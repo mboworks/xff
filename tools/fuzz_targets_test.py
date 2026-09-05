@@ -52,6 +52,17 @@ class FuzzTargetsTest(unittest.TestCase):
         # fuzzer require a hand-maintained count here: BUILD files remain the source of truth.
         self.assertGreaterEqual(len(fuzz_targets.discover_targets(fuzz_targets._REPO_ROOT)), 6)
 
+    def test_campaign_duration_tracks_target_count(self):
+        self.assertEqual(fuzz_targets.campaign_duration_seconds(["one", "two", "three"], 60, 180), 180)
+
+    def test_campaign_duration_rejects_nonpositive_seconds(self):
+        with self.assertRaisesRegex(ValueError, "must be positive"):
+            fuzz_targets.campaign_duration_seconds(["one"], 0)
+
+    def test_campaign_duration_rejects_over_budget_target_growth(self):
+        with self.assertRaisesRegex(ValueError, "240 seconds, exceeding the 180-second budget"):
+            fuzz_targets.campaign_duration_seconds(["one", "two", "three", "four"], 60, 180)
+
     @mock.patch("fuzz_targets.subprocess.run")
     def test_campaign_passes_the_dedicated_cache_flags_to_bazel(self, run):
         run.return_value.returncode = 0

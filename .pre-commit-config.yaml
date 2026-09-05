@@ -416,6 +416,15 @@ repos:
         entry: tools/extras_test.py
         files: ^tools/extras(_test)?\.py$
         pass_filenames: false
+      - id: fuzz-targets-test
+        name: Test fuzz campaign discovery and budgets
+        description: |
+          Runs the fuzz-driver unit tests when its implementation or either CI campaign policy
+          changes, so target growth cannot silently exceed the required or deep-fuzz budget.
+        language: script
+        entry: tools/fuzz_targets_test.py
+        files: ^(\.github/workflows/(fuzz|main)\.yml|tools/fuzz_targets(_test)?\.py)$
+        pass_filenames: false
       - id: release-prep-test
         name: Test the release prep script
         description: |

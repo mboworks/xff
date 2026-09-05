@@ -160,8 +160,11 @@ jobs:
     needs: [pre-commit, trunk]
     runs-on: ubuntu-latest
     timeout-minutes: 75
+    # Required CI stays bounded: ten targets at 60 seconds each is ten minutes of deliberate
+    # mutation plus compilation. The weekly/manual Deep fuzz workflow owns longer campaigns, so a
+    # merge does not hold the main validation and release path for at least fifty minutes.
     env:
-      FUZZ_SECONDS_PER_TARGET: ${{ github.ref == 'refs/heads/main' && 300 || 60 }}
+      FUZZ_SECONDS_PER_TARGET: 60
     steps:
       - uses: actions/checkout@v7
       - uses: bazelbuild/setup-bazelisk@v3
@@ -183,6 +186,7 @@ jobs:
           } >>"${GITHUB_STEP_SUMMARY}"
           tools/fuzz_targets.py \
             --campaign-seconds="${FUZZ_SECONDS_PER_TARGET}" \
+            --max-total-seconds=900 \
             --disk-cache="${HOME}/.cache/bazel-disk" \
             --disk-cache-max-size=600M
 

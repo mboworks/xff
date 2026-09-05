@@ -1,0 +1,44 @@
+name: Deep fuzz
+
+on:
+  schedule:
+    # Weekly sustained mutation without delaying every merge and release.
+    - cron: "17 3 * * 0"
+  workflow_dispatch: {}
+
+concurrency:
+  group: deep-fuzz
+  cancel-in-progress: false
+
+permissions: read-all
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v7
+      - uses: bazelbuild/setup-bazelisk@v3
+      - name: Mount the dedicated fuzz disk cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/bazel-disk
+          key: bazel-disk-fuzz-${{ hashFiles('MODULE.bazel.lock', '.bazelversion') }}
+          restore-keys: |
+            bazel-disk-fuzz-
+      - name: Run deep fuzz campaigns
+        env:
+          SECONDS_PER_TARGET: 300
+        run: |
+          set -euo pipefail
+          target_count="$(tools/fuzz_targets.py --list | wc -l)"
+          {
+            echo "### Deep fuzz campaigns"
+            echo
+            echo "${target_count} targets, ${SECONDS_PER_TARGET} seconds per target"
+          } >>"${GITHUB_STEP_SUMMARY}"
+          tools/fuzz_targets.py \
+            --campaign-seconds="${SECONDS_PER_TARGET}" \
+            --max-total-seconds=3600 \
+            --disk-cache="${HOME}/.cache/bazel-disk" \
+            --disk-cache-max-size=600M

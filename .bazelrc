@@ -129,7 +129,7 @@ common:symbolizer --strip=never
 common:symbolizer --run_under=//tools:run_under_symbolizer
 
 # --config=asan : run with `--config=clang --config=asan` (macOS + clang-22 works
-# via toolchains_llvm 1.8.0 / #769). 1.8.0 also drives sanitizers via the `asan`
+# via toolchains_llvm >= 1.8.0 / #769). The toolchain also drives sanitizers via the `asan`
 # feature (#765); the explicit -fsanitize copts/linkopts keep it working elsewhere too.
 # Enables AddressSanitizer + UndefinedBehaviorSanitizer (vptr excluded: it needs RTTI
 # across TUs). -fno-sanitize-recover makes UB a hard failure, matching the

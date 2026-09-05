@@ -133,11 +133,27 @@ def run_campaigns(targets: list[str], seconds: int, bazel_args: list[str]) -> in
     return 0
 
 
+def campaign_duration_seconds(targets: list[str], seconds: int, maximum: int | None = None) -> int:
+    """Returns deliberate mutation time, rejecting invalid or over-budget campaigns."""
+    if seconds <= 0:
+        raise ValueError("--campaign-seconds must be positive")
+    total = len(targets) * seconds
+    if maximum is not None and total > maximum:
+        raise ValueError(f"campaign requests {total} seconds, exceeding the {maximum}-second budget")
+    return total
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--list", action="store_true", help="print every generated campaign label")
     mode.add_argument("--campaign-seconds", type=int, metavar="N", help="run every campaign for N seconds")
+    parser.add_argument(
+        "--max-total-seconds",
+        type=int,
+        metavar="N",
+        help="fail before building when target count times campaign seconds exceeds N",
+    )
     parser.add_argument("--disk-cache", metavar="PATH", help="use a dedicated Bazel disk cache")
     parser.add_argument(
         "--disk-cache-max-size",
@@ -149,8 +165,10 @@ def main() -> int:
     if args.list:
         print("\n".join(targets))
         return 0
-    if args.campaign_seconds <= 0:
-        parser.error("--campaign-seconds must be positive")
+    try:
+        campaign_duration_seconds(targets, args.campaign_seconds, args.max_total_seconds)
+    except ValueError as error:
+        parser.error(str(error))
     bazel_args: list[str] = []
     if args.disk_cache:
         bazel_args.append(f"--disk_cache={pathlib.Path(args.disk_cache).expanduser()}")
