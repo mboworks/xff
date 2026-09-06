@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-06 17:44:05</td>
+            <td class="headerValue">2026-09-06 18:25:26</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -142,10 +142,10 @@
 <span id="L62"><span class="lineNum">      62</span>                 :             : // One process talks to one fuse3 library, so the API is resolved once and shared: the C callbacks</span>
 <span id="L63"><span class="lineNum">      63</span>                 :             : // have no capture slot besides userdata (which carries the per-mount state), and this is how they</span>
 <span id="L64"><span class="lineNum">      64</span>                 :             : // reach the reply functions.</span>
-<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">         153 : const absl::StatusOr&lt;FuseApi&gt;&amp; ResolvedApi() {</span></span>
-<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">         153 :   static const absl::StatusOr&lt;FuseApi&gt;&amp; api = *new absl::StatusOr&lt;FuseApi&gt;(FuseApi::Resolve());</span></span>
-<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">         153 :   return api;</span></span>
-<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">         153 : }</span></span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">         151 : const absl::StatusOr&lt;FuseApi&gt;&amp; ResolvedApi() {</span></span>
+<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">         151 :   static const absl::StatusOr&lt;FuseApi&gt;&amp; api = *new absl::StatusOr&lt;FuseApi&gt;(FuseApi::Resolve());</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">         151 :   return api;</span></span>
+<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">         151 : }</span></span>
 <span id="L69"><span class="lineNum">      69</span>                 :             : </span>
 <span id="L70"><span class="lineNum">      70</span>                 :             : // The path of `name` inside `dir`, ASKED OF THE FILESYSTEM rather than assembled here. A backend</span>
 <span id="L71"><span class="lineNum">      71</span>                 :             : // spells its paths its own way - the archive VFS writes a member as `container!member`, not</span>
@@ -224,9 +224,9 @@
 <span id="L144"><span class="lineNum">     144</span>                 :             : </span>
 <span id="L145"><span class="lineNum">     145</span>                 :             : namespace {</span>
 <span id="L146"><span class="lineNum">     146</span>                 :             : </span>
-<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">          57 : FuseServer::Impl&amp; ImplOf(fuse_req_t req) {</span></span>
-<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">          57 :   return *static_cast&lt;FuseServer::Impl*&gt;(ResolvedApi()-&gt;req_userdata(req));</span></span>
-<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">          57 : }</span></span>
+<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">          56 : FuseServer::Impl&amp; ImplOf(fuse_req_t req) {</span></span>
+<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">          56 :   return *static_cast&lt;FuseServer::Impl*&gt;(ResolvedApi()-&gt;req_userdata(req));</span></span>
+<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">          56 : }</span></span>
 <span id="L150"><span class="lineNum">     150</span>                 :             : </span>
 <span id="L151"><span class="lineNum">     151</span>                 :             : // The sessions a fatal signal must ask to exit. Guarded by a mutex on the REGISTRATION side only:</span>
 <span id="L152"><span class="lineNum">     152</span>                 :             : // the handler itself cannot lock, so it walks whatever the vector holds - safe in practice because</span>

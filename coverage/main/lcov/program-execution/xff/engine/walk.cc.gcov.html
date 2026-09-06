@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-06 17:44:05</td>
+            <td class="headerValue">2026-09-06 18:25:26</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -192,7 +192,7 @@
 <span id="L112"><span class="lineNum">     112</span>                 :             :  private:</span>
 <span id="L113"><span class="lineNum">     113</span>                 :             :   // A job is ready or the pool is stopping. `absl::Mutex::Await` evaluates this</span>
 <span id="L114"><span class="lineNum">     114</span>                 :             :   // with `mutex_` held, so it requires the lock.</span>
-<span id="L115"><span class="lineNum">     115</span> [<span class="tlaGBC" title="branch 0 was taken 2971 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4755 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1414 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 3341 times"> + </span>]:<span class="tlaGNC">        7726 :   bool Pending() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) { return stop_ || !queue_.empty(); }</span></span>
+<span id="L115"><span class="lineNum">     115</span> [<span class="tlaGBC" title="branch 0 was taken 2920 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4577 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1389 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 3188 times"> + </span>]:<span class="tlaGNC">        7497 :   bool Pending() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) { return stop_ || !queue_.empty(); }</span></span>
 <span id="L116"><span class="lineNum">     116</span>                 :             : </span>
 <span id="L117"><span class="lineNum">     117</span>                 :             :   // Worker loop: drain jobs until stopped and the queue is empty. Caller (the</span>
 <span id="L118"><span class="lineNum">     118</span>                 :             :   // worker thread) must NOT hold `mutex_`.</span>
@@ -201,7 +201,7 @@
 <span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">        2491 :       std::function&lt;void()&gt; job;</span></span>
 <span id="L122"><span class="lineNum">     122</span>                 :<span class="tlaGNC">        2491 :       {</span></span>
 <span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">        2491 :         const absl::MutexLock lock(mutex_, absl::Condition(this, &amp;ReadPool::Pending));</span></span>
-<span id="L124"><span class="lineNum">     124</span> [<span class="tlaGBC" title="branch 0 was taken 1679 times"> + </span><span class="tlaGBC" title="branch 1 was taken 812 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1672 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 7 times"> + </span>]:<span class="tlaGNC">        2491 :         if (stop_ &amp;&amp; queue_.empty()) {</span></span>
+<span id="L124"><span class="lineNum">     124</span> [<span class="tlaGBC" title="branch 0 was taken 1683 times"> + </span><span class="tlaGBC" title="branch 1 was taken 808 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1672 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 11 times"> + </span>]:<span class="tlaGNC">        2491 :         if (stop_ &amp;&amp; queue_.empty()) {</span></span>
 <span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">        1672 :           return;</span></span>
 <span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">        1672 :         }</span></span>
 <span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">         819 :         job = std::move(queue_.front());</span></span>
@@ -342,19 +342,19 @@
 <span id="L262"><span class="lineNum">     262</span>                 :             :  private:</span>
 <span id="L263"><span class="lineNum">     263</span>                 :             :   // lstat (or stat, when following) a single path into a Stated, with the</span>
 <span id="L264"><span class="lineNum">     264</span>                 :             :   // dangling-symlink fallback to the link itself.</span>
-<span id="L265"><span class="lineNum">     265</span>                 :<span class="tlaGNC">        4130 :   Stated StatNode(const std::string&amp; path, bool follow, std::string_view name = {}) const {</span></span>
+<span id="L265"><span class="lineNum">     265</span>                 :<span class="tlaGNC">        4132 :   Stated StatNode(const std::string&amp; path, bool follow, std::string_view name = {}) const {</span></span>
 <span id="L266"><span class="lineNum">     266</span>                 :             :     // A path with no listing behind it (a root operand) falls back to the slash-based basename,</span>
 <span id="L267"><span class="lineNum">     267</span>                 :             :     // which is right for every real filesystem path.</span>
-<span id="L268"><span class="lineNum">     268</span>         [<span class="tlaGBC" title="branch 0 was taken 787 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3343 times"> + </span>]:<span class="tlaGNC">        4130 :     std::string entry_name = name.empty() ? std::string(Basename(path)) : std::string(name);</span></span>
-<span id="L269"><span class="lineNum">     269</span>                 :<span class="tlaGNC">        4130 :     absl::StatusOr&lt;vfs::Metadata&gt; metadata = fs_.Stat(path, follow);</span></span>
-<span id="L270"><span class="lineNum">     270</span> [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4124 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 6 times"> + </span>]:<span class="tlaGNC">        4130 :     if (!metadata.ok() &amp;&amp; follow) {</span></span>
+<span id="L268"><span class="lineNum">     268</span>         [<span class="tlaGBC" title="branch 0 was taken 787 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3345 times"> + </span>]:<span class="tlaGNC">        4132 :     std::string entry_name = name.empty() ? std::string(Basename(path)) : std::string(name);</span></span>
+<span id="L269"><span class="lineNum">     269</span>                 :<span class="tlaGNC">        4132 :     absl::StatusOr&lt;vfs::Metadata&gt; metadata = fs_.Stat(path, follow);</span></span>
+<span id="L270"><span class="lineNum">     270</span> [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4126 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 6 times"> + </span>]:<span class="tlaGNC">        4132 :     if (!metadata.ok() &amp;&amp; follow) {</span></span>
 <span id="L271"><span class="lineNum">     271</span>                 :<span class="tlaUNC">           0 :       metadata = fs_.Stat(path, /*follow_symlinks=*/false);</span></span>
 <span id="L272"><span class="lineNum">     272</span>                 :<span class="tlaUNC">           0 :     }</span></span>
-<span id="L273"><span class="lineNum">     273</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4124 times"> + </span>]:<span class="tlaGNC">        4130 :     if (!metadata.ok()) {</span></span>
+<span id="L273"><span class="lineNum">     273</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4126 times"> + </span>]:<span class="tlaGNC">        4132 :     if (!metadata.ok()) {</span></span>
 <span id="L274"><span class="lineNum">     274</span>                 :<span class="tlaGNC">           6 :       return Stated{.path = path, .name = std::move(entry_name), .ok = false, .status = metadata.status()};</span></span>
 <span id="L275"><span class="lineNum">     275</span>                 :<span class="tlaGNC">           6 :     }</span></span>
-<span id="L276"><span class="lineNum">     276</span>                 :<span class="tlaGNC">        4124 :     return Stated{.path = path, .name = std::move(entry_name), .metadata = *metadata, .ok = true};</span></span>
-<span id="L277"><span class="lineNum">     277</span>                 :<span class="tlaGNC">        4130 :   }</span></span>
+<span id="L276"><span class="lineNum">     276</span>                 :<span class="tlaGNC">        4126 :     return Stated{.path = path, .name = std::move(entry_name), .metadata = *metadata, .ok = true};</span></span>
+<span id="L277"><span class="lineNum">     277</span>                 :<span class="tlaGNC">        4132 :   }</span></span>
 <span id="L278"><span class="lineNum">     278</span>                 :             : </span>
 <span id="L279"><span class="lineNum">     279</span>                 :             :   // A read job: list `dir` and stat every child. Pure - safe to run on a worker.</span>
 <span id="L280"><span class="lineNum">     280</span>                 :<span class="tlaGNC">        1476 :   Listing ReadDir(const std::string&amp; dir) const {</span></span>
@@ -475,7 +475,7 @@
 <span id="L393"><span class="lineNum">     393</span>                 :<span class="tlaUNC">           0 :       return;</span></span>
 <span id="L394"><span class="lineNum">     394</span>                 :<span class="tlaUNC">           0 :     }</span></span>
 <span id="L395"><span class="lineNum">     395</span>         [<span class="tlaGBC" title="branch 0 was taken 764 times"> + </span><span class="tlaGBC" title="branch 1 was taken 594 times"> + </span>]:<span class="tlaGNC">        1358 :     if (options_.sort != SortOrder::kNone) {</span></span>
-<span id="L396"><span class="lineNum">     396</span>                 :<span class="tlaGNC">        2144 :       absl::c_sort(*listing, [](const Stated&amp; lhs, const Stated&amp; rhs) { return lhs.path &lt; rhs.path; });</span></span>
+<span id="L396"><span class="lineNum">     396</span>                 :<span class="tlaGNC">        2143 :       absl::c_sort(*listing, [](const Stated&amp; lhs, const Stated&amp; rhs) { return lhs.path &lt; rhs.path; });</span></span>
 <span id="L397"><span class="lineNum">     397</span>                 :<span class="tlaGNC">         764 :     }</span></span>
 <span id="L398"><span class="lineNum">     398</span>                 :<span class="tlaGNC">        1358 :     HandleChildren(*listing, depth + 1);</span></span>
 <span id="L399"><span class="lineNum">     399</span>                 :<span class="tlaGNC">        1358 :     ancestors_.erase(id);</span></span>
