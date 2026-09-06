@@ -77,19 +77,29 @@ def _excluded_blocks(source_lines: list[str]) -> set[int]:
     """Returns lines inside explicit LCOV exclusion blocks, including markers."""
     excluded: set[int] = set()
     start: int | None = None
+    start_marker = ""
     for number, line in enumerate(source_lines, start=1):
-        if "LCOV_EXCL_START" in line:
+        marker = next(
+            (candidate for candidate in ("LCOV_EXCL_START", "XFF_UNSTABLE_COVERAGE_START") if candidate in line),
+            "",
+        )
+        if marker:
             if start is not None:
-                raise ValueError(f"nested LCOV_EXCL_START at line {number}")
+                raise ValueError(f"nested {marker} at line {number}")
             start = number
+            start_marker = marker
         if start is not None:
             excluded.add(number)
-        if "LCOV_EXCL_STOP" in line:
+        stop_marker = next(
+            (candidate for candidate in ("LCOV_EXCL_STOP", "XFF_UNSTABLE_COVERAGE_STOP") if candidate in line),
+            "",
+        )
+        if stop_marker:
             if start is None:
-                raise ValueError(f"LCOV_EXCL_STOP without LCOV_EXCL_START at line {number}")
+                raise ValueError(f"{stop_marker} without an exclusion start at line {number}")
             start = None
     if start is not None:
-        raise ValueError(f"LCOV_EXCL_START at line {start} has no LCOV_EXCL_STOP")
+        raise ValueError(f"{start_marker} at line {start} has no {start_marker.replace('START', 'STOP')}")
     return excluded
 
 
@@ -142,7 +152,7 @@ def normalize_record(record: str, source: Path) -> str:
     functions: list[tuple[int, str, int]] = []
     function_groups: dict[int, list[tuple[int, str, int]]] = defaultdict(list)
     for line, name in definitions:
-        if line in excluded_functions:
+        if line in excluded_lines or line in excluded_functions:
             continue
         value = (line, name, hits_by_name.get(name, 0))
         if line in merged_functions:
