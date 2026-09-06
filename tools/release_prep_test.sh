@@ -183,7 +183,10 @@ test_release_binaries_use_shared_configuration_and_staging() {
   if [ "$(count_lines_with 'tools/stage_release_artifacts.sh' "${release_workflow}")" -ne 1 ]; then
     fail "release workflow: artifacts must use the shared staging script"
   fi
-  if [ "$(count_lines_with 'bazel test //xff/cli:all --config=release --config=xff_docs' "${main_workflow}")" -ne 1 ]; then
+  if [ "$(count_lines_with 'release_test_config=(--config=release)' "${main_workflow}")" -ne 1 ]; then
+    fail "main workflow: release-test options must start with --config=release"
+  fi
+  if [ "$(count_lines_with 'bazel test //xff/cli:all --config=xff_docs' "${main_workflow}")" -ne 1 ]; then
     fail "main workflow: binary-level tests must use --config=release"
   fi
   if [ "$(count_lines_with '--test_tag_filters=release-binary' "${main_workflow}")" -ne 1 ]; then
