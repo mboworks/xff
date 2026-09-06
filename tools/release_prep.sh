@@ -26,8 +26,9 @@
 #      xff/cli/main.cc;
 #   3. runs tools/check_module_versions.py <tag>, so a location the stamp missed
 #      fails the release loudly instead of shipping a stale version;
-#   4. prints the tag's CHANGELOG.md section and stable versioned documentation
-#      links to stdout (used as the GitHub release body).
+#   4. prints the tag's CHANGELOG.md section, installation and verification
+#      instructions, and stable versioned documentation links to stdout (used
+#      as the GitHub release body).
 #
 # Usage: tools/release_prep.sh <tag>   (v-prefixed, e.g. v1.2.3; may also come
 # from GITHUB_REF_NAME). The stamped version drops the `v`.
@@ -75,6 +76,23 @@ awk -v tag="${VERSION}" '
   grab && /^# [0-9]/ { exit }
   grab { print }
 ' CHANGELOG.md
+printf '\n## Install\n\n'
+cat <<'EOF'
+Download the executable for your platform (use the `xff_full` asset instead if you need every optional feature):
+
+```sh
+EOF
+printf '%s\n' "curl -LO https://github.com/mboworks/xff/releases/download/${TAG}/xff-linux-x86_64"
+printf '%s\n' "curl -LO https://github.com/mboworks/xff/releases/download/${TAG}/SHA256SUMS"
+cat <<'EOF'
+grep ' xff-linux-x86_64$' SHA256SUMS | sha256sum -c -
+mkdir -p "$HOME/.local/bin" "$HOME/.local/share/man/man1"
+install -m 0755 xff-linux-x86_64 "$HOME/.local/bin/xff"
+"$HOME/.local/bin/xff" --pager=never --man > "$HOME/.local/share/man/man1/xff.1"
+```
+
+On macOS ARM64, replace `linux-x86_64` with `macos-arm64` and verify with `shasum -a 256 -c -` instead. The `.tar.zst` asset for each platform contains both binaries and their matching debug files.
+EOF
 printf '\n## Release resources\n\n'
 printf '%s\n' "- [Full HTML reference](https://mboworks.github.io/xff/releases/${VERSION}/)"
 printf '%s\n' "- [Raw reference (XFF.md)](https://mboworks.github.io/xff/releases/${VERSION}/XFF.md)"

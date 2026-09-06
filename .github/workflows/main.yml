@@ -115,6 +115,7 @@ jobs:
         if: matrix.config.name == 'default'
         run: |
           set -euo pipefail
+          command -v zstd
           case "${RUNNER_OS}" in
             Linux) platform=linux ;;
             macOS) platform=macos ;;
@@ -147,7 +148,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: release-candidate-${{ matrix.os }}
-          path: dist/*.tar.gz
+          path: dist/*
           retention-days: 7
           if-no-files-found: error
 

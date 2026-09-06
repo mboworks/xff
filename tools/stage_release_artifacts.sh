@@ -77,6 +77,12 @@ else
   done
 fi
 
-archive="${dist}/${bundle_name}.tar.gz"
-COPYFILE_DISABLE=1 tar -czf "${archive}" -C "${dist}/.${bundle_name}-staging" "${bundle_name}"
-printf '%s\n' "${bundle}/${lean_name}" "${bundle}/${full_name}" "${archive}"
+zstd_tool="$(find_tool "${RELEASE_ZSTD:-}" zstd)"
+archive="${dist}/${bundle_name}.tar.zst"
+COPYFILE_DISABLE=1 tar -cf - -C "${dist}/.${bundle_name}-staging" "${bundle_name}" \
+  | "${zstd_tool}" -19 -T0 --quiet --force -o "${archive}"
+public_lean="${dist}/${lean_name}-${platform}-${arch}"
+public_full="${dist}/${full_name}-${platform}-${arch}"
+install -m 0755 "${bundle}/${lean_name}" "${public_lean}"
+install -m 0755 "${bundle}/${full_name}" "${public_full}"
+printf '%s\n' "${public_lean}" "${public_full}" "${archive}"
