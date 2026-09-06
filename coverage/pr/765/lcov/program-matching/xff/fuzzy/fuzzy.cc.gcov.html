@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-06 09:27:06</td>
+            <td class="headerValue">2026-09-06 10:44:35</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -139,25 +139,25 @@
 <span id="L58"><span class="lineNum">      58</span>                 :             : constexpr int kGap = 1;             // per character skipped before a match</span>
 <span id="L59"><span class="lineNum">      59</span>                 :             : constexpr int kUnmatched = -1'000;  // &quot;no alignment reaches here&quot;, never a real score</span>
 <span id="L60"><span class="lineNum">      60</span>                 :             : </span>
-<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">        1827 : bool IsSeparator(char chr) {</span></span>
-<span id="L62"><span class="lineNum">      62</span> [<span class="tlaGBC" title="branch 0 was taken 117 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1710 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 61 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1649 times"> + </span>]:<span class="tlaGNC">        1827 :   return chr == '_' || chr == '-' || chr == '.' || chr == '/' || chr == ' ';</span></span>
-<span class="lineNum">        </span> [<span class="tlaGBC" title="branch &quot;4&quot; was taken 68 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 1581 times"> + </span>][<span class="tlaGBC" title="branch &quot;6&quot; was taken 23 times"> + </span><span class="tlaGBC" title="branch &quot;7&quot; was taken 1558 times"> + </span>]
-<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;8&quot; was taken 23 times"> + </span><span class="tlaGBC" title="branch &quot;9&quot; was taken 1535 times"> + </span>]
-<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">        1827 : }</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">        1830 : bool IsSeparator(char chr) {</span></span>
+<span id="L62"><span class="lineNum">      62</span> [<span class="tlaGBC" title="branch 0 was taken 117 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1713 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 61 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1652 times"> + </span>]:<span class="tlaGNC">        1830 :   return chr == '_' || chr == '-' || chr == '.' || chr == '/' || chr == ' ';</span></span>
+<span class="lineNum">        </span> [<span class="tlaGBC" title="branch &quot;4&quot; was taken 68 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 1584 times"> + </span>][<span class="tlaGBC" title="branch &quot;6&quot; was taken 23 times"> + </span><span class="tlaGBC" title="branch &quot;7&quot; was taken 1561 times"> + </span>]
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;8&quot; was taken 23 times"> + </span><span class="tlaGBC" title="branch &quot;9&quot; was taken 1538 times"> + </span>]
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">        1830 : }</span></span>
 <span id="L64"><span class="lineNum">      64</span>                 :             : </span>
 <span id="L65"><span class="lineNum">      65</span>                 :             : // Whether text[at] begins a word: the start, anything after a separator, or a camelCase hump.</span>
-<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">        2180 : bool IsWordStart(std::string_view text, std::string_view::size_type at) {</span></span>
-<span id="L67"><span class="lineNum">      67</span>         [<span class="tlaGBC" title="branch 0 was taken 353 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1827 times"> + </span>]:<span class="tlaGNC">        2180 :   if (at == 0) {</span></span>
+<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">        2183 : bool IsWordStart(std::string_view text, std::string_view::size_type at) {</span></span>
+<span id="L67"><span class="lineNum">      67</span>         [<span class="tlaGBC" title="branch 0 was taken 353 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1830 times"> + </span>]:<span class="tlaGNC">        2183 :   if (at == 0) {</span></span>
 <span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">         353 :     return true;</span></span>
 <span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">         353 :   }</span></span>
-<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">        1827 :   const char before = text[at - 1];</span></span>
-<span id="L71"><span class="lineNum">      71</span>         [<span class="tlaGBC" title="branch 0 was taken 292 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1535 times"> + </span>]:<span class="tlaGNC">        1827 :   return IsSeparator(before)</span></span>
-<span id="L72"><span class="lineNum">      72</span>         [<span class="tlaGBC" title="branch 0 was taken 1493 times"> + </span><span class="tlaGBC" title="branch 1 was taken 42 times"> + </span>]:<span class="tlaGNC">        1535 :          || (absl::ascii_islower(static_cast&lt;unsigned char&gt;(before))</span></span>
-<span id="L73"><span class="lineNum">      73</span>         [<span class="tlaGBC" title="branch 0 was taken 13 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1480 times"> + </span>]:<span class="tlaGNC">        1493 :              &amp;&amp; absl::ascii_isupper(static_cast&lt;unsigned char&gt;(text[at])));</span></span>
-<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">        2180 : }</span></span>
+<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">        1830 :   const char before = text[at - 1];</span></span>
+<span id="L71"><span class="lineNum">      71</span>         [<span class="tlaGBC" title="branch 0 was taken 292 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1538 times"> + </span>]:<span class="tlaGNC">        1830 :   return IsSeparator(before)</span></span>
+<span id="L72"><span class="lineNum">      72</span>         [<span class="tlaGBC" title="branch 0 was taken 1495 times"> + </span><span class="tlaGBC" title="branch 1 was taken 43 times"> + </span>]:<span class="tlaGNC">        1538 :          || (absl::ascii_islower(static_cast&lt;unsigned char&gt;(before))</span></span>
+<span id="L73"><span class="lineNum">      73</span>         [<span class="tlaGBC" title="branch 0 was taken 13 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1482 times"> + </span>]:<span class="tlaGNC">        1495 :              &amp;&amp; absl::ascii_isupper(static_cast&lt;unsigned char&gt;(text[at])));</span></span>
+<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">        2183 : }</span></span>
 <span id="L75"><span class="lineNum">      75</span>                 :             : </span>
 <span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">       17915 : bool SameChar(char have, char want, bool fold_case) {</span></span>
-<span id="L77"><span class="lineNum">      77</span> [<span class="tlaGBC" title="branch 0 was taken 2844 times"> + </span><span class="tlaGBC" title="branch 1 was taken 15071 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3882 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 11189 times"> + </span>]:<span class="tlaGNC">       17915 :   return have == want || (fold_case &amp;&amp; absl::ascii_tolower(have) == absl::ascii_tolower(want));</span></span>
+<span id="L77"><span class="lineNum">      77</span> [<span class="tlaGBC" title="branch 0 was taken 2847 times"> + </span><span class="tlaGBC" title="branch 1 was taken 15068 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3882 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 11186 times"> + </span>]:<span class="tlaGNC">       17915 :   return have == want || (fold_case &amp;&amp; absl::ascii_tolower(have) == absl::ascii_tolower(want));</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 51 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 3831 times"> + </span>]
 <span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">       17915 : }</span></span>
 <span id="L79"><span class="lineNum">      79</span>                 :             : </span>
@@ -354,20 +354,20 @@
 <span id="L263"><span class="lineNum">     263</span>         [<span class="tlaGBC" title="branch 0 was taken 12910 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1509 times"> + </span>]:<span class="tlaGNC">       14419 :     if (at &gt; 0) {</span></span>
 <span id="L264"><span class="lineNum">     264</span>                 :<span class="tlaGNC">       12910 :       reachable = std::max(reachable - kGap, previous[at - 1]);</span></span>
 <span id="L265"><span class="lineNum">     265</span>                 :<span class="tlaGNC">       12910 :     }</span></span>
-<span id="L266"><span class="lineNum">     266</span>         [<span class="tlaGBC" title="branch 0 was taken 12239 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2180 times"> + </span>]:<span class="tlaGNC">       14419 :     if (!SameChar(text[at], want, fold_case)) {</span></span>
-<span id="L267"><span class="lineNum">     267</span>                 :<span class="tlaGNC">       12239 :       best[at] = kUnmatched;</span></span>
-<span id="L268"><span class="lineNum">     268</span>                 :<span class="tlaGNC">       12239 :       continue;</span></span>
-<span id="L269"><span class="lineNum">     269</span>                 :<span class="tlaGNC">       12239 :     }</span></span>
-<span id="L270"><span class="lineNum">     270</span>         [<span class="tlaGBC" title="branch 0 was taken 658 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1522 times"> + </span>]:<span class="tlaGNC">        2180 :     const int here = kMatch + (IsWordStart(text, at) ? kWordStart : 0);</span></span>
-<span id="L271"><span class="lineNum">     271</span>         [<span class="tlaGBC" title="branch 0 was taken 525 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1655 times"> + </span>]:<span class="tlaGNC">        2180 :     if (first) {</span></span>
+<span id="L266"><span class="lineNum">     266</span>         [<span class="tlaGBC" title="branch 0 was taken 12236 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2183 times"> + </span>]:<span class="tlaGNC">       14419 :     if (!SameChar(text[at], want, fold_case)) {</span></span>
+<span id="L267"><span class="lineNum">     267</span>                 :<span class="tlaGNC">       12236 :       best[at] = kUnmatched;</span></span>
+<span id="L268"><span class="lineNum">     268</span>                 :<span class="tlaGNC">       12236 :       continue;</span></span>
+<span id="L269"><span class="lineNum">     269</span>                 :<span class="tlaGNC">       12236 :     }</span></span>
+<span id="L270"><span class="lineNum">     270</span>         [<span class="tlaGBC" title="branch 0 was taken 658 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1525 times"> + </span>]:<span class="tlaGNC">        2183 :     const int here = kMatch + (IsWordStart(text, at) ? kWordStart : 0);</span></span>
+<span id="L271"><span class="lineNum">     271</span>         [<span class="tlaGBC" title="branch 0 was taken 525 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1658 times"> + </span>]:<span class="tlaGNC">        2183 :     if (first) {</span></span>
 <span id="L272"><span class="lineNum">     272</span>                 :             :       // The first character may start anywhere, but the later it starts the worse it scores.</span>
 <span id="L273"><span class="lineNum">     273</span>                 :<span class="tlaGNC">         525 :       best[at] = here - (kGap * static_cast&lt;int&gt;(at));</span></span>
 <span id="L274"><span class="lineNum">     274</span>                 :<span class="tlaGNC">         525 :       continue;</span></span>
 <span id="L275"><span class="lineNum">     275</span>                 :<span class="tlaGNC">         525 :     }</span></span>
-<span id="L276"><span class="lineNum">     276</span> [<span class="tlaGBC" title="branch 0 was taken 1559 times"> + </span><span class="tlaGBC" title="branch 1 was taken 96 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 893 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 666 times"> + </span>]:<span class="tlaGNC">        1655 :     const int consecutive = at &gt; 0 &amp;&amp; previous[at - 1] != kUnmatched ? previous[at - 1] + kConsecutive : kUnmatched;</span></span>
-<span id="L277"><span class="lineNum">     277</span>                 :<span class="tlaGNC">        1655 :     const int from = std::max(reachable, consecutive);</span></span>
-<span id="L278"><span class="lineNum">     278</span>         [<span class="tlaGBC" title="branch 0 was taken 471 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1184 times"> + </span>]:<span class="tlaGNC">        1655 :     best[at] = from == kUnmatched ? kUnmatched : from + here;</span></span>
-<span id="L279"><span class="lineNum">     279</span>                 :<span class="tlaGNC">        1655 :   }</span></span>
+<span id="L276"><span class="lineNum">     276</span> [<span class="tlaGBC" title="branch 0 was taken 1562 times"> + </span><span class="tlaGBC" title="branch 1 was taken 96 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 893 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 669 times"> + </span>]:<span class="tlaGNC">        1658 :     const int consecutive = at &gt; 0 &amp;&amp; previous[at - 1] != kUnmatched ? previous[at - 1] + kConsecutive : kUnmatched;</span></span>
+<span id="L277"><span class="lineNum">     277</span>                 :<span class="tlaGNC">        1658 :     const int from = std::max(reachable, consecutive);</span></span>
+<span id="L278"><span class="lineNum">     278</span>         [<span class="tlaGBC" title="branch 0 was taken 474 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1184 times"> + </span>]:<span class="tlaGNC">        1658 :     best[at] = from == kUnmatched ? kUnmatched : from + here;</span></span>
+<span id="L279"><span class="lineNum">     279</span>                 :<span class="tlaGNC">        1658 :   }</span></span>
 <span id="L280"><span class="lineNum">     280</span>                 :<span class="tlaGNC">        1509 : }</span></span>
 <span id="L281"><span class="lineNum">     281</span>                 :             : </span>
 <span id="L282"><span class="lineNum">     282</span>                 :             : }  // namespace</span>
