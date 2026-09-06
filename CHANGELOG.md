@@ -3,6 +3,10 @@
 
 # 0.3.5
 
+- Shrink the installed Linux release binaries with LLD string-tail and branch optimization, safe
+  identical-code folding, and packed relative relocations. The measured AArch64 binaries are 12.9%
+  smaller for `xff` and 7.3% smaller for `xff_full`, without changing macOS or non-release builds.
+
 # 0.3.4
 
 - Restore the four directly downloadable platform binaries and additionally publish each platform's
