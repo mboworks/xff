@@ -27,6 +27,17 @@ sh_binary(
     visibility = ["//xff/cli:__pkg__"],
 )
 
+sh_binary(
+    name = "stage_release_artifacts",
+    srcs = ["stage_release_artifacts.sh"],
+)
+
+bashtest(
+    name = "stage_release_artifacts_test",
+    srcs = ["stage_release_artifacts_test.sh"],
+    data = [":stage_release_artifacts"],
+)
+
 bashtest(
     name = "generate_reference_test",
     srcs = ["generate_reference_test.sh"],

@@ -433,7 +433,7 @@ repos:
           when the release script, workflow, test, or version check changes.
         language: script
         entry: tools/release_prep_test.sh
-        files: ^(\.github/workflows/release\.yml|tools/(release_prep\.sh|release_prep_test\.sh|check_module_versions\.py))$
+        files: ^(\.bazelrc|\.github/workflows/(main|release)\.yml|tools/(release_prep\.sh|release_prep_test\.sh|stage_release_artifacts(_test)?\.sh|check_module_versions\.py))$
         pass_filenames: false
       - id: trigger-release-test
         name: Test the release trigger next-version logic

@@ -1,7 +1,7 @@
 # Release: on a version tag push (e.g. `git tag v0.1.0 && git push origin v0.1.0`,
 # or `tools/trigger_release.sh 0.1.0`), build the lean and full binaries for Linux
-# and macOS and cut a GitHub release with them attached and the CHANGELOG section
-# as the body.
+# and macOS and cut a GitHub release with one archive per platform. Each archive contains the
+# stripped executables, their matching debug symbols, and the CHANGELOG section is the release body.
 #
 # xff is not published to a registry; it ships as a tool. The version is stamped
 # from the tag at build time (override-on-release, see tools/release_prep.sh),
@@ -168,31 +168,35 @@ jobs:
           key: bazel-release-clang-${{ matrix.os }}-${{ hashFiles('MODULE.bazel.lock', '.bazelversion') }}
           restore-keys: |
             bazel-release-clang-${{ matrix.os }}-
-            bazel-disk-${{ matrix.os }}-default-
+            bazel-disk-${{ matrix.os }}-release-
       # Stamp the tag version into MODULE.bazel + main.cc and verify consistency
       # (discard the notes it prints; the release job re-derives them).
       - name: Stamp version + verify
         run: tools/release_prep.sh "${RELEASE_TAG}" >/dev/null
       - name: Build lean + full binaries
         run: |
-          bazel build -c opt --config=clang //xff/cli:xff \
+          bazel build --config=release //xff/cli:xff \
             --disk_cache="${HOME}/.cache/bazel-disk" --repository_cache="${HOME}/.cache/bazel-repo"
-          bazel build -c opt --config=clang --config=xff_full //xff/cli:xff_full \
+          bazel build --config=release --config=xff_full //xff/cli:xff_full \
             --disk_cache="${HOME}/.cache/bazel-disk" --repository_cache="${HOME}/.cache/bazel-repo"
       - name: Stage artifacts
         env:
           PLATFORM: ${{ matrix.platform }}
         run: |
           arch="$(uname -m)"
-          mkdir -p dist
-          lean="$(bazel cquery -c opt --config=clang --output=files //xff/cli:xff 2>/dev/null)"
-          full="$(bazel cquery -c opt --config=clang --config=xff_full --output=files //xff/cli:xff_full 2>/dev/null)"
-          install -m 0755 "${lean}" "dist/xff-${PLATFORM}-${arch}"
-          install -m 0755 "${full}" "dist/xff_full-${PLATFORM}-${arch}"
+          lean="$(bazel cquery --config=release --output=files //xff/cli:xff 2>/dev/null)"
+          full="$(bazel cquery --config=release --config=xff_full --output=files //xff/cli:xff_full 2>/dev/null)"
+          tools/stage_release_artifacts.sh "${PLATFORM}" "${arch}" "${lean}" "${full}" dist
+          staged="dist/.xff-${PLATFORM}-${arch}-staging/xff-${PLATFORM}-${arch}"
+          "${staged}/xff" --version
+          "${staged}/xff" --help >/dev/null
+          "${staged}/xff_full" --version
+          "${staged}/xff_full" --help >/dev/null
+          ls -lh dist/*
       - uses: actions/upload-artifact@v7
         with:
           name: xff-${{ matrix.platform }}
-          path: dist/*
+          path: dist/*.tar.gz
           if-no-files-found: error
 
   release:

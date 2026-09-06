@@ -722,6 +722,7 @@ bashtest(
     size = "small",
     srcs = ["full_binary_test.sh"],
     data = [":xff_full"],
+    tags = ["release-binary"],
     target_compatible_with = XFF_FULL_ONLY,
 )
 
@@ -754,6 +755,7 @@ bashtest(
     # exists inside bazel's linux sandbox. Scoped to the TEST action (see @xff_fuse's server test for
     # why a target-wide no-sandbox tag is wrong: it unsandboxes the compile too).
     exec_properties = {"test.no-sandbox": "1"},
+    tags = ["release-binary"],
     target_compatible_with = XFF_FULL_ONLY,
 )
 
@@ -1009,6 +1011,7 @@ bashtest(
     size = "small",
     srcs = ["help_test.sh"],
     data = [":xff"],
+    tags = ["release-binary"],
 )
 
 # Binary-level test of the `xff help [topic]` subcommand: dispatch, exit codes, and

@@ -106,6 +106,50 @@ jobs:
             --disk_cache=$HOME/.cache/bazel-disk --repository_cache=$HOME/.cache/bazel-repo \
             "${fuse_test_config[@]}" \
             ${{ matrix.config.flags }}
+      # ThinLTO on every unit-test executable makes a cold job exceed 20 minutes. The ordinary suite
+      # above remains on the same hermetic Clang toolchain without LTO; these tagged binary-level
+      # tests compile the actual release targets with size optimization + ThinLTO and exercise both
+      # lean and full programs. Staging and executing the stripped copies covers the final release
+      # transformation as well.
+      - name: Test, build, and smoke-test release artifacts
+        if: matrix.config.name == 'default'
+        run: |
+          set -euo pipefail
+          case "${RUNNER_OS}" in
+            Linux) platform=linux ;;
+            macOS) platform=macos ;;
+            *) echo "unsupported runner OS: ${RUNNER_OS}" >&2; exit 2 ;;
+          esac
+          arch="$(uname -m)"
+          release_test_config=(--config=release)
+          if [ "${RUNNER_OS}" = "Linux" ]; then
+            release_test_config+=(--config=xff_fuse_tests_required)
+          fi
+          bazel test //xff/cli:all --config=xff_docs \
+            --test_tag_filters=release-binary \
+            --disk_cache=$HOME/.cache/bazel-disk --repository_cache=$HOME/.cache/bazel-repo \
+            "${release_test_config[@]}"
+          bazel build --config=release //xff/cli:xff \
+            --disk_cache=$HOME/.cache/bazel-disk --repository_cache=$HOME/.cache/bazel-repo
+          bazel build --config=release --config=xff_full //xff/cli:xff_full \
+            --disk_cache=$HOME/.cache/bazel-disk --repository_cache=$HOME/.cache/bazel-repo
+          lean="$(bazel cquery --config=release --output=files //xff/cli:xff 2>/dev/null)"
+          full="$(bazel cquery --config=release --config=xff_full --output=files //xff/cli:xff_full 2>/dev/null)"
+          tools/stage_release_artifacts.sh "${platform}" "${arch}" "${lean}" "${full}" dist
+          staged="dist/.xff-${platform}-${arch}-staging/xff-${platform}-${arch}"
+          "${staged}/xff" --version
+          "${staged}/xff" --help >/dev/null
+          "${staged}/xff_full" --version
+          "${staged}/xff_full" --help >/dev/null
+          ls -lh dist/*
+      - name: Upload release candidates
+        if: matrix.config.name == 'default' && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-candidate-${{ matrix.os }}
+          path: dist/*.tar.gz
+          retention-days: 7
+          if-no-files-found: error
 
   # GCC is a portability check for this leaf executable, not a second authoritative test matrix.
   # Build every core and extension target once on Linux; Clang + libc++ owns tests, sanitizers,
