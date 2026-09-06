@@ -11,6 +11,35 @@ The former combined roadmap and completion ledger through PR #683 is retained se
 
 ## Resolved decisions
 
+- **INVESTIGATED (2026-09-06): mold does not justify changing xff's Linux release linker.** The candidate was
+  tested on native Linux AArch64 under Colima, with Bazel 9.2.0, hermetic Clang/LLD 22.1.8, and the
+  official mold 2.40.4 binary. Both linkers consumed the same warmed non-LTO object cache; an explicit
+  build ID forced real link actions, and each result was staged before switching configurations. The
+  staged binaries identified the expected linker and passed `--version` and `--help` smoke checks.
+
+  | Configuration       | LLD 22.1.8 | mold 2.40.4 | mold change |
+  | :------------------ | ---------: | ----------: | ----------: |
+  | lean link critical  |     0.23 s |      0.95 s |     +0.72 s |
+  | full link critical  |     0.43 s |      0.44 s |     +0.01 s |
+  | lean stripped       |  2,149,456 |   2,147,664 |    -1,792 B |
+  | full stripped       |  4,728,304 |   4,725,456 |    -2,848 B |
+  | combined `.tar.zst` |  3,794,872 |   3,875,217 |   +80,345 B |
+
+  This non-LTO comparison isolates ordinary ELF linking but is not xff's release configuration.
+  The actual `--config=release` build uses ThinLTO. Mold reaches that link and then fails because
+  Clang supplies `LLVMgold.so`, which is absent from the downloaded LLVM 22 distribution.
+  LLVM's documented external-linker path requires building a matching gold plugin from the LLVM
+  source tree; LLD consumes the bitcode natively. Supplying that plugin would therefore expand the
+  proposed linker bootstrap into an LLVM bootstrap as well.
+
+  The BCR `mold` module exposes a normal `cc_binary`, not a registered C++ linker toolchain. Adding
+  that target to `toolchains_llvm`'s `extra_linker_files` would make it available to link actions but
+  introduces a toolchain cycle unless mold itself is built with a distinct bootstrap toolchain. That
+  remains a potentially useful optional `toolchains_llvm` feature for projects that benefit from
+  mold, but xff's measurements do not justify implementing it here: ordinary links were no faster,
+  compressed distribution size regressed, and the real release link needs another large bootstrap.
+  Xff retains LLD and proceeds with independently measured LLD size optimizations.
+
 - **FIXED (2026-08-13): an unknown VALUE on a known global was silently ignored.** `--color=bogus`,
   `--sort=bogus`, `--case=bogus` and `--pager=bogus` all exited 0 and behaved as the default. It was
   uniform, so it read as a design choice rather than one flag's oversight - but it was the opposite
