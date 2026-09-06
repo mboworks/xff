@@ -21,6 +21,18 @@ load(":golden.bzl", "xff_golden_cases")
 
 package(default_visibility = ["//visibility:private"])
 
+# LLD defaults to -O1. -O2 adds string-tail merging and branch-to-branch optimization;
+# --icf=safe folds code only where address identity is not observable. Packed RELR is compatible
+# with glibc 2.36+, below the GLIBC 2.38 ABI floor of the published Linux binaries.
+RELEASE_ELF_LINKOPTS = select({
+    "//xff:release_elf_link_optimizations": [
+        "-Wl,-O2",
+        "-Wl,--icf=safe",
+        "-Wl,-z,pack-relative-relocs",
+    ],
+    "//conditions:default": [],
+})
+
 # main.cc (the CLI entry point, `main()` included) as a library, so the lean `xff` and the extended
 # `xff_full` are both thin binaries over it: main.cc compiles once, neither binary carries its own
 # main(), and `xff_full` differs only by the composable extras it additionally links (see
@@ -65,6 +77,7 @@ cc_library(
 # runs against, and the one built by `//...`.
 cc_binary(
     name = "xff",
+    linkopts = RELEASE_ELF_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [":main_cc"],
 )
@@ -76,6 +89,7 @@ cc_binary(
 # extras present. The PCRE2 backend (@xff_pcre2) links in via the `select` on //xff:xff_pcre_enabled.
 cc_binary(
     name = "xff_full",
+    linkopts = RELEASE_ELF_LINKOPTS,
     target_compatible_with = XFF_FULL_ONLY,
     visibility = ["//visibility:public"],
     deps = [":main_cc"] + select({

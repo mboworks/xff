@@ -11,6 +11,45 @@ The former combined roadmap and completion ledger through PR #683 is retained se
 
 ## Resolved decisions
 
+- **IMPLEMENTED (2026-09-06): Linux release binaries use measured, semantics-preserving LLD size
+  optimizations.** The release config enables a target-level ELF switch; a Linux constraint applies
+  the selected options only to the shipped `xff` and `xff_full` links, leaving macOS, host tools,
+  sanitizers, and unrelated test executables unchanged. The baseline already had
+  `-ffunction-sections`, `-fdata-sections`, LLD section garbage collection, relaxation, ordinary
+  string merging, GNU hashing, and RELRO/NOW hardening. The remaining useful options are:
+
+  - `-O2`, which advances LLD from ordinary string merging to string-tail merging and enables
+    branch-to-branch optimization on AArch64 and x86-64;
+  - `--icf=safe`, which folds identical code only where address identity is not observable; and
+  - `-z pack-relative-relocs`, which replaces the large RELA-relative table with RELR encoding.
+
+  Native Linux AArch64 measurements used the real Clang/LLD 22.1.8 ThinLTO release configuration.
+  One common build-ID override forced every candidate to relink, and each result was staged before
+  the next configuration. Installed binary size is the deciding metric; the distribution archive is
+  secondary because its compression does not affect every installed invocation.
+
+  | Configuration           | Lean binary | Lean change | Full binary | Full change |
+  | :---------------------- | ----------: | ----------: | ----------: | ----------: |
+  | existing release        |   1,973,968 |           - |   4,496,424 |           - |
+  | LLD `-O2`               |   1,970,760 |    -3,208 B |   4,491,880 |    -4,544 B |
+  | `-O2` + safe ICF        |   1,884,456 |   -89,512 B |   4,369,192 |  -127,232 B |
+  | `-O2` + safe ICF + RELR |   1,719,320 |  -254,648 B |   4,168,272 |  -328,152 B |
+
+  LLD `-O3` is not a further linker optimization level: LLD documents levels 0 through 2 and treats
+  values above 2 like 2 for these passes. ThinLTO's separate `--lto-O3` would instead favor runtime
+  optimization over the release's size objective. `--icf=all` saved only another 304 bytes lean and
+  4,768 bytes full while permitting observable function addresses to collapse, so it was rejected.
+  Likewise, ignoring data-address equality violates C++ object-identity rules. Compressing individual
+  DWARF sections increased the already-Zstandard-compressed release bundle and was rejected as a
+  packaging regression rather than mixed into executable optimization.
+
+  The published Linux binaries already require GLIBC 2.38; RELR's GLIBC 2.36 loader requirement does
+  not raise that ABI floor. In the lean binary it reduced 167,376 bytes of relative relocations to a
+  1,792-byte RELR table. Final validation retained the GNU build ID and split debug file, found no
+  redundant dynamic dependency for `--as-needed` to remove, ran both staged binaries' `--version` and
+  `--help`, and found no stable startup or repository-traversal regression in a rotated-order sanity
+  screen. Release packaging itself remains unchanged.
+
 - **INVESTIGATED (2026-09-06): mold does not justify changing xff's Linux release linker.** The candidate was
   tested on native Linux AArch64 under Colima, with Bazel 9.2.0, hermetic Clang/LLD 22.1.8, and the
   official mold 2.40.4 binary. Both linkers consumed the same warmed non-LTO object cache; an explicit

@@ -112,6 +112,9 @@ common:release --strip=never
 common:release --copt=-Oz
 common:release --copt=-flto=thin
 common:release --linkopt=-flto=thin
+# Enable the ELF-only linkopts selected by the two shipped binary targets. Keeping these behind a
+# build setting prevents LLD spellings from reaching macOS or unrelated test/host executables.
+common:release --//xff:xff_release_elf_link_optimizations=True
 
 # --config=clang-coverage : collect C++ coverage with the same hermetic Clang/libc++ toolchain
 # that owns the default build. Bazel otherwise defaults C++ coverage to the local gcov toolchain.
