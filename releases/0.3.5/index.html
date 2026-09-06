@@ -1,0 +1,1869 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>xff reference</title>
+<style>
+:root{color-scheme:light dark;--bg:#fff;--fg:#202124;--muted:#59636e;--rule:#c7d0da;--soft:#f6f8fa;--code:#eef1f4;--accent:#176b87;--accent-soft:#eaf5f8;--link:#0969da}@media(prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9da7b3;--rule:#3d4752;--soft:#151b23;--code:#1c2530;--accent:#67c1dc;--accent-soft:#112a33;--link:#58a6ff}}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main,header{width:min(100% - 2rem,72rem);margin-inline:auto}header{padding:3rem 0 1.75rem;border-bottom:2px solid var(--accent)}main{padding:1rem 0 4rem}h1,h2,h3,h4{line-height:1.25;scroll-margin-top:1rem}h1{margin:0;font-size:2.5rem}h2{margin-top:2.5rem;padding-bottom:.4rem;border-bottom:2px solid var(--rule)}h3{margin-top:2rem}h4{margin:.2rem 0}.tagline,.tags{color:var(--muted)}.usage{font-size:1.05rem}.entry{padding:.65rem 0}.summary{margin:.25rem 0}.tags{margin-left:.5rem;font-weight:400;font-size:.9rem}code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{padding:.12rem .3rem;border-radius:.25rem;background:var(--code)}pre{overflow:auto;padding:1rem;border:1px solid var(--rule);border-radius:.4rem;background:var(--code)}pre code{padding:0;background:none}a{color:var(--link);text-underline-offset:.15em}a:hover{text-decoration-thickness:2px}.contents{margin:1.5rem 0 .25rem;padding:1rem 1.2rem;border:1px solid var(--rule);border-left:4px solid var(--accent);border-radius:.4rem;background:var(--soft)}.contents strong{color:var(--accent)}.contents ul{columns:3;gap:2rem;margin:.55rem 0 0;padding-left:1.2rem}.contents li{break-inside:avoid;margin:.2rem 0}dl.rows{display:grid;grid-template-columns:minmax(10rem,max-content) 1fr;gap:.55rem 1rem;padding:.85rem;border:1px solid var(--rule);border-radius:.4rem;background:var(--soft)}dt{font-weight:600}dd{margin:0}.table-wrap{max-width:100%;overflow-x:auto;margin:1rem 0;border:1px solid var(--rule);border-radius:.4rem}.table-wrap:focus{outline:2px solid var(--accent);outline-offset:2px}table{width:100%;border-collapse:collapse}th,td{padding:.55rem .75rem;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);text-align:left;vertical-align:top}th:last-child,td:last-child{border-right:0}tbody tr:last-child td{border-bottom:0}th{background:var(--accent-soft);color:var(--fg);font-weight:700}tbody tr:nth-child(even){background:var(--soft)}@media(max-width:42rem){.contents ul{columns:1}dl.rows{display:block}dd{margin:.15rem 0 .5rem}.tags{display:block;margin:.2rem 0 0}}
+</style>
+</head>
+<body>
+<header>
+<h1>xff</h1>
+<p class="tagline">eXtended File Find, a find(1)-compatible file finder with modern extensions.</p>
+<p class="usage"><strong>Usage:</strong> <code>xff [option...] [path...] [expression]</code></p>
+<nav class="contents" aria-label="Reference sections">
+<strong>On this page</strong>
+<ul>
+<li><a href="#description">Description</a></li>
+<li><a href="#configuration">Configuration</a></li>
+<li><a href="#options">Options</a></li>
+<li><a href="#expression">Expression</a></li>
+<li><a href="#fields">Fields</a></li>
+<li><a href="#printf-directives">Printf directives</a></li>
+<li><a href="#time-formats">Time formats</a></li>
+<li><a href="#size-units">Size units</a></li>
+<li><a href="#regex-grammars">Regex grammars</a></li>
+<li><a href="#content-1">Content</a></li>
+<li><a href="#ignore-and-vcs-traversal">Ignore and VCS traversal</a></li>
+<li><a href="#archives">Archives</a></li>
+<li><a href="#statistics">Statistics</a></li>
+<li><a href="#environment">Environment</a></li>
+<li><a href="#examples-4">Examples</a></li>
+<li><a href="#exit-status">Exit status</a></li>
+<li><a href="#see-also">See also</a></li>
+</ul>
+</nav>
+</header>
+<main>
+<section id="description">
+<h2>Description</h2>
+<p>xff walks each starting path and acts on the entries matching an expression, like <code>find</code>(1). With no path it searches the current directory; with no action it prints each match. <code>xff --compare LEFT RIGHT</code> instead compares two directory trees as selected status records or a patch.</p>
+<p>xff has two flavors selected by the program name: invoked as <code>find</code> it is strict find (only the standard vocabulary); invoked as <code>xff</code> it enables the modern extensions. An explicit <code>--config=find|xff</code> overrides the program name. Items marked as xff extensions below are the additions over find.</p>
+</section>
+<section id="configuration">
+<h2>Configuration</h2>
+<p>xff configuration. Options resolve from layered config tiers, then the command line; later layers win. A style (find / xff / rg) sets the baseline defaults, which the tiers and the command line then adjust. Run <code>--explain</code> to print exactly what resolved.</p>
+<section id="layers-lowest-to-highest-precedence">
+<h3>Layers (lowest to highest precedence)</h3>
+<dl class="rows">
+<dt><code>system config</code></dt><dd>machine-wide defaults (+ a root-owned [policy] that can hard-deny arming)</dd>
+<dt><code>user config</code></dt><dd>your personal defaults</dd>
+<dt><code>--xffrc=FILE</code></dt><dd>an explicitly named file (repeatable) - a NON-ARMING tier</dd>
+<dt><code>command line</code></dt><dd>flags and --config, highest</dd>
+</dl>
+<p>There is no project / ancestor .xffrc discovery: config comes from the system and user files plus any <code>--xffrc</code> you name. <code>--no-config</code> ignores the discovered system/user files.</p>
+</section>
+<section id="choosing-a-style">
+<h3>Choosing a style</h3>
+<p><code>--config=NAME</code> selects find / xff / rg (repeatable, last wins); see <code>--help=styles</code> for the table. The invocation name (argv[0]) is the leading selector, so a symlink named <code>find</code> runs the strict find style and <code>rg</code> the rg style; any other name (e.g. a <code>mytool</code> symlink) activates a same-named config block over the xff default. An explicit <code>--config</code> still stacks on top.</p>
+</section>
+<section id="arming-dangerous-directives">
+<h3>Arming dangerous directives</h3>
+<p>A dangerous directive (the exec family -exec/-execdir/-ok/-capture, or -delete) carried by an --xffrc file is inert unless <code>--allow-exec</code> is set from a TRUSTED tier (the command line or the system/user config, never an --xffrc file itself). Unarmed lines are dropped with a warning; the root system [policy] can hard-deny even <code>--allow-exec</code>.</p>
+</section>
+</section>
+<section id="options">
+<h2>Options</h2>
+<section id="config">
+<h3>Config</h3>
+<article class="entry" id="flag-config">
+<h4><code>--config=NAME</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">select a config style: find (strict), xff (evolved), rg (opinionated); repeatable</p>
+<p>A config style sets the defaults for ignore files, hidden files, sizes, sort order, and case. find is strict find compatibility; xff keeps find's grammar but sorts and prints human sizes; rg is opinionated (respect .gitignore, skip hidden, smart case). Repeatable and layered, last one wins. See --help=styles for the per-style defaults.</p>
+</article>
+<article class="entry" id="flag-no-config">
+<h4><code>--no-config</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">ignore discovered .xffrc files</p>
+</article>
+<article class="entry" id="flag-xffrc">
+<h4><code>--xffrc=FILE</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">also load a specific config file (a non-arming tier; see --allow-exec)</p>
+<p>Loads FILE as a config tier above the user config (naming it is consent to LOAD it). It is a NON-ARMING tier: safe directives apply, but a dangerous one - the exec family (-exec/-execdir/-ok, -capture) or -delete - is inert unless --allow-exec is set from a trusted tier (the CLI or the user/system config, never from an --xffrc file itself). An unarmed dangerous line is dropped with a one-line warning. Repeatable; later files win.</p>
+<p>Affects: --allow-exec</p>
+<p>Affected by: --allow-exec</p>
+</article>
+<article class="entry" id="flag-allow-exec">
+<h4><code>--allow-exec</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">arm dangerous directives loaded from an --xffrc file (exec family, -delete)</p>
+<p>Permits the sensitive/destructive directives (the exec family -exec/-execdir/-ok and -capture, and the destructive -delete) carried by an --xffrc-loaded file to actually run. Honored only from a trusted tier - typed on the CLI, or set in the user/system config - never from an --xffrc file (so a named config cannot authorize itself). The root-owned system [policy] can hard-deny even this. Without it, such lines are inert (dropped + warned); -delete still obeys its own --safe/--dry-run guards.</p>
+<p>Affects: --xffrc</p>
+<p>Affected by: --xffrc</p>
+</article>
+<article class="entry" id="flag-explain">
+<h4><code>--explain</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">print the resolved configuration and exit</p>
+</article>
+</section>
+<section id="traversal">
+<h3>Traversal</h3>
+<article class="entry" id="flag-h">
+<h4><code>-H</code><span class="tags">(global, find)</span></h4>
+<p class="summary">follow symlinks named on the command line, not while walking</p>
+</article>
+<article class="entry" id="flag-l">
+<h4><code>-L</code><span class="tags">(global, find)</span></h4>
+<p class="summary">follow symlinks everywhere during the walk</p>
+</article>
+<article class="entry" id="flag-p">
+<h4><code>-P</code><span class="tags">(global, find)</span></h4>
+<p class="summary">never follow symlinks (the default)</p>
+</article>
+<article class="entry" id="flag-archive">
+<h4><code>--archive[=none|roots|all|any], -z[-|+|++], -Z[-|+|++]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">descend into archives: -z- none, -z roots only, -z+ / bare --archive all</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>none</code></dt><dd>an archive is one plain file (find behavior; the find-style default)</dd>
+<dt><code>roots</code></dt><dd>dive only when a search root is itself an archive (the xff-family default)</dd>
+<dt><code>all</code></dt><dd>also dive archives found during the walk (what bare <code>--archive</code> selects)</dd>
+<dt><code>any</code></dt><dd><code>all</code>, plus offer EVERY file to the reader, not only container-looking names</dd>
+</dl>
+</div>
+<p>Treats each archive (tar, gz, bzip2, xz, zstd, lz4, zip, ...) as a directory, so a member is an ordinary entry at a member path like <code>foo.tar.gz!inner/x</code> and the expression matches it with the same -name / -type / -size / -newer every other entry gets - and the predicates and fields that READ an entry (-grep, -content, -hash, {hash}, {lines}) read the member out of its container. The modes are nested: <code>none</code> keeps find's behavior (an archive is one plain file); <code>roots</code> dives only when a search root is itself an archive (pointing xff AT an archive implies looking inside); <code>all</code> also dives archives discovered during the walk; <code>any</code> is <code>all</code> without the name gate, offering every file to the reader (the older spelling is <code>--archive-any</code>). Bare <code>--archive</code> means <code>all</code>, and the short form carries chmod-style suffix signs (<code>-z-</code> none, <code>-z</code> roots, <code>-z+</code> all, <code>-z++</code> any). The UPPER-case family is the same ladder with writing armed (<code>-Z</code> is <code>-z</code> plus <code>--archive-write</code>, <code>-Z+</code> is <code>-z+</code> plus it, <code>-Z++</code> is <code>-z++</code> plus it): the case carries the capability and the signs carry the level, so aiming at one cannot reach the other. The two axes resolve independently and later wins, so <code>-Z++ -z-</code> arms writing with reading off, while <code>-Z-</code> is the full reset (reading off AND writing disarmed). The find style defaults to <code>none</code>, every xff-family style to <code>roots</code>. Members are read-only until a write spelling arms them, so <code>-delete</code> and the exec family refuse them rather than silently skipping. Under <code>all</code>, a file met mid-walk is offered to the reader only if its NAME looks like a container (<code>any</code> drops that gate); one named on the command line always is. A native phar exposes its executable stub as <code>.phar/stub.php</code>, matching tar- and zip-based phars; it is an ordinary regular member for matching, fields, and statistics. If the manifest stores that path, the stored member wins so one path never denotes two entries. The synthetic stub is readable but cannot be deleted because the format requires it. build-time extras: the stock binary is lean and omits readers; rebuild with <code>--config=xff_full</code>, <code>--//xff:xff_archive</code> for the broad libarchive-backed set, or one of the independent <code>--//xff:xff_asar</code> or <code>--//xff:xff_squashfs</code> readers. Asking for archive handling without any reader is a hard error.</p>
+<p>Affected by: --archive-depth, --archive-aggregate, --archive-delete, --archive-extract, --archive-mount, --archive-any</p>
+</article>
+<article class="entry" id="flag-archive-depth">
+<h4><code>--archive-depth=N</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">how many containers deep --archive dives (default 1)</p>
+<p>Counted in CONTAINERS, not directory levels: the default 1 opens an archive but leaves an archive INSIDE it a plain member, so a <code>.gem</code> shows its <code>data.tar.gz</code> without unpacking it. <code>--archive-depth=2</code> opens that one too. Its own knob rather than part of -maxdepth because nesting is where a decompression bomb lives - a few kilobytes can promise gigabytes per level - while -maxdepth keeps counting member levels as the ordinary depth they are. Only <code>all</code> nests: under <code>roots</code> a member is never a search root, so nothing inside the container is dived whatever the value. N must be at least 1; use --archive=none / -z- to stop diving.</p>
+<p>Affects: --archive</p>
+</article>
+<article class="entry" id="flag-archive-aggregate">
+<h4><code>--archive-aggregate=&lt;MODE&gt;</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">what --summary / --histogram count when the walk dives (default members)</p>
+<p>MODE is one of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>members</code></dt><dd>count what is INSIDE a dived container, not the container (the default)</dd>
+<dt><code>container</code></dt><dd>count containers as the files they are on disk, never their members</dd>
+<dt><code>both</code></dt><dd>count each container AND its members - the archive plus its unpacked copy</dd>
+</dl>
+</div>
+<p>Diving makes one byte visible twice - once as the container's own size, once as its members' - so a total that adds <code>both</code> describes no filesystem that exists. <code>members</code> (the default) counts a dived container's members instead of the container itself, which is what unpacking it and measuring the result would give; <code>container</code> counts the archives and never what is in them, which is what the disk holds; <code>both</code> counts everything, the archive AND its unpacked copy, for when the doubling is the point. Only the REDUCTIONS are affected: -print and every action still see every entry the walk visits, so a member is listed under <code>container</code> and the container is listed under <code>members</code>. <code>members</code> needs the walk to open a container before deciding, so a <code>-prune</code> on a container no longer avoids opening it - use another mode, or no reduction, to keep that.</p>
+<p>Affects: --archive</p>
+</article>
+<article class="entry" id="flag-archive-delete">
+<h4><code>--archive-delete</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">let -delete remove an archive member, rewriting its container</p>
+<p>There is no such thing as removing a member in place: an archive is a stream of header and data records, so the container is written again from the members that survive. That is why this is opt-in and why <code>-delete</code> refuses a member without it - an action that silently rewrites a whole archive is not one to do by default. The rewrite happens after the walk, once per container however many of its members matched, because the walk is reading that same container while it runs. The new archive keeps the original's format and compression (a <code>.tar.gz</code> stays a gzipped tar) and every surviving member keeps its name, mode, times and content; it is written beside the original and renamed over it only when complete, so an interrupted run leaves the container as it was. <code>--dry-run</code> lists the members that would go and writes nothing. A NATIVE phar is rewritten too, by xff's own writer: the manifest and data section are rebuilt from the surviving entries verbatim (so per-member gz / bz2 compression is untouched) and the trailing signature is recomputed (md5 / sha1 / sha256 / sha512). Refused, with the reason named: a format this build reads but cannot write (7-Zip, RAR, ISO); a TAR-based or ZIP-based phar, whose signature is a MEMBER computed over the rest of the container, so a rewrite would leave it stale and PHP would reject the result; an OpenSSL-signed phar, which cannot be re-signed without its private key; a compressed single file, which has no member list to rewrite; and a member of a container nested inside another one.</p>
+<p>Affects: --archive</p>
+<p>Affected by: --archive-write</p>
+</article>
+<article class="entry" id="flag-archive-extract">
+<h4><code>--archive-extract</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">let -exec / -ok run on an archive member, via a temporary copy</p>
+<p>A member is bytes inside a container, so there is no path a child process can open and the exec family refuses one by default. With this flag the member is written to its own temporary directory under the same name it has inside the archive, and the child is handed THAT path: <code>{}</code> renders as the temporary file, -execdir runs in the temporary directory, and -ok shows the copy in its prompt before anything runs. Each copy is removed as soon as its child finishes (for a <code>+</code> batch or a -j child, when the run ends), so nothing is left behind. It is The copy goes to a MEMORY-BACKED directory where the platform has one ($XDG_RUNTIME_DIR or /dev/shm on Linux, both tmpfs), so a member never reaches a disk and the child still gets an ordinary path; a member too large for the space that directory reports free lands in the temporary directory instead, since a tmpfs is RAM shared with the whole machine. It is opt-in because the child is editing a COPY: a formatter or a patch tool will report success and change nothing in the archive. -delete stays refused whatever this flag says - removing a temporary copy would be a no-op dressed as a deletion. The container itself is an ordinary file, so an action on IT never needed this.</p>
+<p>Affects: --archive</p>
+<p>Affected by: --archive-mount, --archive-write</p>
+</article>
+<article class="entry" id="flag-archive-mount">
+<h4><code>--archive-mount</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">let -exec / -ok run on an archive member by mounting its container read-only</p>
+<p>The alternative to <code>--archive-extract</code>, answering the same question - what path can a child process open for a member? - with the container itself instead of a copy. The container is mounted read-only (once, whichever members are visited), so <code>{}</code> names a path INSIDE the archive: a tool that only reads it (a compiler, a checksum, <code>grep</code>) sees the real member and nothing is written anywhere. That also removes extraction's trap, where an in-place formatter edits a temporary copy and reports success while the archive keeps its old content: here the mount has no write path at all, so such a tool fails honestly. Mounting is a per-MACHINE capability (it needs the fuse extra AND a runtime FUSE library and permission to mount), so where it cannot happen the run says so once and falls back to extraction rather than failing - which is why this flag is safe to keep in a config file. <code>--archive-extract</code> is still what arms writing through a copy; this one arms reading in place.</p>
+<p>Affects: --archive, --archive-extract</p>
+</article>
+<article class="entry" id="flag-archive-write">
+<h4><code>--archive-write, -Z[-|+|++]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">arm both archive write flags (--archive-extract + --archive-delete)</p>
+<p>One spelling for "let actions touch members", because the two write flags are almost always wanted together: <code>--archive-extract</code> so <code>-exec</code> / <code>-ok</code> can run over a member, and <code>--archive-delete</code> so <code>-delete</code> can remove one. It is exactly those two flags and nothing else - the dive MODE is untouched. The short form is the UPPER-case archive ladder: <code>-Z</code> is <code>-z</code> with writing armed, <code>-Z+</code> is <code>-z+</code> with it, <code>-Z++</code> is <code>-z++</code> with it. Case carries the capability and the signs carry the level, so a slipped shift key changes which of the two you asked for, never both - and arming is not doing, since an action still has to ask for the write and <code>--safe</code> / <code>--dry-run</code> still apply. The level and the arming resolve as separate axes with later winning, so <code>-Z++ -z-</code> keeps writing armed with diving off; <code>-Z-</code> is the full reset, disarming writing and turning diving off together.</p>
+<p>Affects: --archive-delete, --archive-extract</p>
+</article>
+<article class="entry" id="flag-archive-any">
+<h4><code>--archive-any</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">under --archive=all, offer EVERY file to the reader, not only likely names</p>
+<p>By default <code>all</code> only opens a file the walk met whose NAME looks like a container (<code>.tar</code>, <code>.tgz</code>, <code>.zip</code>, <code>.jar</code>, <code>.phar</code>, ... - the reader's formats plus the packages that are one of them underneath). Without that gate, walking a source tree would open and format-bid every <code>.cc</code> and every binary in it, so the cost of diving would fall on runs that dive nothing. The name is only a heuristic, and this flag is the way out of it: an archive called <code>blob</code> or <code>backup.dat</code> is found with --archive-any and missed without. It costs a read of every candidate file, which is why it is not the default. A file NAMED on the command line is always opened - pointing xff at it is the request - so this flag changes nothing for <code>--archive=roots</code>.</p>
+<p>Affects: --archive</p>
+</article>
+<article class="entry" id="flag-archive-separator">
+<h4><code>--archive-separator=STRING</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">string between container and member in a member path (default <code>!</code>)</p>
+<p>A member path is <code>&lt;container&gt;&lt;separator&gt;&lt;member&gt;</code>, and there is no single ecosystem convention - <code>!</code> (JAR / Java URLs), <code>#</code> (fragment style), and the multi-character <code>!/</code> or <code>#/</code> other tools print all exist - so this is a presentation choice rather than something hard-coded. ANY string is accepted, not a fixed menu, so xff can emit what another system accepts. Rendering is plain concatenation and xff adds or removes no slash, so a member stored with a leading slash keeps it: <code>a.tgz!/rooted</code> (and with <code>--archive-separator=!/</code>, the doubled <code>a.tgz!//rooted</code>, which is why plain <code>!</code> is the better default). Parsing splits at the FIRST occurrence and takes the remainder verbatim, so a path xff printed round-trips. A plain <code>/</code> is allowed and composes with globs, but is lossy - a real directory named x.tar becomes indistinguishable from an archive - so it is never the default.</p>
+</article>
+<article class="entry" id="flag-archive-prefix">
+<h4><code>--archive-prefix=[URI|STRING]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">prefix a member path: empty (default), URI, or any literal string</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>(empty)</code></dt><dd>no prefix - a bare path, <code>a.tgz!inner/x</code> (the default)</dd>
+<dt><code>URI</code></dt><dd>the receiving ecosystem's own URL: <code>phar://</code>, <code>jar:file:...!/</code>, else <code>archive:</code></dd>
+<dt><code>STRING</code></dt><dd>any other value is used literally, e.g. <code>--archive-prefix=vfs:</code></dd>
+</dl>
+</div>
+<p>Empty (the default) prints the bare path, <code>a.tgz!inner/x</code>. <code>URI</code> renders a URL the RECEIVING tool will accept, which means the ecosystem's own where one owns the format: a <code>.phar</code> as PHP's <code>phar:///abs/a.phar/inner/x</code>, a <code>.jar</code> / <code>.war</code> / <code>.ear</code> as Java's <code>jar:file:/abs/a.jar!/pkg/C.class</code>, and everything else as <code>archive:///abs/a.tar!x</code> for an absolute container or the opaque <code>archive:a.tgz!x</code> for a relative one - <code>archive://a.tgz</code> would be WRONG, since <code>//</code> starts the authority and would make <code>a.tgz</code> a host name. The choice is by EXTENSION, because that is what the claim is: a jar IS a zip, and only its name says which readers expect it. Those two spellings fix the separator as well, so <code>--archive-separator</code> does not reach them; the BARE path keeps one separator whatever the container is, since being re-pasteable matters more there than matching a foreign form. Any other value is used LITERALLY (e.g. <code>--archive-prefix=vfs:</code>), the same freedom <code>--archive-separator</code> has; <code>URI</code> is the one keyword, spelled in caps like <code>RE2</code> / <code>PCRE2</code> / <code>GLOB</code>. There is deliberately no <code>none</code> value: it would be indistinguishable from a literal prefix spelled <code>none</code>, which is why empty means no prefix. Applies to PARSING too - under a prefix, a bare path is not accepted as a member path, so the spellings never silently interchange.</p>
+</article>
+<article class="entry" id="flag-jobs">
+<h4><code>-j N, --jobs=N|all</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">worker count for the walk and concurrent -exec (all = every core)</p>
+</article>
+<article class="entry" id="flag-sort">
+<h4><code>--sort[=none|dir|subtree|tree]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">sibling/traversal ordering (default depends on the mode)</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>none</code></dt><dd>filesystem order, whatever the directory yields (fastest)</dd>
+<dt><code>dir</code></dt><dd>sort each directory's entries (a bare --sort; also spelled name)</dd>
+<dt><code>subtree</code></dt><dd>sorted entries with each subtree inlined contiguously</dd>
+<dt><code>tree</code></dt><dd>one path-ordered result across the whole walk (buffers everything)</dd>
+<dt><code>score</code></dt><dd>best <code>-fuzzy</code> match first (buffers everything; needs <code>-fuzzy</code>)</dd>
+</dl>
+</div>
+<p><code>none</code> leaves entries in filesystem order (fastest); <code>dir</code> sorts each directory's entries; <code>subtree</code> and <code>tree</code> give a deterministic order across the whole walk. The default is per style: xff sorts per directory, while find and rg leave the order unspecified. <code>score</code> is the odd one out: the others are TRAVERSAL orders the walk streams, while a <code>-fuzzy</code> score only exists once an entry has been evaluated, so results are buffered and ranked after the walk (best first, ties keeping the walk's own order). It needs <code>-fuzzy</code> or <code>-ifuzzy</code> in the expression - ranking by a value nothing produced is a mistake, not an empty ordering - and side-effecting actions such as <code>-exec</code> still run during the walk, so only the printed listing is reordered.</p>
+<p>Affected by: --pack</p>
+</article>
+</section>
+<section id="matching">
+<h3>Matching</h3>
+<article class="entry" id="flag-block-size">
+<h4><code>--block-size=SIZE</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">bytes per -size block for a bare -size N / -size Nb (default 512)</p>
+<p>A bare number is bytes. Explicit <code>B</code>/<code>kB</code>/<code>MB</code>/... units use SI powers of 1000; <code>KiB</code>/<code>MiB</code>/... use IEC powers of 1024. Legacy <code>k</code>/<code>M</code>/<code>G</code>/... remain binary for find compatibility. Lowercase <code>b</code> is invalid here because defining a block in blocks is circular.</p>
+</article>
+<article class="entry" id="flag-exact">
+<h4><code>--exact</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">match -name/-path byte-exact, opting out of the xff FS-native case default</p>
+</article>
+<article class="entry" id="flag-case">
+<h4><code>--case=&lt;MODE&gt;, -i, -s[-|+]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">letter case for matchers: -i insensitive, -s/-s+ smart, -s- sensitive (rg -&gt; smart)</p>
+<p>MODE is one of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>sensitive</code></dt><dd>match exactly (-s-)</dd>
+<dt><code>insensitive</code></dt><dd>fold case (-i)</dd>
+<dt><code>smart</code></dt><dd>fold case only when the pattern is all lower case (-s / -s+)</dd>
+</dl>
+</div>
+<p>Controls case for <code>-name</code>/<code>-path</code>/<code>-regex</code> and the content matchers. <code>sensitive</code> matches exactly; <code>insensitive</code> (<code>-i</code>) folds case; <code>smart</code> (<code>-s</code> / <code>-s+</code>) folds only when the pattern is all lower case and matches exactly otherwise; <code>-s-</code> forces <code>sensitive</code>. rg defaults to <code>smart</code>.</p>
+</article>
+<article class="entry" id="flag-regextype">
+<h4><code>--regextype=&lt;GRAMMAR&gt;</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">match engine: RE2, EXACT, FNMATCH, GLOB, SHGLOB (GLOB + {a,b}), or PCRE2 (a build extra)</p>
+<p>GRAMMAR is one of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>RE2</code></dt><dd>linear-time regular expressions (the default)</dd>
+<dt><code>EXACT</code></dt><dd>a literal string; metacharacters are plain text</dd>
+<dt><code>FNMATCH</code></dt><dd>flat shell wildcard; <code>*</code> matches any character including <code>/</code></dd>
+<dt><code>GLOB</code></dt><dd>path-aware shell glob; wildcards and classes are component-local</dd>
+<dt><code>SHGLOB</code></dt><dd>GLOB plus <code>{a,b}</code> brace alternation, so <code>*.{cc,h}</code> matches either</dd>
+<dt><code>PCRE2</code></dt><dd>Perl syntax (lookaround, backreferences); a build extra</dd>
+</dl>
+</div>
+<p>Selects the grammar for <code>-regex</code>/<code>-iregex</code> and the content matchers <code>-rxc</code>/<code>-grep</code>. <code>RE2</code> (the default) is linear-time regular expressions; <code>EXACT</code> is a literal string (metacharacters are plain text); <code>FNMATCH</code> is a flat shell wildcard where <code>*</code> matches any character including <code>/</code>; <code>GLOB</code> is a locale-independent path glob where <code>*</code>, <code>?</code>, and <code>[...]</code> stay inside one component, while a complete-component <code>**</code> crosses components; middle <code>foo/**/bar</code> permits zero or more components and trailing <code>foo/**</code> requires a descendant. Bracket expressions support ascending ranges, leading <code>!</code> negation, and RE2 ASCII named classes; malformed or unsupported expressions are errors. <code>SHGLOB</code> is <code>GLOB</code> plus nested, possibly empty <code>{a,b}</code> alternatives. <code>PCRE2</code> (Perl syntax: lookaround, backreferences) is the one build-time extra: it is present only in a full build, and selecting it in a lean build is a hard error, never a silent fall back to <code>RE2</code>. <code>RE2</code>/<code>EXACT</code>/<code>FNMATCH</code>/<code>GLOB</code>/<code>SHGLOB</code> are always built in; run <code>xff --help=extras</code> to see whether THIS binary includes <code>PCRE2</code>. See <code>--help=grammars</code> for a full description of each grammar (<code>GLOB</code>/<code>SHGLOB</code> are not POSIX glob(7)).</p>
+</article>
+</section>
+<section id="filter-ignore">
+<h3>Filter &amp; Ignore</h3>
+<article class="entry" id="flag-exclude">
+<h4><code>--exclude=GLOB</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">skip paths matching a gitignore-style glob (repeatable; a matched directory is pruned)</p>
+</article>
+<article class="entry" id="flag-include">
+<h4><code>--include=GLOB</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">re-include paths a --exclude would skip, matching a gitignore-style glob (repeatable)</p>
+</article>
+<article class="entry" id="flag-lang-db">
+<h4><code>--lang-db=FILE</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">overlay language metadata and suffix/filename mappings from JSON; repeatable</p>
+<p>Loads a JSON object keyed by canonical language name. Each value may set <code>type</code>, <code>color</code>, <code>group</code>, and <code>source</code>, plus string arrays <code>aliases</code>, <code>extensions</code>, and <code>filenames</code>. Later files override earlier files and compiled data. Extensions may include their leading dot and may contain multiple parts; matching folds suffix case while exact filenames retain case. Conflicts between two languages in ONE file follow <code>--lang-conflicts</code>.</p>
+<p>Affects: -lang</p>
+<p>Affected by: --lang-conflicts</p>
+</article>
+<article class="entry" id="flag-lang-conflicts">
+<h4><code>--lang-conflicts=error|first|last</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">resolve ambiguous suffix or filename claims within one language vocabulary file</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>error</code></dt><dd>reject two languages claiming one suffix or filename in the same file (default)</dd>
+<dt><code>first</code></dt><dd>keep the first claim in that file</dd>
+<dt><code>last</code></dt><dd>keep the last claim in that file</dd>
+</dl>
+</div>
+<p>Controls only ambiguity inside one <code>--lang-db</code> file. Layering remains deterministic: a later file intentionally overrides earlier files and compiled data. <code>error</code> is the default; <code>first</code> or <code>last</code> is an explicit compatibility escape hatch for imported databases.</p>
+<p>Affects: --lang-db</p>
+</article>
+<article class="entry" id="flag-mime-vocabulary">
+<h4><code>--mime-vocabulary=FILE</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">overlay media-type metadata and extension mappings from JSON; repeatable</p>
+<p>Loads a JSON object keyed by canonical media type. Each value may set <code>description</code>, <code>source</code>, <code>charset</code>, boolean <code>compressible</code>, and string arrays <code>aliases</code> and <code>extensions</code>. Later files override earlier files and compiled data. An extension may include its leading dot; matching folds case. Conflicts between two types in ONE file follow <code>--mime-conflicts</code>.</p>
+<p>Affects: -mime</p>
+<p>Affected by: --mime-conflicts</p>
+</article>
+<article class="entry" id="flag-mime-conflicts">
+<h4><code>--mime-conflicts=error|first|last</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">resolve ambiguous extension claims within one MIME vocabulary file</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>error</code></dt><dd>reject two media types claiming one extension in the same file (default)</dd>
+<dt><code>first</code></dt><dd>keep the first claim in that file</dd>
+<dt><code>last</code></dt><dd>keep the last claim in that file</dd>
+</dl>
+</div>
+<p>Controls only ambiguity inside one <code>--mime-vocabulary</code> file. Layering remains deterministic: a later file intentionally overrides earlier files and compiled data. <code>error</code> is the default; <code>first</code> or <code>last</code> provides an explicit compatibility escape hatch for imported databases.</p>
+<p>Affects: --mime-vocabulary</p>
+</article>
+<article class="entry" id="flag-gitignore">
+<h4><code>--gitignore[=off|auto|on], -g[-|+]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">respect .gitignore files: -g = auto (only in a git repo), -g+/=on always, -g-/=off never</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>off</code></dt><dd>ignore .gitignore files entirely (also <code>-g-</code>, no / false / 0)</dd>
+<dt><code>auto</code></dt><dd>respect .gitignore only inside a git working tree (a bare <code>-g</code> / <code>--gitignore</code>)</dd>
+<dt><code>on</code></dt><dd>respect it anywhere, git repository or not (also <code>-g+</code>, yes / true / 1)</dd>
+</dl>
+</div>
+<p>Reads .gitignore rules while walking, including nested .gitignore files, .git/info/exclude, and core.excludesFile. <code>-g</code> / <code>auto</code> activates only inside a git working tree; <code>-g+</code> / <code>=on</code> forces it anywhere; <code>-g-</code> / <code>=off</code> disables it. Independent of <code>--ignore-files</code> (.ignore / .xffignore).</p>
+</article>
+<article class="entry" id="flag-ignore-files">
+<h4><code>--ignore-files</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">respect per-directory .ignore and .xffignore files (off by default)</p>
+</article>
+<article class="entry" id="flag-ignore-file">
+<h4><code>--ignore-file=PATH</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">read an extra gitignore-format file, rooted at its own directory (repeatable)</p>
+</article>
+<article class="entry" id="flag-no-ignore">
+<h4><code>--no-ignore, -u</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">disable all ignore-file processing (.gitignore/.ignore/.xffignore)</p>
+</article>
+<article class="entry" id="flag-ignore-vcs">
+<h4><code>--ignore-vcs</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">respect version-control ignore files (.gitignore / .git/info/exclude / core.excludesFile)</p>
+<p>The rg-style affirmative for the VCS ignore-file layer - today git's (.gitignore at any depth, .git/info/exclude, core.excludesFile), the same layer -g / --gitignore auto enables. Use it to countermand an earlier --no-ignore-vcs or a style default. Independent of --ignore-files (.ignore / .xffignore), which keep their own switch; --no-ignore / -u still turns off every ignore source. Last of the ignore-mode flags wins.</p>
+</article>
+<article class="entry" id="flag-no-ignore-vcs">
+<h4><code>--no-ignore-vcs</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">do not respect version-control ignore files (keeps .ignore / .xffignore)</p>
+<p>Drops the VCS ignore-file layer (git's .gitignore / .git/info/exclude / core.excludesFile) while leaving --ignore-files (.ignore / .xffignore) untouched - that is the difference from --no-ignore / -u, which turns off every ignore source. Today git is the only VCS ignore file xff reads, so this is nearly --gitignore=off. Last of the ignore-mode flags wins.</p>
+</article>
+<article class="entry" id="flag-hidden">
+<h4><code>--hidden</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">include hidden dotfiles in the walk (default: find/xff show, rg skips)</p>
+</article>
+<article class="entry" id="flag-no-hidden">
+<h4><code>--no-hidden</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">skip hidden dotfiles (the rg default; opts find/xff out)</p>
+</article>
+<article class="entry" id="flag-skip-vcs">
+<h4><code>--skip-vcs[=&lt;LIST&gt;]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">prune VCS metadata dirs (.git, .hg, ...); bare/=all = every known VCS, =LIST a subset</p>
+<p>LIST is one of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>git</code></dt><dd>.git</dd>
+<dt><code>hg</code></dt><dd>.hg</dd>
+<dt><code>svn</code></dt><dd>.svn</dd>
+<dt><code>jj</code></dt><dd>.jj</dd>
+<dt><code>bzr</code></dt><dd>.bzr</dd>
+<dt><code>darcs</code></dt><dd>_darcs</dd>
+<dt><code>cvs</code></dt><dd>CVS</dd>
+<dt><code>all</code></dt><dd>every known VCS (the bare-flag default)</dd>
+<dt><code>none</code></dt><dd>off (same as --no-skip-vcs)</dd>
+</dl>
+</div>
+<p>Prunes version-control metadata directories at any depth (like ripgrep / fd), so a search never wades into repo plumbing. Bare <code>--skip-vcs</code> (or <code>=all</code>) covers every known VCS: <code>git</code> (.git), <code>hg</code> (.hg), <code>svn</code> (.svn), <code>jj</code> (.jj), <code>bzr</code> (.bzr), <code>darcs</code> (_darcs), <code>cvs</code> (CVS). A comma list (<code>--skip-vcs=git,hg</code>) is an explicit, frozen subset - it never changes if a VCS is added to the default set later. <code>--no-skip-vcs</code> (or <code>=none</code>) turns it off. Independent of <code>--hidden</code>, so the user's own dotfiles (.bazelrc, .gitignore) still show. <code>-g</code> / gitignore mode implies <code>--skip-vcs=git</code> (only .git); an explicit <code>--skip-vcs</code> overrides that. Default off otherwise.</p>
+</article>
+<article class="entry" id="flag-no-skip-vcs">
+<h4><code>--no-skip-vcs</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">keep VCS metadata dirs in the walk (opts out of --skip-vcs and the -g .git default)</p>
+</article>
+</section>
+<section id="output">
+<h3>Output</h3>
+<article class="entry" id="flag-format">
+<h4><code>--format=&lt;FORMAT&gt;</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">output format: plain, nul, jsonl, csv, tsv, aligned, markdown (md), tree; default plain</p>
+<p>FORMAT is one of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>plain</code></dt><dd>one path per line (the default)</dd>
+<dt><code>nul</code></dt><dd>NUL-separated paths (for xargs -0)</dd>
+<dt><code>jsonl</code></dt><dd>one JSON object per match</dd>
+<dt><code>csv</code></dt><dd>comma-separated columns</dd>
+<dt><code>tsv</code></dt><dd>tab-separated columns</dd>
+<dt><code>aligned</code></dt><dd>column-aligned table</dd>
+<dt><code>markdown</code></dt><dd>a Markdown table (also <code>md</code>)</dd>
+<dt><code>tree</code></dt><dd>an indented directory tree</dd>
+</dl>
+</div>
+</article>
+<article class="entry" id="flag-no-header">
+<h4><code>--no-header</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">omit the header row from tabular --format (csv/tsv/aligned/markdown; on by default)</p>
+</article>
+<article class="entry" id="flag-columns">
+<h4><code>--columns=FIELD,...</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">columns for tabular --format, from the {field} vocabulary (e.g. path,size,mtime)</p>
+</article>
+<article class="entry" id="flag-compare">
+<h4><code>--compare[=status|diff]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">compare two trees as selected statuses or unified diff, with per-tree .gitignore rules</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>status</code></dt><dd>one tab-separated selected result kind and relative path per record</dd>
+<dt><code>diff</code></dt><dd>a unified tree diff suitable for saving as a patch</dd>
+</dl>
+</div>
+<p>Requires exactly two directory roots and no expression. Bare <code>--compare</code> and <code>--compare=status</code> emit only discrepancies as tab-separated <code>left-only</code>, <code>right-only</code>, or <code>different</code> records. <code>--compare=diff</code> emits one unified tree diff, suitable for redirecting to a patch file; <code>--diff-context</code> and <code>--diff-algorithm</code> tune it. Unlike <code>-diff TARGET</code>, which is an expression action comparing each match from one walk with a templated target and therefore cannot discover target-only paths, <code>--compare</code> inventories both roots symmetrically. Regular files are compared byte for byte (text and binary); symlinks are compared by target. Each root's <code>.gitignore</code> stack is applied independently and VCS metadata is skipped. <code>--no-ignore</code> disables ignore processing.</p>
+<p>Affected by: --compare-select, --diff-algorithm, --diff-context</p>
+</article>
+<article class="entry" id="flag-compare-select">
+<h4><code>--compare-select=KIND,...</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">tree-comparison results to emit: left-only, right-only, identical, different, or all</p>
+<p>Selects comma-separated result kinds for <code>--compare</code>. The default is <code>left-only,right-only,different</code>, so equal files stay silent. <code>all</code> selects every kind. <code>identical</code> is available with status output and is rejected with <code>--compare=diff</code>, where an unchanged file has no patch representation.</p>
+<p>Affects: --compare</p>
+</article>
+<article class="entry" id="flag-diff-algorithm">
+<h4><code>--diff-algorithm=naive|direct|myers</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">diff engine for -diff and tree diffs: naive, direct, or myers (the default)</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>myers</code></dt><dd>minimal diff, as git computes it (the default)</dd>
+<dt><code>direct</code></dt><dd>line-by-line, no alignment search</dd>
+<dt><code>naive</code></dt><dd>the simple longest-common-subsequence walk</dd>
+</dl>
+</div>
+<p>Affects: -diff, --compare</p>
+</article>
+<article class="entry" id="flag-diff-ignore">
+<h4><code>--diff-ignore=TOKEN,...</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">normalize -diff comparison: ws, change, trail, blank, case, eofnl (comma-separated)</p>
+<p>Sets the normalization used by <code>-diff</code>; the last value wins. It may be saved in user config or an explicit <code>--xffrc=FILE</code>, and a command-line value overrides the configured value. An empty value disables configured normalization. Tokens are <code>ws</code>, <code>change</code>, <code>trail</code>, <code>blank</code>, <code>case</code>, and <code>eofnl</code>, comma-separated.</p>
+<p>Affects: -diff</p>
+</article>
+<article class="entry" id="flag-diff-ignore-matching">
+<h4><code>--diff-ignore-matching=REGEX</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">-diff ignores lines matching this regex (RE2)</p>
+<p>Drops matching lines before <code>-diff</code> compares the two inputs. It may be saved in user config or an explicit <code>--xffrc=FILE</code>; the last value wins, so a command-line value overrides configuration. An empty value disables a configured expression. The expression uses RE2.</p>
+<p>Affects: -diff</p>
+</article>
+<article class="entry" id="flag-diff-format">
+<h4><code>--diff-format=u|c|n|y</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">default -diff format: u/unified (default), c/context, n/normal, y/side-by-side</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>u</code></dt><dd>unified, the diff -u shape (the default; also spelled unified)</dd>
+<dt><code>c</code></dt><dd>context, the diff -c shape (also context)</dd>
+<dt><code>n</code></dt><dd>normal, the plain diff shape (also normal)</dd>
+<dt><code>y</code></dt><dd>side by side, the diff -y shape (also side-by-side)</dd>
+</dl>
+</div>
+<p>Affects: -diff</p>
+</article>
+<article class="entry" id="flag-diff-context">
+<h4><code>--diff-context=N</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">default -diff context lines (3); overrides --context for -diff, and -diff:uN overrides it</p>
+<p>Affects: -diff, --compare</p>
+<p>Affected by: --context</p>
+</article>
+<article class="entry" id="flag-hash-algorithm">
+<h4><code>--hash-algorithm=&lt;ALGO&gt;</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">default digest for -hash / {hash} (sha256 default; md5, sha512, blake3, and more)</p>
+<p>ALGO is one of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>blake2b</code></dt><dd>BLAKE2b, 512-bit</dd>
+<dt><code>blake2b_256</code></dt><dd>BLAKE2b, 256-bit</dd>
+<dt><code>blake3</code></dt><dd>BLAKE3 (fast, parallel)</dd>
+<dt><code>md5</code></dt><dd>128-bit legacy (fast, collision-broken)</dd>
+<dt><code>sha1</code></dt><dd>160-bit legacy (collision-broken)</dd>
+<dt><code>sha224</code></dt><dd>SHA-2, 224-bit</dd>
+<dt><code>sha256</code></dt><dd>SHA-2, 256-bit (the default)</dd>
+<dt><code>sha384</code></dt><dd>SHA-2, 384-bit</dd>
+<dt><code>sha3_224</code></dt><dd>SHA-3 (Keccak), 224-bit</dd>
+<dt><code>sha3_256</code></dt><dd>SHA-3 (Keccak), 256-bit</dd>
+<dt><code>sha3_384</code></dt><dd>SHA-3 (Keccak), 384-bit</dd>
+<dt><code>sha3_512</code></dt><dd>SHA-3 (Keccak), 512-bit</dd>
+<dt><code>sha512</code></dt><dd>SHA-2, 512-bit</dd>
+<dt><code>sha512_224</code></dt><dd>SHA-2, 512/224 truncated</dd>
+<dt><code>sha512_256</code></dt><dd>SHA-2, 512/256 truncated</dd>
+</dl>
+</div>
+<p>Sets the default digest algorithm for the <code>-hash</code> action and the <code>{hash}</code> field. <code>sha256</code> is the default; a <code>-hash:ALGO</code> spec or a <code>{hash:ALGO}</code> qualifier overrides it per use.</p>
+</article>
+<article class="entry" id="flag-hash-encoding">
+<h4><code>--hash-encoding=hex|base64</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">default -hash / {hash} rendering: hex (default) or base64</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>hex</code></dt><dd>lower-case hex digits, as the sha256sum family prints (the default)</dd>
+<dt><code>base64</code></dt><dd>standard padded base64 (RFC 4648), the Subresource-Integrity spelling</dd>
+</dl>
+</div>
+</article>
+<article class="entry" id="flag-path-encoding">
+<h4><code>--path-encoding=raw|escape</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">plain-output path byte encoding: raw (verbatim, default) or escape (C-escape controls)</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>raw</code></dt><dd>the path's bytes verbatim, as find writes them (the default)</dd>
+<dt><code>escape</code></dt><dd>C-escape control bytes, so a newline in a name cannot forge a line</dd>
+</dl>
+</div>
+</article>
+<article class="entry" id="flag-template">
+<h4><code>--template=TEMPLATE</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">render each match through a field template ({path}, {name}, ...)</p>
+</article>
+<article class="entry" id="flag-implicit-print">
+<h4><code>--implicit-print=yes|no</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">force the default -print on or off</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>yes</code></dt><dd>print every match even when the expression has its own action (also on / true / 1)</dd>
+<dt><code>no</code></dt><dd>never add the default print (also off / false / 0)</dd>
+</dl>
+</div>
+</article>
+<article class="entry" id="flag-pack">
+<h4><code>--pack=FILE</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">write every match into a new archive at FILE instead of listing them</p>
+<p>The counterpart of <code>--archive</code>: instead of reading a container the walk BUILDS one, so the member list comes from the whole expression vocabulary rather than from a shell pipeline into <code>tar</code>. The output NAME picks the format - <code>--help=archive</code> lists exactly what this binary writes, from the writer's own table rather than a copy kept here, and the single-word shortcuts (<code>.tgz</code>, <code>.txz</code>, <code>.tbz2</code>, <code>.tzst</code>, <code>.tlz</code>, <code>.taZ</code>) mean what they do everywhere else; a name carrying no format is a usage error reported BEFORE the walk, since finding out afterwards would waste the traversal. Each member is stored under the entry's path relative to the search root it was found under, in the order the walk produced it - so <code>--sort</code> decides the order inside the archive, and nothing is renamed or re-rooted behind your back. Like <code>--summary</code> it is a sink: it replaces the per-match listing, while explicit actions still run, so add <code>-print</code> to watch what goes in. The archive is written after the walk and renamed into place only when complete, so an interrupted run leaves no half archive and an existing FILE survives a failed one. A file the walk meets that IS the output is skipped rather than packed into itself. An archive MEMBER cannot be packed: reading files out of one container to re-pack them into another is its own feature, and until it exists the run is refused rather than quietly short. A build-time extra, like <code>--archive</code>.</p>
+<p>Affects: --sort</p>
+<p>Affected by: --pack-option, --pack-level</p>
+</article>
+<article class="entry" id="flag-pack-option">
+<h4><code>--pack-option=NAME=VALUE|@FILE.json</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">tune how <code>--pack</code> writes: repeatable, last value for a NAME wins</p>
+<p>The general knob behind <code>--pack-level</code>. NAME is XFF's own vocabulary, not the archive library's: each name is translated to whatever the linked writer calls the same thing, so an unknown name is a usage error rather than a silent no-op, the accepted set is listed by <code>--help=archive</code> straight from the writer's table, and swapping or upgrading that library changes a translation table instead of the flags you type. A name that exists but does not apply to the chosen output format is refused too, naming the formats it does apply to - <code>zip64</code> is a zip idea, <code>threads</code> is not a gzip one. Everything is checked before the walk starts, so a typo costs no traversal and writes no file. <code>--pack-option=@FILE.json</code> reads one JSON object whose keys are option names and whose values are strings, integers, or booleans; booleans become <code>yes</code> or <code>no</code>. File and inline forms may be repeated and are expanded in command-line order, so the last value for a name wins across both forms.</p>
+<p>Affects: --pack</p>
+</article>
+<article class="entry" id="flag-pack-level">
+<h4><code>--pack-level=N</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">compression level for <code>--pack</code> (gzip/xz/lzip/lzma/zip 0-9, bzip2/lz4 1-9, zstd 1-22)</p>
+<p>How hard the compressor works, on the scale the chosen format uses; left alone it is the format's own default. Exactly <code>--pack-option=level=N</code>, kept as its own spelling because it is the common knob for compressors that expose a level - the same relationship <code>-Z</code> has to <code>--archive-write</code>. On a plain <code>.tar</code> it is a usage error rather than a no-op, because there is no compressor to set a level on and a silently ignored level reads as a smaller archive that never arrives. Legacy Unix <code>compress</code> has no level knob, so <code>.tar.Z</code> refuses this option too.</p>
+<p>Affects: --pack</p>
+</article>
+<article class="entry" id="flag-summary">
+<h4><code>--summary[=&lt;GROUP&gt;]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">aligned count + size table (or --format=jsonl rows) instead of each match; repeatable</p>
+<p>GROUP is one of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>overall</code></dt><dd>one row aggregated over all matches</dd>
+<dt><code>type</code></dt><dd>by file type</dd>
+<dt><code>ext</code></dt><dd>by extension</dd>
+<dt><code>lang</code></dt><dd>by programming language</dd>
+<dt><code>mime</code></dt><dd>by media (MIME) type</dd>
+<dt><code>user</code></dt><dd>by owner</dd>
+<dt><code>group</code></dt><dd>by owning group</dd>
+<dt><code>hash</code></dt><dd>by file digest (dedup: identical files share a bucket; reads every file)</dd>
+<dt><code>hash-verification</code></dt><dd>verified / failed tally from exactly one reached <code>-hasheq</code></dd>
+<dt><code>{template}</code></dt><dd>by any field value, e.g. <code>--summary='{ext}-{type}'</code></dd>
+</dl>
+</div>
+<p>Replaces the per-match listing with an aggregate table: match count and total size per group (overall, by type, extension, programming language, media (MIME) type, user (owner), owning group, file digest, or hash-verification result). The categorical keys reuse the {mime}/{user}/{group}/{hash} field vocabulary; --summary=hash groups identical files into one bucket (a dedup count, reading every file). <code>--summary=hash-verification</code> requires exactly one <code>-hasheq</code> and counts its <code>verified</code> or <code>failed</code> verdict even when that verdict makes the complete expression false; an entry that short-circuits before reaching <code>-hasheq</code> is not counted. Empty expected values and unreadable entries are failed, matching <code>-hasheq</code> itself. A {template} key groups by any field value (e.g. --summary='{ext}-{type}'); a single m// extraction key (--summary='{capture.NAME:m/re/\1/}') groups per extracted line, so a per-file command's multi-line output tallies per key (e.g. git-blame lines per author) - the size column is not meaningful there. Repeatable: each --summary is its own table (e.g. --summary=ext --summary=type), printed in order. --top=N limits the rows of each, --summary-precision sets the scaled-size digits, and --format=jsonl emits one object per group for scripts.</p>
+</article>
+<article class="entry" id="flag-histogram">
+<h4><code>--histogram=BUCKET[:MEASURE]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">bar chart per bucket: a count or sum/mean/min/max of size|lines (repeatable)</p>
+<p>A terminal reduction like --summary, drawn as bars. BUCKET groups the matches - a category (overall, type, ext, lang, mime, user (owner), or group) or a numeric-range field (size / lines by order of magnitude, depth per level, drawn as an ascending distribution). The optional :MEASURE is the bar's value - <code>count</code> (the default) or an aggregate <code>sum(FIELD)</code> / <code>mean(FIELD)</code> / <code>min(FIELD)</code> / <code>max(FIELD)</code> over a numeric FIELD (size or lines). A numeric metric needs an aggregator (<code>ext:lines</code> is an error; <code>ext:sum(lines)</code> is not). Repeatable and combinable with --summary - both are fed by one walk and replace the per-match listing. Bars scale to the tallest, use Unicode block characters on a UTF-8 locale (see --unicode) or ASCII '#' otherwise; --top=N keeps the N tallest and --format=jsonl emits one object per bar for scripts.</p>
+<p>Affected by: --histogram-width</p>
+</article>
+<article class="entry" id="flag-shards">
+<h4><code>--shards[=auto|SCHEME,...]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">collapse each set of sharded files (e.g. data-00000-of-00010) to one line</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>auto</code></dt><dd>recognize every built-in scheme (the default when bare <code>--shards</code>)</dd>
+<dt><code>of</code></dt><dd>only <code>&lt;stem&gt;-&lt;index&gt;-of-&lt;total&gt;</code> (TFRecord-style)</dd>
+<dt><code>dotnum</code></dt><dd>only <code>&lt;stem&gt;.&lt;NNN&gt;</code> (7-Zip-style volumes)</dd>
+<dt><code>underscore</code></dt><dd>only <code>&lt;stem&gt;_&lt;NNN&gt;</code></dd>
+</dl>
+</div>
+<p>Recognizes sharded-file naming conventions and collapses each logical set to a single line instead of listing every shard. Bare <code>--shards</code> (or <code>=auto</code>) enables all built-in schemes: <code>&lt;stem&gt;-&lt;index&gt;-of-&lt;total&gt;</code> (<code>of</code>), <code>&lt;stem&gt;.&lt;NNN&gt;</code> (<code>dotnum</code>), and <code>&lt;stem&gt;_&lt;NNN&gt;</code> (<code>underscore</code>). Restrict to specific schemes with a comma list, e.g. <code>--shards=of,dotnum</code>. Grouping is per-directory; files that match no scheme are listed unchanged. Off by default.</p>
+</article>
+<article class="entry" id="flag-shards-show">
+<h4><code>--shards-show=first|wildcard|count</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">how a collapsed shard set's line reads (default first)</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>first</code></dt><dd>the representative (lowest-index) shard's path (the default)</dd>
+<dt><code>wildcard</code></dt><dd>the masked-index name, e.g. <code>arc.???</code> (or <code>f-</code> idx <code>-of-003</code>)</dd>
+<dt><code>count</code></dt><dd>the wildcard name plus the shard count, e.g. <code>arc.??? (3 shards)</code></dd>
+</dl>
+</div>
+<p>Picks each collapsed set's display: <code>first</code> = the representative (lowest-index) shard's path; <code>wildcard</code> = the masked-index name (the index digits shown as <code>???</code>); <code>count</code> = the <code>wildcard</code> name plus the shard count. An incomplete set is always annotated <code>(present/expected - INCOMPLETE)</code>. Only meaningful with <code>--shards</code>.</p>
+</article>
+<article class="entry" id="flag-shards-dedup">
+<h4><code>--shards-dedup=first|mtime|error</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">how same-index shard duplicates are resolved (default first)</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>first</code></dt><dd>keep the lexicographically-first name among same-index copies (the default)</dd>
+<dt><code>mtime</code></dt><dd>keep the newest by modification time (ties break on name)</dd>
+<dt><code>error</code></dt><dd>treat a same-index duplicate as an error (non-zero exit)</dd>
+</dl>
+</div>
+<p>When two files are the same logical shard (they differ only by an opaque tail, e.g. a regeneration id), <code>--shards-dedup</code> picks which is the representative: <code>first</code> keeps the lexicographically-first name; <code>mtime</code> keeps the newest; <code>error</code> treats the duplicate as an error and fails the run (non-zero exit). Also selects the representative used when <code>-shard-status</code> classifies physical files.</p>
+</article>
+<article class="entry" id="flag-shard-pattern">
+<h4><code>--shard-pattern=REGEX</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">a custom shard scheme via a named-capture regex (repeatable); the escape hatch</p>
+<p>Defines a custom sharded-file scheme for <code>--shards</code> and <code>-shard-status</code> when the built-ins do not fit. REGEX is an RE2 pattern with named groups: <code>(?P&lt;stem&gt;...)</code> and <code>(?P&lt;index&gt;...)</code> are required, <code>(?P&lt;total&gt;...)</code> and <code>(?P&lt;dup&gt;...)</code> are optional. Repeatable; the patterns are tried in order, before the built-in schemes.</p>
+</article>
+<article class="entry" id="flag-count">
+<h4><code>--count, -c</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">with -grep, print a per-file matching-line count (path:count) instead of the lines</p>
+<p>Affects: -grep</p>
+</article>
+<article class="entry" id="flag-context">
+<h4><code>--context=SPEC</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">-grep context lines: N both sides, or A:N,B:N,C:N for after/before/both</p>
+<p><code>--context=2</code> is grep's <code>-C 2</code> (two lines either side); the A / B / C keys inside the value select one side (<code>--context=A:3,B:1</code>), which is what <code>--after-context</code> and <code>--before-context</code> spell one at a time. xff has NO single-dash <code>-A</code> / <code>-B</code> / <code>-C</code>: those letters are unclaimed for now (see TODO.md), and a single-dash flag would be an expression primary under xff's dash-count rule rather than a whole-run option.</p>
+<p>Affects: -grep, -diff, --diff-context</p>
+</article>
+<article class="entry" id="flag-after-context">
+<h4><code>--after-context=N</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">with -grep, print N lines of context after each match (= --context=A:N)</p>
+<p>Affects: -grep</p>
+</article>
+<article class="entry" id="flag-before-context">
+<h4><code>--before-context=N</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">with -grep, print N lines of context before each match (= --context=B:N)</p>
+<p>Affects: -grep</p>
+</article>
+<article class="entry" id="flag-max-results">
+<h4><code>--max-results=N</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">list at most N matched entries without stopping or truncating reductions</p>
+<p>Caps the implicit result listing after the whole expression, across every branch and every per-instance <code>-first</code> / <code>-top</code> filter. It does NOT stop traversal: <code>--summary</code>, <code>--histogram</code>, <code>--count</code>, and archive packing still see the complete matched set rather than silently reporting a partial walk. Explicit expression actions (<code>-print</code>, <code>-grep</code>, <code>-exec</code>, and friends) keep their own positional semantics and are not suppressed; use <code>-first</code> or <code>-top</code> before an action to cap the entries that reach it. With one capped filter this flag is usually redundant; its distinct use is an aggregate ceiling such as <code>\( -type f -first 10 \) -o \( -type d -first 5 \) --max-results=12</code>. Last occurrence wins. A malformed or negative count is a usage error; <code>0</code> lists none.</p>
+</article>
+<article class="entry" id="flag-top">
+<h4><code>--top=N</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">with --summary or --histogram, keep only the N largest/tallest groups</p>
+</article>
+<article class="entry" id="flag-histogram-width">
+<h4><code>--histogram-width=N</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">cell width the tallest --histogram bar fills (default 40)</p>
+<p>Affects: --histogram</p>
+</article>
+<article class="entry" id="flag-summary-precision">
+<h4><code>--summary-precision=N</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">with --summary --human: fraction digits for scaled sizes (default 2; bytes stay integer)</p>
+</article>
+<article class="entry" id="flag-color">
+<h4><code>--color[=auto|always|never]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">colorize the plain listing by file type and language: auto (a tty), always, or never</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>auto</code></dt><dd>colour only when stdout is a terminal (the default; a bare --color is always)</dd>
+<dt><code>always</code></dt><dd>colour even through a pipe or pager (also on / yes / true / 1)</dd>
+<dt><code>never</code></dt><dd>no colour at all (also off / no / false / 0)</dd>
+</dl>
+</div>
+<p>Colorizes the plain listing by file type and, when the active language vocabulary supplies a colour, programming language. auto colorizes only when stdout is a terminal and NO_COLOR is unset; always forces color even through a pipe or pager and deliberately overrides NO_COLOR; never disables it.</p>
+<p>Affected by: --color-scheme</p>
+</article>
+<article class="entry" id="flag-color-scheme">
+<h4><code>--color-scheme=&lt;SCHEME&gt;</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">which palette colour comes from: the terminal's ls theme, or xff's own</p>
+<p>SCHEME is one of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>auto</code></dt><dd>ls OR xff: the theme when $LS_COLORS / $LSCOLORS is set, else xff's scheme (the default; also spelled <code>ls+xff</code>, <code>ls-or-xff</code> or <code>default</code>)</dd>
+<dt><code>ls</code></dt><dd>the theme alone ($LS_COLORS, else $LSCOLORS): what it omits prints plain, as in ls</dd>
+<dt><code>merged</code></dt><dd>the theme where it speaks, xff's type/language colour where it does not (also <code>ls-and-xff</code>)</dd>
+<dt><code>xff</code></dt><dd>xff's built-in type and language scheme, ignoring $LS_COLORS</dd>
+</dl>
+</div>
+<p>Colour is a whole-run choice, so this one palette is used by every surface that colours - the plain listing and -ls alike; they cannot disagree. $LS_COLORS is the variable <code>ls</code> and <code>dircolors</code> use, and xff reads the same keys: the two-letter types (<code>di</code>, <code>ln</code>, <code>ex</code>, <code>pi</code>, <code>so</code>, <code>bd</code>, <code>cd</code>, <code>fi</code>) and the per-extension <code>*.tar=</code> entries. Where only BSD's $LSCOLORS is set - the macOS case - that is read instead: its 11 letter pairs carry the same types in a fixed order, with no way to say "leave this plain" and no per-extension entries, so <code>merged</code> is the interesting scheme there. $LS_COLORS wins when both are set, being the richer format. Both variables are read on every platform rather than one per OS: which one is SET is better evidence than which system this is (a macOS shell with GNU coreutils is themed through $LS_COLORS, and $LSCOLORS is not macOS-only), and the fixed 22-character shape makes the BSD one self-validating. "Use ls's colours" turns out to mean three different things, so each has its own name, spelled the way logic spells it: <code>+</code> is OR, and the merge is AND. <code>auto</code> (the default, also <code>ls+xff</code> or <code>ls-or-xff</code>) is the theme OR xff's scheme - a theme that is set at all is the whole answer, and with none set xff's scheme is, so the decision is per VARIABLE; <code>default</code> is a fourth spelling of it, for a config file that wants whatever the default currently is. <code>ls</code> is the theme ALONE, so a type it never mentions prints uncoloured exactly as in a real ls listing (and with no theme set, nothing is coloured). <code>merged</code> (also <code>ls-and-xff</code>) is the theme AND xff's scheme, merged per KEY: the theme where it speaks, xff's colour for every key it omits - for a sparse theme you want filled in. (<code>ls&amp;xff</code> is deliberately not accepted: an unquoted <code>&amp;</code> backgrounds the command.) <code>xff</code> ignores $LS_COLORS entirely. In xff's scheme a regular non-executable file uses the active language vocabulary's <code>#RRGGBB</code> colour when present. A theme's matching extension or <code>fi</code> value wins; <code>ls</code> and a themed <code>auto</code> do not add language colours, while <code>merged</code> uses one only for a key the theme omitted. Executables and non-regular files retain their type colours. An EMPTY value in the theme (<code>di=</code> or <code>fi=</code>) is it saying "leave these plain" and is honoured as such; a malformed entry is skipped rather than failing the run, as in ls. Whether colour is emitted at all is --color's business, not this flag's.</p>
+<p>Affects: --color</p>
+</article>
+<article class="entry" id="flag-unicode">
+<h4><code>--unicode[=auto|always|never]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">--format=tree connectors: auto (a UTF-8 locale), always (Unicode), or never (ASCII)</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>auto</code></dt><dd>Unicode connectors when the locale is UTF-8, else ASCII (the default)</dd>
+<dt><code>always</code></dt><dd>force the Unicode connectors (also on / yes / true / 1)</dd>
+<dt><code>never</code></dt><dd>force the ASCII connectors (also off / no / false / 0)</dd>
+</dl>
+</div>
+<p>Selects the box-drawing characters --format=tree connects nodes with. auto uses Unicode when the locale (LC_ALL / LC_CTYPE / LANG) is UTF-8, else ASCII; always forces the Unicode connectors; never forces the ASCII ones.</p>
+</article>
+<article class="entry" id="flag-human">
+<h4><code>--human[=si|iec|off]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">size units for -ls / --summary: si (kB/MB, default), iec (KiB/MiB), off (bytes); xff -&gt; si</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>si</code></dt><dd>powers of 1000: kB, MB, GB (the default; also 1000, --si, a bare --human)</dd>
+<dt><code>iec</code></dt><dd>powers of 1024: KiB, MiB, GiB (also 1024)</dd>
+<dt><code>off</code></dt><dd>plain byte counts, no unit suffix</dd>
+</dl>
+</div>
+</article>
+<article class="entry" id="flag-si">
+<h4><code>--si</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">human sizes in SI (kB/MB, 1000^N); an alias for --human=si (the --human default)</p>
+</article>
+<article class="entry" id="flag-buffer">
+<h4><code>--buffer[=auto|off|all|N[kMGT]|NMB|NMiB]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">buffer to size columns (-ls / tables): auto, off, all, N[kMGT] rows, or NMB/NMiB bytes</p>
+<p>Row windows use a bare count or decimal <code>k</code>/<code>M</code>/<code>G</code>/<code>T</code> multiplier. Byte budgets require an explicit trailing <code>B</code>: <code>B</code>/<code>kB</code>/<code>MB</code>/.../<code>EB</code> are SI, while <code>KiB</code>/<code>MiB</code>/.../<code>EiB</code> are IEC. The distinct suffixes keep rows and bytes unambiguous.</p>
+</article>
+<article class="entry" id="flag-width">
+<h4><code>--width[=auto|none|COLS]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">wrap column for plain --help text: auto (terminal width, else unwrapped), none, or a count</p>
+<p>Wraps the flowing text of --help and --help=TOPIC (option and topic descriptions) to a column width. auto uses the terminal width when stdout is a terminal (honoring $COLUMNS), and leaves output unwrapped when it is not (a pipe or file); none (or 0) disables wrapping; a positive integer sets a fixed width. Aligned vocabulary tables and example blocks keep their own layout. Does not affect the file listing, <code>--man</code>, or formatted full help.</p>
+</article>
+<article class="entry" id="flag-pager">
+<h4><code>--pager[=help|auto|always|never|COMMAND]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">page output: help only, auto (all on a tty), always, never, or an explicit command</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>help</code></dt><dd>page help, man, and Markdown on a terminal (the default)</dd>
+<dt><code>auto</code></dt><dd>page every pageable output on a terminal</dd>
+<dt><code>always</code></dt><dd>page every pageable output, even through a pipe</dd>
+<dt><code>never</code></dt><dd>never page (same as <code>--no-pager</code>)</dd>
+<dt><code>COMMAND</code></dt><dd>always page through this explicit shell command</dd>
+</dl>
+</div>
+<p>Pages every pageable output: long meta output (<code>--help</code>, <code>--help=TOPIC</code>, <code>--man</code>) and the file listing, including action rows such as <code>-ls</code>. The default <code>help</code> pages only those meta surfaces and only on a terminal. <code>auto</code> adds every pageable listing when stdout is a terminal; <code>always</code> also pages through a pipe; <code>never</code> (or <code>--no-pager</code>) disables it. Automatic command selection prefers an installed <code>less -FRX</code>, then <code>more</code>, and only then consults <code>$XFF_PAGER</code> followed by ambient <code>$PAGER</code>. <code>--pager=COMMAND</code> always uses COMMAND directly, so <code>--pager="$PAGER"</code> is the explicit way to request the process environment's choice. Listings stream through one pager for the whole walk, so the first screen appears while the walk is still running and quitting ends the run quietly. Paging steps aside for an expression that needs the terminal itself (<code>-ok</code>, <code>-okdir</code>, <code>-exec</code>, <code>-execdir</code>, which can hand the terminal to an editor) and for <code>--quiet</code>, which prints nothing to page; those runs are simply unpaged.</p>
+</article>
+<article class="entry" id="flag-no-pager">
+<h4><code>--no-pager</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">never page any output (an alias for --pager=never)</p>
+</article>
+</section>
+<section id="exit-code-control">
+<h3>Exit code control</h3>
+<article class="entry" id="flag-quiet">
+<h4><code>--quiet, -q</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">suppress output; exit 0 if anything matched, else 1 (-q: grep-compatible)</p>
+</article>
+<article class="entry" id="flag-exit-match">
+<h4><code>--exit-match</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">keep output; exit 0 if anything matched, else 1</p>
+</article>
+</section>
+<section id="safety">
+<h3>Safety</h3>
+<article class="entry" id="flag-safe">
+<h4><code>--safe</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">refuse destructive actions (-delete / -exec)</p>
+</article>
+<article class="entry" id="flag-dry-run">
+<h4><code>--dry-run</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">preview -delete without removing anything</p>
+</article>
+<article class="entry" id="flag-skip-unsupported">
+<h4><code>--skip-unsupported</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">warn and skip a predicate a filesystem cannot evaluate, not fail</p>
+</article>
+</section>
+<section id="fields-exec">
+<h3>Fields &amp; Exec</h3>
+<article class="entry" id="flag-exec-fields">
+<h4><code>--exec-fields</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">render -exec tokens through the field vocabulary ({name}, {path}, ...)</p>
+</article>
+<article class="entry" id="flag-define">
+<h4><code>--define=NAME=VALUE</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">define a value referenced as {def.NAME}</p>
+</article>
+</section>
+<section id="time">
+<h3>Time</h3>
+<article class="entry" id="flag-time-format">
+<h4><code>--time-format=FMT</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">default format for time fields (a preset name or a strftime pattern)</p>
+<p>Sets the default rendering for time fields ({mtime}, {atime}, -printf %t, ...) when no per-field qualifier is given. Accepts a preset (iso, epoch, space, find) or any strftime pattern such as %Y-%m-%d. A per-field qualifier like {mtime:%H:%M} still overrides it.</p>
+</article>
+<article class="entry" id="flag-timezone">
+<h4><code>--timezone=ZONE, --tz=ZONE</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">zone for interpreting/formatting times (local, utc, an IANA name, or +HH:MM)</p>
+<p>The zone used to interpret and format every time. Accepts local, utc, an IANA name like Europe/London, or a fixed offset like +02:00. Affects time fields and -newerXt comparisons.</p>
+</article>
+<article class="entry" id="flag-time-zone-suffix">
+<h4><code>--time-zone-suffix[=auto|always|never]</code><span class="tags">(global, xff)</span></h4>
+<p class="summary">show the zone offset on a time field: auto (per format), always, or never</p>
+<p>One of:</p>
+<div class="group">
+<dl class="rows">
+<dt><code>auto</code></dt><dd>each format's built-in default (the default)</dd>
+<dt><code>always</code></dt><dd>force the offset, even on a format that omits it (also on / yes / true / 1)</dd>
+<dt><code>never</code></dt><dd>drop the optional offset (also off / no / false / 0)</dd>
+</dl>
+</div>
+<p>Controls whether a time field's named preset renders its trailing zone (+0100, +01:00). <code>auto</code> keeps each preset's default (<code>space</code> / <code>iso</code> / <code>rfc3339</code> show it, <code>asctime</code> / <code>epoch</code> omit it); <code>never</code> drops it; <code>always</code> forces it, even on a preset that omits one. Accepts <code>true</code> / <code>yes</code> / <code>on</code> (= <code>always</code>) and <code>false</code> / <code>no</code> / <code>off</code> (= <code>never</code>). The inherently-zoned <code>zulu</code> / <code>zulu-dense</code> / <code>asn1z</code> always keep their mandatory Z, and a custom strftime <code>--time-format</code> is never altered - control its zone with %z / %Ez / %Z yourself. <code>asn1</code>'s zone is optional: <code>always</code> adds its ASN.1-style offset (+0100, no separator), <code>never</code> / <code>auto</code> leave it bare.</p>
+</article>
+</section>
+</section>
+<section id="expression">
+<h2>Expression</h2>
+<section id="tests">
+<h3>Tests</h3>
+<article class="entry" id="primary-name">
+<h4><code>-name ARG, -n ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the basename against a shell glob</p>
+<p>Globs the entry's basename (last path component): <code>*</code> matches any run including none, <code>?</code> one character, <code>[...]</code> a class. Unlike the shell a leading dot is matched literally. Case follows <code>--case</code> - the xff default folds when the volume does (APFS / HFS+ / NTFS), while <code>--exact</code> or <code>--config=find</code> forces a byte-exact compare; <code>-iname</code> always folds. Contrast <code>-path</code> (whole path) and <code>-regex</code> (anchored pattern). Example: <code>xff . -name '*.log'</code>.</p>
+</article>
+<article class="entry" id="primary-iname">
+<h4><code>-iname ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the basename against a shell glob, case-insensitively</p>
+<p>The always-case-insensitive <code>-name</code>: folds case regardless of <code>--case</code> or the volume.</p>
+</article>
+<article class="entry" id="primary-path">
+<h4><code>-path ARG, -p ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the whole path against a shell glob</p>
+<p>Globs the whole path as printed (from the start point down), not just the basename. Unlike the shell, <code>*</code> and <code>?</code> DO match <code>/</code>, so <code>-path '*/build/*'</code> matches a build directory at any depth. Wildcards and case handling are <code>-name</code>'s. GNU spells this <code>-wholename</code>.</p>
+</article>
+<article class="entry" id="primary-ipath">
+<h4><code>-ipath ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the whole path against a shell glob, case-insensitively</p>
+<p>The always-case-insensitive <code>-path</code> (whole-path glob).</p>
+</article>
+<article class="entry" id="primary-wholename">
+<h4><code>-wholename ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">GNU synonym for -path</p>
+</article>
+<article class="entry" id="primary-iwholename">
+<h4><code>-iwholename ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">GNU synonym for -ipath</p>
+</article>
+<article class="entry" id="primary-lname">
+<h4><code>-lname ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the symlink target against a shell glob</p>
+<p>Globs the symlink's target text - the path the link points AT, never the resolved destination - so a link matches even when its target is missing. Only a symbolic link can match, and with the default <code>-P</code> (or <code>-H</code>) a symlink is seen as itself. Wildcards and case handling are <code>-name</code>'s; <code>-ilname</code> always folds.</p>
+</article>
+<article class="entry" id="primary-ilname">
+<h4><code>-ilname ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the symlink target against a shell glob, case-insensitively</p>
+<p>The always-case-insensitive <code>-lname</code> (symlink-target glob).</p>
+</article>
+<article class="entry" id="primary-regex">
+<h4><code>-regex ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the whole path against a regular expression</p>
+<p>Matches when the pattern matches the WHOLE path (anchored both ends, like find), not just a substring - use <code>.*</code> to match anywhere. Dialect is chosen by <code>-regextype</code> (RE2 by default); capture groups become <code>{1}</code>..<code>{N}</code> for a following <code>-exec</code> / <code>-printf</code>. Example: <code>xff . -regex '.*/[0-9]+\.log'</code>.</p>
+</article>
+<article class="entry" id="primary-iregex">
+<h4><code>-iregex ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the whole path against a regular expression, case-insensitively</p>
+<p>The case-insensitive <code>-regex</code>: same whole-path anchoring and capture-group binding, matching without regard to case.</p>
+</article>
+<article class="entry" id="primary-regextype">
+<h4><code>-regextype ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">select the regex dialect for the following -regex/-iregex</p>
+</article>
+<article class="entry" id="primary-content">
+<h4><code>-content ARG</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match a literal substring in the file's content (xff)</p>
+<p>Matches when the file contains SUBSTRING literally (no regex metacharacters - the literal pair sidesteps grep's flavor ambiguity). Reads the file, so it is expensive; a non-regular, unreadable, or binary file (a NUL byte in the first 8 KiB) never matches. <code>-icontent</code> folds ASCII case. Use <code>-rxc</code> for a pattern. This is an xff extension <code>--config=find</code> rejects.</p>
+</article>
+<article class="entry" id="primary-icontent">
+<h4><code>-icontent ARG</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match a literal substring in the file's content, case-insensitively (xff)</p>
+<p>The case-insensitive <code>-content</code>: folds ASCII case on the literal substring search.</p>
+</article>
+<article class="entry" id="primary-rxc">
+<h4><code>-rxc ARG</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match the file's content against a regular expression (xff)</p>
+<p>The regex counterpart of <code>-content</code>: matches when the RE2 pattern is found ANYWHERE in the content (unanchored, like grep - use <code>^</code> / <code>$</code> to anchor), not the whole-file anchoring <code>-regex</code> applies to the path. Same expensive read and non-regular / unreadable / binary skip; <code>-irxc</code> folds case. An xff extension <code>--config=find</code> rejects.</p>
+</article>
+<article class="entry" id="primary-irxc">
+<h4><code>-irxc ARG</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match the file's content against a regular expression, case-insensitively (xff)</p>
+<p>The case-insensitive <code>-rxc</code>: folds case on the content regex search.</p>
+</article>
+<article class="entry" id="primary-text">
+<h4><code>-text[:FLAVOR]</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match a regular text file; -text[=git|posix|windows|apple] picks the definition (xff)</p>
+<p>TRUE for a regular, readable file whose content is text. Bare <code>-text</code> (or <code>=git</code>) is the default heuristic: no NUL byte in the first 8000 bytes (git's buffer_is_binary, also grep/ripgrep), line-ending-agnostic. One leading UTF-8 BOM is transparent. The strict flavors forbid a NUL ANYWHERE after that BOM and pin the line ending, requiring a final terminator (an empty file is vacuously complete): <code>=posix</code> = LF only, ends with a newline; <code>=windows</code> = CRLF only; <code>=apple</code> = CR only. Reads the file (expensive). A directory, symlink, device or unreadable file is not text (nor binary), so it never matches - <code>! -text</code> is NOT <code>-binary</code>. An xff extension <code>--config=find</code> rejects.</p>
+</article>
+<article class="entry" id="primary-binary">
+<h4><code>-binary</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match a regular file whose content is binary (a NUL in the first 8 KiB) (xff)</p>
+<p>TRUE for a regular, readable file whose content is binary - a NUL byte in the first 8 KiB. The precise complement of <code>-text</code> WITHIN regular files: a directory, symlink, device or unreadable file is neither, so <code>-binary</code> is not <code>! -text</code>. Reads the file (expensive). An xff extension <code>--config=find</code> rejects.</p>
+</article>
+<article class="entry" id="primary-eofnl">
+<h4><code>-eofnl</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match a regular file whose content ends with a newline (LF), or is empty (xff)</p>
+<p>TRUE for a regular, readable file whose content ends with a newline / LF (or is empty - a zero-line file is complete). Tests ONLY the final terminator, the other axis from <code>-text</code>/-binary: compose <code>-text</code> <code>-eofnl</code> for a well-formed (POSIX-style) text file, or <code>-text</code> ! <code>-eofnl</code> for the common lint 'a text file missing its final newline'. A CRLF file ends with LF too, so it also matches <code>-eofnl</code>; <code>-eofcrlf</code> is the strict CRLF form. Reads the file (expensive). An xff extension <code>--config=find</code> rejects.</p>
+</article>
+<article class="entry" id="primary-eofcr">
+<h4><code>-eofcr</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match a regular file whose content ends with a bare CR, or is empty (xff)</p>
+<p>TRUE for a regular, readable file whose content ends with a bare carriage return / CR (or is empty). The classic-Mac / <code>-text:apple</code> final terminator, and the CR analogue of <code>-eofnl</code>: compose <code>-text:apple</code> <code>-eofcr</code> for a well-formed CR-terminated file, or <code>-text:apple</code> ! <code>-eofcr</code> for the missing final CR. A CRLF file ends with LF (not a bare CR), so it does NOT match <code>-eofcr</code>. Reads the file (expensive). An xff extension <code>--config=find</code> rejects.</p>
+</article>
+<article class="entry" id="primary-eofcrlf">
+<h4><code>-eofcrlf</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match a regular file whose content ends with CRLF, or is empty (xff)</p>
+<p>TRUE for a regular, readable file whose content ends with CRLF (or is empty). The Windows / <code>-text:windows</code> final terminator, and the CRLF analogue of <code>-eofnl</code>: compose <code>-text:windows</code> <code>-eofcrlf</code> for a well-formed CRLF-terminated file, or <code>-text:windows</code> ! <code>-eofcrlf</code> for the missing final CRLF. Stricter than <code>-eofnl</code> (which any LF-ending file, including CRLF, satisfies). Reads the file (expensive). An xff extension <code>--config=find</code> rejects.</p>
+</article>
+<article class="entry" id="primary-first">
+<h4><code>-first ARG</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">true for the first N entries this instance sees, false after (xff)</p>
+<p>Caps a result set as it streams: TRUE for the first N entries reaching it, FALSE from then on. The count is PER USE, not per run, so each <code>-first</code> keeps its own budget - <code>\( -type f -first 10 \) -o \( -type d -first 5 \)</code> yields ten files AND five directories, which no whole-run flag could express. Because a FALSE test removes the entry from everything downstream, <code>-first</code> genuinely narrows the result set (the summary sees only those N); use <code>-collect</code> before it when you want the full set summarised and only a few shown. Which N you get follows <code>--sort</code>, like any other order-dependent behaviour. An xff extension <code>--config=find</code> rejects. A count that cannot be read is a usage error rather than an empty result set - <code>-first nope</code> is a typo, and returning nothing would be indistinguishable from a tree with no matches; <code>-first 0</code> IS valid and means none. Example: <code>xff . -type f -first 20</code>.</p>
+</article>
+<article class="entry" id="primary-top">
+<h4><code>-top ARG</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">true for the N best fuzzy matches reaching this instance (xff)</p>
+<p>Keeps exactly the N entries with the best normalized fuzzy score reaching THIS use, then resumes the expression for those survivors. It is a TEST, not an output limit: everything to its left has already happened, while tests and actions to its right run after the walk only for entries that make the cut. Thus <code>-collect -top 10 -ls --summary</code> collects every good match, lists the ten best, and summarises all of them; <code>-top 10 -collect --summary</code> collects and summarises only the ten and prints no implicit listing. Each <code>-top</code> instance owns an independent candidate set, retained until the post-walk decision so a rejected entry can still take an <code>-o</code> alternative to the right. A tie keeps traversal order, making the result deterministic under a deterministic <code>--sort</code>. A fuzzy matcher must precede the node on every path that reaches it. All contributing fuzzy matchers must use the same model and threshold: scores from different models or differently strict predicates do not describe one ordering. A bare fuzzy matcher has a <code>0%</code> threshold. <code>-fuzzy:fzf:80% foo -top 10</code> therefore means the ten best good matches. An xff extension <code>--config=find</code> rejects. A malformed or negative count is a usage error; <code>-top 0</code> is valid and keeps none.</p>
+</article>
+<article class="entry" id="primary-shard-status">
+<h4><code>-shard-status ARG</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match complete, incomplete, or superfluous physical shards (xff)</p>
+<p>Classifies the physical shard files reaching THIS primary after the traversal, then resumes the expression. <code>complete</code> matches representatives belonging to a set with every expected index; <code>incomplete</code> matches representatives in a set with a missing expected index; <code>superfluous</code> matches same-index duplicate copies and indices outside a declared total. A non-shard file matches none. Completeness is computed per directory and only from entries that reach this node, so a predicate to its left intentionally narrows the cohort being validated; put ordinary actions to its right when they should run only for the selected status. This is a physical-file diagnostic independent of <code>--shards</code>: without <code>--shards</code> every selected file is listed, while <code>--shards</code> still controls logical-set collapsing. Custom <code>--shard-pattern</code> definitions and any scheme restriction from <code>--shards=SCHEME,...</code> apply. Example: <code>xff data -type f -shard-status incomplete -print</code>.</p>
+</article>
+<article class="entry" id="primary-fuzzy">
+<h4><code>-fuzzy[:MODEL[:PCT%]|PCT%] PATTERN</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match the basename loosely, optionally requiring a normalized score (xff)</p>
+<p>TRUE when PATTERN matches the entry's basename under the selected MODEL. The forms are <code>-fuzzy PATTERN</code>, <code>-fuzzy:MODEL PATTERN</code>, <code>-fuzzy:PCT% PATTERN</code>, and <code>-fuzzy:MODEL:PCT% PATTERN</code>; the default model is <code>fzf</code>, and <code>edit</code> aliases <code>levenshtein</code>. The models answer different questions. <code>sequence</code> is a literal ordered subsequence: <code>tmh</code> finds <code>the_main_header.h</code>. <code>fzf</code> adds fzf EXTENDED-SEARCH expressions: spaces AND terms, <code>|</code> joins OR alternatives, <code>'</code> requests exact matching, <code>^</code> and <code>$</code> anchor, <code>!</code> excludes, and <code>\ </code> embeds a literal space. Quote a query containing spaces for the shell, for example <code>-fuzzy:fzf '^core go$ | rb$ | py$'</code>. As in fzf, anchors ignore whitespace at the corresponding candidate edge. An OR applies only inside its adjacent group: in that example <code>^core</code> remains a required AND term while <code>go$</code>, <code>rb$</code>, and <code>py$</code> are alternatives. Prefix an exact term with <code>!'</code> to exclude that fuzzy subsequence; <code>!^foo</code> excludes a prefix and <code>!foo$</code> a suffix. Backslash only escapes the next query character, so shell quoting and fzf query escaping are separate layers. <code>levenshtein</code> is normalized edit similarity (insert, delete, and substitute cost one), while <code>shingles</code> is unique character-bigram Jaccard similarity. The first two reject a candidate that is not a subsequence/query match; the latter two score every candidate. Case follows <code>--case</code> like <code>-name</code> does; <code>-ifuzzy</code> always folds. PCT requires normalized quality from 0 through 100, and <code>{fuzzy}</code> renders it. Multiple fuzzy tests compose through the expression: AND keeps the weakest required score and OR the best successful alternative, independent of predicate order. Ranking requires every fuzzy test to use the same MODEL and threshold (a bare test means <code>0%</code>): different domains are valid filters, but do not define one unambiguous ordering. In <code>fzf</code>, the percentage is the best alignment relative to an exact self-match: characters at a word start, matched consecutively, and matched early score higher. Thus nearby candidates can all match while receiving different scores; inspect them with <code>--format=tsv --columns=fuzzy,path</code>, rank them with <code>--sort=score</code>, or keep the best N with <code>-top N</code>. Use <code>-name</code> for a glob and <code>-regex</code> for a pattern. An xff extension <code>--config=find</code> rejects. Example: <code>xff . -fuzzy rdme --columns=fuzzy,path</code>.</p>
+</article>
+<article class="entry" id="primary-fuzzypath">
+<h4><code>-fuzzypath[:MODEL[:PCT%]|PCT%] PATTERN</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match the whole path loosely, optionally requiring a normalized score (xff)</p>
+<p><code>-fuzzy</code> for the whole PATH instead of the basename - the <code>-path</code> to its <code>-name</code>. It accepts the same <code>:MODEL[:PCT%]</code> syntax and scoring, so <code>-fuzzypath:sequence eng/wlk</code> finds <code>xff/engine/walk.cc</code>, which no basename match could. It matches far more than <code>-fuzzy</code> does (every path shares its directories), so it is most useful RANKED: <code>--sort=score</code> puts the best match first, and <code>{fuzzy}</code> renders the score. Case follows <code>--case</code>; <code>-ifuzzypath</code> always folds. An xff extension <code>--config=find</code> rejects. Example: <code>xff . -fuzzypath eng/wlk --sort=score</code>.</p>
+</article>
+<article class="entry" id="primary-ifuzzy">
+<h4><code>-ifuzzy[:MODEL[:PCT%]|PCT%] PATTERN</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match the basename loosely, case-insensitively (xff)</p>
+<p>The always-case-insensitive <code>-fuzzy</code>: accepts the same <code>:MODEL[:PCT%]</code> syntax and folds ASCII case regardless of <code>--case</code> or the volume.</p>
+</article>
+<article class="entry" id="primary-ifuzzypath">
+<h4><code>-ifuzzypath[:MODEL[:PCT%]|PCT%] PATTERN</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match the whole path loosely, case-insensitively (xff)</p>
+<p>The always-case-insensitive <code>-fuzzypath</code>: accepts the same <code>:MODEL[:PCT%]</code> syntax and folds ASCII case regardless of <code>--case</code> or the volume.</p>
+</article>
+<article class="entry" id="primary-cmp">
+<h4><code>-cmp ARG</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">true when the file's content is byte-identical to TARGET (a field template) (xff)</p>
+</article>
+<article class="entry" id="primary-similar">
+<h4><code>-similar[:WIDTH[:PCT%]|PCT%] TARGET</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match text whose word-shingle Jaccard similarity to TARGET reaches a threshold (xff)</p>
+<p>Compares a regular text file with TARGET, which is a {field} template evaluated per entry, using Jaccard overlap of unique contiguous word shingles. Bare <code>-similar TARGET</code> uses five-word shingles and requires <code>80%</code>; qualify it as <code>-similar:PCT%</code>, <code>-similar:WIDTH</code>, or <code>-similar:WIDTH:PCT%</code> to override either default. Words are case-folded ASCII alphanumeric or UTF-8 byte runs; punctuation and whitespace separate them. A short non-empty file contributes one shingle containing all its words. Non-regular, unreadable, or binary files do not match. This v1 answers whether each file resembles one reference; whole-tree clustering is deferred.</p>
+</article>
+<article class="entry" id="primary-hasheq">
+<h4><code>-hasheq[:ALGO[/ENCODING]] EXPECTED</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">true when the digest equals EXPECTED (a field template); -hasheq:ALGO[/ENC] (xff)</p>
+<p>Computes the file's digest and is true when it equals EXPECTED - a {field} template evaluated per entry, so it can name a sidecar value like <code>{def.SUMS}</code> or a capture. <code>-hasheq:ALGO[/ENCODING]</code> picks the algorithm (sha256 default; also sha1/sha512/...) and encoding (hex default, or base64); the same grammar as <code>-hash</code> / {hash}. It is a strict equality test (hex folds case). <code>! -hasheq</code> selects files whose digest differs (drift / corruption). Reads the whole file, so it is expensive.</p>
+</article>
+<article class="entry" id="primary-type">
+<h4><code>-type ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the file type (f, d, l, b, c, p, s)</p>
+<p>Matches the entry's type by letter: <code>f</code>=regular file, <code>d</code>=directory, <code>l</code>=symlink, <code>b</code>/<code>c</code>=block / char device, <code>p</code>=FIFO, <code>s</code>=socket. A GNU-style comma list is any-of, so <code>-type f,l</code> matches regular files or symlinks. Under the default <code>-P</code> a symlink is type <code>l</code>; <code>-xtype</code> tests its target's type instead.</p>
+</article>
+<article class="entry" id="primary-xtype">
+<h4><code>-xtype ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the file type of a symlink's target</p>
+<p>Like <code>-type</code>, but for a symlink it tests the type of the link's TARGET (the link is followed). A broken symlink has no target, so it reports as a symlink and <code>-xtype l</code> matches it, matching GNU find under the default <code>-P</code>. On a non-symlink it is identical to <code>-type</code>.</p>
+</article>
+<article class="entry" id="primary-mime">
+<h4><code>-mime ARG</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match the media type by extension against a glob, e.g. -mime 'image/*' (xff)</p>
+<p>xff extension: matches the media (MIME) type derived from the filename extension against a shell glob, so <code>image/*</code> matches png/jpg/... and <code>text/plain</code> is exact. The lean binary has a curated common-type table; the removable <code>mime-db</code> build extra supplies thousands of types, and repeatable <code>--mime-vocabulary=FILE</code> JSON layers override mappings and metadata. This is fast name classification, not content sniffing. The same value is the <code>{mime}</code> field; <code>{mime-category}</code>, <code>{mime-description}</code>, <code>{mime-charset}</code>, <code>{mime-compressible}</code>, and <code>{mime-source}</code> expose its metadata. Matching is always case-insensitive (MIME names are case-insensitive per RFC 2045/6838), so <code>IMAGE/*</code> behaves like <code>image/*</code>; <code>--case</code> / -i / -s do not affect it. See <code>--help=content</code> for the overlay schema and conflict policy.</p>
+<p>Affected by: --mime-vocabulary</p>
+</article>
+<article class="entry" id="primary-lang">
+<h4><code>-lang ARG</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match the language by extension/filename against a glob, e.g. -lang 'C*' (xff)</p>
+<p>xff extension: matches the programming language inferred from the extension/filename against a shell glob, so <code>C*</code> matches C / C++ / C#. The lean binary has a curated common table; the removable GitHub Linguist build extra supplies hundreds of canonical records, and repeatable <code>--lang-db=FILE</code> JSON layers override mappings and metadata. Exact filenames win over the longest matching suffix. The same canonical value is <code>{lang}</code>; <code>{lang-type}</code>, <code>{lang-color}</code>, <code>{lang-group}</code>, and <code>{lang-source}</code> expose metadata. A pattern may also match an alias (<code>cpp</code> matches canonical <code>C++</code>). Matching is always case-insensitive and unaffected by <code>--case</code> / -i / -s. This is fast name classification, not Linguist's content/shebang heuristic classifier.</p>
+<p>Affected by: --lang-db</p>
+</article>
+<article class="entry" id="primary-size">
+<h4><code>-size ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match apparent size with legacy, explicit SI (MB), or IEC (MiB) units</p>
+<p>Compares the file's apparent size. A bare number counts 512-byte blocks (find default); a unit suffix sets the scale: find's <code>c</code>/<code>w</code>/<code>k</code>/<code>M</code>/<code>G</code>/<code>T</code>/<code>P</code>/<code>E</code> are retained as legacy binary units; explicit <code>B</code>/<code>kB</code>/<code>MB</code>/... are SI powers of 1000, and <code>KiB</code>/<code>MiB</code>/... are IEC powers of 1024. A leading + / - means greater / less than. The size is rounded up to whole units, so <code>-size +100M</code> means larger than <code>100 MiB</code>, while <code>-size +100MB</code> means larger than <code>100 MB</code>. See <code>--help=size</code> and <code>-blocks</code> for allocated space.</p>
+</article>
+<article class="entry" id="primary-blocks">
+<h4><code>-blocks ARG</code><span class="tags">(test, xff)</span></h4>
+<p class="summary">match the allocated size (st_blocks); xff's disk-occupancy counterpart to -size</p>
+<p>Uses the same <code>[+|-]N[unit]</code> grammar as <code>-size</code>, but compares allocated disk space rather than apparent length. See <code>--help=size</code> for legacy, SI, and IEC units.</p>
+</article>
+<article class="entry" id="primary-links">
+<h4><code>-links ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the hard-link count</p>
+</article>
+<article class="entry" id="primary-inum">
+<h4><code>-inum ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the inode number</p>
+</article>
+<article class="entry" id="primary-samefile">
+<h4><code>-samefile ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match files that share an inode with FILE</p>
+</article>
+<article class="entry" id="primary-fstype">
+<h4><code>-fstype ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the filesystem type (statfs)</p>
+<p>Matches when the filesystem holding the entry has the given type name (e.g. <code>apfs</code>, <code>ext2/ext3</code>, <code>tmpfs</code>, <code>nfs</code>). The recognized names are platform-specific - macOS / BSD report <code>f_fstypename</code> verbatim, Linux maps the statfs magic to a find-compatible name - so a portable expression usually cannot assume one name across OSes.</p>
+</article>
+<article class="entry" id="primary-uid">
+<h4><code>-uid ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the numeric owner id</p>
+<p>Matches the owner's numeric user id. Like find's numeric tests it accepts <code>+N</code> (greater than), <code>-N</code> (less than), or a bare N (exact). Match by login name with <code>-user</code> instead.</p>
+</article>
+<article class="entry" id="primary-gid">
+<h4><code>-gid ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the numeric group id</p>
+<p>The group counterpart of <code>-uid</code>: the numeric group id, with <code>+N</code> / <code>-N</code> / bare-N. Match by group name with <code>-group</code> instead.</p>
+</article>
+<article class="entry" id="primary-user">
+<h4><code>-user ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the owner by name</p>
+<p>Matches the owner by login name, resolved through the passwd database. A name with no passwd entry never matches, but a bare numeric argument is taken as a uid, so <code>-user 0</code> behaves like <code>-uid 0</code>. Exact match only (no <code>+</code> / <code>-</code>).</p>
+</article>
+<article class="entry" id="primary-group">
+<h4><code>-group ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the group by name</p>
+<p>The group counterpart of <code>-user</code>: matches by group name (via the group database), falling back to a numeric gid. Exact match only.</p>
+</article>
+<article class="entry" id="primary-nouser">
+<h4><code>-nouser</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when the owner uid has no passwd entry</p>
+<p>Matches when the entry's owner uid has NO entry in the passwd database - an orphaned owner, e.g. from a deleted account or an archive unpacked with foreign ids. Takes no argument. See <code>-nogroup</code> for the group side.</p>
+</article>
+<article class="entry" id="primary-nogroup">
+<h4><code>-nogroup</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when the group gid has no group entry</p>
+<p>Matches when the entry's group gid has no entry in the group database (the group side of <code>-nouser</code>).</p>
+</article>
+<article class="entry" id="primary-newer">
+<h4><code>-newer ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when mtime is newer than the reference file's mtime</p>
+<p>Matches when the entry's mtime is strictly newer than reference FILE's mtime. FILE is stat'd following symlinks; a missing or unreadable reference makes it false. This is the base of the -newerXY family: <code>-newerXY FILE</code> compares the entry's X time against the reference's Y time, where each of X and Y is a=access, c=status-change, m=modification, or B=birth - so <code>-newerac</code> is the entry's atime vs the reference's ctime. <code>-anewer</code> / <code>-cnewer</code> are the classic aliases. When Y is <code>t</code> the operand is a TIME STRING, not a file (see <code>-newermt</code>). A birth time the filesystem never recorded makes an X=B test a hard error and a Y=B reference a silent no-match.</p>
+</article>
+<article class="entry" id="primary-anewer">
+<h4><code>-anewer ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when atime is newer than the reference file's mtime (== -neweram)</p>
+<p>find's classic spelling of <code>-neweram</code>: the entry's access time is newer than the reference file's modification time. See <code>-newer</code> for the -newerXY family.</p>
+</article>
+<article class="entry" id="primary-cnewer">
+<h4><code>-cnewer ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when ctime is newer than the reference file's mtime (== -newercm)</p>
+<p>find's classic spelling of <code>-newercm</code>: the entry's status-change time is newer than the reference file's modification time. See <code>-newer</code> for the -newerXY family.</p>
+</article>
+<article class="entry" id="primary-neweraa">
+<h4><code>-neweraa ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when atime is newer than the reference file's atime</p>
+</article>
+<article class="entry" id="primary-newerac">
+<h4><code>-newerac ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when atime is newer than the reference file's ctime</p>
+</article>
+<article class="entry" id="primary-neweram">
+<h4><code>-neweram ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when atime is newer than the reference file's mtime</p>
+</article>
+<article class="entry" id="primary-newerca">
+<h4><code>-newerca ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when ctime is newer than the reference file's atime</p>
+</article>
+<article class="entry" id="primary-newercc">
+<h4><code>-newercc ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when ctime is newer than the reference file's ctime</p>
+</article>
+<article class="entry" id="primary-newercm">
+<h4><code>-newercm ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when ctime is newer than the reference file's mtime</p>
+</article>
+<article class="entry" id="primary-newerma">
+<h4><code>-newerma ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when mtime is newer than the reference file's atime</p>
+</article>
+<article class="entry" id="primary-newermc">
+<h4><code>-newermc ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when mtime is newer than the reference file's ctime</p>
+</article>
+<article class="entry" id="primary-newermm">
+<h4><code>-newermm ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when mtime is newer than the reference file's mtime</p>
+</article>
+<article class="entry" id="primary-newerat">
+<h4><code>-newerat ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when atime is newer than a time string</p>
+</article>
+<article class="entry" id="primary-newerct">
+<h4><code>-newerct ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when ctime is newer than a time string</p>
+</article>
+<article class="entry" id="primary-newermt">
+<h4><code>-newermt ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when mtime is newer than a time string</p>
+<p>The <code>-newerXt</code> time-string form: matches when the entry's mtime is newer than TIME - a timestamp xff parses (an ISO date / date-time, @epoch, or a relative span), interpreted in <code>--timezone</code> - rather than a reference file. <code>-newerat</code> / <code>-newerct</code> / <code>-newerBt</code> are the access / status-change / birth-time counterparts; the file-reference forms are -newerXY (see <code>-newer</code>).</p>
+</article>
+<article class="entry" id="primary-newerba">
+<h4><code>-newerBa ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when birth time is newer than the reference file's atime</p>
+</article>
+<article class="entry" id="primary-newerbc">
+<h4><code>-newerBc ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when birth time is newer than the reference file's ctime</p>
+</article>
+<article class="entry" id="primary-newerbm">
+<h4><code>-newerBm ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when birth time is newer than the reference file's mtime</p>
+</article>
+<article class="entry" id="primary-newerbb">
+<h4><code>-newerBB ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when birth time is newer than the reference file's birth time</p>
+</article>
+<article class="entry" id="primary-newerbt">
+<h4><code>-newerBt ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when birth time is newer than a time string</p>
+</article>
+<article class="entry" id="primary-newerab">
+<h4><code>-neweraB ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when atime is newer than the reference file's birth time</p>
+</article>
+<article class="entry" id="primary-newercb">
+<h4><code>-newercB ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when ctime is newer than the reference file's birth time</p>
+</article>
+<article class="entry" id="primary-newermb">
+<h4><code>-newermB ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match when mtime is newer than the reference file's birth time</p>
+</article>
+<article class="entry" id="primary-mtime">
+<h4><code>-mtime ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the data-modification age in days</p>
+<p>Matches the data-modification age. A bare integer N counts 24-hour periods with any fraction floored (a 2.9-day file is 2); <code>+N</code> matches strictly older than N units, <code>-N</code> strictly younger. A trailing s/m/h/d/w overrides the unit BSD-style (<code>-mtime -1h</code> = under an hour old). The xff-only word/compound span (<code>-mtime "-3 weeks 3 hours"</code>, sign required) reaches back a full relative duration and is rejected by <code>--config=find</code>. See <code>-mmin</code> for the minute scale, <code>-atime</code> / <code>-ctime</code> / <code>-Btime</code> for the other time axes.</p>
+</article>
+<article class="entry" id="primary-mmin">
+<h4><code>-mmin ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the data-modification age in minutes</p>
+<p>The minute-scale <code>-mtime</code>: N counts whole minutes (floored), <code>+N</code> / <code>-N</code> for older / younger. Integer only - no unit suffix and no compound span (use <code>-mtime</code> for those).</p>
+</article>
+<article class="entry" id="primary-atime">
+<h4><code>-atime ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the access age in days</p>
+<p><code>-mtime</code> measured on the access time (atime): same N-day scale, <code>+N</code> / <code>-N</code> polarity, BSD unit suffix, and xff compound span. Note atime is often unreliable - many mounts use relatime or noatime, so a read may not update it.</p>
+</article>
+<article class="entry" id="primary-amin">
+<h4><code>-amin ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the access age in minutes</p>
+<p>The minute-scale <code>-atime</code> (access time): integer minutes, <code>+N</code> / <code>-N</code>, no suffix. See <code>-mmin</code>.</p>
+</article>
+<article class="entry" id="primary-ctime">
+<h4><code>-ctime ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the status-change age in days</p>
+<p><code>-mtime</code> measured on the status-change time (ctime) - when the inode metadata last changed (permissions, ownership, link count, rename), which a content edit also bumps. Same N-day scale, <code>+N</code> / <code>-N</code> polarity, BSD unit suffix, and xff compound span. This is not a creation time; see <code>-Btime</code> for that.</p>
+</article>
+<article class="entry" id="primary-cmin">
+<h4><code>-cmin ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the status-change age in minutes</p>
+<p>The minute-scale <code>-ctime</code> (status-change time): integer minutes, <code>+N</code> / <code>-N</code>, no suffix. See <code>-mmin</code>.</p>
+</article>
+<article class="entry" id="primary-btime">
+<h4><code>-Btime ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the birth (creation) age in days</p>
+<p><code>-mtime</code> measured on the birth (creation) time: same N-day scale, <code>+N</code> / <code>-N</code> polarity, BSD unit suffix, and xff compound span. Birth time is not recorded on every filesystem or kernel - where it is absent the test cannot be evaluated and is a hard error (exit 2); <code>--skip-unsupported</code> downgrades that to a warning and skips the entry.</p>
+</article>
+<article class="entry" id="primary-bmin">
+<h4><code>-Bmin ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the birth (creation) age in minutes</p>
+<p>The minute-scale <code>-Btime</code> (birth time): integer minutes, <code>+N</code> / <code>-N</code>, no suffix. Same unrecorded-birth-time handling as <code>-Btime</code> (hard error, or a skip under <code>--skip-unsupported</code>).</p>
+</article>
+<article class="entry" id="primary-used">
+<h4><code>-used ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the whole days between atime and ctime</p>
+<p>Matches the whole days between an entry's last status change and its last access (atime minus ctime) - roughly how long after its metadata changed it was next read. <code>+N</code> / <code>-N</code> for more / fewer days. Shares atime's relatime / noatime caveat (see <code>-atime</code>).</p>
+</article>
+<article class="entry" id="primary-perm">
+<h4><code>-perm ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match the permission bits (octal or symbolic mode)</p>
+<p>Matches the permission (and setuid / setgid / sticky) bits. MODE is octal (<code>644</code>, <code>0755</code>) or a chmod-style symbolic mode (<code>u+w</code>, <code>go=r</code>, comma-separated clauses). A bare MODE matches exactly; <code>-MODE</code> matches when ALL the listed bits are set; <code>/MODE</code> (GNU) when ANY are. BSD <code>+octal</code> is any-of like <code>/</code>, while a symbolic <code>+r</code> stays exact. Example: <code>-perm -u+x</code> = owner-executable. Contrast <code>-readable</code> / <code>-writable</code> / <code>-executable</code>, which probe the effective user's real access.</p>
+</article>
+<article class="entry" id="primary-maxdepth">
+<h4><code>-maxdepth ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">descend at most N directory levels below each start</p>
+<p>Limits traversal to at most N levels below each start point: level 0 is a start point itself, 1 its immediate children. Like find this is a global positional option - it applies to the whole run wherever it sits in the expression, not just to what follows it. Pair with <code>-mindepth</code> to bound both ends.</p>
+</article>
+<article class="entry" id="primary-mindepth">
+<h4><code>-mindepth ARG</code><span class="tags">(test, find)</span></h4>
+<p class="summary">skip entries fewer than N levels below each start</p>
+<p>Skips entries fewer than N levels below a start point, so <code>-mindepth</code> 1 excludes the start points themselves. A global positional option like <code>-maxdepth</code> (applies run-wide).</p>
+</article>
+<article class="entry" id="primary-depth">
+<h4><code>-depth</code><span class="tags">(test, find)</span></h4>
+<p class="summary">process a directory's contents before the directory</p>
+<p>Visits a directory's contents BEFORE the directory itself (post-order), so a directory is acted on only after everything within it - what <code>-delete</code> needs, and <code>-delete</code> turns this on for you. A global positional option; <code>-d</code> is the BSD/GNU short spelling.</p>
+</article>
+<article class="entry" id="primary-d">
+<h4><code>-d</code><span class="tags">(test, find)</span></h4>
+<p class="summary">BSD/GNU short spelling of -depth</p>
+</article>
+<article class="entry" id="primary-xdev">
+<h4><code>-xdev</code><span class="tags">(test, find)</span></h4>
+<p class="summary">do not descend into other filesystems</p>
+<p>Confines the walk to the filesystem of each start point: it will not descend into a directory that lives on a different mounted device. A global positional option; <code>-mount</code> and <code>-x</code> are synonyms.</p>
+</article>
+<article class="entry" id="primary-mount">
+<h4><code>-mount</code><span class="tags">(test, find)</span></h4>
+<p class="summary">GNU/BSD synonym for -xdev</p>
+</article>
+<article class="entry" id="primary-x">
+<h4><code>-x</code><span class="tags">(test, find)</span></h4>
+<p class="summary">BSD synonym for -xdev</p>
+</article>
+<article class="entry" id="primary-daystart">
+<h4><code>-daystart</code><span class="tags">(test, find)</span></h4>
+<p class="summary">measure age tests from today's local midnight</p>
+<p>Measures the day- and minute-scale age tests (<code>-mtime</code> / <code>-atime</code> / <code>-ctime</code> / <code>-Btime</code> and their -min forms) from the start of today (local midnight) instead of from the exact current instant, matching GNU find's <code>-daystart</code>. Unlike find, where it only affects tests to its right, in xff it applies run-wide regardless of where it appears in the expression.</p>
+</article>
+<article class="entry" id="primary-ignore-readdir-race">
+<h4><code>-ignore_readdir_race</code><span class="tags">(test, find)</span></h4>
+<p class="summary">skip entries that vanish during the walk (ENOENT)</p>
+</article>
+<article class="entry" id="primary-noignore-readdir-race">
+<h4><code>-noignore_readdir_race</code><span class="tags">(test, find)</span></h4>
+<p class="summary">report vanished entries as errors (default)</p>
+</article>
+<article class="entry" id="primary-empty">
+<h4><code>-empty</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match an empty regular file or empty directory</p>
+<p>Matches an empty regular file (size 0) or a directory with no entries; other types never match. The directory case reads the directory to check, so it costs a syscall.</p>
+</article>
+<article class="entry" id="primary-sparse">
+<h4><code>-sparse</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match a file with holes (allocated blocks &lt; apparent size)</p>
+<p>Matches a file stored sparsely - fewer 512-byte blocks are allocated than its apparent size would need (<code>st_blocks * 512 &lt; st_size</code>), i.e. it has holes. A zero-size file is never sparse. Compare <code>-blocks</code> (allocated space) against <code>-size</code> (apparent size).</p>
+</article>
+<article class="entry" id="primary-readable">
+<h4><code>-readable</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match entries the current user can read</p>
+<p>Matches when the entry is readable by the CURRENT (effective) user, via a real access(2) probe rather than a guess from the mode bits - so it reflects ownership and ACLs and can differ from <code>-perm</code>. See <code>-writable</code> / <code>-executable</code> for the other access modes.</p>
+</article>
+<article class="entry" id="primary-writable">
+<h4><code>-writable</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match entries the current user can write</p>
+<p>The write-mode <code>-readable</code>: a real access(2) probe for the effective user (see <code>-readable</code>).</p>
+</article>
+<article class="entry" id="primary-executable">
+<h4><code>-executable</code><span class="tags">(test, find)</span></h4>
+<p class="summary">match entries the current user can execute</p>
+<p>The execute/search-mode <code>-readable</code>: a real access(2) probe for the effective user. On a directory this means search (traverse) permission. See <code>-readable</code>.</p>
+</article>
+<article class="entry" id="primary-true">
+<h4><code>-true</code><span class="tags">(test, find)</span></h4>
+<p class="summary">always match</p>
+</article>
+<article class="entry" id="primary-false">
+<h4><code>-false</code><span class="tags">(test, find)</span></h4>
+<p class="summary">never match</p>
+</article>
+</section>
+<section id="actions">
+<h3>Actions</h3>
+<article class="entry" id="primary-collect">
+<h4><code>-collect[:[!]NAME]</code><span class="tags">(action, xff)</span></h4>
+<p class="summary">add the entry to a named collection for --summary to reduce (xff)</p>
+<p>xff extension: an ACTION that adds the entry to a collection instead of printing it, and makes <code>--summary</code> reduce THAT collection rather than what matched. This is what a truncating test cannot do on its own: a FALSE test removes the entry from every sink, so <code>-first 10 --summary</code> summarises ten entries, never "all of them, showing ten". ORDER selects the reading, because these are primaries rather than position-independent globals: <code>-collect -first 10 -ls --summary</code> collects everything, lists ten, and summarises ALL of them, while <code>-first 10 -collect --summary</code> collects only the ten and summarises those. The second prints no listing because <code>-collect</code> is an action, so the implicit <code>-print</code> is suppressed - find's own rule, not a new one. <code>-collect:NAME</code> uses a second collection; a bare <code>-collect</code> uses the one named <code>default</code>. A NAME is an identifier (<code>[A-Za-z_][A-Za-z0-9_]*</code>), which is what reserves punctuation for modifiers. Two nodes MAY share a collection, but the later one must SAY so with <code>!</code>: <code>\( -type f -collect:all \) -o \( -type d -collect:!all \)</code> gathers both branches into one collection, while an unmarked repeat is a usage error - a silently shared collection shows up only as a doubled total. The modifier is per node, so it cannot loosen the other <code>-collect</code> in a long command the way a whole-run flag would. A collection holds every match until the walk ends, so <code>--buffer</code> bounds it (a row count or a byte budget); exceeding it is an ERROR rather than a silent truncation, because a summary over part of the walk is indistinguishable from a correct one. Without <code>--buffer</code> there is no cap. Presence is SYNTACTIC, like the implicit print: a <code>-collect</code> in a branch that never runs still switches the summary's source, and the summary is then empty. Example: <code>xff . -type f -collect -first 3 -ls --summary</code>.</p>
+</article>
+<article class="entry" id="primary-diff">
+<h4><code>-diff[:STYLE] TARGET</code><span class="tags">(action, xff)</span></h4>
+<p class="summary">diff the file against TARGET (a field template); true when equal (xff)</p>
+<p>Compares the matched file against TARGET - a {field} template evaluated per entry, so it can name a mirror path like <code>../b/{relpath}</code> - and is true when they are equal, false on a difference. The optional :STYLE picks the output: unified <code>u3</code> (default; 3 lines of context), context <code>c</code>, normal <code>n</code>, side-by-side <code>y</code>, or <code>none</code> for just the boolean. This is a one-sided expression action: it visits only the search roots, so it cannot report paths that exist only under TARGET. Use <code>--compare[=status|diff] LEFT RIGHT</code> for a symmetric, ignore-aware comparison of two complete trees. Text files only; expensive.</p>
+<p>Affected by: --diff-algorithm, --diff-ignore, --diff-ignore-matching, --diff-format, --diff-context, --context</p>
+</article>
+<article class="entry" id="primary-hash">
+<h4><code>-hash[:ALGO[/ENCODING]]</code><span class="tags">(action, xff)</span></h4>
+<p class="summary">print the file digest and path; -hash:ALGO[/ENCODING], sha256 hex default (xff)</p>
+<p>Prints <code>DIGEST  PATH</code> for each match (an action). <code>-hash:ALGO[/ENCODING]</code> picks the algorithm (sha256 default; also sha1/sha512/...) and encoding (hex default, or base64). Reads the whole file, so it is expensive; the same digest is available as the {hash} field.</p>
+</article>
+<article class="entry" id="primary-ls">
+<h4><code>-ls</code><span class="tags">(action, find)</span></h4>
+<p class="summary">print an <code>ls -dils</code> style line per entry</p>
+<p>Prints one <code>ls -dils</code>-style line per match: inode, blocks, mode, links, owner, group, size, time, name (find's <code>-ls</code>). Columns align to ls/BSD width defaults. For a custom layout use <code>-printf</code>; for aligned columns of {field}s use <code>--format=aligned</code>.</p>
+</article>
+<article class="entry" id="primary-print">
+<h4><code>-print</code><span class="tags">(action, find)</span></h4>
+<p class="summary">print the path followed by a newline</p>
+<p>Prints the path then a newline. This is the DEFAULT action: with no action anywhere in the expression xff prints each match, exactly as if <code>-print</code> were appended. Naming any action (including <code>-print</code> itself) suppresses that implicit default; <code>--implicit-print=yes</code>|no forces it on or off.</p>
+</article>
+<article class="entry" id="primary-print0">
+<h4><code>-print0</code><span class="tags">(action, find)</span></h4>
+<p class="summary">print the path followed by a NUL</p>
+<p>Prints the path then a NUL byte instead of a newline, so paths containing spaces or newlines survive a pipe into <code>xargs -0</code>. The machine-readable counterpart of <code>-print</code>; see also <code>--format=jsonl</code>.</p>
+</article>
+<article class="entry" id="primary-printf">
+<h4><code>-printf ARG</code><span class="tags">(action, find)</span></h4>
+<p class="summary">print a custom format string (%{field} expands the xff field vocabulary)</p>
+<p>Prints FORMAT for each match, expanding find's <code>%</code> directives (%p path, %f name, %s size, %t/%Ak times, ...) and C escapes (\n, \t). xff adds <code>%{NAME}</code> to reach the full {field} vocabulary and its qualifiers (see --help=fields, --help=printf). No trailing newline unless you write one; <code>-printfln</code> adds the OS line ending. Example: <code>xff . -printf '%s\t%p\n'</code>.</p>
+</article>
+<article class="entry" id="primary-println">
+<h4><code>-println</code><span class="tags">(action, xff)</span></h4>
+<p class="summary">print the path with the OS line ending (xff)</p>
+<p><code>-print</code> but terminated with the OS-native line ending (CRLF on Windows, LF elsewhere) rather than always LF. An xff extension <code>--config=find</code> rejects.</p>
+</article>
+<article class="entry" id="primary-printfln">
+<h4><code>-printfln ARG</code><span class="tags">(action, xff)</span></h4>
+<p class="summary">print a custom format with the OS line ending (xff)</p>
+<p><code>-printf</code> plus the OS line ending appended, so you write FORMAT without a trailing <code>\n</code>. An xff extension <code>--config=find</code> rejects; see <code>-printf</code> for the directive vocabulary.</p>
+</article>
+<article class="entry" id="primary-grep">
+<h4><code>-grep[:FORMAT] PATTERN</code><span class="tags">(action, xff)</span></h4>
+<p class="summary">print each content line matching a regex; -grep:FORMAT for a template (xff)</p>
+<p>The line-output companion of <code>-rxc</code>: <code>-grep PATTERN</code> prints every content line matching the RE2 PATTERN as <code>path:lineno:text</code> (grep's piped form; a literal substring under <code>--regextype=EXACT</code>). <code>-grep:FORMAT PATTERN</code> renders a {line}/{text}/{match}/{column} template instead. Honors <code>-c</code> / <code>--count</code> (one <code>path:count</code> per file) and -A / -B / <code>--context</code> (surrounding lines, grep-style). Reads the file (expensive); non-regular / unreadable / binary files yield nothing. Its truth is "matched a line", so it composes with <code>-o</code> / <code>-q</code>. An xff extension <code>--config=find</code> rejects.</p>
+<p>Affected by: --count, --context, --after-context, --before-context</p>
+</article>
+<article class="entry" id="primary-fprint">
+<h4><code>-fprint ARG</code><span class="tags">(action, find)</span></h4>
+<p class="summary">write -print output to a named file</p>
+<p>Writes what <code>-print</code> would emit to FILE instead of stdout. FILE is opened once (truncating any existing content) and held open for the whole walk, so matches append to it in visit order. This is the anchor of the -f* family - each mirrors a stdout action: <code>-fprint0</code>, <code>-fprintf</code>, <code>-fls</code>, and the xff <code>-fprintln</code> / <code>-fprintfln</code>.</p>
+</article>
+<article class="entry" id="primary-fprintln">
+<h4><code>-fprintln ARG</code><span class="tags">(action, xff)</span></h4>
+<p class="summary">write -println output to a named file (xff)</p>
+<p>The file form of <code>-println</code> (<code>-fprint</code> with the OS line ending). See <code>-fprint</code> for the file handling; an xff extension <code>--config=find</code> rejects.</p>
+</article>
+<article class="entry" id="primary-fprint0">
+<h4><code>-fprint0 ARG</code><span class="tags">(action, find)</span></h4>
+<p class="summary">write -print0 output to a named file</p>
+<p>The file form of <code>-print0</code> (NUL-terminated paths). See <code>-fprint</code> for the file handling.</p>
+</article>
+<article class="entry" id="primary-fprintf">
+<h4><code>-fprintf ARG ARG</code><span class="tags">(action, find)</span></h4>
+<p class="summary">write -printf output to a named file</p>
+<p>The file form of <code>-printf</code>: <code>-fprintf FILE FORMAT</code> (FILE first, then the format). See <code>-printf</code> for the directive vocabulary and <code>-fprint</code> for the file handling.</p>
+</article>
+<article class="entry" id="primary-fprintfln">
+<h4><code>-fprintfln ARG ARG</code><span class="tags">(action, xff)</span></h4>
+<p class="summary">write -printfln output to a named file (xff)</p>
+<p>The file form of <code>-printfln</code>: <code>-fprintfln FILE FORMAT</code> with the OS line ending appended. An xff extension <code>--config=find</code> rejects; see <code>-fprint</code> for the file handling.</p>
+</article>
+<article class="entry" id="primary-fls">
+<h4><code>-fls ARG</code><span class="tags">(action, find)</span></h4>
+<p class="summary">write -ls output to a named file</p>
+<p>The file form of <code>-ls</code> (the <code>ls -dils</code> line). See <code>-fprint</code> for the file handling.</p>
+</article>
+<article class="entry" id="primary-delete">
+<h4><code>-delete</code><span class="tags">(action, find, modifies the filesystem)</span></h4>
+<p class="summary">delete the matched entry</p>
+<p>Deletes the matched file or (empty) directory, and implies <code>-depth</code> so a directory's contents are removed before the directory itself. Destructive, so it is guarded: <code>--dry-run</code> previews (prints what would be deleted, removes nothing) and <code>--safe</code> refuses risky targets. Example: <code>xff . -name '*.tmp' -delete</code>.</p>
+</article>
+<article class="entry" id="primary-prune">
+<h4><code>-prune</code><span class="tags">(action, find)</span></h4>
+<p class="summary">do not descend into the matched directory</p>
+<p>When the matched entry is a directory, do not descend into it (evaluates true). Usually paired with <code>-o</code> to skip a subtree while still processing everything else: <code>xff . -name .git -prune -o -print</code>.</p>
+</article>
+<article class="entry" id="primary-quit">
+<h4><code>-quit</code><span class="tags">(action, find)</span></h4>
+<p class="summary">stop the search immediately</p>
+<p>Stops the whole search as soon as it is reached (after actions on the current entry have run). Handy to emit just the first match: <code>xff . -name target -print -quit</code>.</p>
+</article>
+<article class="entry" id="primary-exec">
+<h4><code>-exec CMD... ;</code><span class="tags">(action, find, runs commands)</span></h4>
+<p class="summary">run a command per match (;) or batched (+)</p>
+<p>Runs the command up to a terminator: <code>;</code> runs it once per match, <code>+</code> batches as many paths as fit per invocation (like xargs). <code>{}</code> expands to the path; xff also binds <code>{1}</code>..<code>{N}</code> from <code>-regex</code> capture groups and the whole {field} vocabulary. Serial by default; <code>-j N</code> runs invocations in parallel. Sensitive: loaded from an <code>--xffrc</code> file it needs <code>--allow-exec</code>. Example: <code>xff . -name '*.o' -exec rm {} +</code>.</p>
+</article>
+<article class="entry" id="primary-execdir">
+<h4><code>-execdir CMD... ;</code><span class="tags">(action, find, runs commands)</span></h4>
+<p class="summary">run a command in the matched entry's directory</p>
+<p>Like <code>-exec</code>, but each command runs with its working directory set to the matched entry's parent and <code>{}</code> is the basename - safer against path injection and directory races. <code>;</code> per match or <code>+</code> batched (a batch shares one directory). Example: <code>xff . -name '*.log' -execdir gzip {} ;</code>.</p>
+</article>
+<article class="entry" id="primary-ok">
+<h4><code>-ok CMD... ;</code><span class="tags">(action, find, runs commands)</span></h4>
+<p class="summary">like -exec, but prompt before each command</p>
+<p>Like <code>-exec</code> but prompts on stderr before each command and runs it only when the reply begins with 'y'; a declined or EOF answer skips that entry. <code>;</code>-terminated only (no <code>+</code> batching, since each run needs its own prompt).</p>
+</article>
+<article class="entry" id="primary-okdir">
+<h4><code>-okdir CMD... ;</code><span class="tags">(action, find, runs commands)</span></h4>
+<p class="summary">like -execdir, but prompt before each command</p>
+<p>Like <code>-execdir</code> (runs in the matched entry's directory, <code>{}</code> is the basename) but prompts before each command, exactly as <code>-ok</code> does.</p>
+</article>
+<article class="entry" id="primary-capture">
+<h4><code>-capture:[!]NAME[=REGEX] CMD... ;</code><span class="tags">(action, xff, runs commands)</span></h4>
+<p class="summary">run a command and bind its output to {capture.NAME} (xff)</p>
+<p>xff extension: runs the <code>;</code>-terminated command and binds its stdout to <code>{capture.NAME}</code> for a later <code>-printf</code> / <code>--format</code> field; <code>-capture:NAME=REGEX</code> keeps only REGEX's first capture group. A NAME must be an identifier (<code>[A-Za-z_][A-Za-z0-9_]*</code>), because it is referenced as <code>{capture.NAME}</code>; binding one NAME twice is an error, and <code>-capture:!NAME</code> on the LATER node says the re-bind is meant (per node, so it cannot loosen the other captures in the command). Sensitive: from an <code>--xffrc</code> file it needs <code>--allow-exec</code>. Example: <code>-capture:branch git rev-parse --abbrev-ref HEAD ; -printf '{relpath}\t{capture.branch}\n'</code>.</p>
+</article>
+<article class="entry" id="primary-capturedir">
+<h4><code>-capturedir:[!]NAME[=REGEX] CMD... ;</code><span class="tags">(action, xff, runs commands)</span></h4>
+<p class="summary">run -capture in the matched entry's directory (xff)</p>
+<p>The <code>-execdir</code> counterpart of <code>-capture</code>: runs the command in the matched entry's directory and binds its stdout to <code>{capture.NAME}</code>. Same <code>NAME[=REGEX]</code> binding and <code>--allow-exec</code> gating.</p>
+</article>
+</section>
+<section id="operators">
+<h3>Operators</h3>
+<article class="entry" id="primary-a">
+<h4><code>-a</code><span class="tags">(operator, find)</span></h4>
+<p class="summary">logical AND (implicit between predicates)</p>
+<p>Logical AND of two predicates (<code>-and</code> is the long spelling). It is also IMPLICIT between juxtaposed predicates, so <code>-type f -name '*.c'</code> means <code>-type f -a -name '*.c'</code>. Precedence, tightest to loosest: <code>-not</code>, then <code>-a</code>, then (xff) <code>-xor</code>, then <code>-o</code>, then the <code>,</code> comma operator; parentheses <code>( ... )</code> override it. Evaluation short-circuits.</p>
+</article>
+<article class="entry" id="primary-and">
+<h4><code>-and</code><span class="tags">(operator, find)</span></h4>
+<p class="summary">logical AND (implicit between predicates)</p>
+</article>
+<article class="entry" id="primary-o">
+<h4><code>-o</code><span class="tags">(operator, find)</span></h4>
+<p class="summary">logical OR</p>
+<p>Logical OR of two predicates (<code>-or</code> is the long spelling); binds looser than <code>-a</code>, so <code>A -o B -a C</code> is <code>A -o (B -a C)</code>. Short-circuits: the right side is skipped when the left already matched. See <code>-a</code> for the full precedence order.</p>
+</article>
+<article class="entry" id="primary-or">
+<h4><code>-or</code><span class="tags">(operator, find)</span></h4>
+<p class="summary">logical OR</p>
+</article>
+<article class="entry" id="primary-not">
+<h4><code>-not</code><span class="tags">(operator, find)</span></h4>
+<p class="summary">logical negation</p>
+<p>Negates the predicate that follows (<code>!</code> is the synonym). Binds tightest of the operators, so <code>-not -type d -o -name x</code> is <code>(-not -type d) -o -name x</code>. See <code>-a</code> for the full precedence order.</p>
+</article>
+<article class="entry" id="primary">
+<h4><code>!</code><span class="tags">(operator, find)</span></h4>
+<p class="summary">logical negation</p>
+</article>
+<article class="entry" id="primary-xor">
+<h4><code>-xor</code><span class="tags">(operator, xff)</span></h4>
+<p class="summary">logical XOR; matches exactly one side (xff)</p>
+<p>Matches when exactly ONE side is true (never both). One of four xff-only operators find lacks: <code>-xor</code>, and the negations <code>-nand</code> (not both), <code>-nor</code> (neither), <code>-xnor</code> (both agree). They sit between <code>-a</code> and <code>-o</code> in precedence (<code>-not</code> &gt; <code>-a</code> / <code>-nand</code> &gt; <code>-xor</code> / <code>-xnor</code> &gt; <code>-o</code> / <code>-nor</code>) and, like all xff-only operators, are rejected by <code>--config=find</code>.</p>
+</article>
+<article class="entry" id="primary-nand">
+<h4><code>-nand</code><span class="tags">(operator, xff)</span></h4>
+<p class="summary">logical NAND; ! (lhs -a rhs) (xff)</p>
+</article>
+<article class="entry" id="primary-nor">
+<h4><code>-nor</code><span class="tags">(operator, xff)</span></h4>
+<p class="summary">logical NOR; ! (lhs -o rhs) (xff)</p>
+</article>
+<article class="entry" id="primary-xnor">
+<h4><code>-xnor</code><span class="tags">(operator, xff)</span></h4>
+<p class="summary">logical XNOR; matches when both sides agree (xff)</p>
+</article>
+</section>
+</section>
+<section id="fields">
+<h2>Fields</h2>
+<p>The <code>{field}</code> placeholder vocabulary, substituted per entry in --template / --format, in -printf via the <code>%{field}</code> escape, and (with --exec-fields) in -exec.</p>
+<section id="path-name">
+<h3>Path &amp; name</h3>
+<dl class="rows">
+<dt><code>{path}</code></dt><dd>full path as traversed ({} is an alias)</dd>
+<dt><code>{relpath}</code></dt><dd>path relative to the search root (find %P)</dd>
+<dt><code>{root}</code></dt><dd>the search root it was reached from (find %H)</dd>
+<dt><code>{dir}</code></dt><dd>directory containing the entry</dd>
+<dt><code>{name} {file}</code></dt><dd>final path component (the file name)</dd>
+<dt><code>{stem}</code></dt><dd>name without its last extension</dd>
+<dt><code>{core}</code></dt><dd>name without all extensions (foo.tar.gz -&gt; foo)</dd>
+<dt><code>{ext} {extension}</code></dt><dd>last extension, no dot (gz)</dd>
+<dt><code>{suffix}</code></dt><dd>last extension, with dot (.gz)</dd>
+<dt><code>{suffixes}</code></dt><dd>all extensions, with dots (.tar.gz)</dd>
+<dt><code>{target}</code></dt><dd>a symlink's target (find %l); else empty</dd>
+</dl>
+</section>
+<section id="type-size">
+<h3>Type &amp; size</h3>
+<dl class="rows">
+<dt><code>{type}</code></dt><dd>entry type letter (f, d, l, ...)</dd>
+<dt><code>{lang} {language}</code></dt><dd>language by extension/filename (C++, Python, ...; empty if unknown)</dd>
+<dt><code>{lang-type}</code></dt><dd>language kind (programming, markup, data, or prose); empty when unspecified</dd>
+<dt><code>{lang-color}</code></dt><dd>language display colour (#RRGGBB); empty when unspecified</dd>
+<dt><code>{lang-group}</code></dt><dd>parent language group; empty when the language is not grouped</dd>
+<dt><code>{lang-source}</code></dt><dd>vocabulary provenance for the language; empty when unspecified</dd>
+<dt><code>{mime}</code></dt><dd>media (MIME) type by extension (text/plain, image/png; application/octet-stream if unknown)</dd>
+<dt><code>{mime-category}</code></dt><dd>top-level media category (application, image, text, ...)</dd>
+<dt><code>{mime-description}</code></dt><dd>media-type description from the active vocabulary; empty when unspecified</dd>
+<dt><code>{mime-charset}</code></dt><dd>default media-type charset; empty when unspecified</dd>
+<dt><code>{mime-compressible}</code></dt><dd>whether the media type is normally compressible (yes/no; empty when unknown)</dd>
+<dt><code>{mime-source}</code></dt><dd>vocabulary provenance for the media type; empty when unspecified</dd>
+<dt><code>{size}</code></dt><dd>size in bytes ({size:h} human-readable)</dd>
+<dt><code>{blocks}</code></dt><dd>512-byte blocks allocated</dd>
+<dt><code>{inode}</code></dt><dd>inode number</dd>
+<dt><code>{links}</code></dt><dd>hard-link count</dd>
+<dt><code>{dev}</code></dt><dd>device number</dd>
+<dt><code>{depth}</code></dt><dd>depth below the root (0 at a root operand)</dd>
+</dl>
+</section>
+<section id="content">
+<h3>Content</h3>
+<dl class="rows">
+<dt><code>{hash}</code></dt><dd>file digest; {hash:ALGO[/ENCODING]} picks the algorithm (default sha256) and hex/base64</dd>
+<dt><code>{lines}</code></dt><dd>text line count (empty for a binary/unreadable file); reads the file</dd>
+<dt><code>{fuzzy}</code></dt><dd>normalized fuzzy quality (AND = weakest requirement, OR = best alternative)</dd>
+<dt><code>{shard}</code></dt><dd>with --shards, the number of shards in the set (empty otherwise); size-like fields then aggregate across the set</dd>
+</dl>
+</section>
+<section id="owner-mode">
+<h3>Owner &amp; mode</h3>
+<dl class="rows">
+<dt><code>{user} {owner}</code></dt><dd>owner user name (alias {owner}; find %u)</dd>
+<dt><code>{group}</code></dt><dd>owner group name</dd>
+<dt><code>{uid}</code></dt><dd>owner numeric user id</dd>
+<dt><code>{gid}</code></dt><dd>owner numeric group id</dd>
+<dt><code>{mode} {perm}</code></dt><dd>permission bits, octal</dd>
+<dt><code>{access}</code></dt><dd>symbolic permissions (ls -l / stat %A)</dd>
+</dl>
+</section>
+<section id="time-1">
+<h3>Time</h3>
+<dl class="rows">
+<dt><code>{atime}</code></dt><dd>last access time</dd>
+<dt><code>{mtime}</code></dt><dd>last modification time</dd>
+<dt><code>{ctime}</code></dt><dd>inode change time</dd>
+<dt><code>{btime}</code></dt><dd>creation/birth time (where supported)</dd>
+</dl>
+</section>
+<section id="grep-context">
+<h3>Grep context</h3>
+<dl class="rows">
+<dt><code>{line}</code></dt><dd>1-based number of the matching line</dd>
+<dt><code>{text}</code></dt><dd>the full matching line</dd>
+<dt><code>{match}</code></dt><dd>the matched substring (grep -o)</dd>
+<dt><code>{column}</code></dt><dd>1-based column of the match</dd>
+</dl>
+</section>
+<section id="braces">
+<h3>Braces</h3>
+<ul>
+<li><code>{{</code> and <code>}}</code> emit literal braces</li>
+<li><code>{}</code> is an alias for <code>{path}</code></li>
+<li>an unknown field renders empty</li>
+<li>a malformed or unterminated <code>{</code> stays literal</li>
+</ul>
+</section>
+<section id="dynamic-namespaces">
+<h3>Dynamic namespaces</h3>
+<dl class="rows">
+<dt><code>{0}..{N}</code></dt><dd>-regex captures ({0} the whole match, {1}..{N} the groups)</dd>
+<dt><code>{env.NAME}</code></dt><dd>a process environment variable</dd>
+<dt><code>{def.NAME}</code></dt><dd>a --define value</dd>
+<dt><code>{capture.NAME}</code></dt><dd>a -capture command result</dd>
+</dl>
+</section>
+<section id="qualifiers-field-qual">
+<h3>Qualifiers ({field:QUAL})</h3>
+<dl class="rows">
+<dt><code>{mtime:FMT}</code></dt><dd>time format: strftime (%Y-%m-%d) or preset (iso, epoch); see --time-format / --timezone</dd>
+<dt><code>{size:h}</code></dt><dd>human-readable size</dd>
+<dt><code>{name:s/RE/R/f}</code></dt><dd>RE2 rewrite of the value (flags g=all, i=ignore-case; any delimiter)</dd>
+<dt><code>{cap:m/RE/R/f}</code></dt><dd>per-line extraction: a value stream, e.g. a --summary key (m//, s///'s list-producing sibling)</dd>
+<dt><code>{cap:m/RE/R/;join(SEP)}</code></dt><dd>reduce the stream to one scalar (join, SEP default newline) so m// is usable in a scalar context (-printf / --template / -exec); reducers are function-notation, e.g. join(, )</dd>
+<dt><code>{path:COMP}</code></dt><dd>path component of the value: basename|core|dir|ext|extension|file|name|path|stem|suffix|suffixes; any path-valued field composes, e.g. {relpath:stem}, {def.B:dir}</dd>
+</dl>
+<p>An m// extraction is a left-to-right pipeline: s/// maps whatever is flowing (each line, then the scalar), and a terminal reducer such as join collapses the stream to one scalar.</p>
+<pre><code>  {cap:m/PAT/REP/;s/PAT/REP/;join(SEP);s/PAT/REP/}
+       |________| |________| |_______| |________|
+       extract    map each   reduce    rewrite
+       per line   line       stream    scalar</code></pre>
+<p>For -printf's own % directives (%p %f %s %t ...) and the <code>%{field}</code> escape that bridges them to this vocabulary, see the Printf directives (<code>--help=-printf</code>).</p>
+</section>
+</section>
+<section id="printf-directives">
+<h2>Printf directives</h2>
+<p>Directives for -printf / -fprintf / -println FORMAT, and the <code>%{field}</code> escape.</p>
+<dl class="rows">
+<dt><code>%p</code></dt><dd>the entry's path</dd>
+<dt><code>%f</code></dt><dd>file name (basename)</dd>
+<dt><code>%h</code></dt><dd>leading directories (dirname)</dd>
+<dt><code>%d</code></dt><dd>depth below the starting point</dd>
+<dt><code>%y</code></dt><dd>type letter (f d l b c p s)</dd>
+<dt><code>%s</code></dt><dd>size in bytes</dd>
+<dt><code>%i</code></dt><dd>inode number</dd>
+<dt><code>%n</code></dt><dd>number of hard links</dd>
+<dt><code>%m</code></dt><dd>permission bits, octal</dd>
+<dt><code>%u</code></dt><dd>owner user name (numeric uid if unknown)</dd>
+<dt><code>%g</code></dt><dd>owner group name (numeric gid if unknown)</dd>
+<dt><code>%U</code></dt><dd>numeric user id</dd>
+<dt><code>%G</code></dt><dd>numeric group id</dd>
+<dt><code>%a %c %t</code></dt><dd>access / change / modification time (asctime form)</dd>
+<dt><code>%Ak %Ck %Tk</code></dt><dd>atime / ctime / mtime via strftime conversion k (e.g. %TY, %Tj)</dd>
+<dt><code>%%</code></dt><dd>a literal percent</dd>
+<dt><code>\n \t \r \\ \0</code></dt><dd>newline, tab, carriage return, backslash, NUL</dd>
+<dt><code>%{NAME}</code></dt><dd>xff: the {field} vocabulary (%{relpath}, %{size:h}, %{def.X}); see --help=fields</dd>
+<dt><code>%{NAME:qual}</code></dt><dd>xff: a field with a :qualifier -- time format, {size:h}, s/// rewrite, or path component (see --help=fields for the full qualifier list)</dd>
+</dl>
+</section>
+<section id="time-formats">
+<h2>Time formats</h2>
+<p>Presets and strftime patterns for --time-format, --timezone, and time-field {:qualifiers}.</p>
+<dl class="rows">
+<dt><code>iso, iso8601</code></dt><dd>ISO-8601 extended (2020-09-13T12:26:40+0000)</dd>
+<dt><code>iso8601-basic</code></dt><dd>ISO-8601 basic / compact (20200913T122640+0000)</dd>
+<dt><code>iso8601-full</code></dt><dd>ISO-8601 with sub-second precision</dd>
+<dt><code>rfc3339</code></dt><dd>RFC 3339, colon offset (2020-09-13T12:26:40+00:00)</dd>
+<dt><code>space, human</code></dt><dd>readable default (2020-09-13 12:26:40 +0000)</dd>
+<dt><code>asctime</code></dt><dd>asctime(3); find's default %t (Sun Sep 13 12:26:40 2020)</dd>
+<dt><code>epoch</code></dt><dd>seconds since the Unix epoch</dd>
+<dt><code>zulu</code></dt><dd>UTC with a Z designator (2020-09-13T12:26:40Z)</dd>
+<dt><code>zulu-dense</code></dt><dd>UTC Z, no separators (20200913T122640Z)</dd>
+<dt><code>asn1, generalizedtime</code></dt><dd>ASN.1 GeneralizedTime, local (20200913122640); =always adds +0000</dd>
+<dt><code>asn1z</code></dt><dd>ASN.1 GeneralizedTime, UTC Z (20200913122640Z)</dd>
+<dt><code>&lt;strftime&gt;</code></dt><dd>any other value is used as an strftime(3) pattern, e.g. %Y-%m-%d</dd>
+</dl>
+<p>Time zone. <code>--timezone=ZONE</code> (alias <code>--tz</code>) sets the zone every time is interpreted and rendered in: <code>local</code> (the default), <code>utc</code> (also <code>z</code> / <code>zulu</code>), an IANA name like <code>Europe/London</code>, or a fixed offset like <code>+02:00</code> / <code>-0800</code>. It shifts the wall-clock digits of every time field and governs <code>-newerXt</code> comparisons; it does not by itself add or remove the printed zone suffix.</p>
+<p>Zone suffix. <code>--time-zone-suffix=never</code> drops the trailing offset (<code>+0100</code>, <code>+01:00</code>) from a preset that shows it by default (<code>space</code>, <code>iso</code> / <code>iso8601-*</code>, <code>rfc3339</code>); <code>always</code> forces one on, even onto <code>asctime</code> which omits it; <code>auto</code> (the default) keeps each preset's built-in behavior. <code>true</code> / <code>false</code> are accepted for <code>always</code> / <code>never</code>. Two things it never touches: the inherently-zoned <code>zulu</code> / <code>zulu-dense</code> / <code>asn1z</code> keep their mandatory <code>Z</code> (UTC is the format's identity), and a custom strftime <code>--time-format</code> is left exactly as written - control its zone there with <code>%z</code> / <code>%Ez</code> / <code>%Z</code> yourself. <code>asn1</code>'s zone is optional, so <code>always</code> appends its ASN.1-style offset (<code>+0100</code>, no separator) and <code>never</code> / <code>auto</code> leave it bare.</p>
+</section>
+<section id="size-units">
+<h2>Size units</h2>
+<p>Units for -size / -blocks [+|-]N[unit]; spell SI and IEC explicitly.</p>
+<dl class="rows">
+<dt><code>c</code></dt><dd>legacy byte unit</dd>
+<dt><code>w</code></dt><dd>legacy 2-byte word unit</dd>
+<dt><code>b / bare</code></dt><dd>blocks (512 bytes by default; --block-size overrides)</dd>
+<dt><code>k / M / G / T / P / E</code></dt><dd>legacy binary units (1024 through 1024^6 bytes)</dd>
+<dt><code>B</code></dt><dd>bytes (explicit)</dd>
+<dt><code>kB / MB / GB / TB / PB / EB</code></dt><dd>SI units (powers of 1000)</dd>
+<dt><code>KiB / MiB / GiB / TiB / PiB / EiB</code></dt><dd>IEC units (powers of 1024)</dd>
+<dt><code>+N / -N</code></dt><dd>greater than / less than N units; a bare N matches exactly</dd>
+</dl>
+<p>All byte counts use an unsigned 64-bit value, so the largest representable size is <code>18446744073709551615 B</code> (about <code>18.45 EB</code>, just under <code>16 EiB</code>). A number multiplied by its unit must fit that range: <code>18EB</code> and <code>15EiB</code> fit, while <code>19EB</code> and <code>16EiB</code> overflow and are usage errors. <code>ZB</code> and <code>ZiB</code> are not accepted because one zettabyte/zebibyte already exceeds the representation; listing their suffixes would promise a unit for which no positive whole value can be represented.</p>
+</section>
+<section id="regex-grammars">
+<h2>Regex grammars</h2>
+<p>The grammar for -regex / -iregex and the content matchers -rxc / -grep, chosen by <code>--regextype</code> (default RE2). EXACT, FNMATCH, GLOB and SHGLOB are core engines, always built in; PCRE2 is a build-time extra (see <code>--help=extras</code>). RE2 and PCRE2 have canonical external references, so the smaller engines are spelled out in full here: they have no single authoritative man page, and FNMATCH delegates to the platform's fnmatch(3), whose class / collation details vary by system.</p>
+<dl class="rows">
+<dt><code>RE2</code></dt><dd>the default. Google RE2 regular expressions - linear-time, no catastrophic backtracking. Full syntax: <a href="https://github.com/google/re2/wiki/Syntax">https://github.com/google/re2/wiki/Syntax</a> .</dd>
+<dt><code>EXACT</code></dt><dd>a literal string; every character matches itself, no metacharacters. -regex is whole-string equality, -rxc / -grep a substring test.</dd>
+<dt><code>FNMATCH</code></dt><dd>a flat shell wildcard via the platform's fnmatch(3): * matches any run of characters (including /), ? one character, [...] a class. Whole-string, like find -name / -path (no /-awareness); -i uses FNM_CASEFOLD. Provided by libc, so class / collation details vary by system.</dd>
+<dt><code>GLOB</code></dt><dd>xff's path-aware, locale-independent shell glob (compiled to RE2 - NOT POSIX glob(7)): * and ? stay within one path component; a complete-component ** crosses components (middle foo/**/bar permits zero or more, while trailing foo/** requires a descendant); embedded star runs reduce to *. [...] supports literals, ascending ranges, leading ! negation, and RE2 ASCII named classes, always excluding / except the compatibility spelling [/]. Malformed ranges, descending ranges, unsupported named classes, collation/equivalence, and negative extglob are errors. Braces are literal. Because it compiles to RE2, -grep / -rxc partial matching and match spans work.</dd>
+<dt><code>SHGLOB</code></dt><dd>GLOB plus brace alternation: {a,b,c} matches any one alternative, so *.{cc,h} matches either. Integer and ASCII-letter sequences expand in either direction (<code>{1..9}</code>, <code>{09..01}</code>, <code>{a..z}</code>); a leading zero preserves integer width, and expansion above 10,000 terms is rejected. Alternatives and sequences may nest; alternatives may be empty. Escaped braces and commas, braces inside a [...] class, and comma-less braces that are not a sequence are literal. The optional shell increment form (<code>{1..9..2}</code>) is not supported and remains literal. Everything else is exactly GLOB.</dd>
+<dt><code>PCRE2</code></dt><dd>Perl-Compatible Regular Expressions (lookaround, backreferences, ...). A build-time extra: present only in a full build - run <code>xff --help=extras</code> to see whether THIS binary has it. Full syntax: pcre2pattern(3).</dd>
+</dl>
+</section>
+<section id="content-1">
+<h2>Content</h2>
+<p>These primaries read the entry's BYTES, not its metadata: <code>-grep</code> prints matching lines the way ripgrep does, <code>-content</code> / <code>-icontent</code> test for a literal, <code>-rxc</code> / <code>-irxc</code> for a regex (grammar per <code>--regextype</code>, see <code>--help=grammars</code>), and <code>-text</code> / <code>-eofcr</code> / <code>-eofcrlf</code> classify line endings and completeness. <code>{lines}</code>, <code>{text}</code>, <code>{line}</code>, <code>{match}</code> and <code>{column}</code> carry the results into templates (<code>--help=fields</code>).</p>
+<p>Every one of them reads through the entry's OWN filesystem, so under <code>--archive</code> a member is searched inside its container exactly like a plain file - <code>a.tar!notes.txt</code> greps without unpacking anything. Reading is per entry and streamed, so a match in a huge tree costs the bytes of the files visited, not of the tree.</p>
+<section id="examples">
+<h3>Examples</h3>
+<pre><code class="language-sh">xff src -name '*.cc' -grep 'TODO\('</code></pre>
+<p>matching lines, rg-style, from the files an expression picked</p>
+<pre><code class="language-sh">xff . -type f ! -text</code></pre>
+<p>the files that are NOT line-oriented text</p>
+<pre><code class="language-sh">xff -z logs.tar -grep ERROR --count</code></pre>
+<p>per-member match counts inside an archive</p>
+</section>
+</section>
+<section id="ignore-and-vcs-traversal">
+<h2>Ignore and VCS traversal</h2>
+<p>Ignoring a path and pruning version-control metadata are separate decisions. Ignore rules filter ordinary paths by pattern; <code>--skip-vcs</code> prevents xff from entering administrative trees such as <code>.git</code> or <code>.hg</code> at all. Hidden-path filtering is a third independent switch. Changing one does not silently change the others.</p>
+<section id="independent-axes">
+<h3>Independent axes</h3>
+<dl class="rows">
+<dt><code>--exclude / --include</code></dt><dd>command-line gitignore-style patterns; repeatable, later matches win</dd>
+<dt><code>--gitignore / -g</code></dt><dd>Git's <code>.gitignore</code>, <code>.git/info/exclude</code>, and <code>core.excludesFile</code> layer</dd>
+<dt><code>--ignore-files</code></dt><dd>per-directory <code>.ignore</code> and <code>.xffignore</code> files</dd>
+<dt><code>--ignore-file=PATH</code></dt><dd>an explicitly named rule file, rooted at its own directory</dd>
+<dt><code>--skip-vcs</code></dt><dd>prune VCS metadata names; independent of pattern-based ignore files</dd>
+<dt><code>--hidden / --no-hidden</code></dt><dd>show or skip dot-prefixed path components</dd>
+</dl>
+</section>
+<section id="defaults-and-overrides">
+<h3>Defaults and overrides</h3>
+<p>The find and xff styles start with ignore files off and hidden paths visible. The rg style honours VCS, <code>.ignore</code>, and <code>.xffignore</code> files and skips hidden paths. Tree comparison honours each root's Git ignore sources by default because its usual input is two Git working trees; <code>--no-ignore</code> / <code>-u</code> disables those sources.</p>
+<p>Bare <code>-g</code> / <code>--gitignore</code> is automatic: it activates only inside a Git working tree. <code>-g+</code> / <code>--gitignore=on</code> forces the Git layer anywhere; <code>-g-</code> / <code>--gitignore=off</code> disables it. <code>--ignore-vcs</code> and <code>--no-ignore-vcs</code> are the rg-style spellings for that same layer. Within this family the last flag wins.</p>
+<p>When the Git ignore layer is active, xff also implicitly prunes <code>.git</code> as if <code>--skip-vcs=git</code> were present. An explicit <code>--skip-vcs[=LIST]</code> replaces that implicit choice; bare or <code>=all</code> selects every known VCS, while <code>--no-skip-vcs</code> / <code>=none</code> keeps metadata in the walk. A list such as <code>--skip-vcs=git,hg</code> is frozen to exactly those systems.</p>
+<p><code>--no-ignore</code> / <code>-u</code> is the master off switch for ignore-file sources, including explicit <code>--ignore-file</code> inputs. It does not cancel command-line <code>--exclude</code> patterns or an explicit <code>--skip-vcs</code>. Use <code>--no-skip-vcs</code> separately when metadata directories must remain visible.</p>
+</section>
+<section id="pattern-precedence">
+<h3>Pattern precedence</h3>
+<p>For a path, command-line <code>--exclude</code> / <code>--include</code> patterns decide first, then explicit <code>--ignore-file</code> sources, then per-directory files. Within a source, gitignore last-match-wins semantics apply; a matched directory is pruned, so a later rule cannot recover descendants that were never visited.</p>
+</section>
+<section id="examples-1">
+<h3>Examples</h3>
+<pre><code class="language-sh">xff -g . -name '*.cc'</code></pre>
+<p>honour Git rules automatically and search the remaining tree</p>
+<pre><code class="language-sh">xff --skip-vcs=git,hg .</code></pre>
+<p>prune only Git and Mercurial metadata, without enabling ignore files</p>
+<pre><code class="language-sh">xff -g --no-skip-vcs .</code></pre>
+<p>honour Git rules while allowing nested <code>.git</code> metadata into the walk</p>
+<pre><code class="language-sh">xff -u --skip-vcs .</code></pre>
+<p>ignore no rule files, but still prune every known VCS metadata tree</p>
+</section>
+</section>
+<section id="archives">
+<h2>Archives</h2>
+<p>With <code>--archive</code>, an archive is a directory: xff opens it and walks its members as ordinary entries, so every predicate and action applies to them unchanged - <code>-name</code>, <code>-type</code>, <code>-grep</code>, <code>{hash}</code>, <code>--summary</code>. Nothing in the expression vocabulary knows about archives. Needs at least one container-reader extra; <code>--help=extras</code> says which readers this binary has.</p>
+<section id="how-far-diving-goes">
+<h3>How far diving goes</h3>
+<dl class="rows">
+<dt><code>none</code></dt><dd>an archive is one plain file (find's behaviour, and the find-style default)</dd>
+<dt><code>roots</code></dt><dd>dive only when a search root IS an archive (the xff-family default)</dd>
+<dt><code>all</code></dt><dd>dive archives met during the walk too (what a bare <code>--archive</code> selects)</dd>
+<dt><code>any</code></dt><dd><code>all</code>, and offer EVERY file to the reader rather than only container-looking names</dd>
+</dl>
+<p>Two axes, spelled independently: the RUNG says how much to look at, the CASE of the short form says whether writing is armed. So a slipped shift key changes the capability, never the level - and arming is not doing: something still has to ask for a write, and <code>--safe</code> / <code>--dry-run</code> still apply.</p>
+<p>Later wins, per axis, which is what makes the two useful together: <code>-Z++ -z-</code> arms writing with reading OFF. Permission alone performs no operation: with diving enabled it is consumed by member-mutating actions such as <code>-delete</code> or the exec family; with diving off it has no observable effect unless the run also names a creation sink such as <code>--pack</code>. Creating a new archive does not itself require member-write permission, because it does not mutate an existing member. <code>-Z-</code> is the full reset, turning reading off AND disarming writing whatever an earlier flag or a config file asked for. A lower-case form never disarms; only <code>-Z-</code> does.</p>
+<pre><code class="language-text">                   read only    + write (--archive-write)
+  none              -z-          -Z-  (also disarms writing)
+  roots (default)   -z           -Z
+  all               -z+          -Z+
+  any               -z++         -Z++</code></pre>
+<p>Under <code>all</code> a file is only opened when its NAME looks like a container, so walking a source tree does not read every file in it; <code>any</code> (also spelled <code>--archive-any</code>) drops that gate. Nesting has its own cap (<code>--archive-depth</code>, default 1) because a container inside a container is where a decompression bomb lives - and it is deliberately NOT part of any rung, since raising the bomb cap is a different decision from looking in more places. <code>-maxdepth</code> keeps counting member levels as ordinary depth.</p>
+</section>
+<section id="a-member-is-an-entry-a-container-is-still-a-file">
+<h3>A member is an entry, a container is still a file</h3>
+<p>A member's path is the container's, the separator, then the member: <code>a.tar!dir/two.txt</code> (<code>--archive-separator</code> / <code>--archive-prefix</code> spell it differently). The container keeps its own identity at the same time - it is a real <code>-type f</code> you can match and delete - so a dive shows you both, which is also why <code>--archive-aggregate</code> exists: a reduction that counted the container AND its members would describe no filesystem that exists.</p>
+<p>Format-defined file-like parts use that same entry model. A native phar's executable stub is the readable regular entry <code>.phar/stub.php</code>, so it can be matched, searched, formatted, and included in <code>--summary</code> / <code>--histogram</code> like any other member. There is never a second entry with the same path: if the manifest stores <code>.phar/stub.php</code> explicitly, that stored member wins over the synthetic view. Incidental metadata that the format does not model as a file is not invented as one. A future visibility option would control presentation of these parts; it must not create duplicate path identities.</p>
+<p>An Electron <code>.asar</code> bundle follows the same rule: packed files, external <code>.asar.unpacked</code> files, directories, and links are entries, while integrity records are metadata and never appear as synthetic files. The ASAR reader is read-only and verifies declared SHA256 whole-file and block hashes when content is read.</p>
+<p>A SquashFS image is another read-only virtual filesystem. The independent SquashFS extra covers raw images, Snap packages, and the embedded filesystem in a type-2 AppImage without mounting it; indexed metadata, links, and member contents use the ordinary expression vocabulary.</p>
+<p>Members are READ-ONLY by default. <code>-delete</code> and the exec family refuse one rather than silently doing nothing, because a member has no path a process can open and no way to be unlinked; <code>--archive-extract</code> runs the child over a temporary copy, and <code>--archive-delete</code> rewrites the container without the member. Both are opt-in, and both say so in the refusal you get without them.</p>
+</section>
+<section id="formats-this-binary-understands">
+<h3>Formats this binary understands</h3>
+<p>Reading is decided by CONTENT (the reader sniffs the bytes), so the extensions are what the name gate dives on under <code>all</code> and how the format is usually spelled - a container with an unlisted name still reads under <code>any</code>. Package extensions ride their underlying format: a <code>.jar</code> is a zip, a <code>.deb</code> an ar, an <code>.rpm</code> a cpio, <code>.crate</code> and <code>.gem</code> are tars, and <code>file</code> is a compressed SINGLE file (<code>notes.txt.gz</code>, one member). Write means <code>--pack</code> can create it.</p>
+<div class="table-wrap" role="region" tabindex="0" aria-label="Table: format, read, write, extensions">
+<table>
+<thead><tr><th scope="col">format</th><th scope="col">read</th><th scope="col">write</th><th scope="col">extensions</th></tr></thead>
+<tbody>
+<tr><td>7z</td><td>yes</td><td>no</td><td>.7z</td></tr>
+<tr><td>ar</td><td>yes</td><td>no</td><td>.ar, .deb</td></tr>
+<tr><td>cab</td><td>yes</td><td>no</td><td>.cab</td></tr>
+<tr><td>cpio</td><td>yes</td><td>no</td><td>.cpio, .rpm</td></tr>
+<tr><td>iso9660</td><td>yes</td><td>no</td><td>.iso</td></tr>
+<tr><td>lha</td><td>yes</td><td>no</td><td>.lha, .lzh</td></tr>
+<tr><td>rar</td><td>yes</td><td>no</td><td>.rar</td></tr>
+<tr><td>tar</td><td>yes</td><td>yes</td><td>.tar, .tar.gz, .tgz, .taz, .crate, .gem, .tar.bz2, .tbz, .tbz2, .tz2, .tar.xz, .txz, .tlz, .tar.lz, .tar.lzma, .tar.lz4, .tar.Z, .taZ, .tar.zst, .tzst, .tar.br, .tbr</td></tr>
+<tr><td>warc</td><td>yes</td><td>no</td><td>.warc</td></tr>
+<tr><td>xar</td><td>yes</td><td>no</td><td>.xar</td></tr>
+<tr><td>zip</td><td>yes</td><td>yes</td><td>.zip, .jar, .war, .ear, .whl, .egg, .apk, .aab, .cbz, .crx, .docx, .epub, .jmod, .nupkg, .odp, .ods, .odt, .pptx, .vsix, .xlsx, .xpi</td></tr>
+<tr><td>phar</td><td>yes</td><td>no</td><td>.phar</td></tr>
+<tr><td>file</td><td>yes</td><td>no</td><td>.gz, .bz2, .xz, .zst, .zstd, .lz, .lz4, .lzma, .Z, .br</td></tr>
+<tr><td>asar</td><td>yes</td><td>no</td><td>.asar</td></tr>
+<tr><td>squashfs</td><td>yes</td><td>no</td><td>.sfs, .sqfs, .sqsh, .squashfs, .snap, .appimage</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="creating-one">
+<h3>Creating one</h3>
+<p><code>--pack=FILE</code> turns the walk around: every match is written into a NEW archive instead of being listed, so the member list is an expression rather than a pipeline into <code>tar</code>. The output name picks the format, each member keeps the path it had relative to its search root, and <code>--sort</code> decides the order inside. It is a sink like <code>--summary</code>, the archive appears only when the walk finished, and a member of another container is refused - harvesting files out of one archive to re-pack them into another is a separate feature, which is also what <code>-Z++ -z-</code> is reserved for.</p>
+<p>Output filename suffixes this binary writes: <code>.tar.gz</code>, <code>.tar.bz2</code>, <code>.tar.xz</code>, <code>.tar.zst</code>, <code>.tar.lzma</code>, <code>.tar.lz4</code>, <code>.tar.lz</code>, <code>.tar.Z</code>, <code>.tbz2</code>, <code>.tzst</code>, <code>.tbz</code>, <code>.tz2</code>, <code>.txz</code>, <code>.tgz</code>, <code>.tlz</code>, <code>.taZ</code>, <code>.tar</code>, <code>.zip</code>, <code>.tar.br</code>, <code>.tbr</code>.</p>
+<p><code>--pack-option=NAME=VALUE|@FILE.json</code> (repeatable, last value for a NAME wins) tunes the writer. The names are xff's own and are translated for whichever library does the writing, so an unknown one is a usage error and this list is exactly what THIS binary accepts:</p>
+<p>The <code>@FILE.json</code> form reads one JSON object. Its keys are the option names below; values may be strings, integers, or booleans, with booleans translated to <code>yes</code> or <code>no</code>. A file is expanded where it occurs among repeated options, so later file or inline values override earlier ones uniformly.</p>
+<dl class="rows">
+<dt><code>compression=store|deflate</code></dt><dd><code>store</code> writes members uncompressed, which is what an archive of already-compressed payloads (images, other archives) wants (<code>zip</code>)</dd>
+<dt><code>level=N</code></dt><dd>how hard the compressor works, on the scale the format uses (also spelled <code>--pack-level</code>) (<code>tar.gz</code>, <code>tar.bz2</code>, <code>tar.xz</code>, <code>tar.zst</code>, <code>tar.lzma</code>, <code>tar.lz4</code>, <code>tar.lz</code>, <code>tgz</code>, <code>tbz2</code>, <code>tbz</code>, <code>tz2</code>, <code>txz</code>, <code>tzst</code>, <code>tlz</code>, <code>zip</code>)</dd>
+<dt><code>threads=N</code></dt><dd>compressor threads; <code>0</code> lets the compressor pick from the machine (<code>tar.xz</code>, <code>tar.zst</code>, <code>txz</code>, <code>tzst</code>)</dd>
+<dt><code>timestamp=yes|no</code></dt><dd>store the modification time in the gzip header; <code>no</code> is what makes two runs over the same input byte-identical (<code>tar.gz</code>, <code>tgz</code>)</dd>
+<dt><code>zip64=yes|no</code></dt><dd>force the zip64 extensions, which lift the 4 GiB member and archive limits (<code>zip</code>)</dd>
+<dt><code>framing=rfc9841|raw</code></dt><dd>Brotli representation (default <code>rfc9841</code>; use <code>raw</code> for legacy tools) (<code>tar.br</code>, <code>tbr</code>)</dd>
+<dt><code>level=0..11</code></dt><dd>Brotli quality (default <code>11</code>) (<code>tar.br</code>, <code>tbr</code>)</dd>
+<dt><code>window=10..24</code></dt><dd>Brotli LZ77 window bits (default <code>22</code>) (<code>tar.br</code>, <code>tbr</code>)</dd>
+</dl>
+<p>PHP phars are the exception: xff reads them and can rewrite one to remove members, but it does not CREATE one, because a phar is a PHP program with a stub, a manifest and a signature rather than a container of files. Build one with <code>box</code> (box-project/box) or PHP's own <code>Phar</code> class, and verify or install one with <code>phive</code> (phar-io/phive), which checks the signature xff will not forge.</p>
+</section>
+<section id="examples-2">
+<h3>Examples</h3>
+<pre><code class="language-sh">xff --archive=roots a.tar</code></pre>
+<p>list the archive and its members</p>
+<pre><code class="language-sh">xff -z+ . -grep TODO</code></pre>
+<p>search inside every archive met in the tree</p>
+<pre><code class="language-sh">xff --archive=roots a.tgz --summary</code></pre>
+<p>count what is INSIDE, not the compressed container</p>
+<pre><code class="language-sh">xff --archive=roots --archive-extract a.tar -name '*.json' -exec jq . {} \;</code></pre>
+<p>run a tool over a member, via a temporary copy</p>
+<pre><code class="language-sh">xff --archive=roots --archive-delete a.tar -name '*.bak' -delete</code></pre>
+<p>rewrite the archive without those members</p>
+<pre><code class="language-sh">xff . -name '*.cc' -newer VERSION --pack=changed.tar.gz</code></pre>
+<p>pack what the expression matched into a new archive</p>
+</section>
+</section>
+<section id="statistics">
+<h2>Statistics</h2>
+<p>xff statistics reductions. <code>--summary</code> and <code>--histogram</code> replace the per-match listing with an aggregate over all matches; they are independent and combinable (one walk feeds both), and an explicit action (<code>-print</code> / <code>-exec</code>) still runs. <code>--format=jsonl</code> emits machine rows instead.</p>
+<section id="examples-3">
+<h3>Examples</h3>
+<pre><code class="language-sh">xff --summary=ext</code></pre>
+<p>files + total size per extension</p>
+<pre><code class="language-sh">xff --histogram=ext</code></pre>
+<p>a bar chart of files per extension</p>
+<pre><code class="language-sh">xff --histogram='ext:sum(lines)'</code></pre>
+<p>total lines per extension</p>
+<pre><code class="language-sh">xff --histogram=size</code></pre>
+<p>the file-size distribution</p>
+<pre><code class="language-sh">xff --summary=type --histogram=ext --format=jsonl</code></pre>
+<p>both, as machine rows</p>
+</section>
+</section>
+<section id="environment">
+<h2>Environment</h2>
+<p>Environment variables xff reads. An explicit command-line flag generally overrides the matching variable.</p>
+<dl class="rows">
+<dt><code>NO_COLOR</code></dt><dd>when set (any value), disables color like <code>--color=never</code>; <code>--color=always</code> still wins (<a href="https://no-color.org">https://no-color.org</a>)</dd>
+<dt><code>XFF_PAGER</code></dt><dd>the first automatic environment fallback when neither <code>less</code> nor <code>more</code> is available</dd>
+<dt><code>PAGER</code></dt><dd>the final automatic environment fallback when no known or xff-specific pager is available</dd>
+<dt><code>XFF_MANPAGER</code></dt><dd>the pager / formatter for <code>--man</code>; overrides the built-in <code>mandoc</code> pipeline; set empty to disable</dd>
+<dt><code>COLUMNS</code></dt><dd>terminal width used to wrap plain <code>--help</code> text for <code>--width=auto</code> when the tty size is unknown</dd>
+<dt><code>XFF_CONFIG</code></dt><dd>explicit path to the config file, taking precedence over the XDG / HOME search (see <code>--help=config</code>)</dd>
+<dt><code>XDG_CONFIG_HOME</code></dt><dd>config search root: <code>$XDG_CONFIG_HOME/xff/config</code> (see <code>--help=config</code>)</dd>
+<dt><code>HOME</code></dt><dd>config fallback: <code>$HOME/.config/xff/config</code> when <code>$XDG_CONFIG_HOME</code> is unset</dd>
+<dt><code>LC_ALL, LC_CTYPE, LANG</code></dt><dd>locale for <code>--unicode=auto</code>: a UTF-8 locale selects the Unicode <code>--format=tree</code> connectors, else ASCII</dd>
+<dt><code>LSCOLORS</code></dt><dd>the same theme in BSD / macOS spelling (11 letter pairs); read when <code>$LS_COLORS</code> is unset, which is what makes a themed macOS shell work (see <code>--color-scheme</code>)</dd>
+<dt><code>LS_COLORS</code></dt><dd>the terminal's colour theme, as <code>ls</code> / <code>dircolors</code> set it: type keys (<code>di</code>, <code>ln</code>, <code>ex</code>, ...) and per-extension <code>*.tar=</code> entries, used by default (see <code>--color-scheme</code>)</dd>
+<dt><code>XDG_RUNTIME_DIR</code></dt><dd>preferred directory for a member extracted by <code>--archive-extract</code>: it is a memory-backed tmpfs, so the copy never reaches a disk (<code>/dev/shm</code> is tried next)</dd>
+<dt><code>TMPDIR</code></dt><dd>where a temporary file goes when no memory-backed directory fits it: an extracted member (<code>--archive-extract</code>) and the in-progress rewrite of a container (<code>--archive-delete</code>)</dd>
+</dl>
+<p>Any process environment variable is also readable in the field vocabulary as <code>{env.NAME}</code> (see <code>--help=fields</code>).</p>
+</section>
+<section id="examples-4">
+<h2>Examples</h2>
+<p>Worked examples that compose xff's building blocks. Each shows a task, its command, and how it works. See <code>--help=fields</code> for the {field}s and <code>--help=stats</code> for the reductions.</p>
+<section id="ten-largest-files">
+<h3>Ten largest files</h3>
+<pre><code class="language-sh">xff . -type f -printf '%s\t%p\n' | sort -rn | head</code></pre>
+<p>%s is the size, %p the path; the shell sorts and takes the top ten. -printf builds any columnar line you need.</p>
+</section>
+<section id="disk-use-per-file-type">
+<h3>Disk use per file type</h3>
+<pre><code class="language-sh">xff . -type f --summary=ext</code></pre>
+<p>a count + total size per extension; the --summary global reads naturally at the end, after the expression (a --long global may sit anywhere). Swap in --histogram=ext for bars, or --histogram='ext:sum(lines)' to rank by lines. See --help=stats.</p>
+</section>
+<section id="delete-stale-temp-files-safely">
+<h3>Delete stale temp files, safely</h3>
+<pre><code class="language-sh">xff . -type f -name '*.tmp' -mtime +7 -delete --dry-run</code></pre>
+<p>lists what -delete WOULD remove (guarded by --dry-run); rerun without it to delete. -delete implies -depth so directories empty first.</p>
+</section>
+<section id="search-code-content-filtered-by-language">
+<h3>Search code content, filtered by language</h3>
+<pre><code class="language-sh">xff src -lang 'C*' -grep 'TODO'</code></pre>
+<p>prints every TODO line as path:lineno:text in C / C++ / C# files; add -c for per-file counts or --context=2 for surrounding lines.</p>
+</section>
+<section id="per-file-git-blame-author-line-counts">
+<h3>Per-file git-blame author line counts</h3>
+<pre><code class="language-sh">xff . -text -exec git blame --line-porcelain {} \; | grep '^author ' | sort | uniq -c | sort -rn</code></pre>
+<p>runs git blame on each text file; the shell pipe tallies lines per author across the tree. -text skips binaries (which git blame cannot line-blame). -exec feeds any pipeline the field vocabulary cannot express alone.</p>
+</section>
+<section id="author-line-counts-natively-no-shell-pipe">
+<h3>Author line counts, natively (no shell pipe)</h3>
+<pre><code class="language-sh">xff -g . -text -capturedir:blame git blame --line-porcelain {} \; --summary='{capture.blame:m/^author (.+)$/\1/}'</code></pre>
+<p>the recipe above with the awk|sort tail folded into xff. -capturedir runs git blame in each file's own directory (repo-safe, works across nested repos); --summary folds that output via an m// extraction, tallying lines per author across the tree - no external pipe. -g honors .gitignore and skips .git; -text keeps blame off binaries. Pass several roots (a b c ...) to span multiple trees. A single-dash global like -g leads; double-dash globals such as --summary may sit anywhere (before or after the paths).</p>
+</section>
+<section id="checksum-manifest-for-a-tree">
+<h3>Checksum manifest for a tree</h3>
+<pre><code class="language-sh">xff . -type f -hash:sha256</code></pre>
+<p>prints <code>DIGEST  PATH</code> per file (like sha256sum); redirect to a file to snapshot a tree, then diff two runs to spot changes.</p>
+</section>
+<section id="create-a-patch-between-repository-trees">
+<h3>Create a patch between repository trees</h3>
+<pre><code class="language-sh">xff --compare=diff old-tree new-tree &gt; changes.patch</code></pre>
+<p>walks both trees with each side's own .gitignore rules and writes one unified patch for added, removed, and changed text files, including files found only on the right - unlike a one-sided <code>-diff TARGET</code> walk. Binary differences are reported in the patch stream. Use --compare-select to restrict which result kinds contribute.</p>
+</section>
+<section id="recently-changed-files-as-machine-rows">
+<h3>Recently changed files as machine rows</h3>
+<pre><code class="language-sh">xff . -type f -mtime -1 --format=jsonl</code></pre>
+<p>everything modified in the last day, one JSON object per file, ready for jq or a script.</p>
+</section>
+</section>
+<section id="exit-status">
+<h2>Exit status</h2>
+<p>0 on success, 2 on error. With <code>--quiet</code> or <code>--exit-match</code> the exit is 0 when something matched and 1 when nothing did (an error still outranks the match status).</p>
+</section>
+<section id="see-also">
+<h2>See also</h2>
+<p class="see-also"><cite>find(1)</cite>, <cite>grep(1)</cite>, <cite>fnmatch(3)</cite>, <cite>glob(7)</cite>, <cite>pcre2pattern(3)</cite></p>
+<p>For the <code>--regextype</code> grammars see the Regex grammars section above (<code>--help=grammars</code>). FNMATCH is the platform's fnmatch(3) and PCRE2 is pcre2pattern(3); GLOB and SHGLOB are xff's path-aware globs (compiled to RE2), NOT POSIX glob(7) - that page is listed only as background on shell globbing. The default RE2 grammar has no man page; its syntax is at <a href="https://github.com/google/re2/wiki/Syntax">https://github.com/google/re2/wiki/Syntax</a> .</p>
+</section>
+</main>
+</body>
+</html>
