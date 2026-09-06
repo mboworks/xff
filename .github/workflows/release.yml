@@ -1,7 +1,7 @@
 # Release: on a version tag push (e.g. `git tag v0.1.0 && git push origin v0.1.0`,
 # or `tools/trigger_release.sh 0.1.0`), build the lean and full binaries for Linux
-# and macOS and cut a GitHub release with one archive per platform. Each archive contains the
-# stripped executables, their matching debug symbols, and the CHANGELOG section is the release body.
+# and macOS and cut a GitHub release with raw executables, one debug archive per platform, and a
+# checksum manifest. The CHANGELOG section and generated installation instructions form the body.
 #
 # xff is not published to a registry; it ships as a tool. The version is stamped
 # from the tag at build time (override-on-release, see tools/release_prep.sh),
@@ -217,7 +217,18 @@ jobs:
           pattern: xff-*
           path: dist
           merge-multiple: true
-      - name: Attest release binaries
+      - name: Generate checksum manifest
+        working-directory: dist
+        run: |
+          sha256sum \
+            xff-linux-x86_64 \
+            xff_full-linux-x86_64 \
+            xff-linux-x86_64.tar.zst \
+            xff-macos-arm64 \
+            xff_full-macos-arm64 \
+            xff-macos-arm64.tar.zst \
+            > SHA256SUMS
+      - name: Attest release assets
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: dist/*

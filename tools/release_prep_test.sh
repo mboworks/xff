@@ -157,6 +157,18 @@ test_happy_path_stamps_and_emits_notes() {
     *"https://mboworks.github.io/xff/coverage/tag/1.2.3/"*) ;;
     *) fail "happy: notes missing the versioned coverage link: ${notes}" ;;
   esac
+  case "${notes}" in
+    *"releases/download/v1.2.3/xff-linux-x86_64"*) ;;
+    *) fail "happy: notes missing the versioned binary download: ${notes}" ;;
+  esac
+  case "${notes}" in
+    *"SHA256SUMS"*"sha256sum -c -"*) ;;
+    *) fail "happy: notes missing checksum verification: ${notes}" ;;
+  esac
+  case "${notes}" in
+    *"--pager=never --man > "*"/.local/share/man/man1/xff.1"*) ;;
+    *) fail "happy: notes missing generated man-page installation: ${notes}" ;;
+  esac
 }
 
 # 4. Documentation generation compiles xff code, so it must use the same Clang
@@ -185,6 +197,12 @@ test_release_binaries_use_shared_configuration_and_staging() {
   fi
   if [ "$(count_lines_with '          path: dist/*' "${release_workflow}")" -ne 1 ]; then
     fail "release workflow: must upload raw binaries and the Zstandard platform archive"
+  fi
+  if [ "$(count_lines_with '            > SHA256SUMS' "${release_workflow}")" -ne 1 ]; then
+    fail "release workflow: must generate exactly one checksum manifest"
+  fi
+  if [ "$(count_lines_with '          subject-path: dist/*' "${release_workflow}")" -ne 1 ]; then
+    fail "release workflow: provenance must attest every asset, including SHA256SUMS"
   fi
   if [ "$(count_lines_with 'release_test_config=(--config=release)' "${main_workflow}")" -ne 1 ]; then
     fail "main workflow: release-test options must start with --config=release"

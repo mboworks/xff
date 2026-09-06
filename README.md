@@ -191,7 +191,9 @@ Zstandard-compressed `xff-PLATFORM-ARCH.tar.zst` archive containing both executa
 matching symbol files under `debug/`; no `.tar.gz` duplicate is published. The ordinary Linux and
 macOS CI jobs run tagged binary-level tests with this same configuration and execute the staged,
 stripped binaries before a release can use it; the full unit-test graph stays on the same hermetic
-Clang toolchain without paying ThinLTO cost for every test executable.
+Clang toolchain without paying ThinLTO cost for every test executable. Each release also publishes
+an attested `SHA256SUMS` manifest and installation instructions, including generation of the
+matching man page directly from the installed binary with `xff --pager=never --man`.
 
 > **Compile-Time Enforcement:** The CLI options for extras (e.g., `--regextype=PCRE2` or `--archive`) are always exposed on the interface. Attempting to invoke an extra feature in a lean build that did not compile it will yield an immediate, explicit error rather than a silent failure or fallback.
 

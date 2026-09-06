@@ -6,6 +6,8 @@
 - Restore the four directly downloadable platform binaries and additionally publish each platform's
   debug bundle as a level-19 Zstandard-compressed `.tar.zst` archive; do not publish `.tar.gz`
   duplicates.
+- Publish an attested `SHA256SUMS` manifest and include binary, checksum-verification, and generated
+  man-page installation instructions in every release.
 
 # 0.3.3
 
