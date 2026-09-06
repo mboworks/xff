@@ -32,21 +32,28 @@ for enforcement and presentation.
    similarity and near-duplicate measurements. Extend the evidence with traversal and memory
    measurements before optimizing. Keep fuzz time/resource guards separate from stable performance
    measurements.
-3. **Near-duplicate grouping design.** The benchmark/design spike now measures exact Jaccard
+3. **Release linker optimization.** Evaluate `mold` for Linux release binaries while retaining the
+   platform linker on macOS. Measure cold and warm link time, raw and level-19 Zstandard-compressed
+   sizes, startup time, and representative runtime before selecting it. Evaluate safe linker
+   optimizations independently, including identical code folding and section garbage collection, and
+   verify their interaction with ThinLTO, split debug information, attestations, and the existing
+   release-binary smoke tests. Keep each experiment attributable; do not change release packaging in
+   the same change.
+4. **Near-duplicate grouping design.** The benchmark/design spike now measures exact Jaccard
    verification behind scalable candidate generation; settle the grouping architecture, configuration,
    and core-versus-extra boundary before shipping a user-facing operation. False positives may reach
    exact verification but must never reach emitted clusters.
-4. **Coverage overview ordering.** Keep `overall` first, then render the program categories
+5. **Coverage overview ordering.** Keep `overall` first, then render the program categories
    alphabetically, followed by the extension categories alphabetically. Preserve this ordering in
    generated and published reports.
-5. **Detailed coverage gaps.** Raise line and function coverage for
+6. **Detailed coverage gaps.** Raise line and function coverage for
    `program-command-grammar/xff/registry/` and branch coverage for `program-execution/xff/exec/`
    until every range is green in the detailed LCOV report.
-6. **Libarchive malformed-input boundary.** The archive fuzz campaign must keep malformed records
+7. **Libarchive malformed-input boundary.** The archive fuzz campaign must keep malformed records
    from reaching known unsafe third-party parser paths. Revisit the pinned libarchive version and
    format-specific validation before broadening beyond structurally valid tar inputs; report any
    confirmed dependency defect through its private security channel when appropriate.
-7. **VFS host-adapter split.** Extend the capability-oriented `vfs::FileSystem` seam for every file
+8. **VFS host-adapter split.** Extend the capability-oriented `vfs::FileSystem` seam for every file
    operation xff needs, then move POSIX and standard-library file primitives behind a minimal local
    host adapter. Consumers must not open or mutate host paths directly; retain annotations only at
    the immediate adapter boundary.
