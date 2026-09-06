@@ -152,7 +152,7 @@ def normalize_record(record: str, source: Path) -> str:
     functions: list[tuple[int, str, int]] = []
     function_groups: dict[int, list[tuple[int, str, int]]] = defaultdict(list)
     for line, name in definitions:
-        if line in excluded_functions:
+        if line in excluded_lines or line in excluded_functions:
             continue
         value = (line, name, hits_by_name.get(name, 0))
         if line in merged_functions:

@@ -195,10 +195,22 @@ class CoverageSourcesTest(unittest.TestCase):
                 encoding="utf-8",
             )
             actual = coverage_sources.normalize_record(
-                "SF:source.cc\nDA:1,1\nDA:2,1\nDA:3,1\nDA:4,1\nLF:4\nLH:4\nend_of_record\n",
+                "SF:source.cc\n"
+                "FN:3,nondeterministic\n"
+                "FNDA:1,nondeterministic\n"
+                "FNF:1\n"
+                "FNH:1\n"
+                "DA:1,1\n"
+                "DA:2,1\n"
+                "DA:3,1\n"
+                "DA:4,1\n"
+                "LF:4\n"
+                "LH:4\n"
+                "end_of_record\n",
                 source,
             )
-            self.assertIn("DA:1,1\nLF:1\nLH:1", actual)
+            self.assertIn("FNF:0\nFNH:0\nBRF:0\nBRH:0\nDA:1,1\nLF:1\nLH:1", actual)
+            self.assertNotIn("nondeterministic", actual)
             self.assertNotIn("LCOV_EXCL", source.read_text(encoding="utf-8"))
 
     def test_rejects_unbalanced_source_exclusion_blocks(self):
