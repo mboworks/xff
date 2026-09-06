@@ -175,6 +175,7 @@ jobs:
         run: tools/release_prep.sh "${RELEASE_TAG}" >/dev/null
       - name: Build lean + full binaries
         run: |
+          command -v zstd
           bazel build --config=release //xff/cli:xff \
             --disk_cache="${HOME}/.cache/bazel-disk" --repository_cache="${HOME}/.cache/bazel-repo"
           bazel build --config=release --config=xff_full //xff/cli:xff_full \
@@ -196,7 +197,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: xff-${{ matrix.platform }}
-          path: dist/*.tar.gz
+          path: dist/*
           if-no-files-found: error
 
   release:

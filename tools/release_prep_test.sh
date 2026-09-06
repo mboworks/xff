@@ -183,6 +183,9 @@ test_release_binaries_use_shared_configuration_and_staging() {
   if [ "$(count_lines_with 'tools/stage_release_artifacts.sh' "${release_workflow}")" -ne 1 ]; then
     fail "release workflow: artifacts must use the shared staging script"
   fi
+  if [ "$(count_lines_with '          path: dist/*' "${release_workflow}")" -ne 1 ]; then
+    fail "release workflow: must upload raw binaries and the Zstandard platform archive"
+  fi
   if [ "$(count_lines_with 'release_test_config=(--config=release)' "${main_workflow}")" -ne 1 ]; then
     fail "main workflow: release-test options must start with --config=release"
   fi
@@ -194,6 +197,9 @@ test_release_binaries_use_shared_configuration_and_staging() {
   fi
   if [ "$(count_lines_with 'tools/stage_release_artifacts.sh' "${main_workflow}")" -ne 1 ]; then
     fail "main workflow: release cells must exercise the shared staging script"
+  fi
+  if [ "$(count_lines_with '          path: dist/*' "${main_workflow}")" -ne 1 ]; then
+    fail "main workflow: must upload raw binaries and the Zstandard platform archive"
   fi
 }
 

@@ -3,6 +3,10 @@
 
 # 0.3.4
 
+- Restore the four directly downloadable platform binaries and additionally publish each platform's
+  debug bundle as a level-19 Zstandard-compressed `.tar.zst` archive; do not publish `.tar.gz`
+  duplicates.
+
 # 0.3.3
 
 - Build release binaries with hermetic Clang, `-Oz`, and ThinLTO; strip the published executables

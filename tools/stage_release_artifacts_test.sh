@@ -47,10 +47,14 @@ test::stages_linux_binaries_and_separate_debug_files() {
   output="$(RELEASE_OBJCOPY="${root}/bin/objcopy" RELEASE_STRIP="${root}/bin/strip" \
     "${stager}" linux x86_64 "${root}/xff" "${root}/xff_full" "${root}/dist")"
 
-  expect_output_contains "${root}/dist/.xff-linux-x86_64-staging/xff-linux-x86_64/xff" "${output}"
+  expect_output_contains "${root}/dist/xff-linux-x86_64" "${output}"
+  expect_output_contains "${root}/dist/xff_full-linux-x86_64" "${output}"
+  expect_output_contains "${root}/dist/xff-linux-x86_64.tar.zst" "${output}"
   expect_eq "lean" "$("${root}/dist/.xff-linux-x86_64-staging/xff-linux-x86_64/xff")"
   expect_eq "full" "$("${root}/dist/.xff-linux-x86_64-staging/xff-linux-x86_64/xff_full")"
-  listing="$(tar -tzf "${root}/dist/xff-linux-x86_64.tar.gz")"
+  expect_eq "lean" "$("${root}/dist/xff-linux-x86_64")"
+  expect_eq "full" "$("${root}/dist/xff_full-linux-x86_64")"
+  listing="$(zstd -dc -- "${root}/dist/xff-linux-x86_64.tar.zst" | tar -tf -)"
   expect_output_contains "xff-linux-x86_64/xff" "${listing}"
   expect_output_contains "xff-linux-x86_64/xff_full" "${listing}"
   expect_output_contains "xff-linux-x86_64/debug/xff.debug" "${listing}"
@@ -66,7 +70,9 @@ test::stages_macos_binaries_and_preserves_unstripped_copies() {
 
   expect_eq "lean" "$("${root}/dist/.xff-macos-arm64-staging/xff-macos-arm64/xff")"
   expect_eq "full" "$("${root}/dist/.xff-macos-arm64-staging/xff-macos-arm64/xff_full")"
-  listing="$(tar -tzf "${root}/dist/xff-macos-arm64.tar.gz")"
+  expect_eq "lean" "$("${root}/dist/xff-macos-arm64")"
+  expect_eq "full" "$("${root}/dist/xff_full-macos-arm64")"
+  listing="$(zstd -dc -- "${root}/dist/xff-macos-arm64.tar.zst" | tar -tf -)"
   expect_output_contains "xff-macos-arm64/xff" "${listing}"
   expect_output_contains "xff-macos-arm64/xff_full" "${listing}"
   expect_output_contains "xff-macos-arm64/debug/xff.debug" "${listing}"
