@@ -102,6 +102,17 @@ common:clang --cxxopt=-gmlt --host_cxxopt=-gmlt
 common:clang --linkopt=-fuse-ld=lld --host_linkopt=-fuse-ld=lld
 common:clang --define is_clang=true
 
+# --config=release : the exact compiler configuration used for published executables. Keep debug
+# information in Bazel's outputs so tools/stage_release_artifacts.sh can split it from the shipped
+# binaries. Explicit -flto=thin flags are intentional: toolchains_llvm does not expose Bazel's
+# thin_lto feature, and --features=thin_lto would therefore be accepted but silently do nothing.
+common:release --config=clang
+common:release --compilation_mode=opt
+common:release --strip=never
+common:release --copt=-Oz
+common:release --copt=-flto=thin
+common:release --linkopt=-flto=thin
+
 # --config=clang-coverage : collect C++ coverage with the same hermetic Clang/libc++ toolchain
 # that owns the default build. Bazel otherwise defaults C++ coverage to the local gcov toolchain.
 common:clang-coverage --config=clang

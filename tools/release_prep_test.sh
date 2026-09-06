@@ -18,7 +18,7 @@
 # temp directory (release_prep.sh operates relative to its own location, so a
 # self-contained copy exercises it without touching the real tree) and checks the
 # CHANGELOG guard, the version stamping, the consistency verification, the
-# release-notes output, and the release workflow's Clang documentation build.
+# release-notes output, and the release workflow's compiler configurations.
 # Run directly (`tools/release_prep_test.sh`) or via pre-commit; no bazel needed.
 
 set -euo pipefail
@@ -169,10 +169,33 @@ test_release_reference_uses_clang() {
   fi
 }
 
+# 5. Published binaries use the named release configuration and the shared staging script. This
+#    prevents the ordinary test jobs and tag workflow from quietly growing separate flag sets.
+test_release_binaries_use_shared_configuration_and_staging() {
+  release_workflow="${HERE}/../.github/workflows/release.yml"
+  main_workflow="${HERE}/../.github/workflows/main.yml"
+  if [ "$(count_lines_with 'bazel build --config=release //xff/cli:xff' "${release_workflow}")" -ne 1 ]; then
+    fail "release workflow: lean binary must build exactly once with --config=release"
+  fi
+  if [ "$(count_lines_with 'bazel build --config=release --config=xff_full //xff/cli:xff_full' "${release_workflow}")" -ne 1 ]; then
+    fail "release workflow: full binary must build exactly once with --config=release"
+  fi
+  if [ "$(count_lines_with 'tools/stage_release_artifacts.sh' "${release_workflow}")" -ne 1 ]; then
+    fail "release workflow: artifacts must use the shared staging script"
+  fi
+  if [ "$(count_lines_with 'flags: "--config=release"' "${main_workflow}")" -ne 1 ]; then
+    fail "main workflow: ordinary Linux/macOS tests must use --config=release"
+  fi
+  if [ "$(count_lines_with 'tools/stage_release_artifacts.sh' "${main_workflow}")" -ne 1 ]; then
+    fail "main workflow: release cells must exercise the shared staging script"
+  fi
+}
+
 test_guard_rejects_mismatched_tag
 test_guard_rejects_nonversion_tag
 test_happy_path_stamps_and_emits_notes
 test_release_reference_uses_clang
+test_release_binaries_use_shared_configuration_and_staging
 
 if [ "${FAILED}" -ne 0 ]; then
   echo "release_prep_test: FAILED" >&2

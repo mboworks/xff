@@ -184,6 +184,12 @@ bazel build --config=xff_full //xff/cli:xff_full
 
 The `//xff` target alias follows your active workspace configuration automatically: it resolves to the lean binary by default, and switches to the full binary under `--config=xff_full`. The underlying targets remain explicit and configuration-stable: `//xff/cli:xff` is always lean, and `//xff/cli:xff_full` is always full.
 
+Published binaries use `--config=release`, which selects the hermetic Clang toolchain, optimizes for
+size, and enables ThinLTO. Each platform release is one `xff-PLATFORM-ARCH.tar.gz` archive containing
+the stripped `xff` and `xff_full` executables plus their matching symbol files under `debug/`. The
+ordinary Linux and macOS CI jobs test this same configuration and execute the
+staged, stripped binaries before a release can use it.
+
 > **Compile-Time Enforcement:** The CLI options for extras (e.g., `--regextype=PCRE2` or `--archive`) are always exposed on the interface. Attempting to invoke an extra feature in a lean build that did not compile it will yield an immediate, explicit error rather than a silent failure or fallback.
 
 - **Requirements:** Bazel 9.1.1 or newer, accompanied by a modern C++23 toolchain (`clang-22` or
