@@ -40,18 +40,18 @@
             <td class="headerValue">xff production coverage</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntryLo">89.3&nbsp;%</td>
-            <td class="headerCovTableEntry">307</td>
-            <td class="headerCovTableEntry">274</td>
+            <td class="headerCovTableEntryLo">88.9&nbsp;%</td>
+            <td class="headerCovTableEntry">298</td>
+            <td class="headerCovTableEntry">265</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-06 13:30:57</td>
+            <td class="headerValue">2026-09-06 17:04:13</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">26</td>
-            <td class="headerCovTableEntry">26</td>
+            <td class="headerCovTableEntry">25</td>
+            <td class="headerCovTableEntry">25</td>
           </tr>
           <tr>
             <td></td>
@@ -142,10 +142,10 @@
 <span id="L62"><span class="lineNum">      62</span>                 :             : // One process talks to one fuse3 library, so the API is resolved once and shared: the C callbacks</span>
 <span id="L63"><span class="lineNum">      63</span>                 :             : // have no capture slot besides userdata (which carries the per-mount state), and this is how they</span>
 <span id="L64"><span class="lineNum">      64</span>                 :             : // reach the reply functions.</span>
-<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">         153 : const absl::StatusOr&lt;FuseApi&gt;&amp; ResolvedApi() {</span></span>
-<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">         153 :   static const absl::StatusOr&lt;FuseApi&gt;&amp; api = *new absl::StatusOr&lt;FuseApi&gt;(FuseApi::Resolve());</span></span>
-<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">         153 :   return api;</span></span>
-<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">         153 : }</span></span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">         147 : const absl::StatusOr&lt;FuseApi&gt;&amp; ResolvedApi() {</span></span>
+<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">         147 :   static const absl::StatusOr&lt;FuseApi&gt;&amp; api = *new absl::StatusOr&lt;FuseApi&gt;(FuseApi::Resolve());</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">         147 :   return api;</span></span>
+<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">         147 : }</span></span>
 <span id="L69"><span class="lineNum">      69</span>                 :             : </span>
 <span id="L70"><span class="lineNum">      70</span>                 :             : // The path of `name` inside `dir`, ASKED OF THE FILESYSTEM rather than assembled here. A backend</span>
 <span id="L71"><span class="lineNum">      71</span>                 :             : // spells its paths its own way - the archive VFS writes a member as `container!member`, not</span>
@@ -224,9 +224,9 @@
 <span id="L144"><span class="lineNum">     144</span>                 :             : </span>
 <span id="L145"><span class="lineNum">     145</span>                 :             : namespace {</span>
 <span id="L146"><span class="lineNum">     146</span>                 :             : </span>
-<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">          57 : FuseServer::Impl&amp; ImplOf(fuse_req_t req) {</span></span>
-<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">          57 :   return *static_cast&lt;FuseServer::Impl*&gt;(ResolvedApi()-&gt;req_userdata(req));</span></span>
-<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">          57 : }</span></span>
+<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">          54 : FuseServer::Impl&amp; ImplOf(fuse_req_t req) {</span></span>
+<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">          54 :   return *static_cast&lt;FuseServer::Impl*&gt;(ResolvedApi()-&gt;req_userdata(req));</span></span>
+<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">          54 : }</span></span>
 <span id="L150"><span class="lineNum">     150</span>                 :             : </span>
 <span id="L151"><span class="lineNum">     151</span>                 :             : // The sessions a fatal signal must ask to exit. Guarded by a mutex on the REGISTRATION side only:</span>
 <span id="L152"><span class="lineNum">     152</span>                 :             : // the handler itself cannot lock, so it walks whatever the vector holds - safe in practice because</span>
@@ -424,203 +424,207 @@
 <span id="L344"><span class="lineNum">     344</span>                 :<span class="tlaGNC">           5 :       req, std::next(content.data(), static_cast&lt;std::ptrdiff_t&gt;(offset)), std::min(size, content.size() - offset));</span></span>
 <span id="L345"><span class="lineNum">     345</span>                 :<span class="tlaGNC">           5 : }</span></span>
 <span id="L346"><span class="lineNum">     346</span>                 :             : </span>
-<span id="L347"><span class="lineNum">     347</span>                 :<span class="tlaGNC">           6 : void OpRelease(fuse_req_t req, fuse_ino_t /*ino*/, struct fuse_file_info* file_info) {</span></span>
-<span id="L348"><span class="lineNum">     348</span>                 :<span class="tlaGNC">           6 :   const FuseApi&amp; api = *ResolvedApi();</span></span>
-<span id="L349"><span class="lineNum">     349</span>                 :<span class="tlaGNC">           6 :   FuseServer::Impl&amp; impl = ImplOf(req);</span></span>
-<span id="L350"><span class="lineNum">     350</span>                 :<span class="tlaGNC">           6 :   {</span></span>
-<span id="L351"><span class="lineNum">     351</span>                 :<span class="tlaGNC">           6 :     const absl::MutexLock lock(impl.mutex);</span></span>
-<span id="L352"><span class="lineNum">     352</span>                 :<span class="tlaGNC">           6 :     impl.contents.erase(file_info-&gt;fh);</span></span>
-<span id="L353"><span class="lineNum">     353</span>                 :<span class="tlaGNC">           6 :   }</span></span>
-<span id="L354"><span class="lineNum">     354</span>                 :<span class="tlaGNC">           6 :   api.reply_err(req, 0);</span></span>
-<span id="L355"><span class="lineNum">     355</span>                 :<span class="tlaGNC">           6 : }</span></span>
-<span id="L356"><span class="lineNum">     356</span>                 :             : </span>
-<span id="L357"><span class="lineNum">     357</span>                 :<span class="tlaGNC">           2 : void OpReadlink(fuse_req_t req, fuse_ino_t ino) {</span></span>
-<span id="L358"><span class="lineNum">     358</span>                 :<span class="tlaGNC">           2 :   const FuseApi&amp; api = *ResolvedApi();</span></span>
-<span id="L359"><span class="lineNum">     359</span>                 :<span class="tlaGNC">           2 :   FuseServer::Impl&amp; impl = ImplOf(req);</span></span>
-<span id="L360"><span class="lineNum">     360</span>                 :<span class="tlaGNC">           2 :   const std::string path = impl.PathOf(ino);</span></span>
-<span id="L361"><span class="lineNum">     361</span>                 :<span class="tlaGNC">           2 :   if (path.empty()) {  // LCOV_EXCL_BR_LINE: FUSE supplies only inodes returned by lookup.</span></span>
-<span id="L362"><span class="lineNum">     362</span>                 :             :     // LCOV_EXCL_START: the kernel cannot readlink an inode it was not given.</span>
-<span id="L363"><span class="lineNum">     363</span>                 :             :     api.reply_err(req, ENOENT);</span>
-<span id="L364"><span class="lineNum">     364</span>                 :             :     return;</span>
-<span id="L365"><span class="lineNum">     365</span>                 :             :     // LCOV_EXCL_STOP</span>
-<span id="L366"><span class="lineNum">     366</span>                 :<span class="tlaUNC">           0 :   }</span></span>
-<span id="L367"><span class="lineNum">     367</span>                 :<span class="tlaGNC">           2 :   const absl::StatusOr&lt;std::string&gt; target = impl.fs-&gt;ReadLink(path);</span></span>
-<span id="L368"><span class="lineNum">     368</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           2 :   if (!target.ok()) {</span></span>
-<span id="L369"><span class="lineNum">     369</span>                 :<span class="tlaGNC">           1 :     api.reply_err(req, ErrnoForStatus(target.status().code()));</span></span>
-<span id="L370"><span class="lineNum">     370</span>                 :<span class="tlaGNC">           1 :     return;</span></span>
-<span id="L371"><span class="lineNum">     371</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L372"><span class="lineNum">     372</span>                 :<span class="tlaGNC">           1 :   api.reply_readlink(req, target-&gt;c_str());</span></span>
-<span id="L373"><span class="lineNum">     373</span>                 :<span class="tlaGNC">           1 : }</span></span>
-<span id="L374"><span class="lineNum">     374</span>                 :             : </span>
-<span id="L375"><span class="lineNum">     375</span>                 :             : // How much of `fuse_lowlevel_ops` we actually fill: the offset just past the LAST op implemented</span>
-<span id="L376"><span class="lineNum">     376</span>                 :             : // (`readdir`, which libfuse declares after the others in ServerOps below). This - not `sizeof` the</span>
-<span id="L377"><span class="lineNum">     377</span>                 :             : // struct we compiled against - is what `fuse_session_new` wants: it copies that many bytes and</span>
-<span id="L378"><span class="lineNum">     378</span>                 :             : // zero-fills the rest, so a runtime OLDER than our headers is handed only fields it has. Passing</span>
-<span id="L379"><span class="lineNum">     379</span>                 :             : // the full sizeof is what makes such a runtime print &quot;library too old, some operations may not</span>
-<span id="L380"><span class="lineNum">     380</span>                 :             : // work&quot; and clamp, which is a complaint about the caller. Ops are only ever APPENDED to the</span>
-<span id="L381"><span class="lineNum">     381</span>                 :             : // struct, so this prefix means the same thing to every 3.x runtime.</span>
-<span id="L382"><span class="lineNum">     382</span>                 :             : constexpr std::size_t kImplementedOpsSize = offsetof(struct fuse_lowlevel_ops, readdir) + sizeof(&amp;OpReaddir);</span>
-<span id="L383"><span class="lineNum">     383</span>                 :             : </span>
-<span id="L384"><span class="lineNum">     384</span>                 :             : // Callbacks bind by NAME into the FETCHED header's ops struct, so a layout change in a future</span>
-<span id="L385"><span class="lineNum">     385</span>                 :             : // pinned libfuse release is a compile error here, never memory corruption.</span>
-<span id="L386"><span class="lineNum">     386</span>                 :<span class="tlaGNC">          20 : const struct fuse_lowlevel_ops&amp; ServerOps() {</span></span>
-<span id="L387"><span class="lineNum">     387</span>                 :<span class="tlaGNC">          20 :   static const struct fuse_lowlevel_ops kOps = [] {</span></span>
-<span id="L388"><span class="lineNum">     388</span>                 :<span class="tlaGNC">          20 :     struct fuse_lowlevel_ops ops = {};</span></span>
-<span id="L389"><span class="lineNum">     389</span>                 :<span class="tlaGNC">          20 :     ops.lookup = &amp;OpLookup;</span></span>
-<span id="L390"><span class="lineNum">     390</span>                 :<span class="tlaGNC">          20 :     ops.getattr = &amp;OpGetattr;</span></span>
-<span id="L391"><span class="lineNum">     391</span>                 :<span class="tlaGNC">          20 :     ops.readdir = &amp;OpReaddir;</span></span>
-<span id="L392"><span class="lineNum">     392</span>                 :<span class="tlaGNC">          20 :     ops.open = &amp;OpOpen;</span></span>
-<span id="L393"><span class="lineNum">     393</span>                 :<span class="tlaGNC">          20 :     ops.read = &amp;OpRead;</span></span>
-<span id="L394"><span class="lineNum">     394</span>                 :<span class="tlaGNC">          20 :     ops.release = &amp;OpRelease;</span></span>
-<span id="L395"><span class="lineNum">     395</span>                 :<span class="tlaGNC">          20 :     ops.readlink = &amp;OpReadlink;</span></span>
-<span id="L396"><span class="lineNum">     396</span>                 :<span class="tlaGNC">          20 :     return ops;</span></span>
-<span id="L397"><span class="lineNum">     397</span>                 :<span class="tlaGNC">          20 :   }();</span></span>
-<span id="L398"><span class="lineNum">     398</span>                 :<span class="tlaGNC">          20 :   return kOps;</span></span>
-<span id="L399"><span class="lineNum">     399</span>                 :<span class="tlaGNC">          20 : }</span></span>
-<span id="L400"><span class="lineNum">     400</span>                 :             : </span>
-<span id="L401"><span class="lineNum">     401</span>                 :             : }  // namespace</span>
-<span id="L402"><span class="lineNum">     402</span>                 :             : </span>
-<span id="L403"><span class="lineNum">     403</span>                 :             : absl::StatusOr&lt;std::unique_ptr&lt;FuseServer&gt;&gt; FuseServer::Mount(</span>
-<span id="L404"><span class="lineNum">     404</span>                 :             :     std::shared_ptr&lt;const vfs::FileSystem&gt; fs,</span>
-<span id="L405"><span class="lineNum">     405</span>                 :             :     std::string root,</span>
-<span id="L406"><span class="lineNum">     406</span>                 :<span class="tlaGNC">          21 :     std::string mount_point) {</span></span>
-<span id="L407"><span class="lineNum">     407</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 20 times"> + </span>]:<span class="tlaGNC">          21 :   if (fs == nullptr) {</span></span>
-<span id="L408"><span class="lineNum">     408</span>                 :<span class="tlaGNC">           1 :     return absl::InvalidArgumentError(&quot;cannot mount a null filesystem&quot;);</span></span>
-<span id="L409"><span class="lineNum">     409</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L410"><span class="lineNum">     410</span>                 :<span class="tlaGNC">          20 :   const absl::StatusOr&lt;FuseApi&gt;&amp; api = ResolvedApi();</span></span>
-<span id="L411"><span class="lineNum">     411</span>         [<span class="tlaGBC" title="branch 0 was taken 40 times"> + </span><span class="tlaGBC" title="branch 1 was taken 20 times"> + </span>]:<span class="tlaGNC">          20 :   MBO_RETURN_IF_ERROR(api.status());</span></span>
-<span id="L412"><span class="lineNum">     412</span> [<span class="tlaGBC" title="branch 0 was taken 23 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 20 times"> + </span>]:<span class="tlaGNC">          23 :   while (root.size() &gt; 1 &amp;&amp; root.back() == '/') {</span></span>
-<span id="L413"><span class="lineNum">     413</span>                 :<span class="tlaGNC">           3 :     root.pop_back();</span></span>
-<span id="L414"><span class="lineNum">     414</span>                 :<span class="tlaGNC">           3 :   }</span></span>
-<span id="L415"><span class="lineNum">     415</span>                 :<span class="tlaGNC">          20 :   auto server = std::unique_ptr&lt;FuseServer&gt;(new FuseServer());</span></span>
-<span id="L416"><span class="lineNum">     416</span>                 :<span class="tlaGNC">          20 :   server-&gt;impl_-&gt;fs = std::move(fs);</span></span>
-<span id="L417"><span class="lineNum">     417</span>                 :<span class="tlaGNC">          20 :   server-&gt;impl_-&gt;root = std::move(root);</span></span>
-<span id="L418"><span class="lineNum">     418</span>                 :<span class="tlaGNC">          20 :   server-&gt;impl_-&gt;mount_point = std::move(mount_point);</span></span>
-<span id="L419"><span class="lineNum">     419</span>                 :             :   // &quot;ro&quot; tells the kernel what the missing write callbacks already enforce; default_permissions</span>
-<span id="L420"><span class="lineNum">     420</span>                 :             :   // lets the kernel check the (write-stripped) mode bits itself.</span>
-<span id="L421"><span class="lineNum">     421</span>                 :<span class="tlaGNC">          20 :   std::string arg0 = &quot;xff&quot;;</span></span>
-<span id="L422"><span class="lineNum">     422</span>                 :<span class="tlaGNC">          20 :   std::string arg1 = &quot;-o&quot;;</span></span>
-<span id="L423"><span class="lineNum">     423</span>                 :<span class="tlaGNC">          20 :   std::string arg2 = &quot;ro,default_permissions&quot;;</span></span>
-<span id="L424"><span class="lineNum">     424</span>                 :<span class="tlaGNC">          20 :   std::array&lt;char*, 3&gt; argv = {arg0.data(), arg1.data(), arg2.data()};</span></span>
-<span id="L425"><span class="lineNum">     425</span>                 :             :   // libfuse spells this FUSE_ARGS_INIT; the struct is three fields, so aggregate init says the same</span>
-<span id="L426"><span class="lineNum">     426</span>                 :             :   // thing without transcribing a macro. `allocated = 0` means &quot;these args are the caller's&quot;.</span>
-<span id="L427"><span class="lineNum">     427</span>                 :<span class="tlaGNC">          20 :   struct fuse_args args = {.argc = static_cast&lt;int&gt;(argv.size()), .argv = argv.data(), .allocated = 0};</span></span>
-<span id="L428"><span class="lineNum">     428</span>                 :<span class="tlaGNC">          20 :   server-&gt;impl_-&gt;session = api-&gt;session_new(&amp;args, &amp;ServerOps(), kImplementedOpsSize, server-&gt;impl_.get());</span></span>
-<span id="L429"><span class="lineNum">     429</span>                 :             :   // session_new copies what it needs and leaves the (now heap-allocated) argv to us, success or</span>
-<span id="L430"><span class="lineNum">     430</span>                 :             :   // not; libfuse's own examples free it here.</span>
-<span id="L431"><span class="lineNum">     431</span>                 :<span class="tlaGNC">          20 :   api-&gt;opt_free_args(&amp;args);</span></span>
-<span id="L432"><span class="lineNum">     432</span>                 :<span class="tlaGNC">          20 :   if (server-&gt;impl_-&gt;session == nullptr) {  // LCOV_EXCL_BR_LINE: libfuse-internal allocation failure.</span></span>
-<span id="L433"><span class="lineNum">     433</span>                 :<span class="tlaUNC">           0 :     return absl::InternalError(&quot;fuse_session_new failed&quot;);</span></span>
-<span id="L434"><span class="lineNum">     434</span>                 :<span class="tlaUNC">           0 :   }</span></span>
-<span id="L435"><span class="lineNum">     435</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 19 times"> + </span>]:<span class="tlaGNC">          20 :   if (api-&gt;session_mount(server-&gt;impl_-&gt;session, server-&gt;impl_-&gt;mount_point.c_str()) != 0) {</span></span>
-<span id="L436"><span class="lineNum">     436</span>                 :<span class="tlaGNC">           1 :     api-&gt;session_destroy(server-&gt;impl_-&gt;session);</span></span>
-<span id="L437"><span class="lineNum">     437</span>                 :<span class="tlaGNC">           1 :     server-&gt;impl_-&gt;session = nullptr;</span></span>
-<span id="L438"><span class="lineNum">     438</span>                 :<span class="tlaGNC">           1 :     return absl::InternalError(absl::StrCat(&quot;FUSE mount failed at '&quot;, server-&gt;impl_-&gt;mount_point, &quot;'&quot;));</span></span>
-<span id="L439"><span class="lineNum">     439</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L440"><span class="lineNum">     440</span>                 :<span class="tlaGNC">          19 :   InstallSignalHandlersOnce();</span></span>
-<span id="L441"><span class="lineNum">     441</span>                 :<span class="tlaGNC">          19 :   {</span></span>
-<span id="L442"><span class="lineNum">     442</span>                 :<span class="tlaGNC">          19 :     const absl::MutexLock lock(LiveMutex());</span></span>
-<span id="L443"><span class="lineNum">     443</span>                 :<span class="tlaGNC">          19 :     LiveSessions().push_back(server-&gt;impl_-&gt;session);</span></span>
-<span id="L444"><span class="lineNum">     444</span>                 :<span class="tlaGNC">          19 :   }</span></span>
-<span id="L445"><span class="lineNum">     445</span>                 :             :   // The API is captured BY VALUE (a struct of function pointers): capturing `api` by reference</span>
-<span id="L446"><span class="lineNum">     446</span>                 :             :   // would capture a reference to Mount's local reference variable, which dies when Mount returns.</span>
-<span id="L447"><span class="lineNum">     447</span>                 :<span class="tlaGNC">          19 :   server-&gt;impl_-&gt;loop = std::thread([impl = server-&gt;impl_.get(), api = *api] {</span></span>
-<span id="L448"><span class="lineNum">     448</span>                 :<span class="tlaGNC">          19 :     const int result = api.session_loop(impl-&gt;session);</span></span>
-<span id="L449"><span class="lineNum">     449</span>                 :<span class="tlaGNC">          19 :     if (!impl-&gt;exiting.load()) {  // LCOV_EXCL_BR_LINE: spontaneous loop exit requires a broken FUSE session.</span></span>
-<span id="L450"><span class="lineNum">     450</span>                 :<span class="tlaUNC">           0 :       std::cerr &lt;&lt; absl::StreamFormat(</span></span>
-<span id="L451"><span class="lineNum">     451</span>                 :<span class="tlaUNC">           0 :           &quot;xff: the FUSE session serving '%s' ended on its own (fuse_session_loop returned %d); reads under&quot;</span></span>
-<span id="L452"><span class="lineNum">     452</span>                 :<span class="tlaUNC">           0 :           &quot; that mount will fail from here on\n&quot;,</span></span>
-<span id="L453"><span class="lineNum">     453</span>                 :<span class="tlaUNC">           0 :           impl-&gt;mount_point, result);</span></span>
-<span id="L454"><span class="lineNum">     454</span>                 :<span class="tlaUNC">           0 :     }</span></span>
-<span id="L455"><span class="lineNum">     455</span>                 :<span class="tlaGNC">          19 :   });</span></span>
-<span id="L456"><span class="lineNum">     456</span>                 :             :   // A mount is not READY when fuse_session_mount returns - it is ready when the session answers.</span>
-<span id="L457"><span class="lineNum">     457</span>                 :             :   // Between those two moments the mount point exists but nothing serves it, and a child process</span>
-<span id="L458"><span class="lineNum">     458</span>                 :             :   // that opens a path under it can lose: CI showed exactly that, one invocation aborting with</span>
-<span id="L459"><span class="lineNum">     459</span>                 :             :   // ECONNABORTED while the next succeeded microseconds later. So prove it: stat the mount point</span>
-<span id="L460"><span class="lineNum">     460</span>                 :             :   // (a round trip the loop thread must serve) before handing the path to anyone. A mount that</span>
-<span id="L461"><span class="lineNum">     461</span>                 :             :   // never answers is torn down and reported, which the caller turns into the extraction fallback</span>
-<span id="L462"><span class="lineNum">     462</span>                 :             :   // instead of a path that fails under a child.</span>
-<span id="L463"><span class="lineNum">     463</span>                 :<span class="tlaGNC">          19 :   {</span></span>
-<span id="L464"><span class="lineNum">     464</span>                 :<span class="tlaGNC">          19 :     struct stat probe = {};</span></span>
-<span id="L465"><span class="lineNum">     465</span>                 :<span class="tlaGNC">          19 :     const absl::Time deadline = absl::Now() + absl::Seconds(5);</span></span>
-<span id="L466"><span class="lineNum">     466</span>                 :<span class="tlaGNC">          19 :     bool ready = false;</span></span>
-<span id="L467"><span class="lineNum">     467</span>         [<span class="tlaGBC" title="branch 0 was taken 19 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          19 :     while (absl::Now() &lt; deadline) {</span></span>
-<span id="L468"><span class="lineNum">     468</span>                 :             :       // XFF_HOST_IO: FUSE adapter probes its explicitly selected mount point.</span>
-<span id="L469"><span class="lineNum">     469</span> [<span class="tlaGBC" title="branch 0 was taken 19 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 19 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">          19 :       if (::stat(server-&gt;impl_-&gt;mount_point.c_str(), &amp;probe) == 0 &amp;&amp; S_ISDIR(probe.st_mode)) {</span></span>
-<span id="L470"><span class="lineNum">     470</span>                 :<span class="tlaGNC">          19 :         ready = true;</span></span>
-<span id="L471"><span class="lineNum">     471</span>                 :<span class="tlaGNC">          19 :         break;</span></span>
-<span id="L472"><span class="lineNum">     472</span>                 :<span class="tlaGNC">          19 :       }</span></span>
-<span id="L473"><span class="lineNum">     473</span>                 :<span class="tlaUNC">           0 :       absl::SleepFor(absl::Milliseconds(2));</span></span>
-<span id="L474"><span class="lineNum">     474</span>                 :<span class="tlaUNC">           0 :     }</span></span>
-<span id="L475"><span class="lineNum">     475</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 19 times"> + </span>]:<span class="tlaGNC">          19 :     if (!ready) {</span></span>
-<span id="L476"><span class="lineNum">     476</span>                 :<span class="tlaUNC">           0 :       return absl::UnavailableError(</span></span>
-<span id="L477"><span class="lineNum">     477</span>                 :<span class="tlaUNC">           0 :           absl::StrCat(&quot;the FUSE mount at '&quot;, server-&gt;impl_-&gt;mount_point, &quot;' never started serving&quot;));</span></span>
+<span id="L347"><span class="lineNum">     347</span>                 :             : // XFF_UNSTABLE_COVERAGE_START: close queues RELEASE asynchronously; teardown may detach the mount before the</span>
+<span id="L348"><span class="lineNum">     348</span>                 :             : // kernel delivers it. Kernel-path tests exercise this callback, but its coverage is not deterministic.</span>
+<span id="L349"><span class="lineNum">     349</span>                 :             : void OpRelease(fuse_req_t req, fuse_ino_t /*ino*/, struct fuse_file_info* file_info) {</span>
+<span id="L350"><span class="lineNum">     350</span>                 :             :   const FuseApi&amp; api = *ResolvedApi();</span>
+<span id="L351"><span class="lineNum">     351</span>                 :             :   FuseServer::Impl&amp; impl = ImplOf(req);</span>
+<span id="L352"><span class="lineNum">     352</span>                 :             :   {</span>
+<span id="L353"><span class="lineNum">     353</span>                 :             :     const absl::MutexLock lock(impl.mutex);</span>
+<span id="L354"><span class="lineNum">     354</span>                 :             :     impl.contents.erase(file_info-&gt;fh);</span>
+<span id="L355"><span class="lineNum">     355</span>                 :             :   }</span>
+<span id="L356"><span class="lineNum">     356</span>                 :             :   api.reply_err(req, 0);</span>
+<span id="L357"><span class="lineNum">     357</span>                 :             : }</span>
+<span id="L358"><span class="lineNum">     358</span>                 :             : </span>
+<span id="L359"><span class="lineNum">     359</span>                 :             : // XFF_UNSTABLE_COVERAGE_STOP</span>
+<span id="L360"><span class="lineNum">     360</span>                 :             : </span>
+<span id="L361"><span class="lineNum">     361</span>                 :<span class="tlaGNC">           2 : void OpReadlink(fuse_req_t req, fuse_ino_t ino) {</span></span>
+<span id="L362"><span class="lineNum">     362</span>                 :<span class="tlaGNC">           2 :   const FuseApi&amp; api = *ResolvedApi();</span></span>
+<span id="L363"><span class="lineNum">     363</span>                 :<span class="tlaGNC">           2 :   FuseServer::Impl&amp; impl = ImplOf(req);</span></span>
+<span id="L364"><span class="lineNum">     364</span>                 :<span class="tlaGNC">           2 :   const std::string path = impl.PathOf(ino);</span></span>
+<span id="L365"><span class="lineNum">     365</span>                 :<span class="tlaGNC">           2 :   if (path.empty()) {  // LCOV_EXCL_BR_LINE: FUSE supplies only inodes returned by lookup.</span></span>
+<span id="L366"><span class="lineNum">     366</span>                 :             :     // LCOV_EXCL_START: the kernel cannot readlink an inode it was not given.</span>
+<span id="L367"><span class="lineNum">     367</span>                 :             :     api.reply_err(req, ENOENT);</span>
+<span id="L368"><span class="lineNum">     368</span>                 :             :     return;</span>
+<span id="L369"><span class="lineNum">     369</span>                 :             :     // LCOV_EXCL_STOP</span>
+<span id="L370"><span class="lineNum">     370</span>                 :<span class="tlaUNC">           0 :   }</span></span>
+<span id="L371"><span class="lineNum">     371</span>                 :<span class="tlaGNC">           2 :   const absl::StatusOr&lt;std::string&gt; target = impl.fs-&gt;ReadLink(path);</span></span>
+<span id="L372"><span class="lineNum">     372</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           2 :   if (!target.ok()) {</span></span>
+<span id="L373"><span class="lineNum">     373</span>                 :<span class="tlaGNC">           1 :     api.reply_err(req, ErrnoForStatus(target.status().code()));</span></span>
+<span id="L374"><span class="lineNum">     374</span>                 :<span class="tlaGNC">           1 :     return;</span></span>
+<span id="L375"><span class="lineNum">     375</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L376"><span class="lineNum">     376</span>                 :<span class="tlaGNC">           1 :   api.reply_readlink(req, target-&gt;c_str());</span></span>
+<span id="L377"><span class="lineNum">     377</span>                 :<span class="tlaGNC">           1 : }</span></span>
+<span id="L378"><span class="lineNum">     378</span>                 :             : </span>
+<span id="L379"><span class="lineNum">     379</span>                 :             : // How much of `fuse_lowlevel_ops` we actually fill: the offset just past the LAST op implemented</span>
+<span id="L380"><span class="lineNum">     380</span>                 :             : // (`readdir`, which libfuse declares after the others in ServerOps below). This - not `sizeof` the</span>
+<span id="L381"><span class="lineNum">     381</span>                 :             : // struct we compiled against - is what `fuse_session_new` wants: it copies that many bytes and</span>
+<span id="L382"><span class="lineNum">     382</span>                 :             : // zero-fills the rest, so a runtime OLDER than our headers is handed only fields it has. Passing</span>
+<span id="L383"><span class="lineNum">     383</span>                 :             : // the full sizeof is what makes such a runtime print &quot;library too old, some operations may not</span>
+<span id="L384"><span class="lineNum">     384</span>                 :             : // work&quot; and clamp, which is a complaint about the caller. Ops are only ever APPENDED to the</span>
+<span id="L385"><span class="lineNum">     385</span>                 :             : // struct, so this prefix means the same thing to every 3.x runtime.</span>
+<span id="L386"><span class="lineNum">     386</span>                 :             : constexpr std::size_t kImplementedOpsSize = offsetof(struct fuse_lowlevel_ops, readdir) + sizeof(&amp;OpReaddir);</span>
+<span id="L387"><span class="lineNum">     387</span>                 :             : </span>
+<span id="L388"><span class="lineNum">     388</span>                 :             : // Callbacks bind by NAME into the FETCHED header's ops struct, so a layout change in a future</span>
+<span id="L389"><span class="lineNum">     389</span>                 :             : // pinned libfuse release is a compile error here, never memory corruption.</span>
+<span id="L390"><span class="lineNum">     390</span>                 :<span class="tlaGNC">          20 : const struct fuse_lowlevel_ops&amp; ServerOps() {</span></span>
+<span id="L391"><span class="lineNum">     391</span>                 :<span class="tlaGNC">          20 :   static const struct fuse_lowlevel_ops kOps = [] {</span></span>
+<span id="L392"><span class="lineNum">     392</span>                 :<span class="tlaGNC">          20 :     struct fuse_lowlevel_ops ops = {};</span></span>
+<span id="L393"><span class="lineNum">     393</span>                 :<span class="tlaGNC">          20 :     ops.lookup = &amp;OpLookup;</span></span>
+<span id="L394"><span class="lineNum">     394</span>                 :<span class="tlaGNC">          20 :     ops.getattr = &amp;OpGetattr;</span></span>
+<span id="L395"><span class="lineNum">     395</span>                 :<span class="tlaGNC">          20 :     ops.readdir = &amp;OpReaddir;</span></span>
+<span id="L396"><span class="lineNum">     396</span>                 :<span class="tlaGNC">          20 :     ops.open = &amp;OpOpen;</span></span>
+<span id="L397"><span class="lineNum">     397</span>                 :<span class="tlaGNC">          20 :     ops.read = &amp;OpRead;</span></span>
+<span id="L398"><span class="lineNum">     398</span>                 :<span class="tlaGNC">          20 :     ops.release = &amp;OpRelease;</span></span>
+<span id="L399"><span class="lineNum">     399</span>                 :<span class="tlaGNC">          20 :     ops.readlink = &amp;OpReadlink;</span></span>
+<span id="L400"><span class="lineNum">     400</span>                 :<span class="tlaGNC">          20 :     return ops;</span></span>
+<span id="L401"><span class="lineNum">     401</span>                 :<span class="tlaGNC">          20 :   }();</span></span>
+<span id="L402"><span class="lineNum">     402</span>                 :<span class="tlaGNC">          20 :   return kOps;</span></span>
+<span id="L403"><span class="lineNum">     403</span>                 :<span class="tlaGNC">          20 : }</span></span>
+<span id="L404"><span class="lineNum">     404</span>                 :             : </span>
+<span id="L405"><span class="lineNum">     405</span>                 :             : }  // namespace</span>
+<span id="L406"><span class="lineNum">     406</span>                 :             : </span>
+<span id="L407"><span class="lineNum">     407</span>                 :             : absl::StatusOr&lt;std::unique_ptr&lt;FuseServer&gt;&gt; FuseServer::Mount(</span>
+<span id="L408"><span class="lineNum">     408</span>                 :             :     std::shared_ptr&lt;const vfs::FileSystem&gt; fs,</span>
+<span id="L409"><span class="lineNum">     409</span>                 :             :     std::string root,</span>
+<span id="L410"><span class="lineNum">     410</span>                 :<span class="tlaGNC">          21 :     std::string mount_point) {</span></span>
+<span id="L411"><span class="lineNum">     411</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 20 times"> + </span>]:<span class="tlaGNC">          21 :   if (fs == nullptr) {</span></span>
+<span id="L412"><span class="lineNum">     412</span>                 :<span class="tlaGNC">           1 :     return absl::InvalidArgumentError(&quot;cannot mount a null filesystem&quot;);</span></span>
+<span id="L413"><span class="lineNum">     413</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L414"><span class="lineNum">     414</span>                 :<span class="tlaGNC">          20 :   const absl::StatusOr&lt;FuseApi&gt;&amp; api = ResolvedApi();</span></span>
+<span id="L415"><span class="lineNum">     415</span>         [<span class="tlaGBC" title="branch 0 was taken 40 times"> + </span><span class="tlaGBC" title="branch 1 was taken 20 times"> + </span>]:<span class="tlaGNC">          20 :   MBO_RETURN_IF_ERROR(api.status());</span></span>
+<span id="L416"><span class="lineNum">     416</span> [<span class="tlaGBC" title="branch 0 was taken 23 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 20 times"> + </span>]:<span class="tlaGNC">          23 :   while (root.size() &gt; 1 &amp;&amp; root.back() == '/') {</span></span>
+<span id="L417"><span class="lineNum">     417</span>                 :<span class="tlaGNC">           3 :     root.pop_back();</span></span>
+<span id="L418"><span class="lineNum">     418</span>                 :<span class="tlaGNC">           3 :   }</span></span>
+<span id="L419"><span class="lineNum">     419</span>                 :<span class="tlaGNC">          20 :   auto server = std::unique_ptr&lt;FuseServer&gt;(new FuseServer());</span></span>
+<span id="L420"><span class="lineNum">     420</span>                 :<span class="tlaGNC">          20 :   server-&gt;impl_-&gt;fs = std::move(fs);</span></span>
+<span id="L421"><span class="lineNum">     421</span>                 :<span class="tlaGNC">          20 :   server-&gt;impl_-&gt;root = std::move(root);</span></span>
+<span id="L422"><span class="lineNum">     422</span>                 :<span class="tlaGNC">          20 :   server-&gt;impl_-&gt;mount_point = std::move(mount_point);</span></span>
+<span id="L423"><span class="lineNum">     423</span>                 :             :   // &quot;ro&quot; tells the kernel what the missing write callbacks already enforce; default_permissions</span>
+<span id="L424"><span class="lineNum">     424</span>                 :             :   // lets the kernel check the (write-stripped) mode bits itself.</span>
+<span id="L425"><span class="lineNum">     425</span>                 :<span class="tlaGNC">          20 :   std::string arg0 = &quot;xff&quot;;</span></span>
+<span id="L426"><span class="lineNum">     426</span>                 :<span class="tlaGNC">          20 :   std::string arg1 = &quot;-o&quot;;</span></span>
+<span id="L427"><span class="lineNum">     427</span>                 :<span class="tlaGNC">          20 :   std::string arg2 = &quot;ro,default_permissions&quot;;</span></span>
+<span id="L428"><span class="lineNum">     428</span>                 :<span class="tlaGNC">          20 :   std::array&lt;char*, 3&gt; argv = {arg0.data(), arg1.data(), arg2.data()};</span></span>
+<span id="L429"><span class="lineNum">     429</span>                 :             :   // libfuse spells this FUSE_ARGS_INIT; the struct is three fields, so aggregate init says the same</span>
+<span id="L430"><span class="lineNum">     430</span>                 :             :   // thing without transcribing a macro. `allocated = 0` means &quot;these args are the caller's&quot;.</span>
+<span id="L431"><span class="lineNum">     431</span>                 :<span class="tlaGNC">          20 :   struct fuse_args args = {.argc = static_cast&lt;int&gt;(argv.size()), .argv = argv.data(), .allocated = 0};</span></span>
+<span id="L432"><span class="lineNum">     432</span>                 :<span class="tlaGNC">          20 :   server-&gt;impl_-&gt;session = api-&gt;session_new(&amp;args, &amp;ServerOps(), kImplementedOpsSize, server-&gt;impl_.get());</span></span>
+<span id="L433"><span class="lineNum">     433</span>                 :             :   // session_new copies what it needs and leaves the (now heap-allocated) argv to us, success or</span>
+<span id="L434"><span class="lineNum">     434</span>                 :             :   // not; libfuse's own examples free it here.</span>
+<span id="L435"><span class="lineNum">     435</span>                 :<span class="tlaGNC">          20 :   api-&gt;opt_free_args(&amp;args);</span></span>
+<span id="L436"><span class="lineNum">     436</span>                 :<span class="tlaGNC">          20 :   if (server-&gt;impl_-&gt;session == nullptr) {  // LCOV_EXCL_BR_LINE: libfuse-internal allocation failure.</span></span>
+<span id="L437"><span class="lineNum">     437</span>                 :<span class="tlaUNC">           0 :     return absl::InternalError(&quot;fuse_session_new failed&quot;);</span></span>
+<span id="L438"><span class="lineNum">     438</span>                 :<span class="tlaUNC">           0 :   }</span></span>
+<span id="L439"><span class="lineNum">     439</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 19 times"> + </span>]:<span class="tlaGNC">          20 :   if (api-&gt;session_mount(server-&gt;impl_-&gt;session, server-&gt;impl_-&gt;mount_point.c_str()) != 0) {</span></span>
+<span id="L440"><span class="lineNum">     440</span>                 :<span class="tlaGNC">           1 :     api-&gt;session_destroy(server-&gt;impl_-&gt;session);</span></span>
+<span id="L441"><span class="lineNum">     441</span>                 :<span class="tlaGNC">           1 :     server-&gt;impl_-&gt;session = nullptr;</span></span>
+<span id="L442"><span class="lineNum">     442</span>                 :<span class="tlaGNC">           1 :     return absl::InternalError(absl::StrCat(&quot;FUSE mount failed at '&quot;, server-&gt;impl_-&gt;mount_point, &quot;'&quot;));</span></span>
+<span id="L443"><span class="lineNum">     443</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L444"><span class="lineNum">     444</span>                 :<span class="tlaGNC">          19 :   InstallSignalHandlersOnce();</span></span>
+<span id="L445"><span class="lineNum">     445</span>                 :<span class="tlaGNC">          19 :   {</span></span>
+<span id="L446"><span class="lineNum">     446</span>                 :<span class="tlaGNC">          19 :     const absl::MutexLock lock(LiveMutex());</span></span>
+<span id="L447"><span class="lineNum">     447</span>                 :<span class="tlaGNC">          19 :     LiveSessions().push_back(server-&gt;impl_-&gt;session);</span></span>
+<span id="L448"><span class="lineNum">     448</span>                 :<span class="tlaGNC">          19 :   }</span></span>
+<span id="L449"><span class="lineNum">     449</span>                 :             :   // The API is captured BY VALUE (a struct of function pointers): capturing `api` by reference</span>
+<span id="L450"><span class="lineNum">     450</span>                 :             :   // would capture a reference to Mount's local reference variable, which dies when Mount returns.</span>
+<span id="L451"><span class="lineNum">     451</span>                 :<span class="tlaGNC">          19 :   server-&gt;impl_-&gt;loop = std::thread([impl = server-&gt;impl_.get(), api = *api] {</span></span>
+<span id="L452"><span class="lineNum">     452</span>                 :<span class="tlaGNC">          19 :     const int result = api.session_loop(impl-&gt;session);</span></span>
+<span id="L453"><span class="lineNum">     453</span>                 :<span class="tlaGNC">          19 :     if (!impl-&gt;exiting.load()) {  // LCOV_EXCL_BR_LINE: spontaneous loop exit requires a broken FUSE session.</span></span>
+<span id="L454"><span class="lineNum">     454</span>                 :<span class="tlaUNC">           0 :       std::cerr &lt;&lt; absl::StreamFormat(</span></span>
+<span id="L455"><span class="lineNum">     455</span>                 :<span class="tlaUNC">           0 :           &quot;xff: the FUSE session serving '%s' ended on its own (fuse_session_loop returned %d); reads under&quot;</span></span>
+<span id="L456"><span class="lineNum">     456</span>                 :<span class="tlaUNC">           0 :           &quot; that mount will fail from here on\n&quot;,</span></span>
+<span id="L457"><span class="lineNum">     457</span>                 :<span class="tlaUNC">           0 :           impl-&gt;mount_point, result);</span></span>
+<span id="L458"><span class="lineNum">     458</span>                 :<span class="tlaUNC">           0 :     }</span></span>
+<span id="L459"><span class="lineNum">     459</span>                 :<span class="tlaGNC">          19 :   });</span></span>
+<span id="L460"><span class="lineNum">     460</span>                 :             :   // A mount is not READY when fuse_session_mount returns - it is ready when the session answers.</span>
+<span id="L461"><span class="lineNum">     461</span>                 :             :   // Between those two moments the mount point exists but nothing serves it, and a child process</span>
+<span id="L462"><span class="lineNum">     462</span>                 :             :   // that opens a path under it can lose: CI showed exactly that, one invocation aborting with</span>
+<span id="L463"><span class="lineNum">     463</span>                 :             :   // ECONNABORTED while the next succeeded microseconds later. So prove it: stat the mount point</span>
+<span id="L464"><span class="lineNum">     464</span>                 :             :   // (a round trip the loop thread must serve) before handing the path to anyone. A mount that</span>
+<span id="L465"><span class="lineNum">     465</span>                 :             :   // never answers is torn down and reported, which the caller turns into the extraction fallback</span>
+<span id="L466"><span class="lineNum">     466</span>                 :             :   // instead of a path that fails under a child.</span>
+<span id="L467"><span class="lineNum">     467</span>                 :<span class="tlaGNC">          19 :   {</span></span>
+<span id="L468"><span class="lineNum">     468</span>                 :<span class="tlaGNC">          19 :     struct stat probe = {};</span></span>
+<span id="L469"><span class="lineNum">     469</span>                 :<span class="tlaGNC">          19 :     const absl::Time deadline = absl::Now() + absl::Seconds(5);</span></span>
+<span id="L470"><span class="lineNum">     470</span>                 :<span class="tlaGNC">          19 :     bool ready = false;</span></span>
+<span id="L471"><span class="lineNum">     471</span>         [<span class="tlaGBC" title="branch 0 was taken 19 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          19 :     while (absl::Now() &lt; deadline) {</span></span>
+<span id="L472"><span class="lineNum">     472</span>                 :             :       // XFF_HOST_IO: FUSE adapter probes its explicitly selected mount point.</span>
+<span id="L473"><span class="lineNum">     473</span> [<span class="tlaGBC" title="branch 0 was taken 19 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 19 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">          19 :       if (::stat(server-&gt;impl_-&gt;mount_point.c_str(), &amp;probe) == 0 &amp;&amp; S_ISDIR(probe.st_mode)) {</span></span>
+<span id="L474"><span class="lineNum">     474</span>                 :<span class="tlaGNC">          19 :         ready = true;</span></span>
+<span id="L475"><span class="lineNum">     475</span>                 :<span class="tlaGNC">          19 :         break;</span></span>
+<span id="L476"><span class="lineNum">     476</span>                 :<span class="tlaGNC">          19 :       }</span></span>
+<span id="L477"><span class="lineNum">     477</span>                 :<span class="tlaUNC">           0 :       absl::SleepFor(absl::Milliseconds(2));</span></span>
 <span id="L478"><span class="lineNum">     478</span>                 :<span class="tlaUNC">           0 :     }</span></span>
-<span id="L479"><span class="lineNum">     479</span>                 :<span class="tlaGNC">          19 :   }</span></span>
-<span id="L480"><span class="lineNum">     480</span>                 :<span class="tlaGNC">          19 :   return server;</span></span>
-<span id="L481"><span class="lineNum">     481</span>                 :<span class="tlaGNC">          19 : }</span></span>
-<span id="L482"><span class="lineNum">     482</span>                 :             : </span>
-<span id="L483"><span class="lineNum">     483</span>                 :<span class="tlaGNC">          20 : FuseServer::FuseServer() : impl_(std::make_unique&lt;Impl&gt;()) {}</span></span>
-<span id="L484"><span class="lineNum">     484</span>                 :             : </span>
-<span id="L485"><span class="lineNum">     485</span>                 :<span class="tlaGNC">          20 : FuseServer::~FuseServer() {</span></span>
-<span id="L486"><span class="lineNum">     486</span>                 :             :   // Only a partially constructed server lacks either object.</span>
-<span id="L487"><span class="lineNum">     487</span>                 :<span class="tlaGNC">          20 :   if (impl_ == nullptr || impl_-&gt;session == nullptr) {  // LCOV_EXCL_BR_LINE</span></span>
-<span id="L488"><span class="lineNum">     488</span>                 :<span class="tlaGNC">           1 :     return;</span></span>
-<span id="L489"><span class="lineNum">     489</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L490"><span class="lineNum">     490</span>                 :<span class="tlaGNC">          19 :   const FuseApi&amp; api = *ResolvedApi();</span></span>
-<span id="L491"><span class="lineNum">     491</span>                 :<span class="tlaGNC">          19 :   {</span></span>
-<span id="L492"><span class="lineNum">     492</span>                 :<span class="tlaGNC">          19 :     const absl::MutexLock lock(LiveMutex());</span></span>
-<span id="L493"><span class="lineNum">     493</span>                 :<span class="tlaGNC">          19 :     std::erase(LiveSessions(), impl_-&gt;session);</span></span>
-<span id="L494"><span class="lineNum">     494</span>                 :<span class="tlaGNC">          19 :   }</span></span>
-<span id="L495"><span class="lineNum">     495</span>                 :<span class="tlaGNC">          19 :   impl_-&gt;exiting.store(true);</span></span>
-<span id="L496"><span class="lineNum">     496</span>                 :<span class="tlaGNC">          19 :   api.session_exit(impl_-&gt;session);</span></span>
-<span id="L497"><span class="lineNum">     497</span>                 :             :   // Waking the loop is the delicate part: it sits in a blocking read on the kernel channel, and</span>
-<span id="L498"><span class="lineNum">     498</span>                 :             :   // the exit flag alone is only checked between requests. Unmounting OUT OF PROCESS makes the</span>
-<span id="L499"><span class="lineNum">     499</span>                 :             :   // kernel end that read, so the loop returns on its own and every later call happens after the</span>
-<span id="L500"><span class="lineNum">     500</span>                 :             :   // join, single-threaded. Calling fuse_session_unmount here instead would close the channel fd</span>
-<span id="L501"><span class="lineNum">     501</span>                 :             :   // from this thread while the loop is still reading it - a real close/read race (ThreadSanitizer</span>
-<span id="L502"><span class="lineNum">     502</span>                 :             :   // reports exactly that), not merely a theoretical one.</span>
-<span id="L503"><span class="lineNum">     503</span>                 :<span class="tlaGNC">          19 :   Unmount(impl_-&gt;mount_point);</span></span>
-<span id="L504"><span class="lineNum">     504</span>                 :<span class="tlaGNC">          19 :   impl_-&gt;loop.join();</span></span>
-<span id="L505"><span class="lineNum">     505</span>                 :<span class="tlaGNC">          19 :   api.session_unmount(impl_-&gt;session);</span></span>
-<span id="L506"><span class="lineNum">     506</span>                 :<span class="tlaGNC">          19 :   api.session_destroy(impl_-&gt;session);</span></span>
-<span id="L507"><span class="lineNum">     507</span>                 :<span class="tlaGNC">          19 : }</span></span>
-<span id="L508"><span class="lineNum">     508</span>                 :             : </span>
-<span id="L509"><span class="lineNum">     509</span>                 :<span class="tlaGNC">           8 : std::string_view FuseServer::MountPoint() const {</span></span>
-<span id="L510"><span class="lineNum">     510</span>                 :<span class="tlaGNC">           8 :   return impl_-&gt;mount_point;</span></span>
-<span id="L511"><span class="lineNum">     511</span>                 :<span class="tlaGNC">           8 : }</span></span>
+<span id="L479"><span class="lineNum">     479</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 19 times"> + </span>]:<span class="tlaGNC">          19 :     if (!ready) {</span></span>
+<span id="L480"><span class="lineNum">     480</span>                 :<span class="tlaUNC">           0 :       return absl::UnavailableError(</span></span>
+<span id="L481"><span class="lineNum">     481</span>                 :<span class="tlaUNC">           0 :           absl::StrCat(&quot;the FUSE mount at '&quot;, server-&gt;impl_-&gt;mount_point, &quot;' never started serving&quot;));</span></span>
+<span id="L482"><span class="lineNum">     482</span>                 :<span class="tlaUNC">           0 :     }</span></span>
+<span id="L483"><span class="lineNum">     483</span>                 :<span class="tlaGNC">          19 :   }</span></span>
+<span id="L484"><span class="lineNum">     484</span>                 :<span class="tlaGNC">          19 :   return server;</span></span>
+<span id="L485"><span class="lineNum">     485</span>                 :<span class="tlaGNC">          19 : }</span></span>
+<span id="L486"><span class="lineNum">     486</span>                 :             : </span>
+<span id="L487"><span class="lineNum">     487</span>                 :<span class="tlaGNC">          20 : FuseServer::FuseServer() : impl_(std::make_unique&lt;Impl&gt;()) {}</span></span>
+<span id="L488"><span class="lineNum">     488</span>                 :             : </span>
+<span id="L489"><span class="lineNum">     489</span>                 :<span class="tlaGNC">          20 : FuseServer::~FuseServer() {</span></span>
+<span id="L490"><span class="lineNum">     490</span>                 :             :   // Only a partially constructed server lacks either object.</span>
+<span id="L491"><span class="lineNum">     491</span>                 :<span class="tlaGNC">          20 :   if (impl_ == nullptr || impl_-&gt;session == nullptr) {  // LCOV_EXCL_BR_LINE</span></span>
+<span id="L492"><span class="lineNum">     492</span>                 :<span class="tlaGNC">           1 :     return;</span></span>
+<span id="L493"><span class="lineNum">     493</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L494"><span class="lineNum">     494</span>                 :<span class="tlaGNC">          19 :   const FuseApi&amp; api = *ResolvedApi();</span></span>
+<span id="L495"><span class="lineNum">     495</span>                 :<span class="tlaGNC">          19 :   {</span></span>
+<span id="L496"><span class="lineNum">     496</span>                 :<span class="tlaGNC">          19 :     const absl::MutexLock lock(LiveMutex());</span></span>
+<span id="L497"><span class="lineNum">     497</span>                 :<span class="tlaGNC">          19 :     std::erase(LiveSessions(), impl_-&gt;session);</span></span>
+<span id="L498"><span class="lineNum">     498</span>                 :<span class="tlaGNC">          19 :   }</span></span>
+<span id="L499"><span class="lineNum">     499</span>                 :<span class="tlaGNC">          19 :   impl_-&gt;exiting.store(true);</span></span>
+<span id="L500"><span class="lineNum">     500</span>                 :<span class="tlaGNC">          19 :   api.session_exit(impl_-&gt;session);</span></span>
+<span id="L501"><span class="lineNum">     501</span>                 :             :   // Waking the loop is the delicate part: it sits in a blocking read on the kernel channel, and</span>
+<span id="L502"><span class="lineNum">     502</span>                 :             :   // the exit flag alone is only checked between requests. Unmounting OUT OF PROCESS makes the</span>
+<span id="L503"><span class="lineNum">     503</span>                 :             :   // kernel end that read, so the loop returns on its own and every later call happens after the</span>
+<span id="L504"><span class="lineNum">     504</span>                 :             :   // join, single-threaded. Calling fuse_session_unmount here instead would close the channel fd</span>
+<span id="L505"><span class="lineNum">     505</span>                 :             :   // from this thread while the loop is still reading it - a real close/read race (ThreadSanitizer</span>
+<span id="L506"><span class="lineNum">     506</span>                 :             :   // reports exactly that), not merely a theoretical one.</span>
+<span id="L507"><span class="lineNum">     507</span>                 :<span class="tlaGNC">          19 :   Unmount(impl_-&gt;mount_point);</span></span>
+<span id="L508"><span class="lineNum">     508</span>                 :<span class="tlaGNC">          19 :   impl_-&gt;loop.join();</span></span>
+<span id="L509"><span class="lineNum">     509</span>                 :<span class="tlaGNC">          19 :   api.session_unmount(impl_-&gt;session);</span></span>
+<span id="L510"><span class="lineNum">     510</span>                 :<span class="tlaGNC">          19 :   api.session_destroy(impl_-&gt;session);</span></span>
+<span id="L511"><span class="lineNum">     511</span>                 :<span class="tlaGNC">          19 : }</span></span>
 <span id="L512"><span class="lineNum">     512</span>                 :             : </span>
-<span id="L513"><span class="lineNum">     513</span>                 :             : namespace {</span>
-<span id="L514"><span class="lineNum">     514</span>                 :             : </span>
-<span id="L515"><span class="lineNum">     515</span>                 :             : // Unmounts `mount_point` with the platform's helper, out of process. Best effort by design: a</span>
-<span id="L516"><span class="lineNum">     516</span>                 :             : // still-busy mount stays for the stale sweep, and an already-gone one makes the helper complain</span>
-<span id="L517"><span class="lineNum">     517</span>                 :             : // harmlessly.</span>
-<span id="L518"><span class="lineNum">     518</span>                 :<span class="tlaGNC">          20 : void Unmount(std::string_view mount_point) {</span></span>
-<span id="L519"><span class="lineNum">     519</span>                 :<span class="tlaGNC">          20 :   std::string target(mount_point);</span></span>
-<span id="L520"><span class="lineNum">     520</span>                 :<span class="tlaGNC">          20 : #if defined(__linux__)</span></span>
-<span id="L521"><span class="lineNum">     521</span>                 :<span class="tlaGNC">          20 :   std::string arg0 = &quot;fusermount3&quot;;</span></span>
-<span id="L522"><span class="lineNum">     522</span>                 :<span class="tlaGNC">          20 :   std::string arg1 = &quot;-uz&quot;;</span></span>
-<span id="L523"><span class="lineNum">     523</span>                 :             : #else</span>
-<span id="L524"><span class="lineNum">     524</span>                 :             :   std::string arg0 = &quot;umount&quot;;</span>
-<span id="L525"><span class="lineNum">     525</span>                 :             :   std::string arg1 = &quot;-f&quot;;</span>
-<span id="L526"><span class="lineNum">     526</span>                 :             : #endif</span>
-<span id="L527"><span class="lineNum">     527</span>                 :             :   // posix_spawnp, not system(): no shell, and the argv is ours.</span>
-<span id="L528"><span class="lineNum">     528</span>                 :<span class="tlaGNC">          20 :   std::array&lt;char*, 4&gt; argv = {arg0.data(), arg1.data(), target.data(), nullptr};</span></span>
-<span id="L529"><span class="lineNum">     529</span>                 :<span class="tlaGNC">          20 :   pid_t pid = 0;</span></span>
-<span id="L530"><span class="lineNum">     530</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 20 times"> + </span>]:<span class="tlaGNC">          20 :   if (::posix_spawnp(&amp;pid, argv[0], nullptr, nullptr, argv.data(), nullptr) != 0) {</span></span>
-<span id="L531"><span class="lineNum">     531</span>                 :<span class="tlaUNC">           0 :     return;</span></span>
-<span id="L532"><span class="lineNum">     532</span>                 :<span class="tlaUNC">           0 :   }</span></span>
-<span id="L533"><span class="lineNum">     533</span>                 :<span class="tlaGNC">          20 :   int wait_status = 0;</span></span>
-<span id="L534"><span class="lineNum">     534</span>                 :<span class="tlaGNC">          20 :   ::waitpid(pid, &amp;wait_status, 0);</span></span>
-<span id="L535"><span class="lineNum">     535</span>                 :<span class="tlaGNC">          20 : }</span></span>
-<span id="L536"><span class="lineNum">     536</span>                 :             : </span>
-<span id="L537"><span class="lineNum">     537</span>                 :             : }  // namespace</span>
-<span id="L538"><span class="lineNum">     538</span>                 :             : </span>
-<span id="L539"><span class="lineNum">     539</span>                 :<span class="tlaGNC">           1 : void CrashUnmount(std::string_view mount_point) {</span></span>
-<span id="L540"><span class="lineNum">     540</span>                 :<span class="tlaGNC">           1 :   Unmount(mount_point);</span></span>
-<span id="L541"><span class="lineNum">     541</span>                 :<span class="tlaGNC">           1 : }</span></span>
+<span id="L513"><span class="lineNum">     513</span>                 :<span class="tlaGNC">           8 : std::string_view FuseServer::MountPoint() const {</span></span>
+<span id="L514"><span class="lineNum">     514</span>                 :<span class="tlaGNC">           8 :   return impl_-&gt;mount_point;</span></span>
+<span id="L515"><span class="lineNum">     515</span>                 :<span class="tlaGNC">           8 : }</span></span>
+<span id="L516"><span class="lineNum">     516</span>                 :             : </span>
+<span id="L517"><span class="lineNum">     517</span>                 :             : namespace {</span>
+<span id="L518"><span class="lineNum">     518</span>                 :             : </span>
+<span id="L519"><span class="lineNum">     519</span>                 :             : // Unmounts `mount_point` with the platform's helper, out of process. Best effort by design: a</span>
+<span id="L520"><span class="lineNum">     520</span>                 :             : // still-busy mount stays for the stale sweep, and an already-gone one makes the helper complain</span>
+<span id="L521"><span class="lineNum">     521</span>                 :             : // harmlessly.</span>
+<span id="L522"><span class="lineNum">     522</span>                 :<span class="tlaGNC">          20 : void Unmount(std::string_view mount_point) {</span></span>
+<span id="L523"><span class="lineNum">     523</span>                 :<span class="tlaGNC">          20 :   std::string target(mount_point);</span></span>
+<span id="L524"><span class="lineNum">     524</span>                 :<span class="tlaGNC">          20 : #if defined(__linux__)</span></span>
+<span id="L525"><span class="lineNum">     525</span>                 :<span class="tlaGNC">          20 :   std::string arg0 = &quot;fusermount3&quot;;</span></span>
+<span id="L526"><span class="lineNum">     526</span>                 :<span class="tlaGNC">          20 :   std::string arg1 = &quot;-uz&quot;;</span></span>
+<span id="L527"><span class="lineNum">     527</span>                 :             : #else</span>
+<span id="L528"><span class="lineNum">     528</span>                 :             :   std::string arg0 = &quot;umount&quot;;</span>
+<span id="L529"><span class="lineNum">     529</span>                 :             :   std::string arg1 = &quot;-f&quot;;</span>
+<span id="L530"><span class="lineNum">     530</span>                 :             : #endif</span>
+<span id="L531"><span class="lineNum">     531</span>                 :             :   // posix_spawnp, not system(): no shell, and the argv is ours.</span>
+<span id="L532"><span class="lineNum">     532</span>                 :<span class="tlaGNC">          20 :   std::array&lt;char*, 4&gt; argv = {arg0.data(), arg1.data(), target.data(), nullptr};</span></span>
+<span id="L533"><span class="lineNum">     533</span>                 :<span class="tlaGNC">          20 :   pid_t pid = 0;</span></span>
+<span id="L534"><span class="lineNum">     534</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 20 times"> + </span>]:<span class="tlaGNC">          20 :   if (::posix_spawnp(&amp;pid, argv[0], nullptr, nullptr, argv.data(), nullptr) != 0) {</span></span>
+<span id="L535"><span class="lineNum">     535</span>                 :<span class="tlaUNC">           0 :     return;</span></span>
+<span id="L536"><span class="lineNum">     536</span>                 :<span class="tlaUNC">           0 :   }</span></span>
+<span id="L537"><span class="lineNum">     537</span>                 :<span class="tlaGNC">          20 :   int wait_status = 0;</span></span>
+<span id="L538"><span class="lineNum">     538</span>                 :<span class="tlaGNC">          20 :   ::waitpid(pid, &amp;wait_status, 0);</span></span>
+<span id="L539"><span class="lineNum">     539</span>                 :<span class="tlaGNC">          20 : }</span></span>
+<span id="L540"><span class="lineNum">     540</span>                 :             : </span>
+<span id="L541"><span class="lineNum">     541</span>                 :             : }  // namespace</span>
 <span id="L542"><span class="lineNum">     542</span>                 :             : </span>
-<span id="L543"><span class="lineNum">     543</span>                 :             : }  // namespace xff::fuse</span>
+<span id="L543"><span class="lineNum">     543</span>                 :<span class="tlaGNC">           1 : void CrashUnmount(std::string_view mount_point) {</span></span>
+<span id="L544"><span class="lineNum">     544</span>                 :<span class="tlaGNC">           1 :   Unmount(mount_point);</span></span>
+<span id="L545"><span class="lineNum">     545</span>                 :<span class="tlaGNC">           1 : }</span></span>
+<span id="L546"><span class="lineNum">     546</span>                 :             : </span>
+<span id="L547"><span class="lineNum">     547</span>                 :             : }  // namespace xff::fuse</span>
         </pre>
               </td>
             </tr>

@@ -3,13 +3,13 @@
   "measurements": {
     "overall": {
       "lines": {
-        "covered": 17556,
-        "total": 18414,
+        "covered": 17547,
+        "total": 18405,
         "percent": 95.34
       },
       "functions": {
-        "covered": 1519,
-        "total": 1533,
+        "covered": 1518,
+        "total": 1532,
         "percent": 99.09
       },
       "branches": {
@@ -207,13 +207,13 @@
     },
     "extensions / FUSE": {
       "lines": {
-        "covered": 535,
-        "total": 576,
-        "percent": 92.88
+        "covered": 526,
+        "total": 567,
+        "percent": 92.77
       },
       "functions": {
-        "covered": 68,
-        "total": 68,
+        "covered": 67,
+        "total": 67,
         "percent": 100.0
       },
       "branches": {
