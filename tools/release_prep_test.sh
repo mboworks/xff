@@ -221,11 +221,35 @@ test_release_binaries_use_shared_configuration_and_staging() {
   fi
 }
 
+# 6. The release config turns on one target-level switch, and only the two published ELF binaries
+#    consume the optimized LLD flags. This keeps Mach-O, host tools, and unrelated test links out of
+#    the ELF optimization boundary while ensuring lean and full releases cannot drift.
+test_release_elf_link_optimizations_are_scoped() {
+  bazelrc="${HERE}/../.bazelrc"
+  root_build="${HERE}/../xff/BUILD.bazel"
+  cli_build="${HERE}/../xff/cli/BUILD.bazel"
+  if [ "$(count_lines_with 'common:release --//xff:xff_release_elf_link_optimizations=True' "${bazelrc}")" -ne 1 ]; then
+    fail "release config: must enable the ELF linker-optimization switch exactly once"
+  fi
+  if [ "$(count_lines_with 'constraint_values = ["@platforms//os:linux"]' "${root_build}")" -ne 1 ]; then
+    fail "release config: optimized linker flags must be constrained to Linux"
+  fi
+  for option in '-Wl,-O2' '-Wl,--icf=safe' '-Wl,-z,pack-relative-relocs'; do
+    if [ "$(count_lines_with "${option}" "${cli_build}")" -ne 1 ]; then
+      fail "release config: ${option} must be declared exactly once"
+    fi
+  done
+  if [ "$(count_lines_with 'linkopts = RELEASE_ELF_LINKOPTS' "${cli_build}")" -ne 2 ]; then
+    fail "release config: lean and full binaries must share the optimized ELF linkopts"
+  fi
+}
+
 test_guard_rejects_mismatched_tag
 test_guard_rejects_nonversion_tag
 test_happy_path_stamps_and_emits_notes
 test_release_reference_uses_clang
 test_release_binaries_use_shared_configuration_and_staging
+test_release_elf_link_optimizations_are_scoped
 
 if [ "${FAILED}" -ne 0 ]; then
   echo "release_prep_test: FAILED" >&2

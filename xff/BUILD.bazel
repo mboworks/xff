@@ -34,6 +34,32 @@ load("//xff:cc.bzl", "cc_test")
 
 package(default_visibility = ["//visibility:private"])
 
+# Internal release-mode switch for ELF linker optimizations. `.bazelrc` enables it only through
+# `--config=release`; the Linux constraint below ensures those LLD options never reach Mach-O links.
+bool_flag(
+    name = "xff_release_elf_link_optimizations",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "xff_release_elf_link_optimizations_enabled",
+    flag_values = {":xff_release_elf_link_optimizations": "True"},
+)
+
+config_setting(
+    name = "linux",
+    constraint_values = ["@platforms//os:linux"],
+)
+
+selects.config_setting_group(
+    name = "release_elf_link_optimizations",
+    match_all = [
+        ":linux",
+        ":xff_release_elf_link_optimizations_enabled",
+    ],
+    visibility = ["//xff/cli:__pkg__"],
+)
+
 # --//xff:xff_all -- turn on EVERY composable extra at once, whatever the set happens to be. It exists
 # so `--config=xff_docs` (the config the committed XFF.md is generated from, and which must document
 # the full surface) is a single line that cannot fall behind: each extra is linked when its OWN flag is
