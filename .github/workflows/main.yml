@@ -31,13 +31,13 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         config:
-          - name: release
-            flags: "--config=release"
+          - name: default
+            flags: "--config=clang"
           - name: asan
             flags: "--config=clang --config=asan"
         exclude:
           # asan on Linux is enough; the macOS asan cell is redundant sanitizer coverage, so drop it.
-          # This leaves: ubuntu release, ubuntu asan, macos release.
+          # This leaves: ubuntu default, ubuntu asan, macos default.
           - os: macos-latest
             config:
               name: asan
@@ -106,11 +106,13 @@ jobs:
             --disk_cache=$HOME/.cache/bazel-disk --repository_cache=$HOME/.cache/bazel-repo \
             "${fuse_test_config[@]}" \
             ${{ matrix.config.flags }}
-      # The ordinary Linux and macOS cells own the production configuration, including size
-      # optimization and ThinLTO. Stage and execute the stripped files as well: testing only the
-      # unstripped Bazel output would leave the final release transformation unverified.
-      - name: Build and smoke-test release artifacts
-        if: matrix.config.name == 'release'
+      # ThinLTO on every unit-test executable makes a cold job exceed 20 minutes. The ordinary suite
+      # above remains on the same hermetic Clang toolchain without LTO; these tagged binary-level
+      # tests compile the actual release targets with size optimization + ThinLTO and exercise both
+      # lean and full programs. Staging and executing the stripped copies covers the final release
+      # transformation as well.
+      - name: Test, build, and smoke-test release artifacts
+        if: matrix.config.name == 'default'
         run: |
           set -euo pipefail
           case "${RUNNER_OS}" in
@@ -119,6 +121,9 @@ jobs:
             *) echo "unsupported runner OS: ${RUNNER_OS}" >&2; exit 2 ;;
           esac
           arch="$(uname -m)"
+          bazel test //xff/cli:all --config=release --config=xff_docs \
+            --test_tag_filters=release-binary \
+            --disk_cache=$HOME/.cache/bazel-disk --repository_cache=$HOME/.cache/bazel-repo
           bazel build --config=release //xff/cli:xff \
             --disk_cache=$HOME/.cache/bazel-disk --repository_cache=$HOME/.cache/bazel-repo
           bazel build --config=release --config=xff_full //xff/cli:xff_full \
@@ -133,7 +138,7 @@ jobs:
           "${staged}/xff_full" --help >/dev/null
           ls -lh dist/*
       - name: Upload release candidates
-        if: matrix.config.name == 'release' && github.event_name == 'pull_request'
+        if: matrix.config.name == 'default' && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: release-candidate-${{ matrix.os }}

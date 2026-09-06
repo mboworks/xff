@@ -187,8 +187,9 @@ The `//xff` target alias follows your active workspace configuration automatical
 Published binaries use `--config=release`, which selects the hermetic Clang toolchain, optimizes for
 size, and enables ThinLTO. Each platform release is one `xff-PLATFORM-ARCH.tar.gz` archive containing
 the stripped `xff` and `xff_full` executables plus their matching symbol files under `debug/`. The
-ordinary Linux and macOS CI jobs test this same configuration and execute the
-staged, stripped binaries before a release can use it.
+ordinary Linux and macOS CI jobs run tagged binary-level tests with this same configuration and
+execute the staged, stripped binaries before a release can use it; the full unit-test graph stays on
+the same hermetic Clang toolchain without paying ThinLTO cost for every test executable.
 
 > **Compile-Time Enforcement:** The CLI options for extras (e.g., `--regextype=PCRE2` or `--archive`) are always exposed on the interface. Attempting to invoke an extra feature in a lean build that did not compile it will yield an immediate, explicit error rather than a silent failure or fallback.
 
