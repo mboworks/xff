@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-06 11:16:14</td>
+            <td class="headerValue">2026-09-06 12:00:47</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -192,7 +192,7 @@
 <span id="L112"><span class="lineNum">     112</span>                 :             :  private:</span>
 <span id="L113"><span class="lineNum">     113</span>                 :             :   // A job is ready or the pool is stopping. `absl::Mutex::Await` evaluates this</span>
 <span id="L114"><span class="lineNum">     114</span>                 :             :   // with `mutex_` held, so it requires the lock.</span>
-<span id="L115"><span class="lineNum">     115</span> [<span class="tlaGBC" title="branch 0 was taken 2958 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4684 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1399 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 3285 times"> + </span>]:<span class="tlaGNC">        7642 :   bool Pending() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) { return stop_ || !queue_.empty(); }</span></span>
+<span id="L115"><span class="lineNum">     115</span> [<span class="tlaGBC" title="branch 0 was taken 2939 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4723 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1419 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 3304 times"> + </span>]:<span class="tlaGNC">        7662 :   bool Pending() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) { return stop_ || !queue_.empty(); }</span></span>
 <span id="L116"><span class="lineNum">     116</span>                 :             : </span>
 <span id="L117"><span class="lineNum">     117</span>                 :             :   // Worker loop: drain jobs until stopped and the queue is empty. Caller (the</span>
 <span id="L118"><span class="lineNum">     118</span>                 :             :   // worker thread) must NOT hold `mutex_`.</span>
