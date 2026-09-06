@@ -1,6 +1,13 @@
 <!-- SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
+# 0.3.3
+
+- Build release binaries with hermetic Clang, `-Oz`, and ThinLTO; strip the published executables
+  and include their matching debug files in one archive per platform.
+- Test the exact release binaries in the default Linux and macOS CI jobs, and use the same staging
+  path for pull-request candidates and tagged releases.
+
 # 0.3.2
 
 - Check in formatter-clean C++ mirrors of embedded license bodies and verify each one against its
