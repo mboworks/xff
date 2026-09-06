@@ -32,16 +32,13 @@ for enforcement and presentation.
    similarity and near-duplicate measurements. Extend the evidence with traversal and memory
    measurements before optimizing. Keep fuzz time/resource guards separate from stable performance
    measurements.
-3. **Release linker optimization.** Evaluate the BCR `mold` module as the hermetic source of the ELF
-   linker for Linux release binaries. Its public executable target is not itself a registered Bazel
-   C++ toolchain, so make the linker selection explicit and verify it from the final executable. Keep
-   the platform Mach-O linker on macOS unless `mold` gains that output format; being buildable on a
-   macOS host does not make an ELF linker a macOS target linker. Measure cold and warm link time, raw
-   and level-19 Zstandard-compressed sizes, startup time, and representative runtime before selecting
-   it. Evaluate safe linker optimizations independently, including identical code folding and section
-   garbage collection, and verify their interaction with ThinLTO, split debug information,
-   attestations, and the existing release-binary smoke tests. Keep each experiment attributable; do
-   not change release packaging in the same change.
+3. **Release linker optimization.** The mold investigation recorded in
+   [`docs/history.md`](docs/history.md) did not justify replacing `lld` for xff. Evaluate `lld`'s safe
+   size optimizations independently, including identical code folding and section garbage collection.
+   Measure raw and level-19 Zstandard-compressed sizes, startup time, and representative runtime, and
+   verify interaction with ThinLTO, split debug information, attestations, and the existing
+   release-binary smoke tests. Keep each experiment attributable; do not change release packaging in
+   the same change.
 4. **Near-duplicate grouping design.** The benchmark/design spike now measures exact Jaccard
    verification behind scalable candidate generation; settle the grouping architecture, configuration,
    and core-versus-extra boundary before shipping a user-facing operation. False positives may reach
