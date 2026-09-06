@@ -121,9 +121,14 @@ jobs:
             *) echo "unsupported runner OS: ${RUNNER_OS}" >&2; exit 2 ;;
           esac
           arch="$(uname -m)"
+          release_test_config=()
+          if [ "${RUNNER_OS}" = "Linux" ]; then
+            release_test_config+=(--config=xff_fuse_tests_required)
+          fi
           bazel test //xff/cli:all --config=release --config=xff_docs \
             --test_tag_filters=release-binary \
-            --disk_cache=$HOME/.cache/bazel-disk --repository_cache=$HOME/.cache/bazel-repo
+            --disk_cache=$HOME/.cache/bazel-disk --repository_cache=$HOME/.cache/bazel-repo \
+            "${release_test_config[@]}"
           bazel build --config=release //xff/cli:xff \
             --disk_cache=$HOME/.cache/bazel-disk --repository_cache=$HOME/.cache/bazel-repo
           bazel build --config=release --config=xff_full //xff/cli:xff_full \
