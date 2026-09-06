@@ -1,6 +1,8 @@
 <!-- SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
+# 0.3.4
+
 # 0.3.3
 
 - Build release binaries with hermetic Clang, `-Oz`, and ThinLTO; strip the published executables
