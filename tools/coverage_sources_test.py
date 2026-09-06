@@ -184,6 +184,22 @@ class CoverageSourcesTest(unittest.TestCase):
             )
             self.assertIn("DA:1,1\nDA:5,1\nLF:2\nLH:2", actual)
 
+    def test_excludes_blocks_without_exposing_lcov_markers_to_genhtml(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "source.cc"
+            source.write_text(
+                "int covered = 1;\n"
+                "// XFF_COVERAGE_EXCL_START: asynchronous kernel callback.\n"
+                "int nondeterministically_covered = 2;\n"
+                "// XFF_COVERAGE_EXCL_STOP\n",
+                encoding="utf-8",
+            )
+            actual = coverage_sources.normalize_record(
+                "SF:source.cc\nDA:1,1\nDA:2,1\nDA:3,1\nDA:4,1\nLF:4\nLH:4\nend_of_record\n",
+                source,
+            )
+            self.assertIn("DA:1,1\nLF:1\nLH:1", actual)
+
     def test_rejects_unbalanced_source_exclusion_blocks(self):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "source.cc"
