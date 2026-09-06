@@ -189,9 +189,9 @@ class CoverageSourcesTest(unittest.TestCase):
             source = Path(directory) / "source.cc"
             source.write_text(
                 "int covered = 1;\n"
-                "// XFF_COVERAGE_EXCL_START: asynchronous kernel callback.\n"
+                "// XFF_UNSTABLE_COVERAGE_START: asynchronous kernel callback.\n"
                 "int nondeterministically_covered = 2;\n"
-                "// XFF_COVERAGE_EXCL_STOP\n",
+                "// XFF_UNSTABLE_COVERAGE_STOP\n",
                 encoding="utf-8",
             )
             actual = coverage_sources.normalize_record(
@@ -199,6 +199,7 @@ class CoverageSourcesTest(unittest.TestCase):
                 source,
             )
             self.assertIn("DA:1,1\nLF:1\nLH:1", actual)
+            self.assertNotIn("LCOV_EXCL", source.read_text(encoding="utf-8"))
 
     def test_rejects_unbalanced_source_exclusion_blocks(self):
         with tempfile.TemporaryDirectory() as directory:

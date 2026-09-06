@@ -344,7 +344,7 @@ void OpRead(fuse_req_t req, fuse_ino_t /*ino*/, size_t size, off_t off, struct f
       req, std::next(content.data(), static_cast<std::ptrdiff_t>(offset)), std::min(size, content.size() - offset));
 }
 
-// XFF_COVERAGE_EXCL_START: close queues RELEASE asynchronously; teardown may detach the mount before the
+// XFF_UNSTABLE_COVERAGE_START: close queues RELEASE asynchronously; teardown may detach the mount before the
 // kernel delivers it. Kernel-path tests exercise this callback, but its coverage is not deterministic.
 void OpRelease(fuse_req_t req, fuse_ino_t /*ino*/, struct fuse_file_info* file_info) {
   const FuseApi& api = *ResolvedApi();
@@ -356,7 +356,7 @@ void OpRelease(fuse_req_t req, fuse_ino_t /*ino*/, struct fuse_file_info* file_i
   api.reply_err(req, 0);
 }
 
-// XFF_COVERAGE_EXCL_STOP
+// XFF_UNSTABLE_COVERAGE_STOP
 
 void OpReadlink(fuse_req_t req, fuse_ino_t ino) {
   const FuseApi& api = *ResolvedApi();

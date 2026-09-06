@@ -80,7 +80,7 @@ def _excluded_blocks(source_lines: list[str]) -> set[int]:
     start_marker = ""
     for number, line in enumerate(source_lines, start=1):
         marker = next(
-            (candidate for candidate in ("LCOV_EXCL_START", "XFF_COVERAGE_EXCL_START") if candidate in line),
+            (candidate for candidate in ("LCOV_EXCL_START", "XFF_UNSTABLE_COVERAGE_START") if candidate in line),
             "",
         )
         if marker:
@@ -91,7 +91,7 @@ def _excluded_blocks(source_lines: list[str]) -> set[int]:
         if start is not None:
             excluded.add(number)
         stop_marker = next(
-            (candidate for candidate in ("LCOV_EXCL_STOP", "XFF_COVERAGE_EXCL_STOP") if candidate in line),
+            (candidate for candidate in ("LCOV_EXCL_STOP", "XFF_UNSTABLE_COVERAGE_STOP") if candidate in line),
             "",
         )
         if stop_marker:
