@@ -24,9 +24,11 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <future>
 #include <iostream>
 #include <limits>
 #include <map>
+#include <mutex>
 #include <optional>
 #include <ranges>
 #include <string>
@@ -2319,7 +2321,7 @@ absl::StatusOr<absl::flat_hash_set<std::string>> ResolveSkipVcs(
 }
 
 // -g auto: whether any search root is inside a git working tree, so .gitignore applies.
-bool AnyRootInRepo(const vfs::FileSystem& fs, const std::vector<std::string>& roots) {
+bool AnyRootInRepo(const vfs::FileSystem& fs, absl::Span<const std::string> roots) {
   return absl::c_any_of(
       roots, [&fs](std::string_view root) { return repo::FindRepoRoot(fs, AbsoluteDir(root)).has_value(); });
 }
@@ -3087,6 +3089,8 @@ namespace {
 struct TreeCompareEntry {
   std::string path;
   vfs::Metadata metadata;
+  mbo::types::OptionalRef<const vfs::FileSystem> fs;
+  std::shared_ptr<const vfs::FileSystem> fs_owner;
 };
 
 using TreeCompareEntries = std::map<std::string, TreeCompareEntry>;
@@ -3140,10 +3144,7 @@ absl::StatusOr<TreeCompareSelection> ResolveTreeCompareSelection(const std::vect
   return selection;
 }
 
-absl::StatusOr<bool> SameTreeEntry(
-    const vfs::FileSystem& fs,
-    const TreeCompareEntry& left,
-    const TreeCompareEntry& right) {
+absl::StatusOr<bool> SameTreeEntry(const TreeCompareEntry& left, const TreeCompareEntry& right) {
   if (left.metadata.type != right.metadata.type) {
     return false;
   }
@@ -3151,8 +3152,8 @@ absl::StatusOr<bool> SameTreeEntry(
     return true;
   }
   if (left.metadata.type == vfs::FileType::kSymlink) {
-    MBO_ASSIGN_OR_RETURN(const std::string left_target, fs.ReadLink(left.path));
-    MBO_ASSIGN_OR_RETURN(const std::string right_target, fs.ReadLink(right.path));
+    MBO_ASSIGN_OR_RETURN(const std::string left_target, left.fs->ReadLink(left.path));
+    MBO_ASSIGN_OR_RETURN(const std::string right_target, right.fs->ReadLink(right.path));
     return left_target == right_target;
   }
   if (left.metadata.type != vfs::FileType::kRegular) {
@@ -3164,8 +3165,8 @@ absl::StatusOr<bool> SameTreeEntry(
   constexpr std::size_t kChunkSize = std::size_t{64} * 1'024;
   for (std::uint64_t offset = 0; offset < left.metadata.size; offset += kChunkSize) {
     const auto length = static_cast<std::size_t>(std::min<std::uint64_t>(kChunkSize, left.metadata.size - offset));
-    MBO_ASSIGN_OR_RETURN(const std::string left_chunk, fs.ReadContentRange(left.path, offset, length));
-    MBO_ASSIGN_OR_RETURN(const std::string right_chunk, fs.ReadContentRange(right.path, offset, length));
+    MBO_ASSIGN_OR_RETURN(const std::string left_chunk, left.fs->ReadContentRange(left.path, offset, length));
+    MBO_ASSIGN_OR_RETURN(const std::string right_chunk, right.fs->ReadContentRange(right.path, offset, length));
     if (left_chunk != right_chunk) {
       return false;
     }
@@ -3174,7 +3175,6 @@ absl::StatusOr<bool> SameTreeEntry(
 }
 
 absl::StatusOr<std::string> TreeEntryPatch(
-    const vfs::FileSystem& fs,
     const std::optional<TreeCompareEntry>& left,
     const std::optional<TreeCompareEntry>& right,
     std::string_view relative_path,
@@ -3189,10 +3189,10 @@ absl::StatusOr<std::string> TreeEntryPatch(
   std::string left_data;
   std::string right_data;
   if (left.has_value()) {
-    MBO_ASSIGN_OR_RETURN(left_data, fs.ReadContent(left->path));
+    MBO_ASSIGN_OR_RETURN(left_data, left->fs->ReadContent(left->path));
   }
   if (right.has_value()) {
-    MBO_ASSIGN_OR_RETURN(right_data, fs.ReadContent(right->path));
+    MBO_ASSIGN_OR_RETURN(right_data, right->fs->ReadContent(right->path));
   }
   if (absl::StrContains(left_data.substr(0, content::kBinaryNulSniffBytes), '\0')
       || absl::StrContains(right_data.substr(0, content::kBinaryNulSniffBytes), '\0')) {
@@ -3203,6 +3203,18 @@ absl::StatusOr<std::string> TreeEntryPatch(
       mbo::file::Artefact{.data = right_data, .name = right_name}, options);
 }
 
+using MatchedEntryFn = absl::FunctionRef<void(const Visit&)>;
+
+RunResult RunFindCore(
+    const parser::Command& command,
+    absl::Span<const std::string> roots,
+    const vfs::FileSystem& fs,
+    EmitFn emit,
+    WalkErrorFn on_error,
+    std::optional<registry::Style> style,
+    mbo::types::OptionalRef<const MatchedEntryFn> matched_entry,
+    bool compare_listing);
+
 // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive two-tree merge dispatch
 RunResult RunTreeCompare(
     const parser::Command& command,
@@ -3210,45 +3222,10 @@ RunResult RunTreeCompare(
     EmitFn emit,
     WalkErrorFn on_error,
     std::optional<registry::Style> style) {
-  if (command.roots.size() != 2 || command.expression) {
-    on_error("--compare", absl::InvalidArgumentError("requires exactly two directory roots and no expression"));
+  if (command.roots.size() != 2) {
+    on_error("--compare", absl::InvalidArgumentError("requires exactly two roots"));
     return RunResult{.errors = 2};
   }
-  for (const std::string& root : command.roots) {
-    const absl::StatusOr<vfs::Metadata> metadata = fs.Stat(root, /*follow_symlinks=*/true);
-    if (!metadata.ok()) {
-      on_error(root, metadata.status());
-      return RunResult{.errors = 2};
-    }
-    if (metadata->type != vfs::FileType::kDirectory) {
-      on_error(root, absl::InvalidArgumentError("tree comparison root is not a directory"));
-      return RunResult{.errors = 2};
-    }
-  }
-
-  const bool gitignore_on = !HasGlobal(command.globals, "--no-ignore") && !HasGlobal(command.globals, "-u");
-  const absl::StatusOr<absl::flat_hash_set<std::string>> skip_vcs = ResolveSkipVcs(command.globals, gitignore_on);
-  if (!skip_vcs.ok()) {
-    on_error("--skip-vcs", skip_vcs.status());
-    return RunResult{.errors = 2};
-  }
-  ignore::PatternList global_excludes;
-  if (gitignore_on) {
-    const repo::GitConfigEnv git_env{
-        .home = env::Get("HOME").value_or(""),
-        .xdg_config_home = env::Get("XDG_CONFIG_HOME").value_or(""),
-    };
-    if (const std::optional<std::string> path = repo::GlobalExcludesPath(fs, git_env)) {
-      if (const absl::StatusOr<std::string> content = fs.ReadContent(*path); content.ok()) {
-        global_excludes = ignore::PatternList::Parse(*content);
-      }
-    }
-  }
-  IgnoreFileCache ignore_files(
-      fs, ResolveIgnoreFileNames(command.globals, gitignore_on, style), gitignore_on, std::move(global_excludes));
-  const ignore::PatternList ignore_patterns = BuildIgnorePatterns(command.globals);
-  const RootedIgnoreFiles rooted_ignore_files = RootedIgnoreFiles::FromGlobals(fs, command.globals);
-  const bool skip_hidden = ResolveSkipHidden(command.globals, style);
   const TreeCompareOutput output = ResolveTreeCompareOutput(command.globals);
   const absl::StatusOr<TreeCompareSelection> selection_result = ResolveTreeCompareSelection(command.globals);
   if (!selection_result.ok()) {
@@ -3285,42 +3262,38 @@ RunResult RunTreeCompare(
   }
 
   std::array<TreeCompareEntries, 2> entries;
-  WalkOptions options;
-  options.symlinks = SymlinkMode::kNever;
-  options.sort = SortOrder::kTree;
-  for (std::size_t side = 0; side < command.roots.size(); ++side) {
-    const std::string& root = command.roots[side];
-    const absl::Status status = Walk(
-        fs, {root}, options,
-        [&](const Visit& visit) {
-          if (skip_hidden && visit.depth > 0 && !visit.name.empty() && visit.name.front() == '.') {
-            return visit.metadata.type == vfs::FileType::kDirectory ? WalkAction::kPrune : WalkAction::kContinue;
-          }
-          if (visit.depth > 0 && skip_vcs->contains(visit.name)) {
-            return visit.metadata.type == vfs::FileType::kDirectory ? WalkAction::kPrune : WalkAction::kContinue;
-          }
-          const bool is_dir = visit.metadata.type == vfs::FileType::kDirectory;
-          const std::string_view rel = RelativeTo(visit.path, visit.root);
-          if (!rel.empty()) {
-            ignore::Decision decision = ignore_patterns.Match(rel, is_dir);
-            if (decision == ignore::Decision::kDefault && rooted_ignore_files.Active()) {
-              decision = rooted_ignore_files.Decide(AbsoluteDir(visit.path), is_dir);
-            }
-            if (decision == ignore::Decision::kDefault && ignore_files.Active()) {
-              decision = ignore_files.Decide(visit.path, visit.root, is_dir);
-            }
-            if (decision == ignore::Decision::kIgnore) {
-              return is_dir ? WalkAction::kPrune : WalkAction::kContinue;
-            }
-            entries.at(side).emplace(
-                std::string(rel), TreeCompareEntry{.path = std::string(visit.path), .metadata = visit.metadata});
-          }
-          return WalkAction::kContinue;
-        },
-        on_error);
-    if (!status.ok()) {
-      return RunResult{.errors = 1};
-    }
+  std::mutex callback_mutex;
+  std::set<std::string> reported_errors;
+  const auto run_side = [&](std::size_t side) {
+    const auto collect_callback = [&](const Visit& visit) {
+      const std::string_view relative = RelativeTo(visit.path, visit.root);
+      entries.at(side).emplace(
+          relative.empty() ? "." : std::string(relative),
+          TreeCompareEntry{
+              .path = std::string(visit.path), .metadata = visit.metadata, .fs = visit.fs, .fs_owner = visit.fs_owner});
+    };
+    const auto emit_callback = [&](std::string_view text) {
+      const std::scoped_lock lock(callback_mutex);
+      emit(text);
+    };
+    const auto error_callback = [&](std::string_view path, absl::Status status) {
+      const std::scoped_lock lock(callback_mutex);
+      if (reported_errors.emplace(absl::StrCat(path, "\n", status.ToString())).second) {
+        on_error(path, std::move(status));
+      }
+    };
+    const MatchedEntryFn collect = collect_callback;
+    const EmitFn synchronized_emit = emit_callback;
+    const WalkErrorFn synchronized_error = error_callback;
+    return RunFindCore(
+        command, absl::MakeConstSpan(command.roots).subspan(side, 1), fs, synchronized_emit, synchronized_error, style,
+        collect, /*compare_listing=*/true);
+  };
+  std::future<RunResult> left_result = std::async(std::launch::async, run_side, 0);
+  const RunResult right_result = run_side(1);
+  const RunResult left_run_result = left_result.get();
+  if (left_run_result.errors != 0 || right_result.errors != 0) {
+    return RunResult{.errors = std::max(left_run_result.errors, right_result.errors)};
   }
 
   bool different = false;
@@ -3333,7 +3306,7 @@ RunResult RunTreeCompare(
           emit(absl::StrCat("left-only\t", left->first, "\n"));
         } else {
           const absl::StatusOr<std::string> patch =
-              TreeEntryPatch(fs, left->second, std::nullopt, left->first, diff_options);
+              TreeEntryPatch(left->second, std::nullopt, left->first, diff_options);
           if (!patch.ok()) {
             on_error(left->first, patch.status());
             return RunResult{.errors = 1};
@@ -3349,7 +3322,7 @@ RunResult RunTreeCompare(
           emit(absl::StrCat("right-only\t", right->first, "\n"));
         } else {
           const absl::StatusOr<std::string> patch =
-              TreeEntryPatch(fs, std::nullopt, right->second, right->first, diff_options);
+              TreeEntryPatch(std::nullopt, right->second, right->first, diff_options);
           if (!patch.ok()) {
             on_error(right->first, patch.status());
             return RunResult{.errors = 1};
@@ -3360,7 +3333,7 @@ RunResult RunTreeCompare(
       different = different || right->second.metadata.type != vfs::FileType::kDirectory;
       ++right;
     } else {
-      const absl::StatusOr<bool> same = SameTreeEntry(fs, left->second, right->second);
+      const absl::StatusOr<bool> same = SameTreeEntry(left->second, right->second);
       if (!same.ok()) {
         on_error(left->first, same.status());
         return RunResult{.errors = 1};
@@ -3372,7 +3345,7 @@ RunResult RunTreeCompare(
           emit(absl::StrCat("different\t", left->first, "\n"));
         } else {
           const absl::StatusOr<std::string> patch =
-              TreeEntryPatch(fs, left->second, right->second, left->first, diff_options);
+              TreeEntryPatch(left->second, right->second, left->first, diff_options);
           if (!patch.ok()) {
             on_error(left->first, patch.status());
             return RunResult{.errors = 1};
@@ -3390,19 +3363,19 @@ RunResult RunTreeCompare(
 
 }  // namespace
 
+namespace {
+
 // Cohesive run dispatch; the visitor and post-walk sinks intentionally share this state.
 // NOLINTNEXTLINE(readability-function-cognitive-complexity,readability-function-size,hicpp-function-size,google-readability-function-size)
-RunResult RunFind(
+RunResult RunFindCore(
     const parser::Command& command,
+    absl::Span<const std::string> roots,
     const vfs::FileSystem& fs,
     EmitFn emit,
     WalkErrorFn on_error,
-    std::optional<registry::Style> style) {
-  if (absl::c_any_of(command.globals, [](std::string_view global) {
-        return global == "--compare" || global.starts_with("--compare=");
-      })) {
-    return RunTreeCompare(command, fs, emit, on_error, style);
-  }
+    std::optional<registry::Style> style,
+    mbo::types::OptionalRef<const MatchedEntryFn> matched_entry,
+    bool compare_listing) {
   bool any_match = false;
   std::vector<std::string> mime_vocabulary_files;
   mime::ConflictPolicy mime_conflicts = mime::ConflictPolicy::kError;
@@ -3452,7 +3425,7 @@ RunResult RunFind(
   const mbo::types::OptionalRef<const parser::Expr> expression = parser::AsConstOptionalExpr(command.expression);
   const bool has_action = expression.has_value() && ContainsAction(*expression);
   // --implicit-print=yes|no overrides find's default-print rule (otherwise !has_action).
-  const bool implicit_print = ResolveImplicitPrint(command.globals).value_or(!has_action);
+  const bool implicit_print = ResolveImplicitPrint(command.globals).value_or(!has_action && !compare_listing);
   if (HasGlobal(command.globals, "--safe") && expression.has_value() && ContainsArmedAction(*expression)) {
     on_error("-delete", absl::FailedPreconditionError("refused: --safe forbids destructive actions"));
     return RunResult{.errors = 2};  // do not traverse
@@ -3962,8 +3935,8 @@ RunResult RunFind(
   // ResolveGitignoreMode returns kOff then, so the repo probe and the global-excludes
   // read below are skipped too.
   const GitignoreMode gitignore_mode = ResolveGitignoreMode(command.globals, style);
-  const bool gitignore_on = gitignore_mode == GitignoreMode::kOn
-                            || (gitignore_mode == GitignoreMode::kAuto && AnyRootInRepo(walk_fs, command.roots));
+  const bool gitignore_on =
+      gitignore_mode == GitignoreMode::kOn || (gitignore_mode == GitignoreMode::kAuto && AnyRootInRepo(walk_fs, roots));
   // --skip-vcs[=LIST] / --no-skip-vcs: the VCS metadata dir names to prune. Resolved once (needs
   // gitignore_on for the -g -> .git default) and validated here, so a bad token is a usage error
   // (exit 2) refused before the walk.
@@ -4134,6 +4107,9 @@ RunResult RunFind(
                                 std::optional<bool> verification) {
     if (matched) {
       any_match = true;
+      if (matched_entry.has_value()) {
+        (*matched_entry)(visit);
+      }
     }
     const bool counted =
         *archive_aggregate == ArchiveAggregate::kBoth
@@ -4249,7 +4225,7 @@ RunResult RunFind(
     deferred_node_order.emplace(deferred_nodes[index], index);
   }
   const absl::Status status = Walk(
-      walk_fs, command.roots, options,
+      walk_fs, roots, options,
       // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive dispatch
       [&](const Visit& visit) {
         // Hidden filter: unless hidden files are included, drop a dotfile (basename
@@ -4897,6 +4873,24 @@ RunResult RunFind(
     }
   }
   return RunResult{.errors = errors, .any_match = any_match};
+}
+
+}  // namespace
+
+RunResult RunFind(
+    const parser::Command& command,
+    const vfs::FileSystem& fs,
+    EmitFn emit,
+    WalkErrorFn on_error,
+    std::optional<registry::Style> style) {
+  if (absl::c_any_of(command.globals, [](std::string_view global) {
+        return global == "--compare" || global.starts_with("--compare=");
+      })) {
+    return RunTreeCompare(command, fs, emit, on_error, style);
+  }
+  return RunFindCore(
+      command, command.roots, fs, emit, on_error, style, mbo::types::OptionalRef<const MatchedEntryFn>{},
+      /*compare_listing=*/false);
 }
 
 namespace {

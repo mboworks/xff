@@ -864,16 +864,17 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--compare[=status|diff]",
         .group = "output",
         .header = "Output",
-        .summary = "compare two trees as selected statuses or unified diff, with per-tree .gitignore rules",
-        .details = "Requires exactly two directory roots and no expression. Bare `--compare` and "
+        .summary = "compare two roots as selected statuses or a unified diff",
+        .details = "Requires exactly two roots. Bare `--compare` and "
                    "`--compare=status` emit only discrepancies as tab-separated `left-only`, `right-only`, or "
                    "`different` records. `--compare=diff` emits one unified tree diff, suitable for redirecting to "
                    "a patch file; `--diff-context` and `--diff-algorithm` tune it. Unlike `-diff TARGET`, which is "
                    "an expression action comparing each match from one walk with a templated target and therefore "
-                   "cannot discover target-only paths, `--compare` inventories both roots symmetrically. Regular "
-                   "files are compared byte for byte (text and binary); symlinks are compared by target. Each "
-                   "root's `.gitignore` stack is applied independently and VCS metadata is skipped. `--no-ignore` "
-                   "disables ignore processing.",
+                   "cannot discover target-only paths, `--compare` walks both roots independently and pairs the "
+                   "matches by relative path. The ordinary expression, ignore, hidden-file, archive, traversal, "
+                   "and `-P` / `-H` / `-L` symlink rules apply unchanged to each side; comparison itself enables "
+                   "none of them. Regular files are compared byte for byte (text and binary). Unfollowed symlinks "
+                   "are compared by target.",
         .values = kCompareValues,
         .topic = "content",
         .value_check = GlobalFlag::ValueCheck::kEnum,

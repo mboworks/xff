@@ -69,8 +69,9 @@ absl::Span<const Recipe> CookbookRecipes() {
        .note = "prints `DIGEST  PATH` per file (like sha256sum); redirect to a file to snapshot a tree, "
                "then diff two runs to spot changes."},
       {.task = "Create a patch between repository trees",
-       .command = "xff --compare=diff old-tree new-tree > changes.patch",
-       .note = "walks both trees with each side's own .gitignore rules and writes one unified patch for added, "
+       .command = "xff -g+ --compare=diff old-tree new-tree > changes.patch",
+       .note = "walks both trees using the requested traversal and ignore options, then writes one unified patch "
+               "for added, "
                "removed, and changed text files, including files found only on the right - unlike a one-sided "
                "`-diff TARGET` walk. Binary differences are reported in the patch stream. Use --compare-select to "
                "restrict which result kinds contribute."},

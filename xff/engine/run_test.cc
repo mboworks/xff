@@ -159,7 +159,7 @@ TEST_F(RunTest, NoExpressionPrintsEverything) {
   EXPECT_THAT(last_errors_, 0);
 }
 
-TEST_F(RunTest, CompareReportsOnlyTreeDiscrepanciesAndRespectsEachGitignore) {
+TEST_F(RunTest, CompareUsesTheRequestedIgnorePolicyIndependentlyOnEachSide) {
   const fs::path left = root_ / "left";
   const fs::path right = root_ / "right";
   ASSERT_TRUE(fs::create_directories(left / "nested"));
@@ -177,6 +177,13 @@ TEST_F(RunTest, CompareReportsOnlyTreeDiscrepanciesAndRespectsEachGitignore) {
 
   EXPECT_THAT(
       RunArgvRecords({"--compare", left.string(), right.string()}),
+      ElementsAre(
+          "different\t.gitignore", "different\tchanged", "left-only\tleft-ignored", "left-only\tleft-only",
+          "right-only\tright-ignored", "right-only\tright-only"));
+  EXPECT_THAT(last_errors_, 0);
+
+  EXPECT_THAT(
+      RunArgvRecords({"--compare", "--gitignore=on", left.string(), right.string()}),
       ElementsAre("different\t.gitignore", "different\tchanged", "left-only\tleft-only", "right-only\tright-only"));
   EXPECT_THAT(last_errors_, 0);
 
@@ -197,11 +204,25 @@ TEST_F(RunTest, CompareReportsOnlyTreeDiscrepanciesAndRespectsEachGitignore) {
   EXPECT_THAT(last_errors_, 0);
 }
 
-TEST_F(RunTest, CompareRequiresExactlyTwoRootsAndNoExpression) {
+TEST_F(RunTest, CompareRequiresTwoRootsAndAppliesTheExpressionToBoth) {
   EXPECT_THAT(RunArgvRecords({"--compare", root_.string()}), IsEmpty());
   EXPECT_THAT(last_errors_, 2);
-  EXPECT_THAT(RunArgvRecords({"--compare", root_.string(), root_.string(), "-name", "*.txt"}), IsEmpty());
-  EXPECT_THAT(last_errors_, 2);
+  const fs::path left = root_ / "expression-left";
+  const fs::path right = root_ / "expression-right";
+  ASSERT_TRUE(fs::create_directories(left));
+  ASSERT_TRUE(fs::create_directories(right));
+  { std::ofstream(left / "selected.txt") << "left"; }
+  { std::ofstream(right / "selected.txt") << "right"; }
+  { std::ofstream(left / "excluded.md") << "left"; }
+  { std::ofstream(right / "excluded.md") << "right"; }
+  EXPECT_THAT(
+      RunArgvRecords({"--compare", left.string(), right.string(), "-name", "*.txt"}),
+      ElementsAre("different\tselected.txt"));
+  EXPECT_THAT(last_errors_, 0);
+  EXPECT_THAT(
+      RunArgvRecords({"--compare", left.string(), right.string(), "-name", "*.txt", "-printf", "%f\\n"}),
+      UnorderedElementsAre("selected.txt", "selected.txt", "different\tselected.txt"));
+  EXPECT_THAT(last_errors_, 0);
 }
 
 TEST_F(RunTest, CompareSelectsEveryResultKind) {
@@ -264,6 +285,24 @@ TEST_F(RunTest, CompareHandlesFileKindsAndTraversalOptions) {
   EXPECT_THAT(last_errors_, 0);
 }
 
+TEST_F(RunTest, CompareRootSymlinksFollowTheRequestedTraversalMode) {
+  const fs::path left_target = root_ / "symlink-left-target";
+  const fs::path right_target = root_ / "symlink-right-target";
+  ASSERT_TRUE(fs::create_directories(left_target));
+  ASSERT_TRUE(fs::create_directories(right_target));
+  { std::ofstream(left_target / "value") << "same"; }
+  { std::ofstream(right_target / "value") << "same"; }
+  const fs::path left = root_ / "symlink-left";
+  const fs::path right = root_ / "symlink-right";
+  fs::create_symlink(left_target.filename(), left);
+  fs::create_symlink(right_target.filename(), right);
+
+  EXPECT_THAT(RunArgvRecords({"--compare", left.string(), right.string()}), ElementsAre("different\t."));
+  EXPECT_THAT(RunArgvRecords({"-H", "--compare", left.string(), right.string()}), IsEmpty());
+  EXPECT_THAT(RunArgvRecords({"-L", "--compare", left.string(), right.string()}), IsEmpty());
+  EXPECT_THAT(last_errors_, 0);
+}
+
 TEST_F(RunTest, CompareAppliesExplicitAndGlobalIgnoreFiles) {
   const fs::path left = root_ / "ignore-left";
   const fs::path right = root_ / "ignore-right";
@@ -281,7 +320,8 @@ TEST_F(RunTest, CompareAppliesExplicitAndGlobalIgnoreFiles) {
   env::SetForTesting("XDG_CONFIG_HOME", config.string());
 
   EXPECT_THAT(
-      RunArgvRecords({"--compare", "--ignore-file=" + explicit_ignore.string(), left.string(), right.string()}),
+      RunArgvRecords(
+          {"--compare", "--gitignore=on", "--ignore-file=" + explicit_ignore.string(), left.string(), right.string()}),
       IsEmpty());
   EXPECT_THAT(last_errors_, 0);
 }
@@ -295,9 +335,16 @@ TEST_F(RunTest, CompareValidatesRootsSelectionsAndDiffOptions) {
   { std::ofstream(right / "value") << "new\n"; }
 
   EXPECT_THAT(RunArgvRecords({"--compare", (root_ / "missing").string(), right.string()}), IsEmpty());
-  EXPECT_THAT(last_errors_, 2);
-  EXPECT_THAT(RunArgvRecords({"--compare", (root_ / "a.txt").string(), right.string()}), IsEmpty());
-  EXPECT_THAT(last_errors_, 2);
+  EXPECT_THAT(last_errors_, 1);
+  EXPECT_THAT(RunArgvRecords({"--compare", left.string(), (root_ / "missing").string()}), IsEmpty());
+  EXPECT_THAT(last_errors_, 1);
+  const fs::path missing = root_ / "missing-on-both-sides";
+  EXPECT_THAT(RunArgvRecords({"--compare", missing.string(), missing.string()}), IsEmpty());
+  EXPECT_THAT(last_errors_, 1);
+  EXPECT_THAT(
+      RunArgvRecords({"--compare", (root_ / "a.txt").string(), right.string()}),
+      ElementsAre("different\t.", "right-only\tvalue"));
+  EXPECT_THAT(last_errors_, 0);
   EXPECT_THAT(RunArgvRecords({"--compare", "--compare-select=unknown", left.string(), right.string()}), IsEmpty());
   EXPECT_THAT(last_errors_, 2);
   EXPECT_THAT(RunArgvRecords({"--compare", "--skip-vcs=unknown", left.string(), right.string()}), IsEmpty());

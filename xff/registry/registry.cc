@@ -463,8 +463,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "optional :STYLE picks the output: unified `u3` (default; 3 lines of context), context `c`, "
                    "normal `n`, side-by-side `y`, or `none` for just the boolean. This is a one-sided expression "
                    "action: it visits only the search roots, so it cannot report paths that exist only under TARGET. "
-                   "Use `--compare[=status|diff] LEFT RIGHT` for a symmetric, ignore-aware comparison of two complete "
-                   "trees. Text files only; expensive.",
+                   "Use `--compare[=status|diff] LEFT RIGHT` to walk two roots with the same options and expression, "
+                   "then compare their matches symmetrically. Text files only; expensive.",
         .kind = Kind::kAction,
         .arity = 1,
         .binding = Binding::kStyle,
