@@ -49,6 +49,24 @@ test::full_binary_resolves_to_the_xff_style_via_argv0() {
   expect_matches '/f\.txt:1:has TODO here' "${out}"
 }
 
+test::full_binary_man_page_uses_its_invocation_name() {
+  local out
+  out="$("$(_xff_full_bin)" --pager=never --man)"
+  expect_matches '^\.TH xff_full 1' "${out}"
+  expect_output_contains $'.SH NAME\nxff_full \\- eXtended File Find' "${out}"
+  expect_output_contains $'.SH SYNOPSIS\n.B xff_full' "${out}"
+}
+
+test::man_page_uses_a_symlink_invocation_name() {
+  local dir out
+  dir="$(test_tmpdir symlink)"
+  ln -s "$(_xff_full_bin)" "${dir}/xff"
+  out="$("${dir}/xff" --pager=never --man)"
+  expect_matches '^\.TH xff 1' "${out}"
+  expect_output_contains $'.SH NAME\nxff \\- eXtended File Find' "${out}"
+  expect_output_contains $'.SH SYNOPSIS\n.B xff' "${out}"
+}
+
 test::full_binary_pcre2_works_when_the_extra_is_linked_else_errors() {
   # This test drives xff_full in whichever build config it was compiled with, so it passes both
   # ways: a plain build links no PCRE2 backend (--regextype=PCRE2 is a usage error), while a

@@ -17,15 +17,18 @@
 #define XFF_CLI_MANPAGE_H_
 
 #include <string>
+#include <string_view>
 
 namespace xff::cli {
 
 // Renders the xff(1) man page (roff/troff) on demand from the same single sources of
 // truth the parser and `--help` use -- cli::Globals() for options and
 // registry::All() for the expression vocabulary -- so the page can never drift from
-// the binary. Emitted by `xff --man`; pipe to `man -l -` or install as
-// .../man/man1/xff.1.
-std::string ManPage();
+// the binary. `program_name` is the basename used to invoke the binary, so an
+// installed `xff_full --man` page consistently documents xff_full while a
+// symlink named `xff` documents xff. Pipe to `man -l -` or install under
+// .../man/man1/<program_name>.1.
+std::string ManPage(std::string_view program_name = "xff");
 
 }  // namespace xff::cli
 

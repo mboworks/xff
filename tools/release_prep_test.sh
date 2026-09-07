@@ -158,16 +158,31 @@ test_happy_path_stamps_and_emits_notes() {
     *) fail "happy: notes missing the versioned coverage link: ${notes}" ;;
   esac
   case "${notes}" in
-    *"releases/download/v1.2.3/xff-linux-x86_64"*) ;;
-    *) fail "happy: notes missing the versioned binary download: ${notes}" ;;
+    *"XFF_VERSION=v1.2.3"*"releases/download/\${XFF_VERSION}/xff-linux-x86_64"*) ;;
+    *) fail "happy: notes missing the reusable versioned Linux download: ${notes}" ;;
   esac
   case "${notes}" in
-    *"SHA256SUMS"*"sha256sum -c -"*) ;;
-    *) fail "happy: notes missing checksum verification: ${notes}" ;;
+    *"releases/download/\${XFF_VERSION}/xff-macos-arm64"*) ;;
+    *) fail "happy: notes missing the reusable versioned macOS download: ${notes}" ;;
   esac
   case "${notes}" in
-    *"--pager=never --man > "*"/.local/share/man/man1/xff.1"*) ;;
+    *" xff-linux-x86_64$"*"sha256sum -c -"*" xff_full-linux-x86_64$"*"sha256sum -c -"*) ;;
+    *) fail "happy: notes do not verify both Linux binaries: ${notes}" ;;
+  esac
+  case "${notes}" in
+    *" xff-macos-arm64$"*"shasum -a 256 -c -"*" xff_full-macos-arm64$"*"shasum -a 256 -c -"*) ;;
+    *) fail "happy: notes do not verify both macOS binaries: ${notes}" ;;
+  esac
+  case "${notes}" in
+    *"install -m 0755 xff-linux-x86_64 \"\$XFF_PATH_BIN/xff\""*) ;;
+    *) fail "happy: notes missing executable installation: ${notes}" ;;
+  esac
+  case "${notes}" in
+    *"\"\$XFF_PATH_BIN/xff\" --pager=never --man > \"\$XFF_PATH_MAN/xff.1\""*) ;;
     *) fail "happy: notes missing generated man-page installation: ${notes}" ;;
+  esac
+  case "${notes}" in
+    *"\\\${XFF_VERSION}"*) fail "happy: generated commands escape XFF_VERSION instead of expanding it" ;;
   esac
 }
 
