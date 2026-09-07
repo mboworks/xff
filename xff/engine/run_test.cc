@@ -219,6 +219,10 @@ TEST_F(RunTest, CompareRequiresTwoRootsAndAppliesTheExpressionToBoth) {
       RunArgvRecords({"--compare", left.string(), right.string(), "-name", "*.txt"}),
       ElementsAre("different\tselected.txt"));
   EXPECT_THAT(last_errors_, 0);
+  EXPECT_THAT(
+      RunArgvRecords({"--compare", left.string(), right.string(), "-name", "*.txt", "-printf", "%f\\n"}),
+      UnorderedElementsAre("selected.txt", "selected.txt", "different\tselected.txt"));
+  EXPECT_THAT(last_errors_, 0);
 }
 
 TEST_F(RunTest, CompareSelectsEveryResultKind) {
@@ -333,6 +337,9 @@ TEST_F(RunTest, CompareValidatesRootsSelectionsAndDiffOptions) {
   EXPECT_THAT(RunArgvRecords({"--compare", (root_ / "missing").string(), right.string()}), IsEmpty());
   EXPECT_THAT(last_errors_, 1);
   EXPECT_THAT(RunArgvRecords({"--compare", left.string(), (root_ / "missing").string()}), IsEmpty());
+  EXPECT_THAT(last_errors_, 1);
+  const fs::path missing = root_ / "missing-on-both-sides";
+  EXPECT_THAT(RunArgvRecords({"--compare", missing.string(), missing.string()}), IsEmpty());
   EXPECT_THAT(last_errors_, 1);
   EXPECT_THAT(
       RunArgvRecords({"--compare", (root_ / "a.txt").string(), right.string()}),
