@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-07 17:23:52</td>
+            <td class="headerValue">2026-09-07 18:25:10</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -1199,276 +1199,276 @@
 <span id="L1107"><span class="lineNum">    1107</span>                 :<span class="tlaGNC">         128 :   return Template::Compile(tmpl).Render(context);</span></span>
 <span id="L1108"><span class="lineNum">    1108</span>                 :<span class="tlaGNC">         128 : }</span></span>
 <span id="L1109"><span class="lineNum">    1109</span>                 :             : </span>
-<span id="L1110"><span class="lineNum">    1110</span>                 :<span class="tlaGNC">          61 : absl::Span&lt;const FieldDoc&gt; FieldDocs() {</span></span>
-<span id="L1111"><span class="lineNum">    1111</span>                 :<span class="tlaGNC">          61 :   static constexpr auto kFileAlias = std::to_array&lt;std::string_view&gt;({&quot;file&quot;});</span></span>
-<span id="L1112"><span class="lineNum">    1112</span>                 :<span class="tlaGNC">          61 :   static constexpr auto kExtensionAlias = std::to_array&lt;std::string_view&gt;({&quot;extension&quot;});</span></span>
-<span id="L1113"><span class="lineNum">    1113</span>                 :<span class="tlaGNC">          61 :   static constexpr auto kLanguageAlias = std::to_array&lt;std::string_view&gt;({&quot;language&quot;});</span></span>
-<span id="L1114"><span class="lineNum">    1114</span>                 :<span class="tlaGNC">          61 :   static constexpr auto kOwnerAlias = std::to_array&lt;std::string_view&gt;({&quot;owner&quot;});</span></span>
-<span id="L1115"><span class="lineNum">    1115</span>                 :<span class="tlaGNC">          61 :   static constexpr auto kPermissionAlias = std::to_array&lt;std::string_view&gt;({&quot;perm&quot;});</span></span>
-<span id="L1116"><span class="lineNum">    1116</span>                 :<span class="tlaGNC">          61 :   static constexpr auto kDocs = std::to_array&lt;FieldDoc&gt;({</span></span>
+<span id="L1110"><span class="lineNum">    1110</span>                 :<span class="tlaGNC">          66 : absl::Span&lt;const FieldDoc&gt; FieldDocs() {</span></span>
+<span id="L1111"><span class="lineNum">    1111</span>                 :<span class="tlaGNC">          66 :   static constexpr auto kFileAlias = std::to_array&lt;std::string_view&gt;({&quot;file&quot;});</span></span>
+<span id="L1112"><span class="lineNum">    1112</span>                 :<span class="tlaGNC">          66 :   static constexpr auto kExtensionAlias = std::to_array&lt;std::string_view&gt;({&quot;extension&quot;});</span></span>
+<span id="L1113"><span class="lineNum">    1113</span>                 :<span class="tlaGNC">          66 :   static constexpr auto kLanguageAlias = std::to_array&lt;std::string_view&gt;({&quot;language&quot;});</span></span>
+<span id="L1114"><span class="lineNum">    1114</span>                 :<span class="tlaGNC">          66 :   static constexpr auto kOwnerAlias = std::to_array&lt;std::string_view&gt;({&quot;owner&quot;});</span></span>
+<span id="L1115"><span class="lineNum">    1115</span>                 :<span class="tlaGNC">          66 :   static constexpr auto kPermissionAlias = std::to_array&lt;std::string_view&gt;({&quot;perm&quot;});</span></span>
+<span id="L1116"><span class="lineNum">    1116</span>                 :<span class="tlaGNC">          66 :   static constexpr auto kDocs = std::to_array&lt;FieldDoc&gt;({</span></span>
 <span id="L1117"><span class="lineNum">    1117</span>                 :             :       // Path &amp; name.</span>
-<span id="L1118"><span class="lineNum">    1118</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;path&quot;,</span></span>
-<span id="L1119"><span class="lineNum">    1119</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1120"><span class="lineNum">    1120</span>                 :<span class="tlaGNC">          61 :        .group = &quot;path&quot;,</span></span>
-<span id="L1121"><span class="lineNum">    1121</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Path &amp; name&quot;,</span></span>
-<span id="L1122"><span class="lineNum">    1122</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;full path as traversed ({} is an alias)&quot;},</span></span>
-<span id="L1123"><span class="lineNum">    1123</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;relpath&quot;,</span></span>
-<span id="L1124"><span class="lineNum">    1124</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1125"><span class="lineNum">    1125</span>                 :<span class="tlaGNC">          61 :        .group = &quot;path&quot;,</span></span>
-<span id="L1126"><span class="lineNum">    1126</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Path &amp; name&quot;,</span></span>
-<span id="L1127"><span class="lineNum">    1127</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;path relative to the search root (find %P)&quot;},</span></span>
-<span id="L1128"><span class="lineNum">    1128</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;root&quot;,</span></span>
-<span id="L1129"><span class="lineNum">    1129</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1130"><span class="lineNum">    1130</span>                 :<span class="tlaGNC">          61 :        .group = &quot;path&quot;,</span></span>
-<span id="L1131"><span class="lineNum">    1131</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Path &amp; name&quot;,</span></span>
-<span id="L1132"><span class="lineNum">    1132</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;the search root it was reached from (find %H)&quot;},</span></span>
-<span id="L1133"><span class="lineNum">    1133</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;dir&quot;,</span></span>
-<span id="L1134"><span class="lineNum">    1134</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1135"><span class="lineNum">    1135</span>                 :<span class="tlaGNC">          61 :        .group = &quot;path&quot;,</span></span>
-<span id="L1136"><span class="lineNum">    1136</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Path &amp; name&quot;,</span></span>
-<span id="L1137"><span class="lineNum">    1137</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;directory containing the entry&quot;},</span></span>
-<span id="L1138"><span class="lineNum">    1138</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;name&quot;,</span></span>
-<span id="L1139"><span class="lineNum">    1139</span>                 :<span class="tlaGNC">          61 :        .aliases = kFileAlias,</span></span>
-<span id="L1140"><span class="lineNum">    1140</span>                 :<span class="tlaGNC">          61 :        .group = &quot;path&quot;,</span></span>
-<span id="L1141"><span class="lineNum">    1141</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Path &amp; name&quot;,</span></span>
-<span id="L1142"><span class="lineNum">    1142</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;final path component (the file name)&quot;},</span></span>
-<span id="L1143"><span class="lineNum">    1143</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;stem&quot;,</span></span>
-<span id="L1144"><span class="lineNum">    1144</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1145"><span class="lineNum">    1145</span>                 :<span class="tlaGNC">          61 :        .group = &quot;path&quot;,</span></span>
-<span id="L1146"><span class="lineNum">    1146</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Path &amp; name&quot;,</span></span>
-<span id="L1147"><span class="lineNum">    1147</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;name without its last extension&quot;},</span></span>
-<span id="L1148"><span class="lineNum">    1148</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;core&quot;,</span></span>
-<span id="L1149"><span class="lineNum">    1149</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1150"><span class="lineNum">    1150</span>                 :<span class="tlaGNC">          61 :        .group = &quot;path&quot;,</span></span>
-<span id="L1151"><span class="lineNum">    1151</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Path &amp; name&quot;,</span></span>
-<span id="L1152"><span class="lineNum">    1152</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;name without all extensions (foo.tar.gz -&gt; foo)&quot;},</span></span>
-<span id="L1153"><span class="lineNum">    1153</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;ext&quot;,</span></span>
-<span id="L1154"><span class="lineNum">    1154</span>                 :<span class="tlaGNC">          61 :        .aliases = kExtensionAlias,</span></span>
-<span id="L1155"><span class="lineNum">    1155</span>                 :<span class="tlaGNC">          61 :        .group = &quot;path&quot;,</span></span>
-<span id="L1156"><span class="lineNum">    1156</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Path &amp; name&quot;,</span></span>
-<span id="L1157"><span class="lineNum">    1157</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;last extension, no dot (gz)&quot;},</span></span>
-<span id="L1158"><span class="lineNum">    1158</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;suffix&quot;,</span></span>
-<span id="L1159"><span class="lineNum">    1159</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1160"><span class="lineNum">    1160</span>                 :<span class="tlaGNC">          61 :        .group = &quot;path&quot;,</span></span>
-<span id="L1161"><span class="lineNum">    1161</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Path &amp; name&quot;,</span></span>
-<span id="L1162"><span class="lineNum">    1162</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;last extension, with dot (.gz)&quot;},</span></span>
-<span id="L1163"><span class="lineNum">    1163</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;suffixes&quot;,</span></span>
-<span id="L1164"><span class="lineNum">    1164</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1165"><span class="lineNum">    1165</span>                 :<span class="tlaGNC">          61 :        .group = &quot;path&quot;,</span></span>
-<span id="L1166"><span class="lineNum">    1166</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Path &amp; name&quot;,</span></span>
-<span id="L1167"><span class="lineNum">    1167</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;all extensions, with dots (.tar.gz)&quot;},</span></span>
-<span id="L1168"><span class="lineNum">    1168</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;target&quot;,</span></span>
-<span id="L1169"><span class="lineNum">    1169</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1170"><span class="lineNum">    1170</span>                 :<span class="tlaGNC">          61 :        .group = &quot;path&quot;,</span></span>
-<span id="L1171"><span class="lineNum">    1171</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Path &amp; name&quot;,</span></span>
-<span id="L1172"><span class="lineNum">    1172</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;a symlink's target (find %l); else empty&quot;},</span></span>
+<span id="L1118"><span class="lineNum">    1118</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;path&quot;,</span></span>
+<span id="L1119"><span class="lineNum">    1119</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1120"><span class="lineNum">    1120</span>                 :<span class="tlaGNC">          66 :        .group = &quot;path&quot;,</span></span>
+<span id="L1121"><span class="lineNum">    1121</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Path &amp; name&quot;,</span></span>
+<span id="L1122"><span class="lineNum">    1122</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;full path as traversed ({} is an alias)&quot;},</span></span>
+<span id="L1123"><span class="lineNum">    1123</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;relpath&quot;,</span></span>
+<span id="L1124"><span class="lineNum">    1124</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1125"><span class="lineNum">    1125</span>                 :<span class="tlaGNC">          66 :        .group = &quot;path&quot;,</span></span>
+<span id="L1126"><span class="lineNum">    1126</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Path &amp; name&quot;,</span></span>
+<span id="L1127"><span class="lineNum">    1127</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;path relative to the search root (find %P)&quot;},</span></span>
+<span id="L1128"><span class="lineNum">    1128</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;root&quot;,</span></span>
+<span id="L1129"><span class="lineNum">    1129</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1130"><span class="lineNum">    1130</span>                 :<span class="tlaGNC">          66 :        .group = &quot;path&quot;,</span></span>
+<span id="L1131"><span class="lineNum">    1131</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Path &amp; name&quot;,</span></span>
+<span id="L1132"><span class="lineNum">    1132</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;the search root it was reached from (find %H)&quot;},</span></span>
+<span id="L1133"><span class="lineNum">    1133</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;dir&quot;,</span></span>
+<span id="L1134"><span class="lineNum">    1134</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1135"><span class="lineNum">    1135</span>                 :<span class="tlaGNC">          66 :        .group = &quot;path&quot;,</span></span>
+<span id="L1136"><span class="lineNum">    1136</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Path &amp; name&quot;,</span></span>
+<span id="L1137"><span class="lineNum">    1137</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;directory containing the entry&quot;},</span></span>
+<span id="L1138"><span class="lineNum">    1138</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;name&quot;,</span></span>
+<span id="L1139"><span class="lineNum">    1139</span>                 :<span class="tlaGNC">          66 :        .aliases = kFileAlias,</span></span>
+<span id="L1140"><span class="lineNum">    1140</span>                 :<span class="tlaGNC">          66 :        .group = &quot;path&quot;,</span></span>
+<span id="L1141"><span class="lineNum">    1141</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Path &amp; name&quot;,</span></span>
+<span id="L1142"><span class="lineNum">    1142</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;final path component (the file name)&quot;},</span></span>
+<span id="L1143"><span class="lineNum">    1143</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;stem&quot;,</span></span>
+<span id="L1144"><span class="lineNum">    1144</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1145"><span class="lineNum">    1145</span>                 :<span class="tlaGNC">          66 :        .group = &quot;path&quot;,</span></span>
+<span id="L1146"><span class="lineNum">    1146</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Path &amp; name&quot;,</span></span>
+<span id="L1147"><span class="lineNum">    1147</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;name without its last extension&quot;},</span></span>
+<span id="L1148"><span class="lineNum">    1148</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;core&quot;,</span></span>
+<span id="L1149"><span class="lineNum">    1149</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1150"><span class="lineNum">    1150</span>                 :<span class="tlaGNC">          66 :        .group = &quot;path&quot;,</span></span>
+<span id="L1151"><span class="lineNum">    1151</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Path &amp; name&quot;,</span></span>
+<span id="L1152"><span class="lineNum">    1152</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;name without all extensions (foo.tar.gz -&gt; foo)&quot;},</span></span>
+<span id="L1153"><span class="lineNum">    1153</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;ext&quot;,</span></span>
+<span id="L1154"><span class="lineNum">    1154</span>                 :<span class="tlaGNC">          66 :        .aliases = kExtensionAlias,</span></span>
+<span id="L1155"><span class="lineNum">    1155</span>                 :<span class="tlaGNC">          66 :        .group = &quot;path&quot;,</span></span>
+<span id="L1156"><span class="lineNum">    1156</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Path &amp; name&quot;,</span></span>
+<span id="L1157"><span class="lineNum">    1157</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;last extension, no dot (gz)&quot;},</span></span>
+<span id="L1158"><span class="lineNum">    1158</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;suffix&quot;,</span></span>
+<span id="L1159"><span class="lineNum">    1159</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1160"><span class="lineNum">    1160</span>                 :<span class="tlaGNC">          66 :        .group = &quot;path&quot;,</span></span>
+<span id="L1161"><span class="lineNum">    1161</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Path &amp; name&quot;,</span></span>
+<span id="L1162"><span class="lineNum">    1162</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;last extension, with dot (.gz)&quot;},</span></span>
+<span id="L1163"><span class="lineNum">    1163</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;suffixes&quot;,</span></span>
+<span id="L1164"><span class="lineNum">    1164</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1165"><span class="lineNum">    1165</span>                 :<span class="tlaGNC">          66 :        .group = &quot;path&quot;,</span></span>
+<span id="L1166"><span class="lineNum">    1166</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Path &amp; name&quot;,</span></span>
+<span id="L1167"><span class="lineNum">    1167</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;all extensions, with dots (.tar.gz)&quot;},</span></span>
+<span id="L1168"><span class="lineNum">    1168</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;target&quot;,</span></span>
+<span id="L1169"><span class="lineNum">    1169</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1170"><span class="lineNum">    1170</span>                 :<span class="tlaGNC">          66 :        .group = &quot;path&quot;,</span></span>
+<span id="L1171"><span class="lineNum">    1171</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Path &amp; name&quot;,</span></span>
+<span id="L1172"><span class="lineNum">    1172</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;a symlink's target (find %l); else empty&quot;},</span></span>
 <span id="L1173"><span class="lineNum">    1173</span>                 :             :       // Type &amp; size.</span>
-<span id="L1174"><span class="lineNum">    1174</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;type&quot;,</span></span>
-<span id="L1175"><span class="lineNum">    1175</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1176"><span class="lineNum">    1176</span>                 :<span class="tlaGNC">          61 :        .group = &quot;type&quot;,</span></span>
-<span id="L1177"><span class="lineNum">    1177</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Type &amp; size&quot;,</span></span>
-<span id="L1178"><span class="lineNum">    1178</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;entry type letter (f, d, l, ...)&quot;},</span></span>
-<span id="L1179"><span class="lineNum">    1179</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;lang&quot;,</span></span>
-<span id="L1180"><span class="lineNum">    1180</span>                 :<span class="tlaGNC">          61 :        .aliases = kLanguageAlias,</span></span>
-<span id="L1181"><span class="lineNum">    1181</span>                 :<span class="tlaGNC">          61 :        .group = &quot;type&quot;,</span></span>
-<span id="L1182"><span class="lineNum">    1182</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Type &amp; size&quot;,</span></span>
-<span id="L1183"><span class="lineNum">    1183</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;language by extension/filename (C++, Python, ...; empty if unknown)&quot;},</span></span>
-<span id="L1184"><span class="lineNum">    1184</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;lang-type&quot;,</span></span>
-<span id="L1185"><span class="lineNum">    1185</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1186"><span class="lineNum">    1186</span>                 :<span class="tlaGNC">          61 :        .group = &quot;type&quot;,</span></span>
-<span id="L1187"><span class="lineNum">    1187</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Type &amp; size&quot;,</span></span>
-<span id="L1188"><span class="lineNum">    1188</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;language kind (programming, markup, data, or prose); empty when unspecified&quot;},</span></span>
-<span id="L1189"><span class="lineNum">    1189</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;lang-color&quot;,</span></span>
-<span id="L1190"><span class="lineNum">    1190</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1191"><span class="lineNum">    1191</span>                 :<span class="tlaGNC">          61 :        .group = &quot;type&quot;,</span></span>
-<span id="L1192"><span class="lineNum">    1192</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Type &amp; size&quot;,</span></span>
-<span id="L1193"><span class="lineNum">    1193</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;language display colour (#RRGGBB); empty when unspecified&quot;},</span></span>
-<span id="L1194"><span class="lineNum">    1194</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;lang-group&quot;,</span></span>
-<span id="L1195"><span class="lineNum">    1195</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1196"><span class="lineNum">    1196</span>                 :<span class="tlaGNC">          61 :        .group = &quot;type&quot;,</span></span>
-<span id="L1197"><span class="lineNum">    1197</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Type &amp; size&quot;,</span></span>
-<span id="L1198"><span class="lineNum">    1198</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;parent language group; empty when the language is not grouped&quot;},</span></span>
-<span id="L1199"><span class="lineNum">    1199</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;lang-source&quot;,</span></span>
-<span id="L1200"><span class="lineNum">    1200</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1201"><span class="lineNum">    1201</span>                 :<span class="tlaGNC">          61 :        .group = &quot;type&quot;,</span></span>
-<span id="L1202"><span class="lineNum">    1202</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Type &amp; size&quot;,</span></span>
-<span id="L1203"><span class="lineNum">    1203</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;vocabulary provenance for the language; empty when unspecified&quot;},</span></span>
-<span id="L1204"><span class="lineNum">    1204</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;mime&quot;,</span></span>
-<span id="L1205"><span class="lineNum">    1205</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1206"><span class="lineNum">    1206</span>                 :<span class="tlaGNC">          61 :        .group = &quot;type&quot;,</span></span>
-<span id="L1207"><span class="lineNum">    1207</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Type &amp; size&quot;,</span></span>
-<span id="L1208"><span class="lineNum">    1208</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;media (MIME) type by extension (text/plain, image/png; application/octet-stream if unknown)&quot;},</span></span>
-<span id="L1209"><span class="lineNum">    1209</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;mime-category&quot;,</span></span>
-<span id="L1210"><span class="lineNum">    1210</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1211"><span class="lineNum">    1211</span>                 :<span class="tlaGNC">          61 :        .group = &quot;type&quot;,</span></span>
-<span id="L1212"><span class="lineNum">    1212</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Type &amp; size&quot;,</span></span>
-<span id="L1213"><span class="lineNum">    1213</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;top-level media category (application, image, text, ...)&quot;},</span></span>
-<span id="L1214"><span class="lineNum">    1214</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;mime-description&quot;,</span></span>
-<span id="L1215"><span class="lineNum">    1215</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1216"><span class="lineNum">    1216</span>                 :<span class="tlaGNC">          61 :        .group = &quot;type&quot;,</span></span>
-<span id="L1217"><span class="lineNum">    1217</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Type &amp; size&quot;,</span></span>
-<span id="L1218"><span class="lineNum">    1218</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;media-type description from the active vocabulary; empty when unspecified&quot;},</span></span>
-<span id="L1219"><span class="lineNum">    1219</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;mime-charset&quot;,</span></span>
-<span id="L1220"><span class="lineNum">    1220</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1221"><span class="lineNum">    1221</span>                 :<span class="tlaGNC">          61 :        .group = &quot;type&quot;,</span></span>
-<span id="L1222"><span class="lineNum">    1222</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Type &amp; size&quot;,</span></span>
-<span id="L1223"><span class="lineNum">    1223</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;default media-type charset; empty when unspecified&quot;},</span></span>
-<span id="L1224"><span class="lineNum">    1224</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;mime-compressible&quot;,</span></span>
-<span id="L1225"><span class="lineNum">    1225</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1226"><span class="lineNum">    1226</span>                 :<span class="tlaGNC">          61 :        .group = &quot;type&quot;,</span></span>
-<span id="L1227"><span class="lineNum">    1227</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Type &amp; size&quot;,</span></span>
-<span id="L1228"><span class="lineNum">    1228</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;whether the media type is normally compressible (yes/no; empty when unknown)&quot;},</span></span>
-<span id="L1229"><span class="lineNum">    1229</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;mime-source&quot;,</span></span>
-<span id="L1230"><span class="lineNum">    1230</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1231"><span class="lineNum">    1231</span>                 :<span class="tlaGNC">          61 :        .group = &quot;type&quot;,</span></span>
-<span id="L1232"><span class="lineNum">    1232</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Type &amp; size&quot;,</span></span>
-<span id="L1233"><span class="lineNum">    1233</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;vocabulary provenance for the media type; empty when unspecified&quot;},</span></span>
-<span id="L1234"><span class="lineNum">    1234</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;size&quot;,</span></span>
-<span id="L1235"><span class="lineNum">    1235</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1236"><span class="lineNum">    1236</span>                 :<span class="tlaGNC">          61 :        .group = &quot;type&quot;,</span></span>
-<span id="L1237"><span class="lineNum">    1237</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Type &amp; size&quot;,</span></span>
-<span id="L1238"><span class="lineNum">    1238</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;size in bytes ({size:h} human-readable)&quot;},</span></span>
-<span id="L1239"><span class="lineNum">    1239</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;blocks&quot;,</span></span>
-<span id="L1240"><span class="lineNum">    1240</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1241"><span class="lineNum">    1241</span>                 :<span class="tlaGNC">          61 :        .group = &quot;type&quot;,</span></span>
-<span id="L1242"><span class="lineNum">    1242</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Type &amp; size&quot;,</span></span>
-<span id="L1243"><span class="lineNum">    1243</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;512-byte blocks allocated&quot;},</span></span>
-<span id="L1244"><span class="lineNum">    1244</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;inode&quot;, .aliases = {}, .group = &quot;type&quot;, .header = &quot;Type &amp; size&quot;, .summary = &quot;inode number&quot;},</span></span>
-<span id="L1245"><span class="lineNum">    1245</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;links&quot;, .aliases = {}, .group = &quot;type&quot;, .header = &quot;Type &amp; size&quot;, .summary = &quot;hard-link count&quot;},</span></span>
-<span id="L1246"><span class="lineNum">    1246</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;dev&quot;, .aliases = {}, .group = &quot;type&quot;, .header = &quot;Type &amp; size&quot;, .summary = &quot;device number&quot;},</span></span>
-<span id="L1247"><span class="lineNum">    1247</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;depth&quot;,</span></span>
-<span id="L1248"><span class="lineNum">    1248</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1249"><span class="lineNum">    1249</span>                 :<span class="tlaGNC">          61 :        .group = &quot;type&quot;,</span></span>
-<span id="L1250"><span class="lineNum">    1250</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Type &amp; size&quot;,</span></span>
-<span id="L1251"><span class="lineNum">    1251</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;depth below the root (0 at a root operand)&quot;},</span></span>
+<span id="L1174"><span class="lineNum">    1174</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;type&quot;,</span></span>
+<span id="L1175"><span class="lineNum">    1175</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1176"><span class="lineNum">    1176</span>                 :<span class="tlaGNC">          66 :        .group = &quot;type&quot;,</span></span>
+<span id="L1177"><span class="lineNum">    1177</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Type &amp; size&quot;,</span></span>
+<span id="L1178"><span class="lineNum">    1178</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;entry type letter (f, d, l, ...)&quot;},</span></span>
+<span id="L1179"><span class="lineNum">    1179</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;lang&quot;,</span></span>
+<span id="L1180"><span class="lineNum">    1180</span>                 :<span class="tlaGNC">          66 :        .aliases = kLanguageAlias,</span></span>
+<span id="L1181"><span class="lineNum">    1181</span>                 :<span class="tlaGNC">          66 :        .group = &quot;type&quot;,</span></span>
+<span id="L1182"><span class="lineNum">    1182</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Type &amp; size&quot;,</span></span>
+<span id="L1183"><span class="lineNum">    1183</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;language by extension/filename (C++, Python, ...; empty if unknown)&quot;},</span></span>
+<span id="L1184"><span class="lineNum">    1184</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;lang-type&quot;,</span></span>
+<span id="L1185"><span class="lineNum">    1185</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1186"><span class="lineNum">    1186</span>                 :<span class="tlaGNC">          66 :        .group = &quot;type&quot;,</span></span>
+<span id="L1187"><span class="lineNum">    1187</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Type &amp; size&quot;,</span></span>
+<span id="L1188"><span class="lineNum">    1188</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;language kind (programming, markup, data, or prose); empty when unspecified&quot;},</span></span>
+<span id="L1189"><span class="lineNum">    1189</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;lang-color&quot;,</span></span>
+<span id="L1190"><span class="lineNum">    1190</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1191"><span class="lineNum">    1191</span>                 :<span class="tlaGNC">          66 :        .group = &quot;type&quot;,</span></span>
+<span id="L1192"><span class="lineNum">    1192</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Type &amp; size&quot;,</span></span>
+<span id="L1193"><span class="lineNum">    1193</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;language display colour (#RRGGBB); empty when unspecified&quot;},</span></span>
+<span id="L1194"><span class="lineNum">    1194</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;lang-group&quot;,</span></span>
+<span id="L1195"><span class="lineNum">    1195</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1196"><span class="lineNum">    1196</span>                 :<span class="tlaGNC">          66 :        .group = &quot;type&quot;,</span></span>
+<span id="L1197"><span class="lineNum">    1197</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Type &amp; size&quot;,</span></span>
+<span id="L1198"><span class="lineNum">    1198</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;parent language group; empty when the language is not grouped&quot;},</span></span>
+<span id="L1199"><span class="lineNum">    1199</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;lang-source&quot;,</span></span>
+<span id="L1200"><span class="lineNum">    1200</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1201"><span class="lineNum">    1201</span>                 :<span class="tlaGNC">          66 :        .group = &quot;type&quot;,</span></span>
+<span id="L1202"><span class="lineNum">    1202</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Type &amp; size&quot;,</span></span>
+<span id="L1203"><span class="lineNum">    1203</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;vocabulary provenance for the language; empty when unspecified&quot;},</span></span>
+<span id="L1204"><span class="lineNum">    1204</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;mime&quot;,</span></span>
+<span id="L1205"><span class="lineNum">    1205</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1206"><span class="lineNum">    1206</span>                 :<span class="tlaGNC">          66 :        .group = &quot;type&quot;,</span></span>
+<span id="L1207"><span class="lineNum">    1207</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Type &amp; size&quot;,</span></span>
+<span id="L1208"><span class="lineNum">    1208</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;media (MIME) type by extension (text/plain, image/png; application/octet-stream if unknown)&quot;},</span></span>
+<span id="L1209"><span class="lineNum">    1209</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;mime-category&quot;,</span></span>
+<span id="L1210"><span class="lineNum">    1210</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1211"><span class="lineNum">    1211</span>                 :<span class="tlaGNC">          66 :        .group = &quot;type&quot;,</span></span>
+<span id="L1212"><span class="lineNum">    1212</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Type &amp; size&quot;,</span></span>
+<span id="L1213"><span class="lineNum">    1213</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;top-level media category (application, image, text, ...)&quot;},</span></span>
+<span id="L1214"><span class="lineNum">    1214</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;mime-description&quot;,</span></span>
+<span id="L1215"><span class="lineNum">    1215</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1216"><span class="lineNum">    1216</span>                 :<span class="tlaGNC">          66 :        .group = &quot;type&quot;,</span></span>
+<span id="L1217"><span class="lineNum">    1217</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Type &amp; size&quot;,</span></span>
+<span id="L1218"><span class="lineNum">    1218</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;media-type description from the active vocabulary; empty when unspecified&quot;},</span></span>
+<span id="L1219"><span class="lineNum">    1219</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;mime-charset&quot;,</span></span>
+<span id="L1220"><span class="lineNum">    1220</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1221"><span class="lineNum">    1221</span>                 :<span class="tlaGNC">          66 :        .group = &quot;type&quot;,</span></span>
+<span id="L1222"><span class="lineNum">    1222</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Type &amp; size&quot;,</span></span>
+<span id="L1223"><span class="lineNum">    1223</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;default media-type charset; empty when unspecified&quot;},</span></span>
+<span id="L1224"><span class="lineNum">    1224</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;mime-compressible&quot;,</span></span>
+<span id="L1225"><span class="lineNum">    1225</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1226"><span class="lineNum">    1226</span>                 :<span class="tlaGNC">          66 :        .group = &quot;type&quot;,</span></span>
+<span id="L1227"><span class="lineNum">    1227</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Type &amp; size&quot;,</span></span>
+<span id="L1228"><span class="lineNum">    1228</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;whether the media type is normally compressible (yes/no; empty when unknown)&quot;},</span></span>
+<span id="L1229"><span class="lineNum">    1229</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;mime-source&quot;,</span></span>
+<span id="L1230"><span class="lineNum">    1230</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1231"><span class="lineNum">    1231</span>                 :<span class="tlaGNC">          66 :        .group = &quot;type&quot;,</span></span>
+<span id="L1232"><span class="lineNum">    1232</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Type &amp; size&quot;,</span></span>
+<span id="L1233"><span class="lineNum">    1233</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;vocabulary provenance for the media type; empty when unspecified&quot;},</span></span>
+<span id="L1234"><span class="lineNum">    1234</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;size&quot;,</span></span>
+<span id="L1235"><span class="lineNum">    1235</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1236"><span class="lineNum">    1236</span>                 :<span class="tlaGNC">          66 :        .group = &quot;type&quot;,</span></span>
+<span id="L1237"><span class="lineNum">    1237</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Type &amp; size&quot;,</span></span>
+<span id="L1238"><span class="lineNum">    1238</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;size in bytes ({size:h} human-readable)&quot;},</span></span>
+<span id="L1239"><span class="lineNum">    1239</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;blocks&quot;,</span></span>
+<span id="L1240"><span class="lineNum">    1240</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1241"><span class="lineNum">    1241</span>                 :<span class="tlaGNC">          66 :        .group = &quot;type&quot;,</span></span>
+<span id="L1242"><span class="lineNum">    1242</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Type &amp; size&quot;,</span></span>
+<span id="L1243"><span class="lineNum">    1243</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;512-byte blocks allocated&quot;},</span></span>
+<span id="L1244"><span class="lineNum">    1244</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;inode&quot;, .aliases = {}, .group = &quot;type&quot;, .header = &quot;Type &amp; size&quot;, .summary = &quot;inode number&quot;},</span></span>
+<span id="L1245"><span class="lineNum">    1245</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;links&quot;, .aliases = {}, .group = &quot;type&quot;, .header = &quot;Type &amp; size&quot;, .summary = &quot;hard-link count&quot;},</span></span>
+<span id="L1246"><span class="lineNum">    1246</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;dev&quot;, .aliases = {}, .group = &quot;type&quot;, .header = &quot;Type &amp; size&quot;, .summary = &quot;device number&quot;},</span></span>
+<span id="L1247"><span class="lineNum">    1247</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;depth&quot;,</span></span>
+<span id="L1248"><span class="lineNum">    1248</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1249"><span class="lineNum">    1249</span>                 :<span class="tlaGNC">          66 :        .group = &quot;type&quot;,</span></span>
+<span id="L1250"><span class="lineNum">    1250</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Type &amp; size&quot;,</span></span>
+<span id="L1251"><span class="lineNum">    1251</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;depth below the root (0 at a root operand)&quot;},</span></span>
 <span id="L1252"><span class="lineNum">    1252</span>                 :             :       // Content.</span>
-<span id="L1253"><span class="lineNum">    1253</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;hash&quot;,</span></span>
-<span id="L1254"><span class="lineNum">    1254</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1255"><span class="lineNum">    1255</span>                 :<span class="tlaGNC">          61 :        .group = &quot;content&quot;,</span></span>
-<span id="L1256"><span class="lineNum">    1256</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Content&quot;,</span></span>
-<span id="L1257"><span class="lineNum">    1257</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;file digest; {hash:ALGO[/ENCODING]} picks the algorithm (default sha256) and hex/base64&quot;},</span></span>
-<span id="L1258"><span class="lineNum">    1258</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;lines&quot;,</span></span>
-<span id="L1259"><span class="lineNum">    1259</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1260"><span class="lineNum">    1260</span>                 :<span class="tlaGNC">          61 :        .group = &quot;content&quot;,</span></span>
-<span id="L1261"><span class="lineNum">    1261</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Content&quot;,</span></span>
-<span id="L1262"><span class="lineNum">    1262</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;text line count (empty for a binary/unreadable file); reads the file&quot;},</span></span>
-<span id="L1263"><span class="lineNum">    1263</span>                 :<span class="tlaGNC">          61 :       {</span></span>
-<span id="L1264"><span class="lineNum">    1264</span>                 :<span class="tlaGNC">          61 :           .name = &quot;fuzzy&quot;,</span></span>
-<span id="L1265"><span class="lineNum">    1265</span>                 :<span class="tlaGNC">          61 :           .aliases = {},</span></span>
-<span id="L1266"><span class="lineNum">    1266</span>                 :<span class="tlaGNC">          61 :           .group = &quot;content&quot;,</span></span>
-<span id="L1267"><span class="lineNum">    1267</span>                 :<span class="tlaGNC">          61 :           .header = &quot;Content&quot;,</span></span>
-<span id="L1268"><span class="lineNum">    1268</span>                 :<span class="tlaGNC">          61 :           .summary = &quot;normalized fuzzy quality (AND = weakest requirement, OR = best alternative)&quot;,</span></span>
-<span id="L1269"><span class="lineNum">    1269</span>                 :<span class="tlaGNC">          61 :       },</span></span>
-<span id="L1270"><span class="lineNum">    1270</span>                 :<span class="tlaGNC">          61 :       {</span></span>
-<span id="L1271"><span class="lineNum">    1271</span>                 :<span class="tlaGNC">          61 :           .name = &quot;shard&quot;,</span></span>
-<span id="L1272"><span class="lineNum">    1272</span>                 :<span class="tlaGNC">          61 :           .aliases = {},</span></span>
-<span id="L1273"><span class="lineNum">    1273</span>                 :<span class="tlaGNC">          61 :           .group = &quot;content&quot;,</span></span>
-<span id="L1274"><span class="lineNum">    1274</span>                 :<span class="tlaGNC">          61 :           .header = &quot;Content&quot;,</span></span>
-<span id="L1275"><span class="lineNum">    1275</span>                 :<span class="tlaGNC">          61 :           .summary = &quot;with --shards, the number of shards in the set (empty otherwise); size-like fields &quot;</span></span>
-<span id="L1276"><span class="lineNum">    1276</span>                 :<span class="tlaGNC">          61 :                      &quot;then aggregate across the set&quot;,</span></span>
-<span id="L1277"><span class="lineNum">    1277</span>                 :<span class="tlaGNC">          61 :       },</span></span>
+<span id="L1253"><span class="lineNum">    1253</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;hash&quot;,</span></span>
+<span id="L1254"><span class="lineNum">    1254</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1255"><span class="lineNum">    1255</span>                 :<span class="tlaGNC">          66 :        .group = &quot;content&quot;,</span></span>
+<span id="L1256"><span class="lineNum">    1256</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Content&quot;,</span></span>
+<span id="L1257"><span class="lineNum">    1257</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;file digest; {hash:ALGO[/ENCODING]} picks the algorithm (default sha256) and hex/base64&quot;},</span></span>
+<span id="L1258"><span class="lineNum">    1258</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;lines&quot;,</span></span>
+<span id="L1259"><span class="lineNum">    1259</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1260"><span class="lineNum">    1260</span>                 :<span class="tlaGNC">          66 :        .group = &quot;content&quot;,</span></span>
+<span id="L1261"><span class="lineNum">    1261</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Content&quot;,</span></span>
+<span id="L1262"><span class="lineNum">    1262</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;text line count (empty for a binary/unreadable file); reads the file&quot;},</span></span>
+<span id="L1263"><span class="lineNum">    1263</span>                 :<span class="tlaGNC">          66 :       {</span></span>
+<span id="L1264"><span class="lineNum">    1264</span>                 :<span class="tlaGNC">          66 :           .name = &quot;fuzzy&quot;,</span></span>
+<span id="L1265"><span class="lineNum">    1265</span>                 :<span class="tlaGNC">          66 :           .aliases = {},</span></span>
+<span id="L1266"><span class="lineNum">    1266</span>                 :<span class="tlaGNC">          66 :           .group = &quot;content&quot;,</span></span>
+<span id="L1267"><span class="lineNum">    1267</span>                 :<span class="tlaGNC">          66 :           .header = &quot;Content&quot;,</span></span>
+<span id="L1268"><span class="lineNum">    1268</span>                 :<span class="tlaGNC">          66 :           .summary = &quot;normalized fuzzy quality (AND = weakest requirement, OR = best alternative)&quot;,</span></span>
+<span id="L1269"><span class="lineNum">    1269</span>                 :<span class="tlaGNC">          66 :       },</span></span>
+<span id="L1270"><span class="lineNum">    1270</span>                 :<span class="tlaGNC">          66 :       {</span></span>
+<span id="L1271"><span class="lineNum">    1271</span>                 :<span class="tlaGNC">          66 :           .name = &quot;shard&quot;,</span></span>
+<span id="L1272"><span class="lineNum">    1272</span>                 :<span class="tlaGNC">          66 :           .aliases = {},</span></span>
+<span id="L1273"><span class="lineNum">    1273</span>                 :<span class="tlaGNC">          66 :           .group = &quot;content&quot;,</span></span>
+<span id="L1274"><span class="lineNum">    1274</span>                 :<span class="tlaGNC">          66 :           .header = &quot;Content&quot;,</span></span>
+<span id="L1275"><span class="lineNum">    1275</span>                 :<span class="tlaGNC">          66 :           .summary = &quot;with --shards, the number of shards in the set (empty otherwise); size-like fields &quot;</span></span>
+<span id="L1276"><span class="lineNum">    1276</span>                 :<span class="tlaGNC">          66 :                      &quot;then aggregate across the set&quot;,</span></span>
+<span id="L1277"><span class="lineNum">    1277</span>                 :<span class="tlaGNC">          66 :       },</span></span>
 <span id="L1278"><span class="lineNum">    1278</span>                 :             :       // Owner &amp; mode.</span>
-<span id="L1279"><span class="lineNum">    1279</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;user&quot;,</span></span>
-<span id="L1280"><span class="lineNum">    1280</span>                 :<span class="tlaGNC">          61 :        .aliases = kOwnerAlias,</span></span>
-<span id="L1281"><span class="lineNum">    1281</span>                 :<span class="tlaGNC">          61 :        .group = &quot;owner&quot;,</span></span>
-<span id="L1282"><span class="lineNum">    1282</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Owner &amp; mode&quot;,</span></span>
-<span id="L1283"><span class="lineNum">    1283</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;owner user name (alias {owner}; find %u)&quot;},</span></span>
-<span id="L1284"><span class="lineNum">    1284</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;group&quot;, .aliases = {}, .group = &quot;owner&quot;, .header = &quot;Owner &amp; mode&quot;, .summary = &quot;owner group name&quot;},</span></span>
-<span id="L1285"><span class="lineNum">    1285</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;uid&quot;, .aliases = {}, .group = &quot;owner&quot;, .header = &quot;Owner &amp; mode&quot;, .summary = &quot;owner numeric user id&quot;},</span></span>
-<span id="L1286"><span class="lineNum">    1286</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;gid&quot;, .aliases = {}, .group = &quot;owner&quot;, .header = &quot;Owner &amp; mode&quot;, .summary = &quot;owner numeric group id&quot;},</span></span>
-<span id="L1287"><span class="lineNum">    1287</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;mode&quot;,</span></span>
-<span id="L1288"><span class="lineNum">    1288</span>                 :<span class="tlaGNC">          61 :        .aliases = kPermissionAlias,</span></span>
-<span id="L1289"><span class="lineNum">    1289</span>                 :<span class="tlaGNC">          61 :        .group = &quot;owner&quot;,</span></span>
-<span id="L1290"><span class="lineNum">    1290</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Owner &amp; mode&quot;,</span></span>
-<span id="L1291"><span class="lineNum">    1291</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;permission bits, octal&quot;},</span></span>
-<span id="L1292"><span class="lineNum">    1292</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;access&quot;,</span></span>
-<span id="L1293"><span class="lineNum">    1293</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1294"><span class="lineNum">    1294</span>                 :<span class="tlaGNC">          61 :        .group = &quot;owner&quot;,</span></span>
-<span id="L1295"><span class="lineNum">    1295</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Owner &amp; mode&quot;,</span></span>
-<span id="L1296"><span class="lineNum">    1296</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;symbolic permissions (ls -l / stat %A)&quot;},</span></span>
+<span id="L1279"><span class="lineNum">    1279</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;user&quot;,</span></span>
+<span id="L1280"><span class="lineNum">    1280</span>                 :<span class="tlaGNC">          66 :        .aliases = kOwnerAlias,</span></span>
+<span id="L1281"><span class="lineNum">    1281</span>                 :<span class="tlaGNC">          66 :        .group = &quot;owner&quot;,</span></span>
+<span id="L1282"><span class="lineNum">    1282</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Owner &amp; mode&quot;,</span></span>
+<span id="L1283"><span class="lineNum">    1283</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;owner user name (alias {owner}; find %u)&quot;},</span></span>
+<span id="L1284"><span class="lineNum">    1284</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;group&quot;, .aliases = {}, .group = &quot;owner&quot;, .header = &quot;Owner &amp; mode&quot;, .summary = &quot;owner group name&quot;},</span></span>
+<span id="L1285"><span class="lineNum">    1285</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;uid&quot;, .aliases = {}, .group = &quot;owner&quot;, .header = &quot;Owner &amp; mode&quot;, .summary = &quot;owner numeric user id&quot;},</span></span>
+<span id="L1286"><span class="lineNum">    1286</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;gid&quot;, .aliases = {}, .group = &quot;owner&quot;, .header = &quot;Owner &amp; mode&quot;, .summary = &quot;owner numeric group id&quot;},</span></span>
+<span id="L1287"><span class="lineNum">    1287</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;mode&quot;,</span></span>
+<span id="L1288"><span class="lineNum">    1288</span>                 :<span class="tlaGNC">          66 :        .aliases = kPermissionAlias,</span></span>
+<span id="L1289"><span class="lineNum">    1289</span>                 :<span class="tlaGNC">          66 :        .group = &quot;owner&quot;,</span></span>
+<span id="L1290"><span class="lineNum">    1290</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Owner &amp; mode&quot;,</span></span>
+<span id="L1291"><span class="lineNum">    1291</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;permission bits, octal&quot;},</span></span>
+<span id="L1292"><span class="lineNum">    1292</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;access&quot;,</span></span>
+<span id="L1293"><span class="lineNum">    1293</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1294"><span class="lineNum">    1294</span>                 :<span class="tlaGNC">          66 :        .group = &quot;owner&quot;,</span></span>
+<span id="L1295"><span class="lineNum">    1295</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Owner &amp; mode&quot;,</span></span>
+<span id="L1296"><span class="lineNum">    1296</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;symbolic permissions (ls -l / stat %A)&quot;},</span></span>
 <span id="L1297"><span class="lineNum">    1297</span>                 :             :       // Time (each takes an optional {:FORMAT} qualifier; see below).</span>
-<span id="L1298"><span class="lineNum">    1298</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;atime&quot;, .aliases = {}, .group = &quot;time&quot;, .header = &quot;Time&quot;, .summary = &quot;last access time&quot;},</span></span>
-<span id="L1299"><span class="lineNum">    1299</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;mtime&quot;, .aliases = {}, .group = &quot;time&quot;, .header = &quot;Time&quot;, .summary = &quot;last modification time&quot;},</span></span>
-<span id="L1300"><span class="lineNum">    1300</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;ctime&quot;, .aliases = {}, .group = &quot;time&quot;, .header = &quot;Time&quot;, .summary = &quot;inode change time&quot;},</span></span>
-<span id="L1301"><span class="lineNum">    1301</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;btime&quot;,</span></span>
-<span id="L1302"><span class="lineNum">    1302</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1303"><span class="lineNum">    1303</span>                 :<span class="tlaGNC">          61 :        .group = &quot;time&quot;,</span></span>
-<span id="L1304"><span class="lineNum">    1304</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Time&quot;,</span></span>
-<span id="L1305"><span class="lineNum">    1305</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;creation/birth time (where supported)&quot;},</span></span>
+<span id="L1298"><span class="lineNum">    1298</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;atime&quot;, .aliases = {}, .group = &quot;time&quot;, .header = &quot;Time&quot;, .summary = &quot;last access time&quot;},</span></span>
+<span id="L1299"><span class="lineNum">    1299</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;mtime&quot;, .aliases = {}, .group = &quot;time&quot;, .header = &quot;Time&quot;, .summary = &quot;last modification time&quot;},</span></span>
+<span id="L1300"><span class="lineNum">    1300</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;ctime&quot;, .aliases = {}, .group = &quot;time&quot;, .header = &quot;Time&quot;, .summary = &quot;inode change time&quot;},</span></span>
+<span id="L1301"><span class="lineNum">    1301</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;btime&quot;,</span></span>
+<span id="L1302"><span class="lineNum">    1302</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1303"><span class="lineNum">    1303</span>                 :<span class="tlaGNC">          66 :        .group = &quot;time&quot;,</span></span>
+<span id="L1304"><span class="lineNum">    1304</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Time&quot;,</span></span>
+<span id="L1305"><span class="lineNum">    1305</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;creation/birth time (where supported)&quot;},</span></span>
 <span id="L1306"><span class="lineNum">    1306</span>                 :             :       // Grep context (populated only during -grep:FORMAT; empty elsewhere).</span>
-<span id="L1307"><span class="lineNum">    1307</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;line&quot;,</span></span>
-<span id="L1308"><span class="lineNum">    1308</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1309"><span class="lineNum">    1309</span>                 :<span class="tlaGNC">          61 :        .group = &quot;grep&quot;,</span></span>
-<span id="L1310"><span class="lineNum">    1310</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Grep context&quot;,</span></span>
-<span id="L1311"><span class="lineNum">    1311</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;1-based number of the matching line&quot;},</span></span>
-<span id="L1312"><span class="lineNum">    1312</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;text&quot;, .aliases = {}, .group = &quot;grep&quot;, .header = &quot;Grep context&quot;, .summary = &quot;the full matching line&quot;},</span></span>
-<span id="L1313"><span class="lineNum">    1313</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;match&quot;,</span></span>
-<span id="L1314"><span class="lineNum">    1314</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1315"><span class="lineNum">    1315</span>                 :<span class="tlaGNC">          61 :        .group = &quot;grep&quot;,</span></span>
-<span id="L1316"><span class="lineNum">    1316</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Grep context&quot;,</span></span>
-<span id="L1317"><span class="lineNum">    1317</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;the matched substring (grep -o)&quot;},</span></span>
-<span id="L1318"><span class="lineNum">    1318</span>                 :<span class="tlaGNC">          61 :       {.name = &quot;column&quot;,</span></span>
-<span id="L1319"><span class="lineNum">    1319</span>                 :<span class="tlaGNC">          61 :        .aliases = {},</span></span>
-<span id="L1320"><span class="lineNum">    1320</span>                 :<span class="tlaGNC">          61 :        .group = &quot;grep&quot;,</span></span>
-<span id="L1321"><span class="lineNum">    1321</span>                 :<span class="tlaGNC">          61 :        .header = &quot;Grep context&quot;,</span></span>
-<span id="L1322"><span class="lineNum">    1322</span>                 :<span class="tlaGNC">          61 :        .summary = &quot;1-based column of the match&quot;},</span></span>
-<span id="L1323"><span class="lineNum">    1323</span>                 :<span class="tlaGNC">          61 :   });</span></span>
-<span id="L1324"><span class="lineNum">    1324</span>                 :<span class="tlaGNC">          61 :   return kDocs;</span></span>
-<span id="L1325"><span class="lineNum">    1325</span>                 :<span class="tlaGNC">          61 : }</span></span>
+<span id="L1307"><span class="lineNum">    1307</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;line&quot;,</span></span>
+<span id="L1308"><span class="lineNum">    1308</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1309"><span class="lineNum">    1309</span>                 :<span class="tlaGNC">          66 :        .group = &quot;grep&quot;,</span></span>
+<span id="L1310"><span class="lineNum">    1310</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Grep context&quot;,</span></span>
+<span id="L1311"><span class="lineNum">    1311</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;1-based number of the matching line&quot;},</span></span>
+<span id="L1312"><span class="lineNum">    1312</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;text&quot;, .aliases = {}, .group = &quot;grep&quot;, .header = &quot;Grep context&quot;, .summary = &quot;the full matching line&quot;},</span></span>
+<span id="L1313"><span class="lineNum">    1313</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;match&quot;,</span></span>
+<span id="L1314"><span class="lineNum">    1314</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1315"><span class="lineNum">    1315</span>                 :<span class="tlaGNC">          66 :        .group = &quot;grep&quot;,</span></span>
+<span id="L1316"><span class="lineNum">    1316</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Grep context&quot;,</span></span>
+<span id="L1317"><span class="lineNum">    1317</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;the matched substring (grep -o)&quot;},</span></span>
+<span id="L1318"><span class="lineNum">    1318</span>                 :<span class="tlaGNC">          66 :       {.name = &quot;column&quot;,</span></span>
+<span id="L1319"><span class="lineNum">    1319</span>                 :<span class="tlaGNC">          66 :        .aliases = {},</span></span>
+<span id="L1320"><span class="lineNum">    1320</span>                 :<span class="tlaGNC">          66 :        .group = &quot;grep&quot;,</span></span>
+<span id="L1321"><span class="lineNum">    1321</span>                 :<span class="tlaGNC">          66 :        .header = &quot;Grep context&quot;,</span></span>
+<span id="L1322"><span class="lineNum">    1322</span>                 :<span class="tlaGNC">          66 :        .summary = &quot;1-based column of the match&quot;},</span></span>
+<span id="L1323"><span class="lineNum">    1323</span>                 :<span class="tlaGNC">          66 :   });</span></span>
+<span id="L1324"><span class="lineNum">    1324</span>                 :<span class="tlaGNC">          66 :   return kDocs;</span></span>
+<span id="L1325"><span class="lineNum">    1325</span>                 :<span class="tlaGNC">          66 : }</span></span>
 <span id="L1326"><span class="lineNum">    1326</span>                 :             : </span>
-<span id="L1327"><span class="lineNum">    1327</span>                 :<span class="tlaGNC">          61 : const FieldHelpDocs&amp; FieldSyntaxDocs() {</span></span>
-<span id="L1328"><span class="lineNum">    1328</span>                 :<span class="tlaGNC">          61 :   static const FieldHelpDocs kDocs = [] {</span></span>
-<span id="L1329"><span class="lineNum">    1329</span>                 :<span class="tlaGNC">          29 :     const std::string path_components = absl::StrCat(</span></span>
-<span id="L1330"><span class="lineNum">    1330</span>                 :<span class="tlaGNC">          29 :         &quot;path component of the value: &quot;, absl::StrJoin(kPathComponents, &quot;|&quot;),</span></span>
-<span id="L1331"><span class="lineNum">    1331</span>                 :<span class="tlaGNC">          29 :         &quot;; any path-valued field composes, e.g. {relpath:stem}, {def.B:dir}&quot;);</span></span>
-<span id="L1332"><span class="lineNum">    1332</span>                 :<span class="tlaGNC">          29 :     return FieldHelpDocs{</span></span>
-<span id="L1333"><span class="lineNum">    1333</span>                 :<span class="tlaGNC">          29 :         .brace_rules =</span></span>
-<span id="L1334"><span class="lineNum">    1334</span>                 :<span class="tlaGNC">          29 :             {</span></span>
-<span id="L1335"><span class="lineNum">    1335</span>                 :<span class="tlaGNC">          29 :                 &quot;`{{` and `}}` emit literal braces&quot;,</span></span>
-<span id="L1336"><span class="lineNum">    1336</span>                 :<span class="tlaGNC">          29 :                 &quot;`{}` is an alias for `{path}`&quot;,</span></span>
-<span id="L1337"><span class="lineNum">    1337</span>                 :<span class="tlaGNC">          29 :                 &quot;an unknown field renders empty&quot;,</span></span>
-<span id="L1338"><span class="lineNum">    1338</span>                 :<span class="tlaGNC">          29 :                 &quot;a malformed or unterminated `{` stays literal&quot;,</span></span>
-<span id="L1339"><span class="lineNum">    1339</span>                 :<span class="tlaGNC">          29 :             },</span></span>
-<span id="L1340"><span class="lineNum">    1340</span>                 :<span class="tlaGNC">          29 :         .dynamic_namespaces =</span></span>
-<span id="L1341"><span class="lineNum">    1341</span>                 :<span class="tlaGNC">          29 :             {</span></span>
-<span id="L1342"><span class="lineNum">    1342</span>                 :<span class="tlaGNC">          29 :                 {.term = &quot;{0}..{N}&quot;, .description = &quot;-regex captures ({0} the whole match, {1}..{N} the groups)&quot;},</span></span>
-<span id="L1343"><span class="lineNum">    1343</span>                 :<span class="tlaGNC">          29 :                 {.term = absl::StrCat(&quot;{&quot;, kEnvironmentNamespace, &quot;NAME}&quot;),</span></span>
-<span id="L1344"><span class="lineNum">    1344</span>                 :<span class="tlaGNC">          29 :                  .description = &quot;a process environment variable&quot;},</span></span>
-<span id="L1345"><span class="lineNum">    1345</span>                 :<span class="tlaGNC">          29 :                 {.term = absl::StrCat(&quot;{&quot;, kDefinitionNamespace, &quot;NAME}&quot;), .description = &quot;a --define value&quot;},</span></span>
-<span id="L1346"><span class="lineNum">    1346</span>                 :<span class="tlaGNC">          29 :                 {.term = absl::StrCat(&quot;{&quot;, kCaptureNamespace, &quot;NAME}&quot;), .description = &quot;a -capture command result&quot;},</span></span>
-<span id="L1347"><span class="lineNum">    1347</span>                 :<span class="tlaGNC">          29 :             },</span></span>
-<span id="L1348"><span class="lineNum">    1348</span>                 :<span class="tlaGNC">          29 :         .qualifiers =</span></span>
-<span id="L1349"><span class="lineNum">    1349</span>                 :<span class="tlaGNC">          29 :             {</span></span>
-<span id="L1350"><span class="lineNum">    1350</span>                 :<span class="tlaGNC">          29 :                 {.term = &quot;{mtime:FMT}&quot;,</span></span>
-<span id="L1351"><span class="lineNum">    1351</span>                 :<span class="tlaGNC">          29 :                  .description =</span></span>
-<span id="L1352"><span class="lineNum">    1352</span>                 :<span class="tlaGNC">          29 :                      &quot;time format: strftime (%Y-%m-%d) or preset (iso, epoch); see --time-format / --timezone&quot;},</span></span>
-<span id="L1353"><span class="lineNum">    1353</span>                 :<span class="tlaGNC">          29 :                 {.term = &quot;{size:h}&quot;, .description = &quot;human-readable size&quot;},</span></span>
-<span id="L1354"><span class="lineNum">    1354</span>                 :<span class="tlaGNC">          29 :                 {.term = &quot;{name:s/RE/R/f}&quot;,</span></span>
-<span id="L1355"><span class="lineNum">    1355</span>                 :<span class="tlaGNC">          29 :                  .description = &quot;RE2 rewrite of the value (flags g=all, i=ignore-case; any delimiter)&quot;},</span></span>
-<span id="L1356"><span class="lineNum">    1356</span>                 :<span class="tlaGNC">          29 :                 {.term = &quot;{cap:m/RE/R/f}&quot;,</span></span>
-<span id="L1357"><span class="lineNum">    1357</span>                 :<span class="tlaGNC">          29 :                  .description =</span></span>
-<span id="L1358"><span class="lineNum">    1358</span>                 :<span class="tlaGNC">          29 :                      &quot;per-line extraction: a value stream, e.g. a --summary key (m//, s///'s list-producing sibling)&quot;},</span></span>
-<span id="L1359"><span class="lineNum">    1359</span>                 :<span class="tlaGNC">          29 :                 {.term = &quot;{cap:m/RE/R/;join(SEP)}&quot;,</span></span>
-<span id="L1360"><span class="lineNum">    1360</span>                 :<span class="tlaGNC">          29 :                  .description =</span></span>
-<span id="L1361"><span class="lineNum">    1361</span>                 :<span class="tlaGNC">          29 :                      &quot;reduce the stream to one scalar (join, SEP default newline) so m// is usable in a scalar &quot;</span></span>
-<span id="L1362"><span class="lineNum">    1362</span>                 :<span class="tlaGNC">          29 :                      &quot;context (-printf / --template / -exec); reducers are function-notation, e.g. join(, )&quot;},</span></span>
-<span id="L1363"><span class="lineNum">    1363</span>                 :<span class="tlaGNC">          29 :                 {.term = &quot;{path:COMP}&quot;, .description = path_components},</span></span>
-<span id="L1364"><span class="lineNum">    1364</span>                 :<span class="tlaGNC">          29 :             },</span></span>
-<span id="L1365"><span class="lineNum">    1365</span>                 :<span class="tlaGNC">          29 :         .qualifier_pipeline =</span></span>
-<span id="L1366"><span class="lineNum">    1366</span>                 :<span class="tlaGNC">          29 :             &quot;An m// extraction is a left-to-right pipeline: s/// maps whatever is flowing (each line, then &quot;</span></span>
-<span id="L1367"><span class="lineNum">    1367</span>                 :<span class="tlaGNC">          29 :             &quot;the scalar), and a terminal reducer such as join collapses the stream to one scalar.&quot;,</span></span>
-<span id="L1368"><span class="lineNum">    1368</span>                 :<span class="tlaGNC">          29 :         .qualifier_example =</span></span>
-<span id="L1369"><span class="lineNum">    1369</span>                 :<span class="tlaGNC">          29 :             &quot;  {cap:m/PAT/REP/;s/PAT/REP/;join(SEP);s/PAT/REP/}\n&quot;</span></span>
-<span id="L1370"><span class="lineNum">    1370</span>                 :<span class="tlaGNC">          29 :             &quot;       |________| |________| |_______| |________|\n&quot;</span></span>
-<span id="L1371"><span class="lineNum">    1371</span>                 :<span class="tlaGNC">          29 :             &quot;       extract    map each   reduce    rewrite\n&quot;</span></span>
-<span id="L1372"><span class="lineNum">    1372</span>                 :<span class="tlaGNC">          29 :             &quot;       per line   line       stream    scalar&quot;,</span></span>
-<span id="L1373"><span class="lineNum">    1373</span>                 :<span class="tlaGNC">          29 :         .printf_note =</span></span>
-<span id="L1374"><span class="lineNum">    1374</span>                 :<span class="tlaGNC">          29 :             &quot;For -printf's own % directives (%p %f %s %t ...) and the `%{field}` escape that bridges them &quot;</span></span>
-<span id="L1375"><span class="lineNum">    1375</span>                 :<span class="tlaGNC">          29 :             &quot;to this vocabulary, see the Printf directives (`--help=-printf`).&quot;,</span></span>
-<span id="L1376"><span class="lineNum">    1376</span>                 :<span class="tlaGNC">          29 :     };</span></span>
-<span id="L1377"><span class="lineNum">    1377</span>                 :<span class="tlaGNC">          29 :   }();</span></span>
-<span id="L1378"><span class="lineNum">    1378</span>                 :<span class="tlaGNC">          61 :   return kDocs;</span></span>
-<span id="L1379"><span class="lineNum">    1379</span>                 :<span class="tlaGNC">          61 : }</span></span>
+<span id="L1327"><span class="lineNum">    1327</span>                 :<span class="tlaGNC">          66 : const FieldHelpDocs&amp; FieldSyntaxDocs() {</span></span>
+<span id="L1328"><span class="lineNum">    1328</span>                 :<span class="tlaGNC">          66 :   static const FieldHelpDocs kDocs = [] {</span></span>
+<span id="L1329"><span class="lineNum">    1329</span>                 :<span class="tlaGNC">          33 :     const std::string path_components = absl::StrCat(</span></span>
+<span id="L1330"><span class="lineNum">    1330</span>                 :<span class="tlaGNC">          33 :         &quot;path component of the value: &quot;, absl::StrJoin(kPathComponents, &quot;|&quot;),</span></span>
+<span id="L1331"><span class="lineNum">    1331</span>                 :<span class="tlaGNC">          33 :         &quot;; any path-valued field composes, e.g. {relpath:stem}, {def.B:dir}&quot;);</span></span>
+<span id="L1332"><span class="lineNum">    1332</span>                 :<span class="tlaGNC">          33 :     return FieldHelpDocs{</span></span>
+<span id="L1333"><span class="lineNum">    1333</span>                 :<span class="tlaGNC">          33 :         .brace_rules =</span></span>
+<span id="L1334"><span class="lineNum">    1334</span>                 :<span class="tlaGNC">          33 :             {</span></span>
+<span id="L1335"><span class="lineNum">    1335</span>                 :<span class="tlaGNC">          33 :                 &quot;`{{` and `}}` emit literal braces&quot;,</span></span>
+<span id="L1336"><span class="lineNum">    1336</span>                 :<span class="tlaGNC">          33 :                 &quot;`{}` is an alias for `{path}`&quot;,</span></span>
+<span id="L1337"><span class="lineNum">    1337</span>                 :<span class="tlaGNC">          33 :                 &quot;an unknown field renders empty&quot;,</span></span>
+<span id="L1338"><span class="lineNum">    1338</span>                 :<span class="tlaGNC">          33 :                 &quot;a malformed or unterminated `{` stays literal&quot;,</span></span>
+<span id="L1339"><span class="lineNum">    1339</span>                 :<span class="tlaGNC">          33 :             },</span></span>
+<span id="L1340"><span class="lineNum">    1340</span>                 :<span class="tlaGNC">          33 :         .dynamic_namespaces =</span></span>
+<span id="L1341"><span class="lineNum">    1341</span>                 :<span class="tlaGNC">          33 :             {</span></span>
+<span id="L1342"><span class="lineNum">    1342</span>                 :<span class="tlaGNC">          33 :                 {.term = &quot;{0}..{N}&quot;, .description = &quot;-regex captures ({0} the whole match, {1}..{N} the groups)&quot;},</span></span>
+<span id="L1343"><span class="lineNum">    1343</span>                 :<span class="tlaGNC">          33 :                 {.term = absl::StrCat(&quot;{&quot;, kEnvironmentNamespace, &quot;NAME}&quot;),</span></span>
+<span id="L1344"><span class="lineNum">    1344</span>                 :<span class="tlaGNC">          33 :                  .description = &quot;a process environment variable&quot;},</span></span>
+<span id="L1345"><span class="lineNum">    1345</span>                 :<span class="tlaGNC">          33 :                 {.term = absl::StrCat(&quot;{&quot;, kDefinitionNamespace, &quot;NAME}&quot;), .description = &quot;a --define value&quot;},</span></span>
+<span id="L1346"><span class="lineNum">    1346</span>                 :<span class="tlaGNC">          33 :                 {.term = absl::StrCat(&quot;{&quot;, kCaptureNamespace, &quot;NAME}&quot;), .description = &quot;a -capture command result&quot;},</span></span>
+<span id="L1347"><span class="lineNum">    1347</span>                 :<span class="tlaGNC">          33 :             },</span></span>
+<span id="L1348"><span class="lineNum">    1348</span>                 :<span class="tlaGNC">          33 :         .qualifiers =</span></span>
+<span id="L1349"><span class="lineNum">    1349</span>                 :<span class="tlaGNC">          33 :             {</span></span>
+<span id="L1350"><span class="lineNum">    1350</span>                 :<span class="tlaGNC">          33 :                 {.term = &quot;{mtime:FMT}&quot;,</span></span>
+<span id="L1351"><span class="lineNum">    1351</span>                 :<span class="tlaGNC">          33 :                  .description =</span></span>
+<span id="L1352"><span class="lineNum">    1352</span>                 :<span class="tlaGNC">          33 :                      &quot;time format: strftime (%Y-%m-%d) or preset (iso, epoch); see --time-format / --timezone&quot;},</span></span>
+<span id="L1353"><span class="lineNum">    1353</span>                 :<span class="tlaGNC">          33 :                 {.term = &quot;{size:h}&quot;, .description = &quot;human-readable size&quot;},</span></span>
+<span id="L1354"><span class="lineNum">    1354</span>                 :<span class="tlaGNC">          33 :                 {.term = &quot;{name:s/RE/R/f}&quot;,</span></span>
+<span id="L1355"><span class="lineNum">    1355</span>                 :<span class="tlaGNC">          33 :                  .description = &quot;RE2 rewrite of the value (flags g=all, i=ignore-case; any delimiter)&quot;},</span></span>
+<span id="L1356"><span class="lineNum">    1356</span>                 :<span class="tlaGNC">          33 :                 {.term = &quot;{cap:m/RE/R/f}&quot;,</span></span>
+<span id="L1357"><span class="lineNum">    1357</span>                 :<span class="tlaGNC">          33 :                  .description =</span></span>
+<span id="L1358"><span class="lineNum">    1358</span>                 :<span class="tlaGNC">          33 :                      &quot;per-line extraction: a value stream, e.g. a --summary key (m//, s///'s list-producing sibling)&quot;},</span></span>
+<span id="L1359"><span class="lineNum">    1359</span>                 :<span class="tlaGNC">          33 :                 {.term = &quot;{cap:m/RE/R/;join(SEP)}&quot;,</span></span>
+<span id="L1360"><span class="lineNum">    1360</span>                 :<span class="tlaGNC">          33 :                  .description =</span></span>
+<span id="L1361"><span class="lineNum">    1361</span>                 :<span class="tlaGNC">          33 :                      &quot;reduce the stream to one scalar (join, SEP default newline) so m// is usable in a scalar &quot;</span></span>
+<span id="L1362"><span class="lineNum">    1362</span>                 :<span class="tlaGNC">          33 :                      &quot;context (-printf / --template / -exec); reducers are function-notation, e.g. join(, )&quot;},</span></span>
+<span id="L1363"><span class="lineNum">    1363</span>                 :<span class="tlaGNC">          33 :                 {.term = &quot;{path:COMP}&quot;, .description = path_components},</span></span>
+<span id="L1364"><span class="lineNum">    1364</span>                 :<span class="tlaGNC">          33 :             },</span></span>
+<span id="L1365"><span class="lineNum">    1365</span>                 :<span class="tlaGNC">          33 :         .qualifier_pipeline =</span></span>
+<span id="L1366"><span class="lineNum">    1366</span>                 :<span class="tlaGNC">          33 :             &quot;An m// extraction is a left-to-right pipeline: s/// maps whatever is flowing (each line, then &quot;</span></span>
+<span id="L1367"><span class="lineNum">    1367</span>                 :<span class="tlaGNC">          33 :             &quot;the scalar), and a terminal reducer such as join collapses the stream to one scalar.&quot;,</span></span>
+<span id="L1368"><span class="lineNum">    1368</span>                 :<span class="tlaGNC">          33 :         .qualifier_example =</span></span>
+<span id="L1369"><span class="lineNum">    1369</span>                 :<span class="tlaGNC">          33 :             &quot;  {cap:m/PAT/REP/;s/PAT/REP/;join(SEP);s/PAT/REP/}\n&quot;</span></span>
+<span id="L1370"><span class="lineNum">    1370</span>                 :<span class="tlaGNC">          33 :             &quot;       |________| |________| |_______| |________|\n&quot;</span></span>
+<span id="L1371"><span class="lineNum">    1371</span>                 :<span class="tlaGNC">          33 :             &quot;       extract    map each   reduce    rewrite\n&quot;</span></span>
+<span id="L1372"><span class="lineNum">    1372</span>                 :<span class="tlaGNC">          33 :             &quot;       per line   line       stream    scalar&quot;,</span></span>
+<span id="L1373"><span class="lineNum">    1373</span>                 :<span class="tlaGNC">          33 :         .printf_note =</span></span>
+<span id="L1374"><span class="lineNum">    1374</span>                 :<span class="tlaGNC">          33 :             &quot;For -printf's own % directives (%p %f %s %t ...) and the `%{field}` escape that bridges them &quot;</span></span>
+<span id="L1375"><span class="lineNum">    1375</span>                 :<span class="tlaGNC">          33 :             &quot;to this vocabulary, see the Printf directives (`--help=-printf`).&quot;,</span></span>
+<span id="L1376"><span class="lineNum">    1376</span>                 :<span class="tlaGNC">          33 :     };</span></span>
+<span id="L1377"><span class="lineNum">    1377</span>                 :<span class="tlaGNC">          33 :   }();</span></span>
+<span id="L1378"><span class="lineNum">    1378</span>                 :<span class="tlaGNC">          66 :   return kDocs;</span></span>
+<span id="L1379"><span class="lineNum">    1379</span>                 :<span class="tlaGNC">          66 : }</span></span>
 <span id="L1380"><span class="lineNum">    1380</span>                 :             : </span>
 <span id="L1381"><span class="lineNum">    1381</span>                 :<span class="tlaGNC">           3 : absl::Span&lt;const std::string_view&gt; FieldNames() {</span></span>
 <span id="L1382"><span class="lineNum">    1382</span>                 :<span class="tlaGNC">           3 :   static constexpr auto kNames = [] {</span></span>

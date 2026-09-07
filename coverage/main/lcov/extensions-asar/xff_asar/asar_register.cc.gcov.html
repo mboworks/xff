@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-07 17:23:52</td>
+            <td class="headerValue">2026-09-07 18:25:10</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -119,15 +119,15 @@
 <span id="L39"><span class="lineNum">      39</span>                 :             : </span>
 <span id="L40"><span class="lineNum">      40</span>                 :             : // NOLINTNEXTLINE(fuchsia-statically-constructed-objects,cert-err58-cpp)</span>
 <span id="L41"><span class="lineNum">      41</span>                 :             : const struct AsarRegistrar {</span>
-<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">         147 :   AsarRegistrar() { RegisterAsarBackend(); }</span></span>
+<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">         151 :   AsarRegistrar() { RegisterAsarBackend(); }</span></span>
 <span id="L43"><span class="lineNum">      43</span>                 :             : } kRegisterAsar;</span>
 <span id="L44"><span class="lineNum">      44</span>                 :             : </span>
 <span id="L45"><span class="lineNum">      45</span>                 :             : }  // namespace</span>
 <span id="L46"><span class="lineNum">      46</span>                 :             : </span>
-<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">         148 : void RegisterAsarBackend() {</span></span>
-<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">         148 :   archive::RegisterContainerReader(</span></span>
-<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">         148 :       &quot;asar&quot;, &amp;OpenAsarContainer, {{.name = &quot;asar&quot;, .suffixes = {&quot;.asar&quot;}, .detail = &quot;Electron application archives&quot;}});</span></span>
-<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">         148 : }</span></span>
+<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">         152 : void RegisterAsarBackend() {</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">         152 :   archive::RegisterContainerReader(</span></span>
+<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">         152 :       &quot;asar&quot;, &amp;OpenAsarContainer, {{.name = &quot;asar&quot;, .suffixes = {&quot;.asar&quot;}, .detail = &quot;Electron application archives&quot;}});</span></span>
+<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">         152 : }</span></span>
 <span id="L51"><span class="lineNum">      51</span>                 :             : </span>
 <span id="L52"><span class="lineNum">      52</span>                 :             : }  // namespace xff::asar</span>
         </pre>

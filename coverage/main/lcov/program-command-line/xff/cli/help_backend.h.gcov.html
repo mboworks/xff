@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-07 17:23:52</td>
+            <td class="headerValue">2026-09-07 18:25:10</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -124,14 +124,14 @@
 <span id="L53"><span class="lineNum">      53</span>              : // via Context(). It is set at construction and constant thereafter.</span>
 <span id="L54"><span class="lineNum">      54</span>              : class HelpBackend {</span>
 <span id="L55"><span class="lineNum">      55</span>              :  public:</span>
-<span id="L56"><span class="lineNum">      56</span> <span class="tlaGNC">          99 :   HelpBackend() = default;</span></span>
+<span id="L56"><span class="lineNum">      56</span> <span class="tlaGNC">         104 :   HelpBackend() = default;</span></span>
 <span id="L57"><span class="lineNum">      57</span>              : </span>
 <span id="L58"><span class="lineNum">      58</span>              :   // std::move is a no-op while HelpRenderContext is trivially copyable, but keeps the</span>
 <span id="L59"><span class="lineNum">      59</span>              :   // sink-parameter idiom for when it gains a non-trivial field (e.g. a color palette).</span>
 <span id="L60"><span class="lineNum">      60</span>              :   // NOLINTNEXTLINE(*-move-const-arg)</span>
 <span id="L61"><span class="lineNum">      61</span> <span class="tlaGNC">         127 :   explicit HelpBackend(HelpRenderContext context) : context_(std::move(context)) {}</span></span>
 <span id="L62"><span class="lineNum">      62</span>              : </span>
-<span id="L63"><span class="lineNum">      63</span> <span class="tlaGNC">         226 :   virtual ~HelpBackend() = default;</span></span>
+<span id="L63"><span class="lineNum">      63</span> <span class="tlaGNC">         231 :   virtual ~HelpBackend() = default;</span></span>
 <span id="L64"><span class="lineNum">      64</span>              :   HelpBackend(const HelpBackend&amp;) = delete;</span>
 <span id="L65"><span class="lineNum">      65</span>              :   HelpBackend&amp; operator=(const HelpBackend&amp;) = delete;</span>
 <span id="L66"><span class="lineNum">      66</span>              :   HelpBackend(HelpBackend&amp;&amp;) = delete;</span>
@@ -143,17 +143,17 @@
 <span id="L72"><span class="lineNum">      72</span>              :   // A top-level section and its close.</span>
 <span id="L73"><span class="lineNum">      73</span>              :   virtual void BeginSection(const Section&amp; section) = 0;</span>
 <span id="L74"><span class="lineNum">      74</span>              : </span>
-<span id="L75"><span class="lineNum">      75</span> <span class="tlaGNC">         378 :   virtual void EndSection(const Section&amp; /*section*/) {}</span></span>
+<span id="L75"><span class="lineNum">      75</span> <span class="tlaGNC">         463 :   virtual void EndSection(const Section&amp; /*section*/) {}</span></span>
 <span id="L76"><span class="lineNum">      76</span>              : </span>
 <span id="L77"><span class="lineNum">      77</span>              :   // A nested subsection and its close.</span>
 <span id="L78"><span class="lineNum">      78</span>              :   virtual void BeginSubsection(const Subsection&amp; subsection) = 0;</span>
 <span id="L79"><span class="lineNum">      79</span>              : </span>
-<span id="L80"><span class="lineNum">      80</span> <span class="tlaGNC">        1584 :   virtual void EndSubsection(const Subsection&amp; /*subsection*/) {}</span></span>
+<span id="L80"><span class="lineNum">      80</span> <span class="tlaGNC">        1944 :   virtual void EndSubsection(const Subsection&amp; /*subsection*/) {}</span></span>
 <span id="L81"><span class="lineNum">      81</span>              : </span>
 <span id="L82"><span class="lineNum">      82</span>              :   // A definition entry (its detail blocks are walked between Begin and End).</span>
 <span id="L83"><span class="lineNum">      83</span>              :   virtual void BeginEntry(const Entry&amp; entry) = 0;</span>
 <span id="L84"><span class="lineNum">      84</span>              : </span>
-<span id="L85"><span class="lineNum">      85</span> <span class="tlaGNC">        3109 :   virtual void EndEntry(const Entry&amp; /*entry*/) {}</span></span>
+<span id="L85"><span class="lineNum">      85</span> <span class="tlaGNC">        4219 :   virtual void EndEntry(const Entry&amp; /*entry*/) {}</span></span>
 <span id="L86"><span class="lineNum">      86</span>              : </span>
 <span id="L87"><span class="lineNum">      87</span>              :   // Leaf blocks. Named Emit* so the method names do not collide with the model's</span>
 <span id="L88"><span class="lineNum">      88</span>              :   // node type names (Prose, Example, ...) they take by reference.</span>

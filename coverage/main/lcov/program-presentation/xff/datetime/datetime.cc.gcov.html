@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-07 17:23:52</td>
+            <td class="headerValue">2026-09-07 18:25:10</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -364,23 +364,23 @@
 <span id="L279"><span class="lineNum">     279</span>                 :<span class="tlaGNC">           3 :   return kNames;</span></span>
 <span id="L280"><span class="lineNum">     280</span>                 :<span class="tlaGNC">           3 : }</span></span>
 <span id="L281"><span class="lineNum">     281</span>                 :             : </span>
-<span id="L282"><span class="lineNum">     282</span>                 :<span class="tlaGNC">          60 : absl::Span&lt;const std::pair&lt;std::string_view, std::string_view&gt;&gt; FormatDocs() {</span></span>
-<span id="L283"><span class="lineNum">     283</span>                 :<span class="tlaGNC">          60 :   static constexpr auto kDocs = std::to_array&lt;std::pair&lt;std::string_view, std::string_view&gt;&gt;({</span></span>
-<span id="L284"><span class="lineNum">     284</span>                 :<span class="tlaGNC">          60 :       {&quot;iso, iso8601&quot;, &quot;ISO-8601 extended (2020-09-13T12:26:40+0000)&quot;},</span></span>
-<span id="L285"><span class="lineNum">     285</span>                 :<span class="tlaGNC">          60 :       {&quot;iso8601-basic&quot;, &quot;ISO-8601 basic / compact (20200913T122640+0000)&quot;},</span></span>
-<span id="L286"><span class="lineNum">     286</span>                 :<span class="tlaGNC">          60 :       {&quot;iso8601-full&quot;, &quot;ISO-8601 with sub-second precision&quot;},</span></span>
-<span id="L287"><span class="lineNum">     287</span>                 :<span class="tlaGNC">          60 :       {&quot;rfc3339&quot;, &quot;RFC 3339, colon offset (2020-09-13T12:26:40+00:00)&quot;},</span></span>
-<span id="L288"><span class="lineNum">     288</span>                 :<span class="tlaGNC">          60 :       {&quot;space, human&quot;, &quot;readable default (2020-09-13 12:26:40 +0000)&quot;},</span></span>
-<span id="L289"><span class="lineNum">     289</span>                 :<span class="tlaGNC">          60 :       {&quot;asctime&quot;, &quot;asctime(3); find's default %t (Sun Sep 13 12:26:40 2020)&quot;},</span></span>
-<span id="L290"><span class="lineNum">     290</span>                 :<span class="tlaGNC">          60 :       {&quot;epoch&quot;, &quot;seconds since the Unix epoch&quot;},</span></span>
-<span id="L291"><span class="lineNum">     291</span>                 :<span class="tlaGNC">          60 :       {&quot;zulu&quot;, &quot;UTC with a Z designator (2020-09-13T12:26:40Z)&quot;},</span></span>
-<span id="L292"><span class="lineNum">     292</span>                 :<span class="tlaGNC">          60 :       {&quot;zulu-dense&quot;, &quot;UTC Z, no separators (20200913T122640Z)&quot;},</span></span>
-<span id="L293"><span class="lineNum">     293</span>                 :<span class="tlaGNC">          60 :       {&quot;asn1, generalizedtime&quot;, &quot;ASN.1 GeneralizedTime, local (20200913122640); =always adds +0000&quot;},</span></span>
-<span id="L294"><span class="lineNum">     294</span>                 :<span class="tlaGNC">          60 :       {&quot;asn1z&quot;, &quot;ASN.1 GeneralizedTime, UTC Z (20200913122640Z)&quot;},</span></span>
-<span id="L295"><span class="lineNum">     295</span>                 :<span class="tlaGNC">          60 :       {&quot;&lt;strftime&gt;&quot;, &quot;any other value is used as an strftime(3) pattern, e.g. %Y-%m-%d&quot;},</span></span>
-<span id="L296"><span class="lineNum">     296</span>                 :<span class="tlaGNC">          60 :   });</span></span>
-<span id="L297"><span class="lineNum">     297</span>                 :<span class="tlaGNC">          60 :   return kDocs;</span></span>
-<span id="L298"><span class="lineNum">     298</span>                 :<span class="tlaGNC">          60 : }</span></span>
+<span id="L282"><span class="lineNum">     282</span>                 :<span class="tlaGNC">          65 : absl::Span&lt;const std::pair&lt;std::string_view, std::string_view&gt;&gt; FormatDocs() {</span></span>
+<span id="L283"><span class="lineNum">     283</span>                 :<span class="tlaGNC">          65 :   static constexpr auto kDocs = std::to_array&lt;std::pair&lt;std::string_view, std::string_view&gt;&gt;({</span></span>
+<span id="L284"><span class="lineNum">     284</span>                 :<span class="tlaGNC">          65 :       {&quot;iso, iso8601&quot;, &quot;ISO-8601 extended (2020-09-13T12:26:40+0000)&quot;},</span></span>
+<span id="L285"><span class="lineNum">     285</span>                 :<span class="tlaGNC">          65 :       {&quot;iso8601-basic&quot;, &quot;ISO-8601 basic / compact (20200913T122640+0000)&quot;},</span></span>
+<span id="L286"><span class="lineNum">     286</span>                 :<span class="tlaGNC">          65 :       {&quot;iso8601-full&quot;, &quot;ISO-8601 with sub-second precision&quot;},</span></span>
+<span id="L287"><span class="lineNum">     287</span>                 :<span class="tlaGNC">          65 :       {&quot;rfc3339&quot;, &quot;RFC 3339, colon offset (2020-09-13T12:26:40+00:00)&quot;},</span></span>
+<span id="L288"><span class="lineNum">     288</span>                 :<span class="tlaGNC">          65 :       {&quot;space, human&quot;, &quot;readable default (2020-09-13 12:26:40 +0000)&quot;},</span></span>
+<span id="L289"><span class="lineNum">     289</span>                 :<span class="tlaGNC">          65 :       {&quot;asctime&quot;, &quot;asctime(3); find's default %t (Sun Sep 13 12:26:40 2020)&quot;},</span></span>
+<span id="L290"><span class="lineNum">     290</span>                 :<span class="tlaGNC">          65 :       {&quot;epoch&quot;, &quot;seconds since the Unix epoch&quot;},</span></span>
+<span id="L291"><span class="lineNum">     291</span>                 :<span class="tlaGNC">          65 :       {&quot;zulu&quot;, &quot;UTC with a Z designator (2020-09-13T12:26:40Z)&quot;},</span></span>
+<span id="L292"><span class="lineNum">     292</span>                 :<span class="tlaGNC">          65 :       {&quot;zulu-dense&quot;, &quot;UTC Z, no separators (20200913T122640Z)&quot;},</span></span>
+<span id="L293"><span class="lineNum">     293</span>                 :<span class="tlaGNC">          65 :       {&quot;asn1, generalizedtime&quot;, &quot;ASN.1 GeneralizedTime, local (20200913122640); =always adds +0000&quot;},</span></span>
+<span id="L294"><span class="lineNum">     294</span>                 :<span class="tlaGNC">          65 :       {&quot;asn1z&quot;, &quot;ASN.1 GeneralizedTime, UTC Z (20200913122640Z)&quot;},</span></span>
+<span id="L295"><span class="lineNum">     295</span>                 :<span class="tlaGNC">          65 :       {&quot;&lt;strftime&gt;&quot;, &quot;any other value is used as an strftime(3) pattern, e.g. %Y-%m-%d&quot;},</span></span>
+<span id="L296"><span class="lineNum">     296</span>                 :<span class="tlaGNC">          65 :   });</span></span>
+<span id="L297"><span class="lineNum">     297</span>                 :<span class="tlaGNC">          65 :   return kDocs;</span></span>
+<span id="L298"><span class="lineNum">     298</span>                 :<span class="tlaGNC">          65 : }</span></span>
 <span id="L299"><span class="lineNum">     299</span>                 :             : </span>
 <span id="L300"><span class="lineNum">     300</span>                 :             : }  // namespace xff::datetime</span>
         </pre>
