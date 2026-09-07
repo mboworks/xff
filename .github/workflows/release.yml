@@ -50,7 +50,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ env.RELEASE_TAG }}
-      - uses: bazelbuild/setup-bazelisk@v3
+      - uses: bazel-contrib/setup-bazel@0.19.0
       - name: Mount Bazel coverage disk cache
         uses: actions/cache@v6
         with:
@@ -160,7 +160,7 @@ jobs:
         with:
           ref: ${{ env.RELEASE_TAG }}
       # bazelisk launches the Bazel release pinned in .bazelversion.
-      - uses: bazelbuild/setup-bazelisk@v3
+      - uses: bazel-contrib/setup-bazel@0.19.0
       - name: Mount Bazel caches
         uses: actions/cache@v6
         with:
