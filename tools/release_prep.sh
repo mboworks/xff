@@ -144,7 +144,5 @@ install -m 0755 xff_full-macos-arm64 "${XFF_PATH_BIN}/xff_full"
 ```
 
 EOF
-printf '\n## Release resources\n\n'
-printf '%s\n' "- [Full HTML reference](https://mboworks.github.io/xff/releases/${VERSION}/)"
-printf '%s\n' "- [Raw reference (XFF.md)](https://mboworks.github.io/xff/releases/${VERSION}/XFF.md)"
-printf '%s\n' "- [Coverage report](https://mboworks.github.io/xff/coverage/tag/${VERSION}/)"
+printf '\n'
+bash tools/release_notes.sh "${TAG}"

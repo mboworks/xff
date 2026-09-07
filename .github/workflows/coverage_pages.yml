@@ -9,6 +9,7 @@ on:
 # same branch concurrently would otherwise overwrite whichever report was pushed first.
 concurrency:
   group: coverage-pages
+  queue: max
   cancel-in-progress: false
 
 permissions: read-all
@@ -125,10 +126,7 @@ jobs:
             git -C site push
           fi
           mkdir -p public
-          rsync --archive site/coverage/ public/coverage/
-          if [[ -d site/releases ]]; then
-            rsync --archive site/releases/ public/releases/
-          fi
+          rsync --archive --exclude='.git' site/ public/
       - uses: actions/upload-pages-artifact@v5
         with:
           path: public
