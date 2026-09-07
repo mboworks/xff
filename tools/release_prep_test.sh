@@ -211,11 +211,20 @@ test_release_binaries_use_shared_configuration_and_staging() {
     fail "release workflow: artifacts must use the shared staging script"
   fi
   if [ "$(count_lines_with '          path: dist/*' "${release_workflow}")" -ne 1 ]; then
-    fail "release workflow: must upload raw binaries and the Zstandard platform archive"
+    fail "release workflow: must upload raw binaries and their Zstandard debug archives"
   fi
   if [ "$(count_lines_with '            > SHA256SUMS' "${release_workflow}")" -ne 1 ]; then
     fail "release workflow: must generate exactly one checksum manifest"
   fi
+  for asset in \
+    xff-linux-x86_64.tar.zst \
+    xff_full-linux-x86_64.tar.zst \
+    xff-macos-arm64.tar.zst \
+    xff_full-macos-arm64.tar.zst; do
+    if [ "$(count_lines_with "            ${asset}" "${release_workflow}")" -ne 1 ]; then
+      fail "release workflow: checksum manifest must include ${asset} exactly once"
+    fi
+  done
   if [ "$(count_lines_with '          subject-path: dist/*' "${release_workflow}")" -ne 1 ]; then
     fail "release workflow: provenance must attest every asset, including SHA256SUMS"
   fi
@@ -232,7 +241,7 @@ test_release_binaries_use_shared_configuration_and_staging() {
     fail "main workflow: release cells must exercise the shared staging script"
   fi
   if [ "$(count_lines_with '          path: dist/*' "${main_workflow}")" -ne 1 ]; then
-    fail "main workflow: must upload raw binaries and the Zstandard platform archive"
+    fail "main workflow: must upload raw binaries and their Zstandard debug archives"
   fi
 }
 

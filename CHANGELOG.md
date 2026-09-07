@@ -9,6 +9,8 @@
 - Make release installation instructions explicit for both supported platforms and both binaries,
   verifying each download before installation and generating its matching manual page. A generated
   man page now uses the binary's invocation name, including `xff_full` or an `xff` symlink.
+- Publish `xff` and `xff_full` symmetrically: each has a directly downloadable, fully stripped
+  executable and a matching `.tar.zst` containing that executable and its separate debug file.
 
 # 0.3.5
 

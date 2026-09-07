@@ -83,6 +83,10 @@ Run either or both install blocks: the lean binary is installed as `xff`, and th
 binary as `xff_full`. Ensure `$HOME/.local/bin` is in `PATH`; the generated manual pages are
 installed below `$HOME/.local/share/man`.
 
+Release files without an archive suffix, such as `xff-linux-x86_64`, are the actual stripped
+platform executables and can be downloaded and installed directly. Each matching `.tar.zst`
+contains that same stripped executable together with its separate debug-information file.
+
 ### Install on Linux x86_64:
 
 ```sh
