@@ -213,11 +213,11 @@ test_release_reference_uses_clang() {
 test_release_binaries_use_shared_configuration_and_staging() {
   release_workflow="${HERE}/../.github/workflows/release.yml"
   main_workflow="${HERE}/../.github/workflows/main.yml"
-  if [ "$(count_lines_with 'bazel build --config=release //xff/cli:xff' "${release_workflow}")" -ne 1 ]; then
-    fail "release workflow: lean binary must build exactly once with --config=release"
+  if [ "$(count_lines_with 'bazel build --config=clang_release //xff/cli:xff' "${release_workflow}")" -ne 1 ]; then
+    fail "release workflow: lean binary must build exactly once with --config=clang_release"
   fi
-  if [ "$(count_lines_with 'bazel build --config=release --config=xff_full //xff/cli:xff_full' "${release_workflow}")" -ne 1 ]; then
-    fail "release workflow: full binary must build exactly once with --config=release"
+  if [ "$(count_lines_with 'bazel build --config=clang_release --config=xff_full //xff/cli:xff_full' "${release_workflow}")" -ne 1 ]; then
+    fail "release workflow: full binary must build exactly once with --config=clang_release"
   fi
   if [ "$(count_lines_with 'tools/stage_release_artifacts.sh' "${release_workflow}")" -ne 1 ]; then
     fail "release workflow: artifacts must use the shared staging script"
@@ -240,14 +240,18 @@ test_release_binaries_use_shared_configuration_and_staging() {
   if [ "$(count_lines_with '          subject-path: dist/*' "${release_workflow}")" -ne 1 ]; then
     fail "release workflow: provenance must attest every asset, including SHA256SUMS"
   fi
-  if [ "$(count_lines_with 'release_test_config=(--config=release)' "${main_workflow}")" -ne 1 ]; then
-    fail "main workflow: release-test options must start with --config=release"
+  if [ "$(count_lines_with 'flags: "--config=clang_release"' "${main_workflow}")" -ne 1 ]; then
+    fail "main workflow: default tests must use the production Clang release configuration"
   fi
-  if [ "$(count_lines_with 'bazel test //xff/cli:all --config=xff_docs' "${main_workflow}")" -ne 1 ]; then
-    fail "main workflow: binary-level tests must use --config=release"
+  if [ "$(count_lines_with 'bazel test //xff/cli:all --config=xff_docs' "${main_workflow}")" -ne 0 ]; then
+    fail "main workflow: release validation must not add a second bazel test invocation"
   fi
-  if [ "$(count_lines_with '--test_tag_filters=release-binary' "${main_workflow}")" -ne 1 ]; then
-    fail "main workflow: release tests must select tagged binary-level bashtests"
+  if [ "$(count_lines_with 'bazel build --config=clang_release' "${main_workflow}")" -ne 0 ]; then
+    fail "main workflow: release validation must not add a bazel build invocation"
+  fi
+  if [ "$(count_lines_with 'lean="bazel-bin/xff/cli/xff"' "${main_workflow}")" -ne 1 ] \
+    || [ "$(count_lines_with 'full="bazel-bin/xff/cli/xff_full"' "${main_workflow}")" -ne 1 ]; then
+    fail "main workflow: staging must consume both binaries built by the complete test invocation"
   fi
   if [ "$(count_lines_with 'tools/stage_release_artifacts.sh' "${main_workflow}")" -ne 1 ]; then
     fail "main workflow: release cells must exercise the shared staging script"

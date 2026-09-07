@@ -65,7 +65,7 @@ The former combined roadmap and completion ledger through PR #683 is retained se
   | combined `.tar.zst` |  3,794,872 |   3,875,217 |   +80,345 B |
 
   This non-LTO comparison isolates ordinary ELF linking but is not xff's release configuration.
-  The actual `--config=release` build uses ThinLTO. Mold reaches that link and then fails because
+  The actual `--config=clang_release` build uses ThinLTO. Mold reaches that link and then fails because
   Clang supplies `LLVMgold.so`, which is absent from the downloaded LLVM 22 distribution.
   LLVM's documented external-linker path requires building a matching gold plugin from the LLVM
   source tree; LLD consumes the bitcode natively. Supplying that plugin would therefore expand the

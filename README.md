@@ -184,7 +184,7 @@ bazel build --config=xff_full //xff/cli:xff_full
 
 The `//xff` target alias follows your active workspace configuration automatically: it resolves to the lean binary by default, and switches to the full binary under `--config=xff_full`. The underlying targets remain explicit and configuration-stable: `//xff/cli:xff` is always lean, and `//xff/cli:xff_full` is always full.
 
-Published binaries use `--config=release`, which selects the hermetic Clang toolchain, optimizes for
+Published binaries use `--config=clang_release`, which combines the hermetic Clang toolchain with
 size, and enables ThinLTO. Releases provide the stripped `xff-PLATFORM-ARCH` and
 `xff_full-PLATFORM-ARCH` executables directly. Each platform also provides one level-19
 Zstandard-compressed `xff-PLATFORM-ARCH.tar.zst` archive containing both executables plus their

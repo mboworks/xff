@@ -176,17 +176,17 @@ jobs:
       - name: Build lean + full binaries
         run: |
           command -v zstd
-          bazel build --config=release //xff/cli:xff \
+          bazel build --config=clang_release //xff/cli:xff \
             --disk_cache="${HOME}/.cache/bazel-disk" --repository_cache="${HOME}/.cache/bazel-repo"
-          bazel build --config=release --config=xff_full //xff/cli:xff_full \
+          bazel build --config=clang_release --config=xff_full //xff/cli:xff_full \
             --disk_cache="${HOME}/.cache/bazel-disk" --repository_cache="${HOME}/.cache/bazel-repo"
       - name: Stage artifacts
         env:
           PLATFORM: ${{ matrix.platform }}
         run: |
           arch="$(uname -m)"
-          lean="$(bazel cquery --config=release --output=files //xff/cli:xff 2>/dev/null)"
-          full="$(bazel cquery --config=release --config=xff_full --output=files //xff/cli:xff_full 2>/dev/null)"
+          lean="$(bazel cquery --config=clang_release --output=files //xff/cli:xff 2>/dev/null)"
+          full="$(bazel cquery --config=clang_release --config=xff_full --output=files //xff/cli:xff_full 2>/dev/null)"
           tools/stage_release_artifacts.sh "${PLATFORM}" "${arch}" "${lean}" "${full}" dist
           lean_staged="dist/.xff-${PLATFORM}-${arch}-staging/xff-${PLATFORM}-${arch}/xff"
           full_staged="dist/.xff_full-${PLATFORM}-${arch}-staging/xff_full-${PLATFORM}-${arch}/xff_full"
