@@ -1,6 +1,8 @@
 <!-- SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
+# 0.3.6
+
 # 0.3.5
 
 - Shrink the installed Linux release binaries with LLD string-tail and branch optimization, safe
