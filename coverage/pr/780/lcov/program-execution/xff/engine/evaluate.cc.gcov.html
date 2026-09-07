@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-07 20:13:49</td>
+            <td class="headerValue">2026-09-07 20:58:45</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">97.8&nbsp;%</td>
@@ -1387,8 +1387,8 @@
 <span id="L1280"><span class="lineNum">    1280</span>                 :             : // (naming it). A non-empty `matching` is compiled into options.ignore_matching_lines; a</span>
 <span id="L1281"><span class="lineNum">    1281</span>                 :             : // regex that does not compile is an InvalidArgument (carrying RE2's diagnostic). Shared by</span>
 <span id="L1282"><span class="lineNum">    1282</span>                 :             : // EvalDiff (per entry) and ValidateDiffIgnore (once, pre-walk, to reject a bad value early).</span>
-<span id="L1283"><span class="lineNum">    1283</span>                 :<span class="tlaGNC">         833 : absl::Status ApplyDiffIgnore(std::string_view tokens, std::string_view matching, mbo::diff::DiffOptions&amp; options) {</span></span>
-<span id="L1284"><span class="lineNum">    1284</span>         [<span class="tlaGBC" title="branch 0 was taken 17 times"> + </span><span class="tlaGBC" title="branch 1 was taken 830 times"> + </span>]:<span class="tlaGNC">         833 :   for (const std::string_view token : absl::StrSplit(tokens, ',', absl::SkipEmpty())) {</span></span>
+<span id="L1283"><span class="lineNum">    1283</span>                 :<span class="tlaGNC">         834 : absl::Status ApplyDiffIgnore(std::string_view tokens, std::string_view matching, mbo::diff::DiffOptions&amp; options) {</span></span>
+<span id="L1284"><span class="lineNum">    1284</span>         [<span class="tlaGBC" title="branch 0 was taken 17 times"> + </span><span class="tlaGBC" title="branch 1 was taken 831 times"> + </span>]:<span class="tlaGNC">         834 :   for (const std::string_view token : absl::StrSplit(tokens, ',', absl::SkipEmpty())) {</span></span>
 <span id="L1285"><span class="lineNum">    1285</span>                 :<span class="tlaGNC">          17 :     const auto it = kDiffIgnoreTokens.find(token);</span></span>
 <span id="L1286"><span class="lineNum">    1286</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 14 times"> + </span>]:<span class="tlaGNC">          17 :     if (it == kDiffIgnoreTokens.end()) {</span></span>
 <span id="L1287"><span class="lineNum">    1287</span>                 :<span class="tlaGNC">           3 :       return absl::InvalidArgumentError(</span></span>
@@ -1396,7 +1396,7 @@
 <span id="L1289"><span class="lineNum">    1289</span>                 :<span class="tlaGNC">           3 :     }</span></span>
 <span id="L1290"><span class="lineNum">    1290</span>                 :<span class="tlaGNC">          14 :     it-&gt;second(options);</span></span>
 <span id="L1291"><span class="lineNum">    1291</span>                 :<span class="tlaGNC">          14 :   }</span></span>
-<span id="L1292"><span class="lineNum">    1292</span>         [<span class="tlaGBC" title="branch 0 was taken 11 times"> + </span><span class="tlaGBC" title="branch 1 was taken 819 times"> + </span>]:<span class="tlaGNC">         830 :   if (!matching.empty()) {</span></span>
+<span id="L1292"><span class="lineNum">    1292</span>         [<span class="tlaGBC" title="branch 0 was taken 11 times"> + </span><span class="tlaGBC" title="branch 1 was taken 820 times"> + </span>]:<span class="tlaGNC">         831 :   if (!matching.empty()) {</span></span>
 <span id="L1293"><span class="lineNum">    1293</span>                 :             :     // log_errors(false): a bad pattern is reported via our own message (below) carrying RE2's</span>
 <span id="L1294"><span class="lineNum">    1294</span>                 :             :     // error(), so RE2 must not also LOG(ERROR) it (which, pre-InitializeLog, is noisy on stderr).</span>
 <span id="L1295"><span class="lineNum">    1295</span>                 :<span class="tlaGNC">          11 :     RE2::Options re2_options;</span></span>
@@ -1407,8 +1407,8 @@
 <span id="L1300"><span class="lineNum">    1300</span>                 :<span class="tlaGNC">           1 :           absl::StrCat(&quot;invalid --diff-ignore-matching regex: &quot;, options.ignore_matching_lines-&gt;error()));</span></span>
 <span id="L1301"><span class="lineNum">    1301</span>                 :<span class="tlaGNC">           1 :     }</span></span>
 <span id="L1302"><span class="lineNum">    1302</span>                 :<span class="tlaGNC">          11 :   }</span></span>
-<span id="L1303"><span class="lineNum">    1303</span>                 :<span class="tlaGNC">         829 :   return absl::OkStatus();</span></span>
-<span id="L1304"><span class="lineNum">    1304</span>                 :<span class="tlaGNC">         830 : }</span></span>
+<span id="L1303"><span class="lineNum">    1303</span>                 :<span class="tlaGNC">         830 :   return absl::OkStatus();</span></span>
+<span id="L1304"><span class="lineNum">    1304</span>                 :<span class="tlaGNC">         831 : }</span></span>
 <span id="L1305"><span class="lineNum">    1305</span>                 :             : </span>
 <span id="L1306"><span class="lineNum">    1306</span>                 :             : }  // namespace</span>
 <span id="L1307"><span class="lineNum">    1307</span>                 :             : </span>
