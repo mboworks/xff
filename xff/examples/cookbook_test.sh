@@ -215,7 +215,7 @@ test::recipe_patch_between_repository_trees() {
   printf 'ignored.txt\n' >"${new_tree}/.gitignore"
   printf 'old noise\n' >"${old_tree}/ignored.txt"
   printf 'new noise\n' >"${new_tree}/ignored.txt"
-  out="$(xff --compare=diff "${old_tree}" "${new_tree}" 2>&1)" && rc=0 || rc=$?
+  out="$(xff -g+ --compare=diff "${old_tree}" "${new_tree}" 2>&1)" && rc=0 || rc=$?
   expect_eq "0" "${rc}"
   expect_output_contains '--- a/changed.txt' "${out}"
   expect_output_contains '+++ b/changed.txt' "${out}"

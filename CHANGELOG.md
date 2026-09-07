@@ -3,6 +3,10 @@
 
 # 0.3.6
 
+- Make `--compare` run two ordinary walks in parallel and compare their expression matches by
+  relative path. It no longer silently enables Git ignores, skips VCS metadata, forces tree sorting,
+  rejects expressions and file roots, or overrides `-P` / `-H` / `-L` symlink traversal.
+
 # 0.3.5
 
 - Shrink the installed Linux release binaries with LLD string-tail and branch optimization, safe
