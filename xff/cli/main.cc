@@ -349,6 +349,12 @@ MetaSelection SelectMeta(const std::vector<std::string>& flags) {
   return {.kind = Meta::kMan};  // --man is the only remaining parser-classified meta flag
 }
 
+std::string_view ProgramBasename(std::string_view program) {
+  const std::string_view::size_type slash = program.find_last_of("/\\");
+  program = slash == std::string_view::npos ? program : program.substr(slash + 1);
+  return program.empty() ? std::string_view("xff") : program;
+}
+
 // The full detailed reference (--help=full / long and --help-full / --help-long): every
 // option and primary with explanations, then each sub-vocabulary topic marked in_full --
 // so adding a topic auto-includes it here, no hand-maintained list.
@@ -537,7 +543,7 @@ int RunMain(int argc, char** argv) {
       case Meta::kMan:
         // roff(1); on a tty the man kind formats it (mandoc) so it reads like `man xff`,
         // while a redirect stays raw roff for `mandoc` / `man -l -` / installing as xff.1.
-        xff::cli::EmitPaged(xff::cli::ManPage(), meta_pager, xff::cli::PagerKind::kMan);
+        xff::cli::EmitPaged(xff::cli::ManPage(ProgramBasename(program)), meta_pager, xff::cli::PagerKind::kMan);
         return 0;
       case Meta::kMarkdown:
         // GitHub-renderable vocabulary reference

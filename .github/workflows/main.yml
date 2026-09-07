@@ -137,11 +137,12 @@ jobs:
           lean="$(bazel cquery --config=release --output=files //xff/cli:xff 2>/dev/null)"
           full="$(bazel cquery --config=release --config=xff_full --output=files //xff/cli:xff_full 2>/dev/null)"
           tools/stage_release_artifacts.sh "${platform}" "${arch}" "${lean}" "${full}" dist
-          staged="dist/.xff-${platform}-${arch}-staging/xff-${platform}-${arch}"
-          "${staged}/xff" --version
-          "${staged}/xff" --help >/dev/null
-          "${staged}/xff_full" --version
-          "${staged}/xff_full" --help >/dev/null
+          lean_staged="dist/.xff-${platform}-${arch}-staging/xff-${platform}-${arch}/xff"
+          full_staged="dist/.xff_full-${platform}-${arch}-staging/xff_full-${platform}-${arch}/xff_full"
+          "${lean_staged}" --version
+          "${lean_staged}" --help >/dev/null
+          "${full_staged}" --version
+          "${full_staged}" --help >/dev/null
           ls -lh dist/*
       - name: Upload release candidates
         if: matrix.config.name == 'default' && github.event_name == 'pull_request'

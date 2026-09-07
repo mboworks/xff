@@ -16,6 +16,7 @@
 #include "xff/cli/manpage.h"
 
 #include <string>
+#include <string_view>
 
 #include "xff/cli/help_backend.h"
 #include "xff/cli/help_build.h"
@@ -23,9 +24,11 @@
 
 namespace xff::cli {
 
-std::string ManPage() {
+std::string ManPage(std::string_view program_name) {
   RoffBackend backend;
-  RenderDocument(BuildReference(), backend);
+  Document doc = BuildReference();
+  doc.name = program_name;
+  RenderDocument(doc, backend);
   return backend.Take();
 }
 

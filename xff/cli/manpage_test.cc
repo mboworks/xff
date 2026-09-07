@@ -28,6 +28,7 @@ namespace {
 
 using ::testing::AllOf;
 using ::testing::HasSubstr;
+using ::testing::StartsWith;
 
 // Undo the roff hyphen/backslash escaping so assertions can match plain names.
 std::string Plain(const std::string& page) {
@@ -43,6 +44,13 @@ TEST_F(ManPageTest, HasTheStandardManSections) {
                 HasSubstr(".TH xff 1"), HasSubstr(".SH NAME"), HasSubstr(".SH SYNOPSIS"), HasSubstr(".SH DESCRIPTION"),
                 HasSubstr(".SH OPTIONS"), HasSubstr(".SH EXPRESSION"), HasSubstr(".SH EXIT STATUS"),
                 HasSubstr(".SH SEE ALSO")));
+}
+
+TEST_F(ManPageTest, UsesTheInvokedProgramName) {
+  const std::string page = ManPage("xff_full");
+  EXPECT_THAT(page, StartsWith(".TH xff_full 1"));
+  EXPECT_THAT(page, HasSubstr("\n.SH NAME\nxff_full \\- eXtended File Find,"));
+  EXPECT_THAT(page, HasSubstr("\n.B xff_full\n"));
 }
 
 TEST_F(ManPageTest, GroupsOptionsAndExpressionsIntoSubsections) {

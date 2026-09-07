@@ -6,6 +6,12 @@
 - Make `--compare` run two ordinary walks in parallel and compare their expression matches by
   relative path. It no longer silently enables Git ignores, skips VCS metadata, forces tree sorting,
   rejects expressions and file roots, or overrides `-P` / `-H` / `-L` symlink traversal.
+- Make release installation instructions explicit for both supported platforms and both binaries,
+  verifying each download before installation and generating its matching manual page. A generated
+  man page now uses the binary's invocation name, including `xff_full` or an `xff` symlink. Downloads
+  use a unique temporary directory and clean it on exit instead of polluting the caller's directory.
+- Publish `xff` and `xff_full` symmetrically: each has a directly downloadable, fully stripped
+  executable and a matching `.tar.zst` containing that executable and its separate debug file.
 
 # 0.3.5
 

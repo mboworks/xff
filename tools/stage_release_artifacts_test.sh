@@ -41,7 +41,7 @@ EOF
 }
 
 test::stages_linux_binaries_and_separate_debug_files() {
-  local root output listing
+  local root output lean_listing full_listing
   root="$(test_tmpdir release-linux)"
   make_fixture "${root}"
   output="$(RELEASE_OBJCOPY="${root}/bin/objcopy" RELEASE_STRIP="${root}/bin/strip" \
@@ -50,33 +50,44 @@ test::stages_linux_binaries_and_separate_debug_files() {
   expect_output_contains "${root}/dist/xff-linux-x86_64" "${output}"
   expect_output_contains "${root}/dist/xff_full-linux-x86_64" "${output}"
   expect_output_contains "${root}/dist/xff-linux-x86_64.tar.zst" "${output}"
+  expect_output_contains "${root}/dist/xff_full-linux-x86_64.tar.zst" "${output}"
   expect_eq "lean" "$("${root}/dist/.xff-linux-x86_64-staging/xff-linux-x86_64/xff")"
-  expect_eq "full" "$("${root}/dist/.xff-linux-x86_64-staging/xff-linux-x86_64/xff_full")"
+  expect_eq "full" "$("${root}/dist/.xff_full-linux-x86_64-staging/xff_full-linux-x86_64/xff_full")"
   expect_eq "lean" "$("${root}/dist/xff-linux-x86_64")"
   expect_eq "full" "$("${root}/dist/xff_full-linux-x86_64")"
-  listing="$(zstd -dc -- "${root}/dist/xff-linux-x86_64.tar.zst" | tar -tf -)"
-  expect_output_contains "xff-linux-x86_64/xff" "${listing}"
-  expect_output_contains "xff-linux-x86_64/xff_full" "${listing}"
-  expect_output_contains "xff-linux-x86_64/debug/xff.debug" "${listing}"
-  expect_output_contains "xff-linux-x86_64/debug/xff_full.debug" "${listing}"
+  expect_output_contains "# stripped" "$(<"${root}/dist/xff-linux-x86_64")"
+  expect_output_contains "# stripped" "$(<"${root}/dist/xff_full-linux-x86_64")"
+  lean_listing="$(zstd -dc -- "${root}/dist/xff-linux-x86_64.tar.zst" | tar -tf -)"
+  expect_output_contains "xff-linux-x86_64/xff" "${lean_listing}"
+  expect_output_contains "xff-linux-x86_64/debug/xff.debug" "${lean_listing}"
+  expect_output_not_contains "xff_full" "${lean_listing}"
+  full_listing="$(zstd -dc -- "${root}/dist/xff_full-linux-x86_64.tar.zst" | tar -tf -)"
+  expect_output_contains "xff_full-linux-x86_64/xff_full" "${full_listing}"
+  expect_output_contains "xff_full-linux-x86_64/debug/xff_full.debug" "${full_listing}"
+  expect_output_not_contains "xff-linux" "${full_listing}"
 }
 
 test::stages_macos_binaries_and_preserves_unstripped_copies() {
-  local root listing
+  local root lean_listing full_listing
   root="$(test_tmpdir release-macos)"
   make_fixture "${root}"
   RELEASE_STRIP="${root}/bin/strip" RELEASE_CODESIGN="${root}/bin/codesign" \
     "${stager}" macos arm64 "${root}/xff" "${root}/xff_full" "${root}/dist" >/dev/null
 
   expect_eq "lean" "$("${root}/dist/.xff-macos-arm64-staging/xff-macos-arm64/xff")"
-  expect_eq "full" "$("${root}/dist/.xff-macos-arm64-staging/xff-macos-arm64/xff_full")"
+  expect_eq "full" "$("${root}/dist/.xff_full-macos-arm64-staging/xff_full-macos-arm64/xff_full")"
   expect_eq "lean" "$("${root}/dist/xff-macos-arm64")"
   expect_eq "full" "$("${root}/dist/xff_full-macos-arm64")"
-  listing="$(zstd -dc -- "${root}/dist/xff-macos-arm64.tar.zst" | tar -tf -)"
-  expect_output_contains "xff-macos-arm64/xff" "${listing}"
-  expect_output_contains "xff-macos-arm64/xff_full" "${listing}"
-  expect_output_contains "xff-macos-arm64/debug/xff.debug" "${listing}"
-  expect_output_contains "xff-macos-arm64/debug/xff_full.debug" "${listing}"
+  expect_output_contains "# stripped" "$(<"${root}/dist/xff-macos-arm64")"
+  expect_output_contains "# stripped" "$(<"${root}/dist/xff_full-macos-arm64")"
+  lean_listing="$(zstd -dc -- "${root}/dist/xff-macos-arm64.tar.zst" | tar -tf -)"
+  expect_output_contains "xff-macos-arm64/xff" "${lean_listing}"
+  expect_output_contains "xff-macos-arm64/debug/xff.debug" "${lean_listing}"
+  expect_output_not_contains "xff_full" "${lean_listing}"
+  full_listing="$(zstd -dc -- "${root}/dist/xff_full-macos-arm64.tar.zst" | tar -tf -)"
+  expect_output_contains "xff_full-macos-arm64/xff_full" "${full_listing}"
+  expect_output_contains "xff_full-macos-arm64/debug/xff_full.debug" "${full_listing}"
+  expect_output_not_contains "xff-macos" "${full_listing}"
 }
 
 test::rejects_unknown_platforms() {
