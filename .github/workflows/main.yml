@@ -106,16 +106,39 @@ jobs:
             --disk_cache=$HOME/.cache/bazel-disk --repository_cache=$HOME/.cache/bazel-repo \
             "${fuse_test_config[@]}" \
             ${{ matrix.config.flags }}
-      # ThinLTO on every unit-test executable makes a cold job exceed 20 minutes. The ordinary suite
-      # above remains on the same hermetic Clang toolchain without LTO; these tagged binary-level
-      # tests compile the actual release targets with size optimization + ThinLTO and exercise both
-      # lean and full programs. Staging and executing the stripped copies covers the final release
-      # transformation as well.
+  # Build and smoke-test the actual ThinLTO release executables independently of the ordinary opt
+  # suite. The previous default cells serialized both configurations: on the final PR 777 run that
+  # cost 6m41s after the 14m32s Linux suite and 4m08s after the 16m53s macOS suite. Keeping this as
+  # its own matrix lets both configurations start together while retaining exact release-binary
+  # coverage. Accept the split only if CI confirms these jobs finish inside their matching tests.
+  release-smoke:
+    name: release smoke (${{ matrix.os }})
+    needs: [pre-commit, trunk]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: bazelbuild/setup-bazelisk@v3
+      - name: Mount Bazel release disk cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/bazel-disk
+          key: bazel-disk-${{ matrix.os }}-release-${{ hashFiles('MODULE.bazel.lock', '.bazelversion') }}
+          restore-keys: |
+            bazel-disk-${{ matrix.os }}-release-
+      - name: Install release-test dependencies
+        run: |
+          if [ "${RUNNER_OS}" = "Linux" ]; then
+            sudo apt-get install -y mandoc fuse3 libfuse3-3
+          fi
+          command -v mandoc
+          command -v zstd
       - name: Test, build, and smoke-test release artifacts
-        if: matrix.config.name == 'default'
         run: |
           set -euo pipefail
-          command -v zstd
           case "${RUNNER_OS}" in
             Linux) platform=linux ;;
             macOS) platform=macos ;;
@@ -145,7 +168,7 @@ jobs:
           "${full_staged}" --help >/dev/null
           ls -lh dist/*
       - name: Upload release candidates
-        if: matrix.config.name == 'default' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: release-candidate-${{ matrix.os }}
@@ -633,6 +656,7 @@ jobs:
     needs:
       [
         test,
+        release-smoke,
         pre-commit,
         trunk,
         coverage,
