@@ -1,10 +1,9 @@
 <!-- SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors -->
-
-[Release website](https://mboworks.github.io/xff/)
-
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 # xff - eXtended File Find
+
+[Release website](https://mboworks.github.io/xff/)
 
 `xff` is a `find(1)`-compatible file finder with modern extensions. It walks each starting path and acts on the entries matching an expression, exactly like `find`, then adds the conveniences you always wished `find` had: content and language search, structured output, per-run summaries and histograms, safe deletes, native hashing, and a shared `{field}` vocabulary that threads through `-printf`, `-exec`, and every renderer.
 
