@@ -1,6 +1,8 @@
 <!-- SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
+# 0.3.7
+
 # 0.3.6
 
 - Make `--compare` run two ordinary walks in parallel and compare their expression matches by
