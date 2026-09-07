@@ -67,6 +67,16 @@ test::man_page_uses_a_symlink_invocation_name() {
   expect_output_contains $'.SH SYNOPSIS\n.B xff' "${out}"
 }
 
+test::man_page_handles_argv0_without_a_path_or_name() {
+  local bin out
+  bin="$(_xff_full_bin)"
+  out="$(bash -c 'exec -a xff_alias "${1}" --pager=never --man' bash "${bin}")"
+  expect_matches '^\.TH xff_alias 1' "${out}"
+
+  out="$(bash -c 'exec -a "" "${1}" --pager=never --man' bash "${bin}")"
+  expect_matches '^\.TH xff 1' "${out}"
+}
+
 test::full_binary_pcre2_works_when_the_extra_is_linked_else_errors() {
   # This test drives xff_full in whichever build config it was compiled with, so it passes both
   # ways: a plain build links no PCRE2 backend (--regextype=PCRE2 is a usage error), while a
