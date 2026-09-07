@@ -35,7 +35,8 @@ load("//xff:cc.bzl", "cc_test")
 package(default_visibility = ["//visibility:private"])
 
 # Internal release-mode switch for ELF linker optimizations. `.bazelrc` enables it only through
-# `--config=release`; the Linux constraint below ensures those LLD options never reach Mach-O links.
+# `--config=clang_release`; the Linux constraint below ensures those LLD options never reach Mach-O
+# links.
 bool_flag(
     name = "xff_release_elf_link_optimizations",
     build_setting_default = False,
