@@ -332,6 +332,8 @@ TEST_F(RunTest, CompareValidatesRootsSelectionsAndDiffOptions) {
 
   EXPECT_THAT(RunArgvRecords({"--compare", (root_ / "missing").string(), right.string()}), IsEmpty());
   EXPECT_THAT(last_errors_, 1);
+  EXPECT_THAT(RunArgvRecords({"--compare", left.string(), (root_ / "missing").string()}), IsEmpty());
+  EXPECT_THAT(last_errors_, 1);
   EXPECT_THAT(
       RunArgvRecords({"--compare", (root_ / "a.txt").string(), right.string()}),
       ElementsAre("different\t.", "right-only\tvalue"));
