@@ -165,6 +165,16 @@ test_happy_path_stamps_and_emits_notes() {
     *"releases/download/\${XFF_VERSION}/xff-macos-arm64"*) ;;
     *) fail "happy: notes missing the reusable versioned macOS download: ${notes}" ;;
   esac
+  # shellcheck disable=SC2016  # literal generated shell text
+  case "${notes}" in
+    *'XFF_PATH_TEMP="$(mktemp -d "${TMPDIR:-/tmp}/xff-install.XXXXXX")"'*'XFF_PATH_TEMP="$(mktemp -d "${TMPDIR:-/tmp}/xff-install.XXXXXX")"'*) ;;
+    *) fail "happy: each platform must use a unique temporary download directory: ${notes}" ;;
+  esac
+  # shellcheck disable=SC2016  # literal generated shell text
+  case "${notes}" in
+    *'trap '\''rm -rf "${XFF_PATH_TEMP}"'\'' EXIT'*'cd "${XFF_PATH_TEMP}"'*'trap '\''rm -rf "${XFF_PATH_TEMP}"'\'' EXIT'*'cd "${XFF_PATH_TEMP}"'*) ;;
+    *) fail "happy: each platform must download in and clean its temporary directory: ${notes}" ;;
+  esac
   case "${notes}" in
     *" xff-linux-x86_64$"*"sha256sum -c -"*" xff_full-linux-x86_64$"*"sha256sum -c -"*) ;;
     *) fail "happy: notes do not verify both Linux binaries: ${notes}" ;;
@@ -173,12 +183,14 @@ test_happy_path_stamps_and_emits_notes() {
     *" xff-macos-arm64$"*"shasum -a 256 -c -"*" xff_full-macos-arm64$"*"shasum -a 256 -c -"*) ;;
     *) fail "happy: notes do not verify both macOS binaries: ${notes}" ;;
   esac
+  # shellcheck disable=SC2016  # literal generated shell text
   case "${notes}" in
-    *"install -m 0755 xff-linux-x86_64 \"\$XFF_PATH_BIN/xff\""*) ;;
+    *'install -m 0755 xff-linux-x86_64 "${XFF_PATH_BIN}/xff"'*) ;;
     *) fail "happy: notes missing executable installation: ${notes}" ;;
   esac
+  # shellcheck disable=SC2016  # literal generated shell text
   case "${notes}" in
-    *"\"\$XFF_PATH_BIN/xff\" --pager=never --man > \"\$XFF_PATH_MAN/xff.1\""*) ;;
+    *'"${XFF_PATH_BIN}/xff" --pager=never --man > "${XFF_PATH_MAN}/xff.1"'*) ;;
     *) fail "happy: notes missing generated man-page installation: ${notes}" ;;
   esac
   case "${notes}" in

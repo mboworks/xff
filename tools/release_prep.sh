@@ -80,8 +80,8 @@ cat <<'EOF'
 ## Install
 
 Run either or both install blocks: the lean binary is installed as `xff`, and the all-features
-binary as `xff_full`. Ensure `$HOME/.local/bin` is in `PATH`; the generated manual pages are
-installed below `$HOME/.local/share/man`.
+binary as `xff_full`. Ensure `${HOME}/.local/bin` is in `PATH`; the generated manual pages are
+installed below `${HOME}/.local/share/man`.
 
 Release files without an archive suffix, such as `xff-linux-x86_64`, are the actual stripped
 platform executables and can be downloaded and installed directly. Each matching `.tar.zst`
@@ -93,23 +93,26 @@ contains that same stripped executable together with its separate debug-informat
 EOF
 printf '%s\n' XFF_VERSION="${TAG}"
 cat <<'EOF'
-XFF_PATH_BIN="$HOME/.local/bin"
-XFF_PATH_MAN="$HOME/.local/share/man/man1"
-mkdir -p "$XFF_PATH_BIN"
-mkdir -p "$XFF_PATH_MAN"
+XFF_PATH_BIN="${HOME}/.local/bin"
+XFF_PATH_MAN="${HOME}/.local/share/man/man1"
+XFF_PATH_TEMP="$(mktemp -d "${TMPDIR:-/tmp}/xff-install.XXXXXX")"
+trap 'rm -rf "${XFF_PATH_TEMP}"' EXIT
+mkdir -p "${XFF_PATH_BIN}"
+mkdir -p "${XFF_PATH_MAN}"
+cd "${XFF_PATH_TEMP}"
 curl -fLO "https://github.com/mboworks/xff/releases/download/${XFF_VERSION}/SHA256SUMS"
 
 # Install xff.
 curl -fLO "https://github.com/mboworks/xff/releases/download/${XFF_VERSION}/xff-linux-x86_64"
 grep ' xff-linux-x86_64$' SHA256SUMS | sha256sum -c -
-install -m 0755 xff-linux-x86_64 "$XFF_PATH_BIN/xff"
-"$XFF_PATH_BIN/xff" --pager=never --man > "$XFF_PATH_MAN/xff.1"
+install -m 0755 xff-linux-x86_64 "${XFF_PATH_BIN}/xff"
+"${XFF_PATH_BIN}/xff" --pager=never --man > "${XFF_PATH_MAN}/xff.1"
 
 # Install xff_full.
 curl -fLO "https://github.com/mboworks/xff/releases/download/${XFF_VERSION}/xff_full-linux-x86_64"
 grep ' xff_full-linux-x86_64$' SHA256SUMS | sha256sum -c -
-install -m 0755 xff_full-linux-x86_64 "$XFF_PATH_BIN/xff_full"
-"$XFF_PATH_BIN/xff_full" --pager=never --man > "$XFF_PATH_MAN/xff_full.1"
+install -m 0755 xff_full-linux-x86_64 "${XFF_PATH_BIN}/xff_full"
+"${XFF_PATH_BIN}/xff_full" --pager=never --man > "${XFF_PATH_MAN}/xff_full.1"
 ```
 
 ### Install on macOS:
@@ -118,23 +121,26 @@ install -m 0755 xff_full-linux-x86_64 "$XFF_PATH_BIN/xff_full"
 EOF
 printf '%s\n' XFF_VERSION="${TAG}"
 cat <<'EOF'
-XFF_PATH_BIN="$HOME/.local/bin"
-XFF_PATH_MAN="$HOME/.local/share/man/man1"
-mkdir -p "$XFF_PATH_BIN"
-mkdir -p "$XFF_PATH_MAN"
+XFF_PATH_BIN="${HOME}/.local/bin"
+XFF_PATH_MAN="${HOME}/.local/share/man/man1"
+XFF_PATH_TEMP="$(mktemp -d "${TMPDIR:-/tmp}/xff-install.XXXXXX")"
+trap 'rm -rf "${XFF_PATH_TEMP}"' EXIT
+mkdir -p "${XFF_PATH_BIN}"
+mkdir -p "${XFF_PATH_MAN}"
+cd "${XFF_PATH_TEMP}"
 curl -fLO "https://github.com/mboworks/xff/releases/download/${XFF_VERSION}/SHA256SUMS"
 
 # Install xff.
 curl -fLO "https://github.com/mboworks/xff/releases/download/${XFF_VERSION}/xff-macos-arm64"
 grep ' xff-macos-arm64$' SHA256SUMS | shasum -a 256 -c -
-install -m 0755 xff-macos-arm64 "$XFF_PATH_BIN/xff"
-"$XFF_PATH_BIN/xff" --pager=never --man > "$XFF_PATH_MAN/xff.1"
+install -m 0755 xff-macos-arm64 "${XFF_PATH_BIN}/xff"
+"${XFF_PATH_BIN}/xff" --pager=never --man > "${XFF_PATH_MAN}/xff.1"
 
 # Install xff_full.
 curl -fLO "https://github.com/mboworks/xff/releases/download/${XFF_VERSION}/xff_full-macos-arm64"
 grep ' xff_full-macos-arm64$' SHA256SUMS | shasum -a 256 -c -
-install -m 0755 xff_full-macos-arm64 "$XFF_PATH_BIN/xff_full"
-"$XFF_PATH_BIN/xff_full" --pager=never --man > "$XFF_PATH_MAN/xff_full.1"
+install -m 0755 xff_full-macos-arm64 "${XFF_PATH_BIN}/xff_full"
+"${XFF_PATH_BIN}/xff_full" --pager=never --man > "${XFF_PATH_MAN}/xff_full.1"
 ```
 
 EOF
