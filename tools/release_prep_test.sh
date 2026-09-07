@@ -284,12 +284,32 @@ test_release_elf_link_optimizations_are_scoped() {
   fi
 }
 
+# Every workflow uses setup-bazel's opt-in cache model. setup-bazelisk unconditionally touched its
+# legacy Actions cache and emitted HTTP 400 warnings even though xff owns explicit bounded caches.
+test_workflows_use_setup_bazel() {
+  setup_count=0
+  for workflow in "${HERE}"/../.github/workflows/*.yml; do
+    if [ "$(count_lines_with 'bazelbuild/setup-bazelisk' "${workflow}")" -ne 0 ]; then
+      fail "workflow $(basename "${workflow}"): setup-bazelisk must not be used"
+    fi
+    workflow_setup_count=$(count_lines_with 'uses: bazel-contrib/setup-bazel@' "${workflow}")
+    setup_count=$((setup_count + workflow_setup_count))
+    if [ "${workflow_setup_count}" -ne "$(count_lines_with 'uses: bazel-contrib/setup-bazel@0.19.0' "${workflow}")" ]; then
+      fail "workflow $(basename "${workflow}"): every setup-bazel use must pin 0.19.0"
+    fi
+  done
+  if [ "${setup_count}" -eq 0 ]; then
+    fail "workflows: setup-bazel must be used"
+  fi
+}
+
 test_guard_rejects_mismatched_tag
 test_guard_rejects_nonversion_tag
 test_happy_path_stamps_and_emits_notes
 test_release_reference_uses_clang
 test_release_binaries_use_shared_configuration_and_staging
 test_release_elf_link_optimizations_are_scoped
+test_workflows_use_setup_bazel
 
 if [ "${FAILED}" -ne 0 ]; then
   echo "release_prep_test: FAILED" >&2

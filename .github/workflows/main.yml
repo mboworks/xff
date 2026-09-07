@@ -45,7 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       # bazelisk launches the Bazel release pinned in .bazelversion.
-      - uses: bazelbuild/setup-bazelisk@v3
+      - uses: bazel-contrib/setup-bazel@0.19.0
       # Persist Bazel's disk cache (compiled action outputs) so each run reuses prior
       # work instead of rebuilding from scratch. Keyed by os/config + the lockfile hash
       # only: a per-run github.sha suffix used to mint a fresh cache on every commit, so
@@ -147,7 +147,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: bazelbuild/setup-bazelisk@v3
+      - uses: bazel-contrib/setup-bazel@0.19.0
       - name: Mount Bazel repo cache
         uses: actions/cache@v6
         with:
@@ -199,7 +199,7 @@ jobs:
       FUZZ_SECONDS_PER_TARGET: 60
     steps:
       - uses: actions/checkout@v7
-      - uses: bazelbuild/setup-bazelisk@v3
+      - uses: bazel-contrib/setup-bazel@0.19.0
       - name: Mount the dedicated fuzz disk cache
         uses: actions/cache@v6
         with:
@@ -232,7 +232,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: bazelbuild/setup-bazelisk@v3
+      - uses: bazel-contrib/setup-bazel@0.19.0
       # Coverage instrumentation has distinct action keys, so keep its compiled outputs in a
       # dedicated cache rather than crowding out the ordinary Clang build. The stable key lets a
       # later run incrementally rebuild only changed coverage objects.
@@ -341,7 +341,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: bazelbuild/setup-bazelisk@v3
+      - uses: bazel-contrib/setup-bazel@0.19.0
       - name: Mount Bazel disk cache
         uses: actions/cache@v6
         with:
@@ -378,7 +378,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: bazelbuild/setup-bazelisk@v3
+      - uses: bazel-contrib/setup-bazel@0.19.0
       - name: Mount Bazel disk cache
         uses: actions/cache@v6
         with:
@@ -413,7 +413,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: bazelbuild/setup-bazelisk@v3
+      - uses: bazel-contrib/setup-bazel@0.19.0
       - name: Mount Bazel disk cache
         uses: actions/cache@v6
         with:
@@ -448,7 +448,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: bazelbuild/setup-bazelisk@v3
+      - uses: bazel-contrib/setup-bazel@0.19.0
       - name: Mount Bazel disk cache
         uses: actions/cache@v6
         with:
@@ -512,7 +512,7 @@ jobs:
             echo "CLANG_TIDY_SCOPE=none" >>"${GITHUB_ENV}"
             echo "No C++ source or header changed; clang-tidy is not required."
           fi
-      - uses: bazelbuild/setup-bazelisk@v3
+      - uses: bazel-contrib/setup-bazel@0.19.0
         if: env.CLANG_TIDY_ENABLED == 'true'
       - uses: actions/setup-python@v7
         if: env.CLANG_TIDY_ENABLED == 'true'
