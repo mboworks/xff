@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-07 18:25:10</td>
+            <td class="headerValue">2026-09-07 19:33:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -147,7 +147,7 @@
 <span id="L67"><span class="lineNum">      67</span>                 :             :   ParallelExec(ParallelExec&amp;&amp;) = delete;</span>
 <span id="L68"><span class="lineNum">      68</span>                 :             :   ParallelExec&amp; operator=(ParallelExec&amp;&amp;) = delete;</span>
 <span id="L69"><span class="lineNum">      69</span>                 :             : </span>
-<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">         768 :   ~ParallelExec() { Drain(); }  // safety net: reap anything a caller forgot to drain</span></span>
+<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">         767 :   ~ParallelExec() { Drain(); }  // safety net: reap anything a caller forgot to drain</span></span>
 <span id="L71"><span class="lineNum">      71</span>                 :             : </span>
 <span id="L72"><span class="lineNum">      72</span>                 :             :   // Spawn `command` with each &quot;{}&quot; replaced by `target`, child cwd = `dir` (empty</span>
 <span id="L73"><span class="lineNum">      73</span>                 :             :   // inherits ours). Blocks only when `cap` children already run (reaps one first).</span>

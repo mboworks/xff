@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-07 18:25:10</td>
+            <td class="headerValue">2026-09-07 19:33:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -222,10 +222,10 @@
 <span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">          47 : }</span></span>
 <span id="L143"><span class="lineNum">     143</span>                 :             : </span>
 <span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">         301 : std::string PadLeft(std::string_view text, std::size_t width) {</span></span>
-<span id="L145"><span class="lineNum">     145</span>         [<span class="tlaGBC" title="branch 0 was taken 193 times"> + </span><span class="tlaGBC" title="branch 1 was taken 108 times"> + </span>]:<span class="tlaGNC">         301 :   if (text.size() &gt;= width) {</span></span>
-<span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">         193 :     return std::string(text);</span></span>
-<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">         193 :   }</span></span>
-<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">         108 :   return std::string(width - text.size(), ' ') + std::string(text);</span></span>
+<span id="L145"><span class="lineNum">     145</span>         [<span class="tlaGBC" title="branch 0 was taken 167 times"> + </span><span class="tlaGBC" title="branch 1 was taken 134 times"> + </span>]:<span class="tlaGNC">         301 :   if (text.size() &gt;= width) {</span></span>
+<span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">         167 :     return std::string(text);</span></span>
+<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">         167 :   }</span></span>
+<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">         134 :   return std::string(width - text.size(), ' ') + std::string(text);</span></span>
 <span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">         301 : }</span></span>
 <span id="L150"><span class="lineNum">     150</span>                 :             : </span>
 <span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">         461 : std::string PadRight(std::string_view text, std::size_t width) {</span></span>
@@ -258,13 +258,13 @@
 <span id="L178"><span class="lineNum">     178</span>                 :             :     std::vector&lt;std::size_t&gt; mins,</span>
 <span id="L179"><span class="lineNum">     179</span>                 :             :     std::size_t window,</span>
 <span id="L180"><span class="lineNum">     180</span>                 :             :     std::size_t byte_budget)</span>
-<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">         764 :     : aligns_(std::move(aligns)),</span></span>
-<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">         764 :       widths_(std::move(mins)),</span></span>
-<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">         764 :       window_(window),</span></span>
-<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">         764 :       byte_budget_(byte_budget),</span></span>
-<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">         764 :       buffering_(window != 0) {</span></span>
-<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">         764 :   widths_.resize(aligns_.size(), 0);  // one width per column, seeded from the mins</span></span>
-<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">         764 : }</span></span>
+<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">         763 :     : aligns_(std::move(aligns)),</span></span>
+<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">         763 :       widths_(std::move(mins)),</span></span>
+<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">         763 :       window_(window),</span></span>
+<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">         763 :       byte_budget_(byte_budget),</span></span>
+<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">         763 :       buffering_(window != 0) {</span></span>
+<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">         763 :   widths_.resize(aligns_.size(), 0);  // one width per column, seeded from the mins</span></span>
+<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">         763 : }</span></span>
 <span id="L188"><span class="lineNum">     188</span>                 :             : </span>
 <span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">          35 : std::string ColumnBuffer::Add(std::vector&lt;std::string&gt; cells) {</span></span>
 <span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">          35 :   const auto widen = [this](const std::vector&lt;std::string&gt;&amp; row) {</span></span>
