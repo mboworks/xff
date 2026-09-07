@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-07 05:38:44</td>
+            <td class="headerValue">2026-09-07 17:23:52</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -114,9 +114,9 @@
 <span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">          15 : }</span></span>
 <span id="L35"><span class="lineNum">      35</span>                 :             : </span>
 <span id="L36"><span class="lineNum">      36</span>                 :             : // Borrows a mutable pointee through a read-only view.</span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">        1346 : inline mbo::types::OptionalRef&lt;const Expr&gt; AsConstOptionalExpr(const std::unique_ptr&lt;Expr&gt;&amp; expr) {</span></span>
-<span id="L38"><span class="lineNum">      38</span>         [<span class="tlaGBC" title="branch 0 was taken 1115 times"> + </span><span class="tlaGBC" title="branch 1 was taken 231 times"> + </span>]:<span class="tlaGNC">        1346 :   return expr ? mbo::types::OptionalRef&lt;const Expr&gt;{*expr} : std::nullopt;</span></span>
-<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">        1346 : }</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">        1398 : inline mbo::types::OptionalRef&lt;const Expr&gt; AsConstOptionalExpr(const std::unique_ptr&lt;Expr&gt;&amp; expr) {</span></span>
+<span id="L38"><span class="lineNum">      38</span>         [<span class="tlaGBC" title="branch 0 was taken 1119 times"> + </span><span class="tlaGBC" title="branch 1 was taken 279 times"> + </span>]:<span class="tlaGNC">        1398 :   return expr ? mbo::types::OptionalRef&lt;const Expr&gt;{*expr} : std::nullopt;</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">        1398 : }</span></span>
 <span id="L40"><span class="lineNum">      40</span>                 :             : </span>
 <span id="L41"><span class="lineNum">      41</span>                 :             : // Borrows an already read-only pointee.</span>
 <span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">           2 : inline mbo::types::OptionalRef&lt;const Expr&gt; AsConstOptionalExpr(const std::unique_ptr&lt;const Expr&gt;&amp; expr) {</span></span>

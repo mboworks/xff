@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-07 05:38:44</td>
+            <td class="headerValue">2026-09-07 17:23:52</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -109,12 +109,12 @@
 <span id="L29"><span class="lineNum">      29</span>                 :             : </span>
 <span id="L30"><span class="lineNum">      30</span>                 :             : namespace xff::values {</span>
 <span id="L31"><span class="lineNum">      31</span>                 :             : </span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">         107 : std::optional&lt;bool&gt; ParseBool(std::string_view value) {</span></span>
-<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">         107 :   const std::string lower = absl::AsciiStrToLower(value);</span></span>
-<span id="L34"><span class="lineNum">      34</span> [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 95 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 11 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 84 times"> + </span>]:<span class="tlaGNC">         107 :   if (lower == &quot;yes&quot; || lower == &quot;true&quot; || lower == &quot;on&quot; || lower == &quot;1&quot;) {</span></span>
-<span class="lineNum">        </span> [<span class="tlaGBC" title="branch &quot;4&quot; was taken 17 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 67 times"> + </span>][<span class="tlaGBC" title="branch &quot;6&quot; was taken 10 times"> + </span><span class="tlaGBC" title="branch &quot;7&quot; was taken 57 times"> + </span>]
-<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">          50 :     return true;</span></span>
-<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">          50 :   }</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">         111 : std::optional&lt;bool&gt; ParseBool(std::string_view value) {</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">         111 :   const std::string lower = absl::AsciiStrToLower(value);</span></span>
+<span id="L34"><span class="lineNum">      34</span> [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 99 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 11 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 88 times"> + </span>]:<span class="tlaGNC">         111 :   if (lower == &quot;yes&quot; || lower == &quot;true&quot; || lower == &quot;on&quot; || lower == &quot;1&quot;) {</span></span>
+<span class="lineNum">        </span> [<span class="tlaGBC" title="branch &quot;4&quot; was taken 21 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 67 times"> + </span>][<span class="tlaGBC" title="branch &quot;6&quot; was taken 10 times"> + </span><span class="tlaGBC" title="branch &quot;7&quot; was taken 57 times"> + </span>]
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">          54 :     return true;</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">          54 :   }</span></span>
 <span id="L37"><span class="lineNum">      37</span> [<span class="tlaGBC" title="branch 0 was taken 13 times"> + </span><span class="tlaGBC" title="branch 1 was taken 44 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 10 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 34 times"> + </span>]:<span class="tlaGNC">          57 :   if (lower == &quot;no&quot; || lower == &quot;false&quot; || lower == &quot;off&quot; || lower == &quot;0&quot;) {</span></span>
 <span class="lineNum">        </span> [<span class="tlaGBC" title="branch &quot;4&quot; was taken 15 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 19 times"> + </span>][<span class="tlaGBC" title="branch &quot;6&quot; was taken 10 times"> + </span><span class="tlaGBC" title="branch &quot;7&quot; was taken 9 times"> + </span>]
 <span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">          48 :     return false;</span></span>
@@ -122,22 +122,22 @@
 <span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">           9 :   return std::nullopt;</span></span>
 <span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">          57 : }</span></span>
 <span id="L42"><span class="lineNum">      42</span>                 :             : </span>
-<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">         203 : std::optional&lt;Tristate&gt; ParseTristate(std::string_view value) {</span></span>
-<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">         203 :   const std::string lower = absl::AsciiStrToLower(value);</span></span>
-<span id="L45"><span class="lineNum">      45</span>         [<span class="tlaGBC" title="branch 0 was taken 11 times"> + </span><span class="tlaGBC" title="branch 1 was taken 192 times"> + </span>]:<span class="tlaGNC">         203 :   if (lower == &quot;auto&quot;) {</span></span>
+<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">         207 : std::optional&lt;Tristate&gt; ParseTristate(std::string_view value) {</span></span>
+<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">         207 :   const std::string lower = absl::AsciiStrToLower(value);</span></span>
+<span id="L45"><span class="lineNum">      45</span>         [<span class="tlaGBC" title="branch 0 was taken 11 times"> + </span><span class="tlaGBC" title="branch 1 was taken 196 times"> + </span>]:<span class="tlaGNC">         207 :   if (lower == &quot;auto&quot;) {</span></span>
 <span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">          11 :     return Tristate::kAuto;</span></span>
 <span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">          11 :   }</span></span>
-<span id="L48"><span class="lineNum">      48</span>         [<span class="tlaGBC" title="branch 0 was taken 74 times"> + </span><span class="tlaGBC" title="branch 1 was taken 118 times"> + </span>]:<span class="tlaGNC">         192 :   if (lower == &quot;always&quot;) {</span></span>
+<span id="L48"><span class="lineNum">      48</span>         [<span class="tlaGBC" title="branch 0 was taken 74 times"> + </span><span class="tlaGBC" title="branch 1 was taken 122 times"> + </span>]:<span class="tlaGNC">         196 :   if (lower == &quot;always&quot;) {</span></span>
 <span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">          74 :     return Tristate::kOn;</span></span>
 <span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">          74 :   }</span></span>
-<span id="L51"><span class="lineNum">      51</span>         [<span class="tlaGBC" title="branch 0 was taken 30 times"> + </span><span class="tlaGBC" title="branch 1 was taken 88 times"> + </span>]:<span class="tlaGNC">         118 :   if (lower == &quot;never&quot;) {</span></span>
+<span id="L51"><span class="lineNum">      51</span>         [<span class="tlaGBC" title="branch 0 was taken 30 times"> + </span><span class="tlaGBC" title="branch 1 was taken 92 times"> + </span>]:<span class="tlaGNC">         122 :   if (lower == &quot;never&quot;) {</span></span>
 <span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">          30 :     return Tristate::kOff;</span></span>
 <span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">          30 :   }</span></span>
-<span id="L54"><span class="lineNum">      54</span>         [<span class="tlaGBC" title="branch 0 was taken 84 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4 times"> + </span>]:<span class="tlaGNC">          88 :   if (const std::optional&lt;bool&gt; parsed = ParseBool(lower); parsed.has_value()) {</span></span>
-<span id="L55"><span class="lineNum">      55</span>         [<span class="tlaGBC" title="branch 0 was taken 43 times"> + </span><span class="tlaGBC" title="branch 1 was taken 41 times"> + </span>]:<span class="tlaGNC">          84 :     return *parsed ? Tristate::kOn : Tristate::kOff;</span></span>
-<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">          84 :   }</span></span>
+<span id="L54"><span class="lineNum">      54</span>         [<span class="tlaGBC" title="branch 0 was taken 88 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4 times"> + </span>]:<span class="tlaGNC">          92 :   if (const std::optional&lt;bool&gt; parsed = ParseBool(lower); parsed.has_value()) {</span></span>
+<span id="L55"><span class="lineNum">      55</span>         [<span class="tlaGBC" title="branch 0 was taken 47 times"> + </span><span class="tlaGBC" title="branch 1 was taken 41 times"> + </span>]:<span class="tlaGNC">          88 :     return *parsed ? Tristate::kOn : Tristate::kOff;</span></span>
+<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">          88 :   }</span></span>
 <span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">           4 :   return std::nullopt;</span></span>
-<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">          88 : }</span></span>
+<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">          92 : }</span></span>
 <span id="L59"><span class="lineNum">      59</span>                 :             : </span>
 <span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">          63 : std::optional&lt;std::uint64_t&gt; ParseByteUnit(std::string_view unit) {</span></span>
 <span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">          63 :   using Unit = std::pair&lt;std::string_view, std::uint64_t&gt;;</span></span>
