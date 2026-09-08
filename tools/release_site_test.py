@@ -19,7 +19,9 @@ class ReleaseSiteTest(unittest.TestCase):
         self.root = Path(self.temporary.name)
         self.source = self.root / "source"
         self.retained = self.root / "retained"
+        self.generated = self.root / "generated"
         self.source.mkdir()
+        self.generated.mkdir()
         subprocess.run(["git", "init", "-q", str(self.source)], check=True)
         self.write("README.md", "release readme")
         self.write("docs/guide.md", "release guide")
@@ -49,7 +51,8 @@ class ReleaseSiteTest(unittest.TestCase):
         return '<h1>Usage</h1><a href="../README.md#a-title">Home</a>'
 
     def build(self, tag="v1.2.3", renderer=None):
-        site.build(self.source, self.retained, "mboworks/mbo", tag, renderer or self.render)
+        site.build(self.source, self.retained, "mboworks/mbo", tag, renderer or self.render,
+                   generated_root=self.generated)
         return self.retained / "site/tag" / tag
 
     def test_configured_destinations_resolve_local_and_github_links(self):
@@ -136,6 +139,57 @@ class ReleaseSiteTest(unittest.TestCase):
                          (self.source / "image.svg").read_bytes())
         self.assertIn('href="static/logo.svg"', (output / "index.html").read_text())
         self.assertIn('href="../static/logo.svg"', (output / "guide/start.html").read_text())
+
+    def test_generated_html_replaces_logical_markdown_without_rendering(self):
+        del self.config["pages"]["docs/guide.md"]
+        self.config["generated_html"] = {
+            "docs/guide.md": {"source": "XFF.html", "destination": "reference/XFF.html"}}
+        self.write("release-site.json", json.dumps(self.config))
+        native = '<!doctype html><html><a href="../index.html">Home</a></html>'
+        (self.generated / "XFF.html").write_text(native)
+        output = self.build(renderer=lambda markdown, *_: (
+            '<a href="docs/guide.md">Reference</a>' if markdown == "release readme"
+            else (_ for _ in ()).throw(AssertionError("generated HTML must not be rendered"))))
+        self.assertEqual((output / "reference/XFF.html").read_text(), native)
+        self.assertIn('href="reference/XFF.html"', (output / "index.html").read_text())
+        self.assertIn('href="reference/XFF.html"', (output / "documents.html").read_text())
+        metadata = json.loads((output / "release.json").read_text())
+        self.assertEqual(metadata["generated_html"]["docs/guide.md"], {
+            "source": "XFF.html",
+            "destination": "reference/XFF.html",
+            "sha256": site.hashlib.sha256(native.encode()).hexdigest(),
+        })
+
+    def test_generated_html_requires_explicit_existing_input(self):
+        del self.config["pages"]["docs/guide.md"]
+        self.config["generated_html"] = {
+            "docs/guide.md": {"source": "missing.html", "destination": "reference.html"}}
+        self.write("release-site.json", json.dumps(self.config))
+        with self.assertRaisesRegex(ValueError, "Missing.*generated HTML"):
+            self.build(renderer=mock.Mock(side_effect=AssertionError("must not render")))
+        with self.assertRaisesRegex(ValueError, "no generated root"):
+            site.build(self.source, self.retained, "mboworks/mbo", "v1.2.3",
+                       mock.Mock(side_effect=AssertionError("must not render")))
+
+    def test_generated_html_paths_and_destinations_are_validated(self):
+        del self.config["pages"]["docs/guide.md"]
+        for mapping in ({"source": "../XFF.html", "destination": "reference.html"},
+                        {"source": "XFF.html", "destination": "index.html"},
+                        {"source": "XFF.md", "destination": "reference.html"}):
+            with self.subTest(mapping=mapping):
+                self.config["generated_html"] = {"docs/guide.md": mapping}
+                self.write("release-site.json", json.dumps(self.config))
+                with self.assertRaises(ValueError):
+                    site.configuration(self.source)
+
+    def test_generated_html_must_be_a_standalone_document(self):
+        del self.config["pages"]["docs/guide.md"]
+        self.config["generated_html"] = {
+            "docs/guide.md": {"source": "XFF.html", "destination": "reference.html"}}
+        self.write("release-site.json", json.dumps(self.config))
+        (self.generated / "XFF.html").write_text("<p>fragment</p>")
+        with self.assertRaisesRegex(ValueError, "not a standalone document"):
+            self.build(renderer=mock.Mock(side_effect=AssertionError("must not render")))
 
     def test_missing_configured_source_fails_before_rendering(self):
         self.config["pages"]["missing.md"] = "missing.html"

@@ -35,7 +35,10 @@ repository root; destinations are relative to that release's site directory. For
 ```
 
 Use existing source files in the actual configuration. `pages` converts Markdown; optional `files`
-copies other files unchanged. `README.md` must map to `index.html`. The generated
+copies other files unchanged. `generated_html` maps a tracked Markdown source name to a generated
+standalone HTML source and its destination. This lets repository links to `XFF.md` resolve to the
+native `XFF.html` emitted by the released binary instead of a second rendering of the Markdown.
+`README.md` must map to `index.html`. The generated
 `documents.html`, `release.json`, `release-site.json`, and `assets/` paths are reserved.
 Destination paths cannot have hidden components (names starting with a dot), because the Pages
 artifact uploader excludes them. Hidden source paths remain valid; for example,
@@ -85,6 +88,11 @@ python3 -m unittest discover -s tools -p release_site_test.py
 
 CI also converts the configured documentation and checks the generated links in a disposable
 runner directory. It never commits, retains, or deploys that preview.
+
+Publication downloads the immutable, attested `xff_full-linux-x86_64` release executable and runs
+`--help=full:html`. The resulting standalone document is copied byte-for-byte into the snapshot and
+participates in the same link and anchor validation as Markdown-rendered pages. `release.json`
+records its SHA-256 alongside the release commit and configuration hash.
 
 Release coverage links select `https://mboworks.github.io/xff/coverage/tag/<version>/`, matching the
 coverage publisher rather than the moving main-branch report.

@@ -74,6 +74,19 @@ jobs:
           ref: refs/tags/${{ steps.release.outputs.tag }}
           path: release
           persist-credentials: false
+      - name: Generate the native HTML reference from the released binary
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir generated
+          gh release download "${RELEASE_TAG}" --pattern xff_full-linux-x86_64 --dir generated
+          gh attestation verify generated/xff_full-linux-x86_64 --repo "${GITHUB_REPOSITORY}"
+          chmod +x generated/xff_full-linux-x86_64
+          XFF_CONFIG=/nonexistent generated/xff_full-linux-x86_64 --help=full:html \
+            >generated/XFF.html
+          test "$(head -n 1 generated/XFF.html)" = '<!doctype html>'
       - name: Restore retained Pages tree
         working-directory: source
         run: |
@@ -112,6 +125,7 @@ jobs:
           fi
           python3 source/tools/release_site.py release site \
             --repository "${GITHUB_REPOSITORY}" --tag "${RELEASE_TAG}" --latest "${LATEST_TAG}" \
+            --generated generated \
             "${config_args[@]}"
       - name: Retain and stage complete Pages tree
         env:
