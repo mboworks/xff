@@ -1,0 +1,22 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>extra_modules/language_db/README.md - xff v0.3.6</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.3.6/">Home</a><a href="/xff/site/tag/v0.3.6/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.3.6">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/ab69af0938f6495efb3cf1140465f1627e2d128b">Source</a><a href="/xff/coverage/tag/0.3.6/">Coverage</a><a href="/xff/releases/0.3.6/">CLI reference</a></nav><p>xff v0.3.6</p><main>
+
+<h1 dir="auto" id="language-database-build-extension">Language database build extension</h1>
+<p dir="auto">This removable extension embeds the MIT-licensed GitHub Linguist <code class="notranslate">languages.yml</code> vocabulary from<br>
+version 9.6.0. The source is retained for auditability; the binary links a 16,552-byte Brotli payload<br>
+instead of the 100,850-byte compact JSON and decompresses it only on first use.</p>
+<p dir="auto">Regenerate the payload with:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">tools/generate_language_db.rb extra_modules/language_db/data/languages.yml /tmp/languages.json
+brotli -f -q 11 -o extra_modules/language_db/data/languages.json.br /tmp/languages.json</pre></div>
+<p dir="auto">Linguist resolves ambiguous extensions using content heuristics that xff deliberately does not run.<br>
+Generation retains xff's documented curated winner where one exists and otherwise omits an ambiguous<br>
+claim. Runtime JSON overlays can make another choice explicitly.</p></main><footer>Release snapshot · ab69af0938f6495efb3cf1140465f1627e2d128b</footer></body></html>

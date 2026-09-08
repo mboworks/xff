@@ -1,0 +1,608 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>README.md - xff v0.3.6</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.3.6/">Home</a><a href="/xff/site/tag/v0.3.6/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.3.6">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/ab69af0938f6495efb3cf1140465f1627e2d128b">Source</a><a href="/xff/coverage/tag/0.3.6/">Coverage</a><a href="/xff/releases/0.3.6/">CLI reference</a></nav><p>xff v0.3.6</p><main>
+
+<h1 dir="auto" id="xff---extended-file-find">xff - eXtended File Find</h1>
+<p dir="auto"><code class="notranslate">xff</code> is a <code class="notranslate">find(1)</code>-compatible file finder with modern extensions. It walks each starting path and acts on the entries matching an expression, exactly like <code class="notranslate">find</code>, then adds the conveniences you always wished <code class="notranslate">find</code> had: content and language search, structured output, per-run summaries and histograms, safe deletes, native hashing, and a shared <code class="notranslate">{field}</code> vocabulary that threads through <code class="notranslate">-printf</code>, <code class="notranslate">-exec</code>, and every renderer.</p>
+<p dir="auto">Anything <code class="notranslate">find</code> does, <code class="notranslate">xff</code> does the same way. Everything else is opt-in.</p>
+<p dir="auto">This <code class="notranslate">README.md</code> is a short overview. The complete, always-current reference lives in <a href="XFF.html">XFF.md</a> (generated from the binary; see Documentation).</p>
+<hr>
+<h2 dir="auto" id="core-highlights--architectural-advantages">Core Highlights &amp; Architectural Advantages</h2>
+<ul dir="auto">
+<li><strong><code class="notranslate">find</code>-Compatible Core:</strong> The standard primaries (<code class="notranslate">-name</code>, <code class="notranslate">-type</code>, <code class="notranslate">-size</code>, <code class="notranslate">-mtime</code>, <code class="notranslate">-regex</code>, <code class="notranslate">-exec</code>, <code class="notranslate">-prune</code>, ...), operators, and exit codes behave exactly as in GNU/BSD <code class="notranslate">find</code>. Invoked as <code class="notranslate">find</code>, it is strict <code class="notranslate">find</code> and nothing more.</li>
+<li><strong>Content &amp; Metadata Matching:</strong> <code class="notranslate">-grep</code> / <code class="notranslate">-content</code> search inside files, <code class="notranslate">-lang 'C*'</code> and <code class="notranslate">-mime 'image/*'</code> match by inferred language or media type, <code class="notranslate">-text</code> / <code class="notranslate">-binary</code> / <code class="notranslate">-eofnl</code> classify content, and native <code class="notranslate">-hash</code> primitives emit optimized checksum manifests.</li>
+<li><strong>Overrideable MIME Vocabulary:</strong> The lean binary carries common media types; the removable<br>
+<code class="notranslate">mime-db</code> extra expands that to thousands of registered types. Repeatable<br>
+<code class="notranslate">--mime-vocabulary=FILE</code> JSON overlays can replace extension mappings and attach descriptions,<br>
+sources, charsets, aliases, and compressibility, with explicit conflict policy and matching<br>
+<code class="notranslate">{mime-*}</code> fields for output and aggregation.</li>
+<li><strong>Overrideable Language Vocabulary:</strong> Common languages remain built in; the removable,<br>
+Brotli-compressed GitHub Linguist extra expands classification to hundreds of canonical records.<br>
+Repeatable <code class="notranslate">--lang-db=FILE</code> layers override suffixes, exact filenames, aliases, colours,<br>
+groups, and provenance with an explicit ambiguity policy; <code class="notranslate">{lang-*}</code> fields expose the selected<br>
+metadata without running a heavyweight content classifier, and the same colours theme regular<br>
+filenames consistently in the plain and <code class="notranslate">-ls</code> listings.</li>
+<li><strong>One Composable Expression Language:</strong> Path, content, ownership, permissions, age, allocated size, language, MIME type, hashes, and content equality are ordinary tests joined with <code class="notranslate">find</code>'s <code class="notranslate">!</code>, <code class="notranslate">-a</code>, <code class="notranslate">-o</code>, and parentheses. Search, reporting, and actions therefore share one walk instead of being stitched together with <code class="notranslate">xargs</code> and temporary files.</li>
+<li><strong>Fuzzy File Finding:</strong> <code class="notranslate">-fuzzy</code> and <code class="notranslate">-fuzzypath</code> provide scored fzf-query, plain-subsequence, Levenshtein/edit, and character-shingle models, while <code class="notranslate">--sort=score</code> ranks the results. The score is also available as <code class="notranslate">{fuzzy}</code> for custom tables and templates.</li>
+<li><strong>Structured Layout Engines:</strong> Stream matches natively as plain text, NUL-delimited, <code class="notranslate">JSONL</code>, <code class="notranslate">CSV</code> / <code class="notranslate">TSV</code>, an aligned console table, a visual tree, or a standard Markdown table, all calculated from one single filesystem walk.</li>
+<li><strong>Summaries &amp; Histograms:</strong> <code class="notranslate">--summary=ext</code> folds matches into counts and totals; <code class="notranslate">--histogram='ext:sum(lines)'</code> draws terminal bar charts using Unicode block characters. No external <code class="notranslate">awk | sort</code> pipeline overhead required.</li>
+<li><strong>Native Comparison &amp; Deduplication:</strong> <code class="notranslate">--compare[=status|diff] LEFT RIGHT [EXPRESSION]</code> applies the requested traversal, symlink, ignore, and expression semantics independently to both roots, then reports selected result kinds or a unified patch; the one-sided <code class="notranslate">-diff TARGET</code> action compares every match from one walk with its templated counterpart. <code class="notranslate">-cmp</code> tests byte equality, <code class="notranslate">-hasheq</code> verifies a digest, and <code class="notranslate">--summary=hash</code> groups duplicate content.</li>
+<li><strong>Near-Duplicate Content Matching:</strong> <code class="notranslate">-similar</code> compares every matched text file with a reference using exact word-shingle Jaccard similarity. Its shingle width and quality threshold are explicit, so source forks, copied documentation, and lightly edited configuration files can be found without reducing the question to byte equality.</li>
+<li><strong>Unified <code class="notranslate">{field}</code> Vocabulary:</strong> The same named fields (<code class="notranslate">{relpath}</code>, <code class="notranslate">{size}</code>, <code class="notranslate">{lang}</code>, <code class="notranslate">{hash}</code>, <code class="notranslate">{capture.NAME}</code>, ...) drive <code class="notranslate">-printf</code>, <code class="notranslate">-exec</code>, <code class="notranslate">--format</code>, and <code class="notranslate">--summary</code>, complete with powerful <code class="notranslate">s///</code> regex rewrite and <code class="notranslate">m//</code> extraction qualifiers.</li>
+<li><strong>Commands as Data Sources:</strong> <code class="notranslate">-capture</code> / <code class="notranslate">-capturedir</code> bind a command's output to <code class="notranslate">{capture.NAME}</code>. Later formatters and reductions can transform or aggregate it, enabling workflows such as tree-wide <code class="notranslate">git blame</code> totals without an <code class="notranslate">awk | sort</code> tail.</li>
+<li><strong>Safe by Default:</strong> <code class="notranslate">-delete</code> implicitly forces <code class="notranslate">-depth</code> and strictly honors <code class="notranslate">--dry-run</code> / <code class="notranslate">--safe</code>. Configuration tiers loaded via an <code class="notranslate">--xffrc</code> file are sandboxed: they cannot execute dangerous directives (<code class="notranslate">-exec</code>, <code class="notranslate">-execdir</code>, <code class="notranslate">-ok</code>, <code class="notranslate">-capture</code>, or <code class="notranslate">-delete</code>) unless explicitly armed via a trusted CLI flag (<code class="notranslate">--allow-exec</code>).</li>
+<li><strong>Multi-Threaded Traversal:</strong> <code class="notranslate">-j N</code> runs the filesystem walk across a native worker pool and also controls concurrent <code class="notranslate">-exec</code> jobs, scaling both discovery and actions across available CPU cores; <code class="notranslate">--sort</code> restores deterministic ordering when requested.</li>
+<li><strong>Virtual Archive Filesystems:</strong> <code class="notranslate">--archive</code> walks archives and compressed files as directory trees, including nested containers, Electron ASAR bundles, SquashFS images, Snap packages, and AppImages. The normal name, metadata, content, hash, and reduction vocabulary works on members; removable format extras stay independently linkable rather than pulling every archive dependency into the core. Opt-in controls can mount or extract members for commands and safely rewrite formats that support deletion.</li>
+<li><strong>Archive Creation from an Expression:</strong> <code class="notranslate">--pack=FILE</code> writes the matched set directly to a new archive, with deterministic member order, atomic publication, compression controls, and no <code class="notranslate">find | tar</code> filename boundary to get wrong. The removable Brotli extra reads raw streams and writes self-identifying RFC 9841 <code class="notranslate">.tar.br</code> / <code class="notranslate">.tbr</code> by default, with an explicit raw compatibility mode.</li>
+<li><strong>Developer-Aware Traversal:</strong> Layered <code class="notranslate">.gitignore</code>, <code class="notranslate">.ignore</code>, and <code class="notranslate">.xffignore</code> handling; explicit include/exclude rules; hidden-file policy; and pruning for Git, Mercurial, Subversion, Jujutsu, Bazaar, Darcs, and CVS are independent, configurable controls.</li>
+<li><strong>Shard-Aware Validation:</strong> <code class="notranslate">--shards</code> recognizes numbered datasets such as <code class="notranslate">data-00000-of-00010</code><br>
+and collapses each set to a useful first, wildcard, or count representation;<br>
+<code class="notranslate">-shard-status complete|incomplete|superfluous</code> selects healthy sets, missing-index sets, duplicate<br>
+copies, and declared-total outliers for inspection or action.</li>
+</ul>
+<hr>
+<h2 dir="auto" id="tool-feature-comparison-matrix">Tool Feature Comparison Matrix</h2>
+<p dir="auto">The matrix compares native, built-in capabilities. A <code class="notranslate">△</code> means the tool covers a narrower form of<br>
+the feature; a <code class="notranslate">-</code> means the workflow normally needs another utility or a shell pipeline. The point<br>
+is not that every specialist is interchangeable, but that <code class="notranslate">xff</code> composes these operations in one<br>
+expression and one traversal.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Feature / Capability</th>
+<th align="center"><code class="notranslate">find</code></th>
+<th align="center"><code class="notranslate">fd</code></th>
+<th align="center"><code class="notranslate">rg</code></th>
+<th align="center"><code class="notranslate">fzf</code></th>
+<th align="center"><code class="notranslate">tree</code></th>
+<th align="center"><code class="notranslate">du</code></th>
+<th align="center"><code class="notranslate">diff</code></th>
+<th align="center">hash tools</th>
+<th align="center">archive tools</th>
+<th align="left"><code class="notranslate">xff</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><strong>Filesystem expression language</strong></td>
+<td align="center">✓</td>
+<td align="center">△</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ GNU/BSD <code class="notranslate">find</code> vocabulary</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Multi-threaded filesystem traversal</strong></td>
+<td align="center">-</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ Native worker pool (<code class="notranslate">-j</code>)</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Ignore-file and VCS awareness</strong></td>
+<td align="center">-</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ Layered and configurable</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Path glob and regex filtering</strong></td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">✓</td>
+<td align="center">△</td>
+<td align="center">△</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="left"><strong>✓ Multiple selectable grammars</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Ranked fuzzy path matching</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">✓</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ <code class="notranslate">-fuzzy</code>, <code class="notranslate">--sort=score</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Regex content search with context</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">✓</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ <code class="notranslate">-grep</code>, <code class="notranslate">-rxc</code>, <code class="notranslate">--context</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Language and MIME filtering</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ <code class="notranslate">-lang</code>, <code class="notranslate">-mime</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Overrideable MIME metadata</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ JSON layers + <code class="notranslate">mime-db</code> extra</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Overrideable language metadata</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ JSON layers + Linguist extra</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Text, binary, and EOL tests</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ <code class="notranslate">-text</code>, <code class="notranslate">-binary</code>, <code class="notranslate">-eof*</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Structured JSON/CSV/table output</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">✓</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="left"><strong>✓ Eight output formats</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Tree rendering</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">✓</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="left"><strong>✓ <code class="notranslate">--format=tree</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Field templates and rewrites</strong></td>
+<td align="center">GNU</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="center">△</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="left"><strong>✓ Shared <code class="notranslate">{field}</code> vocabulary</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Grouped size/count summaries</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="left"><strong>✓ <code class="notranslate">--summary</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Native histograms and statistics</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ <code class="notranslate">--histogram</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Cryptographic hashing</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">✓</td>
+<td align="center">△</td>
+<td align="left"><strong>✓ <code class="notranslate">-hash</code>, <code class="notranslate">{hash}</code>, <code class="notranslate">-hasheq</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Single-pass hash verification tally</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ <code class="notranslate">--summary=hash-verification</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Duplicate-content grouping</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ <code class="notranslate">--summary=hash</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Reference-file near-duplicate match</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ Exact word-shingle Jaccard</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Per-file content comparison/diff</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">✓</td>
+<td align="center">△</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ <code class="notranslate">-cmp</code>, <code class="notranslate">-diff</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Gitignore-aware tree comparison</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="center">△</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ status selection or unified patch</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Virtual archive traversal</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="left"><strong>✓ Members use the full expression</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Nested archive content search</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="left"><strong>✓ Depth-controlled transparent reads</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>SquashFS/Snap/AppImage search</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="left"><strong>✓ Indexed virtual filesystem extra</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Archive creation from matches</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">✓</td>
+<td align="left"><strong>✓ <code class="notranslate">--pack</code> sink</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Standards-framed Brotli archives</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="left"><strong>✓ RFC 9841 default; raw optional</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Safe delete preview</strong></td>
+<td align="center">△</td>
+<td align="center">△</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ <code class="notranslate">--dry-run</code>, <code class="notranslate">--safe</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Parallel/batched per-match exec</strong></td>
+<td align="center">△</td>
+<td align="center">✓</td>
+<td align="center">-</td>
+<td align="center">△</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ <code class="notranslate">-exec ... +</code>, <code class="notranslate">-j</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Capture command output as a field</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ <code class="notranslate">-capture</code>, <code class="notranslate">{capture.NAME}</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>Sharded-dataset validation</strong></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="left"><strong>✓ collapse + status matching</strong></td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto"><code class="notranslate">find</code>'s "Field templates and rewrites" entry is marked <strong>GNU</strong> because it is GNU find's <code class="notranslate">-printf</code>, a<br>
+GNU extension; POSIX and BSD/macOS <code class="notranslate">find</code> have no format primary (only <code class="notranslate">-print</code> / <code class="notranslate">-exec</code>).</p>
+<hr>
+<h2 dir="auto" id="flavor--behavioral-shift-matrix">Flavor &amp; Behavioral Shift Matrix</h2>
+<p dir="auto"><code class="notranslate">xff</code> runs one unified grammar under three operational flavors. The flavor is selected automatically by the program binary name and can be explicitly overridden or layered using the <code class="notranslate">--config</code> flag (where the last specified style wins).</p>
+<p dir="auto">The table below illustrates how traditional shell workflows shift into optimized <code class="notranslate">xff</code> unified expressions.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Target Intent / Use Case</th>
+<th align="left">Legacy Command / Pipeline</th>
+<th align="left">The <code class="notranslate">xff</code> Unified Expression</th>
+<th align="left">Architectural Advantage / Behavioral Shift</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><strong>Strict Compliance</strong></td>
+<td align="left"><code class="notranslate">find . -type f -name "*.cpp"</code></td>
+<td align="left"><code class="notranslate">find . -type f -name "*.cpp"</code> <br><em>or</em> <code class="notranslate">xff --config=find ...</code></td>
+<td align="left"><strong>Strict POSIX compatibility mode:</strong> Turns off all modern extensions; modern flags become immediate usage errors.*</td>
+</tr>
+<tr>
+<td align="left"><strong>Modern Structural Search</strong></td>
+<td align="left"><code class="notranslate">fd -e cc</code></td>
+<td align="left"><code class="notranslate">xff -regex '.*\.cc$'</code> <br><em>or</em> <code class="notranslate">xff --config=xff ...</code></td>
+<td align="left"><strong>Evolved mode (Default):</strong> Expands <code class="notranslate">find</code>'s grammar with modern extensions, enabling sorted output and human sizes (<code class="notranslate">--human=si</code>).</td>
+</tr>
+<tr>
+<td align="left"><strong>Clean Developer Grep</strong></td>
+<td align="left"><code class="notranslate">fd -H -E ".git" | xargs rg "TODO"</code></td>
+<td align="left"><code class="notranslate">xff --config=rg -grep "TODO"</code></td>
+<td align="left"><strong>Opinionated Developer Mode:</strong> Implicitly respects nested <code class="notranslate">.gitignore</code> files, skips hidden files, and uses smart-case matching logic.</td>
+</tr>
+<tr>
+<td align="left"><strong>High-Performance Verification</strong></td>
+<td align="left"><code class="notranslate">find . -type f -exec sha256sum {} \;</code></td>
+<td align="left"><code class="notranslate">xff -type f -hash:sha256</code></td>
+<td align="left"><strong>Zero-Fork Speed:</strong> Eliminates system process-spawning overhead. Reads files directly into the native read loop buffer to hash inline.</td>
+</tr>
+<tr>
+<td align="left"><strong>Missing Newline Code Linting</strong></td>
+<td align="left"><em>Complex multi-line awk scripts or loops.</em></td>
+<td align="left"><code class="notranslate">xff -text ! -eofnl -print</code></td>
+<td align="left"><strong>Native Classification:</strong> Instantly flags text files violating POSIX trailing newline rules without streaming lines to the shell.</td>
+</tr>
+<tr>
+<td align="left"><strong>Cross-OS Time Constraints</strong></td>
+<td align="left"><code class="notranslate">find . -mmin -60</code></td>
+<td align="left"><code class="notranslate">xff -mtime "-3 weeks 3 hours"</code></td>
+<td align="left"><strong>Advanced Parsing:</strong> Uses human-readable compound duration strings interpreted cleanly via explicit IANA <code class="notranslate">--timezone</code> modifiers.</td>
+</tr>
+<tr>
+<td align="left"><strong>Compressed Asset Auditing</strong></td>
+<td align="left"><code class="notranslate">tar -ztf src.tar.gz | grep "cfg"</code></td>
+<td align="left"><code class="notranslate">xff --archive -path "*src.tar.gz*cfg*"</code></td>
+<td align="left"><strong>Virtual File-tree Mapping:</strong> Treats archives as virtual read-only directories, matching inner structures without manual disk extraction.</td>
+</tr>
+<tr>
+<td align="left"><strong>Isolated Variable Outputting</strong></td>
+<td align="left"><code class="notranslate">find . -printf "%p,%s\n"</code></td>
+<td align="left"><code class="notranslate">xff --format=csv --columns=path,size</code></td>
+<td align="left"><strong>Structured Sanitization:</strong> Formats data cleanly into formal arrays with safe, native C-escape column handling (<code class="notranslate">--path-encoding=escape</code>).</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">* <strong>Strict <code class="notranslate">find</code> mode is still xff's engine, not a wrapper around the OS <code class="notranslate">find</code>.</strong> It keeps<br>
+find's vocabulary and turns the xff extensions into usage errors, but the implementation is one<br>
+fast, mostly platform-independent binary. The clearest divergence is regex: <code class="notranslate">-regex</code> / <code class="notranslate">-iregex</code><br>
+default to <strong>RE2</strong> (linear-time, no catastrophic backtracking) and behave identically on Linux<br>
+and macOS - where GNU find instead defaults to its Emacs dialect and BSD/macOS find to BRE.<br>
+<code class="notranslate">-regextype</code> selects xff's uniform grammar set (RE2, EXACT, FNMATCH, GLOB, SHGLOB, plus PCRE2 in<br>
+a full build), never GNU's dialect names. GLOB and SHGLOB are locale-independent, component-aware,<br>
+and reject malformed bracket expressions instead of silently changing their meaning. SHGLOB adds<br>
+nested alternatives and bounded integer or ASCII-letter sequences such as <code class="notranslate">{01..12}</code> and <code class="notranslate">{a..z}</code>.<br>
+Otherwise strict mode is find's documented behavior, made uniform across platforms.</p>
+<hr>
+<h2 dir="auto" id="quick-start">Quick Start</h2>
+<p dir="auto"><code class="notranslate">xff</code> builds with Bazel and runs on macOS and Linux.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate"><span class="pl-c"><span class="pl-c">#</span> Build and run the stock binary.</span>
+bazel run //xff -- <span class="pl-c1">.</span> -type f -name <span class="pl-s"><span class="pl-pds">'</span>*.md<span class="pl-pds">'</span></span>
+
+<span class="pl-c"><span class="pl-c">#</span> Or build it once and put it on your PATH.</span>
+bazel build //xff
+cp bazel-bin/xff/cli/xff /usr/local/bin/xff</pre></div>
+<hr>
+<h2 dir="auto" id="examples">Examples</h2>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate"><span class="pl-c"><span class="pl-c">#</span> Ten largest files (-printf builds any columnar line; the shell sorts).</span>
+xff <span class="pl-c1">.</span> -type f -printf <span class="pl-s"><span class="pl-pds">'</span>%s\t%p\n<span class="pl-pds">'</span></span> <span class="pl-k">|</span> sort -rn <span class="pl-k">|</span> head
+
+<span class="pl-c"><span class="pl-c">#</span> Disk use per file type (a --long global like --summary may sit at the end).</span>
+xff <span class="pl-c1">.</span> -type f --summary=ext
+
+<span class="pl-c"><span class="pl-c">#</span> Delete stale temp files, safely (prints what -delete WOULD remove).</span>
+xff <span class="pl-c1">.</span> -type f -name <span class="pl-s"><span class="pl-pds">'</span>*.tmp<span class="pl-pds">'</span></span> -mtime +7 -delete --dry-run
+
+<span class="pl-c"><span class="pl-c">#</span> Search code content, filtered by language (path:lineno:text for every TODO).</span>
+xff src -lang <span class="pl-s"><span class="pl-pds">'</span>C*<span class="pl-pds">'</span></span> -grep <span class="pl-s"><span class="pl-pds">'</span>TODO<span class="pl-pds">'</span></span>
+
+<span class="pl-c"><span class="pl-c">#</span> Checksum manifest for a tree (like sha256sum: `DIGEST  PATH` per file).</span>
+xff <span class="pl-c1">.</span> -type f -hash:sha256
+
+<span class="pl-c"><span class="pl-c">#</span> Recently changed files as machine rows (one JSON object per file, for jq).</span>
+xff <span class="pl-c1">.</span> -type f -mtime -1 --format=jsonl</pre></div>
+<p dir="auto">See the <a href="XFF.html">XFF.md</a> cookbook for more worked examples, including native per-author <code class="notranslate">git blame</code> line counts computed with no shell pipes.</p>
+<hr>
+<h2 dir="auto" id="documentation">Documentation</h2>
+<p dir="auto">The vocabulary and options are defined once inside the C++ binary (the engine registry acts as the single source of truth), ensuring that every documentation surface is automatically generated and cannot drift:</p>
+<ul dir="auto">
+<li><strong><code class="notranslate">XFF.md</code></strong>: The full comprehensive reference in Markdown. Run <code class="notranslate">xff-md-update.sh</code> to regenerate it; the <code class="notranslate">//xff/cli:xff_markdown_test</code> target fails CI if it drifts from the binary.</li>
+<li><strong><code class="notranslate">xff --help</code></strong>: Renders the main utility usage page. Use <code class="notranslate">xff --help=TOPIC</code> to review specific sub-topics (<code class="notranslate">fields</code>, <code class="notranslate">printf</code>, <code class="notranslate">time</code>, <code class="notranslate">size</code>, <code class="notranslate">grammars</code>, <code class="notranslate">stats</code>, etc.), or <code class="notranslate">xff --help=full</code> to dump all help sections.</li>
+<li><strong>Formatted full reference</strong>: Append <code class="notranslate">:markdown</code> (or <code class="notranslate">:md</code>), <code class="notranslate">:html</code>, or <code class="notranslate">:roff</code> to <code class="notranslate">--help=full</code> (or its <code class="notranslate">long</code> alias). HTML is a standalone, self-contained HTML5 document with no scripts or external assets; <code class="notranslate">--man</code> remains the conventional alias for the roff form.</li>
+<li><strong>Paired release docs</strong>: The shared <code class="notranslate">//xff/cli:xff_reference_gen</code> action always generates Markdown and HTML together, and release Pages publish that exact pair so the formats cannot silently diverge.</li>
+</ul>
+<hr>
+<h2 dir="auto" id="building--dependencies">Building &amp; Dependencies</h2>
+<p dir="auto">The default build provides a lean, dependency-light core. Heavier processing capabilities (such as the advanced <code class="notranslate">PCRE2</code> regex grammar or recursive archive diving) are decoupled as composable build-time extras that are disabled by default to keep the core binary small. The extended target links them all:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate"><span class="pl-c"><span class="pl-c">#</span> The full binary, with every extra (PCRE2, archive diving, Brotli, etc.).</span>
+bazel build --config=xff_full //xff/cli:xff_full</pre></div>
+<p dir="auto">The <code class="notranslate">//xff</code> target alias follows your active workspace configuration automatically: it resolves to the lean binary by default, and switches to the full binary under <code class="notranslate">--config=xff_full</code>. The underlying targets remain explicit and configuration-stable: <code class="notranslate">//xff/cli:xff</code> is always lean, and <code class="notranslate">//xff/cli:xff_full</code> is always full.</p>
+<p dir="auto">Published binaries use <code class="notranslate">--config=release</code>, which selects the hermetic Clang toolchain, optimizes for<br>
+size, and enables ThinLTO. Releases provide the stripped <code class="notranslate">xff-PLATFORM-ARCH</code> and<br>
+<code class="notranslate">xff_full-PLATFORM-ARCH</code> executables directly. Each platform also provides one level-19<br>
+Zstandard-compressed <code class="notranslate">xff-PLATFORM-ARCH.tar.zst</code> archive containing both executables plus their<br>
+matching symbol files under <code class="notranslate">debug/</code>; no <code class="notranslate">.tar.gz</code> duplicate is published. The ordinary Linux and<br>
+macOS CI jobs run tagged binary-level tests with this same configuration and execute the staged,<br>
+stripped binaries before a release can use it; the full unit-test graph stays on the same hermetic<br>
+Clang toolchain without paying ThinLTO cost for every test executable. Each release also publishes<br>
+an attested <code class="notranslate">SHA256SUMS</code> manifest and installation instructions, including generation of the<br>
+matching man page directly from the installed binary with <code class="notranslate">xff --pager=never --man</code>.</p>
+<blockquote>
+<p dir="auto"><strong>Compile-Time Enforcement:</strong> The CLI options for extras (e.g., <code class="notranslate">--regextype=PCRE2</code> or <code class="notranslate">--archive</code>) are always exposed on the interface. Attempting to invoke an extra feature in a lean build that did not compile it will yield an immediate, explicit error rather than a silent failure or fallback.</p>
+</blockquote>
+<ul dir="auto">
+<li><strong>Requirements:</strong> Bazel 9.1.1 or newer, accompanied by a modern C++23 toolchain (<code class="notranslate">clang-22</code> or<br>
+newer). A fully hermetic LLVM toolchain is available out-of-the-box via <code class="notranslate">--config=clang</code>.</li>
+</ul>
+<hr>
+<h2 dir="auto" id="contributing">Contributing</h2>
+<p dir="auto">See <a href="CONTRIBUTING.html">CONTRIBUTING.md</a>, the LLM agent and contributor guidelines in <a href="AGENTS.html">AGENTS.md</a>, and the coding styles in <a href="STYLE_CPP.html">STYLE_CPP.md</a> and <a href="STYLE_SH.html">STYLE_SH.md</a>. In-depth design notes live under <code class="notranslate">docs/</code>; current work is tracked in <a href="TODO.html">TODO.md</a>, while completed investigations and decisions move to the <a href="docs/history.html">development history</a>.</p>
+<hr>
+<h2 dir="auto" id="license">License</h2>
+<p dir="auto">Apache License 2.0. See <code class="notranslate">LICENSE</code> and <code class="notranslate">NOTICE</code> for details.</p></main><footer>Release snapshot · ab69af0938f6495efb3cf1140465f1627e2d128b</footer></body></html>

@@ -1,0 +1,185 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/design-find-flavors.md - xff v0.3.6</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.3.6/">Home</a><a href="/xff/site/tag/v0.3.6/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.3.6">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/ab69af0938f6495efb3cf1140465f1627e2d128b">Source</a><a href="/xff/coverage/tag/0.3.6/">Coverage</a><a href="/xff/releases/0.3.6/">CLI reference</a></nav><p>xff v0.3.6</p><main><h1 dir="auto" id="design-find-flavors-posix--gnu--bsd-and-xffs-compatibility-target">Design: find flavors (POSIX / GNU / BSD) and xff's compatibility target</h1>
+<p dir="auto">Status: design-of-record. Companion to <a href="design-config.html"><code class="notranslate">design-config.md</code></a><br>
+(the style/feature/config mechanism this builds on).</p>
+<h2 dir="auto" id="question">Question</h2>
+<p dir="auto"><code class="notranslate">find</code> is not one tool. The POSIX "original", GNU findutils, and the BSD/macOS<br>
+find diverge in both vocabulary and spelling. xff bills itself as a drop-in<br>
+replacement, so: which find does its <code class="notranslate">find</code> style target, and do we need more<br>
+than one flavor?</p>
+<h2 dir="auto" id="decision">Decision</h2>
+<p dir="auto"><strong>One permissive <code class="notranslate">find</code> style = POSIX (original) <code class="notranslate">union</code> GNU <code class="notranslate">union</code> BSD.</strong> Accept<br>
+every dialect's spelling wherever they do not contradict; the <code class="notranslate">xff</code> style adds<br>
+the genuine xff inventions on top. We do <strong>not</strong> split into <code class="notranslate">find-gnu</code> /<br>
+<code class="notranslate">find-bsd</code> flavors.</p>
+<p dir="auto">Rationale:</p>
+<ol dir="auto">
+<li><strong>xff already implements the union.</strong> It ships BSD's birthtime predicates<br>
+(<code class="notranslate">-Bmin</code>/<code class="notranslate">-Btime</code>) <em>and</em> GNU's <code class="notranslate">-printf</code>/<code class="notranslate">-mmin</code>/<code class="notranslate">-regextype</code>. Two strict<br>
+flavors would force <em>retracting</em> features from each (find-gnu rejecting<br>
+<code class="notranslate">-Bmin</code>, find-bsd rejecting <code class="notranslate">-printf</code>), which is backwards for a replacement.</li>
+<li><strong>The divergence is almost entirely additive</strong> - different spellings for<br>
+similar capabilities. The union is a strict superset of what any single find<br>
+accepts, so every GNU <em>or</em> BSD <em>or</em> POSIX script keeps working.</li>
+<li><strong>The <code class="notranslate">find</code> vs <code class="notranslate">xff</code> line is about xff inventions</strong>, not GNU-vs-BSD spelling.<br>
+Strict <code class="notranslate">--config=find</code> rejects xff-only primitives (<code class="notranslate">-println</code>, <code class="notranslate">-capture</code>,<br>
+<code class="notranslate">{field}</code> substitution, compound durations); it stays lenient about which real<br>
+find dialect you wrote.</li>
+<li>If an "enforce GNU-portability" need ever appears, that is a future<br>
+<code class="notranslate">--feature</code>/<code class="notranslate">--config</code> knob (per <code class="notranslate">design-config.md</code>), not a reason to fork the<br>
+core now.</li>
+</ol>
+<h2 dir="auto" id="divergence-survey">Divergence survey</h2>
+<p dir="auto">Probed against <code class="notranslate">/usr/bin/find</code> (BSD) on macOS and GNU findutils on Linux. (The<br>
+interactive <code class="notranslate">find</code> on the dev box is <code class="notranslate">bfs</code>, itself a GNU+BSD superset; CI uses the<br>
+genuine tools.)</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Feature</th>
+<th>POSIX</th>
+<th>GNU</th>
+<th>BSD</th>
+<th>xff</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">-mtime</code> integer days</td>
+<td>yes</td>
+<td>yes</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code class="notranslate">-mtime N[smhdw]</code> unit suffix</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code class="notranslate">-mmin</code> / <code class="notranslate">-amin</code> / <code class="notranslate">-cmin</code></td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code class="notranslate">-printf</code> / <code class="notranslate">-fprintf</code> / <code class="notranslate">-fls</code></td>
+<td>no</td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code class="notranslate">-regextype</code></td>
+<td>no</td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code class="notranslate">-E</code> (extended-regex global flag)</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+<td>tbd</td>
+</tr>
+<tr>
+<td><code class="notranslate">-daystart</code></td>
+<td>no</td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code class="notranslate">-Bmin</code> / <code class="notranslate">-Btime</code> (birthtime)</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code class="notranslate">-perm -mode</code> (all-of)</td>
+<td>yes</td>
+<td>yes</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code class="notranslate">-perm /mode</code> (any-of)</td>
+<td>no</td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code class="notranslate">-perm +mode</code> (any-of)</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+<td>tbd</td>
+</tr>
+<tr>
+<td><code class="notranslate">-type f,d</code> (OR-list)</td>
+<td>no</td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code class="notranslate">-samefile</code> / <code class="notranslate">-wholename</code></td>
+<td>no</td>
+<td>yes</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>compound duration (<code class="notranslate">3 weeks 3 hrs</code>)</td>
+<td>no</td>
+<td>no*</td>
+<td>no</td>
+<td>xff</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto"><code class="notranslate">*</code> GNU <code class="notranslate">get_date</code> (used by <code class="notranslate">-newermt</code>) does accept compound spans, so compound<br>
+on <code class="notranslate">-newermt</code> is find-compatible; compound on <code class="notranslate">-mtime</code> is novel to xff.</p>
+<h2 dir="auto" id="contradiction-resolutions">Contradiction resolutions</h2>
+<p dir="auto">The few cases where the <em>same</em> input means <em>different</em> things, resolved toward the<br>
+most-capable reading:</p>
+<ul dir="auto">
+<li><strong><code class="notranslate">-type f,d</code></strong>: GNU = "f OR d"; BSD silently uses just "f". -&gt; take GNU's OR.</li>
+<li><strong><code class="notranslate">-perm</code></strong>: <code class="notranslate">+mode</code> (BSD/old-GNU) and <code class="notranslate">/mode</code> (GNU) both = any-of; <code class="notranslate">-mode</code> =<br>
+all-of; bare = exact (POSIX). Accept all three forms with those meanings.</li>
+<li><strong><code class="notranslate">-size</code> suffixes</strong>: shared core (512-byte blocks default, <code class="notranslate">c</code> = bytes,<br>
+<code class="notranslate">k</code>/<code class="notranslate">M</code>/<code class="notranslate">G</code>); accept BSD's extra <code class="notranslate">T</code>/<code class="notranslate">P</code> as a superset.</li>
+<li><strong>regex default flavor</strong>: GNU emacs / BSD basic / xff RE2 - xff uses its RE2<br>
+module with <code class="notranslate">-regextype</code> to select, documented as xff's choice.</li>
+</ul>
+<h2 dir="auto" id="consequence-for-the-time-predicates">Consequence for the time predicates</h2>
+<p dir="auto">This settles the rich-time-comparison gating:</p>
+<ul dir="auto">
+<li><code class="notranslate">-mtime</code> / <code class="notranslate">-atime</code> / <code class="notranslate">-ctime</code> <strong>single unit suffix</strong> (<code class="notranslate">-1h</code>, <code class="notranslate">+2d</code>, <code class="notranslate">+1w</code>) is<br>
+<strong>BSD-native</strong> -&gt; find-compatible, available in the <code class="notranslate">find</code> style too, <strong>not</strong><br>
+xff-gated.</li>
+<li><strong>Compound</strong> duration on <code class="notranslate">-mtime</code> (<code class="notranslate">-"3 weeks 3 hours"</code>) is novel -&gt; xff-only,<br>
+gated to the <code class="notranslate">xff</code> style.</li>
+<li>Compound on <code class="notranslate">-newermt</code> matches GNU <code class="notranslate">get_date</code> -&gt; find-compatible, ungated.</li>
+</ul>
+<h2 dir="auto" id="conformance">Conformance</h2>
+<p dir="auto">The conformance suite compares xff to the <em>system</em> find, so it runs against GNU<br>
+on Linux and BSD on macOS. Because the union is a superset of both, divergent<br>
+primaries are <strong>platform-gated</strong> in the suite (test <code class="notranslate">-printf</code> only where GNU is<br>
+present, <code class="notranslate">-mtime</code> unit suffixes only where BSD is). Primaries common to both with<br>
+identical semantics are tested everywhere.</p></main><footer>Release snapshot · ab69af0938f6495efb3cf1140465f1627e2d128b</footer></body></html>

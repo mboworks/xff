@@ -1,0 +1,81 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>TODO.md - xff v0.3.6</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.3.6/">Home</a><a href="/xff/site/tag/v0.3.6/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.3.6">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/ab69af0938f6495efb3cf1140465f1627e2d128b">Source</a><a href="/xff/coverage/tag/0.3.6/">Coverage</a><a href="/xff/releases/0.3.6/">CLI reference</a></nav><p>xff v0.3.6</p><main><h1 dir="auto" id="todo">TODO</h1>
+<p dir="auto">Actionable roadmap and deliberately deferred ideas. Completed implementation records live in<br>
+<a href="docs/history-roadmap.html"><code class="notranslate">docs/history-roadmap.md</code></a>; other resolved design records and investigations<br>
+live in <a href="docs/history.html"><code class="notranslate">docs/history.md</code></a>.</p>
+<h2 dir="auto" id="project-constraints">Project constraints</h2>
+<h3 dir="auto" id="minimum-bazel-version">Minimum Bazel version</h3>
+<p dir="auto">The supported minimum is <strong>Bazel 9.1.1</strong>. Development and CI use the newer release pinned in<br>
+<code class="notranslate">.bazelversion</code>; the minimum is a support floor, not a second CI configuration. Bazel 7 is no longer<br>
+supported, and no Bazel 8 patch release is part of the support contract. Lowering the minimum requires<br>
+an explicit decision.</p>
+<h3 dir="auto" id="coverage-policy">Coverage policy</h3>
+<p dir="auto">Every current coverage group meets the shared high boundaries. Category overrides may make enforcement<br>
+stricter; there are no lowered onboarding overrides. The JSON policy remains the single source of truth<br>
+for enforcement and presentation.</p>
+<h2 dir="auto" id="active-engineering-priorities">Active engineering priorities</h2>
+<ol dir="auto">
+<li><strong>Fuzzing.</strong> The parser-through-evaluator, matcher, template, PHAR, and ASAR targets now have<br>
+committed seed corpora, semantic invariants, ordinary-CI replay, and automatically discovered<br>
+bounded CI campaigns. Continue with shard, stronger matcher/template, and regex targets; every<br>
+new target is picked up by the campaign driver. Configuration coverage<br>
+includes both file grammars, policy gating, precedence resolution, and arming invariants.<br>
+Expression-evaluation harnesses must exclude safety-classified descriptors and use a mutation-<br>
+refusing in-memory filesystem; <code class="notranslate">--safe</code> text alone is not an isolation boundary.</li>
+<li><strong>Performance evidence.</strong> The parser now has a reproducible manual benchmark alongside the existing<br>
+similarity and near-duplicate measurements. Extend the evidence with traversal and memory<br>
+measurements before optimizing. Keep fuzz time/resource guards separate from stable performance<br>
+measurements.</li>
+<li><strong>Near-duplicate grouping design.</strong> The benchmark/design spike now measures exact Jaccard<br>
+verification behind scalable candidate generation; settle the grouping architecture, configuration,<br>
+and core-versus-extra boundary before shipping a user-facing operation. False positives may reach<br>
+exact verification but must never reach emitted clusters.</li>
+<li><strong>Coverage overview ordering.</strong> Keep <code class="notranslate">overall</code> first, then render the program categories<br>
+alphabetically, followed by the extension categories alphabetically. Preserve this ordering in<br>
+generated and published reports.</li>
+<li><strong>Detailed coverage gaps.</strong> Raise line and function coverage for<br>
+<code class="notranslate">program-command-grammar/xff/registry/</code> and branch coverage for <code class="notranslate">program-execution/xff/exec/</code><br>
+until every range is green in the detailed LCOV report.</li>
+<li><strong>Libarchive malformed-input boundary.</strong> The archive fuzz campaign must keep malformed records<br>
+from reaching known unsafe third-party parser paths. Revisit the pinned libarchive version and<br>
+format-specific validation before broadening beyond structurally valid tar inputs; report any<br>
+confirmed dependency defect through its private security channel when appropriate.</li>
+<li><strong>VFS host-adapter split.</strong> Extend the capability-oriented <code class="notranslate">vfs::FileSystem</code> seam for every file<br>
+operation xff needs, then move POSIX and standard-library file primitives behind a minimal local<br>
+host adapter. Consumers must not open or mutate host paths directly; retain annotations only at<br>
+the immediate adapter boundary.</li>
+</ol>
+<h2 dir="auto" id="design-required-before-implementation">Design required before implementation</h2>
+<ol dir="auto">
+<li><strong>Reassembled shard contents (shards v2).</strong> Decide whether the logical whole replaces or accompanies<br>
+physical shards for matching and actions, how incomplete and duplicate sets read, and which path and<br>
+metadata the synthetic entry owns. The shipped v1 already covers display, statistics, completeness,<br>
+duplicates, and <code class="notranslate">-shard-status</code> matching; do not infer v2 semantics from it.</li>
+<li><strong>Near-duplicate grouping.</strong> The candidate-generation spike in<br>
+<a href="docs/design-near-duplicates.html"><code class="notranslate">docs/design-near-duplicates.md</code></a> selects hashed-shingle postings<br>
+followed by exact Jaccard verification as the first implementation. Decide the user-visible<br>
+clustering rule for non-transitive matches and measure a memory-bounded production representation.</li>
+<li><strong>PHAR structural exposure.</strong> A format-defined file such as <code class="notranslate">.phar/stub.php</code> remains file-like, with a<br>
+stored member winning name conflicts. Decide whether a presentation option may hide such parts.<br>
+Aliases, serialized metadata, and signatures are not files and remain unexported unless a coherent<br>
+separate metadata model is designed.</li>
+</ol>
+<h2 dir="auto" id="deferred-refinements">Deferred refinements</h2>
+<ul dir="auto">
+<li>Filesystem-name behavior: Unicode normalization and Linux per-directory case-fold detection.</li>
+<li>Per-summary-sink modifiers.</li>
+<li>Histogram time buckets, explicit bucket edges/counts, and per-line template measures.</li>
+<li>Text-flavor mixed-line-ending policies.</li>
+<li>Post-1.0 behavior migration through <code class="notranslate">--unstable=NAME</code> if a concrete unstable spelling needs it;<br>
+do not build the rejected general <code class="notranslate">--feature</code> registry speculatively.</li>
+<li>C++ header modules after the hermetic toolchain supplies real compile/use actions.</li>
+</ul></main><footer>Release snapshot · ab69af0938f6495efb3cf1140465f1627e2d128b</footer></body></html>

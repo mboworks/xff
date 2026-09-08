@@ -1,0 +1,216 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/design-parallel.md - xff v0.3.6</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.3.6/">Home</a><a href="/xff/site/tag/v0.3.6/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.3.6">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/ab69af0938f6495efb3cf1140465f1627e2d128b">Source</a><a href="/xff/coverage/tag/0.3.6/">Coverage</a><a href="/xff/releases/0.3.6/">CLI reference</a></nav><p>xff v0.3.6</p><main><h1 dir="auto" id="xff---parallel-traversal-design">xff - Parallel Traversal Design</h1>
+<blockquote>
+<p dir="auto">Detailed spec for parallel directory traversal and <code class="notranslate">--sort</code> (issue <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4707616216" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/43" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/43/hovercard" href="https://github.com/mboworks/xff/pull/43">#43</a>).<br>
+<strong>Refines</strong> <code class="notranslate">design.md</code> §"Cross-cutting concerns" (Determinism). Where the two<br>
+differ, this document is authoritative for traversal/ordering specifically.<br>
+Status: <strong>Draft</strong> · 2026-06-27 · Org: MBO Works</p>
+</blockquote>
+<h2 dir="auto" id="purpose">Purpose</h2>
+<p dir="auto">The directory walk is the hot path and it is IO-bound: most time is spent<br>
+blocked in <code class="notranslate">readdir</code>/<code class="notranslate">lstat</code>, not in CPU. Running it across several workers<br>
+hides that latency and is the single biggest performance lever for xff,<br>
+especially on deep trees and high-latency (network) filesystems.</p>
+<p dir="auto">Parallelism must not cost correctness. Three things are trivially correct in the<br>
+current sequential walk and must stay correct under concurrency: deterministic<br>
+output (when asked for), the <code class="notranslate">-prune</code>/<code class="notranslate">-quit</code>/<code class="notranslate">-depth</code> control semantics, and the<br>
+exit-code model. The VFS layer is already contractually safe to call from many<br>
+threads (<code class="notranslate">vfs::FileSystem</code>), so the foundation is ready.</p>
+<h2 dir="auto" id="v1-scope-what-shipped-first">v1 scope (what shipped first)</h2>
+<p dir="auto">The first implementation (engine PR for <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4707616216" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/43" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/43/hovercard" href="https://github.com/mboworks/xff/pull/43">#43</a>) takes three deliberate simplifications<br>
+of the design below; each has a noted follow-up:</p>
+<ul dir="auto">
+<li><strong>The worker pool parallelizes <code class="notranslate">readdir</code>+<code class="notranslate">lstat</code> only.</strong> The visitor (evaluate +<br>
+emit + exec + capture + summary) runs on the single coordinator thread in <code class="notranslate">--sort</code><br>
+order, so that whole pipeline stays single-threaded and unchanged (<code class="notranslate">run.cc</code><br>
+untouched) - the only new concurrent code is the pool, whose jobs are pure<br>
+(path -&gt; stat'd listing) and touch just the thread-safe VFS and a mutex-guarded<br>
+queue. Per-worker parallel evaluation is a later option if profiling wants it.</li>
+<li><strong>The ordered modes are deterministic.</strong> Siblings are consumed in sorted order<br>
+(reads still overlap via prefetch), so <code class="notranslate">dir</code>/<code class="notranslate">subtree</code>/<code class="notranslate">tree</code> are reproducible<br>
+across runs and machines. Streaming subtrees strictly by completion order (lower<br>
+latency, nondeterministic) is a later refinement.</li>
+<li><strong>Parallelism and sort are opt-in:</strong> <code class="notranslate">-j</code>/<code class="notranslate">--jobs</code> and <code class="notranslate">--sort</code> (default stays<br>
+sequential + <code class="notranslate">none</code>, find-compatible). The mode-scoped auto-defaults (modern -&gt;<br>
+parallel + <code class="notranslate">dir</code>; find/fd/rg -&gt; all cores + <code class="notranslate">none</code>) land with the mode mechanism<br>
+(<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4710274878" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/54" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/54/hovercard" href="https://github.com/mboworks/xff/pull/54">#54</a>), which is where a persona can be queried.</li>
+</ul>
+<h2 dir="auto" id="architecture">Architecture</h2>
+<p dir="auto">A bounded <strong>worker pool</strong> over directories, with a single <strong>emission-ordering<br>
+layer</strong> between the workers and the output sink:</p>
+<ul dir="auto">
+<li>A work queue holds directories to read. Each worker pops a directory, lists it<br>
+(<code class="notranslate">ReadDir</code> + <code class="notranslate">lstat</code>), evaluates each entry against the expression, hands any<br>
+matches to the ordering layer, and pushes child directories back onto the<br>
+queue. The walk ends when the queue drains and all workers are idle.</li>
+<li><code class="notranslate">Evaluate</code> runs concurrently across workers. It reads per-entry state only;<br>
+any side effects with shared state (capture aggregation, <code class="notranslate">--summary</code>, the emit<br>
+sink) are funnelled through the ordering layer or otherwise serialized.</li>
+<li>The <strong>ordering layer owns the sink</strong> - it is the only writer. This keeps<br>
+matching parallel while emission stays single-writer and correctly ordered for<br>
+the chosen <code class="notranslate">--sort</code> mode. <code class="notranslate">-exec</code>/<code class="notranslate">-capture</code> children are bounded by the same<br>
+<code class="notranslate">-j</code> budget (see below).</li>
+</ul>
+<h2 dir="auto" id="--sort-modes"><code class="notranslate">--sort</code> modes</h2>
+<p dir="auto">Four modes, a spectrum of rising ordering cost. <code class="notranslate">name</code> stays an alias for <code class="notranslate">dir</code><br>
+(back-compat with the current <code class="notranslate">SortOrder::kName</code>).</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th><code class="notranslate">--sort</code></th>
+<th>Buffer</th>
+<th>Deterministic order</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">none</code></td>
+<td>none</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code class="notranslate">dir</code></td>
+<td>~none</td>
+<td>within a directory</td>
+</tr>
+<tr>
+<td><code class="notranslate">subtree</code></td>
+<td>bounded</td>
+<td>within a subtree</td>
+</tr>
+<tr>
+<td><code class="notranslate">tree</code></td>
+<td>all matches</td>
+<td>fully</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<ul dir="auto">
+<li><strong><code class="notranslate">none</code></strong> - emit entries in discovery (readdir) order as workers produce them.<br>
+Pure streaming, no buffering, fully nondeterministic. Fastest.</li>
+<li><strong><code class="notranslate">dir</code></strong> - each directory emits its complete direct listing (files <strong>and</strong><br>
+subdirectory entries) sorted as one block; the listing-blocks of different<br>
+directories interleave by completion order. Buffers only one listing at a time.<br>
+A directory's direct children are ordered; the tree as a whole is not.</li>
+<li><strong><code class="notranslate">subtree</code></strong> - each directory emits its non-directory entries sorted, then<br>
+inlines each subdirectory's <strong>whole subtree contiguously</strong> as that subtree<br>
+completes. Subtrees come out as contiguous, locally-sorted blocks; sibling<br>
+subtree order is nondeterministic. Buffers an in-flight subtree's output to<br>
+keep it contiguous - bounded by worker count, not tree size.</li>
+<li><strong><code class="notranslate">tree</code></strong> - the entire result set is globally path-ordered (subdirectories<br>
+sorted into position too), fully reproducible across runs and machines.<br>
+Buffers all matches (collect-all, or a hierarchical ordered merge). Most<br>
+memory, slowest. <code class="notranslate">subtree</code> is the bounded-memory alternative when only<br>
+contiguity (not a global order) is needed.</li>
+</ul>
+<p dir="auto">The key distinction between <code class="notranslate">dir</code>/<code class="notranslate">subtree</code> and <code class="notranslate">tree</code>: neither <code class="notranslate">dir</code> nor<br>
+<code class="notranslate">subtree</code> ever inlines a subdirectory's contents at a globally-sorted position -<br>
+that is precisely what <code class="notranslate">tree</code> buys, and why only <code class="notranslate">tree</code> must buffer everything.</p>
+<h2 dir="auto" id="parallelism-control">Parallelism control</h2>
+<p dir="auto">A single knob, <code class="notranslate">-j N</code> (long form <code class="notranslate">--jobs</code>), caps total concurrency for <strong>both</strong><br>
+the directory walk and concurrent <code class="notranslate">-exec</code>/<code class="notranslate">-capture</code> children - one mental model.<br>
+<code class="notranslate">-j 1</code> forces the sequential walk. <code class="notranslate">-j all</code> (<code class="notranslate">--jobs=all</code>) means every detected<br>
+core (<code class="notranslate">hardware_concurrency()</code>), regardless of the active mode's default.</p>
+<p dir="auto">Under <code class="notranslate">-j &gt; 1</code> the serial <code class="notranslate">-exec ... ;</code> / <code class="notranslate">-execdir ... ;</code> form launches its child<br>
+on a bounded runner (at most <code class="notranslate">N</code> outstanding) instead of running it synchronously.<br>
+Because the child's exit status is not yet known when the action returns, the action<br>
+reports success on launch, so its truth value cannot gate a predicate to its right<br>
+(e.g. <code class="notranslate">-exec a \; -exec b \;</code> or <code class="notranslate">-exec test \; -print</code>). This matches find's exit<br>
+model: find's <code class="notranslate">;</code> form is a predicate whose nonzero exit makes only the action false<br>
+and never raises find's own exit status (verified against BSD and GNU find), so<br>
+nothing observable is lost at the exit-code level - the children are still reaped at<br>
+the end-of-walk drain. Use <code class="notranslate">-j 1</code> for find's strict synchronous, status-gating<br>
+semantics. The <code class="notranslate">+</code> batch forms are unaffected: they always accumulate and flush once<br>
+at end-of-walk, and a nonzero exit there does raise the exit status, as in find.</p>
+<p dir="auto">When <code class="notranslate">-j</code> is omitted the default is <strong>mode-scoped</strong> - xff wears the persona it is<br>
+invoked as (the <code class="notranslate">--mode</code> / <code class="notranslate">argv[0]</code> mechanism, design-config.md and <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4710274878" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/54" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/54/hovercard" href="https://github.com/mboworks/xff/pull/54">#54</a>/<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4710554935" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/59" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/59/hovercard" href="https://github.com/mboworks/xff/pull/59">#59</a>):</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Persona</th>
+<th>Workers (no <code class="notranslate">-j</code>)</th>
+<th>Default <code class="notranslate">--sort</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">find</code></td>
+<td>all cores</td>
+<td><code class="notranslate">none</code></td>
+</tr>
+<tr>
+<td><code class="notranslate">fd</code></td>
+<td>all cores</td>
+<td><code class="notranslate">none</code></td>
+</tr>
+<tr>
+<td><code class="notranslate">rg</code></td>
+<td>all cores</td>
+<td><code class="notranslate">none</code></td>
+</tr>
+<tr>
+<td><code class="notranslate">modern</code></td>
+<td><code class="notranslate">max(1, min(cores-1, 15))</code></td>
+<td><code class="notranslate">dir</code></td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<ul dir="auto">
+<li>The compatibility personas match their namesakes: <code class="notranslate">fd</code>/<code class="notranslate">rg</code> saturate cores,<br>
+and <code class="notranslate">find</code>'s output is unordered. All cores = <code class="notranslate">hardware_concurrency()</code>.</li>
+<li><code class="notranslate">modern</code> is the good-citizen persona: leave a core for the pipe consumer, cap<br>
+at 15 to avoid oversubscription on many-core hosts, floor at 1 for single-core,<br>
+and default to <code class="notranslate">dir</code> so output is nicely sorted out of the box.</li>
+<li><code class="notranslate">-j N</code> overrides the worker count in every mode; <code class="notranslate">--sort=...</code> overrides the<br>
+default ordering in every mode.</li>
+</ul>
+<h2 dir="auto" id="concurrency-correctness">Concurrency correctness</h2>
+<ul dir="auto">
+<li><strong><code class="notranslate">-prune</code></strong> - a worker decides prune before enqueuing a directory's children,<br>
+so a pruned subtree is simply never queued. Unchanged semantics.</li>
+<li><strong><code class="notranslate">-quit</code></strong> - sets a stop flag the workers observe between entries; in-flight<br>
+work drains and the queue is abandoned. Exit status follows the normal model.</li>
+<li><strong><code class="notranslate">-depth</code> (post-order)</strong> - children before parent. The ordering layer holds a<br>
+directory's own visit until its subtree has been emitted; under <code class="notranslate">none</code> this<br>
+still means a parent waits on its descendants' completion.</li>
+<li><strong><code class="notranslate">-maxdepth</code>/<code class="notranslate">-mindepth</code>/<code class="notranslate">-xdev</code></strong> - per-entry decisions, unaffected by<br>
+concurrency.</li>
+<li><strong>Exit-code model</strong> - per-path errors are reported through a thread-safe error<br>
+sink and folded into the final status (design.md "Exit-code model"); a partial<br>
+failure still yields the right nonzero code.</li>
+<li><strong>Thread-safety</strong> - <code class="notranslate">vfs::FileSystem</code> is already documented thread-safe. The<br>
+emit sink, capture map, and <code class="notranslate">--summary</code> accumulators are written only by the<br>
+ordering layer (single-writer) or sharded per worker and merged at the end.</li>
+</ul>
+<h2 dir="auto" id="threadsanitizer">ThreadSanitizer</h2>
+<p dir="auto">As soon as the walk is multithreaded we add a TSan run. TSan is mutually<br>
+exclusive with ASan, so it is a <strong>separate</strong> <code class="notranslate">--config=tsan</code> in <code class="notranslate">.bazelrc</code><br>
+(<code class="notranslate">-fsanitize=thread</code> copt/linkopt, <code class="notranslate">TSAN_OPTIONS=halt_on_error=1</code>, the symbolizer,<br>
+mirroring the <code class="notranslate">asan</code> block) <strong>and</strong> its own <code class="notranslate">clang-tsan</code> CI matrix cell wired into<br>
+the <code class="notranslate">done</code> gate. It lands in the same PR that introduces threads (it is a no-op on<br>
+single-threaded code). The <code class="notranslate">asan</code> config also runs UBSan as of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4757902539" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/138" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/138/hovercard" href="https://github.com/mboworks/xff/pull/138">#138</a>.</p>
+<h2 dir="auto" id="phasing-chained-prs">Phasing (chained PRs)</h2>
+<p dir="auto">Built as a chain of stacked PRs (each off its predecessor's tip), so each step is<br>
+small and conflict-free:</p>
+<ol dir="auto">
+<li><strong>Worker pool + <code class="notranslate">--sort=none</code></strong> - parallel walk behind the existing sink, plus<br>
+the <code class="notranslate">clang-tsan</code> config and CI cell (threads arrive here, so TSan does too).<br>
+The sequential walk stays available via <code class="notranslate">-j 1</code>.</li>
+<li><strong>Ordering layer + <code class="notranslate">--sort=dir</code></strong> - generalize <code class="notranslate">SortOrder::kName</code> to <code class="notranslate">kDir</code><br>
+over the parallel walk (per-directory sorted listing blocks).</li>
+<li><strong><code class="notranslate">--sort=subtree</code></strong> - the bounded-buffer contiguous-subtree mode (<code class="notranslate">kSubtree</code>).</li>
+<li><strong><code class="notranslate">--sort=tree</code></strong> - the collect-all global ordering (<code class="notranslate">kTree</code>).</li>
+<li><strong><code class="notranslate">-j</code> / <code class="notranslate">--jobs</code> + mode-scoped defaults</strong> - the flag and the per-persona<br>
+worker-count and default-<code class="notranslate">--sort</code> wiring.</li>
+</ol>
+<p dir="auto">Open follow-ups: an optional stderr soft-warn for <code class="notranslate">--sort=tree</code> past a large<br>
+match count (no hard cap; <code class="notranslate">subtree</code> already covers bounded-memory ordering).</p></main><footer>Release snapshot · ab69af0938f6495efb3cf1140465f1627e2d128b</footer></body></html>

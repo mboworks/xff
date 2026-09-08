@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>extra_modules/mime_db/README.md - xff v0.3.6</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.3.6/">Home</a><a href="/xff/site/tag/v0.3.6/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.3.6">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/ab69af0938f6495efb3cf1140465f1627e2d128b">Source</a><a href="/xff/coverage/tag/0.3.6/">Coverage</a><a href="/xff/releases/0.3.6/">CLI reference</a></nav><p>xff v0.3.6</p><main>
+
+<h1 dir="auto" id="mime-database-build-extension">MIME database build extension</h1>
+<p dir="auto">This removable extension embeds the MIT-licensed<br>
+<a href="https://github.com/jshttp/mime-db"><code class="notranslate">mime-db</code></a> vocabulary. The checked-in data is generated from<br>
+version <code class="notranslate">1.54.0</code>, commit <code class="notranslate">5207a32f76e77ed2f63421641449f8addeacb0a5</code>, using:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">tools/generate_mime_db.py path/to/mime-db/db.json extra_modules/mime_db/data/mime-db.json</pre></div>
+<p dir="auto">Where multiple media types claim one extension, generation uses the precedence published by<br>
+<code class="notranslate">mime-types</code>: IANA beats unspecified, Apache, then nginx; <code class="notranslate">application/*</code> wins a same-source tie;<br>
+<code class="notranslate">application/octet-stream</code> never displaces a more specific type. The resulting JSON is an ordinary<br>
+xff vocabulary layer and remains inspectable and overrideable at runtime.</p></main><footer>Release snapshot · ab69af0938f6495efb3cf1140465f1627e2d128b</footer></body></html>

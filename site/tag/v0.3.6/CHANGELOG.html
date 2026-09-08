@@ -1,0 +1,368 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>CHANGELOG.md - xff v0.3.6</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.3.6/">Home</a><a href="/xff/site/tag/v0.3.6/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.3.6">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/ab69af0938f6495efb3cf1140465f1627e2d128b">Source</a><a href="/xff/coverage/tag/0.3.6/">Coverage</a><a href="/xff/releases/0.3.6/">CLI reference</a></nav><p>xff v0.3.6</p><main>
+
+<h1 dir="auto" id="036">0.3.6</h1>
+<ul dir="auto">
+<li>Make <code class="notranslate">--compare</code> run two ordinary walks in parallel and compare their expression matches by<br>
+relative path. It no longer silently enables Git ignores, skips VCS metadata, forces tree sorting,<br>
+rejects expressions and file roots, or overrides <code class="notranslate">-P</code> / <code class="notranslate">-H</code> / <code class="notranslate">-L</code> symlink traversal.</li>
+<li>Make release installation instructions explicit for both supported platforms and both binaries,<br>
+verifying each download before installation and generating its matching manual page. A generated<br>
+man page now uses the binary's invocation name, including <code class="notranslate">xff_full</code> or an <code class="notranslate">xff</code> symlink. Downloads<br>
+use a unique temporary directory and clean it on exit instead of polluting the caller's directory.</li>
+<li>Publish <code class="notranslate">xff</code> and <code class="notranslate">xff_full</code> symmetrically: each has a directly downloadable, fully stripped<br>
+executable and a matching <code class="notranslate">.tar.zst</code> containing that executable and its separate debug file.</li>
+</ul>
+<h1 dir="auto" id="035">0.3.5</h1>
+<ul dir="auto">
+<li>Shrink the installed Linux release binaries with LLD string-tail and branch optimization, safe<br>
+identical-code folding, and packed relative relocations. The measured AArch64 binaries are 12.9%<br>
+smaller for <code class="notranslate">xff</code> and 7.3% smaller for <code class="notranslate">xff_full</code>, without changing macOS or non-release builds.</li>
+</ul>
+<h1 dir="auto" id="034">0.3.4</h1>
+<ul dir="auto">
+<li>Restore the four directly downloadable platform binaries and additionally publish each platform's<br>
+debug bundle as a level-19 Zstandard-compressed <code class="notranslate">.tar.zst</code> archive; do not publish <code class="notranslate">.tar.gz</code><br>
+duplicates.</li>
+<li>Publish an attested <code class="notranslate">SHA256SUMS</code> manifest and include binary, checksum-verification, and generated<br>
+man-page installation instructions in every release.</li>
+</ul>
+<h1 dir="auto" id="033">0.3.3</h1>
+<ul dir="auto">
+<li>Build release binaries with hermetic Clang, <code class="notranslate">-Oz</code>, and ThinLTO; strip the published executables<br>
+and include their matching debug files in one archive per platform.</li>
+<li>Test the exact release binaries in the default Linux and macOS CI jobs, and use the same staging<br>
+path for pull-request candidates and tagged releases.</li>
+</ul>
+<h1 dir="auto" id="032">0.3.2</h1>
+<ul dir="auto">
+<li>
+<p dir="auto">Check in formatter-clean C++ mirrors of embedded license bodies and verify each one against its<br>
+authoritative license text with Bazel, giving every platform and build configuration the same<br>
+source path while retaining deterministic regeneration checks.</p>
+</li>
+<li>
+<p dir="auto">Add <code class="notranslate">--help=full:html</code>, a standalone semantic HTML5 rendering of the complete generated reference<br>
+with responsive styling, dark-mode support, stable anchors, and no scripts or external assets.<br>
+<code class="notranslate">--help=full:markdown</code> generates the Markdown form; <code class="notranslate">long</code> aliases <code class="notranslate">full</code>, and <code class="notranslate">--man</code> remains the<br>
+conventional shortcut for <code class="notranslate">--help=full:roff</code>. New releases publish paired HTML and Markdown<br>
+references generated from the same binary.</p>
+</li>
+</ul>
+<h1 dir="auto" id="031">0.3.1</h1>
+<ul dir="auto">
+<li>Publish GitHub build-provenance attestations for every release binary, and link each release to<br>
+its retained production coverage report and versioned <code class="notranslate">XFF.md</code> reference on MBO Works Pages.</li>
+<li>Derive release coverage instrumentation from the extras registry so every enabled extension is<br>
+measured automatically rather than depending on a manually maintained filter.</li>
+</ul>
+<h1 dir="auto" id="030">0.3.0</h1>
+<ul dir="auto">
+<li>
+<p dir="auto">Transfer the repository to <code class="notranslate">mboworks/xff</code>, rename the root Bazel module to<br>
+<code class="notranslate">mboworks_xff</code>, move coverage publishing to MBO Works Pages, and adopt the<br>
+canonical MBO Works copyright identity. Historical tags and GitHub releases<br>
+remain unchanged.</p>
+</li>
+<li>
+<p dir="auto">Migrate MBO Works dependencies and repository references, including<br>
+<code class="notranslate">mboworks_mbo</code> and <code class="notranslate">mboworks_bashtest</code>.</p>
+</li>
+<li>
+<p dir="auto">Keep post-release CHANGELOG updates as ordinary human-reviewed pull requests;<br>
+the release helper no longer arms them for automatic merging.</p>
+</li>
+<li>
+<p dir="auto">Add a non-publishing <code class="notranslate">--dry-run</code> mode to the release helper so its clean-main,<br>
+version, tag, and archive checks can be verified before creating a signed tag.</p>
+</li>
+<li>
+<p dir="auto">Add <code class="notranslate">--compare[=status|diff] LEFT RIGHT</code> tree comparison. It applies each repository's<br>
+<code class="notranslate">.gitignore</code> rules independently, skips VCS metadata, and compares text and binary files byte for<br>
+byte. Status output reports <code class="notranslate">left-only</code>, <code class="notranslate">right-only</code>, <code class="notranslate">identical</code>, and <code class="notranslate">different</code> paths selected<br>
+by <code class="notranslate">--compare-select</code>; diff output produces a unified tree patch. Unlike the one-sided <code class="notranslate">-diff</code><br>
+expression action, it inventories both roots and therefore finds right-only paths.</p>
+</li>
+<li>
+<p dir="auto">Add <code class="notranslate">-similar[:WIDTH[:PCT%]] TARGET</code>, an exact reference-file near-duplicate matcher using unique<br>
+contiguous word shingles and Jaccard overlap. It defaults to five-word shingles and an 80%<br>
+threshold, treats punctuation and whitespace as word boundaries, folds ASCII case, and skips<br>
+binary content. Whole-tree clustering remains a separate deferred reduction.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">--help=styles</code> now documents xff's command-line grammar: double-dash whole-run flags versus<br>
+single-dash expression primaries, where global hoisting stops, and why the deliberate <code class="notranslate">-n</code> / <code class="notranslate">-p</code><br>
+pair does not establish automatic one-letter aliases for other primaries.</p>
+</li>
+<li>
+<p dir="auto">Fzf compatibility tests now pin exact normalized scores for documented compound queries and<br>
+nearby boundary/gap variations, rather than merely checking that successful scores lie in range.<br>
+End-to-end <code class="notranslate">-top</code> and <code class="notranslate">--max-results</code> tests likewise pin complete ordered output.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">-fuzzy:fzf</code> now follows fzf's operator precedence for compound inverse, quote,<br>
+anchor, and OR expressions, and its anchors ignore whitespace at the corresponding<br>
+candidate edge. Tests carry fzf's documented compound query and upstream parser cases.</p>
+</li>
+<li>
+<p dir="auto">Add <code class="notranslate">--max-results=N</code>, an aggregate ceiling for the implicit result listing across expression<br>
+branches and independent <code class="notranslate">-first</code> / <code class="notranslate">-top</code> filters. It does not stop the walk or truncate<br>
+reductions; explicit expression actions retain their positional semantics.</p>
+</li>
+<li>
+<p dir="auto">Add exact expression-level <code class="notranslate">-top N</code> fuzzy result selection. Each use keeps its own stable best-N<br>
+set; actions before it run while traversing and actions after it run only for the selected entries.<br>
+Mixed fuzzy models or thresholds are rejected rather than silently imposing an arbitrary order.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">-n PATTERN</code> and <code class="notranslate">-p PATTERN</code> are concise aliases for <code class="notranslate">-name PATTERN</code> and <code class="notranslate">-path PATTERN</code>.<br>
+They resolve through the expression registry to the canonical primaries, so their matching,<br>
+style, cost, and generated documentation are identical.</p>
+</li>
+<li>
+<p dir="auto">Size inputs now spell their scale explicitly across <code class="notranslate">-size</code>, <code class="notranslate">-blocks</code>, <code class="notranslate">--block-size</code>, and<br>
+<code class="notranslate">--buffer</code>: <code class="notranslate">B</code>/<code class="notranslate">kB</code>/<code class="notranslate">MB</code>/.../<code class="notranslate">EB</code> are decimal SI, while<br>
+<code class="notranslate">KiB</code>/<code class="notranslate">MiB</code>/.../<code class="notranslate">EiB</code> are binary IEC. Find's historical <code class="notranslate">c</code>/<code class="notranslate">w</code>/<code class="notranslate">b</code> and<br>
+<code class="notranslate">k</code>/<code class="notranslate">M</code>/<code class="notranslate">G</code>/.../<code class="notranslate">E</code> forms remain accepted with their original meanings. Multiplication overflow<br>
+is rejected, and <code class="notranslate">--help=size</code> documents the complete shared vocabulary.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">-fuzzy[:MODEL[:PCT%]] PATTERN</code> (and the <code class="notranslate">-ifuzzy</code> / path variants) selects<br>
+<code class="notranslate">fzf</code>, plain <code class="notranslate">sequence</code>, <code class="notranslate">levenshtein</code> (<code class="notranslate">edit</code>), or character-bigram <code class="notranslate">shingles</code><br>
+matching and optionally requires a normalized match quality. The <code class="notranslate">fzf</code> model<br>
+supports fzf's extended-search terms: space AND, <code class="notranslate">|</code> OR, exact/prefix/suffix<br>
+operators, inverse terms, and escaped spaces.<br>
+<code class="notranslate">{fuzzy}</code> and <code class="notranslate">--sort=score</code> use the same 0..100 score, which<br>
+composes across an expression: AND keeps the weakest required match and OR the<br>
+best successful alternative. Scores from different patterns are therefore<br>
+comparable at the same quality threshold and predicate order does not choose the ranking accidentally.<br>
+<code class="notranslate">--sort=score</code> rejects mixed models or thresholds rather than silently choosing between absolute similarity and<br>
+distance above each matcher-specific threshold.</p>
+</li>
+<li>
+<p dir="auto">Add the removable <code class="notranslate">@xff_asar</code> reader for Electron application archives. It exposes packed files,<br>
+external <code class="notranslate">.asar.unpacked</code> members, directories, and links through the ordinary archive VFS; validates<br>
+string offsets, bounds, and SHA-256 whole-file/block integrity metadata; and never invents metadata<br>
+records as files. Container readers now compose through a deterministic multi-reader registry, so<br>
+ASAR remains independent of libarchive and can coexist with every existing archive format.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">--pack-option=@FILE.json</code> loads the existing writer-option vocabulary from a JSON object. String,<br>
+integer, and boolean values map to the same validation and backend translation as inline<br>
+<code class="notranslate">NAME=VALUE</code> options; file and inline forms compose in command-line order, so the last value for a<br>
+name still wins.</p>
+</li>
+<li>
+<p dir="auto">Add the removable <code class="notranslate">@xff_brotli</code> extra. It extends <code class="notranslate">@xff_archive</code> with streaming <code class="notranslate">.tar.br</code> / <code class="notranslate">.tbr</code><br>
+packing and traversal and raw <code class="notranslate">.br</code> single-file traversal, without letting libarchive absorb the<br>
+feature accidentally. New archives use the self-identifying RFC 9841 framing format by default;<br>
+<code class="notranslate">--pack-option=framing=raw</code> produces legacy RFC 7932 streams, and the reader accepts both.</p>
+</li>
+<li>
+<p dir="auto">Extend the archive extra's native filter coverage to lzip/LZMA (<code class="notranslate">.tar.lz</code>, <code class="notranslate">.tar.lzma</code>, <code class="notranslate">.tlz</code>),<br>
+LZ4 (<code class="notranslate">.tar.lz4</code>), and Unix compress (<code class="notranslate">.tar.Z</code>, <code class="notranslate">.taZ</code>) for both name-gated traversal and packing.<br>
+Their single-file forms are recognized too. These codecs were already compiled into libarchive;<br>
+the public suffix and writer tables now expose them consistently, and shorthand formats accept<br>
+the same <code class="notranslate">level</code>/<code class="notranslate">threads</code> options as their long forms. Remove the internal <code class="notranslate">.br</code> claim because<br>
+libarchive has no Brotli filter. Read filters now use an explicit standalone allowlist, and a<br>
+committed Brotli-compressed tar proves the base extra cannot silently absorb a future libarchive<br>
+Brotli implementation that belongs behind the separate Brotli extra.</p>
+</li>
+<li>
+<p dir="auto">Native phar <code class="notranslate">.phar/stub.php</code> is explicitly part of the ordinary member model, including fields<br>
+and statistics. A stored member at that reserved path wins over the synthetic stub, preserving<br>
+one entry per path; help also distinguishes archive-write permission from an operation that uses it.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">--archive</code> / <code class="notranslate">-z</code> dives for real in a build with the archive extra<br>
+(<code class="notranslate">--//xff:xff_archive</code>): a container is visited as the file it is and then descends like<br>
+a directory, so its members are ordinary entries at <code class="notranslate">container!member</code> paths that<br>
+<code class="notranslate">-name</code>, <code class="notranslate">-type</code>, <code class="notranslate">-size</code> and friends match unchanged. <code class="notranslate">--archive=roots</code> (the xff-family<br>
+default) dives only an archive named as a search root; <code class="notranslate">--archive=all</code> (<code class="notranslate">-z+</code>, or bare<br>
+<code class="notranslate">--archive</code>) also dives archives met mid-walk, at the position a directory of that name<br>
+would take under every <code class="notranslate">--sort</code>. <code class="notranslate">-prune</code>, <code class="notranslate">-quit</code> and <code class="notranslate">-maxdepth</code> apply to members as<br>
+they do everywhere else. Without the extra, asking for diving remains a hard error.</p>
+</li>
+<li>
+<p dir="auto">Under <code class="notranslate">--archive=all</code>, a file the walk meets is opened only if its NAME looks like a<br>
+container (<code class="notranslate">.tar</code>, <code class="notranslate">.tgz</code>, <code class="notranslate">.zip</code>, <code class="notranslate">.jar</code>, <code class="notranslate">.phar</code>, ...), so walking a source tree no longer<br>
+offers every <code class="notranslate">.cc</code> and every binary to the reader. <code class="notranslate">--archive-any</code> drops the gate, for an<br>
+archive whose name says nothing. A file named on the command line is always opened.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">--archive-separator</code> / <code class="notranslate">--archive-prefix</code> now reach the walk, so printed member paths<br>
+round-trip through the flags that produced them.</p>
+</li>
+<li>
+<p dir="auto">Everything that reads an entry works on members: <code class="notranslate">-content</code>, <code class="notranslate">-icontent</code>, <code class="notranslate">-rxc</code>,<br>
+<code class="notranslate">-grep</code>, <code class="notranslate">-hash</code>, <code class="notranslate">-hasheq</code>, <code class="notranslate">{hash}</code> and <code class="notranslate">{lines}</code> read a member's bytes out of its<br>
+container, so a member's digest equals the digest of the same bytes on disk.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">--archive-depth=N</code> bounds how many CONTAINERS deep diving goes (default 1, so an<br>
+archive inside an archive stays a plain member). A nested container has no path of its<br>
+own, so its bytes are read out of its parent and mounted from memory; <code class="notranslate">-grep</code> and the<br>
+rest then work at any depth. The cap is its own knob rather than part of <code class="notranslate">-maxdepth</code>,<br>
+because nesting is where a decompression bomb lives.</p>
+</li>
+<li>
+<p dir="auto">A plain text file is no longer mistaken for an archive. libarchive's "every format"<br>
+set includes <code class="notranslate">mtree</code>, a magic-less text format, so <code class="notranslate">xff notes.txt</code> could report a<br>
+bogus member; the reader now enables its formats explicitly and leaves <code class="notranslate">mtree</code> out.</p>
+</li>
+<li>
+<p dir="auto">Native PHP phar archives dive: the mount path tries libarchive and then the phar reader,<br>
+so a <code class="notranslate">.phar</code> lists its members and content predicates search them - including members<br>
+compressed with deflate or bzip2, which the reader inflates itself (a phar compresses the<br>
+member, not the container, so no libarchive format or filter applies). A member whose bytes<br>
+do not match its declared uncompressed size is reported as corrupt rather than truncated.<br>
+A native phar also exposes its executable PHP stub as <code class="notranslate">.phar/stub.php</code>, matching the real member<br>
+used by tar- and zip-based phars. A stored member at that path wins without duplication; the<br>
+synthetic stub is readable and searchable but cannot be deleted because the native format<br>
+requires it.</p>
+</li>
+<li>
+<p dir="auto">A write action on an archive member is refused instead of quietly doing nothing: <code class="notranslate">-delete</code>,<br>
+<code class="notranslate">-exec</code>, <code class="notranslate">-execdir</code>, <code class="notranslate">-ok</code> and <code class="notranslate">-okdir</code> report that the member is read-only (exit 2, naming<br>
+the path) or skip it under <code class="notranslate">--skip-unsupported</code>. Previously <code class="notranslate">-delete</code> exited 0 having deleted<br>
+nothing and <code class="notranslate">-exec</code> handed the child a <code class="notranslate">container!member</code> path it could not open. The<br>
+container itself is a real file, so actions on it still work.</p>
+</li>
+<li>
+<p dir="auto">A compressed single file dives: <code class="notranslate">notes.txt.gz</code> presents one member named <code class="notranslate">notes.txt</code> (the<br>
+name <code class="notranslate">gzip -d</code> restores) with its uncompressed size, and content predicates read it. A text<br>
+file merely named <code class="notranslate">.gz</code> is not claimed, and <code class="notranslate">.tar.gz</code> is still read as the archive it is.</p>
+</li>
+<li>
+<p dir="auto">A whole-file-compressed phar (<code class="notranslate">.phar.gz</code>, <code class="notranslate">.phar.bz2</code>) shows its members: the container is<br>
+decompressed first and then offered to the readers again, so what is inside decides.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">--//xff:xff_all</code> turns on every composable extra at once. Each extra links when its own<br>
+flag or that one is set, so <code class="notranslate">--config=xff_docs</code> (which the committed reference is generated<br>
+from, and which must document the full surface) is a single line instead of one per extra<br>
+plus a comment asking whoever adds the next extra to remember.</p>
+</li>
+<li>
+<p dir="auto">MemorySanitizer is a hard CI gate on Linux. The instrumented C++ standard library it<br>
+needs now comes from the toolchain itself (<code class="notranslate">toolchains_llvm</code>'s <code class="notranslate">--features=msan</code> plus a<br>
+prebuilt instrumented-libc++ overlay) instead of a cmake/ninja build of the LLVM<br>
+runtimes in CI, so the cell is a plain <code class="notranslate">bazel test</code> and needs no suppression file.</p>
+</li>
+<li>
+<p dir="auto">The hermetic LLVM toolchain moved to 22.1.8, matching that instrumented libc++.</p>
+</li>
+</ul>
+<h1 dir="auto" id="020">0.2.0</h1>
+<p dir="auto">Sharded-file awareness, hash verification, and a help system that is generated end to<br>
+end from one source of truth. The complete, always-current reference is<br>
+<a href="XFF.html">XFF.md</a>.</p>
+<p dir="auto">A sharded set (<code class="notranslate">data-000-of-003</code>, <code class="notranslate">data-001-of-003</code>, ...) is one logical file, and xff<br>
+can now treat it that way instead of listing every shard.</p>
+<ul dir="auto">
+<li>
+<p dir="auto"><code class="notranslate">--shards[=auto|of|dotnum|underscore,...]</code> collapses each set to a single entry.<br>
+<code class="notranslate">auto</code> (the bare flag) recognizes every built-in scheme: <code class="notranslate">&lt;stem&gt;-&lt;i&gt;-of-&lt;n&gt;</code>,<br>
+7-Zip-style <code class="notranslate">&lt;stem&gt;.&lt;NNN&gt;</code> volumes, and <code class="notranslate">&lt;stem&gt;_&lt;NNN&gt;</code>.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">--shards-show=first|wildcard|count</code> picks how a collapsed set is displayed - the<br>
+representative shard's path, the masked name (<code class="notranslate">arc.???</code>), or the masked name plus the<br>
+shard count. Incomplete sets are annotated, so a missing shard is visible rather than<br>
+silently ignored.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">--shards-dedup=first|mtime|error</code> decides what happens when two files claim the same<br>
+index: keep the lexicographically first, keep the newest, or fail.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">--shard-pattern=REGEX</code> registers a custom scheme for layouts the built-ins miss.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">{shard}</code> renders the number of shards in the set, and the size / statistics fields<br>
+aggregate across the whole set, so <code class="notranslate">--summary</code> and <code class="notranslate">--histogram</code> count logical files.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">-hasheq EXPECTED</code> is true when the file's digest equals EXPECTED, a <code class="notranslate">{field}</code> template<br>
+rendered per entry. <code class="notranslate">-hasheq {def.SUMS}</code> checks a manifest value and<br>
+<code class="notranslate">! -hasheq {def.SUMS}</code> selects drift or corruption. <code class="notranslate">-hasheq:ALGO[/ENCODING]</code> shares the<br>
+<code class="notranslate">-hash</code> spec grammar (sha256 / hex by default); hex comparison folds case.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">--summary=hash</code> groups matches by digest, so identical files collapse into one bucket<br>
+and the count column reads as a duplicate report.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">--time-zone-suffix=auto|always|never</code> controls whether a time preset renders its<br>
+trailing zone offset. Formats whose zone is part of their identity (<code class="notranslate">zulu</code>,<br>
+<code class="notranslate">zulu-dense</code>, <code class="notranslate">asn1z</code>) always keep their <code class="notranslate">Z</code>.</p>
+</li>
+<li>
+<p dir="auto">ASN.1 <code class="notranslate">GeneralizedTime</code> presets: <code class="notranslate">asn1</code> (also spelled <code class="notranslate">generalizedtime</code>) is<br>
+<code class="notranslate">YYYYMMDDHHMMSS</code> in local time with an optional offset, and <code class="notranslate">asn1z</code> is the UTC form<br>
+with a mandatory <code class="notranslate">Z</code>.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">--help</code>, <code class="notranslate">--help=TOPIC</code>, <code class="notranslate">--man</code> and <code class="notranslate">--markdown</code> are now rendered from a single help<br>
+document built out of the flag and expression registries, so they cannot drift from<br>
+each other or from the implementation.</p>
+</li>
+<li>
+<p dir="auto">New topics <code class="notranslate">--help=environment</code> (every variable xff reads) and <code class="notranslate">--help=help</code> (how the<br>
+help system itself is organized), alongside the existing topic set.</p>
+</li>
+<li>
+<p dir="auto">Plain help is colorized, word-wrapped with correct indentation, and respects <code class="notranslate">--width</code><br>
+as well as the terminal size.</p>
+</li>
+<li>
+<p dir="auto">Valued flags document their values as an aligned table instead of an unreadable inline<br>
+synopsis.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">--pager[=auto|always|never]</code> (with <code class="notranslate">--no-pager</code>) pages the long documentation surfaces<br>
+and never the file listing; <code class="notranslate">--man</code> is formatted through a roff formatter first, so it<br>
+reads like <code class="notranslate">man xff</code>.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">--summary</code> no longer prints a size column when nothing size-worthy was aggregated: a<br>
+count-only summary now reports just the count.</p>
+</li>
+<li>
+<p dir="auto">A topic's flags are no longer listed twice in the full reference.</p>
+</li>
+<li>
+<p dir="auto">Sanitizer and lint coverage grew: clang-tidy runs as a hard CI gate over the whole<br>
+tree, and MemorySanitizer joins AddressSanitizer and ThreadSanitizer on Linux (built<br>
+against an instrumented libc++).</p>
+</li>
+<li>
+<p dir="auto">Environment access is centralized behind one read-once, mutex-guarded cache, and flag<br>
+values share a single option-value parser.</p>
+</li>
+</ul>
+<h1 dir="auto" id="010">0.1.0</h1>
+<p dir="auto">First release of xff (eXtended File Find): a <code class="notranslate">find(1)</code>-compatible file finder<br>
+with modern extensions. This is the basic tool - the core is implemented,<br>
+tested, and verified in CI on Linux and macOS.</p>
+<p dir="auto">Everything <code class="notranslate">find</code> does works the same way. On top of that, xff adds content and<br>
+type matching, structured output, per-run summaries and histograms, file<br>
+hashing, diffing, and safe deletes, under the find / xff / xfd / rg flavors. The<br>
+complete, always-current list of what is supported is the generated reference in<br>
+<a href="XFF.html">XFF.md</a>; the roadmap and open design questions are in <a href="TODO.html">TODO.md</a>.</p>
+<p dir="auto">Notable features not yet built (see <a href="TODO.html">TODO.md</a>):</p>
+<ul dir="auto">
+<li>archive diving (<code class="notranslate">--archive</code>)</li>
+<li>sharded-file handling</li>
+<li>hash verification (files can be hashed; checking a tree against a manifest is<br>
+not done yet)</li>
+</ul></main><footer>Release snapshot · ab69af0938f6495efb3cf1140465f1627e2d128b</footer></body></html>

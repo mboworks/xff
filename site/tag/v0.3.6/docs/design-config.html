@@ -1,0 +1,309 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/design-config.md - xff v0.3.6</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.3.6/">Home</a><a href="/xff/site/tag/v0.3.6/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.3.6">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/ab69af0938f6495efb3cf1140465f1627e2d128b">Source</a><a href="/xff/coverage/tag/0.3.6/">Coverage</a><a href="/xff/releases/0.3.6/">CLI reference</a></nav><p>xff v0.3.6</p><main><h1 dir="auto" id="xff---configuration-system-design">xff - Configuration System Design</h1>
+<blockquote>
+<p dir="auto">Detailed spec for the layered config system. <strong>Refines</strong> <code class="notranslate">design.md</code><br>
+§"Security &amp; safety (review <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4658839735" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/2" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/2/hovercard" href="https://github.com/mboworks/xff/pull/2">#2</a>)" and §"Flag / toggle conventions"; where the<br>
+two differ, this document is authoritative for config specifically.<br>
+Status: <strong>Draft</strong> · 2026-06-21 · Org: MBO Works</p>
+</blockquote>
+<blockquote>
+<p dir="auto"><strong>SUPERSEDED IN PART - the project layer was dropped (Option B, 2026-07-06).</strong><br>
+xff has <strong>no auto-discovered project config</strong>: no per-directory <code class="notranslate">.xffrc</code>, no ancestor<br>
+cascade, no subtree scoping, and no <code class="notranslate">--project-config</code> flag. Config comes from <strong>three<br>
+tiers only</strong>: <strong>system</strong> (<code class="notranslate">/etc/xff.ini</code>, root-owned), <strong>user</strong><br>
+(<code class="notranslate">~/.config/xff/config</code>), and an <strong>explicit <code class="notranslate">--xffrc=FILE</code></strong> (naming the file is the<br>
+consent to load it). Per-directory <em>ignore</em> rules (<code class="notranslate">.gitignore</code> / <code class="notranslate">.xffignore</code>) are an<br>
+ignore concern, not config, and are unaffected. Every mention below of the "project"<br>
+layer, the <code class="notranslate">.xffrc</code> cascade, or <code class="notranslate">--project-config</code> is historical - read it as removed.<br>
+The <code class="notranslate">--xffrc</code> arming restriction (a named file cannot self-arm <code class="notranslate">-exec</code>/<code class="notranslate">-delete</code>;<br>
+<code class="notranslate">--allow-exec</code> arms from the CLI/user/system tiers only) is the remaining live rule; see<br>
+<code class="notranslate">TODO.md</code> "Config: drop the project <code class="notranslate">.xffrc</code> layer".</p>
+</blockquote>
+<h2 dir="auto" id="purpose">Purpose</h2>
+<p dir="auto">A find-compatible tool that can run <code class="notranslate">-exec</code>/<code class="notranslate">-capture</code> is, by construction, a<br>
+code-execution engine. A config system for it must make the common case<br>
+convenient <strong>without</strong> ever letting an untrusted, repo-local file silently run<br>
+commands. The design goal, in the user's words: <em>"by default there is no<br>
+security issue."</em></p>
+<p dir="auto">The system has <strong>four layers</strong> with a strict trust order, and a single<br>
+root-owned <strong>policy</strong> that decides how much each lower (less-trusted) layer may<br>
+do. The policy is the keystone: absence of an admin policy yields the <em>safe</em><br>
+default, never an unsafe one.</p>
+<h2 dir="auto" id="the-four-layers">The four layers</h2>
+<p dir="auto">Lowest → highest precedence; each overrides values set by an earlier one, and<br>
+the <strong>CLI always wins</strong> (typing a flag is explicit consent).</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>#</th>
+<th>Layer</th>
+<th>Owner / trust</th>
+<th>Format</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>built-in</td>
+<td>the binary</td>
+<td>(none)</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>system</strong></td>
+<td>root - the trust anchor</td>
+<td>INI (structured policy)</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>user</strong></td>
+<td>the user - trusted as-is</td>
+<td><code class="notranslate">.xffrc</code> grammar</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>project</strong></td>
+<td>repo - <strong>untrusted</strong></td>
+<td><code class="notranslate">.xffrc</code> grammar</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>CLI</strong></td>
+<td>explicit user consent</td>
+<td>flags</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">(Locations are detailed under Discovery below.)</p>
+<ul dir="auto">
+<li><strong>System</strong> holds global defaults <em>and</em> the per-flag <strong>policy</strong> (below). Only<br>
+this root-owned layer may grant capability; lower layers can never widen their<br>
+own permissions.</li>
+<li><strong>User</strong> is trusted as the user themselves - data and armed <code class="notranslate">[exec]</code>/named<br>
+blocks both honoured.</li>
+<li><strong>Project</strong> <code class="notranslate">.xffrc</code> cascades like <code class="notranslate">.gitignore</code> (each directory's file scopes<br>
+to its subtree; cannot add roots, redirect output, or reach outside its<br>
+subtree - per <code class="notranslate">design.md</code> §132) and is <strong>capped by the policy</strong>: sensitive<br>
+flags are inert unless the system policy grants the project layer.</li>
+<li>Provenance: every setting records <code class="notranslate">enum{unset, system, user, project, cli}</code><br>
+(not <code class="notranslate">bool</code>), so resolution is last-non-unset-wins and <em>unset</em> ≠ <em>off</em><br>
+(<code class="notranslate">design.md</code> §102).</li>
+</ul>
+<h2 dir="auto" id="discovery--loading">Discovery &amp; loading</h2>
+<ul dir="auto">
+<li><strong>System:</strong> <code class="notranslate">/etc/xff.ini</code> then <code class="notranslate">/etc/xff.d/*.ini</code> (lexical). Never skipped by<br>
+<code class="notranslate">--no-config</code> (a security control, not a convenience). Absent ⇒ built-in<br>
+default policy applies.</li>
+<li><strong>User:</strong> <code class="notranslate">$XFF_CONFIG</code> if set, else <code class="notranslate">$XDG_CONFIG_HOME/xff/config</code>, else<br>
+<code class="notranslate">~/.config/xff/config</code>.</li>
+<li><strong>Project:</strong> auto-discovered - from each search root, every <code class="notranslate">.xffrc</code> from the<br>
+filesystem root down to the entry's directory contributes to that subtree<br>
+(cascade). Ownership-gated even for data-only settings (<code class="notranslate">design.md</code> §132).</li>
+<li><strong>Explicit:</strong> <code class="notranslate">--xffrc=FILE</code> loads a specific file and <strong>arms</strong> its<br>
+sensitive/named blocks (ownership-gated). Naming the file <em>is</em> the<br>
+authorization - no trust DB, no hashes. This replaces the working<br>
+<code class="notranslate">--config &lt;file&gt;</code> spelling in <code class="notranslate">design.md</code> §130 (which now collides with<br>
+<code class="notranslate">--config=NAME</code> below).</li>
+<li><strong><code class="notranslate">--no-config</code>:</strong> skip the user + project layers (and system <em>defaults</em>);<br>
+pure CLI + built-ins. The system <em>policy</em> still bounds anything that would<br>
+otherwise be loaded - moot when nothing is.</li>
+</ul>
+<h2 dir="auto" id="formats">Formats</h2>
+<h3 dir="auto" id="system-policy---etcxffini-structured">System policy - <code class="notranslate">/etc/xff.ini</code> (structured)</h3>
+<p dir="auto">INI: a <code class="notranslate">[defaults]</code> section of plain flag lines, and a <code class="notranslate">[policy]</code> section of<br>
+per-layer, per-flag <code class="notranslate">allow</code>/<code class="notranslate">deny</code> lists. Structured because a policy wants<br>
+typed validation and must be unambiguous.</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate"><span class="pl-en">[defaults]</span>
+--<span class="pl-k">color</span> = auto
+
+<span class="pl-en">[policy]</span>
+<span class="pl-c"><span class="pl-c">#</span> Per-flag overrides on top of the built-in safety classification.</span>
+<span class="pl-c"><span class="pl-c">#</span> Built-in default already denies @sensitive/@destructive at the project layer.</span>
+<span class="pl-k">project.allow</span> = --sort, --color, --format       <span class="pl-c"><span class="pl-c">#</span> redundant with built-ins; explicit is fine</span>
+<span class="pl-k">project.deny</span>  = --threads                        <span class="pl-c"><span class="pl-c">#</span> tighten: forbid even a "safe" flag</span>
+<span class="pl-k">user.allow</span>    = @sensitive                       <span class="pl-c"><span class="pl-c">#</span> user may arm -exec/-capture from ~/.config</span></pre></div>
+<ul dir="auto">
+<li>Class tokens <code class="notranslate">@safe</code> / <code class="notranslate">@sensitive</code> / <code class="notranslate">@destructive</code> expand to every flag with<br>
+that registry <code class="notranslate">safety</code> classification (<code class="notranslate">design.md</code> §134), so a <em>new</em><br>
+sensitive flag is covered without editing the policy - <strong>no gaps as the tool<br>
+grows.</strong></li>
+<li><code class="notranslate">deny</code> beats <code class="notranslate">allow</code> on conflict. A layer can be tightened (deny a safe flag)<br>
+or loosened (allow a sensitive one) - only by this root-owned file.</li>
+</ul>
+<h3 dir="auto" id="xffrc-user--project---bazel-rc-grammar"><code class="notranslate">.xffrc</code> (user &amp; project) - bazel-rc grammar</h3>
+<p dir="auto">Line-oriented flag bundles ("what you can type, you can save", <code class="notranslate">design.md</code><br>
+§125), each optionally prefixed by a <strong>two-axis selector</strong> <code class="notranslate">base:config:</code>:</p>
+<pre class="notranslate"><code class="notranslate"># &lt;base&gt;:&lt;config&gt;:  &lt;flags…&gt;     base ∈ {common, &lt;named-config&gt;, ∅(=common)}
+common:        --color=auto                 # every run, always (your defaults)
+myproj:        --feature=long-paths         # only when --config=myproj is active
+xff:myproj:    --feature=trace --threads=1  # only when the xff style AND --config=myproj
+</code></pre>
+<ul dir="auto">
+<li><code class="notranslate">base</code> is <code class="notranslate">common</code>/empty (applies always - your standing defaults) or a <strong>named<br>
+config</strong> (applies only when that <code class="notranslate">--config=NAME</code> is active). A <strong>bare built-in-style<br>
+base</strong> (<code class="notranslate">xff:</code> / <code class="notranslate">find:</code> / <code class="notranslate">rg:</code> with no <code class="notranslate">:config</code>) is <strong>rejected</strong>: a config<br>
+file may not attach behavior to a preset, so a plain <code class="notranslate">xff</code> run stays reproducible (the<br>
+gate drops such a line and warns). <code class="notranslate">:config</code> gates by an active named config; a<br>
+<code class="notranslate">style:config:</code> prefix additionally scopes it to a style (it still needs the named<br>
+config active, so it never fires on a plain preset run). Customize by defining a named<br>
+config and activating it with <code class="notranslate">--config=NAME</code> or an argv[0] alias of that name.</li>
+<li>A line is inert (parsed to AST, never executed). Sensitive flags within it are<br>
+subject to the policy of the <em>layer the file belongs to</em>.</li>
+</ul>
+<h2 dir="auto" id="capability-policy-per-flag-safe-by-default">Capability policy (per-flag, safe-by-default)</h2>
+<p dir="auto">The user-chosen model is <strong>per-flag allow/deny</strong>, anchored to the registry's<br>
+built-in <code class="notranslate">safety</code> classification so the safe default needs no admin file:</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Class</th>
+<th>Project</th>
+<th>User</th>
+<th>System</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">safe</code></td>
+<td>allow</td>
+<td>allow</td>
+<td>allow</td>
+</tr>
+<tr>
+<td><code class="notranslate">sensitive</code></td>
+<td>deny</td>
+<td>allow</td>
+<td>allow</td>
+</tr>
+<tr>
+<td><code class="notranslate">destructive</code></td>
+<td>deny</td>
+<td>allow</td>
+<td>allow</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto"><code class="notranslate">safe</code> = output / traversal / matching (<code class="notranslate">--color</code>, <code class="notranslate">--sort</code>, <code class="notranslate">-name</code>); <code class="notranslate">sensitive</code> = the exec family (<code class="notranslate">-exec</code>, <code class="notranslate">-execdir</code>, <code class="notranslate">-ok</code>, <code class="notranslate">-okdir</code>, <code class="notranslate">-capture</code>, <code class="notranslate">-capturedir</code>); <code class="notranslate">destructive</code> = <code class="notranslate">-delete</code> and future built-in mutators.</p>
+<ul dir="auto">
+<li><strong>No <code class="notranslate">/etc/xff.ini</code> ⇒ this built-in table is the policy.</strong> A repo-local<br>
+<code class="notranslate">.xffrc</code> can recolor output or set a default sort; it can <strong>not</strong> run a<br>
+command or delete a file. That is "no security issue by default".</li>
+<li>The system policy's <code class="notranslate">[policy]</code> lists <strong>override</strong> this table per flag/class<br>
+per layer (loosen or tighten). Lower layers cannot edit policy.</li>
+<li>Class membership is intrinsic to each descriptor, so newly added sensitive<br>
+flags inherit the deny without a policy edit.</li>
+</ul>
+<h3 dir="auto" id="enforcement--self-documentation">Enforcement &amp; self-documentation</h3>
+<ul dir="auto">
+<li>
+<p dir="auto">A disallowed setting from a config layer is <strong>dropped, not fatal</strong> (a hostile<br>
+<code class="notranslate">.xffrc</code> must never abort or DoS the run), with a self-documenting stderr note</p>
+<ul dir="auto">
+<li>never silent (<code class="notranslate">design.md</code> §134):</li>
+</ul>
+<pre class="notranslate"><code class="notranslate">xff: ignoring `-exec` from ./.xffrc - denied for the project layer [security];
+     arm it explicitly with `--xffrc=./.xffrc`, or allow in /etc/xff.ini.
+</code></pre>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">--explain</code> lists every config source consulted, what each contributed, and<br>
+every gate that fired with its <em>why</em>.</p>
+</li>
+<li>
+<p dir="auto">Interacts with <code class="notranslate">--safe</code> (<code class="notranslate">design.md</code> §136): <code class="notranslate">--safe</code> is an orthogonal,<br>
+user-facing hard-refuse of destructive/dangerous ops regardless of layer; the<br>
+policy governs <em>where settings may originate</em>. Both can refuse; both explain.</p>
+</li>
+</ul>
+<h2 dir="auto" id="cli-selectors">CLI selectors</h2>
+<ul dir="auto">
+<li><strong><code class="notranslate">--config=NAME</code></strong> - repeatable, <strong>stacks</strong> (bazel-style; later wins on<br>
+conflict, explicit flags beat config-expanded ones). <code class="notranslate">NAME</code> ∈ the built-in<br>
+styles <code class="notranslate">find</code> / <code class="notranslate">xff</code> <strong>plus</strong> any <code class="notranslate">:NAME</code> block from loaded <code class="notranslate">.xffrc</code> files.<br>
+Selecting a built-in style is how you pick the base behaviour - this<br>
+<strong>subsumes a separate <code class="notranslate">--style</code> flag.</strong> Version-extensible: <code class="notranslate">--config=xff:2</code><br>
+pins a behavioural epoch (the part that scales to "even more modern", unlike a<br>
+binary <code class="notranslate">--modern</code>).</li>
+<li><strong><code class="notranslate">--feature=NAME</code> / <code class="notranslate">--feature=no-NAME</code></strong> - repeatable on/off capability<br>
+gates; the granular dial within a style (a style is just a named bundle of<br>
+feature defaults). Valued options (<code class="notranslate">--implicit-print=no</code>) stay dedicated flags,<br>
+<strong>not</strong> <code class="notranslate">--feature</code>. (The <code class="notranslate">--capture-override</code> that used to be the other example<br>
+here is gone: a name-reuse opt-in belongs on the NODE that reuses the name,<br>
+<code class="notranslate">-capture:!NAME</code>, not on a flag that loosens every node in the command.)</li>
+<li><strong><code class="notranslate">--xffrc=FILE</code></strong> - load + arm a specific file (see Discovery).</li>
+<li><strong><code class="notranslate">--no-config</code></strong> - see Discovery.</li>
+<li><strong><code class="notranslate">--project-config=on|warn|off</code></strong> - a per-directory (project) <code class="notranslate">.xffrc</code> lives in a<br>
+tree the user may not control, so it is <strong>off unless explicitly enabled</strong>: <code class="notranslate">on</code><br>
+applies it (still safe-subset only - sensitive/destructive lines and <strong>style<br>
+selectors</strong> are never honored from a project file, so a repo cannot relax the<br>
+find baseline or arm <code class="notranslate">-exec</code>); <code class="notranslate">warn</code> (<strong>default</strong>) ignores it but prints one<br>
+stderr note when a project <code class="notranslate">.xffrc</code> was found; <code class="notranslate">off</code> ignores it silently. Full<br>
+config, including style relaxation, works only from the user and system layers.</li>
+<li><strong><code class="notranslate">argv[0]</code> dispatch</strong> - the invocation name is the leading <code class="notranslate">--config</code> selector.<br>
+A built-in style name selects that preset: <code class="notranslate">find</code> (strict: accept only find's own<br>
+primaries/options, reject every xff extension incl. single-dash modern primitives<br>
+like <code class="notranslate">-println</code>), <code class="notranslate">xff</code> (modern), <code class="notranslate">rg</code> (the single opinionated flavor). <strong>Any other<br>
+name selects a same-named <em>named config</em></strong> (there is no <code class="notranslate">xfd</code>/<code class="notranslate">fd</code> magic - they are<br>
+just names): a <code class="notranslate">mytool</code> symlink to <code class="notranslate">xff</code> activates the user/system <code class="notranslate">mytool:</code> block<br>
+while the base style stays the modern <code class="notranslate">xff</code> default - the sanctioned way to ship a<br>
+personal preset without overloading a built-in one. An explicit <code class="notranslate">--config=</code> still<br>
+stacks over it. (Subsumes the standalone argv[0]-dispatch task.)</li>
+</ul>
+<h2 dir="auto" id="worked-examples">Worked examples</h2>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate"><span class="pl-c"><span class="pl-c">#</span> Hostile repo → a per-directory .xffrc is OFF by default: nothing from ./.xffrc applies.</span>
+<span class="pl-c1">cd</span> ./untrusted <span class="pl-k">&amp;&amp;</span> xff <span class="pl-c1">.</span>
+<span class="pl-c"><span class="pl-c">#</span>   ./.xffrc present → ignored; "a per-directory .xffrc was found but ignored" on stderr</span>
+<span class="pl-c"><span class="pl-c">#</span>   (silence with --project-config=off)</span>
+
+<span class="pl-c"><span class="pl-c">#</span> Opt in to a per-directory .xffrc. Even then it is safe-subset only: sensitive/destructive</span>
+<span class="pl-c"><span class="pl-c">#</span> lines and style selectors are never honored from a project file (those need user/system config).</span>
+<span class="pl-c1">cd</span> ./trusted <span class="pl-k">&amp;&amp;</span> xff --project-config=on <span class="pl-c1">.</span>
+<span class="pl-c"><span class="pl-c">#</span>   ./.xffrc: common: --color=never     → applied (safe)</span>
+<span class="pl-c"><span class="pl-c">#</span>   ./.xffrc: common: -exec rm {} ;      → dropped + warned (sensitive, project-denied)</span>
+
+<span class="pl-c"><span class="pl-c">#</span> Personal exec recipe from your own (user) config → trusted, applied with no opt-in.</span>
+<span class="pl-c"><span class="pl-c">#</span>   ~/.config/xff/config: xff:thumbs: -capture:W=… convert {} … ;</span>
+xff --config=thumbs <span class="pl-k">~</span>/Pictures            <span class="pl-c"><span class="pl-c">#</span> armed: user layer allows @sensitive</span>
+
+<span class="pl-c"><span class="pl-c">#</span> CI host loosens the project layer for a vetted pipeline (opt-in + policy allow).</span>
+<span class="pl-c"><span class="pl-c">#</span>   /etc/xff.ini: [policy] project.allow = -capture</span>
+<span class="pl-c1">cd</span> <span class="pl-smi">$CI_WORKSPACE</span> <span class="pl-k">&amp;&amp;</span> xff --project-config=on <span class="pl-c1">.</span>   <span class="pl-c"><span class="pl-c">#</span> repo .xffrc -capture now armed</span>
+
+<span class="pl-c"><span class="pl-c">#</span> Strict drop-in via name.</span>
+ln -s xff find <span class="pl-k">&amp;&amp;</span> ./find <span class="pl-c1">.</span> -println        <span class="pl-c"><span class="pl-c">#</span> → error: -println unknown (find style)</span></pre></div>
+<h2 dir="auto" id="implementation-roadmap-small-prs">Implementation roadmap (small PRs)</h2>
+<ul dir="auto">
+<li><strong>A</strong> [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4710526072" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/58" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/58/hovercard" href="https://github.com/mboworks/xff/pull/58">#58</a>]: this spec (reviewable design).</li>
+<li><strong>B</strong> [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4710526072" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/58" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/58/hovercard" href="https://github.com/mboworks/xff/pull/58">#58</a>]: config loader skeleton - parse INI + <code class="notranslate">.xffrc</code> grammar, layer precedence, provenance enums, <code class="notranslate">--no-config</code>, <code class="notranslate">--xffrc=FILE</code>, <code class="notranslate">--config=NAME</code> selection (no gating yet).</li>
+<li><strong>C</strong> [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4710526072" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/58" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/58/hovercard" href="https://github.com/mboworks/xff/pull/58">#58</a>]: policy gate - registry <code class="notranslate">safety</code> classification, built-in default table, <code class="notranslate">[policy]</code> overrides, drop-and-warn enforcement, <strong>hostile-<code class="notranslate">.xffrc</code> rejection tests</strong>.</li>
+<li><strong>D</strong> [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4710274878" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/54" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/54/hovercard" href="https://github.com/mboworks/xff/pull/54">#54</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4710554935" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/59" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/59/hovercard" href="https://github.com/mboworks/xff/pull/59">#59</a>]: wire <code class="notranslate">--config=find|xff</code> styles + <code class="notranslate">--feature</code>, tag every descriptor find-vs-xff, strict-style filter + conformance.</li>
+<li><strong>E</strong> [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4710554935" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/59" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/59/hovercard" href="https://github.com/mboworks/xff/pull/59">#59</a>]: <code class="notranslate">argv[0]</code> default style; cascading project discovery; <code class="notranslate">--explain</code> config trace.</li>
+</ul>
+<h2 dir="auto" id="open-questions">Open questions</h2>
+<ul dir="auto">
+<li><code class="notranslate">/etc/xff.d/</code> drop-in dir now, or single <code class="notranslate">/etc/xff.ini</code> first?</li>
+<li>Class tokens (<code class="notranslate">@sensitive</code>) in the <code class="notranslate">[policy]</code> lists from day one, or per-flag<br>
+names only until proven necessary?</li>
+<li>Should <code class="notranslate">--no-config</code> also drop system <em>defaults</em>, or only user + project?</li>
+<li>Windows: system path (<code class="notranslate">%PROGRAMDATA%\xff</code>) and user path mapping (deferred with<br>
+the rest of Windows support - <code class="notranslate">design.md</code> §Non-Goals).</li>
+</ul>
+<h2 dir="auto" id="prior-art">Prior art</h2>
+<ul dir="auto">
+<li><strong>ripgrep:</strong> config only via an explicit <code class="notranslate">RIPGREP_CONFIG_PATH</code> env var - no<br>
+ambient discovery. (We add cascading project files, but gate them.)</li>
+<li><strong>fd:</strong> ships <em>no</em> config file at all - the maximally safe stance.</li>
+<li><strong>sudoers / ssh:</strong> a root-owned system file defines policy that user files<br>
+cannot override - the model for our system-over-project trust anchor.</li>
+<li><strong>bazel:</strong> <code class="notranslate">--config=NAME</code> named configs and rc layering - adopted, minus<br>
+bazel's workspace auto-load (the exact hole we must not reproduce).</li>
+</ul></main><footer>Release snapshot · ab69af0938f6495efb3cf1140465f1627e2d128b</footer></body></html>
