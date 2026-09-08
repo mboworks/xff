@@ -144,7 +144,7 @@ TEST_F(MarkdownBackendTest, RendersAWholeDocumentAsMarkdown) {
 }
 
 TEST_F(MarkdownBackendTest, LongDocumentGetsLinkedSectionContents) {
-  Document doc{
+  const Document doc{
       .name = "xff",
       .sections =
           {

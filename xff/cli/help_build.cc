@@ -1265,53 +1265,57 @@ std::optional<Document> IndexReference(std::string_view name) {
   return doc;
 }
 
+std::optional<Section> NamedTopicSection(std::string_view name) {
+  if (name == "fields") {
+    return BuildFields();
+  } else if (name == "output") {
+    return OutputSection(/*in_full=*/false);
+  } else if (name == "printf") {
+    return PrintfSection();
+  } else if (name == "time") {
+    return TimeSection();
+  } else if (name == "size") {
+    return SizeSection();
+  } else if (name == "grammars" || name == "regex" || name == "regexp") {
+    return GrammarsSection();
+  } else if (name == "content") {
+    return ContentSection(/*in_full=*/false);
+  } else if (name == "compare") {
+    return CompareSection(/*in_full=*/false);
+  } else if (IsIgnoreTopicName(name)) {
+    return IgnoreSection(/*in_full=*/false);
+  } else if (name == "archive" || name == "archives") {
+    return ArchiveSection(/*in_full=*/false);
+  } else if (name == "stats") {
+    return StatsSection(/*in_full=*/false);
+  } else if (name == "config") {
+    return ConfigSection(/*in_full=*/false);
+  } else if (name == "environment" || name == "env") {
+    return EnvironmentSection();
+  } else if (name == "cookbook" || name == "examples" || name == "recipes") {
+    return BuildExamples();
+  } else if (name == "notice" || name == "notices") {
+    return NoticeSection();
+  } else if (name == "license" || name == "licenses") {
+    return LicenseSection();
+  } else if (name == "help") {
+    return GuideSection();
+  }
+  return std::nullopt;
+}
+
 std::optional<Document> TopicReference(std::string_view name) {
   Document doc;
+  std::optional<Section> section;
   if (const std::optional<std::string_view> component = LicenseComponentOf(name); component.has_value()) {
-    std::optional<Section> section = LicenseComponentSection(*component);
-    if (!section.has_value()) {
-      return std::nullopt;  // unknown component: the caller reports it with the known names
-    }
-    doc.sections.push_back(*std::move(section));
-    return doc;
-  }
-  if (name == "fields") {
-    doc.sections.push_back(BuildFields());
-  } else if (name == "output") {
-    doc.sections.push_back(OutputSection(/*in_full=*/false));
-  } else if (name == "printf") {
-    doc.sections.push_back(PrintfSection());
-  } else if (name == "time") {
-    doc.sections.push_back(TimeSection());
-  } else if (name == "size") {
-    doc.sections.push_back(SizeSection());
-  } else if (name == "grammars" || name == "regex" || name == "regexp") {
-    doc.sections.push_back(GrammarsSection());
-  } else if (name == "content") {
-    doc.sections.push_back(ContentSection(/*in_full=*/false));
-  } else if (name == "compare") {
-    doc.sections.push_back(CompareSection(/*in_full=*/false));
-  } else if (IsIgnoreTopicName(name)) {
-    doc.sections.push_back(IgnoreSection(/*in_full=*/false));
-  } else if (name == "archive" || name == "archives") {
-    doc.sections.push_back(ArchiveSection(/*in_full=*/false));
-  } else if (name == "stats") {
-    doc.sections.push_back(StatsSection(/*in_full=*/false));
-  } else if (name == "config") {
-    doc.sections.push_back(ConfigSection(/*in_full=*/false));
-  } else if (name == "environment" || name == "env") {
-    doc.sections.push_back(EnvironmentSection());
-  } else if (name == "cookbook" || name == "examples" || name == "recipes") {
-    doc.sections.push_back(BuildExamples());
-  } else if (name == "notice" || name == "notices") {
-    doc.sections.push_back(NoticeSection());
-  } else if (name == "license" || name == "licenses") {
-    doc.sections.push_back(LicenseSection());
-  } else if (name == "help") {
-    doc.sections.push_back(GuideSection());
+    section = LicenseComponentSection(*component);
   } else {
+    section = NamedTopicSection(name);
+  }
+  if (!section.has_value()) {
     return std::nullopt;
   }
+  doc.sections.push_back(*std::move(section));
   return doc;
 }
 
