@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-08 12:06:03</td>
+            <td class="headerValue">2026-09-08 13:10:01</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -258,13 +258,13 @@
 <span id="L178"><span class="lineNum">     178</span>                 :             :     std::vector&lt;std::size_t&gt; mins,</span>
 <span id="L179"><span class="lineNum">     179</span>                 :             :     std::size_t window,</span>
 <span id="L180"><span class="lineNum">     180</span>                 :             :     std::size_t byte_budget)</span>
-<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">         763 :     : aligns_(std::move(aligns)),</span></span>
-<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">         763 :       widths_(std::move(mins)),</span></span>
-<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">         763 :       window_(window),</span></span>
-<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">         763 :       byte_budget_(byte_budget),</span></span>
-<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">         763 :       buffering_(window != 0) {</span></span>
-<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">         763 :   widths_.resize(aligns_.size(), 0);  // one width per column, seeded from the mins</span></span>
-<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">         763 : }</span></span>
+<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">         764 :     : aligns_(std::move(aligns)),</span></span>
+<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">         764 :       widths_(std::move(mins)),</span></span>
+<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">         764 :       window_(window),</span></span>
+<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">         764 :       byte_budget_(byte_budget),</span></span>
+<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">         764 :       buffering_(window != 0) {</span></span>
+<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">         764 :   widths_.resize(aligns_.size(), 0);  // one width per column, seeded from the mins</span></span>
+<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">         764 : }</span></span>
 <span id="L188"><span class="lineNum">     188</span>                 :             : </span>
 <span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">          35 : std::string ColumnBuffer::Add(std::vector&lt;std::string&gt; cells) {</span></span>
 <span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">          35 :   const auto widen = [this](const std::vector&lt;std::string&gt;&amp; row) {</span></span>
