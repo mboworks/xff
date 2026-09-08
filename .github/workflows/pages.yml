@@ -81,7 +81,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir generated
-          gh release download "${RELEASE_TAG}" --pattern xff_full-linux-x86_64 --dir generated
+          gh release download "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" \
+            --pattern xff_full-linux-x86_64 --dir generated
           gh attestation verify generated/xff_full-linux-x86_64 --repo "${GITHUB_REPOSITORY}"
           chmod +x generated/xff_full-linux-x86_64
           XFF_CONFIG=/nonexistent generated/xff_full-linux-x86_64 --help=full:html \
