@@ -1265,7 +1265,7 @@ std::optional<Document> IndexReference(std::string_view name) {
   return doc;
 }
 
-std::optional<Section> NamedTopicSection(std::string_view name) {
+static std::optional<Section> NamedTopicSection(std::string_view name) {
   if (name == "fields") {
     return BuildFields();
   } else if (name == "output") {
