@@ -26,8 +26,13 @@
     "RULES.md": "RULES.html",
     "STYLE_CPP.md": "STYLE_CPP.html",
     "STYLE_SH.md": "STYLE_SH.html",
-    "TODO.md": "TODO.html",
-    "XFF.md": "XFF.html"
+    "TODO.md": "TODO.html"
+  },
+  "generated_html": {
+    "XFF.md": {
+      "source": "XFF.html",
+      "destination": "XFF.html"
+    }
   },
   "links": [
     {

@@ -52,6 +52,7 @@ def configuration(source, override=None):
     data = (override if override is not None else source / "release-site.json").read_bytes()
     config = json.loads(data)
     pages = config["pages"]
+    generated_html = config.get("generated_html", {})
     if not pages or pages.get("README.md") != "index.html":
         raise ValueError("README.md must map to index.html")
     destinations = set()
@@ -64,6 +65,27 @@ def configuration(source, override=None):
         if not src.endswith(".md") or not dst.endswith(".html"):
             raise ValueError("Page mappings must convert .md sources to .html destinations")
         if dst in destinations or dst == "documents.html" or dst.startswith("assets/"):
+            raise ValueError(f"Duplicate or reserved destination: {dst}")
+        if any(part.startswith(".") for part in Path(dst).parts):
+            raise ValueError(f"Pages excludes hidden destinations: {dst}")
+        destinations.add(dst)
+    for logical, mapping in generated_html.items():
+        if logical in pages or logical in config.get("files", {}):
+            raise ValueError(f"Source is mapped more than once: {logical}")
+        if not isinstance(mapping, dict) or set(mapping) != {"source", "destination"}:
+            raise ValueError(f"Generated HTML mapping must have source and destination: {logical}")
+        src = mapping["source"]
+        dst = mapping["destination"]
+        for path in (logical, src, dst):
+            if (not isinstance(path, str) or path.startswith("/")
+                    or ".." in Path(path).parts or str(Path(path)) != path
+                    or any(char in path for char in "\\?#")):
+                raise ValueError(f"Unsafe generated HTML path: {path!r}")
+        if not logical.lower().endswith(".md") or not src.lower().endswith(".html") \
+                or not dst.lower().endswith(".html"):
+            raise ValueError("Generated HTML must replace a .md source with .html content")
+        if dst in destinations or dst in ("documents.html", "release.json", "release-site.json") \
+                or dst.startswith("assets/"):
             raise ValueError(f"Duplicate or reserved destination: {dst}")
         if any(part.startswith(".") for part in Path(dst).parts):
             raise ValueError(f"Pages excludes hidden destinations: {dst}")
@@ -267,7 +289,8 @@ def validate_site(output, repository, tag):
                 raise ValueError(f"{document}: missing generated anchor: {link}")
 
 
-def build(source, retained, repository, tag, renderer=render, config_path=None):
+def build(source, retained, repository, tag, renderer=render, config_path=None,
+          generated_root=None):
     source = source.resolve()
     release_version = version(tag)
     destination = retained / "site" / "tag" / tag
@@ -280,11 +303,21 @@ def build(source, retained, repository, tag, renderer=render, config_path=None):
     config, config_data = configuration(source, config_path)
     documents = config["pages"]
     files = config.get("files", {})
+    generated_html = config.get("generated_html", {})
     tracked = set(git(source, "ls-files", "-z").split("\0"))
-    for document in [*documents, *files]:
+    for document in [*documents, *files, *generated_html]:
         path = source / document
         if document not in tracked or not path.is_file() or path.resolve() != path.absolute():
             raise ValueError(f"Missing, untracked, or symlinked document: {document}")
+    if generated_html and generated_root is None:
+        raise ValueError("Generated HTML is configured but no generated root was provided")
+    generated_root = generated_root.resolve() if generated_root is not None else None
+    for mapping in generated_html.values():
+        path = generated_root / mapping["source"]
+        if not path.is_file() or path.resolve() != path.absolute():
+            raise ValueError(f"Missing or symlinked generated HTML: {mapping['source']}")
+        if not path.read_bytes().startswith(b"<!doctype html>"):
+            raise ValueError(f"Generated HTML is not a standalone document: {mapping['source']}")
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=destination.parent) as temporary:
         output = Path(temporary)
@@ -292,6 +325,10 @@ def build(source, retained, repository, tag, renderer=render, config_path=None):
             target = output / dst
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes((source / src).read_bytes())
+        for mapping in generated_html.values():
+            target = output / mapping["destination"]
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((generated_root / mapping["source"]).read_bytes())
         owner, repo = repository.split("/")
         base = f"/{repo}/site/tag/{tag}/"
         links = [("Home", base), ("Documentation", base + "documents.html"),
@@ -310,14 +347,22 @@ def build(source, retained, repository, tag, renderer=render, config_path=None):
                     f'<footer>Release snapshot · {sha}</footer></body></html>\n')
 
         for document in sorted(documents):
-            parser = Links(source, output, document, {**documents, **files}, repository, sha, tag)
+            parser = Links(source, output, document, {
+                **documents,
+                **files,
+                **{logical: mapping["destination"] for logical, mapping in generated_html.items()},
+            }, repository, sha, tag)
             parser.feed(headings(renderer((source / document).read_text(), repository)))
             target = output / documents[document]
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(page(document, "".join(parser.parts)))
+        indexed_documents = {
+            **documents,
+            **{logical: mapping["destination"] for logical, mapping in generated_html.items()},
+        }
         index = "<h1>Documentation</h1><ul>" + "".join(
-            f'<li><a href="{quote(documents[path])}">{html.escape(path)}</a></li>'
-            for path in sorted(documents)
+            f'<li><a href="{quote(indexed_documents[path])}">{html.escape(path)}</a></li>'
+            for path in sorted(indexed_documents)
         ) + "</ul>"
         (output / "documents.html").write_text(page("Documentation", index))
         (output / "release-site.json").write_bytes(config_data)
@@ -325,6 +370,14 @@ def build(source, retained, repository, tag, renderer=render, config_path=None):
             "tag": tag, "commit": sha,
             "configuration": {"origin": "override" if config_path is not None else "tag",
                               "sha256": hashlib.sha256(config_data).hexdigest()},
+            "generated_html": {
+                logical: {
+                    **mapping,
+                    "sha256": hashlib.sha256(
+                        (generated_root / mapping["source"]).read_bytes()).hexdigest(),
+                }
+                for logical, mapping in generated_html.items()
+            },
         }) + "\n")
         validate_site(output, repository, tag)
         # Rename only after every document and image has been converted successfully.
@@ -352,8 +405,10 @@ def main():
     parser.add_argument("--tag", required=True)
     parser.add_argument("--latest", required=True)
     parser.add_argument("--config", type=Path, help="Explicit configuration override for historical tags")
+    parser.add_argument("--generated", type=Path, help="Directory containing configured generated HTML")
     args = parser.parse_args()
-    build(args.source, args.retained, args.repository, args.tag, config_path=args.config)
+    build(args.source, args.retained, args.repository, args.tag, config_path=args.config,
+          generated_root=args.generated)
     if args.latest:
         redirect(args.retained, args.latest)
 

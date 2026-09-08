@@ -37,8 +37,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           # This is a disposable build on the runner, never a Pages publication.
+          mkdir -p "${RUNNER_TEMP}/release-site-generated"
+          printf '%s\n' '<!doctype html><html lang="en"><title>XFF reference</title></html>' \
+            >"${RUNNER_TEMP}/release-site-generated/XFF.html"
           python3 tools/release_site.py . "${RUNNER_TEMP}/release-site-check" \
-            --repository "${GITHUB_REPOSITORY}" --tag 0.0.0-verification --latest ""
+            --repository "${GITHUB_REPOSITORY}" --tag 0.0.0-verification --latest "" \
+            --generated "${RUNNER_TEMP}/release-site-generated"
 
   test:
     name: ${{ matrix.config.name == 'asan' && 'asan' || format('test ({0})', matrix.os) }}
