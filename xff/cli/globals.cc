@@ -337,8 +337,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .name = "--archive",
         .alias = "-z",
         .display = "--archive[=none|roots|all|any], -z[-|+|++], -Z[-|+|++]",
-        .group = "traversal",
-        .header = "Traversal",
+        .group = "archive",
+        .header = "Archive traversal",
         .summary = "descend into archives: -z- none, -z roots only, -z+ / bare --archive all",
         .details = "Treats each archive (tar, gz, bzip2, xz, zstd, lz4, zip, ...) as a directory, so a member is an "
                    "ordinary entry at a member path like `foo.tar.gz!inner/x` and the expression matches it with "
@@ -377,8 +377,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--archive-depth",
         .display = "--archive-depth=N",
-        .group = "traversal",
-        .header = "Traversal",
+        .group = "archive",
+        .header = "Archive traversal",
         .summary = "how many containers deep --archive dives (default 1)",
         .details = "Counted in CONTAINERS, not directory levels: the default 1 opens an archive but leaves an "
                    "archive INSIDE it a plain member, so a `.gem` shows its `data.tar.gz` without unpacking it. "
@@ -394,8 +394,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--archive-aggregate",
         .display = "--archive-aggregate=<MODE>",
-        .group = "traversal",
-        .header = "Traversal",
+        .group = "archive",
+        .header = "Archive traversal",
         .summary = "what --summary / --histogram count when the walk dives (default members)",
         .details = "Diving makes one byte visible twice - once as the container's own size, once as its "
                    "members' - so a total that adds `both` describes no filesystem that exists. `members` (the "
@@ -416,8 +416,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--archive-delete",
         .display = "--archive-delete",
-        .group = "traversal",
-        .header = "Traversal",
+        .group = "archive",
+        .header = "Archive traversal",
         .summary = "let -delete remove an archive member, rewriting its container",
         .details = "There is no such thing as removing a member in place: an archive is a stream of "
                    "header and data records, so the container is written again from the members that "
@@ -446,23 +446,24 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--archive-extract",
         .display = "--archive-extract",
-        .group = "traversal",
-        .header = "Traversal",
+        .group = "archive",
+        .header = "Archive traversal",
         .summary = "let -exec / -ok run on an archive member, via a temporary copy",
         .details = "A member is bytes inside a container, so there is no path a child process can "
                    "open and the exec family refuses one by default. With this flag the member is "
                    "written to its own temporary directory under the same name it has inside the "
                    "archive, and the child is handed THAT path: `{}` renders as the temporary file, "
-                   "-execdir runs in the temporary directory, and -ok shows the copy in its prompt "
+                   "`-execdir` runs in the temporary directory, and `-ok` shows the copy in its prompt "
                    "before anything runs. Each copy is removed as soon as its child finishes (for a "
-                   "`+` batch or a -j child, when the run ends), so nothing is left behind. It is "
-                   "The copy goes to a MEMORY-BACKED directory where the platform has one "
-                   "($XDG_RUNTIME_DIR or /dev/shm on Linux, both tmpfs), so a member never reaches a disk "
-                   "and the child still gets an ordinary path; a member too large for the space that "
-                   "directory reports free lands in the temporary directory instead, since a tmpfs is RAM "
-                   "shared with the whole machine. It is "
+                   "`+` batch or a `-j` child, when the run ends), so nothing is left behind. The copy "
+                   "first goes to a memory-backed directory where the platform has one "
+                   "(`$XDG_RUNTIME_DIR` or `/dev/shm` on Linux, both tmpfs), so the child gets an ordinary "
+                   "path without normally writing the member to disk. If no memory-backed directory is "
+                   "available, or the member is larger than its reported free space, xff falls back to "
+                   "`$TMPDIR` (or the platform temporary directory); extraction therefore does not guarantee "
+                   "that member data never reaches disk. It is "
                    "opt-in because the child is editing a COPY: a formatter or a patch tool will "
-                   "report success and change nothing in the archive. -delete stays refused whatever "
+                   "report success and change nothing in the archive. `-delete` stays refused whatever "
                    "this flag says - removing a temporary copy would be a no-op dressed as a "
                    "deletion. The container itself is an ordinary file, so an action on IT never "
                    "needed this.",
@@ -473,8 +474,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--archive-mount",
         .display = "--archive-mount",
-        .group = "traversal",
-        .header = "Traversal",
+        .group = "archive",
+        .header = "Archive traversal",
         .summary = "let -exec / -ok run on an archive member by mounting its container read-only",
         .details = "The alternative to `--archive-extract`, answering the same question - what path "
                    "can a child process open for a member? - with the container itself instead of a "
@@ -496,8 +497,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--archive-write",
         .display = "--archive-write, -Z[-|+|++]",
-        .group = "traversal",
-        .header = "Traversal",
+        .group = "archive",
+        .header = "Archive traversal",
         .summary = "arm both archive write flags (--archive-extract + --archive-delete)",
         .details = "One spelling for \"let actions touch members\", because the two write flags are almost "
                    "always wanted together: `--archive-extract` so `-exec` / `-ok` can run over a member, and "
@@ -517,8 +518,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--archive-any",
         .display = "--archive-any",
-        .group = "traversal",
-        .header = "Traversal",
+        .group = "archive",
+        .header = "Archive traversal",
         .summary = "under --archive=all, offer EVERY file to the reader, not only likely names",
         .details = "By default `all` only opens a file the walk met whose NAME looks like a container "
                    "(`.tar`, `.tgz`, `.zip`, `.jar`, `.phar`, ... - the reader's formats plus the "
@@ -536,8 +537,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--archive-separator",
         .display = "--archive-separator=STRING",
-        .group = "traversal",
-        .header = "Traversal",
+        .group = "archive",
+        .header = "Archive traversal",
         .summary = "string between container and member in a member path (default `!`)",
         .details = "A member path is `<container><separator><member>`, and there is no single ecosystem "
                    "convention - `!` (JAR / Java URLs), `#` (fragment style), and the multi-character `!/` or "
@@ -555,8 +556,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--archive-prefix",
         .display = "--archive-prefix=[URI|STRING]",
-        .group = "traversal",
-        .header = "Traversal",
+        .group = "archive",
+        .header = "Archive traversal",
         .summary = "prefix a member path: empty (default), URI, or any literal string",
         .details = "Empty (the default) prints the bare path, `a.tgz!inner/x`. `URI` renders a URL the "
                    "RECEIVING tool will accept, which means the ecosystem's own where one owns the format: a "
@@ -582,15 +583,15 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .name = "--jobs",
         .alias = "-j",
         .display = "-j N, --jobs=N|all",
-        .group = "traversal",
-        .header = "Traversal",
+        .group = "scheduling",
+        .header = "Concurrency and ordering",
         .summary = "worker count for the walk and concurrent -exec (all = every core)",
     },
     {
         .name = "--sort",
         .display = "--sort[=none|dir|subtree|tree]",
-        .group = "traversal",
-        .header = "Traversal",
+        .group = "scheduling",
+        .header = "Concurrency and ordering",
         .summary = "sibling/traversal ordering (default depends on the mode)",
         .details = "`none` leaves entries in filesystem order (fastest); `dir` sorts each directory's entries; "
                    "`subtree` and `tree` give a deterministic order across the whole walk. The default is per "
@@ -661,24 +662,24 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--exclude",
         .display = "--exclude=GLOB",
-        .group = "filter",
-        .header = "Filter & Ignore",
+        .group = "path-filter",
+        .header = "Path filters",
         .summary = "skip paths matching a gitignore-style glob (repeatable; a matched directory is pruned)",
         .topic = "ignore",
     },
     {
         .name = "--include",
         .display = "--include=GLOB",
-        .group = "filter",
-        .header = "Filter & Ignore",
+        .group = "path-filter",
+        .header = "Path filters",
         .summary = "re-include paths a --exclude would skip, matching a gitignore-style glob (repeatable)",
         .topic = "ignore",
     },
     {
         .name = "--lang-db",
         .display = "--lang-db=FILE",
-        .group = "filter",
-        .header = "Filter & Ignore",
+        .group = "classification",
+        .header = "Classification databases",
         .summary = "overlay language metadata and suffix/filename mappings from JSON; repeatable",
         .details = "Loads a JSON object keyed by canonical language name. Each value may set `type`, `color`, "
                    "`group`, and `source`, plus string arrays `aliases`, `extensions`, and `filenames`. Later files "
@@ -691,8 +692,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--lang-conflicts",
         .display = "--lang-conflicts=error|first|last",
-        .group = "filter",
-        .header = "Filter & Ignore",
+        .group = "classification",
+        .header = "Classification databases",
         .summary = "resolve ambiguous suffix or filename claims within one language vocabulary file",
         .details = "Controls only ambiguity inside one `--lang-db` file. Layering remains deterministic: "
                    "a later file intentionally overrides earlier files and compiled data. `error` is the default; "
@@ -705,8 +706,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--mime-vocabulary",
         .display = "--mime-vocabulary=FILE",
-        .group = "filter",
-        .header = "Filter & Ignore",
+        .group = "classification",
+        .header = "Classification databases",
         .summary = "overlay media-type metadata and extension mappings from JSON; repeatable",
         .details = "Loads a JSON object keyed by canonical media type. Each value may set `description`, `source`, "
                    "`charset`, boolean `compressible`, and string arrays `aliases` and `extensions`. Later files "
@@ -718,8 +719,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--mime-conflicts",
         .display = "--mime-conflicts=error|first|last",
-        .group = "filter",
-        .header = "Filter & Ignore",
+        .group = "classification",
+        .header = "Classification databases",
         .summary = "resolve ambiguous extension claims within one MIME vocabulary file",
         .details = "Controls only ambiguity inside one `--mime-vocabulary` file. Layering remains deterministic: "
                    "a later file intentionally overrides earlier files and compiled data. `error` is the default; "
@@ -839,31 +840,34 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--format",
         .display = "--format=<FORMAT>",
-        .group = "output",
-        .header = "Output",
+        .group = "format",
+        .header = "Result formatting",
         .summary = "output format: plain, nul, jsonl, csv, tsv, aligned, markdown (md), tree; default plain",
         .values = kFormatValues,
+        .topic = "output",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
         .name = "--no-header",
         .display = "--no-header",
-        .group = "output",
-        .header = "Output",
+        .group = "format",
+        .header = "Result formatting",
         .summary = "omit the header row from tabular --format (csv/tsv/aligned/markdown; on by default)",
+        .topic = "output",
     },
     {
         .name = "--columns",
         .display = "--columns=FIELD,...",
-        .group = "output",
-        .header = "Output",
+        .group = "format",
+        .header = "Result formatting",
         .summary = "columns for tabular --format, from the {field} vocabulary (e.g. path,size,mtime)",
+        .topic = "output",
     },
     {
         .name = "--compare",
         .display = "--compare[=status|diff]",
-        .group = "output",
-        .header = "Output",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
         .summary = "compare two roots as selected statuses or a unified diff",
         .details = "Requires exactly two roots. Bare `--compare` and "
                    "`--compare=status` emit only discrepancies as tab-separated `left-only`, `right-only`, or "
@@ -876,37 +880,38 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "none of them. Regular files are compared byte for byte (text and binary). Unfollowed symlinks "
                    "are compared by target.",
         .values = kCompareValues,
-        .topic = "content",
+        .topic = "compare",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
         .name = "--compare-select",
         .display = "--compare-select=KIND,...",
-        .group = "output",
-        .header = "Output",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
         .summary = "tree-comparison results to emit: left-only, right-only, identical, different, or all",
         .details = "Selects comma-separated result kinds for `--compare`. The default is "
                    "`left-only,right-only,different`, so equal files stay silent. `all` selects every kind. "
                    "`identical` is available with status output and is rejected with `--compare=diff`, where an "
                    "unchanged file has no patch representation.",
         .affects = "--compare",
-        .topic = "content",
+        .topic = "compare",
     },
     {
         .name = "--diff-algorithm",
         .display = "--diff-algorithm=naive|direct|myers",
-        .group = "output",
-        .header = "Output",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
         .summary = "diff engine for -diff and tree diffs: naive, direct, or myers (the default)",
         .values = kDiffAlgorithmValues,
         .affects = "-diff,--compare",
+        .topic = "compare",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
         .name = "--diff-ignore",
         .display = "--diff-ignore=TOKEN,...",
-        .group = "output",
-        .header = "Output",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
         .summary = "normalize -diff comparison: ws, change, trail, blank, case, eofnl (comma-separated)",
         .details = "Sets the normalization used by `-diff`; the last value wins. It may be saved in user config or an "
                    "explicit `--xffrc=FILE`, and a command-line value overrides the configured value. An empty value "
@@ -917,8 +922,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--diff-ignore-matching",
         .display = "--diff-ignore-matching=REGEX",
-        .group = "output",
-        .header = "Output",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
         .summary = "-diff ignores lines matching this regex (RE2)",
         .details = "Drops matching lines before `-diff` compares the two inputs. It may be saved in user config or an "
                    "explicit `--xffrc=FILE`; the last value wins, so a command-line value overrides configuration. An "
@@ -928,8 +933,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--diff-format",
         .display = "--diff-format=u|c|n|y",
-        .group = "output",
-        .header = "Output",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
         .summary = "default -diff format: u/unified (default), c/context, n/normal, y/side-by-side",
         .values = kDiffFormatValues,
         .affects = "-diff",
@@ -938,16 +943,17 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--diff-context",
         .display = "--diff-context=N",
-        .group = "output",
-        .header = "Output",
+        .group = "diff",
+        .header = "Tree comparison and diffs",
         .summary = "default -diff context lines (3); overrides --context for -diff, and -diff:uN overrides it",
         .affects = "-diff,--compare",
+        .topic = "compare",
     },
     {
         .name = "--hash-algorithm",
         .display = "--hash-algorithm=<ALGO>",
         .group = "output",
-        .header = "Output",
+        .header = "Output values and actions",
         .summary = "default digest for -hash / {hash} (sha256 default; md5, sha512, blake3, and more)",
         .details = "Sets the default digest algorithm for the `-hash` action and the `{hash}` field. `sha256` is "
                    "the default; a `-hash:ALGO` spec or a `{hash:ALGO}` qualifier overrides it per use.",
@@ -958,7 +964,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .name = "--hash-encoding",
         .display = "--hash-encoding=hex|base64",
         .group = "output",
-        .header = "Output",
+        .header = "Output values and actions",
         .summary = "default -hash / {hash} rendering: hex (default) or base64",
         .values = kHashEncodingValues,
         .value_check = GlobalFlag::ValueCheck::kEnum,
@@ -967,32 +973,35 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .name = "--path-encoding",
         .display = "--path-encoding=raw|escape",
         .group = "output",
-        .header = "Output",
+        .header = "Output values and actions",
         .summary = "plain-output path byte encoding: raw (verbatim, default) or escape (C-escape controls)",
         .values = kPathEncodingValues,
+        .topic = "output",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
         .name = "--template",
         .display = "--template=TEMPLATE",
         .group = "output",
-        .header = "Output",
+        .header = "Output values and actions",
         .summary = "render each match through a field template ({path}, {name}, ...)",
+        .topic = "output",
     },
     {
         .name = "--implicit-print",
         .display = "--implicit-print=yes|no",
         .group = "output",
-        .header = "Output",
+        .header = "Output values and actions",
         .summary = "force the default -print on or off",
         .values = kImplicitPrintValues,
+        .topic = "output",
         .value_check = GlobalFlag::ValueCheck::kBool,
     },
     {
         .name = "--pack",
         .display = "--pack=FILE",
-        .group = "output",
-        .header = "Output",
+        .group = "pack",
+        .header = "Archive creation",
         .summary = "write every match into a new archive at FILE instead of listing them",
         .details = "The counterpart of `--archive`: instead of reading a container the walk BUILDS one, so the "
                    "member list comes from the whole expression vocabulary rather than from a shell pipeline "
@@ -1019,8 +1028,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--pack-option",
         .display = "--pack-option=NAME=VALUE|@FILE.json",
-        .group = "output",
-        .header = "Output",
+        .group = "pack",
+        .header = "Archive creation",
         .summary = "tune how `--pack` writes: repeatable, last value for a NAME wins",
         .details = "The general knob behind `--pack-level`. NAME is XFF's own vocabulary, not the archive "
                    "library's: each name is translated to whatever the linked writer calls the same thing, "
@@ -1041,8 +1050,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--pack-level",
         .display = "--pack-level=N",
-        .group = "output",
-        .header = "Output",
+        .group = "pack",
+        .header = "Archive creation",
         .summary = "compression level for `--pack` (gzip/xz/lzip/lzma/zip 0-9, bzip2/lz4 1-9, zstd 1-22)",
         .details = "How hard the compressor works, on the scale the chosen format uses; left alone it is the "
                    "format's own default. Exactly `--pack-option=level=N`, kept as its own spelling because it "
@@ -1058,8 +1067,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--summary",
         .display = "--summary[=<GROUP>]",
-        .group = "output",
-        .header = "Output",
+        .group = "stats",
+        .header = "Statistics",
         .summary = "aligned count + size table (or --format=jsonl rows) instead of each match; repeatable",
         .details = "Replaces the per-match listing with an aggregate table: match count and total size per group "
                    "(overall, by type, extension, programming language, media (MIME) type, user (owner), owning "
@@ -1084,8 +1093,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--histogram",
         .display = "--histogram=BUCKET[:MEASURE]",
-        .group = "output",
-        .header = "Output",
+        .group = "stats",
+        .header = "Statistics",
         .summary = "bar chart per bucket: a count or sum/mean/min/max of size|lines (repeatable)",
         .details = "A terminal reduction like --summary, drawn as bars. BUCKET groups the matches - a category "
                    "(overall, type, ext, lang, mime, user (owner), or group) or a numeric-range field "
@@ -1103,8 +1112,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--shards",
         .display = "--shards[=auto|SCHEME,...]",
-        .group = "output",
-        .header = "Output",
+        .group = "shards",
+        .header = "Sharded files",
         .summary = "collapse each set of sharded files (e.g. data-00000-of-00010) to one line",
         .details = "Recognizes sharded-file naming conventions and collapses each logical set to a single line "
                    "instead of listing every shard. Bare `--shards` (or `=auto`) enables all built-in schemes: "
@@ -1118,8 +1127,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--shards-show",
         .display = "--shards-show=first|wildcard|count",
-        .group = "output",
-        .header = "Output",
+        .group = "shards",
+        .header = "Sharded files",
         .summary = "how a collapsed shard set's line reads (default first)",
         .details = "Picks each collapsed set's display: `first` = the representative (lowest-index) shard's "
                    "path; `wildcard` = the masked-index name (the index digits shown as `???`); `count` = the "
@@ -1132,8 +1141,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--shards-dedup",
         .display = "--shards-dedup=first|mtime|error",
-        .group = "output",
-        .header = "Output",
+        .group = "shards",
+        .header = "Sharded files",
         .summary = "how same-index shard duplicates are resolved (default first)",
         .details = "When two files are the same logical shard (they differ only by an opaque tail, e.g. a "
                    "regeneration id), `--shards-dedup` picks which is the representative: `first` keeps the "
@@ -1147,8 +1156,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--shard-pattern",
         .display = "--shard-pattern=REGEX",
-        .group = "output",
-        .header = "Output",
+        .group = "shards",
+        .header = "Sharded files",
         .summary = "a custom shard scheme via a named-capture regex (repeatable); the escape hatch",
         .details = "Defines a custom sharded-file scheme for `--shards` and `-shard-status` when the built-ins "
                    "do not fit. REGEX is "
@@ -1161,8 +1170,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .name = "--count",
         .alias = "-c",
         .display = "--count, -c",
-        .group = "output",
-        .header = "Output",
+        .group = "grep-output",
+        .header = "Content-match output",
         .summary = "with -grep, print a per-file matching-line count (path:count) instead of the lines",
         .affects = "-grep",
         .topic = "content",
@@ -1170,8 +1179,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--context",
         .display = "--context=SPEC",
-        .group = "output",
-        .header = "Output",
+        .group = "grep-output",
+        .header = "Content-match output",
         .summary = "-grep context lines: N both sides, or A:N,B:N,C:N for after/before/both",
         .details = "`--context=2` is grep's `-C 2` (two lines either side); the A / B / C keys inside the "
                    "value select one side (`--context=A:3,B:1`), which is what `--after-context` and "
@@ -1184,24 +1193,24 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--after-context",
         .display = "--after-context=N",
-        .group = "output",
-        .header = "Output",
+        .group = "grep-output",
+        .header = "Content-match output",
         .summary = "with -grep, print N lines of context after each match (= --context=A:N)",
         .affects = "-grep",
     },
     {
         .name = "--before-context",
         .display = "--before-context=N",
-        .group = "output",
-        .header = "Output",
+        .group = "grep-output",
+        .header = "Content-match output",
         .summary = "with -grep, print N lines of context before each match (= --context=B:N)",
         .affects = "-grep",
     },
     {
         .name = "--max-results",
         .display = "--max-results=N",
-        .group = "output",
-        .header = "Output",
+        .group = "limits",
+        .header = "Result limits",
         .summary = "list at most N matched entries without stopping or truncating reductions",
         .details =
             "Caps the implicit result listing after the whole expression, across every branch and every "
@@ -1216,16 +1225,16 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--top",
         .display = "--top=N",
-        .group = "output",
-        .header = "Output",
+        .group = "limits",
+        .header = "Result limits",
         .summary = "with --summary or --histogram, keep only the N largest/tallest groups",
         .topic = "stats",
     },
     {
         .name = "--histogram-width",
         .display = "--histogram-width=N",
-        .group = "output",
-        .header = "Output",
+        .group = "stats-display",
+        .header = "Statistics display",
         .summary = "cell width the tallest --histogram bar fills (default 40)",
         .affects = "--histogram",
         .topic = "stats",
@@ -1233,16 +1242,16 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--summary-precision",
         .display = "--summary-precision=N",
-        .group = "output",
-        .header = "Output",
+        .group = "stats-display",
+        .header = "Statistics display",
         .summary = "with --summary --human: fraction digits for scaled sizes (default 2; bytes stay integer)",
         .topic = "stats",
     },
     {
         .name = "--color",
         .display = "--color[=auto|always|never]",
-        .group = "output",
-        .header = "Output",
+        .group = "display",
+        .header = "Terminal display",
         .summary = "colorize the plain listing by file type and language: auto (a tty), always, or never",
         .details = "Colorizes the plain listing by file type and, when the active language vocabulary supplies a "
                    "colour, programming language. auto colorizes only when stdout is a terminal and NO_COLOR is "
@@ -1254,8 +1263,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--color-scheme",
         .display = "--color-scheme=<SCHEME>",
-        .group = "output",
-        .header = "Output",
+        .group = "display",
+        .header = "Terminal display",
         .summary = "which palette colour comes from: the terminal's ls theme, or xff's own",
         .details = "Colour is a whole-run choice, so this one palette is used by every surface that "
                    "colours - the plain listing and -ls alike; they cannot disagree. $LS_COLORS is the "
@@ -1297,8 +1306,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--unicode",
         .display = "--unicode[=auto|always|never]",
-        .group = "output",
-        .header = "Output",
+        .group = "display",
+        .header = "Terminal display",
         .summary = "--format=tree connectors: auto (a UTF-8 locale), always (Unicode), or never (ASCII)",
         .details = "Selects the box-drawing characters --format=tree connects nodes with. auto uses Unicode when the "
                    "locale (LC_ALL / LC_CTYPE / LANG) is UTF-8, else ASCII; always forces the Unicode connectors; "
@@ -1309,8 +1318,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--human",
         .display = "--human[=si|iec|off]",
-        .group = "output",
-        .header = "Output",
+        .group = "display",
+        .header = "Terminal display",
         .summary = "size units for -ls / --summary: si (kB/MB, default), iec (KiB/MiB), off (bytes); xff -> si",
         .values = kHumanValues,
         .value_check = GlobalFlag::ValueCheck::kEnum,
@@ -1318,15 +1327,15 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--si",
         .display = "--si",
-        .group = "output",
-        .header = "Output",
+        .group = "display",
+        .header = "Terminal display",
         .summary = "human sizes in SI (kB/MB, 1000^N); an alias for --human=si (the --human default)",
     },
     {
         .name = "--buffer",
         .display = "--buffer[=auto|off|all|N[kMGT]|NMB|NMiB]",
-        .group = "output",
-        .header = "Output",
+        .group = "display",
+        .header = "Terminal display",
         .summary = "buffer to size columns (-ls / tables): auto, off, all, N[kMGT] rows, or NMB/NMiB bytes",
         .details = "Row windows use a bare count or decimal `k`/`M`/`G`/`T` multiplier. Byte budgets require an "
                    "explicit trailing `B`: `B`/`kB`/`MB`/.../`EB` are SI, while "
@@ -1335,8 +1344,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--width",
         .display = "--width[=auto|none|COLS]",
-        .group = "output",
-        .header = "Output",
+        .group = "display",
+        .header = "Terminal display",
         .summary = "wrap column for plain --help text: auto (terminal width, else unwrapped), none, or a count",
         .details = "Wraps the flowing text of --help and --help=TOPIC (option and topic descriptions) to a "
                    "column width. auto uses the terminal width when stdout is a terminal (honoring $COLUMNS), "
@@ -1347,8 +1356,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--pager",
         .display = "--pager[=help|auto|always|never|COMMAND]",
-        .group = "output",
-        .header = "Output",
+        .group = "display",
+        .header = "Terminal display",
         .summary = "page output: help only, auto (all on a tty), always, never, or an explicit command",
         .details = "Pages every pageable output: long meta output (`--help`, `--help=TOPIC`, `--man`) and the "
                    "file listing, including action rows such as `-ls`. The default `help` "
@@ -1369,8 +1378,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--no-pager",
         .display = "--no-pager",
-        .group = "output",
-        .header = "Output",
+        .group = "display",
+        .header = "Terminal display",
         .summary = "never page any output (an alias for --pager=never)",
     },
     {
@@ -1394,13 +1403,21 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "safety",
         .header = "Safety",
         .summary = "refuse destructive actions (-delete / -exec)",
+        .details = "Rejects the run before traversal when its expression contains an armed `-delete` or exec-family "
+                   "action. This is a hard guard, not a preview: use `--dry-run` when the goal is to see what a "
+                   "supported write would do. `--safe` does not merely suppress the action after other expression "
+                   "terms have run.",
     },
     {
         .name = "--dry-run",
         .display = "--dry-run",
         .group = "safety",
         .header = "Safety",
-        .summary = "preview -delete without removing anything",
+        .summary = "preview supported writes without changing the filesystem",
+        .details = "Makes `-delete` print each path it would remove, makes `--archive-delete` list member deletions "
+                   "without rewriting the container, and makes `--pack` report how many entries it would write "
+                   "without creating the archive. Traversal and matching still run normally, so the preview uses "
+                   "the real selected set.",
     },
     {
         .name = "--skip-unsupported",
@@ -1408,6 +1425,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "safety",
         .header = "Safety",
         .summary = "warn and skip a predicate a filesystem cannot evaluate, not fail",
+        .details = "Applies when a predicate is unsupported for an entry's filesystem, most commonly an archive "
+                   "member that cannot provide an operation available on the host filesystem. Without this flag "
+                   "the unsupported operation is a hard error; with it the entry is skipped and the reason is "
+                   "reported. Ordinary I/O and traversal errors remain errors.",
     },
     {
         .name = "--exec-fields",

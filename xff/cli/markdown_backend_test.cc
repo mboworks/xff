@@ -29,6 +29,7 @@ namespace {
 using ::mbo::testing::EqualsText;
 using ::mbo::testing::WithDropIndent;
 using ::testing::Eq;
+using ::testing::HasSubstr;
 
 Inline Text(std::string text) {
   return {.style = Inline::Style::kText, .text = std::move(text)};
@@ -140,6 +141,30 @@ TEST_F(MarkdownBackendTest, RendersAWholeDocumentAsMarkdown) {
 
       the classic.
       )out")));
+}
+
+TEST_F(MarkdownBackendTest, LongDocumentGetsLinkedSectionContents) {
+  Document doc{
+      .name = "xff",
+      .sections =
+          {
+              Section{.title = "Description"},
+              Section{.title = "Command structure"},
+              Section{.title = "Options"},
+              Section{.title = "Exit status"},
+          },
+  };
+
+  MarkdownBackend backend;
+  RenderDocument(doc, backend);
+  const std::string out = backend.Take();
+  EXPECT_THAT(
+      out, HasSubstr(
+               "## Contents\n\n"
+               "- [Description](#description)\n"
+               "- [Command structure](#command-structure)\n"
+               "- [Options](#options)\n"
+               "- [Exit status](#exit-status)\n"));
 }
 
 }  // namespace

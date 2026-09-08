@@ -222,8 +222,8 @@ Content PrimaryEntry(const registry::Descriptor& descriptor, bool with_details =
 Section BuildFields() {
   Section section{.title = "Fields"};
   section.children.push_back(ProseOf(
-      "The `{field}` placeholder vocabulary, substituted per entry in --template / --format, in "
-      "-printf via the `%{field}` escape, and (with --exec-fields) in -exec."));
+      "The `{field}` placeholder vocabulary, substituted per entry in `--template` / `--format`, in "
+      "`-printf` via the `%{field}` escape, and (with `--exec-fields`) in `-exec`."));
 
   const absl::Span<const fields::FieldDoc> docs = fields::FieldDocs();
   std::string_view group;
@@ -296,7 +296,7 @@ Section VocabSection(std::string_view title, std::string_view prose, absl::Span<
 // TopicReference). Named so BuildReference and the topic render share one definition.
 Section PrintfSection() {
   return VocabSection(
-      "Printf directives", "Directives for -printf / -fprintf / -println FORMAT, and the `%{field}` escape.",
+      "Printf directives", "Directives for `-printf` / `-fprintf` / `-println` FORMAT, and the `%{field}` escape.",
       engine::PrintfDocs());
 }
 
@@ -336,8 +336,8 @@ Section SizeSection() {
 Section GrammarsSection() {
   return VocabSection(
       "Regex grammars",
-      "The grammar for -regex / -iregex and the content matchers -rxc / -grep, chosen by `--regextype` "
-      "(default RE2). EXACT, FNMATCH, GLOB and SHGLOB are core engines, always built in; PCRE2 is a "
+      "The grammar for `-regex` / `-iregex` and the content matchers `-rxc` / `-grep`, chosen by `--regextype` "
+      "(default `RE2`). `EXACT`, `FNMATCH`, `GLOB` and `SHGLOB` are core engines, always built in; `PCRE2` is a "
       "build-time extra (see `--help=extras`). RE2 and PCRE2 have canonical external references, so the "
       "smaller engines are spelled out in full here: they have no single authoritative man page, and "
       "FNMATCH delegates to the platform's fnmatch(3), whose class / collation details vary by system.",
@@ -375,7 +375,7 @@ Section EnvironmentSection() {
        "per-extension `*.tar=` entries, used by default (see `--color-scheme`)"},
       {"XDG_RUNTIME_DIR",
        "preferred directory for a member extracted by `--archive-extract`: it is a memory-backed tmpfs, so "
-       "the copy never reaches a disk (`/dev/shm` is tried next)"},
+       "the copy avoids disk when this location is usable (`/dev/shm` is tried next)"},
       {"TMPDIR",
        "where a temporary file goes when no memory-backed directory fits it: an extracted member "
        "(`--archive-extract`) and the in-progress rewrite of a container (`--archive-delete`)"},
@@ -739,6 +739,120 @@ Section ContentSection(bool in_full) {
   return section;
 }
 
+// OUTPUT: how the implicit listing relates to expression actions and what each renderer guarantees.
+Section OutputSection(bool in_full) {
+  Section section{.title = "Output"};
+  section.children.push_back(ProseOf(
+      "When the expression contains no action, xff implicitly lists every match. An explicit action such as "
+      "`-print`, `-grep`, or `-exec` suppresses that default listing unless `--implicit-print=yes` restores it. "
+      "`--summary`, `--histogram`, and `--pack` are terminal sinks: they replace the implicit per-match listing "
+      "but do not suppress actions written in the expression."));
+
+  static constexpr std::array<DocPair, 8> kFormats = {{
+      {"plain", "one path plus newline; streaming; use `--path-encoding=escape` for visible control bytes"},
+      {"nul", "raw paths separated by NUL; streaming and safe for arbitrary path bytes"},
+      {"jsonl", "one JSON object per record; the default listing uses a `path` member"},
+      {"csv", "RFC 4180 rows; streaming; header and `--columns` supported"},
+      {"tsv", "tab-separated rows with tabs, newlines, carriage returns, and backslashes escaped"},
+      {"aligned", "human-readable columns; buffers rows to determine display widths"},
+      {"markdown", "a GitHub-flavored Markdown table; also spelled `md`; buffered"},
+      {"tree", "an indented path hierarchy; buffered; Unicode or ASCII connectors per `--unicode`"},
+  }};
+  Subsection formats{.title = "Formats"};
+  formats.children.push_back(RowsOf(kFormats));
+  formats.children.push_back(ProseOf(
+      "`--columns=FIELD,...` applies only to `csv`, `tsv`, `aligned`, and `markdown`; the default column is "
+      "`path`. Those formats include a header unless `--no-header` is set. `--template` is the free-form "
+      "alternative for a custom per-entry record; see `--help=fields` for placeholders."));
+  section.children.push_back(Content{.node = std::move(formats)});
+
+  Subsection safety{.title = "Filename safety"};
+  safety.children.push_back(ProseOf(
+      "A Unix path may contain tabs and newlines. Plain output preserves those bytes by default, so it is for "
+      "people rather than reliable parsing. Prefer `--format=nul` for shell pipelines, `jsonl` for structured "
+      "consumers, or a tabular format whose escaping rules are defined above. `--path-encoding=escape` makes "
+      "control bytes visible in plain output but is not a reversible record separator."));
+  section.children.push_back(Content{.node = std::move(safety)});
+
+  if (!in_full) {
+    Subsection flags{.title = "Output options"};
+    for (const GlobalFlag& flag : Globals()) {
+      if (flag.topic == "output") {
+        flags.children.push_back(FlagEntry(flag));
+      }
+    }
+    section.children.push_back(Content{.node = std::move(flags)});
+  }
+
+  Subsection examples{.title = "Examples"};
+  examples.children.push_back(ExampleOf("xff . -type f --format=nul | xargs -0 sha256sum --", "sh"));
+  examples.children.push_back(ProseOf("pass arbitrary filenames safely to another command"));
+  examples.children.push_back(ExampleOf("xff . -type f --format=csv --columns=path,size,mtime", "sh"));
+  examples.children.push_back(ProseOf("stream selected fields as CSV with a header row"));
+  examples.children.push_back(ExampleOf("xff . -type f --template='{size:human}  {path}'", "sh"));
+  examples.children.push_back(ProseOf("render a custom human-readable record for each match"));
+  section.children.push_back(Content{.node = std::move(examples)});
+  return section;
+}
+
+// COMPARE: the two-root mode needs a mental model beyond the individual flag entries, especially
+// because it deliberately inherits traversal/filtering without enabling any of it implicitly.
+Section CompareSection(bool in_full) {
+  Section section{.title = "Comparing trees"};
+  section.children.push_back(ProseOf(
+      "`--compare` requires exactly two roots. xff walks both roots with the same expression and the "
+      "same explicitly selected traversal, ignore, archive, hidden-file, and symlink options. Comparison "
+      "does not enable `--gitignore`, `--no-ignore`, `-L`, or any other policy on its own. The matched entries "
+      "are paired by path relative to their respective roots, so the root directory names need not match."));
+  section.children.push_back(ProseOf(
+      "Regular files are equal when their bytes are equal, for both text and binary data. Unfollowed symlinks "
+      "are equal when their link targets are equal; `-H` / `-L` instead apply their ordinary traversal meaning. "
+      "Directories and other non-regular entries are compared by type. Metadata such as permissions, owner, "
+      "timestamps, and inode numbers is not compared."));
+
+  static constexpr std::array<DocPair, 4> kStatuses = {{
+      {"left-only", "the relative path matched only below the left root"},
+      {"right-only", "the relative path matched only below the right root"},
+      {"different", "both sides matched the path, but its type, bytes, or symlink target differs"},
+      {"identical", "both sides matched and compare equal; omitted unless explicitly selected"},
+  }};
+  Subsection statuses{.title = "Status output"};
+  statuses.children.push_back(ProseOf(
+      "Bare `--compare` (or `--compare=status`) writes tab-separated `STATUS` and relative-path records. "
+      "The default selection reports discrepancies only; `--compare-select=all` also includes equal entries."));
+  statuses.children.push_back(RowsOf(kStatuses));
+  section.children.push_back(Content{.node = std::move(statuses)});
+
+  Subsection patch{.title = "Patch output"};
+  patch.children.push_back(ProseOf(
+      "`--compare=diff` writes one unified patch for added, removed, and changed regular files. Text files get "
+      "hunks; binary and non-regular differences get a diagnostic line. `--diff-algorithm` and `--diff-context` "
+      "tune this mode. `identical` is rejected because an unchanged entry has no patch representation."));
+  section.children.push_back(Content{.node = std::move(patch)});
+
+  if (!in_full) {
+    Subsection flags{.title = "Comparison options"};
+    for (const GlobalFlag& flag : Globals()) {
+      if (flag.topic == "compare") {
+        flags.children.push_back(FlagEntry(flag));
+      }
+    }
+    section.children.push_back(Content{.node = std::move(flags)});
+  }
+
+  Subsection examples{.title = "Examples"};
+  examples.children.push_back(ExampleOf("xff --compare left-tree right-tree", "sh"));
+  examples.children.push_back(ProseOf("print only paths present on one side or different on both sides"));
+  examples.children.push_back(ExampleOf("xff --compare --compare-select=all left-tree right-tree", "sh"));
+  examples.children.push_back(ProseOf("include `identical` records in the status stream"));
+  examples.children.push_back(ExampleOf("xff -g+ --compare=diff old-tree new-tree >changes.patch", "sh"));
+  examples.children.push_back(ProseOf("apply Git ignore rules to both walks and create a patch"));
+  examples.children.push_back(ExampleOf("xff -L --compare left-tree right-tree -type f -name '*.dat'", "sh"));
+  examples.children.push_back(ProseOf("follow symlinks and compare only matching regular data files"));
+  section.children.push_back(Content{.node = std::move(examples)});
+  return section;
+}
+
 // CONFIGURATION: how options resolve (layered tiers + the command line), how a style is
 // chosen (--config / argv[0]), and how dangerous --xffrc directives are armed. The flags
 // are pulled from the globals SOT via the "config" topic tag so the list cannot drift;
@@ -750,36 +864,36 @@ Section ConfigSection(bool in_full) {
   Section section{.title = "Configuration"};
   section.children.push_back(ProseOf(
       "xff configuration. Options resolve from layered config tiers, then the command line; later "
-      "layers win. A style (find / xff / rg) sets the baseline defaults, which the tiers and the "
+      "layers win. A style (`find` / `xff` / `rg`) sets the baseline defaults, which the tiers and the "
       "command line then adjust. Run `--explain` to print exactly what resolved."));
 
   static constexpr std::array<DocPair, 4> kLayers = {{
-      {"system config", "machine-wide defaults (+ a root-owned [policy] that can hard-deny arming)"},
+      {"system config", "machine-wide defaults (plus a root-owned `[policy]` that can hard-deny arming)"},
       {"user config", "your personal defaults"},
       {"--xffrc=FILE", "an explicitly named file (repeatable) - a NON-ARMING tier"},
-      {"command line", "flags and --config, highest"},
+      {"command line", "flags and `--config`, highest"},
   }};
   Subsection layers{.title = "Layers (lowest to highest precedence)"};
   layers.children.push_back(RowsOf(kLayers));
   layers.children.push_back(ProseOf(
-      "There is no project / ancestor .xffrc discovery: config comes from the system and user files "
+      "There is no project or ancestor `.xffrc` discovery: config comes from the system and user files "
       "plus any `--xffrc` you name. `--no-config` ignores the discovered system/user files."));
   section.children.push_back(Content{.node = std::move(layers)});
 
   Subsection style{.title = "Choosing a style"};
   style.children.push_back(ProseOf(
-      "`--config=NAME` selects find / xff / rg (repeatable, last wins); see `--help=styles` for the "
-      "table. The invocation name (argv[0]) is the leading selector, so a symlink named `find` runs the "
+      "`--config=NAME` selects `find` / `xff` / `rg` (repeatable, last wins); see `--help=styles` for the "
+      "table. The invocation name (`argv[0]`) is the leading selector, so a symlink named `find` runs the "
       "strict find style and `rg` the rg style; any other name (e.g. a `mytool` symlink) activates a "
       "same-named config block over the xff default. An explicit `--config` still stacks on top."));
   section.children.push_back(Content{.node = std::move(style)});
 
   Subsection arming{.title = "Arming dangerous directives"};
   arming.children.push_back(ProseOf(
-      "A dangerous directive (the exec family -exec/-execdir/-ok/-capture, or -delete) carried by an "
-      "--xffrc file is inert unless `--allow-exec` is set from a TRUSTED tier (the command line or the "
-      "system/user config, never an --xffrc file itself). Unarmed lines are dropped with a warning; the "
-      "root system [policy] can hard-deny even `--allow-exec`."));
+      "A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`, or `-delete`) "
+      "carried by an `--xffrc` file is inert unless `--allow-exec` is set from a trusted tier (the command "
+      "line or the system/user config, never an `--xffrc` file itself). Unarmed lines are dropped with a "
+      "warning; the root system `[policy]` can hard-deny even `--allow-exec`."));
   section.children.push_back(Content{.node = std::move(arming)});
 
   if (!in_full) {
@@ -924,6 +1038,41 @@ Section DescriptionSection() {
       "`--config=find|xff` overrides the program name. Items marked as xff extensions below are the "
       "additions over find."));
   return description;
+}
+
+// COMMAND STRUCTURE: the grammar rules a reader needs before the option and primary catalogues.
+// This belongs in the full reference rather than being repeated in individual entries.
+Section CommandStructureSection() {
+  Section section{.title = "Command structure"};
+  section.children.push_back(ProseOf(
+      "A command consists of whole-run options, zero or more starting paths, and an optional expression. "
+      "Starting paths come before the expression; the first expression primary begins with a single dash."));
+
+  Bullets rules;
+  rules.items.push_back(ParseInline(
+      "Whole-run `--long` options are position-independent, so `--summary=ext` may appear before the paths or "
+      "after the expression. They remain literal arguments inside an argument-taking primary such as `-exec` "
+      "or `-printf`."));
+  rules.items.push_back(ParseInline(
+      "The compatibility globals `-H`, `-L`, `-P`, `-g`, `-j`, and `-z` are leading-only because a single-dash "
+      "word can otherwise be an expression primary."));
+  rules.items.push_back(ParseInline(
+      "Adjacent tests and actions have an implicit `-a` (AND). Use `!` for NOT, `-o` for OR, and shell-quoted "
+      "or escaped `(` and `)` for grouping. Evaluation is left to right and short-circuits."));
+  rules.items.push_back(ParseInline(
+      "With no starting path, xff uses `.`. With no explicit action, it prints each matching entry. A bare `--` "
+      "ends option parsing so a path beginning with `-` can be named unambiguously."));
+  section.children.push_back(Content{.node = std::move(rules)});
+
+  Subsection examples{.title = "Basic examples"};
+  examples.children.push_back(ExampleOf("xff src -type f -name '*.cc'", "sh"));
+  examples.children.push_back(ProseOf("find regular C++ source files below `src`"));
+  examples.children.push_back(ExampleOf("xff . \\( -name '*.cc' -o -name '*.h' \\) -print", "sh"));
+  examples.children.push_back(ProseOf("group alternatives explicitly; the shell escapes keep the parentheses for xff"));
+  examples.children.push_back(ExampleOf("xff --compare left-tree right-tree", "sh"));
+  examples.children.push_back(ProseOf("compare two trees and print only discrepancies"));
+  section.children.push_back(Content{.node = std::move(examples)});
+  return section;
 }
 
 // OPTIONS: the whole-run flags grouped by header. `with_details` false yields the terse
@@ -1128,6 +1277,8 @@ std::optional<Document> TopicReference(std::string_view name) {
   }
   if (name == "fields") {
     doc.sections.push_back(BuildFields());
+  } else if (name == "output") {
+    doc.sections.push_back(OutputSection(/*in_full=*/false));
   } else if (name == "printf") {
     doc.sections.push_back(PrintfSection());
   } else if (name == "time") {
@@ -1138,6 +1289,8 @@ std::optional<Document> TopicReference(std::string_view name) {
     doc.sections.push_back(GrammarsSection());
   } else if (name == "content") {
     doc.sections.push_back(ContentSection(/*in_full=*/false));
+  } else if (name == "compare") {
+    doc.sections.push_back(CompareSection(/*in_full=*/false));
   } else if (IsIgnoreTopicName(name)) {
     doc.sections.push_back(IgnoreSection(/*in_full=*/false));
   } else if (name == "archive" || name == "archives") {
@@ -1197,16 +1350,19 @@ Document BuildReference(Audience audience) {
   };
 
   doc.sections.push_back(DescriptionSection());
+  doc.sections.push_back(CommandStructureSection());
   doc.sections.push_back(ConfigSection(/*in_full=*/true));
   doc.sections.push_back(OptionsSection(/*with_details=*/true, audience));
   doc.sections.push_back(ExpressionSection(/*with_details=*/true));
 
+  doc.sections.push_back(OutputSection(/*in_full=*/true));
   doc.sections.push_back(BuildFields());
   doc.sections.push_back(PrintfSection());
   doc.sections.push_back(TimeSection());
   doc.sections.push_back(SizeSection());
   doc.sections.push_back(GrammarsSection());
   doc.sections.push_back(ContentSection(/*in_full=*/true));
+  doc.sections.push_back(CompareSection(/*in_full=*/true));
   doc.sections.push_back(IgnoreSection(/*in_full=*/true));
   doc.sections.push_back(ArchiveSection(/*in_full=*/true));
   doc.sections.push_back(StatsSection(/*in_full=*/true));
