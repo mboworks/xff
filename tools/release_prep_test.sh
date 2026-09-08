@@ -51,8 +51,10 @@ count_lines_with() {
 # untouched), the --version source, and a CHANGELOG whose top version is 1.2.3.
 make_fixture() {
   root="$1"
-  mkdir -p "${root}/tools" "${root}/xff/cli"
+  mkdir -p "${root}/tools" "${root}/xff/cli" "${root}/.github"
   cp "${HERE}/release_prep.sh" "${root}/tools/release_prep.sh"
+  cp "${HERE}/release_notes.sh" "${root}/tools/release_notes.sh"
+  cp "${HERE}/../.github/release-notes.md.template" "${root}/.github/"
   cp "${HERE}/check_module_versions.py" "${root}/tools/check_module_versions.py"
   chmod +x "${root}/tools/release_prep.sh"
   cat >"${root}/MODULE.bazel" <<'EOF'
@@ -144,6 +146,10 @@ test_happy_path_stamps_and_emits_notes() {
   esac
   case "${notes}" in
     *"Older release"*) fail "happy: notes leaked the older 0.9.0 section" ;;
+  esac
+  case "${notes}" in
+    *"https://mboworks.github.io/xff/site/tag/v1.2.3/"*) ;;
+    *) fail "happy: notes missing the versioned website: ${notes}" ;;
   esac
   case "${notes}" in
     *"https://mboworks.github.io/xff/releases/1.2.3/"*) ;;
