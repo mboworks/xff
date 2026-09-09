@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-09 12:51:45</td>
+            <td class="headerValue">2026-09-09 23:10:47</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -1427,15 +1427,15 @@
 <span id="L1347"><span class="lineNum">    1347</span>                 :             : </span>
 <span id="L1348"><span class="lineNum">    1348</span>                 :             : }  // namespace</span>
 <span id="L1349"><span class="lineNum">    1349</span>                 :             : </span>
-<span id="L1350"><span class="lineNum">    1350</span>                 :<span class="tlaGNC">        2881 : mbo::types::OptionalRef&lt;const Descriptor&gt; Lookup(std::string_view name) {</span></span>
-<span id="L1351"><span class="lineNum">    1351</span>         [<span class="tlaGBC" title="branch 0 was taken 150688 times"> + </span><span class="tlaGBC" title="branch 1 was taken 279 times"> + </span>]:<span class="tlaGNC">      150688 :   for (const Descriptor&amp; descriptor : kDescriptors) {</span></span>
-<span id="L1352"><span class="lineNum">    1352</span> [<span class="tlaGBC" title="branch 0 was taken 2593 times"> + </span><span class="tlaGBC" title="branch 1 was taken 148095 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 5051 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 143044 times"> + </span>]:<span class="tlaGNC">      150688 :     if (descriptor.name == name || (!descriptor.alias.empty() &amp;&amp; descriptor.alias == name)) {</span></span>
-<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 9 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 5042 times"> + </span>]
-<span id="L1353"><span class="lineNum">    1353</span>                 :<span class="tlaGNC">        2602 :       return descriptor;</span></span>
-<span id="L1354"><span class="lineNum">    1354</span>                 :<span class="tlaGNC">        2602 :     }</span></span>
-<span id="L1355"><span class="lineNum">    1355</span>                 :<span class="tlaGNC">      150688 :   }</span></span>
+<span id="L1350"><span class="lineNum">    1350</span>                 :<span class="tlaGNC">        2886 : mbo::types::OptionalRef&lt;const Descriptor&gt; Lookup(std::string_view name) {</span></span>
+<span id="L1351"><span class="lineNum">    1351</span>         [<span class="tlaGBC" title="branch 0 was taken 150822 times"> + </span><span class="tlaGBC" title="branch 1 was taken 279 times"> + </span>]:<span class="tlaGNC">      150822 :   for (const Descriptor&amp; descriptor : kDescriptors) {</span></span>
+<span id="L1352"><span class="lineNum">    1352</span> [<span class="tlaGBC" title="branch 0 was taken 2598 times"> + </span><span class="tlaGBC" title="branch 1 was taken 148224 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 5055 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 143169 times"> + </span>]:<span class="tlaGNC">      150822 :     if (descriptor.name == name || (!descriptor.alias.empty() &amp;&amp; descriptor.alias == name)) {</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 9 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 5046 times"> + </span>]
+<span id="L1353"><span class="lineNum">    1353</span>                 :<span class="tlaGNC">        2607 :       return descriptor;</span></span>
+<span id="L1354"><span class="lineNum">    1354</span>                 :<span class="tlaGNC">        2607 :     }</span></span>
+<span id="L1355"><span class="lineNum">    1355</span>                 :<span class="tlaGNC">      150822 :   }</span></span>
 <span id="L1356"><span class="lineNum">    1356</span>                 :<span class="tlaGNC">         279 :   return std::nullopt;</span></span>
-<span id="L1357"><span class="lineNum">    1357</span>                 :<span class="tlaGNC">        2881 : }</span></span>
+<span id="L1357"><span class="lineNum">    1357</span>                 :<span class="tlaGNC">        2886 : }</span></span>
 <span id="L1358"><span class="lineNum">    1358</span>                 :             : </span>
 <span id="L1359"><span class="lineNum">    1359</span>                 :<span class="tlaGNC">         342 : absl::Span&lt;const Descriptor&gt; All() {</span></span>
 <span id="L1360"><span class="lineNum">    1360</span>                 :<span class="tlaGNC">         342 :   return kDescriptors;</span></span>

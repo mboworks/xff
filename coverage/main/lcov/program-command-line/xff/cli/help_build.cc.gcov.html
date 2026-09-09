@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-09 12:51:45</td>
+            <td class="headerValue">2026-09-09 23:10:47</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">98.1&nbsp;%</td>
@@ -213,10 +213,10 @@
 <span id="L133"><span class="lineNum">     133</span>                 :<span class="tlaGNC">        1723 : std::string ValueHeading(std::string_view display) {</span></span>
 <span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">        1723 :   const auto open = display.find('&lt;');</span></span>
 <span id="L135"><span class="lineNum">     135</span>                 :<span class="tlaGNC">        1723 :   const auto close = display.find('&gt;', open + 1);</span></span>
-<span id="L136"><span class="lineNum">     136</span> [<span class="tlaGBC" title="branch 0 was taken 1229 times"> + </span><span class="tlaGBC" title="branch 1 was taken 494 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 494 times"> + </span>]:<span class="tlaGNC">        1723 :   if (open == std::string_view::npos || close == std::string_view::npos) {</span></span>
-<span id="L137"><span class="lineNum">     137</span>                 :<span class="tlaGNC">        1229 :     return &quot;One of:&quot;;</span></span>
-<span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">        1229 :   }</span></span>
-<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">         494 :   return absl::StrCat(display.substr(open + 1, close - open - 1), &quot; is one of:&quot;);</span></span>
+<span id="L136"><span class="lineNum">     136</span> [<span class="tlaGBC" title="branch 0 was taken 1167 times"> + </span><span class="tlaGBC" title="branch 1 was taken 556 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 556 times"> + </span>]:<span class="tlaGNC">        1723 :   if (open == std::string_view::npos || close == std::string_view::npos) {</span></span>
+<span id="L137"><span class="lineNum">     137</span>                 :<span class="tlaGNC">        1167 :     return &quot;One of:&quot;;</span></span>
+<span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">        1167 :   }</span></span>
+<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">         556 :   return absl::StrCat(display.substr(open + 1, close - open - 1), &quot; is one of:&quot;);</span></span>
 <span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">        1723 : }</span></span>
 <span id="L141"><span class="lineNum">     141</span>                 :             : </span>
 <span id="L142"><span class="lineNum">     142</span>                 :             : // A definition entry for a global flag: its display, summary, and (when `with_details`)</span>
@@ -245,20 +245,20 @@
 <span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">        1723 :       details.push_back(ProseOf(ValueHeading(flag.display)));</span></span>
 <span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">        1723 :       Rows rows;</span></span>
 <span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">        1723 :       rows.rows.reserve(flag.values.size());</span></span>
-<span id="L167"><span class="lineNum">     167</span>         [<span class="tlaGBC" title="branch 0 was taken 8234 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1723 times"> + </span>]:<span class="tlaGNC">        8234 :       for (const ValueDoc&amp; value : flag.values) {</span></span>
-<span id="L168"><span class="lineNum">     168</span>         [<span class="tlaGBC" title="branch 0 was taken 782 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7452 times"> + </span>]:<span class="tlaGNC">        8234 :         if (value.hidden) {</span></span>
+<span id="L167"><span class="lineNum">     167</span>         [<span class="tlaGBC" title="branch 0 was taken 8358 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1723 times"> + </span>]:<span class="tlaGNC">        8358 :       for (const ValueDoc&amp; value : flag.values) {</span></span>
+<span id="L168"><span class="lineNum">     168</span>         [<span class="tlaGBC" title="branch 0 was taken 782 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7576 times"> + </span>]:<span class="tlaGNC">        8358 :         if (value.hidden) {</span></span>
 <span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">         782 :           continue;  // an alias or reserved name: accepted by the check, not listed here</span></span>
 <span id="L170"><span class="lineNum">     170</span>                 :<span class="tlaGNC">         782 :         }</span></span>
-<span id="L171"><span class="lineNum">     171</span>                 :<span class="tlaGNC">        7452 :         rows.rows.push_back(Row{.term = std::string(value.value), .description = ParseInline(value.meaning)});</span></span>
-<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">        7452 :       }</span></span>
+<span id="L171"><span class="lineNum">     171</span>                 :<span class="tlaGNC">        7576 :         rows.rows.push_back(Row{.term = std::string(value.value), .description = ParseInline(value.meaning)});</span></span>
+<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">        7576 :       }</span></span>
 <span id="L173"><span class="lineNum">     173</span>                 :             :       // A title-less subsection nests the value table one level deeper than its label.</span>
 <span id="L174"><span class="lineNum">     174</span>                 :<span class="tlaGNC">        1723 :       Subsection group;</span></span>
 <span id="L175"><span class="lineNum">     175</span>                 :<span class="tlaGNC">        1723 :       group.children.push_back(Content{.node = std::move(rows)});</span></span>
 <span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">        1723 :       details.push_back(Content{.node = std::move(group)});</span></span>
 <span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">        1723 :     }</span></span>
-<span id="L178"><span class="lineNum">     178</span>         [<span class="tlaGBC" title="branch 0 was taken 3597 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5616 times"> + </span>]:<span class="tlaGNC">        5616 :     for (Content&amp; block : ParseBlocks(flag.details)) {</span></span>
-<span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">        3597 :       details.push_back(std::move(block));</span></span>
-<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">        3597 :     }</span></span>
+<span id="L178"><span class="lineNum">     178</span>         [<span class="tlaGBC" title="branch 0 was taken 3716 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5616 times"> + </span>]:<span class="tlaGNC">        5616 :     for (Content&amp; block : ParseBlocks(flag.details)) {</span></span>
+<span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">        3716 :       details.push_back(std::move(block));</span></span>
+<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">        3716 :     }</span></span>
 <span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">        5616 :     AppendInfluence(details, &quot;Affects:&quot;, absl::StrSplit(flag.affects, ',', absl::SkipEmpty()));</span></span>
 <span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">        5616 :     AppendInfluence(details, &quot;Affected by:&quot;, AffectedByFlags(flag.name));</span></span>
 <span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">        5616 :   }</span></span>

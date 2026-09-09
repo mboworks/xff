@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-09 12:51:45</td>
+            <td class="headerValue">2026-09-09 23:10:47</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryLo">50.0&nbsp;%</td>
@@ -120,7 +120,7 @@
 <span id="L49"><span class="lineNum">      49</span>              : struct GlobalFlag {</span>
 <span id="L50"><span class="lineNum">      50</span>              :   std::string_view name;     // primary lookup key, e.g. &quot;--sort&quot;, &quot;--jobs&quot;, &quot;-H&quot;</span>
 <span id="L51"><span class="lineNum">      51</span>              :   std::string_view alias;    // alternate lookup key, or &quot;&quot; (e.g. &quot;-j&quot; for --jobs, &quot;--tz&quot;)</span>
-<span id="L52"><span class="lineNum">      52</span>              :   std::string_view display;  // human header, e.g. &quot;-j N, --jobs=N|all&quot; or &quot;--sort[=none|dir|subtree|tree]&quot;</span>
+<span id="L52"><span class="lineNum">      52</span>              :   std::string_view display;  // human header, e.g. &quot;-j N, -j=N, --jobs=N|all&quot; or &quot;--sort[=&lt;ORDER&gt;]&quot;</span>
 <span id="L53"><span class="lineNum">      53</span>              :   std::string_view group;    // short group key, e.g. &quot;config&quot;, &quot;traversal&quot;, &quot;filter&quot; (drives grouping)</span>
 <span id="L54"><span class="lineNum">      54</span>              :   std::string_view header;   // display heading for the group, e.g. &quot;Filter &amp; Ignore&quot; (shown at its first flag)</span>
 <span id="L55"><span class="lineNum">      55</span>              :   std::string_view summary;  // one-line synopsis, lower-case, no trailing period</span>
@@ -206,7 +206,7 @@
 <span id="L135"><span class="lineNum">     135</span>              : // Whether `arg` is a recognized whole-run global token, so `main` can reject an</span>
 <span id="L136"><span class="lineNum">     136</span>              : // unknown leading option instead of silently ignoring it. Accepts: an exact name or</span>
 <span id="L137"><span class="lineNum">     137</span>              : // alias; a valued `name=VALUE` / `alias=VALUE` form when the flag advertises a value</span>
-<span id="L138"><span class="lineNum">     138</span>              : // (its `display` contains '='); the `-jN` / `-jall` short jobs form; and the compat</span>
+<span id="L138"><span class="lineNum">     138</span>              : // (its `display` contains '='); and the compat</span>
 <span id="L139"><span class="lineNum">     139</span>              : // aliases not in the table (`-0`, `-g+`, `-g-`). The meta flags `--help` / `--version`</span>
 <span id="L140"><span class="lineNum">     140</span>              : // / `--man` / formatted full help are consumed before parsing and are not checked here.</span>
 <span id="L141"><span class="lineNum">     141</span>              : bool IsKnownGlobal(std::string_view arg);</span>

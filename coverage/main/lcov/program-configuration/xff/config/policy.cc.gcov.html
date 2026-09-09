@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-09 12:51:45</td>
+            <td class="headerValue">2026-09-09 23:10:47</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -197,15 +197,15 @@
 <span id="L116"><span class="lineNum">     116</span> [<span class="tlaGBC" title="branch 0 was taken 157 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 11 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 146 times"> + </span>]:<span class="tlaGNC">         159 :   return line.config.empty() &amp;&amp; IsBuiltinStyle(line.base);</span></span>
 <span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">         159 : }</span></span>
 <span id="L118"><span class="lineNum">     118</span>                 :             : </span>
-<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">         539 : GateResult GateConfig(const ConfigInputs&amp; inputs, bool xffrc_armed) {</span></span>
-<span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaGNC">         539 :   GateResult result{.config = inputs};</span></span>
-<span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">         539 :   result.config.user.clear();</span></span>
-<span id="L122"><span class="lineNum">     122</span>                 :<span class="tlaGNC">         539 :   result.config.xffrc.clear();</span></span>
-<span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">         543 :   const auto record = [&amp;](const RcLine&amp; line, Source layer, DropReason reason) {</span></span>
+<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">         543 : GateResult GateConfig(const ConfigInputs&amp; inputs, bool xffrc_armed) {</span></span>
+<span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaGNC">         543 :   GateResult result{.config = inputs};</span></span>
+<span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">         543 :   result.config.user.clear();</span></span>
+<span id="L122"><span class="lineNum">     122</span>                 :<span class="tlaGNC">         543 :   result.config.xffrc.clear();</span></span>
+<span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">         547 :   const auto record = [&amp;](const RcLine&amp; line, Source layer, DropReason reason) {</span></span>
 <span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">          21 :     result.drops.push_back(Drop{.line = line, .layer = layer, .safety = LineSafety(line), .reason = reason});</span></span>
 <span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">          21 :   };</span></span>
-<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">        1078 :   const auto gate = [&amp;](const std::vector&lt;RcLine&gt;&amp; lines, Source layer, std::vector&lt;RcLine&gt;&amp; out) {</span></span>
-<span id="L127"><span class="lineNum">     127</span>         [<span class="tlaGBC" title="branch 0 was taken 117 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1078 times"> + </span>]:<span class="tlaGNC">        1146 :     for (const RcLine&amp; line : lines) {</span></span>
+<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">        1086 :   const auto gate = [&amp;](const std::vector&lt;RcLine&gt;&amp; lines, Source layer, std::vector&lt;RcLine&gt;&amp; out) {</span></span>
+<span id="L127"><span class="lineNum">     127</span>         [<span class="tlaGBC" title="branch 0 was taken 117 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1086 times"> + </span>]:<span class="tlaGNC">        1154 :     for (const RcLine&amp; line : lines) {</span></span>
 <span id="L128"><span class="lineNum">     128</span>                 :             :       // A preset-overloading line is dropped in every layer: a config file may not attach behavior</span>
 <span id="L129"><span class="lineNum">     129</span>                 :             :       // to find/xff/rg (it would change what a plain preset run does). Checked first so the warning</span>
 <span id="L130"><span class="lineNum">     130</span>                 :             :       // names the real reason.</span>
@@ -226,11 +226,11 @@
 <span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">           9 :         record(line, layer, DropReason::kSafetyPolicy);</span></span>
 <span id="L145"><span class="lineNum">     145</span>                 :<span class="tlaGNC">           9 :       }</span></span>
 <span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">         105 :     }</span></span>
-<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">        1078 :   };</span></span>
-<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">         539 :   gate(inputs.user, Source::kUser, result.config.user);</span></span>
-<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">         539 :   gate(inputs.xffrc, Source::kXffrc, result.config.xffrc);</span></span>
-<span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">         539 :   return result;</span></span>
-<span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">         539 : }</span></span>
+<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">        1086 :   };</span></span>
+<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">         543 :   gate(inputs.user, Source::kUser, result.config.user);</span></span>
+<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">         543 :   gate(inputs.xffrc, Source::kXffrc, result.config.xffrc);</span></span>
+<span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">         543 :   return result;</span></span>
+<span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">         543 : }</span></span>
 <span id="L152"><span class="lineNum">     152</span>                 :             : </span>
 <span id="L153"><span class="lineNum">     153</span>                 :<span class="tlaGNC">          18 : std::string DropMessage(const Drop&amp; drop) {</span></span>
 <span id="L154"><span class="lineNum">     154</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">          18 :   if (drop.reason == DropReason::kPresetOverload) {</span></span>
