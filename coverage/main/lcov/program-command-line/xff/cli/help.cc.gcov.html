@@ -41,12 +41,12 @@
             <td></td>
             <td class="headerItem">Lines:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">156</td>
-            <td class="headerCovTableEntry">156</td>
+            <td class="headerCovTableEntry">164</td>
+            <td class="headerCovTableEntry">164</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-08 21:23:40</td>
+            <td class="headerValue">2026-09-09 06:58:11</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -216,63 +216,71 @@
 <span id="L136"><span class="lineNum">     136</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;all&quot;, .aliases = {}, .summary = &quot;every option and primary, summaries only&quot;},</span></span>
 <span id="L137"><span class="lineNum">     137</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;expressions&quot;, .aliases = {}, .summary = &quot;the expression vocabulary: tests, operators, actions&quot;},</span></span>
 <span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;fields&quot;, .aliases = {}, .summary = &quot;the {field} placeholder vocabulary&quot;, .in_full = true},</span></span>
-<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;printf&quot;, .aliases = {}, .summary = &quot;the -printf % directives and the %{field} escape&quot;, .in_full = true},</span></span>
-<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;time&quot;, .aliases = {}, .summary = &quot;time-format presets and strftime patterns&quot;, .in_full = true},</span></span>
-<span id="L141"><span class="lineNum">     141</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;size&quot;, .aliases = {}, .summary = &quot;-size/-blocks legacy, SI, and IEC units plus +/-&quot;, .in_full = true},</span></span>
-<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;grammars&quot;,</span></span>
-<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">          44 :        .aliases = kGrammarAliases,</span></span>
-<span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;the --regextype grammars (RE2, EXACT, FNMATCH, GLOB, SHGLOB, PCRE2)&quot;,</span></span>
-<span id="L145"><span class="lineNum">     145</span>                 :<span class="tlaGNC">          44 :        .in_full = true},</span></span>
-<span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;content&quot;,</span></span>
-<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">          44 :        .aliases = {},</span></span>
-<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;reading inside files: -grep, -content, -rxc, -text, and their fields&quot;,</span></span>
+<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;output&quot;,</span></span>
+<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">          44 :        .aliases = {},</span></span>
+<span id="L141"><span class="lineNum">     141</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;implicit listing, output formats, columns, templates, and filename safety&quot;,</span></span>
+<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">          44 :        .in_full = true},</span></span>
+<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;printf&quot;, .aliases = {}, .summary = &quot;the -printf % directives and the %{field} escape&quot;, .in_full = true},</span></span>
+<span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;time&quot;, .aliases = {}, .summary = &quot;time-format presets and strftime patterns&quot;, .in_full = true},</span></span>
+<span id="L145"><span class="lineNum">     145</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;size&quot;, .aliases = {}, .summary = &quot;-size/-blocks legacy, SI, and IEC units plus +/-&quot;, .in_full = true},</span></span>
+<span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;grammars&quot;,</span></span>
+<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">          44 :        .aliases = kGrammarAliases,</span></span>
+<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;the --regextype grammars (RE2, EXACT, FNMATCH, GLOB, SHGLOB, PCRE2)&quot;,</span></span>
 <span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">          44 :        .in_full = true},</span></span>
-<span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;ignore&quot;,</span></span>
-<span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">          44 :        .aliases = kIgnoreAliases,</span></span>
-<span id="L152"><span class="lineNum">     152</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;ignore sources, VCS metadata pruning, hidden paths, and precedence&quot;,</span></span>
+<span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;content&quot;,</span></span>
+<span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">          44 :        .aliases = {},</span></span>
+<span id="L152"><span class="lineNum">     152</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;reading inside files: -grep, -content, -rxc, -text, and their fields&quot;,</span></span>
 <span id="L153"><span class="lineNum">     153</span>                 :<span class="tlaGNC">          44 :        .in_full = true},</span></span>
-<span id="L154"><span class="lineNum">     154</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;config&quot;, .aliases = {}, .summary = &quot;config tiers, style selection (--config / argv[0]), and arming&quot;},</span></span>
-<span id="L155"><span class="lineNum">     155</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;environment&quot;,</span></span>
-<span id="L156"><span class="lineNum">     156</span>                 :<span class="tlaGNC">          44 :        .aliases = kEnvironmentAliases,</span></span>
-<span id="L157"><span class="lineNum">     157</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;the environment variables xff reads (NO_COLOR, PAGER, ...)&quot;,</span></span>
-<span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">          44 :        .in_full = true},</span></span>
-<span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;styles&quot;, .aliases = kStyleAliases, .summary = &quot;the find / xff / rg flavor comparison&quot;},</span></span>
-<span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;extras&quot;,</span></span>
-<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">          44 :        .aliases = {},</span></span>
-<span id="L162"><span class="lineNum">     162</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;optional build extras (PCRE2, archive) and whether this binary has them&quot;},</span></span>
-<span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;archive&quot;,</span></span>
-<span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">          44 :        .aliases = kArchiveAliases,</span></span>
-<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;walking INTO containers: dive modes, member paths, and what is writable&quot;},</span></span>
-<span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;stats&quot;, .aliases = {}, .summary = &quot;the --summary and --histogram reductions&quot;},</span></span>
-<span id="L167"><span class="lineNum">     167</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;cookbook&quot;,</span></span>
-<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">          44 :        .aliases = kCookbookAliases,</span></span>
-<span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;worked examples that compose xff end to end&quot;,</span></span>
-<span id="L170"><span class="lineNum">     170</span>                 :<span class="tlaGNC">          44 :        .in_full = true},</span></span>
-<span id="L171"><span class="lineNum">     171</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;notice&quot;, .aliases = kNoticeAliases, .summary = &quot;third-party components + what this binary contains&quot;},</span></span>
-<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;license&quot;,</span></span>
-<span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">          44 :        .aliases = kLicenseAliases,</span></span>
-<span id="L174"><span class="lineNum">     174</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;xff's license in full (Apache-2.0); =COMPONENT for one component's&quot;},</span></span>
-<span id="L175"><span class="lineNum">     175</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;full&quot;, .aliases = kFullAliases, .summary = &quot;every option and primary, with the long explanations&quot;},</span></span>
-<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">          44 :   });</span></span>
-<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">          44 :   return kTopics;</span></span>
-<span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC">          44 : }</span></span>
-<span id="L179"><span class="lineNum">     179</span>                 :             : </span>
-<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">          27 : absl::Span&lt;const HelpFlag&gt; HelpFlags() {</span></span>
-<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">          27 :   static constexpr auto kFlags = std::to_array&lt;HelpFlag&gt;({</span></span>
-<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">          27 :       {.display = &quot;-h, --help, -help&quot;, .summary = &quot;print this usage page and exit (-help for GNU find compatibility)&quot;},</span></span>
-<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">          27 :       {.display = &quot;--help=NAME&quot;, .summary = &quot;full help for one option or primary (e.g. --help=-regex, --help=--sort)&quot;},</span></span>
-<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">          27 :       {.display = &quot;--help=TOPIC&quot;, .summary = &quot;detailed help for a topic:&quot;},</span></span>
-<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">          27 :       {.display = &quot;--help=full[:FORMAT]&quot;,</span></span>
-<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">          27 :        .summary = &quot;full reference as plain, markdown (md), html, or roff; also --help=long&quot;},</span></span>
-<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">          27 :       {.display = &quot;--help-full&quot;, .summary = &quot;plain full reference (also --help-long); --help-all = --help=all&quot;},</span></span>
-<span id="L188"><span class="lineNum">     188</span>                 :<span class="tlaGNC">          27 :       {.display = &quot;--man&quot;,</span></span>
-<span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">          27 :        .summary = &quot;conventional alias for --help=full:roff; formatted on a terminal, else raw roff&quot;},</span></span>
-<span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">          27 :       {.display = &quot;--version, -version&quot;, .summary = &quot;print the version and exit&quot;},</span></span>
-<span id="L191"><span class="lineNum">     191</span>                 :<span class="tlaGNC">          27 :   });</span></span>
-<span id="L192"><span class="lineNum">     192</span>                 :<span class="tlaGNC">          27 :   return kFlags;</span></span>
-<span id="L193"><span class="lineNum">     193</span>                 :<span class="tlaGNC">          27 : }</span></span>
-<span id="L194"><span class="lineNum">     194</span>                 :             : </span>
-<span id="L195"><span class="lineNum">     195</span>                 :             : }  // namespace xff::cli</span>
+<span id="L154"><span class="lineNum">     154</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;compare&quot;,</span></span>
+<span id="L155"><span class="lineNum">     155</span>                 :<span class="tlaGNC">          44 :        .aliases = {},</span></span>
+<span id="L156"><span class="lineNum">     156</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;compare two selected trees as statuses or a patch&quot;,</span></span>
+<span id="L157"><span class="lineNum">     157</span>                 :<span class="tlaGNC">          44 :        .in_full = true},</span></span>
+<span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;ignore&quot;,</span></span>
+<span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaGNC">          44 :        .aliases = kIgnoreAliases,</span></span>
+<span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;ignore sources, VCS metadata pruning, hidden paths, and precedence&quot;,</span></span>
+<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">          44 :        .in_full = true},</span></span>
+<span id="L162"><span class="lineNum">     162</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;config&quot;, .aliases = {}, .summary = &quot;config tiers, style selection (--config / argv[0]), and arming&quot;},</span></span>
+<span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;environment&quot;,</span></span>
+<span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">          44 :        .aliases = kEnvironmentAliases,</span></span>
+<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;the environment variables xff reads (NO_COLOR, PAGER, ...)&quot;,</span></span>
+<span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">          44 :        .in_full = true},</span></span>
+<span id="L167"><span class="lineNum">     167</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;styles&quot;, .aliases = kStyleAliases, .summary = &quot;the find / xff / rg flavor comparison&quot;},</span></span>
+<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;extras&quot;,</span></span>
+<span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">          44 :        .aliases = {},</span></span>
+<span id="L170"><span class="lineNum">     170</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;optional build extras (PCRE2, archive) and whether this binary has them&quot;},</span></span>
+<span id="L171"><span class="lineNum">     171</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;archive&quot;,</span></span>
+<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">          44 :        .aliases = kArchiveAliases,</span></span>
+<span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;walking INTO containers: dive modes, member paths, and what is writable&quot;},</span></span>
+<span id="L174"><span class="lineNum">     174</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;stats&quot;, .aliases = {}, .summary = &quot;the --summary and --histogram reductions&quot;},</span></span>
+<span id="L175"><span class="lineNum">     175</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;cookbook&quot;,</span></span>
+<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">          44 :        .aliases = kCookbookAliases,</span></span>
+<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;worked examples that compose xff end to end&quot;,</span></span>
+<span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC">          44 :        .in_full = true},</span></span>
+<span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;notice&quot;, .aliases = kNoticeAliases, .summary = &quot;third-party components + what this binary contains&quot;},</span></span>
+<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;license&quot;,</span></span>
+<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">          44 :        .aliases = kLicenseAliases,</span></span>
+<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">          44 :        .summary = &quot;xff's license in full (Apache-2.0); =COMPONENT for one component's&quot;},</span></span>
+<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">          44 :       {.name = &quot;full&quot;, .aliases = kFullAliases, .summary = &quot;every option and primary, with the long explanations&quot;},</span></span>
+<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">          44 :   });</span></span>
+<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">          44 :   return kTopics;</span></span>
+<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">          44 : }</span></span>
+<span id="L187"><span class="lineNum">     187</span>                 :             : </span>
+<span id="L188"><span class="lineNum">     188</span>                 :<span class="tlaGNC">          27 : absl::Span&lt;const HelpFlag&gt; HelpFlags() {</span></span>
+<span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">          27 :   static constexpr auto kFlags = std::to_array&lt;HelpFlag&gt;({</span></span>
+<span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">          27 :       {.display = &quot;-h, --help, -help&quot;, .summary = &quot;print this usage page and exit (-help for GNU find compatibility)&quot;},</span></span>
+<span id="L191"><span class="lineNum">     191</span>                 :<span class="tlaGNC">          27 :       {.display = &quot;--help=NAME&quot;, .summary = &quot;full help for one option or primary (e.g. --help=-regex, --help=--sort)&quot;},</span></span>
+<span id="L192"><span class="lineNum">     192</span>                 :<span class="tlaGNC">          27 :       {.display = &quot;--help=TOPIC&quot;, .summary = &quot;detailed help for a topic:&quot;},</span></span>
+<span id="L193"><span class="lineNum">     193</span>                 :<span class="tlaGNC">          27 :       {.display = &quot;--help=full[:FORMAT]&quot;,</span></span>
+<span id="L194"><span class="lineNum">     194</span>                 :<span class="tlaGNC">          27 :        .summary = &quot;full reference as plain, markdown (md), html, or roff; also --help=long&quot;},</span></span>
+<span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">          27 :       {.display = &quot;--help-full&quot;, .summary = &quot;plain full reference (also --help-long); --help-all = --help=all&quot;},</span></span>
+<span id="L196"><span class="lineNum">     196</span>                 :<span class="tlaGNC">          27 :       {.display = &quot;--man&quot;,</span></span>
+<span id="L197"><span class="lineNum">     197</span>                 :<span class="tlaGNC">          27 :        .summary = &quot;conventional alias for --help=full:roff; formatted on a terminal, else raw roff&quot;},</span></span>
+<span id="L198"><span class="lineNum">     198</span>                 :<span class="tlaGNC">          27 :       {.display = &quot;--version, -version&quot;, .summary = &quot;print the version and exit&quot;},</span></span>
+<span id="L199"><span class="lineNum">     199</span>                 :<span class="tlaGNC">          27 :   });</span></span>
+<span id="L200"><span class="lineNum">     200</span>                 :<span class="tlaGNC">          27 :   return kFlags;</span></span>
+<span id="L201"><span class="lineNum">     201</span>                 :<span class="tlaGNC">          27 : }</span></span>
+<span id="L202"><span class="lineNum">     202</span>                 :             : </span>
+<span id="L203"><span class="lineNum">     203</span>                 :             : }  // namespace xff::cli</span>
         </pre>
               </td>
             </tr>
