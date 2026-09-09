@@ -87,6 +87,15 @@ TEST_F(GlobalsTest, StringifiesAsCanonicalName) {
   EXPECT_THAT(absl::StrCat(LookupGlobal("--jobs").value()), "--jobs");
 }
 
+TEST_F(GlobalsTest, ConfigAndSymlinkFlagsDocumentTheirNonObviousBoundaries) {
+  EXPECT_THAT(LookupGlobal("--config")->details, HasSubstr("Every occurrence remains an active selector"));
+  EXPECT_THAT(LookupGlobal("--no-config")->details, HasSubstr("No config path is consulted"));
+  EXPECT_THAT(LookupGlobal("--explain")->details, HasSubstr("does not walk roots"));
+  EXPECT_THAT(LookupGlobal("-H")->details, HasSubstr("dangling root symlink"));
+  EXPECT_THAT(LookupGlobal("-L")->details, HasSubstr("Filesystem loops are detected"));
+  EXPECT_THAT(LookupGlobal("-P")->details, HasSubstr("including a symlink supplied as a root operand"));
+}
+
 TEST_F(GlobalsTest, ComposableExtraFlagCarriesItsExtraKeyAndIsOffInTheLeanBuild) {
   const mbo::types::OptionalRef<const GlobalFlag> archive = LookupGlobal("--archive");
   ASSERT_THAT(archive, Optional(_));

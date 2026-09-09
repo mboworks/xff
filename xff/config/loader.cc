@@ -54,8 +54,13 @@ ConfigInputs Discover(const DiscoveryOptions& opts, FileReader read) {
   inputs.no_config = opts.no_config;
   inputs.configs = opts.configs;
 
-  // System: always read. Its [policy] is never skipped by --no-config (the gate,
-  // phase C, needs it); ResolveConfig drops the [defaults] under --no-config.
+  // --no-config is absolute: no config path is consulted. There can be no config-sourced
+  // directive to gate in this mode, so retaining the system policy would have no security effect.
+  if (opts.no_config) {
+    return inputs;
+  }
+
+  // System defaults and policy, at the lowest-precedence config tier.
   {
     const std::optional<std::string> text = read("/etc/xff.ini");
     inputs.sources.push_back({.path = "/etc/xff.ini", .layer = Source::kSystem, .found = text.has_value()});
@@ -63,10 +68,6 @@ ConfigInputs Discover(const DiscoveryOptions& opts, FileReader read) {
       inputs.system = ParseIni(*text);
     }
   }
-  if (opts.no_config) {
-    return inputs;  // user + explicit files skipped; system [defaults] dropped by ResolveConfig
-  }
-
   // User: the first existing of $XFF_CONFIG / $XDG_CONFIG_HOME/xff/config / ~/.config/xff/config.
   if (const std::string user_path = UserConfigPath(opts); !user_path.empty()) {
     const std::optional<std::string> text = read(user_path);

@@ -405,11 +405,13 @@ TEST_F(HelpTest, StatsTopicDocumentsSummaryAndHistogram) {
 
 TEST_F(HelpTest, ConfigTopicDocumentsTiersStyleAndArming) {
   // `--help=config` renders from the model (TopicReference): the layered tiers, style
-  // selection (--config / argv[0]), and the arming rule for dangerous --xffrc directives.
+  // selector stacking (--config / argv[0]), --no-config's absolute boundary, and the
+  // arming rule for dangerous --xffrc directives.
   EXPECT_THAT(
       RenderTopicDoc("config"), AllOf(
                                     HasSubstr("system config"), HasSubstr("command line"), HasSubstr("--config"),
-                                    HasSubstr("argv[0]"), HasSubstr("--allow-exec")));
+                                    HasSubstr("multiple named blocks can apply"), HasSubstr("argv[0]"),
+                                    HasSubstr("consults none of those paths"), HasSubstr("--allow-exec")));
 }
 
 TEST_F(HelpTest, NoticeTopicRendersTheManifest) {

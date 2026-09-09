@@ -877,15 +877,17 @@ Section ConfigSection(bool in_full) {
   layers.children.push_back(RowsOf(kLayers));
   layers.children.push_back(ProseOf(
       "There is no project or ancestor `.xffrc` discovery: config comes from the system and user files "
-      "plus any `--xffrc` you name. `--no-config` ignores the discovered system/user files."));
+      "plus any `--xffrc` you name. `--no-config` consults none of those paths, regardless of option order; the run "
+      "uses only built-in defaults and command-line flags."));
   section.children.push_back(Content{.node = std::move(layers)});
 
   Subsection style{.title = "Choosing a style"};
   style.children.push_back(ProseOf(
-      "`--config=NAME` selects `find` / `xff` / `rg` (repeatable, last wins); see `--help=styles` for the "
-      "table. The invocation name (`argv[0]`) is the leading selector, so a symlink named `find` runs the "
-      "strict find style and `rg` the rg style; any other name (e.g. a `mytool` symlink) activates a "
-      "same-named config block over the xff default. An explicit `--config` still stacks on top."));
+      "Every `--config=NAME` remains active, so multiple named blocks can apply. Among built-in style selectors, "
+      "the last `find`, `xff`, or `rg` selects the baseline; custom names do not change it. See `--help=styles` for "
+      "the table. The invocation name (`argv[0]`) is the leading selector, so a symlink named `find` runs the strict "
+      "find style and `rg` the rg style; any other name (e.g. a `mytool` symlink) activates a same-named config block "
+      "over the xff default. Explicit `--config` selectors stack on top."));
   section.children.push_back(Content{.node = std::move(style)});
 
   Subsection arming{.title = "Arming dangerous directives"};

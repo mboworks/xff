@@ -31,7 +31,6 @@ using ::testing::AllOf;
 using ::testing::ElementsAre;
 using ::testing::Field;
 using ::testing::IsEmpty;
-using ::testing::SizeIs;
 
 // A FileReader backed by an in-memory path->contents map; absent paths read as
 // nullopt (missing file).
@@ -98,16 +97,21 @@ TEST_F(LoaderTest, ExplicitXffrcFilesFormTheirOwnTierInOrder) {
       ResolveConfig(in), ElementsAre(FlagIs("--threads=2", Source::kXffrc), FlagIs("--color=never", Source::kXffrc)));
 }
 
-TEST_F(LoaderTest, NoConfigSkipsUserAndDefaultsButStillReadsSystemPolicy) {
+TEST_F(LoaderTest, NoConfigConsultsNoConfigFiles) {
   FakeFs fs;
   fs.files["/etc/xff.ini"] = "[defaults]\n--color=auto\n[policy]\nproject.deny = @sensitive\n";
   fs.files["/home/u/.config/xff/config"] = "common: --sort\n";
   DiscoveryOptions opts;
   opts.home = "/home/u";
+  opts.xffrc_files = {"/extra.rc"};
   opts.no_config = true;
   const ConfigInputs in = Discover(opts, [&fs](std::string_view path) { return fs.Read(path); });
-  EXPECT_THAT(in.system.policy, SizeIs(1));   // policy still parsed for the gate (phase C)
-  EXPECT_THAT(ResolveConfig(in), IsEmpty());  // defaults + user dropped
+  EXPECT_THAT(in.sources, IsEmpty());
+  EXPECT_THAT(in.system.defaults, IsEmpty());
+  EXPECT_THAT(in.system.policy, IsEmpty());
+  EXPECT_THAT(in.user, IsEmpty());
+  EXPECT_THAT(in.xffrc, IsEmpty());
+  EXPECT_THAT(ResolveConfig(in), IsEmpty());
 }
 
 TEST_F(LoaderTest, MissingFilesYieldEmptyLayers) {

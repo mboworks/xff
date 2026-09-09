@@ -73,11 +73,11 @@ xff configuration. Options resolve from layered config tiers, then the command l
 - `--xffrc=FILE` - an explicitly named file (repeatable) - a NON-ARMING tier
 - `command line` - flags and `--config`, highest
 
-There is no project or ancestor `.xffrc` discovery: config comes from the system and user files plus any `--xffrc` you name. `--no-config` ignores the discovered system/user files.
+There is no project or ancestor `.xffrc` discovery: config comes from the system and user files plus any `--xffrc` you name. `--no-config` consults none of those paths, regardless of option order; the run uses only built-in defaults and command-line flags.
 
 ### Choosing a style
 
-`--config=NAME` selects `find` / `xff` / `rg` (repeatable, last wins); see `--help=styles` for the table. The invocation name (`argv[0]`) is the leading selector, so a symlink named `find` runs the strict find style and `rg` the rg style; any other name (e.g. a `mytool` symlink) activates a same-named config block over the xff default. An explicit `--config` still stacks on top.
+Every `--config=NAME` remains active, so multiple named blocks can apply. Among built-in style selectors, the last `find`, `xff`, or `rg` selects the baseline; custom names do not change it. See `--help=styles` for the table. The invocation name (`argv[0]`) is the leading selector, so a symlink named `find` runs the strict find style and `rg` the rg style; any other name (e.g. a `mytool` symlink) activates a same-named config block over the xff default. Explicit `--config` selectors stack on top.
 
 ### Arming dangerous directives
 
@@ -86,9 +86,10 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
 ## Options
 
 ### Config
-- `--config=NAME` - select a config style: find (strict), xff (evolved), rg (opinionated); repeatable _(global, xff)_
-  A config style sets the defaults for ignore files, hidden files, sizes, sort order, and case. find is strict find compatibility; xff keeps find's grammar but sorts and prints human sizes; rg is opinionated (respect .gitignore, skip hidden, smart case). Repeatable and layered, last one wins. See --help=styles for the per-style defaults.
-- `--no-config` - ignore discovered .xffrc files _(global, xff)_
+- `--config=NAME` - activate a named config or select the find, xff, or rg style; repeatable _(global, xff)_
+  A config style sets the defaults for ignore files, hidden files, sizes, sort order, and case. find is strict find compatibility; xff keeps find's grammar but sorts and prints human sizes; rg is opinionated (respect `.gitignore`, skip hidden, smart case). Every occurrence remains an active selector, so several named config blocks can apply. Among the built-in style selectors, the last `find`, `xff`, or `rg` occurrence chooses the baseline; custom names do not change it. A `STYLE:EPOCH` spelling such as `xff:2` selects `STYLE` while retaining the full name as a config selector. See `--help=styles` for the per-style defaults and `--help=config` for layering.
+- `--no-config` - disable all config-file loading _(global, xff)_
+  Runs from built-in defaults and command-line flags only. No config path is consulted: this skips `/etc/xff.ini`, the user config, and every explicit `--xffrc=FILE`, regardless of option order. There is no config-sourced directive to gate, so no system policy is needed in this mode. Ignore files such as `.gitignore` and `.xffignore` are traversal inputs, not config files, and are unaffected.
 - `--xffrc=FILE` - also load a specific config file (a non-arming tier; see --allow-exec) _(global, xff)_
   Loads FILE as a config tier above the user config (naming it is consent to LOAD it). It is a NON-ARMING tier: safe directives apply, but a dangerous one - the exec family (-exec/-execdir/-ok, -capture) or -delete - is inert unless --allow-exec is set from a trusted tier (the CLI or the user/system config, never from an --xffrc file itself). An unarmed dangerous line is dropped with a one-line warning. Repeatable; later files win.
   Affects: --allow-exec
@@ -98,11 +99,15 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
   Affects: --xffrc
   Affected by: --xffrc
 - `--explain` - print the resolved configuration and exit _(global, xff)_
+  Prints the active style, every config source consulted and whether it was found, resolved flags in application order with their provenance, rejected config directives, and the style-default table with this run's effective values. It does not walk roots or evaluate the expression. Diagnostics about unreadable config paths are limited to the source being reported as absent.
 
 ### Traversal
 - `-H` - follow symlinks named on the command line, not while walking _(global, find)_
+  Dereferences each symlink root operand before matching or descending, but keeps symlinks found below that root as symlinks. A dangling root symlink falls back to the link itself. `-H`, `-L`, and `-P` are mutually overriding leading options; the last occurrence wins.
 - `-L` - follow symlinks everywhere during the walk _(global, find)_
+  Dereferences symlink roots and symlinks encountered below them. Matching sees the target's type and metadata, and directory targets are descended. Dangling links fall back to the link itself. Filesystem loops are detected and reported instead of recursed indefinitely. `-H`, `-L`, and `-P` are mutually overriding leading options; the last occurrence wins.
 - `-P` - never follow symlinks (the default) _(global, find)_
+  Matches every symlink as a link and never descends through it, including a symlink supplied as a root operand. Predicates that explicitly inspect a target, such as `-xtype` and `-lname`, retain their documented behavior. `-H`, `-L`, and `-P` are mutually overriding leading options; the last occurrence wins.
 
 ### Archive traversal
 - `--archive[=none|roots|all|any], -z[-|+|++], -Z[-|+|++]` - descend into archives: -z- none, -z roots only, -z+ / bare --archive all _(global, xff)_

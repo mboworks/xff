@@ -3,6 +3,11 @@
 
 # 0.3.7
 
+- Make `--no-config` absolute: it now consults no system, user, or explicitly named config file,
+  matching the expectation set by its name regardless of other config-option ordering.
+- Clarify config-selector stacking, `--explain` output, and `-H` / `-L` / `-P` symlink traversal
+  boundaries in the generated reference.
+
 # 0.3.6
 
 - Make `--compare` run two ordinary walks in parallel and compare their expression matches by
