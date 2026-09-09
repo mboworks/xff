@@ -3,10 +3,23 @@
 
 # 0.3.7
 
+- Publish an immutable, versioned documentation website for every release, with stable links to
+  the native standalone HTML reference, release notes, source documents, and coverage. Historical
+  snapshots remain available while the site root follows the latest stable release.
+- Restructure the generated reference with linked Markdown contents, clearer option groupings, a
+  command-grammar overview, and dedicated output and tree-comparison guides. Console and man-page
+  rendering remain compact, while HTML retains its single native navigation block.
 - Make `--no-config` absolute: it now consults no system, user, or explicitly named config file,
   matching the expectation set by its name regardless of other config-option ordering.
 - Clarify config-selector stacking, `--explain` output, and `-H` / `-L` / `-P` symlink traversal
   boundaries in the generated reference.
+- Test the complete suite with the same Clang, size optimization, ThinLTO, and linker settings as
+  the published binaries, eliminating duplicate release builds while smoke-testing the final
+  stripped artifacts.
+- Upgrade PCRE2 to 10.48, including its security fixes, Unicode 17 data, matching corrections, and
+  memory-use improvements.
+- Replace the legacy Bazel setup action and implicit cache with the current opt-in setup while
+  retaining XFF's explicitly partitioned and size-bounded CI caches.
 
 # 0.3.6
 
