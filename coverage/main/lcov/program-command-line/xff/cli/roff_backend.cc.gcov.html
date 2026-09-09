@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-09 23:10:47</td>
+            <td class="headerValue">2026-09-09 23:50:49</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -108,38 +108,38 @@
 <span id="L28"><span class="lineNum">      28</span>                 :             : </span>
 <span id="L29"><span class="lineNum">      29</span>                 :             : namespace xff::cli {</span>
 <span id="L30"><span class="lineNum">      30</span>                 :             : </span>
-<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">       79841 : std::string RoffEscape(std::string_view text) {</span></span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">       79841 :   std::string out;</span></span>
-<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">       79841 :   out.reserve(text.size());</span></span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">       79841 :   bool at_line_start = true;</span></span>
-<span id="L35"><span class="lineNum">      35</span>         [<span class="tlaGBC" title="branch 0 was taken 2434269 times"> + </span><span class="tlaGBC" title="branch 1 was taken 79841 times"> + </span>]:<span class="tlaGNC">     2434269 :   for (const char chr : text) {</span></span>
+<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">       80031 : std::string RoffEscape(std::string_view text) {</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">       80031 :   std::string out;</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">       80031 :   out.reserve(text.size());</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">       80031 :   bool at_line_start = true;</span></span>
+<span id="L35"><span class="lineNum">      35</span>         [<span class="tlaGBC" title="branch 0 was taken 2438715 times"> + </span><span class="tlaGBC" title="branch 1 was taken 80031 times"> + </span>]:<span class="tlaGNC">     2438715 :   for (const char chr : text) {</span></span>
 <span id="L36"><span class="lineNum">      36</span>                 :             :     // A leading `.` or `'` in the first column is a roff control line; guard it.</span>
-<span id="L37"><span class="lineNum">      37</span> [<span class="tlaGBC" title="branch 0 was taken 79973 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2354296 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2769 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 77204 times"> + </span>]:<span class="tlaGNC">     2434269 :     if (at_line_start &amp;&amp; (chr == '.' || chr == '\'')) {</span></span>
-<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 95 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 77109 times"> + </span>]
+<span id="L37"><span class="lineNum">      37</span> [<span class="tlaGBC" title="branch 0 was taken 80163 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2358552 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2769 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 77394 times"> + </span>]:<span class="tlaGNC">     2438715 :     if (at_line_start &amp;&amp; (chr == '.' || chr == '\'')) {</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 95 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 77299 times"> + </span>]
 <span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">        2864 :       out += &quot;\\&amp;&quot;;</span></span>
 <span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">        2864 :     }</span></span>
-<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">     2434269 :     at_line_start = chr == '\n';</span></span>
-<span id="L41"><span class="lineNum">      41</span>         [<span class="tlaGBC" title="branch 0 was taken 704 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2433565 times"> + </span>]:<span class="tlaGNC">     2434269 :     if (chr == '\\') {</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">     2438715 :     at_line_start = chr == '\n';</span></span>
+<span id="L41"><span class="lineNum">      41</span>         [<span class="tlaGBC" title="branch 0 was taken 704 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2438011 times"> + </span>]:<span class="tlaGNC">     2438715 :     if (chr == '\\') {</span></span>
 <span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">         704 :       out += &quot;\\\\&quot;;</span></span>
-<span id="L43"><span class="lineNum">      43</span>         [<span class="tlaGBC" title="branch 0 was taken 56854 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2376711 times"> + </span>]:<span class="tlaGNC">     2433565 :     } else if (chr == '-') {</span></span>
-<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">       56854 :       out += &quot;\\-&quot;;  // option dashes stay real hyphen-minus (copy-pasteable)</span></span>
-<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">     2376711 :     } else {</span></span>
-<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">     2376711 :       out += chr;</span></span>
-<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">     2376711 :     }</span></span>
-<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">     2434269 :   }</span></span>
-<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">       79841 :   return out;</span></span>
-<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">       79841 : }</span></span>
+<span id="L43"><span class="lineNum">      43</span>         [<span class="tlaGBC" title="branch 0 was taken 56892 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2381119 times"> + </span>]:<span class="tlaGNC">     2438011 :     } else if (chr == '-') {</span></span>
+<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">       56892 :       out += &quot;\\-&quot;;  // option dashes stay real hyphen-minus (copy-pasteable)</span></span>
+<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">     2381119 :     } else {</span></span>
+<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">     2381119 :       out += chr;</span></span>
+<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">     2381119 :     }</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">     2438715 :   }</span></span>
+<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">       80031 :   return out;</span></span>
+<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">       80031 : }</span></span>
 <span id="L51"><span class="lineNum">      51</span>                 :             : </span>
 <span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">       15562 : void RoffBackend::EmitInline(const Inlines&amp; runs) {</span></span>
-<span id="L53"><span class="lineNum">      53</span>         [<span class="tlaGBC" title="branch 0 was taken 67834 times"> + </span><span class="tlaGBC" title="branch 1 was taken 15562 times"> + </span>]:<span class="tlaGNC">       67834 :   for (const Inline&amp; run : runs) {</span></span>
-<span id="L54"><span class="lineNum">      54</span>         [<span class="tlaGBC" title="branch 0 was taken 67834 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">       67834 :     switch (run.style) {</span></span>
-<span id="L55"><span class="lineNum">      55</span>         [<span class="tlaGBC" title="branch 0 was taken 41435 times"> + </span><span class="tlaGBC" title="branch 1 was taken 26399 times"> + </span>]:<span class="tlaGNC">       41435 :       case Inline::Style::kText: absl::StrAppend(&amp;out_, RoffEscape(run.text)); break;</span></span>
-<span id="L56"><span class="lineNum">      56</span>         [<span class="tlaGBC" title="branch 0 was taken 26396 times"> + </span><span class="tlaGBC" title="branch 1 was taken 41438 times"> + </span>]:<span class="tlaGNC">       26396 :       case Inline::Style::kCode:</span></span>
-<span id="L57"><span class="lineNum">      57</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 67833 times"> + </span>]:<span class="tlaGNC">       26397 :       case Inline::Style::kStrong: absl::StrAppend(&amp;out_, &quot;\\fB&quot;, RoffEscape(run.text), &quot;\\fR&quot;); break;</span></span>
-<span id="L58"><span class="lineNum">      58</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 67833 times"> + </span>]:<span class="tlaGNC">           1 :       case Inline::Style::kEmphasis: absl::StrAppend(&amp;out_, &quot;\\fI&quot;, RoffEscape(run.text), &quot;\\fR&quot;); break;</span></span>
-<span id="L59"><span class="lineNum">      59</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 67833 times"> + </span>]:<span class="tlaGNC">           1 :       case Inline::Style::kRef: absl::StrAppend(&amp;out_, RoffEscape(run.text)); break;</span></span>
-<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">       67834 :     }</span></span>
-<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">       67834 :   }</span></span>
+<span id="L53"><span class="lineNum">      53</span>         [<span class="tlaGBC" title="branch 0 was taken 68024 times"> + </span><span class="tlaGBC" title="branch 1 was taken 15562 times"> + </span>]:<span class="tlaGNC">       68024 :   for (const Inline&amp; run : runs) {</span></span>
+<span id="L54"><span class="lineNum">      54</span>         [<span class="tlaGBC" title="branch 0 was taken 68024 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">       68024 :     switch (run.style) {</span></span>
+<span id="L55"><span class="lineNum">      55</span>         [<span class="tlaGBC" title="branch 0 was taken 41530 times"> + </span><span class="tlaGBC" title="branch 1 was taken 26494 times"> + </span>]:<span class="tlaGNC">       41530 :       case Inline::Style::kText: absl::StrAppend(&amp;out_, RoffEscape(run.text)); break;</span></span>
+<span id="L56"><span class="lineNum">      56</span>         [<span class="tlaGBC" title="branch 0 was taken 26491 times"> + </span><span class="tlaGBC" title="branch 1 was taken 41533 times"> + </span>]:<span class="tlaGNC">       26491 :       case Inline::Style::kCode:</span></span>
+<span id="L57"><span class="lineNum">      57</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 68023 times"> + </span>]:<span class="tlaGNC">       26492 :       case Inline::Style::kStrong: absl::StrAppend(&amp;out_, &quot;\\fB&quot;, RoffEscape(run.text), &quot;\\fR&quot;); break;</span></span>
+<span id="L58"><span class="lineNum">      58</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 68023 times"> + </span>]:<span class="tlaGNC">           1 :       case Inline::Style::kEmphasis: absl::StrAppend(&amp;out_, &quot;\\fI&quot;, RoffEscape(run.text), &quot;\\fR&quot;); break;</span></span>
+<span id="L59"><span class="lineNum">      59</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 68023 times"> + </span>]:<span class="tlaGNC">           1 :       case Inline::Style::kRef: absl::StrAppend(&amp;out_, RoffEscape(run.text)); break;</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">       68024 :     }</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">       68024 :   }</span></span>
 <span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">       15562 : }</span></span>
 <span id="L63"><span class="lineNum">      63</span>                 :             : </span>
 <span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">          21 : void RoffBackend::Preamble(const Document&amp; doc) {</span></span>
