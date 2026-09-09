@@ -1265,7 +1265,9 @@ std::optional<Document> IndexReference(std::string_view name) {
   return doc;
 }
 
-static std::optional<Section> NamedTopicSection(std::string_view name) {
+namespace {
+
+std::optional<Section> NamedTopicSection(std::string_view name) {
   if (name == "fields") {
     return BuildFields();
   } else if (name == "output") {
@@ -1303,6 +1305,8 @@ static std::optional<Section> NamedTopicSection(std::string_view name) {
   }
   return std::nullopt;
 }
+
+}  // namespace
 
 std::optional<Document> TopicReference(std::string_view name) {
   Document doc;
