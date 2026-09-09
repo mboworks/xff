@@ -1,0 +1,46 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/design-near-duplicates.md - xff v0.3.7</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.3.7/">Home</a><a href="/xff/site/tag/v0.3.7/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.3.7">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/d74a8229606309cdefcc05cdf771d8ee43cf4d5b">Source</a><a href="/xff/coverage/tag/0.3.7/">Coverage</a><a href="/xff/releases/0.3.7/">CLI reference</a></nav><p>xff v0.3.7</p><main><h1 dir="auto" id="near-duplicate-grouping-design-spike">Near-duplicate grouping design spike</h1>
+<p dir="auto"><code class="notranslate">-similar</code> already answers a one-reference question with exact word-shingle Jaccard similarity. A<br>
+run-wide grouping operation has a different scaling problem: comparing every pair is quadratic before<br>
+the exact verifier has learned anything about either document.</p>
+<h2 dir="auto" id="fixed-correctness-boundary">Fixed correctness boundary</h2>
+<p dir="auto">Candidate generation may over-select. It must never emit a relationship. Every candidate pair passes<br>
+through <code class="notranslate">WordShinglePercent</code> with the requested width and threshold, and only that exact result can add<br>
+an edge. Hash collisions therefore cost verification time but cannot create a false match.</p>
+<p dir="auto">For a positive threshold, two non-empty shingle sets must share at least one shingle. An inverted<br>
+shingle index can consequently enumerate every possible match without comparing disjoint sets. Empty<br>
+sets need one explicit bucket because the current exact contract rates two empty sets as 100% similar.</p>
+<h2 dir="auto" id="measured-spike">Measured spike</h2>
+<p dir="auto"><code class="notranslate">//xff/matching/similarity:near_duplicate_benchmark</code> compares exhaustive verification with a complete<br>
+inverted-shingle candidate index. It validates that both paths emit exactly the same pair set before<br>
+timing either path. The matrix includes clustered documents, where postings are selective, and shared<br>
+boilerplate, where one common shingle deliberately degenerates the index toward all-pairs work.</p>
+<p dir="auto">On the initial 1,024-document clustered corpus, exhaustive search verified 523,776 pairs while the<br>
+index verified 3,584: a 146-fold deterministic reduction. One local optimized run took approximately<br>
+15.1 seconds and 0.14 seconds respectively; timings are machine-specific, while the pair counts are<br>
+the important architectural evidence. The boilerplate case remains in the benchmark so an optimization<br>
+cannot hide the adversarial shape.</p>
+<h2 dir="auto" id="implementation-direction">Implementation direction</h2>
+<ol dir="auto">
+<li>Generate normalized shingles once per eligible entry rather than rebuilding both sets for every<br>
+comparison.</li>
+<li>Store fixed-width shingle hashes in postings, not duplicate shingle strings. A collision only adds a<br>
+candidate because exact verification remains authoritative.</li>
+<li>Bound memory by processing partitions when the estimated posting data exceeds the configured<br>
+budget. This can remain in the core while its representation is compact; make it an extension only<br>
+if measured dependencies or retained state become substantial.</li>
+<li>Keep candidate generation replaceable. Very common postings should later be suppressed or augmented<br>
+by MinHash/LSH, but those mechanisms are optimizations rather than correctness dependencies.</li>
+</ol>
+<p dir="auto">The remaining product decision is clustering, not matching: similarity is not transitive, so connected<br>
+components, representative-centered groups, and maximal cliques produce different answers. No CLI<br>
+spelling should ship until that behavior is chosen and documented.</p></main><footer>Release snapshot · d74a8229606309cdefcc05cdf771d8ee43cf4d5b</footer></body></html>

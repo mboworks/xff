@@ -1,0 +1,445 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/design.md - xff v0.3.7</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.3.7/">Home</a><a href="/xff/site/tag/v0.3.7/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.3.7">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/d74a8229606309cdefcc05cdf771d8ee43cf4d5b">Source</a><a href="/xff/coverage/tag/0.3.7/">Coverage</a><a href="/xff/releases/0.3.7/">CLI reference</a></nav><p>xff v0.3.7</p><main><h1 dir="auto" id="xff---design-document">xff - Design Document</h1>
+<blockquote>
+<p dir="auto"><strong>xff</strong> - <em>eXtended File Find</em>: a massively improved Linux <code class="notranslate">find</code>.<br>
+Status: <strong>Draft</strong> · Started 2026-06-07 · Org: MBO Works</p>
+</blockquote>
+<h2 dir="auto" id="purpose">Purpose</h2>
+<p dir="auto"><em>One-paragraph summary of what xff is and why it exists. (To refine once the goals/features list is complete.)</em></p>
+<h2 dir="auto" id="design-principles">Design Principles</h2>
+<p dir="auto"><strong>Decision hierarchy - where to look for each answer, in order:</strong></p>
+<ol dir="auto">
+<li><strong>Match <code class="notranslate">find</code>.</strong> Anything <code class="notranslate">find</code> already does, we do (defaults, syntax, semantics). Drop-in is the contract.</li>
+<li><strong>Match the closest prior art.</strong> For functionality beyond <code class="notranslate">find</code> that we integrate (content search ← grep/ripgrep; ignore files ← ripgrep/fd; …), follow the established convention as far as is reasonable.</li>
+<li><strong>Invent our own</strong> - only when neither <code class="notranslate">find</code> nor prior art gives a reasonable answer.</li>
+</ol>
+<p dir="auto"><strong>Overriding constraints (everywhere past the <code class="notranslate">find</code>-compat surface):</strong> <em>logical above all</em>, then <em>self-consistent</em> (never contradict our own established conventions). Illogical or self-inconsistent prior art is <strong>not</strong> adopted - e.g. shell <code class="notranslate">set +x</code> polarity was rejected in favour of chmod-style suffix signs <code class="notranslate">-x</code> / <code class="notranslate">-x+</code> / <code class="notranslate">-x-</code>.</p>
+<p dir="auto"><strong>Escalation:</strong> anything that cannot satisfy the above is flagged for detailed discussion - never decided silently.</p>
+<p dir="auto"><strong>Known edge (confirmed):</strong> <code class="notranslate">find</code> is occasionally illogical itself (operator-precedence traps, <code class="notranslate">-delete</code> implies <code class="notranslate">-depth</code>, default <code class="notranslate">-print</code>, exit codes). On the <strong>drop-in surface fidelity wins</strong> - faithful compatibility <em>is</em> the logical requirement there - and the clean/logical version is offered as <strong>our own default/extension</strong> (modern behaviour, promoted via config).</p>
+<h2 dir="auto" id="goals">Goals</h2>
+<p dir="auto"><em>What xff must achieve. (Captured from Marcus's list - discussion deferred.)</em></p>
+<ul dir="auto">
+<li>Full support for modern <code class="notranslate">find</code> command lines - the complete expression/predicate set, including <code class="notranslate">-exec</code> and friends (drop-in compatible with how people use <code class="notranslate">find</code>).</li>
+<li>Run on macOS and *nix (Linux + BSD). Windows is not a priority.</li>
+<li><strong>Security &amp; safety by default - a prime goal.</strong> <em>Security</em> (against untrusted input: traversed configs, archives, remote sources) is paramount and never traded away. <em>Safety</em> (guarding the user from accidental destructive operations) governs xff's own surface and defaults; on the drop-in <code class="notranslate">find</code> surface, find's behaviour is preserved for fidelity (a documented sharp edge, mitigated by visible warnings). All safety/security mechanisms are <strong>self-documenting</strong> - surfaced in flag help, <code class="notranslate">--explain</code>, and docs so users see them and learn the model.</li>
+</ul>
+<h2 dir="auto" id="features">Features</h2>
+<p dir="auto"><em>Concrete capabilities. (Captured from Marcus's list - discussion deferred.)</em></p>
+<ul dir="auto">
+<li>Layered config system: per-user (global) <strong>and</strong> per-directory/local files that cascade like <code class="notranslate">.gitignore</code>, so complex argument sets and controls can be declared where they're relevant instead of retyped on the command line.</li>
+<li>Multiple regex flavors - only the relevant ones: <strong>PCRE</strong>, <strong>RE2</strong>, and <strong>C++</strong> (<code class="notranslate">std::regex</code>) for now.</li>
+<li><code class="notranslate">.gitignore</code>-respecting behavior that is both configurable (via the config system) and controllable from the command line (toggle + scope).</li>
+<li>Support for multiple search roots in a single invocation.</li>
+<li>Content filtering: match on file <strong>contents</strong>, including via regex and <strong>negative / inverted regex</strong> (select files whose contents do - or do <strong>not</strong> - match).
+<ul dir="auto">
+<li><strong>Shipped vocabulary (2026-06-28):</strong> <code class="notranslate">-content</code> / <code class="notranslate">-icontent</code> match a <strong>literal</strong> substring (the <code class="notranslate">i</code> form folds ASCII case); <code class="notranslate">-rxc</code> / <code class="notranslate">-irxc</code> match an <strong>RE2 regular expression</strong> (unanchored, the content counterpart of <code class="notranslate">-regex</code>'s whole-path match). Binary files are skipped by default (NUL-byte sniff over the first 8 KiB, rg-style). All four are xff extensions (<code class="notranslate">--config=find</code> rejects them) and <code class="notranslate">Cost::kExpensive</code>. The name <code class="notranslate">-grep</code> was deliberately rejected <strong>for the predicate</strong>: grep's BRE/ERE/<code class="notranslate">-P</code> flavor baggage makes it ambiguous for a matcher, so the <code class="notranslate">-contains</code> / <code class="notranslate">-grep</code> placeholders used elsewhere in this document are superseded by <code class="notranslate">-content</code> / <code class="notranslate">-rxc</code> for the <em>filter</em>.
+<ul dir="auto">
+<li><strong>Match-output action - <code class="notranslate">-grep</code> (shipped, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4719853627" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/79" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/79/hovercard" href="https://github.com/mboworks/xff/pull/79">#79</a>).</strong> The rg-style line output is an <strong>action</strong>, not a predicate: <code class="notranslate">-grep PATTERN</code> prints each content line matching an RE2 regex as <code class="notranslate">path:line:text</code> (grep's piped form), skipping binaries, and returns true iff it printed a line (grep-like exit). As a <em>pattern-less-flavor output action</em> the earlier <code class="notranslate">-grep</code> objection dissolves - the flavor lives in <code class="notranslate">--regextype</code> (shipped: <code class="notranslate">RE2</code> regex default / <code class="notranslate">EXACT</code> literal; grep-<code class="notranslate">MATCH</code> and <code class="notranslate">PCRE</code> reserved, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4720842932" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/85" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/85/hovercard" href="https://github.com/mboworks/xff/pull/85">#85</a>), not the name. It is self-contained (its own pattern, composable with the full find predicate set: <code class="notranslate">-mtime -7 -grep TODO</code>), so <code class="notranslate">-content</code>/<code class="notranslate">-rxc</code> stay untouched as file filters. Value over piping to grep/rg: find-grade file selection + one-pass fusion with xff actions. <strong><code class="notranslate">-grep:FORMAT</code></strong> overrides the default output with a field template, adding <code class="notranslate">{line}</code> (number), <code class="notranslate">{text}</code> (the matched line), <code class="notranslate">{match}</code> (the matched substring, grep <code class="notranslate">-o</code>), and <code class="notranslate">{column}</code> (its 1-based start) to the entry vocabulary (<code class="notranslate">{path}</code>/<code class="notranslate">{name}</code>/...). <strong><code class="notranslate">--count</code> / <code class="notranslate">-c</code></strong> (rg <code class="notranslate">-c</code>) makes <code class="notranslate">-grep</code> print one <code class="notranslate">path:count</code> per matching file (its matching-line count) instead of the lines. Deferred: <code class="notranslate">--regextype</code> modes beyond RE2/EXACT (grep-<code class="notranslate">MATCH</code>/PCRE, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4720842932" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/85" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/85/hovercard" href="https://github.com/mboworks/xff/pull/85">#85</a>) and context (<code class="notranslate">-A/-B/-C</code>). Also still to come for the filters: negative content match (<code class="notranslate">! -rxc</code>/<code class="notranslate">-content</code>), <code class="notranslate">--max-contentsize</code>, <code class="notranslate">--all-text</code>, and input <code class="notranslate">--encoding</code>.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>File classification: match by media type. <strong>Shipped:</strong> <code class="notranslate">-mime GLOB</code> (xff) matches the media (MIME) type derived from the extension against a shell glob - <code class="notranslate">-mime 'image/*'</code> selects png/jpeg/... at once; an unknown/absent extension is <code class="notranslate">application/octet-stream</code>. The lean core carries common types, the removable <code class="notranslate">mime-db</code> extra supplies a comprehensive MIT-licensed vocabulary, and repeatable <code class="notranslate">--mime-vocabulary=FILE</code> JSON layers provide deterministic local mappings and metadata (<code class="notranslate">--mime-conflicts=error|first|last</code>). The <code class="notranslate">{mime-*}</code> fields expose the selected type, category, description, charset, compressibility, and source. This remains name-based (does not inspect content or gate on <code class="notranslate">-type</code>); content classification is a separate next layer.</li>
+<li>Language classification is likewise a canonical-record vocabulary with derived exact-filename and<br>
+longest-suffix indexes. The lean core carries common languages; the removable, Brotli-compressed<br>
+GitHub Linguist extra adds the comprehensive MIT-licensed records without inflating the lean<br>
+binary. Repeatable <code class="notranslate">--lang-db=FILE</code> layers and<br>
+<code class="notranslate">--lang-conflicts=error|first|last</code> control local mappings. Filename matching remains<br>
+case-sensitive, suffix and language matching fold case, aliases match the canonical record, and<br>
+<code class="notranslate">{lang}</code> retains its canonical spelling. Linguist's content, modeline, and shebang heuristics are<br>
+intentionally not reproduced.</li>
+<li>Ability to dive into archives - descend into archive files (tar / zip / …) and search within them as if they were directories.</li>
+<li>Statistics / aggregation: collect stats over the matched set - total file size, file counts, and similar.
+<ul dir="auto">
+<li>Per-file-type breakdowns: counts and sizes grouped by file type / extension.</li>
+</ul>
+</li>
+<li>Sharded-file awareness: recognize sharded file sets (e.g. <code class="notranslate">f-000-of-003</code>, <code class="notranslate">f-001-of-003</code>, <code class="notranslate">f-002-of-003</code>) and collapse them into a single entry - either a wildcard form (<code class="notranslate">f-???-of-003</code>) or a representative shard (<code class="notranslate">f-000-of-003</code>).</li>
+<li>Output formats - pluggable renderers over one structured result model:
+<ul dir="auto">
+<li><strong>Machine:</strong> NUL-delimited (<code class="notranslate">-print0</code>), JSON / JSONL (object per hit + summary object), CSV / TSV.</li>
+<li><strong>Human:</strong> plain list (default, colorized on TTY), aligned monospace columns, GFM <strong>markdown tables with vertically-aligned source</strong>, tree / grouped.</li>
+<li>Stats reuse the same tabular renderers (per-type breakdowns, top-N, histograms render as aligned / markdown tables).</li>
+</ul>
+</li>
+</ul>
+<h2 dir="auto" id="cross-cutting-concerns">Cross-cutting concerns</h2>
+<p dir="auto"><em>Accepted.</em></p>
+<ul dir="auto">
+<li><strong>Safety:</strong> dry-run + <code class="notranslate">--confirm</code> required for any destructive action (delete / move / overwrite); safe defaults.</li>
+<li><strong>Determinism:</strong> parallel traversal is unordered - offer <code class="notranslate">--sort</code> / deterministic mode for reproducible output (tests, diffs).</li>
+<li><strong><code class="notranslate">--explain</code>:</strong> print the parsed predicate tree / execution plan for a query (debugging + teaching the expression syntax).</li>
+<li><strong>Shell completions:</strong> generate bash / zsh / fish completions.</li>
+</ul>
+<h2 dir="auto" id="tech--implementation">Tech / Implementation</h2>
+<p dir="auto"><em>Captured from Marcus's list - discussion deferred.</em></p>
+<ul dir="auto">
+<li>Language: <strong>C++23</strong> (consider <strong>C++26</strong> if it materially helps parallel / thread management).</li>
+</ul>
+<h2 dir="auto" id="non-goals">Non-Goals</h2>
+<p dir="auto"><em>Explicitly out of scope.</em></p>
+<ul dir="auto">
+<li>First-class Windows support (may happen to work, but not a target).</li>
+<li>In-place content replacement / sed-like editing (and similar content-mutating abilities) - <strong>at least for now</strong> (revisitable).</li>
+</ul>
+<h2 dir="auto" id="open-questions">Open Questions</h2>
+<ul dir="auto">
+<li><del><strong>Scope:</strong> pure file-finder vs. find + integrated content search?</del> <strong>Resolved</strong> (by the content-filtering feature): xff is a <strong>find + content-search hybrid</strong>. To discuss: this puts xff in <code class="notranslate">ripgrep</code>/<code class="notranslate">sift</code> territory as well as <code class="notranslate">fd</code>/<code class="notranslate">find</code>'s.</li>
+<li><del><strong>External / remote filesystems (e.g. SFTP):</strong> in scope?</del> <strong>Resolved as planned:</strong> the VFS seam was built (<code class="notranslate">xff/vfs</code>, local backend today; archive diving adds the second backend). Remote backends (SFTP / object stores) stay <strong>post-v1</strong> - the seam makes them additive, so nothing in the current surface has to anticipate them.</li>
+</ul>
+<h2 dir="auto" id="notes--decisions">Notes / Decisions</h2>
+<p dir="auto"><em>Discussion outcomes land here after the list is complete.</em></p>
+<h3 dir="auto" id="output-rendering">Output rendering</h3>
+<ul dir="auto">
+<li><strong>Two deliberate output modes (by design, not a limitation):</strong>
+<ul dir="auto">
+<li><em>Un-buffered / un-aligned (streaming)</em> - plain / JSONL / NUL / CSV emit row-by-row: low latency, constant memory, ideal for pipelines and huge result sets.</li>
+<li><em>Buffered / aligned</em> - aligned-column / markdown-table / stats collect the full result set to compute column widths, then render. Alignment is inherently buffered, so the un-aligned streaming mode is the intentional escape hatch.</li>
+</ul>
+</li>
+<li><strong>Display-width correctness:</strong> vertical alignment uses grapheme-cluster + East-Asian-width (<code class="notranslate">wcwidth</code>) math, not byte / codepoint counts - required for CJK / emoji / combining marks. (Matches the project rule that tables must be vertically aligned.)</li>
+<li>Right-align numeric columns; GFM alignment markers (<code class="notranslate">:--</code>, <code class="notranslate">--:</code>); escape <code class="notranslate">|</code>, newlines, and control chars for markdown / CSV (JSON / NUL are binary-safe).</li>
+</ul>
+<h3 dir="auto" id="cli-grammar--parser">CLI grammar &amp; parser</h3>
+<ul dir="auto">
+<li><strong>Shape:</strong> <code class="notranslate">xff [--long globals] &lt;dir…&gt; [find expression]</code>. The <strong>first directory is a semantic mode switch</strong> - order-independent globals before it, position-dependent (left→right, short-circuit) find expression after. <code class="notranslate">--</code> is the explicit boundary tiebreaker (and for paths starting with <code class="notranslate">-</code>/<code class="notranslate">+</code>).</li>
+<li><strong>Dialect:</strong> GNU-<code class="notranslate">find</code> canonical; BSD/macOS globals also accepted (<code class="notranslate">-H/-L/-P</code>, clustered <code class="notranslate">-EXdsx</code>, <code class="notranslate">-f path</code>).</li>
+<li><strong>Parser = its own modular, parse-only library:</strong> <code class="notranslate">argv → AST</code> (globals, roots, expression tree) + diagnostics; no traversal / IO. Driven by a <strong>declarative grammar registry</strong> (one descriptor per option/predicate/action: name, region, arity, dialect, cost-tier, purity, toggle-style). The registry is the single source of truth - the parser, <code class="notranslate">--help</code>, completions, <code class="notranslate">--explain</code>, and the cost-warning are all <em>derived</em> from it.</li>
+<li><strong>Left region:</strong> custom getopt-style pre-scan (clustered shorts + <code class="notranslate">--long</code> + boundary). Abseil is <strong>not</strong> used here (can't cluster shorts / attached values). <strong>Right region:</strong> recursive-descent over the find expression.</li>
+</ul>
+<h3 dir="auto" id="evaluation--optimization">Evaluation &amp; optimization</h3>
+<ul dir="auto">
+<li><strong>Strict left→right evaluation</strong> (exact find semantics, short-circuit <code class="notranslate">-a</code>/<code class="notranslate">-o</code>); <strong>no reordering by default</strong>.</li>
+<li><strong>Cost-aware advisory warning</strong> (stderr, on by default, suppress via <code class="notranslate">--no-warn</code> / find's <code class="notranslate">-nowarn</code>): fires when an <em>expensive</em> predicate (opens/reads a file - <code class="notranslate">-contains</code>, archive dive, hashing) precedes a <em>cheaper</em> one <strong>within the same <code class="notranslate">-a</code> conjunction</strong>. Never suggests moves across <code class="notranslate">-o</code>, <code class="notranslate">( )</code>, or actions. May print the concrete fix - it is the always-on lite slice of <code class="notranslate">--explain</code>.</li>
+<li><strong>Opt-in <code class="notranslate">--optimize</code></strong> (semantics-preserving reorder of pure tests within conjunctions) is <strong>post-v1</strong>, gated by <code class="notranslate">--explain</code>.</li>
+</ul>
+<h3 dir="auto" id="flag--toggle-conventions">Flag / toggle conventions</h3>
+<ul dir="auto">
+<li><strong>Long:</strong> <code class="notranslate">--X</code> / <code class="notranslate">--no-X</code> (hyphenated). Separator-less <code class="notranslate">--noX</code> <strong>deferred</strong> (ambiguous with flag names starting "no").</li>
+<li><strong>Short toggles:</strong> chmod-style <strong>suffix signs</strong> - <code class="notranslate">-x</code> (bare = default), <code class="notranslate">-x+</code> (on), <code class="notranslate">-x-</code> (off). Prefix <code class="notranslate">+</code> <strong>rejected</strong> (shell <code class="notranslate">set</code> polarity is cursed/illogical).</li>
+<li><strong>Clustering:</strong> a <code class="notranslate">+</code>/<code class="notranslate">-</code> binds to the immediately-preceding sign-accepting toggle (<code class="notranslate">-Hg+x</code> = H, g·on, x); signs valid only on registered toggles. <code class="notranslate">+</code> is <strong>not</strong> a leading sigil (so <code class="notranslate">+foo</code> paths need no escaping).</li>
+<li><strong>Provenance:</strong> every toggle stores <code class="notranslate">enum{unset, …}</code> (not <code class="notranslate">bool</code>) so CLI &gt; config &gt; default resolves; <em>unset</em> ≠ <em>off</em>.</li>
+</ul>
+<h3 dir="auto" id="ignore--filter-family">Ignore / filter family</h3>
+<p dir="auto"><em>All default to find-compatible (ignore nothing / show everything); a user's config promotes to modern behaviour.</em></p>
+<ul dir="auto">
+<li><strong><code class="notranslate">.gitignore</code> stack</strong> (nested gitignores + <code class="notranslate">.git/info/exclude</code> + global <code class="notranslate">core.excludesFile</code>): <code class="notranslate">-g</code> / <code class="notranslate">--gitignore</code>, ternary - bare <code class="notranslate">-g</code> = <strong>auto</strong> (respect iff in a git repo), <code class="notranslate">-g+</code> = on, <code class="notranslate">-g-</code> = off; unconfigured default = <strong>off</strong>. <em>Shipped (full stack): per-directory nested <code class="notranslate">.gitignore</code>, the bare-<code class="notranslate">-g</code> auto ternary (git-repo detection via <code class="notranslate">xff/filesystem/repo</code>), the <code class="notranslate">-g+</code> / <code class="notranslate">-g-</code> (= <code class="notranslate">--gitignore=on</code> / <code class="notranslate">=off</code>) short spellings, and - when in a repo - a repo-root-anchored walk that honors ancestor <code class="notranslate">.gitignore</code> above the search root, then <code class="notranslate">.git/info/exclude</code>, then git's global <code class="notranslate">core.excludesFile</code> (else <code class="notranslate">~/.config/git/ignore</code>) at the bottom.</em></li>
+<li><strong><code class="notranslate">.ignore</code></strong> (generic, non-git): <code class="notranslate">--ignore-files</code> (long-only).</li>
+<li><strong><code class="notranslate">.xffignore</code></strong>: our own tool-specific ignore file.</li>
+<li><strong>Master "show everything":</strong> <code class="notranslate">-u</code> / <code class="notranslate">--no-ignore</code> (disables <em>all</em> ignore-file processing; rg/fd convention).</li>
+<li><strong>Explicit patterns:</strong> <code class="notranslate">--exclude &lt;glob&gt;</code> / <code class="notranslate">--include &lt;glob&gt;</code>.</li>
+</ul>
+<h3 dir="auto" id="dotfiles-vs-hidden-distinct-concepts">Dotfiles vs hidden (distinct concepts)</h3>
+<ul dir="auto">
+<li><strong><code class="notranslate">--dotfiles</code>:</strong> name begins with <code class="notranslate">.</code> (portable; Linux's only "hidden" notion). Default <strong>shown</strong>; <code class="notranslate">--no-dotfiles</code> / <code class="notranslate">-…-</code> to suppress. <strong>Long-only</strong> (<code class="notranslate">-d</code> is find's depth-first).</li>
+<li><strong><code class="notranslate">--hidden</code>:</strong> OS attribute - macOS <code class="notranslate">UF_HIDDEN</code> (<code class="notranslate">chflags hidden</code>), Windows <code class="notranslate">FILE_ATTRIBUTE_HIDDEN</code>. Default <strong>shown</strong>. Distinct from <code class="notranslate">--dotfiles</code>; inert on Linux.</li>
+</ul>
+<h3 dir="auto" id="case-sensitivity">Case sensitivity</h3>
+<ul dir="auto">
+<li><strong>Name matching:</strong> find per-predicate <code class="notranslate">-iname</code> / <code class="notranslate">-ipath</code> / <code class="notranslate">-iregex</code> (case-insensitive variants); case-<strong>sensitive</strong> default (tier 1).</li>
+<li><strong>Content matching:</strong> <code class="notranslate">-i</code> / <code class="notranslate">--ignore-case</code> (grep/rg, tier 2). Optional global <code class="notranslate">--ignore-case</code> default, per-predicate overridable.</li>
+</ul>
+<h3 dir="auto" id="security--safety-review-2">Security &amp; safety (review <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4658839735" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/2" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/2/hovercard" href="https://github.com/mboworks/xff/pull/2">#2</a>)</h3>
+<p dir="auto">A <strong>prime goal</strong> (see Goals). Two strands:</p>
+<ul dir="auto">
+<li><strong>Security</strong> (untrusted external input - configs, archives, remote sources): always paramount; no <code class="notranslate">find</code>-compat tension since find lacks these features.</li>
+<li><strong>Safety</strong> (the user's own destructive ops): paramount on xff's own surface. On the <code class="notranslate">find</code> drop-in surface, find primaries keep find behaviour (e.g. <code class="notranslate">-delete</code> deletes) for fidelity - but xff emits a <strong>visible, suppressible safety warning</strong> (stderr; behaviour unchanged, so scripts are unaffected). xff's <em>own</em> destructive actions are guarded (dry-run + <code class="notranslate">--confirm</code>); a global <code class="notranslate">--dry-run</code> is always available; find's <code class="notranslate">-ok</code>/<code class="notranslate">-okdir</code> are honoured.</li>
+</ul>
+<p dir="auto"><strong>Config system (detailed spec):</strong> the full layered model - system <code class="notranslate">/etc/xff.ini</code> policy over the user <code class="notranslate">.xffrc</code>, per-flag safe-by-default capability gating, <code class="notranslate">--config</code> / <code class="notranslate">--feature</code> / <code class="notranslate">--xffrc</code> selectors, and <code class="notranslate">argv[0]</code> dispatch - is specified in <a href="design-config.html"><code class="notranslate">design-config.md</code></a>, which is <strong>authoritative for config</strong> (e.g. the explicit-file spelling is now <code class="notranslate">--xffrc=FILE</code>, freeing <code class="notranslate">--config=NAME</code> for named-config selection). <strong>Note (2026-07-06, Option B):</strong> the auto-discovered <strong>project</strong> <code class="notranslate">.xffrc</code> layer was dropped - config is system + user + explicit <code class="notranslate">--xffrc=FILE</code> only, with no per-directory discovery or <code class="notranslate">--project-config</code> flag; see that doc's superseding banner. The notes below are the original sketch.</p>
+<p dir="auto"><strong>Config format:</strong> INI-style - flat CLI-arg lines (the same flags you'd type, parsed by our own <code class="notranslate">parser</code>) plus optional <code class="notranslate">[named]</code> blocks (saved queries / exec recipes). No separate schema; "what you can type, you can save." Parsing is <strong>inert</strong> (builds an AST, never executes) - the security work is the action-gate below, not the format.</p>
+<p dir="auto"><strong>Config trust model:</strong></p>
+<ul dir="auto">
+<li><strong>user-global</strong> (<code class="notranslate">~/.config/xff/…</code>): data + <code class="notranslate">@exec</code> blocks both honoured (user-owned → trusted).</li>
+<li><strong>auto-discovered / cascading tree <code class="notranslate">.xff</code></strong>: <strong>data-only</strong>; action args and <code class="notranslate">[exec]</code> blocks are <strong>inert</strong> (parsed, never run).</li>
+<li><strong>explicitly named <code class="notranslate">--config &lt;file&gt;</code></strong>: arms that file's action args / <code class="notranslate">[exec]</code> blocks. Naming the file <em>is</em> the authorization - no trust DB, no hashes. Guards: <strong>ownership gate</strong> (file user-owned, not world-writable) + <strong>include discipline</strong> (<code class="notranslate">include</code> imports data only, never actions/exec).</li>
+<li>Named blocks are <strong>invoked</strong> (<code class="notranslate">xff @name</code>), never auto-triggered. <strong>No</strong> configurable "default exec-config path" (would re-introduce ambient execution).</li>
+<li>Tree config is <strong>subtree-scoped</strong> (its dir &amp; below; can't add roots, redirect output, or reach global) and ownership-gated even for data-only settings.</li>
+</ul>
+<p dir="auto"><strong>Self-documenting:</strong> registry descriptors carry a <code class="notranslate">safety</code> classification + rationale; <code class="notranslate">--help</code>, <code class="notranslate">--explain</code>, and generated docs surface every gate with its <em>why</em> ("ignoring <code class="notranslate">./.xff</code> - not user-owned [safety]"; "<code class="notranslate">[exec]</code> blocks inert - pass <code class="notranslate">--config</code> to arm [safety]"). Refusals explain themselves; never silent.</p>
+<p dir="auto"><strong>Safe mode:</strong> opt-in <code class="notranslate">--safe</code> (a.k.a. <code class="notranslate">--no-destructive</code>) <strong>hard-refuses</strong> destructive (<code class="notranslate">-delete</code>, future built-in mutators) and dangerous (<code class="notranslate">-exec</code>/<code class="notranslate">-execdir</code>/<code class="notranslate">-ok</code>) operations - distinct from <code class="notranslate">--dry-run</code> (which previews). Off by default (preserves drop-in), but a cautious user sets it as their personal default in user-global config; override per-invocation with <code class="notranslate">--no-safe</code> (CLI &gt; config). Granular <code class="notranslate">--no-exec</code> / <code class="notranslate">--no-delete</code> available. Ideal as a CI guardrail. Refusals self-documenting.</p>
+<h3 dir="auto" id="virtual-entries-archives--remote-review-3">Virtual entries: archives &amp; remote (review <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4659492369" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/3" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/3/hovercard" href="https://github.com/mboworks/xff/pull/3">#3</a>)</h3>
+<p dir="auto">Archive members and remote files have <strong>no real filesystem path</strong>. The VFS tags each entry by source - <code class="notranslate">real-fs</code> / <code class="notranslate">archive-member</code> / <code class="notranslate">remote</code> - with a <strong>read-only</strong> flag; everything downstream branches on it.</p>
+<ul dir="auto">
+<li><strong>Representation:</strong> machine output (JSON) uses structured fields (<code class="notranslate">container</code> + <code class="notranslate">member</code>); human output uses the JAR-style marker <code class="notranslate">container!member</code>. The separator doubles as a relative/absolute indicator: <code class="notranslate">pkg.tar!foo/bar</code> (relative member, normal) vs <code class="notranslate">pkg.tar!/foo/bar</code> (<strong>absolute</strong> stored path - unusual, and exactly the Zip-Slip red flag → flagged). <code class="notranslate">!</code> needs shell-quoting and is escaped if it occurs in a real name.</li>
+<li><strong>Actions are FS-only.</strong> Virtual entries are read-only ⇒ excluded from <code class="notranslate">-delete</code>/<code class="notranslate">-exec</code>/<code class="notranslate">-execdir</code> with a self-documenting skip ("read-only archive member, action skipped [safety]"). <strong>Tests/matching/printing/stats do apply</strong> (content matching reads member bytes). Extract-to-temp for <code class="notranslate">-exec</code> is opt-in, <strong>post-v1</strong>.</li>
+<li><strong>Diving is opt-in</strong> (find-compat: an archive is one file). The control is the ordered enum <code class="notranslate">--archive[=none|roots|all]</code> with the short <code class="notranslate">-z-</code> / <code class="notranslate">-z</code> / <code class="notranslate">-z+</code> (bare <code class="notranslate">--archive</code> = <code class="notranslate">all</code>); <code class="notranslate">find</code> defaults to <code class="notranslate">none</code>, the xff-family flavors to <code class="notranslate">roots</code> (a named archive root dives, mid-walk ones need <code class="notranslate">all</code>). When on, members enumerate as virtual entries. <strong>Size = uncompressed (logical)</strong> in human output; compressed exposed in JSON. Stats label uncompressed totals (which can dwarf disk usage).</li>
+<li><strong>Security (untrusted input - prime goal):</strong> decompression-bomb limits (max expansion ratio / total bytes / member count / nesting depth); Zip-Slip sanitization (reject/flag <code class="notranslate">..</code>-escaping and absolute member paths); never follow archive symlinks out of bounds.</li>
+<li><strong>Streaming:</strong> virtual entries are sequential (no <code class="notranslate">mmap</code>); content + negative-match (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4659858156" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/6" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/6/hovercard" href="https://github.com/mboworks/xff/pull/6">#6</a>) stream/decompress fully. Remote = network stream.</li>
+<li><strong>Remote (SFTP, deferred) uses the same model:</strong> <code class="notranslate">remote</code> source, read-only, URI scheme (<code class="notranslate">sftp://host/path</code>), actions FS-only.</li>
+</ul>
+<h3 dir="auto" id="regex-engines-review-4">Regex engines (review <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4659693354" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/4" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/4/hovercard" href="https://github.com/mboworks/xff/pull/4">#4</a>)</h3>
+<ul dir="auto">
+<li><strong>Two engines only; <code class="notranslate">std::regex</code> dropped</strong> (slow, stdlib-inconsistent, ReDoS-prone, no unique capability). The ECMAScript-familiar syntax C++ devs expect is offered as a PCRE2 flavor, not a separate engine.</li>
+<li><strong>RE2 = default</strong> - linear-time, Unicode, ReDoS-immune (the safe default per the prime goal); no backrefs/lookaround.</li>
+<li><strong>PCRE2 = opt-in power engine</strong> (backrefs, lookaround) with <strong>configurable safety limits</strong> - match limit / backtracking-depth limit / heap limit (<code class="notranslate">pcre2_set_match_limit</code> / <code class="notranslate">set_depth_limit</code> / <code class="notranslate">set_heap_limit</code>). Sane default bounds ReDoS; raise or lower via flags + config. Limit-exceeded errors self-document ("PCRE2 match limit exceeded - pathological pattern, or raise <code class="notranslate">--pcre-match-limit</code> [safety]").</li>
+<li><strong>Explicit selection; no silent fallback</strong> - opt into PCRE2 with <code class="notranslate">--regextype=PCRE2</code> (the one grammar selector, shared with RE2 / EXACT / FNMATCH / GLOB / SHGLOB); a pattern needing PCRE2-only features under RE2 → clear error + suggestion, never a silent switch. A build without the PCRE2 extra linked says so self-documentingly.</li>
+<li><strong>find's <code class="notranslate">-regex</code>/<code class="notranslate">-regextype</code> (its own grammar; tier 1)</strong> backed by <strong>RE2 via grammar translation</strong> (BRE/ERE/egrep/awk → RE2), PCRE2 for exotic/Emacs constructs; cross-platform-consistent, fidelity validated by the Phase-1 conformance suite, deviations documented.</li>
+<li>Patterns are <strong>not portable</strong> across engines (documented).</li>
+</ul>
+<h3 dir="auto" id="output-encoding---non-utf-8-paths--content-review-5">Output encoding - non-UTF-8 paths &amp; content (review <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4659783878" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/5" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/5/hovercard" href="https://github.com/mboworks/xff/pull/5">#5</a>)</h3>
+<p dir="auto">POSIX paths (and content) are byte strings, not guaranteed UTF-8; JSON/CSV/markdown require valid text. Decision: <strong>one uniform, user-chosen encoding per run, with a sensible default.</strong> A consumer can't auto-detect base64 vs utf8/escape, so the encoding is a single explicit mode applied to the <em>whole</em> output - no per-field marking (we deliberately diverge from ripgrep's <code class="notranslate">{text|bytes}</code>). The default is picked so a bad binary filename - the offender's own mess - never derails everyone else's run or burdens the clean-name common case.</p>
+<ul dir="auto">
+<li><strong>Byte-faithful formats (plain, NUL/<code class="notranslate">-print0</code>)</strong>: always emit raw bytes; never affected. <strong>NUL is the escape hatch</strong> for exact bytes.</li>
+<li><strong>Text-structured formats (JSON, CSV, markdown) - default</strong>: never abort; emit the offending path/content in a <strong>reversible escape</strong> (documented <code class="notranslate">\xNN</code>, git <code class="notranslate">core.quotePath</code>-style - lossless, valid string, no shape change) plus a one-line stderr note (transparent, not silent). Clean UTF-8 (the 99.9%) is untouched - plain strings, zero ceremony.</li>
+<li><strong><code class="notranslate">--path-encoding=&lt;mode&gt;</code></strong> (per-invocation or config; governs how non-UTF-8 bytes are rendered in <em>output</em> - paths and any echoed content): <code class="notranslate">escape</code> (default), <code class="notranslate">base64</code> (machine-pure lossless), <code class="notranslate">lossy</code> (U+FFFD), <code class="notranslate">strict</code> (fail - for CI that should reject messy input). Applies uniformly to all FS/content-derived fields.</li>
+<li>Consistency note: this is <em>not</em> a "silent fallback" - that rule governs <em>semantic</em> switches (engines/actions); gracefully encoding edge-case bytes is a display transform, and it's announced on stderr.</li>
+</ul>
+<h3 dir="auto" id="content-match-cost-review-6">Content-match cost (review <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4659858156" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/6" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/6/hovercard" href="https://github.com/mboworks/xff/pull/6">#6</a>)</h3>
+<ul dir="auto">
+<li><strong>Negative content match (<code class="notranslate">! -contains …</code>) is intrinsically slow</strong> - proving absence needs a full read (no early-exit, unlike positive match). Top cost-tier; feeds the ordering warning (put a cheap <code class="notranslate">-type f</code>/<code class="notranslate">-name</code> first to short-circuit most files).</li>
+<li><strong>Literal prefilter mitigates:</strong> for a required-literal, <em>absent</em> → conclude "no match" after one fast SIMD scan (regex skipped); <em>present</em> → run the regex. Pure-literal negation = a single memchr-class sweep.</li>
+<li><strong><code class="notranslate">--max-contentsize</code></strong> caps how much of a file is read for content matching (named to avoid confusion with a size <em>filter</em> / find's <code class="notranslate">-size</code>). A file over the cap is <strong>excluded from content tests</strong> - never silently asserted to "not contain" the pattern (no claiming absence on unread bytes). Self-documenting skip.</li>
+<li><strong>Users are told it's slow:</strong> <code class="notranslate">--explain</code> shows it, and an advisory note fires when negative content matching runs over a large set (same self-documenting ethos as safety).</li>
+<li>Worst case = negative match over archive/remote (full decompress / network read; <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4659492369" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/3" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/3/hovercard" href="https://github.com/mboworks/xff/pull/3">#3</a> limits apply); the parallel scheduler uses work-stealing for the uneven work.</li>
+</ul>
+<h3 dir="auto" id="parallel-exec-review-7">Parallel exec (review <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4659964500" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/7" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/7/hovercard" href="https://github.com/mboworks/xff/pull/7">#7</a>)</h3>
+<ul dir="auto">
+<li><strong><code class="notranslate">-exec</code> / <code class="notranslate">-execdir</code> / <code class="notranslate">-ok</code> serial by default</strong> (tier-1 contract). Traversal runs in parallel, but matched entries are funneled through one ordered queue to the action - each file processed once, not concurrently, like find. <strong><code class="notranslate">-ok</code>/<code class="notranslate">-okdir</code> always serial</strong> (interactive prompt can't come from concurrent workers).</li>
+<li><strong>Parallel exec is opt-in</strong> via <code class="notranslate">-j N</code> / <code class="notranslate">--jobs</code> (&gt;1) - relaxes the serial contract (explicit user choice; settable as a config default per D1). <code class="notranslate">-j</code> is free (find doesn't use it).</li>
+<li><strong>Per-child output buffering</strong> under parallel exec: each invocation's stdout/stderr captured and emitted atomically (no <code class="notranslate">xargs -P</code> garble).</li>
+<li>Fully find-like = <code class="notranslate">-j1 --sort</code> (serial exec + deterministic order). Default = parallel-traversal speed + serial-faithful exec.</li>
+</ul>
+<h3 dir="auto" id="macos--cross-platform-correctness-review-8">macOS / cross-platform correctness (review <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4660026240" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/8" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/8/hovercard" href="https://github.com/mboworks/xff/pull/8">#8</a>)</h3>
+<ul dir="auto">
+<li><strong>Name-match strictness - <code class="notranslate">--exact</code> (shipped <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4707757333" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/45" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/45/hovercard" href="https://github.com/mboworks/xff/pull/45">#45</a>; decided 2026-06-28).</strong> The<br>
+default is the <strong>filesystem-native, naturally-expected</strong> behavior: the xff style<br>
+matches <code class="notranslate">-name</code> / <code class="notranslate">-path</code> the way the entry's own volume resolves names - <strong>case<br>
+folding on a case-insensitive volume</strong> (APFS / HFS+ in their default config, NTFS,<br>
+exFAT), byte-exact on a case-sensitive one (ext4 and friends) - so a lookup the OS<br>
+would satisfy case-insensitively also matches here. <strong><code class="notranslate">--exact</code> opts out</strong>, forcing<br>
+verbatim byte-exact comparison regardless of the FS; the <strong>find style is always<br>
+byte-exact</strong> (drop-in faithful), as is the conservative in-process default. Backed<br>
+by a <code class="notranslate">vfs</code> per-volume <code class="notranslate">IsCaseSensitive</code> probe (<code class="notranslate">pathconf(_PC_CASE_SENSITIVE)</code> on<br>
+macOS/BSD; conservative case-sensitive fallback on Linux and when unprobeable). The<br>
+<code class="notranslate">-iname</code> / <code class="notranslate">-ipath</code> variants fold regardless; regex keeps its own <code class="notranslate">-iregex</code>.
+<ul dir="auto">
+<li><strong>Scope is case only for now.</strong> Normalization (NFC/NFD) and fuzzy/similarity<br>
+matching were an earlier sketch (<code class="notranslate">--exact+</code> byte-exact / <code class="notranslate">--exact-</code> fuzzy);<br>
+they are <strong>deferred</strong> - the shipped flag is the boolean case opt-out above, and<br>
+the tri-state <code class="notranslate">+</code>/<code class="notranslate">-</code> spellings can layer on later if a concrete need appears.</li>
+</ul>
+</li>
+<li><strong>Birthtime</strong> (<code class="notranslate">-Btime</code>/<code class="notranslate">-Bmin</code>/<code class="notranslate">-Bnewer</code>, BSD-compat; GNU lacks them): backed by <code class="notranslate">st_birthtime</code> (macOS/BSD) / <code class="notranslate">statx(STATX_BTIME)</code> (Linux ≥4.11).</li>
+<li><strong>Impossible tasks fail by default:</strong> a predicate that can't be evaluated correctly on a given kernel/FS (e.g. <code class="notranslate">-Btime</code> where birthtime is unrecorded) → <strong>hard error</strong>, self-documenting, naming the unsupported path/FS. Opt-in <code class="notranslate">--skip-unsupported</code> downgrades to warn-and-skip. (Rule: <strong>fail when correctness is impossible; warn when degraded-but-correct.</strong>)</li>
+<li><strong>FSEvents (macOS) vs inotify/fanotify (Linux):</strong> the Phase-4 index/watch abstracts behind a platform interface (deferred).</li>
+<li>All platform-specific metadata (btime, normalization/case caps, watch) lives behind the VFS/platform layer; the engine stays platform-agnostic.</li>
+</ul>
+<h3 dir="auto" id="vfs-capability-and-host-adapter-boundaries">VFS capability and host-adapter boundaries</h3>
+<p dir="auto">The VFS has two deliberately different contracts. Consumers use the small capability-oriented<br>
+<code class="notranslate">vfs::FileSystem</code> interface (<code class="notranslate">ReadDir</code>, <code class="notranslate">Stat</code>, <code class="notranslate">ReadLink</code>, content reads, access checks, and<br>
+capability-scoped writes), with <code class="notranslate">Status</code>/<code class="notranslate">StatusOr</code> results and no descriptors or platform types.<br>
+Write capabilities include creating temporary files, writing/replacing bytes, truncating, and<br>
+removing entries where xff explicitly needs them. Each backend implements only the capabilities it<br>
+can provide; unsupported operations return structured errors.</p>
+<p dir="auto">The local backend keeps a separate internal host adapter for POSIX, <code class="notranslate">std::filesystem</code>, and platform<br>
+metadata primitives, including file creation and mutation. That adapter is the only place where<br>
+host handles and C APIs appear, keeping<br>
+annotations and portability code at the immediate boundary. Archive, memory, and remote backends<br>
+never need to expose those implementation details, and engine code cannot accidentally bypass the<br>
+VFS by opening a host path directly.</p>
+<h3 dir="auto" id="exit-code-model-review-9">Exit-code model (review <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4660072612" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/9" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/9/hovercard" href="https://github.com/mboworks/xff/pull/9">#9</a>)</h3>
+<p dir="auto">One consistent table; the mode decides whether "no-match" is reachable:</p>
+<ul dir="auto">
+<li>
+<p dir="auto"><code class="notranslate">0</code> - success (and, in match-sensitive mode, ≥1 match).</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">1</code> - <strong>no match</strong> (only reachable in match-sensitive mode).</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">2</code> - error (bad args, fatal IO, impossible predicate per <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4660026240" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/8" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/8/hovercard" href="https://github.com/mboworks/xff/pull/8">#8</a>).</p>
+</li>
+<li>
+<p dir="auto"><strong>Default = find semantics:</strong> match status doesn't affect exit (<code class="notranslate">0</code> if it ran, <code class="notranslate">2</code> on error; <code class="notranslate">1</code> never returned) - drop-in faithful. <code class="notranslate">2</code>-for-error satisfies both find's "&gt;0 on error" and grep's "2 = error".</p>
+</li>
+<li>
+<p dir="auto"><strong>Match-sensitive exit is opt-in:</strong> <code class="notranslate">-q</code>/<code class="notranslate">--quiet</code> (grep-style - suppress output, exit by match) and/or <code class="notranslate">--exit-match</code> (keep output, exit by match); only then is <code class="notranslate">1</code> reachable.</p>
+</li>
+<li>
+<p dir="auto"><strong>Per-file access errors</strong> (e.g. permission denied): traversal continues (like find), final exit <code class="notranslate">2</code> (unless softened by the error policy); fatal errors abort with <code class="notranslate">2</code>. Details to stderr.</p>
+</li>
+</ul>
+<h3 dir="auto" id="binary-detection--content-encoding-review-10">Binary detection &amp; content encoding (review <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4660249355" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/10" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/10/hovercard" href="https://github.com/mboworks/xff/pull/10">#10</a>)</h3>
+<p dir="auto">Content-matching path only (<code class="notranslate">-contains</code>/<code class="notranslate">-grep</code>); the find side is unaffected.</p>
+<ul dir="auto">
+<li><strong>Binary files: skipped by default</strong> for content matching (NUL-byte heuristic, rg-style - content search is for text). <strong><code class="notranslate">--all-text</code></strong> (long-only; <code class="notranslate">-a</code> is <em>not</em> reused - it clashes with the expression operator <code class="notranslate">-a</code>/<code class="notranslate">-and</code>) forces treat-as-text; skipped-binary counts surfaced via <code class="notranslate">--explain</code>.</li>
+<li><strong>Input content encoding: UTF-8 by default</strong>, with BOM auto-detect + UTF-16 transcode (rg-style). <strong><code class="notranslate">--encoding</code> / <code class="notranslate">-E &lt;enc&gt;</code></strong> forces an input encoding for BOM-less content; undecodable content → matched as raw bytes (best-effort) or specify <code class="notranslate">-E</code>.</li>
+<li><strong>Name disambiguation:</strong> <code class="notranslate">--encoding</code>/<code class="notranslate">-E</code> = <em>input content</em> decoding (rg-aligned, the expected meaning); the <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4659783878" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/5" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/5/hovercard" href="https://github.com/mboworks/xff/pull/5">#5</a> <em>output</em> encoding is renamed <strong><code class="notranslate">--path-encoding</code></strong>. Two distinct concepts, two distinct names.</li>
+</ul>
+<h3 dir="auto" id="sharded-files-review-11-84">Sharded files (review <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4660647287" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/11" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/11/hovercard" href="https://github.com/mboworks/xff/pull/11">#11</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4720783337" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/84" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/84/hovercard" href="https://github.com/mboworks/xff/pull/84">#84</a>)</h3>
+<p dir="auto"><strong>Off by default; opt-in <code class="notranslate">--shards</code></strong> (find sees the separate files, so the default stays drop-in<br>
+faithful). v1 is <strong>display + stats only</strong>: <code class="notranslate">--shards</code> collapses a shard set into one logical entry<br>
+for <em>listing and aggregate stats</em>, while matching and actions stay per real shard (find-faithful<br>
+underneath, no ambiguous group-exec). A <strong>reassembled-content view</strong> (so <code class="notranslate">-grep</code> / <code class="notranslate">-content</code> /<br>
+<code class="notranslate">-hash</code> / <code class="notranslate">-size</code> see the concatenated whole) is a <strong>v2 built on the <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4720702742" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/83" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/83/hovercard" href="https://github.com/mboworks/xff/pull/83">#83</a> archive vfs backend</strong>, where<br>
+it is most useful (a split archive reassembles, then dives); it is out of scope for v1.</p>
+<p dir="auto"><strong>Sharding is not rotation.</strong> A shard set is <em>parts of one logical whole</em> (concatenate / belong<br>
+together). Rotated logs (<code class="notranslate">app.log.1</code>, <code class="notranslate">app.log-20260101</code>) and storage segments (SSTables, WAL) are<br>
+<em>independent</em> files, not parts of one entity, and are deliberately <strong>out of scope</strong> - the detector<br>
+must never fold them into a set.</p>
+<p dir="auto"><strong>A shard scheme varies along six axes</strong>, and the model expresses all of them:</p>
+<ol dir="auto">
+<li><strong>Index position</strong> - suffix (<code class="notranslate">.001</code>), infix before the extension (<code class="notranslate">.part1.rar</code>, <code class="notranslate">-s001.vmdk</code>), or<br>
+replaces the extension (<code class="notranslate">.z01</code>).</li>
+<li><strong>Index form</strong> - numeric (with pad width) or alpha base-26 (<code class="notranslate">aa</code>); <strong>0-based or 1-based</strong>.</li>
+<li><strong>Declared total</strong> - present (<code class="notranslate">-of-010</code>, enables completeness) or absent (contiguity only).</li>
+<li><strong>Special boundary member</strong> - a differently-named first (<code class="notranslate">.rar</code>) or last (<code class="notranslate">.zip</code>) volume.</li>
+<li><strong>Trailing opaque suffix</strong> - a generation / attempt id excluded from shard identity (see dedup).</li>
+<li><strong>Ordering rule</strong> - numeric ascending, alpha ascending, or "special member sorts first / last".</li>
+</ol>
+<p dir="auto"><strong>Capture vocabulary</strong> (one engine for built-ins and custom patterns; a scheme is defined by these<br>
+named captures):</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Capture</th>
+<th align="left">Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code class="notranslate">stem</code></td>
+<td align="left">the logical base name shared by every member; identifies the set</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">index</code></td>
+<td align="left">the shard's position within the set (numeric or alpha; padding / base is part of the scheme)</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">total</code></td>
+<td align="left">optional declared count; when present, drives completeness validation</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">dup</code></td>
+<td align="left">optional opaque tail (e.g. a generation hash); <strong>excluded from identity</strong>, drives dedup</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Logical shard identity is <code class="notranslate">(stem, index, total?)</code>; the set identity is <code class="notranslate">(stem, total-or-scheme)</code>.</p>
+<p dir="auto"><strong>The optional tail (<code class="notranslate">dup</code>) is a cross-cutting modifier, not its own scheme.</strong> Any scheme may carry an<br>
+optional trailing tail after the shard name so the same logical shard can be <em>regenerated</em> under a new<br>
+name (redundant generators race, the first to finish wins and the stragglers are killed). The tail is<br>
+described by <strong>one regex</strong> carrying <strong>exactly one capturing group</strong> - that group is the opaque <code class="notranslate">dup</code><br>
+(excluded from identity); everything <em>outside</em> the group is literal context that must match as-is, so<br>
+the separator lives inside the regex rather than being a separate optional knob. The default is<br>
+<code class="notranslate">`\.([0-9a-fA-F]{8,})`</code> (a literal dot then a run of at least 8 hex digits, matching the common<br>
+Google 16-hex id) - deliberately conservative, so an ordinary extension (<code class="notranslate">.tfrecord</code>, <code class="notranslate">.parquet</code>) is<br>
+<em>not</em> mistaken for a tail. <code class="notranslate">--shard-tail=REGEX</code> overrides it (base64, a fixed width, a <code class="notranslate">_gen-</code> prefix,<br>
+...); an empty value disables the tail; a custom <code class="notranslate">--shard-pattern</code> instead sets it per-scheme via its<br>
+<code class="notranslate">dup</code> capture. The tail is matched against the string immediately after the shard number, and any<br>
+extension after it is preserved separately (it belongs to the set, not the tail). So<br>
+<code class="notranslate">data-00000-of-00010</code> and <code class="notranslate">data-00000-of-00010.a1b2c3d4e5f6a1b2</code> are the same logical shard<br>
+<code class="notranslate">00000-of-00010</code>; the tail never enters identity or completeness.</p>
+<p dir="auto"><strong>Built-in catalog</strong> (<code class="notranslate">--shards[=auto|SCHEME,...]</code>, default <code class="notranslate">auto</code> tries all):</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Scheme</th>
+<th align="left">Example</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code class="notranslate">of</code></td>
+<td align="left"><code class="notranslate">data-00000-of-00010[.&lt;tail&gt;]</code></td>
+<td align="left">TF/TFRecord; 0-based, declared total, opt tail</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">part</code></td>
+<td align="left"><code class="notranslate">part-00000</code>, <code class="notranslate">part-r-00000-&lt;uuid&gt;.parquet</code></td>
+<td align="left">Spark/Hadoop; optional <code class="notranslate">r-</code>/<code class="notranslate">m-</code> infix, no total</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">webdataset</code></td>
+<td align="left"><code class="notranslate">shard-000042.tar</code>, <code class="notranslate">imagenet-train-001281.tar</code></td>
+<td align="left">bare zero-padded numeric suffix before ext</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">split-alpha</code></td>
+<td align="left"><code class="notranslate">xaa</code>, <code class="notranslate">prefixab</code></td>
+<td align="left"><code class="notranslate">split(1)</code> default; alpha base-26</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">split-num</code></td>
+<td align="left"><code class="notranslate">x00</code>, <code class="notranslate">prefix01</code></td>
+<td align="left"><code class="notranslate">split --numeric-suffixes</code></td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">dotnum</code></td>
+<td align="left"><code class="notranslate">foo.tar.001</code></td>
+<td align="left">7-Zip volumes / generic; 1-based, min-3-digit</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">underscore</code></td>
+<td align="left"><code class="notranslate">foo_001</code></td>
+<td align="left">numeric underscore suffix</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">zip-split</code></td>
+<td align="left"><code class="notranslate">arc.z01, arc.z02, …, arc.zip</code></td>
+<td align="left"><strong>special last member</strong> <code class="notranslate">.zip</code> (axis 4)</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">rar-old</code></td>
+<td align="left"><code class="notranslate">arc.rar, arc.r00, arc.r01, …</code></td>
+<td align="left"><strong>special first member</strong> <code class="notranslate">.rar</code> (axis 4)</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">rar-part</code></td>
+<td align="left"><code class="notranslate">arc.part1.rar</code> / <code class="notranslate">arc.part001.rar</code></td>
+<td align="left">index infix before ext, 1-based</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">vmdk-split</code></td>
+<td align="left"><code class="notranslate">disk-s001.vmdk</code></td>
+<td align="left">index infix <code class="notranslate">-sNNN</code> before ext</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">The special-boundary schemes (<code class="notranslate">zip-split</code>, <code class="notranslate">rar-old</code>, <code class="notranslate">rar-part</code>) are <strong>detected</strong> in v1 (cheap); the<br>
+<em>reassembly</em> that makes a split archive divable is the post-<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4720702742" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/83" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/83/hovercard" href="https://github.com/mboworks/xff/pull/83">#83</a> v2.</p>
+<p dir="auto"><strong>Custom pattern</strong> (full-control escape hatch): <code class="notranslate">--shard-pattern=REGEX</code>, repeatable, using the named<br>
+captures above, e.g.</p>
+<pre class="notranslate"><code class="notranslate">--shard-pattern='(?&lt;stem&gt;.*)-(?&lt;index&gt;\d+)-of-(?&lt;total&gt;\d+)(?:\.(?&lt;dup&gt;[0-9a-f]+))?'
+</code></pre>
+<p dir="auto"><strong>Policy flags</strong> (representation and dedup are orthogonal to enabling / scheme selection):</p>
+<ul dir="auto">
+<li><code class="notranslate">--shards-show=wildcard|first|count</code> - display the set as a wildcard <code class="notranslate">f-???-of-003</code> (default), a<br>
+representative real path, or just a count.</li>
+<li><code class="notranslate">--shards-dedup=first|mtime|error</code> - resolve the <code class="notranslate">dup</code> case (the same logical shard generated more<br>
+than once by redundant generators): keep the first-seen, the newest, or flag it as an error.</li>
+<li><code class="notranslate">--shard-tail=REGEX</code> - override the opaque-tail regex for the built-in schemes; exactly one<br>
+capturing group (the <code class="notranslate">dup</code>), everything else literal (so the separator is in the regex). Default<br>
+<code class="notranslate">`\.([0-9a-fA-F]{8,})`</code>; an empty value disables the tail.</li>
+<li><code class="notranslate">-shard-status complete|incomplete|superfluous</code> - a deferred expression test over the physical<br>
+files reaching that node. Valid representatives inherit their logical set's complete/incomplete<br>
+state; redundant same-index copies and indices outside a declared total are superfluous. The<br>
+cohort is per-directory and deliberately respects predicates to the left, while tests/actions to<br>
+the right run only after classification. Without <code class="notranslate">--shards</code> this exposes every selected physical<br>
+file; <code class="notranslate">--shards</code> remains the independent logical display mode.</li>
+</ul>
+<p dir="auto"><strong>Completeness is surfaced, not hidden:</strong> when the name encodes a total (<code class="notranslate">-of-MMM</code>), a set missing<br>
+members is flagged - <code class="notranslate">f-???-of-003 (2/3 - INCOMPLETE)</code> (a data-validation feature). Completeness<br>
+counts <strong>distinct indices</strong>, never files, so redundant <code class="notranslate">dup</code> copies never mask a gap. With no declared<br>
+total, contiguous runs collapse and detectable gaps are flagged. An index outside a declared total<br>
+is excluded from the logical set and surfaced as superfluous, so it cannot make the set complete or<br>
+inflate its aggregate size.</p>
+<p dir="auto"><strong>References</strong> (real-world naming conventions surveyed for the built-in catalog):</p>
+<ul dir="auto">
+<li>Multi-volume archives overview: <a href="https://www.file-extensions.org/article/useful-information-about-multi-volume-archives" rel="nofollow">https://www.file-extensions.org/article/useful-information-about-multi-volume-archives</a></li>
+<li>WinRAR volumes (<code class="notranslate">.partN.rar</code>, <code class="notranslate">.rNN</code>): <a href="https://documentation.help/WinRAR/HELPArcVolumes.htm" rel="nofollow">https://documentation.help/WinRAR/HELPArcVolumes.htm</a></li>
+<li>7-Zip volume naming (<code class="notranslate">.001</code>): <a href="https://sourceforge.net/p/sevenzip/discussion/45797/thread/6599d448/" rel="nofollow">https://sourceforge.net/p/sevenzip/discussion/45797/thread/6599d448/</a></li>
+<li>ZIP split volumes (<code class="notranslate">.z01</code> … <code class="notranslate">.zip</code>): <a href="https://en.wikipedia.org/wiki/ZIP_(file_format)" rel="nofollow">https://en.wikipedia.org/wiki/ZIP_(file_format)</a></li>
+<li>WebDataset sharding (<code class="notranslate">shard-NNNNNN.tar</code>): <a href="https://rom1504.github.io/webdataset/sharding/" rel="nofollow">https://rom1504.github.io/webdataset/sharding/</a></li>
+<li>PyTorch large-dataset I/O: <a href="https://pytorch.org/blog/efficient-pytorch-io-library-for-large-datasets-many-files-many-gpus/" rel="nofollow">https://pytorch.org/blog/efficient-pytorch-io-library-for-large-datasets-many-files-many-gpus/</a></li>
+</ul></main><footer>Release snapshot · d74a8229606309cdefcc05cdf771d8ee43cf4d5b</footer></body></html>

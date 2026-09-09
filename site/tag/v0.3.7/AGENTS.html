@@ -1,0 +1,204 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AGENTS.md - xff v0.3.7</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.3.7/">Home</a><a href="/xff/site/tag/v0.3.7/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.3.7">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/d74a8229606309cdefcc05cdf771d8ee43cf4d5b">Source</a><a href="/xff/coverage/tag/0.3.7/">Coverage</a><a href="/xff/releases/0.3.7/">CLI reference</a></nav><p>xff v0.3.7</p><main><h1 dir="auto" id="agent-rules---xff">Agent rules - xff</h1>
+<p dir="auto">Conventions for AI agents and contributors working on this repository.<br>
+Companion to <a href="docs/design.html"><code class="notranslate">docs/design.md</code></a> (decisions) and<br>
+<a href="docs/implementation-plan.html"><code class="notranslate">docs/implementation-plan.md</code></a> (build &amp; sequencing).<br>
+The full <strong>C++ coding style</strong> is <a href="STYLE_CPP.html"><code class="notranslate">STYLE_CPP.md</code></a>; project-level rules are<br>
+<a href="RULES.html"><code class="notranslate">RULES.md</code></a>; the contribution flow is <a href="CONTRIBUTING.html"><code class="notranslate">CONTRIBUTING.md</code></a>. The<br>
+GoogleTest section below is the quick reference; <code class="notranslate">STYLE_CPP.md</code> is canonical.</p>
+<p dir="auto">Build &amp; test: <code class="notranslate">bazel test //...</code> · sanitizers: <code class="notranslate">bazel test //... --config=clang --config=asan</code><br>
+(also <code class="notranslate">--config=tsan</code>, and <code class="notranslate">--config=msan</code> on Linux).<br>
+Toolchain: clang-22 minimum (hermetic LLVM under <code class="notranslate">--config=clang</code>).</p>
+<h2 dir="auto" id="c-api-design">C++ API design</h2>
+<p dir="auto">Xff-owned C++ interfaces use no raw object pointers. Pass required observers by reference,<br>
+ownership by value or smart pointer, and optional observers as <code class="notranslate">mbo::types::OptionalRef</code>; lookups<br>
+return an optional reference rather than a nullable pointer. Prefer pure, value-returning helpers:<br>
+return a value, <code class="notranslate">absl::StatusOr</code>, or a named result record instead of mutating caller-owned output<br>
+parameters. Mutation remains valid when it is the explicit purpose of a stateful object or action.<br>
+Exact raw-pointer spellings required by C, POSIX, or third-party ABIs stay inside narrow adapters<br>
+and must carry <code class="notranslate">XFF_ABI_POINTER: &lt;reason&gt;</code> on that declaration or the immediately preceding line;<br>
+do not broaden that exception to xff-owned interfaces or internal convenience pointers.<br>
+<code class="notranslate">STYLE_CPP.md</code> is canonical.</p>
+<p dir="auto">Outside required OS or third-party interfaces and explicitly designated adapters, file I/O APIs are<br>
+forbidden: this includes STL streams, <code class="notranslate">std::filesystem</code> file operations, C/POSIX stdio and file<br>
+descriptor calls, and path-based <code class="notranslate">mbo::file</code>/Abseil helpers. Route reads and writes through the xff<br>
+VFS or a value-returning <code class="notranslate">absl::Status</code>/<code class="notranslate">absl::StatusOr&lt;T&gt;</code> adapter. Prefer pure functions over<br>
+side-effecting output parameters. Narrow host-I/O adapters must carry <code class="notranslate">XFF_HOST_IO: &lt;reason&gt;</code> on<br>
+the declaration or immediately preceding line; the pre-commit policy enforces this boundary.</p>
+<h2 dir="auto" id="bazel-package-policy">Bazel package policy</h2>
+<p dir="auto">Every <code class="notranslate">BUILD</code> / <code class="notranslate">BUILD.bazel</code> file declares<br>
+<code class="notranslate">package(default_visibility = ["//visibility:private"])</code>. Cross-package APIs opt in with a narrow<br>
+target-level <code class="notranslate">visibility</code>; never make a whole package public for convenience. Target and exec C++<br>
+configurations both keep Bazel's <code class="notranslate">layering_check</code> and <code class="notranslate">parse_headers</code> features enabled. The<br>
+<code class="notranslate">check-bazel-policy</code> pre-commit hook enforces all three invariants, including for new packages.</p>
+<h2 dir="auto" id="pull-request-descriptions">Pull request descriptions</h2>
+<p dir="auto">Every PR description has two layers in this order:</p>
+<ol dir="auto">
+<li>a short, human-readable explanation of the outcome and why it matters;</li>
+<li>an <code class="notranslate">## AG;DR</code> heading, followed by the full implementation details, reasoning, validation,<br>
+portability notes, and known limitations needed by reviewers or a future agent.</li>
+</ol>
+<p dir="auto">Update the PR description whenever a commit is added to the PR, so the detailed section describes<br>
+the complete current change rather than the state at PR creation. The short human-readable section<br>
+should remain stable and should rarely need updating: most additional commits refine implementation<br>
+or validation and therefore belong only below <code class="notranslate">## AG;DR</code>. Change the human section only when the<br>
+PR's user-visible outcome or motivation actually changes.</p>
+<h2 dir="auto" id="writing-tests-googletest">Writing tests (GoogleTest)</h2>
+<ol dir="auto">
+<li>
+<p dir="auto"><strong>Always <code class="notranslate">TEST_F</code> with a fixture; never bare <code class="notranslate">TEST(...)</code></strong> - even when the<br>
+harness is a one-line <code class="notranslate">struct FooTest : ::testing::Test {};</code>.</p>
+</li>
+<li>
+<p dir="auto"><strong>The fixture is a <code class="notranslate">struct</code></strong> (not a <code class="notranslate">class</code>) inheriting from<br>
+<code class="notranslate">::testing::Test</code> (or a friend such as <code class="notranslate">::testing::TestWithParam&lt;T&gt;</code>).</p>
+</li>
+<li>
+<p dir="auto"><strong>Use <code class="notranslate">EXPECT_THAT</code> / <code class="notranslate">ASSERT_THAT</code>; comparison macros are forbidden.</strong> Never use either<br>
+<code class="notranslate">EXPECT_</code> or <code class="notranslate">ASSERT_</code> with <code class="notranslate">EQ</code>, <code class="notranslate">NE</code>, <code class="notranslate">LT</code>, <code class="notranslate">LE</code>, <code class="notranslate">GT</code>, <code class="notranslate">GE</code>, <code class="notranslate">STREQ</code>, <code class="notranslate">STRNE</code>, <code class="notranslate">STRCASEEQ</code>,<br>
+<code class="notranslate">STRCASENE</code>, <code class="notranslate">FLOAT_EQ</code>, <code class="notranslate">DOUBLE_EQ</code>, or <code class="notranslate">NEAR</code>. Use a matcher instead. <code class="notranslate">EXPECT_TRUE</code> /<br>
+<code class="notranslate">EXPECT_FALSE</code> and their <code class="notranslate">ASSERT_</code> forms remain available for boolean conditions because they<br>
+are not comparison macros. This is enforced by pre-commit with no exceptions.</p>
+</li>
+<li>
+<p dir="auto"><strong>Multi-line text: use <code class="notranslate">mbo::testing::EqualsText</code>.</strong> For a<br>
+multi-line string use <code class="notranslate">EXPECT_THAT(actual, EqualsText(golden))</code> (unified diff,<br>
+line by line). Write the golden as a <code class="notranslate">DropIndent</code>-filtered indented raw string,<br>
+not concatenated <code class="notranslate">"...\n"</code> literals (which <code class="notranslate">clang-format</code> shoves against the<br>
+<code class="notranslate">EqualsText(</code> paren): <code class="notranslate">WithDropIndent(EqualsText(R"out(</code> ... <code class="notranslate">)out"))</code>.<br>
+<code class="notranslate">WithDropIndent</code> de-indents the expected text only; <code class="notranslate">DropIndentAndSplit</code> yields<br>
+the lines as a vector. Caveat: a raw-string golden cannot carry significant<br>
+trailing whitespace (the trim-trailing-whitespace hook strips it) - use the<br>
+literal form there. <code class="notranslate">STYLE_CPP.md</code> is canonical; use <code class="notranslate">EqualsText</code> for text comparisons.</p>
+</li>
+<li>
+<p dir="auto"><strong>Typed and parameterized tests supply names from the types/values</strong> (name<br>
+generators for <code class="notranslate">TYPED_TEST_SUITE</code> / <code class="notranslate">INSTANTIATE_TEST_SUITE_P</code>), so the<br>
+output never shows numbered tests (<code class="notranslate">Suite/0</code>, <code class="notranslate">Suite/1</code>).</p>
+</li>
+<li>
+<p dir="auto"><strong>Test <code class="notranslate">absl::Status</code> / <code class="notranslate">absl::StatusOr&lt;T&gt;</code> with status matchers - never raw<br>
+<code class="notranslate">.ok()</code>.</strong> Raw <code class="notranslate">EXPECT_TRUE(s.ok())</code> / <code class="notranslate">EXPECT_FALSE(s.ok())</code> throws away the<br>
+code and message on failure. Use <code class="notranslate">mbo::testing</code><br>
+(<code class="notranslate">@mboworks_mbo//mbo/testing:status_cc</code>):</p>
+<ul dir="auto">
+<li><code class="notranslate">EXPECT_THAT(s, IsOk())</code></li>
+<li><code class="notranslate">EXPECT_THAT(s, StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("…")))</code></li>
+<li><code class="notranslate">EXPECT_THAT(so, IsOkAndHolds(Eq(42)))</code></li>
+<li><code class="notranslate">ASSERT_OK_AND_ASSIGN(const auto value, MakeThing());</code> to unwrap a <code class="notranslate">StatusOr</code>.</li>
+</ul>
+<p dir="auto">mbo's set is the MBO Works canonical superset: it works on both <code class="notranslate">Status</code> and<br>
+<code class="notranslate">StatusOr</code>, and adds payload matchers (<code class="notranslate">StatusHasPayload</code>) plus the<br>
+<code class="notranslate">EXPECT_OK</code> / <code class="notranslate">ASSERT_OK</code> / <code class="notranslate">ASSERT_OK_AND_ASSIGN</code> macros over abseil's<br>
+<code class="notranslate">absl_testing</code>.</p>
+</li>
+<li>
+<p dir="auto"><strong>Match optional-like values directly; never assert <code class="notranslate">.has_value()</code>.</strong> Use<br>
+<code class="notranslate">Optional(matcher)</code> for a present <code class="notranslate">std::optional</code> or <code class="notranslate">mbo::types::OptionalRef</code>, and<br>
+<code class="notranslate">Eq(std::nullopt)</code> for absence. <code class="notranslate">StatusOr</code> uses <code class="notranslate">IsOkAndHolds(matcher)</code> as described above.</p>
+</li>
+</ol>
+<h2 dir="auto" id="markdown">Markdown</h2>
+<p dir="auto">Keep GitHub-flavored Markdown tables <strong>vertically aligned</strong> (the <code class="notranslate">|</code> pipes line<br>
+up, every column padded to its widest cell, honoring the <code class="notranslate">:--</code> / <code class="notranslate">--:</code> / <code class="notranslate">:-:</code><br>
+alignment markers). Do not hand-align them: run the formatter<br>
+<a href="https://github.com/mboworks/xff/blob/d74a8229606309cdefcc05cdf771d8ee43cf4d5b/tools/align_markdown_tables.py"><code class="notranslate">tools/align_markdown_tables.py</code></a> (<code class="notranslate">FILE...</code>, or<br>
+<code class="notranslate">--check</code> to only report). It is enforced by the <code class="notranslate">align-markdown-tables</code><br>
+pre-commit hook, so a misaligned table fails CI; let the tool do the spacing.</p>
+<h2 dir="auto" id="self-documenting-features-the-registry-is-the-single-source-of-truth">Self-documenting features (the registry is the single source of truth)</h2>
+<p dir="auto">The expression vocabulary (<code class="notranslate">xff/registry</code>) and the global options<br>
+(<code class="notranslate">xff/cli/globals.cc</code>) are the single sources of truth from which <code class="notranslate">--help</code>,<br>
+<code class="notranslate">--help=TOPIC</code>, the <code class="notranslate">--help=list</code> index, the <code class="notranslate">--man</code> roff page, and the<br>
+<code class="notranslate">--help=full:markdown</code> reference are all generated. So <strong>every feature add or change carries<br>
+its self-documentation in the same change</strong> - this is part of "done", never a<br>
+follow-up:</p>
+<ul dir="auto">
+<li>a new / changed <strong>primary</strong> -&gt; its <code class="notranslate">registry::Descriptor.summary</code> (a non-empty<br>
+one-line synopsis; <code class="notranslate">registry_test</code> enforces presence + shape);</li>
+<li>a new / changed <strong>global flag</strong> -&gt; its <code class="notranslate">cli::GlobalFlag</code> entry in <code class="notranslate">globals.cc</code><br>
+(<code class="notranslate">globals_test</code> enforces it; set <code class="notranslate">alias</code> / <code class="notranslate">display</code> for short or alternate forms);</li>
+<li>a new / changed <strong>cookbook recipe</strong> (<code class="notranslate">cli/help.cc</code> <code class="notranslate">RenderCookbook</code>) -&gt; a matching<br>
+execution case in <code class="notranslate">//xff/examples:cookbook_test</code>; its guard case fails CI if a recipe ships<br>
+without one, so the user-facing examples are run, not just rendered;</li>
+<li>a new <strong>environment variable</strong> the code reads -&gt; a row in <code class="notranslate">cli/help_build.cc</code>'s <code class="notranslate">kVars</code> table<br>
+(<code class="notranslate">--help=environment</code>), enforced by the <code class="notranslate">check-env-documented</code> pre-commit hook, which also fails on<br>
+a documented name nothing reads;</li>
+<li>the hand-maintained <code class="notranslate">kHelpText</code> usage page in <code class="notranslate">cli/main.cc</code>;</li>
+<li>any prose docs the change affects (<code class="notranslate">docs/design-*.md</code>, <code class="notranslate">TODO.md</code>).</li>
+</ul>
+<p dir="auto">The generated <code class="notranslate">--help</code> / <code class="notranslate">--man</code> / <code class="notranslate">--help=full:markdown</code> then stay complete by construction.</p>
+<p dir="auto">When implementing a new feature, consider whether it belongs in the README's<br>
+<strong>Core Highlights &amp; Architectural Advantages</strong> section and <strong>Tool Feature Comparison Matrix</strong>.<br>
+Those sections are curated rather than exhaustive: add only major or genuinely differentiating<br>
+features.</p>
+<h3 dir="auto" id="markup-in-help-prose">Markup in help prose</h3>
+<p dir="auto">Help text is authored in a small inline markup (<code class="notranslate">ParseInline</code>), and the backends render it per<br>
+target: the plain backend keeps the backticks, roff bolds the span, Markdown makes it a code span.<br>
+So <strong>write concrete literals as <code class="notranslate">`code`</code></strong> in <code class="notranslate">details</code>, in <code class="notranslate">ValueDoc.meaning</code>, and in topic<br>
+bodies: option values (<code class="notranslate">`auto`</code>, <code class="notranslate">`all`</code>), flag names (<code class="notranslate">`--no-pager`</code>), primaries<br>
+(<code class="notranslate">`-exec`</code>), and literal tokens (<code class="notranslate">`*.{cc,h}`</code>). A reader should be able to tell a value from<br>
+a word without parsing the sentence.</p>
+<p dir="auto">Two limits, both about noise:</p>
+<ul dir="auto">
+<li><strong><code class="notranslate">summary</code> stays plain.</strong> Summaries appear in dense list views (<code class="notranslate">--help</code>, <code class="notranslate">--help=list</code>), where<br>
+literal backticks on every row cost more than they explain. The exception is a literal that is<br>
+unreadable bare, such as punctuation (<code class="notranslate">`!`</code>).</li>
+<li><strong>Never mark a word used in its English sense</strong>, even when a value shares its spelling: "all<br>
+archive features", "treats the duplicate as an error", "a git working tree", and "<code class="notranslate">ls</code>'s own<br>
+colours" (the tool, not the <code class="notranslate">ls</code> value) all stay plain. This is why the sweep is done by hand -<br>
+mechanical backticking gets exactly these wrong.</li>
+</ul>
+<h2 dir="auto" id="fuzz-test-isolation">Fuzz-test isolation</h2>
+<ul dir="auto">
+<li>A fuzz harness that parses or evaluates arbitrary expressions must never execute a descriptor<br>
+whose <code class="notranslate">registry::Descriptor::safety</code> is not <code class="notranslate">Safety::kNone</code>. Do not rely on a generated <code class="notranslate">--safe</code><br>
+argument alone: arbitrary input can contain a later override or place it inside another primary's<br>
+argument run.</li>
+<li>Evaluate only against an in-memory or otherwise isolated filesystem whose mutation operations<br>
+fail the test. Never point fuzz-generated paths at the host filesystem.</li>
+<li>Leave process-execution, file-output, archive-write, mount, extraction, and confirmation sinks<br>
+disconnected unless that capability is the explicit subject of a separately isolated harness.</li>
+</ul>
+<h2 dir="auto" id="cli-conventions">CLI conventions</h2>
+<ul dir="auto">
+<li><strong>Flag scope by dash count.</strong> <code class="notranslate">--flag</code> is a whole-run global (a config / output /<br>
+traversal modifier); a single-dash <code class="notranslate">-flag</code> is an expression primary (a per-entry<br>
+test or action). Grep / GNU single-dash <em>globals</em> (<code class="notranslate">-h</code>, <code class="notranslate">-help</code>, <code class="notranslate">-version</code>,<br>
+<code class="notranslate">-q</code>) are deliberate special-cased compatibility aliases of their <code class="notranslate">--</code> form, not<br>
+new primaries.</li>
+<li><strong><code class="notranslate">--</code> globals are position-independent.</strong> Because every primary/operator is<br>
+single-dash, a <code class="notranslate">--flag</code> is unambiguous anywhere, so the parser hoists it out of any<br>
+primary/operator position - before the roots, among them, or in the expression<br>
+(including the tail: <code class="notranslate">xff . -type f --summary=ext</code>). It is NOT hoisted out of a<br>
+primary's argument run (an <code class="notranslate">-exec</code> command's args, a <code class="notranslate">-printf</code> format), where a<br>
+<code class="notranslate">--flag</code> is a literal argument to that primary / the child command; a bare <code class="notranslate">--</code><br>
+ends option parsing and disables hoisting. Single-dash globals stay leading-only<br>
+(they are ambiguous with primaries). The parser handles this in ExprParser's<br>
+<code class="notranslate">SkipGlobals()</code> + the roots loop.</li>
+<li><strong>Flag-only; no subcommands.</strong> xff is a single-purpose tool (like <code class="notranslate">fd</code> /<br>
+<code class="notranslate">ripgrep</code>), so meta operations are flags (<code class="notranslate">--help</code>, <code class="notranslate">--man</code>, <code class="notranslate">--help=full:markdown</code>,<br>
+<code class="notranslate">--explain</code>), never <code class="notranslate">git</code>-style subcommands; find and xff share one grammar,<br>
+differing only in vocabulary. (Decided 2026-06-28.)</li>
+<li><strong>A boolean capability belongs to a FAMILY or to an existing flag's value set - not to a<br>
+<code class="notranslate">--feature</code> namespace.</strong> The <code class="notranslate">--feature=NAME</code> mechanism (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4712304382" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/73" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/73/hovercard" href="https://github.com/mboworks/xff/pull/73">#73</a>) stays unbuilt: 22 boolean globals<br>
+later, every one of them read better either as a named member of its family (the <code class="notranslate">--archive-*</code><br>
+set, which <code class="notranslate">--help=archive</code> then gathers) or as a value on a flag that already exists<br>
+(<code class="notranslate">--case=smart</code>, not <code class="notranslate">--smart-case</code>). So when adding a boolean: name it into its family if it has<br>
+one, fold it into a valued flag if that reads naturally, and only then consider a standalone<br>
+boolean. The verdict is recorded in <a href="TODO.html"><code class="notranslate">TODO.md</code></a> under <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4712304382" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/73" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/73/hovercard" href="https://github.com/mboworks/xff/pull/73">#73</a>.</li>
+<li><strong>A feature whose SPELLING is not settled ships behind <code class="notranslate">--unstable=NAME</code>, not under a provisional<br>
+flag name.</strong> That is the one <code class="notranslate">--feature</code>-shaped mechanism xff adopts (design in<br>
+<a href="TODO.html"><code class="notranslate">TODO.md</code></a> under <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4712304382" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/73" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/73/hovercard" href="https://github.com/mboworks/xff/pull/73">#73</a>): one repeatable, comma-separated list; an unknown name is a usage<br>
+error; the gated flag's own help says it is unstable; graduation means DELETING the gate rather<br>
+than keeping an alias. It gates spelling only - a destructive capability keeps its own explicit<br>
+flag and is never armed by list.</li>
+</ul></main><footer>Release snapshot · d74a8229606309cdefcc05cdf771d8ee43cf4d5b</footer></body></html>

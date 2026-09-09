@@ -1,0 +1,1067 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/history.md - xff v0.3.7</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.3.7/">Home</a><a href="/xff/site/tag/v0.3.7/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.3.7">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/d74a8229606309cdefcc05cdf771d8ee43cf4d5b">Source</a><a href="/xff/coverage/tag/0.3.7/">Coverage</a><a href="/xff/releases/0.3.7/">CLI reference</a></nav><p>xff v0.3.7</p><main><h1 dir="auto" id="development-history">Development history</h1>
+<p dir="auto">Resolved design records and investigations moved out of the actionable backlog. For current work, see<br>
+<a href="../TODO.html"><code class="notranslate">TODO.md</code></a>.</p>
+<p dir="auto">This preserves settled decisions, shipped implementation notes, and investigations whose context<br>
+would otherwise be lost when the actionable backlog is simplified.</p>
+<p dir="auto">The former combined roadmap and completion ledger through PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5272465743" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/683" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/683/hovercard" href="https://github.com/mboworks/xff/pull/683">#683</a> is retained separately in<br>
+<a href="history-roadmap.html"><code class="notranslate">history-roadmap.md</code></a>.</p>
+<h2 dir="auto" id="resolved-decisions">Resolved decisions</h2>
+<ul dir="auto">
+<li>
+<p dir="auto"><strong>IMPLEMENTED (2026-09-06): Linux release binaries use measured, semantics-preserving LLD size<br>
+optimizations.</strong> The release config enables a target-level ELF switch; a Linux constraint applies<br>
+the selected options only to the shipped <code class="notranslate">xff</code> and <code class="notranslate">xff_full</code> links, leaving macOS, host tools,<br>
+sanitizers, and unrelated test executables unchanged. The baseline already had<br>
+<code class="notranslate">-ffunction-sections</code>, <code class="notranslate">-fdata-sections</code>, LLD section garbage collection, relaxation, ordinary<br>
+string merging, GNU hashing, and RELRO/NOW hardening. The remaining useful options are:</p>
+<ul dir="auto">
+<li><code class="notranslate">-O2</code>, which advances LLD from ordinary string merging to string-tail merging and enables<br>
+branch-to-branch optimization on AArch64 and x86-64;</li>
+<li><code class="notranslate">--icf=safe</code>, which folds identical code only where address identity is not observable; and</li>
+<li><code class="notranslate">-z pack-relative-relocs</code>, which replaces the large RELA-relative table with RELR encoding.</li>
+</ul>
+<p dir="auto">Native Linux AArch64 measurements used the real Clang/LLD 22.1.8 ThinLTO release configuration.<br>
+One common build-ID override forced every candidate to relink, and each result was staged before<br>
+the next configuration. Installed binary size is the deciding metric; the distribution archive is<br>
+secondary because its compression does not affect every installed invocation.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Configuration</th>
+<th align="right">Lean binary</th>
+<th align="right">Lean change</th>
+<th align="right">Full binary</th>
+<th align="right">Full change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">existing release</td>
+<td align="right">1,973,968</td>
+<td align="right">-</td>
+<td align="right">4,496,424</td>
+<td align="right">-</td>
+</tr>
+<tr>
+<td align="left">LLD <code class="notranslate">-O2</code></td>
+<td align="right">1,970,760</td>
+<td align="right">-3,208 B</td>
+<td align="right">4,491,880</td>
+<td align="right">-4,544 B</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-O2</code> + safe ICF</td>
+<td align="right">1,884,456</td>
+<td align="right">-89,512 B</td>
+<td align="right">4,369,192</td>
+<td align="right">-127,232 B</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-O2</code> + safe ICF + RELR</td>
+<td align="right">1,719,320</td>
+<td align="right">-254,648 B</td>
+<td align="right">4,168,272</td>
+<td align="right">-328,152 B</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">LLD <code class="notranslate">-O3</code> is not a further linker optimization level: LLD documents levels 0 through 2 and treats<br>
+values above 2 like 2 for these passes. ThinLTO's separate <code class="notranslate">--lto-O3</code> would instead favor runtime<br>
+optimization over the release's size objective. <code class="notranslate">--icf=all</code> saved only another 304 bytes lean and<br>
+4,768 bytes full while permitting observable function addresses to collapse, so it was rejected.<br>
+Likewise, ignoring data-address equality violates C++ object-identity rules. Compressing individual<br>
+DWARF sections increased the already-Zstandard-compressed release bundle and was rejected as a<br>
+packaging regression rather than mixed into executable optimization.</p>
+<p dir="auto">The published Linux binaries already require GLIBC 2.38; RELR's GLIBC 2.36 loader requirement does<br>
+not raise that ABI floor. In the lean binary it reduced 167,376 bytes of relative relocations to a<br>
+1,792-byte RELR table. Final validation retained the GNU build ID and split debug file, found no<br>
+redundant dynamic dependency for <code class="notranslate">--as-needed</code> to remove, ran both staged binaries' <code class="notranslate">--version</code> and<br>
+<code class="notranslate">--help</code>, and found no stable startup or repository-traversal regression in a rotated-order sanity<br>
+screen. Release packaging itself remains unchanged.</p>
+</li>
+<li>
+<p dir="auto"><strong>INVESTIGATED (2026-09-06): mold does not justify changing xff's Linux release linker.</strong> The candidate was<br>
+tested on native Linux AArch64 under Colima, with Bazel 9.2.0, hermetic Clang/LLD 22.1.8, and the<br>
+official mold 2.40.4 binary. Both linkers consumed the same warmed non-LTO object cache; an explicit<br>
+build ID forced real link actions, and each result was staged before switching configurations. The<br>
+staged binaries identified the expected linker and passed <code class="notranslate">--version</code> and <code class="notranslate">--help</code> smoke checks.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Configuration</th>
+<th align="right">LLD 22.1.8</th>
+<th align="right">mold 2.40.4</th>
+<th align="right">mold change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">lean link critical</td>
+<td align="right">0.23 s</td>
+<td align="right">0.95 s</td>
+<td align="right">+0.72 s</td>
+</tr>
+<tr>
+<td align="left">full link critical</td>
+<td align="right">0.43 s</td>
+<td align="right">0.44 s</td>
+<td align="right">+0.01 s</td>
+</tr>
+<tr>
+<td align="left">lean stripped</td>
+<td align="right">2,149,456</td>
+<td align="right">2,147,664</td>
+<td align="right">-1,792 B</td>
+</tr>
+<tr>
+<td align="left">full stripped</td>
+<td align="right">4,728,304</td>
+<td align="right">4,725,456</td>
+<td align="right">-2,848 B</td>
+</tr>
+<tr>
+<td align="left">combined <code class="notranslate">.tar.zst</code></td>
+<td align="right">3,794,872</td>
+<td align="right">3,875,217</td>
+<td align="right">+80,345 B</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">This non-LTO comparison isolates ordinary ELF linking but is not xff's release configuration.<br>
+The actual <code class="notranslate">--config=clang_release</code> build uses ThinLTO. Mold reaches that link and then fails because<br>
+Clang supplies <code class="notranslate">LLVMgold.so</code>, which is absent from the downloaded LLVM 22 distribution.<br>
+LLVM's documented external-linker path requires building a matching gold plugin from the LLVM<br>
+source tree; LLD consumes the bitcode natively. Supplying that plugin would therefore expand the<br>
+proposed linker bootstrap into an LLVM bootstrap as well.</p>
+<p dir="auto">The BCR <code class="notranslate">mold</code> module exposes a normal <code class="notranslate">cc_binary</code>, not a registered C++ linker toolchain. Adding<br>
+that target to <code class="notranslate">toolchains_llvm</code>'s <code class="notranslate">extra_linker_files</code> would make it available to link actions but<br>
+introduces a toolchain cycle unless mold itself is built with a distinct bootstrap toolchain. That<br>
+remains a potentially useful optional <code class="notranslate">toolchains_llvm</code> feature for projects that benefit from<br>
+mold, but xff's measurements do not justify implementing it here: ordinary links were no faster,<br>
+compressed distribution size regressed, and the real release link needs another large bootstrap.<br>
+Xff retains LLD and proceeds with independently measured LLD size optimizations.</p>
+</li>
+<li>
+<p dir="auto"><strong>FIXED (2026-08-13): an unknown VALUE on a known global was silently ignored.</strong> <code class="notranslate">--color=bogus</code>,<br>
+<code class="notranslate">--sort=bogus</code>, <code class="notranslate">--case=bogus</code> and <code class="notranslate">--pager=bogus</code> all exited 0 and behaved as the default. It was<br>
+uniform, so it read as a design choice rather than one flag's oversight - but it was the opposite<br>
+of the choice <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4729650940" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/102" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/102/hovercard" href="https://github.com/mboworks/xff/pull/102">#102</a> made for unknown flag NAMES ("unknown option" is a usage error precisely so a<br>
+typo cannot be silently ignored), and the failure mode is worse for values: <code class="notranslate">--case=insensitve</code><br>
+matched case-sensitively and the run looked like it worked.</p>
+<ul dir="auto">
+<li>Both obstacles are resolved rather than worked around. A flag now DECLARES how its value is<br>
+checked (<code class="notranslate">GlobalFlag::ValueCheck</code> = none / enum / bool / tri-state), so the tri-state flags keep<br>
+the whole shared vocabulary while the enumerated ones check against their own <code class="notranslate">values</code> table -<br>
+the same table the help prints, so the error and the documentation cannot disagree. And the check<br>
+runs in ONE place in main, over the parsed globals, rather than inside each resolver: that is<br>
+what lets it cover <code class="notranslate">--color</code> / <code class="notranslate">--width</code> / <code class="notranslate">--pager</code>, which are scanned from raw argv before the<br>
+parse and have nowhere to report from. <code class="notranslate">kNone</code> stays the default, so free-text flags (paths,<br>
+formats, regexes, comma lists that validate themselves) are untouched.</li>
+<li>Precedent for the strict side already existed: <code class="notranslate">--skip-vcs</code>, <code class="notranslate">--diff-format</code>, <code class="notranslate">--diff-algorithm</code><br>
+and <code class="notranslate">--timezone</code> each rejected an unknown value, which is what made the silence elsewhere an<br>
+inconsistency rather than a policy.</li>
+<li>Writing it turned up three flags that accept MORE than they document (<code class="notranslate">--color-scheme</code>'s alias<br>
+spellings, <code class="notranslate">--format=md</code>, and the reserved <code class="notranslate">--regextype=MATCH</code>, whose own error is better than a<br>
+generic one). <code class="notranslate">ValueDoc.hidden</code> marks those: accepted by the check, omitted from the listing, so<br>
+one table stays the source for both.</li>
+</ul>
+</li>
+<li>
+<p dir="auto"><strong>FIXED (2026-08-13): <code class="notranslate">on</code> / <code class="notranslate">off</code> were documented but not accepted.</strong> <code class="notranslate">--time-zone-suffix</code>'s help<br>
+listed <code class="notranslate">on</code> / <code class="notranslate">off</code> as synonyms of <code class="notranslate">always</code> / <code class="notranslate">never</code>, and the shared value parser did not accept<br>
+them, so <code class="notranslate">--time-zone-suffix=off</code> silently kept the offset. <code class="notranslate">--gitignore</code> had the mirror problem: it<br>
+compared the two literal strings <code class="notranslate">on</code> / <code class="notranslate">off</code> itself instead of using the shared parser, so<br>
+<code class="notranslate">--gitignore=yes</code> silently did nothing and <code class="notranslate">=auto</code> was not accepted at all. Both now go through<br>
+<code class="notranslate">values::ParseTristate</code>, which gained <code class="notranslate">on</code> / <code class="notranslate">off</code> - the spelling a switch-shaped flag reads best<br>
+in, and the one the help had been promising.</p>
+</li>
+<li>
+<p dir="auto"><strong>DECIDED (user, 2026-08-13): colour comes from ONE resolved palette, <code class="notranslate">ls</code>-derived by default, and<br>
+<code class="notranslate">-ls</code> uses it too.</strong> Three statements, one design:</p>
+<ol dir="auto">
+<li>if <code class="notranslate">xff .</code> colourises, <code class="notranslate">xff . -ls</code> must colourise as well - the same run colouring one and not<br>
+the other is the bug;</li>
+<li>the colours should be <em>the ones <code class="notranslate">ls</code> uses</em>, i.e. <code class="notranslate">$LS_COLORS</code> (dircolors) is the DEFAULT source;</li>
+<li>a user may want xff's own scheme back - and, symmetrically, someone who likes the <code class="notranslate">ls</code> palette<br>
+wants the plain listing to use it too. So the palette is a run-wide CHOICE, not a per-action one.</li>
+</ol>
+<ul dir="auto">
+<li><strong>Shape:</strong> <code class="notranslate">--color-scheme=ls|xff</code> (spelling to confirm), resolved once per run beside<br>
+<code class="notranslate">--color=WHEN</code>, and consulted by every colourised surface (the plain listing, <code class="notranslate">-ls</code>, and any<br>
+future tabular output). <code class="notranslate">ls</code> means: parse <code class="notranslate">$LS_COLORS</code>, fall back to xff's built-in type scheme<br>
+for anything it does not specify (and entirely, when the variable is unset); <code class="notranslate">xff</code> means the<br>
+built-in scheme regardless. Default <code class="notranslate">ls</code>, per (2) - which is a BEHAVIOUR CHANGE for anyone whose<br>
+<code class="notranslate">$LS_COLORS</code> differs from xff's scheme, and is the point.</li>
+<li><strong><code class="notranslate">-ls</code> colours the NAME column only,</strong> as <code class="notranslate">ls -l</code> does; the metadata stays plain. Safe by<br>
+construction: the path is the last column, so ANSI escapes cannot disturb the computed widths.</li>
+<li><strong>Work:</strong> a dircolors parser (the <code class="notranslate">key=value:</code> list: the two-letter type keys <code class="notranslate">di</code> / <code class="notranslate">ln</code> / <code class="notranslate">ex</code><br>
+/ <code class="notranslate">fi</code> / <code class="notranslate">so</code> / <code class="notranslate">pi</code> / <code class="notranslate">bd</code> / <code class="notranslate">cd</code> / <code class="notranslate">or</code> / <code class="notranslate">mi</code> / <code class="notranslate">su</code> / <code class="notranslate">sg</code> / <code class="notranslate">tw</code> / <code class="notranslate">ow</code> / <code class="notranslate">st</code> / <code class="notranslate">ca</code>, plus<br>
+the <code class="notranslate">*.ext=</code> per-extension entries, which xff's scheme has nothing equivalent to), the<br>
+<code class="notranslate">$LS_COLORS</code> env var documented (the <code class="notranslate">check-env-documented</code> hook enforces it), the flag, and the<br>
+<code class="notranslate">-ls</code> wiring. Two slices: the palette (parser + flag + plain listing), then <code class="notranslate">-ls</code>.</li>
+<li><strong>SHIPPED</strong> as <code class="notranslate">--color-scheme=auto|ls|merged|xff</code> (<code class="notranslate">auto</code> default; <code class="notranslate">ls+xff</code> / <code class="notranslate">ls-or-xff</code> /<br>
+<code class="notranslate">default</code> name <code class="notranslate">auto</code>, <code class="notranslate">ls-and-xff</code> names <code class="notranslate">merged</code>), with <code class="notranslate">-ls</code> colouring the name column.</li>
+<li><strong><code class="notranslate">$LSCOLORS</code> (BSD / macOS) is read too, SHIPPED.</strong> A macOS user who themes <code class="notranslate">ls</code> has BSD's<br>
+variable and no dircolors setup at all, so reading only <code class="notranslate">$LS_COLORS</code> made "the colours ls uses"<br>
+false on that platform. It is 11 fixed-position fg/bg letter pairs (<code class="notranslate">di</code> <code class="notranslate">ln</code> <code class="notranslate">so</code> <code class="notranslate">pi</code> <code class="notranslate">ex</code> <code class="notranslate">bd</code><br>
+<code class="notranslate">cd</code> <code class="notranslate">su</code> <code class="notranslate">sg</code> <code class="notranslate">tw</code> <code class="notranslate">ow</code>), letters <code class="notranslate">a</code>..<code class="notranslate">h</code> for the eight ANSI colours, uppercase = bold<br>
+foreground / bright background, <code class="notranslate">x</code> = terminal default. <code class="notranslate">$LS_COLORS</code> WINS when both are set,<br>
+being the richer format. Two consequences worth remembering: a value of any other length is<br>
+ignored WHOLE (position is the key, so a short value would shift every later type by one) and<br>
+then counts as no theme rather than an empty one; and BSD has no per-extension entries and no<br>
+<code class="notranslate">fi</code> slot, so <code class="notranslate">merged</code> is the interesting scheme there - <code class="notranslate">ls</code> alone leaves every regular file<br>
+plain.</li>
+</ul>
+</li>
+<li>
+<p dir="auto"><strong>BUG (help text): <code class="notranslate">-grep</code> context has only its LONG flags (raised 2026-08-13, FIXED).</strong><br>
+<code class="notranslate">--context=SPEC</code>, <code class="notranslate">--after-context=N</code> and <code class="notranslate">--before-context=N</code> all work; the single-dash <code class="notranslate">-A</code> / <code class="notranslate">-B</code><br>
+/ <code class="notranslate">-C</code> that <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4729390250" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/99" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/99/hovercard" href="https://github.com/mboworks/xff/pull/99">#99</a> reserved were never added, and the flag help cited grep's spellings ("grep -A",<br>
+"grep -C/-A/-B") in a way that read as if xff had them. The help now says which spelling is xff's<br>
+and which is grep's. Whether the shorts should EXIST is the open question below, because <code class="notranslate">-A</code> is<br>
+also the proposed archive umbrella.</p>
+</li>
+<li>
+<p dir="auto"><strong>RESOLVED (2026-08-13, user): the archive shorts are TWO families - <code class="notranslate">-z</code> reads, <code class="notranslate">-Z</code> writes.</strong><br>
+The sign ladder measures ONE axis (how much to look at) and the CASE carries the capability:</p>
+<pre class="notranslate"><code class="notranslate">                   read only    + write (--archive-write)
+  none              -z-          (error: -Z- contradicts itself)
+  roots (default)   -z           -Z
+  all               -z+          -Z+
+  any               -z++         -Z++
+</code></pre>
+<p dir="auto">This replaces the earlier <code class="notranslate">-z++</code> = "all, and writable", which mixed the axes: adding a <code class="notranslate">+</code> must<br>
+never arm a destructive capability (the same principle <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4712304382" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/73" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/73/hovercard" href="https://github.com/mboworks/xff/pull/73">#73</a> records for <code class="notranslate">--feature</code>), and a slipped<br>
+shift key must change which axis you asked for, not both. It also frees the top read rung for<br>
+<code class="notranslate">any</code> = <code class="notranslate">all</code> without the name gate (the older spelling <code class="notranslate">--archive-any</code> stays as a hidden alias),<br>
+which is the "look everywhere, inside everything" convenience <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4762071340" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/185" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/185/hovercard" href="https://github.com/mboworks/xff/pull/185">#185</a> asked for.</p>
+<ul dir="auto">
+<li>Arming is not doing: a <code class="notranslate">-Z</code> run still needs an action that writes (<code class="notranslate">-delete</code>, or <code class="notranslate">-exec</code> over an<br>
+extracted copy), and <code class="notranslate">--safe</code> / <code class="notranslate">--dry-run</code> still apply. That is what makes case-as-capability<br>
+acceptable here; if arming alone could destroy something it would need a whole word.</li>
+<li><strong>Later wins per AXIS, and the axes stay independent (user, 2026-08-14).</strong> <code class="notranslate">-z+ -Z++</code> widens the<br>
+rung to <code class="notranslate">any</code> and arms writing; <code class="notranslate">-z++ -Z</code> narrows back to <code class="notranslate">roots</code>. A lower-case form never<br>
+disarms, so <code class="notranslate">-Z++ -z-</code> means "member writing armed, reading OFF". Permission alone does nothing:<br>
+with diving enabled, member <code class="notranslate">-delete</code> / exec operations consume it; with diving off, it is only<br>
+meaningful alongside a creation sink such as <code class="notranslate">--pack</code>. <code class="notranslate">--pack</code> does not require <code class="notranslate">-Z++</code>, because<br>
+creating a new ordinary archive is not mutation of an existing archive member; the combination<br>
+instead states the useful "create without harvesting existing containers" intent. <code class="notranslate">-Z-</code> is therefore not an<br>
+error (the earlier draft refused it) but the full RESET: reading off and writing disarmed,<br>
+overriding an earlier flag or a config file. Its disarm is only observable once reading is turned<br>
+back on (<code class="notranslate">-Z -Z- -z</code>), which is how the test pins it.</li>
+<li><code class="notranslate">-A</code> / <code class="notranslate">-B</code> / <code class="notranslate">-C</code> stay free for the grep family, as before. <code class="notranslate">-z*</code> stays rejected (a bare <code class="notranslate">-z*</code><br>
+errors in zsh and silently expands in bash), and the ladder stops at <code class="notranslate">++</code> in both families.</li>
+<li><code class="notranslate">--archive-depth</code> is deliberately NOT part of any rung: raising the decompression-bomb cap is a<br>
+different decision from looking in more places.</li>
+</ul>
+</li>
+<li>
+<p dir="auto"><strong>Short primaries <code class="notranslate">-n</code> / <code class="notranslate">-p</code> for <code class="notranslate">-name</code> / <code class="notranslate">-path</code> (SHIPPED 2026-08-20; review reaffirmed).</strong><br>
+These are xff shorthands, not borrowed fd spellings: fd's <code class="notranslate">-p</code> means <code class="notranslate">--full-path</code> and fd has no<br>
+<code class="notranslate">-n</code>. The reason to keep them is narrower and stronger than "shorten popular words": name and path<br>
+are the fundamental, symmetric basename/whole-path glob scopes, and both are used frequently in<br>
+long expressions. Exact-token parsing means <code class="notranslate">-p</code> is not ambiguous with <code class="notranslate">-print</code>, <code class="notranslate">-prune</code>, or<br>
+<code class="notranslate">-printf</code>, and each alias resolves to its canonical descriptor so behavior, style/cost metadata,<br>
+and generated help cannot drift.</p>
+<p dir="auto"><strong>This is not a general one-letter-primary namespace.</strong> <code class="notranslate">-r</code> / <code class="notranslate">-x</code> do not uniquely identify a<br>
+regex grammar or operation, <code class="notranslate">-c</code> collides conceptually with content and count, and <code class="notranslate">-f</code> could mean<br>
+file type. Add no such aliases mechanically; a future short needs its own compelling,<br>
+unambiguous compatibility or usage case.</p>
+</li>
+<li>
+<p dir="auto"><strong>fd's <code class="notranslate">-g</code> / <code class="notranslate">--glob</code>: RESOLVED in <code class="notranslate">--help=styles</code>.</strong> fd matches its single<br>
+positional pattern as a REGEX by default; <code class="notranslate">--glob</code> switches that one pattern to glob semantics.<br>
+xff has no positional pattern - the choice IS the primary (<code class="notranslate">-name</code> / <code class="notranslate">-path</code> glob, <code class="notranslate">-regex</code> /<br>
+<code class="notranslate">-rxc</code> regex, <code class="notranslate">-regextype</code> to pick the grammar) - so the flag has nothing to switch. Also <code class="notranslate">-g</code> is<br>
+already xff's gitignore toggle, and <code class="notranslate">--glob</code> would collide conceptually with <code class="notranslate">--regextype=GLOB</code>.<br>
+Nothing was added to the grammar. The "Coming from fd" table in <code class="notranslate">--help=styles</code> maps fd's<br>
+positional regex and <code class="notranslate">-g / --glob</code> forms to xff's explicit <code class="notranslate">-regex</code> / <code class="notranslate">-name</code> primaries and explains<br>
+that the primary itself selects the grammar.</p>
+</li>
+<li>
+<p dir="auto"><strong>fzf-style scoring for <code class="notranslate">-fuzzy</code> (completed 2026-08-19).</strong> fzf ranks with a Smith-Waterman-ish<br>
+alignment score and takes an extended pattern syntax (<code class="notranslate">^prefix</code>, <code class="notranslate">suffix$</code>, <code class="notranslate">'exact</code>, <code class="notranslate">!negate</code>,<br>
+space = AND, <code class="notranslate">|</code> = OR). Two separate questions:</p>
+<ul dir="auto">
+<li><strong>Where the pattern ends is NOT a problem.</strong> fzf's query is itself ONE argument whose terms are<br>
+space-separated inside it (<code class="notranslate">fzf --query "^src .cc$ !test"</code>), so the xff spelling is<br>
+<code class="notranslate">-fuzzy '^src .cc$ !test'</code> - exactly the quoting <code class="notranslate">-name '*.cc'</code> already needs, with the term<br>
+grammar living inside the token. An UNQUOTED multi-term form would need an <code class="notranslate">-exec</code>-style <code class="notranslate">;</code><br>
+terminator, which for a matcher reads worse than quoting and would be the only primary in the<br>
+vocabulary to work that way.</li>
+<li><strong>Shipped:</strong> <code class="notranslate">-fuzzy:fzf</code> implements that extended query grammar, and the same primary selects<br>
+<code class="notranslate">sequence</code>, <code class="notranslate">levenshtein</code> (<code class="notranslate">edit</code>), or <code class="notranslate">shingles</code>; an optional <code class="notranslate">:PCT%</code> gates each model. The<br>
+implementation is pinned by upstream fzf's documented compound queries, its complete compound<br>
+parser case, anchor whitespace behavior, and maintained algorithm cases.<br>
+Scoring was the real work, and it is the same decision <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4760129902" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/168" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/168/hovercard" href="https://github.com/mboworks/xff/pull/168">#168</a> records: a score implies an output<br>
+ORDER. <code class="notranslate">--sort=score</code>, the alignment search, and exact expression-level <code class="notranslate">-top N</code> are shipped.</li>
+</ul>
+</li>
+<li>
+<p dir="auto"><strong>A shortcut for "all archive features": SHIPPED in the <code class="notranslate">-z</code> / <code class="notranslate">-Z</code> ladders.</strong> <code class="notranslate">-z++</code> means read<br>
+all containers without the name gate (the former <code class="notranslate">--archive=all --archive-any</code> mouthful), while<br>
+<code class="notranslate">-Z++</code> selects the same read rung and separately arms writes. <code class="notranslate">--archive-any</code> remains the older,<br>
+longer spelling. <code class="notranslate">--archive-depth</code> deliberately stays outside both ladders because raising the<br>
+decompression-bomb cap is a separate decision from looking in more places.</p>
+</li>
+<li>
+<p dir="auto"><strong>An in-memory filesystem for unpacking (raised 2026-08-13).</strong> What it can and cannot do, because<br>
+the answer splits:</p>
+<ul dir="auto">
+<li><strong>An IN-PROCESS filesystem cannot serve <code class="notranslate">-exec</code></strong> - a child needs a path the kernel resolves - but<br>
+a MOUNTED memory filesystem can, and one is usually already there (user, 2026-08-13):
+<ul dir="auto">
+<li><strong><code class="notranslate">/dev/shm</code> (and <code class="notranslate">$XDG_RUNTIME_DIR</code>) are tmpfs on Linux (SHIPPED),</strong> so extracting there is<br>
+memory-backed with a real path and no disk write. A temp-DIRECTORY choice, not new machinery:<br>
+<code class="notranslate">ChooseExtractDirectory</code> tries <code class="notranslate">$XDG_RUNTIME_DIR</code>, then <code class="notranslate">/dev/shm</code>, then the ordinary temporary<br>
+directory, and takes a candidate only when the member fits in a quarter of the space it reports<br>
+free - a tmpfs is RAM shared with the whole machine, so a large member still lands on disk. macOS<br>
+has no default equivalent and falls straight through; an <code class="notranslate">hdiutil attach ram://</code> disk would be a<br>
+heavyweight per-run setup and is not attempted.</li>
+<li><strong><code class="notranslate">memfd_create</code> + <code class="notranslate">/proc/self/fd/N</code></strong> avoids a filesystem entirely and is seekable, but any<br>
+tool that reopens the path by NAME or keys on the extension breaks, and it is Linux-only. Not a<br>
+default; at most an opt-in for pipelines known to cope.</li>
+<li><strong>A FUSE mount of the CONTAINER is the DIRECTION (user, 2026-08-13):</strong> the fuse-archive /<br>
+archivemount shape, where every tool gets a real path into the archive and nothing is extracted<br>
+at all. See the dedicated item below; the shipped temporary file stays the portable fallback, and<br>
+the cheap interim improvement is choosing a tmpfs directory for it where the platform has one.</li>
+</ul>
+</li>
+<li><strong>It already serves nesting.</strong> A container inside a container has no path of its own, so<br>
+<code class="notranslate">OpenContainerBytes</code> hands the inner reader the bytes its parent read - an in-memory container in<br>
+all but name. Same for the phar rewrite, which is built in memory and written once.</li>
+</ul>
+</li>
+<li>
+<p dir="auto"><strong>DIRECTION (user, 2026-08-13): mount a container with FUSE (<code class="notranslate">@xff_fuse</code>), rather than extracting.</strong><br>
+A mounted container is the answer the extraction flags approximate: <code class="notranslate">-exec</code>, <code class="notranslate">-execdir</code> and any<br>
+external tool get a real path INTO the archive, <code class="notranslate">{}</code> renders as that path, no copy is made, and the<br>
+"your child edited a copy" surprise disappears (a read-only mount makes an in-place editor fail<br>
+honestly instead of succeeding against a temporary file). It is also the only shape that makes a<br>
+member usable by a tool xff never launched.</p>
+<ul dir="auto">
+<li><strong>Our own FUSE server, not a shell-out to <code class="notranslate">fuse-archive</code>.</strong> Delegating looks cheaper but loses<br>
+exactly the formats xff added: fuse-archive reads what libarchive reads, so a native phar, a<br>
+prefixed payload and the compressed-single-file case all fall out - and xff's reader already<br>
+handles them behind <code class="notranslate">vfs::FileSystem</code>. A FUSE server over that interface serves every container xff<br>
+can open, by construction, and keeps one notion of member paths.</li>
+<li><strong>Shape:</strong> a build-time extra (<code class="notranslate">--//xff:xff_fuse</code>, the <code class="notranslate">@xff_archive</code> pattern), libfuse on Linux and<br>
+macFUSE on macOS (a kernel extension the USER installs, so the extra must degrade to extraction<br>
+when it is absent rather than fail). Read-only first; a writable mount would be how <code class="notranslate">-delete</code> on a<br>
+member and an in-place editor could work later, and it is a separate decision.</li>
+<li><strong>DECIDED (2026-08-13, user): explicit flag, in-process server, and the rest as proposed.</strong><br>
+A mount is process-global state other programs can see, it needs a user-installed kernel<br>
+component on macOS, and not everyone will get it running - so it is an explicit <code class="notranslate">--archive-mount</code><br>
+rather than implicit-when-available, and the same command cannot behave differently on two<br>
+machines by accident. The server runs in-process (a background FUSE thread) with one mount point<br>
+per RUN under <code class="notranslate">$XDG_RUNTIME_DIR/xff/&lt;pid&gt;/</code> (else <code class="notranslate">$TMPDIR</code>), one subdirectory per container,<br>
+read-only; unmount by RAII at exit plus a signal handler (INT / TERM / HUP) that unmounts and<br>
+re-raises, <code class="notranslate">fusermount3 -uz</code> / <code class="notranslate">umount -f</code> as the crash path, and a startup sweep of our own<br>
+<code class="notranslate">xff/&lt;pid&gt;</code> directories whose pid is gone. Mounts do NOT nest (only the outer container is<br>
+mounted; an inner one is read by xff's own reader, since mounting it would mean materialising its<br>
+bytes), and the WALK does not read through the mount - it keeps using the VFS, so a mount failure<br>
+can change what <code class="notranslate">-exec</code> can reach but never what xff finds. Revisit any of it if it proves wrong<br>
+in practice.</li>
+<li><strong>What was on the list to decide:</strong> the mount lifecycle (mount per run under a per-pid<br>
+directory, unmounted at exit AND on a signal, with <code class="notranslate">fusermount -uz</code> / <code class="notranslate">umount -f</code> as the crash<br>
+path, since a stale mount is worse than a stale temp file); whether the mount is implicit when<br>
+available or an explicit flag (a mount is process-global state other programs can see, which argues<br>
+for explicit); how <code class="notranslate">--archive-depth</code> maps onto nested mounts; and whether the walk itself should<br>
+read through the mount (simpler: it keeps using the reader, and only child processes see the mount).</li>
+<li><strong>Relation to the shipped flags:</strong> <code class="notranslate">--archive-extract</code> becomes the portable fallback rather than the<br>
+only mechanism, and <code class="notranslate">--archive-aggregate</code> / <code class="notranslate">--archive-delete</code> are unaffected.</li>
+<li><strong>BUILD PLAN (2026-08-15, epic <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4761998080" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/183" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/183/hovercard" href="https://github.com/mboworks/xff/pull/183">#183</a>; each bullet one PR).</strong> The one open architectural choice is<br>
+how the extra reaches libfuse, and the ratified "degrade when absent" semantics decide it:<br>
+<strong>dlopen at runtime against vendored API headers</strong> (<code class="notranslate">fuse_lowlevel.h</code> interface, permissive<br>
+license), probing <code class="notranslate">libfuse3.so.3</code> on Linux and macFUSE's <code class="notranslate">libfuse.2.dylib</code> on macOS. Rejected:<br>
+system <code class="notranslate">linkopts = ["-lfuse3"]</code> (breaks the hermetic build AND makes absence a startup failure<br>
+instead of a degrade) and vendoring libfuse as a third_party module (its build wants a<br>
+configure-generated config.h per platform, and macFUSE ships its OWN libfuse fork, so a vendored<br>
+Linux build still needs the runtime path on macOS - all cost, no reuse). dlopen is the only shape<br>
+where one binary runs everywhere and mounting is a capability probed per machine. 1. <strong>@xff_fuse skeleton + runtime loader (SHIPPED)</strong>: the extra module (pcre2/archive pattern,<br>
+picked up by <code class="notranslate">tools/extras.py --wildcards</code> automatically), <code class="notranslate">FuseLoader</code> dlopening the<br>
+platform fuse3 library and eagerly resolving the mount server's symbol set (14 symbols<br>
+since 3b added the direntry builder + readlink) - so "available" MEANS mountable - and<br>
+<code class="notranslate">FuseAvailable()</code>. Tests are environment-AGNOSTIC (Linux<br>
+CI images tend to have libfuse3, macOS does not): they pin the invariants of both states.<br>
+fuse2-only installations (older macFUSE) report unavailable by design; revisit when a real<br>
+macFUSE user appears. 2. <strong>Mount lifecycle (SHIPPED, directory half)</strong>: <code class="notranslate">MountRoot</code> owns the per-RUN root<br>
+<code class="notranslate">$XDG_RUNTIME_DIR/xff/&lt;pid&gt;/</code> (else tempdir) with RAII removal, per-container mount points<br>
+(basename + counter on collision), and <code class="notranslate">StaleRoots()</code>/<code class="notranslate">SweepStaleRoots(unmounter)</code> - the<br>
+sweep reports and removes dead-pid roots, calling an INJECTED unmounter per mount point so<br>
+the process-spawning <code class="notranslate">fusermount3 -uz</code> / <code class="notranslate">umount -f</code> crash path and the signal handler land<br>
+with the server (slice 3), which owns actual mounts. All plain-filesystem, tested without<br>
+FUSE. 3. <strong>The read-only FUSE server over <code class="notranslate">vfs::FileSystem</code></strong>, split again on inspection - the fuse3<br>
+ABI surface is the risk, not the callbacks: - <strong>3a. The fuse3 ABI declarations (SHIPPED, then<br>
+superseded).</strong> The first slice fetched fuse-3.18.2's headers. The final design removed that<br>
+build dependency: <code class="notranslate">fuse_abi.h</code> now carries only the declarations and structure prefixes xff<br>
+actually uses, transcribed against that release. <code class="notranslate">FuseApi</code><br>
+is the typed call surface: every loader symbol cast ONCE (the funneled dlsym-contract<br>
+NOLINT) into those local declarations. No LGPL code or text is in the tree; xff's own<br>
+Apache-2.0 extension notice lands with<br>
+the slice that links the extra into <code class="notranslate">xff_full</code>. - <strong>3b. The server itself (SHIPPED)</strong>: <code class="notranslate">FuseServer::Mount</code> serves any <code class="notranslate">vfs::FileSystem</code><br>
+read-only - lookup/getattr/readdir(+release)/open/read/readlink filled by NAME into the<br>
+fetched <code class="notranslate">fuse_lowlevel_ops</code>, an only-grows inode table, whole-member content held per<br>
+open handle (decode once, kernel reads in chunks), one loop thread per mount with RAII<br>
+exit-unmount-join-destroy teardown; INT/TERM/HUP ask every live session to exit before<br>
+re-raising. <code class="notranslate">CrashUnmount</code> (<code class="notranslate">fusermount3 -uz</code> / <code class="notranslate">umount -f</code> via posix_spawnp) is the<br>
+unmounter for slice 2's sweep seam. Linux CI mounts a fake filesystem and reads it back<br>
+through the kernel with <code class="notranslate">--config=xff_fuse_tests_required</code> so that path can never silently skip<br>
+(test action unsandboxed - /dev/fuse and setuid fusermount3 do not exist in the<br>
+sandbox); macOS exercises the degrade. 4. <strong>CLI</strong>, split: - <strong>4a. Build + identity plumbing (SHIPPED)</strong> (user-flagged 2026-08-16: fuse was absent<br>
+from <code class="notranslate">--help=extras</code>): <code class="notranslate">--//xff:xff_fuse</code> + <code class="notranslate">xff_fuse_on</code> (<code class="notranslate">xff_all</code> coverage), xff_full<br>
+links @xff_fuse's registration TU, the <code class="notranslate">xff_extras_api</code> fuse slot<br>
+(<code class="notranslate">MountSupportAvailable</code>) feeds <code class="notranslate">ExtraEnabled("fuse")</code>/<code class="notranslate">kKnownExtras</code>/<code class="notranslate">ExtraBuildFlag</code>,<br>
+the <code class="notranslate">--help=extras</code> row, and the xff FUSE extra NOTICE component (Apache-2.0; the host's<br>
+libfuse/macFUSE implementation is loaded at runtime and is not a binary component; each binary's notice<br>
+renders its linked set, while the committed NOTICE is generated from the all-extras binary). - <strong>4b-0. Path vocabulary (SHIPPED)</strong>: the server resolved a lookup by joining parent and<br>
+name with <code class="notranslate">/</code>, which only a local filesystem understands - the archive VFS spells a member<br>
+<code class="notranslate">container!member</code>. Lookup now asks the FILESYSTEM (<code class="notranslate">ReadDir</code> reports each child's full<br>
+path in its own vocabulary) instead of assembling one, and the fake in the test uses the<br>
+<code class="notranslate">!</code> spelling so a slash-assuming server cannot pass again. The claim itself is pinned<br>
+against REAL bytes by <code class="notranslate">test_data/mini.tar</code> - a committed 3.5 KiB uncompressed tar of raw<br>
+512-byte blocks (<code class="notranslate">hello.txt</code>, <code class="notranslate">sub/a.bin</code>) - in <code class="notranslate">archive_fs_test</code>: the reported paths use<br>
+the separator, those exact paths are the ones <code class="notranslate">Stat</code>/<code class="notranslate">ReadContent</code> answer to, a<br>
+slash-joined path is rejected as InvalidArgument, and directories INSIDE a container keep<br>
+ordinary slashes (so a consumer splits once at the container boundary and never re-joins). - <strong>4b. The flag (SHIPPED)</strong>: <code class="notranslate">--archive-mount</code> serves a member from a read-only MOUNT of<br>
+its container instead of a copy. The seam is a mount FACTORY in <code class="notranslate">xff_extras_api::fuse</code><br>
+(registered by @xff_fuse next to the linked-in slot, so a binary cannot advertise mounting<br>
+it lacks); <code class="notranslate">engine::MountedContainers</code> mounts once per container, splits the member path<br>
+once at the container boundary, and answers the mounted path. <code class="notranslate">ExecTargetPath</code> asks it<br>
+before the extractor, so <code class="notranslate">{}</code> is a path INSIDE the archive for <code class="notranslate">-exec</code> / <code class="notranslate">-execdir</code> and no<br>
+copy is made. Mounting is a per-machine capability: absent extra = the standard hard<br>
+error, absent runtime library or no permission = one line after the walk plus extraction<br>
+(which is what makes the flag safe in a config file); armed without <code class="notranslate">--archive-extract</code><br>
+and unable to mount, the action is refused with a message naming both ways out.<br>
+<code class="notranslate">IsExtracted</code> now ASKS the extractor rather than inferring from "differs from the entry's<br>
+path", so a mounted path is never handed to <code class="notranslate">Release</code>.
+<ul dir="auto">
+<li><strong>4b root cause (FIXED)</strong>: mounts aborted their connection on the first read on Linux<br>
+(ECONNABORTED, request in flight, daemon alive, no teardown). It was a USE-AFTER-FREE, and<br>
+ThreadSanitizer is what finally named it ("data race in <code class="notranslate">~ArchiveFileSystem()</code>"): the walk<br>
+owned the container's reader in a DIVE-SCOPED <code class="notranslate">unique_ptr</code> while <code class="notranslate">MountedContainers</code> keeps<br>
+mounts for the whole run, so once the walk left the container every FUSE callback served<br>
+freed memory - and a garbage reply is exactly what makes the kernel abort a connection.<br>
+That single fact explains everything the hunt found confusing: it failed on x86_64 CI while<br>
+passing on aarch64, differed between two invocations moments apart, and moved when two<br>
+unrelated <code class="notranslate">std::cerr</code> lines were deleted. All allocator timing.<br>
+<strong>The API allowed it</strong>, so the fix is in the type, not the caller: <code class="notranslate">MountFactory</code> /<br>
+<code class="notranslate">MountContainer</code> / <code class="notranslate">FuseServer::Mount</code> take <code class="notranslate">std::shared_ptr&lt;const vfs::FileSystem&gt;</code>, and<br>
+the header no longer says "<code class="notranslate">fs</code> must outlive the returned Mount" - a promise no compiler<br>
+checks, about an object served from another thread for a whole run. That comment WAS the<br>
+bug, written down. Taking ownership also DELETED bookkeeping: <code class="notranslate">PathFor</code> no longer takes a<br>
+filesystem reference plus a separate owner (two parameters that had to agree, unchecked),<br>
+and the struct pairing each mount with its reader is gone. <code class="notranslate">mount_test</code>'s<br>
+<code class="notranslate">AMountKeepsTheReaderAliveAfterTheCallerDropsIt</code> pins the property through a <code class="notranslate">weak_ptr</code><br>
+with no FUSE involved, so it runs on macOS too.<br>
+Two earlier diagnoses were WRONG and are recorded as such: the libfuse pin (3.18.2 headers<br>
+against a 3.14 runtime) and the mode bits were real improvements that fixed nothing here.<br>
+The pin stays at 3.14.0 on its own merit - libfuse guarantees only BACKWARD compatibility,<br>
+so compile against the OLDEST runtime we must support.<br>
+What hid all of it: the extra's mount tests SKIPPED whenever the loader reported no fuse3,<br>
+ignoring the required-FUSE test contract, so the whole kernel<br>
+path reported green without running. An unavailable loader is now fatal where the<br>
+environment promises one, and it prints the loader's reason.</li>
+<li><strong>The lesson, made a command</strong>: <code class="notranslate">tools/fuse_linux_test.sh</code> (functional / <code class="notranslate">tsan</code> / <code class="notranslate">msan</code>)<br>
+runs the mounting tests on Linux from a mac before pushing, because macOS skips every one of<br>
+them and <code class="notranslate">bazel test</code> therefore goes green without executing a line of the kernel path. Its<br>
+comments carry the traps: TSan needs reduced ASLR entropy on aarch64, the repo's own<br>
+<code class="notranslate">--config=tsan</code> pulls an x86_64-only toolchain, and <code class="notranslate">msan</code> must force an EMULATED x86_64<br>
+container because the instrumented libc++ overlay ships x86_64-linux only.</li>
+<li><strong>The msan cell also needed the sanitizer cells to know what machine they are on</strong>: <code class="notranslate">tsan</code><br>
+and <code class="notranslate">msan</code> are standalone jobs, not matrix cells, so they never installed fuse3 or enabled<br>
+<code class="notranslate">--config=xff_fuse_tests_required</code>, and a runner that CAN mount was failing a test that demanded the<br>
+refusal message. Both declare it now. Every mounting test skips under MSan (the dlopened<br>
+system libfuse3 is uninstrumented, so its bytes read back as uninitialized) - in C++ via<br>
+<code class="notranslate">MEMORY_SANITIZER</code>, in the shell test via an <code class="notranslate">XFF_MSAN</code> env from a <code class="notranslate">select()</code> on the same<br>
+flag. And the 1000-member <code class="notranslate">archive_fs_test</code> moved to <code class="notranslate">size = "medium"</code>: 1589 ms natively<br>
+times MSan's origin-tracking factor lands right on the small (60s) cliff.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p dir="auto"><strong>4b follow-up (SHIPPED 2026-08-16)</strong>: mboworks/bashtest 0.6.0's <code class="notranslate">skip_test</code> makes the two<br>
+MSan-guarded CLI mount cases real skips instead of successful tests that merely print a skip<br>
+line; <code class="notranslate">--no-skip</code> is available where an environment guarantee must turn any skip into a failure.</p>
+</li>
+<li>
+<p dir="auto"><strong>Bounded member CACHE (SHIPPED).</strong> <code class="notranslate">-grep</code>, <code class="notranslate">{hash}</code> and <code class="notranslate">-cmp</code> on the same member used to<br>
+each decompress it again. <code class="notranslate">MemberCache</code> (<code class="notranslate">member_cache.{h,cc}</code>) is a mutex-guarded LRU with a<br>
+64 MiB byte cap per open container - the cap is the decompression-bomb concern, so oversized<br>
+content is served but never stored - consulted by <code class="notranslate">ArchiveFileSystem::ReadContent</code>. Built as a<br>
+cache keyed by member (the container is the filesystem instance), not as a general in-memory<br>
+VFS with no second customer.</p>
+</li>
+<li>
+<p dir="auto"><strong>Modern (non-<code class="notranslate">find</code>) default time format: resolved to <code class="notranslate">space</code>.</strong><br>
+<code class="notranslate">space</code> (<code class="notranslate">2026-06-22 14:30:00 +0100</code>) is the default: human-first (it matches<br>
+GNU <code class="notranslate">ls --time-style=long-iso</code>/<code class="notranslate">full-iso</code> and <code class="notranslate">git log --date=iso</code>), still ISO-<br>
+ordered so it sorts lexicographically, and parseable back by <code class="notranslate">ParseTimeString</code>.<br>
+<code class="notranslate">--time-format</code> (config phase D4b) makes this a soft choice rather than a<br>
+lock-in: <code class="notranslate">rfc3339</code> (<code class="notranslate">2026-06-22T14:30:00+01:00</code>) is one flag<br>
+(<code class="notranslate">--time-format=rfc3339</code>) or one <code class="notranslate">.xffrc</code> line (<code class="notranslate">common: --time-format=rfc3339</code>)<br>
+away for interchange-by-default, and machine consumers use <code class="notranslate">--format=jsonl</code>.<br>
+(find's <code class="notranslate">-printf %t</code>, once implemented (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4710032646" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/48" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/48/hovercard" href="https://github.com/mboworks/xff/pull/48">#48</a>), uses <code class="notranslate">asctime</code> per find.)</p>
+</li>
+<li>
+<p dir="auto"><strong><code class="notranslate">--timezone</code> scope and spelling.</strong><br>
+Shipped (config phase D4a) as <code class="notranslate">--timezone=ZONE</code>: overrides the zone used both<br>
+to <em>interpret</em> time-string arguments (<code class="notranslate">-newerXt</code>) and to <em>format</em> time fields<br>
+(<code class="notranslate">{atime}</code>/<code class="notranslate">{mtime}</code>/<code class="notranslate">{ctime}</code>/<code class="notranslate">{btime}</code>). Accepts <code class="notranslate">local</code>/empty,<br>
+<code class="notranslate">utc</code>/<code class="notranslate">z</code>/<code class="notranslate">zulu</code>, and IANA names (<code class="notranslate">America/New_York</code>); an unknown zone is a<br>
+usage error. The companion <code class="notranslate">--time-format=NAME</code> selector shipped alongside it<br>
+(config phase D4b), and <code class="notranslate">-printf</code> (<code class="notranslate">%a</code>/<code class="notranslate">%c</code>/<code class="notranslate">%t</code> + <code class="notranslate">%Ak</code>/<code class="notranslate">%Ck</code>/<code class="notranslate">%Tk</code>) and <code class="notranslate">-ls</code><br>
+both render in the zone (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4710032646" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/48" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/48/hovercard" href="https://github.com/mboworks/xff/pull/48">#48</a>). Both follow-ups have now shipped (with the <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4712144378" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/70" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/70/hovercard" href="https://github.com/mboworks/xff/pull/70">#70</a><br>
+datetime growth): (a) the <code class="notranslate">--tz=ZONE</code> short alias of <code class="notranslate">--timezone=ZONE</code>; (b)<br>
+fixed-offset specs (<code class="notranslate">+05:30</code>, <code class="notranslate">-0800</code>, <code class="notranslate">+01</code>), which <code class="notranslate">ParseTimeZone</code> builds via<br>
+<code class="notranslate">absl::FixedTimeZone</code> since <code class="notranslate">absl::LoadTimeZone</code> cannot parse them.</p>
+</li>
+<li>
+<p dir="auto"><strong>Project <code class="notranslate">.xffrc</code> layer: resolved - dropped entirely (Option B, 2026-07-06).</strong><br>
+Decided against any auto-discovered project config (no ancestor cascade, no subtree<br>
+scoping); config is system + user + an explicit <code class="notranslate">--xffrc=FILE</code> only. This supersedes the<br>
+earlier subtree-scoping question (now moot). Full record + the <code class="notranslate">--xffrc</code> arming restriction<br>
+are in the roadmap tail below ("Config: drop the project <code class="notranslate">.xffrc</code> layer").</p>
+</li>
+<li>
+<p dir="auto"><strong>DONE (2026-08-20): use <code class="notranslate">:</code> for an attached expression-primary qualification and <code class="notranslate">=</code> for a<br>
+whole-run global assignment.</strong> The earlier investigation<br>
+surveyed only double-dash globals and therefore missed the surface that actually motivates the<br>
+change: xff's single-dash expression primaries with attached payloads.</p>
+<p dir="auto"><strong>Proposed grammatical boundary:</strong></p>
+<ul dir="auto">
+<li><code class="notranslate">--flag=VALUE</code> assigns a whole-run global. This remains true even when VALUE has an internal<br>
+grammar: <code class="notranslate">--define=NAME=VALUE</code>, <code class="notranslate">--histogram=BUCKET[:MEASURE]</code>, and<br>
+<code class="notranslate">--pack-option=NAME=VALUE</code>. The first <code class="notranslate">=</code> belongs to the global grammar; everything after it is<br>
+that flag's value. In particular, <code class="notranslate">--define</code> cannot lose both equals: its VALUE really is a<br>
+<code class="notranslate">NAME=VALUE</code> definition, matching make / CMake / Bazel precedent.</li>
+<li><code class="notranslate">-primary:QUALIFIER OPERAND...</code> qualifies one expression node. The colon is attached to the<br>
+primary because the qualification changes HOW that node consumes or presents its ordinary<br>
+operand; operands themselves remain separate argv tokens. A primary with no ordinary operand<br>
+can still be qualified (<code class="notranslate">-text:posix</code>, <code class="notranslate">-hash:sha256</code>) - the distinction is grammatical scope,<br>
+not whether the payload can loosely be called a value.</li>
+<li>A colon inside a global VALUE or a field expression remains that value grammar's separator. It<br>
+is at a different structural level and is not ambiguous: <code class="notranslate">--histogram=size:count</code> assigns the<br>
+VALUE <code class="notranslate">size:count</code>, while <code class="notranslate">-fuzzy:fzf:80% foo</code> qualifies one <code class="notranslate">-fuzzy</code> node. Likewise<br>
+<code class="notranslate">%{size:h}</code> and <code class="notranslate">{field:s/pat/repl/}</code> are self-contained format languages.</li>
+</ul>
+<p dir="auto"><strong>Complete attached-primary inventory (all <code class="notranslate">Descriptor::binding</code> users):</strong></p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">spelling</th>
+<th align="left">attached payload's role</th>
+<th align="left">following operand</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code class="notranslate">-text:FLAVOR</code></td>
+<td align="left">text-definition flavor</td>
+<td align="left">none</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-collect:[!]NAME</code></td>
+<td align="left">collection identity / deliberate-reuse marker</td>
+<td align="left">none</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-fuzzy:MODEL[:PCT%]</code></td>
+<td align="left">matcher model and threshold</td>
+<td align="left">PATTERN</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-fuzzypath:MODEL[:PCT%]</code></td>
+<td align="left">matcher model and threshold</td>
+<td align="left">PATTERN</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-ifuzzy:MODEL[:PCT%]</code></td>
+<td align="left">matcher model and threshold</td>
+<td align="left">PATTERN</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-ifuzzypath:MODEL[:PCT%]</code></td>
+<td align="left">matcher model and threshold</td>
+<td align="left">PATTERN</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-diff:STYLE</code></td>
+<td align="left">output style / context</td>
+<td align="left">TARGET</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-hash:ALGO[/ENCODING]</code></td>
+<td align="left">digest algorithm and rendering</td>
+<td align="left">none</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-hasheq:ALGO[/ENCODING]</code></td>
+<td align="left">digest algorithm and rendering</td>
+<td align="left">EXPECTED</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-grep:FORMAT</code></td>
+<td align="left">per-match output template</td>
+<td align="left">PATTERN</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-capture:[!]NAME[=REGEX]</code></td>
+<td align="left">binding identity, reuse marker, extraction rule</td>
+<td align="left"><code class="notranslate">CMD... ;</code></td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-capturedir:[!]NAME[=REGEX]</code></td>
+<td align="left">binding identity, reuse marker, extraction rule</td>
+<td align="left"><code class="notranslate">CMD... ;</code></td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Bare forms keep their existing defaults (<code class="notranslate">-text</code>, <code class="notranslate">-collect</code>, <code class="notranslate">-fuzzy PATTERN</code>, <code class="notranslate">-diff TARGET</code>,<br>
+<code class="notranslate">-hash</code>, and so on). The <code class="notranslate">=</code> inside <code class="notranslate">NAME=REGEX</code> also remains: it describes the binding's value,<br>
+just as the inner <code class="notranslate">=</code> in <code class="notranslate">--define=NAME=VALUE</code> does. Arbitrary payloads remain representable:<br>
+splitting <code class="notranslate">-grep:{line}={text}</code> at the FIRST colon leaves <code class="notranslate">{line}={text}</code> untouched.</p>
+<p dir="auto"><strong>Everything else was checked and is outside this rule:</strong> all double-dash valued options remain<br>
+global assignments; find-native primaries take separate operands; <code class="notranslate">-jN</code> and the <code class="notranslate">-g+</code> / <code class="notranslate">-z++</code> /<br>
+<code class="notranslate">-Z++</code> / <code class="notranslate">-s+</code> families are compact compatibility or level spellings, not bindings; <code class="notranslate">+N</code> / <code class="notranslate">-N</code><br>
+comparison prefixes live in primary operands; and <code class="notranslate">--help=license=NAME</code> is a meta-topic grammar,<br>
+not an executable option assignment.</p>
+<p dir="auto"><strong>Migration:</strong> this is a hard pre-1.0 switch for the 12 primaries, rather than retaining <code class="notranslate">=</code> aliases<br>
+indefinitely. Accepting both would preserve the very mixed grammar this decision removes, double<br>
+the documented/tested surface, and make <code class="notranslate">=</code> look like a supported convention for future primaries.<br>
+Old forms fail with a focused diagnostic naming the colon spelling. The registry binding parser,<br>
+AST, generated help, cookbook, tests, config policy classification, examples/docs, completion<br>
+inputs, and <code class="notranslate">--help=styles</code> conventions section all use the new boundary.</p>
+</li>
+</ul>
+<h2 dir="auto" id="sanitizer-verification-what-runs-where">Sanitizer verification: what runs where</h2>
+<p dir="auto"><strong>MSan CONFIRMED on x86_64 Linux, 2026-08-16: 124/124 Bazel test targets passed with no<br>
+MemorySanitizer findings.</strong> Nine mounting cases were skipped by design (6 in <code class="notranslate">fuse_server_test</code>,<br>
+1 mount-factory case in <code class="notranslate">fuse_register_test</code>, 2 CLI <code class="notranslate">--archive-mount</code> cases), for the reason in<br>
+"Why every mounting test skips under MSan" below. Everything that does NOT cross into the<br>
+uninstrumented system libfuse ran and passed: archive parsing, the FUSE loader and API logic,<br>
+mount lifecycle, registration, and the ownership tests.</p>
+<p dir="auto">So the honest statement of coverage is: <strong>no MSan defect exists in our own code, and real FUSE<br>
+kernel-mount behaviour is not exercised under MSan at all.</strong> That is not a hole left open - it is<br>
+the deliberate boundary of what MSan can say about a dlopened library it did not instrument. The<br>
+kernel path has its own unsanitized and TSan coverage (CI, plus <code class="notranslate">tools/fuse_linux_test.sh</code>).</p>
+<h3 dir="auto" id="reproducing-it">Reproducing it</h3>
+<p dir="auto">An <strong>x86_64</strong> Linux machine with <code class="notranslate">/dev/fuse</code> (an ordinary VM is fine; <code class="notranslate">sudo</code> only for two<br>
+packages). aarch64 will NOT do - see "why" below. Then:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">sudo apt-get install -y fuse3 libfuse3-3    <span class="pl-c"><span class="pl-c">#</span> the runtime the loader dlopens + the unmount helper</span>
+git clone https://github.com/mboworks/xff <span class="pl-k">&amp;&amp;</span> <span class="pl-c1">cd</span> xff
+<span class="pl-c"><span class="pl-c">#</span> The MSan cell (this is the command that was run):</span>
+bazel <span class="pl-c1">test</span> //... <span class="pl-s"><span class="pl-pds">$(</span>tools/extras.py --wildcards<span class="pl-pds">)</span></span> --config=xff_docs \
+  --config=clang --config=msan --config=xff_fuse_tests_required
+
+<span class="pl-c"><span class="pl-c">#</span> The TSan cell, same shape (already green in CI, cheap to confirm):</span>
+bazel <span class="pl-c1">test</span> //... <span class="pl-s"><span class="pl-pds">$(</span>tools/extras.py --wildcards<span class="pl-pds">)</span></span> --config=xff_docs \
+  --config=clang --config=tsan --config=xff_fuse_tests_required</pre></div>
+<p dir="auto">Expected: all tests pass, with every MOUNTING test reporting SKIPPED under <code class="notranslate">--config=msan</code><br>
+(see below for why that is correct rather than a cop-out).</p>
+<h3 dir="auto" id="why-an-x86_64-host-specifically">Why an x86_64 host specifically</h3>
+<p dir="auto">MSan false-positives on anything it did not instrument, so the C++ standard library must be<br>
+instrumented too. <code class="notranslate">--config=msan</code> gets that from toolchains_llvm's <code class="notranslate">msan</code> feature, which swaps in<br>
+the instrumented libc++ overlay fetched by <code class="notranslate">MSAN_LIBCXX_URL</code> in <code class="notranslate">bazelmod/llvm.MODULE.bazel</code> - and<br>
+that overlay is published for <strong>x86_64-linux only</strong>. There is no aarch64 build to fetch.</p>
+<p dir="auto">Emulation was tried and does not work. <code class="notranslate">tools/fuse_linux_test.sh msan</code> forces a<br>
+<code class="notranslate">--platform linux/amd64</code> container, which on Apple silicon means qemu; the build gets as far as<br>
+linking and then dies with <code class="notranslate">clang: error: unable to execute command: No such file or directory</code></p>
+<ul dir="auto">
+<li>the toolchain's linker cannot run under the emulation layer. That mode is left in the script<br>
+because it is correct on a real x86_64 host, and its comment says so.</li>
+</ul>
+<h3 dir="auto" id="what-is-verified-locally-and-how">What IS verified locally, and how</h3>
+<p dir="auto"><code class="notranslate">tools/fuse_linux_test.sh</code> (from a mac, via colima/docker) exists because <strong>macOS has no fuse3, so<br>
+every mounting test skips there and <code class="notranslate">bazel test</code> goes green without executing a line of the kernel<br>
+path</strong>. Two modes work on aarch64:</p>
+<ul dir="auto">
+<li><code class="notranslate">tools/fuse_linux_test.sh</code> - the fuse tests plus the CLI mount test, sandboxed as CI runs them.</li>
+<li><code class="notranslate">tools/fuse_linux_test.sh tsan</code> - the CLI mount test under ThreadSanitizer. Needs <code class="notranslate">--privileged</code><br>
+and <code class="notranslate">sysctl vm.mmap_rnd_bits=28</code>: aarch64 TSan aborts with "unexpected memory mapping" under the<br>
+default ASLR entropy. It drives the sanitizer through the container's gcc rather than<br>
+<code class="notranslate">--config=tsan</code>, because the repo's config pulls the x86_64-only hermetic clang.</li>
+</ul>
+<p dir="auto">Note the container needs <code class="notranslate">git</code> installed (MODULE.bazel pulls toolchains_llvm and<br>
+hedron_compile_commands through <code class="notranslate">git_repository</code>, so a cold cache cannot even compute the repo<br>
+mapping) and roughly 25 GB of free VM disk for the hermetic LLVM.</p>
+<h3 dir="auto" id="why-every-mounting-test-skips-under-msan-and-why-that-is-not-a-dodge">Why every mounting test skips under MSan (and why that is not a dodge)</h3>
+<p dir="auto">A mount runs through the <strong>dlopened system libfuse3</strong>, which MSan did not instrument, so every byte<br>
+libfuse writes reads back as uninitialized and the process dies inside <code class="notranslate">fuse_opt_parse</code>. There is<br>
+nothing to fix in our code: the report is about libfuse's memory, not ours. The skips are therefore<br>
+deliberate and keyed off <code class="notranslate">--config=msan</code> in one place per language:</p>
+<ul dir="auto">
+<li>C++: <code class="notranslate">#if defined(MEMORY_SANITIZER)</code> (the macro <code class="notranslate">--config=msan</code> defines) in <code class="notranslate">fuse_server_test</code><br>
+and in <code class="notranslate">fuse_register_test</code>'s factory case.</li>
+<li>Shell: an <code class="notranslate">XFF_MSAN</code> env var, set by a <code class="notranslate">select()</code> on <code class="notranslate">//xff:xff_msan_enabled</code> in<br>
+<code class="notranslate">xff/cli/BUILD.bazel</code>, read by <code class="notranslate">_skip_under_msan</code> in <code class="notranslate">xff/cli/full_extras_test.sh</code>.</li>
+</ul>
+<p dir="auto">To check the guards compile and fire without an MSan toolchain at all:<br>
+<code class="notranslate">bazel test @xff_fuse//... --config=xff_full --copt=-DMEMORY_SANITIZER</code> (the factory case must<br>
+report SKIPPED and the rest must pass), and<br>
+<code class="notranslate">bazel test //xff/cli:full_extras_test --config=xff_full --//xff:xff_msan=true</code> (both mount cases<br>
+must print the skip line, and must NOT print it without the flag).</p>
+<h3 dir="auto" id="things-that-bit-us-so-nobody-re-derives-them">Things that bit us, so nobody re-derives them</h3>
+<ul dir="auto">
+<li><strong>A skipped test looks exactly like a passing one.</strong> <code class="notranslate">@xff_fuse//:fuse_server_test</code> reported<br>
+"PASSED in 0.1s" on Linux CI while skipping every mount, because the required-FUSE check covered<br>
+only mount FAILURE, not "no fuse3 here". The named Bazel config now makes both paths fatal and<br>
+carries the same contract into the C++ and shell tests.</li>
+<li><strong><code class="notranslate">tsan</code> and <code class="notranslate">msan</code> are standalone jobs, not matrix cells.</strong> They did not install fuse3 or opt into<br>
+<code class="notranslate">--config=xff_fuse_tests_required</code>, so a runner that CAN mount was failing a test that demanded<br>
+the refusal message. Any new sanitizer job must make the same declaration.</li>
+<li><strong>MSan makes tests far slower.</strong> <code class="notranslate">archive_fs_test</code> reads all 1000 members of <code class="notranslate">many.tar.gz</code> in<br>
+1589 ms natively; under MSan's origin tracking that lands past the <code class="notranslate">small</code> (60s) budget, and it<br>
+timed out with every assertion still holding. It is <code class="notranslate">size = "medium"</code> for that reason - a timeout,<br>
+not a sanitizer finding.</li>
+<li><strong>Pipes hide exit codes.</strong> <code class="notranslate">pre-commit run clang-tidy | grep -c warning</code> reports grep's status and<br>
+discards the gate's; a gate script piped to <code class="notranslate">tail</code> reported success while aborting on an unbound<br>
+variable. Capture output, then read the real exit code.</li>
+</ul>
+<h2 dir="auto" id="result-set-shaping--first--top--collect---max-results-design-of-record-2026-08-17">Result-set shaping: -first, -top, -collect, --max-results (design of record, 2026-08-17)</h2>
+<p dir="auto">Ratified with the user. Supersedes the <code class="notranslate">--top=N</code> / <code class="notranslate">--fuzzy-cutoff</code> sketch: <strong>the first three are not<br>
+globals.</strong> They are expression primaries, because the interesting behaviour is per-invocation and<br>
+positional, which a whole-run flag cannot express. <code class="notranslate">--max-results</code> is the aggregate exception.</p>
+<h3 dir="auto" id="the-insight-that-shapes-everything-else">The insight that shapes everything else</h3>
+<p dir="auto">A test that returns FALSE removes the entry from EVERYTHING downstream - the summary, the<br>
+histograms, the count, every action. So a truncating test can never also mean "summarise all of it<br>
+but show me a few": by the time the summary runs, the entries are gone. That is not a wrinkle to<br>
+work around; it is why <code class="notranslate">-collect</code> exists.</p>
+<h3 dir="auto" id="the-vocabulary">The vocabulary</h3>
+<ul dir="auto">
+<li><strong><code class="notranslate">-first N</code></strong> - a TEST, true for the first N entries it sees, false after. Stateful, and that is<br>
+fine: a test only owes a truth value, and keeping a counter is its own business. State is<br>
+PER INSTANCE (keyed to the AST node), which is exactly what a global could not do:<br>
+<code class="notranslate">xff . \( -type f -first 10 \) -o \( -type d -first 5 \)</code> is ten files AND five directories.<br>
+Truth is immediate, so it streams and its early stop is trivially safe.</li>
+<li><strong><code class="notranslate">-top N</code></strong> - a TEST that keeps the N best by the expression's normalized fuzzy score. Quality<br>
+thresholds belong to the matchers (<code class="notranslate">-fuzzy:PCT% PATTERN</code>), so <code class="notranslate">-fuzzy:80% foo -top 10</code> reads as<br>
+“the ten best good matches” without coupling selection and ranking in one argument. Multiple fuzzy<br>
+tests compose through the boolean AST: AND takes the minimum (the weakest required match), OR the<br>
+maximum (the best successful alternative), and normalized 0..100 percentages make different<br>
+patterns comparable when their thresholds are equal. A ranking operation rejects mixed thresholds: absolute<br>
+similarity and distance above each predicate's threshold imply different orders, so choosing either silently<br>
+would be arbitrary. A bare fuzzy test counts as <code class="notranslate">0%</code>. Multiple <code class="notranslate">-top</code> instances each keep their own bucket.
+<ul dir="auto">
+<li><strong>The contract is EXACT</strong>: the final result is precisely the N best. The general expression case<br>
+retains every candidate until the node is resolved: an entry that loses <code class="notranslate">-top</code> can still enter an<br>
+<code class="notranslate">-o</code> branch to its right, so dropping non-winners from a bounded heap would change expression<br>
+truth and skip downstream actions. A conjunction-only fast path MAY keep just a bounded heap in<br>
+future, but it is an optimisation and must never leak into semantics. Bloom filters do NOT fit<br>
+here: they cannot rank and their false positives would put wrong entries in the result (see the<br>
+shingling entry, where they DO fit).</li>
+<li><strong>Therefore <code class="notranslate">-top</code> is a deferral point</strong>: it cannot answer until the walk ends, so everything to<br>
+its RIGHT is evaluated in a second pass over the survivors. This is a feature, not a cost -<br>
+<code class="notranslate">-top 10 -exec rm {} \;</code> then deletes exactly those ten, which was the reading the user had from<br>
+the start. The cutoff is the optimisation that permits an early stop (once N entries clear it,<br>
+the running top N IS the final top N), never the thing that makes it correct.</li>
+</ul>
+</li>
+<li><strong><code class="notranslate">-collect[=NAME]</code></strong> - an ACTION that adds the entry to a named collection for a later sink.<br>
+<code class="notranslate">-collect:NAME</code> needs no new parser work: <code class="notranslate">-capture:NAME cmd \;</code> already uses <code class="notranslate">Binding::kLabelRegex</code><br>
+from <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4711838879" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/68" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/68/hovercard" href="https://github.com/mboworks/xff/pull/68">#68</a>, and <code class="notranslate">-text:posix</code> shows the plain optional value. The unnamed form is just the default<br>
+name, so there is no special case for "the anonymous one". Duplicate NAME copies <code class="notranslate">-capture</code>'s rule<br>
+verbatim: an error, with an explicit override - two named sinks silently merging would only show up<br>
+as a wrong summary. It holds every matched entry, so it wants <code class="notranslate">--buffer</code>'s row/byte budget<br>
+vocabulary rather than growing unbounded.
+<ul dir="auto">
+<li><strong>Presence of any <code class="notranslate">-collect</code> switches what <code class="notranslate">--summary</code> reads</strong> (the collection instead of "what<br>
+matched"). That is the rule find already has for the implicit <code class="notranslate">-print</code>, which an explicit action<br>
+suppresses - so it is a rule users have learned once here, not a new special case. Presence is<br>
+SYNTACTIC, so a <code class="notranslate">-collect</code> in a branch that never executes still switches the source and the<br>
+summary is then empty; consistent with implicit-print, surprising exactly once, so it needs an<br>
+example in the docs rather than discovery.</li>
+</ul>
+</li>
+</ul>
+<h3 dir="auto" id="order-is-what-selects-the-reading">Order is what selects the reading</h3>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">-collect -top 10 -ls --summary   <span class="pl-c"><span class="pl-c">#</span> collect all, list the 10 best, summary over ALL</span>
+-top 10 -collect --summary       <span class="pl-c"><span class="pl-c">#</span> collect only the 10, summary over those, and NO listing</span></pre></div>
+<p dir="auto">The second prints nothing extra because <code class="notranslate">-collect</code> is an action, so the implicit print is<br>
+suppressed and nothing else asked to print. Summary-only falls out of the existing rule instead of<br>
+needing a <code class="notranslate">--quiet</code>. This is the whole reason these are primaries: a position-independent global<br>
+(AGENTS.md hoists <code class="notranslate">--</code> globals deliberately) makes both spellings identical and neither reading<br>
+expressible.</p>
+<h3 dir="auto" id="--max-results---and-when-it-is-pointless"><code class="notranslate">--max-results</code> - and when it is pointless</h3>
+<p dir="auto">The one genuine global here: an aggregate output ceiling. Call out plainly that it is only<br>
+irreducible when MULTIPLE capped filters are active - with a single <code class="notranslate">-first 10</code> the cap already IS<br>
+ten, and with no capped filter it is just <code class="notranslate">-first N</code> spelled as a global. Its unique job:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff <span class="pl-c1">.</span> <span class="pl-cce">\(</span> -type f -first 10 <span class="pl-cce">\)</span> -o <span class="pl-cce">\(</span> -type d -first 5 <span class="pl-cce">\)</span> --max-results 12</pre></div>
+<p dir="auto">Fifteen pass the filters; only an aggregate bound can say twelve. It caps OUTPUT and does not stop<br>
+the walk, because a summary or count that silently went partial is the same failure as the one above,<br>
+one level up; an early stop stays an explicit opt-in.</p>
+<h3 dir="auto" id="build-order-by-machinery-not-preference">Build order (by machinery, not preference)</h3>
+<ol dir="auto">
+<li>
+<p dir="auto"><strong><code class="notranslate">-first N</code></strong> - immediate truth, no deferral, per-instance counter. Standalone. SHIPPED (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5174690562" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/559" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/559/hovercard" href="https://github.com/mboworks/xff/pull/559">#559</a>).</p>
+</li>
+<li>
+<p dir="auto"><strong><code class="notranslate">-collect[=NAME]</code></strong> - an action; makes <code class="notranslate">--summary</code> read the collection. SHIPPED. Two decisions<br>
+the design left implicit, both settled by building it: <code class="notranslate">--histogram</code> switches its source together<br>
+with <code class="notranslate">--summary</code> (a run where one reduced the collection and the other reduced the matches would<br>
+report two different totals for one walk), and the collection OWNS its entries rather than storing<br>
+the walk's <code class="notranslate">Visit</code>, whose path/name/root are borrowed views and whose metadata is a reference. The<br>
+entry also keeps <code class="notranslate">Visit::fs_owner</code>, so collecting an archive member cannot outlive its reader -<br>
+the same lifetime bug ThreadSanitizer caught in <code class="notranslate">--archive-mount</code>. <code class="notranslate">--buffer</code> now bounds the<br>
+collection (a row window or a byte budget over the stored path/name/root text), and exceeding it<br>
+is an ERROR (exit 2, naming the flag) rather than a silent truncation - a summary computed over<br>
+part of the walk is indistinguishable from a correct one, which is the same reason<br>
+<code class="notranslate">--max-results</code> caps output without stopping the walk. The DEFAULT is deliberately no cap: any<br>
+number picked here would be a guess, and the point of the budget is that a run which would<br>
+exhaust memory says so instead. A measured default is the open question if one is ever wanted.</p>
+<p dir="auto"><strong>Name reuse: the <code class="notranslate">!</code> modifier, not an override flag.</strong> A NAME is an identifier<br>
+(<code class="notranslate">[A-Za-z_][A-Za-z0-9_]*</code>), which is what reserves punctuation for modifiers, and a node that<br>
+reuses a name an earlier node took must say so with <code class="notranslate">!</code>:<br>
+<code class="notranslate">\( -type f -collect:all \) -o \( -type d -collect:!all \)</code>. This replaced the<br>
+<code class="notranslate">--collect-override</code> / <code class="notranslate">--capture-override</code> globals outright, and the reason is the same one that<br>
+made these primaries rather than globals: a whole-run flag loosens EVERY <code class="notranslate">-capture</code> / <code class="notranslate">-collect</code> in<br>
+the command, including the ones the author never thought about, while the modifier loosens exactly<br>
+the node it is written on. <code class="notranslate">--capture-override</code> is GONE (it was never released), and <code class="notranslate">-capture</code><br>
+now takes <code class="notranslate">-capture:!NAME</code> too. Settled with the user 2026-08-17.</p>
+</li>
+<li>
+<p dir="auto"><strong><code class="notranslate">-top N</code> SHIPPED (2026-08-20).</strong> Exact evaluator-level deferral, not a buffered print trick:<br>
+each node gathers the scored entries that actually reach it, selects its stable top N after the<br>
+walk, then replays the expression from memoized prefixes. Actions and stateful tests to the left<br>
+therefore run once during traversal; everything to the right runs only after that node's decision.<br>
+Several nodes resolve in expression order, so a candidate routed into a later <code class="notranslate">-top</code> only after<br>
+losing an earlier one joins the later node BEFORE its selection - its candidate set is complete,<br>
+not an early snapshot. Stored visits own their strings and archive filesystem, as collections do.<br>
+A score must precede the node on every reachable path; model and threshold must be uniform (bare<br>
+means <code class="notranslate">0%</code>), and malformed / negative counts fail before traversal while zero keeps none. Complex<br>
+end-to-end coverage pins exact ranking, before/after actions, independent nodes, late candidates,<br>
+collection order, invalid domains, and zero.</p>
+</li>
+<li>
+<p dir="auto"><strong><code class="notranslate">--max-results</code> SHIPPED (2026-08-20).</strong> The aggregate ceiling applies to the implicit result<br>
+listing after the complete expression, across branches and independent caps. It does not stop the<br>
+walk or truncate reductions, so summaries, histograms, counts, and packing remain complete.<br>
+Explicit actions retain expression semantics: a global cannot retrospectively suppress <code class="notranslate">-print</code><br>
+or <code class="notranslate">-grep</code> records already emitted while deciding the expression, and <code class="notranslate">-exec</code> is not a listing;<br>
+put <code class="notranslate">-first</code> / <code class="notranslate">-top</code> before an action to cap what reaches it. Last occurrence wins, zero lists<br>
+none, and missing / malformed / negative counts are pre-walk usage errors. End-to-end coverage<br>
+pins the 10-files-or-5-directories capped-to-12 case, complete reductions, explicit actions, last<br>
+wins, zero, and every invalid form.</p>
+</li>
+</ol>
+<h2 dir="auto" id="silence-external-warnings-in-the-exec-configuration-too-from-mboworksmbo332---shipped">Silence external warnings in the EXEC configuration too (from <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5174696253" data-permission-text="Title is private" data-url="https://github.com/mboworks/mbo/issues/332" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/mbo/pull/332/hovercard" href="https://github.com/mboworks/mbo/pull/332">mboworks/mbo#332</a>) - SHIPPED</h2>
+<p dir="auto">Adapted from mbo's <a href="https://github.com/mboworks/mbo/pull/332" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/mbo/pull/332/hovercard">#332</a>, which found that the warning<br>
+policy applied only to the TARGET configuration, so anything built for the host escaped it in both<br>
+directions: first-party warnings were not errors, and external sources were not muted.</p>
+<p dir="auto">Two changes, and the first is the one that mattered:</p>
+<ul dir="auto">
+<li><strong><code class="notranslate">-w</code> instead of <code class="notranslate">-Wno-error</code> for external sources.</strong> The downgrade was the wrong tool: it keeps<br>
+the diagnostic and only stops it failing the build, so every compile still PRINTED it. With<br>
+<code class="notranslate">--features=parse_headers</code> a third-party header is compiled as its own external TU, which is how<br>
+<code class="notranslate">gmock.cc:47: '__COUNTER__' is a C2y extension</code> sat in every build log permanently.</li>
+<li><strong>The whole policy mirrored into the exec configuration</strong> (<code class="notranslate">--host_cxxopt=-Werror</code>,<br>
+<code class="notranslate">--host_features=external_include_paths</code>, and host counterparts of every <code class="notranslate">--per_file_copt</code> rule),<br>
+which previously had no warning policy at all.</li>
+</ul>
+<p dir="auto"><strong>The carve-out is the part that is NOT a copy of mbo.</strong> The composable extras are FIRST-party code<br>
+that happens to live under <code class="notranslate">external/</code> (separate modules via <code class="notranslate">local_path_override</code>), so both mute<br>
+rules keep <code class="notranslate">,-external/xff_.*</code> and both configurations get an explicit<br>
+<code class="notranslate">external/xff_.*@-Wextra,-Wpedantic,...</code> rule. mbo's blanket <code class="notranslate">external/.*@-w</code> would have silently<br>
+muted every warning in @xff_archive, @xff_pcre2 and @xff_fuse.</p>
+<p dir="auto">Verified by planting a deliberate unused variable and building, rather than by reading the flags:</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Where</th>
+<th align="left">Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code class="notranslate">xff/fuzzy/fuzzy.cc</code> (first-party)</td>
+<td align="left"><code class="notranslate">error:</code> -Werror, fails</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">external/xff_archive+/archive_reader.cc</code></td>
+<td align="left"><code class="notranslate">error:</code> -Werror, fails</td>
+</tr>
+<tr>
+<td align="left">third-party external sources</td>
+<td align="left">0 warnings (was: on every build)</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto"><strong>Resolved (2026-08-22): eliminate the compile-DB extractor's C/C++ driver mismatch.</strong> The<br>
+<a href="https://github.com/mboworks/xff/actions/runs/32568629375/job/97020893058?pr=611">PR #611 clang-tidy job</a><br>
+again prints ~80 <code class="notranslate">error: invalid argument '-std=c99' not allowed with 'C++'</code> diagnostics. The<br>
+extractor probed third-party C targets (xz sets <code class="notranslate">-std=c99</code>) with <code class="notranslate">clang++</code>; warning flags could not<br>
+affect that language-mode error, and dropping those third-party entries only cleaned the resulting<br>
+database, not the refresh log. <code class="notranslate">compile_commands-update.sh</code> now names the hermetic, language-neutral<br>
+<code class="notranslate">clang</code> driver: the source extension and extracted flags select C versus C++, while clang-tidy can<br>
+still introspect the real driver for its target and resource directory. The output filter was<br>
+removed; the third-party C post-processing and first-party coverage guard remain.</p>
+<h2 dir="auto" id="compile-database-coverage-guard-clang-tidy-cannot-lint-what-the-database-omits">Compile-database coverage guard (clang-tidy cannot lint what the database omits)</h2>
+<p dir="auto"><code class="notranslate">clang-tidy</code> lints only the files the database LISTS, so a source bazel compiles but the extractor<br>
+missed is silently unlinted, and the run still looks clean. That is not hypothetical: every extras<br>
+translation unit was absent once (the story is in <code class="notranslate">//:refresh_compile_commands</code>).</p>
+<p dir="auto"><code class="notranslate">compile_commands-update.sh</code> now asks bazel which first-party <code class="notranslate">.cc</code> files are in a <code class="notranslate">cc_*</code> rule<br>
+(<code class="notranslate">//xff/...</code>, the derived extras wildcards, <code class="notranslate">@xff_extras_api//...</code>) and fails if any lacks a database<br>
+entry, naming the files. Bazel's query is the authority on "compiled" rather than a <code class="notranslate">find</code> over the<br>
+tree - a file in no target is a different problem.</p>
+<p dir="auto">Two properties the implementation must keep, both learned the hard way while writing it:</p>
+<ul dir="auto">
+<li><strong>The comparison goes through the same source-path remap as the rewrite pass.</strong> Labels say<br>
+<code class="notranslate">external/xff_archive+/archive_reader.cc</code>; the post-processed database says<br>
+<code class="notranslate">extra_modules/archive/archive_reader.cc</code>. Comparing the raw spellings reports all 42 extras files<br>
+as missing when every one of them is present (measured: it did, and the "finding" was mine).</li>
+<li><strong>Coverage, never equality.</strong> The database legitimately holds entries the query does not name<br>
+(third-party headers, which <code class="notranslate">--features=parse_headers</code> makes their own TUs) and legitimately omits<br>
+the third-party C sources <code class="notranslate">tools/fix_compile_commands.py</code> drops.</li>
+</ul>
+<p dir="auto">Current state: 165 first-party sources expected, 0 missing. Verified the guard FAILS (exit 1, naming<br>
+the file) on a source that has no entry.</p>
+<h2 dir="auto" id="squashfs-bottom-of-the-stack-read-first-decided-2026-08-18-reader-shipped-2026-08-28">squashfs: bottom of the stack, read first (decided 2026-08-18; reader shipped 2026-08-28)</h2>
+<p dir="auto">Build it when a concrete "search inside a snap / AppImage / firmware image" need appears, not for<br>
+format completeness. Three parts in order: READ without lzo, then WRITE (create from a walk, then<br>
+repack for modification), then lzo if ever.</p>
+<p dir="auto">Structurally it is another container on the existing VFS seam and needs no FUSE at all - diving with<br>
+<code class="notranslate">--archive</code> never mounts anything - and it is in some ways nicer than tar, because it has a real<br>
+index (indexed directory lookup, indexed seeking within a file). Writing is multi-pass with<br>
+backpatching, which is the ordinary shape here (buffered tabular renderers, <code class="notranslate">--sort=score</code>,<br>
+<code class="notranslate">-collect</code>, the <code class="notranslate">-top</code> design). Two real constraints on writing: the output must be SEEKABLE, so<br>
+packing to a pipe gets refused, and buffering the tree needs the bounded-memory treatment <code class="notranslate">-collect</code><br>
+has. Shipping without block dedup and tail-packing into fragments is valid but produces bigger images<br>
+than mksquashfs - a quality gap, not a correctness one.</p>
+<p dir="auto">The licensing is the load-bearing part, verified 2026-08-18:</p>
+<ul dir="auto">
+<li><strong>libsquashfs (squashfs-tools-ng) is LGPLv3</strong> (its tools GPLv3), so it is unusable here: xff ships<br>
+statically linked single-file binaries, and LGPL-3 static linking obliges us to let recipients<br>
+relink. That is an obligation change, not a NOTICE line. Its writer lives in the same library, so<br>
+it does not solve packing either.</li>
+<li><strong>squashfuse is 2-clause BSD</strong> and, despite the name, is a genuine reader: indexed lookup, indexed<br>
+seeking, block caching, dedup and sparse files, xattrs, files over 4 GB. zlib / LZMA2 / LZ4 / zstd<br>
+built in; lzo only via optional liblzo2 (GPL-2), which we simply do not enable - so lzo drops out<br>
+by build configuration rather than by refusal logic.</li>
+<li><strong>libsqsh (sqsh-tools) 1.5.2 is BSD-2-Clause</strong> and is the shipped reader. Its cextras dependency is<br>
+BSD-2-Clause too. xff's overlay selects the static/memory mappers and zlib, LZMA2, LZ4, and zstd<br>
+decoders, while deliberately omitting curl and lzo.</li>
+<li>squashfs-tools-ng keeps lzo out of libsquashfs for exactly the GPL-2 reason, which independently<br>
+confirms the constraint.</li>
+</ul>
+<p dir="auto">The shipped slice is <code class="notranslate">@xff_squashfs</code>, gated by <code class="notranslate">--//xff:xff_squashfs</code> and composed by<br>
+<code class="notranslate">--//xff:xff_all</code>. It registers independently through <code class="notranslate">@xff_extras_api</code>, so enabling it does not pull<br>
+in libarchive. Raw images, Snaps, and AppImages become ordinary virtual member trees and use the same<br>
+predicates, fields, content reads, nesting, and summaries as other containers. AppImage's executable<br>
+prefix uses libsqsh's archive-offset API after a bounded scan for the <code class="notranslate">hsqs</code> superblock. A committed<br>
+fixture and constructed prefixed variants cover path-backed and retained-byte inputs. Creation and<br>
+rewrite remain later work because a correct SquashFS writer is separate, multi-pass work.</p>
+<h2 dir="auto" id="bashtest-scratch-files-use-test_tmpdir-not-hand-rolled-paths">Bashtest scratch files: use <code class="notranslate">test_tmpdir</code>, not hand-rolled paths</h2>
+<p dir="auto">mboworks/bashtest already provides <code class="notranslate">${BASHTEST_TMPDIR}</code>, a scratch directory its own exit trap<br>
+removes, and 19 xff bashtests ignored it to hand-roll <code class="notranslate">mktemp -d</code> plus a per-case <code class="notranslate">rm -rf</code>. Beyond<br>
+the duplication, the cleanup is WRONG in the case that matters: bashtest keeps running after a failed<br>
+expectation, so a case that fails before its <code class="notranslate">rm</code> leaks its tree.</p>
+<p dir="auto">Bashtest now owns per-fixture allocation too. The convention is:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate"><span class="pl-en">_tree</span>() {
+  <span class="pl-k">local</span> root
+  root=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-s"><span class="pl-pds">$(</span>test_tmpdir tree<span class="pl-pds">)</span></span><span class="pl-pds">"</span></span>
+  <span class="pl-c"><span class="pl-c">#</span> Build the fixture under ${root}.</span>
+  <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">${root}</span><span class="pl-pds">"</span></span>
+}
+
+root=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-s"><span class="pl-pds">$(</span>_tree<span class="pl-pds">)</span></span><span class="pl-pds">"</span></span></pre></div>
+<p dir="auto"><code class="notranslate">${FUNCNAME[1]}</code> (the calling test) was tried first and is wrong: the test's name then appears in<br>
+printed paths, where it can satisfy an <code class="notranslate">expect_output_not_contains</code>. That is not hypothetical -<br>
+<code class="notranslate">archive_test</code>'s "archive is off by default" case failed exactly that way. <code class="notranslate">test_tmpdir</code> is unique per<br>
+call, so a case that builds two trees needs nothing special and no mutable counter. Per<br>
+<a href="../STYLE_SH.html"><code class="notranslate">STYLE_SH.md</code></a>, a helper returns the path through stdout (<code class="notranslate">root="$(_tree)"</code>) rather than<br>
+mutating a caller-named variable with <code class="notranslate">printf -v</code>.</p>
+<p dir="auto"><strong>Complete: all 19 converted.</strong> <code class="notranslate">archive_test</code>, <code class="notranslate">color_test</code>, <code class="notranslate">parity_test</code>, <code class="notranslate">first_test</code>, <code class="notranslate">ignore_test</code>, <code class="notranslate">collect_test</code>,<br>
+<code class="notranslate">content_test</code>, <code class="notranslate">fuzzy_test</code>, <code class="notranslate">grep_test</code>, <code class="notranslate">ls_test</code>, <code class="notranslate">exact_test</code>, <code class="notranslate">pager_test</code>, <code class="notranslate">cmp_test</code>,<br>
+<code class="notranslate">full_binary_test</code>, <code class="notranslate">ignore_files_test</code>, <code class="notranslate">help_topic_test</code>, <code class="notranslate">archive_pack_test</code>, <code class="notranslate">archive_dive_test</code>,<br>
+<code class="notranslate">summary_test</code>, <code class="notranslate">ignore_gitignore_test</code> - 19 of 19, with 214 <code class="notranslate">rm -rf</code> lines gone. The later repository-wide audit<br>
+also migrated every other bashtest-created directory, including diff/hash/histogram/csv fixtures,<br>
+man-page scratch, style/exit/exec helpers, and the cookbook's shared fixtures: 114 allocations across<br>
+33 test files now go through <code class="notranslate">test_tmpdir</code>. <code class="notranslate">tools/release_prep_test.sh</code> is the deliberate exception:<br>
+it is a standalone pre-commit test, not a bashtest, and owns its temporary repositories and cleanup.</p>
+<p dir="auto">The location-sensitive archive, summary, and git-ignore assertions pass unchanged; the conversion<br>
+needed fixture-lifetime work, not weakened matching. Unique allocation handles several fixtures per<br>
+case with no special treatment and avoids caller mutation, collisions, and test-name leakage.</p>
+<h2 dir="auto" id="libfuse-no-build-dependency-at-all-shipped-2026-08-18">libfuse: no build dependency at all (SHIPPED 2026-08-18)</h2>
+<p dir="auto">The FUSE extra used to compile against libfuse's fetched headers, which put xff in the position of<br>
+ARGUING that LGPL-2.1 section 5 permits it. The argument was sound - data structure layouts and<br>
+accessors are outside that section's restrictions, and its ten-line limit applies only to inline<br>
+functions - but xff ships statically linked single-file binaries, so the whole question was load<br>
+bearing on a reading of someone else's licence.</p>
+<p dir="auto">It is gone. <code class="notranslate">extra_modules/fuse/fuse_abi.h</code> declares the fuse3 lowlevel ABI itself, the<br>
+<code class="notranslate">http_archive</code> is commented out (kept as provenance and as a conformance tool: uncomment it plus the<br>
+<code class="notranslate">@libfuse//:fuse3_headers</code> deps to diff our declarations against the real ones after a libfuse<br>
+release), and no libfuse file is fetched, read, compiled, linked or shipped. The runtime library is<br>
+unchanged: <code class="notranslate">fuse_loader</code> dlopens whatever the host has.</p>
+<p dir="auto"><strong>Fidelity rules the header follows</strong>, since an ABI description is only worth its accuracy:</p>
+<ul dir="auto">
+<li>Anything never dereferenced is an INCOMPLETE type (<code class="notranslate">fuse_session</code>, <code class="notranslate">fuse_req</code>, <code class="notranslate">fuse_conn_info</code>).<br>
+What is not written cannot drift.</li>
+<li>Anything whose fields we touch carries the exact layout in libfuse's order, transcribed against<br>
+fuse-3.18.2: <code class="notranslate">fuse_args</code>, <code class="notranslate">fuse_entry_param</code>, and <code class="notranslate">fuse_file_info</code> (whose nine one-bit flags plus<br>
+<code class="notranslate">padding : 23</code> fill the first word, with <code class="notranslate">padding2</code> / <code class="notranslate">padding3</code> full words despite the bitfield<br>
+spelling - we read <code class="notranslate">flags</code> and set <code class="notranslate">fh</code> and <code class="notranslate">keep_cache</code>, and those three only land correctly if<br>
+the rest is reproduced).</li>
+<li><code class="notranslate">fuse_lowlevel_ops</code> is declared as the PREFIX through <code class="notranslate">readdir</code>, the last op xff implements, with<br>
+the unimplemented ops in between still declared because order IS the ABI. <code class="notranslate">op_size</code> stays the<br>
+offset just past the last implemented op, never <code class="notranslate">sizeof</code>.</li>
+<li><code class="notranslate">FUSE_ARGS_INIT</code> is not transcribed: the struct is three fields, so aggregate initialisation says<br>
+the same thing without copying a macro.</li>
+</ul>
+<p dir="auto"><strong>How a mistake surfaces:</strong> the loader resolves every entry point by NAME, so a wrong signature or<br>
+offset cannot fail at link time - it corrupts at runtime. Linux CI is the guard, where<br>
+<code class="notranslate">fuse_server_test</code> and the <code class="notranslate">--archive-mount</code> CLI cases drive a real fuse3.</p>
+<p dir="auto"><strong>Notice correction.</strong> The intermediate empty-SPDX interoperability entry was also superseded. The<br>
+final model is recorded below: the component is xff's own Apache-2.0 FUSE extension, while the<br>
+runtime-provided libfuse/macFUSE implementation is not a component of the binary.</p>
+<h2 dir="auto" id="libfuse-no-build-dependency-and-the-notice-lists-our-code-shipped-2026-08-18">libfuse: no build dependency, and the notice lists OUR code (SHIPPED 2026-08-18)</h2>
+<p dir="auto">The FUSE extra used to compile against libfuse's fetched headers, which put xff in the position of<br>
+ARGUING that LGPL-2.1 section 5 permits it. The argument was sound - data structure layouts and<br>
+accessors sit outside that section's restrictions, and its ten-line limit applies only to inline<br>
+functions - but xff ships statically linked single-file binaries, so the whole question was<br>
+load-bearing on a reading of someone else's licence.</p>
+<p dir="auto"><code class="notranslate">extra_modules/fuse/fuse_abi.h</code> now declares the fuse3 lowlevel ABI itself. The <code class="notranslate">http_archive</code> is<br>
+commented out (kept as provenance and as a conformance tool: uncomment it plus the<br>
+<code class="notranslate">@libfuse//:fuse3_headers</code> deps to diff our declarations against the real ones after a libfuse<br>
+release), and no libfuse file is fetched, read, compiled, linked or shipped. <code class="notranslate">fuse_loader</code> still<br>
+dlopens whatever the host has.</p>
+<p dir="auto"><strong>Fidelity rules the header follows</strong>, because an ABI description is only worth its accuracy:</p>
+<ul dir="auto">
+<li>Anything never dereferenced is an INCOMPLETE type (<code class="notranslate">fuse_session</code>, <code class="notranslate">fuse_req</code>, <code class="notranslate">fuse_conn_info</code>).<br>
+What is not written cannot drift.</li>
+<li>Anything whose fields we touch carries the exact layout in libfuse's order, transcribed against<br>
+fuse-3.18.2: <code class="notranslate">fuse_args</code>, <code class="notranslate">fuse_entry_param</code>, and <code class="notranslate">fuse_file_info</code> - whose nine one-bit flags plus<br>
+<code class="notranslate">padding : 23</code> fill the first word, with <code class="notranslate">padding2</code> / <code class="notranslate">padding3</code> full words despite the bitfield<br>
+spelling. We read <code class="notranslate">flags</code> and set <code class="notranslate">fh</code> and <code class="notranslate">keep_cache</code>, and those three only land correctly if the<br>
+rest is reproduced.</li>
+<li><code class="notranslate">fuse_lowlevel_ops</code> is the PREFIX through <code class="notranslate">readdir</code>, the last op xff implements, with the<br>
+unimplemented ops in between still declared, because order IS the ABI. <code class="notranslate">op_size</code> stays the offset<br>
+just past the last implemented op, never <code class="notranslate">sizeof</code>.</li>
+<li><code class="notranslate">FUSE_ARGS_INIT</code> is not transcribed: the struct has three fields, so aggregate initialisation says<br>
+the same thing without copying a macro.</li>
+</ul>
+<p dir="auto"><strong>How a mistake surfaces:</strong> the loader resolves entry points by NAME, so a wrong signature or offset<br>
+cannot fail at link time - it corrupts at runtime. Linux CI is the guard, where <code class="notranslate">fuse_server_test</code> and<br>
+the <code class="notranslate">--archive-mount</code> CLI cases drive a real fuse3.</p>
+<p dir="auto"><strong>The notice model, corrected twice before it was right.</strong> The old entry claimed<br>
+<code class="notranslate">libfuse [LGPL-2.1-only]</code> and "compiled against its headers". That misstated the project (LGPL-2.1<br>
+covers <code class="notranslate">include/</code>, <code class="notranslate">lib/</code>, <code class="notranslate">meson.build</code>; everything else is <strong>GPL-2.0</strong>), asserted <code class="notranslate">-only</code> more<br>
+firmly than the LICENSE file supports, and named the runtime library wrongly - on macOS it is macFUSE,<br>
+under its own terms. An empty SPDX was tried next and is also wrong: <code class="notranslate">[]</code> reads as public domain.</p>
+<p dir="auto">The rule that settles it: <strong>list what you USE, and our own code is Apache-2.0.</strong> So the registered<br>
+component is <code class="notranslate">xff FUSE extra (@xff_fuse)</code> with SPDX <code class="notranslate">Apache-2.0</code>, whose text describes the libfuse<br>
+interaction as INFORMATION - our own declarations, host implementation loaded at runtime - and libfuse<br>
+is not registered at all, because none of its code is in the binary. A test pins both halves.</p>
+<p dir="auto"><strong>Consistency follow-up (SHIPPED, PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5186618575" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/569" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/569/hovercard" href="https://github.com/mboworks/xff/pull/569">#569</a>):</strong> <code class="notranslate">@xff_archive</code> and <code class="notranslate">@xff_pcre2</code> now register their own<br>
+Apache-2.0 extension entries before the third-party components they link, matching <code class="notranslate">@xff_fuse</code> and<br>
+making the manifest complete and uniform.</p></main><footer>Release snapshot · d74a8229606309cdefcc05cdf771d8ee43cf4d5b</footer></body></html>

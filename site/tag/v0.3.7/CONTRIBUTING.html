@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>CONTRIBUTING.md - xff v0.3.7</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.3.7/">Home</a><a href="/xff/site/tag/v0.3.7/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.3.7">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/d74a8229606309cdefcc05cdf771d8ee43cf4d5b">Source</a><a href="/xff/coverage/tag/0.3.7/">Coverage</a><a href="/xff/releases/0.3.7/">CLI reference</a></nav><p>xff v0.3.7</p><main><h1 dir="auto" id="intro">Intro</h1>
+<p dir="auto">All contributions are generally welcome as long as they fit in with the concepts and goals of this repository and as long as the <a href="CODE_OF_CONDUCT.html">CODE_OF_CONDUCT.md</a> is being respected.</p>
+<h1 dir="auto" id="code-rules">Code Rules</h1>
+<p dir="auto">All code must adhere to the <a href="RULES.html">RULES.md</a> and mostly follows the <a href="https://google.github.io/styleguide/" rel="nofollow">Google style</a>. Where it diverges, clang-tidy rules are in effect as much as possible.</p>
+<h2 dir="auto" id="coverage">Coverage</h2>
+<p dir="auto">The production coverage job derives its ratings, HTML colours, and CI gates from<br>
+<a href="https://github.com/mboworks/xff/blob/d74a8229606309cdefcc05cdf771d8ee43cf4d5b/coverage_policy.json"><code class="notranslate">coverage_policy.json</code></a>. See <a href="docs/coverage.html"><code class="notranslate">docs/coverage.md</code></a> before<br>
+changing thresholds or adding a category override; weakened overrides require a documented reason.</p>
+<h1 dir="auto" id="run-pre-commit">Run pre-commit</h1>
+<p dir="auto">All changes will be verified by the pre-commit rules. In order to check these before committing changes install the tool:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">pre-commit install --hook-type pre-commit --hook-type pre-push</pre></div>
+<p dir="auto">Once installed the verification can be triggered for all files as follows:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">pre-commit run -a</pre></div>
+<p dir="auto">Without the <code class="notranslate">-a</code> only the modified and staged files will be checked.</p></main><footer>Release snapshot · d74a8229606309cdefcc05cdf771d8ee43cf4d5b</footer></body></html>

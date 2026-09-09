@@ -1,0 +1,49 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/test-plan.md - xff v0.3.7</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.3.7/">Home</a><a href="/xff/site/tag/v0.3.7/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.3.7">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/d74a8229606309cdefcc05cdf771d8ee43cf4d5b">Source</a><a href="/xff/coverage/tag/0.3.7/">Coverage</a><a href="/xff/releases/0.3.7/">CLI reference</a></nav><p>xff v0.3.7</p><main><h1 dir="auto" id="xff---test-plan">xff - Test Plan</h1>
+<blockquote>
+<p dir="auto">Companion to <a href="implementation-plan.html">implementation-plan.md</a>. Project rule: <strong>tests at every level; no one-shots</strong> - any manual verification must be codified here or as a test before a PR is reviewable.<br>
+Status: <strong>Draft</strong> · 2026-06-07</p>
+</blockquote>
+<h2 dir="auto" id="levels">Levels</h2>
+<h3 dir="auto" id="1-parser---pure-unit-tests-no-fixtures">1. <code class="notranslate">parser</code> - pure unit tests (no fixtures)</h3>
+<ul dir="auto">
+<li>Table-driven <code class="notranslate">argv[] → AST</code> (globals, roots, expression tree) and <code class="notranslate">argv[] → diagnostic</code> (message + source span).</li>
+<li>Cover: cluster parsing (<code class="notranslate">-Hg+x</code>), suffix-sign toggles (bare/<code class="notranslate">+</code>/<code class="notranslate">-</code>), <code class="notranslate">--long</code>/<code class="notranslate">--no-X</code>, <code class="notranslate">--</code> boundary, paths beginning with <code class="notranslate">-</code>/<code class="notranslate">+</code>, GNU vs BSD globals, <code class="notranslate">-exec … \;</code> / <code class="notranslate">… +</code> greedy consumption, operator precedence (<code class="notranslate">! &gt; -a &gt; -o</code>, <code class="notranslate">,</code>), arity errors.</li>
+</ul>
+<h3 dir="auto" id="2-find-compatibility-conformance-phase-1-gate">2. find-compatibility conformance (Phase-1 gate)</h3>
+<ul dir="auto">
+<li>A fixture tree (varied names incl. dotfiles, sizes, mtimes, perms, symlinks, nested dirs).</li>
+<li>An <strong>expression matrix</strong> run through both real <code class="notranslate">find</code> and <code class="notranslate">xff</code>; assert identical output + exit code.</li>
+<li>Run on <strong>both dialects</strong>: Linux GNU-find and macOS BSD-find.</li>
+</ul>
+<h3 dir="auto" id="3-engine---integration">3. <code class="notranslate">engine</code> - integration</h3>
+<ul dir="auto">
+<li>Predicate/action correctness over fixture trees; <code class="notranslate">-exec</code>/<code class="notranslate">-delete</code>/<code class="notranslate">-prune</code> effects; <code class="notranslate">-xdev</code>, depth bounds.</li>
+<li>Parallel-traversal <strong>determinism</strong> under <code class="notranslate">--sort</code>; short-circuit evaluation order observable via side-effecting actions.</li>
+</ul>
+<h3 dir="auto" id="4-regex">4. <code class="notranslate">regex</code></h3>
+<ul dir="auto">
+<li>Per-engine conformance (RE2 vs PCRE2); literal-prefilter must not change match results (equivalence test).</li>
+</ul>
+<h3 dir="auto" id="5-render---golden-tests">5. <code class="notranslate">render</code> - golden tests</h3>
+<ul dir="auto">
+<li>One golden per format (plain/NUL/JSONL/CSV/aligned/markdown/tree).</li>
+<li><strong>Unicode-width alignment</strong> (CJK/emoji/combining marks line up); <strong>non-UTF-8 path</strong> handling in JSON (escape policy).</li>
+</ul>
+<h3 dir="auto" id="6-config">6. <code class="notranslate">config</code></h3>
+<ul dir="auto">
+<li>Cascade precedence (CLI &gt; local dir &gt; user &gt; default); provenance (<code class="notranslate">unset</code> ≠ <code class="notranslate">off</code>); promotion-to-modern defaults.</li>
+</ul>
+<h2 dir="auto" id="ci">CI</h2>
+<ul dir="auto">
+<li><code class="notranslate">bazel test //...</code> on macOS + Linux for every PR; buildifier lint.</li>
+</ul></main><footer>Release snapshot · d74a8229606309cdefcc05cdf771d8ee43cf4d5b</footer></body></html>

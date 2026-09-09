@@ -1,0 +1,93 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/design-help-model.md - xff v0.3.7</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.3.7/">Home</a><a href="/xff/site/tag/v0.3.7/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.3.7">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/d74a8229606309cdefcc05cdf771d8ee43cf4d5b">Source</a><a href="/xff/coverage/tag/0.3.7/">Coverage</a><a href="/xff/releases/0.3.7/">CLI reference</a></nav><p>xff v0.3.7</p><main>
+
+<h1 dir="auto" id="help-model-design">Help model design</h1>
+<p dir="auto">Status: adopted 2026-08-05. Implemented in slices (see the <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4759407229" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/154" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/154/hovercard" href="https://github.com/mboworks/xff/pull/154">#154</a> epic in<br>
+<a href="../TODO.html"><code class="notranslate">TODO.md</code></a>); this document is the decision record.</p>
+<p dir="auto">The HTML backend shipped after the original plain, Markdown, and roff slices. It emits a<br>
+self-contained HTML5 document directly from the model; Pages does not convert Markdown or run a<br>
+client-side renderer. Non-console renderers are formats of the full help document rather than<br>
+standalone operations: <code class="notranslate">--help=full:markdown</code>, <code class="notranslate">--help=full:html</code>, and <code class="notranslate">--help=full:roff</code>; <code class="notranslate">long</code><br>
+aliases <code class="notranslate">full</code>, and <code class="notranslate">--man</code> remains the conventional roff shortcut.</p>
+<h2 dir="auto" id="problem">Problem</h2>
+<p dir="auto">Help generation grew into two parallel systems. The expression <code class="notranslate">registry</code> and the<br>
+global-options table are a real content single source of truth, and the<br>
+<code class="notranslate">WriteReference</code> walk drives the roff / Markdown / plain backends structurally. But<br>
+plain <code class="notranslate">--help</code> and most <code class="notranslate">--help=TOPIC</code> bypass all of that: sixteen hand-assembled<br>
+<code class="notranslate">Render*</code> functions in <code class="notranslate">xff/cli/help.cc</code> plus <code class="notranslate">kHelpText</code> / <code class="notranslate">kHelpTextExpression</code><br>
+in <code class="notranslate">xff/cli/main.cc</code> build strings directly, with hardcoded prose. The result is<br>
+duplicated rendering logic, prose that cannot wrap to width, cross-references that<br>
+are dead text, and content that drifts (the dead "see the Printf directives section<br>
+below" that <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="4739682300" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/126" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/126/hovercard" href="https://github.com/mboworks/xff/pull/126">#126</a> had to repair is exactly this failure mode).</p>
+<h2 dir="auto" id="model">Model</h2>
+<p dir="auto">Help is a <strong>semantic document model</strong> (an AST), and every output format is a<br>
+separate <strong>renderer backend</strong> that walks the one model. The model carries meaning,<br>
+never presentation.</p>
+<h3 dir="auto" id="1-output-independence">1. Output independence</h3>
+<p dir="auto">Backends: plain text, ANSI-colored text, Markdown, roff (man page), and HTML. The<br>
+same node renders natively per backend (a <code class="notranslate">Section</code> is a blank-line heading / a<br>
+bold ANSI line / <code class="notranslate">##</code> / <code class="notranslate">.SH</code> / <code class="notranslate">&lt;h2&gt;</code>). The model has no format-specific strings.</p>
+<h3 dir="auto" id="2-width-text-backends-only">2. Width (text backends only)</h3>
+<p dir="auto">Width is a text-backend concern; the model is width-agnostic and Markdown / HTML /<br>
+roff never hard-wrap (their consumer reflows: a viewer, the browser, mandoc's fill).<br>
+The plain and color backends take a width, resolved highest-precedence-first:</p>
+<ol dir="auto">
+<li>an explicit <code class="notranslate">--width=N</code> (or config value);</li>
+<li>the detected terminal width when stdout is a TTY (<code class="notranslate">ioctl(TIOCGWINSZ)</code>, honoring<br>
+<code class="notranslate">$COLUMNS</code>);</li>
+<li>a fallback of 80 columns (piped / redirected / undetectable), so non-TTY output<br>
+is deterministic.</li>
+</ol>
+<p dir="auto">Per node: <code class="notranslate">Prose</code> free-flows to the width; <code class="notranslate">Row</code> / <code class="notranslate">Entry</code> keep the term column and<br>
+wrap the description with a hanging indent; <code class="notranslate">Example</code> is verbatim and never wrapped.<br>
+Width and color live in a small render-options struct passed to the text backend<br>
+(so a test can feed <code class="notranslate">width=40</code> and assert the wrap).</p>
+<h3 dir="auto" id="3-highlighting-cross-references-index">3. Highlighting, cross-references, index</h3>
+<ul dir="auto">
+<li><strong>Highlighting</strong> is typed inline runs, not markup baked into strings: a text<br>
+field is a sequence of <code class="notranslate">Inline</code> runs styled <code class="notranslate">Text</code> / <code class="notranslate">Code</code> / <code class="notranslate">Emphasis</code> /<br>
+<code class="notranslate">Strong</code> / <code class="notranslate">Ref</code>. Each backend maps a style to its surface (ANSI SGR, <code class="notranslate">`</code>,<br>
+<code class="notranslate">\fB</code>, <code class="notranslate">&lt;code&gt;</code>); plain drops the styling but keeps the text.</li>
+<li><strong>Cross-references</strong> are semantic, never formatted links. A <code class="notranslate">Ref</code> run (and<br>
+<code class="notranslate">SeeAlso</code>) carries a <code class="notranslate">RefTarget {kind, id[, section]}</code> where kind is <code class="notranslate">Topic</code>,<br>
+<code class="notranslate">Flag</code>, <code class="notranslate">Primary</code>, <code class="notranslate">ManPage</code>, <code class="notranslate">Url</code>, or <code class="notranslate">Anchor</code>. Backends resolve it: HTML<br>
+<code class="notranslate">&lt;a href&gt;</code>, Markdown <code class="notranslate">[..](#..)</code>, roff cross-ref, plain / color the text form<br>
+(and color / TTY may emit OSC-8 hyperlinks).</li>
+<li><strong>Index</strong>: every <code class="notranslate">Section</code> / <code class="notranslate">Subsection</code> / <code class="notranslate">Entry</code> carries a stable <code class="notranslate">anchor</code><br>
+(auto-slugged from its title / term, overridable). A <code class="notranslate">BuildIndex</code> walk collects<br>
+<code class="notranslate">{anchor, title, summary, kind, depth}</code> into an index the backends render (plain<br>
+<code class="notranslate">--help=list</code>, HTML / Markdown a table of contents).</li>
+<li>Because refs are semantic and the index knows every anchor, a <strong>resolution pass<br>
+validates every internal cross-reference at build time</strong>: a ref to a topic / flag<br>
+/ primary that does not exist is a build error, not a shipped dead link. This<br>
+needs the whole document as data walked twice, which is why the model beats the<br>
+one-pass imperative <code class="notranslate">WriteReference</code>.</li>
+</ul>
+<h3 dir="auto" id="4-authoring">4. Authoring</h3>
+<p dir="auto">The model is the interchange format; it is authored in C++, not an external markup.</p>
+<ul dir="auto">
+<li><strong>Structured data</strong> (flags, primaries, printf / time / size vocabularies) is<br>
+built from the <code class="notranslate">registry</code> / <code class="notranslate">globals</code> SSOT into <code class="notranslate">Entry</code> / <code class="notranslate">Row</code> nodes. No markup.</li>
+<li><strong>Prose and topics</strong> are declarative model data, diff-reviewable beside the code.</li>
+<li><strong>The only string markup is backticks</strong> - single <code class="notranslate">`code`</code> for an inline<br>
+<code class="notranslate">Code</code> run, and a triple-backtick fence for an <code class="notranslate">Example</code> (verbatim; an optional<br>
+info string like <code class="notranslate">```sh</code> sets <code class="notranslate">Example.lang</code>, which the structured backends use<br>
+and the text backends ignore). We deliberately do NOT parse Markdown's <code class="notranslate">#</code><br>
+headings, <code class="notranslate">-</code> / <code class="notranslate">*</code> bullets, or <code class="notranslate">*emphasis*</code>: those sigils are exactly xff's flag,<br>
+glob, and regex characters, so they would collide with the content. Headings,<br>
+bullets, entries, rows, refs, and anchors are all typed nodes; a literal backtick<br>
+is escaped (doubled) in the rare case it appears.</li>
+</ul>
+<p dir="auto">XHTML / Markdown as an authored input was rejected: the content is programmer<br>
+authored, terse, and lives with the code, so an XML layer adds a parser, verbose<br>
+authoring, and a round-trip for no gain. They remain output backends only. Revisit<br>
+only if help ever becomes externally authored by non-coders.</p></main><footer>Release snapshot · d74a8229606309cdefcc05cdf771d8ee43cf4d5b</footer></body></html>

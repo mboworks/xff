@@ -1,0 +1,152 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>extra_modules/archive/test_data/README.md - xff v0.3.7</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.3.7/">Home</a><a href="/xff/site/tag/v0.3.7/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.3.7">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/d74a8229606309cdefcc05cdf771d8ee43cf4d5b">Source</a><a href="/xff/coverage/tag/0.3.7/">Coverage</a><a href="/xff/releases/0.3.7/">CLI reference</a></nav><p>xff v0.3.7</p><main><h1 dir="auto" id="archive-test-fixtures">archive test fixtures</h1>
+<p dir="auto">Two sets of committed containers. Neither is editable by hand; both are generated.</p>
+<h2 dir="auto" id="phar-containers">phar containers</h2>
+<p dir="auto">Used by <code class="notranslate">//:phar_fixture_test</code>, generated <strong>by PHP itself</strong> with<br>
+<a href="https://github.com/mboworks/xff/blob/d74a8229606309cdefcc05cdf771d8ee43cf4d5b/tools/make_phar_fixtures.php"><code class="notranslate">tools/make_phar_fixtures.php</code></a>:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">php -d phar.readonly=0 tools/make_phar_fixtures.php</pre></div>
+<p dir="auto">They are committed rather than built during the test, on purpose:</p>
+<ul dir="auto">
+<li>A fixture written by our own writer would only prove the reader agrees with itself. One written by<br>
+the reference implementation catches a misreading of the format - which is the whole risk in a<br>
+hand-written reader for a format libarchive does not support.</li>
+<li>The tests must not need a PHP interpreter, and CI must not install one. The files are tiny (each<br>
+well under 10 KiB), so checking them in costs less than the dependency would.</li>
+</ul>
+<p dir="auto">These are binary containers that BEGIN with PHP source, so a content sniff calls them text: the<br>
+<code class="notranslate">end-of-file-fixer</code> / <code class="notranslate">trailing-whitespace</code> pre-commit hooks appended a newline and silently broke<br>
+three of them (every functional test still passed - a byte at EOF moves nothing the reader looks at,<br>
+but the signature covers the whole file). Those hooks now exclude archive extensions, and<br>
+<code class="notranslate">phar_fixture_test</code> asserts the signature's <code class="notranslate">GBMB</code> trailer is still the last four bytes of each<br>
+uncompressed native fixture, so the same accident fails loudly next time.</p>
+<p dir="auto">Regenerate only when a fixture genuinely has to change, and say why in the commit. Timestamps and<br>
+signatures make the bytes differ on every run, so a gratuitous regeneration is pure diff noise.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">File</th>
+<th align="left">Variant</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code class="notranslate">plain.phar</code></td>
+<td align="left">native format, stored (uncompressed) members - the base case</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">entrygz.phar</code></td>
+<td align="left">native, per-member DEFLATE (<code class="notranslate">Phar::GZ</code>): plain manifest, compressed member data</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">entrybz2.phar</code></td>
+<td align="left">native, per-member bzip2 - a second compression id in the same flag field</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">sha256.phar</code></td>
+<td align="left">native, SHA-256 signed: signature plus the <code class="notranslate">GBMB</code> trail after the member data</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">wholegz.phar.gz</code></td>
+<td align="left">native, then the WHOLE FILE gzipped - the halt token is not even visible</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">wholebz2.phar.bz2</code></td>
+<td align="left">the same for bzip2</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">tarbased.phar.tar</code></td>
+<td align="left">the TAR-based phar variant: an ordinary tar, stub and signature are members</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">targz.phar.tar.gz</code></td>
+<td align="left">tar-based and whole-file gzipped</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">zipbased.phar.zip</code></td>
+<td align="left">the ZIP-based variant</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Every variant carries the <strong>same member set</strong> (<code class="notranslate">bin/run.php</code>, <code class="notranslate">lib/util.php</code>, <code class="notranslate">data/readme.txt</code>, and<br>
+the explicit empty directory <code class="notranslate">var/empty</code>), so one set of expectations covers them all and only the<br>
+packaging differs.</p>
+<h2 dir="auto" id="package-format-containers">package-format containers</h2>
+<p dir="auto">Used by <code class="notranslate">//:format_fixture_test</code>, generated by<br>
+<a href="https://github.com/mboworks/xff/blob/d74a8229606309cdefcc05cdf771d8ee43cf4d5b/tools/make_archive_fixtures.py"><code class="notranslate">tools/make_archive_fixtures.py</code></a>:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">tools/make_archive_fixtures.py</pre></div>
+<p dir="auto">Python standard library only, deliberately: these formats are zip / tar / ar / cpio wrappers, so no<br>
+packaging toolchain (<code class="notranslate">jar</code>, <code class="notranslate">dpkg-deb</code>, <code class="notranslate">rpmbuild</code>, <code class="notranslate">npm</code>) has to exist on the machine or in CI. That<br>
+is why they have their own generator rather than sharing the phar one, which does need PHP. Output is<br>
+deterministic (fixed mtimes, no gzip timestamps), so regenerating without a content change produces<br>
+no diff.</p>
+<p dir="auto">They exist because almost every "package format" is a zip or a tar underneath, so libarchive already<br>
+reads it and xff already dives into it - shipped behaviour that had no test. One fixture stands for a<br>
+whole family.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">File</th>
+<th align="left">Wrapper shape it pins</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code class="notranslate">example.jar</code></td>
+<td align="left">zip; also covers war/ear, apk/aab, vsix, xpi, docx/odt, nupkg</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">example.whl</code></td>
+<td align="left">zip with the Python packaging layout</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">npm-example.tgz</code></td>
+<td align="left">gzip-filtered tar: the npm, Cargo <code class="notranslate">.crate</code> and OCI-layer shape</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">example.gem</code></td>
+<td align="left">tar whose members are themselves archives - one layer visible without recursion</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">example.deb</code></td>
+<td align="left"><code class="notranslate">ar</code> with debian-binary + control.tar.gz + data.tar.gz</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">example.rpm</code></td>
+<td align="left">rpm lead + header, then a gzip-filtered cpio payload (libarchive's rpm FILTER)</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">sfx-example.zip</code></td>
+<td align="left">a zip behind a text prefix with ABSOLUTE offsets: the self-extracting shape</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">example.crx</code></td>
+<td align="left">CRX3's <code class="notranslate">Cr24</code> header + a zip appended verbatim, so its offsets are RELATIVE</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">example.jmod</code></td>
+<td align="left">JMOD's 4-byte magic + a zip appended verbatim</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">The last three answer the "prefixed payload" question empirically: the offsets really are shifted (41<br>
+bytes for the crx, 4 for the jmod, 0 for the sfx), and libarchive reads all three, so CRX3, JMOD,<br>
+self-extracting archives and by extension AppImage / PyInstaller need no offset-sniffing mechanism of<br>
+ours. Every fixture carries <code class="notranslate">data/readme.txt</code> with the same content, so one assertion spans formats.</p>
+<h2 dir="auto" id="filter-isolation-container">filter-isolation container</h2>
+<p dir="auto"><code class="notranslate">mini.tar.br</code> is <code class="notranslate">mini.tar</code> compressed with the reference Brotli encoder at quality 11. It is<br>
+committed specifically to prove that the base archive extra rejects Brotli even if a future<br>
+libarchive dependency learns that filter. Brotli belongs to the separate removable Brotli extra.<br>
+RFC 7932 has no magic bytes, so this fixture and the eventual <code class="notranslate">.tar.br</code> claim are suffix-based; do<br>
+not add content sniffing that guesses Brotli from arbitrary bytes.</p>
+<p dir="auto">Regenerate it with:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">brotli --quality=11 --force --output=extra_modules/archive/test_data/mini.tar.br \
+  extra_modules/archive/test_data/mini.tar</pre></div></main><footer>Release snapshot · d74a8229606309cdefcc05cdf771d8ee43cf4d5b</footer></body></html>
