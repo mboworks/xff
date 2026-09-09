@@ -3234,6 +3234,7 @@ RunResult RunTreeCompare(
     return RunResult{.errors = 2};
   }
   const TreeCompareOutput output = ResolveTreeCompareOutput(command.globals);
+  const render::Renderer status_renderer(render::Format::kPlain, ResolvePathEncoding(command.globals));
   const absl::StatusOr<TreeCompareSelection> selection_result = ResolveTreeCompareSelection(command.globals);
   if (!selection_result.ok()) {
     on_error("--compare-select", selection_result.status());
@@ -3304,13 +3305,16 @@ RunResult RunTreeCompare(
   }
 
   bool different = false;
+  const auto emit_status = [&](std::string_view status, std::string_view relative_path) {
+    emit(absl::StrCat(status, "\t", status_renderer.Record(relative_path)));
+  };
   auto left = entries[0].begin();
   auto right = entries[1].begin();
   while (left != entries[0].end() || right != entries[1].end()) {
     if (right == entries[1].end() || (left != entries[0].end() && left->first < right->first)) {
       if (left->second.metadata.type != vfs::FileType::kDirectory && selection.left_only) {
         if (output == TreeCompareOutput::kStatus) {
-          emit(absl::StrCat("left-only\t", left->first, "\n"));
+          emit_status("left-only", left->first);
         } else {
           const absl::StatusOr<std::string> patch =
               TreeEntryPatch(left->second, std::nullopt, left->first, diff_options);
@@ -3326,7 +3330,7 @@ RunResult RunTreeCompare(
     } else if (left == entries[0].end() || right->first < left->first) {
       if (right->second.metadata.type != vfs::FileType::kDirectory && selection.right_only) {
         if (output == TreeCompareOutput::kStatus) {
-          emit(absl::StrCat("right-only\t", right->first, "\n"));
+          emit_status("right-only", right->first);
         } else {
           const absl::StatusOr<std::string> patch =
               TreeEntryPatch(std::nullopt, right->second, right->first, diff_options);
@@ -3346,10 +3350,10 @@ RunResult RunTreeCompare(
         return RunResult{.errors = 1};
       }
       if (*same && left->second.metadata.type != vfs::FileType::kDirectory && selection.identical) {
-        emit(absl::StrCat("identical\t", left->first, "\n"));
+        emit_status("identical", left->first);
       } else if (!*same && selection.different) {
         if (output == TreeCompareOutput::kStatus) {
-          emit(absl::StrCat("different\t", left->first, "\n"));
+          emit_status("different", left->first);
         } else {
           const absl::StatusOr<std::string> patch =
               TreeEntryPatch(left->second, right->second, left->first, diff_options);

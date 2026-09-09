@@ -291,7 +291,7 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
   - `status` - one tab-separated selected result kind and relative path per record
   - `diff` - a unified tree diff suitable for saving as a patch
 
-  Requires exactly two roots. Bare `--compare` and `--compare=status` emit only discrepancies as tab-separated `left-only`, `right-only`, or `different` records. `--compare=diff` emits one unified tree diff, suitable for redirecting to a patch file; `--diff-context` and `--diff-algorithm` tune it. Unlike `-diff TARGET`, which is an expression action comparing each match from one walk with a templated target and therefore cannot discover target-only paths, `--compare` walks both roots independently and pairs the matches by relative path. The ordinary expression, ignore, hidden-file, archive, traversal, and `-P` / `-H` / `-L` symlink rules apply unchanged to each side; comparison itself enables none of them. Regular files are compared byte for byte (text and binary). Unfollowed symlinks are compared by target.
+  Requires exactly two roots. Bare `--compare` and `--compare=status` emit only discrepancies as tab-separated `left-only`, `right-only`, or `different` records. `--compare=diff` emits one unified tree diff, suitable for redirecting to a patch file; `--diff-context` and `--diff-algorithm` tune it. Unlike `-diff TARGET`, which is an expression action comparing each match from one walk with a templated target and therefore cannot discover target-only paths, `--compare` walks both roots independently and pairs the matches by relative path. The ordinary expression, ignore, hidden-file, archive, traversal, and `-P` / `-H` / `-L` symlink rules apply unchanged to each side; comparison itself enables none of them. Regular files are compared byte for byte (text and binary). Unfollowed symlinks are compared by target. In status mode, `--path-encoding=escape` makes control bytes in the relative path unambiguous.
   Affected by: --compare-select, --diff-algorithm, --diff-context
 - `--compare-select=KIND,...` - tree-comparison results to emit: left-only, right-only, identical, different, or all _(global, xff)_
   Selects comma-separated result kinds for `--compare`. The default is `left-only,right-only,different`, so equal files stay silent. `all` selects every kind. `identical` is available with status output and is rejected with `--compare=diff`, where an unchanged file has no patch representation.
@@ -1012,7 +1012,7 @@ Regular files are equal when their bytes are equal, for both text and binary dat
 
 ### Status output
 
-Bare `--compare` (or `--compare=status`) writes tab-separated `STATUS` and relative-path records. The default selection reports discrepancies only; `--compare-select=all` also includes equal entries.
+Bare `--compare` (or `--compare=status`) writes tab-separated `STATUS` and relative-path records. The default selection reports discrepancies only; `--compare-select=all` also includes equal entries. `--path-encoding=escape` makes control bytes in the path unambiguous.
 
 - `left-only` - the relative path matched only below the left root
 - `right-only` - the relative path matched only below the right root
