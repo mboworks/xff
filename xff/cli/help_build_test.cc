@@ -31,6 +31,7 @@ namespace {
 
 using ::testing::Contains;
 using ::testing::ElementsAre;
+using ::testing::ElementsAreArray;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
@@ -138,10 +139,18 @@ TEST_F(BuildReferenceTest, PreambleComesFromTheSot) {
 
 TEST_F(BuildReferenceTest, SectionsAppearInReferenceOrder) {
   EXPECT_THAT(
-      SectionTitles(doc), ElementsAre(
-                              "Description", "Configuration", "Options", "Expression", "Fields", "Printf directives",
-                              "Time formats", "Size units", "Regex grammars", "Content", "Ignore and VCS traversal",
-                              "Archives", "Statistics", "Environment", "Examples", "Exit status", "See also"));
+      SectionTitles(doc), ElementsAreArray({
+                              "Description",     "Command structure",
+                              "Configuration",   "Options",
+                              "Expression",      "Output",
+                              "Fields",          "Printf directives",
+                              "Time formats",    "Size units",
+                              "Regex grammars",  "Content",
+                              "Comparing trees", "Ignore and VCS traversal",
+                              "Archives",        "Statistics",
+                              "Environment",     "Examples",
+                              "Exit status",     "See also",
+                          }));
 }
 
 TEST_F(BuildReferenceTest, ExpressionHasTheThreeKindSubsections) {

@@ -152,6 +152,34 @@ TEST_F(HelpTest, ContentTopicGathersTheTaggedFamilyFromBothSots) {
   EXPECT_THAT(out, HasSubstr("OWN filesystem"));  // the cross-cutting rule the page exists to state
 }
 
+TEST_F(HelpTest, CompareTopicExplainsSelectionAndEquality) {
+  const std::string out = RenderTopicDoc("compare");
+  EXPECT_THAT(
+      out, AllOf(
+               HasSubstr("--compare"), HasSubstr("--compare-select"), HasSubstr("exactly two roots"),
+               HasSubstr("Regular files are equal when their bytes are equal"),
+               HasSubstr("Metadata such as permissions, owner, timestamps, and inode numbers is not compared"),
+               HasSubstr("Patch output")));
+  for (const GlobalFlag& flag : Globals()) {
+    if (flag.topic == "compare") {
+      EXPECT_THAT(out, HasSubstr(flag.name)) << flag.name;
+    }
+  }
+}
+
+TEST_F(HelpTest, OutputTopicExplainsFormatsAndFilenameSafety) {
+  const std::string out = RenderTopicDoc("output");
+  EXPECT_THAT(
+      out, AllOf(
+               HasSubstr("implicitly lists every match"), HasSubstr("Filename safety"), HasSubstr("--format=nul"),
+               HasSubstr("RFC 4180"), HasSubstr("--columns"), HasSubstr("--template")));
+  for (const GlobalFlag& flag : Globals()) {
+    if (flag.topic == "output") {
+      EXPECT_THAT(out, HasSubstr(flag.name)) << flag.name;
+    }
+  }
+}
+
 TEST_F(HelpTest, ATableRendersAlignedInEveryBackend) {
   // The Table contract: plain and roff align columns by width; markdown emits a GFM pipe table that
   // is ALREADY vertically aligned at the source level (the align-markdown-tables hook enforces that
@@ -216,7 +244,10 @@ TEST_F(HelpTest, FullReferenceHasDetailsAllIndexIsSummariesOnly) {
   // explanations; `--help=all` is the same set summaries-only -- strictly shorter.
   const std::string full = RenderDoc(BuildReference());
   const std::string all = RenderIndex("all");
-  EXPECT_THAT(full, AllOf(HasSubstr("--sort"), HasSubstr("-regex"), HasSubstr("A config style sets")));
+  EXPECT_THAT(
+      full, AllOf(
+                HasSubstr("--sort"), HasSubstr("-regex"), HasSubstr("A config style sets"),
+                HasSubstr("COMMAND STRUCTURE"), HasSubstr("implicit -a")));
   EXPECT_THAT(all, AllOf(HasSubstr("--sort"), HasSubstr("-regex")));
   EXPECT_THAT(all, Not(HasSubstr("A config style sets")));  // summaries only, no detail prose
   EXPECT_THAT(all, SizeIs(Lt(full.size())));                // strictly shorter than the full reference

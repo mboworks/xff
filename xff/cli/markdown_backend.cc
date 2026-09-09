@@ -81,9 +81,12 @@ std::string RenderInlinesMarkdown(const Inlines& runs) {
 
 void MarkdownBackend::Preamble(const Document& doc) {
   absl::StrAppendFormat(&out_, "# %s\n\n%s.\n\n**Usage:** `%s %s`\n", doc.name, doc.tagline, doc.name, doc.usage);
+  preamble_end_ = out_.size();
+  emit_contents_ = doc.sections.size() >= 4;
 }
 
 void MarkdownBackend::BeginSection(const Section& section) {
+  section_links_.emplace_back(section.title, SlugFor({.kind = RefTarget::Kind::kAnchor, .id = section.title}));
   absl::StrAppendFormat(&out_, "\n## %s\n", section.title);
 }
 
@@ -207,6 +210,13 @@ void MarkdownBackend::EmitSeeAlso(const SeeAlso& see_also) {
 }
 
 std::string MarkdownBackend::Take() {
+  if (emit_contents_) {
+    std::string contents = "\n## Contents\n\n";
+    for (const auto& [title, anchor] : section_links_) {
+      absl::StrAppend(&contents, "- [", title, "](#", anchor, ")\n");
+    }
+    out_.insert(preamble_end_, contents);
+  }
   return std::move(out_);
 }
 

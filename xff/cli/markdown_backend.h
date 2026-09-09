@@ -16,7 +16,10 @@
 #ifndef XFF_CLI_MARKDOWN_BACKEND_H_
 #define XFF_CLI_MARKDOWN_BACKEND_H_
 
+#include <cstddef>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "xff/cli/help_backend.h"
 #include "xff/cli/help_model.h"
@@ -48,6 +51,9 @@ class MarkdownBackend final : public HelpBackend {
 
  private:
   std::string out_;
+  std::size_t preamble_end_ = 0;
+  std::vector<std::pair<std::string, std::string>> section_links_;
+  bool emit_contents_ = false;
   bool in_entry_ = false;  // detail prose renders as an indented continuation of the entry bullet
 };
 
