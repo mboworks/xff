@@ -36,16 +36,17 @@ namespace xff::engine {
 // (`-L`). Following enables filesystem-loop detection.
 enum class SymlinkMode { kNever, kRoots, kAll };
 
-// Sibling ordering within each directory (xff's --sort). kNone keeps the
+// Root and sibling ordering (xff's --sort). kNone keeps the
 // filesystem's readdir order (find's default, fastest, non-reproducible). The
 // other modes sort each directory's entries by path; they differ in how subtree
 // contents are emitted relative to the listing (see docs/design-parallel.md):
 //   kDir     - emit each directory's sorted listing as a block; subtree contents
-//              interleave by completion order (ordering within a directory).
-//   kSubtree - sorted non-dir entries, then each subtree inlined contiguously as
-//              it completes (ordering within a subtree; bounded buffering).
-//   kTree    - whole result globally path-ordered (total ordering; buffers all).
-enum class SortOrder { kNone, kDir, kSubtree, kTree };
+//              follow in sorted child order (ordering within a directory).
+//   kSubtree - sorted non-dir entries, then each sorted subtree inlined contiguously.
+//   kTree    - each root is path-ordered depth-first; roots retain argv order.
+//   kRoots   - roots are sorted; directory listings retain filesystem order.
+//   kGlobal  - roots are sorted, then each is walked as kTree.
+enum class SortOrder { kNone, kDir, kSubtree, kTree, kRoots, kGlobal };
 
 // Traversal limits and parallelism (see docs/design-parallel.md).
 // How far archive diving descends, mirroring `--archive=none|roots|all`. The three are NESTED, not a

@@ -473,7 +473,7 @@ The former combined roadmap and completion ledger through PR #683 is retained se
   splitting `-grep:{line}={text}` at the FIRST colon leaves `{line}={text}` untouched.
 
   **Everything else was checked and is outside this rule:** all double-dash valued options remain
-  global assignments; find-native primaries take separate operands; `-jN` and the `-g+` / `-z++` /
+  global assignments; find-native primaries take separate operands; `-j N` / `-j=N` and the `-g+` / `-z++` /
   `-Z++` / `-s+` families are compact compatibility or level spellings, not bindings; `+N` / `-N`
   comparison prefixes live in primary operands; and `--help=license=NAME` is a meta-topic grammar,
   not an executable option assignment.

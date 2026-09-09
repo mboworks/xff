@@ -131,13 +131,14 @@ TEST_F(GlobalsTest, IsKnownGlobalAcceptsValuedFormsAndCompatAliases) {
   EXPECT_TRUE(IsKnownGlobal("--define=A=B"));    // value may itself contain '='
   EXPECT_TRUE(IsKnownGlobal("--gitignore=on"));  // bare-or-valued flag, valued form
   EXPECT_TRUE(IsKnownGlobal("--tz=utc"));        // valued via an alias
-  EXPECT_TRUE(IsKnownGlobal("-j4"));             // -jN short jobs form
-  EXPECT_TRUE(IsKnownGlobal("-jall"));           // -jall
-  EXPECT_TRUE(IsKnownGlobal("-0"));              // compat: --format=nul
-  EXPECT_TRUE(IsKnownGlobal("-g+"));             // compat: --gitignore=on
-  EXPECT_TRUE(IsKnownGlobal("-g-"));             // compat: --gitignore=off
-  EXPECT_TRUE(IsKnownGlobal("-z++"));            // the top read rung (= --archive=any)
-  EXPECT_TRUE(IsKnownGlobal("-Z"));              // the same rungs with writing armed
+  EXPECT_TRUE(IsKnownGlobal("-j=4"));            // valued short form
+  EXPECT_TRUE(IsKnownGlobal("-j4"));             // conventional attached short argument
+  EXPECT_TRUE(IsKnownGlobal("-jall"));
+  EXPECT_TRUE(IsKnownGlobal("-0"));    // compat: --format=nul
+  EXPECT_TRUE(IsKnownGlobal("-g+"));   // compat: --gitignore=on
+  EXPECT_TRUE(IsKnownGlobal("-g-"));   // compat: --gitignore=off
+  EXPECT_TRUE(IsKnownGlobal("-z++"));  // the top read rung (= --archive=any)
+  EXPECT_TRUE(IsKnownGlobal("-Z"));    // the same rungs with writing armed
   EXPECT_TRUE(IsKnownGlobal("-Z+"));
   EXPECT_TRUE(IsKnownGlobal("-Z++"));
   // `-Z-` is known so the engine can explain the contradiction rather than have it reported as an

@@ -259,6 +259,30 @@ TEST_F(WalkTest, SortModesOrderUnderWorkers) {
   }
 }
 
+TEST_F(WalkTest, RootsAndGlobalSortRootOperands) {
+  ASSERT_TRUE(fs::create_directories(root_ / "roots-a"));
+  ASSERT_TRUE(fs::create_directories(root_ / "roots-z"));
+  { std::ofstream(root_ / "roots-a" / "child.txt") << "a"; }
+  { std::ofstream(root_ / "roots-z" / "child.txt") << "z"; }
+  const std::string root_a = (root_ / "roots-a").string();
+  const std::string root_z = (root_ / "roots-z").string();
+  const auto paths = [](const Result& result) {
+    std::vector<std::string> out;
+    out.reserve(result.seen.size());
+    for (const auto& [path, depth] : result.seen) {
+      out.push_back(path);
+    }
+    return out;
+  };
+
+  EXPECT_THAT(
+      paths(RunRoots({root_z, root_a}, WalkOptions{.sort = SortOrder::kRoots}, Continue)),
+      ElementsAre(root_a, root_a + "/child.txt", root_z, root_z + "/child.txt"));
+  EXPECT_THAT(
+      paths(RunRoots({root_z, root_a}, WalkOptions{.sort = SortOrder::kGlobal}, Continue)),
+      ElementsAre(root_a, root_a + "/child.txt", root_z, root_z + "/child.txt"));
+}
+
 TEST_F(WalkTest, MaxDepthLimitsDescent) {
   const Result result = Run(WalkOptions{.min_depth = 0, .max_depth = 1}, Continue);
   EXPECT_THAT(

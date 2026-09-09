@@ -52,7 +52,7 @@ bool ExecuteBatchInDir(
 // finished one first when already at the cap -- so at most `cap` run at once;
 // `Drain` waits for the rest. Because a launched child's exit status is not known
 // when Launch returns, the action reports success on launch (its result does not
-// gate later predicates) -- the documented parallel-mode trade-off; use `-j1` for
+// gate later predicates) -- the documented parallel-mode trade-off; use `-j 1` for
 // find's strict synchronous semantics.
 //
 // Touched only from the single-threaded walk visitor, so it holds no locks. The

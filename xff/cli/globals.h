@@ -49,7 +49,7 @@ struct ValueDoc {
 struct GlobalFlag {
   std::string_view name;     // primary lookup key, e.g. "--sort", "--jobs", "-H"
   std::string_view alias;    // alternate lookup key, or "" (e.g. "-j" for --jobs, "--tz")
-  std::string_view display;  // human header, e.g. "-j N, --jobs=N|all" or "--sort[=none|dir|subtree|tree]"
+  std::string_view display;  // human header, e.g. "-j N, -j=N, --jobs=N|all" or "--sort[=<ORDER>]"
   std::string_view group;    // short group key, e.g. "config", "traversal", "filter" (drives grouping)
   std::string_view header;   // display heading for the group, e.g. "Filter & Ignore" (shown at its first flag)
   std::string_view summary;  // one-line synopsis, lower-case, no trailing period
@@ -135,7 +135,7 @@ mbo::types::OptionalRef<const GlobalFlag> LookupGlobal(std::string_view name);
 // Whether `arg` is a recognized whole-run global token, so `main` can reject an
 // unknown leading option instead of silently ignoring it. Accepts: an exact name or
 // alias; a valued `name=VALUE` / `alias=VALUE` form when the flag advertises a value
-// (its `display` contains '='); the `-jN` / `-jall` short jobs form; and the compat
+// (its `display` contains '='); and the compat
 // aliases not in the table (`-0`, `-g+`, `-g-`). The meta flags `--help` / `--version`
 // / `--man` / formatted full help are consumed before parsing and are not checked here.
 bool IsKnownGlobal(std::string_view arg);

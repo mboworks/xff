@@ -229,7 +229,7 @@ struct EvalContext {
   // Bounded concurrent runner for `-exec/-execdir ... ;` under -j>1: when set, the
   // serial-`;` action launches the child here (returning true on launch) instead of
   // running it synchronously. Empty -> the action runs synchronously (find's default,
-  // and -j1). The `+` batch forms always go through exec_batches, never this.
+  // and -j 1). The `+` batch forms always go through exec_batches, never this.
   mbo::types::OptionalRef<exec::ParallelExec> parallel_exec;
   // --archive-extract: where an exec-family action may write an archive member so a child process can
   // open it (see ExtractedMembers). Empty - the default - keeps -exec / -execdir / -ok / -okdir a clean

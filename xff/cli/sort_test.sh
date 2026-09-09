@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# End-to-end test of --sort (none/dir/subtree/tree) and -j / --jobs, the CLI gap that was the
+# End-to-end test of --sort and -j / --jobs, the CLI gap that was the
 # last remaining piece of #43/#27 (the engine unit tests already cover ordering across worker
 # counts). Asserts: every mode walks the whole tree; --sort=tree is a fully deterministic global
 # order that is identical regardless of -j (the core parallel-determinism guarantee); --sort=dir
@@ -55,7 +55,7 @@ test::every_sort_mode_walks_the_whole_tree() {
   local dir mode
   dir="$(test_tmpdir sortall)"
   _make_tree "${dir}"
-  for mode in none dir subtree tree; do
+  for mode in none dir subtree tree roots global; do
     expect_eq "8" "$(_walk "${dir}" "--sort=${mode}" | wc -l | tr -d ' ')"
   done
 }
@@ -64,7 +64,7 @@ test::sort_tree_is_a_deterministic_global_order() {
   local dir out expected
   dir="$(test_tmpdir sorttree)"
   _make_tree "${dir}"
-  out="$(_walk "${dir}" --sort=tree -j1)"
+  out="$(_walk "${dir}" --sort=tree -j 1)"
   expected="$(printf '.\n./a.txt\n./b\n./b/d.txt\n./b/e.txt\n./c.txt\n./x\n./x/y.txt')"
   expect_eq "${expected}" "${out}"
 }
@@ -74,14 +74,29 @@ test::sort_tree_is_identical_across_worker_counts() {
   dir="$(test_tmpdir sortpar)"
   _make_tree "${dir}"
   # The core #43 guarantee: --sort=tree is reproducible regardless of parallelism.
-  expect_eq "$(_walk "${dir}" --sort=tree -j1)" "$(_walk "${dir}" --sort=tree -j8)"
+  expect_eq "$(_walk "${dir}" --sort=tree -j 1)" "$(_walk "${dir}" --sort=tree -j 8)"
+}
+
+test::sort_roots_and_global_order_multiple_operands() {
+  local parent root_a root_z out expected
+  parent="$(test_tmpdir sortroots)"
+  root_a="${parent}/a"
+  root_z="${parent}/z"
+  mkdir -p "${root_a}" "${root_z}"
+  : >"${root_a}/child.txt"
+  : >"${root_z}/child.txt"
+  expected="$(printf '%s\n%s\n%s\n%s' "${root_a}" "${root_a}/child.txt" "${root_z}" "${root_z}/child.txt")"
+  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --sort=roots "${root_z}" "${root_a}")"
+  expect_eq "${expected}" "${out}"
+  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --sort=global "${root_z}" "${root_a}")"
+  expect_eq "${expected}" "${out}"
 }
 
 test::sort_dir_orders_each_directory() {
   local dir out expected
   dir="$(test_tmpdir sortdir)"
   _make_tree "${dir}"
-  out="$(_walk "${dir}" --sort=dir -j1)"
+  out="$(_walk "${dir}" --sort=dir -j 1)"
   expected="$(printf '.\n./a.txt\n./b\n./c.txt\n./x\n./b/d.txt\n./b/e.txt\n./x/y.txt')"
   expect_eq "${expected}" "${out}"
 }
@@ -91,7 +106,7 @@ test::jobs_all_and_n_visit_the_whole_tree() {
   dir="$(test_tmpdir sortjobs)"
   _make_tree "${dir}"
   expect_eq "8" "$(_walk "${dir}" --jobs=all | wc -l | tr -d ' ')"
-  expect_eq "8" "$(_walk "${dir}" -j4 --sort=none | wc -l | tr -d ' ')"
+  expect_eq "8" "$(_walk "${dir}" -j 4 --sort=none | wc -l | tr -d ' ')"
 }
 
 test_runner

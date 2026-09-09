@@ -239,14 +239,18 @@ class Walker {
       on_error_(container, listing.status());
       return;
     }
-    if (options_.sort != SortOrder::kNone) {
+    if (options_.sort != SortOrder::kNone && options_.sort != SortOrder::kRoots) {
       absl::c_sort(*listing, [](const Stated& lhs, const Stated& rhs) { return lhs.path < rhs.path; });
     }
     HandleChildren(*listing, depth + 1);
   }
 
   void WalkRoots(absl::Span<const std::string> roots) {
-    for (const std::string& root : roots) {
+    std::vector<std::string> ordered_roots(roots.begin(), roots.end());
+    if (options_.sort == SortOrder::kRoots || options_.sort == SortOrder::kGlobal) {
+      absl::c_stable_sort(ordered_roots);
+    }
+    for (const std::string& root : ordered_roots) {
       if (stopped_) {
         return;
       }
@@ -392,7 +396,7 @@ class Walker {
       ancestors_.erase(id);
       return;
     }
-    if (options_.sort != SortOrder::kNone) {
+    if (options_.sort != SortOrder::kNone && options_.sort != SortOrder::kRoots) {
       absl::c_sort(*listing, [](const Stated& lhs, const Stated& rhs) { return lhs.path < rhs.path; });
     }
     HandleChildren(*listing, depth + 1);
@@ -409,7 +413,7 @@ class Walker {
   void HandleChildren(const std::vector<Stated>& children, int depth) {
     // Inline DFS at each entry's position. kTree emits a subtree in its sorted
     // place; post-order (`-depth`) always uses this shape (descend then visit).
-    if (options_.sort == SortOrder::kTree || options_.post_order) {
+    if (options_.sort == SortOrder::kTree || options_.sort == SortOrder::kGlobal || options_.post_order) {
       std::vector<std::future<Listing>> reads = SubmitSubdirReads(children, depth);
       for (std::size_t i = 0; i < children.size(); ++i) {
         if (stopped_) {

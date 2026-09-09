@@ -202,7 +202,7 @@ POSIX paths (and content) are byte strings, not guaranteed UTF-8; JSON/CSV/markd
 - **`-exec` / `-execdir` / `-ok` serial by default** (tier-1 contract). Traversal runs in parallel, but matched entries are funneled through one ordered queue to the action - each file processed once, not concurrently, like find. **`-ok`/`-okdir` always serial** (interactive prompt can't come from concurrent workers).
 - **Parallel exec is opt-in** via `-j N` / `--jobs` (>1) - relaxes the serial contract (explicit user choice; settable as a config default per D1). `-j` is free (find doesn't use it).
 - **Per-child output buffering** under parallel exec: each invocation's stdout/stderr captured and emitted atomically (no `xargs -P` garble).
-- Fully find-like = `-j1 --sort` (serial exec + deterministic order). Default = parallel-traversal speed + serial-faithful exec.
+- Fully find-like = `-j 1 --sort` (serial exec + deterministic order). Default = parallel-traversal speed + serial-faithful exec.
 
 ### macOS / cross-platform correctness (review #8)
 
