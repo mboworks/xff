@@ -195,14 +195,26 @@ POSIX paths (and content) are byte strings, not guaranteed UTF-8; JSON/CSV/markd
 - **Literal prefilter mitigates:** for a required-literal, _absent_ → conclude "no match" after one fast SIMD scan (regex skipped); _present_ → run the regex. Pure-literal negation = a single memchr-class sweep.
 - **`--max-contentsize`** caps how much of a file is read for content matching (named to avoid confusion with a size _filter_ / find's `-size`). A file over the cap is **excluded from content tests** - never silently asserted to "not contain" the pattern (no claiming absence on unread bytes). Self-documenting skip.
 - **Users are told it's slow:** `--explain` shows it, and an advisory note fires when negative content matching runs over a large set (same self-documenting ethos as safety).
-- Worst case = negative match over archive/remote (full decompress / network read; #3 limits apply); the parallel scheduler uses work-stealing for the uneven work.
+- Worst case = negative match over archive/remote (full decompress / network read;
+  #3 limits apply). Directory listings may be read ahead, but expression and
+  content evaluation remain on the single coordinator thread.
 
 ### Parallel exec (review #7)
 
-- **`-exec` / `-execdir` / `-ok` serial by default** (tier-1 contract). Traversal runs in parallel, but matched entries are funneled through one ordered queue to the action - each file processed once, not concurrently, like find. **`-ok`/`-okdir` always serial** (interactive prompt can't come from concurrent workers).
-- **Parallel exec is opt-in** via `-j N` / `--jobs` (>1) - relaxes the serial contract (explicit user choice; settable as a config default per D1). `-j` is free (find doesn't use it).
-- **Per-child output buffering** under parallel exec: each invocation's stdout/stderr captured and emitted atomically (no `xargs -P` garble).
-- Fully find-like = `-j 1 --sort` (serial exec + deterministic order). Default = parallel-traversal speed + serial-faithful exec.
+- **`-exec ... ;` / `-execdir ... ;` concurrency follows `--jobs`.** At
+  `-j 1` each child runs synchronously and its status can gate the expression to
+  its right. At `-j N` with `N > 1`, up to `N` children may be outstanding and
+  the action reports success on launch because the status is not known yet. The
+  persona-scoped default worker count therefore also chooses this behavior when
+  `-j` is omitted.
+- **`-ok`/`-okdir` always stay serial** because interactive prompts cannot run
+  concurrently. The `... +` forms remain end-of-walk batches and propagate
+  failures independently of the semicolon-form runner.
+- **Concurrent children inherit stdout and stderr directly.** xff does not buffer
+  or reorder their output, so it may interleave. Use `-j 1`, redirect inside the
+  command, or make each child emit atomically when output ordering matters.
+- Strict synchronous find action semantics require `-j 1`; sorting is a separate
+  traversal-order choice.
 
 ### macOS / cross-platform correctness (review #8)
 

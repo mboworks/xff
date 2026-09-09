@@ -46,8 +46,9 @@ bool ExecuteBatchInDir(
     const std::vector<std::string>& names,
     std::string_view dir);
 
-// Runs `-exec/-execdir command ;` children concurrently for find's `-j` (the
-// single parallelism knob, shared with the directory walk). `Launch` spawns a
+// Runs `-exec/-execdir command ;` children concurrently when xff's `-j` is
+// greater than one. The same knob independently configures directory-read
+// workers; the pools do not share one concurrency budget. `Launch` spawns a
 // child and returns as soon as fewer than `cap` are outstanding -- reaping a
 // finished one first when already at the cap -- so at most `cap` run at once;
 // `Drain` waits for the rest. Because a launched child's exit status is not known

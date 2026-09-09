@@ -1195,9 +1195,10 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "run a command per match (;) or batched (+)",
         .details = "Runs the command up to a terminator: `;` runs it once per match, `+` batches as many paths as "
                    "fit per invocation (like xargs). `{}` expands to the path; xff also binds `{1}`..`{N}` from "
-                   "`-regex` capture groups and the whole {field} vocabulary. Serial by default; `-j N` runs "
-                   "invocations in parallel. Sensitive: loaded from an `--xffrc` file it needs `--allow-exec`. "
-                   "Example: `xff . -name '*.o' -exec rm {} +`.",
+                   "`-regex` capture groups and the whole {field} vocabulary. The `;` form is synchronous at "
+                   "`-j 1`; larger job counts permit up to `N` children concurrently, and their direct stdout / "
+                   "stderr may interleave. The `+` form remains an end-of-walk batch. Sensitive: loaded from an "
+                   "`--xffrc` file it needs `--allow-exec`. Example: `xff . -name '*.o' -exec rm {} +`.",
         .kind = Kind::kAction,
         .arity = -1,
         .safety = Safety::kSecurity,

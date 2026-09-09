@@ -42,7 +42,7 @@ xff/
 - **`config`** - config files → settings, merged by the cascade with provenance (`unset` ≠ explicit); CLI > config > defaults. Enforces the **trust model** (data-only tree configs; `--config`-armed exec blocks; ownership gate) - design.md §Security & safety.
 - **`vfs`** - `Entry`/`Metadata` interface + directory iteration; `LocalFs` backend first. Archive/remote backends slot behind the same interface, tagging entries by source (real-fs/archive-member/remote) + read-only flag, with untrusted-input guards (decompression-bomb / Zip-Slip) - design.md §Virtual entries. Exposes platform metadata caps (btime, normalization/case).
 - **`regex`** - `Matcher` abstraction; RE2 default (linear-time), PCRE2 (opt-in, **configurable limits**) for lookaround/backrefs; literal/Aho-Corasick prefilter; translates find's `-regex`/`-regextype` grammars onto RE2 - design.md §Regex engines.
-- **`engine`** - evaluates the AST over the VFS stream: strict left→right + short-circuit (design.md §Evaluation); parallel traversal; emits the result model; runs the cost-warning from registry cost-tiers.
+- **`engine`** - evaluates the AST over the VFS stream: strict left→right + short-circuit (design.md §Evaluation); parallel directory read-ahead with coordinator-owned evaluation; emits the result model; runs the cost-warning from registry cost-tiers.
 - **`render`** - result/stat model → formats; streaming (plain/JSONL/NUL/CSV) vs buffered/aligned (columns/markdown/tree/stats); display-width-correct alignment.
 - **`cli`** - wires `registry → parser + config → engine → stats → render`; owns exit codes.
 
@@ -64,7 +64,7 @@ Dependency direction: `registry` ← {`parser`, `config`, `engine`}; `engine` �
 
 - `vfs` local backend; `engine` traversal (sequential → parallel) with **`--exact` FS-aware name matching** (#8) and **`--path-encoding`** non-UTF-8 output handling (#5).
 - Full find expression: tests (`-name/-iname/-path/-type/-size/-mtime/-perm/-empty/-newer…`, **`-regex`/`-regextype` via RE2 grammar-translation** (#4), **birthtime `-Btime`/`-Bmin`/`-Bnewer`** (#8)), positional options (`-maxdepth/-mindepth/-depth/-xdev`), symlink modes `-H/-L/-P`, operators/precedence, actions (`-print/-print0/-printf`, `-exec \;`/`+`, `-execdir`, `-delete`, `-prune`, `-quit`, `-ok`/`-okdir`), default `-print`; GNU-canonical + BSD globals.
-- **Exit-code model** (#9, find-default); **impossible-task-fail + `--skip-unsupported`** (#8); **safety**: `--safe`/`--dry-run` + destructive-primitive warnings (#2); **serial `-exec` default + `-j` opt-in parallel** w/ per-child buffering (#7).
+- **Exit-code model** (#9, find-default); **impossible-task-fail + `--skip-unsupported`** (#8); **safety**: `--safe`/`--dry-run` + destructive-primitive warnings (#2); **`-j`-controlled semicolon-form `-exec` concurrency** (synchronous at `-j 1`, direct potentially interleaved child output above one) (#7).
 - Renderers: plain, NUL, JSONL.
 - **Exit:** **find-compatibility conformance suite passes** (Linux GNU-find + macOS BSD-find).
 

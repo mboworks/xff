@@ -407,9 +407,7 @@ class Walker {
   // in how a subdirectory's entry is grouped relative to its subtree. Reads for
   // the descendable subdirectories are submitted as a batch up front so the pool
   // overlaps their IO while the coordinator visits in order.
-  // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive dispatch
-  // subtree/tree) is inherently branchy; splitting it would scatter one cohesive traversal.
-  // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive dispatch
+  // NOLINTNEXTLINE(readability-function-cognitive-complexity): dispatching the ordering modes is cohesive.
   void HandleChildren(const std::vector<Stated>& children, int depth) {
     // Inline DFS at each entry's position. kTree emits a subtree in its sorted
     // place; post-order (`-depth`) always uses this shape (descend then visit).

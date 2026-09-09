@@ -4030,10 +4030,10 @@ RunResult RunFindCore(
   // visitor is single-threaded, so no synchronisation is needed.
   ExecBatches exec_batches;
 
-  // -j>1: `-exec/-execdir ... ;` children run concurrently on this bounded runner,
-  // capped at the same worker count as the walk (docs/design-parallel.md's single
-  // knob). It is wired into the context only when workers > 1; at -j 1 (and the
-  // in-process default) the actions stay synchronous and this stays idle.
+  // -j>1: `-exec/-execdir ... ;` children run concurrently on this bounded runner.
+  // Its numeric cap matches the directory-read worker count, but the two pools
+  // are independent. It is wired into the context only when workers > 1; at -j 1
+  // (and the in-process default) the actions stay synchronous and this stays idle.
   exec::ParallelExec parallel_exec(options.workers);
 
   // Impossible-task policy (design.md "Exit-code model"): a predicate that cannot be
