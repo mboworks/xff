@@ -257,11 +257,14 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--config=NAME",
         .group = "config",
         .header = "Config",
-        .summary = "select a config style: find (strict), xff (evolved), rg (opinionated); repeatable",
+        .summary = "activate a named config or select the find, xff, or rg style; repeatable",
         .details = "A config style sets the defaults for ignore files, hidden files, sizes, sort order, and case. "
                    "find is strict find compatibility; xff keeps find's grammar but sorts and prints human sizes; "
-                   "rg is opinionated (respect .gitignore, skip hidden, smart case). Repeatable and "
-                   "layered, last one wins. See --help=styles for the per-style defaults.",
+                   "rg is opinionated (respect `.gitignore`, skip hidden, smart case). Every occurrence remains an "
+                   "active selector, so several named config blocks can apply. Among the built-in style selectors, "
+                   "the last `find`, `xff`, or `rg` occurrence chooses the baseline; custom names do not change it. "
+                   "A `STYLE:EPOCH` spelling such as `xff:2` selects `STYLE` while retaining the full name as a config "
+                   "selector. See `--help=styles` for the per-style defaults and `--help=config` for layering.",
         .topic = "config",
     },
     {
@@ -269,7 +272,12 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--no-config",
         .group = "config",
         .header = "Config",
-        .summary = "ignore discovered .xffrc files",
+        .summary = "disable all config-file loading",
+        .details = "Runs from built-in defaults and command-line flags only. No config path is consulted: this skips "
+                   "`/etc/xff.ini`, the user config, and every explicit `--xffrc=FILE`, regardless of option order. "
+                   "There is no config-sourced directive to gate, so no system policy is needed in this mode. Ignore "
+                   "files such as `.gitignore` and `.xffignore` are traversal inputs, not config files, and are "
+                   "unaffected.",
         .topic = "config",
     },
     {
@@ -307,6 +315,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "config",
         .header = "Config",
         .summary = "print the resolved configuration and exit",
+        .details = "Prints the active style, every config source consulted and whether it was found, resolved flags "
+                   "in application order with their provenance, rejected config directives, and the style-default "
+                   "table with this run's effective values. It does not walk roots or evaluate the expression. "
+                   "Diagnostics about unreadable config paths are limited to the source being reported as absent.",
         .topic = "config",
     },
     {
@@ -315,6 +327,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "traversal",
         .header = "Traversal",
         .summary = "follow symlinks named on the command line, not while walking",
+        .details = "Dereferences each symlink root operand before matching or descending, but keeps symlinks found "
+                   "below that root as symlinks. A dangling root symlink falls back to the link itself. `-H`, `-L`, "
+                   "and `-P` are mutually overriding leading options; the last occurrence wins.",
         .xff = false,
     },
     {
@@ -323,6 +338,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "traversal",
         .header = "Traversal",
         .summary = "follow symlinks everywhere during the walk",
+        .details = "Dereferences symlink roots and symlinks encountered below them. Matching sees the target's type "
+                   "and metadata, and directory targets are descended. Dangling links fall back to the link itself. "
+                   "Filesystem loops are detected and reported instead of recursed indefinitely. `-H`, `-L`, and "
+                   "`-P` are mutually overriding leading options; the last occurrence wins.",
         .xff = false,
     },
     {
@@ -331,6 +350,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "traversal",
         .header = "Traversal",
         .summary = "never follow symlinks (the default)",
+        .details = "Matches every symlink as a link and never descends through it, including a symlink supplied as a "
+                   "root operand. Predicates that explicitly inspect a target, such as `-xtype` and `-lname`, retain "
+                   "their documented behavior. `-H`, `-L`, and `-P` are mutually overriding leading options; the "
+                   "last occurrence wins.",
         .xff = false,
     },
     {

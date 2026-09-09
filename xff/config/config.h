@@ -55,7 +55,7 @@ struct ConfigInputs {
   std::vector<RcLine> user;           // parsed user .xffrc
   std::vector<RcLine> xffrc;          // parsed --xffrc=FILE files, in order (the non-arming tier)
   std::vector<std::string> configs;   // active --config=NAME selectors (styles and/or named configs)
-  bool no_config = false;             // --no-config: drop the user + xffrc layers and the system defaults
+  bool no_config = false;             // --no-config: consult no config path
   std::vector<ConfigSource> sources;  // every file consulted during discovery, for --explain (set by Discover)
 };
 

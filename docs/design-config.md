@@ -73,9 +73,11 @@ the **CLI always wins** (typing a flag is explicit consent).
   authorization - no trust DB, no hashes. This replaces the working
   `--config <file>` spelling in `design.md` §130 (which now collides with
   `--config=NAME` below).
-- **`--no-config`:** skip the user + project layers (and system _defaults_);
-  pure CLI + built-ins. The system _policy_ still bounds anything that would
-  otherwise be loaded - moot when nothing is.
+- **`--no-config`:** consult no config file at all, including the system, user,
+  and explicitly named `--xffrc` paths; pure CLI + built-ins. With no
+  config-sourced directive to gate, loading the system policy would have no
+  security effect. Like Bazel's `--ignore_all_rc_files`, this is absolute
+  regardless of other config-related option ordering.
 
 ## Formats
 
@@ -238,7 +240,6 @@ ln -s xff find && ./find . -println        # → error: -println unknown (find s
 - `/etc/xff.d/` drop-in dir now, or single `/etc/xff.ini` first?
 - Class tokens (`@sensitive`) in the `[policy]` lists from day one, or per-flag
   names only until proven necessary?
-- Should `--no-config` also drop system _defaults_, or only user + project?
 - Windows: system path (`%PROGRAMDATA%\xff`) and user path mapping (deferred with
   the rest of Windows support - `design.md` §Non-Goals).
 
