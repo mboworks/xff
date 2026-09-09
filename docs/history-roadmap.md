@@ -282,8 +282,8 @@ remains below is the design-forked / larger work.
   walk (`ReadPool`, `absl::Mutex`; parallel `readdir`+`lstat` on workers, single-thread
   coordinator/visitor) with `--sort=none|dir|subtree|tree` (`absl::c_sort`), `-j N` / `--jobs=all`,
   mode-scoped defaults, unit-tested across worker counts plus a tsan CI cell. The CLI gap closed
-  with `xff/cli/sort_test.sh` (every mode walks the whole tree; `--sort=tree` is a deterministic
-  global order identical across `-j`; `--sort=dir` orders each directory) - #43/#27 done.
+  with `xff/cli/sort_test.sh` (every mode walks the whole tree; `--sort=tree` is deterministic
+  within each root and identical across `-j`; `--sort=dir` orders each directory) - #43/#27 done.
 - **Exit-code model refinement + `--skip-unsupported` + impossible-task-fail**
   (#44). Shipped: (a) match-sensitive exit -- the default stays find semantics
   (0 ran / 2 error, match status never affects exit), while `--quiet` (suppress

@@ -76,18 +76,19 @@ Six modes, separating root order from order below each root. `name` stays an ali
   inlines each descendable directory or container subtree contiguously in sorted
   child order. The coordinator emits each subtree directly; it does not retain a
   subtree's output in memory.
-- **`tree`** - the entire result set is globally path-ordered (subdirectories
-  sorted into position too), fully reproducible across runs and machines.
-  Root operands retain command-line order. This mode sorts directory listings; it
-  does not collect all matching results.
+- **`tree`** - each root is path-ordered (subdirectories sorted into position
+  too), fully reproducible across runs and machines. Root operands retain
+  command-line order, so several roots do not form one global lexical order.
+  This mode sorts directory listings; it does not collect all matching results.
 
-- **`roots`** - stable-sort root operands, then walk below each root exactly as
-  `none` does. This makes root processing predictable without paying for sorted
-  directory listings.
+- **`roots`** - stable-sort root operand spellings, then walk below each root
+  exactly as `none` does. This makes root processing predictable without paying
+  for sorted directory listings; roots are not canonicalized before sorting.
 
-- **`global`** - stable-sort root operands, then walk each root as `tree` does.
-  The ordering key is hierarchical: root first, path within that root second.
-  Duplicate and overlapping roots remain separate walks and may repeat paths.
+- **`global`** - stable-sort root operand spellings, then walk each root as
+  `tree` does. The ordering key is hierarchical: operand spelling first, path
+  within that root second. Duplicate and overlapping roots remain separate walks
+  and may repeat paths.
 
 All modes materialize the current directory's stat'd listing. With `-j > 1`, the
 walker may additionally hold listings read ahead for its child directories. That
@@ -100,10 +101,12 @@ actions still occur in traversal order.
 
 ## Parallelism control
 
-A single knob, `-j N` (long form `--jobs`), caps total concurrency for **both**
-the directory walk and concurrent `-exec`/`-capture` children - one mental model.
-`-j 1` forces the sequential walk. `-j all` (`--jobs=all`) means every detected
-core (`hardware_concurrency()`), regardless of the active mode's default.
+A single knob, `-j N` (long form `--jobs`), configures two independent limits:
+`N` directory-read workers and at most `N` outstanding semicolon-form
+`-exec`/`-execdir` children. Directory reads and child processes can overlap, so
+this is not one shared `N`-operation budget. `-j 1` makes both parts synchronous.
+`-j all` (`--jobs=all`) uses every detected core (`hardware_concurrency()`) for
+each limit, regardless of the active mode's default.
 
 Under `-j > 1` the serial `-exec ... ;` / `-execdir ... ;` form launches its child
 on a bounded runner (at most `N` outstanding) instead of running it synchronously.
@@ -137,10 +140,14 @@ invoked as (the `--mode` / `argv[0]` mechanism, design-config.md and #54/#59):
 
 ## Concurrency correctness
 
-- **`-prune`** - a worker decides prune before enqueuing a directory's children,
-  so a pruned subtree is simply never queued. Unchanged semantics.
-- **`-quit`** - sets a stop flag the workers observe between entries; in-flight
-  work drains and the queue is abandoned. Exit status follows the normal model.
+- **`-prune`** - the coordinator evaluates the entry and suppresses descent when
+  the visitor returns prune. Depending on the ordering mode, batched read-ahead
+  may read the pruned directory's listing before or after that decision, but no
+  entry from the pruned subtree is visited or acted upon.
+- **`-quit`** - the coordinator stops visiting entries immediately. Workers only
+  perform leaf directory reads and do not inspect the walk's stop flag; already
+  submitted reads finish while the pool is destroyed. Their results are ignored,
+  and no new expression actions are run. Exit status follows the normal model.
 - **`-depth` (post-order)** - children before parent. The ordering layer holds a
   directory's own visit until its subtree has been emitted; under `none` this
   still means a parent waits on its descendants' completion.
@@ -150,8 +157,8 @@ invoked as (the `--mode` / `argv[0]` mechanism, design-config.md and #54/#59):
   sink and folded into the final status (design.md "Exit-code model"); a partial
   failure still yields the right nonzero code.
 - **Thread-safety** - `vfs::FileSystem` is already documented thread-safe. The
-  emit sink, capture map, and `--summary` accumulators are written only by the
-  ordering layer (single-writer) or sharded per worker and merged at the end.
+  coordinator alone evaluates expressions and writes the emit sink, capture map,
+  and `--summary` accumulators; directory-read workers never touch those objects.
 
 ## ThreadSanitizer
 

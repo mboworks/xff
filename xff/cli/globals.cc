@@ -613,9 +613,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "directory-read and concurrent -exec workers (all = every detected core)",
         .details = "`N` is a positive integer; use `-j 4`, `-j=4`, or `--jobs=4`. The conventional attached "
                    "short form `-j4` is also accepted. Every form accepts `all` in place of `N`. `-j 1` makes "
-                   "directory reads and `-exec ... ;` synchronous. At "
-                   "larger values, xff reads directories ahead and may run up to `N` semicolon-form `-exec` / "
-                   "`-execdir` children concurrently; their truth value is therefore success on launch. The "
+                   "directory reads and `-exec ... ;` synchronous. At larger values, xff reads directories "
+                   "on `N` worker threads and may independently keep up to `N` semicolon-form `-exec` / "
+                   "`-execdir` children outstanding. Reads and children can overlap; `N` is not one shared "
+                   "operation budget. The children's truth value is therefore success on launch. The "
                    "`... +` batch forms still run once after the walk and propagate a failing exit status. With "
                    "no flag, xff uses one fewer than the detected cores, capped at 15 and floored at 1; find and "
                    "rg modes use every detected core. `all` always means every detected core.",
