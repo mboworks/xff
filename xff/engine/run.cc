@@ -200,10 +200,11 @@ std::size_t DefaultWorkers(std::optional<registry::Style> style) {
   return cores;
 }
 
-// xff --sort=none|dir|subtree|tree: per-directory sibling ordering for the walk
+// xff --sort=none|dir|subtree|tree|roots|global: root and sibling ordering for the walk
 // (see docs/design-parallel.md). `none` keeps readdir order (find's default);
 // `dir` sorts each directory's listing; `subtree` adds contiguous subtrees;
-// `tree` is a total path order. Bare --sort and the legacy `name` mean `dir`. The
+// `tree` is depth-first path order within each root; `roots` sorts only roots;
+// `global` combines sorted roots with tree order. Bare --sort and the legacy `name` mean `dir`. The
 // default is mode-scoped: modern (kXff) sorts each directory, find stays unordered.
 // Leading global, last occurrence wins.
 SortOrder ResolveSort(const std::vector<std::string>& globals, std::optional<registry::Style> style) {
@@ -215,6 +216,10 @@ SortOrder ResolveSort(const std::vector<std::string>& globals, std::optional<reg
       sort = SortOrder::kSubtree;
     } else if (global == "--sort=tree") {
       sort = SortOrder::kTree;
+    } else if (global == "--sort=roots") {
+      sort = SortOrder::kRoots;
+    } else if (global == "--sort=global") {
+      sort = SortOrder::kGlobal;
     } else if (global == "--sort=none") {
       sort = SortOrder::kNone;
     }
@@ -250,30 +255,29 @@ bool ResolveRankByScore(const std::vector<std::string>& globals) {
   return rank;
 }
 
-// xff -jN / --jobs=N: worker threads for the parallel directory read-ahead (see
+// xff -j N / -j=N / --jobs=N: worker threads for the parallel directory read-ahead (see
 // docs/design-parallel.md). When absent, the count is mode-scoped (DefaultWorkers).
-// Leading global, last valid occurrence wins; a non-positive or unparseable value
-// is ignored.
-std::size_t ResolveJobs(const std::vector<std::string>& globals, std::optional<registry::Style> style) {
+// Leading global, last occurrence wins; a non-positive or unparseable value is a
+// usage error.
+absl::StatusOr<std::size_t> ResolveJobs(const std::vector<std::string>& globals, std::optional<registry::Style> style) {
   std::size_t jobs = DefaultWorkers(style);
   for (const std::string& global : globals) {
     std::string_view value;
     if (global.starts_with("--jobs=")) {
       value = std::string_view(global).substr(7);
-    } else if (global.starts_with("-j") && global.size() > 2) {
-      value = std::string_view(global).substr(2);
     } else {
       continue;
     }
-    if (value == "all") {  // --jobs=all / -jall: every detected core, regardless of mode
+    if (value == "all") {  // every detected core, regardless of mode
       const unsigned detected = std::thread::hardware_concurrency();
       jobs = detected == 0 ? 1 : detected;
       continue;
     }
     std::size_t parsed = 0;
-    if (absl::SimpleAtoi(value, &parsed) && parsed >= 1) {
-      jobs = parsed;
+    if (!absl::SimpleAtoi(value, &parsed) || parsed < 1) {
+      return absl::InvalidArgumentError(absl::StrCat("'", value, "': expected a positive integer or 'all'"));
     }
+    jobs = parsed;
   }
   return jobs;
 }
@@ -874,13 +878,16 @@ absl::StatusOr<std::uint64_t> ResolveBlockSize(const std::vector<std::string>& g
 // walk (exit 2). Last occurrence wins (the parser agrees).
 absl::Status ValidateRegextype(const std::vector<std::string>& globals) {
   constexpr std::string_view kPrefix = "--regextype=";
+  std::optional<std::string_view> selected;
   for (const std::string& global : globals) {
-    if (!global.starts_with(kPrefix)) {
-      continue;
+    if (global.starts_with(kPrefix)) {
+      selected = std::string_view(global).substr(kPrefix.size());
     }
-    const std::string_view value = std::string_view(global).substr(kPrefix.size());
+  }
+  if (selected.has_value()) {
+    const std::string_view value = *selected;
     if (value == "RE2" || value == "EXACT" || value == "FNMATCH" || value == "GLOB" || value == "SHGLOB") {
-      continue;  // core engines, always linked
+      return absl::OkStatus();  // core engines, always linked
     }
     if (value == "PCRE2") {
       if (!regex::Pcre2Available()) {
@@ -3438,7 +3445,12 @@ RunResult RunFindCore(
   WalkOptions options;
   options.symlinks = ResolveSymlinkMode(command.globals);
   options.sort = ResolveSort(command.globals, style);
-  options.workers = ResolveJobs(command.globals, style);
+  const absl::StatusOr<std::size_t> workers = ResolveJobs(command.globals, style);
+  if (!workers.ok()) {
+    on_error("--jobs", workers.status());
+    return RunResult{.errors = 2};
+  }
+  options.workers = *workers;
   const render::Format format = ResolveFormat(command.globals);
   const render::PathEncoding path_encoding = ResolvePathEncoding(command.globals);
   // --color=auto|always|never: colorize the plain listing by file type. auto (the
@@ -4020,7 +4032,7 @@ RunResult RunFindCore(
 
   // -j>1: `-exec/-execdir ... ;` children run concurrently on this bounded runner,
   // capped at the same worker count as the walk (docs/design-parallel.md's single
-  // knob). It is wired into the context only when workers > 1; at -j1 (and the
+  // knob). It is wired into the context only when workers > 1; at -j 1 (and the
   // in-process default) the actions stay synchronous and this stays idle.
   exec::ParallelExec parallel_exec(options.workers);
 
@@ -4514,8 +4526,8 @@ RunResult RunFindCore(
   // -j>1: reap every concurrent `-exec/-execdir ... ;` child still running. find's
   // `;` form is a predicate -- a nonzero exit makes only the action false, it does
   // NOT affect find's exit status (verified against BSD/GNU find) -- so the drained
-  // failure count is intentionally discarded here, keeping -jN identical to the
-  // synchronous -j1 path. The `+` batch form is the one that does count failures,
+  // failure count is intentionally discarded here, keeping -j N identical to the
+  // synchronous -j 1 path. The `+` batch form is the one that does count failures,
   // and it runs through exec_batches just below. A no-op when nothing was launched.
   parallel_exec.Drain();
 
@@ -4922,6 +4934,8 @@ std::string SortName(SortOrder order) {
     case SortOrder::kDir: return "per-dir";
     case SortOrder::kSubtree: return "subtree";
     case SortOrder::kTree: return "tree";
+    case SortOrder::kRoots: return "roots";
+    case SortOrder::kGlobal: return "global";
   }
   return "none";
 }

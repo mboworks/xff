@@ -837,8 +837,8 @@ bashtest(
     data = [":xff"],
 )
 
-# End-to-end test of --sort (none/dir/subtree/tree) + -j / --jobs: whole-tree coverage, the
-# deterministic global --sort=tree order identical across worker counts, and --sort=dir ordering.
+# End-to-end test of every --sort mode + -j / --jobs: whole-tree coverage, deterministic tree
+# order across worker counts, per-directory ordering, and root-spanning roots/global ordering.
 bashtest(
     name = "sort_test",
     size = "small",

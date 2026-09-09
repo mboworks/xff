@@ -90,6 +90,19 @@ TEST_F(ParserTest, GlobalsRootsExpression) {
   EXPECT_THAT(cmd.expression->args, ElementsAre("f"));
 }
 
+TEST_F(ParserTest, JobsShortFormsCanonicalizeToTheLongGlobal) {
+  ASSERT_OK_AND_ASSIGN(const Command spaced, Parse({"-j", "4", "."}));
+  EXPECT_THAT(spaced.globals, ElementsAre("--jobs=4"));
+  ASSERT_OK_AND_ASSIGN(const Command equals, Parse({"-j=4", "."}));
+  EXPECT_THAT(equals.globals, ElementsAre("--jobs=4"));
+  ASSERT_OK_AND_ASSIGN(const Command attached, Parse({"-j4", "."}));
+  EXPECT_THAT(attached.globals, ElementsAre("--jobs=4"));
+  ASSERT_OK_AND_ASSIGN(const Command attached_all, Parse({"-jall", "."}));
+  EXPECT_THAT(attached_all.globals, ElementsAre("--jobs=all"));
+  ASSERT_OK_AND_ASSIGN(const Command missing, Parse({"-j"}));
+  EXPECT_THAT(missing.globals, ElementsAre("--jobs="));
+}
+
 TEST_F(ParserTest, DoubleDashGlobalsHoistFromAfterRootsAndTheExpression) {
   // A `--` global is unambiguous (every primary/operator is single-dash), so it is hoisted to
   // globals wherever it appears: after the roots, at the tail, and interspersed among operators.
@@ -332,6 +345,10 @@ TEST_F(ParserTest, ApplyCaseModeFoldsSensitiveMatchers) {
   ASSERT_OK_AND_ASSIGN(Command sens, Parse({".", "-name", "readme"}));
   ApplyCaseMode(sens, CaseMode::kSensitive);
   EXPECT_FALSE(sens.expression->case_fold);
+
+  ASSERT_OK_AND_ASSIGN(Command fuzzy, Parse({".", "-fuzzy", "readme"}));
+  ApplyCaseMode(fuzzy, CaseMode::kSmart);
+  EXPECT_TRUE(fuzzy.expression->case_fold);
 }
 
 TEST_F(ParserTest, ApplyCaseModeRecompilesRegexInsensitive) {

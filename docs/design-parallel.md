@@ -3,7 +3,7 @@
 > Detailed spec for parallel directory traversal and `--sort` (issue #43).
 > **Refines** `design.md` §"Cross-cutting concerns" (Determinism). Where the two
 > differ, this document is authoritative for traversal/ordering specifically.
-> Status: **Draft** · 2026-06-27 · Org: MBO Works
+> Status: **Implemented** · 2026-06-27 · Org: MBO Works
 
 ## Purpose
 
@@ -40,53 +40,63 @@ of the design below; each has a noted follow-up:
 
 ## Architecture
 
-A bounded **worker pool** over directories, with a single **emission-ordering
-layer** between the workers and the output sink:
+A bounded directory-read worker pool with a single coordinator:
 
-- A work queue holds directories to read. Each worker pops a directory, lists it
-  (`ReadDir` + `lstat`), evaluates each entry against the expression, hands any
-  matches to the ordering layer, and pushes child directories back onto the
-  queue. The walk ends when the queue drains and all workers are idle.
-- `Evaluate` runs concurrently across workers. It reads per-entry state only;
-  any side effects with shared state (capture aggregation, `--summary`, the emit
-  sink) are funnelled through the ordering layer or otherwise serialized.
-- The **ordering layer owns the sink** - it is the only writer. This keeps
-  matching parallel while emission stays single-writer and correctly ordered for
-  the chosen `--sort` mode. `-exec`/`-capture` children are bounded by the same
-  `-j` budget (see below).
+- Workers perform only `ReadDir` plus metadata lookup and return complete listings.
+  The coordinator submits sibling-directory reads ahead, then consumes their
+  futures in the order required by `--sort`.
+- The coordinator evaluates expressions, applies traversal controls, and writes
+  the output sink. Consequently matching and emission are ordered and single-threaded;
+  only directory I/O and eligible `-exec` children run concurrently.
+- A listing future may retain a completed directory read until the coordinator
+  reaches it. No worker emits a match and no traversal sort collects all matches.
 
 ## `--sort` modes
 
-Four modes, a spectrum of rising ordering cost. `name` stays an alias for `dir`
+Six modes, separating root order from order below each root. `name` stays an alias for `dir`
 (back-compat with the current `SortOrder::kName`).
 
-| `--sort`  | Buffer      | Deterministic order |
-| --------- | ----------- | ------------------- |
-| `none`    | none        | no                  |
-| `dir`     | ~none       | within a directory  |
-| `subtree` | bounded     | within a subtree    |
-| `tree`    | all matches | fully               |
+| `--sort`  | Root order   | Order below each root                         | Result buffer |
+| --------- | ------------ | --------------------------------------------- | ------------- |
+| `none`    | command line | filesystem order                              | none          |
+| `dir`     | command line | sorted child blocks, then their descendants   | none          |
+| `subtree` | command line | sorted files, then contiguous sorted subtrees | none          |
+| `tree`    | command line | sorted depth-first                            | none          |
+| `roots`   | sorted       | filesystem order                              | none          |
+| `global`  | sorted       | sorted depth-first                            | none          |
 
-- **`none`** - emit entries in discovery (readdir) order as workers produce them.
-  Pure streaming, no buffering, fully nondeterministic. Fastest.
+- **`none`** - retain command-line root order and each directory's `readdir`
+  order. The coordinator, not a worker, visits entries, so workers do not race to
+  emit; the filesystem order itself is simply unspecified.
 - **`dir`** - each directory emits its complete direct listing (files **and**
   subdirectory entries) sorted as one block; the listing-blocks of different
-  directories interleave by completion order. Buffers only one listing at a time.
-  A directory's direct children are ordered; the tree as a whole is not.
+  directories are then descended in that same order. A directory's direct children
+  are ordered, but the result is not lexicographic depth-first.
 - **`subtree`** - each directory emits its non-directory entries sorted, then
-  inlines each subdirectory's **whole subtree contiguously** as that subtree
-  completes. Subtrees come out as contiguous, locally-sorted blocks; sibling
-  subtree order is nondeterministic. Buffers an in-flight subtree's output to
-  keep it contiguous - bounded by worker count, not tree size.
+  inlines each descendable directory or container subtree contiguously in sorted
+  child order. The coordinator emits each subtree directly; it does not retain a
+  subtree's output in memory.
 - **`tree`** - the entire result set is globally path-ordered (subdirectories
   sorted into position too), fully reproducible across runs and machines.
-  Buffers all matches (collect-all, or a hierarchical ordered merge). Most
-  memory, slowest. `subtree` is the bounded-memory alternative when only
-  contiguity (not a global order) is needed.
+  Root operands retain command-line order. This mode sorts directory listings; it
+  does not collect all matching results.
 
-The key distinction between `dir`/`subtree` and `tree`: neither `dir` nor
-`subtree` ever inlines a subdirectory's contents at a globally-sorted position -
-that is precisely what `tree` buys, and why only `tree` must buffer everything.
+- **`roots`** - stable-sort root operands, then walk below each root exactly as
+  `none` does. This makes root processing predictable without paying for sorted
+  directory listings.
+
+- **`global`** - stable-sort root operands, then walk each root as `tree` does.
+  The ordering key is hierarchical: root first, path within that root second.
+  Duplicate and overlapping roots remain separate walks and may repeat paths.
+
+All modes materialize the current directory's stat'd listing. With `-j > 1`, the
+walker may additionally hold listings read ahead for its child directories. That
+is traversal read-ahead, not matched-result buffering, and it does not change the
+coordinator's visit order. Result formats have a separate buffering policy:
+plain/nul/jsonl/csv/tsv stream, aligned/Markdown use `--buffer`, and tree-format
+output builds its complete display tree. `--sort=score` is also separate: it
+buffers and ranks the implicit listing after evaluation, while side-effecting
+actions still occur in traversal order.
 
 ## Parallelism control
 
@@ -152,20 +162,18 @@ mirroring the `asan` block) **and** its own `clang-tsan` CI matrix cell wired in
 the `done` gate. It lands in the same PR that introduces threads (it is a no-op on
 single-threaded code). The `asan` config also runs UBSan as of #138.
 
-## Phasing (chained PRs)
+## Implementation history
 
-Built as a chain of stacked PRs (each off its predecessor's tip), so each step is
-small and conflict-free:
+The traversal was delivered incrementally:
 
 1. **Worker pool + `--sort=none`** - parallel walk behind the existing sink, plus
    the `clang-tsan` config and CI cell (threads arrive here, so TSan does too).
    The sequential walk stays available via `-j 1`.
 2. **Ordering layer + `--sort=dir`** - generalize `SortOrder::kName` to `kDir`
    over the parallel walk (per-directory sorted listing blocks).
-3. **`--sort=subtree`** - the bounded-buffer contiguous-subtree mode (`kSubtree`).
-4. **`--sort=tree`** - the collect-all global ordering (`kTree`).
+3. **`--sort=subtree`** - files-first contiguous-subtree traversal (`kSubtree`).
+4. **`--sort=tree`** - sorted depth-first traversal within each root (`kTree`).
 5. **`-j` / `--jobs` + mode-scoped defaults** - the flag and the per-persona
    worker-count and default-`--sort` wiring.
-
-Open follow-ups: an optional stderr soft-warn for `--sort=tree` past a large
-match count (no hard cap; `subtree` already covers bounded-memory ordering).
+6. **`--sort=roots|global`** - stable root ordering, either alone or combined
+   with tree ordering below each root.

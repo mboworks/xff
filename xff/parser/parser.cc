@@ -839,6 +839,31 @@ regex::Grammar GrammarFromGlobals(const std::vector<std::string>& globals) {
   return grammar;
 }
 
+bool ConsumeLeadingJobsGlobal(
+    const std::vector<std::string>& args,
+    std::size_t& idx,
+    std::vector<std::string>& globals) {
+  const std::string& arg = args[idx];
+  if (arg == "-j") {
+    if (++idx >= args.size()) {
+      globals.emplace_back("--jobs=");
+      --idx;
+    } else {
+      globals.push_back(absl::StrCat("--jobs=", args[idx]));
+    }
+    return true;
+  }
+  if (arg.starts_with("-j=")) {
+    globals.push_back(absl::StrCat("--jobs=", std::string_view(arg).substr(3)));
+    return true;
+  }
+  if (arg.starts_with("-j") && arg.size() > 2) {
+    globals.push_back(absl::StrCat("--jobs=", std::string_view(arg).substr(2)));
+    return true;
+  }
+  return false;
+}
+
 }  // namespace
 
 absl::StatusOr<Command> Parse(const std::vector<std::string>& args) {
@@ -854,7 +879,9 @@ absl::StatusOr<Command> Parse(const std::vector<std::string>& args) {
       options_ended = true;
       break;
     }
-    if (IsMetaFlag(arg)) {
+    if (ConsumeLeadingJobsGlobal(args, idx, cmd.globals)) {
+      continue;
+    } else if (IsMetaFlag(arg)) {
       cmd.meta_flags.push_back(arg);
     } else if (!arg.empty() && (arg[0] == '-' || arg[0] == '+')) {
       cmd.globals.push_back(arg);
@@ -979,7 +1006,8 @@ void ApplyCaseModeToNode(Expr& expr, CaseMode mode, regex::Grammar grammar) {
       && !expr.args.empty()) {
     const std::string_view name = expr.descriptor->name;
     const std::string_view pattern = expr.args.front();
-    const bool glob_or_content = name == "-name" || name == "-path" || name == "-lname" || name == "-content";
+    const bool glob_or_content = name == "-name" || name == "-path" || name == "-lname" || name == "-content"
+                                 || name == "-fuzzy" || name == "-fuzzypath";
     const bool regex = name == "-regex" || name == "-rxc" || name == "-grep";
     if ((glob_or_content || regex) && ShouldFold(mode, pattern)) {
       if (regex) {

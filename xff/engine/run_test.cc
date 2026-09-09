@@ -506,7 +506,7 @@ TEST_F(RunTest, ExecSemicolonUnderParallelJobsRunsEveryMatch) {
   std::error_code ec;
   fs::remove(out, ec);
   const std::string script = "echo \"$1\" >> '" + out + "'";
-  RunArgvRecords({"-j2", root_.string(), "-name", "*.txt", "-exec", "sh", "-c", script, "_", "{}", ";"});
+  RunArgvRecords({"-j", "2", root_.string(), "-name", "*.txt", "-exec", "sh", "-c", script, "_", "{}", ";"});
   EXPECT_THAT(last_errors_, 0);
   std::ifstream in(out, std::ios::binary);
   ASSERT_TRUE(in.good());
@@ -522,24 +522,24 @@ TEST_F(RunTest, ExecSemicolonUnderParallelJobsLeavesExitStatusUnaffected) {
   // find's `-exec ... ;` is a predicate: a nonzero exit makes the action false but
   // does NOT raise find's exit status (unlike the `+` batch form). The parallel
   // runner preserves that -- both *.txt matches run `sh -c 'exit 1'`, yet the run
-  // reports no error, identical to the synchronous -j1 path.
-  RunArgvRecords({"-j2", root_.string(), "-name", "*.txt", "-exec", "sh", "-c", "exit 1", ";"});
+  // reports no error, identical to the synchronous -j 1 path.
+  RunArgvRecords({"-j", "2", root_.string(), "-name", "*.txt", "-exec", "sh", "-c", "exit 1", ";"});
   EXPECT_THAT(last_errors_, 0);
 }
 
 TEST_F(RunTest, JobsAllParsesAndWalksEverything) {
   // --jobs=all resolves to every detected core; the parallel walk still visits the
   // whole tree. The set is complete (order unspecified). On a 1-core host it folds
-  // to -j1, which returns the same set, so the assertion holds regardless.
+  // to -j 1, which returns the same set, so the assertion holds regardless.
   EXPECT_THAT(
       RunArgvRecords({"--jobs=all", root_.string()}),
       UnorderedElementsAre(root_.string(), Path("a.txt"), Path("b.md"), Path("sub"), Path("sub/c.txt")));
   EXPECT_THAT(last_errors_, 0);
 }
 
-TEST_F(RunTest, JobsAcceptsLongShortAndAllFormsAndIgnoresInvalidValues) {
+TEST_F(RunTest, JobsAcceptsLongShortAndAllForms) {
   static const std::vector<std::vector<std::string>> kPrefixes = {
-      {"--jobs=1"}, {"-j1"}, {"-jall"}, {"--jobs=0", "--jobs=1"}, {"--jobs=invalid", "-j1"},
+      {"--jobs=1"}, {"-j", "1"}, {"-j=1"}, {"-j1"}, {"-j", "all"}, {"-j=all"}, {"-jall"},
   };
   for (const std::vector<std::string>& prefix : kPrefixes) {
     SCOPED_TRACE(PrintToString(prefix));
@@ -547,6 +547,15 @@ TEST_F(RunTest, JobsAcceptsLongShortAndAllFormsAndIgnoresInvalidValues) {
     argv.push_back(root_.string());
     argv.insert(argv.end(), {"-name", "*.txt"});
     EXPECT_THAT(RunArgvRecords(argv), UnorderedElementsAre(Path("a.txt"), Path("sub/c.txt")));
+  }
+}
+
+TEST_F(RunTest, JobsRejectsInvalidValuesBeforeWalking) {
+  static constexpr auto kInvalidValues = std::to_array<std::string_view>({"--jobs=0", "--jobs=invalid"});
+  for (const std::string_view value : kInvalidValues) {
+    SCOPED_TRACE(value);
+    RunArgvRecords({std::string(value), root_.string()});
+    EXPECT_THAT(last_errors_, 2);
   }
 }
 
@@ -2192,6 +2201,14 @@ TEST_F(RunTest, UnsupportedRegextypeIsAUsageError) {
   EXPECT_THAT(last_errors_, Not(0));
 }
 
+TEST_F(RunTest, RegextypeUsesTheLastOccurrence) {
+  { std::ofstream(root_ / "a.txt") << "price 3.50\nprice 3X50\n"; }
+  EXPECT_THAT(
+      RunArgvRecords({"--regextype=MATCH", "--regextype=EXACT", root_.string(), "-name", "a.txt", "-grep", "3.50"}),
+      ElementsAre(Path("a.txt") + ":1:price 3.50"));
+  EXPECT_THAT(last_errors_, 0);
+}
+
 TEST_F(RunTest, GrepFormatRendersCustomTemplate) {
   // -grep:FORMAT overrides the default path:line:text with a field template.
   { std::ofstream(root_ / "a.txt") << "alpha\nTODO one\nbeta\n"; }
@@ -2464,6 +2481,16 @@ TEST_F(RunTest, ShardsSummaryByShardCountGroupsSets) {
 TEST_F(RunTest, FlavorFacetsHaveStableStorage) {
   const auto facets = FlavorFacets();
   EXPECT_THAT(FlavorFacets().data(), Eq(facets.data()));
+  std::string roots;
+  std::string global;
+  for (const FlavorFacet& facet : facets) {
+    if (facet.behavior == "traversal order") {
+      roots = facet.value({"--sort=roots"}, registry::Style::kXff);
+      global = facet.value({"--sort=global"}, registry::Style::kXff);
+    }
+  }
+  EXPECT_THAT(roots, Eq("roots"));
+  EXPECT_THAT(global, Eq("global"));
 }
 
 }  // namespace

@@ -1,6 +1,15 @@
 <!-- SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
+# 0.4.0
+
+- Add distinct root-spanning traversal orders: `--sort=roots` sorts only the search operands,
+  while `--sort=global` sorts the operands and walks each tree in deterministic depth-first order.
+  Clarify the ordering, directory read-ahead, result buffering, post-order, and score-ranking
+  contracts throughout the generated reference and parallel-walk design.
+- Clarify concurrency and matching controls, including worker defaults and `-exec` timing,
+  filesystem-native versus explicit case folding, block-size units, and regex grammar scope.
+
 # 0.3.7
 
 - Publish an immutable, versioned documentation website for every release, with stable links to

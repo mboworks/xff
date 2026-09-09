@@ -41,7 +41,7 @@ namespace {
 constexpr std::array kCaseValues = std::to_array<ValueDoc>({
     {.value = "sensitive", .meaning = "match exactly (-s-)"},
     {.value = "insensitive", .meaning = "fold case (-i)"},
-    {.value = "smart", .meaning = "fold case only when the pattern is all lower case (-s / -s+)"},
+    {.value = "smart", .meaning = "fold case unless the pattern contains ASCII uppercase (-s / -s+)"},
 });
 constexpr std::array kMimeConflictValues = std::to_array<ValueDoc>({
     {.value = "error", .meaning = "reject two media types claiming one extension in the same file (default)"},
@@ -209,7 +209,9 @@ constexpr std::array kSortValues = std::to_array<ValueDoc>({
     {.value = "none", .meaning = "filesystem order, whatever the directory yields (fastest)"},
     {.value = "dir", .meaning = "sort each directory's entries (a bare --sort; also spelled name)"},
     {.value = "subtree", .meaning = "sorted entries with each subtree inlined contiguously"},
-    {.value = "tree", .meaning = "one path-ordered result across the whole walk (buffers everything)"},
+    {.value = "tree", .meaning = "path-ordered depth-first traversal within each root"},
+    {.value = "roots", .meaning = "sort root operands; retain filesystem order below them"},
+    {.value = "global", .meaning = "sort the roots, then walk each in tree order"},
     {.value = "score", .meaning = "best `-fuzzy` match first (buffers everything; needs `-fuzzy`)"},
     {.value = "name", .meaning = "", .hidden = true},  // `dir`'s meaning already names it
 });
@@ -605,19 +607,39 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     {
         .name = "--jobs",
         .alias = "-j",
-        .display = "-j N, --jobs=N|all",
+        .display = "-j N, -j=N, --jobs=N|all",
         .group = "scheduling",
         .header = "Concurrency and ordering",
-        .summary = "worker count for the walk and concurrent -exec (all = every core)",
+        .summary = "directory-read and concurrent -exec workers (all = every detected core)",
+        .details = "`N` is a positive integer; use `-j 4`, `-j=4`, or `--jobs=4`. The conventional attached "
+                   "short form `-j4` is also accepted. Every form accepts `all` in place of `N`. `-j 1` makes "
+                   "directory reads and `-exec ... ;` synchronous. At "
+                   "larger values, xff reads directories ahead and may run up to `N` semicolon-form `-exec` / "
+                   "`-execdir` children concurrently; their truth value is therefore success on launch. The "
+                   "`... +` batch forms still run once after the walk and propagate a failing exit status. With "
+                   "no flag, xff uses one fewer than the detected cores, capped at 15 and floored at 1; find and "
+                   "rg modes use every detected core. `all` always means every detected core.",
     },
     {
         .name = "--sort",
-        .display = "--sort[=none|dir|subtree|tree]",
+        .display = "--sort[=<ORDER>]",
         .group = "scheduling",
         .header = "Concurrency and ordering",
         .summary = "sibling/traversal ordering (default depends on the mode)",
-        .details = "`none` leaves entries in filesystem order (fastest); `dir` sorts each directory's entries; "
-                   "`subtree` and `tree` give a deterministic order across the whole walk. The default is per "
+        .details = "Traversal order and result buffering are separate. Every mode materializes one directory "
+                   "listing, and `--jobs` may read additional directory listings ahead; none of the path-order "
+                   "modes buffers every match. `none` preserves each directory's filesystem order. `dir` sorts "
+                   "a directory's complete child listing, emits that listing, then descends into its sorted "
+                   "children. `subtree` emits sorted non-directory children first, then each sorted directory or "
+                   "container subtree contiguously. `tree` visits each sorted child and its descendants before "
+                   "the next child, giving lexicographic depth-first order WITHIN each root while retaining "
+                   "command-line root order. `roots` stable-sorts only the root operands and otherwise behaves "
+                   "like `none`. `global` stable-sorts the roots and applies `tree` below each one, producing a "
+                   "total hierarchical order by root and then path. Duplicate or overlapping roots remain "
+                   "separate walks and can therefore repeat paths. "
+                   "`-depth` makes every mode post-order (children before their parent); `none` retains filesystem "
+                   "sibling order; `roots` does too, while every other ordered mode uses sorted sibling order. "
+                   "The default is per "
                    "style: xff sorts "
                    "per directory, while find and rg leave the order unspecified.\n"
                    "`score` is the odd one out: the others are TRAVERSAL orders the walk streams, while a "
@@ -634,17 +656,26 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--block-size=SIZE",
         .group = "matching",
         .header = "Matching",
-        .summary = "bytes per -size block for a bare -size N / -size Nb (default 512)",
+        .summary = "bytes per bare/-b block for -size and -blocks (default 512)",
         .details = "A bare number is bytes. Explicit `B`/`kB`/`MB`/... units use SI powers of 1000; "
                    "`KiB`/`MiB`/... use IEC powers of 1024. Legacy `k`/`M`/`G`/... remain binary for find "
-                   "compatibility. Lowercase `b` is invalid here because defining a block in blocks is circular.",
+                   "compatibility. The value must be positive and fit in 64 bits. Lowercase `b` is invalid here "
+                   "because defining a block in blocks is circular. This changes the comparison unit for both "
+                   "`-size` (apparent bytes) and `-blocks` (allocated bytes); it does not change filesystem "
+                   "metadata or the fixed units printed by `-ls`.",
     },
     {
         .name = "--exact",
         .display = "--exact",
         .group = "matching",
         .header = "Matching",
-        .summary = "match -name/-path byte-exact, opting out of the xff FS-native case default",
+        .summary = "disable xff's filesystem-native case folding for name/path/fuzzy matching",
+        .details = "In xff mode, the otherwise case-sensitive `-name`, `-path`, `-fuzzy`, and `-fuzzypath` "
+                   "matchers follow the containing volume: xff folds ASCII case on a case-insensitive volume "
+                   "and compares exactly on a case-sensitive one. `--exact` opts out and makes those matchers "
+                   "byte-case-exact unless `--case=insensitive` or an explicitly insensitive primary (`-iname`, "
+                   "`-ipath`, `-ifuzzy`, `-ifuzzypath`) requests folding. Find mode is already exact by default. "
+                   "The volume probe is cached per device and safely defaults to exact matching if unavailable.",
     },
     {
         .name = "--case",
@@ -652,9 +683,13 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "matching",
         .header = "Matching",
         .summary = "letter case for matchers: -i insensitive, -s/-s+ smart, -s- sensitive (rg -> smart)",
-        .details = "Controls case for `-name`/`-path`/`-regex` and the content matchers. `sensitive` matches exactly; "
+        .details = "Controls the otherwise case-sensitive name, path, symlink-target, fuzzy, regex, and content "
+                   "matchers (`-name`, `-path`, `-lname`, `-fuzzy`, `-fuzzypath`, `-regex`, `-rxc`, `-grep`). "
+                   "Their `-i...` variants always fold independently. `sensitive` matches exactly; "
                    "`insensitive` (`-i`) folds case; `smart` (`-s` / `-s+`) folds only when the pattern is all "
-                   "lower case and matches exactly otherwise; `-s-` forces `sensitive`. rg defaults to `smart`.",
+                   "free of ASCII uppercase letters and matches exactly otherwise; `-s-` forces `sensitive`. For name, "
+                   "path, and fuzzy matching, xff's filesystem-native folding can additionally apply unless "
+                   "`--exact` is present. rg defaults to `smart`; xff and find default to `sensitive`.",
         .values = kCaseValues,
         .sign_forms = kCaseShorts,
         .value_check = GlobalFlag::ValueCheck::kEnum,
@@ -665,7 +700,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "matching",
         .header = "Matching",
         .summary = "match engine: RE2, EXACT, FNMATCH, GLOB, SHGLOB (GLOB + {a,b}), or PCRE2 (a build extra)",
-        .details = "Selects the grammar for `-regex`/`-iregex` and the content matchers `-rxc`/`-grep`. `RE2` "
+        .details = "Selects one grammar for every `-regex`/`-iregex`, `-rxc`/`-irxc`, and `-grep` pattern in the "
+                   "run; the last occurrence wins. `RE2` "
                    "(the default) is linear-time regular expressions; `EXACT` is a literal string "
                    "(metacharacters are plain text); `FNMATCH` is a flat shell wildcard where `*` matches any "
                    "character including `/`; `GLOB` is a locale-independent path glob where `*`, `?`, and "
@@ -1589,9 +1625,9 @@ bool IsKnownGlobal(std::string_view arg) {
   if (arg == "-0" || arg == "-i") {
     return true;
   }
-  // The short jobs form carries its value attached: -j4, -jall (the "=" form --jobs=N
-  // is handled by the valued-name path below via the -j alias).
-  if (arg.starts_with("-j") && arg.size() > 2) {
+  // Conventional attached short-option argument: -j4 / -jall. The help leads
+  // with the more readable -j N and -j=N forms, but build-tool users expect this.
+  if (arg.starts_with("-j") && arg.size() > 2 && !arg.starts_with("-j=")) {
     return true;
   }
   // An exact name or alias (bare flags, and valued flags used without a value).

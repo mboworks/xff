@@ -500,7 +500,6 @@ jobs:
   clang-tidy:
     needs: [pre-commit, trunk]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     permissions:
       # actions:write for the cache-cleanup step (`gh cache delete`); the workflow default
       # (read-all) stays in force for every other job.
