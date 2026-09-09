@@ -31,7 +31,7 @@ eXtended File Find, a find(1)-compatible file finder with modern extensions.
 
 xff walks each starting path and acts on the entries matching an expression, like `find`(1). With no path it searches the current directory; with no action it prints each match. `xff --compare LEFT RIGHT` instead compares two directory trees as selected status records or a patch.
 
-xff has two flavors selected by the program name: invoked as `find` it is strict find (only the standard vocabulary); invoked as `xff` it enables the modern extensions. An explicit `--config=find|xff` overrides the program name. Items marked as xff extensions below are the additions over find.
+xff has two flavors selected by the program name: invoked as `find` it restricts the expression to find-compatible primaries, operators, and values; invoked as `xff` it enables the modern extensions. Whole-run xff globals remain available as explicit controls in either flavor. An explicit `--config=find|xff` overrides the program name. Items marked as xff extensions below are the additions over find.
 
 ## Command structure
 
@@ -77,7 +77,7 @@ There is no project or ancestor `.xffrc` discovery: config comes from the system
 
 ### Choosing a style
 
-Every `--config=NAME` remains active, so multiple named blocks can apply. Among built-in style selectors, the last `find`, `xff`, or `rg` selects the baseline; custom names do not change it. See `--help=styles` for the table. The invocation name (`argv[0]`) is the leading selector, so a symlink named `find` runs the strict find style and `rg` the rg style; any other name (e.g. a `mytool` symlink) activates a same-named config block over the xff default. Explicit `--config` selectors stack on top.
+Every `--config=NAME` remains active, so multiple named blocks can apply. Among built-in style selectors, the last `find`, `xff`, or `rg` selects the baseline; custom names do not change it. See `--help=styles` for the table. The invocation name (`argv[0]`) is the leading selector, so a symlink named `find` selects the find expression style and `rg` the rg style; any other name (e.g. a `mytool` symlink) activates a same-named config block over the xff default. Explicit `--config` selectors stack on top.
 
 ### Arming dangerous directives
 
@@ -87,7 +87,7 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
 
 ### Config
 - `--config=NAME` - activate a named config or select the find, xff, or rg style; repeatable _(global, xff)_
-  A config style sets the defaults for ignore files, hidden files, sizes, sort order, and case. find is strict find compatibility; xff keeps find's grammar but sorts and prints human sizes; rg is opinionated (respect `.gitignore`, skip hidden, smart case). Every occurrence remains an active selector, so several named config blocks can apply. Among the built-in style selectors, the last `find`, `xff`, or `rg` occurrence chooses the baseline; custom names do not change it. A `STYLE:EPOCH` spelling such as `xff:2` selects `STYLE` while retaining the full name as a config selector. See `--help=styles` for the per-style defaults and `--help=config` for layering.
+  A config style sets the defaults for ignore files, hidden files, sizes, sort order, and case. find restricts the expression to find-compatible vocabulary and defaults; whole-run xff globals remain available as explicit overrides. xff keeps find's grammar but sorts and prints human sizes; rg is opinionated (respect `.gitignore`, skip hidden, smart case). Every occurrence remains an active selector, so several named config blocks can apply. Among the built-in style selectors, the last `find`, `xff`, or `rg` occurrence chooses the baseline; custom names do not change it. A `STYLE:EPOCH` spelling such as `xff:2` selects `STYLE` while retaining the full name as a config selector. See `--help=styles` for the per-style defaults and `--help=config` for layering.
 - `--no-config` - disable all config-file loading _(global, xff)_
   Runs from built-in defaults and command-line flags only. No config path is consulted: this skips `/etc/xff.ini`, the user config, and every explicit `--xffrc=FILE`, regardless of option order. There is no config-sourced directive to gate, so no system policy is needed in this mode. Ignore files such as `.gitignore` and `.xffignore` are traversal inputs, not config files, and are unaffected.
 - `--xffrc=FILE` - also load a specific config file (a non-arming tier; see --allow-exec) _(global, xff)_

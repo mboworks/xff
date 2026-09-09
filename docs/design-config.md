@@ -192,8 +192,8 @@ built-in `safety` classification so the safe default needs no admin file:
   stderr note when a project `.xffrc` was found; `off` ignores it silently. Full
   config, including style relaxation, works only from the user and system layers.
 - **`argv[0]` dispatch** - the invocation name is the leading `--config` selector.
-  A built-in style name selects that preset: `find` (strict: accept only find's own
-  primaries/options, reject every xff extension incl. single-dash modern primitives
+  A built-in style name selects that preset: `find` (restrict the expression to find's
+  primaries/operators/values, rejecting xff expression extensions incl. single-dash modern primitives
   like `-println`), `xff` (modern), `rg` (the single opinionated flavor). **Any other
   name selects a same-named _named config_** (there is no `xfd`/`fd` magic - they are
   just names): a `mytool` symlink to `xff` activates the user/system `mytool:` block
@@ -223,7 +223,7 @@ xff --config=thumbs ~/Pictures            # armed: user layer allows @sensitive
 #   /etc/xff.ini: [policy] project.allow = -capture
 cd $CI_WORKSPACE && xff --project-config=on .   # repo .xffrc -capture now armed
 
-# Strict drop-in via name.
+# Find expression vocabulary via name.
 ln -s xff find && ./find . -println        # → error: -println unknown (find style)
 ```
 

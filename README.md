@@ -5,9 +5,12 @@
 
 [Release website](https://mboworks.github.io/xff/)
 
-`xff` is a `find(1)`-compatible file finder with modern extensions. It walks each starting path and acts on the entries matching an expression, exactly like `find`, then adds the conveniences you always wished `find` had: content and language search, structured output, per-run summaries and histograms, safe deletes, native hashing, and a shared `{field}` vocabulary that threads through `-printf`, `-exec`, and every renderer.
+`xff` is a `find(1)`-compatible file finder with modern extensions. It walks each starting path and acts on entries through find's expression grammar, then adds content and language search, structured output, per-run summaries and histograms, safe deletes, native hashing, and a shared `{field}` vocabulary that threads through `-printf`, `-exec`, and every renderer.
 
-Anything `find` does, `xff` does the same way. Everything else is opt-in.
+The `find` style restricts the expression to find-compatible primaries, operators,
+and values. Whole-run xff globals remain available when explicitly supplied, while
+the default `xff` style intentionally selects modern presentation and traversal
+defaults.
 
 This `README.md` is a short overview. The complete, always-current reference lives in [XFF.md](./XFF.md) (generated from the binary; see Documentation).
 
@@ -15,7 +18,7 @@ This `README.md` is a short overview. The complete, always-current reference liv
 
 ## Core Highlights & Architectural Advantages
 
-- **`find`-Compatible Core:** The standard primaries (`-name`, `-type`, `-size`, `-mtime`, `-regex`, `-exec`, `-prune`, ...), operators, and exit codes behave exactly as in GNU/BSD `find`. Invoked as `find`, it is strict `find` and nothing more.
+- **`find`-Compatible Core:** The standard primaries (`-name`, `-type`, `-size`, `-mtime`, `-regex`, `-exec`, `-prune`, ...), operators, and exit-status conventions provide a portable union of GNU, BSD, and POSIX `find` behavior. Invoking the binary as `find` selects the find expression vocabulary and compatibility-oriented defaults while retaining explicit xff global controls.
 - **Content & Metadata Matching:** `-grep` / `-content` search inside files, `-lang 'C*'` and `-mime 'image/*'` match by inferred language or media type, `-text` / `-binary` / `-eofnl` classify content, and native `-hash` primitives emit optimized checksum manifests.
 - **Overrideable MIME Vocabulary:** The lean binary carries common media types; the removable
   `mime-db` extra expands that to thousands of registered types. Repeatable
@@ -101,7 +104,7 @@ The table below illustrates how traditional shell workflows shift into optimized
 
 | Target Intent / Use Case          | Legacy Command / Pipeline                  | The `xff` Unified Expression                                    | Architectural Advantage / Behavioral Shift                                                                                                 |
 | :-------------------------------- | :----------------------------------------- | :-------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------- |
-| **Strict Compliance**             | `find . -type f -name "*.cpp"`             | `find . -type f -name "*.cpp"` <br>_or_ `xff --config=find ...` | **Strict POSIX compatibility mode:** Turns off all modern extensions; modern flags become immediate usage errors.\*                        |
+| **Find Expression Compatibility** | `find . -type f -name "*.cpp"`             | `find . -type f -name "*.cpp"` <br>_or_ `xff --config=find ...` | **Find vocabulary:** Rejects xff-only primaries, operators, and values while retaining explicit whole-run xff controls.\*                  |
 | **Modern Structural Search**      | `fd -e cc`                                 | `xff -regex '.*\.cc$'` <br>_or_ `xff --config=xff ...`          | **Evolved mode (Default):** Expands `find`'s grammar with modern extensions, enabling sorted output and human sizes (`--human=si`).        |
 | **Clean Developer Grep**          | `fd -H -E ".git" \| xargs rg "TODO"`       | `xff --config=rg -grep "TODO"`                                  | **Opinionated Developer Mode:** Implicitly respects nested `.gitignore` files, skips hidden files, and uses smart-case matching logic.     |
 | **High-Performance Verification** | `find . -type f -exec sha256sum {} \;`     | `xff -type f -hash:sha256`                                      | **Zero-Fork Speed:** Eliminates system process-spawning overhead. Reads files directly into the native read loop buffer to hash inline.    |
@@ -110,16 +113,16 @@ The table below illustrates how traditional shell workflows shift into optimized
 | **Compressed Asset Auditing**     | `tar -ztf src.tar.gz \| grep "cfg"`        | `xff --archive -path "*src.tar.gz*cfg*"`                        | **Virtual File-tree Mapping:** Treats archives as virtual read-only directories, matching inner structures without manual disk extraction. |
 | **Isolated Variable Outputting**  | `find . -printf "%p,%s\n"`                 | `xff --format=csv --columns=path,size`                          | **Structured Records:** RFC 4180 quoting keeps commas, quotes, CR, and LF inside their CSV cells without shell parsing.                    |
 
-\* **Strict `find` mode is still xff's engine, not a wrapper around the OS `find`.** It keeps
-find's vocabulary and turns the xff extensions into usage errors, but the implementation is one
-fast, mostly platform-independent binary. The clearest divergence is regex: `-regex` / `-iregex`
+\* **The `find` style is still xff's engine, not a wrapper around the OS `find`.** It restricts
+the expression vocabulary, but xff globals such as `--format`, `--sort`, and `--jobs` remain
+available as explicit overrides. The clearest divergence is regex: `-regex` / `-iregex`
 default to **RE2** (linear-time, no catastrophic backtracking) and behave identically on Linux
 and macOS - where GNU find instead defaults to its Emacs dialect and BSD/macOS find to BRE.
 `-regextype` selects xff's uniform grammar set (RE2, EXACT, FNMATCH, GLOB, SHGLOB, plus PCRE2 in
 a full build), never GNU's dialect names. GLOB and SHGLOB are locale-independent, component-aware,
 and reject malformed bracket expressions instead of silently changing their meaning. SHGLOB adds
 nested alternatives and bounded integer or ASCII-letter sequences such as `{01..12}` and `{a..z}`.
-Otherwise strict mode is find's documented behavior, made uniform across platforms.
+Otherwise the find expression vocabulary follows the documented GNU, BSD, and POSIX behavior that xff makes uniform across platforms.
 
 ---
 

@@ -885,8 +885,9 @@ Section ConfigSection(bool in_full) {
   style.children.push_back(ProseOf(
       "Every `--config=NAME` remains active, so multiple named blocks can apply. Among built-in style selectors, "
       "the last `find`, `xff`, or `rg` selects the baseline; custom names do not change it. See `--help=styles` for "
-      "the table. The invocation name (`argv[0]`) is the leading selector, so a symlink named `find` runs the strict "
-      "find style and `rg` the rg style; any other name (e.g. a `mytool` symlink) activates a same-named config block "
+      "the table. The invocation name (`argv[0]`) is the leading selector, so a symlink named `find` selects the "
+      "find expression style and `rg` the rg style; any other name (e.g. a `mytool` symlink) activates a same-named "
+      "config block "
       "over the xff default. Explicit `--config` selectors stack on top."));
   section.children.push_back(Content{.node = std::move(style)});
 
@@ -1035,10 +1036,11 @@ Section DescriptionSection() {
       "With no path it searches the current directory; with no action it prints each match. "
       "`xff --compare LEFT RIGHT` instead compares two directory trees as selected status records or a patch."));
   description.children.push_back(ProseOf(
-      "xff has two flavors selected by the program name: invoked as `find` it is strict find (only "
-      "the standard vocabulary); invoked as `xff` it enables the modern extensions. An explicit "
-      "`--config=find|xff` overrides the program name. Items marked as xff extensions below are the "
-      "additions over find."));
+      "xff has two flavors selected by the program name: invoked as `find` it restricts the expression "
+      "to find-compatible primaries, operators, and values; invoked as `xff` it enables the modern "
+      "extensions. Whole-run xff globals remain available as explicit controls in either flavor. An "
+      "explicit `--config=find|xff` overrides the program name. Items marked as xff extensions below "
+      "are the additions over find."));
   return description;
 }
 
