@@ -182,12 +182,23 @@ Archive members and remote files have **no real filesystem path**. The VFS tags 
 
 ### Output encoding - non-UTF-8 paths & content (review #5)
 
-POSIX paths (and content) are byte strings, not guaranteed UTF-8; JSON/CSV/markdown require valid text. Decision: **one uniform, user-chosen encoding per run, with a sensible default.** A consumer can't auto-detect base64 vs utf8/escape, so the encoding is a single explicit mode applied to the _whole_ output - no per-field marking (we deliberately diverge from ripgrep's `{text|bytes}`). The default is picked so a bad binary filename - the offender's own mess - never derails everyone else's run or burdens the clean-name common case.
+POSIX paths are byte strings, not guaranteed UTF-8. The shipped behavior is
+format-specific rather than one uniform encoding mode:
 
-- **Byte-faithful formats (plain, NUL/`-print0`)**: always emit raw bytes; never affected. **NUL is the escape hatch** for exact bytes.
-- **Text-structured formats (JSON, CSV, markdown) - default**: never abort; emit the offending path/content in a **reversible escape** (documented `\xNN`, git `core.quotePath`-style - lossless, valid string, no shape change) plus a one-line stderr note (transparent, not silent). Clean UTF-8 (the 99.9%) is untouched - plain strings, zero ceremony.
-- **`--path-encoding=<mode>`** (per-invocation or config; governs how non-UTF-8 bytes are rendered in _output_ - paths and any echoed content): `escape` (default), `base64` (machine-pure lossless), `lossy` (U+FFFD), `strict` (fail - for CI that should reject messy input). Applies uniformly to all FS/content-derived fields.
-- Consistency note: this is _not_ a "silent fallback" - that rule governs _semantic_ switches (engines/actions); gracefully encoding edge-case bytes is a display transform, and it's announced on stderr.
+- **Plain** writes path bytes verbatim by default. `--path-encoding=escape`
+  C-escapes backslashes and control bytes; printable bytes at and above `0x80`
+  still pass through unchanged. The flag affects plain output only.
+- **NUL / `-print0`** writes exact path bytes followed by NUL and is the reliable
+  byte-faithful interchange format.
+- **CSV** applies RFC 4180 quoting; **TSV** escapes its delimiters and
+  line-breaking controls; **JSONL** escapes JSON syntax and ASCII controls;
+  **Markdown** escapes its cell delimiters. These transforms preserve their
+  record structure but do not validate or transcode non-UTF-8 high bytes.
+
+Consequently, a non-UTF-8 path can still make JSONL or Markdown invalid as text.
+A future policy may add strict, lossy, or explicitly byte-encoded structured
+output, but no such mode is currently implemented. Any choice must make the
+representation detectable rather than silently changing a string's meaning.
 
 ### Content-match cost (review #6)
 

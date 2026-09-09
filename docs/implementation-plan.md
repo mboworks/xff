@@ -62,7 +62,7 @@ Dependency direction: `registry` ← {`parser`, `config`, `engine`}; `engine` �
 
 ### Phase 1 - Drop-in find (the contract)
 
-- `vfs` local backend; `engine` traversal (sequential → parallel) with **`--exact` FS-aware name matching** (#8) and **`--path-encoding`** non-UTF-8 output handling (#5).
+- `vfs` local backend; `engine` traversal (sequential → parallel) with **`--exact` FS-aware name matching** (#8) and plain-output **`--path-encoding=raw|escape`** handling (#5).
 - Full find expression: tests (`-name/-iname/-path/-type/-size/-mtime/-perm/-empty/-newer…`, **`-regex`/`-regextype` via RE2 grammar-translation** (#4), **birthtime `-Btime`/`-Bmin`/`-Bnewer`** (#8)), positional options (`-maxdepth/-mindepth/-depth/-xdev`), symlink modes `-H/-L/-P`, operators/precedence, actions (`-print/-print0/-printf`, `-exec \;`/`+`, `-execdir`, `-delete`, `-prune`, `-quit`, `-ok`/`-okdir`), default `-print`; GNU-canonical + BSD globals.
 - **Exit-code model** (#9, find-default); **impossible-task-fail + `--skip-unsupported`** (#8); **safety**: `--safe`/`--dry-run` + destructive-primitive warnings (#2); **`-j`-controlled semicolon-form `-exec` concurrency** (synchronous at `-j 1`, direct potentially interleaved child output above one) (#7).
 - Renderers: plain, NUL, JSONL.
@@ -73,7 +73,7 @@ Dependency direction: `registry` ← {`parser`, `config`, `engine`}; `engine` �
 - **Content matching** - composable `-contains`/`-grep` via `regex` (**PCRE2 opt-in + configurable limits** (#4), prefilter) + `-i`/`--ignore-case`; **binary-skip + `--all-text`** (#10), **`--encoding`/`-E` input decoding** (#10), **`--max-contentsize`** + negative-match cost (#6).
 - **Ignore family** (gitignore stack, `.ignore`/`--ignore-files`, `.xffignore`, `-u`/`--no-ignore`, `--exclude/--include`); dotfiles/hidden.
 - **`config` cascade + promotion-to-modern + trust model** (#2): data-only tree configs, `--config`-armed exec blocks, ownership gate.
-- Renderers: aligned columns, markdown, CSV/TSV (display-width-correct); full `--path-encoding` mode set.
+- Renderers: aligned columns, markdown, CSV/TSV (display-width-correct). Structured non-UTF-8 policy beyond each format's syntax escaping remains deferred.
 - `--explain`, cost-warning, shell completions.
 - **Exit:** content/ignore/config-trust/render/explain tested incl. CJK-width golden + config-trust security tests; completions generated.
 
