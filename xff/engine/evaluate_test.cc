@@ -73,11 +73,14 @@ struct EvaluateTest : ::testing::Test {
     }
     argv.emplace_back(".");
     argv.insert(argv.end(), expr.begin(), expr.end());
-    const auto command = parser::Parse(argv);
+    auto command = parser::Parse(argv);
     EXPECT_THAT(command, IsOk());
     if (!command.ok() || command->expression == nullptr) {
       return false;
     }
+    parser::BindMatchers(
+        *command, parser::GrammarFromGlobals(command->globals),
+        parser::ResolveCaseMode(command->globals, registry::Style::kXff));
     return MatchExpression(*command->expression, visit);
   }
 

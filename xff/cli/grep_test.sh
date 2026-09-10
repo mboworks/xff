@@ -111,6 +111,18 @@ test::regextype_exact_matches_literally() {
   expect_not_matches '3X50' "${out}" # the regex-wildcard match is gone
 }
 
+test::config_regextype_binds_the_expression_with_the_final_grammar() {
+  local root cfg out
+  root="$(test_tmpdir tree)"
+  cfg="${TEST_TMPDIR}/exact_config"
+  mkdir -p "${root}"
+  printf 'price 3.50\nprice 3X50\n' >"${root}/p.txt"
+  printf 'common: --regextype=EXACT\n' >"${cfg}"
+  out="$(XFF_CONFIG="${cfg}" _run "${root}" -type f -grep '3.50')"
+  expect_matches "/p\.txt:1:price 3\.50(\$|${NL})" "${out}"
+  expect_not_matches '3X50' "${out}"
+}
+
 test::regextype_shglob_expands_brace_alternation() {
   local root out
   root="$(test_tmpdir tree)"

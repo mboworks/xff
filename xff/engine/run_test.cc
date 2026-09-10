@@ -86,8 +86,11 @@ struct RunTest : ::testing::Test {
   std::vector<std::string> RunExpr(const std::vector<std::string>& expr) {
     std::vector<std::string> argv = {root_.string()};
     argv.insert(argv.end(), expr.begin(), expr.end());
-    const auto command = parser::Parse(argv);
+    auto command = parser::Parse(argv);
     EXPECT_THAT(command, IsOk());
+    parser::BindMatchers(
+        *command, parser::GrammarFromGlobals(command->globals),
+        parser::ResolveCaseMode(command->globals, registry::Style::kXff));
     std::vector<std::string> records;
     last_errors_ = RunFind(
                        *command, fs_,
@@ -106,12 +109,15 @@ struct RunTest : ::testing::Test {
   // Like RunExpr, but takes the whole argv (so leading globals such as --summary
   // can come before the root), returning the emitted records, terminator stripped.
   std::vector<std::string> RunArgvRecords(const std::vector<std::string>& argv) {
-    const auto command = parser::Parse(argv);
+    auto command = parser::Parse(argv);
     EXPECT_THAT(command, IsOk());
     std::vector<std::string> records;
     if (!command.ok()) {
       return records;
     }
+    parser::BindMatchers(
+        *command, parser::GrammarFromGlobals(command->globals),
+        parser::ResolveCaseMode(command->globals, registry::Style::kXff));
     last_errors_ = RunFind(
                        *command, fs_,
                        [&](std::string_view record) {
@@ -1513,9 +1519,10 @@ TEST_F(RunTest, ExecFieldsSubstitutesRegexCaptures) {
   // --exec-fields + a -regex match: {1}/{2} resolve to the capture groups, written
   // to a marker beside the file ({path} keeps the marker absolute for cleanup).
   MBO_ASSERT_OK_AND_ASSIGN(
-      const auto command, parser::Parse(
-                              {"--exec-fields", root_.string(), "-regex", ".*/(a)\\.(txt)", "-exec", "/bin/sh", "-c",
-                               R"(printf '%s' "{1}.{2}" > "{path}.cap")", ";"}));
+      auto command, parser::Parse(
+                        {"--exec-fields", root_.string(), "-regex", ".*/(a)\\.(txt)", "-exec", "/bin/sh", "-c",
+                         R"(printf '%s' "{1}.{2}" > "{path}.cap")", ";"}));
+  parser::BindMatchers(command, parser::GrammarFromGlobals(command.globals), parser::CaseMode::kSensitive);
   RunFind(command, fs_, [](std::string_view) {}, [](std::string_view, absl::Status) {});
   const fs::path marker = root_ / "a.txt.cap";
   ASSERT_TRUE(fs::exists(marker));

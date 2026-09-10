@@ -69,12 +69,12 @@ enum class CaseMode { kSensitive, kInsensitive, kSmart };
 // (insensitive), `-s`/`-s+` (smart), `-s-` (sensitive).
 CaseMode ResolveCaseMode(const std::vector<std::string>& globals, registry::Style style);
 
-// Applies `mode` to `command`'s matchers in place (call after Parse, once the style is
-// known, before the walk): for the otherwise case-sensitive matchers it sets Expr.case_fold
-// (glob / content) and recompiles the pre-compiled regex case-insensitively (-regex/-rxc/
-// -grep) when the mode calls for folding (kInsensitive always; kSmart when the pattern has
-// no uppercase). kSensitive is a no-op; the -i variants are left as they are (already fold).
-void ApplyCaseMode(Command& command, CaseMode mode);
+// Resolves the final matcher grammar from the fully expanded global stream.
+regex::Grammar GrammarFromGlobals(const std::vector<std::string>& globals);
+
+// Applies final case semantics and compiles every expression matcher exactly
+// once. Call only after configuration and CLI globals have fully resolved.
+void BindMatchers(Command& command, regex::Grammar grammar, CaseMode mode);
 
 // Whether `command` contains a primary that may take the TERMINAL for itself: -ok / -okdir prompt and
 // read a reply, and -exec / -execdir hand our stdin / stdout to a child that might (an editor).
