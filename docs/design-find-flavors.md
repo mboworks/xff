@@ -32,9 +32,9 @@ Rationale:
    Strict `--config=find` rejects xff-only primitives (`-println`, `-capture`,
    `{field}` substitution, compound durations); it stays lenient about which real
    find dialect you wrote.
-4. If an "enforce GNU-portability" need ever appears, that is a future
-   `--feature`/`--config` knob (per `design-config.md`), not a reason to fork the
-   core now.
+4. If an "enforce GNU-portability" need ever appears, that is a future named
+   configuration or style decision, not a reason to fork the core now. The
+   rejected general `--feature` registry is not a migration mechanism.
 
 ## Divergence survey
 

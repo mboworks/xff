@@ -64,8 +64,7 @@ struct ConfigInputs {
 // CLI flags afterwards (they win). An .xffrc line contributes its flags when its
 // base selector is empty/"common" or names an active --config, AND its config
 // selector is empty or names an active --config. --no-config yields an empty result
-// (pure CLI + built-ins); the system *policy* is never dropped (it is read elsewhere
-// and bounds the run regardless). Gate the inputs first (GateConfig) so a dangerous,
+// (pure CLI + built-ins), including no system policy. Gate the inputs first (GateConfig) so a dangerous,
 // unarmed --xffrc line never reaches here.
 std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& inputs);
 
@@ -92,8 +91,8 @@ bool IsBuiltinStyle(std::string_view name);
 // base (the part before any ':') is "find" or "xff" picks that style; selectors
 // stack, so the last style selector wins. With no style selector the default is
 // the modern xff style. Custom config names (e.g. "debug") and version-pinned
-// epochs ("xff:2" -> base "xff") leave the mapping unchanged. The strict find
-// style is what makes a `find`-style run reject xff-only primaries (see
+// epochs ("xff:2" -> base "xff") leave the mapping unchanged. The find
+// expression style makes a `find`-style run reject xff-only primaries (see
 // parser::EnforceStyle); design-config.md "CLI selectors".
 registry::Style ActiveStyle(const std::vector<std::string>& configs);
 

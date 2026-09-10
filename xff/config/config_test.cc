@@ -50,9 +50,9 @@ TEST_F(ConfigTest, NoConfigYieldsEmpty) {
 
 TEST_F(ConfigTest, SystemDefaultsAreLowestPrecedence) {
   ConfigInputs in;
-  in.system.defaults = {"--color=auto", "--threads=4"};
+  in.system.defaults = {"--color=auto", "--jobs=4"};
   EXPECT_THAT(
-      ResolveConfig(in), ElementsAre(FlagIs("--color=auto", Source::kSystem), FlagIs("--threads=4", Source::kSystem)));
+      ResolveConfig(in), ElementsAre(FlagIs("--color=auto", Source::kSystem), FlagIs("--jobs=4", Source::kSystem)));
 }
 
 TEST_F(ConfigTest, CommonAndBareLinesAlwaysApply) {
@@ -65,19 +65,19 @@ TEST_F(ConfigTest, BaseSelectorGatedByActiveConfig) {
   // A named-config base gates the line on that --config being active (bare preset bases like
   // `xff:` are a separate concern rejected by GateConfig; ResolveConfig only does the gating).
   ConfigInputs in;
-  in.user = ParseXffrc("myproj: --feature=long-paths\nother: --warn");
+  in.user = ParseXffrc("myproj: --format=jsonl\nother: --warn");
   EXPECT_THAT(ResolveConfig(in), IsEmpty());  // no active --config -> neither base applies
   in.configs = {"myproj"};
-  EXPECT_THAT(ResolveConfig(in), ElementsAre(FlagIs("--feature=long-paths", Source::kUser)));
+  EXPECT_THAT(ResolveConfig(in), ElementsAre(FlagIs("--format=jsonl", Source::kUser)));
 }
 
 TEST_F(ConfigTest, ConfigSelectorGatedByNamedConfig) {
   ConfigInputs in;
-  in.user = ParseXffrc("xff:debug: --threads=1");
+  in.user = ParseXffrc("xff:debug: --jobs=1");
   in.configs = {"xff"};  // style active, but not the :debug named config
   EXPECT_THAT(ResolveConfig(in), IsEmpty());
   in.configs = {"xff", "debug"};
-  EXPECT_THAT(ResolveConfig(in), ElementsAre(FlagIs("--threads=1", Source::kUser)));
+  EXPECT_THAT(ResolveConfig(in), ElementsAre(FlagIs("--jobs=1", Source::kUser)));
 }
 
 TEST_F(ConfigTest, LayerPrecedenceSystemThenUser) {
@@ -130,7 +130,7 @@ TEST_F(ConfigTest, SourceNameMapsEachLayer) {
 
 TEST_F(ConfigTest, ActiveStyleDefaultsToXffAndTracksTheConfigStack) {
   EXPECT_THAT(ActiveStyle({}), registry::Style::kXff);         // no selector -> the modern default
-  EXPECT_THAT(ActiveStyle({"find"}), registry::Style::kFind);  // strict find
+  EXPECT_THAT(ActiveStyle({"find"}), registry::Style::kFind);  // find expression vocabulary
   EXPECT_THAT(ActiveStyle({"xff"}), registry::Style::kXff);
   EXPECT_THAT(ActiveStyle({"debug"}), registry::Style::kXff);           // a custom config name is not a style
   EXPECT_THAT(ActiveStyle({"xff:2"}), registry::Style::kXff);           // version-pinned epoch -> base "xff"

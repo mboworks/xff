@@ -59,7 +59,7 @@ std::optional<registry::Safety> ClassToken(std::string_view token) {
 // that exact class. A flag-name token matches when any line flag equals it or carries
 // it as an attached global value or primary qualification (flag == token, or flag starts with the
 // token plus `=` / `:` respectively). Accepting both delimiters here is structural, not a CLI alias:
-// globals such as `--threads=4` and primaries such as `-capture:tag` share this policy matcher.
+// globals such as `--jobs=4` and primaries such as `-capture:tag` share this policy matcher.
 bool TokenMatchesLine(std::string_view token, const RcLine& line) {
   if (const std::optional<registry::Safety> cls = ClassToken(token); cls.has_value()) {
     if (*cls == registry::Safety::kNone) {
