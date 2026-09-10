@@ -819,7 +819,8 @@ Section CompareSection(bool in_full) {
   Subsection statuses{.title = "Status output"};
   statuses.children.push_back(ProseOf(
       "Bare `--compare` (or `--compare=status`) writes tab-separated `STATUS` and relative-path records. "
-      "The default selection reports discrepancies only; `--compare-select=all` also includes equal entries."));
+      "The default selection reports discrepancies only; `--compare-select=all` also includes equal entries. "
+      "`--path-encoding=escape` makes control bytes in the path unambiguous."));
   statuses.children.push_back(RowsOf(kStatuses));
   section.children.push_back(Content{.node = std::move(statuses)});
 

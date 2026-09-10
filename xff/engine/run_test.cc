@@ -246,6 +246,25 @@ TEST_F(RunTest, CompareSelectsEveryResultKind) {
   EXPECT_THAT(last_errors_, 0);
 }
 
+TEST_F(RunTest, CompareStatusHonorsPathEncoding) {
+  const fs::path left = root_ / "encoding-left";
+  const fs::path right = root_ / "encoding-right";
+  ASSERT_TRUE(fs::create_directories(left));
+  ASSERT_TRUE(fs::create_directories(right));
+  { std::ofstream(left / "line\nbreak\tvalue") << "left"; }
+  { std::ofstream(right / "same\npath") << "same"; }
+  { std::ofstream(left / "same\npath") << "same"; }
+
+  EXPECT_THAT(
+      RunArgvRecords({"--compare", "--path-encoding=escape", left.string(), right.string()}),
+      ElementsAre("left-only\tline\\nbreak\\tvalue"));
+  EXPECT_THAT(
+      RunArgvRecords(
+          {"--compare", "--compare-select=identical", "--path-encoding=escape", left.string(), right.string()}),
+      ElementsAre("identical\tsame\\npath"));
+  EXPECT_THAT(last_errors_, 0);
+}
+
 TEST_F(RunTest, CompareHandlesFileKindsAndTraversalOptions) {
   const fs::path left = root_ / "kinds-left";
   const fs::path right = root_ / "kinds-right";
