@@ -167,6 +167,14 @@ TEST_F(HelpTest, CompareTopicExplainsSelectionAndEquality) {
   }
 }
 
+TEST_F(HelpTest, IgnoreTopicDoesNotInventComparisonDefaults) {
+  const std::string out = RenderTopicDoc("ignore");
+  EXPECT_THAT(
+      out, AllOf(
+               HasSubstr("Tree comparison does not change these defaults or enable an ignore source"),
+               Not(HasSubstr("honours each root's Git ignore sources by default"))));
+}
+
 TEST_F(HelpTest, OutputTopicExplainsFormatsAndFilenameSafety) {
   const std::string out = RenderTopicDoc("output");
   EXPECT_THAT(

@@ -450,9 +450,9 @@ Section IgnoreSection(bool in_full) {
   Subsection defaults{.title = "Defaults and overrides"};
   defaults.children.push_back(ProseOf(
       "The find and xff styles start with ignore files off and hidden paths visible. The rg style "
-      "honours VCS, `.ignore`, and `.xffignore` files and skips hidden paths. Tree comparison "
-      "honours each root's Git ignore sources by default because its usual input is two Git working "
-      "trees; `--no-ignore` / `-u` disables those sources."));
+      "honours VCS, `.ignore`, and `.xffignore` files and skips hidden paths. Tree comparison does not "
+      "change these defaults or enable an ignore source: both sides use the selected style and the "
+      "ignore options the user supplies."));
   defaults.children.push_back(ProseOf(
       "Bare `-g` / `--gitignore` is automatic: it activates only inside a Git working tree. "
       "`-g+` / `--gitignore=on` forces the Git layer anywhere; `-g-` / `--gitignore=off` disables it. "
