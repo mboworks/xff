@@ -184,9 +184,9 @@ SymlinkMode ResolveSymlinkMode(const std::vector<std::string>& globals) {
   return mode;
 }
 
-// The mode-scoped default worker count when `-j` is absent (docs/design-parallel.md
-// "Parallelism control"): modern (kXff) leaves a core for the consumer and caps at
-// 15 to avoid oversubscription; find/fd/rg saturate cores; an unset style stays
+// The style-scoped default worker count when `-j` is absent (docs/design-parallel.md
+// "Parallelism control"): xff leaves a core for the consumer and caps at 15 to
+// avoid oversubscription; find/rg saturate cores; an unset style stays
 // sequential (the conservative in-process / test default).
 std::size_t DefaultWorkers(std::optional<registry::Style> style) {
   if (!style.has_value()) {
@@ -205,8 +205,8 @@ std::size_t DefaultWorkers(std::optional<registry::Style> style) {
 // `dir` sorts each directory's listing; `subtree` adds contiguous subtrees;
 // `tree` is depth-first path order within each root; `roots` sorts only roots;
 // `global` combines sorted roots with tree order. Bare --sort and the legacy `name` mean `dir`. The
-// default is mode-scoped: modern (kXff) sorts each directory, find stays unordered.
-// Leading global, last occurrence wins.
+// default is style-scoped: xff (kXff) sorts each directory; find and rg stay
+// unordered. Last occurrence wins.
 SortOrder ResolveSort(const std::vector<std::string>& globals, std::optional<registry::Style> style) {
   SortOrder sort = style == registry::Style::kXff ? SortOrder::kDir : SortOrder::kNone;
   for (const std::string& global : globals) {
@@ -241,8 +241,8 @@ void EmitRanked(std::vector<std::pair<int, std::string>>& ranked, const EmitFn& 
 // --sort=score: rank the printed listing by the -fuzzy score instead of a traversal order. It is
 // deliberately NOT a SortOrder: every other mode orders the WALK, which streams, while a score only
 // exists once an entry has been evaluated - so the walk keeps its style default (which decides ties)
-// and the results are ranked afterwards. Leading global, last occurrence wins; a later --sort=MODE
-// turns ranking back off, so the flag reads left to right like every other last-wins global.
+// and the results are ranked afterwards. Last occurrence wins; a later --sort=MODE turns ranking
+// back off, so the flag reads left to right like every other last-wins global.
 bool ResolveRankByScore(const std::vector<std::string>& globals) {
   bool rank = false;
   for (const std::string& global : globals) {
@@ -256,9 +256,8 @@ bool ResolveRankByScore(const std::vector<std::string>& globals) {
 }
 
 // xff -j N / -j=N / --jobs=N: worker threads for the parallel directory read-ahead (see
-// docs/design-parallel.md). When absent, the count is mode-scoped (DefaultWorkers).
-// Leading global, last occurrence wins; a non-positive or unparseable value is a
-// usage error.
+// docs/design-parallel.md). When absent, the count is style-scoped (DefaultWorkers).
+// Last occurrence wins; a non-positive or unparseable value is a usage error.
 absl::StatusOr<std::size_t> ResolveJobs(const std::vector<std::string>& globals, std::optional<registry::Style> style) {
   std::size_t jobs = DefaultWorkers(style);
   for (const std::string& global : globals) {

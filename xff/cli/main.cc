@@ -733,7 +733,7 @@ int RunMain(int argc, char** argv) {
       [](std::string_view path, absl::Status status) {
         std::cerr << "xff: " << path << ": " << status.message() << "\n";
       },
-      style);  // mode-scoped traversal defaults (modern -> sorted + parallel; find -> unordered)
+      style);  // style-scoped traversal defaults (xff -> sorted + bounded; find/rg -> unordered)
   if (result.errors != 0) {
     return 2;  // an error outranks match status
   }

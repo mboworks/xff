@@ -59,9 +59,9 @@ struct RunResult {
 };
 
 //
-// `style` selects the mode-scoped traversal defaults applied when the user gives
-// no `--sort` / `-j`: kXff (modern) sorts each directory (`--sort=dir`) and runs
-// a capped parallel walk; kFind matches find (unordered) but saturates cores.
+// `style` selects the style-scoped traversal defaults applied when the user gives
+// no `--sort` / `-j`: kXff sorts each directory (`--sort=dir`) and runs a capped
+// parallel walk; kFind and kRg leave order unspecified and saturate cores.
 // `std::nullopt` keeps the conservative defaults (unordered, single-threaded) and
 // is what the in-process callers/tests use; the CLI passes the active style.
 //
