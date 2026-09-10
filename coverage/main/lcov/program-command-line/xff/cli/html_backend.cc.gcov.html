@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 00:26:20</td>
+            <td class="headerValue">2026-09-10 00:53:30</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -174,14 +174,14 @@
 <span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">       26507 : std::string HtmlEscape(std::string_view text) {</span></span>
 <span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">       26507 :   std::string out;</span></span>
 <span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">       26507 :   out.reserve(text.size());</span></span>
-<span id="L92"><span class="lineNum">      92</span>         [<span class="tlaGBC" title="branch 0 was taken 779609 times"> + </span><span class="tlaGBC" title="branch 1 was taken 26507 times"> + </span>]:<span class="tlaGNC">      779609 :   for (const char chr : text) {</span></span>
-<span id="L93"><span class="lineNum">      93</span>                 :<span class="tlaGNC">      779609 :     switch (chr) {</span></span>
-<span id="L94"><span class="lineNum">      94</span>         [<span class="tlaGBC" title="branch 0 was taken 48 times"> + </span><span class="tlaGBC" title="branch 1 was taken 779561 times"> + </span>]:<span class="tlaGNC">          48 :       case '&amp;': absl::StrAppend(&amp;out, &quot;&amp;amp;&quot;); break;</span></span>
-<span id="L95"><span class="lineNum">      95</span>         [<span class="tlaGBC" title="branch 0 was taken 211 times"> + </span><span class="tlaGBC" title="branch 1 was taken 779398 times"> + </span>]:<span class="tlaGNC">         211 :       case '&lt;': absl::StrAppend(&amp;out, &quot;&amp;lt;&quot;); break;</span></span>
-<span id="L96"><span class="lineNum">      96</span>         [<span class="tlaGBC" title="branch 0 was taken 246 times"> + </span><span class="tlaGBC" title="branch 1 was taken 779363 times"> + </span>]:<span class="tlaGNC">         246 :       case '&gt;': absl::StrAppend(&amp;out, &quot;&amp;gt;&quot;); break;</span></span>
-<span id="L97"><span class="lineNum">      97</span>         [<span class="tlaGBC" title="branch 0 was taken 779104 times"> + </span><span class="tlaGBC" title="branch 1 was taken 505 times"> + </span>]:<span class="tlaGNC">      779104 :       default: out.push_back(chr); break;</span></span>
-<span id="L98"><span class="lineNum">      98</span>                 :<span class="tlaGNC">      779609 :     }</span></span>
-<span id="L99"><span class="lineNum">      99</span>                 :<span class="tlaGNC">      779609 :   }</span></span>
+<span id="L92"><span class="lineNum">      92</span>         [<span class="tlaGBC" title="branch 0 was taken 780911 times"> + </span><span class="tlaGBC" title="branch 1 was taken 26507 times"> + </span>]:<span class="tlaGNC">      780911 :   for (const char chr : text) {</span></span>
+<span id="L93"><span class="lineNum">      93</span>                 :<span class="tlaGNC">      780911 :     switch (chr) {</span></span>
+<span id="L94"><span class="lineNum">      94</span>         [<span class="tlaGBC" title="branch 0 was taken 48 times"> + </span><span class="tlaGBC" title="branch 1 was taken 780863 times"> + </span>]:<span class="tlaGNC">          48 :       case '&amp;': absl::StrAppend(&amp;out, &quot;&amp;amp;&quot;); break;</span></span>
+<span id="L95"><span class="lineNum">      95</span>         [<span class="tlaGBC" title="branch 0 was taken 211 times"> + </span><span class="tlaGBC" title="branch 1 was taken 780700 times"> + </span>]:<span class="tlaGNC">         211 :       case '&lt;': absl::StrAppend(&amp;out, &quot;&amp;lt;&quot;); break;</span></span>
+<span id="L96"><span class="lineNum">      96</span>         [<span class="tlaGBC" title="branch 0 was taken 246 times"> + </span><span class="tlaGBC" title="branch 1 was taken 780665 times"> + </span>]:<span class="tlaGNC">         246 :       case '&gt;': absl::StrAppend(&amp;out, &quot;&amp;gt;&quot;); break;</span></span>
+<span id="L97"><span class="lineNum">      97</span>         [<span class="tlaGBC" title="branch 0 was taken 780406 times"> + </span><span class="tlaGBC" title="branch 1 was taken 505 times"> + </span>]:<span class="tlaGNC">      780406 :       default: out.push_back(chr); break;</span></span>
+<span id="L98"><span class="lineNum">      98</span>                 :<span class="tlaGNC">      780911 :     }</span></span>
+<span id="L99"><span class="lineNum">      99</span>                 :<span class="tlaGNC">      780911 :   }</span></span>
 <span id="L100"><span class="lineNum">     100</span>                 :<span class="tlaGNC">       26507 :   return out;</span></span>
 <span id="L101"><span class="lineNum">     101</span>                 :<span class="tlaGNC">       26507 : }</span></span>
 <span id="L102"><span class="lineNum">     102</span>                 :             : </span>
