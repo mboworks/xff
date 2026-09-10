@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 19:55:06</td>
+            <td class="headerValue">2026-09-10 21:20:35</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -183,18 +183,18 @@
 <span id="L101"><span class="lineNum">     101</span>                 :<span class="tlaGNC">          13 :   return list;</span></span>
 <span id="L102"><span class="lineNum">     102</span>                 :<span class="tlaGNC">          13 : }</span></span>
 <span id="L103"><span class="lineNum">     103</span>                 :             : </span>
-<span id="L104"><span class="lineNum">     104</span>                 :<span class="tlaGNC">         609 : Decision PatternList::Match(std::string_view relpath, bool is_dir) const {</span></span>
-<span id="L105"><span class="lineNum">     105</span>                 :<span class="tlaGNC">         609 :   Decision result = Decision::kDefault;</span></span>
-<span id="L106"><span class="lineNum">     106</span>         [<span class="tlaGBC" title="branch 0 was taken 267 times"> + </span><span class="tlaGBC" title="branch 1 was taken 609 times"> + </span>]:<span class="tlaGNC">         628 :   for (const Pattern&amp; pattern : patterns_) {  // last matching pattern wins (gitignore)</span></span>
-<span id="L107"><span class="lineNum">     107</span> [<span class="tlaGBC" title="branch 0 was taken 18 times"> + </span><span class="tlaGBC" title="branch 1 was taken 249 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 11 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 7 times"> + </span>]:<span class="tlaGNC">         267 :     if (pattern.dir_only &amp;&amp; !is_dir) {</span></span>
+<span id="L104"><span class="lineNum">     104</span>                 :<span class="tlaGNC">         610 : Decision PatternList::Match(std::string_view relpath, bool is_dir) const {</span></span>
+<span id="L105"><span class="lineNum">     105</span>                 :<span class="tlaGNC">         610 :   Decision result = Decision::kDefault;</span></span>
+<span id="L106"><span class="lineNum">     106</span>         [<span class="tlaGBC" title="branch 0 was taken 269 times"> + </span><span class="tlaGBC" title="branch 1 was taken 610 times"> + </span>]:<span class="tlaGNC">         629 :   for (const Pattern&amp; pattern : patterns_) {  // last matching pattern wins (gitignore)</span></span>
+<span id="L107"><span class="lineNum">     107</span> [<span class="tlaGBC" title="branch 0 was taken 18 times"> + </span><span class="tlaGBC" title="branch 1 was taken 251 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 11 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 7 times"> + </span>]:<span class="tlaGNC">         269 :     if (pattern.dir_only &amp;&amp; !is_dir) {</span></span>
 <span id="L108"><span class="lineNum">     108</span>                 :<span class="tlaGNC">          11 :       continue;</span></span>
 <span id="L109"><span class="lineNum">     109</span>                 :<span class="tlaGNC">          11 :     }</span></span>
-<span id="L110"><span class="lineNum">     110</span>         [<span class="tlaGBC" title="branch 0 was taken 94 times"> + </span><span class="tlaGBC" title="branch 1 was taken 162 times"> + </span>]:<span class="tlaGNC">         256 :     if (pattern.matcher.FullMatch(relpath)) {</span></span>
+<span id="L110"><span class="lineNum">     110</span>         [<span class="tlaGBC" title="branch 0 was taken 94 times"> + </span><span class="tlaGBC" title="branch 1 was taken 164 times"> + </span>]:<span class="tlaGNC">         258 :     if (pattern.matcher.FullMatch(relpath)) {</span></span>
 <span id="L111"><span class="lineNum">     111</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 87 times"> + </span>]:<span class="tlaGNC">          94 :       result = pattern.negated ? Decision::kInclude : Decision::kIgnore;</span></span>
 <span id="L112"><span class="lineNum">     112</span>                 :<span class="tlaGNC">          94 :     }</span></span>
-<span id="L113"><span class="lineNum">     113</span>                 :<span class="tlaGNC">         256 :   }</span></span>
-<span id="L114"><span class="lineNum">     114</span>                 :<span class="tlaGNC">         609 :   return result;</span></span>
-<span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">         609 : }</span></span>
+<span id="L113"><span class="lineNum">     113</span>                 :<span class="tlaGNC">         258 :   }</span></span>
+<span id="L114"><span class="lineNum">     114</span>                 :<span class="tlaGNC">         610 :   return result;</span></span>
+<span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">         610 : }</span></span>
 <span id="L116"><span class="lineNum">     116</span>                 :             : </span>
 <span id="L117"><span class="lineNum">     117</span>                 :             : }  // namespace xff::ignore</span>
         </pre>
