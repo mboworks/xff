@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 02:54:14</td>
+            <td class="headerValue">2026-09-10 03:17:57</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">98.1&nbsp;%</td>
@@ -139,29 +139,29 @@
 <span id="L59"><span class="lineNum">      59</span>                 :             : }};</span>
 <span id="L60"><span class="lineNum">      60</span>                 :             : </span>
 <span id="L61"><span class="lineNum">      61</span>                 :             : // A single prose paragraph block from an authored string (backtick inline markup).</span>
-<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">       10983 : Content ProseOf(std::string_view text) {</span></span>
-<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">       10983 :   return Content{.node = Prose{.runs = ParseInline(text)}};</span></span>
-<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">       10983 : }</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">       10995 : Content ProseOf(std::string_view text) {</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">       10995 :   return Content{.node = Prose{.runs = ParseInline(text)}};</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">       10995 : }</span></span>
 <span id="L65"><span class="lineNum">      65</span>                 :             : </span>
 <span id="L66"><span class="lineNum">      66</span>                 :             : // A verbatim example block (no wrapping); optional info string for the fenced backends.</span>
-<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">        2396 : Content ExampleOf(std::string text, std::string lang = &quot;&quot;) {</span></span>
-<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">        2396 :   return Content{.node = Example{.text = std::move(text), .lang = std::move(lang)}};</span></span>
-<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">        2396 : }</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">        2400 : Content ExampleOf(std::string text, std::string lang = &quot;&quot;) {</span></span>
+<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">        2400 :   return Content{.node = Example{.text = std::move(text), .lang = std::move(lang)}};</span></span>
+<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">        2400 : }</span></span>
 <span id="L70"><span class="lineNum">      70</span>                 :             : </span>
 <span id="L71"><span class="lineNum">      71</span>                 :             : // A term/description vocabulary table; the description carries backtick markup.</span>
-<span id="L72"><span class="lineNum">      72</span>                 :<span class="tlaGNC">         627 : Content RowsOf(absl::Span&lt;const DocPair&gt; pairs) {</span></span>
-<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">         627 :   Rows rows;</span></span>
-<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">         627 :   rows.rows.reserve(pairs.size());</span></span>
-<span id="L75"><span class="lineNum">      75</span>         [<span class="tlaGBC" title="branch 0 was taken 5234 times"> + </span><span class="tlaGBC" title="branch 1 was taken 627 times"> + </span>]:<span class="tlaGNC">        5234 :   for (const auto&amp; [term, desc] : pairs) {</span></span>
-<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">        5234 :     rows.rows.push_back(Row{.term = std::string(term), .description = ParseInline(desc)});</span></span>
-<span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaGNC">        5234 :   }</span></span>
-<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">         627 :   return Content{.node = std::move(rows)};</span></span>
-<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">         627 : }</span></span>
+<span id="L72"><span class="lineNum">      72</span>                 :<span class="tlaGNC">         628 : Content RowsOf(absl::Span&lt;const DocPair&gt; pairs) {</span></span>
+<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">         628 :   Rows rows;</span></span>
+<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">         628 :   rows.rows.reserve(pairs.size());</span></span>
+<span id="L75"><span class="lineNum">      75</span>         [<span class="tlaGBC" title="branch 0 was taken 5240 times"> + </span><span class="tlaGBC" title="branch 1 was taken 628 times"> + </span>]:<span class="tlaGNC">        5240 :   for (const auto&amp; [term, desc] : pairs) {</span></span>
+<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">        5240 :     rows.rows.push_back(Row{.term = std::string(term), .description = ParseInline(desc)});</span></span>
+<span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaGNC">        5240 :   }</span></span>
+<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">         628 :   return Content{.node = std::move(rows)};</span></span>
+<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">         628 : }</span></span>
 <span id="L80"><span class="lineNum">      80</span>                 :             : </span>
 <span id="L81"><span class="lineNum">      81</span>                 :             : // The classification tags after a flag's term, e.g. (global, xff).</span>
-<span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">        7982 : std::vector&lt;std::string&gt; FlagTags(const GlobalFlag&amp; flag) {</span></span>
-<span id="L83"><span class="lineNum">      83</span>         [<span class="tlaGBC" title="branch 0 was taken 7727 times"> + </span><span class="tlaGBC" title="branch 1 was taken 255 times"> + </span>]:<span class="tlaGNC">        7982 :   return {&quot;global&quot;, flag.xff ? &quot;xff&quot; : &quot;find&quot;};</span></span>
-<span id="L84"><span class="lineNum">      84</span>                 :<span class="tlaGNC">        7982 : }</span></span>
+<span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">        7994 : std::vector&lt;std::string&gt; FlagTags(const GlobalFlag&amp; flag) {</span></span>
+<span id="L83"><span class="lineNum">      83</span>         [<span class="tlaGBC" title="branch 0 was taken 7739 times"> + </span><span class="tlaGBC" title="branch 1 was taken 255 times"> + </span>]:<span class="tlaGNC">        7994 :   return {&quot;global&quot;, flag.xff ? &quot;xff&quot; : &quot;find&quot;};</span></span>
+<span id="L84"><span class="lineNum">      84</span>                 :<span class="tlaGNC">        7994 : }</span></span>
 <span id="L85"><span class="lineNum">      85</span>                 :             : </span>
 <span id="L86"><span class="lineNum">      86</span>                 :             : // The classification tags after a primary's term, e.g. (test, find) or</span>
 <span id="L87"><span class="lineNum">      87</span>                 :             : // (action, xff, runs commands).</span>
@@ -184,24 +184,24 @@
 <span id="L104"><span class="lineNum">     104</span>                 :             : // Every global flag whose `affects` list names `name` (a flag or primary), in</span>
 <span id="L105"><span class="lineNum">     105</span>                 :             : // Globals() display order - the reverse of the forward `affects` declaration, so the</span>
 <span id="L106"><span class="lineNum">     106</span>                 :             : // &quot;Affected by:&quot; block on any entry stays in lock-step with the flags' declarations.</span>
-<span id="L107"><span class="lineNum">     107</span>                 :<span class="tlaGNC">       13391 : std::vector&lt;std::string_view&gt; AffectedByFlags(std::string_view name) {</span></span>
-<span id="L108"><span class="lineNum">     108</span>                 :<span class="tlaGNC">       13391 :   std::vector&lt;std::string_view&gt; out;</span></span>
-<span id="L109"><span class="lineNum">     109</span>         [<span class="tlaGBC" title="branch 0 was taken 1218581 times"> + </span><span class="tlaGBC" title="branch 1 was taken 13391 times"> + </span>]:<span class="tlaGNC">     1218581 :   for (const GlobalFlag&amp; flag : Globals()) {</span></span>
-<span id="L110"><span class="lineNum">     110</span>         [<span class="tlaGBC" title="branch 0 was taken 454853 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1216433 times"> + </span>]:<span class="tlaGNC">     1218581 :     for (const std::string_view token : absl::StrSplit(flag.affects, ',', absl::SkipEmpty())) {</span></span>
-<span id="L111"><span class="lineNum">     111</span>         [<span class="tlaGBC" title="branch 0 was taken 2148 times"> + </span><span class="tlaGBC" title="branch 1 was taken 452705 times"> + </span>]:<span class="tlaGNC">      454853 :       if (token == name) {</span></span>
+<span id="L107"><span class="lineNum">     107</span>                 :<span class="tlaGNC">       13403 : std::vector&lt;std::string_view&gt; AffectedByFlags(std::string_view name) {</span></span>
+<span id="L108"><span class="lineNum">     108</span>                 :<span class="tlaGNC">       13403 :   std::vector&lt;std::string_view&gt; out;</span></span>
+<span id="L109"><span class="lineNum">     109</span>         [<span class="tlaGBC" title="branch 0 was taken 1219673 times"> + </span><span class="tlaGBC" title="branch 1 was taken 13403 times"> + </span>]:<span class="tlaGNC">     1219673 :   for (const GlobalFlag&amp; flag : Globals()) {</span></span>
+<span id="L110"><span class="lineNum">     110</span>         [<span class="tlaGBC" title="branch 0 was taken 455261 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1217525 times"> + </span>]:<span class="tlaGNC">     1219673 :     for (const std::string_view token : absl::StrSplit(flag.affects, ',', absl::SkipEmpty())) {</span></span>
+<span id="L111"><span class="lineNum">     111</span>         [<span class="tlaGBC" title="branch 0 was taken 2148 times"> + </span><span class="tlaGBC" title="branch 1 was taken 453113 times"> + </span>]:<span class="tlaGNC">      455261 :       if (token == name) {</span></span>
 <span id="L112"><span class="lineNum">     112</span>                 :<span class="tlaGNC">        2148 :         out.push_back(flag.name);</span></span>
 <span id="L113"><span class="lineNum">     113</span>                 :<span class="tlaGNC">        2148 :         break;</span></span>
 <span id="L114"><span class="lineNum">     114</span>                 :<span class="tlaGNC">        2148 :       }</span></span>
-<span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">      454853 :     }</span></span>
-<span id="L116"><span class="lineNum">     116</span>                 :<span class="tlaGNC">     1218581 :   }</span></span>
-<span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">       13391 :   return out;</span></span>
-<span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">       13391 : }</span></span>
+<span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">      455261 :     }</span></span>
+<span id="L116"><span class="lineNum">     116</span>                 :<span class="tlaGNC">     1219673 :   }</span></span>
+<span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">       13403 :   return out;</span></span>
+<span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">       13403 : }</span></span>
 <span id="L119"><span class="lineNum">     119</span>                 :             : </span>
 <span id="L120"><span class="lineNum">     120</span>                 :             : // Appends an influence detail line (&quot;Header: a, b, c&quot;) to `blocks` when non-empty.</span>
-<span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">       19007 : void AppendInfluence(Blocks&amp; blocks, std::string_view header, const std::vector&lt;std::string_view&gt;&amp; names) {</span></span>
-<span id="L122"><span class="lineNum">     122</span>         [<span class="tlaGBC" title="branch 0 was taken 16194 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2813 times"> + </span>]:<span class="tlaGNC">       19007 :   if (names.empty()) {</span></span>
-<span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">       16194 :     return;</span></span>
-<span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">       16194 :   }</span></span>
+<span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">       19031 : void AppendInfluence(Blocks&amp; blocks, std::string_view header, const std::vector&lt;std::string_view&gt;&amp; names) {</span></span>
+<span id="L122"><span class="lineNum">     122</span>         [<span class="tlaGBC" title="branch 0 was taken 16218 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2813 times"> + </span>]:<span class="tlaGNC">       19031 :   if (names.empty()) {</span></span>
+<span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">       16218 :     return;</span></span>
+<span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">       16218 :   }</span></span>
 <span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">        2813 :   blocks.push_back(ProseOf(absl::StrCat(header, &quot; &quot;, absl::StrJoin(names, &quot;, &quot;))));</span></span>
 <span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">        2813 : }</span></span>
 <span id="L127"><span class="lineNum">     127</span>                 :             : </span>
@@ -210,68 +210,68 @@
 <span id="L130"><span class="lineNum">     130</span>                 :             : // placeholder's values. A display that spells its values inline instead (`--archive[=none|roots|all]`)</span>
 <span id="L131"><span class="lineNum">     131</span>                 :             : // has no placeholder to name, and gets the bare &quot;One of:&quot; - naming a placeholder that is not there</span>
 <span id="L132"><span class="lineNum">     132</span>                 :             : // used to read as the nonsense &quot;One of is one of:&quot;.</span>
-<span id="L133"><span class="lineNum">     133</span>                 :<span class="tlaGNC">        1723 : std::string ValueHeading(std::string_view display) {</span></span>
-<span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">        1723 :   const auto open = display.find('&lt;');</span></span>
-<span id="L135"><span class="lineNum">     135</span>                 :<span class="tlaGNC">        1723 :   const auto close = display.find('&gt;', open + 1);</span></span>
-<span id="L136"><span class="lineNum">     136</span> [<span class="tlaGBC" title="branch 0 was taken 1167 times"> + </span><span class="tlaGBC" title="branch 1 was taken 556 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 556 times"> + </span>]:<span class="tlaGNC">        1723 :   if (open == std::string_view::npos || close == std::string_view::npos) {</span></span>
-<span id="L137"><span class="lineNum">     137</span>                 :<span class="tlaGNC">        1167 :     return &quot;One of:&quot;;</span></span>
-<span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">        1167 :   }</span></span>
-<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">         556 :   return absl::StrCat(display.substr(open + 1, close - open - 1), &quot; is one of:&quot;);</span></span>
-<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">        1723 : }</span></span>
+<span id="L133"><span class="lineNum">     133</span>                 :<span class="tlaGNC">        1725 : std::string ValueHeading(std::string_view display) {</span></span>
+<span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">        1725 :   const auto open = display.find('&lt;');</span></span>
+<span id="L135"><span class="lineNum">     135</span>                 :<span class="tlaGNC">        1725 :   const auto close = display.find('&gt;', open + 1);</span></span>
+<span id="L136"><span class="lineNum">     136</span> [<span class="tlaGBC" title="branch 0 was taken 1168 times"> + </span><span class="tlaGBC" title="branch 1 was taken 557 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 557 times"> + </span>]:<span class="tlaGNC">        1725 :   if (open == std::string_view::npos || close == std::string_view::npos) {</span></span>
+<span id="L137"><span class="lineNum">     137</span>                 :<span class="tlaGNC">        1168 :     return &quot;One of:&quot;;</span></span>
+<span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">        1168 :   }</span></span>
+<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">         557 :   return absl::StrCat(display.substr(open + 1, close - open - 1), &quot; is one of:&quot;);</span></span>
+<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">        1725 : }</span></span>
 <span id="L141"><span class="lineNum">     141</span>                 :             : </span>
 <span id="L142"><span class="lineNum">     142</span>                 :             : // A definition entry for a global flag: its display, summary, and (when `with_details`)</span>
 <span id="L143"><span class="lineNum">     143</span>                 :             : // its detail blocks enriched with a &quot;not built into this binary&quot; note when its build</span>
 <span id="L144"><span class="lineNum">     144</span>                 :             : // extra is absent and the Affects / Affected-by influence blocks. `with_details` is</span>
 <span id="L145"><span class="lineNum">     145</span>                 :             : // false for the terse usage page (summary + tags only).</span>
-<span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">        7982 : Content FlagEntry(const GlobalFlag&amp; flag, bool with_details = true, Audience audience = Audience::kThisBinary) {</span></span>
-<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">        7982 :   Blocks details;</span></span>
+<span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">        7994 : Content FlagEntry(const GlobalFlag&amp; flag, bool with_details = true, Audience audience = Audience::kThisBinary) {</span></span>
+<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">        7994 :   Blocks details;</span></span>
 <span id="L148"><span class="lineNum">     148</span>                 :             :   // The not-built note shows even on the terse usage page: a flag whose build extra is</span>
 <span id="L149"><span class="lineNum">     149</span>                 :             :   // absent is a hard error if used, so the reader must see it up front. It is OMITTED for a</span>
 <span id="L150"><span class="lineNum">     150</span>                 :             :   // published reference, which documents the tool rather than whichever binary generated it -</span>
 <span id="L151"><span class="lineNum">     151</span>                 :             :   // the flag's own details still say it is a build extra and name the flag to rebuild with.</span>
-<span id="L152"><span class="lineNum">     152</span> [<span class="tlaGBC" title="branch 0 was taken 6526 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1456 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 991 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 5535 times"> + </span>]:<span class="tlaGNC">        7982 :   if (audience == Audience::kThisBinary &amp;&amp; !flag.extra.empty() &amp;&amp; !ExtraEnabled(flag.extra)) {</span></span>
+<span id="L152"><span class="lineNum">     152</span> [<span class="tlaGBC" title="branch 0 was taken 6538 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1456 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 991 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 5547 times"> + </span>]:<span class="tlaGNC">        7994 :   if (audience == Audience::kThisBinary &amp;&amp; !flag.extra.empty() &amp;&amp; !ExtraEnabled(flag.extra)) {</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 926 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 65 times"> + </span>]
 <span id="L153"><span class="lineNum">     153</span>                 :<span class="tlaGNC">         926 :     details.push_back(ProseOf(</span></span>
 <span id="L154"><span class="lineNum">     154</span>                 :<span class="tlaGNC">         926 :         absl::StrCat(</span></span>
 <span id="L155"><span class="lineNum">     155</span>                 :<span class="tlaGNC">         926 :             &quot;NOT built into this binary: rebuild with `&quot;, ExtraBuildFlag(flag.extra),</span></span>
 <span id="L156"><span class="lineNum">     156</span>                 :<span class="tlaGNC">         926 :             &quot;` (used as-is, it is a hard error).&quot;)));</span></span>
 <span id="L157"><span class="lineNum">     157</span>                 :<span class="tlaGNC">         926 :   }</span></span>
-<span id="L158"><span class="lineNum">     158</span>         [<span class="tlaGBC" title="branch 0 was taken 5616 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2366 times"> + </span>]:<span class="tlaGNC">        7982 :   if (with_details) {</span></span>
+<span id="L158"><span class="lineNum">     158</span>         [<span class="tlaGBC" title="branch 0 was taken 5628 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2366 times"> + </span>]:<span class="tlaGNC">        7994 :   if (with_details) {</span></span>
 <span id="L159"><span class="lineNum">     159</span>                 :             :     // The allowed-value table (for a flag whose synopsis collapsed a value grammar to a</span>
 <span id="L160"><span class="lineNum">     160</span>                 :             :     // `&lt;PLACEHOLDER&gt;`) leads, before the prose: a &quot;&lt;LABEL&gt; is one of:&quot; heading line (see</span>
 <span id="L161"><span class="lineNum">     161</span>                 :             :     // ValueHeading) so the</span>
 <span id="L162"><span class="lineNum">     162</span>                 :             :     // rows read as that placeholder's values, then the aligned wrapping `value  meaning` list.</span>
-<span id="L163"><span class="lineNum">     163</span>         [<span class="tlaGBC" title="branch 0 was taken 1723 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3893 times"> + </span>]:<span class="tlaGNC">        5616 :     if (!flag.values.empty()) {</span></span>
-<span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">        1723 :       details.push_back(ProseOf(ValueHeading(flag.display)));</span></span>
-<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">        1723 :       Rows rows;</span></span>
-<span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">        1723 :       rows.rows.reserve(flag.values.size());</span></span>
-<span id="L167"><span class="lineNum">     167</span>         [<span class="tlaGBC" title="branch 0 was taken 8358 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1723 times"> + </span>]:<span class="tlaGNC">        8358 :       for (const ValueDoc&amp; value : flag.values) {</span></span>
-<span id="L168"><span class="lineNum">     168</span>         [<span class="tlaGBC" title="branch 0 was taken 782 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7576 times"> + </span>]:<span class="tlaGNC">        8358 :         if (value.hidden) {</span></span>
+<span id="L163"><span class="lineNum">     163</span>         [<span class="tlaGBC" title="branch 0 was taken 1725 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3903 times"> + </span>]:<span class="tlaGNC">        5628 :     if (!flag.values.empty()) {</span></span>
+<span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">        1725 :       details.push_back(ProseOf(ValueHeading(flag.display)));</span></span>
+<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">        1725 :       Rows rows;</span></span>
+<span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">        1725 :       rows.rows.reserve(flag.values.size());</span></span>
+<span id="L167"><span class="lineNum">     167</span>         [<span class="tlaGBC" title="branch 0 was taken 8370 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1725 times"> + </span>]:<span class="tlaGNC">        8370 :       for (const ValueDoc&amp; value : flag.values) {</span></span>
+<span id="L168"><span class="lineNum">     168</span>         [<span class="tlaGBC" title="branch 0 was taken 782 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7588 times"> + </span>]:<span class="tlaGNC">        8370 :         if (value.hidden) {</span></span>
 <span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">         782 :           continue;  // an alias or reserved name: accepted by the check, not listed here</span></span>
 <span id="L170"><span class="lineNum">     170</span>                 :<span class="tlaGNC">         782 :         }</span></span>
-<span id="L171"><span class="lineNum">     171</span>                 :<span class="tlaGNC">        7576 :         rows.rows.push_back(Row{.term = std::string(value.value), .description = ParseInline(value.meaning)});</span></span>
-<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">        7576 :       }</span></span>
+<span id="L171"><span class="lineNum">     171</span>                 :<span class="tlaGNC">        7588 :         rows.rows.push_back(Row{.term = std::string(value.value), .description = ParseInline(value.meaning)});</span></span>
+<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">        7588 :       }</span></span>
 <span id="L173"><span class="lineNum">     173</span>                 :             :       // A title-less subsection nests the value table one level deeper than its label.</span>
-<span id="L174"><span class="lineNum">     174</span>                 :<span class="tlaGNC">        1723 :       Subsection group;</span></span>
-<span id="L175"><span class="lineNum">     175</span>                 :<span class="tlaGNC">        1723 :       group.children.push_back(Content{.node = std::move(rows)});</span></span>
-<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">        1723 :       details.push_back(Content{.node = std::move(group)});</span></span>
-<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">        1723 :     }</span></span>
-<span id="L178"><span class="lineNum">     178</span>         [<span class="tlaGBC" title="branch 0 was taken 3716 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5616 times"> + </span>]:<span class="tlaGNC">        5616 :     for (Content&amp; block : ParseBlocks(flag.details)) {</span></span>
-<span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">        3716 :       details.push_back(std::move(block));</span></span>
-<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">        3716 :     }</span></span>
-<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">        5616 :     AppendInfluence(details, &quot;Affects:&quot;, absl::StrSplit(flag.affects, ',', absl::SkipEmpty()));</span></span>
-<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">        5616 :     AppendInfluence(details, &quot;Affected by:&quot;, AffectedByFlags(flag.name));</span></span>
-<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">        5616 :   }</span></span>
-<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">        7982 :   return Content{</span></span>
-<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">        7982 :       .node = Entry{</span></span>
-<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">        7982 :           .term = std::string(flag.display),</span></span>
-<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">        7982 :           .summary = ParseInline(flag.summary),</span></span>
-<span id="L188"><span class="lineNum">     188</span>                 :<span class="tlaGNC">        7982 :           .details = std::move(details),</span></span>
-<span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">        7982 :           .xff = flag.xff,</span></span>
-<span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">        7982 :           .tags = FlagTags(flag),</span></span>
-<span id="L191"><span class="lineNum">     191</span>                 :<span class="tlaGNC">        7982 :           .anchor = absl::StrCat(&quot;flag-&quot;, flag.name),</span></span>
-<span id="L192"><span class="lineNum">     192</span>                 :<span class="tlaGNC">        7982 :       }};</span></span>
-<span id="L193"><span class="lineNum">     193</span>                 :<span class="tlaGNC">        7982 : }</span></span>
+<span id="L174"><span class="lineNum">     174</span>                 :<span class="tlaGNC">        1725 :       Subsection group;</span></span>
+<span id="L175"><span class="lineNum">     175</span>                 :<span class="tlaGNC">        1725 :       group.children.push_back(Content{.node = std::move(rows)});</span></span>
+<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">        1725 :       details.push_back(Content{.node = std::move(group)});</span></span>
+<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">        1725 :     }</span></span>
+<span id="L178"><span class="lineNum">     178</span>         [<span class="tlaGBC" title="branch 0 was taken 3720 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5628 times"> + </span>]:<span class="tlaGNC">        5628 :     for (Content&amp; block : ParseBlocks(flag.details)) {</span></span>
+<span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">        3720 :       details.push_back(std::move(block));</span></span>
+<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">        3720 :     }</span></span>
+<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">        5628 :     AppendInfluence(details, &quot;Affects:&quot;, absl::StrSplit(flag.affects, ',', absl::SkipEmpty()));</span></span>
+<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">        5628 :     AppendInfluence(details, &quot;Affected by:&quot;, AffectedByFlags(flag.name));</span></span>
+<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">        5628 :   }</span></span>
+<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">        7994 :   return Content{</span></span>
+<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">        7994 :       .node = Entry{</span></span>
+<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">        7994 :           .term = std::string(flag.display),</span></span>
+<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">        7994 :           .summary = ParseInline(flag.summary),</span></span>
+<span id="L188"><span class="lineNum">     188</span>                 :<span class="tlaGNC">        7994 :           .details = std::move(details),</span></span>
+<span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">        7994 :           .xff = flag.xff,</span></span>
+<span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">        7994 :           .tags = FlagTags(flag),</span></span>
+<span id="L191"><span class="lineNum">     191</span>                 :<span class="tlaGNC">        7994 :           .anchor = absl::StrCat(&quot;flag-&quot;, flag.name),</span></span>
+<span id="L192"><span class="lineNum">     192</span>                 :<span class="tlaGNC">        7994 :       }};</span></span>
+<span id="L193"><span class="lineNum">     193</span>                 :<span class="tlaGNC">        7994 : }</span></span>
 <span id="L194"><span class="lineNum">     194</span>                 :             : </span>
 <span id="L195"><span class="lineNum">     195</span>                 :             : // A definition entry for an expression primary: its synopsis, summary, and (when</span>
 <span id="L196"><span class="lineNum">     196</span>                 :             : // `with_details`) its detail blocks + the Affected-by block. `with_details` is false</span>
@@ -508,80 +508,80 @@
 <span id="L427"><span class="lineNum">     427</span>                 :             : // pulled from the globals SOT via the &quot;ignore&quot; topic tag so the list cannot drift. Standalone as</span>
 <span id="L428"><span class="lineNum">     428</span>                 :             : // `--help=ignore` (aliases `ignores` / `vcs`) and folded into the full reference; the folded form</span>
 <span id="L429"><span class="lineNum">     429</span>                 :             : // omits entries already present in the Options section.</span>
-<span id="L430"><span class="lineNum">     430</span>                 :<span class="tlaGNC">          64 : Section IgnoreSection(bool in_full) {</span></span>
-<span id="L431"><span class="lineNum">     431</span>                 :<span class="tlaGNC">          64 :   Section section{.title = &quot;Ignore and VCS traversal&quot;};</span></span>
-<span id="L432"><span class="lineNum">     432</span>                 :<span class="tlaGNC">          64 :   section.children.push_back(ProseOf(</span></span>
-<span id="L433"><span class="lineNum">     433</span>                 :<span class="tlaGNC">          64 :       &quot;Ignoring a path and pruning version-control metadata are separate decisions. Ignore rules &quot;</span></span>
-<span id="L434"><span class="lineNum">     434</span>                 :<span class="tlaGNC">          64 :       &quot;filter ordinary paths by pattern; `--skip-vcs` prevents xff from entering administrative &quot;</span></span>
-<span id="L435"><span class="lineNum">     435</span>                 :<span class="tlaGNC">          64 :       &quot;trees such as `.git` or `.hg` at all. Hidden-path filtering is a third independent switch. &quot;</span></span>
-<span id="L436"><span class="lineNum">     436</span>                 :<span class="tlaGNC">          64 :       &quot;Changing one does not silently change the others.&quot;));</span></span>
+<span id="L430"><span class="lineNum">     430</span>                 :<span class="tlaGNC">          65 : Section IgnoreSection(bool in_full) {</span></span>
+<span id="L431"><span class="lineNum">     431</span>                 :<span class="tlaGNC">          65 :   Section section{.title = &quot;Ignore and VCS traversal&quot;};</span></span>
+<span id="L432"><span class="lineNum">     432</span>                 :<span class="tlaGNC">          65 :   section.children.push_back(ProseOf(</span></span>
+<span id="L433"><span class="lineNum">     433</span>                 :<span class="tlaGNC">          65 :       &quot;Ignoring a path and pruning version-control metadata are separate decisions. Ignore rules &quot;</span></span>
+<span id="L434"><span class="lineNum">     434</span>                 :<span class="tlaGNC">          65 :       &quot;filter ordinary paths by pattern; `--skip-vcs` prevents xff from entering administrative &quot;</span></span>
+<span id="L435"><span class="lineNum">     435</span>                 :<span class="tlaGNC">          65 :       &quot;trees such as `.git` or `.hg` at all. Hidden-path filtering is a third independent switch. &quot;</span></span>
+<span id="L436"><span class="lineNum">     436</span>                 :<span class="tlaGNC">          65 :       &quot;Changing one does not silently change the others.&quot;));</span></span>
 <span id="L437"><span class="lineNum">     437</span>                 :             : </span>
-<span id="L438"><span class="lineNum">     438</span>                 :<span class="tlaGNC">          64 :   static constexpr std::array&lt;DocPair, 6&gt; kAxes = {{</span></span>
-<span id="L439"><span class="lineNum">     439</span>                 :<span class="tlaGNC">          64 :       {&quot;--exclude / --include&quot;, &quot;command-line gitignore-style patterns; repeatable, later matches win&quot;},</span></span>
-<span id="L440"><span class="lineNum">     440</span>                 :<span class="tlaGNC">          64 :       {&quot;--gitignore / -g&quot;, &quot;Git's `.gitignore`, `.git/info/exclude`, and `core.excludesFile` layer&quot;},</span></span>
-<span id="L441"><span class="lineNum">     441</span>                 :<span class="tlaGNC">          64 :       {&quot;--ignore-files&quot;, &quot;per-directory `.ignore` and `.xffignore` files&quot;},</span></span>
-<span id="L442"><span class="lineNum">     442</span>                 :<span class="tlaGNC">          64 :       {&quot;--ignore-file=PATH&quot;, &quot;an explicitly named rule file, rooted at its own directory&quot;},</span></span>
-<span id="L443"><span class="lineNum">     443</span>                 :<span class="tlaGNC">          64 :       {&quot;--skip-vcs&quot;, &quot;prune VCS metadata names; independent of pattern-based ignore files&quot;},</span></span>
-<span id="L444"><span class="lineNum">     444</span>                 :<span class="tlaGNC">          64 :       {&quot;--hidden / --no-hidden&quot;, &quot;show or skip dot-prefixed path components&quot;},</span></span>
-<span id="L445"><span class="lineNum">     445</span>                 :<span class="tlaGNC">          64 :   }};</span></span>
-<span id="L446"><span class="lineNum">     446</span>                 :<span class="tlaGNC">          64 :   Subsection axes{.title = &quot;Independent axes&quot;};</span></span>
-<span id="L447"><span class="lineNum">     447</span>                 :<span class="tlaGNC">          64 :   axes.children.push_back(RowsOf(kAxes));</span></span>
-<span id="L448"><span class="lineNum">     448</span>                 :<span class="tlaGNC">          64 :   section.children.push_back(Content{.node = std::move(axes)});</span></span>
+<span id="L438"><span class="lineNum">     438</span>                 :<span class="tlaGNC">          65 :   static constexpr std::array&lt;DocPair, 6&gt; kAxes = {{</span></span>
+<span id="L439"><span class="lineNum">     439</span>                 :<span class="tlaGNC">          65 :       {&quot;--exclude / --include&quot;, &quot;command-line gitignore-style patterns; repeatable, later matches win&quot;},</span></span>
+<span id="L440"><span class="lineNum">     440</span>                 :<span class="tlaGNC">          65 :       {&quot;--gitignore / -g&quot;, &quot;Git's `.gitignore`, `.git/info/exclude`, and `core.excludesFile` layer&quot;},</span></span>
+<span id="L441"><span class="lineNum">     441</span>                 :<span class="tlaGNC">          65 :       {&quot;--ignore-files&quot;, &quot;per-directory `.ignore` and `.xffignore` files&quot;},</span></span>
+<span id="L442"><span class="lineNum">     442</span>                 :<span class="tlaGNC">          65 :       {&quot;--ignore-file=PATH&quot;, &quot;an explicitly named rule file, rooted at its own directory&quot;},</span></span>
+<span id="L443"><span class="lineNum">     443</span>                 :<span class="tlaGNC">          65 :       {&quot;--skip-vcs&quot;, &quot;prune VCS metadata names; independent of pattern-based ignore files&quot;},</span></span>
+<span id="L444"><span class="lineNum">     444</span>                 :<span class="tlaGNC">          65 :       {&quot;--hidden / --no-hidden&quot;, &quot;show or skip dot-prefixed path components&quot;},</span></span>
+<span id="L445"><span class="lineNum">     445</span>                 :<span class="tlaGNC">          65 :   }};</span></span>
+<span id="L446"><span class="lineNum">     446</span>                 :<span class="tlaGNC">          65 :   Subsection axes{.title = &quot;Independent axes&quot;};</span></span>
+<span id="L447"><span class="lineNum">     447</span>                 :<span class="tlaGNC">          65 :   axes.children.push_back(RowsOf(kAxes));</span></span>
+<span id="L448"><span class="lineNum">     448</span>                 :<span class="tlaGNC">          65 :   section.children.push_back(Content{.node = std::move(axes)});</span></span>
 <span id="L449"><span class="lineNum">     449</span>                 :             : </span>
-<span id="L450"><span class="lineNum">     450</span>                 :<span class="tlaGNC">          64 :   Subsection defaults{.title = &quot;Defaults and overrides&quot;};</span></span>
-<span id="L451"><span class="lineNum">     451</span>                 :<span class="tlaGNC">          64 :   defaults.children.push_back(ProseOf(</span></span>
-<span id="L452"><span class="lineNum">     452</span>                 :<span class="tlaGNC">          64 :       &quot;The find and xff styles start with ignore files off and hidden paths visible. The rg style &quot;</span></span>
-<span id="L453"><span class="lineNum">     453</span>                 :<span class="tlaGNC">          64 :       &quot;honours VCS, `.ignore`, and `.xffignore` files and skips hidden paths. Tree comparison &quot;</span></span>
-<span id="L454"><span class="lineNum">     454</span>                 :<span class="tlaGNC">          64 :       &quot;honours each root's Git ignore sources by default because its usual input is two Git working &quot;</span></span>
-<span id="L455"><span class="lineNum">     455</span>                 :<span class="tlaGNC">          64 :       &quot;trees; `--no-ignore` / `-u` disables those sources.&quot;));</span></span>
-<span id="L456"><span class="lineNum">     456</span>                 :<span class="tlaGNC">          64 :   defaults.children.push_back(ProseOf(</span></span>
-<span id="L457"><span class="lineNum">     457</span>                 :<span class="tlaGNC">          64 :       &quot;Bare `-g` / `--gitignore` is automatic: it activates only inside a Git working tree. &quot;</span></span>
-<span id="L458"><span class="lineNum">     458</span>                 :<span class="tlaGNC">          64 :       &quot;`-g+` / `--gitignore=on` forces the Git layer anywhere; `-g-` / `--gitignore=off` disables it. &quot;</span></span>
-<span id="L459"><span class="lineNum">     459</span>                 :<span class="tlaGNC">          64 :       &quot;`--ignore-vcs` and `--no-ignore-vcs` are the rg-style spellings for that same layer. Within &quot;</span></span>
-<span id="L460"><span class="lineNum">     460</span>                 :<span class="tlaGNC">          64 :       &quot;this family the last flag wins.&quot;));</span></span>
-<span id="L461"><span class="lineNum">     461</span>                 :<span class="tlaGNC">          64 :   defaults.children.push_back(ProseOf(</span></span>
-<span id="L462"><span class="lineNum">     462</span>                 :<span class="tlaGNC">          64 :       &quot;When the Git ignore layer is active, xff also implicitly prunes `.git` as if &quot;</span></span>
-<span id="L463"><span class="lineNum">     463</span>                 :<span class="tlaGNC">          64 :       &quot;`--skip-vcs=git` were present. An explicit `--skip-vcs[=LIST]` replaces that implicit choice; &quot;</span></span>
-<span id="L464"><span class="lineNum">     464</span>                 :<span class="tlaGNC">          64 :       &quot;bare or `=all` selects every known VCS, while `--no-skip-vcs` / `=none` keeps metadata in the &quot;</span></span>
-<span id="L465"><span class="lineNum">     465</span>                 :<span class="tlaGNC">          64 :       &quot;walk. A list such as `--skip-vcs=git,hg` is frozen to exactly those systems.&quot;));</span></span>
-<span id="L466"><span class="lineNum">     466</span>                 :<span class="tlaGNC">          64 :   defaults.children.push_back(ProseOf(</span></span>
-<span id="L467"><span class="lineNum">     467</span>                 :<span class="tlaGNC">          64 :       &quot;`--no-ignore` / `-u` is the master off switch for ignore-file sources, including explicit &quot;</span></span>
-<span id="L468"><span class="lineNum">     468</span>                 :<span class="tlaGNC">          64 :       &quot;`--ignore-file` inputs. It does not cancel command-line `--exclude` patterns or an explicit &quot;</span></span>
-<span id="L469"><span class="lineNum">     469</span>                 :<span class="tlaGNC">          64 :       &quot;`--skip-vcs`. Use `--no-skip-vcs` separately when metadata directories must remain visible.&quot;));</span></span>
-<span id="L470"><span class="lineNum">     470</span>                 :<span class="tlaGNC">          64 :   section.children.push_back(Content{.node = std::move(defaults)});</span></span>
+<span id="L450"><span class="lineNum">     450</span>                 :<span class="tlaGNC">          65 :   Subsection defaults{.title = &quot;Defaults and overrides&quot;};</span></span>
+<span id="L451"><span class="lineNum">     451</span>                 :<span class="tlaGNC">          65 :   defaults.children.push_back(ProseOf(</span></span>
+<span id="L452"><span class="lineNum">     452</span>                 :<span class="tlaGNC">          65 :       &quot;The find and xff styles start with ignore files off and hidden paths visible. The rg style &quot;</span></span>
+<span id="L453"><span class="lineNum">     453</span>                 :<span class="tlaGNC">          65 :       &quot;honours VCS, `.ignore`, and `.xffignore` files and skips hidden paths. Tree comparison does not &quot;</span></span>
+<span id="L454"><span class="lineNum">     454</span>                 :<span class="tlaGNC">          65 :       &quot;change these defaults or enable an ignore source: both sides use the selected style and the &quot;</span></span>
+<span id="L455"><span class="lineNum">     455</span>                 :<span class="tlaGNC">          65 :       &quot;ignore options the user supplies.&quot;));</span></span>
+<span id="L456"><span class="lineNum">     456</span>                 :<span class="tlaGNC">          65 :   defaults.children.push_back(ProseOf(</span></span>
+<span id="L457"><span class="lineNum">     457</span>                 :<span class="tlaGNC">          65 :       &quot;Bare `-g` / `--gitignore` is automatic: it activates only inside a Git working tree. &quot;</span></span>
+<span id="L458"><span class="lineNum">     458</span>                 :<span class="tlaGNC">          65 :       &quot;`-g+` / `--gitignore=on` forces the Git layer anywhere; `-g-` / `--gitignore=off` disables it. &quot;</span></span>
+<span id="L459"><span class="lineNum">     459</span>                 :<span class="tlaGNC">          65 :       &quot;`--ignore-vcs` and `--no-ignore-vcs` are the rg-style spellings for that same layer. Within &quot;</span></span>
+<span id="L460"><span class="lineNum">     460</span>                 :<span class="tlaGNC">          65 :       &quot;this family the last flag wins.&quot;));</span></span>
+<span id="L461"><span class="lineNum">     461</span>                 :<span class="tlaGNC">          65 :   defaults.children.push_back(ProseOf(</span></span>
+<span id="L462"><span class="lineNum">     462</span>                 :<span class="tlaGNC">          65 :       &quot;When the Git ignore layer is active, xff also implicitly prunes `.git` as if &quot;</span></span>
+<span id="L463"><span class="lineNum">     463</span>                 :<span class="tlaGNC">          65 :       &quot;`--skip-vcs=git` were present. An explicit `--skip-vcs[=LIST]` replaces that implicit choice; &quot;</span></span>
+<span id="L464"><span class="lineNum">     464</span>                 :<span class="tlaGNC">          65 :       &quot;bare or `=all` selects every known VCS, while `--no-skip-vcs` / `=none` keeps metadata in the &quot;</span></span>
+<span id="L465"><span class="lineNum">     465</span>                 :<span class="tlaGNC">          65 :       &quot;walk. A list such as `--skip-vcs=git,hg` is frozen to exactly those systems.&quot;));</span></span>
+<span id="L466"><span class="lineNum">     466</span>                 :<span class="tlaGNC">          65 :   defaults.children.push_back(ProseOf(</span></span>
+<span id="L467"><span class="lineNum">     467</span>                 :<span class="tlaGNC">          65 :       &quot;`--no-ignore` / `-u` is the master off switch for ignore-file sources, including explicit &quot;</span></span>
+<span id="L468"><span class="lineNum">     468</span>                 :<span class="tlaGNC">          65 :       &quot;`--ignore-file` inputs. It does not cancel command-line `--exclude` patterns or an explicit &quot;</span></span>
+<span id="L469"><span class="lineNum">     469</span>                 :<span class="tlaGNC">          65 :       &quot;`--skip-vcs`. Use `--no-skip-vcs` separately when metadata directories must remain visible.&quot;));</span></span>
+<span id="L470"><span class="lineNum">     470</span>                 :<span class="tlaGNC">          65 :   section.children.push_back(Content{.node = std::move(defaults)});</span></span>
 <span id="L471"><span class="lineNum">     471</span>                 :             : </span>
-<span id="L472"><span class="lineNum">     472</span>                 :<span class="tlaGNC">          64 :   Subsection precedence{.title = &quot;Pattern precedence&quot;};</span></span>
-<span id="L473"><span class="lineNum">     473</span>                 :<span class="tlaGNC">          64 :   precedence.children.push_back(ProseOf(</span></span>
-<span id="L474"><span class="lineNum">     474</span>                 :<span class="tlaGNC">          64 :       &quot;For a path, command-line `--exclude` / `--include` patterns decide first, then explicit &quot;</span></span>
-<span id="L475"><span class="lineNum">     475</span>                 :<span class="tlaGNC">          64 :       &quot;`--ignore-file` sources, then per-directory files. Within a source, gitignore last-match-wins &quot;</span></span>
-<span id="L476"><span class="lineNum">     476</span>                 :<span class="tlaGNC">          64 :       &quot;semantics apply; a matched directory is pruned, so a later rule cannot recover descendants &quot;</span></span>
-<span id="L477"><span class="lineNum">     477</span>                 :<span class="tlaGNC">          64 :       &quot;that were never visited.&quot;));</span></span>
-<span id="L478"><span class="lineNum">     478</span>                 :<span class="tlaGNC">          64 :   section.children.push_back(Content{.node = std::move(precedence)});</span></span>
+<span id="L472"><span class="lineNum">     472</span>                 :<span class="tlaGNC">          65 :   Subsection precedence{.title = &quot;Pattern precedence&quot;};</span></span>
+<span id="L473"><span class="lineNum">     473</span>                 :<span class="tlaGNC">          65 :   precedence.children.push_back(ProseOf(</span></span>
+<span id="L474"><span class="lineNum">     474</span>                 :<span class="tlaGNC">          65 :       &quot;For a path, command-line `--exclude` / `--include` patterns decide first, then explicit &quot;</span></span>
+<span id="L475"><span class="lineNum">     475</span>                 :<span class="tlaGNC">          65 :       &quot;`--ignore-file` sources, then per-directory files. Within a source, gitignore last-match-wins &quot;</span></span>
+<span id="L476"><span class="lineNum">     476</span>                 :<span class="tlaGNC">          65 :       &quot;semantics apply; a matched directory is pruned, so a later rule cannot recover descendants &quot;</span></span>
+<span id="L477"><span class="lineNum">     477</span>                 :<span class="tlaGNC">          65 :       &quot;that were never visited.&quot;));</span></span>
+<span id="L478"><span class="lineNum">     478</span>                 :<span class="tlaGNC">          65 :   section.children.push_back(Content{.node = std::move(precedence)});</span></span>
 <span id="L479"><span class="lineNum">     479</span>                 :             : </span>
-<span id="L480"><span class="lineNum">     480</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 59 times"> + </span>]:<span class="tlaGNC">          64 :   if (!in_full) {</span></span>
-<span id="L481"><span class="lineNum">     481</span>                 :<span class="tlaGNC">           5 :     Subsection flags{.title = &quot;Ignore and traversal flags&quot;};</span></span>
-<span id="L482"><span class="lineNum">     482</span>         [<span class="tlaGBC" title="branch 0 was taken 455 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">         455 :     for (const GlobalFlag&amp; flag : Globals()) {</span></span>
-<span id="L483"><span class="lineNum">     483</span>         [<span class="tlaGBC" title="branch 0 was taken 60 times"> + </span><span class="tlaGBC" title="branch 1 was taken 395 times"> + </span>]:<span class="tlaGNC">         455 :       if (flag.topic == &quot;ignore&quot;) {</span></span>
-<span id="L484"><span class="lineNum">     484</span>                 :<span class="tlaGNC">          60 :         flags.children.push_back(FlagEntry(flag));</span></span>
-<span id="L485"><span class="lineNum">     485</span>                 :<span class="tlaGNC">          60 :       }</span></span>
-<span id="L486"><span class="lineNum">     486</span>                 :<span class="tlaGNC">         455 :     }</span></span>
-<span id="L487"><span class="lineNum">     487</span>                 :<span class="tlaGNC">           5 :     section.children.push_back(Content{.node = std::move(flags)});</span></span>
-<span id="L488"><span class="lineNum">     488</span>                 :<span class="tlaGNC">           5 :   }</span></span>
+<span id="L480"><span class="lineNum">     480</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 59 times"> + </span>]:<span class="tlaGNC">          65 :   if (!in_full) {</span></span>
+<span id="L481"><span class="lineNum">     481</span>                 :<span class="tlaGNC">           6 :     Subsection flags{.title = &quot;Ignore and traversal flags&quot;};</span></span>
+<span id="L482"><span class="lineNum">     482</span>         [<span class="tlaGBC" title="branch 0 was taken 546 times"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">         546 :     for (const GlobalFlag&amp; flag : Globals()) {</span></span>
+<span id="L483"><span class="lineNum">     483</span>         [<span class="tlaGBC" title="branch 0 was taken 72 times"> + </span><span class="tlaGBC" title="branch 1 was taken 474 times"> + </span>]:<span class="tlaGNC">         546 :       if (flag.topic == &quot;ignore&quot;) {</span></span>
+<span id="L484"><span class="lineNum">     484</span>                 :<span class="tlaGNC">          72 :         flags.children.push_back(FlagEntry(flag));</span></span>
+<span id="L485"><span class="lineNum">     485</span>                 :<span class="tlaGNC">          72 :       }</span></span>
+<span id="L486"><span class="lineNum">     486</span>                 :<span class="tlaGNC">         546 :     }</span></span>
+<span id="L487"><span class="lineNum">     487</span>                 :<span class="tlaGNC">           6 :     section.children.push_back(Content{.node = std::move(flags)});</span></span>
+<span id="L488"><span class="lineNum">     488</span>                 :<span class="tlaGNC">           6 :   }</span></span>
 <span id="L489"><span class="lineNum">     489</span>                 :             : </span>
-<span id="L490"><span class="lineNum">     490</span>                 :<span class="tlaGNC">          64 :   static constexpr std::array&lt;DocPair, 4&gt; kExamples = {{</span></span>
-<span id="L491"><span class="lineNum">     491</span>                 :<span class="tlaGNC">          64 :       {&quot;xff -g . -name '*.cc'&quot;, &quot;honour Git rules automatically and search the remaining tree&quot;},</span></span>
-<span id="L492"><span class="lineNum">     492</span>                 :<span class="tlaGNC">          64 :       {&quot;xff --skip-vcs=git,hg .&quot;, &quot;prune only Git and Mercurial metadata, without enabling ignore files&quot;},</span></span>
-<span id="L493"><span class="lineNum">     493</span>                 :<span class="tlaGNC">          64 :       {&quot;xff -g --no-skip-vcs .&quot;, &quot;honour Git rules while allowing nested `.git` metadata into the walk&quot;},</span></span>
-<span id="L494"><span class="lineNum">     494</span>                 :<span class="tlaGNC">          64 :       {&quot;xff -u --skip-vcs .&quot;, &quot;ignore no rule files, but still prune every known VCS metadata tree&quot;},</span></span>
-<span id="L495"><span class="lineNum">     495</span>                 :<span class="tlaGNC">          64 :   }};</span></span>
-<span id="L496"><span class="lineNum">     496</span>                 :<span class="tlaGNC">          64 :   Subsection examples{.title = &quot;Examples&quot;};</span></span>
-<span id="L497"><span class="lineNum">     497</span>         [<span class="tlaGBC" title="branch 0 was taken 256 times"> + </span><span class="tlaGBC" title="branch 1 was taken 64 times"> + </span>]:<span class="tlaGNC">         256 :   for (const auto&amp; [command, explanation] : kExamples) {</span></span>
-<span id="L498"><span class="lineNum">     498</span>                 :<span class="tlaGNC">         256 :     examples.children.push_back(ExampleOf(std::string(command), &quot;sh&quot;));</span></span>
-<span id="L499"><span class="lineNum">     499</span>                 :<span class="tlaGNC">         256 :     examples.children.push_back(ProseOf(explanation));</span></span>
-<span id="L500"><span class="lineNum">     500</span>                 :<span class="tlaGNC">         256 :   }</span></span>
-<span id="L501"><span class="lineNum">     501</span>                 :<span class="tlaGNC">          64 :   section.children.push_back(Content{.node = std::move(examples)});</span></span>
-<span id="L502"><span class="lineNum">     502</span>                 :<span class="tlaGNC">          64 :   return section;</span></span>
-<span id="L503"><span class="lineNum">     503</span>                 :<span class="tlaGNC">          64 : }</span></span>
+<span id="L490"><span class="lineNum">     490</span>                 :<span class="tlaGNC">          65 :   static constexpr std::array&lt;DocPair, 4&gt; kExamples = {{</span></span>
+<span id="L491"><span class="lineNum">     491</span>                 :<span class="tlaGNC">          65 :       {&quot;xff -g . -name '*.cc'&quot;, &quot;honour Git rules automatically and search the remaining tree&quot;},</span></span>
+<span id="L492"><span class="lineNum">     492</span>                 :<span class="tlaGNC">          65 :       {&quot;xff --skip-vcs=git,hg .&quot;, &quot;prune only Git and Mercurial metadata, without enabling ignore files&quot;},</span></span>
+<span id="L493"><span class="lineNum">     493</span>                 :<span class="tlaGNC">          65 :       {&quot;xff -g --no-skip-vcs .&quot;, &quot;honour Git rules while allowing nested `.git` metadata into the walk&quot;},</span></span>
+<span id="L494"><span class="lineNum">     494</span>                 :<span class="tlaGNC">          65 :       {&quot;xff -u --skip-vcs .&quot;, &quot;ignore no rule files, but still prune every known VCS metadata tree&quot;},</span></span>
+<span id="L495"><span class="lineNum">     495</span>                 :<span class="tlaGNC">          65 :   }};</span></span>
+<span id="L496"><span class="lineNum">     496</span>                 :<span class="tlaGNC">          65 :   Subsection examples{.title = &quot;Examples&quot;};</span></span>
+<span id="L497"><span class="lineNum">     497</span>         [<span class="tlaGBC" title="branch 0 was taken 260 times"> + </span><span class="tlaGBC" title="branch 1 was taken 65 times"> + </span>]:<span class="tlaGNC">         260 :   for (const auto&amp; [command, explanation] : kExamples) {</span></span>
+<span id="L498"><span class="lineNum">     498</span>                 :<span class="tlaGNC">         260 :     examples.children.push_back(ExampleOf(std::string(command), &quot;sh&quot;));</span></span>
+<span id="L499"><span class="lineNum">     499</span>                 :<span class="tlaGNC">         260 :     examples.children.push_back(ProseOf(explanation));</span></span>
+<span id="L500"><span class="lineNum">     500</span>                 :<span class="tlaGNC">         260 :   }</span></span>
+<span id="L501"><span class="lineNum">     501</span>                 :<span class="tlaGNC">          65 :   section.children.push_back(Content{.node = std::move(examples)});</span></span>
+<span id="L502"><span class="lineNum">     502</span>                 :<span class="tlaGNC">          65 :   return section;</span></span>
+<span id="L503"><span class="lineNum">     503</span>                 :<span class="tlaGNC">          65 : }</span></span>
 <span id="L504"><span class="lineNum">     504</span>                 :             : </span>
 <span id="L505"><span class="lineNum">     505</span>                 :             : // ARCHIVES: what it means to walk INTO a container, and the whole `--archive` family. The flags are</span>
 <span id="L506"><span class="lineNum">     506</span>                 :             : // pulled from the globals SOT via the &quot;archive&quot; topic tag so the list cannot drift; the identity /</span>
@@ -1049,11 +1049,11 @@
 <span id="L968"><span class="lineNum">     968</span>                 :             : </span>
 <span id="L969"><span class="lineNum">     969</span>                 :             : // The COMPONENT in `license=COMPONENT` (or the `licenses=` alias), or nothing when `name` is an</span>
 <span id="L970"><span class="lineNum">     970</span>                 :             : // ordinary topic. Split once on the FIRST `=`, so a component name may itself contain one.</span>
-<span id="L971"><span class="lineNum">     971</span>                 :<span class="tlaGNC">         153 : std::optional&lt;std::string_view&gt; LicenseComponentOf(std::string_view name) {</span></span>
-<span id="L972"><span class="lineNum">     972</span>                 :<span class="tlaGNC">         153 :   const std::size_t eq = name.find('=');</span></span>
-<span id="L973"><span class="lineNum">     973</span>         [<span class="tlaGBC" title="branch 0 was taken 139 times"> + </span><span class="tlaGBC" title="branch 1 was taken 14 times"> + </span>]:<span class="tlaGNC">         153 :   if (eq == std::string_view::npos) {</span></span>
-<span id="L974"><span class="lineNum">     974</span>                 :<span class="tlaGNC">         139 :     return std::nullopt;</span></span>
-<span id="L975"><span class="lineNum">     975</span>                 :<span class="tlaGNC">         139 :   }</span></span>
+<span id="L971"><span class="lineNum">     971</span>                 :<span class="tlaGNC">         154 : std::optional&lt;std::string_view&gt; LicenseComponentOf(std::string_view name) {</span></span>
+<span id="L972"><span class="lineNum">     972</span>                 :<span class="tlaGNC">         154 :   const std::size_t eq = name.find('=');</span></span>
+<span id="L973"><span class="lineNum">     973</span>         [<span class="tlaGBC" title="branch 0 was taken 140 times"> + </span><span class="tlaGBC" title="branch 1 was taken 14 times"> + </span>]:<span class="tlaGNC">         154 :   if (eq == std::string_view::npos) {</span></span>
+<span id="L974"><span class="lineNum">     974</span>                 :<span class="tlaGNC">         140 :     return std::nullopt;</span></span>
+<span id="L975"><span class="lineNum">     975</span>                 :<span class="tlaGNC">         140 :   }</span></span>
 <span id="L976"><span class="lineNum">     976</span>                 :<span class="tlaGNC">          14 :   const std::string_view head = name.substr(0, eq);</span></span>
 <span id="L977"><span class="lineNum">     977</span> [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 14 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not executed"> # </span><span class="tlaUNC" title="branch &quot;3&quot; was not executed"> # </span>]:<span class="tlaGNC">          14 :   if (head != &quot;license&quot; &amp;&amp; head != &quot;licenses&quot;) {</span></span>
 <span id="L978"><span class="lineNum">     978</span>                 :<span class="tlaUNC">           0 :     return std::nullopt;</span></span>
@@ -1297,10 +1297,10 @@
 <span id="L1216"><span class="lineNum">    1216</span>                 :<span class="tlaGNC">           4 :   return help;</span></span>
 <span id="L1217"><span class="lineNum">    1217</span>                 :<span class="tlaGNC">           4 : }</span></span>
 <span id="L1218"><span class="lineNum">    1218</span>                 :             : </span>
-<span id="L1219"><span class="lineNum">    1219</span>                 :<span class="tlaGNC">         116 : bool IsIgnoreTopicName(std::string_view name) {</span></span>
-<span id="L1220"><span class="lineNum">    1220</span> [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 114 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 113 times"> + </span>]:<span class="tlaGNC">         116 :   return name == &quot;ignore&quot; || name == &quot;ignores&quot; || name == &quot;vcs&quot;;</span></span>
+<span id="L1219"><span class="lineNum">    1219</span>                 :<span class="tlaGNC">         117 : bool IsIgnoreTopicName(std::string_view name) {</span></span>
+<span id="L1220"><span class="lineNum">    1220</span> [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 114 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 113 times"> + </span>]:<span class="tlaGNC">         117 :   return name == &quot;ignore&quot; || name == &quot;ignores&quot; || name == &quot;vcs&quot;;</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 111 times"> + </span>]
-<span id="L1221"><span class="lineNum">    1221</span>                 :<span class="tlaGNC">         116 : }</span></span>
+<span id="L1221"><span class="lineNum">    1221</span>                 :<span class="tlaGNC">         117 : }</span></span>
 <span id="L1222"><span class="lineNum">    1222</span>                 :             : </span>
 <span id="L1223"><span class="lineNum">    1223</span>                 :             : }  // namespace</span>
 <span id="L1224"><span class="lineNum">    1224</span>                 :             : </span>
@@ -1355,26 +1355,26 @@
 <span id="L1272"><span class="lineNum">    1272</span>                 :             : </span>
 <span id="L1273"><span class="lineNum">    1273</span>                 :             : namespace {</span>
 <span id="L1274"><span class="lineNum">    1274</span>                 :             : </span>
-<span id="L1275"><span class="lineNum">    1275</span>                 :<span class="tlaGNC">         139 : std::optional&lt;Section&gt; NamedTopicSection(std::string_view name) {</span></span>
-<span id="L1276"><span class="lineNum">    1276</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 136 times"> + </span>]:<span class="tlaGNC">         139 :   if (name == &quot;fields&quot;) {</span></span>
+<span id="L1275"><span class="lineNum">    1275</span>                 :<span class="tlaGNC">         140 : std::optional&lt;Section&gt; NamedTopicSection(std::string_view name) {</span></span>
+<span id="L1276"><span class="lineNum">    1276</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 137 times"> + </span>]:<span class="tlaGNC">         140 :   if (name == &quot;fields&quot;) {</span></span>
 <span id="L1277"><span class="lineNum">    1277</span>                 :<span class="tlaGNC">           3 :     return BuildFields();</span></span>
-<span id="L1278"><span class="lineNum">    1278</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 134 times"> + </span>]:<span class="tlaGNC">         136 :   } else if (name == &quot;output&quot;) {</span></span>
+<span id="L1278"><span class="lineNum">    1278</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 135 times"> + </span>]:<span class="tlaGNC">         137 :   } else if (name == &quot;output&quot;) {</span></span>
 <span id="L1279"><span class="lineNum">    1279</span>                 :<span class="tlaGNC">           2 :     return OutputSection(/*in_full=*/false);</span></span>
-<span id="L1280"><span class="lineNum">    1280</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 132 times"> + </span>]:<span class="tlaGNC">         134 :   } else if (name == &quot;printf&quot;) {</span></span>
+<span id="L1280"><span class="lineNum">    1280</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 133 times"> + </span>]:<span class="tlaGNC">         135 :   } else if (name == &quot;printf&quot;) {</span></span>
 <span id="L1281"><span class="lineNum">    1281</span>                 :<span class="tlaGNC">           2 :     return PrintfSection();</span></span>
-<span id="L1282"><span class="lineNum">    1282</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 129 times"> + </span>]:<span class="tlaGNC">         132 :   } else if (name == &quot;time&quot;) {</span></span>
+<span id="L1282"><span class="lineNum">    1282</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 130 times"> + </span>]:<span class="tlaGNC">         133 :   } else if (name == &quot;time&quot;) {</span></span>
 <span id="L1283"><span class="lineNum">    1283</span>                 :<span class="tlaGNC">           3 :     return TimeSection();</span></span>
-<span id="L1284"><span class="lineNum">    1284</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 127 times"> + </span>]:<span class="tlaGNC">         129 :   } else if (name == &quot;size&quot;) {</span></span>
+<span id="L1284"><span class="lineNum">    1284</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 128 times"> + </span>]:<span class="tlaGNC">         130 :   } else if (name == &quot;size&quot;) {</span></span>
 <span id="L1285"><span class="lineNum">    1285</span>                 :<span class="tlaGNC">           2 :     return SizeSection();</span></span>
-<span id="L1286"><span class="lineNum">    1286</span> [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 125 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 122 times"> + </span>]:<span class="tlaGNC">         127 :   } else if (name == &quot;grammars&quot; || name == &quot;regex&quot; || name == &quot;regexp&quot;) {</span></span>
-<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 120 times"> + </span>]
+<span id="L1286"><span class="lineNum">    1286</span> [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 126 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 123 times"> + </span>]:<span class="tlaGNC">         128 :   } else if (name == &quot;grammars&quot; || name == &quot;regex&quot; || name == &quot;regexp&quot;) {</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 121 times"> + </span>]
 <span id="L1287"><span class="lineNum">    1287</span>                 :<span class="tlaGNC">           7 :     return GrammarsSection();</span></span>
-<span id="L1288"><span class="lineNum">    1288</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 118 times"> + </span>]:<span class="tlaGNC">         120 :   } else if (name == &quot;content&quot;) {</span></span>
+<span id="L1288"><span class="lineNum">    1288</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 119 times"> + </span>]:<span class="tlaGNC">         121 :   } else if (name == &quot;content&quot;) {</span></span>
 <span id="L1289"><span class="lineNum">    1289</span>                 :<span class="tlaGNC">           2 :     return ContentSection(/*in_full=*/false);</span></span>
-<span id="L1290"><span class="lineNum">    1290</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 116 times"> + </span>]:<span class="tlaGNC">         118 :   } else if (name == &quot;compare&quot;) {</span></span>
+<span id="L1290"><span class="lineNum">    1290</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 117 times"> + </span>]:<span class="tlaGNC">         119 :   } else if (name == &quot;compare&quot;) {</span></span>
 <span id="L1291"><span class="lineNum">    1291</span>                 :<span class="tlaGNC">           2 :     return CompareSection(/*in_full=*/false);</span></span>
-<span id="L1292"><span class="lineNum">    1292</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 111 times"> + </span>]:<span class="tlaGNC">         116 :   } else if (IsIgnoreTopicName(name)) {</span></span>
-<span id="L1293"><span class="lineNum">    1293</span>                 :<span class="tlaGNC">           5 :     return IgnoreSection(/*in_full=*/false);</span></span>
+<span id="L1292"><span class="lineNum">    1292</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 111 times"> + </span>]:<span class="tlaGNC">         117 :   } else if (IsIgnoreTopicName(name)) {</span></span>
+<span id="L1293"><span class="lineNum">    1293</span>                 :<span class="tlaGNC">           6 :     return IgnoreSection(/*in_full=*/false);</span></span>
 <span id="L1294"><span class="lineNum">    1294</span> [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 106 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 104 times"> + </span>]:<span class="tlaGNC">         111 :   } else if (name == &quot;archive&quot; || name == &quot;archives&quot;) {</span></span>
 <span id="L1295"><span class="lineNum">    1295</span>                 :<span class="tlaGNC">           7 :     return ArchiveSection(/*in_full=*/false);</span></span>
 <span id="L1296"><span class="lineNum">    1296</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 101 times"> + </span>]:<span class="tlaGNC">         105 :   } else if (name == &quot;stats&quot;) {</span></span>
@@ -1394,24 +1394,24 @@
 <span id="L1309"><span class="lineNum">    1309</span>                 :<span class="tlaGNC">           4 :     return GuideSection();</span></span>
 <span id="L1310"><span class="lineNum">    1310</span>                 :<span class="tlaGNC">           4 :   }</span></span>
 <span id="L1311"><span class="lineNum">    1311</span>                 :<span class="tlaGNC">          67 :   return std::nullopt;</span></span>
-<span id="L1312"><span class="lineNum">    1312</span>                 :<span class="tlaGNC">         139 : }</span></span>
+<span id="L1312"><span class="lineNum">    1312</span>                 :<span class="tlaGNC">         140 : }</span></span>
 <span id="L1313"><span class="lineNum">    1313</span>                 :             : </span>
 <span id="L1314"><span class="lineNum">    1314</span>                 :             : }  // namespace</span>
 <span id="L1315"><span class="lineNum">    1315</span>                 :             : </span>
-<span id="L1316"><span class="lineNum">    1316</span>                 :<span class="tlaGNC">         153 : std::optional&lt;Document&gt; TopicReference(std::string_view name) {</span></span>
-<span id="L1317"><span class="lineNum">    1317</span>                 :<span class="tlaGNC">         153 :   Document doc;</span></span>
-<span id="L1318"><span class="lineNum">    1318</span>                 :<span class="tlaGNC">         153 :   std::optional&lt;Section&gt; section;</span></span>
-<span id="L1319"><span class="lineNum">    1319</span>         [<span class="tlaGBC" title="branch 0 was taken 14 times"> + </span><span class="tlaGBC" title="branch 1 was taken 139 times"> + </span>]:<span class="tlaGNC">         153 :   if (const std::optional&lt;std::string_view&gt; component = LicenseComponentOf(name); component.has_value()) {</span></span>
+<span id="L1316"><span class="lineNum">    1316</span>                 :<span class="tlaGNC">         154 : std::optional&lt;Document&gt; TopicReference(std::string_view name) {</span></span>
+<span id="L1317"><span class="lineNum">    1317</span>                 :<span class="tlaGNC">         154 :   Document doc;</span></span>
+<span id="L1318"><span class="lineNum">    1318</span>                 :<span class="tlaGNC">         154 :   std::optional&lt;Section&gt; section;</span></span>
+<span id="L1319"><span class="lineNum">    1319</span>         [<span class="tlaGBC" title="branch 0 was taken 14 times"> + </span><span class="tlaGBC" title="branch 1 was taken 140 times"> + </span>]:<span class="tlaGNC">         154 :   if (const std::optional&lt;std::string_view&gt; component = LicenseComponentOf(name); component.has_value()) {</span></span>
 <span id="L1320"><span class="lineNum">    1320</span>                 :<span class="tlaGNC">          14 :     section = LicenseComponentSection(*component);</span></span>
-<span id="L1321"><span class="lineNum">    1321</span>                 :<span class="tlaGNC">         139 :   } else {</span></span>
-<span id="L1322"><span class="lineNum">    1322</span>                 :<span class="tlaGNC">         139 :     section = NamedTopicSection(name);</span></span>
-<span id="L1323"><span class="lineNum">    1323</span>                 :<span class="tlaGNC">         139 :   }</span></span>
-<span id="L1324"><span class="lineNum">    1324</span>         [<span class="tlaGBC" title="branch 0 was taken 70 times"> + </span><span class="tlaGBC" title="branch 1 was taken 83 times"> + </span>]:<span class="tlaGNC">         153 :   if (!section.has_value()) {</span></span>
+<span id="L1321"><span class="lineNum">    1321</span>                 :<span class="tlaGNC">         140 :   } else {</span></span>
+<span id="L1322"><span class="lineNum">    1322</span>                 :<span class="tlaGNC">         140 :     section = NamedTopicSection(name);</span></span>
+<span id="L1323"><span class="lineNum">    1323</span>                 :<span class="tlaGNC">         140 :   }</span></span>
+<span id="L1324"><span class="lineNum">    1324</span>         [<span class="tlaGBC" title="branch 0 was taken 70 times"> + </span><span class="tlaGBC" title="branch 1 was taken 84 times"> + </span>]:<span class="tlaGNC">         154 :   if (!section.has_value()) {</span></span>
 <span id="L1325"><span class="lineNum">    1325</span>                 :<span class="tlaGNC">          70 :     return std::nullopt;</span></span>
 <span id="L1326"><span class="lineNum">    1326</span>                 :<span class="tlaGNC">          70 :   }</span></span>
-<span id="L1327"><span class="lineNum">    1327</span>                 :<span class="tlaGNC">          83 :   doc.sections.push_back(*std::move(section));</span></span>
-<span id="L1328"><span class="lineNum">    1328</span>                 :<span class="tlaGNC">          83 :   return doc;</span></span>
-<span id="L1329"><span class="lineNum">    1329</span>                 :<span class="tlaGNC">         153 : }</span></span>
+<span id="L1327"><span class="lineNum">    1327</span>                 :<span class="tlaGNC">          84 :   doc.sections.push_back(*std::move(section));</span></span>
+<span id="L1328"><span class="lineNum">    1328</span>                 :<span class="tlaGNC">          84 :   return doc;</span></span>
+<span id="L1329"><span class="lineNum">    1329</span>                 :<span class="tlaGNC">         154 : }</span></span>
 <span id="L1330"><span class="lineNum">    1330</span>                 :             : </span>
 <span id="L1331"><span class="lineNum">    1331</span>                 :<span class="tlaGNC">          56 : std::optional&lt;Document&gt; EntryReference(std::string_view name) {</span></span>
 <span id="L1332"><span class="lineNum">    1332</span>                 :             :   // An expression primary / operator / action (leading-dash convenience: regex -&gt; -regex).</span>

@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 02:54:14</td>
+            <td class="headerValue">2026-09-10 03:17:57</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -610,29 +610,29 @@
 <span id="L529"><span class="lineNum">     529</span>                 :             : </span>
 <span id="L530"><span class="lineNum">     530</span>                 :             : }  // namespace</span>
 <span id="L531"><span class="lineNum">     531</span>                 :             : </span>
-<span id="L532"><span class="lineNum">     532</span>                 :<span class="tlaGNC">         892 : absl::Status Configure(absl::Span&lt;const std::string&gt; files, ConflictPolicy conflicts) {</span></span>
-<span id="L533"><span class="lineNum">     533</span>         [<span class="tlaGBC" title="branch 0 was taken 864 times"> + </span><span class="tlaGBC" title="branch 1 was taken 28 times"> + </span>]:<span class="tlaGNC">         892 :   if (files.empty()) {</span></span>
+<span id="L532"><span class="lineNum">     532</span>                 :<span class="tlaGNC">         893 : absl::Status Configure(absl::Span&lt;const std::string&gt; files, ConflictPolicy conflicts) {</span></span>
+<span id="L533"><span class="lineNum">     533</span>         [<span class="tlaGBC" title="branch 0 was taken 864 times"> + </span><span class="tlaGBC" title="branch 1 was taken 29 times"> + </span>]:<span class="tlaGNC">         893 :   if (files.empty()) {</span></span>
 <span id="L534"><span class="lineNum">     534</span>                 :<span class="tlaGNC">         864 :     State&amp; state = GlobalState();</span></span>
 <span id="L535"><span class="lineNum">     535</span>                 :<span class="tlaGNC">         864 :     const absl::MutexLock lock(state.mutex);</span></span>
 <span id="L536"><span class="lineNum">     536</span>                 :<span class="tlaGNC">         864 :     state.active.reset();</span></span>
 <span id="L537"><span class="lineNum">     537</span>                 :<span class="tlaGNC">         864 :     return absl::OkStatus();</span></span>
 <span id="L538"><span class="lineNum">     538</span>                 :<span class="tlaGNC">         864 :   }</span></span>
-<span id="L539"><span class="lineNum">     539</span>                 :<span class="tlaGNC">          28 :   LanguageVocabulary vocabulary = CoreVocabulary();</span></span>
-<span id="L540"><span class="lineNum">     540</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 28 times"> + </span>]:<span class="tlaGNC">          28 :   for (const Database&amp; database : Databases()) {</span></span>
+<span id="L539"><span class="lineNum">     539</span>                 :<span class="tlaGNC">          29 :   LanguageVocabulary vocabulary = CoreVocabulary();</span></span>
+<span id="L540"><span class="lineNum">     540</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 29 times"> + </span>]:<span class="tlaGNC">          29 :   for (const Database&amp; database : Databases()) {</span></span>
 <span id="L541"><span class="lineNum">     541</span>         [<span class="tlaUNC" title="branch 0 was not executed"> # </span><span class="tlaUNC" title="branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :     MBO_RETURN_IF_ERROR(LayerProcessor(vocabulary, database.name, ConflictPolicy::kLast).Apply(database.json()));</span></span>
 <span id="L542"><span class="lineNum">     542</span>                 :<span class="tlaUNC">           0 :   }</span></span>
-<span id="L543"><span class="lineNum">     543</span>         [<span class="tlaGBC" title="branch 0 was taken 32 times"> + </span><span class="tlaGBC" title="branch 1 was taken 13 times"> + </span>]:<span class="tlaGNC">          32 :   for (const std::string&amp; file : files) {</span></span>
+<span id="L543"><span class="lineNum">     543</span>         [<span class="tlaGBC" title="branch 0 was taken 32 times"> + </span><span class="tlaGBC" title="branch 1 was taken 14 times"> + </span>]:<span class="tlaGNC">          32 :   for (const std::string&amp; file : files) {</span></span>
 <span id="L544"><span class="lineNum">     544</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 31 times"> + </span>]:<span class="tlaGNC">          32 :     MBO_ASSIGN_OR_RETURN(const std::string text, ReadFile(file));</span></span>
 <span id="L545"><span class="lineNum">     545</span>         [<span class="tlaGBC" title="branch 0 was taken 48 times"> + </span><span class="tlaGBC" title="branch 1 was taken 45 times"> + </span>]:<span class="tlaGNC">          31 :     MBO_RETURN_IF_ERROR(LayerProcessor(vocabulary, file, conflicts).Apply(text));</span></span>
 <span id="L546"><span class="lineNum">     546</span>                 :<span class="tlaGNC">          31 :   }</span></span>
-<span id="L547"><span class="lineNum">     547</span>                 :<span class="tlaGNC">          13 :   Finalize(vocabulary);</span></span>
-<span id="L548"><span class="lineNum">     548</span>                 :<span class="tlaGNC">          13 :   State&amp; state = GlobalState();</span></span>
-<span id="L549"><span class="lineNum">     549</span>                 :<span class="tlaGNC">          13 :   const absl::MutexLock lock(state.mutex);</span></span>
-<span id="L550"><span class="lineNum">     550</span>                 :<span class="tlaGNC">          13 :   auto snapshot = std::make_unique&lt;const LanguageVocabulary&gt;(std::move(vocabulary));</span></span>
-<span id="L551"><span class="lineNum">     551</span>                 :<span class="tlaGNC">          13 :   state.snapshots.push_back(std::move(snapshot));</span></span>
-<span id="L552"><span class="lineNum">     552</span>                 :<span class="tlaGNC">          13 :   state.active.set_ref(*state.snapshots.back());</span></span>
-<span id="L553"><span class="lineNum">     553</span>                 :<span class="tlaGNC">          13 :   return absl::OkStatus();</span></span>
-<span id="L554"><span class="lineNum">     554</span>                 :<span class="tlaGNC">          28 : }</span></span>
+<span id="L547"><span class="lineNum">     547</span>                 :<span class="tlaGNC">          14 :   Finalize(vocabulary);</span></span>
+<span id="L548"><span class="lineNum">     548</span>                 :<span class="tlaGNC">          14 :   State&amp; state = GlobalState();</span></span>
+<span id="L549"><span class="lineNum">     549</span>                 :<span class="tlaGNC">          14 :   const absl::MutexLock lock(state.mutex);</span></span>
+<span id="L550"><span class="lineNum">     550</span>                 :<span class="tlaGNC">          14 :   auto snapshot = std::make_unique&lt;const LanguageVocabulary&gt;(std::move(vocabulary));</span></span>
+<span id="L551"><span class="lineNum">     551</span>                 :<span class="tlaGNC">          14 :   state.snapshots.push_back(std::move(snapshot));</span></span>
+<span id="L552"><span class="lineNum">     552</span>                 :<span class="tlaGNC">          14 :   state.active.set_ref(*state.snapshots.back());</span></span>
+<span id="L553"><span class="lineNum">     553</span>                 :<span class="tlaGNC">          14 :   return absl::OkStatus();</span></span>
+<span id="L554"><span class="lineNum">     554</span>                 :<span class="tlaGNC">          29 : }</span></span>
 <span id="L555"><span class="lineNum">     555</span>                 :             : </span>
 <span id="L556"><span class="lineNum">     556</span>                 :<span class="tlaGNC">         131 : LanguageSnapshot ActiveSnapshot() {</span></span>
 <span id="L557"><span class="lineNum">     557</span>                 :<span class="tlaGNC">         131 :   State&amp; state = GlobalState();</span></span>
