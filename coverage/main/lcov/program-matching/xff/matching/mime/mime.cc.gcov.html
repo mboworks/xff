@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 21:20:35</td>
+            <td class="headerValue">2026-09-10 22:20:23</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -141,10 +141,10 @@
 <span id="L61"><span class="lineNum">      61</span>                 :             :   mbo::types::OptionalRef&lt;const Vocabulary&gt; active ABSL_GUARDED_BY(mutex);</span>
 <span id="L62"><span class="lineNum">      62</span>                 :             : };</span>
 <span id="L63"><span class="lineNum">      63</span>                 :             : </span>
-<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">         944 : State&amp; GlobalState() {</span></span>
-<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">         944 :   static State state;</span></span>
-<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">         944 :   return state;</span></span>
-<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">         944 : }</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">         945 : State&amp; GlobalState() {</span></span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">         945 :   static State state;</span></span>
+<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">         945 :   return state;</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">         945 : }</span></span>
 <span id="L68"><span class="lineNum">      68</span>                 :             : </span>
 <span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">        3870 : std::string Lower(std::string_view value) {</span></span>
 <span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">        3870 :   return absl::AsciiStrToLower(std::string(value));</span></span>
@@ -438,16 +438,16 @@
 <span id="L358"><span class="lineNum">     358</span>                 :<span class="tlaGNC">           5 :   return type.substr(0, type.find('/'));</span></span>
 <span id="L359"><span class="lineNum">     359</span>                 :<span class="tlaGNC">           5 : }</span></span>
 <span id="L360"><span class="lineNum">     360</span>                 :             : </span>
-<span id="L361"><span class="lineNum">     361</span>                 :<span class="tlaGNC">         889 : absl::Status Configure(absl::Span&lt;const std::string&gt; files, ConflictPolicy conflicts) {</span></span>
-<span id="L362"><span class="lineNum">     362</span>         [<span class="tlaGBC" title="branch 0 was taken 865 times"> + </span><span class="tlaGBC" title="branch 1 was taken 24 times"> + </span>]:<span class="tlaGNC">         889 :   if (files.empty()) {</span></span>
-<span id="L363"><span class="lineNum">     363</span>                 :<span class="tlaGNC">         865 :     State&amp; state = GlobalState();</span></span>
-<span id="L364"><span class="lineNum">     364</span>                 :<span class="tlaGNC">         865 :     const absl::MutexLock lock(state.mutex);</span></span>
+<span id="L361"><span class="lineNum">     361</span>                 :<span class="tlaGNC">         890 : absl::Status Configure(absl::Span&lt;const std::string&gt; files, ConflictPolicy conflicts) {</span></span>
+<span id="L362"><span class="lineNum">     362</span>         [<span class="tlaGBC" title="branch 0 was taken 866 times"> + </span><span class="tlaGBC" title="branch 1 was taken 24 times"> + </span>]:<span class="tlaGNC">         890 :   if (files.empty()) {</span></span>
+<span id="L363"><span class="lineNum">     363</span>                 :<span class="tlaGNC">         866 :     State&amp; state = GlobalState();</span></span>
+<span id="L364"><span class="lineNum">     364</span>                 :<span class="tlaGNC">         866 :     const absl::MutexLock lock(state.mutex);</span></span>
 <span id="L365"><span class="lineNum">     365</span>                 :             :     // Registered databases are trusted, generated build inputs. Defer their</span>
 <span id="L366"><span class="lineNum">     366</span>                 :             :     // comparatively expensive JSON parse until a MIME predicate or field is</span>
 <span id="L367"><span class="lineNum">     367</span>                 :             :     // actually evaluated; user-provided layers below remain eagerly validated.</span>
-<span id="L368"><span class="lineNum">     368</span>                 :<span class="tlaGNC">         865 :     state.active.reset();</span></span>
-<span id="L369"><span class="lineNum">     369</span>                 :<span class="tlaGNC">         865 :     return absl::OkStatus();</span></span>
-<span id="L370"><span class="lineNum">     370</span>                 :<span class="tlaGNC">         865 :   }</span></span>
+<span id="L368"><span class="lineNum">     368</span>                 :<span class="tlaGNC">         866 :     state.active.reset();</span></span>
+<span id="L369"><span class="lineNum">     369</span>                 :<span class="tlaGNC">         866 :     return absl::OkStatus();</span></span>
+<span id="L370"><span class="lineNum">     370</span>                 :<span class="tlaGNC">         866 :   }</span></span>
 <span id="L371"><span class="lineNum">     371</span>                 :<span class="tlaGNC">          24 :   Vocabulary vocabulary = CoreVocabulary();</span></span>
 <span id="L372"><span class="lineNum">     372</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 24 times"> + </span>]:<span class="tlaGNC">          24 :   for (const Database&amp; database : Databases()) {</span></span>
 <span id="L373"><span class="lineNum">     373</span>         [<span class="tlaUNC" title="branch 0 was not executed"> # </span><span class="tlaUNC" title="branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :     MBO_RETURN_IF_ERROR(LayerProcessor(vocabulary, database.name, ConflictPolicy::kLast).Apply(database.json));</span></span>

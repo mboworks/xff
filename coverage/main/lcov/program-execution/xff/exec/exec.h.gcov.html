@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 21:20:35</td>
+            <td class="headerValue">2026-09-10 22:20:23</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -141,14 +141,14 @@
 <span id="L61"><span class="lineNum">      61</span>                 :             : // returning, so the unqualified `waitpid` here only ever sees these children.</span>
 <span id="L62"><span class="lineNum">      62</span>                 :             : class ParallelExec {</span>
 <span id="L63"><span class="lineNum">      63</span>                 :             :  public:</span>
-<span id="L64"><span class="lineNum">      64</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 779 times"> + </span>]:<span class="tlaGNC">         779 :   explicit ParallelExec(std::size_t cap) : cap_(cap &lt; 1 ? 1 : cap) {}</span></span>
+<span id="L64"><span class="lineNum">      64</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 780 times"> + </span>]:<span class="tlaGNC">         780 :   explicit ParallelExec(std::size_t cap) : cap_(cap &lt; 1 ? 1 : cap) {}</span></span>
 <span id="L65"><span class="lineNum">      65</span>                 :             : </span>
 <span id="L66"><span class="lineNum">      66</span>                 :             :   ParallelExec(const ParallelExec&amp;) = delete;</span>
 <span id="L67"><span class="lineNum">      67</span>                 :             :   ParallelExec&amp; operator=(const ParallelExec&amp;) = delete;</span>
 <span id="L68"><span class="lineNum">      68</span>                 :             :   ParallelExec(ParallelExec&amp;&amp;) = delete;</span>
 <span id="L69"><span class="lineNum">      69</span>                 :             :   ParallelExec&amp; operator=(ParallelExec&amp;&amp;) = delete;</span>
 <span id="L70"><span class="lineNum">      70</span>                 :             : </span>
-<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">         779 :   ~ParallelExec() { Drain(); }  // safety net: reap anything a caller forgot to drain</span></span>
+<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">         780 :   ~ParallelExec() { Drain(); }  // safety net: reap anything a caller forgot to drain</span></span>
 <span id="L72"><span class="lineNum">      72</span>                 :             : </span>
 <span id="L73"><span class="lineNum">      73</span>                 :             :   // Spawn `command` with each &quot;{}&quot; replaced by `target`, child cwd = `dir` (empty</span>
 <span id="L74"><span class="lineNum">      74</span>                 :             :   // inherits ours). Blocks only when `cap` children already run (reaps one first).</span>

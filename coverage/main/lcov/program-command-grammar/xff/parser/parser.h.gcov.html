@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 21:20:35</td>
+            <td class="headerValue">2026-09-10 22:20:23</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -109,14 +109,14 @@
 <span id="L29"><span class="lineNum">      29</span>                 :             : namespace xff::parser {</span>
 <span id="L30"><span class="lineNum">      30</span>                 :             : </span>
 <span id="L31"><span class="lineNum">      31</span>                 :             : // Borrows the mutable pointee without transferring ownership.</span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">          16 : inline mbo::types::OptionalRef&lt;Expr&gt; AsOptionalExpr(const std::unique_ptr&lt;Expr&gt;&amp; expr) {</span></span>
-<span id="L33"><span class="lineNum">      33</span>         [<span class="tlaGBC" title="branch 0 was taken 15 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">          16 :   return expr ? mbo::types::OptionalRef&lt;Expr&gt;{*expr} : std::nullopt;</span></span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">          16 : }</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">        1207 : inline mbo::types::OptionalRef&lt;Expr&gt; AsOptionalExpr(const std::unique_ptr&lt;Expr&gt;&amp; expr) {</span></span>
+<span id="L33"><span class="lineNum">      33</span>         [<span class="tlaGBC" title="branch 0 was taken 1056 times"> + </span><span class="tlaGBC" title="branch 1 was taken 151 times"> + </span>]:<span class="tlaGNC">        1207 :   return expr ? mbo::types::OptionalRef&lt;Expr&gt;{*expr} : std::nullopt;</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">        1207 : }</span></span>
 <span id="L35"><span class="lineNum">      35</span>                 :             : </span>
 <span id="L36"><span class="lineNum">      36</span>                 :             : // Borrows a mutable pointee through a read-only view.</span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">        1415 : inline mbo::types::OptionalRef&lt;const Expr&gt; AsConstOptionalExpr(const std::unique_ptr&lt;Expr&gt;&amp; expr) {</span></span>
-<span id="L38"><span class="lineNum">      38</span>         [<span class="tlaGBC" title="branch 0 was taken 1122 times"> + </span><span class="tlaGBC" title="branch 1 was taken 293 times"> + </span>]:<span class="tlaGNC">        1415 :   return expr ? mbo::types::OptionalRef&lt;const Expr&gt;{*expr} : std::nullopt;</span></span>
-<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">        1415 : }</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">        1417 : inline mbo::types::OptionalRef&lt;const Expr&gt; AsConstOptionalExpr(const std::unique_ptr&lt;Expr&gt;&amp; expr) {</span></span>
+<span id="L38"><span class="lineNum">      38</span>         [<span class="tlaGBC" title="branch 0 was taken 1124 times"> + </span><span class="tlaGBC" title="branch 1 was taken 293 times"> + </span>]:<span class="tlaGNC">        1417 :   return expr ? mbo::types::OptionalRef&lt;const Expr&gt;{*expr} : std::nullopt;</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">        1417 : }</span></span>
 <span id="L40"><span class="lineNum">      40</span>                 :             : </span>
 <span id="L41"><span class="lineNum">      41</span>                 :             : // Borrows an already read-only pointee.</span>
 <span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">           2 : inline mbo::types::OptionalRef&lt;const Expr&gt; AsConstOptionalExpr(const std::unique_ptr&lt;const Expr&gt;&amp; expr) {</span></span>
@@ -149,12 +149,12 @@
 <span id="L69"><span class="lineNum">      69</span>                 :             : // (insensitive), `-s`/`-s+` (smart), `-s-` (sensitive).</span>
 <span id="L70"><span class="lineNum">      70</span>                 :             : CaseMode ResolveCaseMode(const std::vector&lt;std::string&gt;&amp; globals, registry::Style style);</span>
 <span id="L71"><span class="lineNum">      71</span>                 :             : </span>
-<span id="L72"><span class="lineNum">      72</span>                 :             : // Applies `mode` to `command`'s matchers in place (call after Parse, once the style is</span>
-<span id="L73"><span class="lineNum">      73</span>                 :             : // known, before the walk): for the otherwise case-sensitive matchers it sets Expr.case_fold</span>
-<span id="L74"><span class="lineNum">      74</span>                 :             : // (glob / content) and recompiles the pre-compiled regex case-insensitively (-regex/-rxc/</span>
-<span id="L75"><span class="lineNum">      75</span>                 :             : // -grep) when the mode calls for folding (kInsensitive always; kSmart when the pattern has</span>
-<span id="L76"><span class="lineNum">      76</span>                 :             : // no uppercase). kSensitive is a no-op; the -i variants are left as they are (already fold).</span>
-<span id="L77"><span class="lineNum">      77</span>                 :             : void ApplyCaseMode(Command&amp; command, CaseMode mode);</span>
+<span id="L72"><span class="lineNum">      72</span>                 :             : // Resolves the final matcher grammar from the fully expanded global stream.</span>
+<span id="L73"><span class="lineNum">      73</span>                 :             : regex::Grammar GrammarFromGlobals(const std::vector&lt;std::string&gt;&amp; globals);</span>
+<span id="L74"><span class="lineNum">      74</span>                 :             : </span>
+<span id="L75"><span class="lineNum">      75</span>                 :             : // Applies final case semantics and compiles every expression matcher exactly</span>
+<span id="L76"><span class="lineNum">      76</span>                 :             : // once. Call only after configuration and CLI globals have fully resolved.</span>
+<span id="L77"><span class="lineNum">      77</span>                 :             : void BindMatchers(Command&amp; command, regex::Grammar grammar, CaseMode mode);</span>
 <span id="L78"><span class="lineNum">      78</span>                 :             : </span>
 <span id="L79"><span class="lineNum">      79</span>                 :             : // Whether `command` contains a primary that may take the TERMINAL for itself: -ok / -okdir prompt and</span>
 <span id="L80"><span class="lineNum">      80</span>                 :             : // read a reply, and -exec / -execdir hand our stdin / stdout to a child that might (an editor).</span>
