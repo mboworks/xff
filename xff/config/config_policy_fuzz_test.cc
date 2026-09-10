@@ -66,8 +66,11 @@ void CheckGate(const xff::config::ConfigInputs& inputs) {
   static_cast<void>(xff::config::ExplainConfig(armed_flags, inputs.system.defaults));
 
   xff::config::ConfigInputs disabled = inputs;
-  disabled.no_config = true;
-  Require(xff::config::ResolveConfig(disabled).empty());
+  disabled.no_system_config = true;
+  disabled.no_user_config = true;
+  for (const xff::config::ResolvedFlag& flag : xff::config::ResolveConfig(disabled)) {
+    Require(flag.source == xff::config::Source::kXffrc);  // explicit files remain selected
+  }
 }
 
 }  // namespace

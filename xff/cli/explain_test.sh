@@ -121,6 +121,26 @@ test::xffrc_flag_loads_an_explicit_file() {
   expect_contains "$(printf 'xffrc\t--color=never')" "${lines[@]}"
 }
 
+test::no_user_config_requires_permission_from_a_present_user_file() {
+  local cfg="${TEST_TMPDIR}/user_skip_denied"
+  printf 'common: --format=jsonl\n' >"${cfg}"
+  local out rc
+  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" --no-user-config --explain 2>&1)" && rc=0 || rc=$?
+  expect_eq "2" "${rc}"
+  expect_output_contains '--allow-no-user-config' "${out}"
+}
+
+test::authorized_no_config_suppresses_user_defaults_but_keeps_explicit_xffrc() {
+  local cfg="${TEST_TMPDIR}/user_skip_allowed"
+  local explicit="${TEST_TMPDIR}/explicit_with_no_config"
+  printf 'common: --allow-no-user-config --format=jsonl\n' >"${cfg}"
+  printf 'common: --color=never\n' >"${explicit}"
+  local out
+  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" --no-config --xffrc="${explicit}" --explain)"
+  expect_not_matches 'user[[:space:]]+--format=jsonl' "${out}"
+  expect_matches 'xffrc[[:space:]]+--color=never' "${out}"
+}
+
 test::xffrc_dangerous_line_is_inert_unless_armed() {
   # The --xffrc tier is non-arming: a sensitive -exec carried by the file is dropped (inert) with a
   # "needs --allow-exec" note unless --allow-exec is passed from a trusted tier (here, the CLI). A

@@ -34,7 +34,8 @@ using FileReader = absl::FunctionRef<std::optional<std::string>(std::string_view
 // Inputs to Discover: the CLI selectors plus the environment values that locate
 // the user config (injected rather than read from getenv here, for testability).
 struct DiscoveryOptions {
-  bool no_config = false;                      // --no-config
+  bool no_system_config = false;               // --no-system-config
+  bool no_user_config = false;                 // --no-user-config
   std::vector<std::string> configs;            // --config=NAME, in order
   std::vector<std::string> xffrc_files;        // --xffrc=FILE, in order
   std::optional<std::string> xff_config;       // $XFF_CONFIG
@@ -54,12 +55,15 @@ std::string UserConfigPath(const DiscoveryOptions& opts);
 //   - --xffrc=FILE: its own tier (ConfigInputs.xffrc), in order - a NON-ARMING tier whose
 //     dangerous directives stay inert unless armed (naming the file is consent to load, not to arm).
 // There is no auto-discovered project layer (dropped 2026-07-06, Option B): xff never walks the
-// search roots for an ambient .xffrc. --no-config consults none of these paths: with no
-// config-sourced directive to gate, a system policy would have no security effect in that mode.
+// search roots for an ambient .xffrc. A source requested to be skipped is still read when present
+// so its trusted permission directives and system policy can authorize or reject that request; its
+// ordinary defaults are not applied. Explicit command-line --xffrc files remain selected by
+// --no-config.
 ConfigInputs Discover(const DiscoveryOptions& opts, FileReader read);
 
 // Extracts the config selectors among `globals` into a DiscoveryOptions (the env
-// fields are left unset for the caller): --no-config, --config=NAME (in order),
+// fields are left unset for the caller): --no-config, --no-system-config, --no-user-config,
+// --config=NAME (in order),
 // and --xffrc=FILE (in order). Every other global is ignored.
 DiscoveryOptions SelectorsFromGlobals(const std::vector<std::string>& globals);
 

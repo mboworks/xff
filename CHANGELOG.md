@@ -3,6 +3,9 @@
 
 # 0.4.0
 
+- Add policy-aware `--no-system-config` and `--no-user-config` controls, and make
+  `--no-config` suppress automatic configuration without bypassing mandatory
+  system policy or an explicitly selected `--xffrc` file.
 - Add distinct root-spanning traversal orders: `--sort=roots` sorts only the search operands,
   while `--sort=global` sorts the operands and walks each tree in deterministic depth-first order.
   Clarify the ordering, directory read-ahead, result buffering, post-order, and score-ranking

@@ -138,6 +138,7 @@ cc_library(
         ":xffrc_cc",
         "//xff/registry:registry_cc",
         "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -154,6 +155,7 @@ cc_test(
         "//xff/registry:registry_cc",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )
 

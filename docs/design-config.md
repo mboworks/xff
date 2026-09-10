@@ -37,9 +37,23 @@ every explicit `--xffrc` path are reported by `--explain` as found or absent.
 The current reader represents missing and unreadable files the same way, so an
 unreadable path is reported as absent.
 
-`--no-config` is absolute and position-independent. It consults none of these
-paths, including `/etc/xff.ini` and explicit `--xffrc` arguments, leaving only
-built-in defaults and command-line flags. Ignore files remain unaffected.
+The position-independent `--no-system-config` and `--no-user-config` suppress
+their respective automatic tiers; `--no-config` suppresses both. A
+present source is still inspected for the permission to suppress it and, for
+the system file, its mandatory policy. An explicit command-line `--xffrc=FILE`
+remains active: it is not ambient configuration. Ignore files remain
+unaffected.
+
+Permissions are config-only directives, not command-line options:
+
+- system `[defaults]` may contain `--allow-no-system-config`,
+  `--allow-no-user-config`, or `--allow-no-config` (the latter grants both);
+- an unconditional user-config line may contain `--allow-no-user-config` to
+  authorize suppressing itself;
+- a system deny rule for the user's permission remains authoritative.
+
+A requested skip of a present, unauthorized source is a usage error. A missing
+source needs no permission because there is no configuration to suppress.
 
 ## File grammars
 
@@ -51,6 +65,7 @@ built-in defaults and command-line flags. Ignore files remain unaffected.
 [defaults]
 --color = auto
 --jobs = 4
+--allow-no-config
 
 [policy]
 user.deny = -delete
@@ -153,7 +168,8 @@ as `--safe`, `--dry-run`, and action-specific confirmation remain independent.
 
 ## Resolution and inspection
 
-After discovery and policy gating, surviving flags are prepended in this order:
+After discovery, skip authorization, and policy gating, surviving flags are
+prepended in this order:
 
 1. system defaults;
 2. applying user-config lines;

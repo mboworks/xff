@@ -55,7 +55,8 @@ struct ConfigInputs {
   std::vector<RcLine> user;           // parsed user .xffrc
   std::vector<RcLine> xffrc;          // parsed --xffrc=FILE files, in order (the non-arming tier)
   std::vector<std::string> configs;   // active --config=NAME selectors (styles and/or named configs)
-  bool no_config = false;             // --no-config: consult no config path
+  bool no_system_config = false;      // --no-system-config: suppress system defaults, retain policy
+  bool no_user_config = false;        // --no-user-config: suppress the user tier
   std::vector<ConfigSource> sources;  // every file consulted during discovery, for --explain (set by Discover)
 };
 
@@ -63,8 +64,8 @@ struct ConfigInputs {
 // user .xffrc < --xffrc files), each tagged with its Source; the caller appends
 // CLI flags afterwards (they win). An .xffrc line contributes its flags when its
 // base selector is empty/"common" or names an active --config, AND its config
-// selector is empty or names an active --config. --no-config yields an empty result
-// (pure CLI + built-ins), including no system policy. Gate the inputs first (GateConfig) so a dangerous,
+// selector is empty or names an active --config. Suppressing both automatic tiers yields an empty result
+// (pure CLI + built-ins). Gate the inputs first (GateConfig) so a dangerous,
 // unarmed --xffrc line never reaches here.
 std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& inputs);
 

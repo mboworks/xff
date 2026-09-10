@@ -27,6 +27,14 @@
 namespace xff::config {
 namespace {
 
+constexpr std::string_view kAllowNoConfig = "--allow-no-config";
+constexpr std::string_view kAllowNoSystemConfig = "--allow-no-system-config";
+constexpr std::string_view kAllowNoUserConfig = "--allow-no-user-config";
+
+bool IsSkipPermission(std::string_view flag) {
+  return flag == kAllowNoConfig || flag == kAllowNoSystemConfig || flag == kAllowNoUserConfig;
+}
+
 // An .xffrc line applies under the active --config selectors when its base is
 // "common"/empty or names an active config, AND its config is empty or names one.
 bool LineApplies(const RcLine& line, const std::vector<std::string>& configs) {
@@ -45,7 +53,9 @@ void AppendMatching(
       continue;
     }
     for (const std::string& flag : line.flags) {
-      out.push_back(ResolvedFlag{.flag = flag, .source = source});
+      if (!IsSkipPermission(flag)) {
+        out.push_back(ResolvedFlag{.flag = flag, .source = source});
+      }
     }
   }
 }
@@ -54,13 +64,16 @@ void AppendMatching(
 
 std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& inputs) {
   std::vector<ResolvedFlag> resolved;
-  if (inputs.no_config) {
-    return resolved;  // pure CLI + built-ins; the system policy (read elsewhere) still bounds the run
+  if (!inputs.no_system_config) {
+    for (const std::string& flag : inputs.system.defaults) {  // system defaults are lowest precedence
+      if (!IsSkipPermission(flag)) {
+        resolved.push_back(ResolvedFlag{.flag = flag, .source = Source::kSystem});
+      }
+    }
   }
-  for (const std::string& flag : inputs.system.defaults) {  // global system defaults, lowest precedence
-    resolved.push_back(ResolvedFlag{.flag = flag, .source = Source::kSystem});
+  if (!inputs.no_user_config) {
+    AppendMatching(resolved, inputs.user, inputs.configs, Source::kUser);
   }
-  AppendMatching(resolved, inputs.user, inputs.configs, Source::kUser);
   AppendMatching(resolved, inputs.xffrc, inputs.configs, Source::kXffrc);  // explicit --xffrc wins over user
   return resolved;
 }
@@ -84,11 +97,11 @@ bool ArmedFromTrustedTier(
     return true;  // typed on the CLI: explicit consent
   }
   if (absl::c_contains(inputs.system.defaults, flag)) {
-    return true;  // root-authored system defaults
+    return !inputs.no_system_config;  // root-authored, applying system defaults
   }
   // An applying user .xffrc line (inputs.xffrc is intentionally NOT consulted: a named file
   // cannot arm itself). A line applies under the active --config selectors, like ResolveConfig.
-  return absl::c_any_of(inputs.user, [&](const RcLine& line) {
+  return !inputs.no_user_config && absl::c_any_of(inputs.user, [&](const RcLine& line) {
     return LineApplies(line, inputs.configs) && absl::c_contains(line.flags, flag);
   });
 }

@@ -89,7 +89,9 @@ TEST_F(GlobalsTest, StringifiesAsCanonicalName) {
 
 TEST_F(GlobalsTest, ConfigAndSymlinkFlagsDocumentTheirNonObviousBoundaries) {
   EXPECT_THAT(LookupGlobal("--config")->details, HasSubstr("Every occurrence remains an active selector"));
-  EXPECT_THAT(LookupGlobal("--no-config")->details, HasSubstr("No config path is consulted"));
+  EXPECT_THAT(LookupGlobal("--no-config")->details, HasSubstr("still inspected for policy"));
+  EXPECT_THAT(LookupGlobal("--no-system-config")->details, HasSubstr("--allow-no-system-config"));
+  EXPECT_THAT(LookupGlobal("--no-user-config")->details, HasSubstr("--allow-no-user-config"));
   EXPECT_THAT(LookupGlobal("--explain")->details, HasSubstr("does not walk roots"));
   EXPECT_THAT(LookupGlobal("-H")->details, HasSubstr("dangling root symlink"));
   EXPECT_THAT(LookupGlobal("-L")->details, HasSubstr("Filesystem loops are detected"));

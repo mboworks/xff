@@ -21,6 +21,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/testing/status.h"
 #include "xff/config/config.h"
 #include "xff/config/ini.h"
 #include "xff/config/xffrc.h"
@@ -29,7 +30,10 @@
 namespace xff::config {
 namespace {
 
+using ::mbo::testing::IsOk;
+using ::mbo::testing::StatusIs;
 using ::testing::ElementsAre;
+using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
@@ -108,6 +112,56 @@ TEST_F(PolicyTest, PolicyRulesAreScopedToTheirLayer) {
   EXPECT_FALSE(LinePermitted(Line({"-exec", "rm", ";"}), Source::kUser, policy));
   // ...but does not touch the system layer.
   EXPECT_TRUE(LinePermitted(Line({"-exec", "rm", ";"}), Source::kSystem, policy));
+}
+
+TEST_F(PolicyTest, PresentAutomaticSourcesMustAuthorizeBeingSkipped) {
+  ConfigInputs inputs;
+  inputs.sources = {
+      {.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true},
+      {.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true},
+  };
+  inputs.no_system_config = true;
+  inputs.no_user_config = true;
+  EXPECT_THAT(
+      ValidateConfigSkips(inputs),
+      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--allow-no-system-config")));
+
+  inputs.system.defaults = {"--allow-no-config"};
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+}
+
+TEST_F(PolicyTest, UserMayAuthorizeSkippingItselfButNotTheSystemConfig) {
+  ConfigInputs inputs;
+  inputs.sources = {
+      {.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true},
+      {.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true},
+  };
+  inputs.user = ParseXffrc("common: --allow-no-user-config");
+  inputs.no_user_config = true;
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+
+  inputs.no_user_config = false;
+  inputs.no_system_config = true;
+  EXPECT_THAT(
+      ValidateConfigSkips(inputs),
+      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--allow-no-system-config")));
+}
+
+TEST_F(PolicyTest, SystemPolicyMayDenyTheUsersSelfSkipPermission) {
+  ConfigInputs inputs;
+  inputs.sources = {{.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true}};
+  inputs.system.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"--allow-no-user-config"}}};
+  inputs.user = ParseXffrc("common: --allow-no-user-config");
+  inputs.no_user_config = true;
+  EXPECT_THAT(
+      ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--allow-no-user-config")));
+}
+
+TEST_F(PolicyTest, MissingSourcesNeedNoSkipPermission) {
+  ConfigInputs inputs;
+  inputs.no_system_config = true;
+  inputs.no_user_config = true;
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
 }
 
 TEST_F(PolicyTest, GateConfigDropsDeniedUserLinesAndRecordsThem) {

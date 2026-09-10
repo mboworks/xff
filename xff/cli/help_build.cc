@@ -886,8 +886,9 @@ Section ConfigSection(bool in_full) {
   layers.children.push_back(RowsOf(kLayers));
   layers.children.push_back(ProseOf(
       "There is no project or ancestor `.xffrc` discovery: config comes from the system and user files "
-      "plus any `--xffrc` you name. `--no-config` consults none of those paths, regardless of option order; the run "
-      "uses only built-in defaults and command-line flags."));
+      "plus any `--xffrc` you name. `--no-config` suppresses the automatic system and user tiers when their "
+      "trusted permission directives allow it; those files may still be inspected for policy. An explicit "
+      "command-line `--xffrc` remains active."));
   section.children.push_back(Content{.node = std::move(layers)});
 
   Subsection style{.title = "Choosing a style"};

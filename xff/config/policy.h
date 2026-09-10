@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "xff/config/config.h"
 #include "xff/config/ini.h"
 #include "xff/config/xffrc.h"
@@ -39,6 +40,12 @@ registry::Safety LineSafety(const RcLine& line);
 // addressed by flag name or an @safe/@sensitive/@destructive class token. Only the
 // system layer supplies [policy].
 bool LinePermitted(const RcLine& line, Source layer, const SystemConfig& policy);
+
+// Validates requests to suppress automatic configuration. A present system config must explicitly
+// authorize suppressing its defaults; a present user config must authorize suppressing itself unless
+// the higher-trust system config already does. `--allow-no-config` is system-only shorthand for both
+// permissions. Permission directives are config-only and never enter the resolved runtime flags.
+absl::Status ValidateConfigSkips(const ConfigInputs& inputs);
 
 // Why the gate dropped a line: a safety-policy denial (its safety class bars it from the layer),
 // a structural rule (it attaches behavior to a built-in preset, which no config file may do), or

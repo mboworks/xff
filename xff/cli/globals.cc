@@ -276,12 +276,36 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--no-config",
         .group = "config",
         .header = "Config",
-        .summary = "disable all config-file loading",
-        .details = "Runs from built-in defaults and command-line flags only. No config path is consulted: this skips "
-                   "`/etc/xff.ini`, the user config, and every explicit `--xffrc=FILE`, regardless of option order. "
-                   "There is no config-sourced directive to gate, so no system policy is needed in this mode. Ignore "
-                   "files such as `.gitignore` and `.xffignore` are traversal inputs, not config files, and are "
-                   "unaffected.",
+        .summary = "suppress automatic system and user configuration when authorized",
+        .details = "Suppresses the automatic system defaults and user configuration. A present source is still "
+                   "inspected for policy and must authorize the request: the system config with "
+                   "`--allow-no-config` or the corresponding granular permission, and the user config with "
+                   "`--allow-no-user-config` unless the system already authorized it. An explicitly named "
+                   "`--xffrc=FILE` remains active. Ignore files such as `.gitignore` and `.xffignore` are traversal "
+                   "inputs, not config files, and are unaffected.",
+        .topic = "config",
+    },
+    {
+        .name = "--no-system-config",
+        .display = "--no-system-config",
+        .group = "config",
+        .header = "Config",
+        .summary = "suppress system defaults when the system config permits it",
+        .details = "Suppresses `/etc/xff.ini` defaults but still reads its `[policy]` and config-only permission "
+                   "directives. A present file must contain `--allow-no-system-config` or `--allow-no-config`; "
+                   "otherwise the request is a usage error. The user config and explicit `--xffrc` files remain "
+                   "active.",
+        .topic = "config",
+    },
+    {
+        .name = "--no-user-config",
+        .display = "--no-user-config",
+        .group = "config",
+        .header = "Config",
+        .summary = "suppress user configuration when an authoritative config permits it",
+        .details = "Suppresses the selected user config after inspecting it for permission. A present user file "
+                   "must contain an unconditional `--allow-no-user-config`, unless `/etc/xff.ini` contains that "
+                   "permission or `--allow-no-config`. System defaults and explicit `--xffrc` files remain active.",
         .topic = "config",
     },
     {

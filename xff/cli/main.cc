@@ -658,6 +658,10 @@ int RunMain(int argc, char** argv) {
   // Config is system + user + explicit --xffrc only; there is no auto-discovered project layer
   // (Option B, 2026-07-06), so the search roots do not feed config discovery.
   const xff::config::ConfigInputs inputs = xff::config::Discover(opts, ReadFile);
+  if (const absl::Status status = xff::config::ValidateConfigSkips(inputs); !status.ok()) {
+    std::cerr << "xff: " << status.message() << "\n";
+    return 2;
+  }
   // --allow-exec arms the dangerous directives an --xffrc file may carry, but only when it comes
   // from a trusted tier (the CLI, or the user/system config) - never from an --xffrc file itself,
   // so a named config cannot authorize its own -exec/-delete. The gate uses this to keep unarmed
