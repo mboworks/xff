@@ -49,11 +49,13 @@ void CheckGate(const xff::config::ConfigInputs& inputs) {
   const xff::config::GateResult armed = xff::config::GateConfig(inputs, /*xffrc_armed=*/true);
 
   CheckRetainedLines(unarmed.config.user, xff::config::Source::kUser, inputs.system, /*require_safe=*/false);
-  CheckRetainedLines(unarmed.config.xffrc, xff::config::Source::kXffrc, inputs.system, /*require_safe=*/true);
+  CheckRetainedLines(
+      unarmed.config.xffrc.front().lines, xff::config::Source::kXffrc, inputs.system, /*require_safe=*/true);
   CheckRetainedLines(armed.config.user, xff::config::Source::kUser, inputs.system, /*require_safe=*/false);
-  CheckRetainedLines(armed.config.xffrc, xff::config::Source::kXffrc, inputs.system, /*require_safe=*/false);
+  CheckRetainedLines(
+      armed.config.xffrc.front().lines, xff::config::Source::kXffrc, inputs.system, /*require_safe=*/false);
   Require(unarmed.config.user.size() == armed.config.user.size());
-  Require(unarmed.config.xffrc.size() <= armed.config.xffrc.size());
+  Require(unarmed.config.xffrc.front().lines.size() <= armed.config.xffrc.front().lines.size());
   CheckDrops(unarmed.drops);
   CheckDrops(armed.drops);
 
@@ -62,8 +64,8 @@ void CheckGate(const xff::config::ConfigInputs& inputs) {
 
   const std::vector<xff::config::ResolvedFlag> unarmed_flags = xff::config::ResolveConfig(unarmed.config);
   const std::vector<xff::config::ResolvedFlag> armed_flags = xff::config::ResolveConfig(armed.config);
-  static_cast<void>(xff::config::ExplainConfig(unarmed_flags, inputs.system.defaults));
-  static_cast<void>(xff::config::ExplainConfig(armed_flags, inputs.system.defaults));
+  static_cast<void>(xff::config::ExplainConfig(unarmed_flags));
+  static_cast<void>(xff::config::ExplainConfig(armed_flags));
 
   xff::config::ConfigInputs disabled = inputs;
   disabled.no_system_config = true;
@@ -85,14 +87,14 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
   const xff::config::ConfigInputs inputs{
       .system = xff::config::ParseIni(input),
       .user = xff::config::ParseXffrc(input),
-      .xffrc = xff::config::ParseXffrc(input),
+      .xffrc = {{.path = "/fuzz", .lines = xff::config::ParseXffrc(input)}},
       .configs = {"xff", "fuzz"},
   };
   CheckGate(inputs);
 
   // An untrusted explicit file cannot authorize its own sensitive directives.
   const xff::config::ConfigInputs self_arming{
-      .xffrc = {{.flags = {"--allow-exec"}}},
+      .xffrc = {{.path = "/fuzz", .lines = {{.flags = {"--allow-exec"}}}}},
       .configs = {"xff"},
   };
   Require(!xff::config::ArmedFromTrustedTier(self_arming, {}, "--allow-exec"));

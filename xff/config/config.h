@@ -48,26 +48,44 @@ struct ConfigSource {
   bool found = false;
 };
 
+// One explicitly named --xffrc file. Files remain separate so resolution can
+// apply each file at the command-line position where it was selected.
+struct ExplicitConfig {
+  std::string path;
+  std::vector<RcLine> lines;
+};
+
 // The parsed layers + active selectors fed to ResolveConfig. CLI flags are NOT
 // here: the caller applies them last (highest precedence) after this resolution.
 struct ConfigInputs {
   SystemConfig system;                // parsed /etc/xff.ini ([defaults] + [policy])
   std::vector<RcLine> user;           // parsed user .xffrc
-  std::vector<RcLine> xffrc;          // parsed --xffrc=FILE files, in order (the non-arming tier)
+  std::vector<ExplicitConfig> xffrc;  // parsed --xffrc=FILE files, kept separate and in order
   std::vector<std::string> configs;   // active --config=NAME selectors (styles and/or named configs)
   bool no_system_config = false;      // --no-system-config: suppress system defaults, retain policy
   bool no_user_config = false;        // --no-user-config: suppress the user tier
   std::vector<ConfigSource> sources;  // every file consulted during discovery, for --explain (set by Discover)
 };
 
-// Resolves config-supplied flags, lowest precedence first (system [defaults] <
-// user .xffrc < --xffrc files), each tagged with its Source; the caller appends
-// CLI flags afterwards (they win). An .xffrc line contributes its flags when its
+// Resolves config-supplied flags using the legacy tier view, lowest precedence
+// first, each tagged with its Source. Prefer ResolveConfigInOrder for execution.
+// An .xffrc line contributes its flags when its
 // base selector is empty/"common" or names an active --config, AND its config
 // selector is empty or names an active --config. Suppressing both automatic tiers yields an empty result
 // (pure CLI + built-ins). Gate the inputs first (GateConfig) so a dangerous,
 // unarmed --xffrc line never reaches here.
 std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& inputs);
+
+// Produces the complete application stream. Automatic system/user defaults and
+// the invocation selector apply first; command-line globals then retain their
+// order. A --config selector expands newly matching user and already loaded
+// explicit-file lines at that exact point. A --xffrc selector loads that file's
+// currently matching lines at its exact point; later selectors may activate
+// further lines from it. Each config line is emitted at most once.
+std::vector<ResolvedFlag> ResolveConfigInOrder(
+    const ConfigInputs& inputs,
+    const std::vector<std::string>& cli_globals,
+    std::string_view invocation_selector);
 
 // The lowercase layer name for a Source: "unset"/"system"/"user"/"xffrc"/"cli".
 std::string_view SourceName(Source source);
@@ -110,7 +128,7 @@ std::string_view DefaultStyleForProgram(std::string_view argv0);
 // Renders the effective configuration for --explain: the resolved config flags
 // (each prefixed by its provenance) in application order, then the CLI globals
 // (provenance "cli"). Later lines override earlier ones, mirroring resolution.
-std::string ExplainConfig(const std::vector<ResolvedFlag>& resolved, const std::vector<std::string>& cli_globals);
+std::string ExplainConfig(const std::vector<ResolvedFlag>& application);
 
 // Renders the discovery trace for --explain: the active find/xff style, then every
 // config file consulted (precedence order: system < user), each tagged with its

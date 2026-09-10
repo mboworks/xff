@@ -17,6 +17,7 @@
 
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
@@ -60,6 +61,92 @@ void AppendMatching(
   }
 }
 
+class OrderedResolver {
+ public:
+  OrderedResolver(const ConfigInputs& inputs, std::string_view invocation_selector)
+      : inputs_(inputs), selectors_{std::string(invocation_selector)}, user_emitted_(inputs.user.size()) {
+    file_loaded_.resize(inputs.xffrc.size());
+    file_emitted_.reserve(inputs.xffrc.size());
+    for (const ExplicitConfig& file : inputs.xffrc) {
+      file_emitted_.emplace_back(file.lines.size());
+    }
+  }
+
+  std::vector<ResolvedFlag> Resolve(const std::vector<std::string>& cli_globals) {
+    EmitSystem();
+    EmitMatching();
+    for (const std::string& global : cli_globals) {
+      EmitFlag(global, Source::kCli);
+      LoadExplicitFile(global);
+    }
+    return std::move(application_);
+  }
+
+ private:
+  void EmitSystem() {
+    if (inputs_.no_system_config) {
+      return;
+    }
+    for (const std::string& flag : inputs_.system.defaults) {
+      if (!IsSkipPermission(flag)) {
+        EmitFlag(flag, Source::kSystem);
+      }
+    }
+  }
+
+  void EmitMatching() {
+    if (!inputs_.no_user_config) {
+      EmitLines(inputs_.user, user_emitted_, Source::kUser);
+    }
+    for (std::size_t index = 0; index < inputs_.xffrc.size(); ++index) {
+      if (file_loaded_[index]) {
+        EmitLines(inputs_.xffrc[index].lines, file_emitted_[index], Source::kXffrc);
+      }
+    }
+  }
+
+  void EmitLines(const std::vector<RcLine>& lines, std::vector<bool>& emitted, Source source) {
+    for (std::size_t index = 0; index < lines.size(); ++index) {
+      if (emitted[index] || !LineApplies(lines[index], selectors_)) {
+        continue;
+      }
+      emitted[index] = true;
+      for (const std::string& flag : lines[index].flags) {
+        if (!IsSkipPermission(flag)) {
+          EmitFlag(flag, source);
+        }
+      }
+    }
+  }
+
+  void EmitFlag(const std::string& flag, Source source) {
+    application_.push_back({.flag = flag, .source = source});
+    constexpr std::string_view kConfig = "--config=";
+    if (flag.starts_with(kConfig)) {
+      selectors_.push_back(flag.substr(kConfig.size()));
+      EmitMatching();
+    }
+  }
+
+  void LoadExplicitFile(std::string_view global) {
+    constexpr std::string_view kXffrc = "--xffrc=";
+    if (!global.starts_with(kXffrc) || next_file_ >= inputs_.xffrc.size()) {
+      return;
+    }
+    file_loaded_[next_file_] = true;
+    EmitLines(inputs_.xffrc[next_file_].lines, file_emitted_[next_file_], Source::kXffrc);
+    ++next_file_;
+  }
+
+  const ConfigInputs& inputs_;
+  std::vector<ResolvedFlag> application_;
+  std::vector<std::string> selectors_;
+  std::vector<bool> user_emitted_;
+  std::vector<bool> file_loaded_;
+  std::vector<std::vector<bool>> file_emitted_;
+  std::size_t next_file_ = 0;
+};
+
 }  // namespace
 
 std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& inputs) {
@@ -74,8 +161,17 @@ std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& inputs) {
   if (!inputs.no_user_config) {
     AppendMatching(resolved, inputs.user, inputs.configs, Source::kUser);
   }
-  AppendMatching(resolved, inputs.xffrc, inputs.configs, Source::kXffrc);  // explicit --xffrc wins over user
+  for (const ExplicitConfig& file : inputs.xffrc) {
+    AppendMatching(resolved, file.lines, inputs.configs, Source::kXffrc);
+  }
   return resolved;
+}
+
+std::vector<ResolvedFlag> ResolveConfigInOrder(
+    const ConfigInputs& inputs,
+    const std::vector<std::string>& cli_globals,
+    std::string_view invocation_selector) {
+  return OrderedResolver(inputs, invocation_selector).Resolve(cli_globals);
 }
 
 std::string_view SourceName(Source source) {
@@ -167,13 +263,10 @@ std::string_view DefaultStyleForProgram(std::string_view argv0) {
   return argv0;
 }
 
-std::string ExplainConfig(const std::vector<ResolvedFlag>& resolved, const std::vector<std::string>& cli_globals) {
+std::string ExplainConfig(const std::vector<ResolvedFlag>& application) {
   std::string out = "# xff effective configuration (application order; later overrides earlier)\n";
-  for (const ResolvedFlag& flag : resolved) {
+  for (const ResolvedFlag& flag : application) {
     absl::StrAppend(&out, SourceName(flag.source), "\t", flag.flag, "\n");
-  }
-  for (const std::string& flag : cli_globals) {
-    absl::StrAppend(&out, "cli\t", flag, "\n");
   }
   return out;
 }

@@ -899,6 +899,12 @@ Section ConfigSection(bool in_full) {
       "find expression style and `rg` the rg style; any other name (e.g. a `mytool` symlink) activates a same-named "
       "config block "
       "over the xff default. Explicit `--config` selectors stack on top."));
+  style.children.push_back(ProseOf(
+      "Configuration expands in application order. Automatic system/user defaults and the invocation selector "
+      "come first; each command-line `--config` then activates newly matching lines at that exact position, and "
+      "each `--xffrc` loads its currently matching lines where it appears. Because conflicting options usually "
+      "use the last value, moving a selector can intentionally change the result. A config line is applied at "
+      "most once."));
   section.children.push_back(Content{.node = std::move(style)});
 
   Subsection arming{.title = "Arming dangerous directives"};

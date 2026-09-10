@@ -33,6 +33,8 @@ namespace {
 using ::mbo::testing::IsOk;
 using ::mbo::testing::StatusIs;
 using ::testing::ElementsAre;
+using ::testing::Field;
+using ::testing::FieldsAre;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
@@ -197,16 +199,17 @@ TEST_F(PolicyTest, DropMessageNamesPrimaryLayerAndClass) {
 
 TEST_F(PolicyTest, XffrcDangerousLineIsInertUnlessArmed) {
   ConfigInputs inputs;
-  inputs.xffrc = {Line({"-exec", "rm", ";"}), Line({"--color=never"})};
+  inputs.xffrc = {{.path = "/named", .lines = {Line({"-exec", "rm", ";"}), Line({"--color=never"})}}};
   const GateResult unarmed = GateConfig(inputs, /*xffrc_armed=*/false);
-  ASSERT_THAT(unarmed.config.xffrc, SizeIs(1));
-  EXPECT_THAT(unarmed.config.xffrc.front().flags, ElementsAre("--color=never"));  // safe line survives
+  EXPECT_THAT(
+      unarmed.config.xffrc,
+      ElementsAre(FieldsAre("/named", ElementsAre(Field("flags", &RcLine::flags, ElementsAre("--color=never"))))));
   ASSERT_THAT(unarmed.drops, SizeIs(1));
   EXPECT_THAT(unarmed.drops.front().reason, DropReason::kUnarmedXffrc);
   EXPECT_THAT(unarmed.drops.front().layer, Source::kXffrc);
   EXPECT_THAT(unarmed.drops.front().safety, registry::Safety::kSecurity);
   // Armed: the -exec line is honored (both lines survive).
-  EXPECT_THAT(GateConfig(inputs, /*xffrc_armed=*/true).config.xffrc, SizeIs(2));
+  EXPECT_THAT(GateConfig(inputs, /*xffrc_armed=*/true).config.xffrc, ElementsAre(FieldsAre("/named", SizeIs(2))));
 }
 
 TEST_F(PolicyTest, ArmingGatesOnlyTheXffrcTierNotTheUserLayer) {
@@ -218,9 +221,9 @@ TEST_F(PolicyTest, ArmingGatesOnlyTheXffrcTierNotTheUserLayer) {
 TEST_F(PolicyTest, SystemPolicyHardDeniesAnArmedXffrcLine) {
   ConfigInputs inputs;
   inputs.system.policy = {PolicyRule{.layer = "xffrc", .allow = false, .tokens = {"@sensitive"}}};
-  inputs.xffrc = {Line({"-exec", "rm", ";"})};
+  inputs.xffrc = {{.path = "/named", .lines = {Line({"-exec", "rm", ";"})}}};
   const GateResult gated = GateConfig(inputs, /*xffrc_armed=*/true);
-  EXPECT_THAT(gated.config.xffrc, IsEmpty());  // armed, but policy denies
+  EXPECT_THAT(gated.config.xffrc, ElementsAre(FieldsAre("/named", IsEmpty())));  // armed, but policy denies
   ASSERT_THAT(gated.drops, SizeIs(1));
   EXPECT_THAT(gated.drops.front().reason, DropReason::kSafetyPolicy);
 }

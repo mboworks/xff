@@ -188,7 +188,11 @@ GateResult GateConfig(const ConfigInputs& inputs, bool xffrc_armed) {
     }
   };
   gate(inputs.user, Source::kUser, result.config.user);
-  gate(inputs.xffrc, Source::kXffrc, result.config.xffrc);
+  for (const ExplicitConfig& file : inputs.xffrc) {
+    ExplicitConfig gated_file{.path = file.path};
+    gate(file.lines, Source::kXffrc, gated_file.lines);
+    result.config.xffrc.push_back(std::move(gated_file));
+  }
   return result;
 }
 
