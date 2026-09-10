@@ -809,6 +809,14 @@ Section CompareSection(bool in_full) {
       "are equal when their link targets are equal; `-H` / `-L` instead apply their ordinary traversal meaning. "
       "Directories and other non-regular entries are compared by type. Metadata such as permissions, owner, "
       "timestamps, and inode numbers is not compared."));
+  section.children.push_back(ProseOf(
+      "The two walks run concurrently and each retains its complete matched-entry inventory until both finish. "
+      "xff then merges those inventories and emits comparison records in bytewise relative-path order. This final "
+      "comparison order is fixed: `--sort` controls traversal and the timing of expression actions within each side, "
+      "not the order of status records or patch entries. Explicit expression actions execute independently for both "
+      "walks; their synchronized output may interleave. `--buffer` still controls the output and collection buffers "
+      "documented for those features, but it does not cap the comparison inventories, whose memory use grows with "
+      "the total number of matched entries."));
 
   static constexpr std::array<DocPair, 4> kStatuses = {{
       {"left-only", "the relative path matched only below the left root"},

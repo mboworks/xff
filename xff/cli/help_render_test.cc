@@ -159,7 +159,9 @@ TEST_F(HelpTest, CompareTopicExplainsSelectionAndEquality) {
                HasSubstr("--compare"), HasSubstr("--compare-select"), HasSubstr("exactly two roots"),
                HasSubstr("Regular files are equal when their bytes are equal"),
                HasSubstr("Metadata such as permissions, owner, timestamps, and inode numbers is not compared"),
-               HasSubstr("Patch output")));
+               HasSubstr("each retains its complete matched-entry inventory"), HasSubstr("--sort controls traversal"),
+               HasSubstr("their synchronized output may interleave"),
+               HasSubstr("does not cap the comparison inventories"), HasSubstr("Patch output")));
   for (const GlobalFlag& flag : Globals()) {
     if (flag.topic == "compare") {
       EXPECT_THAT(out, HasSubstr(flag.name)) << flag.name;

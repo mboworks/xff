@@ -940,8 +940,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "matches by relative path. The ordinary expression, ignore, hidden-file, archive, traversal, "
                    "and `-P` / `-H` / `-L` symlink rules apply unchanged to each side; comparison itself enables "
                    "none of them. Regular files are compared byte for byte (text and binary). Unfollowed symlinks "
-                   "are compared by target. In status mode, `--path-encoding=escape` makes control bytes in the "
-                   "relative path unambiguous.",
+                   "are compared by target. Both walks complete before comparison records are emitted in bytewise "
+                   "relative-path order; `--sort` affects each walk, not that final order. In status mode, "
+                   "`--path-encoding=escape` makes control bytes in the relative path unambiguous.",
         .values = kCompareValues,
         .topic = "compare",
         .value_check = GlobalFlag::ValueCheck::kEnum,
