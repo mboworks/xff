@@ -668,15 +668,25 @@ int RunMain(int argc, char** argv) {
   // --xffrc dangerous lines inert.
   const bool xffrc_armed = xff::config::ArmedFromTrustedTier(inputs, command.globals, "--allow-exec");
   const xff::config::GateResult gated = xff::config::GateConfig(inputs, xffrc_armed);
-  const std::vector<xff::config::ResolvedFlag> resolved = xff::config::ResolveConfig(gated.config);
+  const std::string_view invocation_selector = xff::config::DefaultStyleForProgram(program);
+  const std::vector<xff::config::ResolvedFlag> resolved =
+      xff::config::ResolveConfigInOrder(gated.config, command.globals, invocation_selector);
+  std::vector<std::string> effective_configs = {std::string(invocation_selector)};
+  constexpr std::string_view kConfigPrefix = "--config=";
+  for (const xff::config::ResolvedFlag& flag : resolved) {
+    if (flag.flag.starts_with(kConfigPrefix)) {
+      effective_configs.push_back(flag.flag.substr(kConfigPrefix.size()));
+    }
+  }
+  const xff::registry::Style style = xff::config::ActiveStyle(effective_configs);
   if (absl::c_contains(command.globals, "--explain")) {
-    std::cout << xff::config::ExplainSources(inputs.sources, xff::config::ActiveStyle(inputs.configs));
-    std::cout << xff::config::ExplainConfig(resolved, command.globals);
+    std::cout << xff::config::ExplainSources(inputs.sources, style);
+    std::cout << xff::config::ExplainConfig(resolved);
     for (const xff::config::Drop& drop : gated.drops) {
       std::cout << "dropped\t" << xff::config::DropMessage(drop) << "\n";
     }
     std::cout << "\n# flavor defaults per style, and the value resolved for this run:\n";
-    std::cout << RenderFlavorTable(command.globals, xff::config::ActiveStyle(inputs.configs));
+    std::cout << RenderFlavorTable(command.globals, style);
     return 0;
   }
   // A disallowed config line is dropped, never fatal: warn (self-documenting) and
@@ -690,19 +700,17 @@ int RunMain(int argc, char** argv) {
     }
     std::cerr << "xff: ignoring " << xff::config::DropMessage(drop) << why << "\n";
   }
-  // Apply the config: prepend the resolved flags to the globals so they take
-  // effect, the CLI globals (already present, kept last) winning on conflict.
+  // Apply the single resolved stream in its exact precedence order.
   std::vector<std::string> config_flags;
   config_flags.reserve(resolved.size());
   for (const xff::config::ResolvedFlag& flag : resolved) {
     config_flags.push_back(flag.flag);
   }
-  command.globals.insert(command.globals.begin(), config_flags.begin(), config_flags.end());
+  command.globals = std::move(config_flags);
 
   // The find style (--config=find) accepts only find's own expression vocabulary;
   // reject xff extensions (e.g. -println) so a find-style run behaves like GNU
   // find (design-config.md "CLI selectors"). The default xff style accepts all.
-  const xff::registry::Style style = xff::config::ActiveStyle(inputs.configs);
   if (const absl::Status status = xff::parser::EnforceStyle(command, style); !status.ok()) {
     std::cerr << "xff: " << status.message() << "\n";
     return 2;

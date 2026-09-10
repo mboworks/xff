@@ -52,7 +52,7 @@ std::string UserConfigPath(const DiscoveryOptions& opts);
 // ResolveConfig), reading every file through `read`:
 //   - system: /etc/xff.ini,
 //   - user:   UserConfigPath(opts), in the .xffrc grammar,
-//   - --xffrc=FILE: its own tier (ConfigInputs.xffrc), in order - a NON-ARMING tier whose
+//   - --xffrc=FILE: separate parsed files, in order - a NON-ARMING tier whose
 //     dangerous directives stay inert unless armed (naming the file is consent to load, not to arm).
 // There is no auto-discovered project layer (dropped 2026-07-06, Option B): xff never walks the
 // search roots for an ambient .xffrc. A source requested to be skipped is still read when present

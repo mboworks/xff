@@ -53,7 +53,7 @@ TEST_F(ConfigTest, GranularSkipControlsSuppressOnlyTheirAutomaticTier) {
   ConfigInputs in;
   in.system.defaults = {"--color=auto", "--allow-no-system-config"};
   in.user = ParseXffrc("common: --sort\ncommon: --allow-no-user-config");
-  in.xffrc = ParseXffrc("common: --jobs=2");
+  in.xffrc = {{.path = "/named", .lines = ParseXffrc("common: --jobs=2")}};
   in.no_system_config = true;
   EXPECT_THAT(ResolveConfig(in), ElementsAre(FlagIs("--sort", Source::kUser), FlagIs("--jobs=2", Source::kXffrc)));
   in.no_system_config = false;
@@ -114,7 +114,7 @@ TEST_F(ConfigTest, LayerPrecedenceSystemThenUser) {
 TEST_F(ConfigTest, XffrcTierResolvesAboveUser) {
   ConfigInputs in;
   in.user = ParseXffrc("common: --color=auto");
-  in.xffrc = ParseXffrc("common: --color=never");  // an explicit --xffrc file wins over user config
+  in.xffrc = {{.path = "/named", .lines = ParseXffrc("common: --color=never")}};
   EXPECT_THAT(
       ResolveConfig(in), ElementsAre(FlagIs("--color=auto", Source::kUser), FlagIs("--color=never", Source::kXffrc)));
 }
@@ -129,7 +129,7 @@ TEST_F(ConfigTest, ArmedFromTrustedTierAcceptsCliUserSystemNotXffrc) {
   in.user = ParseXffrc("common: --allow-exec");
   EXPECT_TRUE(ArmedFromTrustedTier(in, {}, "--allow-exec"));  // an applying user line
   in.user = {};
-  in.xffrc = ParseXffrc("common: --allow-exec");
+  in.xffrc = {{.path = "/named", .lines = ParseXffrc("common: --allow-exec")}};
   EXPECT_FALSE(ArmedFromTrustedTier(in, {}, "--allow-exec"));  // NOT from an --xffrc file (no self-arming)
 }
 
@@ -198,10 +198,43 @@ TEST_F(ConfigTest, DefaultStyleForProgramStripsFullSuffix) {
 TEST_F(ConfigTest, ExplainConfigTagsEachFlagWithProvenance) {
   const std::vector<ResolvedFlag> resolved = {
       {.flag = "--color=auto", .source = Source::kSystem}, {.flag = "--sort", .source = Source::kUser}};
-  const std::string explained = ExplainConfig(resolved, {"--format=jsonl"});
+  const std::string explained =
+      ExplainConfig({resolved[0], resolved[1], {.flag = "--format=jsonl", .source = Source::kCli}});
   EXPECT_THAT(explained, HasSubstr("system\t--color=auto\n"));
   EXPECT_THAT(explained, HasSubstr("user\t--sort\n"));
   EXPECT_THAT(explained, HasSubstr("cli\t--format=jsonl\n"));
+}
+
+TEST_F(ConfigTest, SelectorsExpandAtTheirCommandLinePosition) {
+  ConfigInputs in;
+  in.user = ParseXffrc("common: --color=auto\nearly: --jobs=2\nlate: --color=never");
+  EXPECT_THAT(
+      ResolveConfigInOrder(in, {"--config=early", "--warn", "--config=late"}, "xff"),
+      ElementsAre(
+          FlagIs("--color=auto", Source::kUser), FlagIs("--config=early", Source::kCli),
+          FlagIs("--jobs=2", Source::kUser), FlagIs("--warn", Source::kCli), FlagIs("--config=late", Source::kCli),
+          FlagIs("--color=never", Source::kUser)));
+}
+
+TEST_F(ConfigTest, ExplicitFileLoadsInPlaceAndCanBeActivatedLater) {
+  ConfigInputs in;
+  in.xffrc = {{.path = "/one", .lines = ParseXffrc("common: --jobs=2\ndebug: --warn")}};
+  EXPECT_THAT(
+      ResolveConfigInOrder(in, {"--color=auto", "--xffrc=/one", "--config=debug"}, "xff"),
+      ElementsAre(
+          FlagIs("--color=auto", Source::kCli), FlagIs("--xffrc=/one", Source::kCli),
+          FlagIs("--jobs=2", Source::kXffrc), FlagIs("--config=debug", Source::kCli),
+          FlagIs("--warn", Source::kXffrc)));
+}
+
+TEST_F(ConfigTest, ConfigSuppliedSelectorExpandsAtItsOwnPosition) {
+  ConfigInputs in;
+  in.user = ParseXffrc("outer: --warn --config=inner --sort\ninner: --jobs=2");
+  EXPECT_THAT(
+      ResolveConfigInOrder(in, {"--config=outer"}, "xff"),
+      ElementsAre(
+          FlagIs("--config=outer", Source::kCli), FlagIs("--warn", Source::kUser),
+          FlagIs("--config=inner", Source::kUser), FlagIs("--jobs=2", Source::kUser), FlagIs("--sort", Source::kUser)));
 }
 
 TEST_F(ConfigTest, ExplainSourcesListsActiveStyleAndConsultedFiles) {

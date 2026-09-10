@@ -28,7 +28,6 @@
 namespace xff::config {
 namespace {
 
-// Parses `text` in the .xffrc grammar and appends its lines to `out`.
 void AppendXffrc(std::vector<RcLine>& out, std::string_view text) {
   const std::vector<RcLine> lines = ParseXffrc(text);
   out.insert(out.end(), lines.begin(), lines.end());
@@ -77,9 +76,8 @@ ConfigInputs Discover(const DiscoveryOptions& opts, FileReader read) {
   for (const std::string& path : opts.xffrc_files) {
     const std::optional<std::string> text = read(path);
     inputs.sources.push_back({.path = path, .layer = Source::kXffrc, .found = text.has_value()});
-    if (text.has_value()) {
-      AppendXffrc(inputs.xffrc, *text);
-    }
+    inputs.xffrc.push_back(
+        ExplicitConfig{.path = path, .lines = text.has_value() ? ParseXffrc(*text) : std::vector<RcLine>{}});
   }
   return inputs;
 }

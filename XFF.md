@@ -79,6 +79,8 @@ There is no project or ancestor `.xffrc` discovery: config comes from the system
 
 Every `--config=NAME` remains active, so multiple named blocks can apply. Among built-in style selectors, the last `find`, `xff`, or `rg` selects the baseline; custom names do not change it. See `--help=styles` for the table. The invocation name (`argv[0]`) is the leading selector, so a symlink named `find` selects the find expression style and `rg` the rg style; any other name (e.g. a `mytool` symlink) activates a same-named config block over the xff default. Explicit `--config` selectors stack on top.
 
+Configuration expands in application order. Automatic system/user defaults and the invocation selector come first; each command-line `--config` then activates newly matching lines at that exact position, and each `--xffrc` loads its currently matching lines where it appears. Because conflicting options usually use the last value, moving a selector can intentionally change the result. A config line is applied at most once.
+
 ### Arming dangerous directives
 
 A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`, or `-delete`) carried by an `--xffrc` file is inert unless `--allow-exec` is set from a trusted tier (the command line or the system/user config, never an `--xffrc` file itself). Unarmed lines are dropped with a warning; the root system `[policy]` can hard-deny even `--allow-exec`.

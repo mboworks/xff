@@ -30,6 +30,7 @@ namespace {
 using ::testing::AllOf;
 using ::testing::ElementsAre;
 using ::testing::Field;
+using ::testing::FieldsAre;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
 
@@ -116,7 +117,7 @@ TEST_F(LoaderTest, NoConfigStillInspectsAutomaticSourcesAndKeepsExplicitXffrc) {
   EXPECT_THAT(in.system.defaults, ElementsAre("--color=auto"));
   EXPECT_THAT(in.system.policy, SizeIs(1));
   EXPECT_THAT(in.user, SizeIs(1));
-  EXPECT_THAT(in.xffrc, IsEmpty());
+  EXPECT_THAT(in.xffrc, ElementsAre(FieldsAre("/extra.rc", IsEmpty())));
 }
 
 TEST_F(LoaderTest, MissingFilesYieldEmptyLayers) {

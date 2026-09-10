@@ -121,6 +121,15 @@ test::xffrc_flag_loads_an_explicit_file() {
   expect_contains "$(printf 'xffrc\t--color=never')" "${lines[@]}"
 }
 
+test::config_expands_at_the_selector_position() {
+  local cfg="${TEST_TMPDIR}/ordered_config"
+  printf 'common: --jobs=1\nplain: --color=never\n' >"${cfg}"
+  local out expected
+  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" --color=always --config=plain --sort --explain)"
+  expected="$(printf 'user\t--jobs=1\ncli\t--color=always\ncli\t--config=plain\nuser\t--color=never\ncli\t--sort')"
+  expect_output_contains "${expected}" "${out}"
+}
+
 test::no_user_config_requires_permission_from_a_present_user_file() {
   local cfg="${TEST_TMPDIR}/user_skip_denied"
   printf 'common: --format=jsonl\n' >"${cfg}"

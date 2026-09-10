@@ -169,16 +169,25 @@ as `--safe`, `--dry-run`, and action-specific confirmation remain independent.
 ## Resolution and inspection
 
 After discovery, skip authorization, and policy gating, surviving flags are
-prepended in this order:
+applied in this order:
 
 1. system defaults;
-2. applying user-config lines;
-3. applying explicit `--xffrc` lines, in file and line order;
-4. original command-line globals.
+2. unconditional user-config lines and lines selected by the invocation name;
+3. original command-line globals, in their original order;
+4. immediately after each `--config=NAME`, user and already-loaded explicit
+   config lines newly activated by that selector;
+5. immediately after each `--xffrc=FILE`, currently applicable lines from that
+   file. Later selectors may activate its remaining lines.
+
+Each config line is applied at most once. Consequently, selector placement is
+observable when options conflict: in `--color=always --config=plain`, a
+`plain:` line containing `--color=never` wins, while reversing those two CLI
+arguments makes `--color=always` win. Multiple explicit files retain their own
+positions rather than collapsing into a single tier.
 
 The ordinary option resolvers then apply their documented conflict behavior,
-usually last value wins. This preserves provenance while keeping one command
-parser and one set of option semantics.
+usually last value wins. This preserves provenance, command-line order, and one
+set of option semantics.
 
 `--explain` does not walk roots. It prints:
 
