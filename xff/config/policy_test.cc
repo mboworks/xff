@@ -73,6 +73,24 @@ TEST_F(PolicyTest, PolicyDenyTightensByClassToken) {
   EXPECT_TRUE(LinePermitted(Line({"-delete"}), Source::kUser, policy));            // @destructive not matched
 }
 
+TEST_F(PolicyTest, PolicyClassDenyFindsEveryDangerousClassOnMixedLines) {
+  SystemConfig policy;
+  policy.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"@destructive"}}};
+  EXPECT_THAT(LinePermitted(Line({"-delete", "-exec", "rm", ";"}), Source::kUser, policy), IsFalse());
+  EXPECT_THAT(LinePermitted(Line({"-exec", "rm", ";", "-delete"}), Source::kUser, policy), IsFalse());
+
+  policy.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"@sensitive"}}};
+  EXPECT_THAT(LinePermitted(Line({"-delete", "-exec", "rm", ";"}), Source::kUser, policy), IsFalse());
+  EXPECT_THAT(LinePermitted(Line({"-exec", "rm", ";", "-delete"}), Source::kUser, policy), IsFalse());
+}
+
+TEST_F(PolicyTest, SafeClassDenyMatchesOnlyWhollySafeLines) {
+  SystemConfig policy;
+  policy.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"@safe"}}};
+  EXPECT_THAT(LinePermitted(Line({"-name", "*.cc"}), Source::kUser, policy), IsFalse());
+  EXPECT_THAT(LinePermitted(Line({"-name", "*.cc", "-delete"}), Source::kUser, policy), IsTrue());
+}
+
 TEST_F(PolicyTest, AllowRuleIsInertAndDenyStillBars) {
   SystemConfig policy;
   // An allow rule has nothing to loosen now (no default denial), so it is inert; a deny rule still bars.
