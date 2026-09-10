@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 06:43:57</td>
+            <td class="headerValue">2026-09-10 19:55:06</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryMed">93.3&nbsp;%</td>
@@ -196,9 +196,9 @@
 <span id="L116"><span class="lineNum">     116</span>                 :             :     std::vector&lt;std::unique_ptr&lt;CustomPattern&gt;&gt; custom)</span>
 <span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">         833 :     : of_re_(std::move(of_re)), tail_re_(std::move(tail_re)), custom_(std::move(custom)) {}</span></span>
 <span id="L118"><span class="lineNum">     118</span>                 :             : </span>
-<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">        1651 : Matcher::Matcher(Matcher&amp;&amp;) noexcept = default;</span></span>
+<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">        1649 : Matcher::Matcher(Matcher&amp;&amp;) noexcept = default;</span></span>
 <span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaUNC">           0 : Matcher&amp; Matcher::operator=(Matcher&amp;&amp;) noexcept = default;</span></span>
-<span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">        2484 : Matcher::~Matcher() = default;</span></span>
+<span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">        2483 : Matcher::~Matcher() = default;</span></span>
 <span id="L122"><span class="lineNum">     122</span>                 :             : </span>
 <span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">         839 : absl::StatusOr&lt;Matcher&gt; Matcher::Make(const TailSpec&amp; tail, absl::Span&lt;const std::string&gt; custom_patterns) {</span></span>
 <span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">         839 :   auto of_re = std::make_unique&lt;RE2&gt;(kOfPattern);</span></span>

@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 06:43:57</td>
+            <td class="headerValue">2026-09-10 19:55:06</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -108,68 +108,68 @@
 <span id="L28"><span class="lineNum">      28</span>                 :             : </span>
 <span id="L29"><span class="lineNum">      29</span>                 :             : // A [defaults] line -&gt; a CLI token: &quot;--color = auto&quot; -&gt; &quot;--color=auto&quot;; a bare</span>
 <span id="L30"><span class="lineNum">      30</span>                 :             : // &quot;--warn&quot; stays &quot;--warn&quot;.</span>
-<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">           7 : std::string DefaultFlag(std::string_view line) {</span></span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">           7 :   const std::string_view::size_type eq = line.find('=');</span></span>
-<span id="L33"><span class="lineNum">      33</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">           7 :   if (eq == std::string_view::npos) {</span></span>
+<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">           8 : std::string DefaultFlag(std::string_view line) {</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">           8 :   const std::string_view::size_type eq = line.find('=');</span></span>
+<span id="L33"><span class="lineNum">      33</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>]:<span class="tlaGNC">           8 :   if (eq == std::string_view::npos) {</span></span>
 <span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">           1 :     return std::string(absl::StripAsciiWhitespace(line));</span></span>
 <span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">           6 :   return absl::StrCat(</span></span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">           6 :       absl::StripAsciiWhitespace(line.substr(0, eq)), &quot;=&quot;, absl::StripAsciiWhitespace(line.substr(eq + 1)));</span></span>
-<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">           7 : }</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">           7 :   return absl::StrCat(</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">           7 :       absl::StripAsciiWhitespace(line.substr(0, eq)), &quot;=&quot;, absl::StripAsciiWhitespace(line.substr(eq + 1)));</span></span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">           8 : }</span></span>
 <span id="L39"><span class="lineNum">      39</span>                 :             : </span>
 <span id="L40"><span class="lineNum">      40</span>                 :             : // A [policy] line &quot;&lt;layer&gt;.&lt;allow|deny&gt; = &lt;comma-list&gt;&quot; -&gt; a PolicyRule. Returns</span>
 <span id="L41"><span class="lineNum">      41</span>                 :             : // false (line ignored) if it lacks '=', a '.', or a recognized allow/deny kind.</span>
-<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">          11 : bool ParsePolicyLine(std::string_view line, PolicyRule&amp; rule) {</span></span>
-<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">          11 :   const std::string_view::size_type eq = line.find('=');</span></span>
-<span id="L44"><span class="lineNum">      44</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 10 times"> + </span>]:<span class="tlaGNC">          11 :   if (eq == std::string_view::npos) {</span></span>
+<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">          12 : bool ParsePolicyLine(std::string_view line, PolicyRule&amp; rule) {</span></span>
+<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">          12 :   const std::string_view::size_type eq = line.find('=');</span></span>
+<span id="L44"><span class="lineNum">      44</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">          12 :   if (eq == std::string_view::npos) {</span></span>
 <span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">           1 :     return false;</span></span>
 <span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">          10 :   const std::string_view key = absl::StripAsciiWhitespace(line.substr(0, eq));</span></span>
-<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">          10 :   const std::string_view::size_type dot = key.find('.');</span></span>
-<span id="L49"><span class="lineNum">      49</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>]:<span class="tlaGNC">          10 :   if (dot == std::string_view::npos) {</span></span>
+<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">          11 :   const std::string_view key = absl::StripAsciiWhitespace(line.substr(0, eq));</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">          11 :   const std::string_view::size_type dot = key.find('.');</span></span>
+<span id="L49"><span class="lineNum">      49</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">          11 :   if (dot == std::string_view::npos) {</span></span>
 <span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">           3 :     return false;</span></span>
 <span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">           3 :   }</span></span>
-<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">           7 :   const std::string_view kind = key.substr(dot + 1);</span></span>
-<span id="L53"><span class="lineNum">      53</span> [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 4 times"> + </span>]:<span class="tlaGNC">           7 :   if (kind != &quot;allow&quot; &amp;&amp; kind != &quot;deny&quot;) {</span></span>
+<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">           8 :   const std::string_view kind = key.substr(dot + 1);</span></span>
+<span id="L53"><span class="lineNum">      53</span> [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 5 times"> + </span>]:<span class="tlaGNC">           8 :   if (kind != &quot;allow&quot; &amp;&amp; kind != &quot;deny&quot;) {</span></span>
 <span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">           1 :     return false;</span></span>
 <span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">           6 :   rule.layer = std::string(key.substr(0, dot));</span></span>
-<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">           6 :   rule.allow = kind == &quot;allow&quot;;</span></span>
-<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">           6 :   rule.tokens.clear();</span></span>
-<span id="L59"><span class="lineNum">      59</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">           8 :   for (const std::string_view tok : absl::StrSplit(line.substr(eq + 1), ',', absl::SkipEmpty())) {</span></span>
-<span id="L60"><span class="lineNum">      60</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">           8 :     if (const std::string_view trimmed = absl::StripAsciiWhitespace(tok); !trimmed.empty()) {</span></span>
-<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">           8 :       rule.tokens.emplace_back(trimmed);</span></span>
-<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">           8 :     }</span></span>
-<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">           8 :   }</span></span>
-<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">           6 :   return true;</span></span>
-<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">           7 : }</span></span>
+<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">           7 :   rule.layer = std::string(key.substr(0, dot));</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">           7 :   rule.allow = kind == &quot;allow&quot;;</span></span>
+<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">           7 :   rule.tokens.clear();</span></span>
+<span id="L59"><span class="lineNum">      59</span>         [<span class="tlaGBC" title="branch 0 was taken 9 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>]:<span class="tlaGNC">           9 :   for (const std::string_view tok : absl::StrSplit(line.substr(eq + 1), ',', absl::SkipEmpty())) {</span></span>
+<span id="L60"><span class="lineNum">      60</span>         [<span class="tlaGBC" title="branch 0 was taken 9 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">           9 :     if (const std::string_view trimmed = absl::StripAsciiWhitespace(tok); !trimmed.empty()) {</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">           9 :       rule.tokens.emplace_back(trimmed);</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">           9 :     }</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">           9 :   }</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">           7 :   return true;</span></span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">           8 : }</span></span>
 <span id="L66"><span class="lineNum">      66</span>                 :             : </span>
 <span id="L67"><span class="lineNum">      67</span>                 :             : }  // namespace</span>
 <span id="L68"><span class="lineNum">      68</span>                 :             : </span>
-<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">           9 : SystemConfig ParseIni(std::string_view text) {</span></span>
-<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">           9 :   SystemConfig config;</span></span>
-<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">           9 :   std::string_view section;</span></span>
-<span id="L72"><span class="lineNum">      72</span>         [<span class="tlaGBC" title="branch 0 was taken 48 times"> + </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">          48 :   for (const std::string_view raw : absl::StrSplit(text, '\n')) {</span></span>
-<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">          48 :     const std::string_view line = absl::StripAsciiWhitespace(raw);</span></span>
-<span id="L74"><span class="lineNum">      74</span> [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 36 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 35 times"> + </span>]:<span class="tlaGNC">          48 :     if (line.empty() || line.front() == '#' || line.front() == ';') {</span></span>
-<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 34 times"> + </span>]
-<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">          14 :       continue;  // blank or comment</span></span>
-<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">          14 :     }</span></span>
-<span id="L77"><span class="lineNum">      77</span> [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 24 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 10 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">          34 :     if (line.front() == '[' &amp;&amp; line.back() == ']') {</span></span>
-<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">          10 :       section = absl::StripAsciiWhitespace(line.substr(1, line.size() - 2));</span></span>
-<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">          10 :       continue;</span></span>
-<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">          10 :     }</span></span>
-<span id="L81"><span class="lineNum">      81</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 17 times"> + </span>]:<span class="tlaGNC">          24 :     if (section == &quot;defaults&quot;) {</span></span>
-<span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">           7 :       config.defaults.push_back(DefaultFlag(line));</span></span>
-<span id="L83"><span class="lineNum">      83</span>         [<span class="tlaGBC" title="branch 0 was taken 11 times"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">          19 :     } else if (section == &quot;policy&quot;) {</span></span>
-<span id="L84"><span class="lineNum">      84</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">          11 :       if (PolicyRule rule; ParsePolicyLine(line, rule)) {</span></span>
-<span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaGNC">           6 :         config.policy.push_back(std::move(rule));</span></span>
-<span id="L86"><span class="lineNum">      86</span>                 :<span class="tlaGNC">           6 :       }</span></span>
-<span id="L87"><span class="lineNum">      87</span>                 :<span class="tlaGNC">          11 :     }</span></span>
+<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">          10 : SystemConfig ParseIni(std::string_view text) {</span></span>
+<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">          10 :   SystemConfig config;</span></span>
+<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">          10 :   std::string_view section;</span></span>
+<span id="L72"><span class="lineNum">      72</span>         [<span class="tlaGBC" title="branch 0 was taken 53 times"> + </span><span class="tlaGBC" title="branch 1 was taken 10 times"> + </span>]:<span class="tlaGNC">          53 :   for (const std::string_view raw : absl::StrSplit(text, '\n')) {</span></span>
+<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">          53 :     const std::string_view line = absl::StripAsciiWhitespace(raw);</span></span>
+<span id="L74"><span class="lineNum">      74</span> [<span class="tlaGBC" title="branch 0 was taken 13 times"> + </span><span class="tlaGBC" title="branch 1 was taken 40 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 39 times"> + </span>]:<span class="tlaGNC">          53 :     if (line.empty() || line.front() == '#' || line.front() == ';') {</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 38 times"> + </span>]
+<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">          15 :       continue;  // blank or comment</span></span>
+<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">          15 :     }</span></span>
+<span id="L77"><span class="lineNum">      77</span> [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 26 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 12 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">          38 :     if (line.front() == '[' &amp;&amp; line.back() == ']') {</span></span>
+<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">          12 :       section = absl::StripAsciiWhitespace(line.substr(1, line.size() - 2));</span></span>
+<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">          12 :       continue;</span></span>
+<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">          12 :     }</span></span>
+<span id="L81"><span class="lineNum">      81</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 18 times"> + </span>]:<span class="tlaGNC">          26 :     if (section == &quot;defaults&quot;) {</span></span>
+<span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">           8 :       config.defaults.push_back(DefaultFlag(line));</span></span>
+<span id="L83"><span class="lineNum">      83</span>         [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">          20 :     } else if (section == &quot;policy&quot;) {</span></span>
+<span id="L84"><span class="lineNum">      84</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">          12 :       if (PolicyRule rule; ParsePolicyLine(line, rule)) {</span></span>
+<span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaGNC">           7 :         config.policy.push_back(std::move(rule));</span></span>
+<span id="L86"><span class="lineNum">      86</span>                 :<span class="tlaGNC">           7 :       }</span></span>
+<span id="L87"><span class="lineNum">      87</span>                 :<span class="tlaGNC">          12 :     }</span></span>
 <span id="L88"><span class="lineNum">      88</span>                 :             :     // Lines outside a known section are ignored (parse-only, forgiving).</span>
-<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">          24 :   }</span></span>
-<span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">           9 :   return config;</span></span>
-<span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">           9 : }</span></span>
+<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">          26 :   }</span></span>
+<span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">          10 :   return config;</span></span>
+<span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">          10 : }</span></span>
 <span id="L92"><span class="lineNum">      92</span>                 :             : </span>
 <span id="L93"><span class="lineNum">      93</span>                 :             : }  // namespace xff::config</span>
         </pre>
