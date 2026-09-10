@@ -1064,7 +1064,7 @@ Ignoring a path and pruning version-control metadata are separate decisions. Ign
 
 ### Defaults and overrides
 
-The find and xff styles start with ignore files off and hidden paths visible. The rg style honours VCS, `.ignore`, and `.xffignore` files and skips hidden paths. Tree comparison honours each root's Git ignore sources by default because its usual input is two Git working trees; `--no-ignore` / `-u` disables those sources.
+The find and xff styles start with ignore files off and hidden paths visible. The rg style honours VCS, `.ignore`, and `.xffignore` files and skips hidden paths. Tree comparison does not change these defaults or enable an ignore source: both sides use the selected style and the ignore options the user supplies.
 
 Bare `-g` / `--gitignore` is automatic: it activates only inside a Git working tree. `-g+` / `--gitignore=on` forces the Git layer anywhere; `-g-` / `--gitignore=off` disables it. `--ignore-vcs` and `--no-ignore-vcs` are the rg-style spellings for that same layer. Within this family the last flag wins.
 
