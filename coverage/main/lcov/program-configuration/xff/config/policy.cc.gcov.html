@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 22:20:23</td>
+            <td class="headerValue">2026-09-10 23:23:57</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -194,13 +194,13 @@
 <span id="L113"><span class="lineNum">     113</span>                 :<span class="tlaGNC">          64 :   return worst;</span></span>
 <span id="L114"><span class="lineNum">     114</span>                 :<span class="tlaGNC">          64 : }</span></span>
 <span id="L115"><span class="lineNum">     115</span>                 :             : </span>
-<span id="L116"><span class="lineNum">     116</span>                 :<span class="tlaGNC">         165 : bool LinePermitted(const RcLine&amp; line, Source layer, const SystemConfig&amp; policy) {</span></span>
+<span id="L116"><span class="lineNum">     116</span>                 :<span class="tlaGNC">         167 : bool LinePermitted(const RcLine&amp; line, Source layer, const SystemConfig&amp; policy) {</span></span>
 <span id="L117"><span class="lineNum">     117</span>                 :             :   // No layer is denied by default now (the untrusted project layer was dropped 2026-07-06,</span>
 <span id="L118"><span class="lineNum">     118</span>                 :             :   // Option B): the trusted system/user layers may do anything, so a line is permitted unless the</span>
 <span id="L119"><span class="lineNum">     119</span>                 :             :   // root-owned system [policy] explicitly DENIES it for this layer. An @class or flag-name token</span>
 <span id="L120"><span class="lineNum">     120</span>                 :             :   // matches; a deny rule bars the line. (An allow rule has nothing left to loosen, so it is inert.)</span>
-<span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">         165 :   const std::string_view layer_name = SourceName(layer);</span></span>
-<span id="L122"><span class="lineNum">     122</span>         [<span class="tlaGBC" title="branch 0 was taken 181 times"> + </span><span class="tlaGBC" title="branch 1 was taken 146 times"> + </span>]:<span class="tlaGNC">         213 :   for (const PolicyRule&amp; rule : policy.policy) {</span></span>
+<span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">         167 :   const std::string_view layer_name = SourceName(layer);</span></span>
+<span id="L122"><span class="lineNum">     122</span>         [<span class="tlaGBC" title="branch 0 was taken 181 times"> + </span><span class="tlaGBC" title="branch 1 was taken 148 times"> + </span>]:<span class="tlaGNC">         215 :   for (const PolicyRule&amp; rule : policy.policy) {</span></span>
 <span id="L123"><span class="lineNum">     123</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 180 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 79 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 101 times"> + </span>]:<span class="tlaGNC">         181 :     if (rule.allow || rule.layer != layer_name) {</span></span>
 <span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">          80 :       continue;</span></span>
 <span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">          80 :     }</span></span>
@@ -208,78 +208,78 @@
 <span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">          19 :       return false;</span></span>
 <span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">          19 :     }</span></span>
 <span id="L129"><span class="lineNum">     129</span>                 :<span class="tlaGNC">         101 :   }</span></span>
-<span id="L130"><span class="lineNum">     130</span>                 :<span class="tlaGNC">         146 :   return true;</span></span>
-<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">         165 : }</span></span>
+<span id="L130"><span class="lineNum">     130</span>                 :<span class="tlaGNC">         148 :   return true;</span></span>
+<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">         167 : }</span></span>
 <span id="L132"><span class="lineNum">     132</span>                 :             : </span>
-<span id="L133"><span class="lineNum">     133</span>                 :<span class="tlaGNC">         538 : absl::Status ValidateConfigSkips(const ConfigInputs&amp; inputs) {</span></span>
-<span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">         538 :   const bool skip_system = inputs.no_system_config;</span></span>
-<span id="L135"><span class="lineNum">     135</span> [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 533 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2 times"> + </span>]:<span class="tlaGNC">         538 :   if (skip_system &amp;&amp; SourceWasFound(inputs, Source::kSystem) &amp;&amp; !SystemAllows(inputs, kAllowNoSystemConfig)) {</span></span>
+<span id="L133"><span class="lineNum">     133</span>                 :<span class="tlaGNC">         540 : absl::Status ValidateConfigSkips(const ConfigInputs&amp; inputs) {</span></span>
+<span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">         540 :   const bool skip_system = inputs.no_system_config;</span></span>
+<span id="L135"><span class="lineNum">     135</span> [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 535 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2 times"> + </span>]:<span class="tlaGNC">         540 :   if (skip_system &amp;&amp; SourceWasFound(inputs, Source::kSystem) &amp;&amp; !SystemAllows(inputs, kAllowNoSystemConfig)) {</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 1 time"> + </span>]
 <span id="L136"><span class="lineNum">     136</span>                 :<span class="tlaGNC">           2 :     return absl::PermissionDeniedError(</span></span>
 <span id="L137"><span class="lineNum">     137</span>                 :<span class="tlaGNC">           2 :         &quot;--no-system-config requires --allow-no-system-config or --allow-no-config in /etc/xff.ini&quot;);</span></span>
 <span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">           2 :   }</span></span>
-<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">         536 :   const bool user_allows = absl::c_any_of(inputs.user, [&amp;](const RcLine&amp; line) {</span></span>
-<span id="L140"><span class="lineNum">     140</span> [<span class="tlaGBC" title="branch 0 was taken 20 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 7 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 13 times"> + </span>]:<span class="tlaGNC">          20 :     if ((!line.base.empty() &amp;&amp; line.base != &quot;common&quot;) || !line.config.empty()</span></span>
-<span class="lineNum">        </span>         [<span class="tlaUNC" title="branch &quot;4&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 13 times"> + </span>]
-<span id="L141"><span class="lineNum">     141</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">          19 :         || !absl::c_contains(line.flags, kAllowNoUserConfig)) {</span></span>
-<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">          17 :       return false;</span></span>
-<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">          17 :     }</span></span>
+<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">         538 :   const bool user_allows = absl::c_any_of(inputs.user, [&amp;](const RcLine&amp; line) {</span></span>
+<span id="L140"><span class="lineNum">     140</span> [<span class="tlaGBC" title="branch 0 was taken 22 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 7 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 15 times"> + </span>]:<span class="tlaGNC">          22 :     if ((!line.base.empty() &amp;&amp; line.base != &quot;common&quot;) || !line.config.empty()</span></span>
+<span class="lineNum">        </span>         [<span class="tlaUNC" title="branch &quot;4&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 15 times"> + </span>]
+<span id="L141"><span class="lineNum">     141</span>         [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">          21 :         || !absl::c_contains(line.flags, kAllowNoUserConfig)) {</span></span>
+<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">          19 :       return false;</span></span>
+<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">          19 :     }</span></span>
 <span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">           3 :     return LinePermitted(line, Source::kUser, inputs.system);</span></span>
-<span id="L145"><span class="lineNum">     145</span>                 :<span class="tlaGNC">          20 :   });</span></span>
-<span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">         536 :   const bool skip_user = inputs.no_user_config;</span></span>
-<span id="L147"><span class="lineNum">     147</span> [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 530 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 5 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">         536 :   if (skip_user &amp;&amp; SourceWasFound(inputs, Source::kUser) &amp;&amp; !SystemAllows(inputs, kAllowNoUserConfig) &amp;&amp; !user_allows) {</span></span>
+<span id="L145"><span class="lineNum">     145</span>                 :<span class="tlaGNC">          22 :   });</span></span>
+<span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">         538 :   const bool skip_user = inputs.no_user_config;</span></span>
+<span id="L147"><span class="lineNum">     147</span> [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 532 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 5 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">         538 :   if (skip_user &amp;&amp; SourceWasFound(inputs, Source::kUser) &amp;&amp; !SystemAllows(inputs, kAllowNoUserConfig) &amp;&amp; !user_allows) {</span></span>
 <span class="lineNum">        </span> [<span class="tlaGBC" title="branch &quot;4&quot; was taken 4 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 1 time"> + </span>][<span class="tlaGBC" title="branch &quot;6&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;7&quot; was taken 2 times"> + </span>]
 <span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">           2 :     return absl::PermissionDeniedError(</span></span>
 <span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">           2 :         &quot;--no-user-config requires --allow-no-user-config in the system or user config, or system --allow-no-config&quot;);</span></span>
 <span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">           2 :   }</span></span>
-<span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">         534 :   return absl::OkStatus();</span></span>
-<span id="L152"><span class="lineNum">     152</span>                 :<span class="tlaGNC">         536 : }</span></span>
+<span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">         536 :   return absl::OkStatus();</span></span>
+<span id="L152"><span class="lineNum">     152</span>                 :<span class="tlaGNC">         538 : }</span></span>
 <span id="L153"><span class="lineNum">     153</span>                 :             : </span>
-<span id="L154"><span class="lineNum">     154</span>                 :<span class="tlaGNC">         163 : bool OverloadsPreset(const RcLine&amp; line) {</span></span>
-<span id="L155"><span class="lineNum">     155</span> [<span class="tlaGBC" title="branch 0 was taken 161 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 11 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 150 times"> + </span>]:<span class="tlaGNC">         163 :   return line.config.empty() &amp;&amp; IsBuiltinStyle(line.base);</span></span>
-<span id="L156"><span class="lineNum">     156</span>                 :<span class="tlaGNC">         163 : }</span></span>
+<span id="L154"><span class="lineNum">     154</span>                 :<span class="tlaGNC">         165 : bool OverloadsPreset(const RcLine&amp; line) {</span></span>
+<span id="L155"><span class="lineNum">     155</span> [<span class="tlaGBC" title="branch 0 was taken 163 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 11 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 152 times"> + </span>]:<span class="tlaGNC">         165 :   return line.config.empty() &amp;&amp; IsBuiltinStyle(line.base);</span></span>
+<span id="L156"><span class="lineNum">     156</span>                 :<span class="tlaGNC">         165 : }</span></span>
 <span id="L157"><span class="lineNum">     157</span>                 :             : </span>
-<span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">         546 : GateResult GateConfig(const ConfigInputs&amp; inputs, bool xffrc_armed) {</span></span>
-<span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaGNC">         546 :   GateResult result{.config = inputs};</span></span>
-<span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">         546 :   result.config.user.clear();</span></span>
-<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">         546 :   result.config.xffrc.clear();</span></span>
-<span id="L162"><span class="lineNum">     162</span>                 :<span class="tlaGNC">         550 :   const auto record = [&amp;](const RcLine&amp; line, Source layer, DropReason reason) {</span></span>
+<span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">         548 : GateResult GateConfig(const ConfigInputs&amp; inputs, bool xffrc_armed) {</span></span>
+<span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaGNC">         548 :   GateResult result{.config = inputs};</span></span>
+<span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">         548 :   result.config.user.clear();</span></span>
+<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">         548 :   result.config.xffrc.clear();</span></span>
+<span id="L162"><span class="lineNum">     162</span>                 :<span class="tlaGNC">         552 :   const auto record = [&amp;](const RcLine&amp; line, Source layer, DropReason reason) {</span></span>
 <span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">          21 :     result.drops.push_back(Drop{.line = line, .layer = layer, .safety = LineSafety(line), .reason = reason});</span></span>
 <span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">          21 :   };</span></span>
-<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">         562 :   const auto gate = [&amp;](const std::vector&lt;RcLine&gt;&amp; lines, Source layer, std::vector&lt;RcLine&gt;&amp; out) {</span></span>
-<span id="L166"><span class="lineNum">     166</span> [<span class="tlaGBC" title="branch 0 was taken 546 times"> + </span><span class="tlaGBC" title="branch 1 was taken 16 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 545 times"> + </span>]:<span class="tlaGNC">         562 :     if (layer == Source::kUser &amp;&amp; inputs.no_user_config) {</span></span>
+<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">         564 :   const auto gate = [&amp;](const std::vector&lt;RcLine&gt;&amp; lines, Source layer, std::vector&lt;RcLine&gt;&amp; out) {</span></span>
+<span id="L166"><span class="lineNum">     166</span> [<span class="tlaGBC" title="branch 0 was taken 548 times"> + </span><span class="tlaGBC" title="branch 1 was taken 16 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 547 times"> + </span>]:<span class="tlaGNC">         564 :     if (layer == Source::kUser &amp;&amp; inputs.no_user_config) {</span></span>
 <span id="L167"><span class="lineNum">     167</span>                 :<span class="tlaGNC">           1 :       return;</span></span>
 <span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">           1 :     }</span></span>
-<span id="L169"><span class="lineNum">     169</span>         [<span class="tlaGBC" title="branch 0 was taken 121 times"> + </span><span class="tlaGBC" title="branch 1 was taken 561 times"> + </span>]:<span class="tlaGNC">         635 :     for (const RcLine&amp; line : lines) {</span></span>
+<span id="L169"><span class="lineNum">     169</span>         [<span class="tlaGBC" title="branch 0 was taken 123 times"> + </span><span class="tlaGBC" title="branch 1 was taken 563 times"> + </span>]:<span class="tlaGNC">         637 :     for (const RcLine&amp; line : lines) {</span></span>
 <span id="L170"><span class="lineNum">     170</span>                 :             :       // A preset-overloading line is dropped in every layer: a config file may not attach behavior</span>
 <span id="L171"><span class="lineNum">     171</span>                 :             :       // to find/xff/rg (it would change what a plain preset run does). Checked first so the warning</span>
 <span id="L172"><span class="lineNum">     172</span>                 :             :       // names the real reason.</span>
-<span id="L173"><span class="lineNum">     173</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 113 times"> + </span>]:<span class="tlaGNC">         121 :       if (OverloadsPreset(line)) {</span></span>
+<span id="L173"><span class="lineNum">     173</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 115 times"> + </span>]:<span class="tlaGNC">         123 :       if (OverloadsPreset(line)) {</span></span>
 <span id="L174"><span class="lineNum">     174</span>                 :<span class="tlaGNC">           8 :         record(line, layer, DropReason::kPresetOverload);</span></span>
 <span id="L175"><span class="lineNum">     175</span>                 :<span class="tlaGNC">           8 :         continue;</span></span>
 <span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">           8 :       }</span></span>
 <span id="L177"><span class="lineNum">     177</span>                 :             :       // The --xffrc tier is non-arming: a dangerous (sensitive/destructive) line is inert unless</span>
 <span id="L178"><span class="lineNum">     178</span>                 :             :       // --allow-exec was set from a trusted tier. A named file thus cannot authorize its own -exec.</span>
-<span id="L179"><span class="lineNum">     179</span> [<span class="tlaGBC" title="branch 0 was taken 54 times"> + </span><span class="tlaGBC" title="branch 1 was taken 59 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 27 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 27 times"> + </span>]:<span class="tlaGNC">         113 :       if (layer == Source::kXffrc &amp;&amp; !xffrc_armed &amp;&amp; LineSafety(line) != registry::Safety::kNone) {</span></span>
+<span id="L179"><span class="lineNum">     179</span> [<span class="tlaGBC" title="branch 0 was taken 54 times"> + </span><span class="tlaGBC" title="branch 1 was taken 61 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 27 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 27 times"> + </span>]:<span class="tlaGNC">         115 :       if (layer == Source::kXffrc &amp;&amp; !xffrc_armed &amp;&amp; LineSafety(line) != registry::Safety::kNone) {</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 4 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 23 times"> + </span>]
 <span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">           4 :         record(line, layer, DropReason::kUnarmedXffrc);</span></span>
 <span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">           4 :         continue;</span></span>
 <span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">           4 :       }</span></span>
-<span id="L183"><span class="lineNum">     183</span>         [<span class="tlaGBC" title="branch 0 was taken 100 times"> + </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">         109 :       if (LinePermitted(line, layer, inputs.system)) {</span></span>
-<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">         100 :         out.push_back(line);</span></span>
-<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">         100 :       } else {</span></span>
+<span id="L183"><span class="lineNum">     183</span>         [<span class="tlaGBC" title="branch 0 was taken 102 times"> + </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">         111 :       if (LinePermitted(line, layer, inputs.system)) {</span></span>
+<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">         102 :         out.push_back(line);</span></span>
+<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">         102 :       } else {</span></span>
 <span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">           9 :         record(line, layer, DropReason::kSafetyPolicy);</span></span>
 <span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">           9 :       }</span></span>
-<span id="L188"><span class="lineNum">     188</span>                 :<span class="tlaGNC">         109 :     }</span></span>
-<span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">         561 :   };</span></span>
-<span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">         546 :   gate(inputs.user, Source::kUser, result.config.user);</span></span>
-<span id="L191"><span class="lineNum">     191</span>         [<span class="tlaGBC" title="branch 0 was taken 16 times"> + </span><span class="tlaGBC" title="branch 1 was taken 546 times"> + </span>]:<span class="tlaGNC">         546 :   for (const ExplicitConfig&amp; file : inputs.xffrc) {</span></span>
+<span id="L188"><span class="lineNum">     188</span>                 :<span class="tlaGNC">         111 :     }</span></span>
+<span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">         563 :   };</span></span>
+<span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">         548 :   gate(inputs.user, Source::kUser, result.config.user);</span></span>
+<span id="L191"><span class="lineNum">     191</span>         [<span class="tlaGBC" title="branch 0 was taken 16 times"> + </span><span class="tlaGBC" title="branch 1 was taken 548 times"> + </span>]:<span class="tlaGNC">         548 :   for (const ExplicitConfig&amp; file : inputs.xffrc) {</span></span>
 <span id="L192"><span class="lineNum">     192</span>                 :<span class="tlaGNC">          16 :     ExplicitConfig gated_file{.path = file.path};</span></span>
 <span id="L193"><span class="lineNum">     193</span>                 :<span class="tlaGNC">          16 :     gate(file.lines, Source::kXffrc, gated_file.lines);</span></span>
 <span id="L194"><span class="lineNum">     194</span>                 :<span class="tlaGNC">          16 :     result.config.xffrc.push_back(std::move(gated_file));</span></span>
 <span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">          16 :   }</span></span>
-<span id="L196"><span class="lineNum">     196</span>                 :<span class="tlaGNC">         546 :   return result;</span></span>
-<span id="L197"><span class="lineNum">     197</span>                 :<span class="tlaGNC">         546 : }</span></span>
+<span id="L196"><span class="lineNum">     196</span>                 :<span class="tlaGNC">         548 :   return result;</span></span>
+<span id="L197"><span class="lineNum">     197</span>                 :<span class="tlaGNC">         548 : }</span></span>
 <span id="L198"><span class="lineNum">     198</span>                 :             : </span>
 <span id="L199"><span class="lineNum">     199</span>                 :<span class="tlaGNC">          18 : std::string DropMessage(const Drop&amp; drop) {</span></span>
 <span id="L200"><span class="lineNum">     200</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">          18 :   if (drop.reason == DropReason::kPresetOverload) {</span></span>

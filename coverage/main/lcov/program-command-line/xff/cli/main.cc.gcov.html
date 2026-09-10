@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 22:20:23</td>
+            <td class="headerValue">2026-09-10 23:23:57</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -139,19 +139,19 @@
 <span id="L59"><span class="lineNum">      59</span>                 :             : namespace {</span>
 <span id="L60"><span class="lineNum">      60</span>                 :             : </span>
 <span id="L61"><span class="lineNum">      61</span>                 :             : // Environment variable as an optional (nullopt when unset), for config discovery.</span>
-<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">        1596 : std::optional&lt;std::string&gt; EnvOpt(std::string_view name) {</span></span>
-<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">        1596 :   return xff::env::Get(name);</span></span>
-<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">        1596 : }</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">        1602 : std::optional&lt;std::string&gt; EnvOpt(std::string_view name) {</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">        1602 :   return xff::env::Get(name);</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">        1602 : }</span></span>
 <span id="L65"><span class="lineNum">      65</span>                 :             : </span>
 <span id="L66"><span class="lineNum">      66</span>                 :             : // Reads a whole file, or nullopt if it cannot be opened: the config FileReader.</span>
-<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">        1069 : std::optional&lt;std::string&gt; ReadFile(std::string_view path) {</span></span>
-<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">        1069 :   const xff::vfs::LocalFs fs;</span></span>
-<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">        1069 :   const absl::StatusOr&lt;std::string&gt; content = fs.ReadContent(path);</span></span>
-<span id="L70"><span class="lineNum">      70</span>         [<span class="tlaGBC" title="branch 0 was taken 1051 times"> + </span><span class="tlaGBC" title="branch 1 was taken 18 times"> + </span>]:<span class="tlaGNC">        1069 :   if (!content.ok()) {</span></span>
-<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">        1051 :     return std::nullopt;</span></span>
-<span id="L72"><span class="lineNum">      72</span>                 :<span class="tlaGNC">        1051 :   }</span></span>
-<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">          18 :   return *content;</span></span>
-<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">        1069 : }</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">        1073 : std::optional&lt;std::string&gt; ReadFile(std::string_view path) {</span></span>
+<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">        1073 :   const xff::vfs::LocalFs fs;</span></span>
+<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">        1073 :   const absl::StatusOr&lt;std::string&gt; content = fs.ReadContent(path);</span></span>
+<span id="L70"><span class="lineNum">      70</span>         [<span class="tlaGBC" title="branch 0 was taken 1053 times"> + </span><span class="tlaGBC" title="branch 1 was taken 20 times"> + </span>]:<span class="tlaGNC">        1073 :   if (!content.ok()) {</span></span>
+<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">        1053 :     return std::nullopt;</span></span>
+<span id="L72"><span class="lineNum">      72</span>                 :<span class="tlaGNC">        1053 :   }</span></span>
+<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">          20 :   return *content;</span></span>
+<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">        1073 : }</span></span>
 <span id="L75"><span class="lineNum">      75</span>                 :             : </span>
 <span id="L76"><span class="lineNum">      76</span>                 :             : // The flavor feature-map: one row per style-scoped behavior, its controlling flag(s), each</span>
 <span id="L77"><span class="lineNum">      77</span>                 :             : // style's default, and (when `current` is set) the value resolved for this invocation. All</span>
@@ -289,11 +289,11 @@
 <span id="L209"><span class="lineNum">     209</span>                 :<span class="tlaGNC">           8 :       &quot;xff build extras. Optional features compiled in at build time; a lean build omits them, and a &quot;</span></span>
 <span id="L210"><span class="lineNum">     210</span>                 :<span class="tlaGNC">           8 :       &quot;full build (--config=xff_full, or the installed `xff_full` binary) includes them all. Where an &quot;</span></span>
 <span id="L211"><span class="lineNum">     211</span>                 :<span class="tlaGNC">           8 :       &quot;extra is not built in, its option stays listed but is a hard error if used.\n\n&quot;;</span></span>
-<span id="L212"><span class="lineNum">     212</span>                 :<span class="tlaGNC">          72 :   const auto row = [&amp;out](std::string_view name, bool built_in, std::string_view rebuild, std::string_view what) {</span></span>
-<span id="L213"><span class="lineNum">     213</span>                 :<span class="tlaGNC">          72 :     absl::StrAppendFormat(</span></span>
-<span id="L214"><span class="lineNum">     214</span>                 :<span class="tlaGNC">          72 :         &amp;out, &quot;  %-9s %s\n            %s\n&quot;, name,</span></span>
-<span id="L215"><span class="lineNum">     215</span>         [<span class="tlaGBC" title="branch 0 was taken 45 times"> + </span><span class="tlaGBC" title="branch 1 was taken 27 times"> + </span>]:<span class="tlaGNC">          72 :         built_in ? &quot;[built into this binary]&quot; : absl::StrCat(&quot;[not built in; rebuild with &quot;, rebuild, &quot;]&quot;), what);</span></span>
-<span id="L216"><span class="lineNum">     216</span>                 :<span class="tlaGNC">          72 :   };</span></span>
+<span id="L212"><span class="lineNum">     212</span>                 :<span class="tlaGNC">          80 :   const auto row = [&amp;out](std::string_view name, bool built_in, std::string_view rebuild, std::string_view what) {</span></span>
+<span id="L213"><span class="lineNum">     213</span>                 :<span class="tlaGNC">          80 :     absl::StrAppendFormat(</span></span>
+<span id="L214"><span class="lineNum">     214</span>                 :<span class="tlaGNC">          80 :         &amp;out, &quot;  %-9s %s\n            %s\n&quot;, name,</span></span>
+<span id="L215"><span class="lineNum">     215</span>         [<span class="tlaGBC" title="branch 0 was taken 50 times"> + </span><span class="tlaGBC" title="branch 1 was taken 30 times"> + </span>]:<span class="tlaGNC">          80 :         built_in ? &quot;[built into this binary]&quot; : absl::StrCat(&quot;[not built in; rebuild with &quot;, rebuild, &quot;]&quot;), what);</span></span>
+<span id="L216"><span class="lineNum">     216</span>                 :<span class="tlaGNC">          80 :   };</span></span>
 <span id="L217"><span class="lineNum">     217</span>                 :<span class="tlaGNC">           8 :   row(&quot;fuse&quot;, xff::cli::ExtraEnabled(&quot;fuse&quot;), xff::cli::ExtraBuildFlag(&quot;fuse&quot;),</span></span>
 <span id="L218"><span class="lineNum">     218</span>                 :<span class="tlaGNC">           8 :       &quot;mount containers as read-only directories via the platform's fuse3 (probed at runtime)&quot;);</span></span>
 <span id="L219"><span class="lineNum">     219</span>                 :<span class="tlaGNC">           8 :   row(&quot;asar&quot;, xff::cli::ExtraEnabled(&quot;asar&quot;), xff::cli::ExtraBuildFlag(&quot;asar&quot;),</span></span>
@@ -309,11 +309,11 @@
 <span id="L229"><span class="lineNum">     229</span>                 :<span class="tlaGNC">           8 :   row(&quot;squashfs&quot;, xff::cli::ExtraEnabled(&quot;squashfs&quot;), xff::cli::ExtraBuildFlag(&quot;squashfs&quot;),</span></span>
 <span id="L230"><span class="lineNum">     230</span>                 :<span class="tlaGNC">           8 :       &quot;read SquashFS images, Snap packages, and AppImage payloads as virtual filesystems&quot;);</span></span>
 <span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaGNC">           8 :   absl::flat_hash_set&lt;std::string_view&gt; seen;</span></span>
-<span id="L232"><span class="lineNum">     232</span>         [<span class="tlaGBC" title="branch 0 was taken 744 times"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">         744 :   for (const xff::cli::GlobalFlag&amp; flag : xff::cli::Globals()) {</span></span>
-<span id="L233"><span class="lineNum">     233</span> [<span class="tlaGBC" title="branch 0 was taken 120 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1368 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 16 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 88 times"> + </span>]:<span class="tlaGNC">         744 :     if (!flag.extra.empty() &amp;&amp; seen.insert(flag.extra).second) {</span></span>
-<span id="L234"><span class="lineNum">     234</span>                 :<span class="tlaGNC">          16 :       row(flag.extra, xff::cli::ExtraEnabled(flag.extra), xff::cli::ExtraBuildFlag(flag.extra), flag.summary);</span></span>
-<span id="L235"><span class="lineNum">     235</span>                 :<span class="tlaGNC">          16 :     }</span></span>
-<span id="L236"><span class="lineNum">     236</span>                 :<span class="tlaGNC">         744 :   }</span></span>
+<span id="L232"><span class="lineNum">     232</span>         [<span class="tlaGBC" title="branch 0 was taken 768 times"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">         768 :   for (const xff::cli::GlobalFlag&amp; flag : xff::cli::Globals()) {</span></span>
+<span id="L233"><span class="lineNum">     233</span> [<span class="tlaGBC" title="branch 0 was taken 136 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1400 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 24 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 88 times"> + </span>]:<span class="tlaGNC">         768 :     if (!flag.extra.empty() &amp;&amp; seen.insert(flag.extra).second) {</span></span>
+<span id="L234"><span class="lineNum">     234</span>                 :<span class="tlaGNC">          24 :       row(flag.extra, xff::cli::ExtraEnabled(flag.extra), xff::cli::ExtraBuildFlag(flag.extra), flag.summary);</span></span>
+<span id="L235"><span class="lineNum">     235</span>                 :<span class="tlaGNC">          24 :     }</span></span>
+<span id="L236"><span class="lineNum">     236</span>                 :<span class="tlaGNC">         768 :   }</span></span>
 <span id="L237"><span class="lineNum">     237</span>                 :<span class="tlaGNC">           8 :   return out;</span></span>
 <span id="L238"><span class="lineNum">     238</span>                 :<span class="tlaGNC">           8 : }</span></span>
 <span id="L239"><span class="lineNum">     239</span>                 :             : </span>
@@ -406,10 +406,10 @@
 <span id="L326"><span class="lineNum">     326</span>                 :<span class="tlaGNC">           1 :   };</span></span>
 <span id="L327"><span class="lineNum">     327</span>                 :<span class="tlaGNC">           2 : }</span></span>
 <span id="L328"><span class="lineNum">     328</span>                 :             : </span>
-<span id="L329"><span class="lineNum">     329</span>                 :<span class="tlaGNC">         693 : MetaSelection SelectMeta(const std::vector&lt;std::string&gt;&amp; flags) {</span></span>
-<span id="L330"><span class="lineNum">     330</span>         [<span class="tlaGBC" title="branch 0 was taken 551 times"> + </span><span class="tlaGBC" title="branch 1 was taken 142 times"> + </span>]:<span class="tlaGNC">         693 :   if (flags.empty()) {</span></span>
-<span id="L331"><span class="lineNum">     331</span>                 :<span class="tlaGNC">         551 :     return {};</span></span>
-<span id="L332"><span class="lineNum">     332</span>                 :<span class="tlaGNC">         551 :   }</span></span>
+<span id="L329"><span class="lineNum">     329</span>                 :<span class="tlaGNC">         696 : MetaSelection SelectMeta(const std::vector&lt;std::string&gt;&amp; flags) {</span></span>
+<span id="L330"><span class="lineNum">     330</span>         [<span class="tlaGBC" title="branch 0 was taken 554 times"> + </span><span class="tlaGBC" title="branch 1 was taken 142 times"> + </span>]:<span class="tlaGNC">         696 :   if (flags.empty()) {</span></span>
+<span id="L331"><span class="lineNum">     331</span>                 :<span class="tlaGNC">         554 :     return {};</span></span>
+<span id="L332"><span class="lineNum">     332</span>                 :<span class="tlaGNC">         554 :   }</span></span>
 <span id="L333"><span class="lineNum">     333</span>                 :<span class="tlaGNC">         142 :   const std::string&amp; arg = flags.front();  // first meta wins, matching the historical behavior</span></span>
 <span id="L334"><span class="lineNum">     334</span> [<span class="tlaGBC" title="branch 0 was taken 16 times"> + </span><span class="tlaGBC" title="branch 1 was taken 126 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 124 times"> + </span>]:<span class="tlaGNC">         142 :   if (arg == &quot;--help&quot; || arg == &quot;-help&quot; || arg == &quot;-h&quot;) {</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 123 times"> + </span>]
@@ -490,74 +490,74 @@
 <span id="L409"><span class="lineNum">     409</span>                 :             : // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive dispatch</span>
 <span id="L410"><span class="lineNum">     410</span>                 :             : // resolve config, dispatch meta flags, build + run the expression) is one cohesive sequence.</span>
 <span id="L411"><span class="lineNum">     411</span>                 :             : // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive dispatch</span>
-<span id="L412"><span class="lineNum">     412</span>                 :<span class="tlaGNC">         698 : int RunMain(int argc, char** argv) {</span></span>
+<span id="L412"><span class="lineNum">     412</span>                 :<span class="tlaGNC">         701 : int RunMain(int argc, char** argv) {</span></span>
 <span id="L413"><span class="lineNum">     413</span>                 :             :   // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic): intentional</span>
-<span id="L414"><span class="lineNum">     414</span>                 :<span class="tlaGNC">         698 :   const std::vector&lt;std::string&gt; args(argv + 1, argv + argc);</span></span>
+<span id="L414"><span class="lineNum">     414</span>                 :<span class="tlaGNC">         701 :   const std::vector&lt;std::string&gt; args(argv + 1, argv + argc);</span></span>
 <span id="L415"><span class="lineNum">     415</span>                 :             :   // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic): intentional</span>
-<span id="L416"><span class="lineNum">     416</span>                 :<span class="tlaGNC">         698 :   const char* const program = argv[0];</span></span>
+<span id="L416"><span class="lineNum">     416</span>                 :<span class="tlaGNC">         701 :   const char* const program = argv[0];</span></span>
 <span id="L417"><span class="lineNum">     417</span>                 :             : </span>
 <span id="L418"><span class="lineNum">     418</span>                 :             :   // Read the fixed set of environment variables xff consults into the env cache up front, in one</span>
 <span id="L419"><span class="lineNum">     419</span>                 :             :   // locked pass, so every later read is a pure cache hit. Dynamic {env.NAME} field references are</span>
 <span id="L420"><span class="lineNum">     420</span>                 :             :   // not here (they are user-supplied); env::Get caches those lazily on first use.</span>
 <span id="L421"><span class="lineNum">     421</span>                 :             :   // Deduced rather than sized: a hand-written count silently pads the array with an empty name when it</span>
 <span id="L422"><span class="lineNum">     422</span>                 :             :   // does not match, which is exactly what happened here (14 declared, 13 written, LS_COLORS missing).</span>
-<span id="L423"><span class="lineNum">     423</span>                 :<span class="tlaGNC">         698 :   static constexpr auto kKnownEnv = std::to_array&lt;std::string_view&gt;({</span></span>
-<span id="L424"><span class="lineNum">     424</span>                 :<span class="tlaGNC">         698 :       &quot;COLUMNS&quot;,</span></span>
-<span id="L425"><span class="lineNum">     425</span>                 :<span class="tlaGNC">         698 :       &quot;HOME&quot;,</span></span>
-<span id="L426"><span class="lineNum">     426</span>                 :<span class="tlaGNC">         698 :       &quot;LANG&quot;,</span></span>
-<span id="L427"><span class="lineNum">     427</span>                 :<span class="tlaGNC">         698 :       &quot;LC_ALL&quot;,</span></span>
-<span id="L428"><span class="lineNum">     428</span>                 :<span class="tlaGNC">         698 :       &quot;LC_CTYPE&quot;,</span></span>
-<span id="L429"><span class="lineNum">     429</span>                 :<span class="tlaGNC">         698 :       &quot;LSCOLORS&quot;,</span></span>
-<span id="L430"><span class="lineNum">     430</span>                 :<span class="tlaGNC">         698 :       &quot;LS_COLORS&quot;,</span></span>
-<span id="L431"><span class="lineNum">     431</span>                 :<span class="tlaGNC">         698 :       &quot;NO_COLOR&quot;,</span></span>
-<span id="L432"><span class="lineNum">     432</span>                 :<span class="tlaGNC">         698 :       &quot;PAGER&quot;,</span></span>
-<span id="L433"><span class="lineNum">     433</span>                 :<span class="tlaGNC">         698 :       &quot;TMPDIR&quot;,</span></span>
-<span id="L434"><span class="lineNum">     434</span>                 :<span class="tlaGNC">         698 :       &quot;XDG_CONFIG_HOME&quot;,</span></span>
-<span id="L435"><span class="lineNum">     435</span>                 :<span class="tlaGNC">         698 :       &quot;XDG_RUNTIME_DIR&quot;,</span></span>
-<span id="L436"><span class="lineNum">     436</span>                 :<span class="tlaGNC">         698 :       &quot;XFF_CONFIG&quot;,</span></span>
-<span id="L437"><span class="lineNum">     437</span>                 :<span class="tlaGNC">         698 :       &quot;XFF_MANPAGER&quot;,</span></span>
-<span id="L438"><span class="lineNum">     438</span>                 :<span class="tlaGNC">         698 :       &quot;XFF_PAGER&quot;,</span></span>
-<span id="L439"><span class="lineNum">     439</span>                 :<span class="tlaGNC">         698 :   });</span></span>
-<span id="L440"><span class="lineNum">     440</span>                 :<span class="tlaGNC">         698 :   xff::env::Prewarm(absl::MakeConstSpan(kKnownEnv));</span></span>
+<span id="L423"><span class="lineNum">     423</span>                 :<span class="tlaGNC">         701 :   static constexpr auto kKnownEnv = std::to_array&lt;std::string_view&gt;({</span></span>
+<span id="L424"><span class="lineNum">     424</span>                 :<span class="tlaGNC">         701 :       &quot;COLUMNS&quot;,</span></span>
+<span id="L425"><span class="lineNum">     425</span>                 :<span class="tlaGNC">         701 :       &quot;HOME&quot;,</span></span>
+<span id="L426"><span class="lineNum">     426</span>                 :<span class="tlaGNC">         701 :       &quot;LANG&quot;,</span></span>
+<span id="L427"><span class="lineNum">     427</span>                 :<span class="tlaGNC">         701 :       &quot;LC_ALL&quot;,</span></span>
+<span id="L428"><span class="lineNum">     428</span>                 :<span class="tlaGNC">         701 :       &quot;LC_CTYPE&quot;,</span></span>
+<span id="L429"><span class="lineNum">     429</span>                 :<span class="tlaGNC">         701 :       &quot;LSCOLORS&quot;,</span></span>
+<span id="L430"><span class="lineNum">     430</span>                 :<span class="tlaGNC">         701 :       &quot;LS_COLORS&quot;,</span></span>
+<span id="L431"><span class="lineNum">     431</span>                 :<span class="tlaGNC">         701 :       &quot;NO_COLOR&quot;,</span></span>
+<span id="L432"><span class="lineNum">     432</span>                 :<span class="tlaGNC">         701 :       &quot;PAGER&quot;,</span></span>
+<span id="L433"><span class="lineNum">     433</span>                 :<span class="tlaGNC">         701 :       &quot;TMPDIR&quot;,</span></span>
+<span id="L434"><span class="lineNum">     434</span>                 :<span class="tlaGNC">         701 :       &quot;XDG_CONFIG_HOME&quot;,</span></span>
+<span id="L435"><span class="lineNum">     435</span>                 :<span class="tlaGNC">         701 :       &quot;XDG_RUNTIME_DIR&quot;,</span></span>
+<span id="L436"><span class="lineNum">     436</span>                 :<span class="tlaGNC">         701 :       &quot;XFF_CONFIG&quot;,</span></span>
+<span id="L437"><span class="lineNum">     437</span>                 :<span class="tlaGNC">         701 :       &quot;XFF_MANPAGER&quot;,</span></span>
+<span id="L438"><span class="lineNum">     438</span>                 :<span class="tlaGNC">         701 :       &quot;XFF_PAGER&quot;,</span></span>
+<span id="L439"><span class="lineNum">     439</span>                 :<span class="tlaGNC">         701 :   });</span></span>
+<span id="L440"><span class="lineNum">     440</span>                 :<span class="tlaGNC">         701 :   xff::env::Prewarm(absl::MakeConstSpan(kKnownEnv));</span></span>
 <span id="L441"><span class="lineNum">     441</span>                 :             : </span>
 <span id="L442"><span class="lineNum">     442</span>                 :             :   // The plain-help wrap width (--width), resolved once so every help / topic render</span>
 <span id="L443"><span class="lineNum">     443</span>                 :             :   // shares it. A bare --width means auto; --width=VALUE carries the value. Scanned</span>
 <span id="L444"><span class="lineNum">     444</span>                 :             :   // here (like the help flags) since --help short-circuits before the full parse.</span>
-<span id="L445"><span class="lineNum">     445</span>                 :<span class="tlaGNC">         698 :   std::optional&lt;std::string_view&gt; width_flag;</span></span>
-<span id="L446"><span class="lineNum">     446</span>         [<span class="tlaGBC" title="branch 0 was taken 2792 times"> + </span><span class="tlaGBC" title="branch 1 was taken 698 times"> + </span>]:<span class="tlaGNC">        2792 :   for (const std::string&amp; arg : args) {</span></span>
-<span id="L447"><span class="lineNum">     447</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 2792 times"> + </span>]:<span class="tlaGNC">        2792 :     if (arg == &quot;--width&quot;) {</span></span>
+<span id="L445"><span class="lineNum">     445</span>                 :<span class="tlaGNC">         701 :   std::optional&lt;std::string_view&gt; width_flag;</span></span>
+<span id="L446"><span class="lineNum">     446</span>         [<span class="tlaGBC" title="branch 0 was taken 2810 times"> + </span><span class="tlaGBC" title="branch 1 was taken 701 times"> + </span>]:<span class="tlaGNC">        2810 :   for (const std::string&amp; arg : args) {</span></span>
+<span id="L447"><span class="lineNum">     447</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 2810 times"> + </span>]:<span class="tlaGNC">        2810 :     if (arg == &quot;--width&quot;) {</span></span>
 <span id="L448"><span class="lineNum">     448</span>                 :<span class="tlaUNC">           0 :       width_flag = &quot;auto&quot;;</span></span>
-<span id="L449"><span class="lineNum">     449</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2790 times"> + </span>]:<span class="tlaGNC">        2792 :     } else if (arg.starts_with(&quot;--width=&quot;)) {</span></span>
+<span id="L449"><span class="lineNum">     449</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2808 times"> + </span>]:<span class="tlaGNC">        2810 :     } else if (arg.starts_with(&quot;--width=&quot;)) {</span></span>
 <span id="L450"><span class="lineNum">     450</span>                 :<span class="tlaGNC">           2 :       width_flag = std::string_view(arg).substr(std::string_view(&quot;--width=&quot;).size());</span></span>
 <span id="L451"><span class="lineNum">     451</span>                 :<span class="tlaGNC">           2 :     }</span></span>
-<span id="L452"><span class="lineNum">     452</span>                 :<span class="tlaGNC">        2792 :   }</span></span>
-<span id="L453"><span class="lineNum">     453</span>                 :<span class="tlaGNC">         698 :   const absl::StatusOr&lt;std::size_t&gt; help_width =</span></span>
-<span id="L454"><span class="lineNum">     454</span>                 :<span class="tlaGNC">         698 :       xff::cli::ResolveHelpWidth(width_flag, xff::cli::DetectTerminalWidth());</span></span>
-<span id="L455"><span class="lineNum">     455</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 698 times"> + </span>]:<span class="tlaGNC">         698 :   if (!help_width.ok()) {</span></span>
+<span id="L452"><span class="lineNum">     452</span>                 :<span class="tlaGNC">        2810 :   }</span></span>
+<span id="L453"><span class="lineNum">     453</span>                 :<span class="tlaGNC">         701 :   const absl::StatusOr&lt;std::size_t&gt; help_width =</span></span>
+<span id="L454"><span class="lineNum">     454</span>                 :<span class="tlaGNC">         701 :       xff::cli::ResolveHelpWidth(width_flag, xff::cli::DetectTerminalWidth());</span></span>
+<span id="L455"><span class="lineNum">     455</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 701 times"> + </span>]:<span class="tlaGNC">         701 :   if (!help_width.ok()) {</span></span>
 <span id="L456"><span class="lineNum">     456</span>                 :<span class="tlaUNC">           0 :     std::cerr &lt;&lt; &quot;xff: &quot; &lt;&lt; help_width.status().message() &lt;&lt; &quot;\n&quot;;</span></span>
 <span id="L457"><span class="lineNum">     457</span>                 :<span class="tlaUNC">           0 :     return 2;</span></span>
 <span id="L458"><span class="lineNum">     458</span>                 :<span class="tlaUNC">           0 :   }</span></span>
-<span id="L459"><span class="lineNum">     459</span>                 :<span class="tlaGNC">         698 :   const bool stdout_is_tty = ::isatty(STDOUT_FILENO) != 0;</span></span>
+<span id="L459"><span class="lineNum">     459</span>                 :<span class="tlaGNC">         701 :   const bool stdout_is_tty = ::isatty(STDOUT_FILENO) != 0;</span></span>
 <span id="L460"><span class="lineNum">     460</span>                 :             :   // --color drives help color too (auto = a tty with NO_COLOR unset; always overrides).</span>
 <span id="L461"><span class="lineNum">     461</span>                 :             :   // Scanned from argv like --width, since --help short-circuits before the full parse.</span>
-<span id="L462"><span class="lineNum">     462</span>                 :<span class="tlaGNC">         698 :   const bool help_color = xff::color::Enabled(xff::color::ResolveWhen(args), stdout_is_tty, xff::env::Has(&quot;NO_COLOR&quot;));</span></span>
-<span id="L463"><span class="lineNum">     463</span>                 :<span class="tlaGNC">         698 :   const xff::cli::HelpRenderContext help_context{.width = *help_width, .color = help_color};</span></span>
+<span id="L462"><span class="lineNum">     462</span>                 :<span class="tlaGNC">         701 :   const bool help_color = xff::color::Enabled(xff::color::ResolveWhen(args), stdout_is_tty, xff::env::Has(&quot;NO_COLOR&quot;));</span></span>
+<span id="L463"><span class="lineNum">     463</span>                 :<span class="tlaGNC">         701 :   const xff::cli::HelpRenderContext help_context{.width = *help_width, .color = help_color};</span></span>
 <span id="L464"><span class="lineNum">     464</span>                 :             :   // Parse once before dispatching help/version. The parser identifies meta flags</span>
 <span id="L465"><span class="lineNum">     465</span>                 :             :   // only at option/expression boundaries, so `-exec echo --help ;` passes</span>
 <span id="L466"><span class="lineNum">     466</span>                 :             :   // `--help` to the child instead of turning the whole xff invocation into help.</span>
-<span id="L467"><span class="lineNum">     467</span>                 :<span class="tlaGNC">         698 :   absl::StatusOr&lt;xff::parser::Command&gt; parsed = xff::parser::Parse(args);</span></span>
-<span id="L468"><span class="lineNum">     468</span>         [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 694 times"> + </span>]:<span class="tlaGNC">         698 :   if (!parsed.ok()) {</span></span>
+<span id="L467"><span class="lineNum">     467</span>                 :<span class="tlaGNC">         701 :   absl::StatusOr&lt;xff::parser::Command&gt; parsed = xff::parser::Parse(args);</span></span>
+<span id="L468"><span class="lineNum">     468</span>         [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 697 times"> + </span>]:<span class="tlaGNC">         701 :   if (!parsed.ok()) {</span></span>
 <span id="L469"><span class="lineNum">     469</span>                 :<span class="tlaGNC">           4 :     std::cerr &lt;&lt; &quot;xff: &quot; &lt;&lt; parsed.status().message() &lt;&lt; &quot;\n&quot;;</span></span>
 <span id="L470"><span class="lineNum">     470</span>                 :<span class="tlaGNC">           4 :     return 2;</span></span>
 <span id="L471"><span class="lineNum">     471</span>                 :<span class="tlaGNC">           4 :   }</span></span>
 <span id="L472"><span class="lineNum">     472</span>                 :             :   // Resolve only the globals the parser identified at option boundaries. In particular, a token</span>
 <span id="L473"><span class="lineNum">     473</span>                 :             :   // such as `--pager=always` inside an -exec argument run belongs to the child command.</span>
-<span id="L474"><span class="lineNum">     474</span>                 :<span class="tlaGNC">         694 :   const absl::StatusOr&lt;xff::cli::PagerConfig&gt; pager = xff::cli::ResolvePager(parsed-&gt;globals);</span></span>
-<span id="L475"><span class="lineNum">     475</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 693 times"> + </span>]:<span class="tlaGNC">         694 :   if (!pager.ok()) {</span></span>
+<span id="L474"><span class="lineNum">     474</span>                 :<span class="tlaGNC">         697 :   const absl::StatusOr&lt;xff::cli::PagerConfig&gt; pager = xff::cli::ResolvePager(parsed-&gt;globals);</span></span>
+<span id="L475"><span class="lineNum">     475</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 696 times"> + </span>]:<span class="tlaGNC">         697 :   if (!pager.ok()) {</span></span>
 <span id="L476"><span class="lineNum">     476</span>                 :<span class="tlaGNC">           1 :     std::cerr &lt;&lt; &quot;xff: &quot; &lt;&lt; pager.status().message() &lt;&lt; &quot;\n&quot;;</span></span>
 <span id="L477"><span class="lineNum">     477</span>                 :<span class="tlaGNC">           1 :     return 2;</span></span>
 <span id="L478"><span class="lineNum">     478</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L479"><span class="lineNum">     479</span>                 :<span class="tlaGNC">         693 :   const xff::cli::PagerDecision meta_pager = xff::cli::DecidePager(*pager, xff::cli::PagerOutput::kMeta, stdout_is_tty);</span></span>
+<span id="L479"><span class="lineNum">     479</span>                 :<span class="tlaGNC">         696 :   const xff::cli::PagerDecision meta_pager = xff::cli::DecidePager(*pager, xff::cli::PagerOutput::kMeta, stdout_is_tty);</span></span>
 <span id="L480"><span class="lineNum">     480</span>                 :             : </span>
 <span id="L481"><span class="lineNum">     481</span>                 :             :   // Help and version are accepted anywhere globals may appear (find prints usage</span>
 <span id="L482"><span class="lineNum">     482</span>                 :             :   // on a bare --help wherever it lands). xff stays flag-only -- no `help` subcommand --</span>
@@ -574,9 +574,9 @@
 <span id="L493"><span class="lineNum">     493</span>                 :             :   // `xff --help=archive --bogus` is a broken command line, and the</span>
 <span id="L494"><span class="lineNum">     494</span>                 :             :   // one-line unknown-option error serves better than pages of help hiding the typo.</span>
 <span id="L495"><span class="lineNum">     495</span>                 :             :   // The parser has already separated these tokens from the command proper.</span>
-<span id="L496"><span class="lineNum">     496</span>                 :<span class="tlaGNC">         693 :   const MetaSelection meta = SelectMeta(parsed-&gt;meta_flags);</span></span>
+<span id="L496"><span class="lineNum">     496</span>                 :<span class="tlaGNC">         696 :   const MetaSelection meta = SelectMeta(parsed-&gt;meta_flags);</span></span>
 <span id="L497"><span class="lineNum">     497</span>                 :             : </span>
-<span id="L498"><span class="lineNum">     498</span>         [<span class="tlaGBC" title="branch 0 was taken 142 times"> + </span><span class="tlaGBC" title="branch 1 was taken 551 times"> + </span>]:<span class="tlaGNC">         693 :   if (meta.kind != Meta::kNone) {</span></span>
+<span id="L498"><span class="lineNum">     498</span>         [<span class="tlaGBC" title="branch 0 was taken 142 times"> + </span><span class="tlaGBC" title="branch 1 was taken 554 times"> + </span>]:<span class="tlaGNC">         696 :   if (meta.kind != Meta::kNone) {</span></span>
 <span id="L499"><span class="lineNum">     499</span>                 :             :     // Bad flags are hard errors even when help was asked for. Ignoring them because</span>
 <span id="L500"><span class="lineNum">     500</span>                 :             :     // help &quot;wins&quot; is how a typo silently vanishes behind 200 lines of output.</span>
 <span id="L501"><span class="lineNum">     501</span>         [<span class="tlaGBC" title="branch 0 was taken 18 times"> + </span><span class="tlaGBC" title="branch 1 was taken 140 times"> + </span>]:<span class="tlaGNC">         142 :     for (const std::string&amp; global : parsed-&gt;globals) {</span></span>
@@ -643,32 +643,32 @@
 <span id="L562"><span class="lineNum">     562</span>                 :             :   // for one out of git/cargo habit would otherwise have the word silently taken as a</span>
 <span id="L563"><span class="lineNum">     563</span>                 :             :   // path to search, so (in the xff flavor only; find must keep `find help` meaning</span>
 <span id="L564"><span class="lineNum">     564</span>                 :             :   // &quot;search ./help&quot;) catch a leading operand that names one and point at the flag.</span>
-<span id="L565"><span class="lineNum">     565</span>         [<span class="tlaGBC" title="branch 0 was taken 549 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">         551 :   if (xff::config::DefaultStyleForProgram(program) != &quot;find&quot;) {</span></span>
-<span id="L566"><span class="lineNum">     566</span>         [<span class="tlaGBC" title="branch 0 was taken 1076 times"> + </span><span class="tlaGBC" title="branch 1 was taken 13 times"> + </span>]:<span class="tlaGNC">        1076 :     for (const std::string&amp; arg : args) {</span></span>
-<span id="L567"><span class="lineNum">     567</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 1076 times"> + </span>]:<span class="tlaGNC">        1076 :       if (arg == &quot;--&quot;) {</span></span>
+<span id="L565"><span class="lineNum">     565</span>         [<span class="tlaGBC" title="branch 0 was taken 552 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">         554 :   if (xff::config::DefaultStyleForProgram(program) != &quot;find&quot;) {</span></span>
+<span id="L566"><span class="lineNum">     566</span>         [<span class="tlaGBC" title="branch 0 was taken 1082 times"> + </span><span class="tlaGBC" title="branch 1 was taken 13 times"> + </span>]:<span class="tlaGNC">        1082 :     for (const std::string&amp; arg : args) {</span></span>
+<span id="L567"><span class="lineNum">     567</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 1082 times"> + </span>]:<span class="tlaGNC">        1082 :       if (arg == &quot;--&quot;) {</span></span>
 <span id="L568"><span class="lineNum">     568</span>                 :<span class="tlaUNC">           0 :         break;  // explicit end-of-options: the next token is deliberately an operand</span></span>
 <span id="L569"><span class="lineNum">     569</span>                 :<span class="tlaUNC">           0 :       }</span></span>
-<span id="L570"><span class="lineNum">     570</span> [<span class="tlaGBC" title="branch 0 was taken 540 times"> + </span><span class="tlaGBC" title="branch 1 was taken 536 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 536 times"> + </span>]:<span class="tlaGNC">        1076 :       if (arg.starts_with(&quot;-&quot;) || arg.starts_with(&quot;+&quot;)) {</span></span>
-<span id="L571"><span class="lineNum">     571</span>                 :<span class="tlaGNC">         540 :         continue;  // a leading global, not yet the first operand</span></span>
-<span id="L572"><span class="lineNum">     572</span>                 :<span class="tlaGNC">         540 :       }</span></span>
-<span id="L573"><span class="lineNum">     573</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 535 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 535 times"> + </span>]:<span class="tlaGNC">         536 :       if (arg == &quot;help&quot; || arg == &quot;version&quot;) {</span></span>
+<span id="L570"><span class="lineNum">     570</span> [<span class="tlaGBC" title="branch 0 was taken 543 times"> + </span><span class="tlaGBC" title="branch 1 was taken 539 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 539 times"> + </span>]:<span class="tlaGNC">        1082 :       if (arg.starts_with(&quot;-&quot;) || arg.starts_with(&quot;+&quot;)) {</span></span>
+<span id="L571"><span class="lineNum">     571</span>                 :<span class="tlaGNC">         543 :         continue;  // a leading global, not yet the first operand</span></span>
+<span id="L572"><span class="lineNum">     572</span>                 :<span class="tlaGNC">         543 :       }</span></span>
+<span id="L573"><span class="lineNum">     573</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 538 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 538 times"> + </span>]:<span class="tlaGNC">         539 :       if (arg == &quot;help&quot; || arg == &quot;version&quot;) {</span></span>
 <span id="L574"><span class="lineNum">     574</span>                 :<span class="tlaGNC">           1 :         const std::string_view flag_hint =</span></span>
 <span id="L575"><span class="lineNum">     575</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">           1 :             arg == &quot;help&quot; ? &quot; for usage, or '--help=NAME' for one primary (e.g. '--help=-regex')&quot; : &quot;&quot;;</span></span>
 <span id="L576"><span class="lineNum">     576</span>                 :<span class="tlaGNC">           1 :         std::cerr &lt;&lt; &quot;xff: '&quot; &lt;&lt; arg &lt;&lt; &quot;' is not a subcommand (xff is flag-only). Use '--&quot; &lt;&lt; arg &lt;&lt; &quot;'&quot; &lt;&lt; flag_hint</span></span>
 <span id="L577"><span class="lineNum">     577</span>                 :<span class="tlaGNC">           1 :                   &lt;&lt; &quot;. To search a path literally named '&quot; &lt;&lt; arg &lt;&lt; &quot;', use './&quot; &lt;&lt; arg &lt;&lt; &quot;'.\n&quot;;</span></span>
 <span id="L578"><span class="lineNum">     578</span>                 :<span class="tlaGNC">           1 :         return 2;</span></span>
 <span id="L579"><span class="lineNum">     579</span>                 :<span class="tlaGNC">           1 :       }</span></span>
-<span id="L580"><span class="lineNum">     580</span>                 :<span class="tlaGNC">         535 :       break;  // the first operand is something else; carry on to normal parsing</span></span>
-<span id="L581"><span class="lineNum">     581</span>                 :<span class="tlaGNC">         536 :     }</span></span>
-<span id="L582"><span class="lineNum">     582</span>                 :<span class="tlaGNC">         549 :   }</span></span>
+<span id="L580"><span class="lineNum">     580</span>                 :<span class="tlaGNC">         538 :       break;  // the first operand is something else; carry on to normal parsing</span></span>
+<span id="L581"><span class="lineNum">     581</span>                 :<span class="tlaGNC">         539 :     }</span></span>
+<span id="L582"><span class="lineNum">     582</span>                 :<span class="tlaGNC">         552 :   }</span></span>
 <span id="L583"><span class="lineNum">     583</span>                 :             : </span>
-<span id="L584"><span class="lineNum">     584</span>                 :<span class="tlaGNC">         550 :   xff::parser::Command command = *std::move(parsed);</span></span>
+<span id="L584"><span class="lineNum">     584</span>                 :<span class="tlaGNC">         553 :   xff::parser::Command command = *std::move(parsed);</span></span>
 <span id="L585"><span class="lineNum">     585</span>                 :             : </span>
 <span id="L586"><span class="lineNum">     586</span>                 :             :   // Reject an unknown leading global option (usually a typo) with a usage error,</span>
 <span id="L587"><span class="lineNum">     587</span>                 :             :   // instead of silently ignoring it. Meta flags (--help / --version / --man) are already handled</span>
 <span id="L588"><span class="lineNum">     588</span>                 :             :   // above, so they never reach here.</span>
-<span id="L589"><span class="lineNum">     589</span>         [<span class="tlaGBC" title="branch 0 was taken 720 times"> + </span><span class="tlaGBC" title="branch 1 was taken 538 times"> + </span>]:<span class="tlaGNC">         782 :   for (const std::string&amp; global : command.globals) {</span></span>
-<span id="L590"><span class="lineNum">     590</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 713 times"> + </span>]:<span class="tlaGNC">         720 :     if (!xff::cli::IsKnownGlobal(global)) {</span></span>
+<span id="L589"><span class="lineNum">     589</span>         [<span class="tlaGBC" title="branch 0 was taken 723 times"> + </span><span class="tlaGBC" title="branch 1 was taken 541 times"> + </span>]:<span class="tlaGNC">         785 :   for (const std::string&amp; global : command.globals) {</span></span>
+<span id="L590"><span class="lineNum">     590</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 716 times"> + </span>]:<span class="tlaGNC">         723 :     if (!xff::cli::IsKnownGlobal(global)) {</span></span>
 <span id="L591"><span class="lineNum">     591</span>                 :<span class="tlaGNC">           7 :       std::cerr &lt;&lt; &quot;xff: unknown option '&quot; &lt;&lt; global &lt;&lt; &quot;'\n&quot;</span></span>
 <span id="L592"><span class="lineNum">     592</span>                 :<span class="tlaGNC">           7 :                 &lt;&lt; &quot;Try 'xff --help' for usage, or 'xff --help=NAME' for one option.\n&quot;;</span></span>
 <span id="L593"><span class="lineNum">     593</span>                 :<span class="tlaGNC">           7 :       return 2;</span></span>
@@ -677,72 +677,72 @@
 <span id="L596"><span class="lineNum">     596</span>                 :             :     // silently, so the run looked like it worked. Checked here rather than in each resolver</span>
 <span id="L597"><span class="lineNum">     597</span>                 :             :     // because several of them (--color, --width, --pager) run before the parse, from raw argv,</span>
 <span id="L598"><span class="lineNum">     598</span>                 :             :     // with nowhere to report an error; by the time this loop runs every global is in hand.</span>
-<span id="L599"><span class="lineNum">     599</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 708 times"> + </span>]:<span class="tlaGNC">         713 :     if (const absl::Status status = xff::cli::ValidateGlobalValue(global); !status.ok()) {</span></span>
+<span id="L599"><span class="lineNum">     599</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 711 times"> + </span>]:<span class="tlaGNC">         716 :     if (const absl::Status status = xff::cli::ValidateGlobalValue(global); !status.ok()) {</span></span>
 <span id="L600"><span class="lineNum">     600</span>                 :<span class="tlaGNC">           5 :       std::cerr &lt;&lt; &quot;xff: &quot; &lt;&lt; status.message() &lt;&lt; &quot;\n&quot;</span></span>
 <span id="L601"><span class="lineNum">     601</span>                 :<span class="tlaGNC">           5 :                 &lt;&lt; &quot;Try 'xff --help=&quot; &lt;&lt; std::string_view(global).substr(0, global.find('=')) &lt;&lt; &quot;' for its values.\n&quot;;</span></span>
 <span id="L602"><span class="lineNum">     602</span>                 :<span class="tlaGNC">           5 :       return 2;</span></span>
 <span id="L603"><span class="lineNum">     603</span>                 :<span class="tlaGNC">           5 :     }</span></span>
-<span id="L604"><span class="lineNum">     604</span>                 :<span class="tlaGNC">         713 :   }</span></span>
+<span id="L604"><span class="lineNum">     604</span>                 :<span class="tlaGNC">         716 :   }</span></span>
 <span id="L605"><span class="lineNum">     605</span>                 :             : </span>
 <span id="L606"><span class="lineNum">     606</span>                 :             :   // A composable-extra flag (e.g. --archive) is always recognized, but if the extra it needs is not</span>
 <span id="L607"><span class="lineNum">     607</span>                 :             :   // compiled into this binary, using it is a hard immediate error naming what to rebuild with - never</span>
 <span id="L608"><span class="lineNum">     608</span>                 :             :   // a silent no-op. Derived from the flag's SOT `extra` key + the compile-time ExtraEnabled map.</span>
-<span id="L609"><span class="lineNum">     609</span>         [<span class="tlaGBC" title="branch 0 was taken 708 times"> + </span><span class="tlaGBC" title="branch 1 was taken 532 times"> + </span>]:<span class="tlaGNC">         770 :   for (const std::string_view global : command.globals) {</span></span>
-<span id="L610"><span class="lineNum">     610</span>                 :<span class="tlaGNC">         708 :     std::string_view name = global.substr(0, global.find('='));</span></span>
+<span id="L609"><span class="lineNum">     609</span>         [<span class="tlaGBC" title="branch 0 was taken 711 times"> + </span><span class="tlaGBC" title="branch 1 was taken 534 times"> + </span>]:<span class="tlaGNC">         773 :   for (const std::string_view global : command.globals) {</span></span>
+<span id="L610"><span class="lineNum">     610</span>                 :<span class="tlaGNC">         711 :     std::string_view name = global.substr(0, global.find('='));</span></span>
 <span id="L611"><span class="lineNum">     611</span>                 :             :     // A chmod-style suffix sign is part of the VALUE, not the name (`-z+` is the short</span>
 <span id="L612"><span class="lineNum">     612</span>                 :             :     // `--archive=all`), so strip it before the lookup or the short forms would slip past</span>
 <span id="L613"><span class="lineNum">     613</span>                 :             :     // this gate entirely and fail later with a confusing message.</span>
-<span id="L614"><span class="lineNum">     614</span> [<span class="tlaGBC" title="branch 0 was taken 708 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 8 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 700 times"> + </span>]:<span class="tlaGNC">         708 :     const bool suffix_off = name.size() &gt; 1 &amp;&amp; name.back() == '-';</span></span>
+<span id="L614"><span class="lineNum">     614</span> [<span class="tlaGBC" title="branch 0 was taken 711 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 8 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 703 times"> + </span>]:<span class="tlaGNC">         711 :     const bool suffix_off = name.size() &gt; 1 &amp;&amp; name.back() == '-';</span></span>
 <span id="L615"><span class="lineNum">     615</span>                 :             :     // A whole RUN of signs, not one: the archive ladder spells its top rung `-z++`, so stripping a</span>
 <span id="L616"><span class="lineNum">     616</span>                 :             :     // single character would leave `-z+`, which is not a flag name, and the run would miss this gate</span>
 <span id="L617"><span class="lineNum">     617</span>                 :             :     // and fail later with a wordier message.</span>
-<span id="L618"><span class="lineNum">     618</span> [<span class="tlaGBC" title="branch 0 was taken 739 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 23 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 716 times"> + </span>]:<span class="tlaGNC">         739 :     while (name.size() &gt; 1 &amp;&amp; (name.back() == '+' || name.back() == '-')) {</span></span>
-<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 8 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 708 times"> + </span>]
+<span id="L618"><span class="lineNum">     618</span> [<span class="tlaGBC" title="branch 0 was taken 742 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 23 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 719 times"> + </span>]:<span class="tlaGNC">         742 :     while (name.size() &gt; 1 &amp;&amp; (name.back() == '+' || name.back() == '-')) {</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 8 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 711 times"> + </span>]
 <span id="L619"><span class="lineNum">     619</span>                 :<span class="tlaGNC">          31 :       name.remove_suffix(1);</span></span>
 <span id="L620"><span class="lineNum">     620</span>                 :<span class="tlaGNC">          31 :     }</span></span>
 <span id="L621"><span class="lineNum">     621</span>                 :             :     // The upper-case archive family is the lower-case one with writing armed, so it needs the same</span>
 <span id="L622"><span class="lineNum">     622</span>                 :             :     // extra; the table knows it under the flag that arms writing.</span>
-<span id="L623"><span class="lineNum">     623</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 698 times"> + </span>]:<span class="tlaGNC">         708 :     if (name == &quot;-Z&quot;) {</span></span>
+<span id="L623"><span class="lineNum">     623</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 701 times"> + </span>]:<span class="tlaGNC">         711 :     if (name == &quot;-Z&quot;) {</span></span>
 <span id="L624"><span class="lineNum">     624</span>                 :<span class="tlaGNC">          10 :       name = &quot;--archive-write&quot;;</span></span>
 <span id="L625"><span class="lineNum">     625</span>                 :<span class="tlaGNC">          10 :     }</span></span>
-<span id="L626"><span class="lineNum">     626</span>                 :<span class="tlaGNC">         708 :     const mbo::types::OptionalRef&lt;const xff::cli::GlobalFlag&gt; flag = xff::cli::LookupGlobal(name);</span></span>
-<span id="L627"><span class="lineNum">     627</span> [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 706 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 516 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 190 times"> + </span>]:<span class="tlaGNC">         708 :     if (!flag.has_value() || flag-&gt;extra.empty() || xff::cli::ExtraEnabled(flag-&gt;extra)) {</span></span>
-<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 182 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 8 times"> + </span>]
-<span id="L628"><span class="lineNum">     628</span>                 :<span class="tlaGNC">         700 :       continue;</span></span>
-<span id="L629"><span class="lineNum">     629</span>                 :<span class="tlaGNC">         700 :     }</span></span>
+<span id="L626"><span class="lineNum">     626</span>                 :<span class="tlaGNC">         711 :     const mbo::types::OptionalRef&lt;const xff::cli::GlobalFlag&gt; flag = xff::cli::LookupGlobal(name);</span></span>
+<span id="L627"><span class="lineNum">     627</span> [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 709 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 518 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 191 times"> + </span>]:<span class="tlaGNC">         711 :     if (!flag.has_value() || flag-&gt;extra.empty() || xff::cli::ExtraEnabled(flag-&gt;extra)) {</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 182 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 9 times"> + </span>]
+<span id="L628"><span class="lineNum">     628</span>                 :<span class="tlaGNC">         702 :       continue;</span></span>
+<span id="L629"><span class="lineNum">     629</span>                 :<span class="tlaGNC">         702 :     }</span></span>
 <span id="L630"><span class="lineNum">     630</span>                 :             :     // Explicitly turning the capability OFF needs no extra: `--archive=none` / `-z-` asks</span>
 <span id="L631"><span class="lineNum">     631</span>                 :             :     // for the plain (find) behavior a lean build already has, so demanding a rebuild there</span>
 <span id="L632"><span class="lineNum">     632</span>                 :             :     // would be nonsense. Only a request for the capability itself is a hard error.</span>
-<span id="L633"><span class="lineNum">     633</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">           8 :     const std::string_view value = global.substr(0, global.find('=')) == global</span></span>
-<span id="L634"><span class="lineNum">     634</span>                 :<span class="tlaGNC">           8 :                                        ? std::string_view()</span></span>
-<span id="L635"><span class="lineNum">     635</span>                 :<span class="tlaGNC">           8 :                                        : std::string_view(global).substr(global.find('=') + 1);</span></span>
-<span id="L636"><span class="lineNum">     636</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 6 times"> + </span>]:<span class="tlaGNC">           8 :     if (suffix_off || value == &quot;none&quot; || value == &quot;off&quot;) {</span></span>
-<span class="lineNum">        </span>         [<span class="tlaUNC" title="branch &quot;4&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 6 times"> + </span>]
+<span id="L633"><span class="lineNum">     633</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">           9 :     const std::string_view value = global.substr(0, global.find('=')) == global</span></span>
+<span id="L634"><span class="lineNum">     634</span>                 :<span class="tlaGNC">           9 :                                        ? std::string_view()</span></span>
+<span id="L635"><span class="lineNum">     635</span>                 :<span class="tlaGNC">           9 :                                        : std::string_view(global).substr(global.find('=') + 1);</span></span>
+<span id="L636"><span class="lineNum">     636</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 7 times"> + </span>]:<span class="tlaGNC">           9 :     if (suffix_off || value == &quot;none&quot; || value == &quot;off&quot;) {</span></span>
+<span class="lineNum">        </span>         [<span class="tlaUNC" title="branch &quot;4&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 7 times"> + </span>]
 <span id="L637"><span class="lineNum">     637</span>                 :<span class="tlaGNC">           2 :       continue;</span></span>
 <span id="L638"><span class="lineNum">     638</span>                 :<span class="tlaGNC">           2 :     }</span></span>
-<span id="L639"><span class="lineNum">     639</span>                 :<span class="tlaGNC">           6 :     std::cerr &lt;&lt; &quot;xff: &quot; &lt;&lt; flag-&gt;name &lt;&lt; &quot;: this build has no &quot; &lt;&lt; flag-&gt;extra &lt;&lt; &quot; support&quot;;</span></span>
-<span id="L640"><span class="lineNum">     640</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">           6 :     if (const std::string_view rebuild = xff::cli::ExtraBuildFlag(flag-&gt;extra); !rebuild.empty()) {</span></span>
-<span id="L641"><span class="lineNum">     641</span>                 :<span class="tlaGNC">           6 :       std::cerr &lt;&lt; &quot;; rebuild with &quot; &lt;&lt; rebuild;</span></span>
-<span id="L642"><span class="lineNum">     642</span>                 :<span class="tlaGNC">           6 :     }</span></span>
-<span id="L643"><span class="lineNum">     643</span>                 :<span class="tlaGNC">           6 :     std::cerr &lt;&lt; &quot;\n&quot;;</span></span>
-<span id="L644"><span class="lineNum">     644</span>                 :<span class="tlaGNC">           6 :     return 2;</span></span>
-<span id="L645"><span class="lineNum">     645</span>                 :<span class="tlaGNC">           8 :   }</span></span>
+<span id="L639"><span class="lineNum">     639</span>                 :<span class="tlaGNC">           7 :     std::cerr &lt;&lt; &quot;xff: &quot; &lt;&lt; flag-&gt;name &lt;&lt; &quot;: this build has no &quot; &lt;&lt; flag-&gt;extra &lt;&lt; &quot; support&quot;;</span></span>
+<span id="L640"><span class="lineNum">     640</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">           7 :     if (const std::string_view rebuild = xff::cli::ExtraBuildFlag(flag-&gt;extra); !rebuild.empty()) {</span></span>
+<span id="L641"><span class="lineNum">     641</span>                 :<span class="tlaGNC">           7 :       std::cerr &lt;&lt; &quot;; rebuild with &quot; &lt;&lt; rebuild;</span></span>
+<span id="L642"><span class="lineNum">     642</span>                 :<span class="tlaGNC">           7 :     }</span></span>
+<span id="L643"><span class="lineNum">     643</span>                 :<span class="tlaGNC">           7 :     std::cerr &lt;&lt; &quot;\n&quot;;</span></span>
+<span id="L644"><span class="lineNum">     644</span>                 :<span class="tlaGNC">           7 :     return 2;</span></span>
+<span id="L645"><span class="lineNum">     645</span>                 :<span class="tlaGNC">           9 :   }</span></span>
 <span id="L646"><span class="lineNum">     646</span>                 :             : </span>
 <span id="L647"><span class="lineNum">     647</span>                 :             :   // Load the layered config (system + user + explicit --xffrc) and resolve the</span>
 <span id="L648"><span class="lineNum">     648</span>                 :             :   // effective flags. --explain writes that effective configuration and exits.</span>
-<span id="L649"><span class="lineNum">     649</span>                 :<span class="tlaGNC">         532 :   xff::config::DiscoveryOptions opts = xff::config::SelectorsFromGlobals(command.globals);</span></span>
+<span id="L649"><span class="lineNum">     649</span>                 :<span class="tlaGNC">         534 :   xff::config::DiscoveryOptions opts = xff::config::SelectorsFromGlobals(command.globals);</span></span>
 <span id="L650"><span class="lineNum">     650</span>                 :             :   // argv[0] dispatch: the program name picks the base style (invoked as `find` -&gt;</span>
 <span id="L651"><span class="lineNum">     651</span>                 :             :   // find expression style; as `xff` or any other alias -&gt; modern xff) as the lowest-precedence</span>
 <span id="L652"><span class="lineNum">     652</span>                 :             :   // selector, so an explicit --config still overrides it (design-config.md &quot;CLI</span>
 <span id="L653"><span class="lineNum">     653</span>                 :             :   // selectors&quot;). Prepended before discovery so find:/xff: .xffrc lines gate on it too.</span>
-<span id="L654"><span class="lineNum">     654</span>                 :<span class="tlaGNC">         532 :   opts.configs.insert(opts.configs.begin(), std::string(xff::config::DefaultStyleForProgram(program)));</span></span>
-<span id="L655"><span class="lineNum">     655</span>                 :<span class="tlaGNC">         532 :   opts.xff_config = EnvOpt(&quot;XFF_CONFIG&quot;);</span></span>
-<span id="L656"><span class="lineNum">     656</span>                 :<span class="tlaGNC">         532 :   opts.xdg_config_home = EnvOpt(&quot;XDG_CONFIG_HOME&quot;);</span></span>
-<span id="L657"><span class="lineNum">     657</span>                 :<span class="tlaGNC">         532 :   opts.home = EnvOpt(&quot;HOME&quot;);</span></span>
+<span id="L654"><span class="lineNum">     654</span>                 :<span class="tlaGNC">         534 :   opts.configs.insert(opts.configs.begin(), std::string(xff::config::DefaultStyleForProgram(program)));</span></span>
+<span id="L655"><span class="lineNum">     655</span>                 :<span class="tlaGNC">         534 :   opts.xff_config = EnvOpt(&quot;XFF_CONFIG&quot;);</span></span>
+<span id="L656"><span class="lineNum">     656</span>                 :<span class="tlaGNC">         534 :   opts.xdg_config_home = EnvOpt(&quot;XDG_CONFIG_HOME&quot;);</span></span>
+<span id="L657"><span class="lineNum">     657</span>                 :<span class="tlaGNC">         534 :   opts.home = EnvOpt(&quot;HOME&quot;);</span></span>
 <span id="L658"><span class="lineNum">     658</span>                 :             :   // Config is system + user + explicit --xffrc only; there is no auto-discovered project layer</span>
 <span id="L659"><span class="lineNum">     659</span>                 :             :   // (Option B, 2026-07-06), so the search roots do not feed config discovery.</span>
-<span id="L660"><span class="lineNum">     660</span>                 :<span class="tlaGNC">         532 :   const xff::config::ConfigInputs inputs = xff::config::Discover(opts, ReadFile);</span></span>
-<span id="L661"><span class="lineNum">     661</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 531 times"> + </span>]:<span class="tlaGNC">         532 :   if (const absl::Status status = xff::config::ValidateConfigSkips(inputs); !status.ok()) {</span></span>
+<span id="L660"><span class="lineNum">     660</span>                 :<span class="tlaGNC">         534 :   const xff::config::ConfigInputs inputs = xff::config::Discover(opts, ReadFile);</span></span>
+<span id="L661"><span class="lineNum">     661</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 533 times"> + </span>]:<span class="tlaGNC">         534 :   if (const absl::Status status = xff::config::ValidateConfigSkips(inputs); !status.ok()) {</span></span>
 <span id="L662"><span class="lineNum">     662</span>                 :<span class="tlaGNC">           1 :     std::cerr &lt;&lt; &quot;xff: &quot; &lt;&lt; status.message() &lt;&lt; &quot;\n&quot;;</span></span>
 <span id="L663"><span class="lineNum">     663</span>                 :<span class="tlaGNC">           1 :     return 2;</span></span>
 <span id="L664"><span class="lineNum">     664</span>                 :<span class="tlaGNC">           1 :   }</span></span>
@@ -750,20 +750,20 @@
 <span id="L666"><span class="lineNum">     666</span>                 :             :   // from a trusted tier (the CLI, or the user/system config) - never from an --xffrc file itself,</span>
 <span id="L667"><span class="lineNum">     667</span>                 :             :   // so a named config cannot authorize its own -exec/-delete. The gate uses this to keep unarmed</span>
 <span id="L668"><span class="lineNum">     668</span>                 :             :   // --xffrc dangerous lines inert.</span>
-<span id="L669"><span class="lineNum">     669</span>                 :<span class="tlaGNC">         531 :   const bool xffrc_armed = xff::config::ArmedFromTrustedTier(inputs, command.globals, &quot;--allow-exec&quot;);</span></span>
-<span id="L670"><span class="lineNum">     670</span>                 :<span class="tlaGNC">         531 :   const xff::config::GateResult gated = xff::config::GateConfig(inputs, xffrc_armed);</span></span>
-<span id="L671"><span class="lineNum">     671</span>                 :<span class="tlaGNC">         531 :   const std::string_view invocation_selector = xff::config::DefaultStyleForProgram(program);</span></span>
-<span id="L672"><span class="lineNum">     672</span>                 :<span class="tlaGNC">         531 :   const std::vector&lt;xff::config::ResolvedFlag&gt; resolved =</span></span>
-<span id="L673"><span class="lineNum">     673</span>                 :<span class="tlaGNC">         531 :       xff::config::ResolveConfigInOrder(gated.config, command.globals, invocation_selector);</span></span>
-<span id="L674"><span class="lineNum">     674</span>                 :<span class="tlaGNC">         531 :   std::vector&lt;std::string&gt; effective_configs = {std::string(invocation_selector)};</span></span>
-<span id="L675"><span class="lineNum">     675</span>                 :<span class="tlaGNC">         531 :   constexpr std::string_view kConfigPrefix = &quot;--config=&quot;;</span></span>
-<span id="L676"><span class="lineNum">     676</span>         [<span class="tlaGBC" title="branch 0 was taken 724 times"> + </span><span class="tlaGBC" title="branch 1 was taken 531 times"> + </span>]:<span class="tlaGNC">         778 :   for (const xff::config::ResolvedFlag&amp; flag : resolved) {</span></span>
-<span id="L677"><span class="lineNum">     677</span>         [<span class="tlaGBC" title="branch 0 was taken 47 times"> + </span><span class="tlaGBC" title="branch 1 was taken 677 times"> + </span>]:<span class="tlaGNC">         724 :     if (flag.flag.starts_with(kConfigPrefix)) {</span></span>
+<span id="L669"><span class="lineNum">     669</span>                 :<span class="tlaGNC">         533 :   const bool xffrc_armed = xff::config::ArmedFromTrustedTier(inputs, command.globals, &quot;--allow-exec&quot;);</span></span>
+<span id="L670"><span class="lineNum">     670</span>                 :<span class="tlaGNC">         533 :   const xff::config::GateResult gated = xff::config::GateConfig(inputs, xffrc_armed);</span></span>
+<span id="L671"><span class="lineNum">     671</span>                 :<span class="tlaGNC">         533 :   const std::string_view invocation_selector = xff::config::DefaultStyleForProgram(program);</span></span>
+<span id="L672"><span class="lineNum">     672</span>                 :<span class="tlaGNC">         533 :   const std::vector&lt;xff::config::ResolvedFlag&gt; resolved =</span></span>
+<span id="L673"><span class="lineNum">     673</span>                 :<span class="tlaGNC">         533 :       xff::config::ResolveConfigInOrder(gated.config, command.globals, invocation_selector);</span></span>
+<span id="L674"><span class="lineNum">     674</span>                 :<span class="tlaGNC">         533 :   std::vector&lt;std::string&gt; effective_configs = {std::string(invocation_selector)};</span></span>
+<span id="L675"><span class="lineNum">     675</span>                 :<span class="tlaGNC">         533 :   constexpr std::string_view kConfigPrefix = &quot;--config=&quot;;</span></span>
+<span id="L676"><span class="lineNum">     676</span>         [<span class="tlaGBC" title="branch 0 was taken 728 times"> + </span><span class="tlaGBC" title="branch 1 was taken 533 times"> + </span>]:<span class="tlaGNC">         780 :   for (const xff::config::ResolvedFlag&amp; flag : resolved) {</span></span>
+<span id="L677"><span class="lineNum">     677</span>         [<span class="tlaGBC" title="branch 0 was taken 47 times"> + </span><span class="tlaGBC" title="branch 1 was taken 681 times"> + </span>]:<span class="tlaGNC">         728 :     if (flag.flag.starts_with(kConfigPrefix)) {</span></span>
 <span id="L678"><span class="lineNum">     678</span>                 :<span class="tlaGNC">          47 :       effective_configs.push_back(flag.flag.substr(kConfigPrefix.size()));</span></span>
 <span id="L679"><span class="lineNum">     679</span>                 :<span class="tlaGNC">          47 :     }</span></span>
-<span id="L680"><span class="lineNum">     680</span>                 :<span class="tlaGNC">         724 :   }</span></span>
-<span id="L681"><span class="lineNum">     681</span>                 :<span class="tlaGNC">         531 :   const xff::registry::Style style = xff::config::ActiveStyle(effective_configs);</span></span>
-<span id="L682"><span class="lineNum">     682</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 521 times"> + </span>]:<span class="tlaGNC">         531 :   if (absl::c_contains(command.globals, &quot;--explain&quot;)) {</span></span>
+<span id="L680"><span class="lineNum">     680</span>                 :<span class="tlaGNC">         728 :   }</span></span>
+<span id="L681"><span class="lineNum">     681</span>                 :<span class="tlaGNC">         533 :   const xff::registry::Style style = xff::config::ActiveStyle(effective_configs);</span></span>
+<span id="L682"><span class="lineNum">     682</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 523 times"> + </span>]:<span class="tlaGNC">         533 :   if (absl::c_contains(command.globals, &quot;--explain&quot;)) {</span></span>
 <span id="L683"><span class="lineNum">     683</span>                 :<span class="tlaGNC">          10 :     std::cout &lt;&lt; xff::config::ExplainSources(inputs.sources, style);</span></span>
 <span id="L684"><span class="lineNum">     684</span>                 :<span class="tlaGNC">          10 :     std::cout &lt;&lt; xff::config::ExplainConfig(resolved);</span></span>
 <span id="L685"><span class="lineNum">     685</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 10 times"> + </span>]:<span class="tlaGNC">          10 :     for (const xff::config::Drop&amp; drop : gated.drops) {</span></span>
@@ -775,7 +775,7 @@
 <span id="L691"><span class="lineNum">     691</span>                 :<span class="tlaGNC">          10 :   }</span></span>
 <span id="L692"><span class="lineNum">     692</span>                 :             :   // A disallowed config line is dropped, never fatal: warn (self-documenting) and</span>
 <span id="L693"><span class="lineNum">     693</span>                 :             :   // carry on with the survivors (design-config.md &quot;Enforcement &amp; self-documentation&quot;).</span>
-<span id="L694"><span class="lineNum">     694</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 521 times"> + </span>]:<span class="tlaGNC">         521 :   for (const xff::config::Drop&amp; drop : gated.drops) {</span></span>
+<span id="L694"><span class="lineNum">     694</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 523 times"> + </span>]:<span class="tlaGNC">         523 :   for (const xff::config::Drop&amp; drop : gated.drops) {</span></span>
 <span id="L695"><span class="lineNum">     695</span>                 :<span class="tlaGNC">           1 :     std::string_view why = &quot; - denied by config policy&quot;;</span></span>
 <span id="L696"><span class="lineNum">     696</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">           1 :     if (drop.reason == xff::config::DropReason::kPresetOverload) {</span></span>
 <span id="L697"><span class="lineNum">     697</span>                 :<span class="tlaGNC">           1 :       why = &quot; - a config file cannot change a preset; use a named config (--config=NAME)&quot;;</span></span>
@@ -785,17 +785,17 @@
 <span id="L701"><span class="lineNum">     701</span>                 :<span class="tlaGNC">           1 :     std::cerr &lt;&lt; &quot;xff: ignoring &quot; &lt;&lt; xff::config::DropMessage(drop) &lt;&lt; why &lt;&lt; &quot;\n&quot;;</span></span>
 <span id="L702"><span class="lineNum">     702</span>                 :<span class="tlaGNC">           1 :   }</span></span>
 <span id="L703"><span class="lineNum">     703</span>                 :             :   // Apply the single resolved stream in its exact precedence order.</span>
-<span id="L704"><span class="lineNum">     704</span>                 :<span class="tlaGNC">         521 :   std::vector&lt;std::string&gt; config_flags;</span></span>
-<span id="L705"><span class="lineNum">     705</span>                 :<span class="tlaGNC">         521 :   config_flags.reserve(resolved.size());</span></span>
-<span id="L706"><span class="lineNum">     706</span>         [<span class="tlaGBC" title="branch 0 was taken 686 times"> + </span><span class="tlaGBC" title="branch 1 was taken 521 times"> + </span>]:<span class="tlaGNC">         741 :   for (const xff::config::ResolvedFlag&amp; flag : resolved) {</span></span>
-<span id="L707"><span class="lineNum">     707</span>                 :<span class="tlaGNC">         686 :     config_flags.push_back(flag.flag);</span></span>
-<span id="L708"><span class="lineNum">     708</span>                 :<span class="tlaGNC">         686 :   }</span></span>
-<span id="L709"><span class="lineNum">     709</span>                 :<span class="tlaGNC">         521 :   command.globals = std::move(config_flags);</span></span>
+<span id="L704"><span class="lineNum">     704</span>                 :<span class="tlaGNC">         523 :   std::vector&lt;std::string&gt; config_flags;</span></span>
+<span id="L705"><span class="lineNum">     705</span>                 :<span class="tlaGNC">         523 :   config_flags.reserve(resolved.size());</span></span>
+<span id="L706"><span class="lineNum">     706</span>         [<span class="tlaGBC" title="branch 0 was taken 690 times"> + </span><span class="tlaGBC" title="branch 1 was taken 523 times"> + </span>]:<span class="tlaGNC">         743 :   for (const xff::config::ResolvedFlag&amp; flag : resolved) {</span></span>
+<span id="L707"><span class="lineNum">     707</span>                 :<span class="tlaGNC">         690 :     config_flags.push_back(flag.flag);</span></span>
+<span id="L708"><span class="lineNum">     708</span>                 :<span class="tlaGNC">         690 :   }</span></span>
+<span id="L709"><span class="lineNum">     709</span>                 :<span class="tlaGNC">         523 :   command.globals = std::move(config_flags);</span></span>
 <span id="L710"><span class="lineNum">     710</span>                 :             : </span>
 <span id="L711"><span class="lineNum">     711</span>                 :             :   // The find style (--config=find) accepts only find's own expression vocabulary;</span>
 <span id="L712"><span class="lineNum">     712</span>                 :             :   // reject xff extensions (e.g. -println) so a find-style run behaves like GNU</span>
 <span id="L713"><span class="lineNum">     713</span>                 :             :   // find (design-config.md &quot;CLI selectors&quot;). The default xff style accepts all.</span>
-<span id="L714"><span class="lineNum">     714</span>         [<span class="tlaGBC" title="branch 0 was taken 19 times"> + </span><span class="tlaGBC" title="branch 1 was taken 502 times"> + </span>]:<span class="tlaGNC">         521 :   if (const absl::Status status = xff::parser::EnforceStyle(command, style); !status.ok()) {</span></span>
+<span id="L714"><span class="lineNum">     714</span>         [<span class="tlaGBC" title="branch 0 was taken 19 times"> + </span><span class="tlaGBC" title="branch 1 was taken 504 times"> + </span>]:<span class="tlaGNC">         523 :   if (const absl::Status status = xff::parser::EnforceStyle(command, style); !status.ok()) {</span></span>
 <span id="L715"><span class="lineNum">     715</span>                 :<span class="tlaGNC">          19 :     std::cerr &lt;&lt; &quot;xff: &quot; &lt;&lt; status.message() &lt;&lt; &quot;\n&quot;;</span></span>
 <span id="L716"><span class="lineNum">     716</span>                 :<span class="tlaGNC">          19 :     return 2;</span></span>
 <span id="L717"><span class="lineNum">     717</span>                 :<span class="tlaGNC">          19 :   }</span></span>
@@ -803,39 +803,39 @@
 <span id="L719"><span class="lineNum">     719</span>                 :             :   // Apply the resolved case mode to the matchers (--case / -i / -s[+|-]; rg defaults</span>
 <span id="L720"><span class="lineNum">     720</span>                 :             :   // smart), in place before the walk: sets folding on the case-sensitive matchers and</span>
 <span id="L721"><span class="lineNum">     721</span>                 :             :   // recompiles their pre-compiled regex. A no-op under the sensitive default.</span>
-<span id="L722"><span class="lineNum">     722</span>                 :<span class="tlaGNC">         502 :   xff::parser::BindMatchers(</span></span>
-<span id="L723"><span class="lineNum">     723</span>                 :<span class="tlaGNC">         502 :       command, xff::parser::GrammarFromGlobals(command.globals), xff::parser::ResolveCaseMode(command.globals, style));</span></span>
+<span id="L722"><span class="lineNum">     722</span>                 :<span class="tlaGNC">         504 :   xff::parser::BindMatchers(</span></span>
+<span id="L723"><span class="lineNum">     723</span>                 :<span class="tlaGNC">         504 :       command, xff::parser::GrammarFromGlobals(command.globals), xff::parser::ResolveCaseMode(command.globals, style));</span></span>
 <span id="L724"><span class="lineNum">     724</span>                 :             : </span>
 <span id="L725"><span class="lineNum">     725</span>                 :             :   // Walk the roots and evaluate the expression, printing matches. Per-path errors</span>
 <span id="L726"><span class="lineNum">     726</span>                 :             :   // -&gt; exit 2 (the xff exit-code model; design.md &quot;Exit-code model&quot;). Match-sensitive</span>
 <span id="L727"><span class="lineNum">     727</span>                 :             :   // exit is opt-in: --quiet suppresses output and exits by match, --exit-match keeps</span>
 <span id="L728"><span class="lineNum">     728</span>                 :             :   // output but exits by match; either makes &quot;1 = no match&quot; reachable. An error still</span>
 <span id="L729"><span class="lineNum">     729</span>                 :             :   // outranks match status (exit 2).</span>
-<span id="L730"><span class="lineNum">     730</span> [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 499 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 497 times"> + </span>]:<span class="tlaGNC">         502 :   const bool quiet = absl::c_contains(command.globals, &quot;--quiet&quot;) || absl::c_contains(command.globals, &quot;-q&quot;);</span></span>
-<span id="L731"><span class="lineNum">     731</span> [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 497 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 495 times"> + </span>]:<span class="tlaGNC">         502 :   const bool match_sensitive = quiet || absl::c_contains(command.globals, &quot;--exit-match&quot;);</span></span>
+<span id="L730"><span class="lineNum">     730</span> [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 501 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 499 times"> + </span>]:<span class="tlaGNC">         504 :   const bool quiet = absl::c_contains(command.globals, &quot;--quiet&quot;) || absl::c_contains(command.globals, &quot;-q&quot;);</span></span>
+<span id="L731"><span class="lineNum">     731</span> [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 499 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 497 times"> + </span>]:<span class="tlaGNC">         504 :   const bool match_sensitive = quiet || absl::c_contains(command.globals, &quot;--exit-match&quot;);</span></span>
 <span id="L732"><span class="lineNum">     732</span>                 :             :   // Auto pages a terminal listing; always and an explicit command also page through a pipe. Every</span>
 <span id="L733"><span class="lineNum">     733</span>                 :             :   // mode streams the whole walk rather than buffering per line, and steps aside for terminal-using</span>
 <span id="L734"><span class="lineNum">     734</span>                 :             :   // expressions (-ok / -exec and friends) or --quiet.</span>
-<span id="L735"><span class="lineNum">     735</span>                 :<span class="tlaGNC">         502 :   const xff::cli::PagerDecision listing_pager = xff::cli::DecidePager(</span></span>
-<span id="L736"><span class="lineNum">     736</span> [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 497 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 19 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 478 times"> + </span>]:<span class="tlaGNC">         502 :       *pager, xff::cli::PagerOutput::kListing, stdout_is_tty, quiet || xff::parser::TakesTerminal(command));</span></span>
-<span id="L737"><span class="lineNum">     737</span>                 :<span class="tlaGNC">         502 :   const xff::cli::PagerStream pager_stream(listing_pager);</span></span>
-<span id="L738"><span class="lineNum">     738</span>                 :<span class="tlaGNC">         502 :   const xff::vfs::LocalFs fs;</span></span>
-<span id="L739"><span class="lineNum">     739</span>                 :<span class="tlaGNC">         502 :   const xff::engine::RunResult result = xff::engine::RunFind(</span></span>
-<span id="L740"><span class="lineNum">     740</span>                 :<span class="tlaGNC">         502 :       command, fs,</span></span>
-<span id="L741"><span class="lineNum">     741</span>                 :<span class="tlaGNC">        1009 :       [quiet](std::string_view record) {</span></span>
-<span id="L742"><span class="lineNum">     742</span>         [<span class="tlaGBC" title="branch 0 was taken 954 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">         956 :         if (!quiet) {  // --quiet suppresses output; the match is still recorded via `matched`</span></span>
-<span id="L743"><span class="lineNum">     743</span>                 :<span class="tlaGNC">         954 :           std::cout.write(record.data(), static_cast&lt;std::streamsize&gt;(record.size()));</span></span>
-<span id="L744"><span class="lineNum">     744</span>                 :<span class="tlaGNC">         954 :         }</span></span>
-<span id="L745"><span class="lineNum">     745</span>                 :<span class="tlaGNC">         956 :       },</span></span>
-<span id="L746"><span class="lineNum">     746</span>                 :<span class="tlaGNC">         502 :       [](std::string_view path, absl::Status status) {</span></span>
+<span id="L735"><span class="lineNum">     735</span>                 :<span class="tlaGNC">         504 :   const xff::cli::PagerDecision listing_pager = xff::cli::DecidePager(</span></span>
+<span id="L736"><span class="lineNum">     736</span> [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 499 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 19 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 480 times"> + </span>]:<span class="tlaGNC">         504 :       *pager, xff::cli::PagerOutput::kListing, stdout_is_tty, quiet || xff::parser::TakesTerminal(command));</span></span>
+<span id="L737"><span class="lineNum">     737</span>                 :<span class="tlaGNC">         504 :   const xff::cli::PagerStream pager_stream(listing_pager);</span></span>
+<span id="L738"><span class="lineNum">     738</span>                 :<span class="tlaGNC">         504 :   const xff::vfs::LocalFs fs;</span></span>
+<span id="L739"><span class="lineNum">     739</span>                 :<span class="tlaGNC">         504 :   const xff::engine::RunResult result = xff::engine::RunFind(</span></span>
+<span id="L740"><span class="lineNum">     740</span>                 :<span class="tlaGNC">         504 :       command, fs,</span></span>
+<span id="L741"><span class="lineNum">     741</span>                 :<span class="tlaGNC">        1011 :       [quiet](std::string_view record) {</span></span>
+<span id="L742"><span class="lineNum">     742</span>         [<span class="tlaGBC" title="branch 0 was taken 956 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">         958 :         if (!quiet) {  // --quiet suppresses output; the match is still recorded via `matched`</span></span>
+<span id="L743"><span class="lineNum">     743</span>                 :<span class="tlaGNC">         956 :           std::cout.write(record.data(), static_cast&lt;std::streamsize&gt;(record.size()));</span></span>
+<span id="L744"><span class="lineNum">     744</span>                 :<span class="tlaGNC">         956 :         }</span></span>
+<span id="L745"><span class="lineNum">     745</span>                 :<span class="tlaGNC">         958 :       },</span></span>
+<span id="L746"><span class="lineNum">     746</span>                 :<span class="tlaGNC">         504 :       [](std::string_view path, absl::Status status) {</span></span>
 <span id="L747"><span class="lineNum">     747</span>                 :<span class="tlaGNC">          62 :         std::cerr &lt;&lt; &quot;xff: &quot; &lt;&lt; path &lt;&lt; &quot;: &quot; &lt;&lt; status.message() &lt;&lt; &quot;\n&quot;;</span></span>
 <span id="L748"><span class="lineNum">     748</span>                 :<span class="tlaGNC">          62 :       },</span></span>
-<span id="L749"><span class="lineNum">     749</span>                 :<span class="tlaGNC">         502 :       style);  // style-scoped traversal defaults (xff -&gt; sorted + bounded; find/rg -&gt; unordered)</span></span>
-<span id="L750"><span class="lineNum">     750</span>         [<span class="tlaGBC" title="branch 0 was taken 61 times"> + </span><span class="tlaGBC" title="branch 1 was taken 441 times"> + </span>]:<span class="tlaGNC">         502 :   if (result.errors != 0) {</span></span>
+<span id="L749"><span class="lineNum">     749</span>                 :<span class="tlaGNC">         504 :       style);  // style-scoped traversal defaults (xff -&gt; sorted + bounded; find/rg -&gt; unordered)</span></span>
+<span id="L750"><span class="lineNum">     750</span>         [<span class="tlaGBC" title="branch 0 was taken 61 times"> + </span><span class="tlaGBC" title="branch 1 was taken 443 times"> + </span>]:<span class="tlaGNC">         504 :   if (result.errors != 0) {</span></span>
 <span id="L751"><span class="lineNum">     751</span>                 :<span class="tlaGNC">          61 :     return 2;  // an error outranks match status</span></span>
 <span id="L752"><span class="lineNum">     752</span>                 :<span class="tlaGNC">          61 :   }</span></span>
-<span id="L753"><span class="lineNum">     753</span> [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 435 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 3 times"> + </span>]:<span class="tlaGNC">         441 :   return match_sensitive &amp;&amp; !result.any_match ? 1 : 0;</span></span>
-<span id="L754"><span class="lineNum">     754</span>                 :<span class="tlaGNC">         502 : }</span></span>
+<span id="L753"><span class="lineNum">     753</span> [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 437 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 3 times"> + </span>]:<span class="tlaGNC">         443 :   return match_sensitive &amp;&amp; !result.any_match ? 1 : 0;</span></span>
+<span id="L754"><span class="lineNum">     754</span>                 :<span class="tlaGNC">         504 : }</span></span>
 <span id="L755"><span class="lineNum">     755</span>                 :             : </span>
 <span id="L756"><span class="lineNum">     756</span>                 :             : // Entry point: run xff, then flush stdout explicitly before the process exits.</span>
 <span id="L757"><span class="lineNum">     757</span>                 :             : // xff writes results and the help / man / markdown pages to std::cout, which is</span>
@@ -846,11 +846,11 @@
 <span id="L762"><span class="lineNum">     762</span>                 :             : // guarantees the bytes are written regardless of what the exit path does next.</span>
 <span id="L763"><span class="lineNum">     763</span>                 :             : }  // namespace</span>
 <span id="L764"><span class="lineNum">     764</span>                 :             : </span>
-<span id="L765"><span class="lineNum">     765</span>                 :<span class="tlaGNC">         698 : int main(int argc, char** argv) {</span></span>
-<span id="L766"><span class="lineNum">     766</span>                 :<span class="tlaGNC">         698 :   const int exit_code = RunMain(argc, argv);</span></span>
-<span id="L767"><span class="lineNum">     767</span>                 :<span class="tlaGNC">         698 :   std::cout.flush();</span></span>
-<span id="L768"><span class="lineNum">     768</span>                 :<span class="tlaGNC">         698 :   return exit_code;</span></span>
-<span id="L769"><span class="lineNum">     769</span>                 :<span class="tlaGNC">         698 : }</span></span>
+<span id="L765"><span class="lineNum">     765</span>                 :<span class="tlaGNC">         701 : int main(int argc, char** argv) {</span></span>
+<span id="L766"><span class="lineNum">     766</span>                 :<span class="tlaGNC">         701 :   const int exit_code = RunMain(argc, argv);</span></span>
+<span id="L767"><span class="lineNum">     767</span>                 :<span class="tlaGNC">         701 :   std::cout.flush();</span></span>
+<span id="L768"><span class="lineNum">     768</span>                 :<span class="tlaGNC">         701 :   return exit_code;</span></span>
+<span id="L769"><span class="lineNum">     769</span>                 :<span class="tlaGNC">         701 : }</span></span>
         </pre>
               </td>
             </tr>

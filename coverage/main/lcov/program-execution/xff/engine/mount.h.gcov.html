@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 22:20:23</td>
+            <td class="headerValue">2026-09-10 23:23:57</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -120,9 +120,9 @@
 <span id="L49"><span class="lineNum">      49</span>              :  public:</span>
 <span id="L50"><span class="lineNum">      50</span>              :   // `armed` is `--archive-mount`; a disarmed instance mounts nothing and answers nothing, so the</span>
 <span id="L51"><span class="lineNum">      51</span>              :   // caller needs no second flag check.</span>
-<span id="L52"><span class="lineNum">      52</span> <span class="tlaGNC">         794 :   explicit MountedContainers(bool armed = false) : armed_(armed) {}</span></span>
+<span id="L52"><span class="lineNum">      52</span> <span class="tlaGNC">         796 :   explicit MountedContainers(bool armed = false) : armed_(armed) {}</span></span>
 <span id="L53"><span class="lineNum">      53</span>              : </span>
-<span id="L54"><span class="lineNum">      54</span> <span class="tlaGNC">         794 :   ~MountedContainers() = default;</span></span>
+<span id="L54"><span class="lineNum">      54</span> <span class="tlaGNC">         796 :   ~MountedContainers() = default;</span></span>
 <span id="L55"><span class="lineNum">      55</span>              : </span>
 <span id="L56"><span class="lineNum">      56</span>              :   MountedContainers(const MountedContainers&amp;) = delete;</span>
 <span id="L57"><span class="lineNum">      57</span>              :   MountedContainers&amp; operator=(const MountedContainers&amp;) = delete;</span>
@@ -139,7 +139,7 @@
 <span id="L68"><span class="lineNum">      68</span>              : </span>
 <span id="L69"><span class="lineNum">      69</span>              :   // Why mounting did not happen, empty until a mount is actually attempted and fails. Recorded</span>
 <span id="L70"><span class="lineNum">      70</span>              :   // once (the first failure), because every later member of every container would repeat it.</span>
-<span id="L71"><span class="lineNum">      71</span> <span class="tlaGNC">         776 :   [[nodiscard]] std::string_view DegradeReason() const { return degrade_reason_; }</span></span>
+<span id="L71"><span class="lineNum">      71</span> <span class="tlaGNC">         778 :   [[nodiscard]] std::string_view DegradeReason() const { return degrade_reason_; }</span></span>
 <span id="L72"><span class="lineNum">      72</span>              : </span>
 <span id="L73"><span class="lineNum">      73</span> <span class="tlaGNC">           2 :   [[nodiscard]] bool Armed() const { return armed_; }</span></span>
 <span id="L74"><span class="lineNum">      74</span>              : </span>
