@@ -1,98 +1,127 @@
-# xff - Implementation Plan
+# xff - Implementation Map and Change Sequence
 
-> Companion to [design.md](design.md). **design.md** is the source of truth for _what / why_ (decisions); this plan owns _how / in what order_ (build, modules, sequencing). Decisions are referenced here, not re-argued.
-> Status: **Draft** · 2026-06-07 · Org: MBO Works · License: **Apache-2.0**
-> Design review #1–#13 complete and incorporated (see design.md §Notes/Decisions); the module seams and phasing below reflect every resolved decision.
+> Companion to [design.md](design.md), which owns product decisions, and
+> [test-plan.md](test-plan.md), which owns verification coverage. Current backlog
+> and unresolved choices live in [TODO.md](../TODO.md); completed investigations
+> move to [history.md](history.md).
+>
+> Status: implemented system map · 2026-09-10
 
-## Toolchain
+This document describes the repository that exists now and the order in which a
+change should cross its boundaries. It is not a feature roadmap.
 
-- **Build:** Bazel with bzlmod (`MODULE.bazel`), pinned `.bazelversion`, shared `.bazelrc`.
-- **Language:** C++23. For consistent C++23 + stdlib across macOS and Linux, prefer a **hermetic LLVM toolchain** (`toolchains_llvm`) over system compilers - reproducible, matches the fetch/pin ethos. (Fallback: system clang/gcc; decided in Phase 0.)
-- **Tests:** GoogleTest + gmock (bzlmod `googletest`); `bazel test //...`.
-- **Dependencies - all via bzlmod (Bazel Central Registry); availability verified 2026-06-07:**
-  - `abseil-cpp` - utilities only (`absl::Status`/`StatusOr`, strings, containers, synchronization). **Not** `absl::flags` - CLI parsing is our own `parser` library.
-  - `re2` - default regex engine.
-  - `pcre2` - Phase 2 (lookaround/backrefs). On BCR - no `foreign_cc` needed.
-  - `libarchive` (+ `zlib` / `zstd` / `bzip2` / `xz`, all on BCR) - Phase 3 archive backend. Acquisition is trivial via bzlmod, but it remains a sizable dependency + transitive compression libs - revisit at Phase 3 whether to take it whole or support a narrower archive set.
-  - `rules_foreign_cc` - declared **fallback only** (also on BCR); not required by any current dependency.
-- **CI:** GitHub Actions, matrix macOS + Linux, `bazel test //...` + buildifier lint.
+## Build model
 
-## Repository layout (Bazel packages)
+- Bazel 9 with bzlmod is the only supported build graph. Every package is private
+  by default and exposes explicit cross-package targets.
+- C++23 is required. `--config=clang` selects the hermetic Clang 22/libc++
+  toolchain; GCC is a compatibility build, not the primary development toolchain.
+- `//xff/cli:xff` is always the lean executable. `//xff/cli:xff_full` is always
+  the full executable and is built with `--config=xff_full`.
+- `//xff` is the configuration-sensitive convenience alias: lean normally and
+  full under `--config=xff_full`.
+- `--config=xff_docs` enables every composable extra. Generated `XFF.md`, HTML,
+  NOTICE content, and their drift tests use that complete surface.
+- `--config=clang_release` composes hermetic Clang with the production `-Oz`,
+  ThinLTO, debug-information, and platform-appropriate linker settings. Artifact
+  staging strips the executables and splits their symbols; it does not rebuild
+  them under another compilation configuration.
 
-```
-xff/
-  MODULE.bazel  .bazelrc  .bazelversion  .github/workflows/
-  docs/        design.md  implementation-plan.md  test-plan.md
-  xff/
-    registry/  # SoT: option/predicate/action descriptors + resolved Query/settings model
-    parser/    # argv -> AST (left scanner + recursive-descent); parse-only
-    config/    # config files + cascade -> settings (uses registry)
-    vfs/       # source abstraction + local backend (archive/remote later)
-    regex/     # engine abstraction (RE2/PCRE2 + literal prefilter)
-    engine/    # AST + settings + VFS -> match stream + actions; parallel; cost-warning
-    stats/     # aggregation over the match stream
-    render/    # result/stat model -> output formats
-    cli/       # the `xff` binary (thin wiring; owns exit codes)
-```
+## Repository boundaries
 
-## Module contracts (the seams)
+| Area                                | Responsibility                                                                                                   |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `xff/registry`                      | Expression descriptor source of truth: spelling, arity, binding, safety, style, cost, topic, and help prose.     |
+| `xff/parser`                        | Pure command grammar: globals, roots, expression AST, validation, and style enforcement.                         |
+| `xff/config`                        | System/user/explicit-file discovery, selector resolution, provenance, arming, and system policy.                 |
+| `xff/vfs`                           | Thread-safe filesystem abstraction and local-filesystem implementation.                                          |
+| `xff/filesystem/{ignore,repo}`      | Ignore evaluation, repository probing, and Git configuration discovery over the VFS.                             |
+| `xff/matching/*`, `xff/content`     | Regex, MIME, language, similarity, fuzzy, and file-content matching.                                             |
+| `xff/datetime`, `xff/values`        | Shared parsing and value semantics.                                                                              |
+| `xff/engine`                        | Traversal, expression evaluation, actions, reductions, comparison, archive operations, and execution scheduling. |
+| `xff/presentation/{fields,format}`  | Field vocabulary, templates, tabular values, and formatting primitives.                                          |
+| `xff/presentation/{render,color}`   | Result renderers, path encoding, tree output, and terminal colour policy.                                        |
+| `xff/cli`                           | Global-option registry, generated help/man/reference output, configuration wiring, diagnostics, and exit codes.  |
+| `xff/examples`, `xff/conformance`   | Executable cookbook coverage and GNU/BSD find comparison.                                                        |
+| `xff_extras_api`, `extra_modules/*` | Stable registration boundary and independently removable optional implementations.                               |
+| `tools`, `.github/workflows`        | Generated-artifact checks, repository policy, CI, release staging, attestation, and publication.                 |
 
-- **`registry`** - the single source of truth. Descriptors carry name(s), region (global/expression), arity, dialect (GNU/BSD), cost-tier, purity, toggle-style. `--help`, completions, `--explain`, and the cost-warning are all _derived_ from it. **DAG root** - everything else depends on it.
-- **`parser`** - `argv → AST` (globals, roots[], expression tree) or a diagnostic with source spans. No traversal / IO ⇒ unit-testable as a pure `string[] → AST`. (design.md §CLI grammar & parser.)
-- **`config`** - config files → settings, merged by the cascade with provenance (`unset` ≠ explicit); CLI > config > defaults. Enforces the **trust model** (data-only tree configs; `--config`-armed exec blocks; ownership gate) - design.md §Security & safety.
-- **`vfs`** - `Entry`/`Metadata` interface + directory iteration; `LocalFs` backend first. Archive/remote backends slot behind the same interface, tagging entries by source (real-fs/archive-member/remote) + read-only flag, with untrusted-input guards (decompression-bomb / Zip-Slip) - design.md §Virtual entries. Exposes platform metadata caps (btime, normalization/case).
-- **`regex`** - `Matcher` abstraction; RE2 default (linear-time), PCRE2 (opt-in, **configurable limits**) for lookaround/backrefs; literal/Aho-Corasick prefilter; translates find's `-regex`/`-regextype` grammars onto RE2 - design.md §Regex engines.
-- **`engine`** - evaluates the AST over the VFS stream: strict left→right + short-circuit (design.md §Evaluation); parallel directory read-ahead with coordinator-owned evaluation; emits the result model; runs the cost-warning from registry cost-tiers.
-- **`render`** - result/stat model → formats; streaming (plain/JSONL/NUL/CSV) vs buffered/aligned (columns/markdown/tree/stats); display-width-correct alignment.
-- **`cli`** - wires `registry → parser + config → engine → stats → render`; owns exit codes.
+The important dependency direction is inward from CLI orchestration toward pure
+registries, parsers, values, matching, and VFS interfaces. Optional modules cross
+into the core only through `xff_extras_api`; the core does not depend on their
+implementation packages.
 
-Dependency direction: `registry` ← {`parser`, `config`, `engine`}; `engine` ← {`vfs`, `regex`}; `render` ← result-model; `cli` ← all. No cycles.
+## Composable extras
 
-## Phases
+The lean executable keeps optional dependencies unlinked. Each extra is its own
+Bazel module below `extra_modules/` and registers through `xff_extras_api`:
 
-> Every phase carries the cross-cutting prime goals (design.md §Security & safety): security against untrusted input, safety with self-documenting refusals/warnings, find-fidelity on the drop-in surface.
+- archive formats through libarchive;
+- standalone ASAR and SquashFS readers;
+- Brotli archive compression;
+- FUSE mounting;
+- PCRE2 regular expressions;
+- comprehensive MIME and language databases.
 
-### Phase 0 - Foundations
+The command-line vocabulary remains visible in both executables. Requesting an
+unlinked implementation produces an explicit error, never a silent fallback.
+`--//xff:xff_all=True` is the single source of truth used by `xff_full` and the
+documentation build. Adding an extra must declare its module in
+`bazelmod/extras.MODULE.bazel` and extend the `xff_all` composition;
+`tools/extras.py` then discovers its test wildcard from that module declaration.
 
-- Bazel/bzlmod skeleton; hermetic-toolchain decision; `.bazelrc`; CI matrix (macOS+Linux); **Apache-2.0 LICENSE + NOTICE/THIRD_PARTY**; buildifier.
-- `registry` (descriptor types incl. **`safety` classification + cost-tier + toggle-style**; initial descriptors); `parser` (left scanner + recursive-descent + AST + diagnostics).
-- Result model; minimal `cli` (`--help`/`--version`).
-- Author `docs/test-plan.md`.
-- **Exit:** `bazel test //...` green on both OSes; `parser` passes table-driven AST + error-diagnostic tests.
+## Change sequence
 
-### Phase 1 - Drop-in find (the contract)
+Move a feature through the narrowest applicable sequence; do not start at the CLI
+and tunnel around lower layers.
 
-- `vfs` local backend; `engine` traversal (sequential → parallel) with **`--exact` FS-aware name matching** (#8) and plain-output **`--path-encoding=raw|escape`** handling (#5).
-- Full find expression: tests (`-name/-iname/-path/-type/-size/-mtime/-perm/-empty/-newer…`, **`-regex`/`-regextype` via RE2 grammar-translation** (#4), **birthtime `-Btime`/`-Bmin`/`-Bnewer`** (#8)), positional options (`-maxdepth/-mindepth/-depth/-xdev`), symlink modes `-H/-L/-P`, operators/precedence, actions (`-print/-print0/-printf`, `-exec \;`/`+`, `-execdir`, `-delete`, `-prune`, `-quit`, `-ok`/`-okdir`), default `-print`; GNU-canonical + BSD globals.
-- **Exit-code model** (#9, find-default); **impossible-task-fail + `--skip-unsupported`** (#8); **safety**: `--safe`/`--dry-run` + destructive-primitive warnings (#2); **`-j`-controlled semicolon-form `-exec` concurrency** (synchronous at `-j 1`, direct potentially interleaved child output above one) (#7).
-- Renderers: plain, NUL, JSONL.
-- **Exit:** **find-compatibility conformance suite passes** (Linux GNU-find + macOS BSD-find).
+1. Record a behavior decision in the relevant `docs/design-*.md` document or
+   `TODO.md` when the spelling or semantics are not already settled.
+2. Add or change the source-of-truth descriptor:
+   `xff/registry/registry.cc` for expression vocabulary or
+   `xff/cli/globals.cc` for whole-run options.
+3. Extend parsing/value validation only when the existing declarative grammar is
+   insufficient. Keep parsing independent of host I/O.
+4. Add filesystem or optional-backend capability behind the VFS or extras API
+   before wiring engine behavior to it.
+5. Implement evaluation, traversal, action, reduction, or comparison behavior in
+   `xff/engine`, preserving left-to-right expression semantics and explicit
+   unsupported-operation errors.
+6. Extend fields/format/render only when the feature creates a new result value or
+   output contract.
+7. Wire CLI configuration, diagnostics, and exit behavior. Update the generated
+   help source in the same change; never patch `XFF.md` manually.
+8. Add focused unit tests at each changed boundary and an integration or cookbook
+   test for the user-visible path.
+9. Regenerate checked-in outputs with their repository scripts and run the
+   relevant pre-commit hooks before the full Bazel test graph.
 
-### Phase 2 - Modern layer
+For a bug fix, begin at the step that owns the defect and still cover the
+user-visible regression. For documentation-only corrections, update the owning
+source of truth and regenerate derived files when applicable.
 
-- **Content matching** - composable `-contains`/`-grep` via `regex` (**PCRE2 opt-in + configurable limits** (#4), prefilter) + `-i`/`--ignore-case`; **binary-skip + `--all-text`** (#10), **`--encoding`/`-E` input decoding** (#10), **`--max-contentsize`** + negative-match cost (#6).
-- **Ignore family** (gitignore stack, `.ignore`/`--ignore-files`, `.xffignore`, `-u`/`--no-ignore`, `--exclude/--include`); dotfiles/hidden.
-- **`config` cascade + promotion-to-modern + trust model** (#2): data-only tree configs, `--config`-armed exec blocks, ownership gate.
-- Renderers: aligned columns, markdown, CSV/TSV (display-width-correct). Structured non-UTF-8 policy beyond each format's syntax escaping remains deferred.
-- `--explain`, cost-warning, shell completions.
-- **Exit:** content/ignore/config-trust/render/explain tested incl. CJK-width golden + config-trust security tests; completions generated.
+## Validation ladder
 
-### Phase 3 - Differentiators
+Use the smallest test first for fast feedback, then widen in proportion to the
+change:
 
-- `stats` (sizes/counts, per-type, histograms, top-N); **`--shards` collapsing + completeness flagging** (#11); duplicate detection (content hash); `vfs` **archive** backend - **virtual entries (read-only, `container!member`) + bomb/Zip-Slip guards** (#3) - via libarchive.
-- **Exit:** stats/shards/dedup/archive tested incl. decompression-bomb + Zip-Slip cases.
+1. package-level Bazel tests for the edited boundary;
+2. generated-reference scripts when registry/help/license inputs change;
+3. pre-commit over every changed file;
+4. `bazel test //...` plus the wildcard targets printed by
+   `tools/extras.py --wildcards` when validating the complete modular graph;
+5. sanitizer, coverage, fuzz, minimal-core, and release-artifact jobs in CI.
 
-### Phase 4 - Later / optional
+Linux CI explicitly requires working FUSE integration where applicable. The
+minimal job removes the extras tree and proves the lean core still builds. The
+default Linux and macOS jobs test the production ThinLTO configuration and stage
+and execute the same stripped artifacts that the release workflow publishes.
 
-- Freshness-aware index (**FSEvents/inotify** behind a platform interface, #8); `vfs` **remote/SFTP** virtual entries (#3); opt-in `--optimize`; named query profiles. (sed-like editing remains a non-goal.)
+## Release boundary
 
-## Test strategy (detail in docs/test-plan.md)
-
-Per the project rule (tests at every level; no one-shots):
-
-- **parser:** table-driven `argv → AST` / error (pure, no fixtures).
-- **find-compat:** golden conformance - real `find` vs `xff` over a fixture tree × expression matrix, both dialects (Phase-1 gate).
-- **engine:** integration over fixture trees (predicates, actions, parallel determinism with `--sort`).
-- **regex:** per-engine conformance; prefilter equivalence.
-- **render:** golden output per format incl. Unicode-width alignment and non-UTF-8 path handling (JSON escaping).
-- **config:** cascade precedence + provenance.
+The release workflow rebuilds both explicit executable targets with
+`--config=clang_release`, stages stripped platform executables plus split debug
+information, constructs the `.tar.zst` archives, generates `SHA256SUMS`, and
+publishes attestations. Release preparation derives notes and documentation from
+the repository sources; generated artifacts must pass their drift tests before a
+tag is published.
