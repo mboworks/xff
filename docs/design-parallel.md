@@ -33,10 +33,10 @@ of the design below; each has a noted follow-up:
   (reads still overlap via prefetch), so `dir`/`subtree`/`tree` are reproducible
   across runs and machines. Streaming subtrees strictly by completion order (lower
   latency, nondeterministic) is a later refinement.
-- **Parallelism and sort are opt-in:** `-j`/`--jobs` and `--sort` (default stays
-  sequential + `none`, find-compatible). The mode-scoped auto-defaults (modern ->
-  parallel + `dir`; find/fd/rg -> all cores + `none`) land with the mode mechanism
-  (#54), which is where a persona can be queried.
+- **Parallelism and sort were opt-in in the first implementation.** The shipped
+  style-scoped defaults now give `xff` bounded parallelism plus `dir` ordering;
+  `find` and `rg` use every detected core plus `none`. Explicit `-j` / `--jobs`
+  and `--sort` values override those defaults.
 
 ## Architecture
 
@@ -120,23 +120,23 @@ the end-of-walk drain. Use `-j 1` for find's strict synchronous, status-gating
 semantics. The `+` batch forms are unaffected: they always accumulate and flush once
 at end-of-walk, and a nonzero exit there does raise the exit status, as in find.
 
-When `-j` is omitted the default is **mode-scoped** - xff wears the persona it is
-invoked as (the `--mode` / `argv[0]` mechanism, design-config.md and #54/#59):
+When `-j` is omitted the default is **style-scoped**. Invocation name and the
+last explicit `--config=find|xff|rg` selector choose the style (see
+design-config.md):
 
-| Persona  | Workers (no `-j`)          | Default `--sort` |
-| -------- | -------------------------- | ---------------- |
-| `find`   | all cores                  | `none`           |
-| `fd`     | all cores                  | `none`           |
-| `rg`     | all cores                  | `none`           |
-| `modern` | `max(1, min(cores-1, 15))` | `dir`            |
+| Style  | Workers (no `-j`)          | Default `--sort` |
+| ------ | -------------------------- | ---------------- |
+| `find` | all cores                  | `none`           |
+| `xff`  | `max(1, min(cores-1, 15))` | `dir`            |
+| `rg`   | all cores                  | `none`           |
 
-- The compatibility personas match their namesakes: `fd`/`rg` saturate cores,
-  and `find`'s output is unordered. All cores = `hardware_concurrency()`.
-- `modern` is the good-citizen persona: leave a core for the pipe consumer, cap
+- The `find` and `rg` styles saturate cores and leave traversal order unspecified.
+  All cores = `hardware_concurrency()`.
+- `xff` is the good-citizen style: leave a core for the pipe consumer, cap
   at 15 to avoid oversubscription on many-core hosts, floor at 1 for single-core,
   and default to `dir` so output is nicely sorted out of the box.
-- `-j N` overrides the worker count in every mode; `--sort=...` overrides the
-  default ordering in every mode.
+- `-j N` overrides the worker count in every style; `--sort=...` overrides the
+  default ordering in every style.
 
 ## Concurrency correctness
 
@@ -165,7 +165,7 @@ invoked as (the `--mode` / `argv[0]` mechanism, design-config.md and #54/#59):
 As soon as the walk is multithreaded we add a TSan run. TSan is mutually
 exclusive with ASan, so it is a **separate** `--config=tsan` in `.bazelrc`
 (`-fsanitize=thread` copt/linkopt, `TSAN_OPTIONS=halt_on_error=1`, the symbolizer,
-mirroring the `asan` block) **and** its own `clang-tsan` CI matrix cell wired into
+mirroring the `asan` block) **and** its own `tsan` CI job wired into
 the `done` gate. It lands in the same PR that introduces threads (it is a no-op on
 single-threaded code). The `asan` config also runs UBSan as of #138.
 
@@ -174,13 +174,13 @@ single-threaded code). The `asan` config also runs UBSan as of #138.
 The traversal was delivered incrementally:
 
 1. **Worker pool + `--sort=none`** - parallel walk behind the existing sink, plus
-   the `clang-tsan` config and CI cell (threads arrive here, so TSan does too).
+   the `tsan` config and CI job (threads arrive here, so TSan does too).
    The sequential walk stays available via `-j 1`.
 2. **Ordering layer + `--sort=dir`** - generalize `SortOrder::kName` to `kDir`
    over the parallel walk (per-directory sorted listing blocks).
 3. **`--sort=subtree`** - files-first contiguous-subtree traversal (`kSubtree`).
 4. **`--sort=tree`** - sorted depth-first traversal within each root (`kTree`).
-5. **`-j` / `--jobs` + mode-scoped defaults** - the flag and the per-persona
+5. **`-j` / `--jobs` + style-scoped defaults** - the flag and the per-style
    worker-count and default-`--sort` wiring.
 6. **`--sort=roots|global`** - stable root ordering, either alone or combined
    with tree ordering below each root.

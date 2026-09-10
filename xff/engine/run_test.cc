@@ -126,7 +126,7 @@ struct RunTest : ::testing::Test {
     return records;
   }
 
-  // Runs the bare root under `style` to exercise the mode-scoped traversal
+  // Runs the bare root under `style` to exercise the style-scoped traversal
   // defaults (RunFind's `style`), returning records with the terminator stripped.
   std::vector<std::string> RunStyled(registry::Style style) const {
     const auto command = parser::Parse({root_.string()});
@@ -578,8 +578,8 @@ TEST_F(RunTest, JobsRejectsInvalidValuesBeforeWalking) {
   }
 }
 
-TEST_F(RunTest, ModeScopedSortDefault) {
-  // With no --sort, the active style picks the default: modern (kXff) sorts each
+TEST_F(RunTest, StyleScopedSortDefault) {
+  // With no --sort, the active style picks the default: xff (kXff) sorts each
   // directory's listing, so the walk is deterministic (root, then a.txt < b.md <
   // sub as a block, then sub's contents). find leaves it unordered (same set).
   EXPECT_THAT(
