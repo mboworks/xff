@@ -35,7 +35,8 @@
 ### Configuration and policy
 
 - Discovery tests cover system and user locations, environment precedence,
-  explicitly named `--xffrc` files, missing/unreadable files, and `--no-config`.
+  explicitly named `--xffrc` files, missing/unreadable files, granular config-source suppression,
+  permission enforcement, and `--no-config`.
 - Resolution tests cover selector order, invocation-name defaults, `_full`
   normalization, repeated values, provenance, and CLI precedence.
 - Policy tests cover layer scoping, named and class denies, preset-overload

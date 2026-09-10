@@ -73,7 +73,7 @@ xff configuration. Options resolve from layered config tiers, then the command l
 - `--xffrc=FILE` - an explicitly named file (repeatable) - a NON-ARMING tier
 - `command line` - flags and `--config`, highest
 
-There is no project or ancestor `.xffrc` discovery: config comes from the system and user files plus any `--xffrc` you name. `--no-config` consults none of those paths, regardless of option order; the run uses only built-in defaults and command-line flags.
+There is no project or ancestor `.xffrc` discovery: config comes from the system and user files plus any `--xffrc` you name. `--no-config` suppresses the automatic system and user tiers when their trusted permission directives allow it; those files may still be inspected for policy. An explicit command-line `--xffrc` remains active.
 
 ### Choosing a style
 
@@ -88,8 +88,12 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
 ### Config
 - `--config=NAME` - activate a named config or select the find, xff, or rg style; repeatable _(global, xff)_
   A config style sets the defaults for ignore files, hidden files, sizes, sort order, and case. find restricts the expression to find-compatible vocabulary and defaults; whole-run xff globals remain available as explicit overrides. xff keeps find's grammar but sorts and prints human sizes; rg is opinionated (respect `.gitignore`, skip hidden, smart case). Every occurrence remains an active selector, so several named config blocks can apply. Among the built-in style selectors, the last `find`, `xff`, or `rg` occurrence chooses the baseline; custom names do not change it. A `STYLE:EPOCH` spelling such as `xff:2` selects `STYLE` while retaining the full name as a config selector. See `--help=styles` for the per-style defaults and `--help=config` for layering.
-- `--no-config` - disable all config-file loading _(global, xff)_
-  Runs from built-in defaults and command-line flags only. No config path is consulted: this skips `/etc/xff.ini`, the user config, and every explicit `--xffrc=FILE`, regardless of option order. There is no config-sourced directive to gate, so no system policy is needed in this mode. Ignore files such as `.gitignore` and `.xffignore` are traversal inputs, not config files, and are unaffected.
+- `--no-config` - suppress automatic system and user configuration when authorized _(global, xff)_
+  Suppresses the automatic system defaults and user configuration. A present source is still inspected for policy and must authorize the request: the system config with `--allow-no-config` or the corresponding granular permission, and the user config with `--allow-no-user-config` unless the system already authorized it. An explicitly named `--xffrc=FILE` remains active. Ignore files such as `.gitignore` and `.xffignore` are traversal inputs, not config files, and are unaffected.
+- `--no-system-config` - suppress system defaults when the system config permits it _(global, xff)_
+  Suppresses `/etc/xff.ini` defaults but still reads its `[policy]` and config-only permission directives. A present file must contain `--allow-no-system-config` or `--allow-no-config`; otherwise the request is a usage error. The user config and explicit `--xffrc` files remain active.
+- `--no-user-config` - suppress user configuration when an authoritative config permits it _(global, xff)_
+  Suppresses the selected user config after inspecting it for permission. A present user file must contain an unconditional `--allow-no-user-config`, unless `/etc/xff.ini` contains that permission or `--allow-no-config`. System defaults and explicit `--xffrc` files remain active.
 - `--xffrc=FILE` - also load a specific config file (a non-arming tier; see --allow-exec) _(global, xff)_
   Loads FILE as a config tier above the user config (naming it is consent to LOAD it). It is a NON-ARMING tier: safe directives apply, but a dangerous one - the exec family (-exec/-execdir/-ok, -capture) or -delete - is inert unless --allow-exec is set from a trusted tier (the CLI or the user/system config, never from an --xffrc file itself). An unarmed dangerous line is dropped with a one-line warning. Repeatable; later files win.
   Affects: --allow-exec

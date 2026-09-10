@@ -44,8 +44,29 @@ TEST_F(ConfigTest, NoConfigYieldsEmpty) {
   ConfigInputs in;
   in.system.defaults = {"--color=auto"};
   in.user = ParseXffrc("common: --sort");
-  in.no_config = true;
+  in.no_system_config = true;
+  in.no_user_config = true;
   EXPECT_THAT(ResolveConfig(in), IsEmpty());
+}
+
+TEST_F(ConfigTest, GranularSkipControlsSuppressOnlyTheirAutomaticTier) {
+  ConfigInputs in;
+  in.system.defaults = {"--color=auto", "--allow-no-system-config"};
+  in.user = ParseXffrc("common: --sort\ncommon: --allow-no-user-config");
+  in.xffrc = ParseXffrc("common: --jobs=2");
+  in.no_system_config = true;
+  EXPECT_THAT(ResolveConfig(in), ElementsAre(FlagIs("--sort", Source::kUser), FlagIs("--jobs=2", Source::kXffrc)));
+  in.no_system_config = false;
+  in.no_user_config = true;
+  EXPECT_THAT(
+      ResolveConfig(in), ElementsAre(FlagIs("--color=auto", Source::kSystem), FlagIs("--jobs=2", Source::kXffrc)));
+}
+
+TEST_F(ConfigTest, SkipPermissionDirectivesNeverBecomeRuntimeGlobals) {
+  ConfigInputs in;
+  in.system.defaults = {"--allow-no-config", "--allow-no-user-config", "--color=auto"};
+  in.user = ParseXffrc("common: --allow-no-user-config --sort");
+  EXPECT_THAT(ResolveConfig(in), ElementsAre(FlagIs("--color=auto", Source::kSystem), FlagIs("--sort", Source::kUser)));
 }
 
 TEST_F(ConfigTest, SystemDefaultsAreLowestPrecedence) {

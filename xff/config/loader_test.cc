@@ -31,6 +31,7 @@ using ::testing::AllOf;
 using ::testing::ElementsAre;
 using ::testing::Field;
 using ::testing::IsEmpty;
+using ::testing::SizeIs;
 
 // A FileReader backed by an in-memory path->contents map; absent paths read as
 // nullopt (missing file).
@@ -97,21 +98,25 @@ TEST_F(LoaderTest, ExplicitXffrcFilesFormTheirOwnTierInOrder) {
       ResolveConfig(in), ElementsAre(FlagIs("--jobs=2", Source::kXffrc), FlagIs("--color=never", Source::kXffrc)));
 }
 
-TEST_F(LoaderTest, NoConfigConsultsNoConfigFiles) {
+TEST_F(LoaderTest, NoConfigStillInspectsAutomaticSourcesAndKeepsExplicitXffrc) {
   FakeFs fs;
   fs.files["/etc/xff.ini"] = "[defaults]\n--color=auto\n[policy]\nxffrc.deny = @sensitive\n";
   fs.files["/home/u/.config/xff/config"] = "common: --sort\n";
   DiscoveryOptions opts;
   opts.home = "/home/u";
   opts.xffrc_files = {"/extra.rc"};
-  opts.no_config = true;
+  opts.no_system_config = true;
+  opts.no_user_config = true;
   const ConfigInputs in = Discover(opts, [&fs](std::string_view path) { return fs.Read(path); });
-  EXPECT_THAT(in.sources, IsEmpty());
-  EXPECT_THAT(in.system.defaults, IsEmpty());
-  EXPECT_THAT(in.system.policy, IsEmpty());
-  EXPECT_THAT(in.user, IsEmpty());
+  EXPECT_THAT(
+      in.sources,
+      ElementsAre(
+          SourceIs("/etc/xff.ini", Source::kSystem, true), SourceIs("/home/u/.config/xff/config", Source::kUser, true),
+          SourceIs("/extra.rc", Source::kXffrc, false)));
+  EXPECT_THAT(in.system.defaults, ElementsAre("--color=auto"));
+  EXPECT_THAT(in.system.policy, SizeIs(1));
+  EXPECT_THAT(in.user, SizeIs(1));
   EXPECT_THAT(in.xffrc, IsEmpty());
-  EXPECT_THAT(ResolveConfig(in), IsEmpty());
 }
 
 TEST_F(LoaderTest, MissingFilesYieldEmptyLayers) {
@@ -125,8 +130,10 @@ TEST_F(LoaderTest, MissingFilesYieldEmptyLayers) {
 
 TEST_F(LoaderTest, SelectorsFromGlobalsExtractsConfigSelectorsInOrder) {
   const DiscoveryOptions opts = SelectorsFromGlobals(
-      {"-L", "--config=xff", "--no-config", "--xffrc=/a", "--config=debug", "--xffrc=/b", "--color=auto"});
-  EXPECT_TRUE(opts.no_config);
+      {"-L", "--config=xff", "--no-config", "--no-system-config", "--no-user-config", "--xffrc=/a", "--config=debug",
+       "--xffrc=/b", "--color=auto"});
+  EXPECT_TRUE(opts.no_system_config);
+  EXPECT_TRUE(opts.no_user_config);
   EXPECT_THAT(opts.configs, ElementsAre("xff", "debug"));
   EXPECT_THAT(opts.xffrc_files, ElementsAre("/a", "/b"));
 }

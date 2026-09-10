@@ -32,6 +32,10 @@
 namespace xff::config {
 namespace {
 
+constexpr std::string_view kAllowNoConfig = "--allow-no-config";
+constexpr std::string_view kAllowNoSystemConfig = "--allow-no-system-config";
+constexpr std::string_view kAllowNoUserConfig = "--allow-no-user-config";
+
 // The registry safety class of one flag token (kNone for globals/unknowns). An
 // attached binding like "-capture:tag" is classified by its base name "-capture".
 registry::Safety FlagSafety(std::string_view flag) {
@@ -84,6 +88,16 @@ std::string_view ClassName(registry::Safety safety) {
   return "safe";
 }
 
+bool SystemAllows(const ConfigInputs& inputs, std::string_view permission) {
+  return absl::c_contains(inputs.system.defaults, kAllowNoConfig)
+         || absl::c_contains(inputs.system.defaults, permission);
+}
+
+bool SourceWasFound(const ConfigInputs& inputs, Source layer) {
+  return absl::c_any_of(
+      inputs.sources, [layer](const ConfigSource& source) { return source.layer == layer && source.found; });
+}
+
 }  // namespace
 
 registry::Safety LineSafety(const RcLine& line) {
@@ -116,6 +130,27 @@ bool LinePermitted(const RcLine& line, Source layer, const SystemConfig& policy)
   return true;
 }
 
+absl::Status ValidateConfigSkips(const ConfigInputs& inputs) {
+  const bool skip_system = inputs.no_system_config;
+  if (skip_system && SourceWasFound(inputs, Source::kSystem) && !SystemAllows(inputs, kAllowNoSystemConfig)) {
+    return absl::PermissionDeniedError(
+        "--no-system-config requires --allow-no-system-config or --allow-no-config in /etc/xff.ini");
+  }
+  const bool user_allows = absl::c_any_of(inputs.user, [&](const RcLine& line) {
+    if ((!line.base.empty() && line.base != "common") || !line.config.empty()
+        || !absl::c_contains(line.flags, kAllowNoUserConfig)) {
+      return false;
+    }
+    return LinePermitted(line, Source::kUser, inputs.system);
+  });
+  const bool skip_user = inputs.no_user_config;
+  if (skip_user && SourceWasFound(inputs, Source::kUser) && !SystemAllows(inputs, kAllowNoUserConfig) && !user_allows) {
+    return absl::PermissionDeniedError(
+        "--no-user-config requires --allow-no-user-config in the system or user config, or system --allow-no-config");
+  }
+  return absl::OkStatus();
+}
+
 bool OverloadsPreset(const RcLine& line) {
   return line.config.empty() && IsBuiltinStyle(line.base);
 }
@@ -128,6 +163,9 @@ GateResult GateConfig(const ConfigInputs& inputs, bool xffrc_armed) {
     result.drops.push_back(Drop{.line = line, .layer = layer, .safety = LineSafety(line), .reason = reason});
   };
   const auto gate = [&](const std::vector<RcLine>& lines, Source layer, std::vector<RcLine>& out) {
+    if (layer == Source::kUser && inputs.no_user_config) {
+      return;
+    }
     for (const RcLine& line : lines) {
       // A preset-overloading line is dropped in every layer: a config file may not attach behavior
       // to find/xff/rg (it would change what a plain preset run does). Checked first so the warning

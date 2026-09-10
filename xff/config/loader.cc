@@ -51,14 +51,9 @@ std::string UserConfigPath(const DiscoveryOptions& opts) {
 
 ConfigInputs Discover(const DiscoveryOptions& opts, FileReader read) {
   ConfigInputs inputs;
-  inputs.no_config = opts.no_config;
+  inputs.no_system_config = opts.no_system_config;
+  inputs.no_user_config = opts.no_user_config;
   inputs.configs = opts.configs;
-
-  // --no-config is absolute: no config path is consulted. There can be no config-sourced
-  // directive to gate in this mode, so retaining the system policy would have no security effect.
-  if (opts.no_config) {
-    return inputs;
-  }
 
   // System defaults and policy, at the lowest-precedence config tier.
   {
@@ -95,7 +90,12 @@ DiscoveryOptions SelectorsFromGlobals(const std::vector<std::string>& globals) {
   DiscoveryOptions opts;
   for (const std::string& global : globals) {
     if (global == "--no-config") {
-      opts.no_config = true;
+      opts.no_system_config = true;
+      opts.no_user_config = true;
+    } else if (global == "--no-system-config") {
+      opts.no_system_config = true;
+    } else if (global == "--no-user-config") {
+      opts.no_user_config = true;
     } else if (global.starts_with(kConfig)) {
       opts.configs.push_back(global.substr(kConfig.size()));
     } else if (global.starts_with(kXffrc)) {
