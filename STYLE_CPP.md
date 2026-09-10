@@ -436,13 +436,13 @@ substitute for a committed test. Tests use GoogleTest + GoogleMock with these co
   `struct FooTest : ::testing::Test {};` is preferred, so shared setup has a home.
 - One behaviour per test; name the test for the behaviour it asserts.
 
-### Assertions: matchers only; comparison macros are forbidden
+### Assertions: matchers only; convenience macros are forbidden
 
 - Assert with **`EXPECT_THAT` / `ASSERT_THAT` + a matcher**. The complete forbidden set is either
   `EXPECT_` or `ASSERT_` combined with `EQ`, `NE`, `LT`, `LE`, `GT`, `GE`, `STREQ`, `STRNE`,
   `STRCASEEQ`, `STRCASENE`, `FLOAT_EQ`, `DOUBLE_EQ`, or `NEAR`. There are no comparison-macro
-  exceptions. `EXPECT_TRUE` / `EXPECT_FALSE` and `ASSERT_TRUE` / `ASSERT_FALSE` remain available for
-  boolean conditions because they are not comparison macros. The
+  exceptions. `EXPECT_TRUE` / `EXPECT_FALSE` and `ASSERT_TRUE` / `ASSERT_FALSE` are also forbidden;
+  use `IsTrue` / `IsFalse` so boolean checks follow the same matcher-only rule. The
   `no-comparison-macros-in-cc-tests` pre-commit hook
   ([`tools/check_test_matchers.sh`](tools/check_test_matchers.sh)) enforces this in all C++ files.
   Use `NotNull` for pointers, `Lt` / `Le` / `Gt` / `Ge` for ordering, `StrEq` where C-string value

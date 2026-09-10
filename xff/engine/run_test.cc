@@ -67,7 +67,7 @@ struct RunTest : ::testing::Test {
             / (std::string("xff_run_") + ::testing::UnitTest::GetInstance()->current_test_info()->name());
     std::error_code ec;
     fs::remove_all(root_, ec);
-    ASSERT_TRUE(fs::create_directories(root_ / "sub"));
+    ASSERT_THAT(fs::create_directories(root_ / "sub"), IsTrue());
     { std::ofstream(root_ / "a.txt") << "a"; }
     { std::ofstream(root_ / "b.md") << "b"; }
     { std::ofstream(root_ / "sub" / "c.txt") << "c"; }
@@ -168,8 +168,8 @@ TEST_F(RunTest, NoExpressionPrintsEverything) {
 TEST_F(RunTest, CompareUsesTheRequestedIgnorePolicyIndependentlyOnEachSide) {
   const fs::path left = root_ / "left";
   const fs::path right = root_ / "right";
-  ASSERT_TRUE(fs::create_directories(left / "nested"));
-  ASSERT_TRUE(fs::create_directories(right / "nested"));
+  ASSERT_THAT(fs::create_directories(left / "nested"), IsTrue());
+  ASSERT_THAT(fs::create_directories(right / "nested"), IsTrue());
   { std::ofstream(left / ".gitignore") << "left-ignored\n"; }
   { std::ofstream(right / ".gitignore") << "right-ignored\n"; }
   { std::ofstream(left / "same") << "same"; }
@@ -215,8 +215,8 @@ TEST_F(RunTest, CompareRequiresTwoRootsAndAppliesTheExpressionToBoth) {
   EXPECT_THAT(last_errors_, 2);
   const fs::path left = root_ / "expression-left";
   const fs::path right = root_ / "expression-right";
-  ASSERT_TRUE(fs::create_directories(left));
-  ASSERT_TRUE(fs::create_directories(right));
+  ASSERT_THAT(fs::create_directories(left), IsTrue());
+  ASSERT_THAT(fs::create_directories(right), IsTrue());
   { std::ofstream(left / "selected.txt") << "left"; }
   { std::ofstream(right / "selected.txt") << "right"; }
   { std::ofstream(left / "excluded.md") << "left"; }
@@ -234,8 +234,8 @@ TEST_F(RunTest, CompareRequiresTwoRootsAndAppliesTheExpressionToBoth) {
 TEST_F(RunTest, CompareSelectsEveryResultKind) {
   const fs::path left = root_ / "select-left";
   const fs::path right = root_ / "select-right";
-  ASSERT_TRUE(fs::create_directories(left));
-  ASSERT_TRUE(fs::create_directories(right));
+  ASSERT_THAT(fs::create_directories(left), IsTrue());
+  ASSERT_THAT(fs::create_directories(right), IsTrue());
   { std::ofstream(left / "left") << "left"; }
   { std::ofstream(right / "right") << "right"; }
   { std::ofstream(left / "same") << "same"; }
@@ -255,8 +255,8 @@ TEST_F(RunTest, CompareSelectsEveryResultKind) {
 TEST_F(RunTest, CompareStatusHonorsPathEncoding) {
   const fs::path left = root_ / "encoding-left";
   const fs::path right = root_ / "encoding-right";
-  ASSERT_TRUE(fs::create_directories(left));
-  ASSERT_TRUE(fs::create_directories(right));
+  ASSERT_THAT(fs::create_directories(left), IsTrue());
+  ASSERT_THAT(fs::create_directories(right), IsTrue());
   { std::ofstream(left / "line\nbreak\tvalue") << "left"; }
   { std::ofstream(right / "same\npath") << "same"; }
   { std::ofstream(left / "same\npath") << "same"; }
@@ -274,11 +274,11 @@ TEST_F(RunTest, CompareStatusHonorsPathEncoding) {
 TEST_F(RunTest, CompareHandlesFileKindsAndTraversalOptions) {
   const fs::path left = root_ / "kinds-left";
   const fs::path right = root_ / "kinds-right";
-  ASSERT_TRUE(fs::create_directories(left / ".hidden-dir"));
-  ASSERT_TRUE(fs::create_directories(right / ".hidden-dir"));
-  ASSERT_TRUE(fs::create_directories(left / ".git"));
-  ASSERT_TRUE(fs::create_directories(right / ".git"));
-  ASSERT_TRUE(fs::create_directories(left / "type-change"));
+  ASSERT_THAT(fs::create_directories(left / ".hidden-dir"), IsTrue());
+  ASSERT_THAT(fs::create_directories(right / ".hidden-dir"), IsTrue());
+  ASSERT_THAT(fs::create_directories(left / ".git"), IsTrue());
+  ASSERT_THAT(fs::create_directories(right / ".git"), IsTrue());
+  ASSERT_THAT(fs::create_directories(left / "type-change"), IsTrue());
   { std::ofstream(right / "type-change") << "file"; }
   { std::ofstream(left / "size-change") << "short"; }
   { std::ofstream(right / "size-change") << "considerably longer"; }
@@ -313,8 +313,8 @@ TEST_F(RunTest, CompareHandlesFileKindsAndTraversalOptions) {
 TEST_F(RunTest, CompareRootSymlinksFollowTheRequestedTraversalMode) {
   const fs::path left_target = root_ / "symlink-left-target";
   const fs::path right_target = root_ / "symlink-right-target";
-  ASSERT_TRUE(fs::create_directories(left_target));
-  ASSERT_TRUE(fs::create_directories(right_target));
+  ASSERT_THAT(fs::create_directories(left_target), IsTrue());
+  ASSERT_THAT(fs::create_directories(right_target), IsTrue());
   { std::ofstream(left_target / "value") << "same"; }
   { std::ofstream(right_target / "value") << "same"; }
   const fs::path left = root_ / "symlink-left";
@@ -332,9 +332,9 @@ TEST_F(RunTest, CompareAppliesExplicitAndGlobalIgnoreFiles) {
   const fs::path left = root_ / "ignore-left";
   const fs::path right = root_ / "ignore-right";
   const fs::path config = root_ / "config";
-  ASSERT_TRUE(fs::create_directories(left));
-  ASSERT_TRUE(fs::create_directories(right));
-  ASSERT_TRUE(fs::create_directories(config / "git"));
+  ASSERT_THAT(fs::create_directories(left), IsTrue());
+  ASSERT_THAT(fs::create_directories(right), IsTrue());
+  ASSERT_THAT(fs::create_directories(config / "git"), IsTrue());
   { std::ofstream(left / "global") << "left"; }
   { std::ofstream(right / "global") << "right"; }
   { std::ofstream(left / "explicit") << "left"; }
@@ -354,8 +354,8 @@ TEST_F(RunTest, CompareAppliesExplicitAndGlobalIgnoreFiles) {
 TEST_F(RunTest, CompareValidatesRootsSelectionsAndDiffOptions) {
   const fs::path left = root_ / "options-left";
   const fs::path right = root_ / "options-right";
-  ASSERT_TRUE(fs::create_directories(left));
-  ASSERT_TRUE(fs::create_directories(right));
+  ASSERT_THAT(fs::create_directories(left), IsTrue());
+  ASSERT_THAT(fs::create_directories(right), IsTrue());
   { std::ofstream(left / "value") << "old\n"; }
   { std::ofstream(right / "value") << "new\n"; }
 
@@ -397,7 +397,7 @@ TEST_F(RunTest, FprintWritesMatchesToFileNotStdout) {
   EXPECT_THAT(RunExpr({"-name", "*.txt", "-fprint", out}), IsEmpty());
   EXPECT_THAT(last_errors_, 0);
   std::ifstream in(out, std::ios::binary);
-  ASSERT_TRUE(in.good());
+  ASSERT_THAT(in.good(), IsTrue());
   std::vector<std::string> lines;
   for (std::string line; std::getline(in, line);) {
     lines.push_back(line);
@@ -451,7 +451,7 @@ TEST_F(RunTest, DaystartFeedsTheTimeTests) {
   const auto ten_days_ago = fs::file_time_type::clock::now() - std::chrono::hours(24 * 10);
   std::error_code ec;
   fs::last_write_time(root_ / "a.txt", ten_days_ago, ec);
-  ASSERT_FALSE(ec);
+  ASSERT_THAT(ec, IsFalse());
   EXPECT_THAT(RunExpr({"-daystart", "-mtime", "+5", "-name", "a.txt"}), ElementsAre(Path("a.txt")));
   EXPECT_THAT(last_errors_, 0);
 }
@@ -493,7 +493,7 @@ TEST_F(RunTest, ExecPlusBatchesAllMatchesIntoOneRun) {
   RunExpr({"-name", "*.txt", "-exec", "sh", "-c", script, "_", "{}", "+"});
   EXPECT_THAT(last_errors_, 0);
   std::ifstream in(out, std::ios::binary);
-  ASSERT_TRUE(in.good());
+  ASSERT_THAT(in.good(), IsTrue());
   std::vector<std::string> lines;
   for (std::string line; std::getline(in, line);) {
     lines.push_back(line);
@@ -513,7 +513,7 @@ TEST_F(RunTest, ExecdirPlusBatchesPerDirectory) {
   RunExpr({"-name", "*.txt", "-execdir", "sh", "-c", script, "_", "{}", "+"});
   EXPECT_THAT(last_errors_, 0);
   std::ifstream in(out, std::ios::binary);
-  ASSERT_TRUE(in.good());
+  ASSERT_THAT(in.good(), IsTrue());
   std::vector<std::string> lines;
   for (std::string line; std::getline(in, line);) {
     lines.push_back(line);
@@ -534,7 +534,7 @@ TEST_F(RunTest, ExecSemicolonUnderParallelJobsRunsEveryMatch) {
   RunArgvRecords({"-j", "2", root_.string(), "-name", "*.txt", "-exec", "sh", "-c", script, "_", "{}", ";"});
   EXPECT_THAT(last_errors_, 0);
   std::ifstream in(out, std::ios::binary);
-  ASSERT_TRUE(in.good());
+  ASSERT_THAT(in.good(), IsTrue());
   std::vector<std::string> lines;
   for (std::string line; std::getline(in, line);) {
     lines.push_back(line);
@@ -810,7 +810,7 @@ TEST_F(RunTest, DepthVisitsPostOrder) {
 TEST_F(RunTest, SymlinkLModeFollowsDirectorySymlink) {
   std::error_code ec;
   fs::create_directory_symlink(root_ / "sub", root_ / "lnk", ec);
-  ASSERT_FALSE(ec);
+  ASSERT_THAT(ec, IsFalse());
   // `find -L <root> -name c.txt`: -L follows the directory symlink lnk -> sub, so
   // c.txt is reachable both directly (sub/c.txt) and through the link (lnk/c.txt).
   MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"-L", root_.string(), "-name", "c.txt"}));
@@ -894,7 +894,7 @@ TEST_F(RunTest, TemplateTargetRendersTheSymlinkTarget) {
   // context; empty for a non-symlink. Exercises the engine's link-target wiring e2e.
   std::error_code ec;
   fs::create_symlink("a.txt", root_ / "link.lnk", ec);
-  ASSERT_FALSE(ec);
+  ASSERT_THAT(ec, IsFalse());
   EXPECT_THAT(RunArgvRecords({"--template={target}", root_.string(), "-name", "link.lnk"}), ElementsAre("a.txt"));
   EXPECT_THAT(RunArgvRecords({"--template=[{target}]", root_.string(), "-name", "a.txt"}), ElementsAre("[]"));
 }
@@ -918,7 +918,7 @@ TEST_F(RunTest, CmpTargetIsAPerEntryTemplate) {
   const std::string other = (fs::path(::testing::TempDir()) / "xff_cmp_other").string();
   std::error_code ec;
   fs::remove_all(other, ec);
-  ASSERT_TRUE(fs::create_directories(other));
+  ASSERT_THAT(fs::create_directories(other), IsTrue());
   { std::ofstream(fs::path(other) / "a.txt") << "a"; }         // identical to <root>/a.txt
   { std::ofstream(fs::path(other) / "b.md") << "DIFFERENT"; }  // differs from <root>/b.md ("b")
   // ! -cmp '{def.OTHER}/{name}' -> files whose twin under OTHER differs (b.md; a.txt matches).
@@ -1223,9 +1223,9 @@ TEST_F(RunTest, ColorAutoStaysPlainWhenStdoutIsNotATty) {
 
 TEST_F(RunTest, DeleteRemovesMatchedFiles) {
   RunExpr({"-name", "*.txt", "-delete"});  // -delete implies -depth, so children go first
-  EXPECT_FALSE(fs::exists(root_ / "a.txt"));
-  EXPECT_FALSE(fs::exists(root_ / "sub" / "c.txt"));
-  EXPECT_TRUE(fs::exists(root_ / "b.md"));  // not matched
+  EXPECT_THAT(fs::exists(root_ / "a.txt"), IsFalse());
+  EXPECT_THAT(fs::exists(root_ / "sub" / "c.txt"), IsFalse());
+  EXPECT_THAT(fs::exists(root_ / "b.md"), IsTrue());  // not matched
 }
 
 TEST_F(RunTest, DeleteDryRunPreviewsWithoutDeleting) {
@@ -1242,7 +1242,7 @@ TEST_F(RunTest, DeleteDryRunPreviewsWithoutDeleting) {
         records.push_back(std::move(text));
       },
       [](std::string_view, absl::Status) {});
-  EXPECT_TRUE(fs::exists(root_ / "a.txt"));                   // --dry-run: nothing deleted
+  EXPECT_THAT(fs::exists(root_ / "a.txt"), IsTrue());         // --dry-run: nothing deleted
   EXPECT_THAT(records, UnorderedElementsAre(Path("a.txt")));  // but previewed
 }
 
@@ -1251,13 +1251,13 @@ TEST_F(RunTest, SafeRefusesDelete) {
   const auto [errors, any_match] =
       RunFind(command, fs_, [](std::string_view) {}, [](std::string_view, absl::Status) {});
   EXPECT_THAT(errors, 2);
-  EXPECT_TRUE(fs::exists(root_ / "a.txt"));  // refused: nothing deleted
+  EXPECT_THAT(fs::exists(root_ / "a.txt"), IsTrue());  // refused: nothing deleted
 }
 
 TEST_F(RunTest, ExecRunsCommandPerMatch) {
   // -exec /bin/sh -c 'echo > "{}.ran"' ; creates a marker beside each matched file.
   RunExpr({"-name", "a.txt", "-exec", "/bin/sh", "-c", "echo > \"{}.ran\"", ";"});
-  EXPECT_TRUE(fs::exists(root_ / "a.txt.ran"));
+  EXPECT_THAT(fs::exists(root_ / "a.txt.ran"), IsTrue());
 }
 
 TEST_F(RunTest, SafeRefusesExec) {
@@ -1267,7 +1267,7 @@ TEST_F(RunTest, SafeRefusesExec) {
   const auto [errors, any_match] =
       RunFind(command, fs_, [](std::string_view) {}, [](std::string_view, absl::Status) {});
   EXPECT_THAT(errors, 2);
-  EXPECT_FALSE(fs::exists(root_ / "a.txt.ran"));  // refused: command not run
+  EXPECT_THAT(fs::exists(root_ / "a.txt.ran"), IsFalse());  // refused: command not run
 }
 
 TEST_F(RunTest, UnknownTimezoneIsRefusedBeforeTraversal) {
@@ -1286,7 +1286,7 @@ TEST_F(RunTest, UnknownTimezoneIsRefusedBeforeTraversal) {
   EXPECT_THAT(errors, 2);
   EXPECT_THAT(err_path, "--timezone");
   EXPECT_THAT(err_status, StatusIs(absl::StatusCode::kInvalidArgument));
-  EXPECT_FALSE(emitted) << "an invalid --timezone must not traverse";
+  EXPECT_THAT(emitted, IsFalse()) << "an invalid --timezone must not traverse";
 }
 
 TEST_F(RunTest, OversizedSizeUnitIsRefusedBeforeTraversal) {
@@ -1300,7 +1300,7 @@ TEST_F(RunTest, OversizedSizeUnitIsRefusedBeforeTraversal) {
       [&](std::string_view, absl::Status status) { err_status = status; });
   EXPECT_THAT(errors, 2);
   EXPECT_THAT(err_status, StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("largest units")));
-  EXPECT_FALSE(emitted) << "a malformed -size must not traverse";
+  EXPECT_THAT(emitted, IsFalse()) << "a malformed -size must not traverse";
 }
 
 TEST_F(RunTest, BlockSizeRedefinesTheBareSizeUnit) {
@@ -1334,7 +1334,7 @@ TEST_F(RunTest, InvalidBlockSizeIsRefusedBeforeTraversal) {
       [&](std::string_view, absl::Status status) { err_status = status; });
   EXPECT_THAT(errors, 2);
   EXPECT_THAT(err_status, StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("positive")));
-  EXPECT_FALSE(emitted) << "an invalid --block-size must not traverse";
+  EXPECT_THAT(emitted, IsFalse()) << "an invalid --block-size must not traverse";
 }
 
 TEST_F(RunTest, ValidTimezoneIsAcceptedAndTheRunProceeds) {
@@ -1512,7 +1512,7 @@ TEST_F(RunTest, ExecFieldsRendersNamedPlaceholders) {
       parser::Parse(
           {"--exec-fields", root_.string(), "-name", "a.txt", "-exec", "/bin/sh", "-c", "echo > \"{path}.fld\"", ";"}));
   RunFind(command, fs_, [](std::string_view) {}, [](std::string_view, absl::Status) {});
-  EXPECT_TRUE(fs::exists(root_ / "a.txt.fld"));
+  EXPECT_THAT(fs::exists(root_ / "a.txt.fld"), IsTrue());
 }
 
 TEST_F(RunTest, ExecFieldsSubstitutesRegexCaptures) {
@@ -1525,7 +1525,7 @@ TEST_F(RunTest, ExecFieldsSubstitutesRegexCaptures) {
   parser::BindMatchers(command, parser::GrammarFromGlobals(command.globals), parser::CaseMode::kSensitive);
   RunFind(command, fs_, [](std::string_view) {}, [](std::string_view, absl::Status) {});
   const fs::path marker = root_ / "a.txt.cap";
-  ASSERT_TRUE(fs::exists(marker));
+  ASSERT_THAT(fs::exists(marker), IsTrue());
   std::ifstream in(marker);
   std::string content;
   std::getline(in, content);

@@ -42,13 +42,13 @@
 namespace xff::archive {
 namespace {
 
+using ::mbo::testing::IsOk;
 using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
 using ::testing::Contains;
 using ::testing::Field;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
-using ::testing::IsTrue;
 using ::testing::Not;
 using ::testing::NotNull;
 using ::testing::SizeIs;
@@ -163,7 +163,7 @@ TEST_F(FormatFixtureTest, TheFixturesAreReproducible) {
   // without a content change produces no diff, and a diff in review therefore means something. The
   // cheap proxy for "still the bytes we generated" is that every fixture still opens.
   for (const std::string_view fixture : kAllFixtures) {
-    EXPECT_THAT(ListMembersOfFile(Fixture(fixture)).ok(), IsTrue()) << fixture;
+    EXPECT_THAT(ListMembersOfFile(Fixture(fixture)), IsOk()) << fixture;
   }
 }
 

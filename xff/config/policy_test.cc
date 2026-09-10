@@ -39,6 +39,7 @@ using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
+using ::testing::ResultOf;
 using ::testing::SizeIs;
 
 struct PolicyTest : ::testing::Test {};
@@ -59,24 +60,24 @@ TEST_F(PolicyTest, NoLayerIsDeniedByDefault) {
   const SystemConfig none;  // no [policy]
   // With the untrusted project layer gone (Option B), the trusted user/system layers may do
   // anything by default; only a system [policy] deny rule bars a line.
-  EXPECT_TRUE(LinePermitted(Line({"-exec", "rm", ";"}), Source::kUser, none));
-  EXPECT_TRUE(LinePermitted(Line({"-delete"}), Source::kUser, none));
-  EXPECT_TRUE(LinePermitted(Line({"-delete"}), Source::kSystem, none));
-  EXPECT_TRUE(LinePermitted(Line({"--color=auto"}), Source::kUser, none));
+  EXPECT_THAT(LinePermitted(Line({"-exec", "rm", ";"}), Source::kUser, none), IsTrue());
+  EXPECT_THAT(LinePermitted(Line({"-delete"}), Source::kUser, none), IsTrue());
+  EXPECT_THAT(LinePermitted(Line({"-delete"}), Source::kSystem, none), IsTrue());
+  EXPECT_THAT(LinePermitted(Line({"--color=auto"}), Source::kUser, none), IsTrue());
 }
 
 TEST_F(PolicyTest, PolicyDenyTightensAFlagByName) {
   SystemConfig policy;
   policy.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"--jobs"}}};
-  EXPECT_FALSE(LinePermitted(Line({"--jobs=4"}), Source::kUser, policy));     // named flag denied
-  EXPECT_TRUE(LinePermitted(Line({"--color=auto"}), Source::kUser, policy));  // unrelated flag fine
+  EXPECT_THAT(LinePermitted(Line({"--jobs=4"}), Source::kUser, policy), IsFalse());     // named flag denied
+  EXPECT_THAT(LinePermitted(Line({"--color=auto"}), Source::kUser, policy), IsTrue());  // unrelated flag fine
 }
 
 TEST_F(PolicyTest, PolicyDenyTightensByClassToken) {
   SystemConfig policy;
   policy.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"@sensitive"}}};
-  EXPECT_FALSE(LinePermitted(Line({"-exec", "rm", ";"}), Source::kUser, policy));  // @sensitive denied
-  EXPECT_TRUE(LinePermitted(Line({"-delete"}), Source::kUser, policy));            // @destructive not matched
+  EXPECT_THAT(LinePermitted(Line({"-exec", "rm", ";"}), Source::kUser, policy), IsFalse());  // @sensitive denied
+  EXPECT_THAT(LinePermitted(Line({"-delete"}), Source::kUser, policy), IsTrue());            // @destructive not matched
 }
 
 TEST_F(PolicyTest, PolicyClassDenyFindsEveryDangerousClassOnMixedLines) {
@@ -104,16 +105,16 @@ TEST_F(PolicyTest, AllowRuleIsInertAndDenyStillBars) {
       PolicyRule{.layer = "user", .allow = true, .tokens = {"-exec"}},
       PolicyRule{.layer = "user", .allow = false, .tokens = {"-exec"}},
   };
-  EXPECT_FALSE(LinePermitted(Line({"-exec", "rm", ";"}), Source::kUser, policy));
+  EXPECT_THAT(LinePermitted(Line({"-exec", "rm", ";"}), Source::kUser, policy), IsFalse());
 }
 
 TEST_F(PolicyTest, PolicyRulesAreScopedToTheirLayer) {
   SystemConfig policy;
   policy.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"-exec"}}};
   // The user.deny tightens the user layer...
-  EXPECT_FALSE(LinePermitted(Line({"-exec", "rm", ";"}), Source::kUser, policy));
+  EXPECT_THAT(LinePermitted(Line({"-exec", "rm", ";"}), Source::kUser, policy), IsFalse());
   // ...but does not touch the system layer.
-  EXPECT_TRUE(LinePermitted(Line({"-exec", "rm", ";"}), Source::kSystem, policy));
+  EXPECT_THAT(LinePermitted(Line({"-exec", "rm", ";"}), Source::kSystem, policy), IsTrue());
 }
 
 TEST_F(PolicyTest, PresentAutomaticSourcesMustAuthorizeBeingSkipped) {
@@ -240,14 +241,16 @@ TEST_F(PolicyTest, DropMessageForUnarmedXffrcNamesTheArm) {
 
 TEST_F(PolicyTest, OverloadsPresetDetectsBarePresetSelectors) {
   // A bare preset selector (base is a built-in style, no named config) overloads the preset.
-  EXPECT_THAT(OverloadsPreset(ParseXffrc("xff: --format=jsonl").front()), IsTrue());
-  EXPECT_THAT(OverloadsPreset(ParseXffrc("find: --warn").front()), IsTrue());
-  EXPECT_THAT(OverloadsPreset(ParseXffrc("rg: --x").front()), IsTrue());
+  const auto overloads_preset = ResultOf("OverloadsPreset", OverloadsPreset, IsTrue());
+  EXPECT_THAT(ParseXffrc("xff: --format=jsonl"), ElementsAre(overloads_preset));
+  EXPECT_THAT(ParseXffrc("find: --warn"), ElementsAre(overloads_preset));
+  EXPECT_THAT(ParseXffrc("rg: --x"), ElementsAre(overloads_preset));
   // common: is not a preset; a named config and a style-scoped named config are fine (they need
   // explicit activation, so they do not silently change a plain preset run).
-  EXPECT_THAT(OverloadsPreset(ParseXffrc("common: --sort").front()), IsFalse());
-  EXPECT_THAT(OverloadsPreset(ParseXffrc("myx: --format=jsonl").front()), IsFalse());
-  EXPECT_THAT(OverloadsPreset(ParseXffrc("xff:debug: --jobs=1").front()), IsFalse());
+  const auto does_not_overload = ResultOf("OverloadsPreset", OverloadsPreset, IsFalse());
+  EXPECT_THAT(ParseXffrc("common: --sort"), ElementsAre(does_not_overload));
+  EXPECT_THAT(ParseXffrc("myx: --format=jsonl"), ElementsAre(does_not_overload));
+  EXPECT_THAT(ParseXffrc("xff:debug: --jobs=1"), ElementsAre(does_not_overload));
 }
 
 TEST_F(PolicyTest, GateConfigDropsPresetOverloadWithReason) {

@@ -30,6 +30,7 @@
 namespace xff::archive {
 namespace {
 
+using ::testing::IsFalse;
 namespace stdfs = ::std::filesystem;
 using ::mbo::testing::IsOk;
 using ::mbo::testing::IsOkAndHolds;
@@ -141,7 +142,7 @@ TEST_F(ArchivePackTest, AMissingSourceLeavesNoHalfArchive) {
   entries.push_back(PackEntry{.source = (root_ / "absent.txt").string(), .name = "absent.txt"});
   const std::string out = Output("packed.tar");
   EXPECT_THAT(PackFiles(out, entries), StatusIs(absl::StatusCode::kNotFound, HasSubstr("absent.txt")));
-  EXPECT_FALSE(stdfs::exists(out));
+  EXPECT_THAT(stdfs::exists(out), IsFalse());
 }
 
 TEST_F(ArchivePackTest, AnExistingOutputSurvivesAFailedPack) {
@@ -159,7 +160,7 @@ TEST_F(ArchivePackTest, AnExistingOutputSurvivesAFailedPack) {
 TEST_F(ArchivePackTest, DirectoriesAndSymlinksKeepTheirType) {
   std::error_code error;
   stdfs::create_symlink("one.txt", root_ / "link", error);
-  ASSERT_FALSE(error);
+  ASSERT_THAT(error, IsFalse());
   const std::string out = Output("packed.tar");
   std::vector<PackEntry> entries = Entries();
   entries.push_back(PackEntry{.source = (root_ / "dir").string(), .name = "dir"});
@@ -302,7 +303,7 @@ TEST_F(ArchivePackTest, ARejectedOptionWritesNothing) {
   EXPECT_THAT(
       PackFiles(out, Entries(), PackSettings{.options = {{.name = "squish", .value = "9"}}}),
       StatusIs(absl::StatusCode::kInvalidArgument));
-  EXPECT_FALSE(stdfs::exists(out));
+  EXPECT_THAT(stdfs::exists(out), IsFalse());
 }
 
 TEST_F(ArchivePackTest, ALevelOutOfTheFormatsRangeIsRefusedNamingTheRange) {

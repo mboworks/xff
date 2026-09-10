@@ -31,6 +31,8 @@ using ::testing::ElementsAre;
 using ::testing::Field;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
+using ::testing::IsFalse;
+using ::testing::IsTrue;
 
 struct ConfigTest : ::testing::Test {};
 
@@ -121,24 +123,24 @@ TEST_F(ConfigTest, XffrcTierResolvesAboveUser) {
 
 TEST_F(ConfigTest, ArmedFromTrustedTierAcceptsCliUserSystemNotXffrc) {
   ConfigInputs in;
-  EXPECT_TRUE(ArmedFromTrustedTier(in, {"--allow-exec"}, "--allow-exec"));  // typed on the CLI
-  EXPECT_FALSE(ArmedFromTrustedTier(in, {}, "--allow-exec"));               // nowhere
+  EXPECT_THAT(ArmedFromTrustedTier(in, {"--allow-exec"}, "--allow-exec"), IsTrue());  // typed on the CLI
+  EXPECT_THAT(ArmedFromTrustedTier(in, {}, "--allow-exec"), IsFalse());               // nowhere
   in.system.defaults = {"--allow-exec"};
-  EXPECT_TRUE(ArmedFromTrustedTier(in, {}, "--allow-exec"));  // system defaults
+  EXPECT_THAT(ArmedFromTrustedTier(in, {}, "--allow-exec"), IsTrue());  // system defaults
   in.system.defaults = {};
   in.user = ParseXffrc("common: --allow-exec");
-  EXPECT_TRUE(ArmedFromTrustedTier(in, {}, "--allow-exec"));  // an applying user line
+  EXPECT_THAT(ArmedFromTrustedTier(in, {}, "--allow-exec"), IsTrue());  // an applying user line
   in.user = {};
   in.xffrc = {{.path = "/named", .lines = ParseXffrc("common: --allow-exec")}};
-  EXPECT_FALSE(ArmedFromTrustedTier(in, {}, "--allow-exec"));  // NOT from an --xffrc file (no self-arming)
+  EXPECT_THAT(ArmedFromTrustedTier(in, {}, "--allow-exec"), IsFalse());  // NOT from an --xffrc file (no self-arming)
 }
 
 TEST_F(ConfigTest, ArmedFromTrustedTierRespectsActiveConfig) {
   ConfigInputs in;
-  in.user = ParseXffrc("debug: --allow-exec");                 // only under --config=debug
-  EXPECT_FALSE(ArmedFromTrustedTier(in, {}, "--allow-exec"));  // debug not active -> line inert
+  in.user = ParseXffrc("debug: --allow-exec");                           // only under --config=debug
+  EXPECT_THAT(ArmedFromTrustedTier(in, {}, "--allow-exec"), IsFalse());  // debug not active -> line inert
   in.configs = {"debug"};
-  EXPECT_TRUE(ArmedFromTrustedTier(in, {}, "--allow-exec"));
+  EXPECT_THAT(ArmedFromTrustedTier(in, {}, "--allow-exec"), IsTrue());
 }
 
 TEST_F(ConfigTest, SourceNameMapsEachLayer) {

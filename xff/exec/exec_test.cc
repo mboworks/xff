@@ -29,6 +29,8 @@ namespace xff::exec {
 namespace {
 
 using ::testing::Eq;
+using ::testing::IsFalse;
+using ::testing::IsTrue;
 using ::testing::Optional;
 using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
@@ -38,30 +40,30 @@ using ::testing::UnorderedElementsAre;
 struct ExecTest : ::testing::Test {};
 
 TEST_F(ExecTest, ReturnsTrueWhenChildExitsZero) {
-  EXPECT_TRUE(Execute({"/bin/sh", "-c", "exit 0"}, "ignored"));
+  EXPECT_THAT(Execute({"/bin/sh", "-c", "exit 0"}, "ignored"), IsTrue());
 }
 
 TEST_F(ExecTest, ReturnsFalseWhenChildExitsNonzero) {
-  EXPECT_FALSE(Execute({"/bin/sh", "-c", "exit 7"}, "ignored"));
+  EXPECT_THAT(Execute({"/bin/sh", "-c", "exit 7"}, "ignored"), IsFalse());
 }
 
 TEST_F(ExecTest, SubstitutesBracePlaceholderWithPath) {
   // {} is replaced by the path everywhere it appears in a token.
-  EXPECT_TRUE(Execute({"/bin/sh", "-c", "test \"{}\" = /a/b"}, "/a/b"));
-  EXPECT_FALSE(Execute({"/bin/sh", "-c", "test \"{}\" = /a/b"}, "/zz"));
+  EXPECT_THAT(Execute({"/bin/sh", "-c", "test \"{}\" = /a/b"}, "/a/b"), IsTrue());
+  EXPECT_THAT(Execute({"/bin/sh", "-c", "test \"{}\" = /a/b"}, "/zz"), IsFalse());
 }
 
 TEST_F(ExecTest, EmptyCommandIsFalse) {
-  EXPECT_FALSE(Execute({}, "x"));
+  EXPECT_THAT(Execute({}, "x"), IsFalse());
 }
 
 TEST_F(ExecTest, ExecuteArgsSpawnsVerbatimWithoutSubstitution) {
-  EXPECT_TRUE(ExecuteArgs({"/bin/sh", "-c", "exit 0"}));
-  EXPECT_FALSE(ExecuteArgs({"/bin/sh", "-c", "exit 7"}));
-  EXPECT_FALSE(ExecuteArgs({}));  // empty argv
+  EXPECT_THAT(ExecuteArgs({"/bin/sh", "-c", "exit 0"}), IsTrue());
+  EXPECT_THAT(ExecuteArgs({"/bin/sh", "-c", "exit 7"}), IsFalse());
+  EXPECT_THAT(ExecuteArgs({}), IsFalse());  // empty argv
   // No "{}" substitution: the literal braces reach the child unchanged, so both
   // sides of the comparison are the literal string "{}".
-  EXPECT_TRUE(ExecuteArgs({"/bin/sh", "-c", "test '{}' = '{}'"}));
+  EXPECT_THAT(ExecuteArgs({"/bin/sh", "-c", "test '{}' = '{}'"}), IsTrue());
 }
 
 TEST_F(ExecTest, CaptureOutputReturnsChildStdout) {
@@ -87,21 +89,21 @@ TEST_F(ExecTest, CaptureOutputDrainsMoreThanPipeBuffer) {
 TEST_F(ExecTest, ExecuteInDirSetsChildWorkingDirectory) {
   // The child runs with its cwd set to `dir`: chdir to "/" -> pwd -P is "/". "/" is
   // always present and accessible, including under the test sandbox.
-  EXPECT_TRUE(ExecuteInDir({"/bin/sh", "-c", "test \"$(pwd -P)\" = /"}, "/", "ignored"));
+  EXPECT_THAT(ExecuteInDir({"/bin/sh", "-c", "test \"$(pwd -P)\" = /"}, "/", "ignored"), IsTrue());
 }
 
 TEST_F(ExecTest, ExecuteInDirSubstitutesBraceWithName) {
   // {} is replaced by `name` (the caller's "./<basename>"), independent of the cwd.
-  EXPECT_TRUE(ExecuteInDir({"/bin/sh", "-c", "test \"{}\" = ./f.txt"}, "/", "./f.txt"));
-  EXPECT_FALSE(ExecuteInDir({"/bin/sh", "-c", "test \"{}\" = ./f.txt"}, "/", "./other"));
-  EXPECT_FALSE(ExecuteInDir({}, "/", "x"));  // empty command
+  EXPECT_THAT(ExecuteInDir({"/bin/sh", "-c", "test \"{}\" = ./f.txt"}, "/", "./f.txt"), IsTrue());
+  EXPECT_THAT(ExecuteInDir({"/bin/sh", "-c", "test \"{}\" = ./f.txt"}, "/", "./other"), IsFalse());
+  EXPECT_THAT(ExecuteInDir({}, "/", "x"), IsFalse());  // empty command
 }
 
 TEST_F(ExecTest, ExecuteArgsInDirSpawnsVerbatimInDir) {
-  EXPECT_TRUE(ExecuteArgsInDir({"/bin/sh", "-c", "test \"$(pwd -P)\" = /"}, "/"));
-  EXPECT_FALSE(ExecuteArgsInDir({}, "/"));  // empty argv
+  EXPECT_THAT(ExecuteArgsInDir({"/bin/sh", "-c", "test \"$(pwd -P)\" = /"}, "/"), IsTrue());
+  EXPECT_THAT(ExecuteArgsInDir({}, "/"), IsFalse());  // empty argv
   // No "{}" substitution: the literal braces reach the child unchanged.
-  EXPECT_TRUE(ExecuteArgsInDir({"/bin/sh", "-c", "test '{}' = '{}'"}, "/"));
+  EXPECT_THAT(ExecuteArgsInDir({"/bin/sh", "-c", "test '{}' = '{}'"}, "/"), IsTrue());
 }
 
 TEST_F(ExecTest, BatchNoOpAndFailureCases) {
@@ -118,8 +120,8 @@ TEST_F(ExecTest, CaptureOutputFailsWhenWorkingDirectoryDoesNotExist) {
 
 TEST_F(ExecTest, DirVariantsWithEmptyOrDotDirInheritCwd) {
   // An empty or "." dir means "do not chdir" -- like ExecuteArgs/Execute.
-  EXPECT_TRUE(ExecuteArgsInDir({"/bin/sh", "-c", "exit 0"}, ""));
-  EXPECT_TRUE(ExecuteArgsInDir({"/bin/sh", "-c", "exit 0"}, "."));
+  EXPECT_THAT(ExecuteArgsInDir({"/bin/sh", "-c", "exit 0"}, ""), IsTrue());
+  EXPECT_THAT(ExecuteArgsInDir({"/bin/sh", "-c", "exit 0"}, "."), IsTrue());
 }
 
 TEST_F(ExecTest, CaptureOutputRunsChildInDirWhenDirGiven) {

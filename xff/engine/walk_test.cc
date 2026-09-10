@@ -42,6 +42,7 @@
 namespace xff::engine {
 namespace {
 
+using ::testing::IsTrue;
 // gtest struct-fixture idioms suppressed file-wide: SetUp/TearDown are public overrides of the
 // base's protected hooks; fixture state carries the private-style `_` suffix; and the data-heavy
 // TEST_F bodies plus trivial local names (a one-line path lambda) trip cognitive-complexity and
@@ -155,7 +156,7 @@ struct WalkTest : ::testing::Test {
             / (std::string("xff_walk_") + ::testing::UnitTest::GetInstance()->current_test_info()->name());
     std::error_code ec;
     fs::remove_all(root_, ec);
-    ASSERT_TRUE(fs::create_directories(root_ / "sub"));
+    ASSERT_THAT(fs::create_directories(root_ / "sub"), IsTrue());
     { std::ofstream(root_ / "a.txt") << "a"; }
     { std::ofstream(root_ / "sub" / "b.txt") << "b"; }
     fs::create_symlink("a.txt", root_ / "link");
@@ -224,8 +225,8 @@ TEST_F(WalkTest, ParallelVisitsWholeTreeAsSet) {
 TEST_F(WalkTest, SortModesOrderUnderWorkers) {
   // A tree where a file (`z.txt`) sorts after the subdirectories, so the three
   // ordered modes are all distinct. Output is deterministic at any worker count.
-  ASSERT_TRUE(fs::create_directories(root_ / "order" / "m1"));
-  ASSERT_TRUE(fs::create_directories(root_ / "order" / "m2"));
+  ASSERT_THAT(fs::create_directories(root_ / "order" / "m1"), IsTrue());
+  ASSERT_THAT(fs::create_directories(root_ / "order" / "m2"), IsTrue());
   { std::ofstream(root_ / "order" / "a.txt") << "a"; }
   { std::ofstream(root_ / "order" / "z.txt") << "z"; }
   { std::ofstream(root_ / "order" / "m1" / "x.txt") << "x"; }
@@ -260,8 +261,8 @@ TEST_F(WalkTest, SortModesOrderUnderWorkers) {
 }
 
 TEST_F(WalkTest, RootsAndGlobalSortRootOperands) {
-  ASSERT_TRUE(fs::create_directories(root_ / "roots-a"));
-  ASSERT_TRUE(fs::create_directories(root_ / "roots-z"));
+  ASSERT_THAT(fs::create_directories(root_ / "roots-a"), IsTrue());
+  ASSERT_THAT(fs::create_directories(root_ / "roots-z"), IsTrue());
   { std::ofstream(root_ / "roots-a" / "child.txt") << "a"; }
   { std::ofstream(root_ / "roots-z" / "child.txt") << "z"; }
   const std::string root_a = (root_ / "roots-a").string();

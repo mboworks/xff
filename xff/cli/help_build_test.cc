@@ -35,6 +35,7 @@ using ::testing::ElementsAreArray;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
+using ::testing::IsTrue;
 using ::testing::Not;
 using ::testing::NotNull;
 using ::testing::SizeIs;
@@ -167,7 +168,7 @@ TEST_F(BuildReferenceTest, OptionsGroupsFlagsIntoNonEmptySubsections) {
   for (const Content& child : first->children) {
     has_entry = has_entry || std::holds_alternative<Entry>(child.node);
   }
-  EXPECT_TRUE(has_entry);
+  EXPECT_THAT(has_entry, IsTrue());
 }
 
 TEST_F(BuildReferenceTest, FieldsCarriesTheBracesAndQualifiersSubsections) {

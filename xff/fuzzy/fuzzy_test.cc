@@ -26,6 +26,7 @@
 namespace xff::fuzzy {
 namespace {
 
+using ::testing::_;
 using ::testing::AllOf;
 using ::testing::Eq;
 using ::testing::Ge;
@@ -326,7 +327,11 @@ TEST_F(FuzzyScoreTest, EveryScoredMatchIsAlsoAMatch) {
       {"xyz", "the_main_header.h"},
   });
   for (const auto& [pattern, text] : kCases) {
-    EXPECT_THAT(Score(pattern, text, false).has_value(), Eq(Matches(pattern, text, false))) << pattern << " / " << text;
+    if (Matches(pattern, text, false)) {
+      EXPECT_THAT(Score(pattern, text, false), Optional(_)) << pattern << " / " << text;
+    } else {
+      EXPECT_THAT(Score(pattern, text, false), Eq(std::nullopt)) << pattern << " / " << text;
+    }
   }
 }
 

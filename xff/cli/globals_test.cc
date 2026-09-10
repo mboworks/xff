@@ -37,6 +37,7 @@ using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
+using ::testing::IsTrue;
 using ::testing::Le;
 using ::testing::Ne;
 using ::testing::Not;
@@ -50,7 +51,7 @@ struct GlobalsTest : ::testing::Test {};
 TEST_F(GlobalsTest, EveryGlobalIsWellFormed) {
   EXPECT_THAT(Globals(), Not(IsEmpty()));
   for (const GlobalFlag& flag : Globals()) {
-    EXPECT_THAT(flag.name, Not(IsEmpty())) << flag.name;
+    ASSERT_THAT(flag.name, Not(IsEmpty())) << flag.name;
     EXPECT_THAT(flag.display, Not(IsEmpty())) << flag.name;
     EXPECT_THAT(flag.group, Not(IsEmpty())) << flag.name;
     EXPECT_THAT(flag.header, Not(IsEmpty())) << flag.name;
@@ -77,40 +78,58 @@ TEST_F(GlobalsTest, HashAlgorithmValuesMatchTheHashLib) {
 }
 
 TEST_F(GlobalsTest, LookupResolvesNameAndAlias) {
+  const mbo::types::OptionalRef<const GlobalFlag> jobs = LookupGlobal("-j");
+  const mbo::types::OptionalRef<const GlobalFlag> timezone = LookupGlobal("--tz");
+  ASSERT_THAT(jobs, Optional(_));
+  ASSERT_THAT(timezone, Optional(_));
   EXPECT_THAT(LookupGlobal("--sort"), Optional(_));
-  EXPECT_THAT(LookupGlobal("--jobs"), Optional(Ref(LookupGlobal("-j").value())));        // same entry
-  EXPECT_THAT(LookupGlobal("--timezone"), Optional(Ref(LookupGlobal("--tz").value())));  // ditto
+  EXPECT_THAT(LookupGlobal("--jobs"), Optional(Ref(*jobs)));          // same entry
+  EXPECT_THAT(LookupGlobal("--timezone"), Optional(Ref(*timezone)));  // ditto
   EXPECT_THAT(LookupGlobal("--nonesuch"), Eq(std::nullopt));
 }
 
 TEST_F(GlobalsTest, StringifiesAsCanonicalName) {
-  EXPECT_THAT(absl::StrCat(LookupGlobal("--jobs").value()), "--jobs");
+  const mbo::types::OptionalRef<const GlobalFlag> jobs = LookupGlobal("--jobs");
+  ASSERT_THAT(jobs, Optional(_));
+  EXPECT_THAT(absl::StrCat(*jobs), "--jobs");
 }
 
 TEST_F(GlobalsTest, ConfigAndSymlinkFlagsDocumentTheirNonObviousBoundaries) {
-  EXPECT_THAT(LookupGlobal("--config")->details, HasSubstr("Every occurrence remains an active selector"));
-  EXPECT_THAT(LookupGlobal("--no-config")->details, HasSubstr("still inspected for policy"));
-  EXPECT_THAT(LookupGlobal("--no-system-config")->details, HasSubstr("--allow-no-system-config"));
-  EXPECT_THAT(LookupGlobal("--no-user-config")->details, HasSubstr("--allow-no-user-config"));
-  EXPECT_THAT(LookupGlobal("--explain")->details, HasSubstr("does not walk roots"));
-  EXPECT_THAT(LookupGlobal("-H")->details, HasSubstr("dangling root symlink"));
-  EXPECT_THAT(LookupGlobal("-L")->details, HasSubstr("Filesystem loops are detected"));
-  EXPECT_THAT(LookupGlobal("-P")->details, HasSubstr("including a symlink supplied as a root operand"));
+  EXPECT_THAT(
+      LookupGlobal("--config"),
+      Optional(Field("details", &GlobalFlag::details, HasSubstr("Every occurrence remains an active selector"))));
+  EXPECT_THAT(
+      LookupGlobal("--no-config"),
+      Optional(Field("details", &GlobalFlag::details, HasSubstr("still inspected for policy"))));
+  EXPECT_THAT(
+      LookupGlobal("--no-system-config"),
+      Optional(Field("details", &GlobalFlag::details, HasSubstr("--allow-no-system-config"))));
+  EXPECT_THAT(
+      LookupGlobal("--no-user-config"),
+      Optional(Field("details", &GlobalFlag::details, HasSubstr("--allow-no-user-config"))));
+  EXPECT_THAT(
+      LookupGlobal("--explain"), Optional(Field("details", &GlobalFlag::details, HasSubstr("does not walk roots"))));
+  EXPECT_THAT(LookupGlobal("-H"), Optional(Field("details", &GlobalFlag::details, HasSubstr("dangling root symlink"))));
+  EXPECT_THAT(
+      LookupGlobal("-L"), Optional(Field("details", &GlobalFlag::details, HasSubstr("Filesystem loops are detected"))));
+  EXPECT_THAT(
+      LookupGlobal("-P"),
+      Optional(Field("details", &GlobalFlag::details, HasSubstr("including a symlink supplied as a root operand"))));
 }
 
 TEST_F(GlobalsTest, ComposableExtraFlagCarriesItsExtraKeyAndIsOffInTheLeanBuild) {
   const mbo::types::OptionalRef<const GlobalFlag> archive = LookupGlobal("--archive");
   ASSERT_THAT(archive, Optional(_));
-  EXPECT_THAT(archive->extra, Eq("archive"));             // the SOT link from the flag to its build extra
-  EXPECT_THAT(ExtraEnabled("archive"), IsFalse());        // not compiled into the lean default binary
-  EXPECT_THAT(ExtraEnabled("pcre2"), IsFalse());          // same gate as archive, same lean answer
-  EXPECT_THAT(ExtraEnabled("brotli"), IsFalse());         // removable extension of the archive extra
-  EXPECT_THAT(ExtraEnabled("language-db"), IsFalse());    // removable comprehensive language vocabulary
-  EXPECT_THAT(ExtraEnabled("mime-db"), IsFalse());        // removable comprehensive media vocabulary
-  EXPECT_THAT(ExtraEnabled("squashfs"), IsFalse());       // removable filesystem-image reader
-  EXPECT_THAT(EnabledExtras(), IsEmpty());                // the notice line's source: nothing in a lean build
-  EXPECT_THAT(ExtraEnabled("nonesuch"), IsFalse());       // an unknown extra reads as off
-  EXPECT_THAT(LookupGlobal("--sort")->extra, IsEmpty());  // a core flag carries no extra
+  EXPECT_THAT(archive->extra, Eq("archive"));           // the SOT link from the flag to its build extra
+  EXPECT_THAT(ExtraEnabled("archive"), IsFalse());      // not compiled into the lean default binary
+  EXPECT_THAT(ExtraEnabled("pcre2"), IsFalse());        // same gate as archive, same lean answer
+  EXPECT_THAT(ExtraEnabled("brotli"), IsFalse());       // removable extension of the archive extra
+  EXPECT_THAT(ExtraEnabled("language-db"), IsFalse());  // removable comprehensive language vocabulary
+  EXPECT_THAT(ExtraEnabled("mime-db"), IsFalse());      // removable comprehensive media vocabulary
+  EXPECT_THAT(ExtraEnabled("squashfs"), IsFalse());     // removable filesystem-image reader
+  EXPECT_THAT(EnabledExtras(), IsEmpty());              // the notice line's source: nothing in a lean build
+  EXPECT_THAT(ExtraEnabled("nonesuch"), IsFalse());     // an unknown extra reads as off
+  EXPECT_THAT(LookupGlobal("--sort"), Optional(Field("extra", &GlobalFlag::extra, IsEmpty())));
 }
 
 TEST_F(GlobalsTest, EveryGlobalResolvesByItsOwnName) {
@@ -121,39 +140,39 @@ TEST_F(GlobalsTest, EveryGlobalResolvesByItsOwnName) {
 
 TEST_F(GlobalsTest, IsKnownGlobalAcceptsEveryTableNameAndAlias) {
   for (const GlobalFlag& flag : Globals()) {
-    EXPECT_TRUE(IsKnownGlobal(flag.name)) << flag.name;
+    EXPECT_THAT(IsKnownGlobal(flag.name), IsTrue()) << flag.name;
     if (!flag.alias.empty()) {
-      EXPECT_TRUE(IsKnownGlobal(flag.alias)) << flag.alias;
+      EXPECT_THAT(IsKnownGlobal(flag.alias), IsTrue()) << flag.alias;
     }
   }
 }
 
 TEST_F(GlobalsTest, IsKnownGlobalAcceptsValuedFormsAndCompatAliases) {
-  EXPECT_TRUE(IsKnownGlobal("--sort=tree"));     // valued name=VALUE
-  EXPECT_TRUE(IsKnownGlobal("--define=A=B"));    // value may itself contain '='
-  EXPECT_TRUE(IsKnownGlobal("--gitignore=on"));  // bare-or-valued flag, valued form
-  EXPECT_TRUE(IsKnownGlobal("--tz=utc"));        // valued via an alias
-  EXPECT_TRUE(IsKnownGlobal("-j=4"));            // valued short form
-  EXPECT_TRUE(IsKnownGlobal("-j4"));             // conventional attached short argument
-  EXPECT_TRUE(IsKnownGlobal("-jall"));
-  EXPECT_TRUE(IsKnownGlobal("-0"));    // compat: --format=nul
-  EXPECT_TRUE(IsKnownGlobal("-g+"));   // compat: --gitignore=on
-  EXPECT_TRUE(IsKnownGlobal("-g-"));   // compat: --gitignore=off
-  EXPECT_TRUE(IsKnownGlobal("-z++"));  // the top read rung (= --archive=any)
-  EXPECT_TRUE(IsKnownGlobal("-Z"));    // the same rungs with writing armed
-  EXPECT_TRUE(IsKnownGlobal("-Z+"));
-  EXPECT_TRUE(IsKnownGlobal("-Z++"));
+  EXPECT_THAT(IsKnownGlobal("--sort=tree"), IsTrue());     // valued name=VALUE
+  EXPECT_THAT(IsKnownGlobal("--define=A=B"), IsTrue());    // value may itself contain '='
+  EXPECT_THAT(IsKnownGlobal("--gitignore=on"), IsTrue());  // bare-or-valued flag, valued form
+  EXPECT_THAT(IsKnownGlobal("--tz=utc"), IsTrue());        // valued via an alias
+  EXPECT_THAT(IsKnownGlobal("-j=4"), IsTrue());            // valued short form
+  EXPECT_THAT(IsKnownGlobal("-j4"), IsTrue());             // conventional attached short argument
+  EXPECT_THAT(IsKnownGlobal("-jall"), IsTrue());
+  EXPECT_THAT(IsKnownGlobal("-0"), IsTrue());    // compat: --format=nul
+  EXPECT_THAT(IsKnownGlobal("-g+"), IsTrue());   // compat: --gitignore=on
+  EXPECT_THAT(IsKnownGlobal("-g-"), IsTrue());   // compat: --gitignore=off
+  EXPECT_THAT(IsKnownGlobal("-z++"), IsTrue());  // the top read rung (= --archive=any)
+  EXPECT_THAT(IsKnownGlobal("-Z"), IsTrue());    // the same rungs with writing armed
+  EXPECT_THAT(IsKnownGlobal("-Z+"), IsTrue());
+  EXPECT_THAT(IsKnownGlobal("-Z++"), IsTrue());
   // `-Z-` is known so the engine can explain the contradiction rather than have it reported as an
   // unknown option; it is still a usage error.
-  EXPECT_TRUE(IsKnownGlobal("-Z-"));
+  EXPECT_THAT(IsKnownGlobal("-Z-"), IsTrue());
 }
 
 TEST_F(GlobalsTest, IsKnownGlobalRejectsUnknownFlagsAndBadValuedKeys) {
-  EXPECT_FALSE(IsKnownGlobal("--bogus"));
-  EXPECT_FALSE(IsKnownGlobal("--srot"));     // a typo of --sort
-  EXPECT_FALSE(IsKnownGlobal("-Y"));         // an unclaimed letter (-Z is the write archive ladder)
-  EXPECT_FALSE(IsKnownGlobal("--safe=x"));   // --safe takes no value, so a valued form is unknown
-  EXPECT_FALSE(IsKnownGlobal("--bogus=1"));  // unknown key with a value
+  EXPECT_THAT(IsKnownGlobal("--bogus"), IsFalse());
+  EXPECT_THAT(IsKnownGlobal("--srot"), IsFalse());     // a typo of --sort
+  EXPECT_THAT(IsKnownGlobal("-Y"), IsFalse());         // an unclaimed letter (-Z is the write archive ladder)
+  EXPECT_THAT(IsKnownGlobal("--safe=x"), IsFalse());   // --safe takes no value, so a valued form is unknown
+  EXPECT_THAT(IsKnownGlobal("--bogus=1"), IsFalse());  // unknown key with a value
 }
 
 TEST_F(GlobalsTest, EveryTableCheckedFlagHasAValueTableToCheckAgainst) {
@@ -225,7 +244,7 @@ TEST_F(GlobalsTest, EveryDeclaredSignFormIsAccepted) {
   // literal list caught up).
   for (const GlobalFlag& flag : Globals()) {
     for (const std::string_view form : flag.sign_forms) {
-      EXPECT_TRUE(IsKnownGlobal(form)) << flag.name << " declares " << form;
+      EXPECT_THAT(IsKnownGlobal(form), IsTrue()) << flag.name << " declares " << form;
     }
   }
 }
@@ -246,10 +265,10 @@ TEST_F(GlobalsTest, ASignFormNamesItsOwnFlagAndBelongsToOnlyOne) {
 
 TEST_F(GlobalsTest, AnUndeclaredSignFormStaysUnknown) {
   // The ladders stop where they are declared; a longer run of signs is a typo, not a rung.
-  EXPECT_FALSE(IsKnownGlobal("-z+++"));
-  EXPECT_FALSE(IsKnownGlobal("-Z+++"));
-  EXPECT_FALSE(IsKnownGlobal("-g++"));
-  EXPECT_FALSE(IsKnownGlobal("-s++"));
+  EXPECT_THAT(IsKnownGlobal("-z+++"), IsFalse());
+  EXPECT_THAT(IsKnownGlobal("-Z+++"), IsFalse());
+  EXPECT_THAT(IsKnownGlobal("-g++"), IsFalse());
+  EXPECT_THAT(IsKnownGlobal("-s++"), IsFalse());
 }
 
 }  // namespace

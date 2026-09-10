@@ -202,8 +202,8 @@ TEST_F(EvaluateTest, ExpressionIdentityTracksNodesRatherThanTheirContents) {
 TEST_F(EvaluateTest, TrueAndFalse) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo", "foo", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-true"}, visit));
-  EXPECT_FALSE(Match({"-false"}, visit));
+  EXPECT_THAT(Match({"-true"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-false"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, HashVerificationSideChannelRecordsEveryDefensiveFailure) {
@@ -236,37 +236,37 @@ TEST_F(EvaluateTest, HashVerificationSideChannelRecordsEveryDefensiveFailure) {
 TEST_F(EvaluateTest, XorMatchesExactlyOneSide) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo", "foo", vfs::FileType::kRegular, md);
-  EXPECT_FALSE(Match({"-true", "-xor", "-true"}, visit));
-  EXPECT_TRUE(Match({"-true", "-xor", "-false"}, visit));
-  EXPECT_TRUE(Match({"-false", "-xor", "-true"}, visit));
-  EXPECT_FALSE(Match({"-false", "-xor", "-false"}, visit));
+  EXPECT_THAT(Match({"-true", "-xor", "-true"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-true", "-xor", "-false"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-false", "-xor", "-true"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-false", "-xor", "-false"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, XnorMatchesWhenBothSidesAgree) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo", "foo", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-true", "-xnor", "-true"}, visit));
-  EXPECT_FALSE(Match({"-true", "-xnor", "-false"}, visit));
-  EXPECT_FALSE(Match({"-false", "-xnor", "-true"}, visit));
-  EXPECT_TRUE(Match({"-false", "-xnor", "-false"}, visit));
+  EXPECT_THAT(Match({"-true", "-xnor", "-true"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-true", "-xnor", "-false"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-false", "-xnor", "-true"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-false", "-xnor", "-false"}, visit), IsTrue());
 }
 
 TEST_F(EvaluateTest, NandIsTheNegationOfAnd) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo", "foo", vfs::FileType::kRegular, md);
-  EXPECT_FALSE(Match({"-true", "-nand", "-true"}, visit));
-  EXPECT_TRUE(Match({"-true", "-nand", "-false"}, visit));
-  EXPECT_TRUE(Match({"-false", "-nand", "-true"}, visit));
-  EXPECT_TRUE(Match({"-false", "-nand", "-false"}, visit));
+  EXPECT_THAT(Match({"-true", "-nand", "-true"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-true", "-nand", "-false"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-false", "-nand", "-true"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-false", "-nand", "-false"}, visit), IsTrue());
 }
 
 TEST_F(EvaluateTest, NorIsTheNegationOfOr) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo", "foo", vfs::FileType::kRegular, md);
-  EXPECT_FALSE(Match({"-true", "-nor", "-true"}, visit));
-  EXPECT_FALSE(Match({"-true", "-nor", "-false"}, visit));
-  EXPECT_FALSE(Match({"-false", "-nor", "-true"}, visit));
-  EXPECT_TRUE(Match({"-false", "-nor", "-false"}, visit));
+  EXPECT_THAT(Match({"-true", "-nor", "-true"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-true", "-nor", "-false"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-false", "-nor", "-true"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-false", "-nor", "-false"}, visit), IsTrue());
 }
 
 TEST_F(EvaluateTest, DaystartIsAPositionalNoOp) {
@@ -274,24 +274,24 @@ TEST_F(EvaluateTest, DaystartIsAPositionalNoOp) {
   const Visit visit = MakeVisit("dir/foo", "foo", vfs::FileType::kRegular, md);
   // -daystart is consumed by the driver (it shifts the age-test reference to local
   // midnight); as a predicate it is a no-op that matches, so it never filters.
-  EXPECT_TRUE(Match({"-daystart"}, visit));
-  EXPECT_TRUE(Match({"-daystart", "-name", "foo"}, visit));
+  EXPECT_THAT(Match({"-daystart"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-daystart", "-name", "foo"}, visit), IsTrue());
 }
 
 TEST_F(EvaluateTest, NameGlobsBasename) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo.txt", "foo.txt", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-name", "*.txt"}, visit));
-  EXPECT_TRUE(Match({"-name", "foo.*"}, visit));
-  EXPECT_FALSE(Match({"-name", "*.md"}, visit));
-  EXPECT_FALSE(Match({"-name", "dir/*"}, visit)) << "-name matches the basename, not the path";
+  EXPECT_THAT(Match({"-name", "*.txt"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-name", "foo.*"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-name", "*.md"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-name", "dir/*"}, visit), IsFalse()) << "-name matches the basename, not the path";
 }
 
 TEST_F(EvaluateTest, INameFoldsCase) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/Foo.TXT", "Foo.TXT", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-iname", "foo.txt"}, visit));
-  EXPECT_FALSE(Match({"-name", "foo.txt"}, visit));
+  EXPECT_THAT(Match({"-iname", "foo.txt"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-name", "foo.txt"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, FsNativeFoldsNameOnCaseFoldingVolume) {
@@ -300,35 +300,36 @@ TEST_F(EvaluateTest, FsNativeFoldsNameOnCaseFoldingVolume) {
   // matches the way the filesystem itself resolves the name.
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/Foo.TXT", "Foo.TXT", vfs::FileType::kRegular, md);
-  EXPECT_FALSE(Match({"-name", "foo.txt"}, visit)) << "byte-exact by default (case-sensitive volume / --exact)";
+  EXPECT_THAT(Match({"-name", "foo.txt"}, visit), IsFalse())
+      << "byte-exact by default (case-sensitive volume / --exact)";
   fold_name_case_ = true;
-  EXPECT_TRUE(Match({"-name", "foo.txt"}, visit)) << "FS-native fold on a case-folding volume";
-  EXPECT_TRUE(Match({"-name", "Foo.TXT"}, visit)) << "the exact-case name still matches when folding";
+  EXPECT_THAT(Match({"-name", "foo.txt"}, visit), IsTrue()) << "FS-native fold on a case-folding volume";
+  EXPECT_THAT(Match({"-name", "Foo.TXT"}, visit), IsTrue()) << "the exact-case name still matches when folding";
 }
 
 TEST_F(EvaluateTest, FsNativeFoldsPathOnCaseFoldingVolume) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("Dir/Foo.TXT", "Foo.TXT", vfs::FileType::kRegular, md);
-  EXPECT_FALSE(Match({"-path", "dir/foo.txt"}, visit));
+  EXPECT_THAT(Match({"-path", "dir/foo.txt"}, visit), IsFalse());
   fold_name_case_ = true;
-  EXPECT_TRUE(Match({"-path", "dir/foo.txt"}, visit)) << "-path folds too under FS-native matching";
+  EXPECT_THAT(Match({"-path", "dir/foo.txt"}, visit), IsTrue()) << "-path folds too under FS-native matching";
 }
 
 TEST_F(EvaluateTest, PathGlobsWholePath) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("a/b/c.txt", "c.txt", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-path", "a/*/c.txt"}, visit));
-  EXPECT_TRUE(Match({"-path", "*/c.txt"}, visit)) << "* spans slashes for -path";
-  EXPECT_FALSE(Match({"-path", "c.txt"}, visit));
-  EXPECT_TRUE(Match({"-ipath", "A/B/*"}, visit));
+  EXPECT_THAT(Match({"-path", "a/*/c.txt"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-path", "*/c.txt"}, visit), IsTrue()) << "* spans slashes for -path";
+  EXPECT_THAT(Match({"-path", "c.txt"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-ipath", "A/B/*"}, visit), IsTrue());
 }
 
 TEST_F(EvaluateTest, FuzzyPercentThresholdGatesTheMatch) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/far_out_of", "far_out_of", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-fuzzy:0%", "foo"}, visit));
-  EXPECT_FALSE(Match({"-fuzzy:100%", "foo"}, visit));
-  EXPECT_TRUE(Match({"-fuzzy:100%", "far_out_of"}, visit));
+  EXPECT_THAT(Match({"-fuzzy:0%", "foo"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-fuzzy:100%", "foo"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-fuzzy:100%", "far_out_of"}, visit), IsTrue());
   EXPECT_THAT(fuzzy_score_, Optional(Eq(100)));
 }
 
@@ -345,23 +346,23 @@ TEST_F(EvaluateTest, FuzzyModelsHaveConcreteThresholdSemantics) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo", "foo", vfs::FileType::kRegular, md);
 
-  EXPECT_TRUE(Match({"-fuzzy:sequence:67%", "fo"}, visit));
+  EXPECT_THAT(Match({"-fuzzy:sequence:67%", "fo"}, visit), IsTrue());
   EXPECT_THAT(fuzzy_score_, Optional(Eq(67)));
-  EXPECT_FALSE(Match({"-fuzzy:sequence:68%", "fo"}, visit));
+  EXPECT_THAT(Match({"-fuzzy:sequence:68%", "fo"}, visit), IsFalse());
 
-  EXPECT_TRUE(Match({"-fuzzy:levenshtein:67%", "fof"}, visit));
+  EXPECT_THAT(Match({"-fuzzy:levenshtein:67%", "fof"}, visit), IsTrue());
   EXPECT_THAT(fuzzy_score_, Optional(Eq(67)));
-  EXPECT_FALSE(Match({"-fuzzy:levenshtein:68%", "fof"}, visit));
+  EXPECT_THAT(Match({"-fuzzy:levenshtein:68%", "fof"}, visit), IsFalse());
 
-  EXPECT_TRUE(Match({"-fuzzy:shingles:33%", "fof"}, visit));
+  EXPECT_THAT(Match({"-fuzzy:shingles:33%", "fof"}, visit), IsTrue());
   EXPECT_THAT(fuzzy_score_, Optional(Eq(33)));
-  EXPECT_FALSE(Match({"-fuzzy:shingles:34%", "fof"}, visit));
+  EXPECT_THAT(Match({"-fuzzy:shingles:34%", "fof"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, FuzzyAndUsesTheWeakestNormalizedScore) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/far_out_of", "far_out_of", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-fuzzy", "foo", "-fuzzy", "far_out_of"}, visit));
+  EXPECT_THAT(Match({"-fuzzy", "foo", "-fuzzy", "far_out_of"}, visit), IsTrue());
   const std::optional<int> weak = fuzzy::Percent("foo", "far_out_of", false);
   EXPECT_THAT(fuzzy_score_, Eq(weak));
 }
@@ -369,17 +370,17 @@ TEST_F(EvaluateTest, FuzzyAndUsesTheWeakestNormalizedScore) {
 TEST_F(EvaluateTest, PureFuzzyOrEvaluatesBothAlternativesAndUsesTheBestScore) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/far_out_of", "far_out_of", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-fuzzy", "foo", "-o", "-fuzzy", "far_out_of"}, visit));
+  EXPECT_THAT(Match({"-fuzzy", "foo", "-o", "-fuzzy", "far_out_of"}, visit), IsTrue());
   EXPECT_THAT(fuzzy_score_, Optional(Eq(100)));
 }
 
 TEST_F(EvaluateTest, WholenameIsSynonymForPath) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("a/b/c.txt", "c.txt", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-wholename", "a/*/c.txt"}, visit));  // -wholename == -path
-  EXPECT_FALSE(Match({"-wholename", "c.txt"}, visit));     // matches the whole path, not the basename
-  EXPECT_TRUE(Match({"-iwholename", "A/B/*"}, visit));     // -iwholename folds case, like -ipath
-  EXPECT_FALSE(Match({"-wholename", "A/B/*"}, visit));     // -wholename is case-sensitive
+  EXPECT_THAT(Match({"-wholename", "a/*/c.txt"}, visit), IsTrue());  // -wholename == -path
+  EXPECT_THAT(Match({"-wholename", "c.txt"}, visit), IsFalse());     // matches the whole path, not the basename
+  EXPECT_THAT(Match({"-iwholename", "A/B/*"}, visit), IsTrue());     // -iwholename folds case, like -ipath
+  EXPECT_THAT(Match({"-wholename", "A/B/*"}, visit), IsFalse());     // -wholename is case-sensitive
 }
 
 TEST_F(EvaluateTest, TypeMatchesFileType) {
@@ -387,42 +388,42 @@ TEST_F(EvaluateTest, TypeMatchesFileType) {
   const Visit file = MakeVisit("x", "x", vfs::FileType::kRegular, file_md);
   vfs::Metadata dir_md;
   const Visit dir = MakeVisit("d", "d", vfs::FileType::kDirectory, dir_md);
-  EXPECT_TRUE(Match({"-type", "f"}, file));
-  EXPECT_FALSE(Match({"-type", "d"}, file));
-  EXPECT_TRUE(Match({"-type", "d"}, dir));
-  EXPECT_FALSE(Match({"-type", "f"}, dir));
+  EXPECT_THAT(Match({"-type", "f"}, file), IsTrue());
+  EXPECT_THAT(Match({"-type", "d"}, file), IsFalse());
+  EXPECT_THAT(Match({"-type", "d"}, dir), IsTrue());
+  EXPECT_THAT(Match({"-type", "f"}, dir), IsFalse());
 }
 
 TEST_F(EvaluateTest, MimeGlobsTheExtensionDerivedMediaType) {
   vfs::Metadata md;
   const Visit png = MakeVisit("dir/photo.png", "photo.png", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-mime", "image/*"}, png));    // image/png matches the glob
-  EXPECT_TRUE(Match({"-mime", "image/png"}, png));  // and the exact type
-  EXPECT_FALSE(Match({"-mime", "text/*"}, png));
+  EXPECT_THAT(Match({"-mime", "image/*"}, png), IsTrue());    // image/png matches the glob
+  EXPECT_THAT(Match({"-mime", "image/png"}, png), IsTrue());  // and the exact type
+  EXPECT_THAT(Match({"-mime", "text/*"}, png), IsFalse());
   // MIME type/subtype names are case-insensitive (RFC 2045/6838): an upper- or mixed-case pattern
   // matches the (canonical lowercase) type just the same.
-  EXPECT_TRUE(Match({"-mime", "IMAGE/*"}, png));
-  EXPECT_TRUE(Match({"-mime", "Image/PNG"}, png));
+  EXPECT_THAT(Match({"-mime", "IMAGE/*"}, png), IsTrue());
+  EXPECT_THAT(Match({"-mime", "Image/PNG"}, png), IsTrue());
   // An unknown / absent extension is application/octet-stream (the file(1) fallback).
   vfs::Metadata bin_md;
   const Visit bin = MakeVisit("dir/README", "README", vfs::FileType::kRegular, bin_md);
-  EXPECT_TRUE(Match({"-mime", "application/octet-stream"}, bin));
-  EXPECT_FALSE(Match({"-mime", "text/*"}, bin));
+  EXPECT_THAT(Match({"-mime", "application/octet-stream"}, bin), IsTrue());
+  EXPECT_THAT(Match({"-mime", "text/*"}, bin), IsFalse());
 }
 
 TEST_F(EvaluateTest, LangGlobsTheExtensionOrFilenameLanguage) {
   vfs::Metadata md;
   const Visit cpp = MakeVisit("src/main.cc", "main.cc", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-lang", "C*"}, cpp));   // "C++" matches the glob
-  EXPECT_TRUE(Match({"-lang", "c++"}, cpp));  // and case-insensitively (canonical is "C++")
-  EXPECT_FALSE(Match({"-lang", "Python"}, cpp));
+  EXPECT_THAT(Match({"-lang", "C*"}, cpp), IsTrue());   // "C++" matches the glob
+  EXPECT_THAT(Match({"-lang", "c++"}, cpp), IsTrue());  // and case-insensitively (canonical is "C++")
+  EXPECT_THAT(Match({"-lang", "Python"}, cpp), IsFalse());
   // Filename-classified languages match too.
   const Visit mk = MakeVisit("proj/Makefile", "Makefile", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-lang", "Makefile"}, mk));
+  EXPECT_THAT(Match({"-lang", "Makefile"}, mk), IsTrue());
   // An unrecognized name has no language (""), matched only by a `*` / empty pattern.
   const Visit bin = MakeVisit("dir/photo.jpg", "photo.jpg", vfs::FileType::kRegular, md);
-  EXPECT_FALSE(Match({"-lang", "C*"}, bin));
-  EXPECT_TRUE(Match({"-lang", "*"}, bin));
+  EXPECT_THAT(Match({"-lang", "C*"}, bin), IsFalse());
+  EXPECT_THAT(Match({"-lang", "*"}, bin), IsTrue());
 }
 
 TEST_F(EvaluateTest, TypeListMatchesAnyListedType) {
@@ -433,32 +434,32 @@ TEST_F(EvaluateTest, TypeListMatchesAnyListedType) {
   vfs::Metadata link_md;
   const Visit link = MakeVisit("l", "l", vfs::FileType::kSymlink, link_md);
   // GNU's "-type f,d": matches if the entry is any of the listed types.
-  EXPECT_TRUE(Match({"-type", "f,d"}, file));
-  EXPECT_TRUE(Match({"-type", "f,d"}, dir));
-  EXPECT_FALSE(Match({"-type", "f,d"}, link));
-  EXPECT_TRUE(Match({"-type", "l,p,f"}, file));  // order does not matter
+  EXPECT_THAT(Match({"-type", "f,d"}, file), IsTrue());
+  EXPECT_THAT(Match({"-type", "f,d"}, dir), IsTrue());
+  EXPECT_THAT(Match({"-type", "f,d"}, link), IsFalse());
+  EXPECT_THAT(Match({"-type", "l,p,f"}, file), IsTrue());  // order does not matter
   // A malformed list (empty element, trailing comma, unknown letter) never matches.
-  EXPECT_FALSE(Match({"-type", "f,"}, file));
-  EXPECT_FALSE(Match({"-type", ",f"}, file));
-  EXPECT_FALSE(Match({"-type", "f,z"}, file));
+  EXPECT_THAT(Match({"-type", "f,"}, file), IsFalse());
+  EXPECT_THAT(Match({"-type", ",f"}, file), IsFalse());
+  EXPECT_THAT(Match({"-type", "f,z"}, file), IsFalse());
 }
 
 TEST_F(EvaluateTest, AndOrNotShortCircuit) {
   vfs::Metadata md;
   const Visit txt = MakeVisit("dir/foo.txt", "foo.txt", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-type", "f", "-name", "*.txt"}, txt));        // implicit -a
-  EXPECT_FALSE(Match({"-type", "d", "-name", "*.txt"}, txt));       // -a, first fails
-  EXPECT_TRUE(Match({"-type", "d", "-o", "-name", "*.txt"}, txt));  // -o
-  EXPECT_TRUE(Match({"!", "-type", "d"}, txt));                     // -not
-  EXPECT_FALSE(Match({"!", "-name", "*.txt"}, txt));
+  EXPECT_THAT(Match({"-type", "f", "-name", "*.txt"}, txt), IsTrue());        // implicit -a
+  EXPECT_THAT(Match({"-type", "d", "-name", "*.txt"}, txt), IsFalse());       // -a, first fails
+  EXPECT_THAT(Match({"-type", "d", "-o", "-name", "*.txt"}, txt), IsTrue());  // -o
+  EXPECT_THAT(Match({"!", "-type", "d"}, txt), IsTrue());                     // -not
+  EXPECT_THAT(Match({"!", "-name", "*.txt"}, txt), IsFalse());
 }
 
 TEST_F(EvaluateTest, PrintActionsEmit) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo.txt", "foo.txt", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-print"}, visit));
+  EXPECT_THAT(Match({"-print"}, visit), IsTrue());
   EXPECT_THAT(emitted_, "dir/foo.txt\n");
-  EXPECT_TRUE(Match({"-print0"}, visit));
+  EXPECT_THAT(Match({"-print0"}, visit), IsTrue());
   EXPECT_THAT(emitted_, std::string("dir/foo.txt\0", 12));
 }
 
@@ -467,22 +468,22 @@ TEST_F(EvaluateTest, FileActionsWriteRecordsToNamedFiles) {
   const Visit visit = MakeVisit("dir/foo.txt", "foo.txt", vfs::FileType::kRegular, md);
   // Each f-action mirrors its stdout counterpart's bytes, routed to the FILE arg
   // (Match clears file_emitted_ each call, so each map holds just that action's output).
-  EXPECT_TRUE(Match({"-fprint", "out"}, visit));
+  EXPECT_THAT(Match({"-fprint", "out"}, visit), IsTrue());
   EXPECT_THAT(file_emitted_, ElementsAre(Pair("out", "dir/foo.txt\n")));
-  EXPECT_TRUE(Match({"-fprint0", "out"}, visit));
+  EXPECT_THAT(Match({"-fprint0", "out"}, visit), IsTrue());
   EXPECT_THAT(file_emitted_, ElementsAre(Pair("out", std::string("dir/foo.txt\0", 12))));
-  EXPECT_TRUE(Match({"-fprintf", "out", "%p:%f\n"}, visit));
+  EXPECT_THAT(Match({"-fprintf", "out", "%p:%f\n"}, visit), IsTrue());
   EXPECT_THAT(file_emitted_, ElementsAre(Pair("out", "dir/foo.txt:foo.txt\n")));
-  EXPECT_TRUE(Match({"-fls", "log"}, visit));
+  EXPECT_THAT(Match({"-fls", "log"}, visit), IsTrue());
   EXPECT_THAT(file_emitted_, ElementsAre(Pair("log", HasSubstr("dir/foo.txt"))));
 }
 
 TEST_F(EvaluateTest, ShortCircuitSkipsAction) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("dir/foo.txt", "foo.txt", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-type", "f", "-print"}, visit));
+  EXPECT_THAT(Match({"-type", "f", "-print"}, visit), IsTrue());
   EXPECT_THAT(emitted_, "dir/foo.txt\n");
-  EXPECT_FALSE(Match({"-type", "d", "-print"}, visit)) << "-type d fails; -a short-circuits before -print";
+  EXPECT_THAT(Match({"-type", "d", "-print"}, visit), IsFalse()) << "-type d fails; -a short-circuits before -print";
   EXPECT_THAT(emitted_, IsEmpty());
 }
 
@@ -491,13 +492,13 @@ TEST_F(EvaluateTest, SizeMatchesBytesAndUnits) {
   md.type = vfs::FileType::kRegular;
   md.size = 5;  // bytes
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-size", "5c"}, visit));
-  EXPECT_FALSE(Match({"-size", "4c"}, visit));
-  EXPECT_TRUE(Match({"-size", "+4c"}, visit));
-  EXPECT_TRUE(Match({"-size", "-6c"}, visit));
-  EXPECT_FALSE(Match({"-size", "+5c"}, visit));
-  EXPECT_TRUE(Match({"-size", "1"}, visit)) << "5 bytes rounds up to one 512-byte block";
-  EXPECT_TRUE(Match({"-size", "1k"}, visit)) << "5 bytes rounds up to one 1k unit";
+  EXPECT_THAT(Match({"-size", "5c"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-size", "4c"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-size", "+4c"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-size", "-6c"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-size", "+5c"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-size", "1"}, visit), IsTrue()) << "5 bytes rounds up to one 512-byte block";
+  EXPECT_THAT(Match({"-size", "1k"}, visit), IsTrue()) << "5 bytes rounds up to one 1k unit";
 }
 
 TEST_F(EvaluateTest, SizeMatchesLargeUnits) {
@@ -507,15 +508,15 @@ TEST_F(EvaluateTest, SizeMatchesLargeUnits) {
   md.type = vfs::FileType::kRegular;
   md.size = 3ULL * 1'024 * 1'024 * 1'024 * 1'024;  // 3 TiB
   const Visit tib{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-size", "3T"}, tib));
-  EXPECT_TRUE(Match({"-size", "+2T"}, tib));
-  EXPECT_FALSE(Match({"-size", "2T"}, tib));
+  EXPECT_THAT(Match({"-size", "3T"}, tib), IsTrue());
+  EXPECT_THAT(Match({"-size", "+2T"}, tib), IsTrue());
+  EXPECT_THAT(Match({"-size", "2T"}, tib), IsFalse());
   md.size = 2ULL * 1'024 * 1'024 * 1'024 * 1'024 * 1'024;  // 2 PiB
   const Visit pib{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-size", "2P"}, pib));
+  EXPECT_THAT(Match({"-size", "2P"}, pib), IsTrue());
   md.size = 1ULL * 1'024 * 1'024 * 1'024 * 1'024 * 1'024 * 1'024;  // 1 EiB (2^60)
   const Visit eib{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-size", "1E"}, eib));
+  EXPECT_THAT(Match({"-size", "1E"}, eib), IsTrue());
 }
 
 TEST_F(EvaluateTest, SizeExplicitUnitsKeepDecimalAndBinaryMeaningsDistinct) {
@@ -523,11 +524,11 @@ TEST_F(EvaluateTest, SizeExplicitUnitsKeepDecimalAndBinaryMeaningsDistinct) {
   md.type = vfs::FileType::kRegular;
   md.size = 1'000'001;
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-size", "2MB"}, visit)) << "SI MB rounds 1,000,001 bytes up to two units";
-  EXPECT_TRUE(Match({"-size", "1MiB"}, visit)) << "the same length fits in one IEC MiB";
-  EXPECT_TRUE(Match({"-size", "1M"}, visit)) << "legacy M remains the binary MiB scale";
-  EXPECT_FALSE(Match({"-size", "1MB"}, visit));
-  EXPECT_TRUE(Match({"-size", "1000001B"}, visit));
+  EXPECT_THAT(Match({"-size", "2MB"}, visit), IsTrue()) << "SI MB rounds 1,000,001 bytes up to two units";
+  EXPECT_THAT(Match({"-size", "1MiB"}, visit), IsTrue()) << "the same length fits in one IEC MiB";
+  EXPECT_THAT(Match({"-size", "1M"}, visit), IsTrue()) << "legacy M remains the binary MiB scale";
+  EXPECT_THAT(Match({"-size", "1MB"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-size", "1000001B"}, visit), IsTrue());
 }
 
 TEST_F(EvaluateTest, ValidateSizeArgsRejectsBadUnits) {
@@ -590,20 +591,20 @@ TEST_F(EvaluateTest, BlocksMatchesAllocatedSpaceNotApparentSize) {
   md.size = 1;     // 1 apparent byte
   md.blocks = 16;  // 16 * 512 = 8 KiB allocated
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-blocks", "16"}, visit));  // 8192 bytes / 512-byte block = 16
-  EXPECT_TRUE(Match({"-blocks", "+8"}, visit));  // more than 8 blocks
-  EXPECT_TRUE(Match({"-blocks", "8k"}, visit));  // exactly 8 KiB allocated
-  EXPECT_FALSE(Match({"-blocks", "+8k"}, visit));
-  EXPECT_FALSE(Match({"-blocks", "1c"}, visit));  // not 1 byte allocated
-  EXPECT_TRUE(Match({"-size", "1c"}, visit));     // but -size sees the 1 apparent byte
+  EXPECT_THAT(Match({"-blocks", "16"}, visit), IsTrue());  // 8192 bytes / 512-byte block = 16
+  EXPECT_THAT(Match({"-blocks", "+8"}, visit), IsTrue());  // more than 8 blocks
+  EXPECT_THAT(Match({"-blocks", "8k"}, visit), IsTrue());  // exactly 8 KiB allocated
+  EXPECT_THAT(Match({"-blocks", "+8k"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-blocks", "1c"}, visit), IsFalse());  // not 1 byte allocated
+  EXPECT_THAT(Match({"-size", "1c"}, visit), IsTrue());     // but -size sees the 1 apparent byte
 }
 
 TEST_F(EvaluateTest, BlocksZeroForUnallocatedEntry) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;  // blocks defaults to 0 (nothing allocated)
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_FALSE(Match({"-blocks", "+0"}, visit));  // occupies no disk
-  EXPECT_TRUE(Match({"-blocks", "0"}, visit));
+  EXPECT_THAT(Match({"-blocks", "+0"}, visit), IsFalse());  // occupies no disk
+  EXPECT_THAT(Match({"-blocks", "0"}, visit), IsTrue());
 }
 
 TEST_F(EvaluateTest, PermMatchesOctalModes) {
@@ -611,15 +612,15 @@ TEST_F(EvaluateTest, PermMatchesOctalModes) {
   md.type = vfs::FileType::kRegular;
   md.mode = 0644;  // rw-r--r--
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-perm", "644"}, visit));  // exact
-  EXPECT_FALSE(Match({"-perm", "640"}, visit));
-  EXPECT_TRUE(Match({"-perm", "-200"}, visit));   // -MODE: owner-write bit set
-  EXPECT_TRUE(Match({"-perm", "-044"}, visit));   // group + other read set
-  EXPECT_FALSE(Match({"-perm", "-022"}, visit));  // group/other write NOT set
-  EXPECT_TRUE(Match({"-perm", "/040"}, visit));   // /MODE: any bit (group read) set
-  EXPECT_FALSE(Match({"-perm", "/022"}, visit));  // none of group/other write set
-  EXPECT_TRUE(Match({"-perm", "+040"}, visit));   // BSD +MODE: any-of, like /MODE
-  EXPECT_FALSE(Match({"-perm", "+022"}, visit));  // none of group/other write set
+  EXPECT_THAT(Match({"-perm", "644"}, visit), IsTrue());  // exact
+  EXPECT_THAT(Match({"-perm", "640"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-perm", "-200"}, visit), IsTrue());   // -MODE: owner-write bit set
+  EXPECT_THAT(Match({"-perm", "-044"}, visit), IsTrue());   // group + other read set
+  EXPECT_THAT(Match({"-perm", "-022"}, visit), IsFalse());  // group/other write NOT set
+  EXPECT_THAT(Match({"-perm", "/040"}, visit), IsTrue());   // /MODE: any bit (group read) set
+  EXPECT_THAT(Match({"-perm", "/022"}, visit), IsFalse());  // none of group/other write set
+  EXPECT_THAT(Match({"-perm", "+040"}, visit), IsTrue());   // BSD +MODE: any-of, like /MODE
+  EXPECT_THAT(Match({"-perm", "+022"}, visit), IsFalse());  // none of group/other write set
 }
 
 TEST_F(EvaluateTest, PermMatchesSymbolicModes) {
@@ -628,19 +629,19 @@ TEST_F(EvaluateTest, PermMatchesSymbolicModes) {
   md.mode = 0644;  // rw-r--r--
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
   // Exact: the symbolic mode resolves (from zero) to exactly the file's bits.
-  EXPECT_TRUE(Match({"-perm", "u=rw,go=r"}, visit));  // == 0644
-  EXPECT_FALSE(Match({"-perm", "u=rw,g=r"}, visit));  // == 0640, file is 0644
-  EXPECT_FALSE(Match({"-perm", "u+w"}, visit));       // == 0200 exactly; file has more
+  EXPECT_THAT(Match({"-perm", "u=rw,go=r"}, visit), IsTrue());  // == 0644
+  EXPECT_THAT(Match({"-perm", "u=rw,g=r"}, visit), IsFalse());  // == 0640, file is 0644
+  EXPECT_THAT(Match({"-perm", "u+w"}, visit), IsFalse());       // == 0200 exactly; file has more
   // -MODE: all requested bits present.
-  EXPECT_TRUE(Match({"-perm", "-u+w"}, visit));       // owner write set
-  EXPECT_TRUE(Match({"-perm", "-u+r,go+r"}, visit));  // all of owner/group/other read set
-  EXPECT_FALSE(Match({"-perm", "-g+w"}, visit));      // group write NOT set
-  EXPECT_FALSE(Match({"-perm", "-a+x"}, visit));      // no execute bits set
+  EXPECT_THAT(Match({"-perm", "-u+w"}, visit), IsTrue());       // owner write set
+  EXPECT_THAT(Match({"-perm", "-u+r,go+r"}, visit), IsTrue());  // all of owner/group/other read set
+  EXPECT_THAT(Match({"-perm", "-g+w"}, visit), IsFalse());      // group write NOT set
+  EXPECT_THAT(Match({"-perm", "-a+x"}, visit), IsFalse());      // no execute bits set
   // /MODE: any requested bit present.
-  EXPECT_TRUE(Match({"-perm", "/u+x,g+r"}, visit));  // group read is set
-  EXPECT_FALSE(Match({"-perm", "/a+x"}, visit));     // no execute bits at all
+  EXPECT_THAT(Match({"-perm", "/u+x,g+r"}, visit), IsTrue());  // group read is set
+  EXPECT_THAT(Match({"-perm", "/a+x"}, visit), IsFalse());     // no execute bits at all
   // A malformed symbolic mode never matches.
-  EXPECT_FALSE(Match({"-perm", "u?w"}, visit));
+  EXPECT_THAT(Match({"-perm", "u?w"}, visit), IsFalse());
   EXPECT_THAT(Match({"-perm", "u"}, visit), IsFalse());
   EXPECT_THAT(Match({"-perm", "u+q"}, visit), IsFalse());
   EXPECT_THAT(Match({"-perm", "u+w,u-w,go+r"}, visit), IsFalse());
@@ -650,8 +651,8 @@ TEST_F(EvaluateTest, PermMatchesSymbolicModes) {
   r_md.type = vfs::FileType::kRegular;
   r_md.mode = 0444;  // r--r--r--
   const Visit r_all{.path = "r", .name = "r", .depth = 1, .metadata = r_md};
-  EXPECT_TRUE(Match({"-perm", "+r"}, r_all));    // exact: omitted who == a, so 0444
-  EXPECT_FALSE(Match({"-perm", "u+r"}, r_all));  // exact: explicit u+r == 0400, file is 0444
+  EXPECT_THAT(Match({"-perm", "+r"}, r_all), IsTrue());    // exact: omitted who == a, so 0444
+  EXPECT_THAT(Match({"-perm", "u+r"}, r_all), IsFalse());  // exact: explicit u+r == 0400, file is 0444
 }
 
 TEST_F(EvaluateTest, OptionalStatefulCapabilitiesAreExplicit) {
@@ -692,25 +693,25 @@ TEST_F(EvaluateTest, PermSymbolicSpecialBits) {
   md.type = vfs::FileType::kRegular;
   md.mode = 04755;  // setuid + rwxr-xr-x
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-perm", "-u+s"}, visit));      // setuid bit set
-  EXPECT_FALSE(Match({"-perm", "-g+s"}, visit));     // setgid NOT set
-  EXPECT_TRUE(Match({"-perm", "-u+s,a+x"}, visit));  // setuid + all execute set
+  EXPECT_THAT(Match({"-perm", "-u+s"}, visit), IsTrue());      // setuid bit set
+  EXPECT_THAT(Match({"-perm", "-g+s"}, visit), IsFalse());     // setgid NOT set
+  EXPECT_THAT(Match({"-perm", "-u+s,a+x"}, visit), IsTrue());  // setuid + all execute set
 }
 
 TEST_F(EvaluateTest, EmptyMatchesZeroByteFilesNotOthers) {
   vfs::Metadata empty_file;
   empty_file.type = vfs::FileType::kRegular;
   empty_file.size = 0;
-  EXPECT_TRUE(Match({"-empty"}, Visit{.path = "f", .name = "f", .depth = 1, .metadata = empty_file}));
+  EXPECT_THAT(Match({"-empty"}, Visit{.path = "f", .name = "f", .depth = 1, .metadata = empty_file}), IsTrue());
 
   vfs::Metadata nonempty_file;
   nonempty_file.type = vfs::FileType::kRegular;
   nonempty_file.size = 5;
-  EXPECT_FALSE(Match({"-empty"}, Visit{.path = "f", .name = "f", .depth = 1, .metadata = nonempty_file}));
+  EXPECT_THAT(Match({"-empty"}, Visit{.path = "f", .name = "f", .depth = 1, .metadata = nonempty_file}), IsFalse());
 
   vfs::Metadata link;
   link.type = vfs::FileType::kSymlink;
-  EXPECT_FALSE(Match({"-empty"}, Visit{.path = "l", .name = "l", .depth = 1, .metadata = link}))
+  EXPECT_THAT(Match({"-empty"}, Visit{.path = "l", .name = "l", .depth = 1, .metadata = link}), IsFalse())
       << "-empty matches only regular files and directories";
 }
 
@@ -719,17 +720,17 @@ TEST_F(EvaluateTest, SparseMatchesFilesWithHoles) {
   sparse.type = vfs::FileType::kRegular;
   sparse.size = 1'000'000;
   sparse.blocks = 8;  // 8 * 512 = 4096, far less than the 1 MB apparent size -> sparse
-  EXPECT_TRUE(Match({"-sparse"}, Visit{.path = "s", .name = "s", .depth = 1, .metadata = sparse}));
+  EXPECT_THAT(Match({"-sparse"}, Visit{.path = "s", .name = "s", .depth = 1, .metadata = sparse}), IsTrue());
 
   vfs::Metadata dense;
   dense.type = vfs::FileType::kRegular;
   dense.size = 4'096;
   dense.blocks = 8;  // 4096 fully allocated -> not sparse
-  EXPECT_FALSE(Match({"-sparse"}, Visit{.path = "d", .name = "d", .depth = 1, .metadata = dense}));
+  EXPECT_THAT(Match({"-sparse"}, Visit{.path = "d", .name = "d", .depth = 1, .metadata = dense}), IsFalse());
 
   vfs::Metadata empty;
   empty.type = vfs::FileType::kRegular;  // zero-size is not sparse
-  EXPECT_FALSE(Match({"-sparse"}, Visit{.path = "e", .name = "e", .depth = 1, .metadata = empty}));
+  EXPECT_THAT(Match({"-sparse"}, Visit{.path = "e", .name = "e", .depth = 1, .metadata = empty}), IsFalse());
 }
 
 TEST_F(EvaluateTest, LinksMatchesHardLinkCount) {
@@ -737,11 +738,11 @@ TEST_F(EvaluateTest, LinksMatchesHardLinkCount) {
   md.type = vfs::FileType::kRegular;
   md.nlink = 1;
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-links", "1"}, visit));
-  EXPECT_FALSE(Match({"-links", "2"}, visit));
-  EXPECT_TRUE(Match({"-links", "-2"}, visit));
-  EXPECT_TRUE(Match({"-links", "+0"}, visit));
-  EXPECT_FALSE(Match({"-links", "+1"}, visit));
+  EXPECT_THAT(Match({"-links", "1"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-links", "2"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-links", "-2"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-links", "+0"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-links", "+1"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, NewerFalseWhenReferenceMissing) {
@@ -750,7 +751,7 @@ TEST_F(EvaluateTest, NewerFalseWhenReferenceMissing) {
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
   // The reference cannot be stat'd, so -newer is false (real comparisons are
   // covered by the conformance test against actual files).
-  EXPECT_FALSE(Match({"-newer", "/no/such/reference/file"}, visit));
+  EXPECT_THAT(Match({"-newer", "/no/such/reference/file"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, InumMatchesInodeNumber) {
@@ -758,10 +759,10 @@ TEST_F(EvaluateTest, InumMatchesInodeNumber) {
   md.type = vfs::FileType::kRegular;
   md.ino = 4'242;
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-inum", "4242"}, visit));
-  EXPECT_FALSE(Match({"-inum", "4243"}, visit));
-  EXPECT_TRUE(Match({"-inum", "-5000"}, visit));   // inode < 5000
-  EXPECT_FALSE(Match({"-inum", "+4242"}, visit));  // not strictly greater than itself
+  EXPECT_THAT(Match({"-inum", "4242"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-inum", "4243"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-inum", "-5000"}, visit), IsTrue());   // inode < 5000
+  EXPECT_THAT(Match({"-inum", "+4242"}, visit), IsFalse());  // not strictly greater than itself
 }
 
 TEST_F(EvaluateTest, UsedMatchesWholeDaysBetweenAtimeAndCtime) {
@@ -770,12 +771,12 @@ TEST_F(EvaluateTest, UsedMatchesWholeDaysBetweenAtimeAndCtime) {
   md.ctime = absl::FromUnixSeconds(1'600'000'000);
   md.atime = md.ctime + absl::Hours(24 * 5) + absl::Hours(3);  // 5 days 3h later -> floor 5
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-used", "5"}, visit));  // exactly 5 whole days
-  EXPECT_FALSE(Match({"-used", "6"}, visit));
-  EXPECT_TRUE(Match({"-used", "+4"}, visit));  // more than 4
-  EXPECT_FALSE(Match({"-used", "+5"}, visit));
-  EXPECT_TRUE(Match({"-used", "-6"}, visit));  // fewer than 6
-  EXPECT_FALSE(Match({"-used", "-5"}, visit));
+  EXPECT_THAT(Match({"-used", "5"}, visit), IsTrue());  // exactly 5 whole days
+  EXPECT_THAT(Match({"-used", "6"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-used", "+4"}, visit), IsTrue());  // more than 4
+  EXPECT_THAT(Match({"-used", "+5"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-used", "-6"}, visit), IsTrue());  // fewer than 6
+  EXPECT_THAT(Match({"-used", "-5"}, visit), IsFalse());
 
   // atime before ctime yields a negative day delta (accessed before status change).
   vfs::Metadata before;
@@ -783,8 +784,8 @@ TEST_F(EvaluateTest, UsedMatchesWholeDaysBetweenAtimeAndCtime) {
   before.ctime = absl::FromUnixSeconds(1'600'000'000);
   before.atime = before.ctime - absl::Hours(24 * 2);  // 2 days earlier -> -2
   const Visit earlier{.path = "g", .name = "g", .depth = 1, .metadata = before};
-  EXPECT_FALSE(Match({"-used", "0"}, earlier));  // -2 is not 0
-  EXPECT_TRUE(Match({"-used", "-1"}, earlier));  // -2 < 1
+  EXPECT_THAT(Match({"-used", "0"}, earlier), IsFalse());  // -2 is not 0
+  EXPECT_THAT(Match({"-used", "-1"}, earlier), IsTrue());  // -2 < 1
 }
 
 TEST_F(EvaluateTest, SamefileFalseWhenReferenceMissing) {
@@ -793,7 +794,7 @@ TEST_F(EvaluateTest, SamefileFalseWhenReferenceMissing) {
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
   // No reference to stat, so -samefile is false (the real same-inode match is
   // covered by the conformance test against an actual hard link).
-  EXPECT_FALSE(Match({"-samefile", "/no/such/reference/file"}, visit));
+  EXPECT_THAT(Match({"-samefile", "/no/such/reference/file"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, AccessReadableWritableExecutable) {
@@ -805,11 +806,11 @@ TEST_F(EvaluateTest, AccessReadableWritableExecutable) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   const Visit visit{.path = path, .name = "xff_access_probe.tmp", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-readable"}, visit));
-  EXPECT_TRUE(Match({"-writable"}, visit));
-  EXPECT_FALSE(Match({"-executable"}, visit));  // no execute bit (X_OK is not bypassed, even for root)
+  EXPECT_THAT(Match({"-readable"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-writable"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-executable"}, visit), IsFalse());  // no execute bit (X_OK is not bypassed, even for root)
   stdfs::remove(tmp);
-  EXPECT_FALSE(Match({"-readable"}, visit));  // gone -> not accessible
+  EXPECT_THAT(Match({"-readable"}, visit), IsFalse());  // gone -> not accessible
 }
 
 TEST_F(EvaluateTest, FstypeMatchesTheHostingFilesystem) {
@@ -826,48 +827,48 @@ TEST_F(EvaluateTest, FstypeMatchesTheHostingFilesystem) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;
   const Visit visit{.path = path, .name = "xff_fstype_probe.tmp", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-fstype", *actual}, visit));
-  EXPECT_FALSE(Match({"-fstype", "xff_no_such_fstype"}, visit));
+  EXPECT_THAT(Match({"-fstype", *actual}, visit), IsTrue());
+  EXPECT_THAT(Match({"-fstype", "xff_no_such_fstype"}, visit), IsFalse());
   stdfs::remove(tmp);
-  EXPECT_FALSE(Match({"-fstype", *actual}, visit));  // gone -> statfs fails -> never matches
+  EXPECT_THAT(Match({"-fstype", *actual}, visit), IsFalse());  // gone -> statfs fails -> never matches
 }
 
 TEST_F(EvaluateTest, ContentMatchesLiteralSubstring) {
   const std::string path = WriteContentFile("literal.txt", "the quick brown fox\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "literal.txt", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-content", "quick brown"}, visit));
-  EXPECT_TRUE(Match({"-content", "fox"}, visit));
-  EXPECT_FALSE(Match({"-content", "QUICK"}, visit));     // -content is case-sensitive
-  EXPECT_FALSE(Match({"-content", "lazy dog"}, visit));  // absent
+  EXPECT_THAT(Match({"-content", "quick brown"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-content", "fox"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-content", "QUICK"}, visit), IsFalse());     // -content is case-sensitive
+  EXPECT_THAT(Match({"-content", "lazy dog"}, visit), IsFalse());  // absent
   // '.' is a literal character, not a regex wildcard: "q.ick" matches "quick" as a
   // regex but not as the literal substring -content searches for.
-  EXPECT_FALSE(Match({"-content", "q.ick"}, visit));
+  EXPECT_THAT(Match({"-content", "q.ick"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, DiffTreatsUnreadableSourceAsDifferent) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("missing-source", "missing-source", vfs::FileType::kRegular, md);
-  EXPECT_FALSE(Match({"-diff:none", "missing-target"}, visit));
+  EXPECT_THAT(Match({"-diff:none", "missing-target"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, IcontentFoldsCase) {
   const std::string path = WriteContentFile("fold.txt", "Hello World");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "fold.txt", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-icontent", "hello"}, visit));
-  EXPECT_TRUE(Match({"-icontent", "WORLD"}, visit));
-  EXPECT_FALSE(Match({"-icontent", "goodbye"}, visit));
+  EXPECT_THAT(Match({"-icontent", "hello"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-icontent", "WORLD"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-icontent", "goodbye"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, RxcMatchesRegexAnywhere) {
   const std::string path = WriteContentFile("rx.txt", "id=12345 name=foo\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "rx.txt", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-rxc", "id=[0-9]+"}, visit));  // unanchored: matches a substring
-  EXPECT_TRUE(Match({"-rxc", "name=[a-z]+"}, visit));
-  EXPECT_FALSE(Match({"-rxc", "id=[a-z]+"}, visit));  // digits are not letters
-  EXPECT_FALSE(Match({"-rxc", "^name="}, visit));     // 'name=' is not at the start of the content
+  EXPECT_THAT(Match({"-rxc", "id=[0-9]+"}, visit), IsTrue());  // unanchored: matches a substring
+  EXPECT_THAT(Match({"-rxc", "name=[a-z]+"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-rxc", "id=[a-z]+"}, visit), IsFalse());  // digits are not letters
+  EXPECT_THAT(Match({"-rxc", "^name="}, visit), IsFalse());     // 'name=' is not at the start of the content
 }
 
 TEST_F(EvaluateTest, RxcUnderExactMatchesLiterally) {
@@ -877,8 +878,8 @@ TEST_F(EvaluateTest, RxcUnderExactMatchesLiterally) {
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "rx_exact.txt", vfs::FileType::kRegular, md);
   regextype_ = "EXACT";
-  EXPECT_TRUE(Match({"-rxc", "a[0-9]b"}, visit));  // the literal bracket text is present
-  EXPECT_FALSE(Match({"-rxc", "a5b"}, visit));     // the regex interpretation is gone under EXACT
+  EXPECT_THAT(Match({"-rxc", "a[0-9]b"}, visit), IsTrue());  // the literal bracket text is present
+  EXPECT_THAT(Match({"-rxc", "a5b"}, visit), IsFalse());     // the regex interpretation is gone under EXACT
 }
 
 TEST_F(EvaluateTest, RxcUnderFnmatchUsesShellWildcards) {
@@ -887,9 +888,9 @@ TEST_F(EvaluateTest, RxcUnderFnmatchUsesShellWildcards) {
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "rx_glob.txt", vfs::FileType::kRegular, md);
   regextype_ = "FNMATCH";
-  EXPECT_TRUE(Match({"-rxc", "quick*fox"}, visit));   // glob spans the middle
-  EXPECT_TRUE(Match({"-rxc", "q?ick"}, visit));       // '?' matches one char
-  EXPECT_FALSE(Match({"-rxc", "quick.fox"}, visit));  // '.' is literal in a glob, no dot here
+  EXPECT_THAT(Match({"-rxc", "quick*fox"}, visit), IsTrue());   // glob spans the middle
+  EXPECT_THAT(Match({"-rxc", "q?ick"}, visit), IsTrue());       // '?' matches one char
+  EXPECT_THAT(Match({"-rxc", "quick.fox"}, visit), IsFalse());  // '.' is literal in a glob, no dot here
 }
 
 TEST_F(EvaluateTest, RxcUnderGlobUsesPathAwareGlob) {
@@ -898,17 +899,17 @@ TEST_F(EvaluateTest, RxcUnderGlobUsesPathAwareGlob) {
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "rx_pathglob.txt", vfs::FileType::kRegular, md);
   regextype_ = "GLOB";
-  EXPECT_TRUE(Match({"-rxc", "src/**/main.cc"}, visit));  // `**` crosses the 'app' directory
-  EXPECT_TRUE(Match({"-rxc", "src/*/main.cc"}, visit));   // one segment
-  EXPECT_FALSE(Match({"-rxc", "src/main.cc"}, visit));    // `*`/segment does not cross '/', 'app' is in the way
+  EXPECT_THAT(Match({"-rxc", "src/**/main.cc"}, visit), IsTrue());  // `**` crosses the 'app' directory
+  EXPECT_THAT(Match({"-rxc", "src/*/main.cc"}, visit), IsTrue());   // one segment
+  EXPECT_THAT(Match({"-rxc", "src/main.cc"}, visit), IsFalse());  // `*`/segment does not cross '/', 'app' is in the way
 }
 
 TEST_F(EvaluateTest, IrxcFoldsCase) {
   const std::string path = WriteContentFile("irx.txt", "STATUS: OK");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "irx.txt", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-irxc", "status: ok"}, visit));
-  EXPECT_FALSE(Match({"-rxc", "status: ok"}, visit));  // the case-sensitive form does not match
+  EXPECT_THAT(Match({"-irxc", "status: ok"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-rxc", "status: ok"}, visit), IsFalse());  // the case-sensitive form does not match
 }
 
 TEST_F(EvaluateTest, ContentSkipsBinaryFiles) {
@@ -917,8 +918,8 @@ TEST_F(EvaluateTest, ContentSkipsBinaryFiles) {
   const std::string path = WriteContentFile("bin", std::string("ELF\0needle here", 15));
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "bin", vfs::FileType::kRegular, md);
-  EXPECT_FALSE(Match({"-content", "needle"}, visit));
-  EXPECT_FALSE(Match({"-rxc", "needle"}, visit));
+  EXPECT_THAT(Match({"-content", "needle"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-rxc", "needle"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, TextFlavorsEnforceTheirDocumentedLineEndings) {
@@ -986,7 +987,7 @@ TEST_F(EvaluateTest, GrepEmitsMatchingLinesAsPathLineText) {
   const std::string path = WriteContentFile("grep.txt", "first TODO line\nsecond line\nanother TODO here\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep.txt", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-grep", "TODO"}, visit));  // returns true because a line matched
+  EXPECT_THAT(Match({"-grep", "TODO"}, visit), IsTrue());  // returns true because a line matched
   EXPECT_THAT(emitted_, EqualsText(absl::StrCat(path, ":1:first TODO line\n", path, ":3:another TODO here\n")));
 }
 
@@ -994,7 +995,7 @@ TEST_F(EvaluateTest, GrepUsesRegexNotLiteral) {
   const std::string path = WriteContentFile("grep_rx.txt", "id=12345\nname=foo\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_rx.txt", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-grep", "id=[0-9]+"}, visit));
+  EXPECT_THAT(Match({"-grep", "id=[0-9]+"}, visit), IsTrue());
   EXPECT_THAT(emitted_, EqualsText(absl::StrCat(path, ":1:id=12345\n")));
 }
 
@@ -1002,7 +1003,7 @@ TEST_F(EvaluateTest, GrepWithNoMatchingLineIsFalseAndSilent) {
   const std::string path = WriteContentFile("grep_none.txt", "nothing to see\nhere at all\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_none.txt", vfs::FileType::kRegular, md);
-  EXPECT_FALSE(Match({"-grep", "TODO"}, visit));
+  EXPECT_THAT(Match({"-grep", "TODO"}, visit), IsFalse());
   EXPECT_THAT(emitted_, IsEmpty());
 }
 
@@ -1010,7 +1011,7 @@ TEST_F(EvaluateTest, GrepSkipsBinaryFiles) {
   const std::string path = WriteContentFile("grep_bin", std::string("ELF\0TODO here\n", 14));
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_bin", vfs::FileType::kRegular, md);
-  EXPECT_FALSE(Match({"-grep", "TODO"}, visit));
+  EXPECT_THAT(Match({"-grep", "TODO"}, visit), IsFalse());
   EXPECT_THAT(emitted_, IsEmpty());
 }
 
@@ -1021,7 +1022,7 @@ TEST_F(EvaluateTest, GrepExactModeMatchesLiterally) {
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_exact.txt", vfs::FileType::kRegular, md);
   regextype_ = "EXACT";
-  EXPECT_TRUE(Match({"-grep", "3.50"}, visit));
+  EXPECT_THAT(Match({"-grep", "3.50"}, visit), IsTrue());
   EXPECT_THAT(emitted_, EqualsText(absl::StrCat(path, ":1:price 3.50\n")));  // only the literal 3.50, not 3X50
 }
 
@@ -1031,7 +1032,7 @@ TEST_F(EvaluateTest, GrepExactModeAcceptsRegexMetacharactersAsLiterals) {
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_lit.txt", vfs::FileType::kRegular, md);
   regextype_ = "EXACT";
-  EXPECT_TRUE(Match({"-grep", "foo(bar"}, visit));
+  EXPECT_THAT(Match({"-grep", "foo(bar"}, visit), IsTrue());
   EXPECT_THAT(emitted_, EqualsText(absl::StrCat(path, ":1:call foo(bar) now\n")));
 }
 
@@ -1040,7 +1041,7 @@ TEST_F(EvaluateTest, GrepFormatRendersTemplatePerMatchLine) {
   const std::string path = WriteContentFile("grep_fmt.txt", "alpha\nhit one\nbeta\nhit two\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_fmt.txt", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-grep:{line}: {text}", "hit"}, visit));
+  EXPECT_THAT(Match({"-grep:{line}: {text}", "hit"}, visit), IsTrue());
   EXPECT_THAT(emitted_, EqualsText("2: hit one\n4: hit two\n"));
 }
 
@@ -1049,7 +1050,7 @@ TEST_F(EvaluateTest, GrepFormatCanReferenceEntryFields) {
   const std::string path = WriteContentFile("grep_fmt2.txt", "x hit y\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_fmt2.txt", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-grep:{path}#{line}", "hit"}, visit));
+  EXPECT_THAT(Match({"-grep:{path}#{line}", "hit"}, visit), IsTrue());
   EXPECT_THAT(emitted_, EqualsText(absl::StrCat(path, "#1\n")));
 }
 
@@ -1058,7 +1059,7 @@ TEST_F(EvaluateTest, GrepFormatMatchAndColumnExtractTheMatch) {
   const std::string path = WriteContentFile("grep_o.txt", "code E42 here\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_o.txt", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-grep:{column}:{match}", "E[0-9]+"}, visit));
+  EXPECT_THAT(Match({"-grep:{column}:{match}", "E[0-9]+"}, visit), IsTrue());
   EXPECT_THAT(emitted_, EqualsText("6:E42\n"));  // E42 starts at column 6 (after "code ")
 }
 
@@ -1067,7 +1068,7 @@ TEST_F(EvaluateTest, GrepFormatMatchInExactModeUsesTheLiteralSpan) {
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_o2.txt", vfs::FileType::kRegular, md);
   regextype_ = "EXACT";
-  EXPECT_TRUE(Match({"-grep:{column} {match}", "X"}, visit));
+  EXPECT_THAT(Match({"-grep:{column} {match}", "X"}, visit), IsTrue());
   EXPECT_THAT(emitted_, EqualsText("2 X\n"));  // first literal X at column 2
 }
 
@@ -1077,7 +1078,7 @@ TEST_F(EvaluateTest, GrepCountEmitsPerFileMatchLineCount) {
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_c.txt", vfs::FileType::kRegular, md);
   grep_count_ = true;
-  EXPECT_TRUE(Match({"-grep:{line}", "TODO"}, visit));  // FORMAT is superseded by --count
+  EXPECT_THAT(Match({"-grep:{line}", "TODO"}, visit), IsTrue());  // FORMAT is superseded by --count
   EXPECT_THAT(emitted_, EqualsText(absl::StrCat(path, ":3\n")));
 }
 
@@ -1086,7 +1087,7 @@ TEST_F(EvaluateTest, GrepCountEmitsNothingWhenNoLineMatches) {
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_c0.txt", vfs::FileType::kRegular, md);
   grep_count_ = true;
-  EXPECT_FALSE(Match({"-grep", "TODO"}, visit));  // no match -> false, and no count line
+  EXPECT_THAT(Match({"-grep", "TODO"}, visit), IsFalse());  // no match -> false, and no count line
   EXPECT_THAT(emitted_, IsEmpty());
 }
 
@@ -1095,11 +1096,11 @@ TEST_F(EvaluateTest, ContentNonRegularOrMissingDoesNotMatch) {
   // a clean no-match, not an error.
   vfs::Metadata dir_md;
   const Visit dir = MakeVisit(".", ".", vfs::FileType::kDirectory, dir_md);
-  EXPECT_FALSE(Match({"-content", "anything"}, dir));
+  EXPECT_THAT(Match({"-content", "anything"}, dir), IsFalse());
   vfs::Metadata md;
   const Visit missing = MakeVisit("/no/such/xff/file", "file", vfs::FileType::kRegular, md);
-  EXPECT_FALSE(Match({"-content", "anything"}, missing));
-  EXPECT_FALSE(Match({"-rxc", "anything"}, missing));
+  EXPECT_THAT(Match({"-content", "anything"}, missing), IsFalse());
+  EXPECT_THAT(Match({"-rxc", "anything"}, missing), IsFalse());
 }
 
 TEST_F(EvaluateTest, LnameGlobsSymlinkTarget) {
@@ -1111,14 +1112,14 @@ TEST_F(EvaluateTest, LnameGlobsSymlinkTarget) {
   vfs::Metadata md;
   md.type = vfs::FileType::kSymlink;
   const Visit visit{.path = path, .name = "xff_lname_probe.link", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-lname", "*/target.txt"}, visit));   // glob against the (unresolved) target text
-  EXPECT_FALSE(Match({"-lname", "*/TARGET.txt"}, visit));  // -lname is case-sensitive
-  EXPECT_TRUE(Match({"-ilname", "*/TARGET.txt"}, visit));  // -ilname folds case
+  EXPECT_THAT(Match({"-lname", "*/target.txt"}, visit), IsTrue());   // glob against the (unresolved) target text
+  EXPECT_THAT(Match({"-lname", "*/TARGET.txt"}, visit), IsFalse());  // -lname is case-sensitive
+  EXPECT_THAT(Match({"-ilname", "*/TARGET.txt"}, visit), IsTrue());  // -ilname folds case
   // A non-symlink never matches, even when the target glob otherwise would.
   vfs::Metadata reg;
   reg.type = vfs::FileType::kRegular;
   const Visit regular{.path = path, .name = "xff_lname_probe.link", .depth = 1, .metadata = reg};
-  EXPECT_FALSE(Match({"-lname", "*"}, regular));
+  EXPECT_THAT(Match({"-lname", "*"}, regular), IsFalse());
   stdfs::remove(link);
 }
 
@@ -1126,7 +1127,7 @@ TEST_F(EvaluateTest, XtypeFollowsSymlinkTarget) {
   namespace stdfs = ::std::filesystem;
   const stdfs::path dir = stdfs::temp_directory_path() / "xff_xtype_probe.d";
   stdfs::remove_all(dir);
-  ASSERT_TRUE(stdfs::create_directories(dir));
+  ASSERT_THAT(stdfs::create_directories(dir), IsTrue());
   const stdfs::path file = dir / "target.txt";
   { std::ofstream(file) << "x"; }
   stdfs::create_symlink(file, dir / "to_file");
@@ -1142,17 +1143,17 @@ TEST_F(EvaluateTest, XtypeFollowsSymlinkTarget) {
   const Visit v_file{.path = to_file, .name = "to_file", .depth = 1, .metadata = link_md};
   const Visit v_dir{.path = to_dir, .name = "to_dir", .depth = 1, .metadata = link_md};
   const Visit v_broken{.path = broken, .name = "broken", .depth = 1, .metadata = link_md};
-  EXPECT_TRUE(Match({"-xtype", "f"}, v_file));  // link -> regular file
-  EXPECT_FALSE(Match({"-xtype", "d"}, v_file));
-  EXPECT_TRUE(Match({"-xtype", "d"}, v_dir));     // link -> directory
-  EXPECT_TRUE(Match({"-xtype", "l"}, v_broken));  // broken link reports type l
-  EXPECT_FALSE(Match({"-xtype", "f"}, v_broken));
+  EXPECT_THAT(Match({"-xtype", "f"}, v_file), IsTrue());  // link -> regular file
+  EXPECT_THAT(Match({"-xtype", "d"}, v_file), IsFalse());
+  EXPECT_THAT(Match({"-xtype", "d"}, v_dir), IsTrue());     // link -> directory
+  EXPECT_THAT(Match({"-xtype", "l"}, v_broken), IsTrue());  // broken link reports type l
+  EXPECT_THAT(Match({"-xtype", "f"}, v_broken), IsFalse());
   // A non-symlink behaves exactly like -type.
   vfs::Metadata reg_md;
   reg_md.type = vfs::FileType::kRegular;
   const Visit v_reg{.path = file_s, .name = "target.txt", .depth = 1, .metadata = reg_md};
-  EXPECT_TRUE(Match({"-xtype", "f"}, v_reg));
-  EXPECT_FALSE(Match({"-xtype", "l"}, v_reg));
+  EXPECT_THAT(Match({"-xtype", "f"}, v_reg), IsTrue());
+  EXPECT_THAT(Match({"-xtype", "l"}, v_reg), IsFalse());
   stdfs::remove_all(dir);
 }
 
@@ -1161,11 +1162,11 @@ TEST_F(EvaluateTest, MTimeMatchesWholeDaysAgo) {
   md.type = vfs::FileType::kRegular;
   md.mtime = now_ - absl::Hours(60);  // 2.5 days ago -> floor to 2 whole days
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-mtime", "2"}, visit));  // floor(2.5) == 2
-  EXPECT_FALSE(Match({"-mtime", "3"}, visit));
-  EXPECT_TRUE(Match({"-mtime", "+1"}, visit));   // strictly older than 1 day
-  EXPECT_FALSE(Match({"-mtime", "+2"}, visit));  // not strictly older than 2
-  EXPECT_TRUE(Match({"-mtime", "-3"}, visit));   // strictly younger than 3 days
+  EXPECT_THAT(Match({"-mtime", "2"}, visit), IsTrue());  // floor(2.5) == 2
+  EXPECT_THAT(Match({"-mtime", "3"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-mtime", "+1"}, visit), IsTrue());   // strictly older than 1 day
+  EXPECT_THAT(Match({"-mtime", "+2"}, visit), IsFalse());  // not strictly older than 2
+  EXPECT_THAT(Match({"-mtime", "-3"}, visit), IsTrue());   // strictly younger than 3 days
 }
 
 TEST_F(EvaluateTest, MMinMatchesWholeMinutesAgo) {
@@ -1173,10 +1174,10 @@ TEST_F(EvaluateTest, MMinMatchesWholeMinutesAgo) {
   md.type = vfs::FileType::kRegular;
   md.mtime = now_ - absl::Minutes(150);  // 150 minutes ago
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-mmin", "150"}, visit));
-  EXPECT_TRUE(Match({"-mmin", "+100"}, visit));
-  EXPECT_FALSE(Match({"-mmin", "+150"}, visit));
-  EXPECT_TRUE(Match({"-mmin", "-200"}, visit));
+  EXPECT_THAT(Match({"-mmin", "150"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-mmin", "+100"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-mmin", "+150"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-mmin", "-200"}, visit), IsTrue());
 }
 
 TEST_F(EvaluateTest, BTimeMatchesWholeDaysSinceBirth) {
@@ -1186,11 +1187,11 @@ TEST_F(EvaluateTest, BTimeMatchesWholeDaysSinceBirth) {
   md.type = vfs::FileType::kRegular;
   md.btime = now_ - absl::Hours(60);  // born 2.5 days ago -> floor to 2 whole days
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-Btime", "2"}, visit));  // floor(2.5) == 2
-  EXPECT_FALSE(Match({"-Btime", "3"}, visit));
-  EXPECT_TRUE(Match({"-Btime", "+1"}, visit));   // strictly older than 1 day
-  EXPECT_FALSE(Match({"-Btime", "+2"}, visit));  // not strictly older than 2
-  EXPECT_TRUE(Match({"-Btime", "-3"}, visit));   // strictly younger than 3 days
+  EXPECT_THAT(Match({"-Btime", "2"}, visit), IsTrue());  // floor(2.5) == 2
+  EXPECT_THAT(Match({"-Btime", "3"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-Btime", "+1"}, visit), IsTrue());   // strictly older than 1 day
+  EXPECT_THAT(Match({"-Btime", "+2"}, visit), IsFalse());  // not strictly older than 2
+  EXPECT_THAT(Match({"-Btime", "-3"}, visit), IsTrue());   // strictly younger than 3 days
 }
 
 TEST_F(EvaluateTest, BMinMatchesWholeMinutesSinceBirth) {
@@ -1198,10 +1199,10 @@ TEST_F(EvaluateTest, BMinMatchesWholeMinutesSinceBirth) {
   md.type = vfs::FileType::kRegular;
   md.btime = now_ - absl::Minutes(150);  // born 150 minutes ago
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-Bmin", "150"}, visit));
-  EXPECT_TRUE(Match({"-Bmin", "+100"}, visit));
-  EXPECT_FALSE(Match({"-Bmin", "+150"}, visit));
-  EXPECT_TRUE(Match({"-Bmin", "-200"}, visit));
+  EXPECT_THAT(Match({"-Bmin", "150"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-Bmin", "+100"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-Bmin", "+150"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-Bmin", "-200"}, visit), IsTrue());
 }
 
 TEST_F(EvaluateTest, BirthtimePredicatesNeverMatchWhenBtimeUnrecorded) {
@@ -1211,9 +1212,9 @@ TEST_F(EvaluateTest, BirthtimePredicatesNeverMatchWhenBtimeUnrecorded) {
   md.type = vfs::FileType::kRegular;  // md.btime deliberately left empty
   md.mtime = now_ - absl::Hours(60);  // a present mtime must not be used as a fallback
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_FALSE(Match({"-Btime", "2"}, visit));
-  EXPECT_FALSE(Match({"-Btime", "-9999"}, visit));  // even a wide window: no btime -> no match
-  EXPECT_FALSE(Match({"-Bmin", "-9999"}, visit));
+  EXPECT_THAT(Match({"-Btime", "2"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-Btime", "-9999"}, visit), IsFalse());  // even a wide window: no btime -> no match
+  EXPECT_THAT(Match({"-Bmin", "-9999"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, BirthtimePredicateFlagsUnsupportedWhenBtimeUnrecorded) {
@@ -1223,11 +1224,11 @@ TEST_F(EvaluateTest, BirthtimePredicateFlagsUnsupportedWhenBtimeUnrecorded) {
   vfs::Metadata md;
   md.type = vfs::FileType::kRegular;  // no btime
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_FALSE(Match({"-Btime", "2"}, visit));
+  EXPECT_THAT(Match({"-Btime", "2"}, visit), IsFalse());
   EXPECT_THAT(control_.unsupported, Not(IsEmpty()));
-  EXPECT_FALSE(Match({"-Bmin", "2"}, visit));
+  EXPECT_THAT(Match({"-Bmin", "2"}, visit), IsFalse());
   EXPECT_THAT(control_.unsupported, Not(IsEmpty()));
-  EXPECT_FALSE(Match({"-newerBt", "@1"}, visit));
+  EXPECT_THAT(Match({"-newerBt", "@1"}, visit), IsFalse());
   EXPECT_THAT(control_.unsupported, Not(IsEmpty()));
 }
 
@@ -1238,7 +1239,7 @@ TEST_F(EvaluateTest, BirthtimePredicateDoesNotFlagUnsupportedWhenBtimePresent) {
   md.type = vfs::FileType::kRegular;
   md.btime = now_ - absl::Hours(60);
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-Btime", "2"}, visit));
+  EXPECT_THAT(Match({"-Btime", "2"}, visit), IsTrue());
   EXPECT_THAT(control_.unsupported, IsEmpty());
 }
 
@@ -1249,16 +1250,16 @@ TEST_F(EvaluateTest, MTimeAcceptsBsdUnitSuffix) {
   md.atime = now_ - absl::Hours(3);
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
   // A BSD s/m/h/d/w suffix overrides the day default (here, hours).
-  EXPECT_TRUE(Match({"-mtime", "3h"}, visit));     // floor(3h / 1h) == 3
-  EXPECT_TRUE(Match({"-mtime", "+2h"}, visit));    // older than 2 hours
-  EXPECT_FALSE(Match({"-mtime", "+3h"}, visit));   // not older than 3
-  EXPECT_TRUE(Match({"-mtime", "-4h"}, visit));    // younger than 4 hours
-  EXPECT_FALSE(Match({"-mtime", "-3h"}, visit));   // not younger than 3
-  EXPECT_TRUE(Match({"-mtime", "+179m"}, visit));  // 180 min old, older than 179 minutes
-  EXPECT_TRUE(Match({"-mtime", "-1d"}, visit));    // younger than 1 day
-  EXPECT_TRUE(Match({"-mtime", "+1s"}, visit));    // older than 1 second
-  EXPECT_TRUE(Match({"-atime", "+2h"}, visit));    // suffix works on -atime too
-  EXPECT_FALSE(Match({"-mtime", "3x"}, visit));    // unrecognised suffix -> no match
+  EXPECT_THAT(Match({"-mtime", "3h"}, visit), IsTrue());     // floor(3h / 1h) == 3
+  EXPECT_THAT(Match({"-mtime", "+2h"}, visit), IsTrue());    // older than 2 hours
+  EXPECT_THAT(Match({"-mtime", "+3h"}, visit), IsFalse());   // not older than 3
+  EXPECT_THAT(Match({"-mtime", "-4h"}, visit), IsTrue());    // younger than 4 hours
+  EXPECT_THAT(Match({"-mtime", "-3h"}, visit), IsFalse());   // not younger than 3
+  EXPECT_THAT(Match({"-mtime", "+179m"}, visit), IsTrue());  // 180 min old, older than 179 minutes
+  EXPECT_THAT(Match({"-mtime", "-1d"}, visit), IsTrue());    // younger than 1 day
+  EXPECT_THAT(Match({"-mtime", "+1s"}, visit), IsTrue());    // older than 1 second
+  EXPECT_THAT(Match({"-atime", "+2h"}, visit), IsTrue());    // suffix works on -atime too
+  EXPECT_THAT(Match({"-mtime", "3x"}, visit), IsFalse());    // unrecognised suffix -> no match
 }
 
 TEST_F(EvaluateTest, MMinRejectsUnitSuffix) {
@@ -1267,8 +1268,8 @@ TEST_F(EvaluateTest, MMinRejectsUnitSuffix) {
   md.mtime = now_ - absl::Minutes(150);
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
   // -mmin is GNU integer-minutes only; a BSD-style suffix is not its vocabulary.
-  EXPECT_FALSE(Match({"-mmin", "150m"}, visit));
-  EXPECT_FALSE(Match({"-mmin", "-3h"}, visit));
+  EXPECT_THAT(Match({"-mmin", "150m"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-mmin", "-3h"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, MTimeAcceptsXffWordDuration) {
@@ -1279,12 +1280,12 @@ TEST_F(EvaluateTest, MTimeAcceptsXffWordDuration) {
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
   // "+span" = older than the span; "-span" = younger than it (the span reaches
   // back through ParseTimeString, so compound terms work).
-  EXPECT_TRUE(Match({"-mtime", "+3 weeks"}, visit));           // 3w3h old is older than 3 weeks
-  EXPECT_FALSE(Match({"-mtime", "+3 weeks 4 hours"}, visit));  // but not older than 3w4h
-  EXPECT_TRUE(Match({"-mtime", "-3 weeks 4 hours"}, visit));   // it is younger than 3w4h
-  EXPECT_FALSE(Match({"-mtime", "-3 weeks"}, visit));          // not younger than 3 weeks
-  EXPECT_TRUE(Match({"-atime", "+1 day"}, visit));             // works on -atime too
-  EXPECT_FALSE(Match({"-mtime", "3 weeks"}, visit));           // the word form requires an explicit sign
+  EXPECT_THAT(Match({"-mtime", "+3 weeks"}, visit), IsTrue());           // 3w3h old is older than 3 weeks
+  EXPECT_THAT(Match({"-mtime", "+3 weeks 4 hours"}, visit), IsFalse());  // but not older than 3w4h
+  EXPECT_THAT(Match({"-mtime", "-3 weeks 4 hours"}, visit), IsTrue());   // it is younger than 3w4h
+  EXPECT_THAT(Match({"-mtime", "-3 weeks"}, visit), IsFalse());          // not younger than 3 weeks
+  EXPECT_THAT(Match({"-atime", "+1 day"}, visit), IsTrue());             // works on -atime too
+  EXPECT_THAT(Match({"-mtime", "3 weeks"}, visit), IsFalse());           // the word form requires an explicit sign
 }
 
 TEST_F(EvaluateTest, UidAndGidMatchNumericOwner) {
@@ -1293,12 +1294,12 @@ TEST_F(EvaluateTest, UidAndGidMatchNumericOwner) {
   md.uid = 501;
   md.gid = 20;
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-uid", "501"}, visit));
-  EXPECT_FALSE(Match({"-uid", "500"}, visit));
-  EXPECT_TRUE(Match({"-uid", "+500"}, visit));  // uid strictly greater than 500
-  EXPECT_TRUE(Match({"-gid", "20"}, visit));
-  EXPECT_FALSE(Match({"-gid", "21"}, visit));
-  EXPECT_TRUE(Match({"-gid", "-21"}, visit));  // gid strictly less than 21
+  EXPECT_THAT(Match({"-uid", "501"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-uid", "500"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-uid", "+500"}, visit), IsTrue());  // uid strictly greater than 500
+  EXPECT_THAT(Match({"-gid", "20"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-gid", "21"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-gid", "-21"}, visit), IsTrue());  // gid strictly less than 21
 }
 
 TEST_F(EvaluateTest, AccessAndChangeTimeFamily) {
@@ -1307,13 +1308,13 @@ TEST_F(EvaluateTest, AccessAndChangeTimeFamily) {
   md.atime = now_ - absl::Hours(60);     // 2.5 days / 3600 minutes ago
   md.ctime = now_ - absl::Minutes(150);  // 2.5 hours / 150 minutes ago
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-atime", "2"}, visit));  // -atime/-amin read atime: floor(2.5 days) == 2
-  EXPECT_TRUE(Match({"-atime", "+1"}, visit));
-  EXPECT_TRUE(Match({"-amin", "3600"}, visit));
-  EXPECT_TRUE(Match({"-amin", "+3000"}, visit));
-  EXPECT_TRUE(Match({"-ctime", "0"}, visit));  // -ctime/-cmin read ctime: 2.5 hours floors to 0 days
-  EXPECT_TRUE(Match({"-cmin", "150"}, visit));
-  EXPECT_FALSE(Match({"-cmin", "+150"}, visit));
+  EXPECT_THAT(Match({"-atime", "2"}, visit), IsTrue());  // -atime/-amin read atime: floor(2.5 days) == 2
+  EXPECT_THAT(Match({"-atime", "+1"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-amin", "3600"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-amin", "+3000"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-ctime", "0"}, visit), IsTrue());  // -ctime/-cmin read ctime: 2.5 hours floors to 0 days
+  EXPECT_THAT(Match({"-cmin", "150"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-cmin", "+150"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, UserGroupNumericFallback) {
@@ -1325,10 +1326,10 @@ TEST_F(EvaluateTest, UserGroupNumericFallback) {
   // A token that is not a known user/group but is all-digits is taken as a
   // literal id (matching find); real-name resolution is covered by the
   // conformance test against the current user/group.
-  EXPECT_TRUE(Match({"-user", "501"}, visit));
-  EXPECT_FALSE(Match({"-user", "500"}, visit));
-  EXPECT_TRUE(Match({"-group", "20"}, visit));
-  EXPECT_FALSE(Match({"-group", "21"}, visit));
+  EXPECT_THAT(Match({"-user", "501"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-user", "500"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-group", "20"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-group", "21"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, NouserNogroupMatchOrphanedIds) {
@@ -1337,15 +1338,15 @@ TEST_F(EvaluateTest, NouserNogroupMatchOrphanedIds) {
   owned_md.uid = 0;  // root: present in passwd
   owned_md.gid = 0;  // present in group
   const Visit owned{.path = "a", .name = "a", .depth = 1, .metadata = owned_md};
-  EXPECT_FALSE(Match({"-nouser"}, owned));
-  EXPECT_FALSE(Match({"-nogroup"}, owned));
+  EXPECT_THAT(Match({"-nouser"}, owned), IsFalse());
+  EXPECT_THAT(Match({"-nogroup"}, owned), IsFalse());
   vfs::Metadata orphan_md;
   orphan_md.type = vfs::FileType::kRegular;
   orphan_md.uid = 2'000'000'001U;  // unassigned on Linux/macOS runners (avoids macOS nobody == -2)
   orphan_md.gid = 2'000'000'001U;
   const Visit orphan{.path = "b", .name = "b", .depth = 1, .metadata = orphan_md};
-  EXPECT_TRUE(Match({"-nouser"}, orphan));
-  EXPECT_TRUE(Match({"-nogroup"}, orphan));
+  EXPECT_THAT(Match({"-nouser"}, orphan), IsTrue());
+  EXPECT_THAT(Match({"-nogroup"}, orphan), IsTrue());
 }
 
 TEST_F(EvaluateTest, CommaEvaluatesBothValueIsRight) {
@@ -1353,10 +1354,10 @@ TEST_F(EvaluateTest, CommaEvaluatesBothValueIsRight) {
   md.type = vfs::FileType::kRegular;
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
   // The comma list evaluates both operands; its value is the right operand's.
-  EXPECT_FALSE(Match({"-true", ",", "-false"}, visit));
-  EXPECT_TRUE(Match({"-false", ",", "-true"}, visit));
+  EXPECT_THAT(Match({"-true", ",", "-false"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-false", ",", "-true"}, visit), IsTrue());
   // Side effects on both sides still occur: two -print actions emit two records.
-  EXPECT_TRUE(Match({"-print", ",", "-print"}, visit));
+  EXPECT_THAT(Match({"-print", ",", "-print"}, visit), IsTrue());
   EXPECT_THAT(emitted_, "f\nf\n");
 }
 
@@ -1378,7 +1379,8 @@ TEST_F(EvaluateTest, WriteActionsRefuseAVirtualEntryInsteadOfActingOnIt) {
   };
   for (const std::vector<std::string>& action : kWriteActions) {
     const std::string label = action.front();
-    EXPECT_FALSE(Match(action, Visit{.path = "a.tar!x", .name = "x", .depth = 1, .metadata = member})) << label;
+    EXPECT_THAT(Match(action, Visit{.path = "a.tar!x", .name = "x", .depth = 1, .metadata = member}), IsFalse())
+        << label;
     EXPECT_THAT(control_.unsupported, HasSubstr("archive member")) << label;
   }
 }
@@ -1388,7 +1390,7 @@ TEST_F(EvaluateTest, WriteActionsStillActOnARealFile) {
   // reports true, and nothing is recorded as unsupported.
   vfs::Metadata real;
   real.type = vfs::FileType::kRegular;
-  EXPECT_TRUE(Match({"-exec", "true", ";"}, Visit{.path = "f", .name = "f", .depth = 1, .metadata = real}));
+  EXPECT_THAT(Match({"-exec", "true", ";"}, Visit{.path = "f", .name = "f", .depth = 1, .metadata = real}), IsTrue());
   EXPECT_THAT(control_.unsupported, IsEmpty());
 }
 
@@ -1396,25 +1398,25 @@ TEST_F(EvaluateTest, PruneAndQuitSetControl) {
   vfs::Metadata md;
   md.type = vfs::FileType::kDirectory;
   const Visit visit{.path = "d", .name = "d", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-prune"}, visit));
-  EXPECT_TRUE(control_.prune);
-  EXPECT_FALSE(control_.quit);
-  EXPECT_TRUE(Match({"-quit"}, visit));
-  EXPECT_TRUE(control_.quit);
-  EXPECT_FALSE(control_.prune);  // control is reset per Match
+  EXPECT_THAT(Match({"-prune"}, visit), IsTrue());
+  EXPECT_THAT(control_.prune, IsTrue());
+  EXPECT_THAT(control_.quit, IsFalse());
+  EXPECT_THAT(Match({"-quit"}, visit), IsTrue());
+  EXPECT_THAT(control_.quit, IsTrue());
+  EXPECT_THAT(control_.prune, IsFalse());  // control is reset per Match
   // A short-circuited -prune does not fire: `-type f -prune` on a directory.
-  EXPECT_FALSE(Match({"-type", "f", "-prune"}, visit));
-  EXPECT_FALSE(control_.prune);
+  EXPECT_THAT(Match({"-type", "f", "-prune"}, visit), IsFalse());
+  EXPECT_THAT(control_.prune, IsFalse());
 }
 
 TEST_F(EvaluateTest, RegexMatchesWholePath) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("a/b/c.txt", "c.txt", vfs::FileType::kRegular, md);
   // -regex matches the whole path (not just the basename); -iregex folds case.
-  EXPECT_TRUE(Match({"-regex", ".*\\.txt"}, visit));
-  EXPECT_FALSE(Match({"-regex", ".*\\.md"}, visit));
-  EXPECT_FALSE(Match({"-regex", "c\\.txt"}, visit));  // must match the whole path, not the basename
-  EXPECT_TRUE(Match({"-iregex", ".*\\.TXT"}, visit));
+  EXPECT_THAT(Match({"-regex", ".*\\.txt"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-regex", ".*\\.md"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-regex", "c\\.txt"}, visit), IsFalse());  // must match the whole path, not the basename
+  EXPECT_THAT(Match({"-iregex", ".*\\.TXT"}, visit), IsTrue());
 }
 
 TEST_F(EvaluateTest, NewerXYFalseWhenReferenceMissing) {
@@ -1422,8 +1424,8 @@ TEST_F(EvaluateTest, NewerXYFalseWhenReferenceMissing) {
   const Visit visit = MakeVisit("f", "f", vfs::FileType::kRegular, md);
   // -newerXY with an unreadable reference is false; real field comparisons are
   // covered by the conformance test against actual files.
-  EXPECT_FALSE(Match({"-newermm", "/no/such/reference"}, visit));
-  EXPECT_FALSE(Match({"-newerac", "/no/such/reference"}, visit));
+  EXPECT_THAT(Match({"-newermm", "/no/such/reference"}, visit), IsFalse());
+  EXPECT_THAT(Match({"-newerac", "/no/such/reference"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, AnewerCnewerCompareEntryTimeToReferenceMtime) {
@@ -1431,8 +1433,8 @@ TEST_F(EvaluateTest, AnewerCnewerCompareEntryTimeToReferenceMtime) {
   // atime/ctime vs the reference file's mtime. False when the reference is gone.
   vfs::Metadata missing_md;
   const Visit missing = MakeVisit("f", "f", vfs::FileType::kRegular, missing_md);
-  EXPECT_FALSE(Match({"-anewer", "/no/such/reference"}, missing));
-  EXPECT_FALSE(Match({"-cnewer", "/no/such/reference"}, missing));
+  EXPECT_THAT(Match({"-anewer", "/no/such/reference"}, missing), IsFalse());
+  EXPECT_THAT(Match({"-cnewer", "/no/such/reference"}, missing), IsFalse());
 
   namespace stdfs = ::std::filesystem;
   const stdfs::path ref = stdfs::temp_directory_path() / "xff_anewer_ref.tmp";
@@ -1443,8 +1445,8 @@ TEST_F(EvaluateTest, AnewerCnewerCompareEntryTimeToReferenceMtime) {
   md.atime = absl::FromUnixSeconds(2'000'000'000);  // 2033, after the reference's mtime
   md.ctime = absl::FromUnixSeconds(1'000'000'000);  // 2001, before the reference's mtime
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-anewer", ref_path}, visit));   // atime newer than the reference mtime
-  EXPECT_FALSE(Match({"-cnewer", ref_path}, visit));  // ctime older than the reference mtime
+  EXPECT_THAT(Match({"-anewer", ref_path}, visit), IsTrue());   // atime newer than the reference mtime
+  EXPECT_THAT(Match({"-cnewer", ref_path}, visit), IsFalse());  // ctime older than the reference mtime
   stdfs::remove(ref);
 }
 
@@ -1454,8 +1456,8 @@ TEST_F(EvaluateTest, NewerBtComparesBirthTimeToTimeString) {
   md.type = vfs::FileType::kRegular;
   md.btime = now_;
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-newerBt", "@1500000000"}, visit));   // born after an earlier instant
-  EXPECT_FALSE(Match({"-newerBt", "@1700000001"}, visit));  // not after a later instant
+  EXPECT_THAT(Match({"-newerBt", "@1500000000"}, visit), IsTrue());   // born after an earlier instant
+  EXPECT_THAT(Match({"-newerBt", "@1700000001"}, visit), IsFalse());  // not after a later instant
 }
 
 TEST_F(EvaluateTest, NewerBCombosAreFalseWhenBirthTimeUnrecorded) {
@@ -1465,8 +1467,8 @@ TEST_F(EvaluateTest, NewerBCombosAreFalseWhenBirthTimeUnrecorded) {
   md.type = vfs::FileType::kRegular;  // no btime
   md.mtime = now_;
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_FALSE(Match({"-newerBt", "@1"}, visit));                  // X=B, no btime
-  EXPECT_FALSE(Match({"-newerBm", "/no/such/reference"}, visit));  // X=B (also a missing ref)
+  EXPECT_THAT(Match({"-newerBt", "@1"}, visit), IsFalse());                  // X=B, no btime
+  EXPECT_THAT(Match({"-newerBm", "/no/such/reference"}, visit), IsFalse());  // X=B (also a missing ref)
 }
 
 TEST_F(EvaluateTest, NewerBmComparesBirthTimeToReferenceMtime) {
@@ -1479,10 +1481,10 @@ TEST_F(EvaluateTest, NewerBmComparesBirthTimeToReferenceMtime) {
   md.type = vfs::FileType::kRegular;
   md.btime = absl::FromUnixSeconds(2'000'000'000);  // 2033, after the reference's mtime
   const Visit younger{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-newerBm", ref_path}, younger));
+  EXPECT_THAT(Match({"-newerBm", ref_path}, younger), IsTrue());
   md.btime = absl::FromUnixSeconds(1'000'000'000);  // 2001, before the reference's mtime
   const Visit older{.path = "f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_FALSE(Match({"-newerBm", ref_path}, older));
+  EXPECT_THAT(Match({"-newerBm", ref_path}, older), IsFalse());
   stdfs::remove(ref);
 }
 
@@ -1501,10 +1503,10 @@ TEST_F(EvaluateTest, NewerMbComparesMtimeToReferenceBirthTime) {
     md.type = vfs::FileType::kRegular;
     md.mtime = absl::FromUnixSeconds(2'000'000'000);  // 2033, after the reference's birth time
     const Visit younger{.path = "f", .name = "f", .depth = 1, .metadata = md};
-    EXPECT_TRUE(Match({"-newermB", ref_path}, younger));
+    EXPECT_THAT(Match({"-newermB", ref_path}, younger), IsTrue());
     md.mtime = absl::FromUnixSeconds(1'000'000'000);  // 2001, before the reference's birth time
     const Visit older{.path = "f", .name = "f", .depth = 1, .metadata = md};
-    EXPECT_FALSE(Match({"-newermB", ref_path}, older));
+    EXPECT_THAT(Match({"-newermB", ref_path}, older), IsFalse());
   }
   stdfs::remove(ref);
 }
@@ -1516,9 +1518,9 @@ TEST_F(EvaluateTest, PrintfExpandsDirectivesAndEscapes) {
   md.mode = 0644;
   md.nlink = 3;
   const Visit visit{.path = "a/b/c.txt", .name = "c.txt", .depth = 2, .metadata = md};
-  EXPECT_TRUE(Match({"-printf", "%p|%f|%h|%s|%m|%d|%y\\n"}, visit));
+  EXPECT_THAT(Match({"-printf", "%p|%f|%h|%s|%m|%d|%y\\n"}, visit), IsTrue());
   EXPECT_THAT(emitted_, "a/b/c.txt|c.txt|a/b|42|644|2|f\n");
-  EXPECT_TRUE(Match({"-printf", "%%\\t%n"}, visit));  // literal %, tab escape, link count
+  EXPECT_THAT(Match({"-printf", "%%\\t%n"}, visit), IsTrue());  // literal %, tab escape, link count
   EXPECT_THAT(emitted_, "%\t3");
 }
 
@@ -1569,7 +1571,7 @@ TEST_F(EvaluateTest, PrintfOwnerDirectives) {
   md.uid = 1'234'567;  // no passwd entry -> %u falls back to the numeric id
   md.gid = 7'654'321;  // no group entry -> %g falls back to the numeric id
   const Visit visit{.path = "d/f", .name = "f", .depth = 1, .metadata = md};
-  EXPECT_TRUE(Match({"-printf", "%u|%U|%g|%G"}, visit));
+  EXPECT_THAT(Match({"-printf", "%u|%U|%g|%G"}, visit), IsTrue());
   EXPECT_THAT(emitted_, "1234567|1234567|7654321|7654321");  // %U/%G numeric; %u/%g fall back to the id
 }
 
@@ -1581,11 +1583,11 @@ TEST_F(EvaluateTest, PrintfTimeDirectives) {
   const Visit visit{.path = "f", .name = "f", .depth = 1, .metadata = md};
   tz_ = absl::UTCTimeZone();  // render times in UTC for a deterministic assertion
   // %t/%a are the asctime form of mtime/atime; %Tk/%Ak are strftime conversion k.
-  EXPECT_TRUE(Match({"-printf", "%t|%TY-%Tm-%Td %TH:%TM:%TS|%AY"}, visit));
+  EXPECT_THAT(Match({"-printf", "%t|%TY-%Tm-%Td %TH:%TM:%TS|%AY"}, visit), IsTrue());
   EXPECT_THAT(emitted_, "Sun Sep 13 12:26:40 2020|2020-09-13 12:26:40|1970");
   // The rendering zone honors EvalContext::tz (--timezone): 12:26 UTC is 13:26 in UTC+1.
   tz_ = absl::FixedTimeZone(3'600);
-  EXPECT_TRUE(Match({"-printf", "%TH"}, visit));
+  EXPECT_THAT(Match({"-printf", "%TH"}, visit), IsTrue());
   EXPECT_THAT(emitted_, "13");
 
   md.ctime = absl::FromUnixSeconds(86'400);
@@ -1601,10 +1603,10 @@ TEST_F(EvaluateTest, PrintlnAndPrintflnAppendOsLineEnding) {
   md.size = 42;
   const Visit visit{.path = "a/b/c.txt", .name = "c.txt", .depth = 2, .metadata = md};
   // -println: -print with the OS line ending (LF on this platform).
-  EXPECT_TRUE(Match({"-println"}, visit));
+  EXPECT_THAT(Match({"-println"}, visit), IsTrue());
   EXPECT_THAT(emitted_, "a/b/c.txt\n");
   // -printfln: -printf plus a trailing OS line ending the format need not carry.
-  EXPECT_TRUE(Match({"-printfln", "%f|%s"}, visit));
+  EXPECT_THAT(Match({"-printfln", "%f|%s"}, visit), IsTrue());
   EXPECT_THAT(emitted_, "c.txt|42\n");
 }
 
@@ -1621,7 +1623,7 @@ TEST_F(EvaluateTest, LsEmitsAnLsStyleLine) {
   md.mtime = absl::FromUnixSeconds(1'600'000'000);  // 2020-09-13 UTC, >6mo before now_ -> year form
   const Visit visit{.path = "dir/f", .name = "f", .depth = 1, .metadata = md};
   tz_ = absl::UTCTimeZone();
-  EXPECT_TRUE(Match({"-ls"}, visit));
+  EXPECT_THAT(Match({"-ls"}, visit), IsTrue());
   EXPECT_THAT(emitted_, "42 4 -rw-r--r-- 1 1234567 7654321 4096 Sep 13  2020 dir/f\n");
 }
 
@@ -1652,12 +1654,12 @@ TEST_F(EvaluateTest, OkPromptsWithSubstitutionAndRunsOnlyWhenConfirmed) {
   const Visit visit = MakeVisit("dir/foo.txt", "foo.txt", vfs::FileType::kRegular, md);
   // Declined: the command is not run, -ok is false; the prompt shows {} -> the path.
   confirm_reply_ = false;
-  EXPECT_FALSE(Match({"-ok", "/bin/echo", "{}", ";"}, visit));
+  EXPECT_THAT(Match({"-ok", "/bin/echo", "{}", ";"}, visit), IsFalse());
   EXPECT_THAT(last_prompt_, "/bin/echo dir/foo.txt? ");
   // Affirmative: the command runs and -ok mirrors its exit status.
   confirm_reply_ = true;
-  EXPECT_TRUE(Match({"-ok", "/bin/sh", "-c", "exit 0", ";"}, visit));
-  EXPECT_FALSE(Match({"-ok", "/bin/sh", "-c", "exit 1", ";"}, visit));
+  EXPECT_THAT(Match({"-ok", "/bin/sh", "-c", "exit 0", ";"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-ok", "/bin/sh", "-c", "exit 1", ";"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, NewerMtComparesEntryTimeToTimeString) {
@@ -1666,13 +1668,13 @@ TEST_F(EvaluateTest, NewerMtComparesEntryTimeToTimeString) {
   md.mtime = absl::FromUnixSeconds(1'600'000'000);  // 2020-09-13, a fixed mtime
   const Visit visit = MakeVisit("f", "f", vfs::FileType::kRegular, md);
   // @epoch reference: mtime is newer than an earlier instant, not a later one.
-  EXPECT_TRUE(Match({"-newermt", "@1500000000"}, visit));
-  EXPECT_FALSE(Match({"-newermt", "@1700000000"}, visit));
+  EXPECT_THAT(Match({"-newermt", "@1500000000"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-newermt", "@1700000000"}, visit), IsFalse());
   // ISO date form (local zone); the coarse year gap is timezone-independent.
-  EXPECT_TRUE(Match({"-newermt", "2001-01-01"}, visit));
-  EXPECT_FALSE(Match({"-newermt", "2099-01-01"}, visit));
+  EXPECT_THAT(Match({"-newermt", "2001-01-01"}, visit), IsTrue());
+  EXPECT_THAT(Match({"-newermt", "2099-01-01"}, visit), IsFalse());
   // An unparseable time string never matches.
-  EXPECT_FALSE(Match({"-newermt", "yesterday"}, visit));
+  EXPECT_THAT(Match({"-newermt", "yesterday"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, NewerMtAcceptsRelativeTimeStrings) {
@@ -1680,10 +1682,10 @@ TEST_F(EvaluateTest, NewerMtAcceptsRelativeTimeStrings) {
   md.type = vfs::FileType::kRegular;
   md.mtime = now_ - absl::Hours(48);  // modified two days before the reference clock
   const Visit visit = MakeVisit("f", "f", vfs::FileType::kRegular, md);
-  EXPECT_TRUE(Match({"-newermt", "3 days ago"}, visit));  // within the last three days
-  EXPECT_TRUE(Match({"-newermt", "-3 days"}, visit));     // same, sign form
-  EXPECT_FALSE(Match({"-newermt", "1 day ago"}, visit));  // not within the last day
-  EXPECT_FALSE(Match({"-newermt", "now"}, visit));        // older than now
+  EXPECT_THAT(Match({"-newermt", "3 days ago"}, visit), IsTrue());  // within the last three days
+  EXPECT_THAT(Match({"-newermt", "-3 days"}, visit), IsTrue());     // same, sign form
+  EXPECT_THAT(Match({"-newermt", "1 day ago"}, visit), IsFalse());  // not within the last day
+  EXPECT_THAT(Match({"-newermt", "now"}, visit), IsFalse());        // older than now
 }
 
 TEST_F(EvaluateTest, NewerMtInterpretsTheTimeStringInTheContextZone) {
@@ -1696,9 +1698,9 @@ TEST_F(EvaluateTest, NewerMtInterpretsTheTimeStringInTheContextZone) {
   const Visit visit = MakeVisit("f", "f", vfs::FileType::kRegular, md);
 
   tz_ = absl::UTCTimeZone();  // ref = 2020-01-02 00:00 UTC; mtime is 30 min earlier -> not newer
-  EXPECT_FALSE(Match({"-newermt", "2020-01-02"}, visit));
+  EXPECT_THAT(Match({"-newermt", "2020-01-02"}, visit), IsFalse());
   tz_ = absl::FixedTimeZone(3'600);  // UTC+1: ref = 2020-01-01 23:00 UTC; mtime is 30 min later -> newer
-  EXPECT_TRUE(Match({"-newermt", "2020-01-02"}, visit));
+  EXPECT_THAT(Match({"-newermt", "2020-01-02"}, visit), IsTrue());
 }
 
 TEST_F(EvaluateTest, ExecFieldsGatesNamedPlaceholderSubstitution) {
@@ -1707,10 +1709,10 @@ TEST_F(EvaluateTest, ExecFieldsGatesNamedPlaceholderSubstitution) {
   // Default (find-exact): {name} is not a placeholder, so the child compares the
   // literal "{name}" against "f.txt" -> not equal -> child exits 1 -> false.
   exec_fields_ = false;
-  EXPECT_FALSE(Match({"-exec", "/bin/sh", "-c", "test \"{name}\" = f.txt", ";"}, visit));
+  EXPECT_THAT(Match({"-exec", "/bin/sh", "-c", "test \"{name}\" = f.txt", ";"}, visit), IsFalse());
   // With --exec-fields, {name} renders the basename -> equal -> child exits 0 -> true.
   exec_fields_ = true;
-  EXPECT_TRUE(Match({"-exec", "/bin/sh", "-c", "test \"{name}\" = f.txt", ";"}, visit));
+  EXPECT_THAT(Match({"-exec", "/bin/sh", "-c", "test \"{name}\" = f.txt", ";"}, visit), IsTrue());
 }
 
 TEST_F(EvaluateTest, ExecdirRunsChildInEntryDirectoryWithDotSlashBasename) {
@@ -1719,9 +1721,9 @@ TEST_F(EvaluateTest, ExecdirRunsChildInEntryDirectoryWithDotSlashBasename) {
   // ("/" always exists, so the chdir succeeds under the test sandbox).
   const Visit visit = MakeVisit("/x.txt", "x.txt", vfs::FileType::kRegular, md);
   exec_fields_ = false;
-  EXPECT_TRUE(Match({"-execdir", "/bin/sh", "-c", "test \"$(pwd -P)\" = /", ";"}, visit));  // ran in "/"
-  EXPECT_TRUE(Match({"-execdir", "/bin/sh", "-c", "test \"{}\" = ./x.txt", ";"}, visit));   // {} -> ./basename
-  EXPECT_FALSE(Match({"-execdir", "/bin/sh", "-c", "test \"{}\" = ./nope", ";"}, visit));
+  EXPECT_THAT(Match({"-execdir", "/bin/sh", "-c", "test \"$(pwd -P)\" = /", ";"}, visit), IsTrue());  // ran in "/"
+  EXPECT_THAT(Match({"-execdir", "/bin/sh", "-c", "test \"{}\" = ./x.txt", ";"}, visit), IsTrue());  // {} -> ./basename
+  EXPECT_THAT(Match({"-execdir", "/bin/sh", "-c", "test \"{}\" = ./nope", ";"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, ExecdirHonorsExecFields) {
@@ -1730,19 +1732,19 @@ TEST_F(EvaluateTest, ExecdirHonorsExecFields) {
   // With --exec-fields, {name} renders the basename (the vocabulary still sees the
   // full path); without it, {name} stays literal and the comparison fails.
   exec_fields_ = true;
-  EXPECT_TRUE(Match({"-execdir", "/bin/sh", "-c", "test \"{name}\" = f.txt", ";"}, visit));
+  EXPECT_THAT(Match({"-execdir", "/bin/sh", "-c", "test \"{name}\" = f.txt", ";"}, visit), IsTrue());
   exec_fields_ = false;
-  EXPECT_FALSE(Match({"-execdir", "/bin/sh", "-c", "test \"{name}\" = f.txt", ";"}, visit));
+  EXPECT_THAT(Match({"-execdir", "/bin/sh", "-c", "test \"{name}\" = f.txt", ";"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, OkdirPromptsWithDotSlashBasenameThenRunsInEntryDirOnYes) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("/x.txt", "x.txt", vfs::FileType::kRegular, md);
   confirm_reply_ = true;  // affirmative: -okdir runs the command, like -execdir
-  EXPECT_TRUE(Match({"-okdir", "/bin/sh", "-c", "test \"$(pwd -P)\" = /", ";"}, visit));  // ran in "/"
-  EXPECT_TRUE(Match({"-okdir", "/bin/sh", "-c", "test \"{}\" = ./x.txt", ";"}, visit));   // {} -> ./basename
+  EXPECT_THAT(Match({"-okdir", "/bin/sh", "-c", "test \"$(pwd -P)\" = /", ";"}, visit), IsTrue());  // ran in "/"
+  EXPECT_THAT(Match({"-okdir", "/bin/sh", "-c", "test \"{}\" = ./x.txt", ";"}, visit), IsTrue());   // {} -> ./basename
   // The prompt substitutes {} -> ./basename and ends with "? ".
-  EXPECT_TRUE(Match({"-okdir", "/bin/echo", "{}", ";"}, visit));
+  EXPECT_THAT(Match({"-okdir", "/bin/echo", "{}", ";"}, visit), IsTrue());
   EXPECT_THAT(last_prompt_, "/bin/echo ./x.txt? ");  // tokens joined, then "? " (no space before, like -ok)
 }
 
@@ -1750,7 +1752,7 @@ TEST_F(EvaluateTest, OkdirDeclinedDoesNotRunAndIsFalse) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("/x.txt", "x.txt", vfs::FileType::kRegular, md);
   confirm_reply_ = false;  // declined: not run, -okdir is false (the command would exit 0)
-  EXPECT_FALSE(Match({"-okdir", "/bin/sh", "-c", "exit 0", ";"}, visit));
+  EXPECT_THAT(Match({"-okdir", "/bin/sh", "-c", "exit 0", ";"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, CapturedirRunsCommandInEntryDirAndBindsStdout) {
@@ -1758,7 +1760,7 @@ TEST_F(EvaluateTest, CapturedirRunsCommandInEntryDirAndBindsStdout) {
   const Visit visit = MakeVisit("/x.txt", "x.txt", vfs::FileType::kRegular, md);
   // -capturedir:NAME runs the command in the entry's directory ("/") and binds its
   // stdout (trailing newline stripped) to {capture.NAME}.
-  EXPECT_TRUE(Match({"-capturedir:cwd", "/bin/sh", "-c", "pwd -P", ";"}, visit));
+  EXPECT_THAT(Match({"-capturedir:cwd", "/bin/sh", "-c", "pwd -P", ";"}, visit), IsTrue());
   EXPECT_THAT(outputs_["cwd"], "/");
 }
 
@@ -1778,10 +1780,12 @@ TEST_F(EvaluateTest, ExecFieldsSubstitutesRegexCaptures) {
   // A preceding -regex match records its groups; -exec {1} then references group 1
   // ("a/b"). The child compares it to a/b -> exit 0 -> true.
   exec_fields_ = true;
-  EXPECT_TRUE(Match({"-regex", "(.*)/([^/]+)\\.(.*)", "-exec", "/bin/sh", "-c", "test \"{1}\" = a/b", ";"}, visit));
+  EXPECT_THAT(
+      Match({"-regex", "(.*)/([^/]+)\\.(.*)", "-exec", "/bin/sh", "-c", "test \"{1}\" = a/b", ";"}, visit), IsTrue());
   // Without the gate there is no capture and {1} stays literal -> not equal -> false.
   exec_fields_ = false;
-  EXPECT_FALSE(Match({"-regex", "(.*)/([^/]+)\\.(.*)", "-exec", "/bin/sh", "-c", "test \"{1}\" = a/b", ";"}, visit));
+  EXPECT_THAT(
+      Match({"-regex", "(.*)/([^/]+)\\.(.*)", "-exec", "/bin/sh", "-c", "test \"{1}\" = a/b", ";"}, visit), IsFalse());
 }
 
 TEST_F(EvaluateTest, CapturesAreVisibleLeftToRightOnly) {
@@ -1792,9 +1796,11 @@ TEST_F(EvaluateTest, CapturesAreVisibleLeftToRightOnly) {
   const Visit visit = MakeVisit("a/b/c.txt", "c.txt", vfs::FileType::kRegular, md);
   exec_fields_ = true;
   // -regex to the LEFT of -exec: its groups are bound when -exec runs, so {1} == "a/b".
-  EXPECT_TRUE(Match({"-regex", "(.*)/([^/]+)\\.(.*)", "-exec", "/bin/sh", "-c", "test \"{1}\" = a/b", ";"}, visit));
+  EXPECT_THAT(
+      Match({"-regex", "(.*)/([^/]+)\\.(.*)", "-exec", "/bin/sh", "-c", "test \"{1}\" = a/b", ";"}, visit), IsTrue());
   // -regex to the RIGHT: not yet evaluated when -exec runs, so {1} is still empty there.
-  EXPECT_TRUE(Match({"-exec", "/bin/sh", "-c", "test -z \"{1}\"", ";", "-regex", "(.*)/([^/]+)\\.(.*)"}, visit));
+  EXPECT_THAT(
+      Match({"-exec", "/bin/sh", "-c", "test -z \"{1}\"", ";", "-regex", "(.*)/([^/]+)\\.(.*)"}, visit), IsTrue());
 }
 
 TEST_F(EvaluateTest, CaptureBindsOutputNamespace) {
@@ -1802,9 +1808,12 @@ TEST_F(EvaluateTest, CaptureBindsOutputNamespace) {
   const Visit visit = MakeVisit("a/b/c.txt", "c.txt", vfs::FileType::kRegular, md);
   exec_fields_ = true;  // so the -exec reading {capture.tag} renders the vocabulary
   // -capture runs the command and binds {capture.tag}; the later -exec reads it.
-  EXPECT_TRUE(Match(
-      {"-capture:tag", "/bin/sh", "-c", "printf hi", ";", "-exec", "/bin/sh", "-c", "test \"{capture.tag}\" = hi", ";"},
-      visit));
+  EXPECT_THAT(
+      Match(
+          {"-capture:tag", "/bin/sh", "-c", "printf hi", ";", "-exec", "/bin/sh", "-c", "test \"{capture.tag}\" = hi",
+           ";"},
+          visit),
+      IsTrue());
 }
 
 TEST_F(EvaluateTest, PrintfDocsDocumentEveryDirective) {

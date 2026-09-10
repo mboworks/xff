@@ -58,11 +58,11 @@ PR's user-visible outcome or motivation actually changes.
    harness is a one-line `struct FooTest : ::testing::Test {};`.
 2. **The fixture is a `struct`** (not a `class`) inheriting from
    `::testing::Test` (or a friend such as `::testing::TestWithParam<T>`).
-3. **Use `EXPECT_THAT` / `ASSERT_THAT`; comparison macros are forbidden.** Never use either
+3. **Use `EXPECT_THAT` / `ASSERT_THAT`; convenience assertion macros are forbidden.** Never use either
    `EXPECT_` or `ASSERT_` with `EQ`, `NE`, `LT`, `LE`, `GT`, `GE`, `STREQ`, `STRNE`, `STRCASEEQ`,
-   `STRCASENE`, `FLOAT_EQ`, `DOUBLE_EQ`, or `NEAR`. Use a matcher instead. `EXPECT_TRUE` /
-   `EXPECT_FALSE` and their `ASSERT_` forms remain available for boolean conditions because they
-   are not comparison macros. This is enforced by pre-commit with no exceptions.
+   `STRCASENE`, `FLOAT_EQ`, `DOUBLE_EQ`, or `NEAR`, and do not use `EXPECT_TRUE`, `EXPECT_FALSE`,
+   `ASSERT_TRUE`, or `ASSERT_FALSE`. Use `EXPECT_THAT` / `ASSERT_THAT` with `IsTrue` / `IsFalse`
+   instead. This is enforced by pre-commit with no exceptions.
 4. **Multi-line text: use `mbo::testing::EqualsText`.** For a
    multi-line string use `EXPECT_THAT(actual, EqualsText(golden))` (unified diff,
    line by line). Write the golden as a `DropIndent`-filtered indented raw string,
