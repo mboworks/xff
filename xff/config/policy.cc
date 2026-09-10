@@ -54,14 +54,18 @@ std::optional<registry::Safety> ClassToken(std::string_view token) {
   return std::nullopt;
 }
 
-// Whether a [policy] rule `token` matches `line`: an @class token matches by the
-// line's class; a flag-name token matches when any line flag equals it or carries
+// Whether a [policy] rule `token` matches `line`: @safe matches a wholly safe
+// line, while a dangerous @class token matches when any primary on the line has
+// that exact class. A flag-name token matches when any line flag equals it or carries
 // it as an attached global value or primary qualification (flag == token, or flag starts with the
 // token plus `=` / `:` respectively). Accepting both delimiters here is structural, not a CLI alias:
 // globals such as `--threads=4` and primaries such as `-capture:tag` share this policy matcher.
 bool TokenMatchesLine(std::string_view token, const RcLine& line) {
   if (const std::optional<registry::Safety> cls = ClassToken(token); cls.has_value()) {
-    return LineSafety(line) == *cls;
+    if (*cls == registry::Safety::kNone) {
+      return LineSafety(line) == registry::Safety::kNone;
+    }
+    return absl::c_any_of(line.flags, [&](std::string_view flag) { return FlagSafety(flag) == *cls; });
   }
   const std::string with_value = absl::StrCat(token, "=");
   const std::string with_qualifier = absl::StrCat(token, ":");
