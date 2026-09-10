@@ -49,7 +49,7 @@ genuine tools.)
 | `-mmin` / `-amin` / `-cmin`         | no    | yes  | yes | yes |
 | `-printf` / `-fprintf` / `-fls`     | no    | yes  | no  | yes |
 | `-regextype`                        | no    | yes  | no  | yes |
-| `-E` (extended-regex global flag)   | no    | no   | yes | tbd |
+| `-E` (extended-regex global flag)   | no    | no   | yes | no  |
 | `-daystart`                         | no    | yes  | no  | yes |
 | `-Bmin` / `-Btime` (birthtime)      | no    | no   | yes | yes |
 | `-perm -mode` (all-of)              | yes   | yes  | yes | yes |
@@ -74,6 +74,9 @@ most-capable reading:
   `k`/`M`/`G`); accept BSD's extra `T`/`P` as a superset.
 - **regex default flavor**: GNU emacs / BSD basic / xff RE2 - xff uses its RE2
   module with `-regextype` to select, documented as xff's choice.
+- **BSD `-E`**: xff does not use this spelling to select extended regular
+  expressions; use `-regextype`. The spelling remains reserved for the planned
+  input-content `--encoding` shorthand, matching ripgrep rather than BSD find.
 
 ## Consequence for the time predicates
 
