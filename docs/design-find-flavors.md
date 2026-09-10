@@ -23,9 +23,11 @@ Rationale:
    (`-Bmin`/`-Btime`) _and_ GNU's `-printf`/`-mmin`/`-regextype`. Two strict
    flavors would force _retracting_ features from each (find-gnu rejecting
    `-Bmin`, find-bsd rejecting `-printf`), which is backwards for a replacement.
-2. **The divergence is almost entirely additive** - different spellings for
-   similar capabilities. The union is a strict superset of what any single find
-   accepts, so every GNU _or_ BSD _or_ POSIX script keeps working.
+2. **The vocabulary divergence is mostly additive** - different spellings for
+   similar capabilities. The union accepts most GNU, BSD, and POSIX expressions
+   without selecting a platform flavor. It is not a promise that every script is
+   behaviorally identical: contradictory spellings and defaults are resolved
+   explicitly below, and unimplemented entries remain identified in the survey.
 3. **The `find` vs `xff` line is about xff inventions**, not GNU-vs-BSD spelling.
    Strict `--config=find` rejects xff-only primitives (`-println`, `-capture`,
    `{field}` substitution, compound durations); it stays lenient about which real
@@ -52,7 +54,7 @@ genuine tools.)
 | `-Bmin` / `-Btime` (birthtime)      | no    | no   | yes | yes |
 | `-perm -mode` (all-of)              | yes   | yes  | yes | yes |
 | `-perm /mode` (any-of)              | no    | yes  | no  | yes |
-| `-perm +mode` (any-of)              | no    | no   | yes | tbd |
+| `-perm +mode` (any-of)              | no    | no   | yes | yes |
 | `-type f,d` (OR-list)               | no    | yes  | no  | yes |
 | `-samefile` / `-wholename`          | no    | yes  | no  | yes |
 | compound duration (`3 weeks 3 hrs`) | no    | no\* | no  | xff |
@@ -87,7 +89,9 @@ This settles the rich-time-comparison gating:
 ## Conformance
 
 The conformance suite compares xff to the _system_ find, so it runs against GNU
-on Linux and BSD on macOS. Because the union is a superset of both, divergent
-primaries are **platform-gated** in the suite (test `-printf` only where GNU is
-present, `-mtime` unit suffixes only where BSD is). Primaries common to both with
-identical semantics are tested everywhere.
+on Linux and BSD on macOS. Vocabulary available in only one dialect is
+**platform-gated** in the suite (test `-printf` only where GNU is present,
+`-mtime` unit suffixes only where BSD is). Primaries common to both with
+identical semantics are tested everywhere; intentional contradiction resolutions
+such as the regex default need xff-specific expectations rather than an equality
+claim against both tools.

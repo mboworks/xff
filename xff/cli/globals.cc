@@ -261,7 +261,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Config",
         .summary = "activate a named config or select the find, xff, or rg style; repeatable",
         .details = "A config style sets the defaults for ignore files, hidden files, sizes, sort order, and case. "
-                   "find is strict find compatibility; xff keeps find's grammar but sorts and prints human sizes; "
+                   "find restricts the expression to find-compatible vocabulary and defaults; whole-run xff "
+                   "globals remain available as explicit overrides. xff keeps find's grammar but sorts and prints "
+                   "human sizes; "
                    "rg is opinionated (respect `.gitignore`, skip hidden, smart case). Every occurrence remains an "
                    "active selector, so several named config blocks can apply. Among the built-in style selectors, "
                    "the last `find`, `xff`, or `rg` occurrence chooses the baseline; custom names do not change it. "
