@@ -25,7 +25,7 @@ namespace xff::config {
 // One [policy] rule: a layer, whether it allow- or deny-lists, and the flag /
 // @class tokens it names (e.g. "--sort", "@sensitive").
 struct PolicyRule {
-  std::string layer;                // "project" / "user" / "system"
+  std::string layer;                // normally "user" / "xffrc" / "system"; parser accepts any name
   bool allow = true;                // allow-list (true) or deny-list (false)
   std::vector<std::string> tokens;  // flag names and/or @class tokens
 };
@@ -42,7 +42,7 @@ struct SystemConfig {
 // A [policy] "<layer>.<allow|deny> = <comma-list>" line becomes a PolicyRule.
 // Blank lines and '#'/';' comments are skipped; lines outside [defaults]/[policy]
 // and malformed [policy] lines are ignored. Parse-only: no registry validation
-// and no enforcement (the policy gate, phase C, does that).
+// and no enforcement (the policy gate does that).
 SystemConfig ParseIni(std::string_view text);
 
 }  // namespace xff::config

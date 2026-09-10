@@ -52,14 +52,13 @@ TEST_F(XffrcTest, BareFlagsAreCommonAnyConfig) {
 }
 
 TEST_F(XffrcTest, BaseSelector) {
-  EXPECT_THAT(
-      ParseXffrc("xff: --feature=long-paths"), ElementsAre(RcLineIs("xff", "", ElementsAre("--feature=long-paths"))));
+  EXPECT_THAT(ParseXffrc("xff: --format=jsonl"), ElementsAre(RcLineIs("xff", "", ElementsAre("--format=jsonl"))));
 }
 
 TEST_F(XffrcTest, BaseAndConfigSelector) {
   EXPECT_THAT(
-      ParseXffrc("xff:debug: --feature=trace --threads=1"),
-      ElementsAre(RcLineIs("xff", "debug", ElementsAre("--feature=trace", "--threads=1"))));
+      ParseXffrc("xff:debug: --format=jsonl --jobs=1"),
+      ElementsAre(RcLineIs("xff", "debug", ElementsAre("--format=jsonl", "--jobs=1"))));
 }
 
 TEST_F(XffrcTest, CommonSelectorPreservedVerbatim) {
@@ -69,10 +68,10 @@ TEST_F(XffrcTest, CommonSelectorPreservedVerbatim) {
 
 TEST_F(XffrcTest, SelectorOnlyLineHasNoFlags) {
   EXPECT_THAT(
-      ParseXffrc("find: --warn\nxff:\nxff: --feature=x"),
+      ParseXffrc("find: --warn\nxff:\nxff: --format=csv"),
       ElementsAre(
           RcLineIs("find", "", ElementsAre("--warn")), RcLineIs("xff", "", IsEmpty()),  // selector with no flags
-          RcLineIs("xff", "", ElementsAre("--feature=x"))));
+          RcLineIs("xff", "", ElementsAre("--format=csv"))));
 }
 
 TEST_F(XffrcTest, FlagValueWithColonIsNotASelector) {

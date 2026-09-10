@@ -648,7 +648,7 @@ int RunMain(int argc, char** argv) {
   // effective flags. --explain writes that effective configuration and exits.
   xff::config::DiscoveryOptions opts = xff::config::SelectorsFromGlobals(command.globals);
   // argv[0] dispatch: the program name picks the base style (invoked as `find` ->
-  // strict find; as `xff` or any other alias -> modern xff) as the lowest-precedence
+  // find expression style; as `xff` or any other alias -> modern xff) as the lowest-precedence
   // selector, so an explicit --config still overrides it (design-config.md "CLI
   // selectors"). Prepended before discovery so find:/xff: .xffrc lines gate on it too.
   opts.configs.insert(opts.configs.begin(), std::string(xff::config::DefaultStyleForProgram(program)));
@@ -695,7 +695,7 @@ int RunMain(int argc, char** argv) {
   }
   command.globals.insert(command.globals.begin(), config_flags.begin(), config_flags.end());
 
-  // The strict find style (--config=find) accepts only find's own vocabulary;
+  // The find style (--config=find) accepts only find's own expression vocabulary;
   // reject xff extensions (e.g. -println) so a find-style run behaves like GNU
   // find (design-config.md "CLI selectors"). The default xff style accepts all.
   const xff::registry::Style style = xff::config::ActiveStyle(inputs.configs);

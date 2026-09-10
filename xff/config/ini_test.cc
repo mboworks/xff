@@ -52,26 +52,26 @@ TEST_F(IniTest, DefaultsRenderToCliTokens) {
 TEST_F(IniTest, PolicyAllowDenyAndClassTokens) {
   const SystemConfig cfg = ParseIni(
       "[policy]\n"
-      "project.allow = --sort, --color, --format\n"
-      "project.deny  = --threads\n"
-      "user.allow    = @sensitive\n");
+      "user.allow = --sort, --color, --format\n"
+      "xffrc.deny = --jobs\n"
+      "user.deny  = @sensitive\n");
   EXPECT_THAT(
-      cfg.policy, ElementsAre(
-                      PolicyRuleIs("project", true, ElementsAre("--sort", "--color", "--format")),
-                      PolicyRuleIs("project", false, ElementsAre("--threads")),
-                      PolicyRuleIs("user", true, ElementsAre("@sensitive"))));
+      cfg.policy,
+      ElementsAre(
+          PolicyRuleIs("user", true, ElementsAre("--sort", "--color", "--format")),
+          PolicyRuleIs("xffrc", false, ElementsAre("--jobs")), PolicyRuleIs("user", false, ElementsAre("@sensitive"))));
 }
 
 TEST_F(IniTest, CommentsBlanksAndBothSections) {
   const SystemConfig cfg =
-      ParseIni("; a comment\n# another\n[defaults]\n\n--color = never\n[policy]\nproject.allow = --sort\n");
+      ParseIni("; a comment\n# another\n[defaults]\n\n--color = never\n[policy]\nuser.allow = --sort\n");
   EXPECT_THAT(cfg.defaults, ElementsAre("--color=never"));
-  EXPECT_THAT(cfg.policy, ElementsAre(PolicyRuleIs("project", true, ElementsAre("--sort"))));
+  EXPECT_THAT(cfg.policy, ElementsAre(PolicyRuleIs("user", true, ElementsAre("--sort"))));
 }
 
 TEST_F(IniTest, MalformedPolicyLinesIgnored) {
   // No '=', no '.', and an unknown kind are each ignored (forgiving parse).
-  const SystemConfig cfg = ParseIni("[policy]\nnonsense\nproject = x\nproject.maybe = x\n");
+  const SystemConfig cfg = ParseIni("[policy]\nnonsense\nuser = x\nuser.maybe = x\n");
   EXPECT_THAT(cfg.policy, IsEmpty());
 }
 

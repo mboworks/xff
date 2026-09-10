@@ -42,7 +42,7 @@ cc_test(
 )
 
 # The system policy parser (/etc/xff.ini): [defaults] flag lines + [policy]
-# per-layer allow/deny rules. Parse-only; the policy gate (phase C) enforces.
+# per-layer allow/deny rules. Parse-only; the policy gate enforces.
 cc_library(
     name = "ini_cc",
     srcs = ["ini.cc"],
@@ -64,9 +64,9 @@ cc_test(
     ],
 )
 
-# The loader core: resolves the parsed layers (system [defaults] + user/project
-# .xffrc) under the active --config selectors into a precedence-ordered, prov-
-# enance-tagged flag list. No discovery (phase B-next) or gating (phase C) yet.
+# The resolver core combines parsed system defaults, user xffrc, and explicit
+# --xffrc tiers under the active selectors into a precedence-ordered,
+# provenance-tagged flag list.
 cc_library(
     name = "config_cc",
     srcs = ["config.cc"],
@@ -94,10 +94,9 @@ cc_test(
     ],
 )
 
-# Discovery: locates and reads the config files (system /etc/xff.ini, user
-# .xffrc, explicit --xffrc) through an injectable FileReader, parsing them into
-# ConfigInputs for ResolveConfig. No file IO of its own (run.cc supplies the
-# reader); the project cascade is phase E.
+# Discovery locates and reads /etc/xff.ini, the selected user config, and
+# explicit --xffrc files through an injectable FileReader, parsing them into
+# ConfigInputs for ResolveConfig. It performs no file I/O of its own.
 cc_library(
     name = "loader_cc",
     srcs = ["loader.cc"],
@@ -125,10 +124,9 @@ cc_test(
     ],
 )
 
-# The safe-by-default policy gate: classifies an .xffrc line by the registry
-# safety class of its flags and decides whether the line is permitted for its
-# layer (built-in deny table + [policy] overrides, deny beats allow). Pure
-# decision logic; phase C-next wires it into the resolve path with drop-and-warn.
+# The config policy gate classifies an xffrc line by registry safety, applies
+# system deny rules and preset-overload/non-arming constraints, and records each
+# dropped line for warnings and --explain.
 cc_library(
     name = "policy_cc",
     srcs = ["policy.cc"],

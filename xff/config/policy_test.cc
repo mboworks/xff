@@ -61,8 +61,8 @@ TEST_F(PolicyTest, NoLayerIsDeniedByDefault) {
 
 TEST_F(PolicyTest, PolicyDenyTightensAFlagByName) {
   SystemConfig policy;
-  policy.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"--threads"}}};
-  EXPECT_FALSE(LinePermitted(Line({"--threads=4"}), Source::kUser, policy));  // named flag denied
+  policy.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"--jobs"}}};
+  EXPECT_FALSE(LinePermitted(Line({"--jobs=4"}), Source::kUser, policy));     // named flag denied
   EXPECT_TRUE(LinePermitted(Line({"--color=auto"}), Source::kUser, policy));  // unrelated flag fine
 }
 
@@ -183,21 +183,21 @@ TEST_F(PolicyTest, DropMessageForUnarmedXffrcNamesTheArm) {
 
 TEST_F(PolicyTest, OverloadsPresetDetectsBarePresetSelectors) {
   // A bare preset selector (base is a built-in style, no named config) overloads the preset.
-  EXPECT_THAT(OverloadsPreset(ParseXffrc("xff: --feature=long").front()), IsTrue());
+  EXPECT_THAT(OverloadsPreset(ParseXffrc("xff: --format=jsonl").front()), IsTrue());
   EXPECT_THAT(OverloadsPreset(ParseXffrc("find: --warn").front()), IsTrue());
   EXPECT_THAT(OverloadsPreset(ParseXffrc("rg: --x").front()), IsTrue());
   // common: is not a preset; a named config and a style-scoped named config are fine (they need
   // explicit activation, so they do not silently change a plain preset run).
   EXPECT_THAT(OverloadsPreset(ParseXffrc("common: --sort").front()), IsFalse());
-  EXPECT_THAT(OverloadsPreset(ParseXffrc("myx: --feature=long").front()), IsFalse());
-  EXPECT_THAT(OverloadsPreset(ParseXffrc("xff:debug: --threads=1").front()), IsFalse());
+  EXPECT_THAT(OverloadsPreset(ParseXffrc("myx: --format=jsonl").front()), IsFalse());
+  EXPECT_THAT(OverloadsPreset(ParseXffrc("xff:debug: --jobs=1").front()), IsFalse());
 }
 
 TEST_F(PolicyTest, GateConfigDropsPresetOverloadWithReason) {
   ConfigInputs inputs;
   // xff: and find: are preset-overloads (dropped in any layer); common: / myx: / xff:debug: survive.
   inputs.user =
-      ParseXffrc("xff: --feature=long\ncommon: --sort\nfind: --warn\nmyx: --color=never\nxff:debug: --threads=1");
+      ParseXffrc("xff: --format=jsonl\ncommon: --sort\nfind: --warn\nmyx: --color=never\nxff:debug: --jobs=1");
   const GateResult gated = GateConfig(inputs, /*xffrc_armed=*/false);
   EXPECT_THAT(gated.config.user, SizeIs(3));  // common:, myx:, xff:debug:
   ASSERT_THAT(gated.drops, SizeIs(2));

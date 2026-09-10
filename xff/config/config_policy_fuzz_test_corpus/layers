@@ -1,10 +1,10 @@
 [defaults]
 --color = auto
---threads = 4
+--jobs = 4
 
 [policy]
-user.deny = --threads
+user.deny = --jobs
 xffrc.deny = @destructive
 
 common: --color=never
-fuzz: --threads=2
+fuzz: --jobs=2

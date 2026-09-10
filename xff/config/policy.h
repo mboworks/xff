@@ -77,7 +77,7 @@ struct GateResult {
 GateResult GateConfig(const ConfigInputs& inputs, bool xffrc_armed);
 
 // A one-line human description of a dropped line for the stderr warning and
-// --explain, e.g. "'-exec' from the project .xffrc (sensitive)".
+// --explain, e.g. "'-exec' from the --xffrc file (sensitive; needs --allow-exec)".
 std::string DropMessage(const Drop& drop);
 
 }  // namespace xff::config
