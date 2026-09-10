@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 02:20:36</td>
+            <td class="headerValue">2026-09-10 02:54:14</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -732,7 +732,7 @@
 <span id="L648"><span class="lineNum">     648</span>                 :             :   // effective flags. --explain writes that effective configuration and exits.</span>
 <span id="L649"><span class="lineNum">     649</span>                 :<span class="tlaGNC">         528 :   xff::config::DiscoveryOptions opts = xff::config::SelectorsFromGlobals(command.globals);</span></span>
 <span id="L650"><span class="lineNum">     650</span>                 :             :   // argv[0] dispatch: the program name picks the base style (invoked as `find` -&gt;</span>
-<span id="L651"><span class="lineNum">     651</span>                 :             :   // strict find; as `xff` or any other alias -&gt; modern xff) as the lowest-precedence</span>
+<span id="L651"><span class="lineNum">     651</span>                 :             :   // find expression style; as `xff` or any other alias -&gt; modern xff) as the lowest-precedence</span>
 <span id="L652"><span class="lineNum">     652</span>                 :             :   // selector, so an explicit --config still overrides it (design-config.md &quot;CLI</span>
 <span id="L653"><span class="lineNum">     653</span>                 :             :   // selectors&quot;). Prepended before discovery so find:/xff: .xffrc lines gate on it too.</span>
 <span id="L654"><span class="lineNum">     654</span>                 :<span class="tlaGNC">         528 :   opts.configs.insert(opts.configs.begin(), std::string(xff::config::DefaultStyleForProgram(program)));</span></span>
@@ -779,7 +779,7 @@
 <span id="L695"><span class="lineNum">     695</span>                 :<span class="tlaGNC">          10 :   }</span></span>
 <span id="L696"><span class="lineNum">     696</span>                 :<span class="tlaGNC">         520 :   command.globals.insert(command.globals.begin(), config_flags.begin(), config_flags.end());</span></span>
 <span id="L697"><span class="lineNum">     697</span>                 :             : </span>
-<span id="L698"><span class="lineNum">     698</span>                 :             :   // The strict find style (--config=find) accepts only find's own vocabulary;</span>
+<span id="L698"><span class="lineNum">     698</span>                 :             :   // The find style (--config=find) accepts only find's own expression vocabulary;</span>
 <span id="L699"><span class="lineNum">     699</span>                 :             :   // reject xff extensions (e.g. -println) so a find-style run behaves like GNU</span>
 <span id="L700"><span class="lineNum">     700</span>                 :             :   // find (design-config.md &quot;CLI selectors&quot;). The default xff style accepts all.</span>
 <span id="L701"><span class="lineNum">     701</span>                 :<span class="tlaGNC">         520 :   const xff::registry::Style style = xff::config::ActiveStyle(inputs.configs);</span></span>
