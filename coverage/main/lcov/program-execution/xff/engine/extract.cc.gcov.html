@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 00:53:30</td>
+            <td class="headerValue">2026-09-10 01:21:03</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -194,16 +194,16 @@
 <span id="L114"><span class="lineNum">     114</span>                 :<span class="tlaGNC">           3 :   return candidates.back();</span></span>
 <span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">          16 : }</span></span>
 <span id="L116"><span class="lineNum">     116</span>                 :             : </span>
-<span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">         790 : ExtractedMembers::~ExtractedMembers() {</span></span>
+<span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">         793 : ExtractedMembers::~ExtractedMembers() {</span></span>
 <span id="L118"><span class="lineNum">     118</span>                 :             :   // The end-of-run sweep: a `+` batch runs after the walk, so its members are still held here, and a</span>
 <span id="L119"><span class="lineNum">     119</span>                 :             :   // child that died leaves its file behind too. Errors are ignored - there is no one left to tell,</span>
 <span id="L120"><span class="lineNum">     120</span>                 :             :   // and a temporary file that outlives the run is not worth failing over.</span>
-<span id="L121"><span class="lineNum">     121</span>         [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 790 times"> + </span>]:<span class="tlaGNC">         790 :   for (const std::string&amp; path : held_) {</span></span>
+<span id="L121"><span class="lineNum">     121</span>         [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 793 times"> + </span>]:<span class="tlaGNC">         793 :   for (const std::string&amp; path : held_) {</span></span>
 <span id="L122"><span class="lineNum">     122</span>                 :<span class="tlaGNC">          12 :     std::error_code error;</span></span>
 <span id="L123"><span class="lineNum">     123</span>                 :             :     // XFF_HOST_IO: extraction removes its explicitly selected temporary parent.</span>
 <span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">          12 :     stdfs::remove_all(stdfs::path(path).parent_path(), error);</span></span>
 <span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">          12 :   }</span></span>
-<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">         790 : }</span></span>
+<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">         793 : }</span></span>
 <span id="L127"><span class="lineNum">     127</span>                 :             : </span>
 <span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">          14 : absl::StatusOr&lt;std::string&gt; ExtractedMembers::Extract(const vfs::FileSystem&amp; fs, std::string_view member) {</span></span>
 <span id="L129"><span class="lineNum">     129</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 13 times"> + </span>]:<span class="tlaGNC">          14 :   MBO_ASSIGN_OR_RETURN(const std::string content, fs.ReadContent(member));</span></span>

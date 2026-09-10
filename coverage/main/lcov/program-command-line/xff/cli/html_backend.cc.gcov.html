@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 00:53:30</td>
+            <td class="headerValue">2026-09-10 01:21:03</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -114,16 +114,16 @@
 <span class="lineNum">        </span>         [<span class="tlaUNC" title="branch &quot;8&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;9&quot; was taken 1 time"> + </span>]
 <span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">          22 : }</span></span>
 <span id="L33"><span class="lineNum">      33</span>                 :             : </span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">       12926 : std::size_t FindUrl(std::string_view text, std::size_t cursor) {</span></span>
-<span id="L35"><span class="lineNum">      35</span>         [<span class="tlaGBC" title="branch 0 was taken 12927 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">       12927 :   while (cursor &lt; text.size()) {</span></span>
-<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">       12927 :     const std::size_t begin = std::min(text.find(&quot;http://&quot;, cursor), text.find(&quot;https://&quot;, cursor));</span></span>
-<span id="L37"><span class="lineNum">      37</span> [<span class="tlaGBC" title="branch 0 was taken 12905 times"> + </span><span class="tlaGBC" title="branch 1 was taken 22 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 21 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">       12927 :     if (begin == std::string_view::npos || IsUrlStart(text, begin)) {</span></span>
-<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">       12926 :       return begin;</span></span>
-<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">       12926 :     }</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">       12938 : std::size_t FindUrl(std::string_view text, std::size_t cursor) {</span></span>
+<span id="L35"><span class="lineNum">      35</span>         [<span class="tlaGBC" title="branch 0 was taken 12939 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">       12939 :   while (cursor &lt; text.size()) {</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">       12939 :     const std::size_t begin = std::min(text.find(&quot;http://&quot;, cursor), text.find(&quot;https://&quot;, cursor));</span></span>
+<span id="L37"><span class="lineNum">      37</span> [<span class="tlaGBC" title="branch 0 was taken 12917 times"> + </span><span class="tlaGBC" title="branch 1 was taken 22 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 21 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">       12939 :     if (begin == std::string_view::npos || IsUrlStart(text, begin)) {</span></span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">       12938 :       return begin;</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">       12938 :     }</span></span>
 <span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">           1 :     cursor = begin + 1;</span></span>
 <span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">           1 :   }</span></span>
 <span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaUNC">           0 :   return std::string_view::npos;</span></span>
-<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">       12926 : }</span></span>
+<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">       12938 : }</span></span>
 <span id="L44"><span class="lineNum">      44</span>                 :             : </span>
 <span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">          21 : std::size_t LinkEnd(std::string_view text, std::size_t begin) {</span></span>
 <span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">          21 :   std::size_t end = begin;</span></span>
@@ -171,19 +171,19 @@
 <span id="L86"><span class="lineNum">      86</span>                 :<span class="tlaGNC">        1845 :   return HtmlAttributeEscape(anchor);</span></span>
 <span id="L87"><span class="lineNum">      87</span>                 :<span class="tlaGNC">        1845 : }</span></span>
 <span id="L88"><span class="lineNum">      88</span>                 :             : </span>
-<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">       26507 : std::string HtmlEscape(std::string_view text) {</span></span>
-<span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">       26507 :   std::string out;</span></span>
-<span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">       26507 :   out.reserve(text.size());</span></span>
-<span id="L92"><span class="lineNum">      92</span>         [<span class="tlaGBC" title="branch 0 was taken 780911 times"> + </span><span class="tlaGBC" title="branch 1 was taken 26507 times"> + </span>]:<span class="tlaGNC">      780911 :   for (const char chr : text) {</span></span>
-<span id="L93"><span class="lineNum">      93</span>                 :<span class="tlaGNC">      780911 :     switch (chr) {</span></span>
-<span id="L94"><span class="lineNum">      94</span>         [<span class="tlaGBC" title="branch 0 was taken 48 times"> + </span><span class="tlaGBC" title="branch 1 was taken 780863 times"> + </span>]:<span class="tlaGNC">          48 :       case '&amp;': absl::StrAppend(&amp;out, &quot;&amp;amp;&quot;); break;</span></span>
-<span id="L95"><span class="lineNum">      95</span>         [<span class="tlaGBC" title="branch 0 was taken 211 times"> + </span><span class="tlaGBC" title="branch 1 was taken 780700 times"> + </span>]:<span class="tlaGNC">         211 :       case '&lt;': absl::StrAppend(&amp;out, &quot;&amp;lt;&quot;); break;</span></span>
-<span id="L96"><span class="lineNum">      96</span>         [<span class="tlaGBC" title="branch 0 was taken 246 times"> + </span><span class="tlaGBC" title="branch 1 was taken 780665 times"> + </span>]:<span class="tlaGNC">         246 :       case '&gt;': absl::StrAppend(&amp;out, &quot;&amp;gt;&quot;); break;</span></span>
-<span id="L97"><span class="lineNum">      97</span>         [<span class="tlaGBC" title="branch 0 was taken 780406 times"> + </span><span class="tlaGBC" title="branch 1 was taken 505 times"> + </span>]:<span class="tlaGNC">      780406 :       default: out.push_back(chr); break;</span></span>
-<span id="L98"><span class="lineNum">      98</span>                 :<span class="tlaGNC">      780911 :     }</span></span>
-<span id="L99"><span class="lineNum">      99</span>                 :<span class="tlaGNC">      780911 :   }</span></span>
-<span id="L100"><span class="lineNum">     100</span>                 :<span class="tlaGNC">       26507 :   return out;</span></span>
-<span id="L101"><span class="lineNum">     101</span>                 :<span class="tlaGNC">       26507 : }</span></span>
+<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">       26531 : std::string HtmlEscape(std::string_view text) {</span></span>
+<span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">       26531 :   std::string out;</span></span>
+<span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">       26531 :   out.reserve(text.size());</span></span>
+<span id="L92"><span class="lineNum">      92</span>         [<span class="tlaGBC" title="branch 0 was taken 781877 times"> + </span><span class="tlaGBC" title="branch 1 was taken 26531 times"> + </span>]:<span class="tlaGNC">      781877 :   for (const char chr : text) {</span></span>
+<span id="L93"><span class="lineNum">      93</span>                 :<span class="tlaGNC">      781877 :     switch (chr) {</span></span>
+<span id="L94"><span class="lineNum">      94</span>         [<span class="tlaGBC" title="branch 0 was taken 48 times"> + </span><span class="tlaGBC" title="branch 1 was taken 781829 times"> + </span>]:<span class="tlaGNC">          48 :       case '&amp;': absl::StrAppend(&amp;out, &quot;&amp;amp;&quot;); break;</span></span>
+<span id="L95"><span class="lineNum">      95</span>         [<span class="tlaGBC" title="branch 0 was taken 211 times"> + </span><span class="tlaGBC" title="branch 1 was taken 781666 times"> + </span>]:<span class="tlaGNC">         211 :       case '&lt;': absl::StrAppend(&amp;out, &quot;&amp;lt;&quot;); break;</span></span>
+<span id="L96"><span class="lineNum">      96</span>         [<span class="tlaGBC" title="branch 0 was taken 246 times"> + </span><span class="tlaGBC" title="branch 1 was taken 781631 times"> + </span>]:<span class="tlaGNC">         246 :       case '&gt;': absl::StrAppend(&amp;out, &quot;&amp;gt;&quot;); break;</span></span>
+<span id="L97"><span class="lineNum">      97</span>         [<span class="tlaGBC" title="branch 0 was taken 781372 times"> + </span><span class="tlaGBC" title="branch 1 was taken 505 times"> + </span>]:<span class="tlaGNC">      781372 :       default: out.push_back(chr); break;</span></span>
+<span id="L98"><span class="lineNum">      98</span>                 :<span class="tlaGNC">      781877 :     }</span></span>
+<span id="L99"><span class="lineNum">      99</span>                 :<span class="tlaGNC">      781877 :   }</span></span>
+<span id="L100"><span class="lineNum">     100</span>                 :<span class="tlaGNC">       26531 :   return out;</span></span>
+<span id="L101"><span class="lineNum">     101</span>                 :<span class="tlaGNC">       26531 : }</span></span>
 <span id="L102"><span class="lineNum">     102</span>                 :             : </span>
 <span id="L103"><span class="lineNum">     103</span>                 :<span class="tlaGNC">        2229 : std::string HtmlAttributeEscape(std::string_view text) {</span></span>
 <span id="L104"><span class="lineNum">     104</span>                 :<span class="tlaGNC">        2229 :   std::string out;</span></span>
@@ -224,23 +224,23 @@
 <span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">        1852 :   return slug;</span></span>
 <span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">        1852 : }</span></span>
 <span id="L141"><span class="lineNum">     141</span>                 :             : </span>
-<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">       12905 : std::string RenderTextHtml(std::string_view text) {</span></span>
-<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">       12905 :   std::string out;</span></span>
-<span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">       12905 :   std::size_t cursor = 0;</span></span>
-<span id="L145"><span class="lineNum">     145</span>         [<span class="tlaGBC" title="branch 0 was taken 12926 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">       12926 :   while (cursor &lt; text.size()) {</span></span>
-<span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">       12926 :     const std::size_t begin = FindUrl(text, cursor);</span></span>
-<span id="L147"><span class="lineNum">     147</span>         [<span class="tlaGBC" title="branch 0 was taken 12905 times"> + </span><span class="tlaGBC" title="branch 1 was taken 21 times"> + </span>]:<span class="tlaGNC">       12926 :     if (begin == std::string_view::npos) {</span></span>
-<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">       12905 :       absl::StrAppend(&amp;out, HtmlEscape(text.substr(cursor)));</span></span>
-<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">       12905 :       break;</span></span>
-<span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">       12905 :     }</span></span>
+<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">       12917 : std::string RenderTextHtml(std::string_view text) {</span></span>
+<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">       12917 :   std::string out;</span></span>
+<span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">       12917 :   std::size_t cursor = 0;</span></span>
+<span id="L145"><span class="lineNum">     145</span>         [<span class="tlaGBC" title="branch 0 was taken 12938 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">       12938 :   while (cursor &lt; text.size()) {</span></span>
+<span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">       12938 :     const std::size_t begin = FindUrl(text, cursor);</span></span>
+<span id="L147"><span class="lineNum">     147</span>         [<span class="tlaGBC" title="branch 0 was taken 12917 times"> + </span><span class="tlaGBC" title="branch 1 was taken 21 times"> + </span>]:<span class="tlaGNC">       12938 :     if (begin == std::string_view::npos) {</span></span>
+<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">       12917 :       absl::StrAppend(&amp;out, HtmlEscape(text.substr(cursor)));</span></span>
+<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">       12917 :       break;</span></span>
+<span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">       12917 :     }</span></span>
 <span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">          21 :     absl::StrAppend(&amp;out, HtmlEscape(text.substr(cursor, begin - cursor)));</span></span>
 <span id="L152"><span class="lineNum">     152</span>                 :<span class="tlaGNC">          21 :     const std::size_t end = LinkEnd(text, begin);</span></span>
 <span id="L153"><span class="lineNum">     153</span>                 :<span class="tlaGNC">          21 :     const std::string_view url = text.substr(begin, end - begin);</span></span>
 <span id="L154"><span class="lineNum">     154</span>                 :<span class="tlaGNC">          21 :     absl::StrAppend(&amp;out, &quot;&lt;a href=\&quot;&quot;, HtmlAttributeEscape(url), &quot;\&quot;&gt;&quot;, HtmlEscape(url), &quot;&lt;/a&gt;&quot;);</span></span>
 <span id="L155"><span class="lineNum">     155</span>                 :<span class="tlaGNC">          21 :     cursor = end;</span></span>
 <span id="L156"><span class="lineNum">     156</span>                 :<span class="tlaGNC">          21 :   }</span></span>
-<span id="L157"><span class="lineNum">     157</span>                 :<span class="tlaGNC">       12905 :   return out;</span></span>
-<span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">       12905 : }</span></span>
+<span id="L157"><span class="lineNum">     157</span>                 :<span class="tlaGNC">       12917 :   return out;</span></span>
+<span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">       12917 : }</span></span>
 <span id="L159"><span class="lineNum">     159</span>                 :             : </span>
 <span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">          41 : std::string HtmlRefLink(const RefTarget&amp; target, std::string_view label) {</span></span>
 <span id="L161"><span class="lineNum">     161</span>         [<span class="tlaGBC" title="branch 0 was taken 36 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">          41 :   std::string text = HtmlEscape(label.empty() ? target.id : label);</span></span>
@@ -265,18 +265,18 @@
 <span id="L180"><span class="lineNum">     180</span>                 :             : </span>
 <span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">        4844 : std::string RenderInlinesHtml(const Inlines&amp; runs) {</span></span>
 <span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">        4844 :   std::string out;</span></span>
-<span id="L183"><span class="lineNum">     183</span>         [<span class="tlaGBC" title="branch 0 was taken 21126 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4844 times"> + </span>]:<span class="tlaGNC">       21126 :   for (const Inline&amp; run : runs) {</span></span>
-<span id="L184"><span class="lineNum">     184</span>         [<span class="tlaGBC" title="branch 0 was taken 12899 times"> + </span><span class="tlaGBC" title="branch 1 was taken 8227 times"> + </span>]:<span class="tlaGNC">       21126 :     const std::string text = run.style == Inline::Style::kText ? RenderTextHtml(run.text) : HtmlEscape(run.text);</span></span>
-<span id="L185"><span class="lineNum">     185</span>         [<span class="tlaGBC" title="branch 0 was taken 21126 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">       21126 :     switch (run.style) {</span></span>
-<span id="L186"><span class="lineNum">     186</span>         [<span class="tlaGBC" title="branch 0 was taken 12899 times"> + </span><span class="tlaGBC" title="branch 1 was taken 8227 times"> + </span>]:<span class="tlaGNC">       12899 :       case Inline::Style::kText: absl::StrAppend(&amp;out, text); break;</span></span>
-<span id="L187"><span class="lineNum">     187</span>         [<span class="tlaGBC" title="branch 0 was taken 8223 times"> + </span><span class="tlaGBC" title="branch 1 was taken 12903 times"> + </span>]:<span class="tlaGNC">        8223 :       case Inline::Style::kCode: absl::StrAppend(&amp;out, &quot;&lt;code&gt;&quot;, text, &quot;&lt;/code&gt;&quot;); break;</span></span>
-<span id="L188"><span class="lineNum">     188</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 21125 times"> + </span>]:<span class="tlaGNC">           1 :       case Inline::Style::kEmphasis: absl::StrAppend(&amp;out, &quot;&lt;em&gt;&quot;, text, &quot;&lt;/em&gt;&quot;); break;</span></span>
-<span id="L189"><span class="lineNum">     189</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 21125 times"> + </span>]:<span class="tlaGNC">           1 :       case Inline::Style::kStrong: absl::StrAppend(&amp;out, &quot;&lt;strong&gt;&quot;, text, &quot;&lt;/strong&gt;&quot;); break;</span></span>
-<span id="L190"><span class="lineNum">     190</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 21124 times"> + </span>]:<span class="tlaGNC">           2 :       case Inline::Style::kRef:</span></span>
+<span id="L183"><span class="lineNum">     183</span>         [<span class="tlaGBC" title="branch 0 was taken 21150 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4844 times"> + </span>]:<span class="tlaGNC">       21150 :   for (const Inline&amp; run : runs) {</span></span>
+<span id="L184"><span class="lineNum">     184</span>         [<span class="tlaGBC" title="branch 0 was taken 12911 times"> + </span><span class="tlaGBC" title="branch 1 was taken 8239 times"> + </span>]:<span class="tlaGNC">       21150 :     const std::string text = run.style == Inline::Style::kText ? RenderTextHtml(run.text) : HtmlEscape(run.text);</span></span>
+<span id="L185"><span class="lineNum">     185</span>         [<span class="tlaGBC" title="branch 0 was taken 21150 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">       21150 :     switch (run.style) {</span></span>
+<span id="L186"><span class="lineNum">     186</span>         [<span class="tlaGBC" title="branch 0 was taken 12911 times"> + </span><span class="tlaGBC" title="branch 1 was taken 8239 times"> + </span>]:<span class="tlaGNC">       12911 :       case Inline::Style::kText: absl::StrAppend(&amp;out, text); break;</span></span>
+<span id="L187"><span class="lineNum">     187</span>         [<span class="tlaGBC" title="branch 0 was taken 8235 times"> + </span><span class="tlaGBC" title="branch 1 was taken 12915 times"> + </span>]:<span class="tlaGNC">        8235 :       case Inline::Style::kCode: absl::StrAppend(&amp;out, &quot;&lt;code&gt;&quot;, text, &quot;&lt;/code&gt;&quot;); break;</span></span>
+<span id="L188"><span class="lineNum">     188</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 21149 times"> + </span>]:<span class="tlaGNC">           1 :       case Inline::Style::kEmphasis: absl::StrAppend(&amp;out, &quot;&lt;em&gt;&quot;, text, &quot;&lt;/em&gt;&quot;); break;</span></span>
+<span id="L189"><span class="lineNum">     189</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 21149 times"> + </span>]:<span class="tlaGNC">           1 :       case Inline::Style::kStrong: absl::StrAppend(&amp;out, &quot;&lt;strong&gt;&quot;, text, &quot;&lt;/strong&gt;&quot;); break;</span></span>
+<span id="L190"><span class="lineNum">     190</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 21148 times"> + </span>]:<span class="tlaGNC">           2 :       case Inline::Style::kRef:</span></span>
 <span id="L191"><span class="lineNum">     191</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           2 :         absl::StrAppend(&amp;out, run.target.has_value() ? HtmlRefLink(*run.target, run.text) : text);</span></span>
 <span id="L192"><span class="lineNum">     192</span>                 :<span class="tlaGNC">           2 :         break;</span></span>
-<span id="L193"><span class="lineNum">     193</span>                 :<span class="tlaGNC">       21126 :     }</span></span>
-<span id="L194"><span class="lineNum">     194</span>                 :<span class="tlaGNC">       21126 :   }</span></span>
+<span id="L193"><span class="lineNum">     193</span>                 :<span class="tlaGNC">       21150 :     }</span></span>
+<span id="L194"><span class="lineNum">     194</span>                 :<span class="tlaGNC">       21150 :   }</span></span>
 <span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">        4844 :   return out;</span></span>
 <span id="L196"><span class="lineNum">     196</span>                 :<span class="tlaGNC">        4844 : }</span></span>
 <span id="L197"><span class="lineNum">     197</span>                 :             : </span>
