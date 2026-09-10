@@ -107,6 +107,11 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
 - `--explain` - print the resolved configuration and exit _(global, xff)_
   Prints the active style, every config source consulted and whether it was found, resolved flags in application order with their provenance, rejected config directives, and the style-default table with this run's effective values. It does not walk roots or evaluate the expression. Diagnostics about unreadable config paths are limited to the source being reported as absent.
 
+### Matching
+- `-E` - use the configured extended-regex grammar (RE2 by default) _(global, find)_
+  Accepts BSD/macOS find's leading extended-regex switch. In xff the extended grammar is selected by `--regextype`; it defaults to `RE2`, and command-line `--re2` or `--pcre` override a configured choice. This compatibility flag does not itself replace that choice.
+  Affects: -regex, -iregex, -rxc, -irxc, -grep, -capture, -capturedir
+
 ### Traversal
 - `-H` - follow symlinks named on the command line, not while walking _(global, find)_
   Dereferences each symlink root operand before matching or descending, but keeps symlinks found below that root as symlinks. A dangling root symlink falls back to the link itself. `-H`, `-L`, and `-P` are mutually overriding leading options; the last occurrence wins.
@@ -207,6 +212,13 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
   - `PCRE2` - Perl syntax (lookaround, backreferences); a build extra
 
   Selects one grammar for every `-regex`/`-iregex`, `-rxc`/`-irxc`, and `-grep` pattern in the run; the last occurrence wins. `RE2` (the default) is linear-time regular expressions; `EXACT` is a literal string (metacharacters are plain text); `FNMATCH` is a flat shell wildcard where `*` matches any character including `/`; `GLOB` is a locale-independent path glob where `*`, `?`, and `[...]` stay inside one component, while a complete-component `**` crosses components; middle `foo/**/bar` permits zero or more components and trailing `foo/**` requires a descendant. Bracket expressions support ascending ranges, leading `!` negation, and RE2 ASCII named classes; malformed or unsupported expressions are errors. `SHGLOB` is `GLOB` plus nested, possibly empty `{a,b}` alternatives. `PCRE2` (Perl syntax: lookaround, backreferences) is the one build-time extra: it is present only in a full build, and selecting it in a lean build is a hard error, never a silent fall back to `RE2`. `RE2`/`EXACT`/`FNMATCH`/`GLOB`/`SHGLOB` are always built in; run `xff --help=extras` to see whether THIS binary includes `PCRE2`. See `--help=grammars` for a full description of each grammar (`GLOB`/`SHGLOB` are not POSIX glob(7)).
+  Affected by: --re2, --pcre
+- `--re2` - select the fast, linear-time RE2 grammar _(global, xff)_
+  A convenient command-line spelling of `--regextype=RE2`. It overrides a grammar selected by configuration; among grammar selectors, the last occurrence wins.
+  Affects: --regextype, -regex, -iregex, -rxc, -irxc, -grep, -capture, -capturedir
+- `--pcre` - select the PCRE2 grammar (a build extra) _(global, xff)_
+  A convenient command-line spelling of `--regextype=PCRE2`. It overrides a grammar selected by configuration; among grammar selectors, the last occurrence wins. PCRE2 is available only in a full build, and selecting it in a lean build is a usage error.
+  Affects: --regextype, -regex, -iregex, -rxc, -irxc, -grep, -capture, -capturedir
 
 ### Path filters
 - `--exclude=GLOB` - skip paths matching a gitignore-style glob (repeatable; a matched directory is pruned) _(global, xff)_
@@ -553,8 +565,10 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
   The always-case-insensitive `-lname` (symlink-target glob).
 - `-regex ARG` - match the whole path against a regular expression _(test, find)_
   Matches when the pattern matches the WHOLE path (anchored both ends, like find), not just a substring - use `.*` to match anywhere. Dialect is chosen by `-regextype` (RE2 by default); capture groups become `{1}`..`{N}` for a following `-exec` / `-printf`. Example: `xff . -regex '.*/[0-9]+\.log'`.
+  Affected by: -E, --re2, --pcre
 - `-iregex ARG` - match the whole path against a regular expression, case-insensitively _(test, find)_
   The case-insensitive `-regex`: same whole-path anchoring and capture-group binding, matching without regard to case.
+  Affected by: -E, --re2, --pcre
 - `-regextype ARG` - select the regex dialect for the following -regex/-iregex _(test, find)_
 - `-content ARG` - match a literal substring in the file's content (xff) _(test, xff)_
   Matches when the file contains SUBSTRING literally (no regex metacharacters - the literal pair sidesteps grep's flavor ambiguity). Reads the file, so it is expensive; a non-regular, unreadable, or binary file (a NUL byte in the first 8 KiB) never matches. `-icontent` folds ASCII case. Use `-rxc` for a pattern. This is an xff extension `--config=find` rejects.
@@ -562,8 +576,10 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
   The case-insensitive `-content`: folds ASCII case on the literal substring search.
 - `-rxc ARG` - match the file's content against a regular expression (xff) _(test, xff)_
   The regex counterpart of `-content`: matches when the RE2 pattern is found ANYWHERE in the content (unanchored, like grep - use `^` / `$` to anchor), not the whole-file anchoring `-regex` applies to the path. Same expensive read and non-regular / unreadable / binary skip; `-irxc` folds case. An xff extension `--config=find` rejects.
+  Affected by: -E, --re2, --pcre
 - `-irxc ARG` - match the file's content against a regular expression, case-insensitively (xff) _(test, xff)_
   The case-insensitive `-rxc`: folds case on the content regex search.
+  Affected by: -E, --re2, --pcre
 - `-text[:FLAVOR]` - match a regular text file; -text[=git|posix|windows|apple] picks the definition (xff) _(test, xff)_
   TRUE for a regular, readable file whose content is text. Bare `-text` (or `=git`) is the default heuristic: no NUL byte in the first 8000 bytes (git's buffer_is_binary, also grep/ripgrep), line-ending-agnostic. One leading UTF-8 BOM is transparent. The strict flavors forbid a NUL ANYWHERE after that BOM and pin the line ending, requiring a final terminator (an empty file is vacuously complete): `=posix` = LF only, ends with a newline; `=windows` = CRLF only; `=apple` = CR only. Reads the file (expensive). A directory, symlink, device or unreadable file is not text (nor binary), so it never matches - `! -text` is NOT `-binary`. An xff extension `--config=find` rejects.
 - `-binary` - match a regular file whose content is binary (a NUL in the first 8 KiB) (xff) _(test, xff)_
@@ -721,7 +737,7 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
   `-printf` plus the OS line ending appended, so you write FORMAT without a trailing `\n`. An xff extension `--config=find` rejects; see `-printf` for the directive vocabulary.
 - `-grep[:FORMAT] PATTERN` - print each content line matching a regex; -grep:FORMAT for a template (xff) _(action, xff)_
   The line-output companion of `-rxc`: `-grep PATTERN` prints every content line matching the RE2 PATTERN as `path:lineno:text` (grep's piped form; a literal substring under `--regextype=EXACT`). `-grep:FORMAT PATTERN` renders a {line}/{text}/{match}/{column} template instead. Honors `-c` / `--count` (one `path:count` per file) and -A / -B / `--context` (surrounding lines, grep-style). Reads the file (expensive); non-regular / unreadable / binary files yield nothing. Its truth is "matched a line", so it composes with `-o` / `-q`. An xff extension `--config=find` rejects.
-  Affected by: --count, --context, --after-context, --before-context
+  Affected by: -E, --re2, --pcre, --count, --context, --after-context, --before-context
 - `-fprint ARG` - write -print output to a named file _(action, find)_
   Writes what `-print` would emit to FILE instead of stdout. FILE is opened once (truncating any existing content) and held open for the whole walk, so matches append to it in visit order. This is the anchor of the -f* family - each mirrors a stdout action: `-fprint0`, `-fprintf`, `-fls`, and the xff `-fprintln` / `-fprintfln`.
 - `-fprintln ARG` - write -println output to a named file (xff) _(action, xff)_
@@ -750,8 +766,10 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
   Like `-execdir` (runs in the matched entry's directory, `{}` is the basename) but prompts before each command, exactly as `-ok` does.
 - `-capture:[!]NAME[=REGEX] CMD... ;` - run a command and bind its output to {capture.NAME} (xff) _(action, xff, runs commands)_
   xff extension: runs the `;`-terminated command and binds its stdout to `{capture.NAME}` for a later `-printf` / `--format` field; `-capture:NAME=REGEX` keeps only REGEX's first capture group. A NAME must be an identifier (`[A-Za-z_][A-Za-z0-9_]*`), because it is referenced as `{capture.NAME}`; binding one NAME twice is an error, and `-capture:!NAME` on the LATER node says the re-bind is meant (per node, so it cannot loosen the other captures in the command). Sensitive: from an `--xffrc` file it needs `--allow-exec`. Example: `-capture:branch git rev-parse --abbrev-ref HEAD ; -printf '{relpath}\t{capture.branch}\n'`.
+  Affected by: -E, --re2, --pcre
 - `-capturedir:[!]NAME[=REGEX] CMD... ;` - run -capture in the matched entry's directory (xff) _(action, xff, runs commands)_
   The `-execdir` counterpart of `-capture`: runs the command in the matched entry's directory and binds its stdout to `{capture.NAME}`. Same `NAME[=REGEX]` binding and `--allow-exec` gating.
+  Affected by: -E, --re2, --pcre
 
 ### Operators
 - `-a` - logical AND (implicit between predicates) _(operator, find)_

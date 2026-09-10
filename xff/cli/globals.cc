@@ -350,6 +350,18 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .topic = "config",
     },
     {
+        .name = "-E",
+        .display = "-E",
+        .group = "matching",
+        .header = "Matching",
+        .summary = "use the configured extended-regex grammar (RE2 by default)",
+        .details = "Accepts BSD/macOS find's leading extended-regex switch. In xff the extended grammar is "
+                   "selected by `--regextype`; it defaults to `RE2`, and command-line `--re2` or `--pcre` "
+                   "override a configured choice. This compatibility flag does not itself replace that choice.",
+        .affects = "-regex,-iregex,-rxc,-irxc,-grep,-capture,-capturedir",
+        .xff = false,
+    },
+    {
         .name = "-H",
         .display = "-H",
         .group = "traversal",
@@ -744,6 +756,28 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "each grammar (`GLOB`/`SHGLOB` are not POSIX glob(7)).",
         .values = kRegextypeValues,
         .value_check = GlobalFlag::ValueCheck::kEnum,
+    },
+    {
+        .name = "--re2",
+        .display = "--re2",
+        .group = "matching",
+        .header = "Matching",
+        .summary = "select the fast, linear-time RE2 grammar",
+        .details = "A convenient command-line spelling of `--regextype=RE2`. It overrides a grammar selected "
+                   "by configuration; among grammar selectors, the last occurrence wins.",
+        .affects = "--regextype,-regex,-iregex,-rxc,-irxc,-grep,-capture,-capturedir",
+    },
+    {
+        .name = "--pcre",
+        .display = "--pcre",
+        .group = "matching",
+        .header = "Matching",
+        .summary = "select the PCRE2 grammar (a build extra)",
+        .details = "A convenient command-line spelling of `--regextype=PCRE2`. It overrides a grammar selected "
+                   "by configuration; among grammar selectors, the last occurrence wins. PCRE2 is available "
+                   "only in a full build, and selecting it in a lean build is a usage error.",
+        .affects = "--regextype,-regex,-iregex,-rxc,-irxc,-grep,-capture,-capturedir",
+        .extra = "pcre2",
     },
     {
         .name = "--exclude",

@@ -810,6 +810,14 @@ regex::Grammar GrammarFromGlobalsInternal(const std::vector<std::string>& global
   constexpr std::string_view kPrefix = "--regextype=";
   regex::Grammar grammar = regex::Grammar::kRe2;
   for (const std::string& global : globals) {
+    if (global == "--re2") {
+      grammar = regex::Grammar::kRe2;
+      continue;
+    }
+    if (global == "--pcre") {
+      grammar = regex::Grammar::kPcre2;
+      continue;
+    }
     if (!global.starts_with(kPrefix)) {
       continue;
     }

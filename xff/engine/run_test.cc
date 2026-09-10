@@ -2225,6 +2225,8 @@ TEST_F(RunTest, UnsupportedRegextypeIsAUsageError) {
   EXPECT_THAT(last_errors_, Not(0));
   EXPECT_THAT(RunArgvRecords({"--regextype=PCRE2", root_.string(), "-grep", "x"}), IsEmpty());
   EXPECT_THAT(last_errors_, Not(0));
+  EXPECT_THAT(RunArgvRecords({"--pcre", root_.string(), "-grep", "x"}), IsEmpty());
+  EXPECT_THAT(last_errors_, Not(0));
 }
 
 TEST_F(RunTest, RegextypeUsesTheLastOccurrence) {

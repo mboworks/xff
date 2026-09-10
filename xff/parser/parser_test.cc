@@ -674,6 +674,13 @@ TEST_F(ParserTest, RegextypeSelectsTheMatcherGrammar) {
   EXPECT_THAT(last.grammar, regex::Grammar::kRe2);
 }
 
+TEST_F(ParserTest, ErgonomicRegexSelectorsParticipateInLastWinsOrder) {
+  EXPECT_THAT(GrammarFromGlobals({"--regextype=EXACT", "--re2"}), regex::Grammar::kRe2);
+  EXPECT_THAT(GrammarFromGlobals({"--re2", "--pcre"}), regex::Grammar::kPcre2);
+  EXPECT_THAT(GrammarFromGlobals({"--pcre", "--regextype=GLOB"}), regex::Grammar::kGlob);
+  EXPECT_THAT(GrammarFromGlobals({"--regextype=EXACT", "-E"}), regex::Grammar::kExact);
+}
+
 struct TakesTerminalTest : ::testing::Test {};
 
 TEST_F(TakesTerminalTest, TheExecAndPromptFamilyTakesTheTerminal) {

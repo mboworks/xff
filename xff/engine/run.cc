@@ -880,7 +880,11 @@ absl::Status ValidateRegextype(const std::vector<std::string>& globals) {
   constexpr std::string_view kPrefix = "--regextype=";
   std::optional<std::string_view> selected;
   for (const std::string& global : globals) {
-    if (global.starts_with(kPrefix)) {
+    if (global == "--re2") {
+      selected = "RE2";
+    } else if (global == "--pcre") {
+      selected = "PCRE2";
+    } else if (global.starts_with(kPrefix)) {
       selected = std::string_view(global).substr(kPrefix.size());
     }
   }

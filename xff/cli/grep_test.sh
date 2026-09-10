@@ -123,6 +123,38 @@ test::config_regextype_binds_the_expression_with_the_final_grammar() {
   expect_not_matches '3X50' "${out}"
 }
 
+test::re2_overrides_a_configured_grammar() {
+  local root cfg out
+  root="$(test_tmpdir tree)"
+  cfg="${TEST_TMPDIR}/literal_config"
+  mkdir -p "${root}"
+  printf 'price 3X50\n' >"${root}/p.txt"
+  printf 'common: --regextype=EXACT\n' >"${cfg}"
+  out="$(XFF_CONFIG="${cfg}" _run --re2 "${root}" -type f -grep '3.50')"
+  expect_matches '3X50' "${out}"
+}
+
+test::bsd_e_uses_the_configured_extended_grammar() {
+  local root cfg out
+  root="$(test_tmpdir tree)"
+  cfg="${TEST_TMPDIR}/bsd_e_config"
+  mkdir -p "${root}"
+  printf 'price 3.50\nprice 3X50\n' >"${root}/p.txt"
+  printf 'common: --regextype=EXACT\n' >"${cfg}"
+  out="$(XFF_CONFIG="${cfg}" _run -E "${root}" -type f -grep '3.50')"
+  expect_matches '3\.50' "${out}"
+  expect_not_matches '3X50' "${out}"
+}
+
+test::pcre_reports_the_missing_lean_build_extra() {
+  local root out rc
+  root="$(test_tmpdir tree)"
+  mkdir -p "${root}"
+  out="$("$(_xff_bin)" --pcre "${root}" -type f -grep x 2>&1)" && rc=0 || rc=$?
+  expect_eq "2" "${rc}"
+  expect_matches 'no pcre2 support' "${out}"
+}
+
 test::regextype_shglob_expands_brace_alternation() {
   local root out
   root="$(test_tmpdir tree)"
