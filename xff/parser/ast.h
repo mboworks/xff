@@ -60,10 +60,10 @@ struct Expr {
   // -exec terminated by `+` (batch form): the matched paths are accumulated and
   // the command runs at end-of-walk in ARG_MAX-bounded chunks, not per entry.
   bool exec_batch = false;
-  // The node's regex, compiled once at parse time (so evaluation is a lock-free
-  // read, not a per-entry compile): -regex/-iregex's pattern (args[0], case folded
-  // for -iregex), or -capture/-capturedir's optional extraction regex (args[1]).
-  // Null when the node has no regex or the pattern did not compile (-> no match).
+  // The node's regex, compiled once after configuration resolution (so evaluation is a lock-free
+  // read, not a per-entry compile): -regex/-iregex's pattern (args[0], case folded for -iregex),
+  // or -capture/-capturedir's optional extraction regex (args[1]).
+  // Null before final binding, when the node has no regex, or when compilation failed (-> no match).
   std::shared_ptr<const regex::Matcher> matcher;
   // -grep:FORMAT: the attached output template, compiled once at parse time. Null
   // for a bare -grep (which uses the default path:line:text) and every other node.
@@ -93,7 +93,7 @@ struct Expr {
   // Defaults are the v1 design-of-record: five words and 80 percent.
   std::size_t similarity_width = kDefaultSimilarityShingleWidth;
   int similarity_threshold = kDefaultSimilarityThresholdPercent;
-  // Case folding forced on by the resolved --case mode (parser::ApplyCaseMode), for the
+  // Case folding forced on by the resolved --case mode (parser::BindMatchers), for the
   // otherwise case-sensitive matchers (-name/-path/-content and, via a recompiled
   // `matcher`, -regex/-rxc/-grep): true under --case=insensitive, or --case=smart when the
   // pattern has no uppercase. Independent of the descriptor's fold_case (the -i variants,
@@ -116,9 +116,8 @@ struct Command {
   std::vector<std::string> meta_flags;
   std::vector<std::string> roots;
   ExprPtr expression;
-  // The regex grammar for every matcher in this command, resolved once from --regextype at parse
-  // time (default RE2). The pattern predicates (-regex/-rxc/-grep + the -capture extraction regex)
-  // compile with it; ApplyCaseMode's recompile reuses it.
+  // The final regex grammar for every matcher in this command. Parsing records patterns only;
+  // BindMatchers sets this after configuration resolution and compiles each matcher once.
   regex::Grammar grammar = regex::Grammar::kRe2;
 };
 

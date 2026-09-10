@@ -8,6 +8,8 @@
   system policy or an explicitly selected `--xffrc` file.
 - Apply named configuration and explicitly loaded config files at each command-line
   selector's exact position instead of flattening them ahead of all CLI options.
+- Defer regex matcher binding until the final configuration has selected grammar
+  and case, avoiding premature or duplicate compilation.
 - Add distinct root-spanning traversal orders: `--sort=roots` sorts only the search operands,
   while `--sort=global` sorts the operands and walks each tree in deterministic depth-first order.
   Clarify the ordering, directory read-ahead, result buffering, post-order, and score-ranking

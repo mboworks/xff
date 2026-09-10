@@ -143,16 +143,14 @@ LabelSpec SplitLabelModifier(std::string_view spec) {
   return LabelSpec{.rest = spec};
 }
 
-// Pre-compiles a node's regex at parse time so evaluation reads it lock-free:
+// Returns a node's regex pattern when it has one:
 // -regex/-iregex (whole-path) and -rxc/-irxc (file-content) match args[0];
 // -capture/-capturedir (Binding::kLabelRegex) carry an optional extraction regex in
 // args[1]. Case sensitivity comes from the descriptor's fold_case (so the i-variants
 // are data, not a name check). Returns null when the node carries no regex, or the
-// pattern does not compile (then no-match).
-std::shared_ptr<const regex::Matcher> CompileNodeRegex(
+std::optional<std::string_view> NodeRegexPattern(
     const registry::Descriptor& descriptor,
-    const std::vector<std::string>& args,
-    regex::Grammar grammar) {
+    const std::vector<std::string>& args) {
   std::string_view pattern;
   if ((descriptor.name == "-regex" || descriptor.name == "-iregex" || descriptor.name == "-rxc"
        || descriptor.name == "-irxc" || descriptor.name == "-grep")
@@ -161,20 +159,15 @@ std::shared_ptr<const regex::Matcher> CompileNodeRegex(
   } else if (descriptor.binding == registry::Binding::kLabelRegex && args.size() > 1 && !args[1].empty()) {
     pattern = args[1];  // the optional :NAME=REGEX extraction regex
   } else {
-    return nullptr;
+    return std::nullopt;
   }
-  absl::StatusOr<regex::Matcher> matcher = regex::Matcher::Compile(pattern, descriptor.fold_case, grammar);
-  if (!matcher.ok()) {
-    return nullptr;
-  }
-  return std::make_shared<const regex::Matcher>(*std::move(matcher));
+  return pattern;
 }
 
-ExprPtr MakePredicate(const registry::Descriptor& descriptor, std::vector<std::string> args, regex::Grammar grammar) {
+ExprPtr MakePredicate(const registry::Descriptor& descriptor, std::vector<std::string> args) {
   auto expr = std::make_unique<Expr>();
   expr->kind = Expr::Kind::kPredicate;
   expr->descriptor.set_ref(descriptor);
-  expr->matcher = CompileNodeRegex(descriptor, args, grammar);  // compile once, here; eval just reads it
   expr->args = std::move(args);
   return expr;
 }
@@ -206,8 +199,8 @@ class ExprParser {
  public:
   // `hoist_globals` = pull double-dash globals out of primary/operator positions into
   // HoistedGlobals() (off after an explicit `--` end-of-options delimiter).
-  ExprParser(const std::vector<std::string>& tokens, regex::Grammar grammar, bool hoist_globals = true)
-      : tokens_(tokens), grammar_(grammar), hoist_globals_(hoist_globals) {}
+  explicit ExprParser(const std::vector<std::string>& tokens, bool hoist_globals = true)
+      : tokens_(tokens), hoist_globals_(hoist_globals) {}
 
   absl::StatusOr<ExprPtr> Parse() {
     SkipGlobals();
@@ -373,7 +366,7 @@ class ExprParser {
           return nullptr;
         }
         ++pos_;
-        ExprPtr node = MakePredicate(*descriptor, {std::string(spec.rest)}, grammar_);
+        ExprPtr node = MakePredicate(*descriptor, {std::string(spec.rest)});
         if (node != nullptr) {
           node->label_override = spec.override_name;
         }
@@ -424,7 +417,7 @@ class ExprParser {
         for (std::string& cmd_token : command) {
           args.push_back(std::move(cmd_token));
         }
-        ExprPtr node = MakePredicate(*descriptor, std::move(args), grammar_);
+        ExprPtr node = MakePredicate(*descriptor, std::move(args));
         if (node != nullptr) {
           node->label_override = modifier.override_name;
         }
@@ -446,7 +439,7 @@ class ExprParser {
           }
           args.push_back(tokens_[pos_++]);
         }
-        ExprPtr node = MakePredicate(*descriptor, std::move(args), grammar_);
+        ExprPtr node = MakePredicate(*descriptor, std::move(args));
         if (node != nullptr) {
           node->grep_template = std::make_shared<const fields::Template>(fields::Template::Compile(format));
         }
@@ -483,7 +476,7 @@ class ExprParser {
           }
           args.push_back(tokens_[pos_++]);
         }
-        ExprPtr node = MakePredicate(*descriptor, std::move(args), grammar_);
+        ExprPtr node = MakePredicate(*descriptor, std::move(args));
         if (node != nullptr) {
           node->diff_style = style;
         }
@@ -505,7 +498,7 @@ class ExprParser {
           }
           args.push_back(tokens_[pos_++]);
         }
-        ExprPtr node = MakePredicate(*descriptor, std::move(args), grammar_);
+        ExprPtr node = MakePredicate(*descriptor, std::move(args));
         if (node != nullptr) {
           node->hash_spec = spec;
         }
@@ -522,7 +515,7 @@ class ExprParser {
           return nullptr;
         }
         ++pos_;  // consume the `-text:FLAVOR` token
-        ExprPtr node = MakePredicate(*descriptor, {}, grammar_);
+        ExprPtr node = MakePredicate(*descriptor, {});
         if (node != nullptr) {
           node->text_flavor = flavor;
         }
@@ -597,7 +590,7 @@ class ExprParser {
           Fail(absl::StrCat("predicate '", base, "' is missing an argument"));
           return nullptr;
         }
-        ExprPtr node = MakePredicate(*descriptor, {tokens_[pos_++]}, grammar_);
+        ExprPtr node = MakePredicate(*descriptor, {tokens_[pos_++]});
         if (node != nullptr) {
           node->fuzzy_threshold = threshold;
           node->fuzzy_model = model;
@@ -643,7 +636,7 @@ class ExprParser {
           Fail(absl::StrCat("predicate '", base, "' is missing an argument"));
           return nullptr;
         }
-        ExprPtr node = MakePredicate(*descriptor, {tokens_[pos_++]}, grammar_);
+        ExprPtr node = MakePredicate(*descriptor, {tokens_[pos_++]});
         if (node != nullptr) {
           node->similarity_width = width;
           node->similarity_threshold = threshold;
@@ -692,7 +685,7 @@ class ExprParser {
         return nullptr;
       }
       ++pos_;  // consume ';' or '+'
-      ExprPtr node = MakePredicate(*descriptor, std::move(command), grammar_);
+      ExprPtr node = MakePredicate(*descriptor, std::move(command));
       if (node != nullptr) {
         node->exec_batch = batch;
       }
@@ -706,11 +699,10 @@ class ExprParser {
       }
       args.push_back(tokens_[pos_++]);
     }
-    return MakePredicate(*descriptor, std::move(args), grammar_);
+    return MakePredicate(*descriptor, std::move(args));
   }
 
   const std::vector<std::string>& tokens_;
-  regex::Grammar grammar_;  // the regex grammar for this command's matchers (from --regextype)
   bool hoist_globals_ = true;
   std::vector<std::string> hoisted_globals_;
   std::vector<std::string> hoisted_meta_flags_;
@@ -814,7 +806,7 @@ mbo::types::OptionalRef<const Expr> FirstXffPrintfField(const Expr& expr) {
 // reserved MATCH placeholder) stay RE2. This is lenient by design: an unknown or PCRE2-not-built-in
 // value is left as RE2 and rejected by run.cc's ValidateRegextype (the validating reader) before the
 // walk, so it never reaches a matcher.
-regex::Grammar GrammarFromGlobals(const std::vector<std::string>& globals) {
+regex::Grammar GrammarFromGlobalsInternal(const std::vector<std::string>& globals) {
   constexpr std::string_view kPrefix = "--regextype=";
   regex::Grammar grammar = regex::Grammar::kRe2;
   for (const std::string& global : globals) {
@@ -865,6 +857,10 @@ bool ConsumeLeadingJobsGlobal(
 }
 
 }  // namespace
+
+regex::Grammar GrammarFromGlobals(const std::vector<std::string>& globals) {
+  return GrammarFromGlobalsInternal(globals);
+}
 
 absl::StatusOr<Command> Parse(const std::vector<std::string>& args) {
   Command cmd;
@@ -919,7 +915,7 @@ absl::StatusOr<Command> Parse(const std::vector<std::string>& args) {
   // works -- and we fold them back into the command's globals, then refresh the grammar.
   const std::vector<std::string> expr_tokens(args.begin() + static_cast<std::ptrdiff_t>(idx), args.end());
   if (!expr_tokens.empty()) {
-    ExprParser parser(expr_tokens, cmd.grammar, /*hoist_globals=*/!options_ended);
+    ExprParser parser(expr_tokens, /*hoist_globals=*/!options_ended);
     MBO_ASSIGN_OR_RETURN(cmd.expression, parser.Parse());
     cmd.globals.insert(cmd.globals.end(), parser.HoistedGlobals().begin(), parser.HoistedGlobals().end());
     cmd.meta_flags.insert(cmd.meta_flags.end(), parser.HoistedMetaFlags().begin(), parser.HoistedMetaFlags().end());
@@ -997,46 +993,41 @@ bool ShouldFold(CaseMode mode, std::string_view pattern) {
   return false;
 }
 
-// Sets folding on the case-sensitive matchers under `mode`: the glob / substring ones
-// (-name/-path/-lname/-content) via Expr::case_fold, the pre-compiled regex ones
-// (-regex/-rxc/-grep) by recompiling `matcher` case-insensitively. Leaves the -i variants
-// and non-matcher nodes untouched; recurses over the whole tree.
-void ApplyCaseModeToNode(Expr& expr, CaseMode mode, regex::Grammar grammar) {
-  if (expr.kind == Expr::Kind::kPredicate && expr.descriptor.has_value() && !expr.descriptor->fold_case
-      && !expr.args.empty()) {
+// Applies final case semantics and compiles each regex exactly once, after the
+// complete configuration/CLI stream has selected the grammar and case mode.
+void BindMatchersToNode(Expr& expr, CaseMode mode, regex::Grammar grammar) {
+  if (expr.kind == Expr::Kind::kPredicate && expr.descriptor.has_value()) {
     const std::string_view name = expr.descriptor->name;
-    const std::string_view pattern = expr.args.front();
     const bool glob_or_content = name == "-name" || name == "-path" || name == "-lname" || name == "-content"
                                  || name == "-fuzzy" || name == "-fuzzypath";
-    const bool regex = name == "-regex" || name == "-rxc" || name == "-grep";
-    if ((glob_or_content || regex) && ShouldFold(mode, pattern)) {
-      if (regex) {
-        if (absl::StatusOr<regex::Matcher> matcher =
-                regex::Matcher::Compile(pattern, /*case_insensitive=*/true, grammar);
-            matcher.ok()) {
-          expr.matcher = std::make_shared<const regex::Matcher>(*std::move(matcher));
-        }
-      } else {
-        expr.case_fold = true;
+    if (glob_or_content && !expr.args.empty()) {
+      expr.case_fold = ShouldFold(mode, expr.args.front());
+    }
+    if (const std::optional<std::string_view> pattern = NodeRegexPattern(*expr.descriptor, expr.args);
+        pattern.has_value()) {
+      const bool case_insensitive =
+          expr.descriptor->fold_case
+          || (expr.descriptor->binding != registry::Binding::kLabelRegex && ShouldFold(mode, *pattern));
+      if (absl::StatusOr<regex::Matcher> matcher = regex::Matcher::Compile(*pattern, case_insensitive, grammar);
+          matcher.ok()) {
+        expr.matcher = std::make_shared<const regex::Matcher>(*std::move(matcher));
       }
     }
   }
   if (expr.lhs) {
-    ApplyCaseModeToNode(*expr.lhs, mode, grammar);
+    BindMatchersToNode(*expr.lhs, mode, grammar);
   }
   if (expr.rhs) {
-    ApplyCaseModeToNode(*expr.rhs, mode, grammar);
+    BindMatchersToNode(*expr.rhs, mode, grammar);
   }
 }
 
 }  // namespace
 
-void ApplyCaseMode(Command& command, CaseMode mode) {
-  if (mode == CaseMode::kSensitive) {
-    return;  // nothing to fold; the -i variants already handle their own case
-  }
+void BindMatchers(Command& command, regex::Grammar grammar, CaseMode mode) {
+  command.grammar = grammar;
   if (auto expression = AsOptionalExpr(command.expression); expression.has_value()) {
-    ApplyCaseModeToNode(*expression, mode, command.grammar);
+    BindMatchersToNode(*expression, mode, grammar);
   }
 }
 

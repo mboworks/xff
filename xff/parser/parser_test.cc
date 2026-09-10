@@ -325,41 +325,52 @@ TEST_F(ParserTest, ResolveCaseModeDefaultsAndFlags) {
   EXPECT_THAT(ResolveCaseMode({"-i", "-s-"}, registry::Style::kFind), CaseMode::kSensitive);  // last wins
 }
 
-TEST_F(ParserTest, ApplyCaseModeFoldsSensitiveMatchers) {
+TEST_F(ParserTest, BindMatchersFoldsSensitiveMatchers) {
   // smart: an all-lowercase glob folds; an uppercase-bearing pattern stays exact.
   ASSERT_OK_AND_ASSIGN(Command lower, Parse({".", "-name", "readme"}));
-  ApplyCaseMode(lower, CaseMode::kSmart);
+  BindMatchers(lower, lower.grammar, CaseMode::kSmart);
   EXPECT_TRUE(lower.expression->case_fold);
   ASSERT_OK_AND_ASSIGN(Command upper, Parse({".", "-name", "README"}));
-  ApplyCaseMode(upper, CaseMode::kSmart);
+  BindMatchers(upper, upper.grammar, CaseMode::kSmart);
   EXPECT_FALSE(upper.expression->case_fold);
   // insensitive: folds regardless of pattern case.
   ASSERT_OK_AND_ASSIGN(Command ins, Parse({".", "-name", "README"}));
-  ApplyCaseMode(ins, CaseMode::kInsensitive);
+  BindMatchers(ins, ins.grammar, CaseMode::kInsensitive);
   EXPECT_TRUE(ins.expression->case_fold);
   // The -i variant already folds (descriptor.fold_case), so it is left untouched.
   ASSERT_OK_AND_ASSIGN(Command iname, Parse({".", "-iname", "README"}));
-  ApplyCaseMode(iname, CaseMode::kInsensitive);
+  BindMatchers(iname, iname.grammar, CaseMode::kInsensitive);
   EXPECT_FALSE(iname.expression->case_fold);
   // sensitive is a no-op.
   ASSERT_OK_AND_ASSIGN(Command sens, Parse({".", "-name", "readme"}));
-  ApplyCaseMode(sens, CaseMode::kSensitive);
+  BindMatchers(sens, sens.grammar, CaseMode::kSensitive);
   EXPECT_FALSE(sens.expression->case_fold);
 
   ASSERT_OK_AND_ASSIGN(Command fuzzy, Parse({".", "-fuzzy", "readme"}));
-  ApplyCaseMode(fuzzy, CaseMode::kSmart);
+  BindMatchers(fuzzy, fuzzy.grammar, CaseMode::kSmart);
   EXPECT_TRUE(fuzzy.expression->case_fold);
 }
 
-TEST_F(ParserTest, ApplyCaseModeRecompilesRegexInsensitive) {
-  // A -regex node's pre-compiled matcher is recompiled case-insensitively under smart
-  // (all-lowercase pattern), so it then matches an uppercase path.
+TEST_F(ParserTest, BindMatchersCompilesRegexOnceWithFinalCaseMode) {
+  // Parsing records the pattern but does not bind an engine. The final smart-case mode compiles
+  // the matcher case-insensitively once, so it matches an uppercase path.
   ASSERT_OK_AND_ASSIGN(Command cmd, Parse({".", "-regex", ".*readme.*"}));
-  ASSERT_THAT(cmd.expression->matcher, NotNull());
-  EXPECT_FALSE(cmd.expression->matcher->PartialMatch("/x/README.txt"));  // sensitive before
-  ApplyCaseMode(cmd, CaseMode::kSmart);
+  EXPECT_THAT(cmd.expression->matcher, IsNull());
+  BindMatchers(cmd, cmd.grammar, CaseMode::kSmart);
   ASSERT_THAT(cmd.expression->matcher, NotNull());
   EXPECT_TRUE(cmd.expression->matcher->PartialMatch("/x/README.txt"));  // folded after
+}
+
+TEST_F(ParserTest, BindMatchersCompilesOptionalCaptureRegexWithoutApplyingGlobalCaseMode) {
+  ASSERT_OK_AND_ASSIGN(Command capture, Parse({".", "-capture:n=([a-z]+)", "printf", ";"}));
+  BindMatchers(capture, regex::Grammar::kRe2, CaseMode::kInsensitive);
+  ASSERT_THAT(capture.expression->matcher, NotNull());
+  EXPECT_THAT(capture.expression->matcher->FullMatch("lower"), IsTrue());
+  EXPECT_THAT(capture.expression->matcher->FullMatch("UPPER"), IsFalse());
+
+  ASSERT_OK_AND_ASSIGN(Command without_regex, Parse({".", "-capture:n", "printf", ";"}));
+  BindMatchers(without_regex, regex::Grammar::kRe2, CaseMode::kInsensitive);
+  EXPECT_THAT(without_regex.expression->matcher, IsNull());
 }
 
 TEST_F(ParserTest, EnforceStyleRejectsXffExtensionUnderFind) {
@@ -468,10 +479,11 @@ TEST_F(ParserTest, EnforceStyleAcceptsBareAndSuffixTimeUnderFind) {
   EXPECT_THAT(EnforceStyle(suffix, registry::Style::kFind), IsOk());
 }
 
-TEST_F(ParserTest, RegexPredicatesCompileAMatcherAtParseTime) {
-  // -regex carries a compiled matcher on the node (so evaluation is a lock-free read).
-  ASSERT_OK_AND_ASSIGN(const Command cmd, Parse({".", "-regex", ".*\\.txt"}));
+TEST_F(ParserTest, RegexPredicatesCompileWhenFinallyBound) {
+  ASSERT_OK_AND_ASSIGN(Command cmd, Parse({".", "-regex", ".*\\.txt"}));
   ASSERT_THAT(cmd.expression, NotNull());
+  EXPECT_THAT(cmd.expression->matcher, IsNull());
+  BindMatchers(cmd, regex::Grammar::kRe2, CaseMode::kSensitive);
   ASSERT_THAT(cmd.expression->matcher, NotNull());
   EXPECT_TRUE(cmd.expression->matcher->FullMatch("a/b.txt"));
   EXPECT_FALSE(cmd.expression->matcher->FullMatch("a/b.md"));
@@ -479,7 +491,8 @@ TEST_F(ParserTest, RegexPredicatesCompileAMatcherAtParseTime) {
 
 TEST_F(ParserTest, IregexMatcherFoldsCaseFromTheDescriptor) {
   // -iregex's case-insensitivity comes from the descriptor's fold_case, not a name check.
-  ASSERT_OK_AND_ASSIGN(const Command cmd, Parse({".", "-iregex", ".*readme"}));
+  ASSERT_OK_AND_ASSIGN(Command cmd, Parse({".", "-iregex", ".*readme"}));
+  BindMatchers(cmd, regex::Grammar::kRe2, CaseMode::kSensitive);
   ASSERT_THAT(cmd.expression->matcher, NotNull());
   EXPECT_TRUE(cmd.expression->matcher->FullMatch("docs/README"));
 }
@@ -487,7 +500,8 @@ TEST_F(ParserTest, IregexMatcherFoldsCaseFromTheDescriptor) {
 TEST_F(ParserTest, NonRegexAndUncompilablePatternsLeaveMatcherNull) {
   ASSERT_OK_AND_ASSIGN(const Command name, Parse({".", "-name", "x"}));
   EXPECT_THAT(name.expression->matcher, IsNull());  // not a regex predicate
-  ASSERT_OK_AND_ASSIGN(const Command bad, Parse({".", "-regex", "a("}));
+  ASSERT_OK_AND_ASSIGN(Command bad, Parse({".", "-regex", "a("}));
+  BindMatchers(bad, regex::Grammar::kRe2, CaseMode::kSensitive);
   EXPECT_THAT(bad.expression->matcher, IsNull());  // uncompilable: null (evaluated as no-match), no parse error
 }
 
@@ -633,7 +647,7 @@ TEST_F(ParserTest, EnforceStyleAcceptsXffOperatorsUnderXff) {
 
 TEST_F(ParserTest, RegextypeSelectsTheMatcherGrammar) {
   // The grammar is resolved once from --regextype and stored on the Command, so every matcher (and
-  // the ApplyCaseMode recompile) uses it. RE2 is the default; PCRE2 is the only non-default value.
+  // final BindMatchers call uses it. RE2 is the default; PCRE2 is the only non-default value.
   ASSERT_OK_AND_ASSIGN(const Command def, Parse({".", "-regex", ".*"}));
   EXPECT_THAT(def.grammar, regex::Grammar::kRe2);  // no --regextype -> RE2
 

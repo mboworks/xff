@@ -123,10 +123,13 @@ struct ConformanceTest : ::testing::Test {
     std::vector<std::string> argv = globals;
     argv.push_back(root_.string());
     argv.insert(argv.end(), expr.begin(), expr.end());
-    const auto command = parser::Parse(argv);
+    auto command = parser::Parse(argv);
     EXPECT_THAT(command, IsOk());
     std::vector<std::string> lines;
     if (command.ok()) {
+      parser::BindMatchers(
+          *command, parser::GrammarFromGlobals(command->globals),
+          parser::ResolveCaseMode(command->globals, registry::Style::kXff));
       engine::RunFind(
           *command, fs_,
           [&](std::string_view record) {
