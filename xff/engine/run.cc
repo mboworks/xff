@@ -715,9 +715,10 @@ absl::StatusOr<GrepContext> ResolveGrepContext(const std::vector<std::string>& g
   return result;
 }
 
-// xff's modern output selector (leading globals, last wins, default plain):
-// --format=plain|nul|jsonl, with -0 a shorthand for NUL. find's -print/-print0
-// keep their fixed formats; this drives only the implicit (default) print.
+// xff's output selector (position-independent globals, last wins, default plain):
+// --format=plain|nul|jsonl|csv|tsv|aligned|markdown|md|tree, with -0 a shorthand
+// for NUL. find's -print/-print0 keep their fixed formats; this drives only the
+// implicit (default) print.
 render::Format ResolveFormat(const std::vector<std::string>& globals) {
   render::Format format = render::Format::kPlain;
   for (const std::string& global : globals) {
