@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 04:49:31</td>
+            <td class="headerValue">2026-09-10 05:17:01</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryMed">93.3&nbsp;%</td>
@@ -196,9 +196,9 @@
 <span id="L116"><span class="lineNum">     116</span>                 :             :     std::vector&lt;std::unique_ptr&lt;CustomPattern&gt;&gt; custom)</span>
 <span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">         833 :     : of_re_(std::move(of_re)), tail_re_(std::move(tail_re)), custom_(std::move(custom)) {}</span></span>
 <span id="L118"><span class="lineNum">     118</span>                 :             : </span>
-<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">        1651 : Matcher::Matcher(Matcher&amp;&amp;) noexcept = default;</span></span>
+<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">        1649 : Matcher::Matcher(Matcher&amp;&amp;) noexcept = default;</span></span>
 <span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaUNC">           0 : Matcher&amp; Matcher::operator=(Matcher&amp;&amp;) noexcept = default;</span></span>
-<span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">        2484 : Matcher::~Matcher() = default;</span></span>
+<span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">        2482 : Matcher::~Matcher() = default;</span></span>
 <span id="L122"><span class="lineNum">     122</span>                 :             : </span>
 <span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">         839 : absl::StatusOr&lt;Matcher&gt; Matcher::Make(const TailSpec&amp; tail, absl::Span&lt;const std::string&gt; custom_patterns) {</span></span>
 <span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">         839 :   auto of_re = std::make_unique&lt;RE2&gt;(kOfPattern);</span></span>
@@ -206,18 +206,18 @@
 <span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaUNC">           0 :     return absl::InternalError(absl::StrCat(&quot;shard 'of' pattern failed to compile: &quot;, of_re-&gt;error()));</span></span>
 <span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaUNC">           0 :   }</span></span>
 <span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">         839 :   std::unique_ptr&lt;RE2&gt; tail_re;</span></span>
-<span id="L129"><span class="lineNum">     129</span> [<span class="tlaGBC" title="branch 0 was taken 836 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 835 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">         839 :   if (tail.enabled &amp;&amp; !tail.pattern.empty()) {</span></span>
-<span id="L130"><span class="lineNum">     130</span>                 :<span class="tlaGNC">         835 :     tail_re = std::make_unique&lt;RE2&gt;(tail.pattern);</span></span>
-<span id="L131"><span class="lineNum">     131</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 834 times"> + </span>]:<span class="tlaGNC">         835 :     if (!tail_re-&gt;ok()) {</span></span>
+<span id="L129"><span class="lineNum">     129</span> [<span class="tlaGBC" title="branch 0 was taken 836 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 836 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 4294967296 times"> + </span>]:<span class="tlaGNC">         839 :   if (tail.enabled &amp;&amp; !tail.pattern.empty()) {</span></span>
+<span id="L130"><span class="lineNum">     130</span>                 :<span class="tlaGNC">         836 :     tail_re = std::make_unique&lt;RE2&gt;(tail.pattern);</span></span>
+<span id="L131"><span class="lineNum">     131</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 835 times"> + </span>]:<span class="tlaGNC">         836 :     if (!tail_re-&gt;ok()) {</span></span>
 <span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">           1 :       return absl::InvalidArgumentError(absl::StrCat(&quot;invalid --shard-tail regex: &quot;, tail_re-&gt;error()));</span></span>
 <span id="L133"><span class="lineNum">     133</span>                 :<span class="tlaGNC">           1 :     }</span></span>
-<span id="L134"><span class="lineNum">     134</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 832 times"> + </span>]:<span class="tlaGNC">         834 :     if (tail_re-&gt;NumberOfCapturingGroups() != 1) {</span></span>
+<span id="L134"><span class="lineNum">     134</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 833 times"> + </span>]:<span class="tlaGNC">         835 :     if (tail_re-&gt;NumberOfCapturingGroups() != 1) {</span></span>
 <span id="L135"><span class="lineNum">     135</span>                 :<span class="tlaGNC">           2 :       return absl::InvalidArgumentError(</span></span>
 <span id="L136"><span class="lineNum">     136</span>                 :<span class="tlaGNC">           2 :           absl::StrCat(</span></span>
 <span id="L137"><span class="lineNum">     137</span>                 :<span class="tlaGNC">           2 :               &quot;--shard-tail regex must have exactly one capturing group (the dup), got &quot;,</span></span>
 <span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">           2 :               tail_re-&gt;NumberOfCapturingGroups()));</span></span>
 <span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">           2 :     }</span></span>
-<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">         834 :   }</span></span>
+<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">         835 :   }</span></span>
 <span id="L141"><span class="lineNum">     141</span>                 :<span class="tlaGNC">         836 :   std::vector&lt;std::unique_ptr&lt;CustomPattern&gt;&gt; custom;</span></span>
 <span id="L142"><span class="lineNum">     142</span>         [<span class="tlaGBC" title="branch 0 was taken 9 times"> + </span><span class="tlaGBC" title="branch 1 was taken 833 times"> + </span>]:<span class="tlaGNC">         836 :   for (const std::string&amp; pattern : custom_patterns) {</span></span>
 <span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">           9 :     auto re = std::make_unique&lt;RE2&gt;(pattern);</span></span>

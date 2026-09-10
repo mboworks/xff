@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 04:49:31</td>
+            <td class="headerValue">2026-09-10 05:17:01</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -817,7 +817,7 @@
 <span id="L733"><span class="lineNum">     733</span>                 :<span class="tlaGNC">         501 :       [](std::string_view path, absl::Status status) {</span></span>
 <span id="L734"><span class="lineNum">     734</span>                 :<span class="tlaGNC">          62 :         std::cerr &lt;&lt; &quot;xff: &quot; &lt;&lt; path &lt;&lt; &quot;: &quot; &lt;&lt; status.message() &lt;&lt; &quot;\n&quot;;</span></span>
 <span id="L735"><span class="lineNum">     735</span>                 :<span class="tlaGNC">          62 :       },</span></span>
-<span id="L736"><span class="lineNum">     736</span>                 :<span class="tlaGNC">         501 :       style);  // mode-scoped traversal defaults (modern -&gt; sorted + parallel; find -&gt; unordered)</span></span>
+<span id="L736"><span class="lineNum">     736</span>                 :<span class="tlaGNC">         501 :       style);  // style-scoped traversal defaults (xff -&gt; sorted + bounded; find/rg -&gt; unordered)</span></span>
 <span id="L737"><span class="lineNum">     737</span>         [<span class="tlaGBC" title="branch 0 was taken 61 times"> + </span><span class="tlaGBC" title="branch 1 was taken 440 times"> + </span>]:<span class="tlaGNC">         501 :   if (result.errors != 0) {</span></span>
 <span id="L738"><span class="lineNum">     738</span>                 :<span class="tlaGNC">          61 :     return 2;  // an error outranks match status</span></span>
 <span id="L739"><span class="lineNum">     739</span>                 :<span class="tlaGNC">          61 :   }</span></span>
