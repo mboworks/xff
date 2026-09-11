@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-10 23:23:57</td>
+            <td class="headerValue">2026-09-11 10:11:52</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">97.8&nbsp;%</td>
@@ -2534,20 +2534,20 @@
 <span id="L2424"><span class="lineNum">    2424</span>                 :<span class="tlaGNC">          36 :   };</span></span>
 <span id="L2425"><span class="lineNum">    2425</span>                 :<span class="tlaGNC">          36 : }</span></span>
 <span id="L2426"><span class="lineNum">    2426</span>                 :             : </span>
-<span id="L2427"><span class="lineNum">    2427</span>                 :<span class="tlaGNC">         776 : absl::Span&lt;const LsColumn&gt; LsColumns() {</span></span>
-<span id="L2428"><span class="lineNum">    2428</span>                 :<span class="tlaGNC">         776 :   static constexpr auto kColumns = std::to_array&lt;LsColumn&gt;({</span></span>
-<span id="L2429"><span class="lineNum">    2429</span>                 :<span class="tlaGNC">         776 :       {.align = format::Align::kRight, .min_width = 8},  // inode</span></span>
-<span id="L2430"><span class="lineNum">    2430</span>                 :<span class="tlaGNC">         776 :       {.align = format::Align::kRight, .min_width = 5},  // 1 KiB blocks</span></span>
-<span id="L2431"><span class="lineNum">    2431</span>                 :<span class="tlaGNC">         776 :       {.align = format::Align::kLeft, .min_width = 10},  // symbolic permissions (fixed width)</span></span>
-<span id="L2432"><span class="lineNum">    2432</span>                 :<span class="tlaGNC">         776 :       {.align = format::Align::kRight, .min_width = 2},  // link count</span></span>
-<span id="L2433"><span class="lineNum">    2433</span>                 :<span class="tlaGNC">         776 :       {.align = format::Align::kLeft, .min_width = 8},   // owner</span></span>
-<span id="L2434"><span class="lineNum">    2434</span>                 :<span class="tlaGNC">         776 :       {.align = format::Align::kLeft, .min_width = 8},   // group</span></span>
-<span id="L2435"><span class="lineNum">    2435</span>                 :<span class="tlaGNC">         776 :       {.align = format::Align::kRight, .min_width = 8},  // size (bytes)</span></span>
-<span id="L2436"><span class="lineNum">    2436</span>                 :<span class="tlaGNC">         776 :       {.align = format::Align::kLeft, .min_width = 12},  // time</span></span>
-<span id="L2437"><span class="lineNum">    2437</span>                 :<span class="tlaGNC">         776 :       {.align = format::Align::kLeft, .min_width = 0},   // path (trailing, unpadded)</span></span>
-<span id="L2438"><span class="lineNum">    2438</span>                 :<span class="tlaGNC">         776 :   });</span></span>
-<span id="L2439"><span class="lineNum">    2439</span>                 :<span class="tlaGNC">         776 :   return kColumns;</span></span>
-<span id="L2440"><span class="lineNum">    2440</span>                 :<span class="tlaGNC">         776 : }</span></span>
+<span id="L2427"><span class="lineNum">    2427</span>                 :<span class="tlaGNC">         775 : absl::Span&lt;const LsColumn&gt; LsColumns() {</span></span>
+<span id="L2428"><span class="lineNum">    2428</span>                 :<span class="tlaGNC">         775 :   static constexpr auto kColumns = std::to_array&lt;LsColumn&gt;({</span></span>
+<span id="L2429"><span class="lineNum">    2429</span>                 :<span class="tlaGNC">         775 :       {.align = format::Align::kRight, .min_width = 8},  // inode</span></span>
+<span id="L2430"><span class="lineNum">    2430</span>                 :<span class="tlaGNC">         775 :       {.align = format::Align::kRight, .min_width = 5},  // 1 KiB blocks</span></span>
+<span id="L2431"><span class="lineNum">    2431</span>                 :<span class="tlaGNC">         775 :       {.align = format::Align::kLeft, .min_width = 10},  // symbolic permissions (fixed width)</span></span>
+<span id="L2432"><span class="lineNum">    2432</span>                 :<span class="tlaGNC">         775 :       {.align = format::Align::kRight, .min_width = 2},  // link count</span></span>
+<span id="L2433"><span class="lineNum">    2433</span>                 :<span class="tlaGNC">         775 :       {.align = format::Align::kLeft, .min_width = 8},   // owner</span></span>
+<span id="L2434"><span class="lineNum">    2434</span>                 :<span class="tlaGNC">         775 :       {.align = format::Align::kLeft, .min_width = 8},   // group</span></span>
+<span id="L2435"><span class="lineNum">    2435</span>                 :<span class="tlaGNC">         775 :       {.align = format::Align::kRight, .min_width = 8},  // size (bytes)</span></span>
+<span id="L2436"><span class="lineNum">    2436</span>                 :<span class="tlaGNC">         775 :       {.align = format::Align::kLeft, .min_width = 12},  // time</span></span>
+<span id="L2437"><span class="lineNum">    2437</span>                 :<span class="tlaGNC">         775 :       {.align = format::Align::kLeft, .min_width = 0},   // path (trailing, unpadded)</span></span>
+<span id="L2438"><span class="lineNum">    2438</span>                 :<span class="tlaGNC">         775 :   });</span></span>
+<span id="L2439"><span class="lineNum">    2439</span>                 :<span class="tlaGNC">         775 :   return kColumns;</span></span>
+<span id="L2440"><span class="lineNum">    2440</span>                 :<span class="tlaGNC">         775 : }</span></span>
 <span id="L2441"><span class="lineNum">    2441</span>                 :             : </span>
 <span id="L2442"><span class="lineNum">    2442</span>                 :             : namespace {</span>
 <span id="L2443"><span class="lineNum">    2443</span>                 :             : </span>
@@ -2810,10 +2810,10 @@
 <span id="L2698"><span class="lineNum">    2698</span>                 :             : // Pre-walk validation of the --diff-ignore / --diff-ignore-matching values: runs the same</span>
 <span id="L2699"><span class="lineNum">    2699</span>                 :             : // ApplyDiffIgnore the per-entry -diff uses against a throwaway DiffOptions, so the token set and</span>
 <span id="L2700"><span class="lineNum">    2700</span>                 :             : // the regex share one source of truth with the apply path. See the header for the contract.</span>
-<span id="L2701"><span class="lineNum">    2701</span>                 :<span class="tlaGNC">         818 : absl::Status ValidateDiffIgnore(std::string_view tokens, std::string_view matching) {</span></span>
-<span id="L2702"><span class="lineNum">    2702</span>                 :<span class="tlaGNC">         818 :   mbo::diff::DiffOptions options;</span></span>
-<span id="L2703"><span class="lineNum">    2703</span>                 :<span class="tlaGNC">         818 :   return ApplyDiffIgnore(tokens, matching, options);</span></span>
-<span id="L2704"><span class="lineNum">    2704</span>                 :<span class="tlaGNC">         818 : }</span></span>
+<span id="L2701"><span class="lineNum">    2701</span>                 :<span class="tlaGNC">         817 : absl::Status ValidateDiffIgnore(std::string_view tokens, std::string_view matching) {</span></span>
+<span id="L2702"><span class="lineNum">    2702</span>                 :<span class="tlaGNC">         817 :   mbo::diff::DiffOptions options;</span></span>
+<span id="L2703"><span class="lineNum">    2703</span>                 :<span class="tlaGNC">         817 :   return ApplyDiffIgnore(tokens, matching, options);</span></span>
+<span id="L2704"><span class="lineNum">    2704</span>                 :<span class="tlaGNC">         817 : }</span></span>
 <span id="L2705"><span class="lineNum">    2705</span>                 :             : </span>
 <span id="L2706"><span class="lineNum">    2706</span>                 :<span class="tlaGNC">        1460 : absl::Status ValidateSizeArgs(const parser::Expr&amp; expr) {</span></span>
 <span id="L2707"><span class="lineNum">    2707</span>         [<span class="tlaGBC" title="branch 0 was taken 1065 times"> + </span><span class="tlaGBC" title="branch 1 was taken 395 times"> + </span>]:<span class="tlaGNC">        1460 :   if (expr.kind == parser::Expr::Kind::kPredicate) {</span></span>
