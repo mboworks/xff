@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-11 13:10:00</td>
+            <td class="headerValue">2026-09-11 17:04:48</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -112,18 +112,18 @@
 <span id="L32"><span class="lineNum">      32</span>                 :             : </span>
 <span id="L33"><span class="lineNum">      33</span>                 :             : namespace xff::cli {</span>
 <span id="L34"><span class="lineNum">      34</span>                 :             : </span>
-<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">         714 : absl::StatusOr&lt;std::size_t&gt; ResolveHelpWidth(std::optional&lt;std::string_view&gt; flag, std::size_t detected_cols) {</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">         715 : absl::StatusOr&lt;std::size_t&gt; ResolveHelpWidth(std::optional&lt;std::string_view&gt; flag, std::size_t detected_cols) {</span></span>
 <span id="L36"><span class="lineNum">      36</span>                 :             :   // A positive width narrower than the minimum wraps at the minimum instead; 0 (no</span>
 <span id="L37"><span class="lineNum">      37</span>                 :             :   // wrap) is exempt.</span>
-<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">         714 :   const auto clamp = [](std::size_t cols) -&gt; std::size_t {</span></span>
-<span id="L39"><span class="lineNum">      39</span> [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 702 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 5 times"> + </span>]:<span class="tlaGNC">         709 :     return (cols != 0 &amp;&amp; cols &lt; kMinHelpWidth) ? kMinHelpWidth : cols;</span></span>
-<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">         709 :   };</span></span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">         715 :   const auto clamp = [](std::size_t cols) -&gt; std::size_t {</span></span>
+<span id="L39"><span class="lineNum">      39</span> [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 703 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 5 times"> + </span>]:<span class="tlaGNC">         710 :     return (cols != 0 &amp;&amp; cols &lt; kMinHelpWidth) ? kMinHelpWidth : cols;</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">         710 :   };</span></span>
 <span id="L41"><span class="lineNum">      41</span>                 :             :   // auto: wrap to the terminal width when it is known, else do not wrap (0). Piped /</span>
 <span id="L42"><span class="lineNum">      42</span>                 :             :   // redirected output stays full-width and byte-stable; a real terminal still wraps.</span>
-<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">         714 :   const auto automatic = [&amp;clamp, detected_cols] { return clamp(detected_cols); };</span></span>
-<span id="L44"><span class="lineNum">      44</span>         [<span class="tlaGBC" title="branch 0 was taken 702 times"> + </span><span class="tlaGBC" title="branch 1 was taken 12 times"> + </span>]:<span class="tlaGNC">         714 :   if (!flag.has_value()) {</span></span>
-<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">         702 :     return automatic();</span></span>
-<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">         702 :   }</span></span>
+<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">         715 :   const auto automatic = [&amp;clamp, detected_cols] { return clamp(detected_cols); };</span></span>
+<span id="L44"><span class="lineNum">      44</span>         [<span class="tlaGBC" title="branch 0 was taken 703 times"> + </span><span class="tlaGBC" title="branch 1 was taken 12 times"> + </span>]:<span class="tlaGNC">         715 :   if (!flag.has_value()) {</span></span>
+<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">         703 :     return automatic();</span></span>
+<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">         703 :   }</span></span>
 <span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">          12 :   const std::string value = absl::AsciiStrToLower(*flag);</span></span>
 <span id="L48"><span class="lineNum">      48</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 10 times"> + </span>]:<span class="tlaGNC">          12 :   if (value == &quot;auto&quot;) {</span></span>
 <span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">           2 :     return automatic();</span></span>
@@ -139,10 +139,10 @@
 <span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">           5 :   return clamp(cols);  // an explicit --width=0 means no wrapping, same as &quot;none&quot;</span></span>
 <span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">           7 : }</span></span>
 <span id="L61"><span class="lineNum">      61</span>                 :             : </span>
-<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">         707 : std::size_t DetectTerminalWidth() {</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">         708 : std::size_t DetectTerminalWidth() {</span></span>
 <span id="L63"><span class="lineNum">      63</span>                 :             :   // $COLUMNS wins when set to a positive integer - the conventional override,</span>
 <span id="L64"><span class="lineNum">      64</span>                 :             :   // honored even off a tty so a caller can force a width. Read through the env cache.</span>
-<span id="L65"><span class="lineNum">      65</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 704 times"> + </span>]:<span class="tlaGNC">         707 :   if (const std::optional&lt;std::string&gt; columns = env::Get(&quot;COLUMNS&quot;)) {</span></span>
+<span id="L65"><span class="lineNum">      65</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 705 times"> + </span>]:<span class="tlaGNC">         708 :   if (const std::optional&lt;std::string&gt; columns = env::Get(&quot;COLUMNS&quot;)) {</span></span>
 <span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">           3 :     std::size_t cols = 0;</span></span>
 <span id="L67"><span class="lineNum">      67</span> [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">           3 :     if (absl::SimpleAtoi(*columns, &amp;cols) &amp;&amp; cols &gt; 0) {</span></span>
 <span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">           1 :       return cols;</span></span>
@@ -150,14 +150,14 @@
 <span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">           3 :   }</span></span>
 <span id="L71"><span class="lineNum">      71</span>                 :             :   // Otherwise ask the tty for its width; ioctl / winsize are the C terminal API</span>
 <span id="L72"><span class="lineNum">      72</span>                 :             :   // (ioctl is variadic - the one place we must call a C vararg function).</span>
-<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">         706 :   struct winsize ws = {};</span></span>
+<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">         707 :   struct winsize ws = {};</span></span>
 <span id="L74"><span class="lineNum">      74</span>                 :             :   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)</span>
-<span id="L75"><span class="lineNum">      75</span> [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 704 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">         706 :   if (::isatty(STDOUT_FILENO) != 0 &amp;&amp; ::ioctl(STDOUT_FILENO, TIOCGWINSZ, &amp;ws) == 0 &amp;&amp; ws.ws_col &gt; 0) {</span></span>
+<span id="L75"><span class="lineNum">      75</span> [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 705 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">         707 :   if (::isatty(STDOUT_FILENO) != 0 &amp;&amp; ::ioctl(STDOUT_FILENO, TIOCGWINSZ, &amp;ws) == 0 &amp;&amp; ws.ws_col &gt; 0) {</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 1 time"> + </span>]
 <span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">           1 :     return ws.ws_col;</span></span>
 <span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">         705 :   return 0;</span></span>
-<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">         706 : }</span></span>
+<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">         706 :   return 0;</span></span>
+<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">         707 : }</span></span>
 <span id="L80"><span class="lineNum">      80</span>                 :             : </span>
 <span id="L81"><span class="lineNum">      81</span>                 :             : }  // namespace xff::cli</span>
         </pre>
