@@ -44,17 +44,17 @@ struct RegexTest : ::testing::Test {};
 
 TEST_F(RegexTest, FullMatchAnchorsBothEnds) {
   ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile(".*\\.txt", /*case_insensitive=*/false));
-  EXPECT_TRUE(matcher.FullMatch("a/b/c.txt"));
-  EXPECT_FALSE(matcher.FullMatch("c.txt.bak"));  // trailing text -> not a whole-string match
-  EXPECT_FALSE(matcher.FullMatch("c.md"));
+  EXPECT_THAT(matcher.FullMatch("a/b/c.txt"), IsTrue());
+  EXPECT_THAT(matcher.FullMatch("c.txt.bak"), IsFalse());  // trailing text -> not a whole-string match
+  EXPECT_THAT(matcher.FullMatch("c.md"), IsFalse());
 }
 
 TEST_F(RegexTest, PartialMatchIsUnanchored) {
   ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("c\\.txt", /*case_insensitive=*/false));
-  EXPECT_TRUE(matcher.PartialMatch("a/b/c.txt"));  // matches a substring (unlike FullMatch)
-  EXPECT_TRUE(matcher.PartialMatch("c.txt.bak"));  // trailing text is fine for a partial match
-  EXPECT_FALSE(matcher.PartialMatch("c.md"));      // still must occur somewhere
-  EXPECT_FALSE(matcher.FullMatch("a/b/c.txt"));    // the same pattern does not match the whole string
+  EXPECT_THAT(matcher.PartialMatch("a/b/c.txt"), IsTrue());  // matches a substring (unlike FullMatch)
+  EXPECT_THAT(matcher.PartialMatch("c.txt.bak"), IsTrue());  // trailing text is fine for a partial match
+  EXPECT_THAT(matcher.PartialMatch("c.md"), IsFalse());      // still must occur somewhere
+  EXPECT_THAT(matcher.FullMatch("a/b/c.txt"), IsFalse());    // the same pattern does not match the whole string
 }
 
 TEST_F(RegexTest, FindFirstReturnsLeftmostMatchSpan) {
@@ -66,9 +66,9 @@ TEST_F(RegexTest, FindFirstReturnsLeftmostMatchSpan) {
 
 TEST_F(RegexTest, CaseInsensitiveFoldsCase) {
   ASSERT_OK_AND_ASSIGN(const Matcher folded, Matcher::Compile("readme", /*case_insensitive=*/true));
-  EXPECT_TRUE(folded.FullMatch("README"));
+  EXPECT_THAT(folded.FullMatch("README"), IsTrue());
   ASSERT_OK_AND_ASSIGN(const Matcher exact, Matcher::Compile("readme", /*case_insensitive=*/false));
-  EXPECT_FALSE(exact.FullMatch("README"));
+  EXPECT_THAT(exact.FullMatch("README"), IsFalse());
 }
 
 TEST_F(RegexTest, InvalidPatternReturnsError) {
@@ -77,14 +77,14 @@ TEST_F(RegexTest, InvalidPatternReturnsError) {
 
 TEST_F(RegexTest, Re2IsTheExplicitDefaultGrammar) {
   ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("a.c", /*case_insensitive=*/false, Grammar::kRe2));
-  EXPECT_TRUE(matcher.FullMatch("abc"));
+  EXPECT_THAT(matcher.FullMatch("abc"), IsTrue());
 }
 
 TEST_F(RegexTest, Pcre2GrammarIsNotBuiltInAndReportsUnimplemented) {
   // No PCRE2 backend is registered in this (lean) test binary, so Compile reports the grammar as
   // unavailable -- a distinct Unimplemented state from an InvalidArgument for a bad pattern, and
   // never a silent fallback to RE2. A full build links the real backend and this succeeds.
-  EXPECT_FALSE(Pcre2Available());
+  EXPECT_THAT(Pcre2Available(), IsFalse());
   EXPECT_THAT(
       Matcher::Compile("a.c", /*case_insensitive=*/false, Grammar::kPcre2), StatusIs(absl::StatusCode::kUnimplemented));
 }
@@ -93,7 +93,7 @@ TEST_F(RegexTest, FullMatchCapturesReturnsGroups) {
   ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("(.*)/([^/]+)\\.(.*)", /*case_insensitive=*/false));
   const auto captures = matcher.FullMatchCaptures("a/b/c.txt");
   EXPECT_THAT(captures, Optional(ElementsAre("a/b/c.txt", "a/b", "c", "txt")));  // [0]=whole match, then the 3 groups
-  EXPECT_FALSE(matcher.FullMatchCaptures("nomatch").has_value());                // no full match -> nullopt
+  EXPECT_THAT(matcher.FullMatchCaptures("nomatch"), Eq(std::nullopt));           // no full match -> nullopt
 }
 
 TEST_F(RegexTest, FullMatchCapturesWithNoGroupsReturnsWholeMatchOnly) {
@@ -118,18 +118,18 @@ TEST_F(RegexTest, ExactGrammarMatchesLiterally) {
   // kExact is a literal engine: metacharacters are plain text, FullMatch is equality, PartialMatch a
   // substring test. It is a core grammar, always available, and never fails to compile.
   ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("3.50", /*case_insensitive=*/false, Grammar::kExact));
-  EXPECT_TRUE(matcher.FullMatch("3.50"));
-  EXPECT_FALSE(matcher.FullMatch("3X50"));   // '.' is literal, not a wildcard
-  EXPECT_FALSE(matcher.FullMatch("x3.50"));  // FullMatch is whole-string equality
-  EXPECT_TRUE(matcher.PartialMatch("price 3.50 now"));
-  EXPECT_FALSE(matcher.PartialMatch("price 3X50"));
+  EXPECT_THAT(matcher.FullMatch("3.50"), IsTrue());
+  EXPECT_THAT(matcher.FullMatch("3X50"), IsFalse());   // '.' is literal, not a wildcard
+  EXPECT_THAT(matcher.FullMatch("x3.50"), IsFalse());  // FullMatch is whole-string equality
+  EXPECT_THAT(matcher.PartialMatch("price 3.50 now"), IsTrue());
+  EXPECT_THAT(matcher.PartialMatch("price 3X50"), IsFalse());
 }
 
 TEST_F(RegexTest, ExactGrammarCompilesAnyPatternAndFindsTheSpan) {
   // A pattern that is not a valid regex is a fine literal (never an InvalidArgument), and FindFirst
   // reports the literal span (offset + pattern length), 1:1 with the old -grep EXACT substring path.
   ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("foo(bar", /*case_insensitive=*/false, Grammar::kExact));
-  EXPECT_TRUE(matcher.PartialMatch("call foo(bar) now"));
+  EXPECT_THAT(matcher.PartialMatch("call foo(bar) now"), IsTrue());
   EXPECT_THAT(matcher.FindFirst("aXfoo(barX"), Optional(Pair(Eq(2U), Eq(7U))));  // "foo(bar" at offset 2, len 7
   EXPECT_THAT(matcher.FindFirst("no match"), Eq(std::nullopt));
   EXPECT_THAT(matcher.Rewrite("x foo(bar y foo(bar", "Z", /*global=*/true), "x Z y Z");  // literal replace
@@ -152,11 +152,11 @@ TEST_F(RegexTest, UnknownGrammarReportsInternalError) {
 
 TEST_F(RegexTest, ExactGrammarCaseInsensitiveFoldsAsciiCase) {
   ASSERT_OK_AND_ASSIGN(const Matcher folded, Matcher::Compile("Readme", /*case_insensitive=*/true, Grammar::kExact));
-  EXPECT_TRUE(folded.FullMatch("README"));
-  EXPECT_TRUE(folded.PartialMatch("the readme file"));
+  EXPECT_THAT(folded.FullMatch("README"), IsTrue());
+  EXPECT_THAT(folded.PartialMatch("the readme file"), IsTrue());
   EXPECT_THAT(folded.FindFirst("see README now"), Optional(Pair(Eq(4U), Eq(6U))));  // span in the original text
   ASSERT_OK_AND_ASSIGN(const Matcher exact, Matcher::Compile("Readme", /*case_insensitive=*/false, Grammar::kExact));
-  EXPECT_FALSE(exact.FullMatch("README"));
+  EXPECT_THAT(exact.FullMatch("README"), IsFalse());
 }
 
 TEST_F(RegexTest, ExactGrammarCapturesTheWholeLiteralMatch) {
@@ -170,28 +170,28 @@ TEST_F(RegexTest, FnmatchGrammarIsAWholeStringWildcard) {
   // '.' is literal. A core grammar; Compile never fails.
   ASSERT_OK_AND_ASSIGN(
       const Matcher matcher, Matcher::Compile("a*.txt", /*case_insensitive=*/false, Grammar::kFnmatch));
-  EXPECT_TRUE(matcher.FullMatch("a.txt"));
-  EXPECT_TRUE(matcher.FullMatch("abc.txt"));
-  EXPECT_TRUE(matcher.FullMatch("a/b/c.txt"));  // '*' spans '/' (no FNM_PATHNAME - flat, like -path)
-  EXPECT_FALSE(matcher.FullMatch("a.md"));
-  EXPECT_FALSE(matcher.FullMatch("xa.txt"));  // FullMatch is anchored (whole string)
+  EXPECT_THAT(matcher.FullMatch("a.txt"), IsTrue());
+  EXPECT_THAT(matcher.FullMatch("abc.txt"), IsTrue());
+  EXPECT_THAT(matcher.FullMatch("a/b/c.txt"), IsTrue());  // '*' spans '/' (no FNM_PATHNAME - flat, like -path)
+  EXPECT_THAT(matcher.FullMatch("a.md"), IsFalse());
+  EXPECT_THAT(matcher.FullMatch("xa.txt"), IsFalse());  // FullMatch is anchored (whole string)
 }
 
 TEST_F(RegexTest, FnmatchPartialMatchWrapsInStars) {
   // PartialMatch wraps the pattern in `*…*` so it matches anywhere; FindFirst reports the whole text
   // as the span (fnmatch is a whole-string test, not a sub-span search).
   ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("f?o", /*case_insensitive=*/false, Grammar::kFnmatch));
-  EXPECT_TRUE(matcher.PartialMatch("a foo b"));  // contains an f-any-o triple
-  EXPECT_FALSE(matcher.PartialMatch("a fizz b"));
+  EXPECT_THAT(matcher.PartialMatch("a foo b"), IsTrue());  // contains an f-any-o triple
+  EXPECT_THAT(matcher.PartialMatch("a fizz b"), IsFalse());
   EXPECT_THAT(matcher.FindFirst("a foo b"), Optional(Pair(Eq(0U), Eq(7U))));  // whole text is the match
   EXPECT_THAT(matcher.FindFirst("nope"), Eq(std::nullopt));
 }
 
 TEST_F(RegexTest, FnmatchCaseInsensitiveUsesCasefold) {
   ASSERT_OK_AND_ASSIGN(const Matcher folded, Matcher::Compile("R*E", /*case_insensitive=*/true, Grammar::kFnmatch));
-  EXPECT_TRUE(folded.FullMatch("readme"));
+  EXPECT_THAT(folded.FullMatch("readme"), IsTrue());
   ASSERT_OK_AND_ASSIGN(const Matcher exact, Matcher::Compile("R*E", /*case_insensitive=*/false, Grammar::kFnmatch));
-  EXPECT_FALSE(exact.FullMatch("readme"));
+  EXPECT_THAT(exact.FullMatch("readme"), IsFalse());
 }
 
 TEST_F(RegexTest, FnmatchCapturesItsWholeMatchAndDoesNotRewrite) {
@@ -215,18 +215,18 @@ TEST_F(RegexTest, GlobGrammarIsPathSegmentAware) {
   // kGlob is a path-aware shell glob (translated to RE2): unlike fnmatch, `*` stops at `/`.
   ASSERT_OK_AND_ASSIGN(
       const Matcher matcher, Matcher::Compile("src/*.txt", /*case_insensitive=*/false, Grammar::kGlob));
-  EXPECT_TRUE(matcher.FullMatch("src/a.txt"));
-  EXPECT_FALSE(matcher.FullMatch("src/sub/a.txt"));  // '*' does not cross '/' (unlike FNMATCH)
-  EXPECT_FALSE(matcher.FullMatch("a.txt"));
+  EXPECT_THAT(matcher.FullMatch("src/a.txt"), IsTrue());
+  EXPECT_THAT(matcher.FullMatch("src/sub/a.txt"), IsFalse());  // '*' does not cross '/' (unlike FNMATCH)
+  EXPECT_THAT(matcher.FullMatch("a.txt"), IsFalse());
 }
 
 TEST_F(RegexTest, GlobDoubleStarCrossesDirectories) {
   // `**` is the cross-directory wildcard (the gitignore/shell globstar).
   ASSERT_OK_AND_ASSIGN(
       const Matcher matcher, Matcher::Compile("src/**/*.txt", /*case_insensitive=*/false, Grammar::kGlob));
-  EXPECT_TRUE(matcher.FullMatch("src/a.txt"));      // zero directories
-  EXPECT_TRUE(matcher.FullMatch("src/x/y/a.txt"));  // several directories
-  EXPECT_FALSE(matcher.FullMatch("other/a.txt"));
+  EXPECT_THAT(matcher.FullMatch("src/a.txt"), IsTrue());      // zero directories
+  EXPECT_THAT(matcher.FullMatch("src/x/y/a.txt"), IsTrue());  // several directories
+  EXPECT_THAT(matcher.FullMatch("other/a.txt"), IsFalse());
 }
 
 TEST_F(RegexTest, GlobTrailingDoubleStarRequiresADescendant) {
@@ -260,7 +260,7 @@ TEST_F(RegexTest, GlobDelegatesToRe2ForSpanAndPartial) {
   // Because kGlob compiles to RE2, PartialMatch is unanchored and FindFirst returns a real span
   // (unlike fnmatch's whole-text span) - so -grep's {match}/{column} work under GLOB.
   ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("f*o", /*case_insensitive=*/false, Grammar::kGlob));
-  EXPECT_TRUE(matcher.PartialMatch("a foo b"));                               // matches within the line
+  EXPECT_THAT(matcher.PartialMatch("a foo b"), IsTrue());                     // matches within the line
   EXPECT_THAT(matcher.FindFirst("a foo b"), Optional(Pair(Eq(2U), Eq(3U))));  // "foo" at offset 2, len 3
 }
 
@@ -269,10 +269,10 @@ TEST_F(RegexTest, ShglobGrammarExpandsBraceAlternation) {
   // extension-of-set pattern matches any listed alternative and nothing else.
   ASSERT_OK_AND_ASSIGN(
       const Matcher matcher, Matcher::Compile("*.{cc,h}", /*case_insensitive=*/false, Grammar::kShglob));
-  EXPECT_TRUE(matcher.FullMatch("a.cc"));
-  EXPECT_TRUE(matcher.FullMatch("a.h"));
-  EXPECT_FALSE(matcher.FullMatch("a.hpp"));  // only the listed alternatives
-  EXPECT_FALSE(matcher.FullMatch("a.o"));
+  EXPECT_THAT(matcher.FullMatch("a.cc"), IsTrue());
+  EXPECT_THAT(matcher.FullMatch("a.h"), IsTrue());
+  EXPECT_THAT(matcher.FullMatch("a.hpp"), IsFalse());  // only the listed alternatives
+  EXPECT_THAT(matcher.FullMatch("a.o"), IsFalse());
 }
 
 TEST_F(RegexTest, ShglobSupportsNestedAndEmptyAlternatives) {
@@ -310,10 +310,10 @@ TEST_F(RegexTest, ShglobKeepsGlobPathSemantics) {
   // The GLOB behavior carries over: `*` stops at `/`, alternatives may contain `/`.
   ASSERT_OK_AND_ASSIGN(
       const Matcher matcher, Matcher::Compile("{src,test}/*.cc", /*case_insensitive=*/false, Grammar::kShglob));
-  EXPECT_TRUE(matcher.FullMatch("src/a.cc"));
-  EXPECT_TRUE(matcher.FullMatch("test/a.cc"));
-  EXPECT_FALSE(matcher.FullMatch("src/sub/a.cc"));  // '*' does not cross '/'
-  EXPECT_FALSE(matcher.FullMatch("lib/a.cc"));
+  EXPECT_THAT(matcher.FullMatch("src/a.cc"), IsTrue());
+  EXPECT_THAT(matcher.FullMatch("test/a.cc"), IsTrue());
+  EXPECT_THAT(matcher.FullMatch("src/sub/a.cc"), IsFalse());  // '*' does not cross '/'
+  EXPECT_THAT(matcher.FullMatch("lib/a.cc"), IsFalse());
 }
 
 TEST_F(RegexTest, GrammarDocsCoverEveryGrammarInValueOrder) {

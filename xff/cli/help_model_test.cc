@@ -28,6 +28,7 @@ namespace {
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
+using ::testing::Ge;
 using ::testing::IsTrue;
 using ::testing::Optional;
 using ::testing::SizeIs;
@@ -153,12 +154,13 @@ TEST_F(HelpModelTest, InlineRefCarriesASemanticTargetNotAFormattedLink) {
 
 TEST_F(HelpModelTest, EntryAndExampleCarryTheirMetadata) {
   const Section section = MakeFieldsSection();
+  ASSERT_THAT(section.children, SizeIs(Ge(5U)));
   const auto& example = std::get<Example>(section.children[3].node);
   EXPECT_THAT(example.lang, Eq("sh"));
   const auto& entry = std::get<Entry>(section.children[4].node);
   EXPECT_THAT(entry.xff, IsTrue());
   EXPECT_THAT(entry.anchor, Eq("summary"));
-  EXPECT_THAT(entry.details, SizeIs(1));
+  ASSERT_THAT(entry.details, SizeIs(1));
   EXPECT_THAT(std::holds_alternative<Prose>(entry.details.front().node), IsTrue());
 }
 

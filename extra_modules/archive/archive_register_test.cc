@@ -48,6 +48,7 @@ using ::testing::Eq;
 using ::testing::Field;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
+using ::testing::IsFalse;
 using ::testing::IsTrue;
 using ::testing::Not;
 
@@ -72,11 +73,11 @@ TEST_F(ArchiveRegisterTest, TheDiveGateIsDerivedFromTheDeclaredReadFormats) {
   ASSERT_THAT(formats, Not(IsEmpty()));
   for (const ReadFormatInfo& format : formats) {
     for (const std::string& suffix : format.suffixes) {
-      EXPECT_TRUE(LooksLikeContainerName(absl::StrCat("x", suffix))) << format.name << " declares " << suffix;
+      EXPECT_THAT(LooksLikeContainerName(absl::StrCat("x", suffix)), IsTrue()) << format.name << " declares " << suffix;
     }
   }
-  EXPECT_FALSE(LooksLikeContainerName("notes.txt"));
-  EXPECT_FALSE(LooksLikeContainerName("Makefile"));
+  EXPECT_THAT(LooksLikeContainerName("notes.txt"), IsFalse());
+  EXPECT_THAT(LooksLikeContainerName("Makefile"), IsFalse());
 }
 
 TEST_F(ArchiveRegisterTest, LinkingTheExtraGivesTheCoreContainerCreation) {

@@ -26,6 +26,8 @@ namespace {
 
 using ::testing::Eq;
 using ::testing::IsEmpty;
+using ::testing::IsFalse;
+using ::testing::IsTrue;
 
 struct ColorTest : ::testing::Test {};
 
@@ -39,11 +41,12 @@ TEST_F(ColorTest, ResolveWhenLastOccurrenceWins) {
 }
 
 TEST_F(ColorTest, EnabledCombinesModeTtyAndNoColor) {
-  EXPECT_TRUE(Enabled(When::kAlways, /*stdout_is_tty=*/false, /*no_color_env=*/true));  // explicit wins over NO_COLOR
-  EXPECT_FALSE(Enabled(When::kNever, /*stdout_is_tty=*/true, /*no_color_env=*/false));
-  EXPECT_TRUE(Enabled(When::kAuto, /*stdout_is_tty=*/true, /*no_color_env=*/false));
-  EXPECT_FALSE(Enabled(When::kAuto, /*stdout_is_tty=*/false, /*no_color_env=*/false));  // not a terminal
-  EXPECT_FALSE(Enabled(When::kAuto, /*stdout_is_tty=*/true, /*no_color_env=*/true));    // NO_COLOR set
+  EXPECT_THAT(
+      Enabled(When::kAlways, /*stdout_is_tty=*/false, /*no_color_env=*/true), IsTrue());  // explicit wins over NO_COLOR
+  EXPECT_THAT(Enabled(When::kNever, /*stdout_is_tty=*/true, /*no_color_env=*/false), IsFalse());
+  EXPECT_THAT(Enabled(When::kAuto, /*stdout_is_tty=*/true, /*no_color_env=*/false), IsTrue());
+  EXPECT_THAT(Enabled(When::kAuto, /*stdout_is_tty=*/false, /*no_color_env=*/false), IsFalse());  // not a terminal
+  EXPECT_THAT(Enabled(When::kAuto, /*stdout_is_tty=*/true, /*no_color_env=*/true), IsFalse());    // NO_COLOR set
 }
 
 TEST_F(ColorTest, CodeForTypeUsesLsLikeScheme) {

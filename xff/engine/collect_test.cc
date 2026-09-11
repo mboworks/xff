@@ -61,7 +61,7 @@ TEST_F(CollectTest, AddStoresUnderTheNamedCollection) {
     collections.Add("keep", MakeVisit(path, name, root, md));
   }
   EXPECT_THAT(collections.Names(), ElementsAre("keep"));
-  EXPECT_THAT(collections.Entries("keep"), SizeIs(1));
+  ASSERT_THAT(collections.Entries("keep"), SizeIs(1));
   const CollectedEntry& entry = collections.Entries("keep").front();
   EXPECT_THAT(entry.path, Eq("./a/b.txt"));
   EXPECT_THAT(entry.name, Eq("b.txt"));
@@ -78,6 +78,7 @@ TEST_F(CollectTest, AsVisitRebuildsTheEntryForASink) {
     const std::string root = ".";
     collections.Add(kDefaultCollection, MakeVisit(path, name, root, md, 3));
   }
+  ASSERT_THAT(collections.Entries(kDefaultCollection), SizeIs(1));
   const Visit visit = collections.Entries(kDefaultCollection).front().AsVisit();
   EXPECT_THAT(visit.path, Eq("./x.txt"));
   EXPECT_THAT(visit.name, Eq("x.txt"));

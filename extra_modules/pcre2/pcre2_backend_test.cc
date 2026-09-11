@@ -40,6 +40,7 @@ using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
 using ::testing::IsEmpty;
+using ::testing::IsFalse;
 using ::testing::IsTrue;
 using ::testing::Not;
 using ::testing::Optional;
@@ -72,13 +73,13 @@ TEST_F(Pcre2BackendTest, BackreferencesMatch) {
   // A backreference is the canonical PCRE2-only feature (RE2 rejects it; see //xff/matching/regex:regex_test).
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<const RegexBackend> backend, MakePcre2Backend("(\\w+) \\1", false));
   EXPECT_THAT(backend->PartialMatch("the the fox"), IsTrue());  // doubled word
-  EXPECT_FALSE(backend->PartialMatch("the quick fox"));
+  EXPECT_THAT(backend->PartialMatch("the quick fox"), IsFalse());
 }
 
 TEST_F(Pcre2BackendTest, LookaheadMatchesAndFindsSpan) {
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<const RegexBackend> backend, MakePcre2Backend("foo(?=bar)", false));
   EXPECT_THAT(backend->PartialMatch("foobar"), IsTrue());
-  EXPECT_FALSE(backend->PartialMatch("foobaz"));
+  EXPECT_THAT(backend->PartialMatch("foobaz"), IsFalse());
   EXPECT_THAT(
       backend->FindFirst("x foobar"), Optional(Pair(Eq(2U), Eq(3U))));  // just "foo", the lookahead is zero-width
 }
@@ -97,8 +98,8 @@ TEST_F(Pcre2BackendTest, FindFirstReturnsNothingWhenThePatternDoesNotMatch) {
 TEST_F(Pcre2BackendTest, FullMatchAnchorsBothEnds) {
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<const RegexBackend> backend, MakePcre2Backend("a.c", false));
   EXPECT_THAT(backend->FullMatch("abc"), IsTrue());
-  EXPECT_FALSE(backend->FullMatch("xabc"));  // anchored: must match the whole string
-  EXPECT_FALSE(backend->FullMatch("abcx"));
+  EXPECT_THAT(backend->FullMatch("xabc"), IsFalse());  // anchored: must match the whole string
+  EXPECT_THAT(backend->FullMatch("abcx"), IsFalse());
   EXPECT_THAT(backend->PartialMatch("xabcx"), IsTrue());  // unanchored still matches within
 }
 
@@ -109,7 +110,7 @@ TEST_F(Pcre2BackendTest, FullMatchCapturesReturnsGroups) {
   EXPECT_THAT(
       backend->FullMatchCaptures("user@host"),
       Optional(ElementsAre("user@host", "user", "host")));  // [0]=whole, then groups
-  EXPECT_FALSE(backend->FullMatchCaptures("nope").has_value());
+  EXPECT_THAT(backend->FullMatchCaptures("nope"), Eq(std::nullopt));
 }
 
 TEST_F(Pcre2BackendTest, FullMatchCapturesRepresentsANonParticipatingGroupAsEmpty) {
@@ -147,7 +148,7 @@ TEST_F(Pcre2BackendTest, CaseInsensitiveFolds) {
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<const RegexBackend> folded, MakePcre2Backend("readme", true));
   EXPECT_THAT(folded->FullMatch("README"), IsTrue());
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<const RegexBackend> exact, MakePcre2Backend("readme", false));
-  EXPECT_FALSE(exact->FullMatch("README"));
+  EXPECT_THAT(exact->FullMatch("README"), IsFalse());
 }
 
 TEST_F(Pcre2BackendTest, InvalidPatternReturnsInvalidArgument) {

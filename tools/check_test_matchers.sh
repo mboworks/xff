@@ -14,18 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Guard (pre-commit): C++ code asserts with EXPECT_THAT / ASSERT_THAT and a gmock matcher. Every
-# scalar, string, floating-point, and tolerance comparison macro is forbidden in both its EXPECT_
-# and ASSERT_ form.
+# Guard (pre-commit): C++ code asserts with EXPECT_THAT / ASSERT_THAT and a gmock matcher. Scalar,
+# string, floating-point, tolerance, and boolean convenience macros are forbidden in both their
+# EXPECT_ and ASSERT_ forms.
 # Matchers compose and print far better failures: a container mismatch names the element, a
 # multi-line string diffs line by line through mbo::testing::EqualsText, and a status carries
 # its code and message. See STYLE_CPP.md ("Assertions: matchers only").
 #
-# EXPECT_TRUE / EXPECT_FALSE are NOT flagged: the style guide keeps them as the one accepted
-# exception, since they read fine on their own.
 set -euo pipefail
 
-readonly PATTERN='\b(ASSERT|EXPECT)_(EQ|NE|LT|LE|GT|GE|STREQ|STRNE|STRCASEEQ|STRCASENE|FLOAT_EQ|DOUBLE_EQ|NEAR)[[:space:]]*\('
+readonly PATTERN='\b(ASSERT|EXPECT)_(TRUE|FALSE|EQ|NE|LT|LE|GT|GE|STREQ|STRNE|STRCASEEQ|STRCASENE|FLOAT_EQ|DOUBLE_EQ|NEAR)[[:space:]]*\('
 readonly QUALIFIED_MATCHER_PATTERN='(::mbo::)?testing::[A-Z][A-Za-z0-9_]*\('
 readonly ALLOWED_QUALIFIED_UTILITY_PATTERN='testing::(TempDir|Test|TestWithParam|Values)\('
 
@@ -35,7 +33,8 @@ for file in "$@"; do
   # `//` inside a string literal can only cause a miss, never a false positive.
   hits="$(sed 's|//.*||' "${file}" | grep -nE "${PATTERN}" || true)"
   if [[ -n "${hits}" ]]; then
-    echo "${file}: use EXPECT_THAT / ASSERT_THAT with a matcher (EqualsText for multi-line text,"
+    echo "${file}: use EXPECT_THAT / ASSERT_THAT with a matcher (IsTrue / IsFalse for booleans,"
+    echo "  EqualsText for multi-line text,"
     echo "  ElementsAre / SizeIs for containers, IsOkAndHolds / StatusIs for status) - see STYLE_CPP.md:"
     while IFS= read -r hit; do
       echo "  ${file}:${hit}"

@@ -234,13 +234,13 @@ TEST_F(ParserTest, ExecPlusMarksBatchAndKeepsCommand) {
   ASSERT_OK_AND_ASSIGN(const Command cmd, Parse({".", "-exec", "echo", "{}", "+"}));
   const Expr& root = *cmd.expression;
   EXPECT_THAT(root.descriptor->name, "-exec");
-  EXPECT_TRUE(root.exec_batch);
+  EXPECT_THAT(root.exec_batch, IsTrue());
   EXPECT_THAT(root.args, ElementsAre("echo", "{}"));
 }
 
 TEST_F(ParserTest, ExecSemicolonIsNotBatch) {
   ASSERT_OK_AND_ASSIGN(const Command cmd, Parse({".", "-exec", "echo", "{}", ";"}));
-  EXPECT_FALSE(cmd.expression->exec_batch);
+  EXPECT_THAT(cmd.expression->exec_batch, IsFalse());
 }
 
 TEST_F(ParserTest, ExecPlusRequiresTrailingBrace) {
@@ -252,7 +252,7 @@ TEST_F(ParserTest, ExecPlusRequiresTrailingBrace) {
 TEST_F(ParserTest, ExecdirPlusMarksBatch) {
   ASSERT_OK_AND_ASSIGN(const Command cmd, Parse({".", "-execdir", "echo", "{}", "+"}));
   EXPECT_THAT(cmd.expression->descriptor->name, "-execdir");
-  EXPECT_TRUE(cmd.expression->exec_batch);
+  EXPECT_THAT(cmd.expression->exec_batch, IsTrue());
 }
 
 TEST_F(ParserTest, OkPlusNotSupported) {
@@ -329,26 +329,26 @@ TEST_F(ParserTest, BindMatchersFoldsSensitiveMatchers) {
   // smart: an all-lowercase glob folds; an uppercase-bearing pattern stays exact.
   ASSERT_OK_AND_ASSIGN(Command lower, Parse({".", "-name", "readme"}));
   BindMatchers(lower, lower.grammar, CaseMode::kSmart);
-  EXPECT_TRUE(lower.expression->case_fold);
+  EXPECT_THAT(lower.expression->case_fold, IsTrue());
   ASSERT_OK_AND_ASSIGN(Command upper, Parse({".", "-name", "README"}));
   BindMatchers(upper, upper.grammar, CaseMode::kSmart);
-  EXPECT_FALSE(upper.expression->case_fold);
+  EXPECT_THAT(upper.expression->case_fold, IsFalse());
   // insensitive: folds regardless of pattern case.
   ASSERT_OK_AND_ASSIGN(Command ins, Parse({".", "-name", "README"}));
   BindMatchers(ins, ins.grammar, CaseMode::kInsensitive);
-  EXPECT_TRUE(ins.expression->case_fold);
+  EXPECT_THAT(ins.expression->case_fold, IsTrue());
   // The -i variant already folds (descriptor.fold_case), so it is left untouched.
   ASSERT_OK_AND_ASSIGN(Command iname, Parse({".", "-iname", "README"}));
   BindMatchers(iname, iname.grammar, CaseMode::kInsensitive);
-  EXPECT_FALSE(iname.expression->case_fold);
+  EXPECT_THAT(iname.expression->case_fold, IsFalse());
   // sensitive is a no-op.
   ASSERT_OK_AND_ASSIGN(Command sens, Parse({".", "-name", "readme"}));
   BindMatchers(sens, sens.grammar, CaseMode::kSensitive);
-  EXPECT_FALSE(sens.expression->case_fold);
+  EXPECT_THAT(sens.expression->case_fold, IsFalse());
 
   ASSERT_OK_AND_ASSIGN(Command fuzzy, Parse({".", "-fuzzy", "readme"}));
   BindMatchers(fuzzy, fuzzy.grammar, CaseMode::kSmart);
-  EXPECT_TRUE(fuzzy.expression->case_fold);
+  EXPECT_THAT(fuzzy.expression->case_fold, IsTrue());
 }
 
 TEST_F(ParserTest, BindMatchersCompilesRegexOnceWithFinalCaseMode) {
@@ -358,7 +358,7 @@ TEST_F(ParserTest, BindMatchersCompilesRegexOnceWithFinalCaseMode) {
   EXPECT_THAT(cmd.expression->matcher, IsNull());
   BindMatchers(cmd, cmd.grammar, CaseMode::kSmart);
   ASSERT_THAT(cmd.expression->matcher, NotNull());
-  EXPECT_TRUE(cmd.expression->matcher->PartialMatch("/x/README.txt"));  // folded after
+  EXPECT_THAT(cmd.expression->matcher->PartialMatch("/x/README.txt"), IsTrue());  // folded after
 }
 
 TEST_F(ParserTest, BindMatchersCompilesOptionalCaptureRegexWithoutApplyingGlobalCaseMode) {
@@ -485,8 +485,8 @@ TEST_F(ParserTest, RegexPredicatesCompileWhenFinallyBound) {
   EXPECT_THAT(cmd.expression->matcher, IsNull());
   BindMatchers(cmd, regex::Grammar::kRe2, CaseMode::kSensitive);
   ASSERT_THAT(cmd.expression->matcher, NotNull());
-  EXPECT_TRUE(cmd.expression->matcher->FullMatch("a/b.txt"));
-  EXPECT_FALSE(cmd.expression->matcher->FullMatch("a/b.md"));
+  EXPECT_THAT(cmd.expression->matcher->FullMatch("a/b.txt"), IsTrue());
+  EXPECT_THAT(cmd.expression->matcher->FullMatch("a/b.md"), IsFalse());
 }
 
 TEST_F(ParserTest, IregexMatcherFoldsCaseFromTheDescriptor) {
@@ -494,7 +494,7 @@ TEST_F(ParserTest, IregexMatcherFoldsCaseFromTheDescriptor) {
   ASSERT_OK_AND_ASSIGN(Command cmd, Parse({".", "-iregex", ".*readme"}));
   BindMatchers(cmd, regex::Grammar::kRe2, CaseMode::kSensitive);
   ASSERT_THAT(cmd.expression->matcher, NotNull());
-  EXPECT_TRUE(cmd.expression->matcher->FullMatch("docs/README"));
+  EXPECT_THAT(cmd.expression->matcher->FullMatch("docs/README"), IsTrue());
 }
 
 TEST_F(ParserTest, NonRegexAndUncompilablePatternsLeaveMatcherNull) {

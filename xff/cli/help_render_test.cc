@@ -85,7 +85,6 @@ using ::testing::AllOf;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
-using ::testing::IsFalse;
 using ::testing::IsTrue;
 using ::testing::Lt;
 using ::testing::Not;
@@ -471,7 +470,7 @@ TEST_F(HelpTest, AnUnknownLicenseComponentIsNoDocumentAtAll) {
   // The CLI turns this into the guiding error that names the known components (see main.cc); the
   // model's job is only to refuse.
   const std::optional<Document> doc = TopicReference("license=no-such-component");
-  EXPECT_THAT(doc.has_value(), IsFalse());
+  EXPECT_THAT(doc, Eq(std::nullopt));
 }
 
 TEST_F(HelpTest, GlobalFlagTopicRendersWithGlobalTag) {
@@ -530,7 +529,7 @@ TEST_F(HelpTest, EveryAffectsTokenResolvesToARealEntry) {
   for (const GlobalFlag& flag : Globals()) {
     for (const std::string_view token : absl::StrSplit(flag.affects, ',', absl::SkipEmpty())) {
       const bool resolves = registry::Lookup(token).has_value() || LookupGlobal(token).has_value();
-      EXPECT_TRUE(resolves) << flag.name << " affects unknown entry '" << token << "'";
+      EXPECT_THAT(resolves, IsTrue()) << flag.name << " affects unknown entry '" << token << "'";
     }
   }
 }

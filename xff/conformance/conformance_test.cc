@@ -52,6 +52,8 @@
 namespace xff {
 namespace {
 
+using ::testing::IsFalse;
+using ::testing::IsTrue;
 namespace fs = ::std::filesystem;
 using ::mbo::testing::IsOk;
 using ::testing::ElementsAreArray;
@@ -70,7 +72,7 @@ struct ConformanceTest : ::testing::Test {
             / (std::string("xff_conf_") + ::testing::UnitTest::GetInstance()->current_test_info()->name());
     std::error_code ec;
     fs::remove_all(root_, ec);
-    ASSERT_TRUE(fs::create_directories(root_ / "sub"));
+    ASSERT_THAT(fs::create_directories(root_ / "sub"), IsTrue());
     fs::create_directory(root_ / "emptydir", ec);
     { std::ofstream(root_ / "a.txt") << "a"; }
     { std::ofstream(root_ / "b.md") << "bb"; }
@@ -100,7 +102,7 @@ struct ConformanceTest : ::testing::Test {
   void PinMtime(std::string_view rel, fs::file_time_type when) const {
     std::error_code ec;
     fs::last_write_time(root_ / rel, when, ec);
-    ASSERT_FALSE(ec) << "pin mtime " << rel << ": " << ec.message();
+    ASSERT_THAT(ec, IsFalse()) << "pin mtime " << rel << ": " << ec.message();
   }
 
   // The full path for a fixture entry; "" is the root itself.

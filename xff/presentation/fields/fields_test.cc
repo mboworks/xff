@@ -583,10 +583,10 @@ TEST_F(FieldsTest, MReducerIsScalarValuedNotAStream) {
   // scalar contexts), unlike the bare (unreduced) extraction.
   const Template bare = Template::Compile("{capture.b:m/(.+)/\\1/}");
   const Template reduced = Template::Compile("{capture.b:m/(.+)/\\1/;join(, )}");
-  EXPECT_TRUE(bare.HasUnreducedExtraction());
-  EXPECT_TRUE(bare.IsExtraction());
-  EXPECT_FALSE(reduced.HasUnreducedExtraction());
-  EXPECT_FALSE(reduced.IsExtraction());
+  EXPECT_THAT(bare.HasUnreducedExtraction(), IsTrue());
+  EXPECT_THAT(bare.IsExtraction(), IsTrue());
+  EXPECT_THAT(reduced.HasUnreducedExtraction(), IsFalse());
+  EXPECT_THAT(reduced.IsExtraction(), IsFalse());
 }
 
 TEST_F(FieldsTest, MReducerAppliesPerLineChainThenJoinsThenScalarChain) {
@@ -688,12 +688,12 @@ TEST_F(FieldsTest, DocumentationVocabulariesHaveStableStorage) {
 TEST_F(FieldsTest, IsKnownFieldAcceptsVocabularyRejectsUnknown) {
   // Powers --columns validation: a builtin, a qualified name, a namespace, and a capture
   // index are known; a typo is not.
-  EXPECT_TRUE(IsKnownField("path"));
-  EXPECT_TRUE(IsKnownField("mtime:%Y"));  // a name with a :qualifier
-  EXPECT_TRUE(IsKnownField("env.HOME"));  // a dynamic namespace
-  EXPECT_TRUE(IsKnownField("def.B"));
-  EXPECT_TRUE(IsKnownField("0"));  // a {0}..{N} capture index
-  EXPECT_FALSE(IsKnownField("bogus"));
+  EXPECT_THAT(IsKnownField("path"), IsTrue());
+  EXPECT_THAT(IsKnownField("mtime:%Y"), IsTrue());  // a name with a :qualifier
+  EXPECT_THAT(IsKnownField("env.HOME"), IsTrue());  // a dynamic namespace
+  EXPECT_THAT(IsKnownField("def.B"), IsTrue());
+  EXPECT_THAT(IsKnownField("0"), IsTrue());  // a {0}..{N} capture index
+  EXPECT_THAT(IsKnownField("bogus"), IsFalse());
 }
 
 }  // namespace
