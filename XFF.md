@@ -77,6 +77,19 @@ There is no project or ancestor `.xffrc` discovery: config comes from the system
 
 Skip permissions are config-only controls placed before the first section. The system file may set one of `--allow-no-config` / `--no-allow-no-config` once, one of `--allow-no-system-config` / `--no-allow-no-system-config` once and one of `--allow-no-user-config` / `--no-allow-no-user-config` once. Each pair controls only its corresponding command-line skip flag. The user file may set its user-control pair once before the first selector block. A system user-control decision is authoritative over the user file. Explicit `--xffrc` files may not contain any of these controls. Separately, `--allow-xffrc` / `--no-allow-xffrc` is a normal config-only setting usable in system defaults or any user config block; ordinary selection and precedence decide whether command-line `--xffrc=FILE` is accepted, while system policy may forbid the user from enabling it.
 
+### Config-only controls
+
+These directives are accepted only inside the stated automatic config files, not on the command line or in an explicitly loaded `--xffrc` file. An allow/deny pair is one setting: where a pair is limited to one occurrence, its positive and negative forms may not both appear.
+
+- `--allow-no-config` - authorizes the command-line `--no-config` request to suppress both automatic tiers; system config only, before the first section, and at most one of this pair
+- `--no-allow-no-config` - denies the command-line `--no-config` request; system config only, before the first section, and at most one of this pair
+- `--allow-no-system-config` - authorizes command-line `--no-system-config`; system config only, before the first section, and at most one of this pair
+- `--no-allow-no-system-config` - denies command-line `--no-system-config`; system config only, before the first section, and at most one of this pair
+- `--allow-no-user-config` - authorizes command-line `--no-user-config`; before the first section in the system or user config, and at most one of this pair per file; the system decision is authoritative
+- `--no-allow-no-user-config` - denies command-line `--no-user-config`; before the first section in the system or user config, and at most one of this pair per file; the system decision is authoritative
+- `--allow-xffrc` - allows command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config selection and last-value precedence
+- `--no-allow-xffrc` - denies command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config selection and last-value precedence
+
 ### Choosing a style
 
 Every `--config=NAME` remains active, so multiple named blocks can apply. Among built-in style selectors, the last `find`, `xff`, or `rg` selects the baseline; custom names do not change it. See `--help=styles` for the table. The invocation name (`argv[0]`) is the leading selector, so a symlink named `find` selects the find expression style and `rg` the rg style; any other name (e.g. a `mytool` symlink) activates a same-named config block over the xff default. Explicit `--config` selectors stack on top.

@@ -417,10 +417,14 @@ TEST_F(HelpTest, ConfigTopicDocumentsTiersStyleAndArming) {
   // selector stacking (--config / argv[0]), policy-authorized config suppression, and the
   // arming rule for dangerous --xffrc directives.
   EXPECT_THAT(
-      RenderTopicDoc("config"), AllOf(
-                                    HasSubstr("system config"), HasSubstr("command line"), HasSubstr("--config"),
-                                    HasSubstr("multiple named blocks can apply"), HasSubstr("argv[0]"),
-                                    HasSubstr("may still be inspected for policy"), HasSubstr("--allow-exec")));
+      RenderTopicDoc("config"),
+      AllOf(
+          HasSubstr("system config"), HasSubstr("command line"), HasSubstr("--config"),
+          HasSubstr("multiple named blocks can apply"), HasSubstr("argv[0]"),
+          HasSubstr("may still be inspected for policy"), HasSubstr("--allow-exec"), HasSubstr("Config-only controls"),
+          HasSubstr("--allow-no-config"), HasSubstr("--no-allow-no-config"), HasSubstr("--allow-no-system-config"),
+          HasSubstr("--no-allow-no-system-config"), HasSubstr("--allow-no-user-config"),
+          HasSubstr("--no-allow-no-user-config"), HasSubstr("--allow-xffrc"), HasSubstr("--no-allow-xffrc")));
 }
 
 TEST_F(HelpTest, NoticeTopicRendersTheManifest) {

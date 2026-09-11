@@ -11,6 +11,8 @@
   explicitly selected `--xffrc` files. Each permission pair governs only its matching skip flag.
 - Add config-selectable `--allow-xffrc` / `--no-allow-xffrc` controls for explicitly named config
   files, subject to the system policy gate and unavailable to the file being admitted.
+- Document every config-only allow/deny control individually in `--help=config`, including its
+  scope, permitted location, precedence, and multiplicity.
 - Warn about overriding the same setting more than once within one logical config section while
   preserving last-value-wins behavior. Deliberately accumulating settings, expression primaries,
   separate sections and tiers, and all command-line repetitions remain unaffected.
