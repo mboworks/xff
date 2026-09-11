@@ -139,13 +139,13 @@ test::no_user_config_requires_permission_from_a_present_user_file() {
   expect_output_contains '--allow-no-user-config' "${out}"
 }
 
-test::authorized_no_config_suppresses_user_defaults_but_keeps_explicit_xffrc() {
+test::authorized_no_user_config_suppresses_user_defaults_but_keeps_explicit_xffrc() {
   local cfg="${TEST_TMPDIR}/user_skip_allowed"
   local explicit="${TEST_TMPDIR}/explicit_with_no_config"
-  printf 'common: --allow-no-user-config --format=jsonl\n' >"${cfg}"
+  printf '%s\n' '--allow-no-user-config' 'common: --format=jsonl' >"${cfg}"
   printf 'common: --color=never\n' >"${explicit}"
   local out
-  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" --no-config --xffrc="${explicit}" --explain)"
+  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" --no-user-config --xffrc="${explicit}" --explain)"
   expect_not_matches 'user[[:space:]]+--format=jsonl' "${out}"
   expect_matches 'xffrc[[:space:]]+--color=never' "${out}"
 }

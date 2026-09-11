@@ -33,15 +33,16 @@ struct PolicyRule {
 // The parsed system policy (/etc/xff.ini): [defaults] flag lines + [policy]
 // per-layer allow/deny rules.
 struct SystemConfig {
+  std::vector<std::string> globals;   // file-global controls before the first section
   std::vector<std::string> defaults;  // [defaults] flags in CLI token form
   std::vector<PolicyRule> policy;     // [policy] rules, in file order
 };
 
-// Parses system INI `text`. A [defaults] "key = value" line renders to a CLI
+// Parses system INI `text`. A file-global or [defaults] "key = value" line renders to a CLI
 // token ("--color = auto" -> "--color=auto"; a bare "--warn" stays "--warn").
 // A [policy] "<layer>.<allow|deny> = <comma-list>" line becomes a PolicyRule.
-// Blank lines and '#'/';' comments are skipped; lines outside [defaults]/[policy]
-// and malformed [policy] lines are ignored. Parse-only: no registry validation
+// Blank lines and '#'/';' comments are skipped; file-global lines are accepted only before the
+// first section, while unknown sections and malformed [policy] lines are ignored. Parse-only: no registry validation
 // and no enforcement (the policy gate does that).
 SystemConfig ParseIni(std::string_view text);
 

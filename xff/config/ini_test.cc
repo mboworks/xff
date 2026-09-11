@@ -44,7 +44,8 @@ Matcher<PolicyRule> PolicyRuleIs(
 }
 
 TEST_F(IniTest, DefaultsRenderToCliTokens) {
-  const SystemConfig cfg = ParseIni("[defaults]\n--color = auto\n--warn\n");
+  const SystemConfig cfg = ParseIni("--allow-no-config\n[defaults]\n--color = auto\n--warn\n");
+  EXPECT_THAT(cfg.globals, ElementsAre("--allow-no-config"));
   EXPECT_THAT(cfg.defaults, ElementsAre("--color=auto", "--warn"));
   EXPECT_THAT(cfg.policy, IsEmpty());
 }
@@ -76,7 +77,8 @@ TEST_F(IniTest, MalformedPolicyLinesIgnored) {
 }
 
 TEST_F(IniTest, LinesOutsideKnownSectionsIgnored) {
-  const SystemConfig cfg = ParseIni("--color = auto\n[unknown]\n--foo = bar\n");
+  const SystemConfig cfg = ParseIni("[unknown]\n--foo = bar\n");
+  EXPECT_THAT(cfg.globals, IsEmpty());
   EXPECT_THAT(cfg.defaults, IsEmpty());
   EXPECT_THAT(cfg.policy, IsEmpty());
 }

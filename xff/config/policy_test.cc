@@ -125,11 +125,11 @@ TEST_F(PolicyTest, PresentAutomaticSourcesMustAuthorizeBeingSkipped) {
   };
   inputs.no_system_config = true;
   inputs.no_user_config = true;
+  inputs.no_config = true;
   EXPECT_THAT(
-      ValidateConfigSkips(inputs),
-      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--allow-no-system-config")));
+      ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--allow-no-config")));
 
-  inputs.system.defaults = {"--allow-no-config"};
+  inputs.system.globals = {"--allow-no-config"};
   EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
 }
 
@@ -139,7 +139,7 @@ TEST_F(PolicyTest, UserMayAuthorizeSkippingItselfButNotTheSystemConfig) {
       {.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true},
       {.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true},
   };
-  inputs.user = ParseXffrc("common: --allow-no-user-config");
+  inputs.user = ParseXffrc("--allow-no-user-config");
   inputs.no_user_config = true;
   EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
 
@@ -150,11 +150,89 @@ TEST_F(PolicyTest, UserMayAuthorizeSkippingItselfButNotTheSystemConfig) {
       StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--allow-no-system-config")));
 }
 
+TEST_F(PolicyTest, NegativeControlsApplyOnlyToTheirCorrespondingSkipRequest) {
+  ConfigInputs inputs;
+  inputs.sources = {
+      {.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true},
+      {.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true},
+  };
+  inputs.system.globals = {"--allow-no-config", "--no-allow-no-system-config", "--no-allow-no-user-config"};
+  inputs.user = ParseXffrc("--allow-no-user-config");
+  inputs.no_config = true;
+  inputs.no_system_config = true;
+  inputs.no_user_config = true;
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+
+  inputs.no_config = false;
+  EXPECT_THAT(
+      ValidateConfigSkips(inputs),
+      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--allow-no-system-config")));
+
+  inputs.no_system_config = false;
+  EXPECT_THAT(
+      ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--allow-no-user-config")));
+}
+
+TEST_F(PolicyTest, SystemControlsMustPrecedeEveryIniSection) {
+  ConfigInputs inputs;
+  inputs.system.defaults = {"--allow-no-config"};
+  EXPECT_THAT(
+      ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("precede every system")));
+}
+
+TEST_F(PolicyTest, ConfigControlPairsMayOccurOnlyOncePerPermittedFile) {
+  ConfigInputs inputs;
+  inputs.system.globals = {"--allow-no-system-config", "--no-allow-no-system-config"};
+  EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("system config")));
+
+  inputs.system.globals = {"--allow-no-user-config", "--no-allow-no-user-config"};
+  EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("system config")));
+
+  inputs.system.globals.clear();
+  inputs.user = ParseXffrc("--allow-no-user-config\ndebug: --no-allow-no-user-config");
+  EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("user config")));
+}
+
+TEST_F(PolicyTest, ConfigControlsAreRestrictedToTheirTrustedFiles) {
+  ConfigInputs inputs;
+  inputs.user = ParseXffrc("--allow-no-system-config");
+  EXPECT_THAT(
+      ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("only in the system")));
+
+  inputs.user.clear();
+  inputs.xffrc = {{.path = "/named", .lines = ParseXffrc("common: --allow-no-user-config")}};
+  EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("not permitted")));
+}
+
+TEST_F(PolicyTest, SelectedSystemAndUserSettingsControlExplicitXffrcFiles) {
+  ConfigInputs inputs;
+  inputs.configs = {"locked"};
+  inputs.system.defaults = {"--no-allow-xffrc"};
+  inputs.user = ParseXffrc("locked: --allow-xffrc\nopen: --no-allow-xffrc");
+  inputs.xffrc = {{.path = "/named", .lines = {}}};
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+
+  inputs.configs = {"open"};
+  EXPECT_THAT(
+      ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-allow-xffrc")));
+}
+
+TEST_F(PolicyTest, SystemPolicyMayPreventUserConfigFromEnablingXffrc) {
+  ConfigInputs inputs;
+  inputs.configs = {"locked"};
+  inputs.system.defaults = {"--no-allow-xffrc"};
+  inputs.system.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"--allow-xffrc"}}};
+  inputs.user = ParseXffrc("locked: --allow-xffrc");
+  inputs.xffrc = {{.path = "/named", .lines = {}}};
+  EXPECT_THAT(
+      ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-allow-xffrc")));
+}
+
 TEST_F(PolicyTest, SystemPolicyMayDenyTheUsersSelfSkipPermission) {
   ConfigInputs inputs;
   inputs.sources = {{.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true}};
   inputs.system.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"--allow-no-user-config"}}};
-  inputs.user = ParseXffrc("common: --allow-no-user-config");
+  inputs.user = ParseXffrc("--allow-no-user-config");
   inputs.no_user_config = true;
   EXPECT_THAT(
       ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--allow-no-user-config")));

@@ -34,6 +34,7 @@ using FileReader = absl::FunctionRef<std::optional<std::string>(std::string_view
 // Inputs to Discover: the CLI selectors plus the environment values that locate
 // the user config (injected rather than read from getenv here, for testability).
 struct DiscoveryOptions {
+  bool no_config = false;                      // --no-config
   bool no_system_config = false;               // --no-system-config
   bool no_user_config = false;                 // --no-user-config
   std::vector<std::string> configs;            // --config=NAME, in order

@@ -890,6 +890,17 @@ Section ConfigSection(bool in_full) {
       "plus any `--xffrc` you name. `--no-config` suppresses the automatic system and user tiers when their "
       "trusted permission directives allow it; those files may still be inspected for policy. An explicit "
       "command-line `--xffrc` remains active."));
+  layers.children.push_back(ProseOf(
+      "Skip permissions are config-only controls placed before the first section. The system file may set one of "
+      "`--allow-no-config` / `--no-allow-no-config` once, one of "
+      "`--allow-no-system-config` / `--no-allow-no-system-config` once and one of "
+      "`--allow-no-user-config` / `--no-allow-no-user-config` once. Each pair controls only its corresponding "
+      "command-line skip flag. The user file may set its user-control pair once before the first selector block. A "
+      "system "
+      "user-control decision is authoritative over the user file. Explicit `--xffrc` files may not contain any "
+      "of these controls. Separately, `--allow-xffrc` / `--no-allow-xffrc` is a normal config-only setting usable "
+      "in system defaults or any user config block; ordinary selection and precedence decide whether command-line "
+      "`--xffrc=FILE` is accepted, while system policy may forbid the user from enabling it."));
   section.children.push_back(Content{.node = std::move(layers)});
 
   Subsection style{.title = "Choosing a style"};

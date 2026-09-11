@@ -31,9 +31,16 @@ namespace {
 constexpr std::string_view kAllowNoConfig = "--allow-no-config";
 constexpr std::string_view kAllowNoSystemConfig = "--allow-no-system-config";
 constexpr std::string_view kAllowNoUserConfig = "--allow-no-user-config";
+constexpr std::string_view kAllowXffrc = "--allow-xffrc";
+constexpr std::string_view kNoAllowNoSystemConfig = "--no-allow-no-system-config";
+constexpr std::string_view kNoAllowNoUserConfig = "--no-allow-no-user-config";
+constexpr std::string_view kNoAllowNoConfig = "--no-allow-no-config";
+constexpr std::string_view kNoAllowXffrc = "--no-allow-xffrc";
 
 bool IsSkipPermission(std::string_view flag) {
-  return flag == kAllowNoConfig || flag == kAllowNoSystemConfig || flag == kAllowNoUserConfig;
+  return flag == kAllowNoConfig || flag == kNoAllowNoConfig || flag == kAllowNoSystemConfig
+         || flag == kAllowNoUserConfig || flag == kNoAllowNoSystemConfig || flag == kNoAllowNoUserConfig
+         || flag == kAllowXffrc || flag == kNoAllowXffrc;
 }
 
 // An .xffrc line applies under the active --config selectors when its base is

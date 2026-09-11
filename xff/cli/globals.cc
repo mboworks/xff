@@ -279,9 +279,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Config",
         .summary = "suppress automatic system and user configuration when authorized",
         .details = "Suppresses the automatic system defaults and user configuration. A present source is still "
-                   "inspected for policy and must authorize the request: the system config with "
-                   "`--allow-no-config` or the corresponding granular permission, and the user config with "
-                   "`--allow-no-user-config` unless the system already authorized it. An explicitly named "
+                   "inspected for policy. The system config must authorize this combined request with a leading "
+                   "`--allow-no-config`; `--no-allow-no-config` explicitly denies it. The granular permissions "
+                   "govern only their corresponding granular command-line flags. An explicitly named "
                    "`--xffrc=FILE` remains active. Ignore files such as `.gitignore` and `.xffignore` are traversal "
                    "inputs, not config files, and are unaffected.",
         .topic = "config",
@@ -292,9 +292,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "config",
         .header = "Config",
         .summary = "suppress system defaults when the system config permits it",
-        .details = "Suppresses `/etc/xff.ini` defaults but still reads its `[policy]` and config-only permission "
-                   "directives. A present file must contain `--allow-no-system-config` or `--allow-no-config`; "
-                   "otherwise the request is a usage error. The user config and explicit `--xffrc` files remain "
+        .details = "Suppresses `/etc/xff.ini` defaults but still reads its `[policy]` and leading config-only "
+                   "permission controls. A present file must grant permission with `--allow-no-system-config`; "
+                   "`--no-allow-no-system-config` explicitly denies it. "
+                   "Without either grant, the request is a usage error. The user config and explicit `--xffrc` "
+                   "files remain "
                    "active.",
         .topic = "config",
     },
@@ -304,9 +306,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "config",
         .header = "Config",
         .summary = "suppress user configuration when an authoritative config permits it",
-        .details = "Suppresses the selected user config after inspecting it for permission. A present user file "
-                   "must contain an unconditional `--allow-no-user-config`, unless `/etc/xff.ini` contains that "
-                   "permission or `--allow-no-config`. System defaults and explicit `--xffrc` files remain active.",
+        .details = "Suppresses the selected user config after inspecting it for permission. The system config may "
+                   "authoritatively grant or deny permission with `--allow-no-user-config` / "
+                   "`--no-allow-no-user-config`; without either, the user file may decide for itself with the same "
+                   "pair. The separate `--allow-no-config` pair governs only `--no-config`. "
+                   "System defaults and explicit `--xffrc` files remain active.",
         .topic = "config",
     },
     {
