@@ -50,6 +50,7 @@ std::string UserConfigPath(const DiscoveryOptions& opts) {
 
 ConfigInputs Discover(const DiscoveryOptions& opts, FileReader read) {
   ConfigInputs inputs;
+  inputs.no_config = opts.no_config;
   inputs.no_system_config = opts.no_system_config;
   inputs.no_user_config = opts.no_user_config;
   inputs.configs = opts.configs;
@@ -88,6 +89,7 @@ DiscoveryOptions SelectorsFromGlobals(const std::vector<std::string>& globals) {
   DiscoveryOptions opts;
   for (const std::string& global : globals) {
     if (global == "--no-config") {
+      opts.no_config = true;
       opts.no_system_config = true;
       opts.no_user_config = true;
     } else if (global == "--no-system-config") {

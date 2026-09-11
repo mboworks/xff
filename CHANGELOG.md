@@ -6,6 +6,11 @@
 - Add policy-aware `--no-system-config` and `--no-user-config` controls, and make
   `--no-config` suppress automatic configuration without bypassing mandatory
   system policy or an explicitly selected `--xffrc` file.
+- Add explicit negative skip-permission controls, require every permission control before the
+  first config section, enforce its trust-tier and uniqueness rules, and reject permissions from
+  explicitly selected `--xffrc` files. Each permission pair governs only its matching skip flag.
+- Add config-selectable `--allow-xffrc` / `--no-allow-xffrc` controls for explicitly named config
+  files, subject to the system policy gate and unavailable to the file being admitted.
 - Apply named configuration and explicitly loaded config files at each command-line
   selector's exact position instead of flattening them ahead of all CLI options.
 - Defer regex matcher binding until the final configuration has selected grammar

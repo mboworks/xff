@@ -35,6 +35,131 @@ namespace {
 constexpr std::string_view kAllowNoConfig = "--allow-no-config";
 constexpr std::string_view kAllowNoSystemConfig = "--allow-no-system-config";
 constexpr std::string_view kAllowNoUserConfig = "--allow-no-user-config";
+constexpr std::string_view kAllowXffrc = "--allow-xffrc";
+constexpr std::string_view kNoAllowNoConfig = "--no-allow-no-config";
+constexpr std::string_view kNoAllowNoSystemConfig = "--no-allow-no-system-config";
+constexpr std::string_view kNoAllowNoUserConfig = "--no-allow-no-user-config";
+constexpr std::string_view kNoAllowXffrc = "--no-allow-xffrc";
+
+bool IsSystemControl(std::string_view flag) {
+  return flag == kAllowNoSystemConfig || flag == kNoAllowNoSystemConfig;
+}
+
+bool IsUserControl(std::string_view flag) {
+  return flag == kAllowNoUserConfig || flag == kNoAllowNoUserConfig;
+}
+
+bool IsXffrcControl(std::string_view flag) {
+  return flag == kAllowXffrc || flag == kNoAllowXffrc;
+}
+
+bool IsNoConfigControl(std::string_view flag) {
+  return flag == kAllowNoConfig || flag == kNoAllowNoConfig;
+}
+
+absl::Status ValidateSingleControl(
+    const std::vector<std::string>& flags,
+    bool (*is_control)(std::string_view),
+    std::string_view message) {
+  if (absl::c_count_if(flags, is_control) > 1) {
+    return absl::InvalidArgumentError(message);
+  }
+  return absl::OkStatus();
+}
+
+absl::Status ValidateSystemControlLocations(const SystemConfig& system) {
+  for (const std::string& flag : system.defaults) {
+    if (IsNoConfigControl(flag) || IsSystemControl(flag) || IsUserControl(flag)) {
+      return absl::InvalidArgumentError(absl::StrCat(flag, " must precede every system config section"));
+    }
+  }
+  if (absl::Status status = ValidateSingleControl(
+          system.globals, IsNoConfigControl,
+          "the system config may set --allow-no-config or --no-allow-no-config only once");
+      !status.ok()) {
+    return status;
+  }
+  if (absl::Status status = ValidateSingleControl(
+          system.globals, IsSystemControl,
+          "the system config may set --allow-no-system-config or --no-allow-no-system-config only once");
+      !status.ok()) {
+    return status;
+  }
+  return ValidateSingleControl(
+      system.globals, IsUserControl,
+      "the system config may set --allow-no-user-config or --no-allow-no-user-config only once");
+}
+
+absl::Status ValidateUserControlLocations(const std::vector<RcLine>& user) {
+  std::size_t user_controls = 0;
+  bool saw_user_section = false;
+  for (const RcLine& line : user) {
+    saw_user_section = saw_user_section || !line.base.empty() || !line.config.empty();
+    for (const std::string& flag : line.flags) {
+      if (IsNoConfigControl(flag) || IsSystemControl(flag)) {
+        return absl::InvalidArgumentError(absl::StrCat(flag, " is permitted only in the system config"));
+      }
+      if (IsUserControl(flag) && saw_user_section) {
+        return absl::InvalidArgumentError(
+            "--allow-no-user-config and --no-allow-no-user-config must precede every user config section");
+      }
+      user_controls += IsUserControl(flag) ? 1 : 0;
+    }
+  }
+  if (user_controls > 1) {
+    return absl::InvalidArgumentError(
+        "the user config may set --allow-no-user-config or --no-allow-no-user-config only once");
+  }
+  return absl::OkStatus();
+}
+
+absl::Status ValidateExplicitControlLocations(const std::vector<ExplicitConfig>& files) {
+  for (const ExplicitConfig& file : files) {
+    for (const RcLine& line : file.lines) {
+      for (const std::string& flag : line.flags) {
+        if (IsNoConfigControl(flag) || IsSystemControl(flag) || IsUserControl(flag) || IsXffrcControl(flag)) {
+          return absl::InvalidArgumentError(absl::StrCat(flag, " is not permitted in an --xffrc file"));
+        }
+      }
+    }
+  }
+  return absl::OkStatus();
+}
+
+absl::Status ValidateControlLocations(const ConfigInputs& inputs) {
+  if (absl::Status status = ValidateSystemControlLocations(inputs.system); !status.ok()) {
+    return status;
+  }
+  if (absl::Status status = ValidateUserControlLocations(inputs.user); !status.ok()) {
+    return status;
+  }
+  return ValidateExplicitControlLocations(inputs.xffrc);
+}
+
+bool LineApplies(const RcLine& line, const std::vector<std::string>& configs) {
+  const bool base_ok = line.base.empty() || line.base == "common" || absl::c_contains(configs, line.base);
+  const bool config_ok = line.config.empty() || absl::c_contains(configs, line.config);
+  return base_ok && config_ok;
+}
+
+bool XffrcAllowed(const ConfigInputs& inputs) {
+  bool allowed = true;
+  const auto apply = [&](const std::vector<std::string>& flags) {
+    for (const std::string& flag : flags) {
+      if (IsXffrcControl(flag)) {
+        allowed = flag == kAllowXffrc;
+      }
+    }
+  };
+  apply(inputs.system.globals);
+  apply(inputs.system.defaults);
+  for (const RcLine& line : inputs.user) {
+    if (LineApplies(line, inputs.configs) && LinePermitted(line, Source::kUser, inputs.system)) {
+      apply(line.flags);
+    }
+  }
+  return allowed;
+}
 
 // The registry safety class of one flag token (kNone for globals/unknowns). An
 // attached binding like "-capture:tag" is classified by its base name "-capture".
@@ -88,9 +213,19 @@ std::string_view ClassName(registry::Safety safety) {
   return "safe";
 }
 
-bool SystemAllows(const ConfigInputs& inputs, std::string_view permission) {
-  return absl::c_contains(inputs.system.defaults, kAllowNoConfig)
-         || absl::c_contains(inputs.system.defaults, permission);
+std::optional<bool> SystemPermission(const ConfigInputs& inputs, std::string_view permission) {
+  std::optional<bool> allowed;
+  for (const std::string& flag : inputs.system.globals) {
+    if (flag == permission) {
+      allowed = true;
+    } else if (
+        (permission == kAllowNoConfig && flag == kNoAllowNoConfig)
+        || (permission == kAllowNoSystemConfig && flag == kNoAllowNoSystemConfig)
+        || (permission == kAllowNoUserConfig && flag == kNoAllowNoUserConfig)) {
+      allowed = false;
+    }
+  }
+  return allowed;
 }
 
 bool SourceWasFound(const ConfigInputs& inputs, Source layer) {
@@ -131,22 +266,38 @@ bool LinePermitted(const RcLine& line, Source layer, const SystemConfig& policy)
 }
 
 absl::Status ValidateConfigSkips(const ConfigInputs& inputs) {
-  const bool skip_system = inputs.no_system_config;
-  if (skip_system && SourceWasFound(inputs, Source::kSystem) && !SystemAllows(inputs, kAllowNoSystemConfig)) {
-    return absl::PermissionDeniedError(
-        "--no-system-config requires --allow-no-system-config or --allow-no-config in /etc/xff.ini");
+  if (const absl::Status locations = ValidateControlLocations(inputs); !locations.ok()) {
+    return locations;
   }
-  const bool user_allows = absl::c_any_of(inputs.user, [&](const RcLine& line) {
-    if ((!line.base.empty() && line.base != "common") || !line.config.empty()
-        || !absl::c_contains(line.flags, kAllowNoUserConfig)) {
-      return false;
+  if (!inputs.xffrc.empty() && !XffrcAllowed(inputs)) {
+    return absl::PermissionDeniedError("--xffrc is disabled by the resolved --no-allow-xffrc setting");
+  }
+  if (inputs.no_config) {
+    if ((SourceWasFound(inputs, Source::kSystem) || SourceWasFound(inputs, Source::kUser))
+        && !SystemPermission(inputs, kAllowNoConfig).value_or(false)) {
+      return absl::PermissionDeniedError(
+          "--no-config requires --allow-no-config in /etc/xff.ini and may be denied by --no-allow-no-config");
     }
-    return LinePermitted(line, Source::kUser, inputs.system);
-  });
+    return absl::OkStatus();
+  }
+  const std::optional<bool> system_permission = SystemPermission(inputs, kAllowNoSystemConfig);
+  const bool skip_system = inputs.no_system_config;
+  if (skip_system && SourceWasFound(inputs, Source::kSystem) && !system_permission.value_or(false)) {
+    return absl::PermissionDeniedError("--no-system-config requires --allow-no-system-config in /etc/xff.ini");
+  }
+  std::optional<bool> user_permission;
+  for (const RcLine& line : inputs.user) {
+    for (const std::string& flag : line.flags) {
+      if (IsUserControl(flag) && LinePermitted(line, Source::kUser, inputs.system)) {
+        user_permission = flag == kAllowNoUserConfig;
+      }
+    }
+  }
+  const std::optional<bool> authoritative_user_permission = SystemPermission(inputs, kAllowNoUserConfig);
   const bool skip_user = inputs.no_user_config;
-  if (skip_user && SourceWasFound(inputs, Source::kUser) && !SystemAllows(inputs, kAllowNoUserConfig) && !user_allows) {
-    return absl::PermissionDeniedError(
-        "--no-user-config requires --allow-no-user-config in the system or user config, or system --allow-no-config");
+  if (skip_user && SourceWasFound(inputs, Source::kUser)
+      && !authoritative_user_permission.value_or(user_permission.value_or(false))) {
+    return absl::PermissionDeniedError("--no-user-config requires --allow-no-user-config in the system or user config");
   }
   return absl::OkStatus();
 }

@@ -69,23 +69,27 @@ bool ParsePolicyLine(std::string_view line, PolicyRule& rule) {
 SystemConfig ParseIni(std::string_view text) {
   SystemConfig config;
   std::string_view section;
+  bool saw_section = false;
   for (const std::string_view raw : absl::StrSplit(text, '\n')) {
     const std::string_view line = absl::StripAsciiWhitespace(raw);
     if (line.empty() || line.front() == '#' || line.front() == ';') {
       continue;  // blank or comment
     }
     if (line.front() == '[' && line.back() == ']') {
+      saw_section = true;
       section = absl::StripAsciiWhitespace(line.substr(1, line.size() - 2));
       continue;
     }
-    if (section == "defaults") {
+    if (!saw_section) {
+      config.globals.push_back(DefaultFlag(line));
+    } else if (section == "defaults") {
       config.defaults.push_back(DefaultFlag(line));
     } else if (section == "policy") {
       if (PolicyRule rule; ParsePolicyLine(line, rule)) {
         config.policy.push_back(std::move(rule));
       }
     }
-    // Lines outside a known section are ignored (parse-only, forgiving).
+    // Lines inside an unknown section are ignored (parse-only, forgiving).
   }
   return config;
 }

@@ -43,8 +43,13 @@ bool LinePermitted(const RcLine& line, Source layer, const SystemConfig& policy)
 
 // Validates requests to suppress automatic configuration. A present system config must explicitly
 // authorize suppressing its defaults; a present user config must authorize suppressing itself unless
-// the higher-trust system config already does. `--allow-no-config` is system-only shorthand for both
-// permissions. Permission directives are config-only and never enter the resolved runtime flags.
+// the higher-trust system config already does. Each positive/negative permission pair controls only
+// its corresponding command-line skip flag and is unique per automatic config file.
+// system-skip control is system-only, user-skip control may occur in the system or user file, and
+// every control precedes all sections. No control is accepted from an explicitly named --xffrc
+// file. Permission directives are config-only and never enter the resolved runtime flags.
+// --allow-xffrc/--no-allow-xffrc is a separate config-only setting resolved through ordinary
+// system/user selection and precedence; an explicit --xffrc file cannot admit itself.
 absl::Status ValidateConfigSkips(const ConfigInputs& inputs);
 
 // Why the gate dropped a line: a safety-policy denial (its safety class bars it from the layer),

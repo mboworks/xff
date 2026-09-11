@@ -134,6 +134,7 @@ TEST_F(LoaderTest, SelectorsFromGlobalsExtractsConfigSelectorsInOrder) {
   const DiscoveryOptions opts = SelectorsFromGlobals(
       {"-L", "--config=xff", "--no-config", "--no-system-config", "--no-user-config", "--xffrc=/a", "--config=debug",
        "--xffrc=/b", "--color=auto"});
+  EXPECT_THAT(opts.no_config, IsTrue());
   EXPECT_THAT(opts.no_system_config, IsTrue());
   EXPECT_THAT(opts.no_user_config, IsTrue());
   EXPECT_THAT(opts.configs, ElementsAre("xff", "debug"));
