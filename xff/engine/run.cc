@@ -872,7 +872,7 @@ absl::StatusOr<std::uint64_t> ResolveBlockSize(const std::vector<std::string>& g
 // --regextype=RE2|EXACT|PCRE2: validates the grammar selector for the whole run. The grammar itself
 // is resolved by the parser (parser::GrammarFromGlobals) and pre-compiled into each matcher; this is
 // the single validating reader, called unconditionally so it guards every pattern predicate
-// (-regex/-rxc/-grep). RE2 (default) and EXACT (literal) are core engines, always available. PCRE2
+// (-regex/-rxc/-grep). RE2 (default), ERE, and the non-regex grammars are core engines. PCRE2
 // is a build-time extra: when its backend is not linked it is a usage error here, never a silent RE2
 // fallback. MATCH is still reserved. An unknown value is a usage error. All are refused before the
 // walk (exit 2). Last occurrence wins (the parser agrees).
@@ -890,7 +890,8 @@ absl::Status ValidateRegextype(const std::vector<std::string>& globals) {
   }
   if (selected.has_value()) {
     const std::string_view value = *selected;
-    if (value == "RE2" || value == "EXACT" || value == "FNMATCH" || value == "GLOB" || value == "SHGLOB") {
+    if (value == "RE2" || value == "ERE" || value == "EXACT" || value == "FNMATCH" || value == "GLOB"
+        || value == "SHGLOB") {
       return absl::OkStatus();  // core engines, always linked
     }
     if (value == "PCRE2") {
@@ -902,10 +903,10 @@ absl::Status ValidateRegextype(const std::vector<std::string>& globals) {
       return absl::InvalidArgumentError(
           absl::StrCat(
               "--regextype=", value,
-              " is reserved and not supported yet; use RE2, EXACT, FNMATCH, GLOB, SHGLOB or PCRE2"));
+              " is reserved and not supported yet; use RE2, ERE, EXACT, FNMATCH, GLOB, SHGLOB or PCRE2"));
     } else {
       return absl::InvalidArgumentError(
-          absl::StrCat("unknown --regextype '", value, "'; expected RE2, EXACT, FNMATCH, GLOB, SHGLOB or PCRE2"));
+          absl::StrCat("unknown --regextype '", value, "'; expected RE2, ERE, EXACT, FNMATCH, GLOB, SHGLOB or PCRE2"));
     }
   }
   return absl::OkStatus();

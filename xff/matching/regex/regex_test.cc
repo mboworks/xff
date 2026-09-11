@@ -32,6 +32,7 @@ using ::mbo::testing::IsOk;
 using ::mbo::testing::StatusIs;
 using ::testing::ElementsAre;
 using ::testing::Eq;
+using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
@@ -78,6 +79,69 @@ TEST_F(RegexTest, InvalidPatternReturnsError) {
 TEST_F(RegexTest, Re2IsTheExplicitDefaultGrammar) {
   ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("a.c", /*case_insensitive=*/false, Grammar::kRe2));
   EXPECT_THAT(matcher.FullMatch("abc"), IsTrue());
+}
+
+TEST_F(RegexTest, EreSupportsAlternationCapturesAndCaseFolding) {
+  ASSERT_OK_AND_ASSIGN(
+      const Matcher matcher, Matcher::Compile("(cat|dog)-([0-9]+)", /*case_insensitive=*/true, Grammar::kEre));
+  EXPECT_THAT(matcher.FullMatchCaptures("DOG-42"), Optional(ElementsAre("DOG-42", "DOG", "42")));
+  EXPECT_THAT(matcher.FindFirst("a cat-7 then dog-2"), Optional(Pair(Eq(2U), Eq(5U))));
+  EXPECT_THAT(matcher.PartialMatch("nothing"), IsFalse());
+}
+
+TEST_F(RegexTest, EreFullMatchRequiresBothBoundaries) {
+  ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("cat|dog", /*case_insensitive=*/false, Grammar::kEre));
+  EXPECT_THAT(matcher.FullMatch("cat"), IsTrue());
+  EXPECT_THAT(matcher.FullMatch("catapult"), IsFalse());
+  EXPECT_THAT(matcher.FullMatch("a dog"), IsFalse());
+  EXPECT_THAT(matcher.FullMatch("bird"), IsFalse());
+}
+
+TEST_F(RegexTest, EreCapturesRequireAFullMatchAndRepresentUnmatchedGroupsAsEmpty) {
+  ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("(cat)?dog", /*case_insensitive=*/false, Grammar::kEre));
+  EXPECT_THAT(matcher.FullMatchCaptures("dog"), Optional(ElementsAre("dog", "")));
+  EXPECT_THAT(matcher.FullMatchCaptures("doghouse"), Eq(std::nullopt));
+  EXPECT_THAT(matcher.FullMatchCaptures("a dog"), Eq(std::nullopt));
+  EXPECT_THAT(matcher.FullMatchCaptures("bird"), Eq(std::nullopt));
+}
+
+TEST_F(RegexTest, EreRejectsInvalidPatterns) {
+  EXPECT_THAT(
+      Matcher::Compile("a(b", /*case_insensitive=*/false, Grammar::kEre), StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(
+      Matcher::Compile(std::string_view("a\0b", 3), /*case_insensitive=*/false, Grammar::kEre),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("NUL")));
+}
+
+TEST_F(RegexTest, EreRewriteSupportsCapturesAndZeroLengthMatches) {
+  ASSERT_OK_AND_ASSIGN(
+      const Matcher captures, Matcher::Compile("([a-z]+)-([0-9]+)", /*case_insensitive=*/false, Grammar::kEre));
+  EXPECT_THAT(captures.Rewrite("a-1 b-22", "\\2:\\1", /*global=*/true), "1:a 22:b");
+
+  ASSERT_OK_AND_ASSIGN(const Matcher empty, Matcher::Compile("x*", /*case_insensitive=*/false, Grammar::kEre));
+  EXPECT_THAT(empty.Rewrite("ab", "_", /*global=*/true), "_a_b_");
+
+  ASSERT_OK_AND_ASSIGN(const Matcher anchored, Matcher::Compile("^", /*case_insensitive=*/false, Grammar::kEre));
+  EXPECT_THAT(anchored.Rewrite("ab", "_", /*global=*/true), "_ab");
+}
+
+TEST_F(RegexTest, EreRewriteSupportsSingleMatchesAndReplacementEscapes) {
+  ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("(a)(b)?", /*case_insensitive=*/false, Grammar::kEre));
+  EXPECT_THAT(matcher.Rewrite("ab ab", "\\0-\\1-\\2", /*global=*/false), "ab-a-b ab");
+  EXPECT_THAT(matcher.Rewrite("a", "<\\2>", /*global=*/false), "<>");
+  EXPECT_THAT(matcher.Rewrite("a", "\\9", /*global=*/false), "");
+  EXPECT_THAT(matcher.Rewrite("a", "\\q\\", /*global=*/false), "q\\");
+  EXPECT_THAT(matcher.Rewrite("bird", "x", /*global=*/true), "bird");
+}
+
+TEST_F(RegexTest, EreDoesNotSilentlyTruncateSubjectsAtNul) {
+  ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("a", /*case_insensitive=*/false, Grammar::kEre));
+  const std::string subject("a\0b", 3);
+  EXPECT_THAT(matcher.FullMatch(subject), IsFalse());
+  EXPECT_THAT(matcher.PartialMatch(subject), IsFalse());
+  EXPECT_THAT(matcher.FindFirst(subject), Eq(std::nullopt));
+  EXPECT_THAT(matcher.FullMatchCaptures(subject), Eq(std::nullopt));
+  EXPECT_THAT(matcher.Rewrite(subject, "x", /*global=*/true), subject);
 }
 
 TEST_F(RegexTest, Pcre2GrammarIsNotBuiltInAndReportsUnimplemented) {
@@ -320,8 +384,9 @@ TEST_F(RegexTest, GrammarDocsCoverEveryGrammarInValueOrder) {
   // Anti-drift for --help=grammars: exactly one doc row per Grammar, in --regextype value order.
   // kAllGrammars mirrors the enum; adding a Grammar means listing it here (proving it compiles below)
   // and adding a GrammarDocs row, or the SizeIs check fails.
-  static constexpr std::array<Grammar, 6> kAllGrammars = {
-      Grammar::kRe2, Grammar::kExact, Grammar::kFnmatch, Grammar::kGlob, Grammar::kShglob, Grammar::kPcre2,
+  static constexpr std::array<Grammar, 7> kAllGrammars = {
+      Grammar::kRe2,    Grammar::kExact, Grammar::kFnmatch, Grammar::kGlob,
+      Grammar::kShglob, Grammar::kEre,   Grammar::kPcre2,
   };
   const absl::Span<const std::pair<std::string_view, std::string_view>> docs = GrammarDocs();
   EXPECT_THAT(docs, SizeIs(kAllGrammars.size()));
@@ -330,7 +395,7 @@ TEST_F(RegexTest, GrammarDocsCoverEveryGrammarInValueOrder) {
     names.push_back(name);
     EXPECT_THAT(description, Not(IsEmpty()));  // every grammar carries an explanation
   }
-  EXPECT_THAT(names, ElementsAre("RE2", "EXACT", "FNMATCH", "GLOB", "SHGLOB", "PCRE2"));
+  EXPECT_THAT(names, ElementsAre("RE2", "EXACT", "FNMATCH", "GLOB", "SHGLOB", "ERE", "PCRE2"));
 }
 
 TEST_F(RegexTest, GrammarDocsHaveStableStorage) {
@@ -339,14 +404,15 @@ TEST_F(RegexTest, GrammarDocsHaveStableStorage) {
 }
 
 TEST_F(RegexTest, EveryGrammarCompilesATrivialPattern) {
-  // The core engines never fail to compile; PCRE2 (a build extra) is the only one that may return
-  // Unimplemented in a lean build, so it is exercised by its own dedicated test above.
+  // PCRE2 (a build extra) may return Unimplemented in a lean build, so it is exercised by its own
+  // dedicated test above.
   static constexpr std::array kAllGrammars = std::to_array<Grammar>({
       Grammar::kRe2,
       Grammar::kExact,
       Grammar::kFnmatch,
       Grammar::kGlob,
       Grammar::kShglob,
+      Grammar::kEre,
   });
   for (const Grammar grammar : kAllGrammars) {
     EXPECT_THAT(Matcher::Compile("abc", /*case_insensitive=*/false, grammar), IsOk());

@@ -830,6 +830,8 @@ regex::Grammar GrammarFromGlobalsInternal(const std::vector<std::string>& global
       grammar = regex::Grammar::kGlob;
     } else if (value == "SHGLOB") {
       grammar = regex::Grammar::kShglob;
+    } else if (value == "ERE") {
+      grammar = regex::Grammar::kEre;
     } else if (value == "PCRE2") {
       grammar = regex::Grammar::kPcre2;
     } else {

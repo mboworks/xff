@@ -2218,6 +2218,14 @@ TEST_F(RunTest, GrepRegextypeDefaultIsRe2) {
       ElementsAre(Path("a.txt") + ":1:price 3.50", Path("a.txt") + ":2:price 3X50"));
 }
 
+TEST_F(RunTest, GrepRegextypeEreUsesThePlatformPosixEngine) {
+  { std::ofstream(root_ / "a.txt") << "item 42\nnone\n"; }
+  EXPECT_THAT(
+      RunArgvRecords({"--regextype=ERE", root_.string(), "-name", "a.txt", "-grep", "[[:digit:]]+"}),
+      ElementsAre(Path("a.txt") + ":1:item 42"));
+  EXPECT_THAT(last_errors_, 0);
+}
+
 TEST_F(RunTest, UnsupportedRegextypeIsAUsageError) {
   // MATCH is reserved (#85), and PCRE2 is a build extra not linked into this (lean) test binary:
   // both are usage errors refused before the walk (exit 2), never a silent RE2 fallback.

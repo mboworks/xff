@@ -118,8 +118,9 @@ the expression vocabulary, but xff globals such as `--format`, `--sort`, and `--
 available as explicit overrides. The clearest divergence is regex: `-regex` / `-iregex`
 default to **RE2** (linear-time, no catastrophic backtracking) and behave identically on Linux
 and macOS - where GNU find instead defaults to its Emacs dialect and BSD/macOS find to BRE.
-`-regextype` selects xff's uniform grammar set (RE2, EXACT, FNMATCH, GLOB, SHGLOB, plus PCRE2 in
-a full build), never GNU's dialect names. GLOB and SHGLOB are locale-independent, component-aware,
+`-regextype` selects xff's grammar set (RE2, ERE, EXACT, FNMATCH, GLOB, SHGLOB, plus PCRE2 in
+a full build), never GNU's dialect names. ERE deliberately uses the platform POSIX implementation;
+the other core grammars are cross-platform. GLOB and SHGLOB are locale-independent, component-aware,
 and reject malformed bracket expressions instead of silently changing their meaning. SHGLOB adds
 nested alternatives and bounded integer or ASCII-letter sequences such as `{01..12}` and `{a..z}`.
 Otherwise the find expression vocabulary follows the documented GNU, BSD, and POSIX behavior that xff makes uniform across platforms.

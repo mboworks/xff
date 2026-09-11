@@ -40,11 +40,12 @@ namespace xff::regex {
 // plus brace alternation (`{a,b}` -> `(?:a|b)`, so `*.{cc,h}` works), also translated to RE2. kPcre2
 // is PCRE2 (Perl syntax: backreferences, lookaround); it is a build extra, available only when its
 // backend is linked, otherwise Compile returns an Unimplemented error (never a silent RE2 fallback).
+// kEre delegates to the platform POSIX regcomp(3) implementation with REG_EXTENDED.
 // kExact and kFnmatch need no real compilation, so Compile(...) never fails for them.
-enum class Grammar { kRe2, kExact, kFnmatch, kGlob, kShglob, kPcre2 };
+enum class Grammar { kRe2, kExact, kFnmatch, kGlob, kShglob, kEre, kPcre2 };
 
 // A compiled regular expression. -regex matches the whole string (FullMatch); -rxc / -grep match
-// anywhere (PartialMatch / FindFirst). The grammar (RE2 default, or PCRE2) is chosen at Compile and
+// anywhere (PartialMatch / FindFirst). The grammar (RE2 default) is chosen at Compile and
 // the engine held behind a RegexBackend, so this API is grammar-agnostic. Move-only; const after
 // compile, so a compiled Matcher is safe to match concurrently.
 class Matcher {
@@ -97,10 +98,9 @@ class Matcher {
 // The `--regextype` grammar reference: one row per Grammar, `{VALUE, what it is}`, in --regextype
 // value order. The single source of truth behind `--help=regex` (and the "Regex grammars" section of
 // --help=full / --man / --markdown), so the documented grammars cannot drift from the enum -
-// regex_test asserts every Grammar value has a row. RE2 and PCRE2 cite their canonical external
-// references (the RE2 wiki, pcre2pattern(3)); the core engines EXACT / FNMATCH / GLOB / SHGLOB are
-// spelled out in full here because they have no single authoritative man page (and FNMATCH delegates
-// to the platform's fnmatch(3), whose class/collation details vary by system).
+// regex_test asserts every Grammar value has a row. RE2, ERE, and PCRE2 cite their canonical external
+// references (the RE2 wiki, regcomp(3), and pcre2pattern(3)); the smaller core engines are spelled out
+// in full here because they have no single authoritative man page.
 [[nodiscard]] absl::Span<const std::pair<std::string_view, std::string_view>> GrammarDocs();
 
 }  // namespace xff::regex

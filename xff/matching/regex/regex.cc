@@ -22,6 +22,7 @@
 #include "xff/matching/regex/regex.h"
 
 #include <fnmatch.h>
+#include <regex.h>
 
 #include <array>
 #include <cstddef>
@@ -90,6 +91,154 @@ class Re2Backend final : public RegexBackend {
 
  private:
   std::unique_ptr<RE2> re_;
+};
+
+class EreBackend final : public RegexBackend {
+ public:
+  EreBackend(const EreBackend&) = delete;
+  EreBackend& operator=(const EreBackend&) = delete;
+  EreBackend(EreBackend&&) = delete;
+  EreBackend& operator=(EreBackend&&) = delete;
+
+  static absl::StatusOr<std::unique_ptr<EreBackend>> Compile(std::string_view pattern, bool case_insensitive) {
+    if (ContainsNul(pattern)) {
+      return absl::InvalidArgumentError("POSIX ERE patterns cannot contain NUL bytes");
+    }
+    auto backend = std::unique_ptr<EreBackend>(new EreBackend());
+    const int result =
+        regcomp(&backend->compiled_, std::string(pattern).c_str(), REG_EXTENDED | (case_insensitive ? REG_ICASE : 0));
+    if (result == 0) {
+      backend->compiled_ok_ = true;
+      return backend;
+    }
+    std::array<char, 256> message{};
+    regerror(result, &backend->compiled_, message.data(), message.size());
+    return absl::InvalidArgumentError(absl::StrCat("invalid POSIX ERE: ", message.data()));
+  }
+
+  ~EreBackend() override {
+    if (compiled_ok_) {
+      regfree(&compiled_);
+    }
+  }
+
+  bool FullMatch(std::string_view text) const override {
+    if (ContainsNul(text)) {
+      return false;
+    }
+    const std::string input(text);
+    regmatch_t match{};
+    return regexec(&compiled_, input.c_str(), 1, &match, 0) == 0 && match.rm_so == 0
+           && static_cast<std::size_t>(match.rm_eo) == input.size();
+  }
+
+  bool PartialMatch(std::string_view text) const override { return FindFirst(text).has_value(); }
+
+  std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text) const override {
+    if (ContainsNul(text)) {
+      return std::nullopt;
+    }
+    const std::string input(text);
+    regmatch_t match{};
+    if (regexec(&compiled_, input.c_str(), 1, &match, 0) != 0) {
+      return std::nullopt;
+    }
+    return std::make_pair(static_cast<std::size_t>(match.rm_so), static_cast<std::size_t>(match.rm_eo - match.rm_so));
+  }
+
+  std::optional<std::vector<std::string>> FullMatchCaptures(std::string_view text) const override {
+    if (ContainsNul(text)) {
+      return std::nullopt;
+    }
+    const std::string input(text);
+    std::vector<regmatch_t> matches(compiled_.re_nsub + 1);
+    if (regexec(&compiled_, input.c_str(), matches.size(), matches.data(), 0) != 0 || matches[0].rm_so != 0
+        || static_cast<std::size_t>(matches[0].rm_eo) != input.size()) {
+      return std::nullopt;
+    }
+    std::vector<std::string> captures;
+    captures.reserve(matches.size());
+    for (const regmatch_t match : matches) {
+      if (match.rm_so < 0) {
+        captures.emplace_back();
+      } else {
+        captures.emplace_back(
+            input.substr(static_cast<std::size_t>(match.rm_so), static_cast<std::size_t>(match.rm_eo - match.rm_so)));
+      }
+    }
+    return captures;
+  }
+
+  std::string Rewrite(std::string_view text, std::string_view replacement, bool global) const override {
+    if (ContainsNul(text)) {
+      return std::string(text);
+    }
+    const std::string input(text);
+    std::string out;
+    std::size_t offset = 0;
+    while (true) {
+      std::vector<regmatch_t> matches(compiled_.re_nsub + 1);
+      const int flags = offset == 0 ? 0 : REG_NOTBOL;
+      if (regexec(&compiled_, SuffixCString(input, offset), matches.size(), matches.data(), flags) != 0) {
+        break;
+      }
+      const std::size_t begin = offset + static_cast<std::size_t>(matches[0].rm_so);
+      const std::size_t end = offset + static_cast<std::size_t>(matches[0].rm_eo);
+      out.append(input, offset, begin - offset);
+      AppendReplacement(out, input, offset, matches, replacement);
+      offset = end;
+      if (end == begin) {
+        if (offset >= input.size()) {
+          break;
+        }
+        out.push_back(input[offset++]);
+      }
+      if (!global) {
+        break;
+      }
+    }
+    out.append(input.substr(offset));
+    return out;
+  }
+
+ private:
+  EreBackend() = default;
+
+  static bool ContainsNul(std::string_view text) { return absl::StrContains(text, std::string_view("\0", 1)); }
+
+  // XFF_ABI_POINTER: regexec requires a NUL-terminated pointer to the current subject suffix.
+  static const char* SuffixCString(const std::string& input, std::size_t offset) {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic): narrow POSIX regex adapter.
+    return input.c_str() + offset;
+  }
+
+  static void AppendReplacement(
+      std::string& out,
+      const std::string& input,
+      std::size_t offset,
+      const std::vector<regmatch_t>& matches,
+      std::string_view replacement) {
+    for (std::size_t index = 0; index < replacement.size(); ++index) {
+      if (replacement[index] != '\\' || index + 1 >= replacement.size()) {
+        out.push_back(replacement[index]);
+        continue;
+      }
+      const char escaped = replacement[++index];
+      if (escaped < '0' || escaped > '9') {
+        out.push_back(escaped);
+        continue;
+      }
+      const auto capture = static_cast<std::size_t>(escaped - '0');
+      if (capture < matches.size() && matches[capture].rm_so >= 0) {
+        out.append(
+            input, offset + static_cast<std::size_t>(matches[capture].rm_so),
+            static_cast<std::size_t>(matches[capture].rm_eo - matches[capture].rm_so));
+      }
+    }
+  }
+
+  regex_t compiled_{};
+  bool compiled_ok_ = false;
 };
 
 // The kExact grammar: a literal string match, no metacharacters. A core engine (always linked, no
@@ -244,6 +393,10 @@ absl::StatusOr<Matcher> Matcher::Compile(std::string_view pattern, bool case_ins
           mbo::file::Glob2Re2Expression(pattern, {.syntax = mbo::file::GlobSyntax::kShGlob}));
       return compile_re2(translated);
     }
+    case Grammar::kEre: {
+      MBO_ASSIGN_OR_RETURN(std::unique_ptr<EreBackend> compiled, EreBackend::Compile(pattern, case_insensitive));
+      return Matcher(std::move(compiled));
+    }
     case Grammar::kPcre2: {
       // PCRE2 is a build-time extra: the real backend (extra_modules/pcre2) self-registers a factory
       // in the xff_extras_api slot. MakePcre2Backend invokes it, or returns Unimplemented when no
@@ -311,6 +464,12 @@ absl::Span<const std::pair<std::string_view, std::string_view>> GrammarDocs() {
        "and sequences may nest; alternatives may be empty. Escaped braces and commas, braces inside a "
        "[...] class, and comma-less braces that are not a sequence are literal. The optional shell "
        "increment form (`{1..9..2}`) is not supported and remains literal. Everything else is exactly GLOB."},
+      {"ERE",
+       "POSIX extended regular expressions through the platform regcomp(3) implementation. This provides "
+       "traditional find -E syntax, captures, partial matching, and rewrites, but locale details and some "
+       "edge-case behavior follow the host C library rather than RE2's cross-platform semantics or linear-time "
+       "guarantee. Patterns containing NUL are errors; subjects containing NUL do not match because the POSIX API "
+       "uses C strings."},
       {"PCRE2",
        "Perl-Compatible Regular Expressions (lookaround, backreferences, ...). A build-time extra: "
        "present only in a full build - run `xff --help=extras` to see whether THIS binary has it. Full "
