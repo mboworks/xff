@@ -153,10 +153,11 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
     {
         .name = "-rxc",
         .summary = "match the file's content against a regular expression (xff)",
-        .details = "The regex counterpart of `-content`: matches when the RE2 pattern is found ANYWHERE in the "
-                   "content (unanchored, like grep - use `^` / `$` to anchor), not the whole-file anchoring `-regex` "
-                   "applies to the path. Same expensive read and non-regular / unreadable / binary skip; `-irxc` "
-                   "folds case. An xff extension `--config=find` rejects.",
+        .details =
+            "The regex counterpart of `-content`: matches when the selected regex pattern is found ANYWHERE in the "
+            "content (unanchored, like grep - use `^` / `$` to anchor), not the whole-file anchoring `-regex` "
+            "applies to the path. Same expensive read and non-regular / unreadable / binary skip; `-irxc` "
+            "folds case. An xff extension `--config=find` rejects.",
         .kind = Kind::kTest,
         .arity = 1,
         .style = Style::kXff,

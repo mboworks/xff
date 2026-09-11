@@ -145,7 +145,7 @@ absl::Span<const HelpTopic> HelpTopics() {
       {.name = "size", .aliases = {}, .summary = "-size/-blocks legacy, SI, and IEC units plus +/-", .in_full = true},
       {.name = "grammars",
        .aliases = kGrammarAliases,
-       .summary = "the --regextype grammars (RE2, EXACT, FNMATCH, GLOB, SHGLOB, PCRE2)",
+       .summary = "the --regextype grammars (RE2, ERE, EXACT, FNMATCH, GLOB, SHGLOB, PCRE2)",
        .in_full = true},
       {.name = "content",
        .aliases = {},

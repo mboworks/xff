@@ -647,12 +647,15 @@ TEST_F(ParserTest, EnforceStyleAcceptsXffOperatorsUnderXff) {
 
 TEST_F(ParserTest, RegextypeSelectsTheMatcherGrammar) {
   // The grammar is resolved once from --regextype and stored on the Command, so every matcher (and
-  // final BindMatchers call uses it. RE2 is the default; PCRE2 is the only non-default value.
+  // final BindMatchers call uses it. RE2 is the default.
   ASSERT_OK_AND_ASSIGN(const Command def, Parse({".", "-regex", ".*"}));
   EXPECT_THAT(def.grammar, regex::Grammar::kRe2);  // no --regextype -> RE2
 
   ASSERT_OK_AND_ASSIGN(const Command re2, Parse({"--regextype=RE2", ".", "-regex", ".*"}));
   EXPECT_THAT(re2.grammar, regex::Grammar::kRe2);
+
+  ASSERT_OK_AND_ASSIGN(const Command ere, Parse({"--regextype=ERE", ".", "-regex", ".*"}));
+  EXPECT_THAT(ere.grammar, regex::Grammar::kEre);
 
   ASSERT_OK_AND_ASSIGN(const Command pcre2, Parse({"--regextype=PCRE2", ".", "-regex", ".*"}));
   EXPECT_THAT(pcre2.grammar, regex::Grammar::kPcre2);

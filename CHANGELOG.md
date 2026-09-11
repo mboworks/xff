@@ -12,6 +12,8 @@
   and case, avoiding premature or duplicate compilation.
 - Add `--re2` and `--pcre` as direct regex-engine selectors, plus BSD/macOS
   find-compatible `-E` using the configured extended grammar.
+- Add the always-available `--regextype=ERE` engine for native POSIX extended
+  regular expressions, with platform locale semantics and explicit NUL handling.
 - Add distinct root-spanning traversal orders: `--sort=roots` sorts only the search operands,
   while `--sort=global` sorts the operands and walks each tree in deterministic depth-first order.
   Clarify the ordering, directory read-ahead, result buffering, post-order, and score-ranking

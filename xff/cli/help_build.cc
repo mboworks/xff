@@ -337,10 +337,11 @@ Section GrammarsSection() {
   return VocabSection(
       "Regex grammars",
       "The grammar for `-regex` / `-iregex` and the content matchers `-rxc` / `-grep`, chosen by `--regextype` "
-      "(default `RE2`). `EXACT`, `FNMATCH`, `GLOB` and `SHGLOB` are core engines, always built in; `PCRE2` is a "
+      "(default `RE2`). `ERE`, `EXACT`, `FNMATCH`, `GLOB` and `SHGLOB` are core engines, always built in; `PCRE2` is a "
       "build-time extra (see `--help=extras`). RE2 and PCRE2 have canonical external references, so the "
       "smaller engines are spelled out in full here: they have no single authoritative man page, and "
-      "FNMATCH delegates to the platform's fnmatch(3), whose class / collation details vary by system.",
+      "ERE and FNMATCH delegate to the platform's regcomp(3) and fnmatch(3), whose locale, class, and collation "
+      "details vary by system.",
       regex::GrammarDocs());
 }
 
