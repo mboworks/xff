@@ -32,6 +32,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
+#include "xff/cli/config_validation.h"
 #include "xff/cli/globals.h"
 #include "xff/cli/help.h"
 #include "xff/cli/help_backend.h"
@@ -658,6 +659,9 @@ int RunMain(int argc, char** argv) {
   // Config is system + user + explicit --xffrc only; there is no auto-discovered project layer
   // (Option B, 2026-07-06), so the search roots do not feed config discovery.
   const xff::config::ConfigInputs inputs = xff::config::Discover(opts, ReadFile);
+  for (const std::string& notice : xff::cli::ConfigOverrideNotices(inputs)) {
+    std::cerr << "xff: warning: " << notice << "\n";
+  }
   if (const absl::Status status = xff::config::ValidateConfigSkips(inputs); !status.ok()) {
     std::cerr << "xff: " << status.message() << "\n";
     return 2;

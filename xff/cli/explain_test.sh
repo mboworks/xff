@@ -150,6 +150,16 @@ test::authorized_no_user_config_suppresses_user_defaults_but_keeps_explicit_xffr
   expect_matches 'xffrc[[:space:]]+--color=never' "${out}"
 }
 
+test::config_local_override_warns_but_last_value_still_wins() {
+  local cfg="${TEST_TMPDIR}/local_override"
+  printf 'common: --color=always\ncommon: --color=never\n' >"${cfg}"
+  local out
+  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" --explain 2>&1)"
+  expect_output_contains 'warning: setting --color is overridden within user config section' "${out}"
+  expect_matches 'user[[:space:]]+--color=always' "${out}"
+  expect_matches 'user[[:space:]]+--color=never' "${out}"
+}
+
 test::xffrc_dangerous_line_is_inert_unless_armed() {
   # The --xffrc tier is non-arming: a sensitive -exec carried by the file is dropped (inert) with a
   # "needs --allow-exec" note unless --allow-exec is passed from a trusted tier (here, the CLI). A

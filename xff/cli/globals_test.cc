@@ -32,8 +32,10 @@ using ::mbo::testing::IsOk;
 using ::mbo::testing::StatusIs;
 using ::testing::_;
 using ::testing::Contains;
+using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::Eq;
+using ::testing::Field;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
@@ -88,6 +90,15 @@ TEST_F(GlobalsTest, LookupResolvesNameAndAlias) {
   EXPECT_THAT(LookupGlobal("--nonesuch"), Eq(std::nullopt));
 }
 
+TEST_F(GlobalsTest, LookupArgumentCanonicalizesEveryAcceptedForm) {
+  EXPECT_THAT(LookupGlobalArgument("--sort=global"), Optional(Field("name", &GlobalFlag::name, Eq("--sort"))));
+  EXPECT_THAT(LookupGlobalArgument("--tz=utc"), Optional(Field("name", &GlobalFlag::name, Eq("--timezone"))));
+  EXPECT_THAT(LookupGlobalArgument("-j4"), Optional(Field("name", &GlobalFlag::name, Eq("--jobs"))));
+  EXPECT_THAT(LookupGlobalArgument("-g+"), Optional(Field("name", &GlobalFlag::name, Eq("--gitignore"))));
+  EXPECT_THAT(LookupGlobalArgument("-0"), Optional(Field("name", &GlobalFlag::name, Eq("--format"))));
+  EXPECT_THAT(LookupGlobalArgument("--unknown"), Eq(std::nullopt));
+}
+
 TEST_F(GlobalsTest, StringifiesAsCanonicalName) {
   const mbo::types::OptionalRef<const GlobalFlag> jobs = LookupGlobal("--jobs");
   ASSERT_THAT(jobs, Optional(_));
@@ -136,6 +147,19 @@ TEST_F(GlobalsTest, EveryGlobalResolvesByItsOwnName) {
   for (const GlobalFlag& flag : Globals()) {
     EXPECT_THAT(LookupGlobal(flag.name), Optional(Ref(flag))) << flag.name;
   }
+}
+
+TEST_F(GlobalsTest, NonOverridingGlobalsDeclareTheirRepetitionSemantics) {
+  std::vector<std::string_view> names;
+  for (const GlobalFlag& flag : Globals()) {
+    if (flag.repetition != GlobalFlag::Repetition::kOverride) {
+      names.push_back(flag.name);
+    }
+  }
+  EXPECT_THAT(
+      names, ElementsAre(
+                 "--config", "--xffrc", "--exclude", "--include", "--lang-db", "--mime-vocabulary", "--ignore-file",
+                 "--pack-option", "--summary", "--histogram", "--shard-pattern", "--define"));
 }
 
 TEST_F(GlobalsTest, IsKnownGlobalAcceptsEveryTableNameAndAlias) {
