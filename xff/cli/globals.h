@@ -88,6 +88,12 @@ struct GlobalFlag {
   // extra step); what each level MEANS is the flag's own business, and the families differ: `-g`
   // is a tri-state, `-z` is a nested ladder, `-Z` is that ladder with a capability added.
   absl::Span<const std::string_view> sign_forms;
+  // How multiple occurrences combine. This is parser metadata, not merely documentation: config
+  // diagnostics distinguish deliberate stacking from a likely-unnecessary override inside one
+  // logical section. kKeyed accumulates different NAMEs but overrides the same NAME, as in
+  // `--define=NAME=VALUE` and inline `--pack-option=NAME=VALUE`.
+  enum class Repetition : std::uint8_t { kOverride, kAccumulate, kKeyed };
+  Repetition repetition = Repetition::kOverride;
   // How a `name=VALUE` form is CHECKED, so a typo is a usage error rather than a silent default
   // (`--case=insensitve` used to match case-sensitively and look like it worked). Only kNone
   // accepts anything: it is the default because most valued flags take free text (a path, a
@@ -131,6 +137,11 @@ absl::Span<const GlobalFlag> Globals();
 // The global option named `name` (matching the canonical name or an alias), or no reference if
 // none. `name` carries its leading dashes (e.g. "--sort", "-j").
 mbo::types::OptionalRef<const GlobalFlag> LookupGlobal(std::string_view name);
+
+// The global option represented by the complete argument `arg`, normalized to its registry entry.
+// Accepts the same exact, valued, sign-suffixed, and compatibility forms as IsKnownGlobal. This is
+// useful when callers need the canonical option identity rather than only a yes/no classification.
+mbo::types::OptionalRef<const GlobalFlag> LookupGlobalArgument(std::string_view arg);
 
 // Whether `arg` is a recognized whole-run global token, so `main` can reject an
 // unknown leading option instead of silently ignoring it. Accepts: an exact name or

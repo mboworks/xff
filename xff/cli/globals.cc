@@ -271,6 +271,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "A `STYLE:EPOCH` spelling such as `xff:2` selects `STYLE` while retaining the full name as a config "
                    "selector. See `--help=styles` for the per-style defaults and `--help=config` for layering.",
         .topic = "config",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
     },
     {
         .name = "--no-config",
@@ -326,6 +327,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "a one-line warning. Repeatable; later files win.",
         .affects = "--allow-exec",
         .topic = "config",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
     },
     {
         .name = "--allow-exec",
@@ -792,6 +794,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Path filters",
         .summary = "skip paths matching a gitignore-style glob (repeatable; a matched directory is pruned)",
         .topic = "ignore",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
     },
     {
         .name = "--include",
@@ -800,6 +803,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Path filters",
         .summary = "re-include paths a --exclude would skip, matching a gitignore-style glob (repeatable)",
         .topic = "ignore",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
     },
     {
         .name = "--lang-db",
@@ -814,6 +818,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "between two languages in ONE file follow `--lang-conflicts`.",
         .affects = "-lang",
         .topic = "content",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
     },
     {
         .name = "--lang-conflicts",
@@ -841,6 +846,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "folds case. Conflicts between two types in ONE file follow `--mime-conflicts`.",
         .affects = "-mime",
         .topic = "content",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
     },
     {
         .name = "--mime-conflicts",
@@ -887,6 +893,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Filter & Ignore",
         .summary = "read an extra gitignore-format file, rooted at its own directory (repeatable)",
         .topic = "ignore",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
     },
     {
         .name = "--no-ignore",
@@ -1174,6 +1181,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "--pack",
         .topic = "archive",
         .extra = "archive",
+        .repetition = GlobalFlag::Repetition::kKeyed,
     },
     {
         .name = "--pack-level",
@@ -1216,6 +1224,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "for scripts.",
         .values = kSummaryValues,
         .topic = "stats",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
         .value_check = GlobalFlag::ValueCheck::kEnumOrTemplate,
     },
     {
@@ -1236,6 +1245,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "--unicode) or ASCII '#' otherwise; --top=N keeps the N tallest and --format=jsonl emits one "
                    "object per bar for scripts.",
         .topic = "stats",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
     },
     {
         .name = "--shards",
@@ -1293,6 +1303,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "`(?P<total>...)` and `(?P<dup>...)` are optional. Repeatable; the patterns are tried in "
                    "order, before the built-in schemes.",
         .topic = "stats",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
     },
     {
         .name = "--count",
@@ -1571,6 +1582,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "fields",
         .header = "Fields & Exec",
         .summary = "define a value referenced as {def.NAME}",
+        .repetition = GlobalFlag::Repetition::kKeyed,
     },
     {
         .name = "--time-format",
@@ -1621,6 +1633,33 @@ mbo::types::OptionalRef<const GlobalFlag> LookupGlobal(std::string_view name) {
   for (const GlobalFlag& flag : kGlobals) {
     if (flag.name == name || (!flag.alias.empty() && flag.alias == name)) {
       return flag;
+    }
+  }
+  return std::nullopt;
+}
+
+mbo::types::OptionalRef<const GlobalFlag> LookupGlobalArgument(std::string_view arg) {
+  if (const mbo::types::OptionalRef<const GlobalFlag> exact = LookupGlobal(arg); exact.has_value()) {
+    return exact;
+  }
+  if (arg == "-0") {
+    return LookupGlobal("--format");
+  }
+  if (arg == "-i") {
+    return LookupGlobal("--case");
+  }
+  if (arg.starts_with("-j") && arg.size() > 2 && !arg.starts_with("-j=")) {
+    return LookupGlobal("--jobs");
+  }
+  for (const GlobalFlag& flag : Globals()) {
+    if (absl::c_contains(flag.sign_forms, arg)) {
+      return flag;
+    }
+  }
+  if (const std::string_view::size_type equals = arg.find('='); equals != std::string_view::npos) {
+    const mbo::types::OptionalRef<const GlobalFlag> valued = LookupGlobal(arg.substr(0, equals));
+    if (valued.has_value() && absl::StrContains(valued->display, '=')) {
+      return valued;
     }
   }
   return std::nullopt;
@@ -1682,35 +1721,7 @@ absl::Status ValidateGlobalValue(std::string_view arg) {
 }
 
 bool IsKnownGlobal(std::string_view arg) {
-  // The sign ladders come from the flags themselves (GlobalFlag::sign_forms), so a new one is
-  // recognised by declaring it rather than by also editing a list here.
-  for (const GlobalFlag& flag : Globals()) {
-    if (absl::c_contains(flag.sign_forms, arg)) {
-      return true;
-    }
-  }
-  // What is left are the compat aliases that carry no sign: -0 (= --format=nul) and -i
-  // (= --case=insensitive).
-  if (arg == "-0" || arg == "-i") {
-    return true;
-  }
-  // Conventional attached short-option argument: -j4 / -jall. The help leads
-  // with the more readable -j N and -j=N forms, but build-tool users expect this.
-  if (arg.starts_with("-j") && arg.size() > 2 && !arg.starts_with("-j=")) {
-    return true;
-  }
-  // An exact name or alias (bare flags, and valued flags used without a value).
-  if (LookupGlobal(arg).has_value()) {
-    return true;
-  }
-  // A valued form name=VALUE / alias=VALUE: the key must resolve to a flag that
-  // advertises a value (its display contains '='), so `--safe=x` stays unknown while
-  // `--sort=tree` / `--define=A=B` are accepted (only the key before the first '=').
-  if (const std::string_view::size_type eq = arg.find('='); eq != std::string_view::npos) {
-    const mbo::types::OptionalRef<const GlobalFlag> flag = LookupGlobal(arg.substr(0, eq));
-    return flag.has_value() && absl::StrContains(flag->display, '=');
-  }
-  return false;
+  return LookupGlobalArgument(arg).has_value();
 }
 
 bool ExtraEnabled(std::string_view key) {

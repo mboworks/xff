@@ -41,6 +41,7 @@ cc_library(
     name = "main_cc",
     srcs = ["main.cc"],
     deps = [
+        ":config_validation_cc",
         ":globals_cc",
         ":help_backend_cc",
         ":help_build_cc",
@@ -70,6 +71,34 @@ cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/types:span",
         "@mboworks_mbo//mbo/types:optional_ref_cc",
+    ],
+)
+
+cc_library(
+    name = "config_validation_cc",
+    srcs = ["config_validation.cc"],
+    hdrs = ["config_validation.h"],
+    deps = [
+        ":globals_cc",
+        "//xff/config:config_cc",
+        "//xff/config:xffrc_cc",
+        "//xff/registry:registry_cc",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/strings",
+        "@mboworks_mbo//mbo/types:optional_ref_cc",
+    ],
+)
+
+cc_test(
+    name = "config_validation_test",
+    size = "small",
+    srcs = ["config_validation_test.cc"],
+    deps = [
+        ":config_validation_cc",
+        "//xff/config:config_cc",
+        "//xff/config:xffrc_cc",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
     ],
 )
 

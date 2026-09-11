@@ -11,6 +11,9 @@
   explicitly selected `--xffrc` files. Each permission pair governs only its matching skip flag.
 - Add config-selectable `--allow-xffrc` / `--no-allow-xffrc` controls for explicitly named config
   files, subject to the system policy gate and unavailable to the file being admitted.
+- Warn about overriding the same setting more than once within one logical config section while
+  preserving last-value-wins behavior. Deliberately accumulating settings, expression primaries,
+  separate sections and tiers, and all command-line repetitions remain unaffected.
 - Apply named configuration and explicitly loaded config files at each command-line
   selector's exact position instead of flattening them ahead of all CLI options.
 - Defer regex matcher binding until the final configuration has selected grammar
@@ -23,6 +26,10 @@
   while `--sort=global` sorts the operands and walks each tree in deterministic depth-first order.
   Clarify the ordering, directory read-ahead, result buffering, post-order, and score-ranking
   contracts throughout the generated reference and parallel-walk design.
+- Honor the selected path encoding in tree-comparison status records, including non-UTF-8 path
+  bytes, instead of emitting raw relative paths independently of the output configuration.
+- Apply every matching system-policy safety-class denial to mixed config lines, so a destructive
+  primary cannot be hidden from an `@destructive` rule by a sensitive primary on the same line.
 - Clarify concurrency and matching controls, including worker defaults and `-exec` timing,
   filesystem-native versus explicit case folding, block-size units, and regex grammar scope.
 

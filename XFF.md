@@ -83,6 +83,8 @@ Every `--config=NAME` remains active, so multiple named blocks can apply. Among 
 
 Configuration expands in application order. Automatic system/user defaults and the invocation selector come first; each command-line `--config` then activates newly matching lines at that exact position, and each `--xffrc` loads its currently matching lines where it appears. Because conflicting options usually use the last value, moving a selector can intentionally change the result. A config line is applied at most once.
 
+Within one logical config section, repeating an overriding setting keeps the normal last-value-wins result but emits a warning: the earlier value is locally redundant and is usually a copy/paste mistake. Options that deliberately accumulate (such as `--exclude`, `--summary`, and `--define`) may repeat without warning, as may expression primaries. Separate config sections and tiers remain independent. Command-line repetition is never warned about, so a pasted command can be adjusted by appending an override.
+
 ### Arming dangerous directives
 
 A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`, or `-delete`) carried by an `--xffrc` file is inert unless `--allow-exec` is set from a trusted tier (the command line or the system/user config, never an `--xffrc` file itself). Unarmed lines are dropped with a warning; the root system `[policy]` can hard-deny even `--allow-exec`.

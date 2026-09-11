@@ -917,6 +917,13 @@ Section ConfigSection(bool in_full) {
       "each `--xffrc` loads its currently matching lines where it appears. Because conflicting options usually "
       "use the last value, moving a selector can intentionally change the result. A config line is applied at "
       "most once."));
+  style.children.push_back(ProseOf(
+      "Within one logical config section, repeating an overriding setting keeps the normal last-value-wins "
+      "result but emits a warning: the earlier value is locally redundant and is usually a copy/paste mistake. "
+      "Options that deliberately accumulate (such as `--exclude`, `--summary`, and `--define`) may repeat "
+      "without warning, as may expression primaries. Separate config sections and tiers remain independent. "
+      "Command-line repetition is never warned about, so a pasted command can be adjusted by appending an "
+      "override."));
   section.children.push_back(Content{.node = std::move(style)});
 
   Subsection arming{.title = "Arming dangerous directives"};
