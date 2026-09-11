@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-11 11:30:33</td>
+            <td class="headerValue">2026-09-11 12:42:13</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -158,16 +158,16 @@
 <span id="L78"><span class="lineNum">      78</span>                 :             : </span>
 <span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">        1746 : std::string RenderInlinesPlain(const Inlines&amp; runs) {</span></span>
 <span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">        1746 :   std::string out;</span></span>
-<span id="L81"><span class="lineNum">      81</span>         [<span class="tlaGBC" title="branch 0 was taken 11516 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1746 times"> + </span>]:<span class="tlaGNC">       11516 :   for (const Inline&amp; run : runs) {</span></span>
+<span id="L81"><span class="lineNum">      81</span>         [<span class="tlaGBC" title="branch 0 was taken 11644 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1746 times"> + </span>]:<span class="tlaGNC">       11644 :   for (const Inline&amp; run : runs) {</span></span>
 <span id="L82"><span class="lineNum">      82</span>                 :             :     // Free prose drops emphasis markup; a ref shows its label, or its plain locator</span>
 <span id="L83"><span class="lineNum">      83</span>                 :             :     // when the label is empty. All other styles are literal text.</span>
-<span id="L84"><span class="lineNum">      84</span> [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 11513 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">       11516 :     if (run.style == Inline::Style::kRef &amp;&amp; run.text.empty() &amp;&amp; run.target.has_value()) {</span></span>
+<span id="L84"><span class="lineNum">      84</span> [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 11641 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">       11644 :     if (run.style == Inline::Style::kRef &amp;&amp; run.text.empty() &amp;&amp; run.target.has_value()) {</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 2 times"> + </span><span class="tlaUNC" title="branch &quot;5&quot; was not taken"> - </span>]
 <span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaGNC">           2 :       absl::StrAppend(&amp;out, PlainRefLocator(*run.target));</span></span>
-<span id="L86"><span class="lineNum">      86</span>                 :<span class="tlaGNC">       11514 :     } else {</span></span>
-<span id="L87"><span class="lineNum">      87</span>                 :<span class="tlaGNC">       11514 :       absl::StrAppend(&amp;out, run.text);</span></span>
-<span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaGNC">       11514 :     }</span></span>
-<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">       11516 :   }</span></span>
+<span id="L86"><span class="lineNum">      86</span>                 :<span class="tlaGNC">       11642 :     } else {</span></span>
+<span id="L87"><span class="lineNum">      87</span>                 :<span class="tlaGNC">       11642 :       absl::StrAppend(&amp;out, run.text);</span></span>
+<span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaGNC">       11642 :     }</span></span>
+<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">       11644 :   }</span></span>
 <span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">        1746 :   return out;</span></span>
 <span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">        1746 : }</span></span>
 <span id="L92"><span class="lineNum">      92</span>                 :             : </span>

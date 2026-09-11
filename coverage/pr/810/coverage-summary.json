@@ -3,25 +3,25 @@
   "measurements": {
     "overall": {
       "lines": {
-        "covered": 18088,
-        "total": 18941,
-        "percent": 95.5
+        "covered": 18157,
+        "total": 19027,
+        "percent": 95.43
       },
       "functions": {
-        "covered": 1558,
-        "total": 1572,
+        "covered": 1567,
+        "total": 1581,
         "percent": 99.11
       },
       "branches": {
-        "covered": 8636,
-        "total": 9780,
-        "percent": 88.3
+        "covered": 8709,
+        "total": 9862,
+        "percent": 88.31
       }
     },
     "program / command line": {
       "lines": {
-        "covered": 3094,
-        "total": 3163,
+        "covered": 3098,
+        "total": 3167,
         "percent": 97.82
       },
       "functions": {
@@ -37,19 +37,19 @@
     },
     "program / configuration": {
       "lines": {
-        "covered": 554,
-        "total": 561,
-        "percent": 98.75
+        "covered": 629,
+        "total": 643,
+        "percent": 97.82
       },
       "functions": {
-        "covered": 57,
-        "total": 57,
+        "covered": 66,
+        "total": 66,
         "percent": 100.0
       },
       "branches": {
-        "covered": 341,
-        "total": 364,
-        "percent": 93.68
+        "covered": 403,
+        "total": 446,
+        "percent": 90.36
       }
     },
     "program / command grammar": {
@@ -71,9 +71,9 @@
     },
     "program / execution": {
       "lines": {
-        "covered": 5800,
+        "covered": 5789,
         "total": 6187,
-        "percent": 93.74
+        "percent": 93.57
       },
       "functions": {
         "covered": 444,
@@ -81,16 +81,16 @@
         "percent": 97.8
       },
       "branches": {
-        "covered": 3298,
+        "covered": 3309,
         "total": 3882,
-        "percent": 84.96
+        "percent": 85.24
       }
     },
     "program / filesystem": {
       "lines": {
-        "covered": 643,
+        "covered": 644,
         "total": 661,
-        "percent": 97.28
+        "percent": 97.43
       },
       "functions": {
         "covered": 56,
@@ -523,9 +523,9 @@
   "reasons": {},
   "patch": {
     "lines": {
-      "covered": 77,
-      "total": 77,
-      "percent": 100.0
+      "covered": 163,
+      "total": 168,
+      "percent": 97.02
     },
     "functions": {
       "covered": 0,
@@ -533,9 +533,9 @@
       "percent": null
     },
     "branches": {
-      "covered": 76,
-      "total": 82,
-      "percent": 92.68
+      "covered": 142,
+      "total": 166,
+      "percent": 85.54
     }
   },
   "patch_policy": {
