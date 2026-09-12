@@ -81,6 +81,21 @@ TEST_F(PolicyTest, CombinedSkipRequiresPermissionForEachPresentFile) {
       StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-require-system-config")));
 }
 
+TEST_F(PolicyTest, SystemGrantOverridesUserRequirementForIndividualAndCombinedSkips) {
+  ConfigInputs inputs;
+  inputs.sources = {
+      {.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true},
+      {.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true},
+  };
+  inputs.system = ParseIni("--no-require-system-config\n--no-require-user-config");
+  inputs.user = ParseIni("--require-user-config");
+  inputs.no_user_config = true;
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+  inputs.no_user_config = false;
+  inputs.no_config = true;
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+}
+
 TEST_F(PolicyTest, CombinedSkipNeedsNoPermissionForMissingFiles) {
   ConfigInputs inputs;
   inputs.no_config = true;
