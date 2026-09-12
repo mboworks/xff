@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-12 15:34:14</td>
+            <td class="headerValue">2026-09-12 19:15:52</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -112,13 +112,13 @@
 <span id="L32"><span class="lineNum">      32</span>                 :             : </span>
 <span id="L33"><span class="lineNum">      33</span>                 :             : namespace xff::color {</span>
 <span id="L34"><span class="lineNum">      34</span>                 :             : </span>
-<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">        1515 : When ResolveWhen(const std::vector&lt;std::string&gt;&amp; globals) {</span></span>
-<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">        1515 :   When when = When::kAuto;</span></span>
-<span id="L37"><span class="lineNum">      37</span>         [<span class="tlaGBC" title="branch 0 was taken 3730 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1515 times"> + </span>]:<span class="tlaGNC">        3793 :   for (const std::string&amp; global : globals) {</span></span>
-<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">        3730 :     std::string_view value = global;</span></span>
-<span id="L39"><span class="lineNum">      39</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 3729 times"> + </span>]:<span class="tlaGNC">        3730 :     if (value == &quot;--color&quot;) {</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">        1526 : When ResolveWhen(const std::vector&lt;std::string&gt;&amp; globals) {</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">        1526 :   When when = When::kAuto;</span></span>
+<span id="L37"><span class="lineNum">      37</span>         [<span class="tlaGBC" title="branch 0 was taken 3757 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1526 times"> + </span>]:<span class="tlaGNC">        3820 :   for (const std::string&amp; global : globals) {</span></span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">        3757 :     std::string_view value = global;</span></span>
+<span id="L39"><span class="lineNum">      39</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 3756 times"> + </span>]:<span class="tlaGNC">        3757 :     if (value == &quot;--color&quot;) {</span></span>
 <span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">           1 :       when = When::kAlways;  // a bare --color forces color on</span></span>
-<span id="L41"><span class="lineNum">      41</span>         [<span class="tlaGBC" title="branch 0 was taken 56 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3673 times"> + </span>]:<span class="tlaGNC">        3729 :     } else if (absl::ConsumePrefix(&amp;value, &quot;--color=&quot;)) {</span></span>
+<span id="L41"><span class="lineNum">      41</span>         [<span class="tlaGBC" title="branch 0 was taken 56 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3700 times"> + </span>]:<span class="tlaGNC">        3756 :     } else if (absl::ConsumePrefix(&amp;value, &quot;--color=&quot;)) {</span></span>
 <span id="L42"><span class="lineNum">      42</span>                 :             :       // The shared vocabulary (auto / always / never plus yes / no / 1 / true / 0 /</span>
 <span id="L43"><span class="lineNum">      43</span>                 :             :       // false); an unrecognized value is ignored, leaving the prior resolution.</span>
 <span id="L44"><span class="lineNum">      44</span>         [<span class="tlaGBC" title="branch 0 was taken 55 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">          56 :       if (const std::optional&lt;values::Tristate&gt; tri = values::ParseTristate(value); tri.has_value()) {</span></span>
@@ -129,19 +129,19 @@
 <span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">          55 :         }</span></span>
 <span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">          55 :       }</span></span>
 <span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">          56 :     }</span></span>
-<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">        3730 :   }</span></span>
-<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">        1515 :   return when;</span></span>
-<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">        1515 : }</span></span>
+<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">        3757 :   }</span></span>
+<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">        1526 :   return when;</span></span>
+<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">        1526 : }</span></span>
 <span id="L55"><span class="lineNum">      55</span>                 :             : </span>
-<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">        1514 : bool Enabled(When when, bool stdout_is_tty, bool no_color_env) {</span></span>
-<span id="L57"><span class="lineNum">      57</span>         [<span class="tlaGBC" title="branch 0 was taken 1514 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">        1514 :   switch (when) {</span></span>
-<span id="L58"><span class="lineNum">      58</span>         [<span class="tlaGBC" title="branch 0 was taken 46 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1468 times"> + </span>]:<span class="tlaGNC">          46 :     case When::kAlways: return true;  // an explicit request overrides NO_COLOR</span></span>
-<span id="L59"><span class="lineNum">      59</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1508 times"> + </span>]:<span class="tlaGNC">           6 :     case When::kNever: return false;</span></span>
-<span id="L60"><span class="lineNum">      60</span> [<span class="tlaGBC" title="branch 0 was taken 1462 times"> + </span><span class="tlaGBC" title="branch 1 was taken 52 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1460 times"> + </span>]:<span class="tlaGNC">        1462 :     case When::kAuto: return stdout_is_tty &amp;&amp; !no_color_env;</span></span>
+<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">        1525 : bool Enabled(When when, bool stdout_is_tty, bool no_color_env) {</span></span>
+<span id="L57"><span class="lineNum">      57</span>         [<span class="tlaGBC" title="branch 0 was taken 1525 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">        1525 :   switch (when) {</span></span>
+<span id="L58"><span class="lineNum">      58</span>         [<span class="tlaGBC" title="branch 0 was taken 46 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1479 times"> + </span>]:<span class="tlaGNC">          46 :     case When::kAlways: return true;  // an explicit request overrides NO_COLOR</span></span>
+<span id="L59"><span class="lineNum">      59</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1519 times"> + </span>]:<span class="tlaGNC">           6 :     case When::kNever: return false;</span></span>
+<span id="L60"><span class="lineNum">      60</span> [<span class="tlaGBC" title="branch 0 was taken 1473 times"> + </span><span class="tlaGBC" title="branch 1 was taken 52 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1471 times"> + </span>]:<span class="tlaGNC">        1473 :     case When::kAuto: return stdout_is_tty &amp;&amp; !no_color_env;</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 1 time"> + </span>]
-<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">        1514 :   }</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">        1525 :   }</span></span>
 <span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaUNC">           0 :   return false;</span></span>
-<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">        1514 : }</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">        1525 : }</span></span>
 <span id="L64"><span class="lineNum">      64</span>                 :             : </span>
 <span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">         111 : std::string_view CodeForType(vfs::FileType type, std::uint32_t mode) {</span></span>
 <span id="L66"><span class="lineNum">      66</span>         [<span class="tlaGBC" title="branch 0 was taken 111 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">         111 :   switch (type) {</span></span>

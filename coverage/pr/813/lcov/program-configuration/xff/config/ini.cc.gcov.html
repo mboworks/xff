@@ -41,12 +41,12 @@
             <td></td>
             <td class="headerItem">Lines:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">49</td>
-            <td class="headerCovTableEntry">49</td>
+            <td class="headerCovTableEntry">41</td>
+            <td class="headerCovTableEntry">41</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-12 15:34:14</td>
+            <td class="headerValue">2026-09-12 19:15:52</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -58,8 +58,8 @@
             <td></td>
             <td></td>
             <td class="headerItem">Branches:</td>
-            <td class="headerCovTableEntryHi">85.0&nbsp;%</td>
-            <td class="headerCovTableEntry">20</td>
+            <td class="headerCovTableEntryHi">94.4&nbsp;%</td>
+            <td class="headerCovTableEntry">18</td>
             <td class="headerCovTableEntry">17</td>
           </tr>
                   <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
@@ -96,76 +96,67 @@
 <span id="L16"><span class="lineNum">      16</span>                 :             : #include &quot;xff/config/ini.h&quot;</span>
 <span id="L17"><span class="lineNum">      17</span>                 :             : </span>
 <span id="L18"><span class="lineNum">      18</span>                 :             : #include &lt;cstddef&gt;</span>
-<span id="L19"><span class="lineNum">      19</span>                 :             : #include &lt;ranges&gt;</span>
-<span id="L20"><span class="lineNum">      20</span>                 :             : #include &lt;string&gt;</span>
-<span id="L21"><span class="lineNum">      21</span>                 :             : #include &lt;string_view&gt;</span>
-<span id="L22"><span class="lineNum">      22</span>                 :             : #include &lt;vector&gt;</span>
-<span id="L23"><span class="lineNum">      23</span>                 :             : </span>
-<span id="L24"><span class="lineNum">      24</span>                 :             : #include &quot;absl/strings/ascii.h&quot;</span>
-<span id="L25"><span class="lineNum">      25</span>                 :             : #include &quot;absl/strings/str_cat.h&quot;</span>
-<span id="L26"><span class="lineNum">      26</span>                 :             : #include &quot;absl/strings/str_split.h&quot;</span>
-<span id="L27"><span class="lineNum">      27</span>                 :             : </span>
-<span id="L28"><span class="lineNum">      28</span>                 :             : namespace xff::config {</span>
-<span id="L29"><span class="lineNum">      29</span>                 :             : namespace {</span>
-<span id="L30"><span class="lineNum">      30</span>                 :             : </span>
-<span id="L31"><span class="lineNum">      31</span>                 :             : // An INI option line -&gt; a CLI token: &quot;--color = auto&quot; -&gt; &quot;--color=auto&quot;; a bare</span>
-<span id="L32"><span class="lineNum">      32</span>                 :             : // &quot;--warn&quot; stays &quot;--warn&quot;.</span>
-<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">         100 : std::string DefaultFlag(std::string_view line) {</span></span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">         100 :   const std::string_view::size_type eq = line.find('=');</span></span>
-<span id="L35"><span class="lineNum">      35</span>         [<span class="tlaGBC" title="branch 0 was taken 52 times"> + </span><span class="tlaGBC" title="branch 1 was taken 48 times"> + </span>]:<span class="tlaGNC">         100 :   if (eq == std::string_view::npos) {</span></span>
-<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">          52 :     return std::string(absl::StripAsciiWhitespace(line));</span></span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">          52 :   }</span></span>
-<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">          48 :   return absl::StrCat(</span></span>
-<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">          48 :       absl::StripAsciiWhitespace(line.substr(0, eq)), &quot;=&quot;, absl::StripAsciiWhitespace(line.substr(eq + 1)));</span></span>
-<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">         100 : }</span></span>
-<span id="L41"><span class="lineNum">      41</span>                 :             : </span>
-<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">         100 : std::vector&lt;std::string&gt; FlagTokens(std::string_view line) {</span></span>
-<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">         100 :   const std::string normalized = DefaultFlag(line);</span></span>
-<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">         100 :   std::vector&lt;std::string&gt; result;</span></span>
-<span id="L45"><span class="lineNum">      45</span>         [<span class="tlaGBC" title="branch 0 was taken 155 times"> + </span><span class="tlaGBC" title="branch 1 was taken 100 times"> + </span>]:<span class="tlaGNC">         155 :   for (const std::string_view token : absl::StrSplit(normalized, absl::ByAnyChar(&quot; \t&quot;), absl::SkipEmpty())) {</span></span>
-<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">         155 :     result.emplace_back(token);</span></span>
-<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">         155 :   }</span></span>
-<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">         100 :   return result;</span></span>
-<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">         100 : }</span></span>
-<span id="L50"><span class="lineNum">      50</span>                 :             : </span>
-<span id="L51"><span class="lineNum">      51</span>                 :             : }  // namespace</span>
-<span id="L52"><span class="lineNum">      52</span>                 :             : </span>
-<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">          30 : SystemConfig ParseIni(std::string_view text) {</span></span>
-<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">          30 :   SystemConfig config;</span></span>
-<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">          30 :   std::string_view section;</span></span>
-<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">          30 :   std::size_t section_line = 0;</span></span>
-<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">          30 :   bool saw_section = false;</span></span>
-<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">          30 :   std::size_t line_number = 0;</span></span>
-<span id="L59"><span class="lineNum">      59</span>         [<span class="tlaGBC" title="branch 0 was taken 194 times"> + </span><span class="tlaGBC" title="branch 1 was taken 30 times"> + </span>]:<span class="tlaGNC">         194 :   for (const std::string_view raw : absl::StrSplit(text, '\n')) {</span></span>
-<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">         194 :     ++line_number;</span></span>
-<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">         194 :     const std::string_view line = absl::StripAsciiWhitespace(raw);</span></span>
-<span id="L62"><span class="lineNum">      62</span> [<span class="tlaGBC" title="branch 0 was taken 47 times"> + </span><span class="tlaGBC" title="branch 1 was taken 147 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 147 times"> + </span>]:<span class="tlaGNC">         194 :     if (line.empty() || line.front() == '#' || line.front() == ';') {</span></span>
-<span class="lineNum">        </span>         [<span class="tlaUNC" title="branch &quot;4&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 147 times"> + </span>]
-<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">          47 :       continue;  // blank or comment</span></span>
-<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">          47 :     }</span></span>
-<span id="L65"><span class="lineNum">      65</span> [<span class="tlaGBC" title="branch 0 was taken 47 times"> + </span><span class="tlaGBC" title="branch 1 was taken 100 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 47 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">         147 :     if (line.front() == '[' &amp;&amp; line.back() == ']') {</span></span>
-<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">          47 :       saw_section = true;</span></span>
-<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">          47 :       section = absl::StripAsciiWhitespace(line.substr(1, line.size() - 2));</span></span>
-<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">          47 :       section_line = line_number;</span></span>
-<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">          47 :       continue;</span></span>
-<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">          47 :     }</span></span>
-<span id="L71"><span class="lineNum">      71</span>         [<span class="tlaGBC" title="branch 0 was taken 42 times"> + </span><span class="tlaGBC" title="branch 1 was taken 58 times"> + </span>]:<span class="tlaGNC">         100 :     if (!saw_section) {</span></span>
-<span id="L72"><span class="lineNum">      72</span>                 :<span class="tlaGNC">          42 :       const IniLine parsed{.number = line_number, .text = std::string(line), .tokens = FlagTokens(line)};</span></span>
-<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">          42 :       config.globals.insert(config.globals.end(), parsed.tokens.begin(), parsed.tokens.end());</span></span>
-<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">          42 :       config.global_lines.push_back(parsed);</span></span>
-<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">          67 :     } else {</span></span>
-<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">          58 :       auto found = std::ranges::find(config.named, section, &amp;IniSection::name);</span></span>
-<span id="L77"><span class="lineNum">      77</span>         [<span class="tlaGBC" title="branch 0 was taken 47 times"> + </span><span class="tlaGBC" title="branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">          58 :       if (found == config.named.end()) {</span></span>
-<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">          47 :         config.named.push_back({.name = std::string(section), .number = section_line});</span></span>
-<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">          47 :         found = config.named.end() - 1;</span></span>
-<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">          47 :       }</span></span>
-<span id="L81"><span class="lineNum">      81</span>                 :<span class="tlaGNC">          58 :       found-&gt;lines.push_back({.number = line_number, .text = std::string(line), .tokens = FlagTokens(line)});</span></span>
-<span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">          58 :     }</span></span>
-<span id="L83"><span class="lineNum">      83</span>                 :<span class="tlaGNC">         100 :   }</span></span>
-<span id="L84"><span class="lineNum">      84</span>                 :<span class="tlaGNC">          30 :   return config;</span></span>
-<span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaGNC">          30 : }</span></span>
-<span id="L86"><span class="lineNum">      86</span>                 :             : </span>
-<span id="L87"><span class="lineNum">      87</span>                 :             : }  // namespace xff::config</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             : #include &lt;string&gt;</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             : #include &lt;string_view&gt;</span>
+<span id="L21"><span class="lineNum">      21</span>                 :             : #include &lt;vector&gt;</span>
+<span id="L22"><span class="lineNum">      22</span>                 :             : </span>
+<span id="L23"><span class="lineNum">      23</span>                 :             : #include &quot;absl/strings/ascii.h&quot;</span>
+<span id="L24"><span class="lineNum">      24</span>                 :             : #include &quot;absl/strings/str_cat.h&quot;</span>
+<span id="L25"><span class="lineNum">      25</span>                 :             : #include &quot;absl/strings/str_split.h&quot;</span>
+<span id="L26"><span class="lineNum">      26</span>                 :             : </span>
+<span id="L27"><span class="lineNum">      27</span>                 :             : namespace xff::config {</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             : namespace {</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             : </span>
+<span id="L30"><span class="lineNum">      30</span>                 :             : // An INI option line -&gt; a CLI token: &quot;--color = auto&quot; -&gt; &quot;--color=auto&quot;; a bare</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             : // &quot;--warn&quot; stays &quot;--warn&quot;.</span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">         284 : std::string DefaultFlag(std::string_view line) {</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">         284 :   const std::string_view::size_type eq = line.find('=');</span></span>
+<span id="L34"><span class="lineNum">      34</span>         [<span class="tlaGBC" title="branch 0 was taken 139 times"> + </span><span class="tlaGBC" title="branch 1 was taken 145 times"> + </span>]:<span class="tlaGNC">         284 :   if (eq == std::string_view::npos) {</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">         139 :     return std::string(absl::StripAsciiWhitespace(line));</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">         139 :   }</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">         145 :   return absl::StrCat(</span></span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">         145 :       absl::StripAsciiWhitespace(line.substr(0, eq)), &quot;=&quot;, absl::StripAsciiWhitespace(line.substr(eq + 1)));</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">         284 : }</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :             : </span>
+<span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">         284 : std::vector&lt;std::string&gt; FlagTokens(std::string_view line) {</span></span>
+<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">         284 :   const std::string normalized = DefaultFlag(line);</span></span>
+<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">         284 :   std::vector&lt;std::string&gt; result;</span></span>
+<span id="L44"><span class="lineNum">      44</span>         [<span class="tlaGBC" title="branch 0 was taken 399 times"> + </span><span class="tlaGBC" title="branch 1 was taken 284 times"> + </span>]:<span class="tlaGNC">         399 :   for (const std::string_view token : absl::StrSplit(normalized, absl::ByAnyChar(&quot; \t&quot;), absl::SkipEmpty())) {</span></span>
+<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">         399 :     result.emplace_back(token);</span></span>
+<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">         399 :   }</span></span>
+<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">         284 :   return result;</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">         284 : }</span></span>
+<span id="L49"><span class="lineNum">      49</span>                 :             : </span>
+<span id="L50"><span class="lineNum">      50</span>                 :             : }  // namespace</span>
+<span id="L51"><span class="lineNum">      51</span>                 :             : </span>
+<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">         138 : ConfigFile ParseIni(std::string_view text) {</span></span>
+<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">         138 :   ConfigFile config;</span></span>
+<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">         138 :   std::size_t line_number = 0;</span></span>
+<span id="L55"><span class="lineNum">      55</span>         [<span class="tlaGBC" title="branch 0 was taken 541 times"> + </span><span class="tlaGBC" title="branch 1 was taken 138 times"> + </span>]:<span class="tlaGNC">         541 :   for (const std::string_view raw : absl::StrSplit(text, '\n')) {</span></span>
+<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">         541 :     ++line_number;</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">         541 :     const std::string_view line = absl::StripAsciiWhitespace(raw);</span></span>
+<span id="L58"><span class="lineNum">      58</span> [<span class="tlaGBC" title="branch 0 was taken 109 times"> + </span><span class="tlaGBC" title="branch 1 was taken 432 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 430 times"> + </span>]:<span class="tlaGNC">         541 :     if (line.empty() || line.front() == '#' || line.front() == ';') {</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 429 times"> + </span>]
+<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">         112 :       continue;  // blank or comment</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">         112 :     }</span></span>
+<span id="L61"><span class="lineNum">      61</span> [<span class="tlaGBC" title="branch 0 was taken 145 times"> + </span><span class="tlaGBC" title="branch 1 was taken 284 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 145 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">         429 :     if (line.front() == '[' &amp;&amp; line.back() == ']') {</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">         145 :       const std::string_view name = absl::StripAsciiWhitespace(line.substr(1, line.size() - 2));</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">         145 :       config.named.push_back({.name = std::string(name), .number = line_number});</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">         145 :       continue;</span></span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">         145 :     }</span></span>
+<span id="L66"><span class="lineNum">      66</span>         [<span class="tlaGBC" title="branch 0 was taken 127 times"> + </span><span class="tlaGBC" title="branch 1 was taken 157 times"> + </span>]:<span class="tlaGNC">         284 :     if (config.named.empty()) {</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">         127 :       const IniLine parsed{.number = line_number, .text = std::string(line), .tokens = FlagTokens(line)};</span></span>
+<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">         127 :       config.globals.insert(config.globals.end(), parsed.tokens.begin(), parsed.tokens.end());</span></span>
+<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">         127 :       config.global_lines.push_back(parsed);</span></span>
+<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">         185 :     } else {</span></span>
+<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">         157 :       config.named.back().lines.push_back(</span></span>
+<span id="L72"><span class="lineNum">      72</span>                 :<span class="tlaGNC">         157 :           {.number = line_number, .text = std::string(line), .tokens = FlagTokens(line)});</span></span>
+<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">         157 :     }</span></span>
+<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">         284 :   }</span></span>
+<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">         138 :   return config;</span></span>
+<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">         138 : }</span></span>
+<span id="L77"><span class="lineNum">      77</span>                 :             : </span>
+<span id="L78"><span class="lineNum">      78</span>                 :             : }  // namespace xff::config</span>
         </pre>
               </td>
             </tr>

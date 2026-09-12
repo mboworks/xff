@@ -3,53 +3,53 @@
   "measurements": {
     "overall": {
       "lines": {
-        "covered": 18602,
-        "total": 19475,
+        "covered": 18665,
+        "total": 19540,
         "percent": 95.52
       },
       "functions": {
-        "covered": 1586,
-        "total": 1600,
-        "percent": 99.12
+        "covered": 1593,
+        "total": 1607,
+        "percent": 99.13
       },
       "branches": {
-        "covered": 8891,
-        "total": 10078,
-        "percent": 88.22
+        "covered": 8864,
+        "total": 10032,
+        "percent": 88.36
       }
     },
     "program / command line": {
       "lines": {
-        "covered": 3461,
-        "total": 3546,
-        "percent": 97.6
+        "covered": 3538,
+        "total": 3623,
+        "percent": 97.65
       },
       "functions": {
-        "covered": 231,
-        "total": 233,
-        "percent": 99.14
+        "covered": 234,
+        "total": 236,
+        "percent": 99.15
       },
       "branches": {
-        "covered": 1260,
-        "total": 1370,
-        "percent": 91.97
+        "covered": 1264,
+        "total": 1374,
+        "percent": 91.99
       }
     },
     "program / configuration": {
       "lines": {
-        "covered": 686,
-        "total": 695,
-        "percent": 98.71
+        "covered": 672,
+        "total": 683,
+        "percent": 98.39
       },
       "functions": {
-        "covered": 65,
-        "total": 65,
+        "covered": 69,
+        "total": 69,
         "percent": 100.0
       },
       "branches": {
-        "covered": 431,
-        "total": 480,
-        "percent": 89.79
+        "covered": 402,
+        "total": 430,
+        "percent": 93.49
       }
     },
     "program / command grammar": {
@@ -81,9 +81,9 @@
         "percent": 97.8
       },
       "branches": {
-        "covered": 3298,
+        "covered": 3296,
         "total": 3882,
-        "percent": 84.96
+        "percent": 84.9
       }
     },
     "program / filesystem": {
@@ -523,9 +523,9 @@
   "reasons": {},
   "patch": {
     "lines": {
-      "covered": 425,
-      "total": 435,
-      "percent": 97.7
+      "covered": 665,
+      "total": 679,
+      "percent": 97.94
     },
     "functions": {
       "covered": 0,
@@ -533,9 +533,9 @@
       "percent": null
     },
     "branches": {
-      "covered": 263,
-      "total": 290,
-      "percent": 90.69
+      "covered": 372,
+      "total": 400,
+      "percent": 93.0
     }
   },
   "patch_policy": {

@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-12 15:34:14</td>
+            <td class="headerValue">2026-09-12 19:15:52</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -108,41 +108,41 @@
 <span id="L28"><span class="lineNum">      28</span>                 :             : </span>
 <span id="L29"><span class="lineNum">      29</span>                 :             : namespace xff::cli {</span>
 <span id="L30"><span class="lineNum">      30</span>                 :             : </span>
-<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">       60882 : Inlines ParseInline(std::string_view text) {</span></span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">       60882 :   Inlines runs;</span></span>
-<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">       60882 :   std::string pending;  // literal text accumulated between code spans</span></span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">      151425 :   const auto flush_text = [&amp;] {</span></span>
-<span id="L35"><span class="lineNum">      35</span>         [<span class="tlaGBC" title="branch 0 was taken 149733 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1692 times"> + </span>]:<span class="tlaGNC">      151425 :     if (!pending.empty()) {</span></span>
-<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">      149733 :       runs.push_back(Inline{.style = Inline::Style::kText, .text = pending});</span></span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">      149733 :       pending.clear();</span></span>
-<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">      149733 :     }</span></span>
-<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">      151425 :   };</span></span>
-<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">       60882 :   std::size_t pos = 0;</span></span>
-<span id="L41"><span class="lineNum">      41</span>         [<span class="tlaGBC" title="branch 0 was taken 7825009 times"> + </span><span class="tlaGBC" title="branch 1 was taken 60882 times"> + </span>]:<span class="tlaGNC">     7885891 :   while (pos &lt; text.size()) {</span></span>
-<span id="L42"><span class="lineNum">      42</span>         [<span class="tlaGBC" title="branch 0 was taken 7734464 times"> + </span><span class="tlaGBC" title="branch 1 was taken 90545 times"> + </span>]:<span class="tlaGNC">     7825009 :     if (text[pos] != '`') {</span></span>
-<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">     7734464 :       pending.push_back(text[pos]);</span></span>
-<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">     7734464 :       ++pos;</span></span>
-<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">     7734464 :       continue;</span></span>
-<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">     7734464 :     }</span></span>
-<span id="L47"><span class="lineNum">      47</span> [<span class="tlaGBC" title="branch 0 was taken 90545 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 90544 times"> + </span>]:<span class="tlaGNC">       90545 :     if (pos + 1 &lt; text.size() &amp;&amp; text[pos + 1] == '`') {</span></span>
+<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">       61502 : Inlines ParseInline(std::string_view text) {</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">       61502 :   Inlines runs;</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">       61502 :   std::string pending;  // literal text accumulated between code spans</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">      154279 :   const auto flush_text = [&amp;] {</span></span>
+<span id="L35"><span class="lineNum">      35</span>         [<span class="tlaGBC" title="branch 0 was taken 152339 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1940 times"> + </span>]:<span class="tlaGNC">      154279 :     if (!pending.empty()) {</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">      152339 :       runs.push_back(Inline{.style = Inline::Style::kText, .text = pending});</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">      152339 :       pending.clear();</span></span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">      152339 :     }</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">      154279 :   };</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">       61502 :   std::size_t pos = 0;</span></span>
+<span id="L41"><span class="lineNum">      41</span>         [<span class="tlaGBC" title="branch 0 was taken 7949511 times"> + </span><span class="tlaGBC" title="branch 1 was taken 61502 times"> + </span>]:<span class="tlaGNC">     8011013 :   while (pos &lt; text.size()) {</span></span>
+<span id="L42"><span class="lineNum">      42</span>         [<span class="tlaGBC" title="branch 0 was taken 7856732 times"> + </span><span class="tlaGBC" title="branch 1 was taken 92779 times"> + </span>]:<span class="tlaGNC">     7949511 :     if (text[pos] != '`') {</span></span>
+<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">     7856732 :       pending.push_back(text[pos]);</span></span>
+<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">     7856732 :       ++pos;</span></span>
+<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">     7856732 :       continue;</span></span>
+<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">     7856732 :     }</span></span>
+<span id="L47"><span class="lineNum">      47</span> [<span class="tlaGBC" title="branch 0 was taken 92779 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 92778 times"> + </span>]:<span class="tlaGNC">       92779 :     if (pos + 1 &lt; text.size() &amp;&amp; text[pos + 1] == '`') {</span></span>
 <span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">           1 :       pending.push_back('`');  // a doubled backtick is one literal backtick</span></span>
 <span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">           1 :       pos += 2;</span></span>
 <span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">           1 :       continue;</span></span>
 <span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">           1 :     }</span></span>
 <span id="L52"><span class="lineNum">      52</span>                 :             :     // A single backtick opens a code span; it closes at the next backtick.</span>
-<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">       90544 :     const std::size_t close = text.find('`', pos + 1);</span></span>
-<span id="L54"><span class="lineNum">      54</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 90543 times"> + </span>]:<span class="tlaGNC">       90544 :     if (close == std::string_view::npos) {</span></span>
+<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">       92778 :     const std::size_t close = text.find('`', pos + 1);</span></span>
+<span id="L54"><span class="lineNum">      54</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 92777 times"> + </span>]:<span class="tlaGNC">       92778 :     if (close == std::string_view::npos) {</span></span>
 <span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">           1 :       pending.push_back('`');  // unterminated: the backtick is literal</span></span>
 <span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">           1 :       ++pos;</span></span>
 <span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">           1 :       continue;</span></span>
 <span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">           1 :     }</span></span>
-<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">       90543 :     flush_text();</span></span>
-<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">       90543 :     runs.push_back(Inline{.style = Inline::Style::kCode, .text = std::string(text.substr(pos + 1, close - pos - 1))});</span></span>
-<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">       90543 :     pos = close + 1;</span></span>
-<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">       90543 :   }</span></span>
-<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">       60882 :   flush_text();</span></span>
-<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">       60882 :   return runs;</span></span>
-<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">       60882 : }</span></span>
+<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">       92777 :     flush_text();</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">       92777 :     runs.push_back(Inline{.style = Inline::Style::kCode, .text = std::string(text.substr(pos + 1, close - pos - 1))});</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">       92777 :     pos = close + 1;</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">       92777 :   }</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">       61502 :   flush_text();</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">       61502 :   return runs;</span></span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">       61502 : }</span></span>
 <span id="L66"><span class="lineNum">      66</span>                 :             : </span>
 <span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">       13711 : Blocks ParseBlocks(std::string_view text) {</span></span>
 <span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">       13711 :   Blocks blocks;</span></span>

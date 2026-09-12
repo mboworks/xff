@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-12 15:34:14</td>
+            <td class="headerValue">2026-09-12 19:15:52</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">97.3&nbsp;%</td>
@@ -58,9 +58,9 @@
             <td></td>
             <td></td>
             <td class="headerItem">Branches:</td>
-            <td class="headerCovTableEntryHi">86.4&nbsp;%</td>
+            <td class="headerCovTableEntryHi">86.3&nbsp;%</td>
             <td class="headerCovTableEntry">2272</td>
-            <td class="headerCovTableEntry">1962</td>
+            <td class="headerCovTableEntry">1960</td>
           </tr>
                   <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
                 </table>
@@ -289,26 +289,26 @@
 <span id="L207"><span class="lineNum">     207</span>                 :             : // `global` combines sorted roots with tree order. Bare --sort and the legacy `name` mean `dir`. The</span>
 <span id="L208"><span class="lineNum">     208</span>                 :             : // default is style-scoped: xff (kXff) sorts each directory; find and rg stay</span>
 <span id="L209"><span class="lineNum">     209</span>                 :             : // unordered. Last occurrence wins.</span>
-<span id="L210"><span class="lineNum">     210</span>                 :<span class="tlaGNC">         917 : SortOrder ResolveSort(const std::vector&lt;std::string&gt;&amp; globals, std::optional&lt;registry::Style&gt; style) {</span></span>
-<span id="L211"><span class="lineNum">     211</span>         [<span class="tlaGBC" title="branch 0 was taken 529 times"> + </span><span class="tlaGBC" title="branch 1 was taken 388 times"> + </span>]:<span class="tlaGNC">         917 :   SortOrder sort = style == registry::Style::kXff ? SortOrder::kDir : SortOrder::kNone;</span></span>
-<span id="L212"><span class="lineNum">     212</span>         [<span class="tlaGBC" title="branch 0 was taken 1025 times"> + </span><span class="tlaGBC" title="branch 1 was taken 917 times"> + </span>]:<span class="tlaGNC">        1156 :   for (const std::string&amp; global : globals) {</span></span>
-<span id="L213"><span class="lineNum">     213</span> [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1021 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 18 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1003 times"> + </span>]:<span class="tlaGNC">        1025 :     if (global == &quot;--sort&quot; || global == &quot;--sort=dir&quot; || global == &quot;--sort=name&quot;) {</span></span>
-<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 6 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 997 times"> + </span>]
+<span id="L210"><span class="lineNum">     210</span>                 :<span class="tlaGNC">         937 : SortOrder ResolveSort(const std::vector&lt;std::string&gt;&amp; globals, std::optional&lt;registry::Style&gt; style) {</span></span>
+<span id="L211"><span class="lineNum">     211</span>         [<span class="tlaGBC" title="branch 0 was taken 541 times"> + </span><span class="tlaGBC" title="branch 1 was taken 396 times"> + </span>]:<span class="tlaGNC">         937 :   SortOrder sort = style == registry::Style::kXff ? SortOrder::kDir : SortOrder::kNone;</span></span>
+<span id="L212"><span class="lineNum">     212</span>         [<span class="tlaGBC" title="branch 0 was taken 1037 times"> + </span><span class="tlaGBC" title="branch 1 was taken 937 times"> + </span>]:<span class="tlaGNC">        1176 :   for (const std::string&amp; global : globals) {</span></span>
+<span id="L213"><span class="lineNum">     213</span> [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1033 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 18 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1015 times"> + </span>]:<span class="tlaGNC">        1037 :     if (global == &quot;--sort&quot; || global == &quot;--sort=dir&quot; || global == &quot;--sort=name&quot;) {</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 6 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 1009 times"> + </span>]
 <span id="L214"><span class="lineNum">     214</span>                 :<span class="tlaGNC">          28 :       sort = SortOrder::kDir;</span></span>
-<span id="L215"><span class="lineNum">     215</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 996 times"> + </span>]:<span class="tlaGNC">         997 :     } else if (global == &quot;--sort=subtree&quot;) {</span></span>
+<span id="L215"><span class="lineNum">     215</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1008 times"> + </span>]:<span class="tlaGNC">        1009 :     } else if (global == &quot;--sort=subtree&quot;) {</span></span>
 <span id="L216"><span class="lineNum">     216</span>                 :<span class="tlaGNC">           1 :       sort = SortOrder::kSubtree;</span></span>
-<span id="L217"><span class="lineNum">     217</span>         [<span class="tlaGBC" title="branch 0 was taken 29 times"> + </span><span class="tlaGBC" title="branch 1 was taken 967 times"> + </span>]:<span class="tlaGNC">         996 :     } else if (global == &quot;--sort=tree&quot;) {</span></span>
+<span id="L217"><span class="lineNum">     217</span>         [<span class="tlaGBC" title="branch 0 was taken 29 times"> + </span><span class="tlaGBC" title="branch 1 was taken 979 times"> + </span>]:<span class="tlaGNC">        1008 :     } else if (global == &quot;--sort=tree&quot;) {</span></span>
 <span id="L218"><span class="lineNum">     218</span>                 :<span class="tlaGNC">          29 :       sort = SortOrder::kTree;</span></span>
-<span id="L219"><span class="lineNum">     219</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 964 times"> + </span>]:<span class="tlaGNC">         979 :     } else if (global == &quot;--sort=roots&quot;) {</span></span>
+<span id="L219"><span class="lineNum">     219</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 976 times"> + </span>]:<span class="tlaGNC">         991 :     } else if (global == &quot;--sort=roots&quot;) {</span></span>
 <span id="L220"><span class="lineNum">     220</span>                 :<span class="tlaGNC">           3 :       sort = SortOrder::kRoots;</span></span>
-<span id="L221"><span class="lineNum">     221</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 961 times"> + </span>]:<span class="tlaGNC">         964 :     } else if (global == &quot;--sort=global&quot;) {</span></span>
+<span id="L221"><span class="lineNum">     221</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 973 times"> + </span>]:<span class="tlaGNC">         976 :     } else if (global == &quot;--sort=global&quot;) {</span></span>
 <span id="L222"><span class="lineNum">     222</span>                 :<span class="tlaGNC">           3 :       sort = SortOrder::kGlobal;</span></span>
-<span id="L223"><span class="lineNum">     223</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 959 times"> + </span>]:<span class="tlaGNC">         961 :     } else if (global == &quot;--sort=none&quot;) {</span></span>
+<span id="L223"><span class="lineNum">     223</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 971 times"> + </span>]:<span class="tlaGNC">         973 :     } else if (global == &quot;--sort=none&quot;) {</span></span>
 <span id="L224"><span class="lineNum">     224</span>                 :<span class="tlaGNC">           2 :       sort = SortOrder::kNone;</span></span>
 <span id="L225"><span class="lineNum">     225</span>                 :<span class="tlaGNC">           2 :     }</span></span>
-<span id="L226"><span class="lineNum">     226</span>                 :<span class="tlaGNC">        1025 :   }</span></span>
-<span id="L227"><span class="lineNum">     227</span>                 :<span class="tlaGNC">         917 :   return sort;</span></span>
-<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">         917 : }</span></span>
+<span id="L226"><span class="lineNum">     226</span>                 :<span class="tlaGNC">        1037 :   }</span></span>
+<span id="L227"><span class="lineNum">     227</span>                 :<span class="tlaGNC">         937 :   return sort;</span></span>
+<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">         937 : }</span></span>
 <span id="L229"><span class="lineNum">     229</span>                 :             : </span>
 <span id="L230"><span class="lineNum">     230</span>                 :             : // Emits the buffered listing best-score-first. STABLE so equal scores keep the walk's order, which</span>
 <span id="L231"><span class="lineNum">     231</span>                 :             : // the style's --sort already made deterministic - a plain sort would make ties depend on the</span>
@@ -1631,11 +1631,11 @@
 <span id="L1541"><span class="lineNum">    1541</span> [<span class="tlaGBC" title="branch 0 was taken 94 times"> + </span><span class="tlaGBC" title="branch 1 was taken 606 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 606 times"> + </span>]:<span class="tlaGNC">         700 :   if (path == root || root.empty()) {</span></span>
 <span id="L1542"><span class="lineNum">    1542</span>         [<span class="tlaGBC" title="branch 0 was taken 94 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          94 :     return path == root ? std::string_view() : path;</span></span>
 <span id="L1543"><span class="lineNum">    1543</span>                 :<span class="tlaGNC">          94 :   }</span></span>
-<span id="L1544"><span class="lineNum">    1544</span> [<span class="tlaGBC" title="branch 0 was taken 606 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 605 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">         606 :   if (path.size() &gt; root.size() &amp;&amp; path.starts_with(root)) {</span></span>
+<span id="L1544"><span class="lineNum">    1544</span> [<span class="tlaGBC" title="branch 0 was taken 606 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 606 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">         606 :   if (path.size() &gt; root.size() &amp;&amp; path.starts_with(root)) {</span></span>
 <span id="L1545"><span class="lineNum">    1545</span>                 :<span class="tlaGNC">         606 :     std::string_view rest = path.substr(root.size());</span></span>
-<span id="L1546"><span class="lineNum">    1546</span> [<span class="tlaGBC" title="branch 0 was taken 1212 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4294967295 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 605 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 607 times"> + </span>]:<span class="tlaGNC">        1212 :     while (!rest.empty() &amp;&amp; rest.front() == '/') {</span></span>
-<span id="L1547"><span class="lineNum">    1547</span>                 :<span class="tlaGNC">         605 :       rest.remove_prefix(1);</span></span>
-<span id="L1548"><span class="lineNum">    1548</span>                 :<span class="tlaGNC">         605 :     }</span></span>
+<span id="L1546"><span class="lineNum">    1546</span> [<span class="tlaGBC" title="branch 0 was taken 1212 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 606 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 606 times"> + </span>]:<span class="tlaGNC">        1212 :     while (!rest.empty() &amp;&amp; rest.front() == '/') {</span></span>
+<span id="L1547"><span class="lineNum">    1547</span>                 :<span class="tlaGNC">         606 :       rest.remove_prefix(1);</span></span>
+<span id="L1548"><span class="lineNum">    1548</span>                 :<span class="tlaGNC">         606 :     }</span></span>
 <span id="L1549"><span class="lineNum">    1549</span>                 :<span class="tlaGNC">         606 :     return rest;</span></span>
 <span id="L1550"><span class="lineNum">    1550</span>                 :<span class="tlaGNC">         606 :   }</span></span>
 <span id="L1551"><span class="lineNum">    1551</span>                 :<span class="tlaUNC">           0 :   return path;  // not root-prefixed (should not happen from the walk); match whole</span></span>
@@ -1891,9 +1891,9 @@
 <span id="L1800"><span class="lineNum">    1800</span>                 :             :   std::vector&lt;Source&gt; sources_;</span>
 <span id="L1801"><span class="lineNum">    1801</span>                 :             : };</span>
 <span id="L1802"><span class="lineNum">    1802</span>                 :             : </span>
-<span id="L1803"><span class="lineNum">    1803</span>                 :<span class="tlaGNC">        9789 : bool HasGlobal(const std::vector&lt;std::string&gt;&amp; globals, std::string_view flag) {</span></span>
-<span id="L1804"><span class="lineNum">    1804</span>                 :<span class="tlaGNC">       12495 :   return absl::c_any_of(globals, [flag](std::string_view global) { return global == flag; });</span></span>
-<span id="L1805"><span class="lineNum">    1805</span>                 :<span class="tlaGNC">        9789 : }</span></span>
+<span id="L1803"><span class="lineNum">    1803</span>                 :<span class="tlaGNC">        9829 : bool HasGlobal(const std::vector&lt;std::string&gt;&amp; globals, std::string_view flag) {</span></span>
+<span id="L1804"><span class="lineNum">    1804</span>                 :<span class="tlaGNC">       12535 :   return absl::c_any_of(globals, [flag](std::string_view global) { return global == flag; });</span></span>
+<span id="L1805"><span class="lineNum">    1805</span>                 :<span class="tlaGNC">        9829 : }</span></span>
 <span id="L1806"><span class="lineNum">    1806</span>                 :             : </span>
 <span id="L1807"><span class="lineNum">    1807</span>                 :             : // --gitignore / -g ternary. Bare `-g` / `--gitignore` selects AUTO (respect .gitignore</span>
 <span id="L1808"><span class="lineNum">    1808</span>                 :             : // only when the traversal is inside a git repo, matching git's own behavior);</span>
@@ -1907,25 +1907,25 @@
 <span id="L1816"><span class="lineNum">    1816</span>                 :             : // ignore source is position-independent, not a participant in the last-wins scan.</span>
 <span id="L1817"><span class="lineNum">    1817</span>                 :             : enum class GitignoreMode { kOff, kOn, kAuto };</span>
 <span id="L1818"><span class="lineNum">    1818</span>                 :             : </span>
-<span id="L1819"><span class="lineNum">    1819</span>                 :<span class="tlaGNC">         839 : GitignoreMode ResolveGitignoreMode(const std::vector&lt;std::string&gt;&amp; globals, std::optional&lt;registry::Style&gt; style) {</span></span>
-<span id="L1820"><span class="lineNum">    1820</span> [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 836 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 7 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 829 times"> + </span>]:<span class="tlaGNC">         839 :   if (HasGlobal(globals, &quot;--no-ignore&quot;) || HasGlobal(globals, &quot;-u&quot;)) {</span></span>
+<span id="L1819"><span class="lineNum">    1819</span>                 :<span class="tlaGNC">         859 : GitignoreMode ResolveGitignoreMode(const std::vector&lt;std::string&gt;&amp; globals, std::optional&lt;registry::Style&gt; style) {</span></span>
+<span id="L1820"><span class="lineNum">    1820</span> [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 856 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 7 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 849 times"> + </span>]:<span class="tlaGNC">         859 :   if (HasGlobal(globals, &quot;--no-ignore&quot;) || HasGlobal(globals, &quot;-u&quot;)) {</span></span>
 <span id="L1821"><span class="lineNum">    1821</span>                 :<span class="tlaGNC">          10 :     return GitignoreMode::kOff;</span></span>
 <span id="L1822"><span class="lineNum">    1822</span>                 :<span class="tlaGNC">          10 :   }</span></span>
 <span id="L1823"><span class="lineNum">    1823</span>                 :             :   // The opinionated style (rg) respect ignore files by default (their headline</span>
 <span id="L1824"><span class="lineNum">    1824</span>                 :             :   // behavior); find/xff start off (find-compatible). An explicit -g / --gitignore flag</span>
 <span id="L1825"><span class="lineNum">    1825</span>                 :             :   // still overrides.</span>
-<span id="L1826"><span class="lineNum">    1826</span>                 :<span class="tlaGNC">         829 :   const bool opinionated = style == registry::Style::kRg;</span></span>
-<span id="L1827"><span class="lineNum">    1827</span>         [<span class="tlaGBC" title="branch 0 was taken 20 times"> + </span><span class="tlaGBC" title="branch 1 was taken 809 times"> + </span>]:<span class="tlaGNC">         829 :   GitignoreMode mode = opinionated ? GitignoreMode::kOn : GitignoreMode::kOff;</span></span>
-<span id="L1828"><span class="lineNum">    1828</span>                 :<span class="tlaGNC">         829 :   constexpr std::string_view kPrefix = &quot;--gitignore=&quot;;</span></span>
-<span id="L1829"><span class="lineNum">    1829</span>         [<span class="tlaGBC" title="branch 0 was taken 915 times"> + </span><span class="tlaGBC" title="branch 1 was taken 829 times"> + </span>]:<span class="tlaGNC">        1047 :   for (const std::string&amp; global : globals) {</span></span>
-<span id="L1830"><span class="lineNum">    1830</span> [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 905 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 905 times"> + </span>]:<span class="tlaGNC">         915 :     if (global == &quot;-g&quot; || global == &quot;--gitignore&quot; || global == &quot;--ignore-vcs&quot;) {</span></span>
-<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 903 times"> + </span>]
+<span id="L1826"><span class="lineNum">    1826</span>                 :<span class="tlaGNC">         849 :   const bool opinionated = style == registry::Style::kRg;</span></span>
+<span id="L1827"><span class="lineNum">    1827</span>         [<span class="tlaGBC" title="branch 0 was taken 24 times"> + </span><span class="tlaGBC" title="branch 1 was taken 825 times"> + </span>]:<span class="tlaGNC">         849 :   GitignoreMode mode = opinionated ? GitignoreMode::kOn : GitignoreMode::kOff;</span></span>
+<span id="L1828"><span class="lineNum">    1828</span>                 :<span class="tlaGNC">         849 :   constexpr std::string_view kPrefix = &quot;--gitignore=&quot;;</span></span>
+<span id="L1829"><span class="lineNum">    1829</span>         [<span class="tlaGBC" title="branch 0 was taken 927 times"> + </span><span class="tlaGBC" title="branch 1 was taken 849 times"> + </span>]:<span class="tlaGNC">        1067 :   for (const std::string&amp; global : globals) {</span></span>
+<span id="L1830"><span class="lineNum">    1830</span> [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 917 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 917 times"> + </span>]:<span class="tlaGNC">         927 :     if (global == &quot;-g&quot; || global == &quot;--gitignore&quot; || global == &quot;--ignore-vcs&quot;) {</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 915 times"> + </span>]
 <span id="L1831"><span class="lineNum">    1831</span>                 :<span class="tlaGNC">          12 :       mode = GitignoreMode::kAuto;</span></span>
-<span id="L1832"><span class="lineNum">    1832</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 896 times"> + </span>]:<span class="tlaGNC">         903 :     } else if (global == &quot;-g+&quot;) {</span></span>
+<span id="L1832"><span class="lineNum">    1832</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 908 times"> + </span>]:<span class="tlaGNC">         915 :     } else if (global == &quot;-g+&quot;) {</span></span>
 <span id="L1833"><span class="lineNum">    1833</span>                 :<span class="tlaGNC">           7 :       mode = GitignoreMode::kOn;</span></span>
-<span id="L1834"><span class="lineNum">    1834</span> [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 894 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 891 times"> + </span>]:<span class="tlaGNC">         896 :     } else if (global == &quot;-g-&quot; || global == &quot;--no-ignore-vcs&quot;) {</span></span>
+<span id="L1834"><span class="lineNum">    1834</span> [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 906 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 903 times"> + </span>]:<span class="tlaGNC">         908 :     } else if (global == &quot;-g-&quot; || global == &quot;--no-ignore-vcs&quot;) {</span></span>
 <span id="L1835"><span class="lineNum">    1835</span>                 :<span class="tlaGNC">           5 :       mode = GitignoreMode::kOff;</span></span>
-<span id="L1836"><span class="lineNum">    1836</span>         [<span class="tlaGBC" title="branch 0 was taken 25 times"> + </span><span class="tlaGBC" title="branch 1 was taken 866 times"> + </span>]:<span class="tlaGNC">         891 :     } else if (global.starts_with(kPrefix)) {</span></span>
+<span id="L1836"><span class="lineNum">    1836</span>         [<span class="tlaGBC" title="branch 0 was taken 25 times"> + </span><span class="tlaGBC" title="branch 1 was taken 878 times"> + </span>]:<span class="tlaGNC">         903 :     } else if (global.starts_with(kPrefix)) {</span></span>
 <span id="L1837"><span class="lineNum">    1837</span>                 :             :       // The shared vocabulary (on / off / auto plus yes / no / true / false / 1 / 0), so this flag</span>
 <span id="L1838"><span class="lineNum">    1838</span>                 :             :       // spells its values the way every other tri-state does; an unrecognized value is ignored,</span>
 <span id="L1839"><span class="lineNum">    1839</span>                 :             :       // leaving the prior resolution.</span>
@@ -1935,9 +1935,9 @@
 <span id="L1843"><span class="lineNum">    1843</span>                 :<span class="tlaGNC">          11 :                                                 : GitignoreMode::kAuto;</span></span>
 <span id="L1844"><span class="lineNum">    1844</span>                 :<span class="tlaGNC">          25 :       }</span></span>
 <span id="L1845"><span class="lineNum">    1845</span>                 :<span class="tlaGNC">          25 :     }</span></span>
-<span id="L1846"><span class="lineNum">    1846</span>                 :<span class="tlaGNC">         915 :   }</span></span>
-<span id="L1847"><span class="lineNum">    1847</span>                 :<span class="tlaGNC">         829 :   return mode;</span></span>
-<span id="L1848"><span class="lineNum">    1848</span>                 :<span class="tlaGNC">         839 : }</span></span>
+<span id="L1846"><span class="lineNum">    1846</span>                 :<span class="tlaGNC">         927 :   }</span></span>
+<span id="L1847"><span class="lineNum">    1847</span>                 :<span class="tlaGNC">         849 :   return mode;</span></span>
+<span id="L1848"><span class="lineNum">    1848</span>                 :<span class="tlaGNC">         859 : }</span></span>
 <span id="L1849"><span class="lineNum">    1849</span>                 :             : </span>
 <span id="L1850"><span class="lineNum">    1850</span>                 :             : // --archive / -z: how far archive diving descends. The three modes are NESTED</span>
 <span id="L1851"><span class="lineNum">    1851</span>                 :             : // (none subset roots subset all), so one ordered enum expresses two separately-wanted</span>
@@ -2351,17 +2351,17 @@
 <span id="L2249"><span class="lineNum">    2249</span>                 :             : // (find-compatible), the opinionated style (rg) skips them (fd-like, less dotclutter).</span>
 <span id="L2250"><span class="lineNum">    2250</span>                 :             : // --hidden forces show, --no-hidden forces skip; last occurrence wins. An explicitly named</span>
 <span id="L2251"><span class="lineNum">    2251</span>                 :             : // search root is always entered regardless (handled at the walk by depth).</span>
-<span id="L2252"><span class="lineNum">    2252</span>                 :<span class="tlaGNC">         836 : bool ResolveSkipHidden(const std::vector&lt;std::string&gt;&amp; globals, std::optional&lt;registry::Style&gt; style) {</span></span>
-<span id="L2253"><span class="lineNum">    2253</span>                 :<span class="tlaGNC">         836 :   bool skip = style == registry::Style::kRg;</span></span>
-<span id="L2254"><span class="lineNum">    2254</span>         [<span class="tlaGBC" title="branch 0 was taken 931 times"> + </span><span class="tlaGBC" title="branch 1 was taken 836 times"> + </span>]:<span class="tlaGNC">        1060 :   for (const std::string&amp; global : globals) {</span></span>
-<span id="L2255"><span class="lineNum">    2255</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 926 times"> + </span>]:<span class="tlaGNC">         931 :     if (global == &quot;--hidden&quot;) {</span></span>
+<span id="L2252"><span class="lineNum">    2252</span>                 :<span class="tlaGNC">         856 : bool ResolveSkipHidden(const std::vector&lt;std::string&gt;&amp; globals, std::optional&lt;registry::Style&gt; style) {</span></span>
+<span id="L2253"><span class="lineNum">    2253</span>                 :<span class="tlaGNC">         856 :   bool skip = style == registry::Style::kRg;</span></span>
+<span id="L2254"><span class="lineNum">    2254</span>         [<span class="tlaGBC" title="branch 0 was taken 943 times"> + </span><span class="tlaGBC" title="branch 1 was taken 856 times"> + </span>]:<span class="tlaGNC">        1080 :   for (const std::string&amp; global : globals) {</span></span>
+<span id="L2255"><span class="lineNum">    2255</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 938 times"> + </span>]:<span class="tlaGNC">         943 :     if (global == &quot;--hidden&quot;) {</span></span>
 <span id="L2256"><span class="lineNum">    2256</span>                 :<span class="tlaGNC">           5 :       skip = false;</span></span>
-<span id="L2257"><span class="lineNum">    2257</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 923 times"> + </span>]:<span class="tlaGNC">         926 :     } else if (global == &quot;--no-hidden&quot;) {</span></span>
+<span id="L2257"><span class="lineNum">    2257</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 935 times"> + </span>]:<span class="tlaGNC">         938 :     } else if (global == &quot;--no-hidden&quot;) {</span></span>
 <span id="L2258"><span class="lineNum">    2258</span>                 :<span class="tlaGNC">           3 :       skip = true;</span></span>
 <span id="L2259"><span class="lineNum">    2259</span>                 :<span class="tlaGNC">           3 :     }</span></span>
-<span id="L2260"><span class="lineNum">    2260</span>                 :<span class="tlaGNC">         931 :   }</span></span>
-<span id="L2261"><span class="lineNum">    2261</span>                 :<span class="tlaGNC">         836 :   return skip;</span></span>
-<span id="L2262"><span class="lineNum">    2262</span>                 :<span class="tlaGNC">         836 : }</span></span>
+<span id="L2260"><span class="lineNum">    2260</span>                 :<span class="tlaGNC">         943 :   }</span></span>
+<span id="L2261"><span class="lineNum">    2261</span>                 :<span class="tlaGNC">         856 :   return skip;</span></span>
+<span id="L2262"><span class="lineNum">    2262</span>                 :<span class="tlaGNC">         856 : }</span></span>
 <span id="L2263"><span class="lineNum">    2263</span>                 :             : </span>
 <span id="L2264"><span class="lineNum">    2264</span>                 :             : // The version-control systems whose metadata --skip-vcs can prune: a token (the --skip-vcs= value)</span>
 <span id="L2265"><span class="lineNum">    2265</span>                 :             : // mapped to the directory / gitlink-file name to drop. Order matches the --help / display order.</span>
@@ -2697,23 +2697,23 @@
 <span id="L2594"><span class="lineNum">    2594</span>                 :             : // shows raw bytes (find -ls compatibility). Last occurrence wins; nullopt means raw bytes.</span>
 <span id="L2595"><span class="lineNum">    2595</span>                 :             : std::optional&lt;format::SizeUnits&gt; ResolveHuman(</span>
 <span id="L2596"><span class="lineNum">    2596</span>                 :             :     const std::vector&lt;std::string&gt;&amp; globals,</span>
-<span id="L2597"><span class="lineNum">    2597</span>                 :<span class="tlaGNC">         863 :     std::optional&lt;registry::Style&gt; style) {</span></span>
-<span id="L2598"><span class="lineNum">    2598</span>                 :<span class="tlaGNC">         863 :   std::optional&lt;format::SizeUnits&gt; units;</span></span>
-<span id="L2599"><span class="lineNum">    2599</span> [<span class="tlaGBC" title="branch 0 was taken 545 times"> + </span><span class="tlaGBC" title="branch 1 was taken 318 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 519 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 26 times"> + </span>]:<span class="tlaGNC">         863 :   if (style.has_value() &amp;&amp; *style != registry::Style::kFind) {</span></span>
-<span id="L2600"><span class="lineNum">    2600</span>                 :<span class="tlaGNC">         519 :     units = format::SizeUnits::kSi;  // the modern styles (xff, rg) default to human sizes (SI)</span></span>
-<span id="L2601"><span class="lineNum">    2601</span>                 :<span class="tlaGNC">         519 :   }</span></span>
-<span id="L2602"><span class="lineNum">    2602</span>         [<span class="tlaGBC" title="branch 0 was taken 974 times"> + </span><span class="tlaGBC" title="branch 1 was taken 863 times"> + </span>]:<span class="tlaGNC">        1103 :   for (const std::string_view global : globals) {</span></span>
-<span id="L2603"><span class="lineNum">    2603</span> [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 972 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 970 times"> + </span>]:<span class="tlaGNC">         974 :     if (global == &quot;--human&quot; || global == &quot;--human=si&quot; || global == &quot;--human=1000&quot; || global == &quot;--si&quot;) {</span></span>
-<span class="lineNum">        </span> [<span class="tlaUNC" title="branch &quot;4&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 970 times"> + </span>][<span class="tlaGBC" title="branch &quot;6&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;7&quot; was taken 969 times"> + </span>]
+<span id="L2597"><span class="lineNum">    2597</span>                 :<span class="tlaGNC">         883 :     std::optional&lt;registry::Style&gt; style) {</span></span>
+<span id="L2598"><span class="lineNum">    2598</span>                 :<span class="tlaGNC">         883 :   std::optional&lt;format::SizeUnits&gt; units;</span></span>
+<span id="L2599"><span class="lineNum">    2599</span> [<span class="tlaGBC" title="branch 0 was taken 565 times"> + </span><span class="tlaGBC" title="branch 1 was taken 318 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 535 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 30 times"> + </span>]:<span class="tlaGNC">         883 :   if (style.has_value() &amp;&amp; *style != registry::Style::kFind) {</span></span>
+<span id="L2600"><span class="lineNum">    2600</span>                 :<span class="tlaGNC">         535 :     units = format::SizeUnits::kSi;  // the modern styles (xff, rg) default to human sizes (SI)</span></span>
+<span id="L2601"><span class="lineNum">    2601</span>                 :<span class="tlaGNC">         535 :   }</span></span>
+<span id="L2602"><span class="lineNum">    2602</span>         [<span class="tlaGBC" title="branch 0 was taken 986 times"> + </span><span class="tlaGBC" title="branch 1 was taken 883 times"> + </span>]:<span class="tlaGNC">        1123 :   for (const std::string_view global : globals) {</span></span>
+<span id="L2603"><span class="lineNum">    2603</span> [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 984 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 982 times"> + </span>]:<span class="tlaGNC">         986 :     if (global == &quot;--human&quot; || global == &quot;--human=si&quot; || global == &quot;--human=1000&quot; || global == &quot;--si&quot;) {</span></span>
+<span class="lineNum">        </span> [<span class="tlaUNC" title="branch &quot;4&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 982 times"> + </span>][<span class="tlaGBC" title="branch &quot;6&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;7&quot; was taken 981 times"> + </span>]
 <span id="L2604"><span class="lineNum">    2604</span>                 :<span class="tlaGNC">           5 :       units = format::SizeUnits::kSi;  // bare --human defaults to SI (KB/MB); --si is its alias</span></span>
-<span id="L2605"><span class="lineNum">    2605</span> [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 965 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 965 times"> + </span>]:<span class="tlaGNC">         969 :     } else if (global == &quot;--human=iec&quot; || global == &quot;--human=1024&quot;) {</span></span>
+<span id="L2605"><span class="lineNum">    2605</span> [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 977 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 977 times"> + </span>]:<span class="tlaGNC">         981 :     } else if (global == &quot;--human=iec&quot; || global == &quot;--human=1024&quot;) {</span></span>
 <span id="L2606"><span class="lineNum">    2606</span>                 :<span class="tlaGNC">           4 :       units = format::SizeUnits::kIec;</span></span>
-<span id="L2607"><span class="lineNum">    2607</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 962 times"> + </span>]:<span class="tlaGNC">         965 :     } else if (global == &quot;--human=off&quot;) {</span></span>
+<span id="L2607"><span class="lineNum">    2607</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 974 times"> + </span>]:<span class="tlaGNC">         977 :     } else if (global == &quot;--human=off&quot;) {</span></span>
 <span id="L2608"><span class="lineNum">    2608</span>                 :<span class="tlaGNC">           3 :       units = std::nullopt;  // force raw bytes, even in the modern styles</span></span>
 <span id="L2609"><span class="lineNum">    2609</span>                 :<span class="tlaGNC">           3 :     }</span></span>
-<span id="L2610"><span class="lineNum">    2610</span>                 :<span class="tlaGNC">         974 :   }</span></span>
-<span id="L2611"><span class="lineNum">    2611</span>                 :<span class="tlaGNC">         863 :   return units;</span></span>
-<span id="L2612"><span class="lineNum">    2612</span>                 :<span class="tlaGNC">         863 : }</span></span>
+<span id="L2610"><span class="lineNum">    2610</span>                 :<span class="tlaGNC">         986 :   }</span></span>
+<span id="L2611"><span class="lineNum">    2611</span>                 :<span class="tlaGNC">         883 :   return units;</span></span>
+<span id="L2612"><span class="lineNum">    2612</span>                 :<span class="tlaGNC">         883 : }</span></span>
 <span id="L2613"><span class="lineNum">    2613</span>                 :             : </span>
 <span id="L2614"><span class="lineNum">    2614</span>                 :             : // The resolved --buffer cap for a column buffer: a row `window` and/or a `byte_budget` (0 =</span>
 <span id="L2615"><span class="lineNum">    2615</span>                 :             : // no byte cap). A byte-budget value clears the row cap to kAll so only the bytes bound.</span>
@@ -5040,75 +5040,75 @@
 <span id="L4917"><span class="lineNum">    4917</span>                 :             : namespace {</span>
 <span id="L4918"><span class="lineNum">    4918</span>                 :             : </span>
 <span id="L4919"><span class="lineNum">    4919</span>                 :             : // Display strings for the flavor feature-map, one per resolver's value type.</span>
-<span id="L4920"><span class="lineNum">    4920</span>                 :<span class="tlaGNC">          58 : std::string GitignoreName(GitignoreMode mode) {</span></span>
-<span id="L4921"><span class="lineNum">    4921</span>         [<span class="tlaGBC" title="branch 0 was taken 58 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          58 :   switch (mode) {</span></span>
-<span id="L4922"><span class="lineNum">    4922</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 58 times"> + </span>]:<span class="tlaUNC">           0 :     case GitignoreMode::kAuto: return &quot;auto&quot;;</span></span>
-<span id="L4923"><span class="lineNum">    4923</span>         [<span class="tlaGBC" title="branch 0 was taken 43 times"> + </span><span class="tlaGBC" title="branch 1 was taken 15 times"> + </span>]:<span class="tlaGNC">          43 :     case GitignoreMode::kOff: return &quot;off&quot;;</span></span>
-<span id="L4924"><span class="lineNum">    4924</span>         [<span class="tlaGBC" title="branch 0 was taken 15 times"> + </span><span class="tlaGBC" title="branch 1 was taken 43 times"> + </span>]:<span class="tlaGNC">          15 :     case GitignoreMode::kOn: return &quot;on&quot;;</span></span>
-<span id="L4925"><span class="lineNum">    4925</span>                 :<span class="tlaGNC">          58 :   }</span></span>
+<span id="L4920"><span class="lineNum">    4920</span>                 :<span class="tlaGNC">          78 : std::string GitignoreName(GitignoreMode mode) {</span></span>
+<span id="L4921"><span class="lineNum">    4921</span>         [<span class="tlaGBC" title="branch 0 was taken 78 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          78 :   switch (mode) {</span></span>
+<span id="L4922"><span class="lineNum">    4922</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 78 times"> + </span>]:<span class="tlaUNC">           0 :     case GitignoreMode::kAuto: return &quot;auto&quot;;</span></span>
+<span id="L4923"><span class="lineNum">    4923</span>         [<span class="tlaGBC" title="branch 0 was taken 59 times"> + </span><span class="tlaGBC" title="branch 1 was taken 19 times"> + </span>]:<span class="tlaGNC">          59 :     case GitignoreMode::kOff: return &quot;off&quot;;</span></span>
+<span id="L4924"><span class="lineNum">    4924</span>         [<span class="tlaGBC" title="branch 0 was taken 19 times"> + </span><span class="tlaGBC" title="branch 1 was taken 59 times"> + </span>]:<span class="tlaGNC">          19 :     case GitignoreMode::kOn: return &quot;on&quot;;</span></span>
+<span id="L4925"><span class="lineNum">    4925</span>                 :<span class="tlaGNC">          78 :   }</span></span>
 <span id="L4926"><span class="lineNum">    4926</span>                 :<span class="tlaUNC">           0 :   return &quot;off&quot;;</span></span>
-<span id="L4927"><span class="lineNum">    4927</span>                 :<span class="tlaGNC">          58 : }</span></span>
+<span id="L4927"><span class="lineNum">    4927</span>                 :<span class="tlaGNC">          78 : }</span></span>
 <span id="L4928"><span class="lineNum">    4928</span>                 :             : </span>
-<span id="L4929"><span class="lineNum">    4929</span>                 :<span class="tlaGNC">          58 : std::string HiddenName(bool skip) {</span></span>
-<span id="L4930"><span class="lineNum">    4930</span>         [<span class="tlaGBC" title="branch 0 was taken 14 times"> + </span><span class="tlaGBC" title="branch 1 was taken 44 times"> + </span>]:<span class="tlaGNC">          58 :   return skip ? &quot;skip&quot; : &quot;show&quot;;</span></span>
-<span id="L4931"><span class="lineNum">    4931</span>                 :<span class="tlaGNC">          58 : }</span></span>
+<span id="L4929"><span class="lineNum">    4929</span>                 :<span class="tlaGNC">          78 : std::string HiddenName(bool skip) {</span></span>
+<span id="L4930"><span class="lineNum">    4930</span>         [<span class="tlaGBC" title="branch 0 was taken 18 times"> + </span><span class="tlaGBC" title="branch 1 was taken 60 times"> + </span>]:<span class="tlaGNC">          78 :   return skip ? &quot;skip&quot; : &quot;show&quot;;</span></span>
+<span id="L4931"><span class="lineNum">    4931</span>                 :<span class="tlaGNC">          78 : }</span></span>
 <span id="L4932"><span class="lineNum">    4932</span>                 :             : </span>
-<span id="L4933"><span class="lineNum">    4933</span>                 :<span class="tlaGNC">          58 : std::string HumanName(std::optional&lt;format::SizeUnits&gt; units) {</span></span>
-<span id="L4934"><span class="lineNum">    4934</span>         [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 46 times"> + </span>]:<span class="tlaGNC">          58 :   if (!units.has_value()) {</span></span>
-<span id="L4935"><span class="lineNum">    4935</span>                 :<span class="tlaGNC">          12 :     return &quot;bytes&quot;;</span></span>
-<span id="L4936"><span class="lineNum">    4936</span>                 :<span class="tlaGNC">          12 :   }</span></span>
-<span id="L4937"><span class="lineNum">    4937</span>         [<span class="tlaGBC" title="branch 0 was taken 46 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          46 :   return *units == format::SizeUnits::kSi ? &quot;si&quot; : &quot;iec&quot;;</span></span>
-<span id="L4938"><span class="lineNum">    4938</span>                 :<span class="tlaGNC">          58 : }</span></span>
+<span id="L4933"><span class="lineNum">    4933</span>                 :<span class="tlaGNC">          78 : std::string HumanName(std::optional&lt;format::SizeUnits&gt; units) {</span></span>
+<span id="L4934"><span class="lineNum">    4934</span>         [<span class="tlaGBC" title="branch 0 was taken 16 times"> + </span><span class="tlaGBC" title="branch 1 was taken 62 times"> + </span>]:<span class="tlaGNC">          78 :   if (!units.has_value()) {</span></span>
+<span id="L4935"><span class="lineNum">    4935</span>                 :<span class="tlaGNC">          16 :     return &quot;bytes&quot;;</span></span>
+<span id="L4936"><span class="lineNum">    4936</span>                 :<span class="tlaGNC">          16 :   }</span></span>
+<span id="L4937"><span class="lineNum">    4937</span>         [<span class="tlaGBC" title="branch 0 was taken 62 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          62 :   return *units == format::SizeUnits::kSi ? &quot;si&quot; : &quot;iec&quot;;</span></span>
+<span id="L4938"><span class="lineNum">    4938</span>                 :<span class="tlaGNC">          78 : }</span></span>
 <span id="L4939"><span class="lineNum">    4939</span>                 :             : </span>
-<span id="L4940"><span class="lineNum">    4940</span>                 :<span class="tlaGNC">          60 : std::string SortName(SortOrder order) {</span></span>
-<span id="L4941"><span class="lineNum">    4941</span>         [<span class="tlaGBC" title="branch 0 was taken 60 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          60 :   switch (order) {</span></span>
-<span id="L4942"><span class="lineNum">    4942</span>         [<span class="tlaGBC" title="branch 0 was taken 26 times"> + </span><span class="tlaGBC" title="branch 1 was taken 34 times"> + </span>]:<span class="tlaGNC">          26 :     case SortOrder::kNone: return &quot;none&quot;;</span></span>
-<span id="L4943"><span class="lineNum">    4943</span>         [<span class="tlaGBC" title="branch 0 was taken 32 times"> + </span><span class="tlaGBC" title="branch 1 was taken 28 times"> + </span>]:<span class="tlaGNC">          32 :     case SortOrder::kDir: return &quot;per-dir&quot;;</span></span>
-<span id="L4944"><span class="lineNum">    4944</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 60 times"> + </span>]:<span class="tlaUNC">           0 :     case SortOrder::kSubtree: return &quot;subtree&quot;;</span></span>
-<span id="L4945"><span class="lineNum">    4945</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 60 times"> + </span>]:<span class="tlaUNC">           0 :     case SortOrder::kTree: return &quot;tree&quot;;</span></span>
-<span id="L4946"><span class="lineNum">    4946</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 59 times"> + </span>]:<span class="tlaGNC">           1 :     case SortOrder::kRoots: return &quot;roots&quot;;</span></span>
-<span id="L4947"><span class="lineNum">    4947</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 59 times"> + </span>]:<span class="tlaGNC">           1 :     case SortOrder::kGlobal: return &quot;global&quot;;</span></span>
-<span id="L4948"><span class="lineNum">    4948</span>                 :<span class="tlaGNC">          60 :   }</span></span>
+<span id="L4940"><span class="lineNum">    4940</span>                 :<span class="tlaGNC">          80 : std::string SortName(SortOrder order) {</span></span>
+<span id="L4941"><span class="lineNum">    4941</span>         [<span class="tlaGBC" title="branch 0 was taken 80 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          80 :   switch (order) {</span></span>
+<span id="L4942"><span class="lineNum">    4942</span>         [<span class="tlaGBC" title="branch 0 was taken 34 times"> + </span><span class="tlaGBC" title="branch 1 was taken 46 times"> + </span>]:<span class="tlaGNC">          34 :     case SortOrder::kNone: return &quot;none&quot;;</span></span>
+<span id="L4943"><span class="lineNum">    4943</span>         [<span class="tlaGBC" title="branch 0 was taken 44 times"> + </span><span class="tlaGBC" title="branch 1 was taken 36 times"> + </span>]:<span class="tlaGNC">          44 :     case SortOrder::kDir: return &quot;per-dir&quot;;</span></span>
+<span id="L4944"><span class="lineNum">    4944</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 80 times"> + </span>]:<span class="tlaUNC">           0 :     case SortOrder::kSubtree: return &quot;subtree&quot;;</span></span>
+<span id="L4945"><span class="lineNum">    4945</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 80 times"> + </span>]:<span class="tlaUNC">           0 :     case SortOrder::kTree: return &quot;tree&quot;;</span></span>
+<span id="L4946"><span class="lineNum">    4946</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 79 times"> + </span>]:<span class="tlaGNC">           1 :     case SortOrder::kRoots: return &quot;roots&quot;;</span></span>
+<span id="L4947"><span class="lineNum">    4947</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 79 times"> + </span>]:<span class="tlaGNC">           1 :     case SortOrder::kGlobal: return &quot;global&quot;;</span></span>
+<span id="L4948"><span class="lineNum">    4948</span>                 :<span class="tlaGNC">          80 :   }</span></span>
 <span id="L4949"><span class="lineNum">    4949</span>                 :<span class="tlaUNC">           0 :   return &quot;none&quot;;</span></span>
-<span id="L4950"><span class="lineNum">    4950</span>                 :<span class="tlaGNC">          60 : }</span></span>
+<span id="L4950"><span class="lineNum">    4950</span>                 :<span class="tlaGNC">          80 : }</span></span>
 <span id="L4951"><span class="lineNum">    4951</span>                 :             : </span>
-<span id="L4952"><span class="lineNum">    4952</span>                 :<span class="tlaGNC">          58 : std::string CaseName(parser::CaseMode mode) {</span></span>
-<span id="L4953"><span class="lineNum">    4953</span>         [<span class="tlaGBC" title="branch 0 was taken 58 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          58 :   switch (mode) {</span></span>
-<span id="L4954"><span class="lineNum">    4954</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 58 times"> + </span>]:<span class="tlaUNC">           0 :     case parser::CaseMode::kInsensitive: return &quot;insensitive&quot;;</span></span>
-<span id="L4955"><span class="lineNum">    4955</span>         [<span class="tlaGBC" title="branch 0 was taken 44 times"> + </span><span class="tlaGBC" title="branch 1 was taken 14 times"> + </span>]:<span class="tlaGNC">          44 :     case parser::CaseMode::kSensitive: return &quot;sensitive&quot;;</span></span>
-<span id="L4956"><span class="lineNum">    4956</span>         [<span class="tlaGBC" title="branch 0 was taken 14 times"> + </span><span class="tlaGBC" title="branch 1 was taken 44 times"> + </span>]:<span class="tlaGNC">          14 :     case parser::CaseMode::kSmart: return &quot;smart&quot;;</span></span>
-<span id="L4957"><span class="lineNum">    4957</span>                 :<span class="tlaGNC">          58 :   }</span></span>
+<span id="L4952"><span class="lineNum">    4952</span>                 :<span class="tlaGNC">          78 : std::string CaseName(parser::CaseMode mode) {</span></span>
+<span id="L4953"><span class="lineNum">    4953</span>         [<span class="tlaGBC" title="branch 0 was taken 78 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          78 :   switch (mode) {</span></span>
+<span id="L4954"><span class="lineNum">    4954</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 78 times"> + </span>]:<span class="tlaUNC">           0 :     case parser::CaseMode::kInsensitive: return &quot;insensitive&quot;;</span></span>
+<span id="L4955"><span class="lineNum">    4955</span>         [<span class="tlaGBC" title="branch 0 was taken 60 times"> + </span><span class="tlaGBC" title="branch 1 was taken 18 times"> + </span>]:<span class="tlaGNC">          60 :     case parser::CaseMode::kSensitive: return &quot;sensitive&quot;;</span></span>
+<span id="L4956"><span class="lineNum">    4956</span>         [<span class="tlaGBC" title="branch 0 was taken 18 times"> + </span><span class="tlaGBC" title="branch 1 was taken 60 times"> + </span>]:<span class="tlaGNC">          18 :     case parser::CaseMode::kSmart: return &quot;smart&quot;;</span></span>
+<span id="L4957"><span class="lineNum">    4957</span>                 :<span class="tlaGNC">          78 :   }</span></span>
 <span id="L4958"><span class="lineNum">    4958</span>                 :<span class="tlaUNC">           0 :   return &quot;sensitive&quot;;</span></span>
-<span id="L4959"><span class="lineNum">    4959</span>                 :<span class="tlaGNC">          58 : }</span></span>
+<span id="L4959"><span class="lineNum">    4959</span>                 :<span class="tlaGNC">          78 : }</span></span>
 <span id="L4960"><span class="lineNum">    4960</span>                 :             : </span>
 <span id="L4961"><span class="lineNum">    4961</span>                 :             : constexpr auto kFlavorFacets = std::to_array&lt;FlavorFacet&gt;({</span>
 <span id="L4962"><span class="lineNum">    4962</span>                 :             :     {.behavior = &quot;ignore files (.gitignore/.ignore)&quot;,</span>
 <span id="L4963"><span class="lineNum">    4963</span>                 :             :      .flag = &quot;-g / --gitignore, --no-ignore&quot;,</span>
 <span id="L4964"><span class="lineNum">    4964</span>                 :             :      .value = [](const std::vector&lt;std::string&gt;&amp; globals,</span>
-<span id="L4965"><span class="lineNum">    4965</span>                 :<span class="tlaGNC">          58 :                  registry::Style style) { return GitignoreName(ResolveGitignoreMode(globals, style)); }},</span></span>
+<span id="L4965"><span class="lineNum">    4965</span>                 :<span class="tlaGNC">          78 :                  registry::Style style) { return GitignoreName(ResolveGitignoreMode(globals, style)); }},</span></span>
 <span id="L4966"><span class="lineNum">    4966</span>                 :             :     {.behavior = &quot;hidden dotfiles&quot;,</span>
 <span id="L4967"><span class="lineNum">    4967</span>                 :             :      .flag = &quot;--hidden / --no-hidden&quot;,</span>
 <span id="L4968"><span class="lineNum">    4968</span>                 :             :      .value = [](const std::vector&lt;std::string&gt;&amp; globals,</span>
-<span id="L4969"><span class="lineNum">    4969</span>                 :<span class="tlaGNC">          58 :                  registry::Style style) { return HiddenName(ResolveSkipHidden(globals, style)); }},</span></span>
+<span id="L4969"><span class="lineNum">    4969</span>                 :<span class="tlaGNC">          78 :                  registry::Style style) { return HiddenName(ResolveSkipHidden(globals, style)); }},</span></span>
 <span id="L4970"><span class="lineNum">    4970</span>                 :             :     {.behavior = &quot;sizes&quot;,</span>
 <span id="L4971"><span class="lineNum">    4971</span>                 :             :      .flag = &quot;--human&quot;,</span>
 <span id="L4972"><span class="lineNum">    4972</span>                 :             :      .value = [](const std::vector&lt;std::string&gt;&amp; globals,</span>
-<span id="L4973"><span class="lineNum">    4973</span>                 :<span class="tlaGNC">          58 :                  registry::Style style) { return HumanName(ResolveHuman(globals, style)); }},</span></span>
+<span id="L4973"><span class="lineNum">    4973</span>                 :<span class="tlaGNC">          78 :                  registry::Style style) { return HumanName(ResolveHuman(globals, style)); }},</span></span>
 <span id="L4974"><span class="lineNum">    4974</span>                 :             :     {.behavior = &quot;traversal order&quot;,</span>
 <span id="L4975"><span class="lineNum">    4975</span>                 :             :      .flag = &quot;--sort&quot;,</span>
 <span id="L4976"><span class="lineNum">    4976</span>                 :             :      .value = [](const std::vector&lt;std::string&gt;&amp; globals,</span>
-<span id="L4977"><span class="lineNum">    4977</span>                 :<span class="tlaGNC">          60 :                  registry::Style style) { return SortName(ResolveSort(globals, style)); }},</span></span>
+<span id="L4977"><span class="lineNum">    4977</span>                 :<span class="tlaGNC">          80 :                  registry::Style style) { return SortName(ResolveSort(globals, style)); }},</span></span>
 <span id="L4978"><span class="lineNum">    4978</span>                 :             :     {.behavior = &quot;letter case&quot;,</span>
 <span id="L4979"><span class="lineNum">    4979</span>                 :             :      .flag = &quot;--case, -i, -s[+|-]&quot;,</span>
 <span id="L4980"><span class="lineNum">    4980</span>                 :             :      .value = [](const std::vector&lt;std::string&gt;&amp; globals,</span>
-<span id="L4981"><span class="lineNum">    4981</span>                 :<span class="tlaGNC">          58 :                  registry::Style style) { return CaseName(parser::ResolveCaseMode(globals, style)); }},</span></span>
+<span id="L4981"><span class="lineNum">    4981</span>                 :<span class="tlaGNC">          78 :                  registry::Style style) { return CaseName(parser::ResolveCaseMode(globals, style)); }},</span></span>
 <span id="L4982"><span class="lineNum">    4982</span>                 :             : });</span>
 <span id="L4983"><span class="lineNum">    4983</span>                 :             : </span>
 <span id="L4984"><span class="lineNum">    4984</span>                 :             : }  // namespace</span>
 <span id="L4985"><span class="lineNum">    4985</span>                 :             : </span>
-<span id="L4986"><span class="lineNum">    4986</span>                 :<span class="tlaGNC">          14 : absl::Span&lt;const FlavorFacet&gt; FlavorFacets() {</span></span>
-<span id="L4987"><span class="lineNum">    4987</span>                 :<span class="tlaGNC">          14 :   return kFlavorFacets;</span></span>
-<span id="L4988"><span class="lineNum">    4988</span>                 :<span class="tlaGNC">          14 : }</span></span>
+<span id="L4986"><span class="lineNum">    4986</span>                 :<span class="tlaGNC">          18 : absl::Span&lt;const FlavorFacet&gt; FlavorFacets() {</span></span>
+<span id="L4987"><span class="lineNum">    4987</span>                 :<span class="tlaGNC">          18 :   return kFlavorFacets;</span></span>
+<span id="L4988"><span class="lineNum">    4988</span>                 :<span class="tlaGNC">          18 : }</span></span>
 <span id="L4989"><span class="lineNum">    4989</span>                 :             : </span>
 <span id="L4990"><span class="lineNum">    4990</span>                 :             : }  // namespace xff::engine</span>
         </pre>
