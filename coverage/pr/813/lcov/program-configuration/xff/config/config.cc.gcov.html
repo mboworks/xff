@@ -1,0 +1,499 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - xff production coverage - program-configuration/xff/config/config.cc</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+  <style>
+    .xffNavigation { padding: .35rem 0; text-align: center; }
+    .xffHeaderSummary { margin: 0 auto; width: 80%; }
+    .xffPolicy { border-collapse: collapse; margin: .75rem auto 1rem; width: auto; }
+    .xffPolicy th { padding: .2rem .75rem; text-align: left; }
+    .xffPolicy td { font-size: 100%; padding: .2rem .75rem; text-align: center; }
+  </style>
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="xffNavigation"><a href="../../../../index.html">Report overview</a> &middot; <a href="../../../../../../index.html">All coverage reports</a></td></tr>
+
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table class="xffHeaderSummary" cellpadding=1 border=0>
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../index.html" title="Click to go to top-level">top level</a> - <a href="index.html" title="Click to go to directory program-configuration/xff/config">program-configuration/xff/config</a> - config.cc<span style="font-size: 80%;"> (source / <a href="config.cc.func-c.html" title="Click to go to function table">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">xff production coverage</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">99.2&nbsp;%</td>
+            <td class="headerCovTableEntry">252</td>
+            <td class="headerCovTableEntry">250</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-09-12 15:34:14</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">24</td>
+            <td class="headerCovTableEntry">24</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryHi">93.6&nbsp;%</td>
+            <td class="headerCovTableEntry">188</td>
+            <td class="headerCovTableEntry">176</td>
+          </tr>
+                  <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : // SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors</span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : // SPDX-License-Identifier: Apache-2.0</span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : //</span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : // Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : // you may not use this file except in compliance with the License.</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : // You may obtain a copy of the License at</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : //</span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : //      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : //</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             : // Unless required by applicable law or agreed to in writing, software</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : // distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : // See the License for the specific language governing permissions and</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : // limitations under the License.</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : </span>
+<span id="L16"><span class="lineNum">      16</span>                 :             : #include &quot;xff/config/config.h&quot;</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             : </span>
+<span id="L18"><span class="lineNum">      18</span>                 :             : #include &lt;algorithm&gt;</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             : #include &lt;string&gt;</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             : #include &lt;string_view&gt;</span>
+<span id="L21"><span class="lineNum">      21</span>                 :             : #include &lt;utility&gt;</span>
+<span id="L22"><span class="lineNum">      22</span>                 :             : #include &lt;vector&gt;</span>
+<span id="L23"><span class="lineNum">      23</span>                 :             : </span>
+<span id="L24"><span class="lineNum">      24</span>                 :             : #include &quot;absl/algorithm/container.h&quot;</span>
+<span id="L25"><span class="lineNum">      25</span>                 :             : #include &quot;absl/strings/str_cat.h&quot;</span>
+<span id="L26"><span class="lineNum">      26</span>                 :             : #include &quot;xff/config/ini.h&quot;</span>
+<span id="L27"><span class="lineNum">      27</span>                 :             : #include &quot;xff/config/xffrc.h&quot;</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             : #include &quot;xff/registry/registry.h&quot;</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             : </span>
+<span id="L30"><span class="lineNum">      30</span>                 :             : namespace xff::config {</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             : namespace {</span>
+<span id="L32"><span class="lineNum">      32</span>                 :             : </span>
+<span id="L33"><span class="lineNum">      33</span>                 :             : constexpr std::string_view kAllowNoConfig = &quot;--allow-no-config&quot;;</span>
+<span id="L34"><span class="lineNum">      34</span>                 :             : constexpr std::string_view kAllowNoSystemConfig = &quot;--allow-no-system-config&quot;;</span>
+<span id="L35"><span class="lineNum">      35</span>                 :             : constexpr std::string_view kAllowNoUserConfig = &quot;--allow-no-user-config&quot;;</span>
+<span id="L36"><span class="lineNum">      36</span>                 :             : constexpr std::string_view kAllowXffrc = &quot;--allow-xffrc&quot;;</span>
+<span id="L37"><span class="lineNum">      37</span>                 :             : constexpr std::string_view kNoAllowNoSystemConfig = &quot;--no-allow-no-system-config&quot;;</span>
+<span id="L38"><span class="lineNum">      38</span>                 :             : constexpr std::string_view kNoAllowNoUserConfig = &quot;--no-allow-no-user-config&quot;;</span>
+<span id="L39"><span class="lineNum">      39</span>                 :             : constexpr std::string_view kNoAllowNoConfig = &quot;--no-allow-no-config&quot;;</span>
+<span id="L40"><span class="lineNum">      40</span>                 :             : constexpr std::string_view kNoAllowXffrc = &quot;--no-allow-xffrc&quot;;</span>
+<span id="L41"><span class="lineNum">      41</span>                 :             : </span>
+<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">         235 : bool IsSkipPermission(std::string_view flag) {</span></span>
+<span id="L43"><span class="lineNum">      43</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 234 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 234 times"> + </span>]:<span class="tlaGNC">         235 :   return flag == kAllowNoConfig || flag == kNoAllowNoConfig || flag == kAllowNoSystemConfig</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 233 times"> + </span>]
+<span id="L44"><span class="lineNum">      44</span> [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 230 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 230 times"> + </span>]:<span class="tlaGNC">         233 :          || flag == kAllowNoUserConfig || flag == kNoAllowNoSystemConfig || flag == kNoAllowNoUserConfig</span></span>
+<span class="lineNum">        </span>         [<span class="tlaUNC" title="branch &quot;4&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 230 times"> + </span>]
+<span id="L45"><span class="lineNum">      45</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 229 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 227 times"> + </span>]:<span class="tlaGNC">         230 :          || flag == kAllowXffrc || flag == kNoAllowXffrc || flag == &quot;--no-allow-exec&quot;;</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 7 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 220 times"> + </span>]
+<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">         235 : }</span></span>
+<span id="L47"><span class="lineNum">      47</span>                 :             : </span>
+<span id="L48"><span class="lineNum">      48</span>                 :             : // An .xffrc line applies under the active --config selectors when its base is</span>
+<span id="L49"><span class="lineNum">      49</span>                 :             : // &quot;common&quot;/empty or names an active config, AND its config is empty or names one.</span>
+<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">         206 : bool LineApplies(const RcLine&amp; line, const std::vector&lt;std::string&gt;&amp; configs) {</span></span>
+<span id="L51"><span class="lineNum">      51</span> [<span class="tlaGBC" title="branch 0 was taken 26 times"> + </span><span class="tlaGBC" title="branch 1 was taken 180 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 62 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 118 times"> + </span>]:<span class="tlaGNC">         206 :   const bool base_ok = line.base.empty() || line.base == &quot;common&quot; || absl::c_contains(configs, line.base);</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 39 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 79 times"> + </span>]
+<span id="L52"><span class="lineNum">      52</span> [<span class="tlaGBC" title="branch 0 was taken 204 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">         206 :   const bool config_ok = line.config.empty() || absl::c_contains(configs, line.config);</span></span>
+<span id="L53"><span class="lineNum">      53</span> [<span class="tlaGBC" title="branch 0 was taken 127 times"> + </span><span class="tlaGBC" title="branch 1 was taken 79 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 126 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">         206 :   return base_ok &amp;&amp; config_ok;</span></span>
+<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">         206 : }</span></span>
+<span id="L55"><span class="lineNum">      55</span>                 :             : </span>
+<span id="L56"><span class="lineNum">      56</span>                 :             : void AppendMatching(</span>
+<span id="L57"><span class="lineNum">      57</span>                 :             :     std::vector&lt;ResolvedFlag&gt;&amp; out,</span>
+<span id="L58"><span class="lineNum">      58</span>                 :             :     const std::vector&lt;RcLine&gt;&amp; lines,</span>
+<span id="L59"><span class="lineNum">      59</span>                 :             :     const std::vector&lt;std::string&gt;&amp; configs,</span>
+<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">          30 :     Source source) {</span></span>
+<span id="L61"><span class="lineNum">      61</span>         [<span class="tlaGBC" title="branch 0 was taken 71 times"> + </span><span class="tlaGBC" title="branch 1 was taken 30 times"> + </span>]:<span class="tlaGNC">          71 :   for (const RcLine&amp; line : lines) {</span></span>
+<span id="L62"><span class="lineNum">      62</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 66 times"> + </span>]:<span class="tlaGNC">          71 :     if (!LineApplies(line, configs)) {</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">           5 :       continue;</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">           5 :     }</span></span>
+<span id="L65"><span class="lineNum">      65</span>         [<span class="tlaGBC" title="branch 0 was taken 95 times"> + </span><span class="tlaGBC" title="branch 1 was taken 66 times"> + </span>]:<span class="tlaGNC">          95 :     for (const std::string&amp; flag : line.flags) {</span></span>
+<span id="L66"><span class="lineNum">      66</span>         [<span class="tlaGBC" title="branch 0 was taken 88 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>]:<span class="tlaGNC">          95 :       if (!IsSkipPermission(flag)) {</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">          88 :         out.push_back(ResolvedFlag{.flag = flag, .source = source});</span></span>
+<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">          88 :       }</span></span>
+<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">          95 :     }</span></span>
+<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">          66 :   }</span></span>
+<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">          30 : }</span></span>
+<span id="L72"><span class="lineNum">      72</span>                 :             : </span>
+<span id="L73"><span class="lineNum">      73</span>                 :             : class OrderedResolver {</span>
+<span id="L74"><span class="lineNum">      74</span>                 :             :  public:</span>
+<span id="L75"><span class="lineNum">      75</span>                 :             :   OrderedResolver(const ConfigInputs&amp; inputs, std::string_view invocation_selector)</span>
+<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">        1109 :       : inputs_(inputs),</span></span>
+<span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaGNC">        1109 :         selectors_{std::string(invocation_selector)},</span></span>
+<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">        1109 :         system_named_emitted_(inputs.system.named.size()),</span></span>
+<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">        1109 :         user_emitted_(inputs.user.size()) {</span></span>
+<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">        1109 :     file_loaded_.resize(inputs.xffrc.size());</span></span>
+<span id="L81"><span class="lineNum">      81</span>                 :<span class="tlaGNC">        1109 :     file_emitted_.reserve(inputs.xffrc.size());</span></span>
+<span id="L82"><span class="lineNum">      82</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1109 times"> + </span>]:<span class="tlaGNC">        1109 :     for (const ExplicitConfig&amp; file : inputs.xffrc) {</span></span>
+<span id="L83"><span class="lineNum">      83</span>                 :<span class="tlaGNC">           6 :       file_emitted_.emplace_back(file.lines.size());</span></span>
+<span id="L84"><span class="lineNum">      84</span>                 :<span class="tlaGNC">           6 :     }</span></span>
+<span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaGNC">        1109 :   }</span></span>
+<span id="L86"><span class="lineNum">      86</span>                 :             : </span>
+<span id="L87"><span class="lineNum">      87</span>                 :<span class="tlaGNC">        1109 :   std::vector&lt;ResolvedFlag&gt; Resolve(const std::vector&lt;std::string&gt;&amp; cli_globals) {</span></span>
+<span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaGNC">        1109 :     EmitSystem();</span></span>
+<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">        1109 :     EmitMatching();</span></span>
+<span id="L90"><span class="lineNum">      90</span>         [<span class="tlaGBC" title="branch 0 was taken 2028 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1109 times"> + </span>]:<span class="tlaGNC">        2048 :     for (const std::string&amp; global : cli_globals) {</span></span>
+<span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">        2028 :       EmitFlag(global, Source::kCli);</span></span>
+<span id="L92"><span class="lineNum">      92</span>                 :<span class="tlaGNC">        2028 :       LoadExplicitFile(global);</span></span>
+<span id="L93"><span class="lineNum">      93</span>                 :<span class="tlaGNC">        2028 :     }</span></span>
+<span id="L94"><span class="lineNum">      94</span>                 :<span class="tlaGNC">        1109 :     return std::move(application_);</span></span>
+<span id="L95"><span class="lineNum">      95</span>                 :<span class="tlaGNC">        1109 :   }</span></span>
+<span id="L96"><span class="lineNum">      96</span>                 :             : </span>
+<span id="L97"><span class="lineNum">      97</span>                 :             :  private:</span>
+<span id="L98"><span class="lineNum">      98</span>                 :<span class="tlaGNC">        1109 :   void EmitSystem() {</span></span>
+<span id="L99"><span class="lineNum">      99</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1108 times"> + </span>]:<span class="tlaGNC">        1109 :     if (inputs_.no_system_config) {</span></span>
+<span id="L100"><span class="lineNum">     100</span>                 :<span class="tlaGNC">           1 :       return;</span></span>
+<span id="L101"><span class="lineNum">     101</span>                 :<span class="tlaGNC">           1 :     }</span></span>
+<span id="L102"><span class="lineNum">     102</span>                 :<span class="tlaGNC">        1108 :     EmitTokens(inputs_.system.globals, Source::kSystem);</span></span>
+<span id="L103"><span class="lineNum">     103</span>                 :<span class="tlaGNC">        1108 :   }</span></span>
+<span id="L104"><span class="lineNum">     104</span>                 :             : </span>
+<span id="L105"><span class="lineNum">     105</span>                 :<span class="tlaGNC">        1827 :   void EmitMatching() {</span></span>
+<span id="L106"><span class="lineNum">     106</span>         [<span class="tlaGBC" title="branch 0 was taken 1826 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">        1827 :     if (!inputs_.no_system_config) {</span></span>
+<span id="L107"><span class="lineNum">     107</span>         [<span class="tlaGBC" title="branch 0 was taken 35 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1826 times"> + </span>]:<span class="tlaGNC">        1861 :       for (std::size_t index = 0; index &lt; inputs_.system.named.size(); ++index) {</span></span>
+<span id="L108"><span class="lineNum">     108</span>                 :<span class="tlaGNC">          35 :         const IniSection&amp; section = inputs_.system.named[index];</span></span>
+<span id="L109"><span class="lineNum">     109</span> [<span class="tlaGBC" title="branch 0 was taken 34 times"> + </span><span class="tlaGBC" title="branch 1 was taken 36 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 18 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 9 times"> + </span>]:<span class="tlaGNC">          35 :         if (system_named_emitted_[index] || !absl::c_contains(selectors_, section.name)) {</span></span>
+<span id="L110"><span class="lineNum">     110</span>                 :<span class="tlaGNC">          26 :           continue;</span></span>
+<span id="L111"><span class="lineNum">     111</span>                 :<span class="tlaGNC">          26 :         }</span></span>
+<span id="L112"><span class="lineNum">     112</span>                 :<span class="tlaGNC">           9 :         system_named_emitted_[index] = true;</span></span>
+<span id="L113"><span class="lineNum">     113</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">          10 :         for (const IniLine&amp; line : section.lines) {</span></span>
+<span id="L114"><span class="lineNum">     114</span>                 :<span class="tlaGNC">          10 :           EmitTokens(line.tokens, Source::kSystem);</span></span>
+<span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">          10 :         }</span></span>
+<span id="L116"><span class="lineNum">     116</span>                 :<span class="tlaGNC">           9 :       }</span></span>
+<span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">        1826 :     }</span></span>
+<span id="L118"><span class="lineNum">     118</span>         [<span class="tlaGBC" title="branch 0 was taken 1817 times"> + </span><span class="tlaGBC" title="branch 1 was taken 10 times"> + </span>]:<span class="tlaGNC">        1827 :     if (!inputs_.no_user_config) {</span></span>
+<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">        1817 :       EmitLines(inputs_.user, user_emitted_, Source::kUser);</span></span>
+<span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaGNC">        1817 :     }</span></span>
+<span id="L121"><span class="lineNum">     121</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1827 times"> + </span>]:<span class="tlaGNC">        1834 :     for (std::size_t index = 0; index &lt; inputs_.xffrc.size(); ++index) {</span></span>
+<span id="L122"><span class="lineNum">     122</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">           7 :       if (file_loaded_[index]) {</span></span>
+<span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">           1 :         EmitLines(inputs_.xffrc[index].lines, file_emitted_[index], Source::kXffrc);</span></span>
+<span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">           1 :       }</span></span>
+<span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">           7 :     }</span></span>
+<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">        1827 :   }</span></span>
+<span id="L127"><span class="lineNum">     127</span>                 :             : </span>
+<span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">        1824 :   void EmitLines(const std::vector&lt;RcLine&gt;&amp; lines, std::vector&lt;bool&gt;&amp; emitted, Source source) {</span></span>
+<span id="L129"><span class="lineNum">     129</span>         [<span class="tlaGBC" title="branch 0 was taken 173 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1824 times"> + </span>]:<span class="tlaGNC">        1997 :     for (std::size_t index = 0; index &lt; lines.size(); ++index) {</span></span>
+<span id="L130"><span class="lineNum">     130</span> [<span class="tlaGBC" title="branch 0 was taken 151 times"> + </span><span class="tlaGBC" title="branch 1 was taken 195 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 75 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 60 times"> + </span>]:<span class="tlaGNC">         173 :       if (emitted[index] || !LineApplies(lines[index], selectors_)) {</span></span>
+<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">         113 :         continue;</span></span>
+<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">         113 :       }</span></span>
+<span id="L133"><span class="lineNum">     133</span>                 :<span class="tlaGNC">          60 :       emitted[index] = true;</span></span>
+<span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">          60 :       EmitTokens(lines[index].flags, source);</span></span>
+<span id="L135"><span class="lineNum">     135</span>                 :<span class="tlaGNC">          60 :     }</span></span>
+<span id="L136"><span class="lineNum">     136</span>                 :<span class="tlaGNC">        1824 :   }</span></span>
+<span id="L137"><span class="lineNum">     137</span>                 :             : </span>
+<span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">        1178 :   void EmitTokens(const std::vector&lt;std::string&gt;&amp; tokens, Source source) {</span></span>
+<span id="L139"><span class="lineNum">     139</span>         [<span class="tlaGBC" title="branch 0 was taken 101 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1178 times"> + </span>]:<span class="tlaGNC">        1279 :     for (std::size_t pos = 0; pos &lt; tokens.size(); ++pos) {</span></span>
+<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">         101 :       const std::string&amp; token = tokens[pos];</span></span>
+<span id="L141"><span class="lineNum">     141</span>         [<span class="tlaGBC" title="branch 0 was taken 98 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">         101 :       if (!IsSkipPermission(token)) {</span></span>
+<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">          98 :         EmitFlag(token, source);</span></span>
+<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">          98 :       }</span></span>
+<span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">         101 :       const auto primary = registry::Lookup(token.substr(0, token.find(':')));</span></span>
+<span id="L145"><span class="lineNum">     145</span>         [<span class="tlaGBC" title="branch 0 was taken 77 times"> + </span><span class="tlaGBC" title="branch 1 was taken 24 times"> + </span>]:<span class="tlaGNC">         101 :       if (!primary.has_value()) {</span></span>
+<span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">          77 :         continue;</span></span>
+<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">          77 :       }</span></span>
+<span id="L148"><span class="lineNum">     148</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 21 times"> + </span>]:<span class="tlaGNC">          24 :       if (primary-&gt;arity &lt; 0) {</span></span>
+<span id="L149"><span class="lineNum">     149</span>         [<span class="tlaGBC" title="branch 0 was taken 11 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          11 :         while (++pos &lt; tokens.size()) {</span></span>
+<span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">          11 :           application_.push_back({.flag = tokens[pos], .source = source, .is_argument = true});</span></span>
+<span id="L151"><span class="lineNum">     151</span> [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 8 times"> + </span>]:<span class="tlaGNC">          11 :           if (tokens[pos] == &quot;;&quot; || tokens[pos] == &quot;+&quot;) {</span></span>
+<span id="L152"><span class="lineNum">     152</span>                 :<span class="tlaGNC">           3 :             break;</span></span>
+<span id="L153"><span class="lineNum">     153</span>                 :<span class="tlaGNC">           3 :           }</span></span>
+<span id="L154"><span class="lineNum">     154</span>                 :<span class="tlaGNC">          11 :         }</span></span>
+<span id="L155"><span class="lineNum">     155</span>                 :<span class="tlaGNC">          24 :       } else {</span></span>
+<span id="L156"><span class="lineNum">     156</span> [<span class="tlaGBC" title="branch 0 was taken 16 times"> + </span><span class="tlaGBC" title="branch 1 was taken 21 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 16 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">          37 :         for (int remaining = primary-&gt;arity; remaining &gt; 0 &amp;&amp; pos + 1 &lt; tokens.size(); --remaining) {</span></span>
+<span id="L157"><span class="lineNum">     157</span>                 :<span class="tlaGNC">          16 :           application_.push_back({.flag = tokens[++pos], .source = source, .is_argument = true});</span></span>
+<span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">          16 :         }</span></span>
+<span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaGNC">          21 :       }</span></span>
+<span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">          24 :     }</span></span>
+<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">        1178 :   }</span></span>
+<span id="L162"><span class="lineNum">     162</span>                 :             : </span>
+<span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">        2126 :   void EmitFlag(const std::string&amp; flag, Source source) {</span></span>
+<span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">        2126 :     application_.push_back({.flag = flag, .source = source});</span></span>
+<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">        2126 :     constexpr std::string_view kConfig = &quot;--config=&quot;;</span></span>
+<span id="L166"><span class="lineNum">     166</span>         [<span class="tlaGBC" title="branch 0 was taken 718 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1408 times"> + </span>]:<span class="tlaGNC">        2126 :     if (flag.starts_with(kConfig)) {</span></span>
+<span id="L167"><span class="lineNum">     167</span>                 :<span class="tlaGNC">         718 :       selectors_.push_back(flag.substr(kConfig.size()));</span></span>
+<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">         718 :       EmitMatching();</span></span>
+<span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">         718 :     }</span></span>
+<span id="L170"><span class="lineNum">     170</span>                 :<span class="tlaGNC">        2126 :   }</span></span>
+<span id="L171"><span class="lineNum">     171</span>                 :             : </span>
+<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">        2028 :   void LoadExplicitFile(std::string_view global) {</span></span>
+<span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">        2028 :     constexpr std::string_view kXffrc = &quot;--xffrc=&quot;;</span></span>
+<span id="L174"><span class="lineNum">     174</span> [<span class="tlaGBC" title="branch 0 was taken 2016 times"> + </span><span class="tlaGBC" title="branch 1 was taken 12 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 6 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 6 times"> + </span>]:<span class="tlaGNC">        2028 :     if (!global.starts_with(kXffrc) || next_file_ &gt;= inputs_.xffrc.size()) {</span></span>
+<span id="L175"><span class="lineNum">     175</span>                 :<span class="tlaGNC">        2022 :       return;</span></span>
+<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">        2022 :     }</span></span>
+<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">           6 :     file_loaded_[next_file_] = true;</span></span>
+<span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC">           6 :     EmitLines(inputs_.xffrc[next_file_].lines, file_emitted_[next_file_], Source::kXffrc);</span></span>
+<span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">           6 :     ++next_file_;</span></span>
+<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">           6 :   }</span></span>
+<span id="L181"><span class="lineNum">     181</span>                 :             : </span>
+<span id="L182"><span class="lineNum">     182</span>                 :             :   const ConfigInputs&amp; inputs_;</span>
+<span id="L183"><span class="lineNum">     183</span>                 :             :   std::vector&lt;ResolvedFlag&gt; application_;</span>
+<span id="L184"><span class="lineNum">     184</span>                 :             :   std::vector&lt;std::string&gt; selectors_;</span>
+<span id="L185"><span class="lineNum">     185</span>                 :             :   std::vector&lt;bool&gt; system_named_emitted_;</span>
+<span id="L186"><span class="lineNum">     186</span>                 :             :   std::vector&lt;bool&gt; user_emitted_;</span>
+<span id="L187"><span class="lineNum">     187</span>                 :             :   std::vector&lt;bool&gt; file_loaded_;</span>
+<span id="L188"><span class="lineNum">     188</span>                 :             :   std::vector&lt;std::vector&lt;bool&gt;&gt; file_emitted_;</span>
+<span id="L189"><span class="lineNum">     189</span>                 :             :   std::size_t next_file_ = 0;</span>
+<span id="L190"><span class="lineNum">     190</span>                 :             : };</span>
+<span id="L191"><span class="lineNum">     191</span>                 :             : </span>
+<span id="L192"><span class="lineNum">     192</span>                 :             : }  // namespace</span>
+<span id="L193"><span class="lineNum">     193</span>                 :             : </span>
+<span id="L194"><span class="lineNum">     194</span>                 :             : // Primary arguments are literal data, even when they resemble selectors or config-only controls.</span>
+<span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">        3262 : std::vector&lt;std::string_view&gt; DirectiveTokens(const std::vector&lt;std::string&gt;&amp; tokens) {</span></span>
+<span id="L196"><span class="lineNum">     196</span>                 :<span class="tlaGNC">        3262 :   std::vector&lt;std::string_view&gt; result;</span></span>
+<span id="L197"><span class="lineNum">     197</span>         [<span class="tlaGBC" title="branch 0 was taken 868 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3262 times"> + </span>]:<span class="tlaGNC">        4130 :   for (std::size_t pos = 0; pos &lt; tokens.size(); ++pos) {</span></span>
+<span id="L198"><span class="lineNum">     198</span>                 :<span class="tlaGNC">         868 :     const std::string&amp; token = tokens[pos];</span></span>
+<span id="L199"><span class="lineNum">     199</span>                 :<span class="tlaGNC">         868 :     result.push_back(token);</span></span>
+<span id="L200"><span class="lineNum">     200</span>                 :<span class="tlaGNC">         868 :     const auto primary = registry::Lookup(token.substr(0, token.find(':')));</span></span>
+<span id="L201"><span class="lineNum">     201</span>         [<span class="tlaGBC" title="branch 0 was taken 699 times"> + </span><span class="tlaGBC" title="branch 1 was taken 169 times"> + </span>]:<span class="tlaGNC">         868 :     if (!primary.has_value()) {</span></span>
+<span id="L202"><span class="lineNum">     202</span>                 :<span class="tlaGNC">         699 :       continue;</span></span>
+<span id="L203"><span class="lineNum">     203</span>                 :<span class="tlaGNC">         699 :     }</span></span>
+<span id="L204"><span class="lineNum">     204</span>         [<span class="tlaGBC" title="branch 0 was taken 46 times"> + </span><span class="tlaGBC" title="branch 1 was taken 123 times"> + </span>]:<span class="tlaGNC">         169 :     if (primary-&gt;arity &lt; 0) {</span></span>
+<span id="L205"><span class="lineNum">     205</span> [<span class="tlaGBC" title="branch 0 was taken 198 times"> + </span><span class="tlaGBC" title="branch 1 was taken 26 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 178 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 20 times"> + </span>]:<span class="tlaGNC">         224 :       while (++pos &lt; tokens.size() &amp;&amp; tokens[pos] != &quot;;&quot; &amp;&amp; tokens[pos] != &quot;+&quot;) {}</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 178 times"> + </span><span class="tlaUNC" title="branch &quot;5&quot; was not taken"> - </span>]
+<span id="L206"><span class="lineNum">     206</span>                 :<span class="tlaGNC">         155 :     } else {</span></span>
+<span id="L207"><span class="lineNum">     207</span>                 :<span class="tlaGNC">         123 :       pos += static_cast&lt;std::size_t&gt;(primary-&gt;arity);</span></span>
+<span id="L208"><span class="lineNum">     208</span>                 :<span class="tlaGNC">         123 :     }</span></span>
+<span id="L209"><span class="lineNum">     209</span>                 :<span class="tlaGNC">         169 :   }</span></span>
+<span id="L210"><span class="lineNum">     210</span>                 :<span class="tlaGNC">        3262 :   return result;</span></span>
+<span id="L211"><span class="lineNum">     211</span>                 :<span class="tlaGNC">        3262 : }</span></span>
+<span id="L212"><span class="lineNum">     212</span>                 :             : </span>
+<span id="L213"><span class="lineNum">     213</span>                 :<span class="tlaGNC">          23 : std::vector&lt;ResolvedFlag&gt; ResolveConfig(const ConfigInputs&amp; inputs) {</span></span>
+<span id="L214"><span class="lineNum">     214</span>                 :<span class="tlaGNC">          23 :   std::vector&lt;ResolvedFlag&gt; resolved;</span></span>
+<span id="L215"><span class="lineNum">     215</span>         [<span class="tlaGBC" title="branch 0 was taken 18 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">          23 :   if (!inputs.no_system_config) {</span></span>
+<span id="L216"><span class="lineNum">     216</span>         [<span class="tlaGBC" title="branch 0 was taken 36 times"> + </span><span class="tlaGBC" title="branch 1 was taken 18 times"> + </span>]:<span class="tlaGNC">          40 :     for (const std::string&amp; flag : inputs.system.globals) {</span></span>
+<span id="L217"><span class="lineNum">     217</span>         [<span class="tlaGBC" title="branch 0 was taken 31 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">          36 :       if (!IsSkipPermission(flag)) {</span></span>
+<span id="L218"><span class="lineNum">     218</span>                 :<span class="tlaGNC">          31 :         resolved.push_back(ResolvedFlag{.flag = flag, .source = Source::kSystem});</span></span>
+<span id="L219"><span class="lineNum">     219</span>                 :<span class="tlaGNC">          31 :       }</span></span>
+<span id="L220"><span class="lineNum">     220</span>                 :<span class="tlaGNC">          36 :     }</span></span>
+<span id="L221"><span class="lineNum">     221</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 18 times"> + </span>]:<span class="tlaGNC">          18 :     for (const IniSection&amp; section : inputs.system.named) {</span></span>
+<span id="L222"><span class="lineNum">     222</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           5 :       if (!absl::c_contains(inputs.configs, section.name)) {</span></span>
+<span id="L223"><span class="lineNum">     223</span>                 :<span class="tlaGNC">           3 :         continue;</span></span>
+<span id="L224"><span class="lineNum">     224</span>                 :<span class="tlaGNC">           3 :       }</span></span>
+<span id="L225"><span class="lineNum">     225</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           2 :       for (const IniLine&amp; line : section.lines) {</span></span>
+<span id="L226"><span class="lineNum">     226</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           3 :         for (const std::string&amp; flag : line.tokens) {</span></span>
+<span id="L227"><span class="lineNum">     227</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">           3 :           if (!IsSkipPermission(flag)) {</span></span>
+<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">           3 :             resolved.push_back(ResolvedFlag{.flag = flag, .source = Source::kSystem});</span></span>
+<span id="L229"><span class="lineNum">     229</span>                 :<span class="tlaGNC">           3 :           }</span></span>
+<span id="L230"><span class="lineNum">     230</span>                 :<span class="tlaGNC">           3 :         }</span></span>
+<span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaGNC">           2 :       }</span></span>
+<span id="L232"><span class="lineNum">     232</span>                 :<span class="tlaGNC">           2 :     }</span></span>
+<span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">          18 :   }</span></span>
+<span id="L234"><span class="lineNum">     234</span>         [<span class="tlaGBC" title="branch 0 was taken 19 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4 times"> + </span>]:<span class="tlaGNC">          23 :   if (!inputs.no_user_config) {</span></span>
+<span id="L235"><span class="lineNum">     235</span>                 :<span class="tlaGNC">          19 :     AppendMatching(resolved, inputs.user, inputs.configs, Source::kUser);</span></span>
+<span id="L236"><span class="lineNum">     236</span>                 :<span class="tlaGNC">          19 :   }</span></span>
+<span id="L237"><span class="lineNum">     237</span>         [<span class="tlaGBC" title="branch 0 was taken 11 times"> + </span><span class="tlaGBC" title="branch 1 was taken 23 times"> + </span>]:<span class="tlaGNC">          23 :   for (const ExplicitConfig&amp; file : inputs.xffrc) {</span></span>
+<span id="L238"><span class="lineNum">     238</span>                 :<span class="tlaGNC">          11 :     AppendMatching(resolved, file.lines, inputs.configs, Source::kXffrc);</span></span>
+<span id="L239"><span class="lineNum">     239</span>                 :<span class="tlaGNC">          11 :   }</span></span>
+<span id="L240"><span class="lineNum">     240</span>                 :<span class="tlaGNC">          23 :   return resolved;</span></span>
+<span id="L241"><span class="lineNum">     241</span>                 :<span class="tlaGNC">          23 : }</span></span>
+<span id="L242"><span class="lineNum">     242</span>                 :             : </span>
+<span id="L243"><span class="lineNum">     243</span>                 :             : std::vector&lt;ResolvedFlag&gt; ResolveConfigInOrder(</span>
+<span id="L244"><span class="lineNum">     244</span>                 :             :     const ConfigInputs&amp; inputs,</span>
+<span id="L245"><span class="lineNum">     245</span>                 :             :     const std::vector&lt;std::string&gt;&amp; cli_globals,</span>
+<span id="L246"><span class="lineNum">     246</span>                 :<span class="tlaGNC">        1109 :     std::string_view invocation_selector) {</span></span>
+<span id="L247"><span class="lineNum">     247</span>                 :<span class="tlaGNC">        1109 :   return OrderedResolver(inputs, invocation_selector).Resolve(cli_globals);</span></span>
+<span id="L248"><span class="lineNum">     248</span>                 :<span class="tlaGNC">        1109 : }</span></span>
+<span id="L249"><span class="lineNum">     249</span>                 :             : </span>
+<span id="L250"><span class="lineNum">     250</span>                 :<span class="tlaGNC">         165 : std::string_view SourceName(Source source) {</span></span>
+<span id="L251"><span class="lineNum">     251</span>         [<span class="tlaGBC" title="branch 0 was taken 165 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">         165 :   switch (source) {</span></span>
+<span id="L252"><span class="lineNum">     252</span>         [<span class="tlaGBC" title="branch 0 was taken 28 times"> + </span><span class="tlaGBC" title="branch 1 was taken 137 times"> + </span>]:<span class="tlaGNC">          28 :     case Source::kCli: return &quot;cli&quot;;</span></span>
+<span id="L253"><span class="lineNum">     253</span>         [<span class="tlaGBC" title="branch 0 was taken 38 times"> + </span><span class="tlaGBC" title="branch 1 was taken 127 times"> + </span>]:<span class="tlaGNC">          38 :     case Source::kSystem: return &quot;system&quot;;</span></span>
+<span id="L254"><span class="lineNum">     254</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 164 times"> + </span>]:<span class="tlaGNC">           1 :     case Source::kUnset: return &quot;unset&quot;;</span></span>
+<span id="L255"><span class="lineNum">     255</span>         [<span class="tlaGBC" title="branch 0 was taken 57 times"> + </span><span class="tlaGBC" title="branch 1 was taken 108 times"> + </span>]:<span class="tlaGNC">          57 :     case Source::kUser: return &quot;user&quot;;</span></span>
+<span id="L256"><span class="lineNum">     256</span>         [<span class="tlaGBC" title="branch 0 was taken 41 times"> + </span><span class="tlaGBC" title="branch 1 was taken 124 times"> + </span>]:<span class="tlaGNC">          41 :     case Source::kXffrc: return &quot;xffrc&quot;;</span></span>
+<span id="L257"><span class="lineNum">     257</span>                 :<span class="tlaGNC">         165 :   }</span></span>
+<span id="L258"><span class="lineNum">     258</span>                 :<span class="tlaUNC">           0 :   return &quot;unset&quot;;</span></span>
+<span id="L259"><span class="lineNum">     259</span>                 :<span class="tlaGNC">         165 : }</span></span>
+<span id="L260"><span class="lineNum">     260</span>                 :             : </span>
+<span id="L261"><span class="lineNum">     261</span>                 :             : bool ArmedFromTrustedTier(</span>
+<span id="L262"><span class="lineNum">     262</span>                 :             :     const ConfigInputs&amp; inputs,</span>
+<span id="L263"><span class="lineNum">     263</span>                 :             :     const std::vector&lt;std::string&gt;&amp; cli_globals,</span>
+<span id="L264"><span class="lineNum">     264</span>                 :<span class="tlaGNC">         553 :     std::string_view flag) {</span></span>
+<span id="L265"><span class="lineNum">     265</span> [<span class="tlaGBC" title="branch 0 was taken 557 times"> + </span><span class="tlaGBC" title="branch 1 was taken 549 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 4 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 549 times"> + </span>]:<span class="tlaGNC">         553 :   if (flag == &quot;--allow-exec&quot; &amp;&amp; absl::c_contains(DirectiveTokens(inputs.system.globals), &quot;--no-allow-exec&quot;)) {</span></span>
+<span id="L266"><span class="lineNum">     266</span>                 :<span class="tlaGNC">           4 :     return false;</span></span>
+<span id="L267"><span class="lineNum">     267</span>                 :<span class="tlaGNC">           4 :   }</span></span>
+<span id="L268"><span class="lineNum">     268</span>                 :             :   // Expand selectors from automatic tiers too: a transitive named configuration may arm a file.</span>
+<span id="L269"><span class="lineNum">     269</span>                 :             :   // Explicit-file flags are excluded by provenance so an explicit file cannot authorize itself.</span>
+<span id="L270"><span class="lineNum">     270</span>                 :<span class="tlaGNC">         549 :   std::vector&lt;std::string&gt; selectors;</span></span>
+<span id="L271"><span class="lineNum">     271</span>                 :<span class="tlaGNC">         549 :   selectors.reserve(inputs.configs.size());</span></span>
+<span id="L272"><span class="lineNum">     272</span>         [<span class="tlaGBC" title="branch 0 was taken 591 times"> + </span><span class="tlaGBC" title="branch 1 was taken 549 times"> + </span>]:<span class="tlaGNC">         599 :   for (const std::string&amp; name : inputs.configs) {</span></span>
+<span id="L273"><span class="lineNum">     273</span>                 :<span class="tlaGNC">         591 :     selectors.push_back(absl::StrCat(&quot;--config=&quot;, name));</span></span>
+<span id="L274"><span class="lineNum">     274</span>                 :<span class="tlaGNC">         591 :   }</span></span>
+<span id="L275"><span class="lineNum">     275</span>                 :<span class="tlaGNC">         549 :   selectors.insert(selectors.end(), cli_globals.begin(), cli_globals.end());</span></span>
+<span id="L276"><span class="lineNum">     276</span>                 :<span class="tlaGNC">         549 :   ConfigInputs trusted = inputs;</span></span>
+<span id="L277"><span class="lineNum">     277</span>                 :<span class="tlaGNC">         549 :   trusted.xffrc.clear();</span></span>
+<span id="L278"><span class="lineNum">     278</span> [<span class="tlaGBC" title="branch 0 was taken 35 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 33 times"> + </span>]:<span class="tlaGNC">         551 :   std::erase_if(trusted.user, [](const RcLine&amp; line) { return line.config.empty() &amp;&amp; IsBuiltinStyle(line.base); });</span></span>
+<span id="L279"><span class="lineNum">     279</span>                 :<span class="tlaGNC">        1338 :   return absl::c_any_of(ResolveConfigInOrder(trusted, selectors, &quot;&quot;), [&amp;](const ResolvedFlag&amp; resolved) {</span></span>
+<span id="L280"><span class="lineNum">     280</span> [<span class="tlaGBC" title="branch 0 was taken 1329 times"> + </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1329 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">        1338 :     return !resolved.is_argument &amp;&amp; resolved.source != Source::kXffrc &amp;&amp; resolved.flag == flag;</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 7 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 1322 times"> + </span>]
+<span id="L281"><span class="lineNum">     281</span>                 :<span class="tlaGNC">        1338 :   });</span></span>
+<span id="L282"><span class="lineNum">     282</span>                 :<span class="tlaGNC">         553 : }</span></span>
+<span id="L283"><span class="lineNum">     283</span>                 :             : </span>
+<span id="L284"><span class="lineNum">     284</span>                 :<span class="tlaGNC">         214 : bool IsBuiltinStyle(std::string_view name) {</span></span>
+<span id="L285"><span class="lineNum">     285</span> [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 212 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 211 times"> + </span>]:<span class="tlaGNC">         214 :   return name == &quot;find&quot; || name == &quot;rg&quot; || name == &quot;xff&quot;;</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 10 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 201 times"> + </span>]
+<span id="L286"><span class="lineNum">     286</span>                 :<span class="tlaGNC">         214 : }</span></span>
+<span id="L287"><span class="lineNum">     287</span>                 :             : </span>
+<span id="L288"><span class="lineNum">     288</span>                 :<span class="tlaGNC">         549 : registry::Style ActiveStyle(const std::vector&lt;std::string&gt;&amp; configs) {</span></span>
+<span id="L289"><span class="lineNum">     289</span>                 :<span class="tlaGNC">         549 :   registry::Style style = registry::Style::kXff;  // the modern xff style is the default</span></span>
+<span id="L290"><span class="lineNum">     290</span>         [<span class="tlaGBC" title="branch 0 was taken 602 times"> + </span><span class="tlaGBC" title="branch 1 was taken 549 times"> + </span>]:<span class="tlaGNC">         602 :   for (const std::string&amp; name : configs) {</span></span>
+<span id="L291"><span class="lineNum">     291</span>                 :<span class="tlaGNC">         602 :     std::string_view base = name;</span></span>
+<span id="L292"><span class="lineNum">     292</span>                 :<span class="tlaGNC">         602 :     base = base.substr(0, base.find(':'));  // &quot;xff:2&quot; pins an epoch; the base picks the style</span></span>
+<span id="L293"><span class="lineNum">     293</span>         [<span class="tlaGBC" title="branch 0 was taken 35 times"> + </span><span class="tlaGBC" title="branch 1 was taken 567 times"> + </span>]:<span class="tlaGNC">         602 :     if (base == &quot;find&quot;) {</span></span>
+<span id="L294"><span class="lineNum">     294</span>                 :<span class="tlaGNC">          35 :       style = registry::Style::kFind;</span></span>
+<span id="L295"><span class="lineNum">     295</span>         [<span class="tlaGBC" title="branch 0 was taken 547 times"> + </span><span class="tlaGBC" title="branch 1 was taken 20 times"> + </span>]:<span class="tlaGNC">         567 :     } else if (base == &quot;xff&quot;) {</span></span>
+<span id="L296"><span class="lineNum">     296</span>                 :<span class="tlaGNC">         547 :       style = registry::Style::kXff;</span></span>
+<span id="L297"><span class="lineNum">     297</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 10 times"> + </span>]:<span class="tlaGNC">         549 :     } else if (base == &quot;rg&quot;) {</span></span>
+<span id="L298"><span class="lineNum">     298</span>                 :<span class="tlaGNC">          10 :       style = registry::Style::kRg;  // the single opinionated style (gitignore, skip hidden, smart case)</span></span>
+<span id="L299"><span class="lineNum">     299</span>                 :<span class="tlaGNC">          10 :     }</span></span>
+<span id="L300"><span class="lineNum">     300</span>                 :<span class="tlaGNC">         602 :   }</span></span>
+<span id="L301"><span class="lineNum">     301</span>                 :<span class="tlaGNC">         549 :   return style;</span></span>
+<span id="L302"><span class="lineNum">     302</span>                 :<span class="tlaGNC">         549 : }</span></span>
+<span id="L303"><span class="lineNum">     303</span>                 :             : </span>
+<span id="L304"><span class="lineNum">     304</span>                 :             : namespace {</span>
+<span id="L305"><span class="lineNum">     305</span>                 :             : </span>
+<span id="L306"><span class="lineNum">     306</span>                 :             : // The active style's name for --explain output.</span>
+<span id="L307"><span class="lineNum">     307</span>                 :<span class="tlaGNC">          12 : std::string_view StyleName(registry::Style style) {</span></span>
+<span id="L308"><span class="lineNum">     308</span>         [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          12 :   switch (style) {</span></span>
+<span id="L309"><span class="lineNum">     309</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">           1 :     case registry::Style::kFind: return &quot;find&quot;;</span></span>
+<span id="L310"><span class="lineNum">     310</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">           1 :     case registry::Style::kRg: return &quot;rg&quot;;</span></span>
+<span id="L311"><span class="lineNum">     311</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">          10 :     case registry::Style::kXff: return &quot;xff&quot;;</span></span>
+<span id="L312"><span class="lineNum">     312</span>                 :<span class="tlaGNC">          12 :   }</span></span>
+<span id="L313"><span class="lineNum">     313</span>                 :<span class="tlaUNC">           0 :   return &quot;xff&quot;;</span></span>
+<span id="L314"><span class="lineNum">     314</span>                 :<span class="tlaGNC">          12 : }</span></span>
+<span id="L315"><span class="lineNum">     315</span>                 :             : </span>
+<span id="L316"><span class="lineNum">     316</span>                 :             : }  // namespace</span>
+<span id="L317"><span class="lineNum">     317</span>                 :             : </span>
+<span id="L318"><span class="lineNum">     318</span>                 :<span class="tlaGNC">        1653 : std::string_view DefaultStyleForProgram(std::string_view argv0) {</span></span>
+<span id="L319"><span class="lineNum">     319</span>         [<span class="tlaGBC" title="branch 0 was taken 1639 times"> + </span><span class="tlaGBC" title="branch 1 was taken 14 times"> + </span>]:<span class="tlaGNC">        1653 :   if (const std::string_view::size_type slash = argv0.rfind('/'); slash != std::string_view::npos) {</span></span>
+<span id="L320"><span class="lineNum">     320</span>                 :<span class="tlaGNC">        1639 :     argv0 = argv0.substr(slash + 1);  // basename: the last path component</span></span>
+<span id="L321"><span class="lineNum">     321</span>                 :<span class="tlaGNC">        1639 :   }</span></span>
+<span id="L322"><span class="lineNum">     322</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1652 times"> + </span>]:<span class="tlaGNC">        1653 :   if (argv0.empty()) {</span></span>
+<span id="L323"><span class="lineNum">     323</span>                 :<span class="tlaGNC">           1 :     return &quot;xff&quot;;  // no invocation name -&gt; the modern default</span></span>
+<span id="L324"><span class="lineNum">     324</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L325"><span class="lineNum">     325</span>                 :             :   // A `_full` suffix marks the extras-included twin of a program (the `xff_full` full build, and</span>
+<span id="L326"><span class="lineNum">     326</span>                 :             :   // more generally `&lt;prefix&gt;_full`); it behaves exactly as its base name, so `xff_full` -&gt; xff,</span>
+<span id="L327"><span class="lineNum">     327</span>                 :             :   // `find_full` -&gt; find, `rg_full` -&gt; rg. Without this strip, `find_full` would not match the</span>
+<span id="L328"><span class="lineNum">     328</span>                 :             :   // `find` built-in selector and would silently fall through to the xff default, losing find</span>
+<span id="L329"><span class="lineNum">     329</span>                 :             :   // semantics. The `_full` suffix is thus reserved for the full build and never a config name.</span>
+<span id="L330"><span class="lineNum">     330</span>         [<span class="tlaGBC" title="branch 0 was taken 401 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1251 times"> + </span>]:<span class="tlaGNC">        1652 :   if (argv0.ends_with(&quot;_full&quot;)) {</span></span>
+<span id="L331"><span class="lineNum">     331</span>                 :<span class="tlaGNC">         401 :     argv0.remove_suffix(std::string_view(&quot;_full&quot;).size());</span></span>
+<span id="L332"><span class="lineNum">     332</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 400 times"> + </span>]:<span class="tlaGNC">         401 :     if (argv0.empty()) {</span></span>
+<span id="L333"><span class="lineNum">     333</span>                 :<span class="tlaGNC">           1 :       return &quot;xff&quot;;  // a bare `_full` invocation name -&gt; the modern default</span></span>
+<span id="L334"><span class="lineNum">     334</span>                 :<span class="tlaGNC">           1 :     }</span></span>
+<span id="L335"><span class="lineNum">     335</span>                 :<span class="tlaGNC">         401 :   }</span></span>
+<span id="L336"><span class="lineNum">     336</span>                 :             :   // The invocation name is the leading --config selector, used verbatim: a built-in style name</span>
+<span id="L337"><span class="lineNum">     337</span>                 :             :   // (find/xff/rg) selects that preset; any other name (a `mytool` symlink to xff, and note there</span>
+<span id="L338"><span class="lineNum">     338</span>                 :             :   // is no `xfd`/`fd` magic - those are just names too) selects a same-named NAMED config, leaving</span>
+<span id="L339"><span class="lineNum">     339</span>                 :             :   // the base style at the modern xff default (ActiveStyle ignores a non-style selector). So</span>
+<span id="L340"><span class="lineNum">     340</span>                 :             :   // aliasing xff auto-activates the matching `mytool:` config block without a preset ever being</span>
+<span id="L341"><span class="lineNum">     341</span>                 :             :   // overloadable. An explicit --config still stacks (last wins).</span>
+<span id="L342"><span class="lineNum">     342</span>                 :<span class="tlaGNC">        1651 :   return argv0;</span></span>
+<span id="L343"><span class="lineNum">     343</span>                 :<span class="tlaGNC">        1652 : }</span></span>
+<span id="L344"><span class="lineNum">     344</span>                 :             : </span>
+<span id="L345"><span class="lineNum">     345</span>                 :<span class="tlaGNC">          16 : std::string ExplainConfig(const std::vector&lt;ResolvedFlag&gt;&amp; application) {</span></span>
+<span id="L346"><span class="lineNum">     346</span>                 :<span class="tlaGNC">          16 :   std::string out = &quot;# xff effective configuration (application order; later overrides earlier)\n&quot;;</span></span>
+<span id="L347"><span class="lineNum">     347</span>         [<span class="tlaGBC" title="branch 0 was taken 124 times"> + </span><span class="tlaGBC" title="branch 1 was taken 16 times"> + </span>]:<span class="tlaGNC">         124 :   for (const ResolvedFlag&amp; flag : application) {</span></span>
+<span id="L348"><span class="lineNum">     348</span>                 :<span class="tlaGNC">         124 :     absl::StrAppend(&amp;out, SourceName(flag.source), &quot;\t&quot;, flag.flag, &quot;\n&quot;);</span></span>
+<span id="L349"><span class="lineNum">     349</span>                 :<span class="tlaGNC">         124 :   }</span></span>
+<span id="L350"><span class="lineNum">     350</span>                 :<span class="tlaGNC">          16 :   return out;</span></span>
+<span id="L351"><span class="lineNum">     351</span>                 :<span class="tlaGNC">          16 : }</span></span>
+<span id="L352"><span class="lineNum">     352</span>                 :             : </span>
+<span id="L353"><span class="lineNum">     353</span>                 :<span class="tlaGNC">          12 : std::string ExplainSources(const std::vector&lt;ConfigSource&gt;&amp; sources, registry::Style style) {</span></span>
+<span id="L354"><span class="lineNum">     354</span>                 :<span class="tlaGNC">          12 :   std::string out = absl::StrCat(&quot;# xff active style: &quot;, StyleName(style), &quot;\n&quot;);</span></span>
+<span id="L355"><span class="lineNum">     355</span>                 :<span class="tlaGNC">          12 :   absl::StrAppend(&amp;out, &quot;# config sources consulted (precedence order)\n&quot;);</span></span>
+<span id="L356"><span class="lineNum">     356</span>         [<span class="tlaGBC" title="branch 0 was taken 28 times"> + </span><span class="tlaGBC" title="branch 1 was taken 12 times"> + </span>]:<span class="tlaGNC">          28 :   for (const ConfigSource&amp; source : sources) {</span></span>
+<span id="L357"><span class="lineNum">     357</span>                 :<span class="tlaGNC">          28 :     absl::StrAppend(</span></span>
+<span id="L358"><span class="lineNum">     358</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 18 times"> + </span>]:<span class="tlaGNC">          28 :         &amp;out, &quot;source\t&quot;, SourceName(source.layer), &quot;\t&quot;, source.found ? &quot;found&quot; : &quot;absent&quot;, &quot;\t&quot;, source.path, &quot;\n&quot;);</span></span>
+<span id="L359"><span class="lineNum">     359</span>                 :<span class="tlaGNC">          28 :   }</span></span>
+<span id="L360"><span class="lineNum">     360</span>                 :<span class="tlaGNC">          12 :   return out;</span></span>
+<span id="L361"><span class="lineNum">     361</span>                 :<span class="tlaGNC">          12 : }</span></span>
+<span id="L362"><span class="lineNum">     362</span>                 :             : </span>
+<span id="L363"><span class="lineNum">     363</span>                 :             : }  // namespace xff::config</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table class="xffPolicy">
+            <thead>
+              <tr>
+                <th scope="col">Global coverage policy</th>
+                <th scope="col">Low</th>
+                <th scope="col">Medium</th>
+                <th scope="col">High</th>
+                <th scope="col">Enforced</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <th scope="row">Lines</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 92%</td>
+              <td class="headerValueLegH">&ge; 92%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Branches</th>
+              <td class="headerValueLegL">&lt; 80%</td>
+              <td class="headerValueLegM">&ge; 80% and &lt; 82%</td>
+              <td class="headerValueLegH">&ge; 82%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Functions</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 95%</td>
+              <td class="headerValueLegH">&ge; 95%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            </tbody>
+          </table>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 2.5-0</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>
