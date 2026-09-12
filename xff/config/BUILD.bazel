@@ -18,15 +18,14 @@ load("//xff:cc.bzl", "cc_library", "cc_test")
 
 package(default_visibility = ["//visibility:private"])
 
-# The .xffrc grammar parser (bazel-rc-style flag bundles with base:config:
-# selectors). Parse-only; the config loader and policy gate build on it.
+# The .xffrc entry point delegates to the shared INI grammar.
 cc_library(
     name = "xffrc_cc",
     srcs = ["xffrc.cc"],
     hdrs = ["xffrc.h"],
     visibility = ["//xff:__subpackages__"],
     deps = [
-        "@abseil-cpp//absl/strings",
+        ":ini_cc",
     ],
 )
 
@@ -41,8 +40,8 @@ cc_test(
     ],
 )
 
-# The system policy parser (/etc/xff.ini): [defaults] flag lines + [policy]
-# per-layer allow/deny rules. Parse-only; the policy gate enforces.
+# The shared INI parser: unsectioned globals and plain named sections in every config tier.
+# Parse-only; CLI validation checks flags and disables invalid sections atomically.
 cc_library(
     name = "ini_cc",
     srcs = ["ini.cc"],
@@ -125,7 +124,7 @@ cc_test(
 )
 
 # The config policy gate classifies an xffrc line by registry safety, applies
-# system deny rules and preset-overload/non-arming constraints, and records each
+# authoritative global prohibitions and preset-overload/non-arming constraints, and records each
 # dropped line for warnings and --explain.
 cc_library(
     name = "policy_cc",
@@ -159,7 +158,7 @@ cc_test(
     ],
 )
 
-# Feed arbitrary text through both config grammars and the complete policy/resolution pipeline.
+# Feed arbitrary text through the shared config grammar and the complete policy/resolution pipeline.
 # Ordinary tests replay the corpus; the bounded CI campaign mutates it.
 cc_fuzz_test(
     name = "config_policy_fuzz_test",

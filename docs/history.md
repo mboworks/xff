@@ -406,7 +406,7 @@ The former combined roadmap and completion ledger through PR #683 is retained se
   ordered so it sorts lexicographically, and parseable back by `ParseTimeString`.
   `--time-format` (config phase D4b) makes this a soft choice rather than a
   lock-in: `rfc3339` (`2026-06-22T14:30:00+01:00`) is one flag
-  (`--time-format=rfc3339`) or one `.xffrc` line (`common: --time-format=rfc3339`)
+  (`--time-format=rfc3339`) or one `.xffrc` line (`--time-format=rfc3339`)
   away for interchange-by-default, and machine consumers use `--format=jsonl`.
   (find's `-printf %t`, once implemented (#48), uses `asctime` per find.)
 

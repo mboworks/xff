@@ -510,18 +510,23 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "device, `p`=FIFO, `s`=socket. A GNU-style comma list is any-of, so `-type f,l` matches regular "
                    "files "
                    "or symlinks. Under the default `-P` a symlink is type `l`; `-xtype` tests its target's type "
-                   "instead.",
+                   "instead. Unknown type letters and empty list elements are usage errors.",
         .kind = Kind::kTest,
         .arity = 1,
+        .argument_choices = "b,c,d,f,l,p,s",
+        .argument_choice_list = true,
     },
     {
         .name = "-xtype",
         .summary = "match the file type of a symlink's target",
         .details = "Like `-type`, but for a symlink it tests the type of the link's TARGET (the link is followed). A "
                    "broken symlink has no target, so it reports as a symlink and `-xtype l` matches it, matching GNU "
-                   "find under the default `-P`. On a non-symlink it is identical to `-type`.",
+                   "find under the default `-P`. On a non-symlink it is identical to `-type`. "
+                   "Accepts the same type letters and comma lists; unknown or empty values are usage errors.",
         .kind = Kind::kTest,
         .arity = 1,
+        .argument_choices = "b,c,d,f,l,p,s",
+        .argument_choice_list = true,
     },
     {
         // xff: match the media (MIME) type derived from the extension, glob-style.

@@ -39,13 +39,12 @@ using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
-using ::testing::ResultOf;
 using ::testing::SizeIs;
 
 struct PolicyTest : ::testing::Test {};
 
-RcLine Line(std::vector<std::string> flags) {
-  return RcLine{.flags = std::move(flags)};
+IniLine Line(std::vector<std::string> flags) {
+  return IniLine{.tokens = std::move(flags)};
 }
 
 TEST_F(PolicyTest, LineSafetyTakesTheWorstFlag) {
@@ -56,80 +55,60 @@ TEST_F(PolicyTest, LineSafetyTakesTheWorstFlag) {
   EXPECT_THAT(LineSafety(Line({"-name", "x", "-exec", "rm", ";"})), registry::Safety::kSecurity);  // worst wins
 }
 
-TEST_F(PolicyTest, NoLayerIsDeniedByDefault) {
-  const SystemConfig none;  // no [policy]
-  // With the untrusted project layer gone (Option B), the trusted user/system layers may do
-  // anything by default; only a system [policy] deny rule bars a line.
-  EXPECT_THAT(LinePermitted(Line({"-exec", "rm", ";"}), Source::kUser, none), IsTrue());
-  EXPECT_THAT(LinePermitted(Line({"-delete"}), Source::kUser, none), IsTrue());
-  EXPECT_THAT(LinePermitted(Line({"-delete"}), Source::kSystem, none), IsTrue());
-  EXPECT_THAT(LinePermitted(Line({"--color=auto"}), Source::kUser, none), IsTrue());
-}
-
-TEST_F(PolicyTest, PolicyDenyTightensAFlagByName) {
-  SystemConfig policy;
-  policy.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"--jobs"}}};
-  EXPECT_THAT(LinePermitted(Line({"--jobs=4"}), Source::kUser, policy), IsFalse());     // named flag denied
-  EXPECT_THAT(LinePermitted(Line({"--color=auto"}), Source::kUser, policy), IsTrue());  // unrelated flag fine
-}
-
-TEST_F(PolicyTest, PolicyDenyTightensByClassToken) {
-  SystemConfig policy;
-  policy.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"@sensitive"}}};
-  EXPECT_THAT(LinePermitted(Line({"-exec", "rm", ";"}), Source::kUser, policy), IsFalse());  // @sensitive denied
-  EXPECT_THAT(LinePermitted(Line({"-delete"}), Source::kUser, policy), IsTrue());            // @destructive not matched
-}
-
-TEST_F(PolicyTest, PolicyClassDenyFindsEveryDangerousClassOnMixedLines) {
-  SystemConfig policy;
-  policy.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"@destructive"}}};
-  EXPECT_THAT(LinePermitted(Line({"-delete", "-exec", "rm", ";"}), Source::kUser, policy), IsFalse());
-  EXPECT_THAT(LinePermitted(Line({"-exec", "rm", ";", "-delete"}), Source::kUser, policy), IsFalse());
-
-  policy.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"@sensitive"}}};
-  EXPECT_THAT(LinePermitted(Line({"-delete", "-exec", "rm", ";"}), Source::kUser, policy), IsFalse());
-  EXPECT_THAT(LinePermitted(Line({"-exec", "rm", ";", "-delete"}), Source::kUser, policy), IsFalse());
-}
-
-TEST_F(PolicyTest, SafeClassDenyMatchesOnlyWhollySafeLines) {
-  SystemConfig policy;
-  policy.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"@safe"}}};
-  EXPECT_THAT(LinePermitted(Line({"-name", "*.cc"}), Source::kUser, policy), IsFalse());
-  EXPECT_THAT(LinePermitted(Line({"-name", "*.cc", "-delete"}), Source::kUser, policy), IsTrue());
-}
-
-TEST_F(PolicyTest, AllowRuleIsInertAndDenyStillBars) {
-  SystemConfig policy;
-  // An allow rule has nothing to loosen now (no default denial), so it is inert; a deny rule still bars.
-  policy.policy = {
-      PolicyRule{.layer = "user", .allow = true, .tokens = {"-exec"}},
-      PolicyRule{.layer = "user", .allow = false, .tokens = {"-exec"}},
-  };
-  EXPECT_THAT(LinePermitted(Line({"-exec", "rm", ";"}), Source::kUser, policy), IsFalse());
-}
-
-TEST_F(PolicyTest, PolicyRulesAreScopedToTheirLayer) {
-  SystemConfig policy;
-  policy.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"-exec"}}};
-  // The user.deny tightens the user layer...
-  EXPECT_THAT(LinePermitted(Line({"-exec", "rm", ";"}), Source::kUser, policy), IsFalse());
-  // ...but does not touch the system layer.
-  EXPECT_THAT(LinePermitted(Line({"-exec", "rm", ";"}), Source::kSystem, policy), IsTrue());
-}
-
-TEST_F(PolicyTest, PresentAutomaticSourcesMustAuthorizeBeingSkipped) {
+TEST_F(PolicyTest, CombinedSkipRequiresPermissionForEachPresentFile) {
   ConfigInputs inputs;
   inputs.sources = {
       {.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true},
       {.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true},
   };
-  inputs.no_system_config = true;
-  inputs.no_user_config = true;
   inputs.no_config = true;
   EXPECT_THAT(
-      ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--allow-no-config")));
+      ValidateConfigSkips(inputs),
+      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-require-system-config")));
+  inputs.system = ParseIni("--no-require-system-config");
+  EXPECT_THAT(
+      ValidateConfigSkips(inputs),
+      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-require-user-config")));
+  inputs.user = ParseIni("--no-require-user-config");
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+  inputs.system = ParseIni("--no-require-system-config\n--require-user-config");
+  EXPECT_THAT(
+      ValidateConfigSkips(inputs),
+      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-require-user-config")));
+  inputs.system = ParseIni("--require-system-config\n--no-require-user-config");
+  EXPECT_THAT(
+      ValidateConfigSkips(inputs),
+      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-require-system-config")));
+}
 
-  inputs.system.globals = {"--allow-no-config"};
+TEST_F(PolicyTest, SystemGrantOverridesUserRequirementForIndividualAndCombinedSkips) {
+  ConfigInputs inputs;
+  inputs.sources = {
+      {.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true},
+      {.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true},
+  };
+  inputs.system = ParseIni("--no-require-system-config\n--no-require-user-config");
+  inputs.user = ParseIni("--require-user-config");
+  inputs.no_user_config = true;
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+  inputs.no_user_config = false;
+  inputs.no_config = true;
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+}
+
+TEST_F(PolicyTest, CombinedSkipNeedsNoPermissionForMissingFiles) {
+  ConfigInputs inputs;
+  inputs.no_config = true;
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+  inputs.sources = {{.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true}};
+  inputs.user = ParseIni("--no-require-user-config");
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+  inputs.user = {};
+  EXPECT_THAT(
+      ValidateConfigSkips(inputs),
+      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-require-user-config")));
+  inputs.sources = {{.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true}};
+  inputs.system = ParseIni("--no-require-system-config\n--require-user-config");
   EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
 }
 
@@ -139,7 +118,7 @@ TEST_F(PolicyTest, UserMayAuthorizeSkippingItselfButNotTheSystemConfig) {
       {.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true},
       {.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true},
   };
-  inputs.user = ParseXffrc("--allow-no-user-config");
+  inputs.user = ParseXffrc("--no-require-user-config");
   inputs.no_user_config = true;
   EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
 
@@ -147,69 +126,45 @@ TEST_F(PolicyTest, UserMayAuthorizeSkippingItselfButNotTheSystemConfig) {
   inputs.no_system_config = true;
   EXPECT_THAT(
       ValidateConfigSkips(inputs),
-      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--allow-no-system-config")));
-}
-
-TEST_F(PolicyTest, NegativeControlsApplyOnlyToTheirCorrespondingSkipRequest) {
-  ConfigInputs inputs;
-  inputs.sources = {
-      {.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true},
-      {.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true},
-  };
-  inputs.system.globals = {"--allow-no-config", "--no-allow-no-system-config", "--no-allow-no-user-config"};
-  inputs.user = ParseXffrc("--allow-no-user-config");
-  inputs.no_config = true;
-  inputs.no_system_config = true;
-  inputs.no_user_config = true;
-  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
-
-  inputs.no_config = false;
-  EXPECT_THAT(
-      ValidateConfigSkips(inputs),
-      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--allow-no-system-config")));
-
-  inputs.no_system_config = false;
-  EXPECT_THAT(
-      ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--allow-no-user-config")));
+      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-require-system-config")));
 }
 
 TEST_F(PolicyTest, SystemControlsMustPrecedeEveryIniSection) {
   ConfigInputs inputs;
-  inputs.system.defaults = {"--allow-no-config"};
+  inputs.system = ParseIni("[named]\n--no-require-system-config");
   EXPECT_THAT(
       ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("precede every system")));
 }
 
 TEST_F(PolicyTest, ConfigControlPairsMayOccurOnlyOncePerPermittedFile) {
   ConfigInputs inputs;
-  inputs.system.globals = {"--allow-no-system-config", "--no-allow-no-system-config"};
+  inputs.system.globals = {"--no-require-system-config", "--require-system-config"};
   EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("system config")));
 
-  inputs.system.globals = {"--allow-no-user-config", "--no-allow-no-user-config"};
+  inputs.system.globals = {"--no-require-user-config", "--require-user-config"};
   EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("system config")));
 
   inputs.system.globals.clear();
-  inputs.user = ParseXffrc("--allow-no-user-config\ndebug: --no-allow-no-user-config");
+  inputs.user = ParseXffrc("--no-require-user-config\n[debug]\n--require-user-config");
   EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("user config")));
 }
 
 TEST_F(PolicyTest, ConfigControlsAreRestrictedToTheirTrustedFiles) {
   ConfigInputs inputs;
-  inputs.user = ParseXffrc("--allow-no-system-config");
+  inputs.user = ParseXffrc("--no-require-system-config");
   EXPECT_THAT(
       ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("only in the system")));
 
-  inputs.user.clear();
-  inputs.xffrc = {{.path = "/named", .lines = ParseXffrc("common: --allow-no-user-config")}};
+  inputs.user = {};
+  inputs.xffrc = {{.path = "/named", .config = ParseXffrc("--no-require-user-config")}};
   EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("not permitted")));
 }
 
-TEST_F(PolicyTest, SelectedSystemAndUserSettingsControlExplicitXffrcFiles) {
+TEST_F(PolicyTest, SelectedUserSettingsControlExplicitXffrcFiles) {
   ConfigInputs inputs;
   inputs.configs = {"locked"};
-  inputs.system.defaults = {"--no-allow-xffrc"};
-  inputs.user = ParseXffrc("locked: --allow-xffrc\nopen: --no-allow-xffrc");
-  inputs.xffrc = {{.path = "/named", .lines = {}}};
+  inputs.user = ParseXffrc("[locked]\n--allow-xffrc\n[open]\n--no-allow-xffrc");
+  inputs.xffrc = {{.path = "/named", .config = {}}};
   EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
 
   inputs.configs = {"open"};
@@ -217,25 +172,36 @@ TEST_F(PolicyTest, SelectedSystemAndUserSettingsControlExplicitXffrcFiles) {
       ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-allow-xffrc")));
 }
 
-TEST_F(PolicyTest, SystemPolicyMayPreventUserConfigFromEnablingXffrc) {
+TEST_F(PolicyTest, AutomaticTransitiveSelectionControlsExplicitFileAdmission) {
+  ConfigInputs inputs;
+  inputs.system = ParseIni("--config=outer\n[outer]\n--config=locked");
+  inputs.user = ParseXffrc("[locked]\n--no-allow-xffrc");
+  inputs.xffrc = {{.path = "/named", .config = {}}};
+  EXPECT_THAT(
+      ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-allow-xffrc")));
+  inputs.no_user_config = true;
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+}
+
+TEST_F(PolicyTest, SystemGlobalProhibitionMayPreventUserConfigFromEnablingXffrc) {
   ConfigInputs inputs;
   inputs.configs = {"locked"};
-  inputs.system.defaults = {"--no-allow-xffrc"};
-  inputs.system.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"--allow-xffrc"}}};
-  inputs.user = ParseXffrc("locked: --allow-xffrc");
-  inputs.xffrc = {{.path = "/named", .lines = {}}};
+  inputs.system.globals = {"--no-allow-xffrc"};
+  inputs.user = ParseXffrc("[locked]\n--allow-xffrc");
+  inputs.xffrc = {{.path = "/named", .config = {}}};
   EXPECT_THAT(
       ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-allow-xffrc")));
 }
 
-TEST_F(PolicyTest, SystemPolicyMayDenyTheUsersSelfSkipPermission) {
+TEST_F(PolicyTest, SystemGlobalProhibitionMayDenyTheUsersSelfSkipPermission) {
   ConfigInputs inputs;
   inputs.sources = {{.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true}};
-  inputs.system.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"--allow-no-user-config"}}};
-  inputs.user = ParseXffrc("--allow-no-user-config");
+  inputs.system.globals = {"--require-user-config"};
+  inputs.user = ParseXffrc("--no-require-user-config");
   inputs.no_user_config = true;
   EXPECT_THAT(
-      ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--allow-no-user-config")));
+      ValidateConfigSkips(inputs),
+      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-require-user-config")));
 }
 
 TEST_F(PolicyTest, MissingSourcesNeedNoSkipPermission) {
@@ -247,23 +213,23 @@ TEST_F(PolicyTest, MissingSourcesNeedNoSkipPermission) {
 
 TEST_F(PolicyTest, GateConfigDropsDeniedUserLinesAndRecordsThem) {
   ConfigInputs inputs;
-  inputs.system.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"-exec"}}};  // deny -exec in user
-  inputs.user = {Line({"-exec", "rm", ";"}), Line({"--color=never"})};
+  inputs.system.globals = {"--no-allow-exec"};
+  inputs.user = {.global_lines = {Line({"-exec", "rm", ";"}), Line({"--color=never"})}};
   const GateResult gated = GateConfig(inputs, /*xffrc_armed=*/false);
-  ASSERT_THAT(gated.config.user, SizeIs(1));
-  EXPECT_THAT(gated.config.user.front().flags, ElementsAre("--color=never"));  // only permitted survives
+  ASSERT_THAT(gated.config.user.global_lines, SizeIs(1));
+  EXPECT_THAT(gated.config.user.global_lines.front().tokens, ElementsAre("--color=never"));  // only permitted survives
   ASSERT_THAT(gated.drops, SizeIs(1));
   EXPECT_THAT(gated.drops.front().layer, Source::kUser);
   EXPECT_THAT(gated.drops.front().safety, registry::Safety::kSecurity);
-  EXPECT_THAT(gated.drops.front().line.flags, ElementsAre("-exec", "rm", ";"));
+  EXPECT_THAT(gated.drops.front().line.tokens, ElementsAre("-exec", "rm", ";"));
 }
 
 TEST_F(PolicyTest, GateConfigAlwaysReturnsDroppedLines) {
   ConfigInputs inputs;
-  inputs.system.policy = {PolicyRule{.layer = "user", .allow = false, .tokens = {"-delete"}}};
-  inputs.user = {Line({"-delete"})};
+  inputs.system.globals = {"--no-allow-exec"};
+  inputs.user = {.global_lines = {Line({"-delete"})}};
   const GateResult gated = GateConfig(inputs, /*xffrc_armed=*/false);
-  EXPECT_THAT(gated.config.user, IsEmpty());
+  EXPECT_THAT(gated.config.user.global_lines, IsEmpty());
   EXPECT_THAT(gated.drops, SizeIs(1));
 }
 
@@ -273,38 +239,45 @@ TEST_F(PolicyTest, DropMessageNamesPrimaryLayerAndClass) {
       .layer = Source::kUser,
       .safety = registry::Safety::kSecurity,
   };
-  EXPECT_THAT(DropMessage(drop), "'-exec' from the user .xffrc (sensitive)");
+  EXPECT_THAT(DropMessage(drop), "'-exec' from the user .xffrc (sensitive; system --no-allow-exec)");
 }
 
 TEST_F(PolicyTest, XffrcDangerousLineIsInertUnlessArmed) {
   ConfigInputs inputs;
-  inputs.xffrc = {{.path = "/named", .lines = {Line({"-exec", "rm", ";"}), Line({"--color=never"})}}};
+  inputs.xffrc = {
+      {.path = "/named", .config = {.global_lines = {Line({"-exec", "rm", ";"}), Line({"--color=never"})}}}};
   const GateResult unarmed = GateConfig(inputs, /*xffrc_armed=*/false);
   EXPECT_THAT(
       unarmed.config.xffrc,
-      ElementsAre(FieldsAre("/named", ElementsAre(Field("flags", &RcLine::flags, ElementsAre("--color=never"))))));
+      ElementsAre(FieldsAre("/named", Field("globals", &ConfigFile::globals, ElementsAre("--color=never")))));
   ASSERT_THAT(unarmed.drops, SizeIs(1));
   EXPECT_THAT(unarmed.drops.front().reason, DropReason::kUnarmedXffrc);
   EXPECT_THAT(unarmed.drops.front().layer, Source::kXffrc);
   EXPECT_THAT(unarmed.drops.front().safety, registry::Safety::kSecurity);
   // Armed: the -exec line is honored (both lines survive).
-  EXPECT_THAT(GateConfig(inputs, /*xffrc_armed=*/true).config.xffrc, ElementsAre(FieldsAre("/named", SizeIs(2))));
+  EXPECT_THAT(
+      GateConfig(inputs, /*xffrc_armed=*/true).config.xffrc,
+      ElementsAre(FieldsAre("/named", Field("global_lines", &ConfigFile::global_lines, SizeIs(2)))));
 }
 
 TEST_F(PolicyTest, ArmingGatesOnlyTheXffrcTierNotTheUserLayer) {
   ConfigInputs inputs;
-  inputs.user = {Line({"-exec", "rm", ";"})};  // a dangerous USER line is honored regardless of the arm
-  EXPECT_THAT(GateConfig(inputs, /*xffrc_armed=*/false).config.user, SizeIs(1));
+  inputs.user = {
+      .global_lines = {Line({"-exec", "rm", ";"})}};  // a dangerous USER line is honored regardless of the arm
+  EXPECT_THAT(GateConfig(inputs, /*xffrc_armed=*/false).config.user.global_lines, SizeIs(1));
 }
 
-TEST_F(PolicyTest, SystemPolicyHardDeniesAnArmedXffrcLine) {
+TEST_F(PolicyTest, SystemGlobalProhibitionHardDeniesAnArmedXffrcLine) {
   ConfigInputs inputs;
-  inputs.system.policy = {PolicyRule{.layer = "xffrc", .allow = false, .tokens = {"@sensitive"}}};
-  inputs.xffrc = {{.path = "/named", .lines = {Line({"-exec", "rm", ";"})}}};
+  inputs.system.globals = {"--no-allow-exec"};
+  inputs.xffrc = {{.path = "/named", .config = {.global_lines = {Line({"-exec", "rm", ";"})}}}};
   const GateResult gated = GateConfig(inputs, /*xffrc_armed=*/true);
-  EXPECT_THAT(gated.config.xffrc, ElementsAre(FieldsAre("/named", IsEmpty())));  // armed, but policy denies
+  EXPECT_THAT(
+      gated.config.xffrc,
+      ElementsAre(FieldsAre(
+          "/named", Field("global_lines", &ConfigFile::global_lines, IsEmpty()))));  // armed, but policy denies
   ASSERT_THAT(gated.drops, SizeIs(1));
-  EXPECT_THAT(gated.drops.front().reason, DropReason::kSafetyPolicy);
+  EXPECT_THAT(gated.drops.front().reason, DropReason::kSystemProhibition);
 }
 
 TEST_F(PolicyTest, DropMessageForUnarmedXffrcNamesTheArm) {
@@ -317,31 +290,33 @@ TEST_F(PolicyTest, DropMessageForUnarmedXffrcNamesTheArm) {
   EXPECT_THAT(DropMessage(drop), "'-exec' from the --xffrc file (sensitive; needs --allow-exec)");
 }
 
-TEST_F(PolicyTest, OverloadsPresetDetectsBarePresetSelectors) {
-  // A bare preset selector (base is a built-in style, no named config) overloads the preset.
-  const auto overloads_preset = ResultOf("OverloadsPreset", OverloadsPreset, IsTrue());
-  EXPECT_THAT(ParseXffrc("xff: --format=jsonl"), ElementsAre(overloads_preset));
-  EXPECT_THAT(ParseXffrc("find: --warn"), ElementsAre(overloads_preset));
-  EXPECT_THAT(ParseXffrc("rg: --x"), ElementsAre(overloads_preset));
-  // common: is not a preset; a named config and a style-scoped named config are fine (they need
-  // explicit activation, so they do not silently change a plain preset run).
-  const auto does_not_overload = ResultOf("OverloadsPreset", OverloadsPreset, IsFalse());
-  EXPECT_THAT(ParseXffrc("common: --sort"), ElementsAre(does_not_overload));
-  EXPECT_THAT(ParseXffrc("myx: --format=jsonl"), ElementsAre(does_not_overload));
-  EXPECT_THAT(ParseXffrc("xff:debug: --jobs=1"), ElementsAre(does_not_overload));
+TEST_F(PolicyTest, OverloadsPresetDetectsOnlyExactBuiltinNames) {
+  EXPECT_THAT(OverloadsPreset("xff"), IsTrue());
+  EXPECT_THAT(OverloadsPreset("find"), IsTrue());
+  EXPECT_THAT(OverloadsPreset("rg"), IsTrue());
+  EXPECT_THAT(OverloadsPreset(""), IsFalse());
+  EXPECT_THAT(OverloadsPreset("common"), IsFalse());
+  EXPECT_THAT(OverloadsPreset("myx"), IsFalse());
+  EXPECT_THAT(OverloadsPreset("xff:debug"), IsFalse());
 }
 
 TEST_F(PolicyTest, GateConfigDropsPresetOverloadWithReason) {
   ConfigInputs inputs;
-  // xff: and find: are preset-overloads (dropped in any layer); common: / myx: / xff:debug: survive.
+  // Exact preset names are dropped; defaults and custom named sections survive.
   inputs.user =
-      ParseXffrc("xff: --format=jsonl\ncommon: --sort\nfind: --warn\nmyx: --color=never\nxff:debug: --jobs=1");
+      ParseXffrc("--sort\n[xff]\n--format=jsonl\n[find]\n--warn\n[myx]\n--color=never\n[xff:debug]\n--jobs=1");
   const GateResult gated = GateConfig(inputs, /*xffrc_armed=*/false);
-  EXPECT_THAT(gated.config.user, SizeIs(3));  // common:, myx:, xff:debug:
+  EXPECT_THAT(gated.config.user.globals, ElementsAre("--sort"));
+  EXPECT_THAT(
+      gated.config.user.named,
+      ElementsAre(
+          AllOf(Field("name", &IniSection::name, "xff"), Field("lines", &IniSection::lines, IsEmpty())),
+          AllOf(Field("name", &IniSection::name, "find"), Field("lines", &IniSection::lines, IsEmpty())),
+          Field("name", &IniSection::name, "myx"), Field("name", &IniSection::name, "xff:debug")));
   ASSERT_THAT(gated.drops, SizeIs(2));
   EXPECT_THAT(gated.drops[0].reason, DropReason::kPresetOverload);  // xff: (file order)
   EXPECT_THAT(gated.drops[1].reason, DropReason::kPresetOverload);  // find:
-  EXPECT_THAT(DropMessage(gated.drops[0]), "'xff:' in the user .xffrc");
+  EXPECT_THAT(DropMessage(gated.drops[0]), "'[xff]' in the user .xffrc");
 }
 
 }  // namespace

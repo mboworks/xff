@@ -16,35 +16,40 @@
 #ifndef XFF_CONFIG_INI_H_
 #define XFF_CONFIG_INI_H_
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
 
 namespace xff::config {
 
-// One [policy] rule: a layer, whether it allow- or deny-lists, and the flag /
-// @class tokens it names (e.g. "--sort", "@sensitive").
-struct PolicyRule {
-  std::string layer;                // normally "user" / "xffrc" / "system"; parser accepts any name
-  bool allow = true;                // allow-list (true) or deny-list (false)
-  std::vector<std::string> tokens;  // flag names and/or @class tokens
+struct IniLine {
+  std::size_t number = 0;
+  std::string text;
+  std::vector<std::string> tokens;
 };
 
-// The parsed system policy (/etc/xff.ini): [defaults] flag lines + [policy]
-// per-layer allow/deny rules.
-struct SystemConfig {
-  std::vector<std::string> globals;   // file-global controls before the first section
-  std::vector<std::string> defaults;  // [defaults] flags in CLI token form
-  std::vector<PolicyRule> policy;     // [policy] rules, in file order
+struct IniSection {
+  std::string name;
+  std::size_t number = 0;
+  std::vector<IniLine> lines;
 };
 
-// Parses system INI `text`. A file-global or [defaults] "key = value" line renders to a CLI
-// token ("--color = auto" -> "--color=auto"; a bare "--warn" stays "--warn").
-// A [policy] "<layer>.<allow|deny> = <comma-list>" line becomes a PolicyRule.
+// Parsed config file, shared by system, user, and explicit files.
+struct ConfigFile {
+  std::vector<std::string> globals;  // options before the first section, in CLI token form
+  std::vector<IniLine> global_lines;
+  std::vector<IniSection> named;
+};
+
+// Parses INI `text`. A file-global or named-section "key = value" line renders to CLI
+// tokens ("--color = auto" -> "--color=auto"; a bare "--warn" stays "--warn").
 // Blank lines and '#'/';' comments are skipped; file-global lines are accepted only before the
-// first section, while unknown sections and malformed [policy] lines are ignored. Parse-only: no registry validation
-// and no enforcement (the policy gate does that).
-SystemConfig ParseIni(std::string_view text);
+// first section. Every [NAME], including [policy], is an ordinary named configuration. Parse-only:
+// Every header is preserved, including empty and repeated sections, so duplicates can be
+// diagnosed rather than silently merged. Registry-aware validation and atomic section disabling happen in
+// cli::ValidateConfigFile.
+ConfigFile ParseIni(std::string_view text);
 
 }  // namespace xff::config
 

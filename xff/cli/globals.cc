@@ -261,15 +261,18 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "config",
         .header = "Config",
         .summary = "activate a named config or select the find, xff, or rg style; repeatable",
-        .details = "A config style sets the defaults for ignore files, hidden files, sizes, sort order, and case. "
-                   "find restricts the expression to find-compatible vocabulary and defaults; whole-run xff "
-                   "globals remain available as explicit overrides. xff keeps find's grammar but sorts and prints "
-                   "human sizes; "
-                   "rg is opinionated (respect `.gitignore`, skip hidden, smart case). Every occurrence remains an "
-                   "active selector, so several named config blocks can apply. Among the built-in style selectors, "
-                   "the last `find`, `xff`, or `rg` occurrence chooses the baseline; custom names do not change it. "
-                   "A `STYLE:EPOCH` spelling such as `xff:2` selects `STYLE` while retaining the full name as a config "
-                   "selector. See `--help=styles` for the per-style defaults and `--help=config` for layering.",
+        .details =
+            "A config style sets the defaults for ignore files, hidden files, sizes, sort order, and case. "
+            "find restricts the expression to find-compatible vocabulary and defaults; whole-run xff "
+            "globals remain available as explicit overrides. xff keeps find's grammar but sorts and prints "
+            "human sizes; "
+            "rg is opinionated (respect `.gitignore`, skip hidden, smart case). Every occurrence remains an "
+            "active selector, so several named config blocks can apply. All config files use INI sections; each name "
+            "is declared once per file and may be refined in other files. `--config=NAME` inside a section "
+            "composes it with another config. Among the built-in style selectors, "
+            "the last `find`, `xff`, or `rg` occurrence chooses the baseline; custom names do not change it. "
+            "A `STYLE:EPOCH` spelling such as `xff:2` selects `STYLE` while retaining the full name as a config "
+            "selector. See `--help=styles` for the per-style defaults and `--help=config` for layering.",
         .topic = "config",
         .repetition = GlobalFlag::Repetition::kAccumulate,
     },
@@ -280,9 +283,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Config",
         .summary = "suppress automatic system and user configuration when authorized",
         .details = "Suppresses the automatic system defaults and user configuration. A present source is still "
-                   "inspected for policy. The system config must authorize this combined request with a leading "
-                   "`--allow-no-config`; `--no-allow-no-config` explicitly denies it. The granular permissions "
-                   "govern only their corresponding granular command-line flags. An explicitly named "
+                   "inspected for policy. Equivalent to requesting both `--no-system-config` and "
+                   "`--no-user-config`: each existing file must permit its own suppression, or the entire "
+                   "request is rejected. Missing files need no permission. An explicitly named "
                    "`--xffrc=FILE` remains active. Ignore files such as `.gitignore` and `.xffignore` are traversal "
                    "inputs, not config files, and are unaffected.",
         .topic = "config",
@@ -293,10 +296,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "config",
         .header = "Config",
         .summary = "suppress system defaults when the system config permits it",
-        .details = "Suppresses `/etc/xff.ini` defaults but still reads its `[policy]` and leading config-only "
-                   "permission controls. A present file must grant permission with `--allow-no-system-config`; "
-                   "`--no-allow-no-system-config` explicitly denies it. "
-                   "Without either grant, the request is a usage error. The user config and explicit `--xffrc` "
+        .details = "Suppresses `/etc/xff.ini` defaults but still reads its leading authoritative config-only "
+                   "permission controls. A present file must grant permission with `--no-require-system-config`; "
+                   "`--require-system-config` explicitly denies it. "
+                   "Without a grant, the request is a usage error. The user config and explicit `--xffrc` "
                    "files remain "
                    "active.",
         .topic = "config",
@@ -308,9 +311,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Config",
         .summary = "suppress user configuration when an authoritative config permits it",
         .details = "Suppresses the selected user config after inspecting it for permission. The system config may "
-                   "authoritatively grant or deny permission with `--allow-no-user-config` / "
-                   "`--no-allow-no-user-config`; without either, the user file may decide for itself with the same "
-                   "pair. The separate `--allow-no-config` pair governs only `--no-config`. "
+                   "authoritatively grant or deny permission with `--no-require-user-config` / "
+                   "`--require-user-config`; without either, the user file may decide for itself with the same "
+                   "pair. Without a grant, skipping a present user file is a usage error. "
                    "System defaults and explicit `--xffrc` files remain active.",
         .topic = "config",
     },
@@ -338,7 +341,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "Permits the sensitive/destructive directives (the exec family -exec/-execdir/-ok and -capture, "
                    "and the destructive -delete) carried by an --xffrc-loaded file to actually run. Honored only from "
                    "a trusted tier - typed on the CLI, or set in the user/system config - never from an --xffrc file "
-                   "(so a named config cannot authorize itself). The root-owned system [policy] can hard-deny even "
+                   "(so a named config cannot authorize itself). The unsectioned system `--no-allow-exec` control can "
+                   "prohibit even "
                    "this. Without it, such lines are inert (dropped + warned); -delete still obeys its own "
                    "--safe/--dry-run guards.",
         .affects = "--xffrc",

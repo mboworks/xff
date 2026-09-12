@@ -1,0 +1,3 @@
+--allow-exec
+-exec echo {} ;
+--color=never

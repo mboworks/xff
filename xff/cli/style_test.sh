@@ -130,15 +130,15 @@ test::argv0_custom_alias_activates_same_named_config() {
   local dir
   dir="$(test_tmpdir argv0alias)"
   : >"${dir}/a.txt"
-  # A user config defines a NAMED block `mytool:` (not a preset). Invoked through a `mytool`
+  # A user config defines a NAMED block `[mytool]` (not a preset). Invoked through a `mytool`
   # symlink, argv[0] selects that named config with no --config, so its --format=jsonl applies.
   local cfg="${TEST_TMPDIR}/argv0alias_cfg"
-  printf 'mytool: --format=jsonl\n' >"${cfg}"
+  printf -- '[mytool]\n--format=jsonl\n' >"${cfg}"
   ln -sf "$(_xff_bin)" "${TEST_TMPDIR}/mytool"
   local out
   out="$(XFF_CONFIG="${cfg}" "${TEST_TMPDIR}/mytool" "${dir}" -name a.txt 2>&1)"
-  expect_output_contains "{" "${out}" # --format=jsonl from the mytool: block -> a JSON object
-  # A plain xff run does not activate mytool:, so output stays plain (no JSON object).
+  expect_output_contains "{" "${out}" # --format=jsonl from the [mytool] block -> a JSON object
+  # A plain xff run does not activate [mytool], so output stays plain (no JSON object).
   out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}" -name a.txt 2>&1)"
   expect_output_not_contains "{" "${out}"
 }
@@ -273,6 +273,31 @@ test::argv0_xff_alias_defaults_to_modern_style() {
   local rc
   XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name a.txt -println >/dev/null 2>&1 && rc=0 || rc=$?
   expect_eq "0" "${rc}"
+}
+
+test::config_multiple_predicates_are_evaluated() {
+  local dir out config
+  dir="$(test_tmpdir configpredicates)"
+  : >"${dir}/foo"
+  : >"${dir}/bar"
+  : >"${dir}/other"
+  config="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testdata/config_validation/multiple/user.rc"
+  out="$(XFF_CONFIG="${config}" "$(_xff_bin)" --config=both "${dir}" -type f -printf '%f\n')"
+  expect_eq "" "${out}"
+  out="$(XFF_CONFIG="${config}" "$(_xff_bin)" --config=either "${dir}" -type f -printf '%f\n')"
+  expect_output_contains "foo" "${out}"
+  expect_output_contains "bar" "${out}"
+  expect_output_not_contains "other" "${out}"
+  out="$(XFF_CONFIG="${config}" "$(_xff_bin)" --config=mixed "${dir}" -type f -printf '%f\n')"
+  expect_eq "foo" "${out}"
+}
+
+test::type_choices_reject_unknown_values() {
+  local dir out rc
+  dir="$(_tree invalidtype)"
+  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -type garbage 2>&1)" && rc=0 || rc=$?
+  expect_eq "2" "${rc}"
+  expect_output_contains "unknown value 'garbage' for -type" "${out}"
 }
 
 test_runner

@@ -114,10 +114,10 @@ TEST_F(GlobalsTest, ConfigAndSymlinkFlagsDocumentTheirNonObviousBoundaries) {
       Optional(Field("details", &GlobalFlag::details, HasSubstr("still inspected for policy"))));
   EXPECT_THAT(
       LookupGlobal("--no-system-config"),
-      Optional(Field("details", &GlobalFlag::details, HasSubstr("--allow-no-system-config"))));
+      Optional(Field("details", &GlobalFlag::details, HasSubstr("--no-require-system-config"))));
   EXPECT_THAT(
       LookupGlobal("--no-user-config"),
-      Optional(Field("details", &GlobalFlag::details, HasSubstr("--allow-no-user-config"))));
+      Optional(Field("details", &GlobalFlag::details, HasSubstr("--no-require-user-config"))));
   EXPECT_THAT(
       LookupGlobal("--explain"), Optional(Field("details", &GlobalFlag::details, HasSubstr("does not walk roots"))));
   EXPECT_THAT(LookupGlobal("-H"), Optional(Field("details", &GlobalFlag::details, HasSubstr("dangling root symlink"))));

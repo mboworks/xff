@@ -1,10 +1,11 @@
-[defaults]
 --color = auto
 --jobs = 4
+--no-allow-exec
 
 [policy]
-user.deny = --jobs
-xffrc.deny = @destructive
+--color=never
 
-common: --color=never
-fuzz: --jobs=2
+--color=never
+
+[fuzz]
+--jobs=2

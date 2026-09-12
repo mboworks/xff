@@ -34,12 +34,18 @@
 
 ### Configuration and policy
 
+- All config tiers share the INI parser. Tests reject repeated declarations per file, preserve
+  cross-file refinements and repeated composition references, and exercise literal colon names.
+- Real INI fixtures cover independent invalid global lines, atomic named-section disablement,
+  transitive references, plain section names, and the scope and uniqueness of skip-control pairs.
+- Global execution and explicit-file prohibitions remain authoritative over lower-trust arming and
+  permission grants, including when automatic defaults are suppressed.
 - Discovery tests cover system and user locations, environment precedence,
   explicitly named `--xffrc` files, missing/unreadable files, granular config-source suppression,
   permission enforcement, and `--no-config`.
 - Resolution tests cover selector order, invocation-name defaults, `_full`
   normalization, repeated values, provenance, and CLI precedence.
-- Policy tests cover layer scoping, named and class denies, preset-overload
+- Policy tests cover authoritative global prohibitions, preset-overload
   rejection, explicit-file arming, mixed safety classes, drop reasons, and
   diagnostics.
 - Configuration fuzzing composes arbitrary INI and xffrc input with the policy

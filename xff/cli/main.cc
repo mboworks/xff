@@ -21,6 +21,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
@@ -658,13 +659,47 @@ int RunMain(int argc, char** argv) {
   opts.home = EnvOpt("HOME");
   // Config is system + user + explicit --xffrc only; there is no auto-discovered project layer
   // (Option B, 2026-07-06), so the search roots do not feed config discovery.
-  const xff::config::ConfigInputs inputs = xff::config::Discover(opts, ReadFile);
-  for (const std::string& notice : xff::cli::ConfigOverrideNotices(inputs)) {
-    std::cerr << "xff: warning: " << notice << "\n";
+  xff::config::ConfigInputs inputs = xff::config::DiscoverAutomatic(opts, ReadFile);
+  xff::cli::ConfigFileValidation system_validation =
+      xff::cli::ValidateConfigFile(std::move(inputs.system), opts.configs);
+  inputs.system = std::move(system_validation.config);
+  for (const std::string& diagnostic : system_validation.diagnostics) {
+    std::cerr << "xff: " << diagnostic << "\n";
   }
+  if (!system_validation.selected_configs_status.ok()) {
+    std::cerr << "xff: " << system_validation.selected_configs_status.message() << "\n";
+    return 2;
+  }
+  // Authorize explicit-file loading before opening any of the requested paths.
   if (const absl::Status status = xff::config::ValidateConfigSkips(inputs); !status.ok()) {
     std::cerr << "xff: " << status.message() << "\n";
     return 2;
+  }
+  const auto validate_file = [&](xff::config::ConfigFile file, std::string_view path, xff::config::Source source) {
+    xff::cli::ConfigFileValidation checked = xff::cli::ValidateConfigFile(std::move(file), {}, path, source);
+    for (const std::string& diagnostic : checked.diagnostics) {
+      std::cerr << "xff: " << diagnostic << "\n";
+    }
+    system_validation.disabled_configs.insert(
+        system_validation.disabled_configs.end(), checked.disabled_configs.begin(), checked.disabled_configs.end());
+    return std::move(checked.config);
+  };
+  inputs.user = validate_file(std::move(inputs.user), xff::config::UserConfigPath(opts), xff::config::Source::kUser);
+  if (const absl::Status status = xff::config::ValidateConfigSkips(inputs); !status.ok()) {
+    std::cerr << "xff: " << status.message() << "\n";
+    return 2;
+  }
+  inputs = xff::config::DiscoverExplicit(std::move(inputs), ReadFile);
+  // Explicit files cannot supply automatic-file permission controls.
+  if (const absl::Status status = xff::config::ValidateConfigSkips(inputs); !status.ok()) {
+    std::cerr << "xff: " << status.message() << "\n";
+    return 2;
+  }
+  for (xff::config::ExplicitConfig& file : inputs.xffrc) {
+    file.config = validate_file(std::move(file.config), file.path, xff::config::Source::kXffrc);
+  }
+  for (const std::string& notice : xff::cli::ConfigOverrideNotices(inputs)) {
+    std::cerr << "xff: warning: " << notice << "\n";
   }
   // --allow-exec arms the dangerous directives an --xffrc file may carry, but only when it comes
   // from a trusted tier (the CLI, or the user/system config) - never from an --xffrc file itself,
@@ -678,8 +713,14 @@ int RunMain(int argc, char** argv) {
   std::vector<std::string> effective_configs = {std::string(invocation_selector)};
   constexpr std::string_view kConfigPrefix = "--config=";
   for (const xff::config::ResolvedFlag& flag : resolved) {
-    if (flag.flag.starts_with(kConfigPrefix)) {
+    if (!flag.is_argument && flag.flag.starts_with(kConfigPrefix)) {
       effective_configs.push_back(flag.flag.substr(kConfigPrefix.size()));
+    }
+  }
+  for (const std::string& selected : effective_configs) {
+    if (absl::c_contains(system_validation.disabled_configs, selected)) {
+      std::cerr << "xff: selected config [" << selected << "] is disabled; see earlier diagnostics\n";
+      return 2;
     }
   }
   const xff::registry::Style style = xff::config::ActiveStyle(effective_configs);
@@ -704,13 +745,13 @@ int RunMain(int argc, char** argv) {
     }
     std::cerr << "xff: ignoring " << xff::config::DropMessage(drop) << why << "\n";
   }
-  // Apply the single resolved stream in its exact precedence order.
-  std::vector<std::string> config_flags;
-  config_flags.reserve(resolved.size());
-  for (const xff::config::ResolvedFlag& flag : resolved) {
-    config_flags.push_back(flag.flag);
+  // Apply globals and compose config predicates/actions with the CLI expression.
+  absl::StatusOr<xff::parser::Command> configured = xff::cli::ApplyResolvedConfig(std::move(command), resolved);
+  if (!configured.ok()) {
+    std::cerr << "xff: invalid config expression: " << configured.status().message() << "\n";
+    return 2;
   }
-  command.globals = std::move(config_flags);
+  command = *std::move(configured);
 
   // The find style (--config=find) accepts only find's own expression vocabulary;
   // reject xff extensions (e.g. -println) so a find-style run behaves like GNU
