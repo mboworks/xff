@@ -14,12 +14,12 @@ not be able to grant itself permission to run a dangerous directive.
 
 xff has three config-file tiers, followed by the command line:
 
-| Precedence | Source         | Grammar    | Trust and purpose                                                  |
-| ---------- | -------------- | ---------- | ------------------------------------------------------------------ |
-| lowest     | `/etc/xff.ini` | system INI | root-owned defaults and authoritative controls                     |
-|            | user config    | xffrc      | trusted personal defaults and named configurations                 |
-|            | `--xffrc=FILE` | xffrc      | explicitly loaded, repeatable, non-arming files                    |
-| highest    | command line   | CLI        | explicit flags and selectors; later conflicting values usually win |
+| Precedence | Source         | Grammar | Trust and purpose                                                  |
+| ---------- | -------------- | ------- | ------------------------------------------------------------------ |
+| lowest     | `/etc/xff.ini` | INI     | root-owned defaults and authoritative controls                     |
+|            | user config    | INI     | trusted personal defaults and named configurations                 |
+|            | `--xffrc=FILE` | INI     | explicitly loaded, repeatable, non-arming files                    |
+| highest    | command line   | CLI     | explicit flags and selectors; later conflicting values usually win |
 
 There is no project tier. xff never discovers `.xffrc` below a search root or
 through its ancestors, and it has no `--project-config` option. Per-directory
@@ -44,12 +44,13 @@ the system file, its authoritative controls. An explicit command-line `--xffrc=F
 remains active: it is not ambient configuration. Ignore files remain
 unaffected.
 
-Permissions are config-only directives, not command-line options:
+Permissions are config-only directives, not command-line options. `--no-require-*` makes the corresponding file optional so it may be skipped;
+`--require-*` prevents skipping a file that exists. Neither requires a missing file to exist.
+Without an applicable `--no-require-*`, a present file is required:
 
-- `--allow-no-config` / `--no-allow-no-config` govern only `--no-config`;
-- `--allow-no-system-config` / `--no-allow-no-system-config` govern only `--no-system-config`;
-- those two pairs are system-only, before the first section;
-- `--allow-no-user-config` / `--no-allow-no-user-config` govern only `--no-user-config` and may
+- `--no-require-system-config` / `--require-system-config` govern skipping the system file;
+  they are system-only, before the first section;
+- `--no-require-user-config` / `--require-user-config` govern skipping the user file and may
   appear before the first section in the system or user file; the system decision is authoritative;
 - each pair may occur once per permitted file; a duplicate system global line is diagnosed and ignored;
 - explicit `--xffrc` files cannot supply these controls.
@@ -61,18 +62,15 @@ a named section, an explicit file, or suppression of system defaults.
 A requested skip of a present, unauthorized source is a usage error. A missing
 source needs no permission because there is no configuration to suppress.
 
-## File grammars
+## Shared file grammar
 
-### System INI
-
-`/etc/xff.ini` accepts unconditional options before its first section, plain named configuration
-sections. Every section name, including `[global]`, `[defaults]`, and `[policy]`, is an ordinary
+System, user, and explicit `.xffrc` files all accept the same INI grammar: unconditional
+options before the first section, then plain named configuration sections. Every section name, including `[global]`, `[defaults]`, and `[policy]`, is an ordinary
 named configuration:
 
 ```ini
---allow-no-config
---allow-no-system-config
---allow-no-user-config
+--no-require-system-config
+--no-require-user-config
 --color=auto
 
 [dev]
@@ -111,37 +109,51 @@ There is no special policy rule language. System-only controls belong before the
 placing one in a named section disables that section atomically. `--no-allow-exec` is a system-only
 global control that prohibits dangerous directives from lower-trust config files.
 
-### xffrc
+### Names, refinements, and composition
 
-The user config and explicitly named files use a line-oriented, Bazel-rc-style
-grammar:
+Declare each `[NAME]` at most once in a file, including empty sections. Repeating a name disables
+all its declarations in that file; selecting it directly or through composition is a usage error.
+A different file may declare the same name to refine it. Values apply in resolution order, so
+later overrides win. Composition expands referenced sections in place, while refinements from
+later files wait for the earlier file's section to finish. For example:
 
-```text
-common: --color=auto
-debug: --jobs=1 --verbose
-xff:debug: --format=jsonl
+```ini
+# /etc/xff.ini
+[dev]
+--color=auto
 ```
 
-Each non-comment line is:
+```ini
+# user config
+[dev]
+--color=always
+--config=checks
 
-```text
-[BASE[:CONFIG]:] FLAG...
+[checks]
+-type f
 ```
 
-`common:` and an omitted selector apply on every run. A named base such as
-`debug:` applies when that exact `--config=debug` selector is active. A two-axis
-selector such as `xff:debug:` requires both selectors to be active. Matching is
-exact against the complete selector string; for example, `xff:2` selects the xff
-style by its `xff` prefix but remains a distinct name for xffrc matching.
+```ini
+# task.xffrc
+[dev]
+--color=never
+```
 
-The parser splits flags on spaces and tabs. It does not currently interpret
-shell quotes or escapes, so one token cannot contain whitespace. Blank lines and
-lines whose first non-blank character is `#` are ignored.
+`xff . --config=dev --xffrc=task.xffrc` applies all three `[dev]` contributions, selects
+`[checks]`, and ends with `--color=never`. References such as `--config=checks` may repeat;
+they compose configurations rather than declaring them. Each contributing line is applied at
+most once, so repeated references and cycles do not repeatedly apply a configuration.
 
-Config files may not attach defaults directly to the reserved built-in style
-blocks `find:`, `xff:`, or `rg:`. Such lines are dropped with a warning so a
-plain preset remains reproducible. Use a named block, optionally style-scoped,
-and activate it explicitly.
+Names are literal, including colons: `[xff:debug]` requires `--config=xff:debug`; it does not
+mean that both `xff` and `debug` must be active. `[common]` is an ordinary named config.
+Unconditional flags belong before the first section.
+
+The parser splits flags on spaces and tabs. It does not interpret shell quotes or escapes,
+so one token cannot contain whitespace. Blank lines and lines beginning with `#` or `;` are ignored.
+
+User and explicit config files may not redefine the exact built-in preset names `[find]`, `[xff]`,
+or `[rg]`. Those lines are dropped with a warning. Use a custom named configuration and compose
+the desired preset explicitly with `--config=find`, `--config=xff`, or `--config=rg`.
 
 ## Selectors and invocation names
 
@@ -213,22 +225,31 @@ ends with `always`. `[dev]` is optional configuration; the unsectioned line appl
 `/etc/xff.ini`:
 
 ```ini
---no-allow-no-config
---no-allow-no-system-config
---allow-no-user-config
+--require-system-config
+--no-require-user-config
 ```
 
 `xff . --no-user-config` is allowed. `--no-system-config` and `--no-config` are rejected.
-Allowing the user-only skip does not allow the combined skip. A user-file
-`--no-allow-no-user-config` cannot override the system grant. If the system omits its user-skip
+The combined skip fails because the system file refuses to be skipped. A user-file
+`--require-user-config` cannot override the system grant. If the system omits its user-skip
 pair, this user config instead decides for itself:
 
-```text
---allow-no-user-config
-common: --color=never
+```ini
+--no-require-user-config
+--color=never
 ```
 
-All skip controls precede sections or selector blocks. Each pair may occur only once in its file.
+All skip controls precede sections. Each pair may occur only once in its file.
+
+`--no-config` requests both `--no-system-config` and `--no-user-config`. Each existing
+file must permit its own skip; if either refuses, the entire request fails. A missing file
+needs no permission. Without an applicable grant, an existing file cannot be skipped.
+To permit all three command-line spellings, put both grants in `/etc/xff.ini`:
+
+```ini
+--no-require-system-config
+--no-require-user-config
+```
 
 ### Prevent dangerous directives from lower-trust files
 
@@ -261,7 +282,7 @@ Runtime `--safe`, `--dry-run`, and action-specific confirmation remain separate 
 With no system prohibition, `task.rc` may contain:
 
 ```text
-common: -exec echo {} ;
+-exec echo {} ;
 ```
 
 `xff . --xffrc=task.rc` leaves that dangerous line inert. Supplying `--allow-exec` from the
@@ -284,7 +305,7 @@ applied in this order:
 
 Each config line is applied at most once. Consequently, selector placement is
 observable when options conflict: in `--color=always --config=plain`, a
-`plain:` line containing `--color=never` wins, while reversing those two CLI
+`[plain]` section containing `--color=never` wins, while reversing those two CLI
 arguments makes `--color=always` win. Multiple explicit files retain their own
 positions rather than collapsing into a single tier.
 
@@ -305,5 +326,3 @@ set of option semantics.
 
 - xffrc values cannot contain whitespace because quoting is not implemented.
 - Missing and unreadable config files are not distinguished in discovery output.
-- Behavioral-epoch selectors such as `xff:2` are syntactically supported, but
-  no migration policy is implied until an epoch is actually defined.

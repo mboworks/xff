@@ -32,25 +32,36 @@ using ::testing::SizeIs;
 struct IniTest : ::testing::Test {};
 
 TEST_F(IniTest, GlobalLinesRenderToCliTokens) {
-  const SystemConfig cfg = ParseIni("--allow-no-config\n--color = auto\n-E\n");
-  EXPECT_THAT(cfg.globals, ElementsAre("--allow-no-config", "--color=auto", "-E"));
+  const ConfigFile cfg = ParseIni("--no-require-system-config\n--color = auto\n-E\n");
+  EXPECT_THAT(cfg.globals, ElementsAre("--no-require-system-config", "--color=auto", "-E"));
   EXPECT_THAT(cfg.global_lines, SizeIs(3));
 }
 
 TEST_F(IniTest, GlobalLinesMayContainMultipleDirectivesAndArguments) {
-  const SystemConfig cfg = ParseIni("--hidden --color=never\n-name foo -name bar");
+  const ConfigFile cfg = ParseIni("--hidden --color=never\n-name foo -name bar");
   EXPECT_THAT(cfg.globals, ElementsAre("--hidden", "--color=never", "-name", "foo", "-name", "bar"));
 }
 
 TEST_F(IniTest, PolicyAndDefaultsHaveNoReservedMeaning) {
-  const SystemConfig cfg = ParseIni("[defaults]\n--color=auto\n[policy]\n--hidden\n");
+  const ConfigFile cfg = ParseIni("[defaults]\n--color=auto\n[policy]\n--hidden\n");
   ASSERT_THAT(cfg.named, SizeIs(2));
   EXPECT_THAT(cfg.named[0].name, Eq("defaults"));
   EXPECT_THAT(cfg.named[1].name, Eq("policy"));
 }
 
+TEST_F(IniTest, PreservesRepeatedAndEmptyDeclarationsForValidation) {
+  const ConfigFile cfg = ParseIni("[ dev ]\n[other]\n--hidden\n[dev]");
+  ASSERT_THAT(cfg.named, SizeIs(3));
+  EXPECT_THAT(cfg.named[0].name, "dev");
+  EXPECT_THAT(cfg.named[0].number, 1);
+  EXPECT_THAT(cfg.named[0].lines, IsEmpty());
+  EXPECT_THAT(cfg.named[2].name, "dev");
+  EXPECT_THAT(cfg.named[2].number, 4);
+  EXPECT_THAT(cfg.named[2].lines, IsEmpty());
+}
+
 TEST_F(IniTest, EverySectionNameDefinesAConfig) {
-  const SystemConfig cfg = ParseIni("[unknown]\n--foo = bar\n");
+  const ConfigFile cfg = ParseIni("[unknown]\n--foo = bar\n");
   EXPECT_THAT(cfg.globals, IsEmpty());
   ASSERT_THAT(cfg.named, SizeIs(1));
   EXPECT_THAT(cfg.named[0].name, Eq("unknown"));
@@ -58,8 +69,8 @@ TEST_F(IniTest, EverySectionNameDefinesAConfig) {
 }
 
 TEST_F(IniTest, ParsesGlobalOptionsAndPlainNamedSectionsWithSourceLines) {
-  const SystemConfig cfg = ParseIni(
-      "--allow-no-config\n"
+  const ConfigFile cfg = ParseIni(
+      "--no-require-system-config\n"
       "--color=auto\n"
       "[dev]\n"
       "--color=always\n"
@@ -68,7 +79,7 @@ TEST_F(IniTest, ParsesGlobalOptionsAndPlainNamedSectionsWithSourceLines) {
       "--color=never\n");
 
   ASSERT_THAT(cfg.global_lines, SizeIs(2));
-  EXPECT_THAT(cfg.global_lines[0].tokens, ElementsAre("--allow-no-config"));
+  EXPECT_THAT(cfg.global_lines[0].tokens, ElementsAre("--no-require-system-config"));
   ASSERT_THAT(cfg.named, SizeIs(2));
   EXPECT_THAT(cfg.named[0].name, Eq("dev"));
   EXPECT_THAT(cfg.named[0].lines, SizeIs(2));

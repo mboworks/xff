@@ -660,8 +660,8 @@ int RunMain(int argc, char** argv) {
   // Config is system + user + explicit --xffrc only; there is no auto-discovered project layer
   // (Option B, 2026-07-06), so the search roots do not feed config discovery.
   xff::config::ConfigInputs inputs = xff::config::DiscoverAutomatic(opts, ReadFile);
-  xff::cli::SystemConfigValidation system_validation =
-      xff::cli::ValidateSystemConfig(std::move(inputs.system), opts.configs);
+  xff::cli::ConfigFileValidation system_validation =
+      xff::cli::ValidateConfigFile(std::move(inputs.system), opts.configs);
   inputs.system = std::move(system_validation.config);
   for (const std::string& diagnostic : system_validation.diagnostics) {
     std::cerr << "xff: " << diagnostic << "\n";
@@ -675,11 +675,28 @@ int RunMain(int argc, char** argv) {
     std::cerr << "xff: " << status.message() << "\n";
     return 2;
   }
+  const auto validate_file = [&](xff::config::ConfigFile file, std::string_view path, xff::config::Source source) {
+    xff::cli::ConfigFileValidation checked = xff::cli::ValidateConfigFile(std::move(file), {}, path, source);
+    for (const std::string& diagnostic : checked.diagnostics) {
+      std::cerr << "xff: " << diagnostic << "\n";
+    }
+    system_validation.disabled_configs.insert(
+        system_validation.disabled_configs.end(), checked.disabled_configs.begin(), checked.disabled_configs.end());
+    return std::move(checked.config);
+  };
+  inputs.user = validate_file(std::move(inputs.user), xff::config::UserConfigPath(opts), xff::config::Source::kUser);
+  if (const absl::Status status = xff::config::ValidateConfigSkips(inputs); !status.ok()) {
+    std::cerr << "xff: " << status.message() << "\n";
+    return 2;
+  }
   inputs = xff::config::DiscoverExplicit(std::move(inputs), ReadFile);
   // Explicit files cannot supply automatic-file permission controls.
   if (const absl::Status status = xff::config::ValidateConfigSkips(inputs); !status.ok()) {
     std::cerr << "xff: " << status.message() << "\n";
     return 2;
+  }
+  for (xff::config::ExplicitConfig& file : inputs.xffrc) {
+    file.config = validate_file(std::move(file.config), file.path, xff::config::Source::kXffrc);
   }
   for (const std::string& notice : xff::cli::ConfigOverrideNotices(inputs)) {
     std::cerr << "xff: warning: " << notice << "\n";

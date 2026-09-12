@@ -35,20 +35,21 @@ struct IniSection {
   std::vector<IniLine> lines;
 };
 
-// Parsed /etc/xff.ini global options and named configurations.
-struct SystemConfig {
+// Parsed config file, shared by system, user, and explicit files.
+struct ConfigFile {
   std::vector<std::string> globals;  // options before the first section, in CLI token form
   std::vector<IniLine> global_lines;
   std::vector<IniSection> named;
 };
 
-// Parses system INI `text`. A file-global or named-section "key = value" line renders to CLI
+// Parses INI `text`. A file-global or named-section "key = value" line renders to CLI
 // tokens ("--color = auto" -> "--color=auto"; a bare "--warn" stays "--warn").
 // Blank lines and '#'/';' comments are skipped; file-global lines are accepted only before the
 // first section. Every [NAME], including [policy], is an ordinary named configuration. Parse-only:
-// registry-aware validation and atomic section disabling happen in
-// cli::ValidateSystemConfig.
-SystemConfig ParseIni(std::string_view text);
+// Every header is preserved, including empty and repeated sections, so duplicates can be
+// diagnosed rather than silently merged. Registry-aware validation and atomic section disabling happen in
+// cli::ValidateConfigFile.
+ConfigFile ParseIni(std::string_view text);
 
 }  // namespace xff::config
 

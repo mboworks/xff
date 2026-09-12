@@ -1,4 +1,7 @@
-common: --allow-exec
-fuzz: -exec echo {}
-fuzz: -delete
-xff: --color=always
+--allow-exec
+
+[fuzz]
+-exec echo {}
+-delete
+[xff]
+--color=always

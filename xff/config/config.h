@@ -57,14 +57,14 @@ struct ConfigSource {
 // apply each file at the command-line position where it was selected.
 struct ExplicitConfig {
   std::string path;
-  std::vector<RcLine> lines;
+  ConfigFile config;
 };
 
 // The parsed layers + active selectors fed to ResolveConfig. CLI flags are NOT
 // here: the caller applies them last (highest precedence) after this resolution.
 struct ConfigInputs {
-  SystemConfig system;                // parsed /etc/xff.ini globals + named configurations
-  std::vector<RcLine> user;           // parsed user .xffrc
+  ConfigFile system;                  // parsed /etc/xff.ini globals + named configurations
+  ConfigFile user;                    // parsed user INI
   std::vector<ExplicitConfig> xffrc;  // parsed --xffrc=FILE files, kept separate and in order
   std::vector<std::string> configs;   // active --config=NAME selectors (styles and/or named configs)
   bool no_config = false;             // --no-config: suppress both automatic tiers when authorized
@@ -75,11 +75,8 @@ struct ConfigInputs {
 
 // Resolves config-supplied flags using the legacy tier view, lowest precedence
 // first, each tagged with its Source. Prefer ResolveConfigInOrder for execution.
-// An .xffrc line contributes its flags when its
-// base selector is empty/"common" or names an active --config, AND its config
-// selector is empty or names an active --config. Suppressing both automatic tiers yields an empty result
-// (pure CLI + built-ins). Gate the inputs first (GateConfig) so a dangerous,
-// unarmed --xffrc line never reaches here.
+// Each file contributes its unconditional globals and sections whose literal names are selected.
+// Gate the inputs first so an unarmed explicit-file action never reaches execution.
 std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& inputs);
 
 // Produces the complete application stream. Automatic system/user defaults and
@@ -125,7 +122,7 @@ registry::Style ActiveStyle(const std::vector<std::string>& configs);
 // basename: a built-in style name ("find"/"xff"/"rg") selects that preset; an empty name defaults
 // to "xff"; ANY OTHER name (including "fd"/"xfd" - there is no magic remap) is returned verbatim as
 // a NAMED-config selector (e.g. a "mytool" symlink -> "mytool"), which activates a matching
-// `mytool:` config block while leaving the base style at the modern xff default (ActiveStyle
+// `[mytool]` config block while leaving the base style at the modern xff default (ActiveStyle
 // ignores a non-style selector). main() prepends this as the lowest-precedence selector, so an
 // explicit --config still stacks over it via ActiveStyle's last-wins (design-config.md "CLI
 // selectors"). The returned view aliases `argv0` for a passthrough name; copy it to retain.

@@ -25,13 +25,26 @@ void Require(bool condition) {
   }
 }
 
-void CheckRetainedLines(const std::vector<xff::config::RcLine>& lines, bool require_safe) {
-  for (const xff::config::RcLine& line : lines) {
-    Require(!xff::config::OverloadsPreset(line));
-    if (require_safe) {
-      Require(xff::config::LineSafety(line) == xff::registry::Safety::kNone);
+void CheckRetainedLines(const xff::config::ConfigFile& file, bool require_safe) {
+  if (require_safe) {
+    Require(xff::config::LineSafety({.tokens = file.globals}) == xff::registry::Safety::kNone);
+  }
+  for (const xff::config::IniSection& section : file.named) {
+    for (const xff::config::IniLine& line : section.lines) {
+      Require(!xff::config::OverloadsPreset(section.name));
+      if (require_safe) {
+        Require(xff::config::LineSafety(line) == xff::registry::Safety::kNone);
+      }
     }
   }
+}
+
+std::size_t LineCount(const xff::config::ConfigFile& file) {
+  std::size_t count = file.global_lines.size();
+  for (const xff::config::IniSection& section : file.named) {
+    count += section.lines.size();
+  }
+  return count;
 }
 
 void CheckDrops(const std::vector<xff::config::Drop>& drops) {
@@ -50,11 +63,11 @@ void CheckGate(const xff::config::ConfigInputs& inputs) {
     Require(!xff::config::ArmedFromTrustedTier(inputs, {"--allow-exec"}, "--allow-exec"));
   }
   CheckRetainedLines(unarmed.config.user, prohibited);
-  CheckRetainedLines(unarmed.config.xffrc.front().lines, /*require_safe=*/true);
+  CheckRetainedLines(unarmed.config.xffrc.front().config, /*require_safe=*/true);
   CheckRetainedLines(armed.config.user, prohibited);
-  CheckRetainedLines(armed.config.xffrc.front().lines, prohibited);
-  Require(unarmed.config.user.size() == armed.config.user.size());
-  Require(unarmed.config.xffrc.front().lines.size() <= armed.config.xffrc.front().lines.size());
+  CheckRetainedLines(armed.config.xffrc.front().config, prohibited);
+  Require(LineCount(unarmed.config.user) == LineCount(armed.config.user));
+  Require(LineCount(unarmed.config.xffrc.front().config) <= LineCount(armed.config.xffrc.front().config));
   CheckDrops(unarmed.drops);
   CheckDrops(armed.drops);
 
@@ -86,14 +99,14 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
   const xff::config::ConfigInputs inputs{
       .system = xff::config::ParseIni(input),
       .user = xff::config::ParseXffrc(input),
-      .xffrc = {{.path = "/fuzz", .lines = xff::config::ParseXffrc(input)}},
+      .xffrc = {{.path = "/fuzz", .config = xff::config::ParseXffrc(input)}},
       .configs = {"xff", "fuzz"},
   };
   CheckGate(inputs);
 
   // An untrusted explicit file cannot authorize its own sensitive directives.
   const xff::config::ConfigInputs self_arming{
-      .xffrc = {{.path = "/fuzz", .lines = {{.flags = {"--allow-exec"}}}}},
+      .xffrc = {{.path = "/fuzz", .config = {.globals = {"--allow-exec"}}}},
       .configs = {"xff"},
   };
   Require(!xff::config::ArmedFromTrustedTier(self_arming, {}, "--allow-exec"));

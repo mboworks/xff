@@ -31,13 +31,13 @@ namespace xff::config {
 // flags (registry Lookup; unknown tokens such as globals are kNone). A line
 // counts as sensitive/destructive when ANY of its flags is. An attached binding
 // like "-capture:tag" is classified by its base name before ':'.
-registry::Safety LineSafety(const RcLine& line);
+registry::Safety LineSafety(const IniLine& line);
 
 // Validates requests to suppress automatic configuration. A present system config must explicitly
 // authorize suppressing its defaults; a present user config must authorize suppressing itself unless
-// the higher-trust system config already does. Each positive/negative permission pair controls only
-// its corresponding command-line skip flag and is unique per automatic config file.
-// system-skip control is system-only, user-skip control may occur in the system or user file, and
+// the higher-trust system config already does. Each require/no-require permission pair controls
+// whether its file may be skipped, including by --no-config, and is unique per automatic config file.
+// System-skip control is system-only, user-skip control may occur in the system or user file, and
 // every control precedes all sections. No control is accepted from an explicitly named --xffrc
 // file. Permission directives are config-only and never enter the resolved runtime flags.
 // --allow-xffrc/--no-allow-xffrc is a separate config-only setting resolved through ordinary
@@ -53,18 +53,16 @@ enum class DropReason { kSystemProhibition, kPresetOverload, kUnarmedXffrc };
 // A config line dropped by the gate: the line, the layer it came from, the safety class (relevant
 // to kSystemProhibition), and why it was dropped (for the stderr warning and --explain).
 struct Drop {
-  RcLine line;
+  IniLine line;
+  std::string config_name;
   Source layer;
   registry::Safety safety;
   DropReason reason = DropReason::kSystemProhibition;
 };
 
-// Whether `line` attaches behavior to a built-in preset: its base names a style (find/xff/rg)
-// with no named-config component (`xff: --flag`), so it would apply whenever that preset is active
-// and silently change what a plain `xff` run does. Config files customize via `common:` (always-on)
-// or named blocks (`myconfig:`, or the style-scoped `xff:myconfig:`) instead, so a preset stays
-// reproducible. Applies to every layer.
-bool OverloadsPreset(const RcLine& line);
+// Whether a section name exactly matches a built-in preset (find/xff/rg). User and explicit
+// files customize through unsectioned defaults or custom named sections instead.
+bool OverloadsPreset(std::string_view name);
 
 struct GateResult {
   ConfigInputs config;

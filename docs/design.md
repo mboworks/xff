@@ -147,23 +147,12 @@ A **prime goal** (see Goals). Two strands:
 **Config system (detailed spec):** [`design-config.md`](design-config.md) is authoritative. System
 `/etc/xff.ini` contains unsectioned globals and plain named sections; trusted global controls govern
 skipping automatic files, accepting explicit files, and arming dangerous config directives. User
-config and explicit `--xffrc=FILE` files use xffrc syntax. `--config=NAME` and the invocation name
-select configurations. Invalid system global lines are ignored individually with diagnostics;
+config and explicit `--xffrc=FILE` files share the same INI grammar and parsed representation.
+Each name is declared once per file and may be refined by other files; `--config=NAME` composes
+configurations. `--config=NAME` and the invocation name
+select configurations. Invalid global lines are ignored individually with diagnostics;
 invalid named sections are disabled atomically and transitively. There is no special policy-section
-language, general `--feature` mechanism, or auto-discovered project config layer. The notes below
-are the original, superseded sketch.
-
-**Config format:** INI-style - flat CLI-arg lines (the same flags you'd type, parsed by our own `parser`) plus optional `[named]` blocks (saved queries / exec recipes). No separate schema; "what you can type, you can save." Parsing is **inert** (builds an AST, never executes) - the security work is the action-gate below, not the format.
-
-**Config trust model:**
-
-- **user-global** (`~/.config/xff/…`): data + `@exec` blocks both honoured (user-owned → trusted).
-- **auto-discovered / cascading tree `.xff`**: **data-only**; action args and `[exec]` blocks are **inert** (parsed, never run).
-- **explicitly named `--config <file>`**: arms that file's action args / `[exec]` blocks. Naming the file _is_ the authorization - no trust DB, no hashes. Guards: **ownership gate** (file user-owned, not world-writable) + **include discipline** (`include` imports data only, never actions/exec).
-- Named blocks are **invoked** (`xff @name`), never auto-triggered. **No** configurable "default exec-config path" (would re-introduce ambient execution).
-- Tree config is **subtree-scoped** (its dir & below; can't add roots, redirect output, or reach global) and ownership-gated even for data-only settings.
-
-**Self-documenting:** registry descriptors carry a `safety` classification + rationale; `--help`, `--explain`, and generated docs surface every gate with its _why_ ("ignoring `./.xff` - not user-owned [safety]"; "`[exec]` blocks inert - pass `--config` to arm [safety]"). Refusals explain themselves; never silent.
+language, general `--feature` mechanism, or auto-discovered project config layer.
 
 **Safe mode:** opt-in `--safe` (a.k.a. `--no-destructive`) **hard-refuses** destructive (`-delete`, future built-in mutators) and dangerous (`-exec`/`-execdir`/`-ok`) operations - distinct from `--dry-run` (which previews). Off by default (preserves drop-in), but a cautious user sets it as their personal default in user-global config; override per-invocation with `--no-safe` (CLI > config). Granular `--no-exec` / `--no-delete` available. Ideal as a CI guardrail. Refusals self-documenting.
 

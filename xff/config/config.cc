@@ -16,6 +16,7 @@
 #include "xff/config/config.h"
 
 #include <algorithm>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -30,39 +31,50 @@
 namespace xff::config {
 namespace {
 
-constexpr std::string_view kAllowNoConfig = "--allow-no-config";
-constexpr std::string_view kAllowNoSystemConfig = "--allow-no-system-config";
-constexpr std::string_view kAllowNoUserConfig = "--allow-no-user-config";
+constexpr std::string_view kNoRequireSystemConfig = "--no-require-system-config";
+constexpr std::string_view kNoRequireUserConfig = "--no-require-user-config";
 constexpr std::string_view kAllowXffrc = "--allow-xffrc";
-constexpr std::string_view kNoAllowNoSystemConfig = "--no-allow-no-system-config";
-constexpr std::string_view kNoAllowNoUserConfig = "--no-allow-no-user-config";
-constexpr std::string_view kNoAllowNoConfig = "--no-allow-no-config";
+constexpr std::string_view kRequireSystemConfig = "--require-system-config";
+constexpr std::string_view kRequireUserConfig = "--require-user-config";
 constexpr std::string_view kNoAllowXffrc = "--no-allow-xffrc";
 
 bool IsSkipPermission(std::string_view flag) {
-  return flag == kAllowNoConfig || flag == kNoAllowNoConfig || flag == kAllowNoSystemConfig
-         || flag == kAllowNoUserConfig || flag == kNoAllowNoSystemConfig || flag == kNoAllowNoUserConfig
-         || flag == kAllowXffrc || flag == kNoAllowXffrc || flag == "--no-allow-exec";
+  return flag == kNoRequireSystemConfig || flag == kNoRequireUserConfig || flag == kRequireSystemConfig
+         || flag == kRequireUserConfig || flag == kAllowXffrc || flag == kNoAllowXffrc || flag == "--no-allow-exec";
 }
 
-// An .xffrc line applies under the active --config selectors when its base is
-// "common"/empty or names an active config, AND its config is empty or names one.
-bool LineApplies(const RcLine& line, const std::vector<std::string>& configs) {
-  const bool base_ok = line.base.empty() || line.base == "common" || absl::c_contains(configs, line.base);
-  const bool config_ok = line.config.empty() || absl::c_contains(configs, line.config);
-  return base_ok && config_ok;
+struct ConfigEntry {
+  std::string name;
+  std::vector<std::string> tokens;
+};
+
+std::vector<ConfigEntry> Entries(const ConfigFile& file) {
+  std::vector<ConfigEntry> entries = {{.tokens = file.globals}};
+  entries.reserve(1 + file.named.size());
+  for (const IniSection& section : file.named) {
+    ConfigEntry entry{.name = section.name};
+    for (const IniLine& line : section.lines) {
+      entry.tokens.insert(entry.tokens.end(), line.tokens.begin(), line.tokens.end());
+    }
+    entries.push_back(std::move(entry));
+  }
+  return entries;
+}
+
+bool Applies(const ConfigEntry& entry, const std::vector<std::string>& configs) {
+  return entry.name.empty() || absl::c_contains(configs, entry.name);
 }
 
 void AppendMatching(
     std::vector<ResolvedFlag>& out,
-    const std::vector<RcLine>& lines,
+    const ConfigFile& file,
     const std::vector<std::string>& configs,
     Source source) {
-  for (const RcLine& line : lines) {
-    if (!LineApplies(line, configs)) {
+  for (const ConfigEntry& entry : Entries(file)) {
+    if (!Applies(entry, configs)) {
       continue;
     }
-    for (const std::string& flag : line.flags) {
+    for (const std::string& flag : entry.tokens) {
       if (!IsSkipPermission(flag)) {
         out.push_back(ResolvedFlag{.flag = flag, .source = source});
       }
@@ -76,11 +88,14 @@ class OrderedResolver {
       : inputs_(inputs),
         selectors_{std::string(invocation_selector)},
         system_named_emitted_(inputs.system.named.size()),
-        user_emitted_(inputs.user.size()) {
+        user_entries_(Entries(inputs.user)),
+        user_emitted_(user_entries_.size()) {
     file_loaded_.resize(inputs.xffrc.size());
     file_emitted_.reserve(inputs.xffrc.size());
+    file_entries_.reserve(inputs.xffrc.size());
     for (const ExplicitConfig& file : inputs.xffrc) {
-      file_emitted_.emplace_back(file.lines.size());
+      file_entries_.push_back(Entries(file.config));
+      file_emitted_.emplace_back(file_entries_.back().size());
     }
   }
 
@@ -99,7 +114,7 @@ class OrderedResolver {
     if (inputs_.no_system_config) {
       return;
     }
-    EmitTokens(inputs_.system.globals, Source::kSystem);
+    EmitTokens(inputs_.system.globals, Source::kSystem, 0);
   }
 
   void EmitMatching() {
@@ -111,31 +126,39 @@ class OrderedResolver {
         }
         system_named_emitted_[index] = true;
         for (const IniLine& line : section.lines) {
-          EmitTokens(line.tokens, Source::kSystem);
+          EmitTokens(line.tokens, Source::kSystem, 0);
         }
       }
     }
-    if (!inputs_.no_user_config) {
-      EmitLines(inputs_.user, user_emitted_, Source::kUser);
+    if (!inputs_.no_user_config && CanEmit(1)) {
+      EmitLines(user_entries_, user_emitted_, Source::kUser, 1);
     }
     for (std::size_t index = 0; index < inputs_.xffrc.size(); ++index) {
-      if (file_loaded_[index]) {
-        EmitLines(inputs_.xffrc[index].lines, file_emitted_[index], Source::kXffrc);
+      if (file_loaded_[index] && CanEmit(index + 2)) {
+        EmitLines(file_entries_[index], file_emitted_[index], Source::kXffrc, index + 2);
       }
     }
   }
 
-  void EmitLines(const std::vector<RcLine>& lines, std::vector<bool>& emitted, Source source) {
+  bool CanEmit(std::size_t file_index) const { return !active_file_.has_value() || file_index <= *active_file_; }
+
+  void EmitLines(
+      const std::vector<ConfigEntry>& lines,
+      std::vector<bool>& emitted,
+      Source source,
+      std::size_t file_index) {
     for (std::size_t index = 0; index < lines.size(); ++index) {
-      if (emitted[index] || !LineApplies(lines[index], selectors_)) {
+      if (emitted[index] || !Applies(lines[index], selectors_)) {
         continue;
       }
       emitted[index] = true;
-      EmitTokens(lines[index].flags, source);
+      EmitTokens(lines[index].tokens, source, file_index);
     }
   }
 
-  void EmitTokens(const std::vector<std::string>& tokens, Source source) {
+  void EmitTokens(const std::vector<std::string>& tokens, Source source, std::size_t file_index) {
+    // Expand references in place, but defer later-file refinements until this body finishes.
+    const auto previous_file = std::exchange(active_file_, file_index);
     for (std::size_t pos = 0; pos < tokens.size(); ++pos) {
       const std::string& token = tokens[pos];
       if (!IsSkipPermission(token)) {
@@ -158,6 +181,7 @@ class OrderedResolver {
         }
       }
     }
+    active_file_ = previous_file;
   }
 
   void EmitFlag(const std::string& flag, Source source) {
@@ -175,7 +199,7 @@ class OrderedResolver {
       return;
     }
     file_loaded_[next_file_] = true;
-    EmitLines(inputs_.xffrc[next_file_].lines, file_emitted_[next_file_], Source::kXffrc);
+    EmitLines(file_entries_[next_file_], file_emitted_[next_file_], Source::kXffrc, next_file_ + 2);
     ++next_file_;
   }
 
@@ -183,7 +207,10 @@ class OrderedResolver {
   std::vector<ResolvedFlag> application_;
   std::vector<std::string> selectors_;
   std::vector<bool> system_named_emitted_;
+  std::optional<std::size_t> active_file_;
+  std::vector<ConfigEntry> user_entries_;
   std::vector<bool> user_emitted_;
+  std::vector<std::vector<ConfigEntry>> file_entries_;
   std::vector<bool> file_loaded_;
   std::vector<std::vector<bool>> file_emitted_;
   std::size_t next_file_ = 0;
@@ -235,7 +262,7 @@ std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& inputs) {
     AppendMatching(resolved, inputs.user, inputs.configs, Source::kUser);
   }
   for (const ExplicitConfig& file : inputs.xffrc) {
-    AppendMatching(resolved, file.lines, inputs.configs, Source::kXffrc);
+    AppendMatching(resolved, file.config, inputs.configs, Source::kXffrc);
   }
   return resolved;
 }
@@ -275,7 +302,7 @@ bool ArmedFromTrustedTier(
   selectors.insert(selectors.end(), cli_globals.begin(), cli_globals.end());
   ConfigInputs trusted = inputs;
   trusted.xffrc.clear();
-  std::erase_if(trusted.user, [](const RcLine& line) { return line.config.empty() && IsBuiltinStyle(line.base); });
+  std::erase_if(trusted.user.named, [](const IniSection& section) { return IsBuiltinStyle(section.name); });
   return absl::c_any_of(ResolveConfigInOrder(trusted, selectors, ""), [&](const ResolvedFlag& resolved) {
     return !resolved.is_argument && resolved.source != Source::kXffrc && resolved.flag == flag;
   });

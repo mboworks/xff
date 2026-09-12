@@ -1,2 +1,2 @@
-common: --allow-exec
-common: -delete
+--allow-exec
+-delete

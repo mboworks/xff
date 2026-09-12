@@ -77,7 +77,7 @@ TEST_F(LoaderTest, UserConfigPathEmptyWhenNoEnv) {
 TEST_F(LoaderTest, DiscoverAppliesSystemThenUserLayersWithActiveConfig) {
   FakeFs fs;
   fs.files["/etc/xff.ini"] = "--color=auto\n";
-  fs.files["/home/u/.config/xff/config"] = "common: --sort\nxff: --format=jsonl\nfind: --warn\n";
+  fs.files["/home/u/.config/xff/config"] = "--sort\n\n[xff]\n--format=jsonl\n[find]\n--warn";
   DiscoveryOptions opts;
   opts.home = "/home/u";
   opts.configs = {"xff"};  // the find: line stays inert
@@ -90,8 +90,8 @@ TEST_F(LoaderTest, DiscoverAppliesSystemThenUserLayersWithActiveConfig) {
 
 TEST_F(LoaderTest, ExplicitXffrcFilesFormTheirOwnTierInOrder) {
   FakeFs fs;
-  fs.files["/explicit.rc"] = "common: --jobs=2\n";
-  fs.files["/extra.rc"] = "common: --color=never\n";
+  fs.files["/explicit.rc"] = "--jobs=2\n";
+  fs.files["/extra.rc"] = "--color=never\n";
   DiscoveryOptions opts;
   opts.xffrc_files = {"/explicit.rc", "/extra.rc"};
   const ConfigInputs in = Discover(opts, [&fs](std::string_view path) { return fs.Read(path); });
@@ -110,7 +110,7 @@ TEST_F(LoaderTest, AutomaticDiscoveryDoesNotReadExplicitPaths) {
   };
   const ConfigInputs automatic = DiscoverAutomatic(opts, read);
   EXPECT_THAT(reads, ElementsAre("/etc/xff.ini"));
-  EXPECT_THAT(automatic.xffrc, ElementsAre(FieldsAre("/explicit", IsEmpty())));
+  EXPECT_THAT(automatic.xffrc, ElementsAre(FieldsAre("/explicit", Field("globals", &ConfigFile::globals, IsEmpty()))));
   const ConfigInputs complete = DiscoverExplicit(automatic, read);
   EXPECT_THAT(reads, ElementsAre("/etc/xff.ini", "/explicit"));
   EXPECT_THAT(
@@ -121,7 +121,7 @@ TEST_F(LoaderTest, AutomaticDiscoveryDoesNotReadExplicitPaths) {
 TEST_F(LoaderTest, NoConfigStillInspectsAutomaticSourcesAndKeepsExplicitXffrc) {
   FakeFs fs;
   fs.files["/etc/xff.ini"] = "--color=auto\n--no-allow-exec\n";
-  fs.files["/home/u/.config/xff/config"] = "common: --sort\n";
+  fs.files["/home/u/.config/xff/config"] = "--sort\n";
   DiscoveryOptions opts;
   opts.home = "/home/u";
   opts.xffrc_files = {"/extra.rc"};
@@ -135,8 +135,8 @@ TEST_F(LoaderTest, NoConfigStillInspectsAutomaticSourcesAndKeepsExplicitXffrc) {
           SourceIs("/extra.rc", Source::kXffrc, false)));
   EXPECT_THAT(in.system.globals, ElementsAre("--color=auto", "--no-allow-exec"));
 
-  EXPECT_THAT(in.user, SizeIs(1));
-  EXPECT_THAT(in.xffrc, ElementsAre(FieldsAre("/extra.rc", IsEmpty())));
+  EXPECT_THAT(in.user.global_lines, SizeIs(1));
+  EXPECT_THAT(in.xffrc, ElementsAre(FieldsAre("/extra.rc", Field("globals", &ConfigFile::globals, IsEmpty()))));
 }
 
 TEST_F(LoaderTest, MissingFilesYieldEmptyLayers) {
@@ -162,7 +162,7 @@ TEST_F(LoaderTest, SelectorsFromGlobalsExtractsConfigSelectorsInOrder) {
 TEST_F(LoaderTest, DiscoverRecordsConsultedSourcesForExplain) {
   FakeFs fs;
   fs.files["/etc/xff.ini"] = "--color=auto\n";  // present
-  fs.files["/extra.rc"] = "common: --sort\n";   // present (explicit --xffrc)
+  fs.files["/extra.rc"] = "--sort\n";           // present (explicit --xffrc)
   DiscoveryOptions opts;
   opts.home = "/home/u";             // user path computed, but the file is absent
   opts.xffrc_files = {"/extra.rc"};  // explicit file, present

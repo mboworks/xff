@@ -130,15 +130,15 @@ test::argv0_custom_alias_activates_same_named_config() {
   local dir
   dir="$(test_tmpdir argv0alias)"
   : >"${dir}/a.txt"
-  # A user config defines a NAMED block `mytool:` (not a preset). Invoked through a `mytool`
+  # A user config defines a NAMED block `[mytool]` (not a preset). Invoked through a `mytool`
   # symlink, argv[0] selects that named config with no --config, so its --format=jsonl applies.
   local cfg="${TEST_TMPDIR}/argv0alias_cfg"
-  printf 'mytool: --format=jsonl\n' >"${cfg}"
+  printf -- '[mytool]\n--format=jsonl\n' >"${cfg}"
   ln -sf "$(_xff_bin)" "${TEST_TMPDIR}/mytool"
   local out
   out="$(XFF_CONFIG="${cfg}" "${TEST_TMPDIR}/mytool" "${dir}" -name a.txt 2>&1)"
-  expect_output_contains "{" "${out}" # --format=jsonl from the mytool: block -> a JSON object
-  # A plain xff run does not activate mytool:, so output stays plain (no JSON object).
+  expect_output_contains "{" "${out}" # --format=jsonl from the [mytool] block -> a JSON object
+  # A plain xff run does not activate [mytool], so output stays plain (no JSON object).
   out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}" -name a.txt 2>&1)"
   expect_output_not_contains "{" "${out}"
 }

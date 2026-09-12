@@ -26,9 +26,9 @@ namespace xff::cli {
 namespace {
 
 bool IsSystemControl(std::string_view token) {
-  return token == "--allow-no-config" || token == "--no-allow-no-config" || token == "--allow-no-system-config"
-         || token == "--no-allow-no-system-config" || token == "--allow-no-user-config" || token == "--no-allow-exec"
-         || token == "--no-allow-no-user-config" || token == "--allow-xffrc" || token == "--no-allow-xffrc";
+  return token == "--no-require-system-config" || token == "--require-system-config"
+         || token == "--no-require-user-config" || token == "--no-allow-exec" || token == "--require-user-config"
+         || token == "--allow-xffrc" || token == "--no-allow-xffrc";
 }
 
 absl::StatusOr<std::size_t> PrimaryArgumentCount(
@@ -91,11 +91,6 @@ std::vector<std::string> ConfigReferences(const config::IniSection& section) {
   }
   return result;
 }
-
-struct SectionSettings {
-  std::string key;
-  absl::flat_hash_set<std::string> names;
-};
 
 std::string CanonicalName(const GlobalFlag& flag) {
   constexpr std::string_view kNo = "--no-";
@@ -168,33 +163,27 @@ void FindOverrides(
   }
 }
 
-void FindRcOverrides(
-    const std::vector<config::RcLine>& lines,
-    std::string_view file,
-    std::vector<std::string>& notices) {
-  std::vector<SectionSettings> sections;
-  for (const config::RcLine& line : lines) {
-    const std::string key = absl::StrCat(line.base, ":", line.config);
-    auto section = sections.begin();
-    while (section != sections.end() && section->key != key) {
-      ++section;
+void FindFileOverrides(const config::ConfigFile& file, std::string_view path, std::vector<std::string>& notices) {
+  absl::flat_hash_set<std::string> globals;
+  FindOverrides(file.globals, absl::StrCat(path, " globals"), globals, notices);
+  for (const config::IniSection& section : file.named) {
+    absl::flat_hash_set<std::string> settings;
+    for (const config::IniLine& line : section.lines) {
+      FindOverrides(line.tokens, absl::StrCat(path, " section '[", section.name, "]'"), settings, notices);
     }
-    if (section == sections.end()) {
-      sections.push_back({.key = key});
-      section = sections.end() - 1;
-    }
-    const std::string location = absl::StrCat(file, " section '", key, "'");
-    FindOverrides(line.flags, location, section->names, notices);
   }
 }
 
-class SystemConfigValidator {
+class ConfigFileValidator {
  public:
-  SystemConfigValidator(config::SystemConfig config, std::string_view path)
-      : result_{.config = std::move(config), .selected_configs_status = absl::OkStatus()}, path_(path) {}
+  ConfigFileValidator(config::ConfigFile config, std::string_view path, config::Source source)
+      : result_{.config = std::move(config), .selected_configs_status = absl::OkStatus()},
+        path_(path),
+        source_(source) {}
 
-  SystemConfigValidation Validate(const std::vector<std::string>& selected_configs) {
+  ConfigFileValidation Validate(const std::vector<std::string>& selected_configs) {
     ValidateGlobals();
+    ValidateNames();
     ValidateSections();
     PropagateDisablement();
     result_.disabled_configs.assign(disabled_.begin(), disabled_.end());
@@ -225,8 +214,8 @@ class SystemConfigValidator {
       if (status.ok()) {
         for (const std::string_view token : config::DirectiveTokens(line.tokens)) {
           const std::string name =
-              token.starts_with("--no-allow-no-") ? absl::StrCat("--", token.substr(5)) : std::string(token);
-          if ((name == "--allow-no-config" || name == "--allow-no-system-config" || name == "--allow-no-user-config")
+              token.starts_with("--no-require-") ? absl::StrCat("--", token.substr(5)) : std::string(token);
+          if ((name == "--require-system-config" || name == "--require-user-config")
               && !next_controls.insert(name).second) {
             status = absl::InvalidArgumentError(absl::StrCat(name, " and its negative form may occur only once"));
             break;
@@ -244,10 +233,34 @@ class SystemConfigValidator {
     }
   }
 
+  void ValidateNames() {
+    absl::flat_hash_set<std::string> names;
+    for (const config::IniSection& section : result_.config.named) {
+      if (section.name.empty()) {
+        disabled_.insert(section.name);
+        result_.diagnostics.push_back(absl::StrCat(path_, ":", section.number, ": disabling empty config name"));
+        continue;
+      }
+      if (!names.insert(section.name).second) {
+        disabled_.insert(section.name);
+        result_.diagnostics.push_back(
+            absl::StrCat(
+                path_, ":", section.number, ": disabling config [", section.name,
+                "] because its name is declared more than once in this file"));
+      }
+    }
+  }
+
   void ValidateSections() {
     for (const config::IniSection& section : result_.config.named) {
       for (const config::IniLine& line : section.lines) {
-        const bool has_control = std::ranges::any_of(config::DirectiveTokens(line.tokens), IsSystemControl);
+        const bool has_control =
+            std::ranges::any_of(config::DirectiveTokens(line.tokens), [this](std::string_view token) {
+              if (source_ == config::Source::kUser && (token == "--allow-xffrc" || token == "--no-allow-xffrc")) {
+                return false;
+              }
+              return IsSystemControl(token);
+            });
         const absl::Status status =
             has_control ? absl::InvalidArgumentError("system controls must precede every system config section")
                         : ValidateTokens(line.tokens);
@@ -285,19 +298,21 @@ class SystemConfigValidator {
     }
   }
 
-  SystemConfigValidation result_;
+  ConfigFileValidation result_;
   std::string_view path_;
+  config::Source source_;
   absl::flat_hash_set<std::string> controls_;
   absl::flat_hash_set<std::string> disabled_;
 };
 
 }  // namespace
 
-SystemConfigValidation ValidateSystemConfig(
-    config::SystemConfig config,
+ConfigFileValidation ValidateConfigFile(
+    config::ConfigFile file,
     const std::vector<std::string>& selected_configs,
-    std::string_view path) {
-  return SystemConfigValidator(std::move(config), path).Validate(selected_configs);
+    std::string_view path,
+    config::Source source) {
+  return ConfigFileValidator(std::move(file), path, source).Validate(selected_configs);
 }
 
 absl::StatusOr<parser::Command> ApplyResolvedConfig(
@@ -330,17 +345,10 @@ absl::StatusOr<parser::Command> ApplyResolvedConfig(
 
 std::vector<std::string> ConfigOverrideNotices(const config::ConfigInputs& inputs) {
   std::vector<std::string> notices;
-  absl::flat_hash_set<std::string> system_globals;
-  FindOverrides(inputs.system.globals, "system config globals", system_globals, notices);
-  for (const config::IniSection& section : inputs.system.named) {
-    absl::flat_hash_set<std::string> settings;
-    for (const config::IniLine& line : section.lines) {
-      FindOverrides(line.tokens, absl::StrCat("system config section '[", section.name, "]'"), settings, notices);
-    }
-  }
-  FindRcOverrides(inputs.user, "user config", notices);
+  FindFileOverrides(inputs.system, "system config", notices);
+  FindFileOverrides(inputs.user, "user config", notices);
   for (const config::ExplicitConfig& file : inputs.xffrc) {
-    FindRcOverrides(file.lines, absl::StrCat("--xffrc file ", file.path), notices);
+    FindFileOverrides(file.config, absl::StrCat("--xffrc file ", file.path), notices);
   }
   return notices;
 }

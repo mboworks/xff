@@ -16,7 +16,6 @@
 #include "xff/config/ini.h"
 
 #include <cstddef>
-#include <ranges>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -50,11 +49,8 @@ std::vector<std::string> FlagTokens(std::string_view line) {
 
 }  // namespace
 
-SystemConfig ParseIni(std::string_view text) {
-  SystemConfig config;
-  std::string_view section;
-  std::size_t section_line = 0;
-  bool saw_section = false;
+ConfigFile ParseIni(std::string_view text) {
+  ConfigFile config;
   std::size_t line_number = 0;
   for (const std::string_view raw : absl::StrSplit(text, '\n')) {
     ++line_number;
@@ -63,22 +59,17 @@ SystemConfig ParseIni(std::string_view text) {
       continue;  // blank or comment
     }
     if (line.front() == '[' && line.back() == ']') {
-      saw_section = true;
-      section = absl::StripAsciiWhitespace(line.substr(1, line.size() - 2));
-      section_line = line_number;
+      const std::string_view name = absl::StripAsciiWhitespace(line.substr(1, line.size() - 2));
+      config.named.push_back({.name = std::string(name), .number = line_number});
       continue;
     }
-    if (!saw_section) {
+    if (config.named.empty()) {
       const IniLine parsed{.number = line_number, .text = std::string(line), .tokens = FlagTokens(line)};
       config.globals.insert(config.globals.end(), parsed.tokens.begin(), parsed.tokens.end());
       config.global_lines.push_back(parsed);
     } else {
-      auto found = std::ranges::find(config.named, section, &IniSection::name);
-      if (found == config.named.end()) {
-        config.named.push_back({.name = std::string(section), .number = section_line});
-        found = config.named.end() - 1;
-      }
-      found->lines.push_back({.number = line_number, .text = std::string(line), .tokens = FlagTokens(line)});
+      config.named.back().lines.push_back(
+          {.number = line_number, .text = std::string(line), .tokens = FlagTokens(line)});
     }
   }
   return config;

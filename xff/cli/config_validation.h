@@ -21,20 +21,21 @@ namespace xff::cli {
 // remain independent. Structurally invalid config controls are rejected separately by policy.
 std::vector<std::string> ConfigOverrideNotices(const config::ConfigInputs& inputs);
 
-struct SystemConfigValidation final {
-  config::SystemConfig config;
+struct ConfigFileValidation final {
+  config::ConfigFile config;
   std::vector<std::string> diagnostics;
   std::vector<std::string> disabled_configs;
   absl::Status selected_configs_status;
 };
 
-// Validates system globals independently and named sections atomically. Invalid global lines are
-// diagnosed and omitted. One invalid line disables its complete named section; disablement then
-// propagates through --config references. Selecting a disabled section is a hard error.
-SystemConfigValidation ValidateSystemConfig(
-    config::SystemConfig config,
+// Validates file globals independently and named sections atomically. Repeated declarations disable
+// every occurrence in that file. Disablement propagates through --config references, and selecting
+// a disabled name is a hard error. Only the permitted control locations depend on the source.
+ConfigFileValidation ValidateConfigFile(
+    config::ConfigFile file,
     const std::vector<std::string>& selected_configs,
-    std::string_view path = "/etc/xff.ini");
+    std::string_view path = "/etc/xff.ini",
+    config::Source source = config::Source::kSystem);
 
 // Applies global options in resolution order and ANDs the config expression with the CLI expression.
 // Literal primary operands retain their role; they cannot become global options.

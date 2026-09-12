@@ -34,7 +34,9 @@
 
 ### Configuration and policy
 
-- Real system INI fixtures cover independent invalid global lines, atomic named-section disablement,
+- All config tiers share the INI parser. Tests reject repeated declarations per file, preserve
+  cross-file refinements and repeated composition references, and exercise literal colon names.
+- Real INI fixtures cover independent invalid global lines, atomic named-section disablement,
   transitive references, plain section names, and the scope and uniqueness of skip-control pairs.
 - Global execution and explicit-file prohibitions remain authoritative over lower-trust arming and
   permission grants, including when automatic defaults are suppressed.

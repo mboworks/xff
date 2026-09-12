@@ -5,5 +5,7 @@
 [policy]
 --color=never
 
-common: --color=never
-fuzz: --jobs=2
+--color=never
+
+[fuzz]
+--jobs=2

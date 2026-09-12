@@ -15,54 +15,14 @@
 
 #include "xff/config/xffrc.h"
 
-#include <cstddef>
-#include <string>
 #include <string_view>
-#include <vector>
 
-#include "absl/strings/ascii.h"
-#include "absl/strings/str_split.h"
+#include "xff/config/ini.h"
 
 namespace xff::config {
-namespace {
 
-// Splits a selector token (known to end in ':') into base and config:
-// "xff:debug:" -> {"xff", "debug"}; "common:" -> {"common", ""}; ":" -> {"", ""}.
-RcLine SplitSelector(std::string_view selector) {
-  selector.remove_suffix(1);  // drop the known trailing ':'
-  const std::vector<std::string_view> parts = absl::StrSplit(selector, ':');
-  RcLine line;
-  if (!parts.empty()) {
-    line.base = std::string(parts[0]);
-  }
-  if (parts.size() >= 2) {
-    line.config = std::string(parts[1]);
-  }
-  return line;
-}
-
-}  // namespace
-
-std::vector<RcLine> ParseXffrc(std::string_view text) {
-  std::vector<RcLine> lines;
-  for (const std::string_view raw : absl::StrSplit(text, '\n')) {
-    const std::string_view trimmed = absl::StripAsciiWhitespace(raw);
-    if (trimmed.empty() || trimmed.front() == '#') {
-      continue;  // blank or comment
-    }
-    const std::vector<std::string_view> tokens = absl::StrSplit(trimmed, absl::ByAnyChar(" \t"), absl::SkipEmpty());
-    RcLine line;
-    std::size_t first_flag = 0;
-    if (!tokens.empty() && tokens.front().back() == ':') {
-      line = SplitSelector(tokens.front());  // a leading "selector:" token
-      first_flag = 1;
-    }
-    for (std::size_t i = first_flag; i < tokens.size(); ++i) {
-      line.flags.emplace_back(tokens[i]);
-    }
-    lines.push_back(std::move(line));
-  }
-  return lines;
+ConfigFile ParseXffrc(std::string_view text) {
+  return ParseIni(text);
 }
 
 }  // namespace xff::config

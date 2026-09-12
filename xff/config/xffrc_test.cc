@@ -24,60 +24,42 @@
 namespace xff::config {
 namespace {
 
-using ::testing::AllOf;
 using ::testing::ElementsAre;
-using ::testing::Field;
 using ::testing::IsEmpty;
-using ::testing::Matcher;
+using ::testing::SizeIs;
 
 struct XffrcTest : ::testing::Test {};
 
-// Matches an RcLine by its base/config selectors and a matcher over its flags,
-// so one ElementsAre(...) covers line count, order, selectors, and flags at once.
-Matcher<RcLine> RcLineIs(
-    const std::string& base,
-    const std::string& config,
-    const Matcher<std::vector<std::string>>& flags) {
-  return AllOf(
-      Field("base", &RcLine::base, base), Field("config", &RcLine::config, config),
-      Field("flags", &RcLine::flags, flags));
+TEST_F(XffrcTest, SharedGrammarPreservesGlobalsSectionsAndLocations) {
+  const ConfigFile file = ParseXffrc("# comment\n--color = auto\n[dev]\n-type f\n; comment");
+  EXPECT_THAT(file.globals, ElementsAre("--color=auto"));
+  ASSERT_THAT(file.named, SizeIs(1));
+  EXPECT_THAT(file.named[0].name, "dev");
+  EXPECT_THAT(file.named[0].number, 3);
+  ASSERT_THAT(file.named[0].lines, SizeIs(1));
+  EXPECT_THAT(file.named[0].lines[0].tokens, ElementsAre("-type", "f"));
+  EXPECT_THAT(file.named[0].lines[0].number, 4);
 }
 
-TEST_F(XffrcTest, SkipsBlanksAndComments) {
-  EXPECT_THAT(ParseXffrc("\n  \n# a comment\n   # indented comment\n"), IsEmpty());
+TEST_F(XffrcTest, NamesWithColonsAreLiteralAndCommonIsAnOrdinaryName) {
+  const ConfigFile file = ParseXffrc("[common]\n--hidden\n[xff:debug]\n--jobs=1");
+  EXPECT_THAT(file.globals, IsEmpty());
+  ASSERT_THAT(file.named, SizeIs(2));
+  EXPECT_THAT(file.named[0].name, "common");
+  EXPECT_THAT(file.named[1].name, "xff:debug");
 }
 
-TEST_F(XffrcTest, BareFlagsAreCommonAnyConfig) {
-  EXPECT_THAT(ParseXffrc("--color=auto --sort"), ElementsAre(RcLineIs("", "", ElementsAre("--color=auto", "--sort"))));
+TEST_F(XffrcTest, RepeatedEmptyHeadersArePreservedForValidation) {
+  const ConfigFile file = ParseXffrc("[dev]\n[dev]");
+  ASSERT_THAT(file.named, SizeIs(2));
+  EXPECT_THAT(file.named[0].lines, IsEmpty());
+  EXPECT_THAT(file.named[1].lines, IsEmpty());
 }
 
-TEST_F(XffrcTest, BaseSelector) {
-  EXPECT_THAT(ParseXffrc("xff: --format=jsonl"), ElementsAre(RcLineIs("xff", "", ElementsAre("--format=jsonl"))));
-}
-
-TEST_F(XffrcTest, BaseAndConfigSelector) {
-  EXPECT_THAT(
-      ParseXffrc("xff:debug: --format=jsonl --jobs=1"),
-      ElementsAre(RcLineIs("xff", "debug", ElementsAre("--format=jsonl", "--jobs=1"))));
-}
-
-TEST_F(XffrcTest, CommonSelectorPreservedVerbatim) {
-  // The loader treats "common" == "", but the parser preserves it verbatim.
-  EXPECT_THAT(ParseXffrc("common: --color=auto"), ElementsAre(RcLineIs("common", "", ElementsAre("--color=auto"))));
-}
-
-TEST_F(XffrcTest, SelectorOnlyLineHasNoFlags) {
-  EXPECT_THAT(
-      ParseXffrc("find: --warn\nxff:\nxff: --format=csv"),
-      ElementsAre(
-          RcLineIs("find", "", ElementsAre("--warn")), RcLineIs("xff", "", IsEmpty()),  // selector with no flags
-          RcLineIs("xff", "", ElementsAre("--format=csv"))));
-}
-
-TEST_F(XffrcTest, FlagValueWithColonIsNotASelector) {
-  EXPECT_THAT(
-      ParseXffrc("--config=xff:2"),  // ends in '2', not ':'
-      ElementsAre(RcLineIs("", "", ElementsAre("--config=xff:2"))));
+TEST_F(XffrcTest, OldSelectorSyntaxHasNoSpecialMeaning) {
+  const ConfigFile file = ParseXffrc("dev: --hidden");
+  EXPECT_THAT(file.globals, ElementsAre("dev:", "--hidden"));
+  EXPECT_THAT(file.named, IsEmpty());
 }
 
 }  // namespace

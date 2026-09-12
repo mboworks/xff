@@ -27,15 +27,6 @@
 #include "xff/config/xffrc.h"
 
 namespace xff::config {
-namespace {
-
-void AppendXffrc(std::vector<RcLine>& out, std::string_view text) {
-  const std::vector<RcLine> lines = ParseXffrc(text);
-  out.insert(out.end(), lines.begin(), lines.end());
-}
-
-}  // namespace
-
 std::string UserConfigPath(const DiscoveryOptions& opts) {
   if (opts.xff_config.has_value() && !opts.xff_config->empty()) {
     return *opts.xff_config;
@@ -69,7 +60,7 @@ ConfigInputs DiscoverAutomatic(const DiscoveryOptions& opts, FileReader read) {
     const std::optional<std::string> text = read(user_path);
     inputs.sources.push_back({.path = user_path, .layer = Source::kUser, .found = text.has_value()});
     if (text.has_value()) {
-      AppendXffrc(inputs.user, *text);
+      inputs.user = ParseIni(*text);
     }
   }
   for (const std::string& path : opts.xffrc_files) {
@@ -82,7 +73,7 @@ ConfigInputs DiscoverExplicit(ConfigInputs inputs, FileReader read) {
   for (ExplicitConfig& file : inputs.xffrc) {
     const std::optional<std::string> text = read(file.path);
     inputs.sources.push_back({.path = file.path, .layer = Source::kXffrc, .found = text.has_value()});
-    file.lines = text.has_value() ? ParseXffrc(*text) : std::vector<RcLine>{};
+    file.config = text.has_value() ? ParseIni(*text) : ConfigFile{};
   }
   return inputs;
 }
