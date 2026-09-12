@@ -85,6 +85,14 @@ A line may contain multiple directives: `--hidden --color=never` or `-name foo -
 
 These directives are accepted only inside the stated automatic config files, not on the command line or in an explicitly loaded `--xffrc` file. An allow/deny pair is one setting: where a pair is limited to one occurrence, its positive and negative forms may not both appear.
 
+The system pair is `--require-system-config` / `--no-require-system-config`; the user pair is `--require-user-config` / `--no-require-user-config`.
+
+- System pair: unsectioned system config only.
+- User pair: unsectioned system or user config; the system decision wins.
+- Each pair may appear once per permitted file.
+- Neither pair is allowed in named sections, explicit `.xffrc` files, or on the CLI.
+- `--no-config` requests both skips and fails if either existing file requires application.
+
 - `--no-require-system-config` - permits skipping the system file with `--no-system-config` or `--no-config`; system config only, before the first section, and at most one of this pair
 - `--require-system-config` - forbids skipping the system file, including with `--no-config`; system config only, before the first section, and at most one of this pair
 - `--no-require-user-config` - permits skipping the user file with `--no-user-config` or `--no-config`; before the first section in the system or user config, and at most one of this pair per file; the system decision is authoritative

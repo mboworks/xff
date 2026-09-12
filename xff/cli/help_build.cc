@@ -958,6 +958,18 @@ Section ConfigSection(bool in_full) {
       "These directives are accepted only inside the stated automatic config files, not on the command line or in "
       "an explicitly loaded `--xffrc` file. An allow/deny pair is one setting: where a pair is limited to one "
       "occurrence, its positive and negative forms may not both appear."));
+  controls.children.push_back(ProseOf(
+      "The system pair is `--require-system-config` / `--no-require-system-config`; "
+      "the user pair is `--require-user-config` / `--no-require-user-config`."));
+  Bullets requirements;
+  requirements.items.push_back(ParseInline("System pair: unsectioned system config only."));
+  requirements.items.push_back(ParseInline("User pair: unsectioned system or user config; the system decision wins."));
+  requirements.items.push_back(ParseInline("Each pair may appear once per permitted file."));
+  requirements.items.push_back(
+      ParseInline("Neither pair is allowed in named sections, explicit `.xffrc` files, or on the CLI."));
+  requirements.items.push_back(
+      ParseInline("`--no-config` requests both skips and fails if either existing file requires application."));
+  controls.children.push_back(Content{.node = std::move(requirements)});
   controls.children.push_back(RowsOf(kConfigControls));
   section.children.push_back(Content{.node = std::move(controls)});
 

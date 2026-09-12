@@ -48,12 +48,16 @@ Permission flags (allow and require flags) are config-only directives, not comma
 `--require-*` prevents skipping a file that exists. Neither requires a missing file to exist.
 Without an applicable `--no-require-*`, a present file is required:
 
-- `--no-require-system-config` / `--require-system-config` govern skipping the system file;
-  they are system-only, before the first section;
-- `--no-require-user-config` / `--require-user-config` govern skipping the user file and may
-  appear before the first section in the system or user file; the system decision is authoritative;
-- each pair may occur once per permitted file; a duplicate system global line is diagnosed and ignored;
-- explicit `--xffrc` files cannot supply these controls.
+The system pair is `--require-system-config` / `--no-require-system-config`;
+the user pair is `--require-user-config` / `--no-require-user-config`.
+
+- System pair: unsectioned system config only.
+- User pair: unsectioned system or user config; the system decision wins.
+- Each pair may appear once per permitted file.
+- Neither pair is allowed in named sections, explicit `.xffrc` files, or on the CLI.
+- `--no-config` requests both skips and fails if either existing file requires application.
+
+A duplicate system global line is diagnosed and ignored.
 
 `--allow-xffrc` / `--no-allow-xffrc` control acceptance of explicit files. They may occur in system
 unsectioned globals or user blocks. A system global denial cannot be overridden by the user file,
