@@ -891,7 +891,8 @@ Section ConfigSection(bool in_full) {
       "trusted permission directives allow it; those files may still be inspected for policy. An explicit "
       "command-line `--xffrc` remains active."));
   layers.children.push_back(ProseOf(
-      "Skip permissions are config-only controls placed before the first section. `--no-require-*` makes a file "
+      "Permission flags (allow and require flags) are config-only directives, not command-line options. "
+      "Require flags precede the first section. `--no-require-*` makes a file "
       "optional; "
       "`--require-*` prevents skipping an existing file, without requiring a missing file to exist. The system file "
       "may set one of "
@@ -959,6 +960,12 @@ Section ConfigSection(bool in_full) {
       "occurrence, its positive and negative forms may not both appear."));
   controls.children.push_back(RowsOf(kConfigControls));
   section.children.push_back(Content{.node = std::move(controls)});
+
+  section.children.push_back(ProseOf(
+      "Explicit `.xffrc` files cannot contain the require/no-require pairs, `--allow-xffrc`, "
+      "`--no-allow-xffrc`, or the system-only `--no-allow-exec`. The separate runtime flag `--allow-exec` "
+      "is accepted on the CLI and in config files, but an explicit file's own setting never arms its "
+      "dangerous directives."));
 
   Subsection examples{.title = "Tiny config examples"};
   examples.children.push_back(ProseOf(

@@ -44,7 +44,7 @@ the system file, its authoritative controls. An explicit command-line `--xffrc=F
 remains active: it is not ambient configuration. Ignore files remain
 unaffected.
 
-Permissions are config-only directives, not command-line options. `--no-require-*` makes the corresponding file optional so it may be skipped;
+Permission flags (allow and require flags) are config-only directives, not command-line options. `--no-require-*` makes the corresponding file optional so it may be skipped;
 `--require-*` prevents skipping a file that exists. Neither requires a missing file to exist.
 Without an applicable `--no-require-*`, a present file is required:
 
@@ -58,6 +58,13 @@ Without an applicable `--no-require-*`, a present file is required:
 `--allow-xffrc` / `--no-allow-xffrc` control acceptance of explicit files. They may occur in system
 unsectioned globals or user blocks. A system global denial cannot be overridden by the user file,
 a named section, an explicit file, or suppression of system defaults.
+
+Explicit `.xffrc` files cannot contain the require/no-require pairs or
+`--allow-xffrc` / `--no-allow-xffrc`; these controls govern automatic files or permission
+to load an explicit file, so that file cannot grant itself permission. `--no-allow-exec`
+is also prohibited there because it is system-only. In contrast, `--allow-exec` is a
+separate runtime flag accepted on the CLI and in config files, but an explicit file's
+own `--allow-exec` never arms its dangerous directives.
 
 A requested skip of a present, unauthorized source is a usage error. A missing
 source needs no permission because there is no configuration to suppress.
