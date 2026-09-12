@@ -121,6 +121,18 @@ test::xffrc_flag_loads_an_explicit_file() {
   expect_contains "$(printf 'xffrc\t--color=never')" "${lines[@]}"
 }
 
+test::explicit_ini_globals_apply_without_selecting_named_sections() {
+  local cfg="${TEST_TMPDIR}/explicit_sections.xffrc"
+  local out
+  printf -- '%s\n' '--hidden' '[quiet]' '--color=never' >"${cfg}"
+  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --xffrc="${cfg}" --explain)"
+  expect_matches 'xffrc[[:space:]]+--hidden' "${out}"
+  expect_not_matches 'xffrc[[:space:]]+--color=never' "${out}"
+  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --xffrc="${cfg}" --config=quiet --explain)"
+  expect_matches 'xffrc[[:space:]]+--hidden' "${out}"
+  expect_matches 'xffrc[[:space:]]+--color=never' "${out}"
+}
+
 test::config_expands_at_the_selector_position() {
   local cfg="${TEST_TMPDIR}/ordered_config"
   printf -- '--jobs=1\n\n[plain]\n--color=never' >"${cfg}"

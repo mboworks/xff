@@ -122,6 +122,17 @@ Refine `[dev]` across files: the system file supplies `--color=auto`, the user f
 
 `--config=checks` composes configurations; repeated references are allowed and each contributing line applies at most once. Later-file refinements wait for the earlier file's section to finish. Section names are literal: `[common]` is named, and `[xff:debug]` matches only `--config=xff:debug`. Unconditional flags go before the first section.
 
+An explicit `task.xffrc` uses exactly the same INI format. Its unsectioned flags apply when loaded; named flags apply only when that configuration is selected:
+
+```ini
+--hidden
+
+[quiet]
+--color=never
+```
+
+`xff . --xffrc=task.xffrc` applies `--hidden`; adding `--config=quiet` also applies `--color=never`. The invocation name or another config's `--config=quiet` can also select the section. A selector alone does not discover files. Unsectioned `--config=NAME` directives can select sections when the file loads. There is no automatic `.xffrc` discovery.
+
 Permit only the user-file skip: these unsectioned system controls allow `--no-user-config`, reject `--no-config` and `--no-system-config`, and override the user file's own skip permission.
 
 ```ini

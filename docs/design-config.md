@@ -94,7 +94,7 @@ nothing; use `-name foo -o -name bar` for either name. Parentheses group express
 predicates and actions are parsed as an expression, then ANDed as a group with the command-line
 expression; global options retain their application order. `-type` and `-xtype` accept only the
 registered letters `b,c,d,f,l,p,s`, individually or as non-empty comma lists. `-type garbage` is
-a usage error on the CLI and invalidates its line or named section in the system config.
+a usage error on the CLI and invalidates its line or named section in any config file.
 
 Every unconditional line is validated independently. An invalid line is diagnosed with its file,
 line number, source text, and command-line validation error, then ignored without suppressing other
@@ -289,6 +289,30 @@ With no system prohibition, `task.rc` may contain:
 command line or an applying automatic config permits it through the config gate. Putting
 `--allow-exec` in `task.rc` itself never grants that permission. Arming does not bypass the
 runtime guards on destructive actions.
+
+## Explicit `.xffrc` files
+
+An `.xffrc` file uses exactly the same INI format as the system and user files. Loading
+it applies its unsectioned flags; each `[NAME]` section applies only when that name is
+selected. For example, `task.xffrc` can contain both:
+
+```ini
+--hidden
+
+[quiet]
+--color=never
+```
+
+`xff . --xffrc=task.xffrc` applies `--hidden`. Adding `--config=quiet` also applies
+`--color=never`. A name can also be selected by the invocation name or by another
+config's `--config=NAME` directive; it need not be repeated on the command line.
+Selecting a name does not discover files: `--config=quiet` alone does not load `task.xffrc`.
+Unsectioned flags can themselves include `--config=NAME` to select a section when the
+file loads. Config-only authority controls retain their source restrictions.
+
+No `.xffrc` is loaded automatically from the current directory, search roots, or
+ancestors. Each explicit file requires `--xffrc=FILE` and passes the admission and
+safety checks described above.
 
 ## Resolution and inspection
 
