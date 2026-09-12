@@ -1,0 +1,3 @@
+both: -name foo -name bar
+either: -name foo -o -name bar
+mixed: --hidden --color=never -name foo

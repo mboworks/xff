@@ -68,14 +68,18 @@ xff configuration. Options resolve from layered config tiers, then the command l
 
 ### Layers (lowest to highest precedence)
 
-- `system config` - machine-wide defaults (plus a root-owned `[policy]` that can hard-deny arming)
+- `system config` - machine-wide defaults (plus root-owned global controls that can prohibit arming)
 - `user config` - your personal defaults
 - `--xffrc=FILE` - an explicitly named file (repeatable) - a NON-ARMING tier
 - `command line` - flags and `--config`, highest
 
 There is no project or ancestor `.xffrc` discovery: config comes from the system and user files plus any `--xffrc` you name. `--no-config` suppresses the automatic system and user tiers when their trusted permission directives allow it; those files may still be inspected for policy. An explicit command-line `--xffrc` remains active.
 
-Skip permissions are config-only controls placed before the first section. The system file may set one of `--allow-no-config` / `--no-allow-no-config` once, one of `--allow-no-system-config` / `--no-allow-no-system-config` once and one of `--allow-no-user-config` / `--no-allow-no-user-config` once. Each pair controls only its corresponding command-line skip flag. The user file may set its user-control pair once before the first selector block. A system user-control decision is authoritative over the user file. Explicit `--xffrc` files may not contain any of these controls. Separately, `--allow-xffrc` / `--no-allow-xffrc` is a normal config-only setting usable in system defaults or any user config block; ordinary selection and precedence decide whether command-line `--xffrc=FILE` is accepted, while system policy may forbid the user from enabling it.
+Skip permissions are config-only controls placed before the first section. The system file may set one of `--allow-no-config` / `--no-allow-no-config` once, one of `--allow-no-system-config` / `--no-allow-no-system-config` once and one of `--allow-no-user-config` / `--no-allow-no-user-config` once. Each pair controls only its corresponding command-line skip flag. The user file may set its user-control pair once before the first selector block. A system user-control decision is authoritative over the user file. Explicit `--xffrc` files may not contain any of these controls. Separately, `--allow-xffrc` / `--no-allow-xffrc` is a normal config-only setting usable in system defaults or any user config block; user selection and precedence decide whether command-line `--xffrc=FILE` is accepted, and an unsectioned system denial cannot be overridden. Admission is checked before explicit paths are opened.
+
+The system file writes unconditional options with their exact command-line spelling before the first section, and named configurations as plain `[NAME]` sections. For example, write `--color=auto`, then `[dev]` and `-E`; do not remove the option dashes or add a `config` section prefix. Global lines are validated independently and an invalid one is diagnosed and ignored. Named sections are atomic: one invalid line disables the entire section. Disablement propagates through `--config=NAME` references, and selecting a disabled section is a usage error. Thus `-E development` disables its section because `-E` takes no value and `development` is an unexpected token.
+
+A line may contain multiple directives: `--hidden --color=never` or `-name foo -name bar`. Adjacent predicates mean AND; use `-name foo -o -name bar` for either name. Config predicates and actions form an expression that is ANDed as a group with the CLI expression. Each primary consumes only its own arguments. Closed choices are validated by the shared CLI parser: `-type garbage` is invalid, while `-type f,d` is a valid any-of list.
 
 ### Config-only controls
 
@@ -88,7 +92,35 @@ These directives are accepted only inside the stated automatic config files, not
 - `--allow-no-user-config` - authorizes command-line `--no-user-config`; before the first section in the system or user config, and at most one of this pair per file; the system decision is authoritative
 - `--no-allow-no-user-config` - denies command-line `--no-user-config`; before the first section in the system or user config, and at most one of this pair per file; the system decision is authoritative
 - `--allow-xffrc` - allows command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config selection and last-value precedence
-- `--no-allow-xffrc` - denies command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config selection and last-value precedence
+- `--no-allow-xffrc` - denies command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config selection and last-value precedence; an unsectioned system denial is authoritative
+- `--no-allow-exec` - prohibits dangerous directives in user and explicit configs, even with CLI arming; system-only, before the first section; remains authoritative when system defaults are suppressed
+
+### Tiny config examples
+
+Defaults and a named override in `/etc/xff.ini`: `xff . --config=dev` ends with `--color=never`; adding `--color=always` after the selector overrides it.
+
+```ini
+--color=auto
+[dev]
+--color=never
+```
+
+Permit only the user-file skip: these unsectioned system controls allow `--no-user-config`, reject `--no-config` and `--no-system-config`, and override the user file's own skip permission.
+
+```ini
+--no-allow-no-config
+--no-allow-no-system-config
+--allow-no-user-config
+```
+
+To prevent dangerous directives from lower-trust configs, put `--no-allow-exec` before every section in an administrator-owned `/etc/xff.ini` that those users cannot modify. User and explicit-file dangerous lines are dropped even with CLI `--allow-exec`, and the prohibition survives suppression of system defaults. Add `--no-allow-xffrc` to reject explicit files altogether:
+
+```ini
+--no-allow-exec
+--no-allow-xffrc
+```
+
+Neither user `--allow-xffrc` nor an explicit file's own `--allow-exec` can undo those prohibitions. These controls constrain config-file capabilities, not actions typed directly on the CLI. Runtime `--safe`, `--dry-run`, and action-specific confirmation remain separate. Without a system prohibition, `--allow-exec` from the CLI or an applying automatic config permits dangerous explicit-file lines through the config gate; the explicit file cannot arm itself.
 
 ### Choosing a style
 
@@ -100,7 +132,7 @@ Within one logical config section, repeating an overriding setting keeps the nor
 
 ### Arming dangerous directives
 
-A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`, or `-delete`) carried by an `--xffrc` file is inert unless `--allow-exec` is set from a trusted tier (the command line or the system/user config, never an `--xffrc` file itself). Unarmed lines are dropped with a warning; the root system `[policy]` can hard-deny even `--allow-exec`.
+A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`, or `-delete`) carried by an `--xffrc` file is inert unless `--allow-exec` is set from a trusted tier (the command line or the system/user config, never an `--xffrc` file itself). Unarmed lines are dropped with a warning; the unsectioned system `--no-allow-exec` prohibition overrides even CLI arming.
 
 ## Options
 
@@ -110,7 +142,7 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
 - `--no-config` - suppress automatic system and user configuration when authorized _(global, xff)_
   Suppresses the automatic system defaults and user configuration. A present source is still inspected for policy. The system config must authorize this combined request with a leading `--allow-no-config`; `--no-allow-no-config` explicitly denies it. The granular permissions govern only their corresponding granular command-line flags. An explicitly named `--xffrc=FILE` remains active. Ignore files such as `.gitignore` and `.xffignore` are traversal inputs, not config files, and are unaffected.
 - `--no-system-config` - suppress system defaults when the system config permits it _(global, xff)_
-  Suppresses `/etc/xff.ini` defaults but still reads its `[policy]` and leading config-only permission controls. A present file must grant permission with `--allow-no-system-config`; `--no-allow-no-system-config` explicitly denies it. Without either grant, the request is a usage error. The user config and explicit `--xffrc` files remain active.
+  Suppresses `/etc/xff.ini` defaults but still reads its leading authoritative config-only permission controls. A present file must grant permission with `--allow-no-system-config`; `--no-allow-no-system-config` explicitly denies it. Without either grant, the request is a usage error. The user config and explicit `--xffrc` files remain active.
 - `--no-user-config` - suppress user configuration when an authoritative config permits it _(global, xff)_
   Suppresses the selected user config after inspecting it for permission. The system config may authoritatively grant or deny permission with `--allow-no-user-config` / `--no-allow-no-user-config`; without either, the user file may decide for itself with the same pair. The separate `--allow-no-config` pair governs only `--no-config`. System defaults and explicit `--xffrc` files remain active.
 - `--xffrc=FILE` - also load a specific config file (a non-arming tier; see --allow-exec) _(global, xff)_
@@ -118,7 +150,7 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
   Affects: --allow-exec
   Affected by: --allow-exec
 - `--allow-exec` - arm dangerous directives loaded from an --xffrc file (exec family, -delete) _(global, xff)_
-  Permits the sensitive/destructive directives (the exec family -exec/-execdir/-ok and -capture, and the destructive -delete) carried by an --xffrc-loaded file to actually run. Honored only from a trusted tier - typed on the CLI, or set in the user/system config - never from an --xffrc file (so a named config cannot authorize itself). The root-owned system [policy] can hard-deny even this. Without it, such lines are inert (dropped + warned); -delete still obeys its own --safe/--dry-run guards.
+  Permits the sensitive/destructive directives (the exec family -exec/-execdir/-ok and -capture, and the destructive -delete) carried by an --xffrc-loaded file to actually run. Honored only from a trusted tier - typed on the CLI, or set in the user/system config - never from an --xffrc file (so a named config cannot authorize itself). The unsectioned system `--no-allow-exec` control can prohibit even this. Without it, such lines are inert (dropped + warned); -delete still obeys its own --safe/--dry-run guards.
   Affects: --xffrc
   Affected by: --xffrc
 - `--explain` - print the resolved configuration and exit _(global, xff)_
@@ -628,9 +660,9 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
 - `-hasheq[:ALGO[/ENCODING]] EXPECTED` - true when the digest equals EXPECTED (a field template); -hasheq:ALGO[/ENC] (xff) _(test, xff)_
   Computes the file's digest and is true when it equals EXPECTED - a {field} template evaluated per entry, so it can name a sidecar value like `{def.SUMS}` or a capture. `-hasheq:ALGO[/ENCODING]` picks the algorithm (sha256 default; also sha1/sha512/...) and encoding (hex default, or base64); the same grammar as `-hash` / {hash}. It is a strict equality test (hex folds case). `! -hasheq` selects files whose digest differs (drift / corruption). Reads the whole file, so it is expensive.
 - `-type ARG` - match the file type (f, d, l, b, c, p, s) _(test, find)_
-  Matches the entry's type by letter: `f`=regular file, `d`=directory, `l`=symlink, `b`/`c`=block / char device, `p`=FIFO, `s`=socket. A GNU-style comma list is any-of, so `-type f,l` matches regular files or symlinks. Under the default `-P` a symlink is type `l`; `-xtype` tests its target's type instead.
+  Matches the entry's type by letter: `f`=regular file, `d`=directory, `l`=symlink, `b`/`c`=block / char device, `p`=FIFO, `s`=socket. A GNU-style comma list is any-of, so `-type f,l` matches regular files or symlinks. Under the default `-P` a symlink is type `l`; `-xtype` tests its target's type instead. Unknown type letters and empty list elements are usage errors.
 - `-xtype ARG` - match the file type of a symlink's target _(test, find)_
-  Like `-type`, but for a symlink it tests the type of the link's TARGET (the link is followed). A broken symlink has no target, so it reports as a symlink and `-xtype l` matches it, matching GNU find under the default `-P`. On a non-symlink it is identical to `-type`.
+  Like `-type`, but for a symlink it tests the type of the link's TARGET (the link is followed). A broken symlink has no target, so it reports as a symlink and `-xtype l` matches it, matching GNU find under the default `-P`. On a non-symlink it is identical to `-type`. Accepts the same type letters and comma lists; unknown or empty values are usage errors.
 - `-mime ARG` - match the media type by extension against a glob, e.g. -mime 'image/*' (xff) _(test, xff)_
   xff extension: matches the media (MIME) type derived from the filename extension against a shell glob, so `image/*` matches png/jpg/... and `text/plain` is exact. The lean binary has a curated common-type table; the removable `mime-db` build extra supplies thousands of types, and repeatable `--mime-vocabulary=FILE` JSON layers override mappings and metadata. This is fast name classification, not content sniffing. The same value is the `{mime}` field; `{mime-category}`, `{mime-description}`, `{mime-charset}`, `{mime-compressible}`, and `{mime-source}` expose its metadata. Matching is always case-insensitive (MIME names are case-insensitive per RFC 2045/6838), so `IMAGE/*` behaves like `image/*`; `--case` / -i / -s do not affect it. See `--help=content` for the overlay schema and conflict policy.
   Affected by: --mime-vocabulary

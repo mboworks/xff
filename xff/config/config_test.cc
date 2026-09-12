@@ -33,6 +33,7 @@ using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
+using ::testing::SizeIs;
 
 struct ConfigTest : ::testing::Test {};
 
@@ -44,7 +45,7 @@ testing::Matcher<ResolvedFlag> FlagIs(const std::string& flag, Source source) {
 
 TEST_F(ConfigTest, NoConfigYieldsEmpty) {
   ConfigInputs in;
-  in.system.defaults = {"--color=auto"};
+  in.system.globals = {"--color=auto"};
   in.user = ParseXffrc("common: --sort");
   in.no_system_config = true;
   in.no_user_config = true;
@@ -53,7 +54,7 @@ TEST_F(ConfigTest, NoConfigYieldsEmpty) {
 
 TEST_F(ConfigTest, GranularSkipControlsSuppressOnlyTheirAutomaticTier) {
   ConfigInputs in;
-  in.system.defaults = {"--color=auto", "--allow-no-system-config"};
+  in.system.globals = {"--color=auto", "--allow-no-system-config"};
   in.user = ParseXffrc("common: --sort\ncommon: --allow-no-user-config");
   in.xffrc = {{.path = "/named", .lines = ParseXffrc("common: --jobs=2")}};
   in.no_system_config = true;
@@ -66,14 +67,53 @@ TEST_F(ConfigTest, GranularSkipControlsSuppressOnlyTheirAutomaticTier) {
 
 TEST_F(ConfigTest, SkipPermissionDirectivesNeverBecomeRuntimeGlobals) {
   ConfigInputs in;
-  in.system.defaults = {"--allow-no-config", "--allow-no-user-config", "--color=auto"};
+  in.system.globals = {"--allow-no-config", "--allow-no-user-config", "--color=auto"};
   in.user = ParseXffrc("common: --allow-no-user-config --sort");
   EXPECT_THAT(ResolveConfig(in), ElementsAre(FlagIs("--color=auto", Source::kSystem), FlagIs("--sort", Source::kUser)));
 }
 
+TEST_F(ConfigTest, SystemExecProhibitionOverridesEveryArmingTierEvenWhenDefaultsAreSkipped) {
+  ConfigInputs inputs;
+  inputs.system.globals = {"--no-allow-exec", "--allow-exec"};
+  inputs.user = ParseXffrc("common: --allow-exec");
+  inputs.xffrc = {{.path = "/named", .lines = ParseXffrc("common: --allow-exec")}};
+  EXPECT_THAT(ArmedFromTrustedTier(inputs, {"--allow-exec"}, "--allow-exec"), IsFalse());
+  inputs.no_system_config = true;
+  EXPECT_THAT(ArmedFromTrustedTier(inputs, {"--allow-exec"}, "--allow-exec"), IsFalse());
+}
+
+TEST_F(ConfigTest, TransitiveAutomaticSelectorsCanArmAnExplicitFile) {
+  ConfigInputs inputs;
+  inputs.system = ParseIni("[outer]\n--config=inner\n[inner]\n--allow-exec");
+  inputs.configs = {"outer"};
+  EXPECT_THAT(ArmedFromTrustedTier(inputs, {}, "--allow-exec"), IsTrue());
+}
+
+TEST_F(ConfigTest, ExplicitFileCannotArmItselfThroughAnAutomaticNamedConfig) {
+  ConfigInputs inputs;
+  inputs.system = ParseIni("[arm]\n--allow-exec");
+  inputs.xffrc = {{.path = "/named", .lines = ParseXffrc("common: --config=arm")}};
+  EXPECT_THAT(ArmedFromTrustedTier(inputs, {"--xffrc=/named"}, "--allow-exec"), IsFalse());
+}
+
+TEST_F(ConfigTest, DirectiveTokensExcludeFixedAndTerminatedArguments) {
+  const std::vector<std::string> tokens = {
+      "-printf", "--config=literal", "-exec", "echo", "--allow-exec", ";", "--hidden",
+  };
+  EXPECT_THAT(DirectiveTokens(tokens), ElementsAre("-printf", "-exec", "--hidden"));
+}
+
+TEST_F(ConfigTest, PrimaryArgumentsCannotSelectOrArmConfigurations) {
+  ConfigInputs inputs;
+  inputs.system = ParseIni("[inner]\n--color=never");
+  inputs.user = ParseXffrc("common: -exec echo --config=inner --allow-exec ;");
+  EXPECT_THAT(ArmedFromTrustedTier(inputs, {}, "--allow-exec"), IsFalse());
+  EXPECT_THAT(ResolveConfigInOrder(inputs, {}, "xff"), SizeIs(5));
+}
+
 TEST_F(ConfigTest, SystemDefaultsAreLowestPrecedence) {
   ConfigInputs in;
-  in.system.defaults = {"--color=auto", "--jobs=4"};
+  in.system.globals = {"--color=auto", "--jobs=4"};
   EXPECT_THAT(
       ResolveConfig(in), ElementsAre(FlagIs("--color=auto", Source::kSystem), FlagIs("--jobs=4", Source::kSystem)));
 }
@@ -105,7 +145,7 @@ TEST_F(ConfigTest, ConfigSelectorGatedByNamedConfig) {
 
 TEST_F(ConfigTest, LayerPrecedenceSystemThenUser) {
   ConfigInputs in;
-  in.system.defaults = {"--color=auto"};
+  in.system.globals = {"--color=auto"};
   in.user = ParseXffrc("common: --sort\ncommon: --color=never");  // user wins over the system default
   EXPECT_THAT(
       ResolveConfig(in), ElementsAre(
@@ -125,9 +165,9 @@ TEST_F(ConfigTest, ArmedFromTrustedTierAcceptsCliUserSystemNotXffrc) {
   ConfigInputs in;
   EXPECT_THAT(ArmedFromTrustedTier(in, {"--allow-exec"}, "--allow-exec"), IsTrue());  // typed on the CLI
   EXPECT_THAT(ArmedFromTrustedTier(in, {}, "--allow-exec"), IsFalse());               // nowhere
-  in.system.defaults = {"--allow-exec"};
+  in.system.globals = {"--allow-exec"};
   EXPECT_THAT(ArmedFromTrustedTier(in, {}, "--allow-exec"), IsTrue());  // system defaults
-  in.system.defaults = {};
+  in.system.globals = {};
   in.user = ParseXffrc("common: --allow-exec");
   EXPECT_THAT(ArmedFromTrustedTier(in, {}, "--allow-exec"), IsTrue());  // an applying user line
   in.user = {};
@@ -237,6 +277,24 @@ TEST_F(ConfigTest, ConfigSuppliedSelectorExpandsAtItsOwnPosition) {
       ElementsAre(
           FlagIs("--config=outer", Source::kCli), FlagIs("--warn", Source::kUser),
           FlagIs("--config=inner", Source::kUser), FlagIs("--jobs=2", Source::kUser), FlagIs("--sort", Source::kUser)));
+}
+
+TEST_F(ConfigTest, SystemNamedSectionsExpandTransitivelyAtSelectorPosition) {
+  ConfigInputs in;
+  in.system = ParseIni(
+      "--color=auto\n"
+      "[outer]\n"
+      "--hidden\n"
+      "--config=inner\n"
+      "[inner]\n"
+      "-E\n");
+
+  EXPECT_THAT(
+      ResolveConfigInOrder(in, {"--config=outer"}, "xff"),
+      ElementsAre(
+          FlagIs("--color=auto", Source::kSystem), FlagIs("--config=outer", Source::kCli),
+          FlagIs("--hidden", Source::kSystem), FlagIs("--config=inner", Source::kSystem),
+          FlagIs("-E", Source::kSystem)));
 }
 
 TEST_F(ConfigTest, ExplainSourcesListsActiveStyleAndConsultedFiles) {

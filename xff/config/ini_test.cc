@@ -24,63 +24,56 @@
 namespace xff::config {
 namespace {
 
-using ::testing::AllOf;
 using ::testing::ElementsAre;
-using ::testing::Field;
+using ::testing::Eq;
 using ::testing::IsEmpty;
-using ::testing::Matcher;
+using ::testing::SizeIs;
 
 struct IniTest : ::testing::Test {};
 
-// Matches a PolicyRule by its layer, allow/deny flag, and a matcher over its
-// tokens, so one ElementsAre(...) covers rule count, order, and every field.
-Matcher<PolicyRule> PolicyRuleIs(
-    const std::string& layer,
-    bool allow,
-    const Matcher<std::vector<std::string>>& tokens) {
-  return AllOf(
-      Field("layer", &PolicyRule::layer, layer), Field("allow", &PolicyRule::allow, allow),
-      Field("tokens", &PolicyRule::tokens, tokens));
+TEST_F(IniTest, GlobalLinesRenderToCliTokens) {
+  const SystemConfig cfg = ParseIni("--allow-no-config\n--color = auto\n-E\n");
+  EXPECT_THAT(cfg.globals, ElementsAre("--allow-no-config", "--color=auto", "-E"));
+  EXPECT_THAT(cfg.global_lines, SizeIs(3));
 }
 
-TEST_F(IniTest, DefaultsRenderToCliTokens) {
-  const SystemConfig cfg = ParseIni("--allow-no-config\n[defaults]\n--color = auto\n--warn\n");
-  EXPECT_THAT(cfg.globals, ElementsAre("--allow-no-config"));
-  EXPECT_THAT(cfg.defaults, ElementsAre("--color=auto", "--warn"));
-  EXPECT_THAT(cfg.policy, IsEmpty());
+TEST_F(IniTest, GlobalLinesMayContainMultipleDirectivesAndArguments) {
+  const SystemConfig cfg = ParseIni("--hidden --color=never\n-name foo -name bar");
+  EXPECT_THAT(cfg.globals, ElementsAre("--hidden", "--color=never", "-name", "foo", "-name", "bar"));
 }
 
-TEST_F(IniTest, PolicyAllowDenyAndClassTokens) {
-  const SystemConfig cfg = ParseIni(
-      "[policy]\n"
-      "user.allow = --sort, --color, --format\n"
-      "xffrc.deny = --jobs\n"
-      "user.deny  = @sensitive\n");
-  EXPECT_THAT(
-      cfg.policy,
-      ElementsAre(
-          PolicyRuleIs("user", true, ElementsAre("--sort", "--color", "--format")),
-          PolicyRuleIs("xffrc", false, ElementsAre("--jobs")), PolicyRuleIs("user", false, ElementsAre("@sensitive"))));
+TEST_F(IniTest, PolicyAndDefaultsHaveNoReservedMeaning) {
+  const SystemConfig cfg = ParseIni("[defaults]\n--color=auto\n[policy]\n--hidden\n");
+  ASSERT_THAT(cfg.named, SizeIs(2));
+  EXPECT_THAT(cfg.named[0].name, Eq("defaults"));
+  EXPECT_THAT(cfg.named[1].name, Eq("policy"));
 }
 
-TEST_F(IniTest, CommentsBlanksAndBothSections) {
-  const SystemConfig cfg =
-      ParseIni("; a comment\n# another\n[defaults]\n\n--color = never\n[policy]\nuser.allow = --sort\n");
-  EXPECT_THAT(cfg.defaults, ElementsAre("--color=never"));
-  EXPECT_THAT(cfg.policy, ElementsAre(PolicyRuleIs("user", true, ElementsAre("--sort"))));
-}
-
-TEST_F(IniTest, MalformedPolicyLinesIgnored) {
-  // No '=', no '.', and an unknown kind are each ignored (forgiving parse).
-  const SystemConfig cfg = ParseIni("[policy]\nnonsense\nuser = x\nuser.maybe = x\n");
-  EXPECT_THAT(cfg.policy, IsEmpty());
-}
-
-TEST_F(IniTest, LinesOutsideKnownSectionsIgnored) {
+TEST_F(IniTest, EverySectionNameDefinesAConfig) {
   const SystemConfig cfg = ParseIni("[unknown]\n--foo = bar\n");
   EXPECT_THAT(cfg.globals, IsEmpty());
-  EXPECT_THAT(cfg.defaults, IsEmpty());
-  EXPECT_THAT(cfg.policy, IsEmpty());
+  ASSERT_THAT(cfg.named, SizeIs(1));
+  EXPECT_THAT(cfg.named[0].name, Eq("unknown"));
+  EXPECT_THAT(cfg.named[0].lines[0].tokens, ElementsAre("--foo=bar"));
+}
+
+TEST_F(IniTest, ParsesGlobalOptionsAndPlainNamedSectionsWithSourceLines) {
+  const SystemConfig cfg = ParseIni(
+      "--allow-no-config\n"
+      "--color=auto\n"
+      "[dev]\n"
+      "--color=always\n"
+      "-E\n"
+      "[prod]\n"
+      "--color=never\n");
+
+  ASSERT_THAT(cfg.global_lines, SizeIs(2));
+  EXPECT_THAT(cfg.global_lines[0].tokens, ElementsAre("--allow-no-config"));
+  ASSERT_THAT(cfg.named, SizeIs(2));
+  EXPECT_THAT(cfg.named[0].name, Eq("dev"));
+  EXPECT_THAT(cfg.named[0].lines, SizeIs(2));
+  EXPECT_THAT(cfg.named[0].lines[1].tokens, ElementsAre("-E"));
+  EXPECT_THAT(cfg.named[1].name, Eq("prod"));
 }
 
 }  // namespace

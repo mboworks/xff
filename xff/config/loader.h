@@ -62,6 +62,13 @@ std::string UserConfigPath(const DiscoveryOptions& opts);
 // --no-config.
 ConfigInputs Discover(const DiscoveryOptions& opts, FileReader read);
 
+// Reads automatic files and records explicit paths without opening them. Validate the automatic
+// system config and explicit-file admission before completing discovery with DiscoverExplicit.
+ConfigInputs DiscoverAutomatic(const DiscoveryOptions& opts, FileReader read);
+
+// Completes an automatic discovery by reading its explicit paths and recording their sources.
+ConfigInputs DiscoverExplicit(ConfigInputs inputs, FileReader read);
+
 // Extracts the config selectors among `globals` into a DiscoveryOptions (the env
 // fields are left unset for the caller): --no-config, --no-system-config, --no-user-config,
 // --config=NAME (in order),

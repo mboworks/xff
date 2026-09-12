@@ -31,6 +31,7 @@
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_split.h"
 #include "mbo/container/limited_set.h"
 #include "mbo/status/status_macros.h"
 #include "xff/matching/regex/regex.h"
@@ -698,6 +699,23 @@ class ExprParser {
         return nullptr;
       }
       args.push_back(tokens_[pos_++]);
+    }
+    if (!descriptor->argument_choices.empty()) {
+      const std::vector<std::string_view> choices = absl::StrSplit(descriptor->argument_choices, ',');
+      for (const std::string& argument : args) {
+        const std::vector<std::string_view> values = descriptor->argument_choice_list
+                                                         ? std::vector<std::string_view>(absl::StrSplit(argument, ','))
+                                                         : std::vector<std::string_view>{argument};
+        for (const std::string_view value : values) {
+          if (!absl::c_contains(choices, value)) {
+            Fail(
+                absl::StrCat(
+                    "unknown value '", value, "' for ", descriptor->name, " (accepted: ", descriptor->argument_choices,
+                    ")"));
+            return nullptr;
+          }
+        }
+      }
     }
     return MakePredicate(*descriptor, std::move(args));
   }

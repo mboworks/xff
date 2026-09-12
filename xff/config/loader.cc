@@ -18,6 +18,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_cat.h"
@@ -48,14 +49,14 @@ std::string UserConfigPath(const DiscoveryOptions& opts) {
   return "";
 }
 
-ConfigInputs Discover(const DiscoveryOptions& opts, FileReader read) {
+ConfigInputs DiscoverAutomatic(const DiscoveryOptions& opts, FileReader read) {
   ConfigInputs inputs;
   inputs.no_config = opts.no_config;
   inputs.no_system_config = opts.no_system_config;
   inputs.no_user_config = opts.no_user_config;
   inputs.configs = opts.configs;
 
-  // System defaults and policy, at the lowest-precedence config tier.
+  // System globals and named configurations, at the lowest-precedence config tier.
   {
     const std::optional<std::string> text = read("/etc/xff.ini");
     inputs.sources.push_back({.path = "/etc/xff.ini", .layer = Source::kSystem, .found = text.has_value()});
@@ -71,16 +72,23 @@ ConfigInputs Discover(const DiscoveryOptions& opts, FileReader read) {
       AppendXffrc(inputs.user, *text);
     }
   }
-  // Explicit --xffrc files form their own tier (inputs.xffrc), in order. Naming the file is the
-  // consent to LOAD it, not to arm it: its dangerous directives stay inert unless --allow-exec is
-  // set from a trusted tier (the gate enforces this). There is no auto-discovered project layer.
   for (const std::string& path : opts.xffrc_files) {
-    const std::optional<std::string> text = read(path);
-    inputs.sources.push_back({.path = path, .layer = Source::kXffrc, .found = text.has_value()});
-    inputs.xffrc.push_back(
-        ExplicitConfig{.path = path, .lines = text.has_value() ? ParseXffrc(*text) : std::vector<RcLine>{}});
+    inputs.xffrc.push_back(ExplicitConfig{.path = path});
   }
   return inputs;
+}
+
+ConfigInputs DiscoverExplicit(ConfigInputs inputs, FileReader read) {
+  for (ExplicitConfig& file : inputs.xffrc) {
+    const std::optional<std::string> text = read(file.path);
+    inputs.sources.push_back({.path = file.path, .layer = Source::kXffrc, .found = text.has_value()});
+    file.lines = text.has_value() ? ParseXffrc(*text) : std::vector<RcLine>{};
+  }
+  return inputs;
+}
+
+ConfigInputs Discover(const DiscoveryOptions& opts, FileReader read) {
+  return DiscoverExplicit(DiscoverAutomatic(opts, read), read);
 }
 
 DiscoveryOptions SelectorsFromGlobals(const std::vector<std::string>& globals) {

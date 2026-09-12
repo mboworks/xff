@@ -878,7 +878,7 @@ Section ConfigSection(bool in_full) {
       "command line then adjust. Run `--explain` to print exactly what resolved."));
 
   static constexpr std::array<DocPair, 4> kLayers = {{
-      {"system config", "machine-wide defaults (plus a root-owned `[policy]` that can hard-deny arming)"},
+      {"system config", "machine-wide defaults (plus root-owned global controls that can prohibit arming)"},
       {"user config", "your personal defaults"},
       {"--xffrc=FILE", "an explicitly named file (repeatable) - a NON-ARMING tier"},
       {"command line", "flags and `--config`, highest"},
@@ -899,11 +899,26 @@ Section ConfigSection(bool in_full) {
       "system "
       "user-control decision is authoritative over the user file. Explicit `--xffrc` files may not contain any "
       "of these controls. Separately, `--allow-xffrc` / `--no-allow-xffrc` is a normal config-only setting usable "
-      "in system defaults or any user config block; ordinary selection and precedence decide whether command-line "
-      "`--xffrc=FILE` is accepted, while system policy may forbid the user from enabling it."));
+      "in system defaults or any user config block; user selection and precedence decide whether command-line "
+      "`--xffrc=FILE` is accepted, and an unsectioned system denial cannot be overridden. Admission is checked before "
+      "explicit paths are opened."));
+  layers.children.push_back(ProseOf(
+      "The system file writes unconditional options with their exact command-line spelling before the first "
+      "section, and named configurations as plain `[NAME]` sections. For example, write `--color=auto`, then "
+      "`[dev]` and `-E`; do not remove the option dashes or add a `config` section prefix. Global lines are "
+      "validated independently and an invalid one is diagnosed and ignored. Named sections are atomic: one "
+      "invalid line disables the entire section. Disablement propagates through `--config=NAME` references, and "
+      "selecting a disabled section is a usage error. Thus `-E development` disables its section because `-E` "
+      "takes no value and `development` is an unexpected token."));
+  layers.children.push_back(ProseOf(
+      "A line may contain multiple directives: `--hidden --color=never` or `-name foo -name bar`. Adjacent "
+      "predicates mean AND; use `-name foo -o -name bar` for either name. Config predicates and actions form "
+      "an expression that is ANDed as a group with the CLI expression. Each primary consumes only its own "
+      "arguments. Closed choices are validated by the shared CLI parser: `-type garbage` is invalid, while "
+      "`-type f,d` is a valid any-of list."));
   section.children.push_back(Content{.node = std::move(layers)});
 
-  static constexpr std::array<DocPair, 8> kConfigControls = {{
+  static constexpr std::array<DocPair, 9> kConfigControls = {{
       {"--allow-no-config",
        "authorizes the command-line `--no-config` request to suppress both automatic tiers; system config only, "
        "before the first section, and at most one of this pair"},
@@ -927,7 +942,10 @@ Section ConfigSection(bool in_full) {
        "selection and last-value precedence"},
       {"--no-allow-xffrc",
        "denies command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config "
-       "selection and last-value precedence"},
+       "selection and last-value precedence; an unsectioned system denial is authoritative"},
+      {"--no-allow-exec",
+       "prohibits dangerous directives in user and explicit configs, even with CLI arming; system-only, before "
+       "the first section; remains authoritative when system defaults are suppressed"},
   }};
   Subsection controls{.title = "Config-only controls"};
   controls.children.push_back(ProseOf(
@@ -936,6 +954,30 @@ Section ConfigSection(bool in_full) {
       "occurrence, its positive and negative forms may not both appear."));
   controls.children.push_back(RowsOf(kConfigControls));
   section.children.push_back(Content{.node = std::move(controls)});
+
+  Subsection examples{.title = "Tiny config examples"};
+  examples.children.push_back(ProseOf(
+      "Defaults and a named override in `/etc/xff.ini`: `xff . --config=dev` ends with `--color=never`; "
+      "adding `--color=always` after the selector overrides it."));
+  examples.children.push_back(ExampleOf("--color=auto\n[dev]\n--color=never", "ini"));
+  examples.children.push_back(ProseOf(
+      "Permit only the user-file skip: these unsectioned system controls allow `--no-user-config`, reject "
+      "`--no-config` and `--no-system-config`, and override the user file's own skip permission."));
+  examples.children.push_back(
+      ExampleOf("--no-allow-no-config\n--no-allow-no-system-config\n--allow-no-user-config", "ini"));
+  examples.children.push_back(ProseOf(
+      "To prevent dangerous directives from lower-trust configs, put `--no-allow-exec` before every section "
+      "in an administrator-owned `/etc/xff.ini` that those users cannot modify. User and explicit-file "
+      "dangerous lines are dropped even with CLI `--allow-exec`, and the prohibition survives suppression of "
+      "system defaults. Add `--no-allow-xffrc` to reject explicit files altogether:"));
+  examples.children.push_back(ExampleOf("--no-allow-exec\n--no-allow-xffrc", "ini"));
+  examples.children.push_back(ProseOf(
+      "Neither user `--allow-xffrc` nor an explicit file's own `--allow-exec` can undo those prohibitions. "
+      "These controls constrain config-file capabilities, not actions typed directly on the CLI. Runtime "
+      "`--safe`, `--dry-run`, and action-specific confirmation remain separate. Without a system prohibition, "
+      "`--allow-exec` from the CLI or an applying automatic config permits dangerous explicit-file lines "
+      "through the config gate; the explicit file cannot arm itself."));
+  section.children.push_back(Content{.node = std::move(examples)});
 
   Subsection style{.title = "Choosing a style"};
   style.children.push_back(ProseOf(
@@ -965,7 +1007,7 @@ Section ConfigSection(bool in_full) {
       "A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`, or `-delete`) "
       "carried by an `--xffrc` file is inert unless `--allow-exec` is set from a trusted tier (the command "
       "line or the system/user config, never an `--xffrc` file itself). Unarmed lines are dropped with a "
-      "warning; the root system `[policy]` can hard-deny even `--allow-exec`."));
+      "warning; the unsectioned system `--no-allow-exec` prohibition overrides even CLI arming."));
   section.children.push_back(Content{.node = std::move(arming)});
 
   if (!in_full) {

@@ -68,9 +68,14 @@ absl::Status ValidateSingleControl(
 }
 
 absl::Status ValidateSystemControlLocations(const SystemConfig& system) {
-  for (const std::string& flag : system.defaults) {
-    if (IsNoConfigControl(flag) || IsSystemControl(flag) || IsUserControl(flag)) {
-      return absl::InvalidArgumentError(absl::StrCat(flag, " must precede every system config section"));
+  for (const IniSection& section : system.named) {
+    for (const IniLine& line : section.lines) {
+      for (const std::string_view flag : DirectiveTokens(line.tokens)) {
+        if (IsNoConfigControl(flag) || IsSystemControl(flag) || IsUserControl(flag) || IsXffrcControl(flag)
+            || flag == "--no-allow-exec") {
+          return absl::InvalidArgumentError(absl::StrCat(flag, " must precede every system config section"));
+        }
+      }
     }
   }
   if (absl::Status status = ValidateSingleControl(
@@ -95,8 +100,8 @@ absl::Status ValidateUserControlLocations(const std::vector<RcLine>& user) {
   bool saw_user_section = false;
   for (const RcLine& line : user) {
     saw_user_section = saw_user_section || !line.base.empty() || !line.config.empty();
-    for (const std::string& flag : line.flags) {
-      if (IsNoConfigControl(flag) || IsSystemControl(flag)) {
+    for (const std::string_view flag : DirectiveTokens(line.flags)) {
+      if (IsNoConfigControl(flag) || IsSystemControl(flag) || flag == "--no-allow-exec") {
         return absl::InvalidArgumentError(absl::StrCat(flag, " is permitted only in the system config"));
       }
       if (IsUserControl(flag) && saw_user_section) {
@@ -116,8 +121,9 @@ absl::Status ValidateUserControlLocations(const std::vector<RcLine>& user) {
 absl::Status ValidateExplicitControlLocations(const std::vector<ExplicitConfig>& files) {
   for (const ExplicitConfig& file : files) {
     for (const RcLine& line : file.lines) {
-      for (const std::string& flag : line.flags) {
-        if (IsNoConfigControl(flag) || IsSystemControl(flag) || IsUserControl(flag) || IsXffrcControl(flag)) {
+      for (const std::string_view flag : DirectiveTokens(line.flags)) {
+        if (IsNoConfigControl(flag) || IsSystemControl(flag) || IsUserControl(flag) || IsXffrcControl(flag)
+            || flag == "--no-allow-exec") {
           return absl::InvalidArgumentError(absl::StrCat(flag, " is not permitted in an --xffrc file"));
         }
       }
@@ -145,16 +151,30 @@ bool LineApplies(const RcLine& line, const std::vector<std::string>& configs) {
 bool XffrcAllowed(const ConfigInputs& inputs) {
   bool allowed = true;
   const auto apply = [&](const std::vector<std::string>& flags) {
-    for (const std::string& flag : flags) {
+    for (const std::string_view flag : DirectiveTokens(flags)) {
       if (IsXffrcControl(flag)) {
         allowed = flag == kAllowXffrc;
       }
     }
   };
   apply(inputs.system.globals);
-  apply(inputs.system.defaults);
+  if (!allowed) {
+    return false;  // A global prohibition is authoritative, even when system defaults are skipped.
+  }
+  ConfigInputs automatic = inputs;
+  automatic.xffrc.clear();
+  std::vector<std::string> selectors;
+  for (const std::string& name : inputs.configs) {
+    selectors.push_back(absl::StrCat("--config=", name));
+  }
+  std::vector<std::string> configs = inputs.configs;
+  for (const ResolvedFlag& flag : ResolveConfigInOrder(automatic, selectors, "")) {
+    if (!flag.is_argument && flag.flag.starts_with("--config=")) {
+      configs.push_back(flag.flag.substr(std::string_view("--config=").size()));
+    }
+  }
   for (const RcLine& line : inputs.user) {
-    if (LineApplies(line, inputs.configs) && LinePermitted(line, Source::kUser, inputs.system)) {
+    if (!inputs.no_user_config && LineApplies(line, configs)) {
       apply(line.flags);
     }
   }
@@ -169,40 +189,6 @@ registry::Safety FlagSafety(std::string_view flag) {
   return descriptor.has_value() ? descriptor->safety : registry::Safety::kNone;
 }
 
-// @safe/@sensitive/@destructive -> the matching class; nullopt if not a class token.
-std::optional<registry::Safety> ClassToken(std::string_view token) {
-  if (token == "@safe") {
-    return registry::Safety::kNone;
-  }
-  if (token == "@destructive") {
-    return registry::Safety::kSafety;
-  }
-  if (token == "@sensitive") {
-    return registry::Safety::kSecurity;
-  }
-  return std::nullopt;
-}
-
-// Whether a [policy] rule `token` matches `line`: @safe matches a wholly safe
-// line, while a dangerous @class token matches when any primary on the line has
-// that exact class. A flag-name token matches when any line flag equals it or carries
-// it as an attached global value or primary qualification (flag == token, or flag starts with the
-// token plus `=` / `:` respectively). Accepting both delimiters here is structural, not a CLI alias:
-// globals such as `--jobs=4` and primaries such as `-capture:tag` share this policy matcher.
-bool TokenMatchesLine(std::string_view token, const RcLine& line) {
-  if (const std::optional<registry::Safety> cls = ClassToken(token); cls.has_value()) {
-    if (*cls == registry::Safety::kNone) {
-      return LineSafety(line) == registry::Safety::kNone;
-    }
-    return absl::c_any_of(line.flags, [&](std::string_view flag) { return FlagSafety(flag) == *cls; });
-  }
-  const std::string with_value = absl::StrCat(token, "=");
-  const std::string with_qualifier = absl::StrCat(token, ":");
-  return absl::c_any_of(line.flags, [&](std::string_view flag) {
-    return flag == token || absl::StartsWith(flag, with_value) || absl::StartsWith(flag, with_qualifier);
-  });
-}
-
 // The human name of a safety class, for warnings and --explain.
 std::string_view ClassName(registry::Safety safety) {
   switch (safety) {
@@ -215,7 +201,7 @@ std::string_view ClassName(registry::Safety safety) {
 
 std::optional<bool> SystemPermission(const ConfigInputs& inputs, std::string_view permission) {
   std::optional<bool> allowed;
-  for (const std::string& flag : inputs.system.globals) {
+  for (const std::string_view flag : DirectiveTokens(inputs.system.globals)) {
     if (flag == permission) {
       allowed = true;
     } else if (
@@ -239,30 +225,13 @@ registry::Safety LineSafety(const RcLine& line) {
   // Safety is declared in increasing restrictiveness (kNone < kSafety < kSecurity),
   // so the line's class is the maximum by enum value over its flags.
   registry::Safety worst = registry::Safety::kNone;
-  for (const std::string& flag : line.flags) {
+  for (const std::string_view flag : DirectiveTokens(line.flags)) {
     const registry::Safety current = FlagSafety(flag);
     if (static_cast<int>(current) > static_cast<int>(worst)) {
       worst = current;
     }
   }
   return worst;
-}
-
-bool LinePermitted(const RcLine& line, Source layer, const SystemConfig& policy) {
-  // No layer is denied by default now (the untrusted project layer was dropped 2026-07-06,
-  // Option B): the trusted system/user layers may do anything, so a line is permitted unless the
-  // root-owned system [policy] explicitly DENIES it for this layer. An @class or flag-name token
-  // matches; a deny rule bars the line. (An allow rule has nothing left to loosen, so it is inert.)
-  const std::string_view layer_name = SourceName(layer);
-  for (const PolicyRule& rule : policy.policy) {
-    if (rule.allow || rule.layer != layer_name) {
-      continue;
-    }
-    if (absl::c_any_of(rule.tokens, [&](std::string_view token) { return TokenMatchesLine(token, line); })) {
-      return false;
-    }
-  }
-  return true;
 }
 
 absl::Status ValidateConfigSkips(const ConfigInputs& inputs) {
@@ -287,8 +256,8 @@ absl::Status ValidateConfigSkips(const ConfigInputs& inputs) {
   }
   std::optional<bool> user_permission;
   for (const RcLine& line : inputs.user) {
-    for (const std::string& flag : line.flags) {
-      if (IsUserControl(flag) && LinePermitted(line, Source::kUser, inputs.system)) {
+    for (const std::string_view flag : DirectiveTokens(line.flags)) {
+      if (IsUserControl(flag)) {
         user_permission = flag == kAllowNoUserConfig;
       }
     }
@@ -325,17 +294,18 @@ GateResult GateConfig(const ConfigInputs& inputs, bool xffrc_armed) {
         record(line, layer, DropReason::kPresetOverload);
         continue;
       }
+      if (absl::c_contains(DirectiveTokens(inputs.system.globals), "--no-allow-exec")
+          && LineSafety(line) != registry::Safety::kNone) {
+        record(line, layer, DropReason::kSystemProhibition);
+        continue;
+      }
       // The --xffrc tier is non-arming: a dangerous (sensitive/destructive) line is inert unless
       // --allow-exec was set from a trusted tier. A named file thus cannot authorize its own -exec.
       if (layer == Source::kXffrc && !xffrc_armed && LineSafety(line) != registry::Safety::kNone) {
         record(line, layer, DropReason::kUnarmedXffrc);
         continue;
       }
-      if (LinePermitted(line, layer, inputs.system)) {
-        out.push_back(line);
-      } else {
-        record(line, layer, DropReason::kSafetyPolicy);
-      }
+      out.push_back(line);
     }
   };
   gate(inputs.user, Source::kUser, result.config.user);
@@ -355,7 +325,9 @@ std::string DropMessage(const Drop& drop) {
   if (drop.reason == DropReason::kUnarmedXffrc) {
     return absl::StrCat("'", primary, "' from the --xffrc file (", ClassName(drop.safety), "; needs --allow-exec)");
   }
-  return absl::StrCat("'", primary, "' from the ", SourceName(drop.layer), " .xffrc (", ClassName(drop.safety), ")");
+  return absl::StrCat(
+      "'", primary, "' from the ", SourceName(drop.layer), " .xffrc (", ClassName(drop.safety),
+      "; system --no-allow-exec)");
 }
 
 }  // namespace xff::config

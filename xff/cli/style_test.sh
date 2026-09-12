@@ -275,4 +275,29 @@ test::argv0_xff_alias_defaults_to_modern_style() {
   expect_eq "0" "${rc}"
 }
 
+test::config_multiple_predicates_are_evaluated() {
+  local dir out config
+  dir="$(test_tmpdir configpredicates)"
+  : >"${dir}/foo"
+  : >"${dir}/bar"
+  : >"${dir}/other"
+  config="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testdata/config_validation/multiple/user.rc"
+  out="$(XFF_CONFIG="${config}" "$(_xff_bin)" --config=both "${dir}" -type f -printf '%f\n')"
+  expect_eq "" "${out}"
+  out="$(XFF_CONFIG="${config}" "$(_xff_bin)" --config=either "${dir}" -type f -printf '%f\n')"
+  expect_output_contains "foo" "${out}"
+  expect_output_contains "bar" "${out}"
+  expect_output_not_contains "other" "${out}"
+  out="$(XFF_CONFIG="${config}" "$(_xff_bin)" --config=mixed "${dir}" -type f -printf '%f\n')"
+  expect_eq "foo" "${out}"
+}
+
+test::type_choices_reject_unknown_values() {
+  local dir out rc
+  dir="$(_tree invalidtype)"
+  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -type garbage 2>&1)" && rc=0 || rc=$?
+  expect_eq "2" "${rc}"
+  expect_output_contains "unknown value 'garbage' for -type" "${out}"
+}
+
 test_runner

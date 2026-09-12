@@ -144,7 +144,14 @@ A **prime goal** (see Goals). Two strands:
 - **Security** (untrusted external input - configs, archives, remote sources): always paramount; no `find`-compat tension since find lacks these features.
 - **Safety** (the user's own destructive ops): paramount on xff's own surface. On the `find` drop-in surface, find primaries keep find behaviour (e.g. `-delete` deletes) for fidelity - but xff emits a **visible, suppressible safety warning** (stderr; behaviour unchanged, so scripts are unaffected). xff's _own_ destructive actions are guarded (dry-run + `--confirm`); a global `--dry-run` is always available; find's `-ok`/`-okdir` are honoured.
 
-**Config system (detailed spec):** the full layered model - system `/etc/xff.ini` policy over the user `.xffrc`, per-flag safe-by-default capability gating, `--config` / `--feature` / `--xffrc` selectors, and `argv[0]` dispatch - is specified in [`design-config.md`](design-config.md), which is **authoritative for config** (e.g. the explicit-file spelling is now `--xffrc=FILE`, freeing `--config=NAME` for named-config selection). **Note (2026-07-06, Option B):** the auto-discovered **project** `.xffrc` layer was dropped - config is system + user + explicit `--xffrc=FILE` only, with no per-directory discovery or `--project-config` flag; see that doc's superseding banner. The notes below are the original sketch.
+**Config system (detailed spec):** [`design-config.md`](design-config.md) is authoritative. System
+`/etc/xff.ini` contains unsectioned globals and plain named sections; trusted global controls govern
+skipping automatic files, accepting explicit files, and arming dangerous config directives. User
+config and explicit `--xffrc=FILE` files use xffrc syntax. `--config=NAME` and the invocation name
+select configurations. Invalid system global lines are ignored individually with diagnostics;
+invalid named sections are disabled atomically and transitively. There is no special policy-section
+language, general `--feature` mechanism, or auto-discovered project config layer. The notes below
+are the original, superseded sketch.
 
 **Config format:** INI-style - flat CLI-arg lines (the same flags you'd type, parsed by our own `parser`) plus optional `[named]` blocks (saved queries / exec recipes). No separate schema; "what you can type, you can save." Parsing is **inert** (builds an AST, never executes) - the security work is the action-gate below, not the format.
 

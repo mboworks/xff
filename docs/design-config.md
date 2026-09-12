@@ -16,7 +16,7 @@ xff has three config-file tiers, followed by the command line:
 
 | Precedence | Source         | Grammar    | Trust and purpose                                                  |
 | ---------- | -------------- | ---------- | ------------------------------------------------------------------ |
-| lowest     | `/etc/xff.ini` | system INI | root-owned defaults and deny policy                                |
+| lowest     | `/etc/xff.ini` | system INI | root-owned defaults and authoritative controls                     |
 |            | user config    | xffrc      | trusted personal defaults and named configurations                 |
 |            | `--xffrc=FILE` | xffrc      | explicitly loaded, repeatable, non-arming files                    |
 | highest    | command line   | CLI        | explicit flags and selectors; later conflicting values usually win |
@@ -40,17 +40,23 @@ unreadable path is reported as absent.
 The position-independent `--no-system-config` and `--no-user-config` suppress
 their respective automatic tiers; `--no-config` suppresses both. A
 present source is still inspected for the permission to suppress it and, for
-the system file, its mandatory policy. An explicit command-line `--xffrc=FILE`
+the system file, its authoritative controls. An explicit command-line `--xffrc=FILE`
 remains active: it is not ambient configuration. Ignore files remain
 unaffected.
 
 Permissions are config-only directives, not command-line options:
 
-- system `[defaults]` may contain `--allow-no-system-config`,
-  `--allow-no-user-config`, or `--allow-no-config` (the latter grants both);
-- an unconditional user-config line may contain `--allow-no-user-config` to
-  authorize suppressing itself;
-- a system deny rule for the user's permission remains authoritative.
+- `--allow-no-config` / `--no-allow-no-config` govern only `--no-config`;
+- `--allow-no-system-config` / `--no-allow-no-system-config` govern only `--no-system-config`;
+- those two pairs are system-only, before the first section;
+- `--allow-no-user-config` / `--no-allow-no-user-config` govern only `--no-user-config` and may
+  appear before the first section in the system or user file; the system decision is authoritative;
+- each pair may occur once per permitted file; a duplicate system global line is diagnosed and ignored;
+- explicit `--xffrc` files cannot supply these controls.
+
+`--allow-xffrc` / `--no-allow-xffrc` control acceptance of explicit files. They may occur in system
+unsectioned globals or user blocks. A system global denial cannot be overridden by the user file,
+a named section, an explicit file, or suppression of system defaults.
 
 A requested skip of a present, unauthorized source is a usage error. A missing
 source needs no permission because there is no configuration to suppress.
@@ -59,29 +65,51 @@ source needs no permission because there is no configuration to suppress.
 
 ### System INI
 
-`/etc/xff.ini` recognizes `[defaults]` and `[policy]` sections:
+`/etc/xff.ini` accepts unconditional options before its first section, plain named configuration
+sections. Every section name, including `[global]`, `[defaults]`, and `[policy]`, is an ordinary
+named configuration:
 
 ```ini
-[defaults]
---color = auto
---jobs = 4
 --allow-no-config
+--allow-no-system-config
+--allow-no-user-config
+--color=auto
+
+[dev]
+--color=always
+-E
+
+[prod]
+--color=never
 
 [policy]
-user.deny = -delete
-xffrc.deny = @sensitive, @destructive
+--hidden
 ```
 
-A defaults entry becomes one command-line token: `--color = auto` becomes
-`--color=auto`, while a bare `--warn` remains bare. Blank lines and lines
-beginning with `#` or `;` are ignored.
+The option spelling is exactly the command-line spelling: write `--color`, not `color`, and `-E`,
+not a derived configuration key. An entry written as `--color = auto` is normalized to
+`--color=auto`. Blank lines and lines beginning with `#` or `;` are ignored.
 
-A policy key is `LAYER.allow` or `LAYER.deny`; its value is a comma-separated
-list of exact option/primary names or the class tokens `@safe`, `@sensitive`, and
-`@destructive`. The shipped policy engine enforces deny rules for the `user` and
-`xffrc` layers. Allow rules remain parse-compatible but are inert because no
-existing layer is denied by default. Unknown sections and malformed policy lines
-are ignored by the forgiving parser.
+One line may contain multiple directives: `--hidden --color=never` or `-name foo -name bar`.
+Each primary consumes only its own arguments. Adjacent predicates mean AND, so the latter matches
+nothing; use `-name foo -o -name bar` for either name. Parentheses group expressions. Config
+predicates and actions are parsed as an expression, then ANDed as a group with the command-line
+expression; global options retain their application order. `-type` and `-xtype` accept only the
+registered letters `b,c,d,f,l,p,s`, individually or as non-empty comma lists. `-type garbage` is
+a usage error on the CLI and invalidates its line or named section in the system config.
+
+Every unconditional line is validated independently. An invalid line is diagnosed with its file,
+line number, source text, and command-line validation error, then ignored without suppressing other
+unconditional options. A named section is atomic: one invalid line disables the complete section,
+so a partially applied configuration is impossible. A section that selects a disabled section with
+`--config=NAME` is disabled transitively. Loading continues so independent sections remain usable,
+but explicitly selecting any directly or transitively disabled section is a usage error. For
+example, `-E development` is invalid because `-E` takes no value; `development` is an unexpected
+token, and the containing section is disabled.
+
+There is no special policy rule language. System-only controls belong before the first section;
+placing one in a named section disables that section atomically. `--no-allow-exec` is a system-only
+global control that prohibits dangerous directives from lower-trust config files.
 
 ### xffrc
 
@@ -144,13 +172,12 @@ gated temporarily by `--unstable=NAME` after its behavior is designed.
 
 Registry descriptors classify expression directives as safe, sensitive, or
 destructive. A config line receives the most restrictive class of any directive
-on that line; that aggregate class drives arming and diagnostics. System
-`[policy]` deny rules can reject a line by exact directive name. The class tokens
-`@sensitive` and `@destructive` instead match when any directive on the line has
-that exact class, including a less restrictive directive on a mixed-class line;
-`@safe` matches only a wholly safe line. Rejected lines are dropped, reported by
-`--explain`, and warned about during a normal run rather than aborting the entire
-invocation.
+on that line; that aggregate class drives arming and diagnostics. The trusted unsectioned
+`--no-allow-exec` control drops sensitive and destructive lines from user and explicit configs,
+even when `--allow-exec` is supplied on the CLI. The prohibition remains authoritative when
+system defaults are suppressed. Rejected lines are reported by `--explain` and warned about
+during a normal run. Direct CLI expressions and system-authored directives retain their own
+runtime safety rules.
 
 System and user configuration are trusted tiers. An explicit `--xffrc` file is a
 non-arming tier: naming it authorizes loading it, not executing dangerous content
@@ -162,9 +189,85 @@ from it. Sensitive or destructive directives in that tier are dropped unless
 - an applying user-config line.
 
 An explicit `--xffrc` file is deliberately excluded from that check, so it
-cannot authorize itself. System policy may still deny a directive after it is
-armed. `--allow-exec` only controls config provenance; runtime protections such
+cannot authorize itself. The global `--no-allow-exec` prohibition takes precedence over arming. `--allow-exec` only controls config provenance; runtime protections such
 as `--safe`, `--dry-run`, and action-specific confirmation remain independent.
+
+## Tiny configuration examples
+
+### Defaults and a named override
+
+`/etc/xff.ini`:
+
+```ini
+--color=auto
+[dev]
+--color=never
+```
+
+`xff . --config=dev` applies `auto`, then `never`. `xff . --config=dev --color=always`
+ends with `always`. `[dev]` is optional configuration; the unsectioned line applies on every run.
+`[global]` would simply define another optional named configuration.
+
+### Who may skip which file
+
+`/etc/xff.ini`:
+
+```ini
+--no-allow-no-config
+--no-allow-no-system-config
+--allow-no-user-config
+```
+
+`xff . --no-user-config` is allowed. `--no-system-config` and `--no-config` are rejected.
+Allowing the user-only skip does not allow the combined skip. A user-file
+`--no-allow-no-user-config` cannot override the system grant. If the system omits its user-skip
+pair, this user config instead decides for itself:
+
+```text
+--allow-no-user-config
+common: --color=never
+```
+
+All skip controls precede sections or selector blocks. Each pair may occur only once in its file.
+
+### Prevent dangerous directives from lower-trust files
+
+Keep `/etc/xff.ini` administrator-owned and unwritable by users whose configs it constrains:
+
+```ini
+--no-allow-exec
+```
+
+A user or explicit-file line containing `-exec`, `-capture`, or `-delete` is dropped with a
+warning. Even `xff . --allow-exec --xffrc=task.rc` cannot arm dangerous lines in `task.rc`.
+Safe config lines remain usable. The prohibition is inspected even when system defaults are
+permitted to be skipped; `--allow-exec` inside a named section or user file cannot undo it.
+
+To reject explicit files altogether, add one line:
+
+```ini
+--no-allow-exec
+--no-allow-xffrc
+```
+
+Now `--xffrc=task.rc` is a usage error before `task.rc` is opened, including when a user block
+says `--allow-xffrc`.
+These controls constrain config-file capabilities; they do not prohibit actions typed directly
+on the command line or make a user-controlled executable an operating-system security boundary.
+Runtime `--safe`, `--dry-run`, and action-specific confirmation remain separate controls.
+
+### Deliberately arm one explicit file
+
+With no system prohibition, `task.rc` may contain:
+
+```text
+common: -exec echo {} ;
+```
+
+`xff . --xffrc=task.rc` leaves that dangerous line inert. Supplying `--allow-exec` from the
+command line or an applying automatic config permits it through the config gate. Putting
+`--allow-exec` in `task.rc` itself never grants that permission. Arming does not bypass the
+runtime guards on destructive actions.
 
 ## Resolution and inspection
 
@@ -174,7 +277,7 @@ applied in this order:
 1. system defaults;
 2. unconditional user-config lines and lines selected by the invocation name;
 3. original command-line globals, in their original order;
-4. immediately after each `--config=NAME`, user and already-loaded explicit
+4. immediately after each `--config=NAME`, system named sections, user and already-loaded explicit
    config lines newly activated by that selector;
 5. immediately after each `--xffrc=FILE`, currently applicable lines from that
    file. Later selectors may activate its remaining lines.
@@ -202,9 +305,5 @@ set of option semantics.
 
 - xffrc values cannot contain whitespace because quoting is not implemented.
 - Missing and unreadable config files are not distinguished in discovery output.
-- System INI parsing is deliberately forgiving; malformed or unknown lines are
-  ignored rather than diagnosed.
-- `[policy]` allow rules are parsed but currently have no effect because the
-  shipped layers are allowed by default; deny rules are authoritative.
 - Behavioral-epoch selectors such as `xff:2` are syntactically supported, but
   no migration policy is implied until an epoch is actually defined.

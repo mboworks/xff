@@ -41,8 +41,8 @@ cc_test(
     ],
 )
 
-# The system policy parser (/etc/xff.ini): [defaults] flag lines + [policy]
-# per-layer allow/deny rules. Parse-only; the policy gate enforces.
+# The system INI parser (/etc/xff.ini): unsectioned globals and plain named sections.
+# Parse-only; CLI validation checks flags and disables invalid sections atomically.
 cc_library(
     name = "ini_cc",
     srcs = ["ini.cc"],
@@ -125,7 +125,7 @@ cc_test(
 )
 
 # The config policy gate classifies an xffrc line by registry safety, applies
-# system deny rules and preset-overload/non-arming constraints, and records each
+# authoritative global prohibitions and preset-overload/non-arming constraints, and records each
 # dropped line for warnings and --explain.
 cc_library(
     name = "policy_cc",

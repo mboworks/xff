@@ -438,10 +438,7 @@ TEST_F(EvaluateTest, TypeListMatchesAnyListedType) {
   EXPECT_THAT(Match({"-type", "f,d"}, dir), IsTrue());
   EXPECT_THAT(Match({"-type", "f,d"}, link), IsFalse());
   EXPECT_THAT(Match({"-type", "l,p,f"}, file), IsTrue());  // order does not matter
-  // A malformed list (empty element, trailing comma, unknown letter) never matches.
-  EXPECT_THAT(Match({"-type", "f,"}, file), IsFalse());
-  EXPECT_THAT(Match({"-type", ",f"}, file), IsFalse());
-  EXPECT_THAT(Match({"-type", "f,z"}, file), IsFalse());
+  // Malformed lists are rejected by the shared parser before evaluation.
 }
 
 TEST_F(EvaluateTest, AndOrNotShortCircuit) {

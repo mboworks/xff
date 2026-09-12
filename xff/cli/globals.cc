@@ -293,7 +293,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "config",
         .header = "Config",
         .summary = "suppress system defaults when the system config permits it",
-        .details = "Suppresses `/etc/xff.ini` defaults but still reads its `[policy]` and leading config-only "
+        .details = "Suppresses `/etc/xff.ini` defaults but still reads its leading authoritative config-only "
                    "permission controls. A present file must grant permission with `--allow-no-system-config`; "
                    "`--no-allow-no-system-config` explicitly denies it. "
                    "Without either grant, the request is a usage error. The user config and explicit `--xffrc` "
@@ -338,7 +338,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "Permits the sensitive/destructive directives (the exec family -exec/-execdir/-ok and -capture, "
                    "and the destructive -delete) carried by an --xffrc-loaded file to actually run. Honored only from "
                    "a trusted tier - typed on the CLI, or set in the user/system config - never from an --xffrc file "
-                   "(so a named config cannot authorize itself). The root-owned system [policy] can hard-deny even "
+                   "(so a named config cannot authorize itself). The unsectioned system `--no-allow-exec` control can "
+                   "prohibit even "
                    "this. Without it, such lines are inert (dropped + warned); -delete still obeys its own "
                    "--safe/--dry-run guards.",
         .affects = "--xffrc",

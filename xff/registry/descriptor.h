@@ -76,8 +76,11 @@ struct Descriptor {
   std::string_view details;
   Kind kind = Kind::kTest;
   Region region = Region::kExpression;
-  int arity = 0;                     // trailing tokens consumed as arguments (-1 = variadic until ';')
-  Binding binding = Binding::kNone;  // attached ':' qualification carried on the token itself
+  int arity = 0;  // trailing tokens consumed as arguments (-1 = variadic until ';')
+  // Optional closed vocabulary for each operand, comma-delimited. Empty means unrestricted.
+  std::string_view argument_choices;
+  bool argument_choice_list = false;  // an operand may be a non-empty comma list of choices
+  Binding binding = Binding::kNone;   // attached ':' qualification carried on the token itself
   // The case-insensitive variant of a matcher (-iname/-ipath/-iregex): folds case
   // when matching (FNM_CASEFOLD for the glob tests, RE2 case-insensitive for the
   // regex). Lets the parser/evaluator read case from the registry instead of

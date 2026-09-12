@@ -1,0 +1,3 @@
+common: --allow-exec
+common: -exec echo {} ;
+common: --color=never
