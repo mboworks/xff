@@ -268,6 +268,7 @@ bool ArmedFromTrustedTier(
   // Expand selectors from automatic tiers too: a transitive named configuration may arm a file.
   // Explicit-file flags are excluded by provenance so an explicit file cannot authorize itself.
   std::vector<std::string> selectors;
+  selectors.reserve(inputs.configs.size());
   for (const std::string& name : inputs.configs) {
     selectors.push_back(absl::StrCat("--config=", name));
   }

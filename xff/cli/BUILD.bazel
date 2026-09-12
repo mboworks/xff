@@ -104,6 +104,7 @@ cc_test(
         "//xff/config:ini_cc",
         "//xff/config:policy_cc",
         "//xff/config:xffrc_cc",
+        "//xff/env:env_cc",
         "//xff/parser:parser_cc",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",

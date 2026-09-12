@@ -72,6 +72,26 @@ TEST_F(ConfigTest, SkipPermissionDirectivesNeverBecomeRuntimeGlobals) {
   EXPECT_THAT(ResolveConfig(in), ElementsAre(FlagIs("--color=auto", Source::kSystem), FlagIs("--sort", Source::kUser)));
 }
 
+TEST_F(ConfigTest, SelectedSystemSectionsResolveInFileOrderWithProvenance) {
+  ConfigInputs inputs;
+  inputs.system = ParseIni(R"ini(
+--color=auto
+[first]
+--hidden --jobs=2
+[unused]
+--color=never
+[second]
+--sort=none
+)ini");
+  inputs.configs = {"second", "first"};
+  EXPECT_THAT(
+      ResolveConfig(inputs), ElementsAre(
+                                 FlagIs("--color=auto", Source::kSystem), FlagIs("--hidden", Source::kSystem),
+                                 FlagIs("--jobs=2", Source::kSystem), FlagIs("--sort=none", Source::kSystem)));
+  inputs.no_system_config = true;
+  EXPECT_THAT(ResolveConfig(inputs), IsEmpty());
+}
+
 TEST_F(ConfigTest, SystemExecProhibitionOverridesEveryArmingTierEvenWhenDefaultsAreSkipped) {
   ConfigInputs inputs;
   inputs.system.globals = {"--no-allow-exec", "--allow-exec"};

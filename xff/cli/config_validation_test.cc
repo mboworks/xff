@@ -3,7 +3,6 @@
 
 #include "xff/cli/config_validation.h"
 
-#include <cstdlib>
 #include <fstream>
 #include <iterator>
 #include <string>
@@ -18,6 +17,7 @@
 #include "xff/config/config.h"
 #include "xff/config/policy.h"
 #include "xff/config/xffrc.h"
+#include "xff/env/env.h"
 #include "xff/parser/parser.h"
 
 namespace xff::cli {
@@ -40,12 +40,9 @@ struct ConfigValidationTest : ::testing::Test {};
 
 // XFF_HOST_IO: reads explicitly declared Bazel runfile fixtures and reports failures as status.
 absl::StatusOr<std::string> Fixture(std::string_view directory, std::string_view file = "system.ini") {
-  // XFF_ABI_POINTER: getenv is a C ABI and returns a borrowed process-environment string.
-  const char* const test_srcdir = std::getenv("TEST_SRCDIR");
-  // XFF_ABI_POINTER: getenv is a C ABI and returns a borrowed process-environment string.
-  const char* const test_workspace = std::getenv("TEST_WORKSPACE");
-  const std::string path =
-      absl::StrCat(test_srcdir, "/", test_workspace, "/xff/cli/testdata/config_validation/", directory, "/", file);
+  const std::string path = absl::StrCat(
+      env::Get("TEST_SRCDIR").value_or(""), "/", env::Get("TEST_WORKSPACE").value_or(""),
+      "/xff/cli/testdata/config_validation/", directory, "/", file);
   // XFF_HOST_IO: this test adapter reads an explicitly declared Bazel runfile fixture.
   std::ifstream stream(path);
   if (!stream) {
@@ -108,6 +105,43 @@ TEST_F(ConfigValidationTest, StopsRecognizingSettingsAfterDoubleDash) {
   config::ConfigInputs inputs;
   inputs.user = config::ParseXffrc("common: --sort=tree -- --sort=global");
   EXPECT_THAT(ConfigOverrideNotices(inputs), IsEmpty());
+}
+
+TEST_F(ConfigValidationTest, NamedSectionsReportOverridesWithinTheirOwnScope) {
+  config::ConfigInputs inputs;
+  inputs.system = config::ParseIni(R"ini(
+[first]
+--color=auto
+--color=never
+[second]
+--color=always
+)ini");
+  EXPECT_THAT(
+      ConfigOverrideNotices(inputs),
+      ElementsAre(AllOf(HasSubstr("setting --color is overridden"), HasSubstr("section '[first]'"))));
+}
+
+TEST_F(ConfigValidationTest, GroupedExpressionAndSequenceRemainValid) {
+  const SystemConfigValidation validation =
+      ValidateSystemConfig(config::ParseIni("[grouped]\n( -name foo -o -name bar ) , -type f"), {"grouped"});
+  EXPECT_THAT(validation.diagnostics, IsEmpty());
+  EXPECT_THAT(validation.selected_configs_status, IsOk());
+  config::ConfigInputs inputs;
+  inputs.system = validation.config;
+  ASSERT_OK_AND_ASSIGN(
+      const parser::Command configured,
+      ApplyResolvedConfig({}, config::ResolveConfigInOrder(inputs, {"--config=grouped"}, "xff")));
+  ASSERT_THAT(configured.expression, NotNull());
+  EXPECT_THAT(configured.expression->kind, parser::Expr::Kind::kComma);
+}
+
+TEST_F(ConfigValidationTest, UnterminatedExecDisablesOnlyItsSection) {
+  const SystemConfigValidation validation =
+      ValidateSystemConfig(config::ParseIni("[broken]\n-exec echo {}\n[healthy]\n-type f"), {"broken"});
+  EXPECT_THAT(validation.disabled_configs, ElementsAre("broken"));
+  EXPECT_THAT(validation.diagnostics, ElementsAre(HasSubstr("requires a terminating ';' or '+'")));
+  EXPECT_THAT(validation.selected_configs_status, StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(validation.config.named, ElementsAre(Field("name", &config::IniSection::name, "healthy")));
 }
 
 TEST_F(ConfigValidationTest, PreservesProgrammaticallySuppliedGlobals) {
@@ -210,7 +244,8 @@ TEST_F(ConfigValidationTest, MultipleGlobalsAndAPrimaryRemainSeparate) {
 
 TEST_F(ConfigValidationTest, InvalidGlobalLineIsDiagnosedAndOnlyThatLineIsIgnored) {
   ASSERT_OK_AND_ASSIGN(const std::string fixture, Fixture("globals"));
-  SystemConfigValidation validation = ValidateSystemConfig(config::ParseIni(fixture), {"dev"}, "globals/system.ini");
+  const SystemConfigValidation validation =
+      ValidateSystemConfig(config::ParseIni(fixture), {"dev"}, "globals/system.ini");
 
   EXPECT_THAT(validation.selected_configs_status, IsOk());
   EXPECT_THAT(validation.diagnostics, ElementsAre(AllOf(HasSubstr("globals/system.ini:5"), HasSubstr("development"))));
@@ -223,7 +258,8 @@ TEST_F(ConfigValidationTest, InvalidGlobalLineIsDiagnosedAndOnlyThatLineIsIgnore
 
 TEST_F(ConfigValidationTest, InvalidNamedSectionIsAtomicAndDoesNotAffectSibling) {
   ASSERT_OK_AND_ASSIGN(const std::string fixture, Fixture("atomic"));
-  SystemConfigValidation validation = ValidateSystemConfig(config::ParseIni(fixture), {"healthy"}, "atomic/system.ini");
+  const SystemConfigValidation validation =
+      ValidateSystemConfig(config::ParseIni(fixture), {"healthy"}, "atomic/system.ini");
 
   EXPECT_THAT(validation.selected_configs_status, IsOk());
   EXPECT_THAT(
@@ -237,7 +273,7 @@ TEST_F(ConfigValidationTest, InvalidNamedSectionIsAtomicAndDoesNotAffectSibling)
 
 TEST_F(ConfigValidationTest, DisablementPropagatesAndSelectingItIsAHardError) {
   ASSERT_OK_AND_ASSIGN(const std::string fixture, Fixture("transitive"));
-  SystemConfigValidation validation =
+  const SystemConfigValidation validation =
       ValidateSystemConfig(config::ParseIni(fixture), {"outer"}, "transitive/system.ini");
 
   EXPECT_THAT(

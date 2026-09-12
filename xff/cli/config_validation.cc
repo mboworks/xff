@@ -31,6 +31,25 @@ bool IsSystemControl(std::string_view token) {
          || token == "--no-allow-no-user-config" || token == "--allow-xffrc" || token == "--no-allow-xffrc";
 }
 
+absl::StatusOr<std::size_t> PrimaryArgumentCount(
+    const std::vector<std::string>& tokens,
+    std::size_t pos,
+    const registry::Descriptor& primary) {
+  if (primary.arity < 0) {
+    for (std::size_t end = pos + 1; end < tokens.size(); ++end) {
+      if (tokens[end] == ";" || tokens[end] == "+") {
+        return end - pos;
+      }
+    }
+    return absl::InvalidArgumentError(absl::StrCat("'", tokens[pos], "' requires a terminating ';' or '+'"));
+  }
+  const auto arity = static_cast<std::size_t>(primary.arity);
+  if (arity > tokens.size() - pos - 1) {
+    return absl::InvalidArgumentError(absl::StrCat("'", tokens[pos], "' requires ", arity, " argument(s)"));
+  }
+  return arity;
+}
+
 absl::Status ValidateTokens(const std::vector<std::string>& tokens) {
   std::vector<std::string> arguments = {"."};
   for (std::size_t pos = 0; pos < tokens.size(); ++pos) {
@@ -52,24 +71,7 @@ absl::Status ValidateTokens(const std::vector<std::string>& tokens) {
     if (!primary.has_value()) {
       return absl::InvalidArgumentError(absl::StrCat("unexpected token '", token, "'"));
     }
-    if (primary->arity < 0) {
-      bool terminated = false;
-      while (++pos < tokens.size()) {
-        arguments.push_back(tokens[pos]);
-        if (tokens[pos] == ";" || tokens[pos] == "+") {
-          terminated = true;
-          break;
-        }
-      }
-      if (!terminated) {
-        return absl::InvalidArgumentError(absl::StrCat("'", token, "' requires a terminating ';' or '+'"));
-      }
-      continue;
-    }
-    const auto arity = static_cast<std::size_t>(primary->arity);
-    if (arity > tokens.size() - pos - 1) {
-      return absl::InvalidArgumentError(absl::StrCat("'", token, "' requires ", arity, " argument(s)"));
-    }
+    MBO_ASSIGN_OR_RETURN(const std::size_t arity, PrimaryArgumentCount(tokens, pos, *primary));
     for (std::size_t offset = 0; offset < arity; ++offset) {
       arguments.push_back(tokens[++pos]);
     }
@@ -186,93 +188,116 @@ void FindRcOverrides(
   }
 }
 
+class SystemConfigValidator {
+ public:
+  SystemConfigValidator(config::SystemConfig config, std::string_view path)
+      : result_{.config = std::move(config), .selected_configs_status = absl::OkStatus()}, path_(path) {}
+
+  SystemConfigValidation Validate(const std::vector<std::string>& selected_configs) {
+    ValidateGlobals();
+    ValidateSections();
+    PropagateDisablement();
+    result_.disabled_configs.assign(disabled_.begin(), disabled_.end());
+    std::ranges::sort(result_.disabled_configs);
+    result_.config.named.erase(
+        std::remove_if(
+            result_.config.named.begin(), result_.config.named.end(),
+            [this](const config::IniSection& section) { return disabled_.contains(section.name); }),
+        result_.config.named.end());
+    for (const std::string& selected : selected_configs) {
+      if (disabled_.contains(selected)) {
+        result_.selected_configs_status = absl::InvalidArgumentError(
+            absl::StrCat("selected config [", selected, "] is disabled; see earlier diagnostics"));
+        break;
+      }
+    }
+    return std::move(result_);
+  }
+
+ private:
+  void ValidateGlobals() {
+    if (!result_.config.global_lines.empty()) {
+      result_.config.globals.clear();
+    }
+    for (const config::IniLine& line : result_.config.global_lines) {
+      absl::Status status = ValidateTokens(line.tokens);
+      auto next_controls = controls_;
+      if (status.ok()) {
+        for (const std::string_view token : config::DirectiveTokens(line.tokens)) {
+          const std::string name =
+              token.starts_with("--no-allow-no-") ? absl::StrCat("--", token.substr(5)) : std::string(token);
+          if ((name == "--allow-no-config" || name == "--allow-no-system-config" || name == "--allow-no-user-config")
+              && !next_controls.insert(name).second) {
+            status = absl::InvalidArgumentError(absl::StrCat(name, " and its negative form may occur only once"));
+            break;
+          }
+        }
+      }
+      if (status.ok()) {
+        controls_ = std::move(next_controls);
+        result_.config.globals.insert(result_.config.globals.end(), line.tokens.begin(), line.tokens.end());
+      } else {
+        result_.diagnostics.push_back(
+            absl::StrCat(
+                path_, ":", line.number, ": invalid global config line '", line.text, "': ", status.message()));
+      }
+    }
+  }
+
+  void ValidateSections() {
+    for (const config::IniSection& section : result_.config.named) {
+      for (const config::IniLine& line : section.lines) {
+        const bool has_control = std::ranges::any_of(config::DirectiveTokens(line.tokens), IsSystemControl);
+        const absl::Status status =
+            has_control ? absl::InvalidArgumentError("system controls must precede every system config section")
+                        : ValidateTokens(line.tokens);
+        if (!status.ok()) {
+          disabled_.insert(section.name);
+          result_.diagnostics.push_back(
+              absl::StrCat(
+                  path_, ":", line.number, ": disabling config [", section.name, "] because line '", line.text,
+                  "' is invalid: ", status.message()));
+        }
+      }
+    }
+  }
+
+  void PropagateDisablement() {
+    bool changed = true;
+    while (changed) {
+      changed = false;
+      for (const config::IniSection& section : result_.config.named) {
+        if (disabled_.contains(section.name)) {
+          continue;
+        }
+        for (const std::string& dependency : ConfigReferences(section)) {
+          if (disabled_.contains(dependency)) {
+            disabled_.insert(section.name);
+            result_.diagnostics.push_back(
+                absl::StrCat(
+                    path_, ":", section.number, ": disabling config [", section.name,
+                    "] because it references disabled config [", dependency, "]"));
+            changed = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  SystemConfigValidation result_;
+  std::string_view path_;
+  absl::flat_hash_set<std::string> controls_;
+  absl::flat_hash_set<std::string> disabled_;
+};
+
 }  // namespace
 
 SystemConfigValidation ValidateSystemConfig(
     config::SystemConfig config,
     const std::vector<std::string>& selected_configs,
     std::string_view path) {
-  SystemConfigValidation result{.config = std::move(config), .selected_configs_status = absl::OkStatus()};
-  if (!result.config.global_lines.empty()) {
-    result.config.globals.clear();
-  }
-  absl::flat_hash_set<std::string> controls;
-  for (const config::IniLine& line : result.config.global_lines) {
-    absl::Status status = ValidateTokens(line.tokens);
-    auto next_controls = controls;
-    if (status.ok()) {
-      for (const std::string_view token : config::DirectiveTokens(line.tokens)) {
-        const std::string name =
-            token.starts_with("--no-allow-no-") ? absl::StrCat("--", token.substr(5)) : std::string(token);
-        if ((name == "--allow-no-config" || name == "--allow-no-system-config" || name == "--allow-no-user-config")
-            && !next_controls.insert(name).second) {
-          status = absl::InvalidArgumentError(absl::StrCat(name, " and its negative form may occur only once"));
-          break;
-        }
-      }
-    }
-    if (status.ok()) {
-      controls = std::move(next_controls);
-      result.config.globals.insert(result.config.globals.end(), line.tokens.begin(), line.tokens.end());
-    } else {
-      result.diagnostics.push_back(
-          absl::StrCat(path, ":", line.number, ": invalid global config line '", line.text, "': ", status.message()));
-    }
-  }
-
-  absl::flat_hash_set<std::string> disabled;
-  for (const config::IniSection& section : result.config.named) {
-    for (const config::IniLine& line : section.lines) {
-      const bool has_control = std::ranges::any_of(config::DirectiveTokens(line.tokens), IsSystemControl);
-      const absl::Status status =
-          has_control ? absl::InvalidArgumentError("system controls must precede every system config section")
-                      : ValidateTokens(line.tokens);
-      if (!status.ok()) {
-        disabled.insert(section.name);
-        result.diagnostics.push_back(
-            absl::StrCat(
-                path, ":", line.number, ": disabling config [", section.name, "] because line '", line.text,
-                "' is invalid: ", status.message()));
-      }
-    }
-  }
-
-  bool changed = true;
-  while (changed) {
-    changed = false;
-    for (const config::IniSection& section : result.config.named) {
-      if (disabled.contains(section.name)) {
-        continue;
-      }
-      for (const std::string& dependency : ConfigReferences(section)) {
-        if (disabled.contains(dependency)) {
-          disabled.insert(section.name);
-          result.diagnostics.push_back(
-              absl::StrCat(
-                  path, ":", section.number, ": disabling config [", section.name,
-                  "] because it references disabled config [", dependency, "]"));
-          changed = true;
-          break;
-        }
-      }
-    }
-  }
-
-  result.disabled_configs.assign(disabled.begin(), disabled.end());
-  std::ranges::sort(result.disabled_configs);
-  result.config.named.erase(
-      std::remove_if(
-          result.config.named.begin(), result.config.named.end(),
-          [&disabled](const config::IniSection& section) { return disabled.contains(section.name); }),
-      result.config.named.end());
-  for (const std::string& selected : selected_configs) {
-    if (disabled.contains(selected)) {
-      result.selected_configs_status = absl::InvalidArgumentError(
-          absl::StrCat("selected config [", selected, "] is disabled; see earlier diagnostics"));
-      break;
-    }
-  }
-  return result;
+  return SystemConfigValidator(std::move(config), path).Validate(selected_configs);
 }
 
 absl::StatusOr<parser::Command> ApplyResolvedConfig(

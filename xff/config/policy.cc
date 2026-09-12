@@ -164,6 +164,7 @@ bool XffrcAllowed(const ConfigInputs& inputs) {
   ConfigInputs automatic = inputs;
   automatic.xffrc.clear();
   std::vector<std::string> selectors;
+  selectors.reserve(inputs.configs.size());
   for (const std::string& name : inputs.configs) {
     selectors.push_back(absl::StrCat("--config=", name));
   }
