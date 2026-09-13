@@ -3,7 +3,10 @@
 
 """Expose PCRE2's copied tables and upstream reference for materialization and drift tests."""
 
-_ChartablesInfo = provider(fields = ["files"])
+_ChartablesInfo = provider(
+    doc = "Carries PCRE2's generated character tables and upstream reference through source dependencies.",
+    fields = {"files": "Depset of generated character tables and upstream .dist reference artifacts."},
+)
 
 def _chartables_aspect_impl(target, ctx):
     direct = []
