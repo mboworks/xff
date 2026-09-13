@@ -138,6 +138,9 @@ fi
 # source //:refresh_compile_commands uses - a hardcoded list here is how @xff_fuse shipped with a
 # compile DB whose headers did not exist (PR #534's CI). No --//xff:xff_<extra> flag: that gates
 # whether the CORE links an extra, not whether the extra itself builds (see //BUILD.bazel).
+# These wildcards also request explicit generated-source targets, such as PCRE2's
+# chartables_source. Keeping those as top-level outputs materializes them even when
+# compiled library outputs come from cache; their diff tests guard the upstream copies.
 for EXTRA_TARGETS in $(tools/extras.py --wildcards); do
   echo "Building ${EXTRA_TARGETS} so the compile DB resolves its headers ..." 1>&2
   bazel build --config=clang-tidy "${EXTRA_TARGETS}" >/dev/null \

@@ -13,8 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 load("@xff_extras_api//:license_body.bzl", "license_body")
+load(":chartables.bzl", "chartables")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -79,4 +81,22 @@ cc_test(
         "@xff_extras_api//:license_notice_cc",
         "@xff_extras_api//:regex_backend_cc",
     ],
+)
+
+# This explicit target materializes the source even when compiled PCRE2 objects are cached.
+chartables(
+    name = "chartables_source",
+    library = "@pcre2",
+)
+
+filegroup(
+    name = "chartables_reference",
+    srcs = [":chartables_source"],
+    output_group = "reference",
+)
+
+diff_test(
+    name = "chartables_test",
+    file1 = ":chartables_reference",
+    file2 = ":chartables_source",
 )
