@@ -410,13 +410,13 @@ test::archive_content_deletion_remains_independent_of_ordinary_deletion() {
 --block-file-writing
 --block-file-deletion
 INI
-  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/out.tar" -z --archive-delete -name a.cc -delete >/dev/null
+  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/out.tar" --archive --archive-delete -name a.cc -delete >/dev/null
   members="$(tar -tf "${root}/out.tar")"
   expect_output_not_contains "a.cc" "${members}"
   expect_output_contains "c.txt" "${members}"
   echo '--block-archive-content-deletion' >>"${root}/policy.ini"
   status=0
-  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/out.tar" -z --archive-delete -name c.txt -delete --skip-unsupported >/dev/null 2>&1 || status=$?
+  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/out.tar" --archive --archive-delete -name c.txt -delete --skip-unsupported >/dev/null 2>&1 || status=$?
   expect_eq 2 "${status}"
   expect_output_contains "c.txt" "$(tar -tf "${root}/out.tar")"
 }

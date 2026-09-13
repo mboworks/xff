@@ -28,8 +28,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "xff/vfs/mutations.h"
 #include "mbo/status/status_macros.h"
+#include "xff/vfs/mutations.h"
 #if defined(__APPLE__)
 # include <sys/mount.h>  // statfs + f_fstypename (BSD/macOS report the name directly)
 # include <sys/param.h>
