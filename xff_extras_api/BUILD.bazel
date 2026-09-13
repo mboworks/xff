@@ -232,6 +232,9 @@ cc_library(
         ":host_descriptors_interface_cc",
         ":vfs_implementation_cc",
     ],
+    # GNU ld sees this adapter before its consumers in vfs_implementation_cc.
+    # Retain the three definitions regardless of static archive scanning order.
+    alwayslink = True,
 )
 
 cc_library(
