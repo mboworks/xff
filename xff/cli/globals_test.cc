@@ -119,7 +119,8 @@ TEST_F(GlobalsTest, ConfigAndSymlinkFlagsDocumentTheirNonObviousBoundaries) {
       LookupGlobal("--no-user-config"),
       Optional(Field("details", &GlobalFlag::details, HasSubstr("--no-require-user-config"))));
   EXPECT_THAT(
-      LookupGlobal("--explain"), Optional(Field("details", &GlobalFlag::details, HasSubstr("does not walk roots"))));
+      LookupGlobal("--explain"),
+      Optional(Field("details", &GlobalFlag::details, HasSubstr("does not evaluate the expression"))));
   EXPECT_THAT(LookupGlobal("-H"), Optional(Field("details", &GlobalFlag::details, HasSubstr("dangling root symlink"))));
   EXPECT_THAT(
       LookupGlobal("-L"), Optional(Field("details", &GlobalFlag::details, HasSubstr("Filesystem loops are detected"))));

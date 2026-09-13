@@ -45,6 +45,10 @@ registry::Safety LineSafety(const IniLine& line);
 // --xffrc file cannot admit itself.
 absl::Status ValidateConfigSkips(const ConfigInputs& inputs);
 
+// Unsectioned system/user permission for globals in automatically discovered .xffrc files.
+// A system denial is authoritative. Explicit --xffrc files are unaffected.
+bool RcGlobalsAllowed(const ConfigInputs& inputs);
+
 // Why the gate dropped a line: activation only through explicit-file composition,
 // a structural rule (it attaches behavior to a built-in preset, which no config file may do), or
 // an unarmed dangerous directive loaded from an --xffrc file (kSafety/kSecurity, no --allow-exec).

@@ -106,16 +106,24 @@ cc_test(
 # ConfigInputs for ResolveConfig. It performs no file I/O of its own.
 cc_library(
     name = "loader_cc",
-    srcs = ["loader.cc"],
+    srcs = [
+        "autoload.cc",
+        "loader.cc",
+    ],
     hdrs = ["loader.h"],
     visibility = ["//xff:__subpackages__"],
     deps = [
         ":config_cc",
         ":ini_cc",
+        ":policy_cc",
         ":xffrc_cc",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/functional:function_ref",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@xff_extras_api//:vfs_cc",
     ],
 )
 
@@ -128,6 +136,20 @@ cc_test(
         ":loader_cc",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "autoload_test",
+    size = "small",
+    srcs = ["autoload_test.cc"],
+    deps = [
+        ":config_cc",
+        ":loader_cc",
+        ":policy_cc",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+        "@xff_extras_api//:vfs_cc",
     ],
 )
 

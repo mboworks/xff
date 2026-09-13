@@ -23,6 +23,7 @@
 
 #include "absl/functional/function_ref.h"
 #include "xff/config/config.h"
+#include "xff/vfs/filesystem.h"
 
 namespace xff::config {
 
@@ -55,11 +56,9 @@ std::string UserConfigPath(const DiscoveryOptions& opts);
 //   - user:   UserConfigPath(opts), in the shared INI grammar,
 //   - --xffrc=FILE: separate parsed files, in order - a NON-ARMING tier whose
 //     dangerous directives stay inert unless armed (naming the file is consent to load, not to arm).
-// There is no auto-discovered project layer (dropped 2026-07-06, Option B): xff never walks the
-// search roots for an ambient .xffrc. A source requested to be skipped is still read when present
-// so its trusted permission directives and system policy can authorize or reject that request; its
-// ordinary defaults are not applied. Explicit command-line --xffrc files remain selected by
-// --no-config.
+// A requested skip still reads present trusted files so their controls can authorize it.
+// Explicit files remain selected by --no-config. Root discovery is a separate,
+// admission-checked step through DiscoverRc.
 ConfigInputs Discover(const DiscoveryOptions& opts, FileReader read);
 
 // Reads automatic files and records explicit paths without opening them. Validate the automatic
@@ -68,6 +67,23 @@ ConfigInputs DiscoverAutomatic(const DiscoveryOptions& opts, FileReader read);
 
 // Completes an automatic discovery by reading its explicit paths and recording their sources.
 ConfigInputs DiscoverExplicit(ConfigInputs inputs, FileReader read);
+
+// Resolve discovery from trusted system/user configuration and CLI directives only.
+// --no-config suppresses discovery; .xffrc content cannot control discovery.
+RcMode ResolveRcMode(
+    const ConfigInputs& inputs,
+    const std::vector<std::string>& cli_globals,
+    std::string_view invocation_selector);
+std::string_view RcModeName(RcMode mode);
+
+// Discover physical .xffrc files in argument order, parent before children and
+// lexicographically among siblings. Uses the VFS exclusively, never follows
+// directory symlinks, and does not apply search filters to configuration discovery.
+// Mode/admission must be resolved before calling. Discovered files precede explicit files.
+absl::StatusOr<ConfigInputs> DiscoverRc(
+    ConfigInputs inputs,
+    const std::vector<std::string>& roots,
+    const vfs::FileSystem& filesystem);
 
 // Extracts the config selectors among `globals` into a DiscoveryOptions (the env
 // fields are left unset for the caller): --no-config, --no-system-config, --no-user-config,
