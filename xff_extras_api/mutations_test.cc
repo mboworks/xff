@@ -156,6 +156,8 @@ TEST_F(MutationsTest, DirectoryOperationsCreateAndRemoveOnlyTheRequestedTree) {
 TEST_F(MutationsTest, AReadOnlyDescriptorRejectsWritingAndLeavesTheDestinationUntouched) {
   ASSERT_OK_AND_ASSIGN(auto output, TemporaryOutput::Create(Path("scratch"), {}));
   // Replace the borrowed descriptor with a read-only handle while preserving ownership.
+  // POSIX open is variadic even when opening an existing file without a mode argument.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
   const int read_only = ::open(output->Path().c_str(), O_RDONLY | O_CLOEXEC);
   ASSERT_THAT(read_only, Ge(0));
   EXPECT_THAT(::dup2(read_only, output->Fd()), Eq(output->Fd()));
@@ -167,7 +169,13 @@ TEST_F(MutationsTest, AReadOnlyDescriptorRejectsWritingAndLeavesTheDestinationUn
 TEST_F(MutationsTest, FlushFailureDoesNotPublishAnArchive) {
   ASSERT_OK_AND_ASSIGN(auto output, TemporaryOutput::Create(Path("scratch"), {}));
   std::array<int, 2> pipe_fds{};
+#if defined(__linux__)
+  ASSERT_THAT(::pipe2(pipe_fds.data(), O_CLOEXEC), Eq(0));
+#else
+  // macOS has no pipe2; this synchronous error-injection test never starts a child process.
+  // NOLINTNEXTLINE(android-cloexec-pipe)
   ASSERT_THAT(::pipe(pipe_fds.data()), Eq(0));
+#endif
   EXPECT_THAT(::dup2(pipe_fds.back(), output->Fd()), Eq(output->Fd()));
   EXPECT_THAT(::close(pipe_fds.front()), Eq(0));
   EXPECT_THAT(::close(pipe_fds.back()), Eq(0));
