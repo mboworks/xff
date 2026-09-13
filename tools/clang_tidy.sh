@@ -131,9 +131,9 @@ done
 # targeted, commented NOLINT rather than a blanket exemption for the whole test tree.
 readonly TEST_DISABLED_CHECKS='-readability-function-cognitive-complexity,-misc-override-with-different-visibility,-readability-identifier-naming'
 
-# Keep local checks bounded even on machines with many logical CPUs. CI explicitly
-# supplies its available CPU count; the runner also caps workers to selected tasks.
-PARALLELISM="${CLANG_TIDY_JOBS:-2}"
+# Use the coordinator's detected CPU count unless explicitly overridden.
+# The coordinator also caps workers to the number of selected tasks.
+PARALLELISM="${CLANG_TIDY_JOBS:-auto}"
 readonly PARALLELISM
 
 # Preserve scope-selection failures; process substitution would hide a stale database error.
@@ -159,10 +159,12 @@ python3 tools/clang_tidy_compdb.py compile_commands.json "${CDB_DIR}/compile_com
 RUNNER_ARGS=(
   --clang-tidy "${CLANG_TIDY}"
   --compile-database "${CDB_DIR}"
-  --jobs "${PARALLELISM}"
   --output "${OUTPUT}"
   "--test-disabled-checks=${TEST_DISABLED_CHECKS}"
 )
+if [[ "${PARALLELISM}" != auto ]]; then
+  RUNNER_ARGS+=(--jobs "${PARALLELISM}")
+fi
 RUNNER_ARGS+=("${EXTRA_ARGS[@]}")
 for FILE in ${SOURCES[@]+"${SOURCES[@]}"}; do RUNNER_ARGS+=(--source "${FILE}"); done
 for FILE in ${TESTS[@]+"${TESTS[@]}"}; do RUNNER_ARGS+=(--test "${FILE}"); done
