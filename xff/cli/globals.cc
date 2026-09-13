@@ -328,8 +328,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Config",
         .summary = "also load a specific config file (a non-arming tier; see --allow-exec)",
         .details = "Loads FILE as a config tier above the user config (naming it is consent to LOAD it). It is a "
-                   "NON-ARMING tier: safe directives apply, but a dangerous one - the exec family (-exec/-execdir/-ok, "
-                   "-capture) or -delete - is inert unless --allow-exec is set from a trusted tier (the CLI or the "
+                   "NON-ARMING tier: execution and deletion actions - the exec family (-exec/-execdir/-ok, "
+                   "-capture) or -delete - are inert unless --allow-exec is set from a trusted tier (the CLI or the "
                    "user/system config, never from an --xffrc file itself). An unarmed dangerous line is dropped with "
                    "a one-line warning. Repeatable; later files win.",
         .affects = "--allow-exec",
@@ -1948,6 +1948,36 @@ mbo::types::OptionalRef<const GlobalFlag> LookupGlobalArgument(std::string_view 
   return std::nullopt;
 }
 
+namespace {
+bool AcceptsEnumValue(const GlobalFlag& flag, std::string_view value) {
+  return absl::c_any_of(flag.values, [value](const ValueDoc& doc) { return doc.value == value; });
+}
+
+bool AcceptsEnumList(const GlobalFlag& flag, std::string_view value) {
+  return value.empty() || absl::c_all_of(absl::StrSplit(value, ','), [&](std::string_view item) {
+           return AcceptsEnumValue(flag, item);
+         });
+}
+
+std::string AcceptedValues(const GlobalFlag& flag) {
+  std::string accepted;
+  if (flag.value_check == GlobalFlag::ValueCheck::kEnumList || flag.value_check == GlobalFlag::ValueCheck::kEnum
+      || flag.value_check == GlobalFlag::ValueCheck::kEnumOrTemplate) {
+    for (const ValueDoc& doc : flag.values) {
+      if (doc.hidden) {
+        continue;  // accepted, but not something to suggest
+      }
+      absl::StrAppend(&accepted, accepted.empty() ? "" : ", ", doc.value);
+    }
+  } else {
+    accepted = flag.value_check == GlobalFlag::ValueCheck::kBool
+                   ? "yes, no, on, off, true, false, 1, 0"
+                   : "auto, always, never, on, off, yes, no, true, false, 1, 0";
+  }
+  return accepted;
+}
+}  // namespace
+
 absl::Status ValidateGlobalValue(std::string_view arg) {
   const std::string_view::size_type equals = arg.find('=');
   if (equals == std::string_view::npos) {
@@ -1972,42 +2002,25 @@ absl::Status ValidateGlobalValue(std::string_view arg) {
       }
       break;
     case GlobalFlag::ValueCheck::kEnumList:
-      if (value.empty() || absl::c_all_of(absl::StrSplit(value, ','), [&](std::string_view item) {
-            return absl::c_any_of(flag->values, [item](const ValueDoc& doc) { return doc.value == item; });
-          })) {
+      if (AcceptsEnumList(*flag, value)) {
         return absl::OkStatus();
       }
       break;
     case GlobalFlag::ValueCheck::kEnum:
-      if (absl::c_any_of(flag->values, [value](const ValueDoc& doc) { return doc.value == value; })) {
+      if (AcceptsEnumValue(*flag, value)) {
         return absl::OkStatus();
       }
       break;
     case GlobalFlag::ValueCheck::kEnumOrTemplate:
-      if (value.starts_with('{')
-          || absl::c_any_of(flag->values, [value](const ValueDoc& doc) { return doc.value == value; })) {
+      if (value.starts_with('{') || AcceptsEnumValue(*flag, value)) {
         return absl::OkStatus();
       }
       break;
   }
   // The accepted list comes from the same table the help prints (or from the shared vocabulary),
   // so the error and the documentation cannot disagree.
-  std::string accepted;
-  if (flag->value_check == GlobalFlag::ValueCheck::kEnumList || flag->value_check == GlobalFlag::ValueCheck::kEnum
-      || flag->value_check == GlobalFlag::ValueCheck::kEnumOrTemplate) {
-    for (const ValueDoc& doc : flag->values) {
-      if (doc.hidden) {
-        continue;  // accepted, but not something to suggest
-      }
-      absl::StrAppend(&accepted, accepted.empty() ? "" : ", ", doc.value);
-    }
-  } else {
-    accepted = flag->value_check == GlobalFlag::ValueCheck::kBool
-                   ? "yes, no, on, off, true, false, 1, 0"
-                   : "auto, always, never, on, off, yes, no, true, false, 1, 0";
-  }
   return absl::InvalidArgumentError(
-      absl::StrCat("unknown value '", value, "' for ", flag->name, " (accepted: ", accepted, ")"));
+      absl::StrCat("unknown value '", value, "' for ", flag->name, " (accepted: ", AcceptedValues(*flag), ")"));
 }
 
 bool IsKnownGlobal(std::string_view arg) {

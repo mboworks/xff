@@ -2,6 +2,8 @@
 
 xff starts unrestricted when no configuration requests restrictions. Safety has three independent
 parts: unconditional capability blocks, a configurable safe-mode profile, and dry-run previews.
+Explicit-file arming (`--allow-exec`) covers execution and deletion only. An unarmed explicit file
+can request file/archive output, including overwrite, when the safety policy permits it.
 These controls govern xff's actions. They are not a sandbox around child programs, an output-directory
 confinement mechanism, or a guarantee against resource exhaustion.
 

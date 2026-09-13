@@ -43,7 +43,8 @@ struct ConfigTest : ::testing::Test {};
 TEST_F(ConfigTest, SafetyDefaultsAndProfilesRemainSeparateFromUnconditionalBlocks) {
   const auto capabilities = std::to_array<Capability>(
       {Capability::kFileDeletion, Capability::kExecution, Capability::kFileWriting, Capability::kFileOverwrite,
-       Capability::kArchiveContentDeletion, Capability::kArchiveWriting, Capability::kArchiveOverwrite});
+       Capability::kArchiveContentDeletion, Capability::kArchiveWriting, Capability::kArchiveOverwrite,
+       Capability::kArchiveContentWriting, Capability::kArchiveContentOverwrite});
   for (const auto capability : capabilities) {
     const std::string name(CapabilityName(capability));
     EXPECT_THAT(ResolveSafety({}).Blocks(capability), IsFalse());
@@ -135,6 +136,7 @@ TEST_F(ConfigTest, SafetyPolicyComposesFullSystemUserAndExplicitFiles) {
   inputs.xffrc = {{.path = "task.rc", .config = ParseIni("--no-safe\n--no-safe-block-file-deletion")}};
   const auto resolved = ResolveConfigInOrder(inputs, {"--config=safe", "--config=unsafe", "--xffrc=task.rc"}, "xff");
   std::vector<std::string> globals;
+  globals.reserve(resolved.size());
   for (const auto& flag : resolved) {
     globals.push_back(flag.flag);
   }

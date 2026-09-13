@@ -44,7 +44,7 @@ the system file, its authoritative controls. An explicit command-line `--xffrc=F
 remains active: it is not ambient configuration. Ignore files remain
 unaffected.
 
-Permission flags (allow and require flags) are config-only directives, not command-line options. `--no-require-*` makes the corresponding file optional so it may be skipped;
+File-requirement directives and the `--allow-xffrc` pair are config-only, not command-line options. `--no-require-*` makes the corresponding file optional so it may be skipped;
 `--require-*` prevents skipping a file that exists. Neither requires a missing file to exist.
 Without an applicable `--no-require-*`, a present file is required:
 

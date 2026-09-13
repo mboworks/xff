@@ -2618,36 +2618,40 @@ EvaluationResult EvaluateXnor(const parser::Expr& expr, EvalContext& context) {
   return (rhs.deferred || rhs.unknown) ? rhs : EvaluationResult{.matched = lhs.matched == rhs.matched};
 }
 
+void PreviewExecution(const parser::Expr& expr, EvalContext& context) {
+  std::string preview = absl::StrCat("would execute ", expr.descriptor->name, " for ", context.visit.path, ":");
+  const bool capture = expr.descriptor->name == "-capture" || expr.descriptor->name == "-capturedir";
+  const std::size_t first = capture ? 2 : 0;
+  const bool in_dir = expr.descriptor->name.ends_with("dir");
+  const auto target = SplitExecDir(context.visit.path);
+  std::vector<std::string> args;
+  if (context.exec_fields && !capture) {
+    args = RenderExecArgv(expr, context, context.visit.path);
+  } else {
+    for (std::size_t index = first; index < expr.args.size(); ++index) {
+      std::string arg = expr.args[index];
+      const std::string_view subst = in_dir ? std::string_view(target.brace) : context.visit.path;
+      for (std::size_t pos = 0; (pos = arg.find("{}", pos)) != std::string::npos; pos += subst.size()) {
+        arg.replace(pos, 2, subst);
+      }
+      args.push_back(std::move(arg));
+    }
+  }
+  for (const std::string& arg : args) {
+    absl::StrAppend(&preview, " '", absl::CEscape(arg), "'");
+  }
+  if (in_dir) {
+    absl::StrAppend(&preview, " (cwd ", target.dir, ")");
+  }
+  absl::StrAppend(&preview, "\n");
+  context.emit(preview);
+}
+
 EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) {
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate: {
       if (context.dry_run && expr.descriptor->safety == registry::Safety::kSecurity) {
-        std::string preview = absl::StrCat("would execute ", expr.descriptor->name, " for ", context.visit.path, ":");
-        const bool capture = expr.descriptor->name == "-capture" || expr.descriptor->name == "-capturedir";
-        const std::size_t first = capture ? 2 : 0;
-        const bool in_dir = expr.descriptor->name.ends_with("dir");
-        const auto target = SplitExecDir(context.visit.path);
-        std::vector<std::string> args;
-        if (context.exec_fields && !capture) {
-          args = RenderExecArgv(expr, context, context.visit.path);
-        } else {
-          for (std::size_t index = first; index < expr.args.size(); ++index) {
-            std::string arg = expr.args[index];
-            const std::string_view subst = in_dir ? std::string_view(target.brace) : context.visit.path;
-            for (std::size_t pos = 0; (pos = arg.find("{}", pos)) != std::string::npos; pos += subst.size()) {
-              arg.replace(pos, 2, subst);
-            }
-            args.push_back(std::move(arg));
-          }
-        }
-        for (const std::string& arg : args) {
-          absl::StrAppend(&preview, " '", absl::CEscape(arg), "'");
-        }
-        if (in_dir) {
-          absl::StrAppend(&preview, " (cwd ", target.dir, ")");
-        }
-        absl::StrAppend(&preview, "\n");
-        context.emit(preview);
+        PreviewExecution(expr, context);
         return {.unknown = true};
       }
       if (expr.descriptor->name == "-top") {

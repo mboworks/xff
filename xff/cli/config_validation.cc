@@ -51,20 +51,37 @@ absl::StatusOr<std::size_t> PrimaryArgumentCount(
   return arity;
 }
 
+absl::StatusOr<absl::flat_hash_set<std::string>> ValidateControls(
+    const config::IniLine& line,
+    absl::flat_hash_set<std::string> controls) {
+  for (const std::string_view token : config::DirectiveTokens(line.tokens)) {
+    const std::string name = token.starts_with("--detailed-block-policy=") ? "--detailed-block-policy"
+                             : token.starts_with("--no-require-")          ? absl::StrCat("--", token.substr(5))
+                                                                           : std::string(token);
+    if ((name == "--require-system-config" || name == "--require-user-config" || name == "--detailed-block-policy")
+        && !controls.insert(name).second) {
+      return absl::InvalidArgumentError(absl::StrCat(name, " and its negative form may occur only once"));
+    }
+  }
+  return controls;
+}
+
+absl::Status ValidateSystemControl(std::string_view token) {
+  if (!token.starts_with("--detailed-block-policy")) {
+    return absl::OkStatus();
+  }
+  if (!token.contains('=')) {
+    return absl::InvalidArgumentError("--detailed-block-policy requires =LIST (empty or comma-separated categories)");
+  }
+  return ValidateGlobalValue(token);
+}
+
 absl::Status ValidateTokens(const std::vector<std::string>& tokens) {
   std::vector<std::string> arguments = {"."};
   for (std::size_t pos = 0; pos < tokens.size(); ++pos) {
     const std::string_view token = tokens[pos];
     if (IsSystemControl(token)) {
-      if (token.starts_with("--detailed-block-policy")) {
-        if (const auto status = ValidateGlobalValue(token); !status.ok()) {
-          return status;
-        }
-        if (token.find('=') == std::string_view::npos) {
-          return absl::InvalidArgumentError(
-              "--detailed-block-policy requires =LIST (empty or comma-separated categories)");
-        }
-      }
+      MBO_RETURN_IF_ERROR(ValidateSystemControl(token));
       continue;
     }
     if (LookupGlobalArgument(token).has_value()) {
@@ -222,23 +239,13 @@ class ConfigFileValidator {
     for (const config::IniLine& line : result_.config.global_lines) {
       absl::Status status =
           line.syntax_error.empty() ? ValidateTokens(line.tokens) : absl::InvalidArgumentError(line.syntax_error);
-      auto next_controls = controls_;
-      if (status.ok()) {
-        for (const std::string_view token : config::DirectiveTokens(line.tokens)) {
-          const std::string name = token.starts_with("--detailed-block-policy=") ? "--detailed-block-policy"
-                                   : token.starts_with("--no-require-")          ? absl::StrCat("--", token.substr(5))
-                                                                                 : std::string(token);
-          if ((name == "--require-system-config" || name == "--require-user-config"
-               || name == "--detailed-block-policy")
-              && !next_controls.insert(name).second) {
-            status = absl::InvalidArgumentError(absl::StrCat(name, " and its negative form may occur only once"));
-            break;
-          }
-        }
+      auto next_controls = ValidateControls(line, controls_);
+      if (status.ok() && !next_controls.ok()) {
+        status = next_controls.status();
       }
       if (status.ok()) {
         valid_lines.push_back(line);
-        controls_ = std::move(next_controls);
+        controls_ = *std::move(next_controls);
         result_.config.globals.insert(result_.config.globals.end(), line.tokens.begin(), line.tokens.end());
       } else {
         result_.diagnostics.push_back(

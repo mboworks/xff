@@ -42,12 +42,14 @@ class TemporaryOutput {
   ~TemporaryOutput();
   TemporaryOutput(const TemporaryOutput&) = delete;
   TemporaryOutput& operator=(const TemporaryOutput&) = delete;
+  TemporaryOutput(TemporaryOutput&&) = delete;
+  TemporaryOutput& operator=(TemporaryOutput&&) = delete;
 
   int Fd() const { return fd_; }
 
   const std::string& Path() const { return path_; }
 
-  absl::Status Write(std::string_view content);
+  absl::Status Write(std::string_view content) const;
   absl::Status Publish(std::string_view target);
   absl::Status SetPermissions(unsigned int mode) const;
 
@@ -67,6 +69,8 @@ class TemporaryDirectory {
   ~TemporaryDirectory();
   TemporaryDirectory(const TemporaryDirectory&) = delete;
   TemporaryDirectory& operator=(const TemporaryDirectory&) = delete;
+  TemporaryDirectory(TemporaryDirectory&&) = delete;
+  TemporaryDirectory& operator=(TemporaryDirectory&&) = delete;
 
   const std::string& Path() const { return path_; }
 

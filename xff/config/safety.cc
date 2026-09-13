@@ -16,11 +16,11 @@ constexpr std::array<std::string_view, 9> kNames = {
     "archive-overwrite",
     "archive-content-writing",
     "archive-content-overwrite"};
-}
+}  // namespace
 
 bool SafetyPolicy::Blocks(Capability capability) const {
   const auto index = static_cast<std::size_t>(capability);
-  return unconditional[index] || (safe && profile[index]);
+  return unconditional.at(index) || (safe && profile.at(index));
 }
 
 vfs::MutationPolicy SafetyPolicy::FileMutations() const {
@@ -40,7 +40,7 @@ vfs::MutationPolicy SafetyPolicy::ArchiveMutations() const {
 }
 
 std::string_view CapabilityName(Capability capability) {
-  return kNames[static_cast<std::size_t>(capability)];
+  return kNames.at(static_cast<std::size_t>(capability));
 }
 
 std::vector<std::string> ExpandSafetyFlag(std::string_view flag, bool separate_archives) {
@@ -51,8 +51,8 @@ std::vector<std::string> ExpandSafetyFlag(std::string_view flag, bool separate_a
   if (separate_archives) {
     return result;
   }
-  constexpr auto prefixes = std::to_array<std::string_view>({"--block-", "--safe-block-", "--no-safe-block-"});
-  for (const std::string_view prefix : prefixes) {
+  constexpr auto kPrefixes = std::to_array<std::string_view>({"--block-", "--safe-block-", "--no-safe-block-"});
+  for (const std::string_view prefix : kPrefixes) {
     if (!flag.starts_with(prefix)) {
       continue;
     }
@@ -81,12 +81,12 @@ SafetyPolicy ResolveSafety(const std::vector<std::string>& globals, bool expande
         result.dry_run = true;
       } else {
         for (std::size_t index = 0; index < kNames.size(); ++index) {
-          if (flag.starts_with("--block-") && flag.substr(8) == kNames[index]) {
-            result.unconditional[index] = true;
-          } else if (flag.starts_with("--safe-block-") && flag.substr(13) == kNames[index]) {
-            result.profile[index] = true;
-          } else if (flag.starts_with("--no-safe-block-") && flag.substr(16) == kNames[index]) {
-            result.profile[index] = false;
+          if (flag.starts_with("--block-") && flag.substr(8) == kNames.at(index)) {
+            result.unconditional.at(index) = true;
+          } else if (flag.starts_with("--safe-block-") && flag.substr(13) == kNames.at(index)) {
+            result.profile.at(index) = true;
+          } else if (flag.starts_with("--no-safe-block-") && flag.substr(16) == kNames.at(index)) {
+            result.profile.at(index) = false;
           }
         }
       }

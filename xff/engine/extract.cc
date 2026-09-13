@@ -127,7 +127,7 @@ absl::StatusOr<std::string> ExtractedMembers::Extract(const vfs::FileSystem& fs,
   const std::string prefix =
       absl::StrCat(ChooseExtractDirectory(content.size(), DefaultExtractDirectories()), "/xff-extract");
   MBO_ASSIGN_OR_RETURN(auto directory, vfs::TemporaryDirectory::Create(prefix, policy_));
-  const std::string path = absl::StrCat(directory->Path(), "/", name);
+  std::string path = absl::StrCat(directory->Path(), "/", name);
   MBO_ASSIGN_OR_RETURN(const auto output, vfs::OpenHostOutput(path, true, policy_));
   MBO_RETURN_IF_ERROR(output->Write(content));
   directories_.emplace(path, std::move(directory));

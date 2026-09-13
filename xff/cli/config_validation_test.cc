@@ -30,10 +30,8 @@ using ::testing::AllOf;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
-using ::testing::FieldsAre;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
-using ::testing::IsFalse;
 using ::testing::NotNull;
 using ::testing::SizeIs;
 

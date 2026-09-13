@@ -415,6 +415,22 @@ absl::StatusOr<std::string> Decode(
   return DecodeStream(file, path, max_bytes);
 }
 
+namespace {
+absl::Status EncodeTarOutput(
+    const stdfs::path& tar,
+    vfs::TemporaryOutput& compressed,
+    const vfs::TemporaryDirectory& scratch,
+    const EncodingOptions& encoding,
+    const vfs::MutationPolicy& mutations) {
+  if (encoding.raw) {
+    return EncodeFile(tar, compressed, encoding.quality, encoding.window_bits);
+  }
+  MBO_ASSIGN_OR_RETURN(auto raw, vfs::TemporaryOutput::Create(scratch.Path() + "/raw", mutations));
+  MBO_RETURN_IF_ERROR(EncodeFile(tar, *raw, encoding.quality, encoding.window_bits));
+  return FrameEncodedTar(tar, raw->Path(), compressed);
+}
+}  // namespace
+
 absl::Status PackTar(
     std::string_view path,
     const std::vector<archive::PackFile>& files,
@@ -427,13 +443,7 @@ absl::Status PackTar(
   MBO_RETURN_IF_ERROR(archive::PackNativeArchiveContainer(tar.string(), files, {.mutations = options.mutations}));
   MBO_ASSIGN_OR_RETURN(
       auto compressed, vfs::TemporaryOutput::Create(std::string(path) + ".xff-pack", options.mutations));
-  if (encoding.raw) {
-    MBO_RETURN_IF_ERROR(EncodeFile(tar, *compressed, encoding.quality, encoding.window_bits));
-  } else {
-    MBO_ASSIGN_OR_RETURN(auto raw, vfs::TemporaryOutput::Create(scratch->Path() + "/raw", options.mutations));
-    MBO_RETURN_IF_ERROR(EncodeFile(tar, *raw, encoding.quality, encoding.window_bits));
-    MBO_RETURN_IF_ERROR(FrameEncodedTar(tar, raw->Path(), *compressed));
-  }
+  MBO_RETURN_IF_ERROR(EncodeTarOutput(tar, *compressed, *scratch, encoding, options.mutations));
   return compressed->Publish(path);
 }
 

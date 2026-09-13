@@ -218,6 +218,36 @@ bool IsSignedTarOrZipPhar(const std::vector<Member>& members) {
       members, [](const Member& member) { return NormalizeMemberName(member.path) == kPharSignatureMember; });
 }
 
+namespace {
+absl::Status ValidateStubRemoval(const PharLayout& layout, const std::vector<std::string>& members) {
+  const bool has_stored_stub = absl::c_any_of(layout.members, [](const PharMemberLayout& member) {
+    return NormalizeMemberName(member.name) == kPharStubMember;
+  });
+  if (!has_stored_stub && absl::c_any_of(members, [](std::string_view member) {
+        return NormalizeMemberName(member) == kPharStubMember;
+      })) {
+    return absl::FailedPreconditionError("cannot remove .phar/stub.php: a native phar requires its executable stub");
+  }
+
+  return absl::OkStatus();
+}
+
+absl::Status PublishPharReplacement(std::string_view path, std::string_view bytes, const vfs::MutationPolicy& policy) {
+  const stdfs::path target{std::string(path)};
+  MBO_ASSIGN_OR_RETURN(const auto temporary, vfs::TemporaryOutput::Create(absl::StrCat(path, ".xff-rewrite"), policy));
+  MBO_RETURN_IF_ERROR(temporary->Write(bytes));
+  std::error_code error;
+  // XFF_HOST_IO: reads original permissions before publishing the owned replacement.
+  const auto mode = stdfs::status(target, error).permissions();
+  if (error) {
+    return absl::UnavailableError(error.message());
+  }
+  MBO_RETURN_IF_ERROR(temporary->SetPermissions(static_cast<unsigned int>(mode)));
+  return temporary->Publish(path);
+}
+
+}  // namespace
+
 absl::Status RemovePharMembersOfFile(
     std::string_view path,
     const std::vector<std::string>& members,
@@ -231,14 +261,7 @@ absl::Status RemovePharMembersOfFile(
   MBO_ASSIGN_OR_RETURN(const std::string bytes, ReadWholeFile(path_string));
   MBO_ASSIGN_OR_RETURN(const PharLayout layout, ParsePharLayout(bytes));
 
-  const bool has_stored_stub = absl::c_any_of(layout.members, [](const PharMemberLayout& member) {
-    return NormalizeMemberName(member.name) == kPharStubMember;
-  });
-  if (!has_stored_stub && absl::c_any_of(members, [](std::string_view member) {
-        return NormalizeMemberName(member) == kPharStubMember;
-      })) {
-    return absl::FailedPreconditionError("cannot remove .phar/stub.php: a native phar requires its executable stub");
-  }
+  MBO_RETURN_IF_ERROR(ValidateStubRemoval(layout, members));
 
   // The three stages carry the layout facts between them: SELECT decides survival, REBUILD copies
   // the surviving bytes verbatim, RE-SIGN digests the result when the original was signed.
@@ -246,17 +269,7 @@ absl::Status RemovePharMembersOfFile(
   std::string rebuilt = RebuildPhar(bytes, layout, survivors);
   MBO_RETURN_IF_ERROR(AppendSignature(path, bytes, layout, rebuilt));
 
-  const stdfs::path target(path_string);
-  MBO_ASSIGN_OR_RETURN(const auto temporary, vfs::TemporaryOutput::Create(absl::StrCat(path, ".xff-rewrite"), policy));
-  MBO_RETURN_IF_ERROR(temporary->Write(rebuilt));
-  std::error_code error;
-  // XFF_HOST_IO: reads original permissions before publishing the owned replacement.
-  const auto mode = stdfs::status(target, error).permissions();
-  if (error) {
-    return absl::UnavailableError(error.message());
-  }
-  MBO_RETURN_IF_ERROR(temporary->SetPermissions(static_cast<unsigned int>(mode)));
-  return temporary->Publish(path);
+  return PublishPharReplacement(path, rebuilt, policy);
 }
 
 }  // namespace xff::archive

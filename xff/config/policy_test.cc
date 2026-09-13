@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_cat.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/status.h"
@@ -56,14 +57,14 @@ TEST_F(PolicyTest, ArchivePolicyIsUniqueAndRestrictedToTrustedGlobals) {
     inputs.system = ParseIni(flag);
     inputs.user = ParseIni(flag);
     EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
-    inputs.system = ParseIni(flag + "\n" + flag);
+    inputs.system = ParseIni(absl::StrCat(flag, "\n", flag));
     EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("only once")));
     inputs.system = ParseIni("[named]\n" + flag);
     EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("precede")));
     inputs.system = {};
     inputs.user = ParseIni("[named]\n" + flag);
     EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("precede")));
-    inputs.user = ParseIni(flag + "\n" + flag);
+    inputs.user = ParseIni(absl::StrCat(flag, "\n", flag));
     EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("only once")));
     inputs.user = {};
     inputs.xffrc = {{.path = "task.rc", .config = ParseIni(flag)}};

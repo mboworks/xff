@@ -249,6 +249,28 @@ absl::Status TransferFirstMember(
   return absl::OkStatus();
 }
 
+absl::Status RewriteMembers(
+    ::archive& reader,
+    ::archive_entry& first,
+    vfs::TemporaryOutput& temporary,
+    std::string_view path,
+    const std::vector<std::string>& members) {
+  const WritePtr writer{::archive_write_new()};
+  if (writer == nullptr) {  // LCOV_EXCL_BR_LINE: libarchive allocation failure injection.
+    return absl::UnavailableError("cannot create a libarchive writer");
+  }
+  MBO_RETURN_IF_ERROR(MatchWriterToReader(reader, *writer, temporary, path));
+  RemovalTracker removals(members);
+  // The peeked header is the first member, so handle it before the loop takes over the rest.
+  MBO_RETURN_IF_ERROR(TransferFirstMember(reader, *writer, first, removals));
+  MBO_RETURN_IF_ERROR(RewriteWithout(reader, *writer, removals));
+  MBO_RETURN_IF_ERROR(removals.CheckAll(path));
+  if (::archive_write_close(writer.get()) != ARCHIVE_OK) {
+    return absl::UnavailableError(LastError(writer.get()));
+  }
+  return absl::OkStatus();
+}
+
 }  // namespace
 
 absl::Status RemoveMembersOfFile(
@@ -277,30 +299,7 @@ absl::Status RemoveMembersOfFile(
   }
   const stdfs::path target(path_string);
   MBO_ASSIGN_OR_RETURN(const auto temporary, vfs::TemporaryOutput::Create(absl::StrCat(path, ".xff-rewrite"), policy));
-  {
-    const WritePtr writer{::archive_write_new()};
-    if (writer == nullptr) {  // LCOV_EXCL_BR_LINE: libarchive allocation failure injection.
-      return absl::UnavailableError("cannot create a libarchive writer");
-    }
-    MBO_RETURN_IF_ERROR(MatchWriterToReader(*reader, *writer, *temporary, path));
-    RemovalTracker removals(members);
-    // The peeked header is the first member, so handle it before the loop takes over the rest.
-    absl::Status status = TransferFirstMember(*reader, *writer, *first, removals);
-    if (status.ok()) {
-      status = RewriteWithout(*reader, *writer, removals);
-    }
-    if (status.ok()) {
-      status = removals.CheckAll(path);
-    }
-    if (status.ok() && ::archive_write_close(writer.get()) != ARCHIVE_OK) {  // LCOV_EXCL_BR_LINE
-      // Close is where a zip writes its central directory, so a failure here is a failure to write.
-      status = absl::UnavailableError(LastError(writer.get()));
-    }
-    MBO_RETURN_IF_ERROR(status);
-    if (::archive_write_close(writer.get()) != ARCHIVE_OK) {
-      return absl::UnavailableError("cannot finish archive rewrite");
-    }
-  }
+  MBO_RETURN_IF_ERROR(RewriteMembers(*reader, *first, *temporary, path, members));
   std::error_code error;
   // XFF_HOST_IO: reads original permissions before publishing the owned replacement.
   const auto mode = stdfs::status(target, error).permissions();

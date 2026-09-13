@@ -36,6 +36,11 @@ class HostOutput final : public OutputFile {
  public:
   explicit HostOutput(int fd) : fd_(fd) {}
 
+  HostOutput(const HostOutput&) = delete;
+  HostOutput& operator=(const HostOutput&) = delete;
+  HostOutput(HostOutput&&) = delete;
+  HostOutput& operator=(HostOutput&&) = delete;
+
   // XFF_HOST_IO: releases an authorized output handle.
   ~HostOutput() override { ::close(fd_); }
 
@@ -74,10 +79,12 @@ absl::StatusOr<std::unique_ptr<OutputFile>> OpenHostOutput(
     std::string_view path,
     bool exclusive,
     const MutationPolicy& policy) {
-  if (const auto status = policy.Write(); !status.ok()) {
+  if (auto status = policy.Write(); !status.ok()) {
     return status;
   }
   const std::string name(path);
+  // POSIX open requires a variadic mode argument when creating a file.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
   const int fd = ::open(
       name.c_str(), O_WRONLY | O_CREAT | O_CLOEXEC | ((exclusive || policy.block_overwrite) ? O_EXCL : O_TRUNC), 0666);
   if (fd < 0) {
@@ -88,7 +95,7 @@ absl::StatusOr<std::unique_ptr<OutputFile>> OpenHostOutput(
 
 // XFF_HOST_IO: checked deletion of one caller-selected entry.
 absl::Status RemoveHostEntry(std::string_view path, const MutationPolicy& policy) {
-  if (const auto status = policy.Delete(); !status.ok()) {
+  if (auto status = policy.Delete(); !status.ok()) {
     return status;
   }
   return ::remove(std::string(path).c_str()) == 0 ? absl::OkStatus()
@@ -97,7 +104,7 @@ absl::Status RemoveHostEntry(std::string_view path, const MutationPolicy& policy
 
 // XFF_HOST_IO: checked directory creation, used only by the mount-root adapter.
 absl::Status CreateHostDirectories(std::string_view path, const MutationPolicy& policy) {
-  if (const auto status = policy.Write(); !status.ok()) {
+  if (auto status = policy.Write(); !status.ok()) {
     return status;
   }
   std::error_code error;
@@ -108,7 +115,7 @@ absl::Status CreateHostDirectories(std::string_view path, const MutationPolicy& 
 
 // XFF_HOST_IO: checked recursive removal of explicitly identified abandoned mount roots.
 absl::Status RemoveHostTree(std::string_view path, const MutationPolicy& policy) {
-  if (const auto status = policy.Delete(); !status.ok()) {
+  if (auto status = policy.Delete(); !status.ok()) {
     return status;
   }
   std::error_code error;
@@ -130,6 +137,8 @@ absl::StatusOr<std::unique_ptr<TemporaryOutput>> TemporaryOutput::Create(
     MutationPolicy policy) {
   MBO_ASSIGN_OR_RETURN(auto directory, TemporaryDirectory::Create(prefix, policy));
   const std::string path = directory->Path() + "/output";
+  // POSIX open requires a variadic mode argument when creating a file.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
   const int fd = ::open(path.c_str(), O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
   if (fd < 0) {
     return absl::ErrnoToStatus(errno, "cannot create temporary output");
@@ -142,7 +151,7 @@ TemporaryOutput::~TemporaryOutput() {
   ::close(fd_);
 }
 
-absl::Status TemporaryOutput::Write(std::string_view content) {
+absl::Status TemporaryOutput::Write(std::string_view content) const {
   if (published_) {
     return absl::FailedPreconditionError("cannot write after publication");
   }
@@ -154,7 +163,7 @@ absl::Status TemporaryOutput::Publish(std::string_view target) {
   if (published_) {
     return absl::FailedPreconditionError("temporary output was already published");
   }
-  if (const auto status = policy_.Write(); !status.ok()) {
+  if (auto status = policy_.Write(); !status.ok()) {
     return status;
   }
   if (::fsync(fd_) != 0) {
@@ -182,7 +191,7 @@ TemporaryDirectory::TemporaryDirectory(std::string path) : path_(std::move(path)
 absl::StatusOr<std::unique_ptr<TemporaryDirectory>> TemporaryDirectory::Create(
     std::string_view prefix,
     MutationPolicy policy) {
-  if (const auto status = policy.Write(); !status.ok()) {
+  if (auto status = policy.Write(); !status.ok()) {
     return status;
   }
   std::string path = absl::StrCat(prefix, "-XXXXXX");

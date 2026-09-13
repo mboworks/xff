@@ -41,6 +41,8 @@ class OutputFile {
   virtual ~OutputFile() = default;
   OutputFile(const OutputFile&) = delete;
   OutputFile& operator=(const OutputFile&) = delete;
+  OutputFile(OutputFile&&) = delete;
+  OutputFile& operator=(OutputFile&&) = delete;
   virtual absl::Status Write(std::string_view content) = 0;
 };
 

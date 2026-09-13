@@ -55,7 +55,7 @@ absl::StatusOr<std::unique_ptr<Mount>> MountContainer(
     std::shared_ptr<const vfs::FileSystem> fs,
     std::string_view container,
     const vfs::MutationPolicy& policy) {
-  if (const auto status = policy.Write(); !status.ok()) {
+  if (auto status = policy.Write(); !status.ok()) {
     return status;
   }
   if (fs == nullptr) {

@@ -73,8 +73,8 @@ std::vector<std::string> ExpandSafetyTokens(const std::vector<std::string>& toke
 ConfigFile ExpandFileSafety(ConfigFile file) {
   const auto directives = DirectiveTokens(file.globals);
   const bool separate = absl::c_any_of(directives, [](std::string_view token) {
-    constexpr std::string_view prefix = "--detailed-block-policy=";
-    return token.starts_with(prefix) && absl::c_contains(absl::StrSplit(token.substr(prefix.size()), ','), "archive");
+    constexpr std::string_view kPrefix = "--detailed-block-policy=";
+    return token.starts_with(kPrefix) && absl::c_contains(absl::StrSplit(token.substr(kPrefix.size()), ','), "archive");
   });
   file.globals = ExpandSafetyTokens(file.globals, separate);
   for (auto& line : file.global_lines) {

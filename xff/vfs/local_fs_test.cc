@@ -109,7 +109,8 @@ TEST_F(LocalFsTest, WriteContentReportsOpenFailure) {
 #if defined(__linux__)
 TEST_F(LocalFsTest, WriteContentReportsWriteFailure) {
   EXPECT_THAT(
-      local_fs_.WriteContent("/dev/full", "data"), StatusIs(absl::StatusCode::kInternal, HasSubstr("cannot write")));
+      local_fs_.WriteContent("/dev/full", "data"),
+      StatusIs(absl::StatusCode::kResourceExhausted, HasSubstr("cannot write")));
 }
 #endif
 

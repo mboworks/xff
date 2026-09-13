@@ -932,6 +932,10 @@ Section SafetySection(bool in_full) {
       "and replacement of existing archives. Child processes are not sandboxed by xff's file controls; "
       "block execution when those controls must not be bypassed by a command."));
   section.children.push_back(ProseOf(
+      "Explicit-file arming with `--allow-exec` covers execution and deletion. It does not gate file "
+      "or archive output: an unarmed explicit file can request writes and overwrites when this safety "
+      "policy permits them. Use unconditional blocks for mandatory output restrictions."));
+  section.children.push_back(ProseOf(
       "`--dry-run` validates safety restrictions first, then previews actions without executing commands "
       "or modifying files. It never grants a blocked operation. Reading and normal terminal output remain "
       "allowed. A command's exit status or captured output cannot be predicted: preview stops evaluation "
@@ -969,7 +973,7 @@ Section ConfigSection(bool in_full) {
       "trusted permission directives allow it; those files may still be inspected for policy. An explicit "
       "command-line `--xffrc` remains active."));
   layers.children.push_back(ProseOf(
-      "Permission flags (allow and require flags) are config-only directives, not command-line options. "
+      "File-requirement directives and the `--allow-xffrc` pair are config-only, not command-line options. "
       "Require flags precede the first section. `--no-require-*` makes a file "
       "optional; "
       "`--require-*` prevents skipping an existing file, without requiring a missing file to exist. The system file "
