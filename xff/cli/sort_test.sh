@@ -26,9 +26,9 @@ set -euo pipefail
 source "${mboworks_bashtest}"
 
 _xff_bin() {
-  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/xff"
+  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testing/xff"
   if [[ ! -x "${bin}" ]]; then
-    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/xff' 2>/dev/null | head -1)"
+    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/testing/xff' 2>/dev/null | head -1)"
   fi
   echo "${bin}"
 }
@@ -48,7 +48,7 @@ _make_tree() {
 _walk() {
   local dir="$1"
   shift
-  (cd "${dir}" && XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "$@" .)
+  (cd "${dir}" && XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "$@" .)
 }
 
 test::every_sort_mode_walks_the_whole_tree() {
@@ -86,9 +86,9 @@ test::sort_roots_and_global_order_multiple_operands() {
   : >"${root_a}/child.txt"
   : >"${root_z}/child.txt"
   expected="$(printf '%s\n%s\n%s\n%s' "${root_a}" "${root_a}/child.txt" "${root_z}" "${root_z}/child.txt")"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --sort=roots "${root_z}" "${root_a}")"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --sort=roots "${root_z}" "${root_a}")"
   expect_eq "${expected}" "${out}"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --sort=global "${root_z}" "${root_a}")"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --sort=global "${root_z}" "${root_a}")"
   expect_eq "${expected}" "${out}"
 }
 

@@ -362,10 +362,8 @@ Section EnvironmentSection() {
       {"XFF_MANPAGER",
        "the pager / formatter for `--man`; overrides the built-in `mandoc` pipeline; set empty to disable"},
       {"COLUMNS", "terminal width used to wrap plain `--help` text for `--width=auto` when the tty size is unknown"},
-      {"XFF_CONFIG",
-       "explicit path to the config file, taking precedence over the XDG / HOME search (see `--help=config`)"},
-      {"XDG_CONFIG_HOME", "config search root: `$XDG_CONFIG_HOME/xff/config` (see `--help=config`)"},
-      {"HOME", "config fallback: `$HOME/.config/xff/config` when `$XDG_CONFIG_HOME` is unset"},
+      {"XDG_CONFIG_HOME", "Git global-ignore discovery root; does not change the xff config location"},
+      {"HOME", "Git configuration and global-ignore discovery; does not change the xff config location"},
       {"LC_ALL, LC_CTYPE, LANG",
        "locale for `--unicode=auto`: a UTF-8 locale selects the Unicode `--format=tree` connectors, else ASCII"},
       {"LSCOLORS",
@@ -1026,6 +1024,10 @@ Section ConfigSection(bool in_full) {
       "File-requirement directives and the `--allow-xffrc` pair are config-only, not command-line options. "
       "Require flags precede the first section. `--no-require-*` makes a file "
       "optional; "
+      "The user config is always `<OS account home>/.config/xff/config`, using the effective OS account record, "
+      "independent of environment variables. Missing automatic system/user files are normal. "
+      "An explicit `--xffrc=FILE` must exist; existing unreadable configs and dangling symlinks are errors, "
+      "even when a skip is requested. "
       "`--require-*` prevents skipping an existing file, without requiring a missing file to exist. The system file "
       "may set one of "
       "`--no-require-system-config` / `--require-system-config` once and one of "

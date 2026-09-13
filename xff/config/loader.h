@@ -16,57 +16,62 @@
 #ifndef XFF_CONFIG_LOADER_H_
 #define XFF_CONFIG_LOADER_H_
 
-#include <optional>
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include "absl/functional/function_ref.h"
+#include "absl/status/statusor.h"
 #include "xff/config/config.h"
 #include "xff/vfs/filesystem.h"
 
 namespace xff::config {
 
-// Reads the file at `path`, returning its contents, or nullopt if the file is
-// missing or unreadable. Injected so discovery is testable without touching the
-// real filesystem; the caller supplies a status-returning reader.
-using FileReader = absl::FunctionRef<std::optional<std::string>(std::string_view path)>;
+// Reads config contents. NotFound means the path is absent; every other failure is an error.
+using FileReader = absl::FunctionRef<absl::StatusOr<std::string>(std::string_view path)>;
 
-// Inputs to Discover: the CLI selectors plus the environment values that locate
-// the user config (injected rather than read from getenv here, for testability).
-struct DiscoveryOptions {
-  bool no_config = false;                      // --no-config
-  bool no_system_config = false;               // --no-system-config
-  bool no_user_config = false;                 // --no-user-config
-  std::vector<std::string> configs;            // --config=NAME, in order
-  std::vector<std::string> xffrc_files;        // --xffrc=FILE, in order
-  std::optional<std::string> xff_config;       // $XFF_CONFIG
-  std::optional<std::string> xdg_config_home;  // $XDG_CONFIG_HOME
-  std::optional<std::string> home;             // $HOME
+struct ConfigPaths {
+  std::string system = "/etc/xff.ini";
+  std::string user;
 };
 
-// The user config path per the discovery order: $XFF_CONFIG, else
-// $XDG_CONFIG_HOME/xff/config, else $HOME/.config/xff/config. Empty if none of
-// those is set.
-std::string UserConfigPath(const DiscoveryOptions& opts);
+// The effective OS account supplies the home; environment variables cannot redirect policy.
+absl::StatusOr<ConfigPaths> DefaultConfigPaths();
+
+// An account lookup receives its scratch-buffer size and returns a home directory.
+// OutOfRange requests a larger buffer. Other errors propagate without an environment fallback.
+using AccountHomeLookup = absl::FunctionRef<absl::StatusOr<std::string>(std::size_t buffer_size)>;
+absl::StatusOr<ConfigPaths> ConfigPathsFromAccountLookup(AccountHomeLookup lookup);
+absl::StatusOr<std::string> UserConfigPath(std::string_view account_home);
+
+// CLI selectors and explicitly injected paths for discovery.
+struct DiscoveryOptions {
+  bool no_config = false;                // --no-config
+  bool no_system_config = false;         // --no-system-config
+  bool no_user_config = false;           // --no-user-config
+  std::vector<std::string> configs;      // --config=NAME, in order
+  std::vector<std::string> xffrc_files;  // --xffrc=FILE, in order
+  ConfigPaths paths;
+};
 
 // Discovers and parses the config layers into ConfigInputs (ready for
 // ResolveConfig), reading every file through `read`:
 //   - system: /etc/xff.ini,
-//   - user:   UserConfigPath(opts), in the shared INI grammar,
+//   - user:   the fixed OS account path, in the shared INI grammar,
 //   - --xffrc=FILE: separate parsed files, in order - a NON-ARMING tier whose
 //     dangerous directives stay inert unless armed (naming the file is consent to load, not to arm).
 // A requested skip still reads present trusted files so their controls can authorize it.
 // Explicit files remain selected by --no-config. Root discovery is a separate,
 // admission-checked step through DiscoverRc.
-ConfigInputs Discover(const DiscoveryOptions& opts, FileReader read);
+absl::StatusOr<ConfigInputs> Discover(const DiscoveryOptions& opts, FileReader read);
 
 // Reads automatic files and records explicit paths without opening them. Validate the automatic
 // system config and explicit-file admission before completing discovery with DiscoverExplicit.
-ConfigInputs DiscoverAutomatic(const DiscoveryOptions& opts, FileReader read);
+absl::StatusOr<ConfigInputs> DiscoverAutomatic(const DiscoveryOptions& opts, FileReader read);
 
 // Completes an automatic discovery by reading its explicit paths and recording their sources.
-ConfigInputs DiscoverExplicit(ConfigInputs inputs, FileReader read);
+absl::StatusOr<ConfigInputs> DiscoverExplicit(ConfigInputs inputs, FileReader read);
 
 // Resolve discovery from trusted system/user configuration and CLI directives only.
 // --no-config suppresses discovery; .xffrc content cannot control discovery.
@@ -85,8 +90,8 @@ absl::StatusOr<ConfigInputs> DiscoverRc(
     const std::vector<std::string>& roots,
     const vfs::FileSystem& filesystem);
 
-// Extracts the config selectors among `globals` into a DiscoveryOptions (the env
-// fields are left unset for the caller): --no-config, --no-system-config, --no-user-config,
+// Extracts the config selectors among `globals` into a DiscoveryOptions (the paths
+// are supplied by the caller): --no-config, --no-system-config, --no-user-config,
 // --config=NAME (in order),
 // and --xffrc=FILE (in order). Every other global is ignored.
 DiscoveryOptions SelectorsFromGlobals(const std::vector<std::string>& globals);

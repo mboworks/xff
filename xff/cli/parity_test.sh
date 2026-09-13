@@ -33,9 +33,9 @@ source "${mboworks_bashtest}"
 
 # Resolve the lean `xff` ($1=xff) or extended `xff_full` ($1=xff_full) runfile.
 _bin() {
-  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/$1"
+  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testing/$1"
   if [[ ! -x "${bin}" ]]; then
-    bin="$(find "${TEST_SRCDIR}" -type f -name "$1" -path "*xff/cli/$1" 2>/dev/null | head -1)"
+    bin="$(find "${TEST_SRCDIR}" -type f -name "$1" -path "*xff/cli/testing/$1" 2>/dev/null | head -1)"
   fi
   echo "${bin}"
 }

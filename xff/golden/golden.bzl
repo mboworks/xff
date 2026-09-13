@@ -64,6 +64,6 @@ def xff_golden(name, setup, args, find_golden, xff_golden, ordered = False, size
             setup,
             find_golden,
             xff_golden,
-            "//xff/cli:xff",
+            "//xff/cli/testing:xff",
         ],
     )

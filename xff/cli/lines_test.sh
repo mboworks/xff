@@ -25,9 +25,9 @@ set -euo pipefail
 source "${mboworks_bashtest}"
 
 _xff_bin() {
-  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/xff"
+  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testing/xff"
   if [[ ! -x "${bin}" ]]; then
-    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/xff' 2>/dev/null | head -1)"
+    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/testing/xff' 2>/dev/null | head -1)"
   fi
   echo "${bin}"
 }
@@ -40,7 +40,7 @@ test::lines_field_counts_text_files() {
   printf 'x' >"${dir}/one.txt"           # 1 line, no trailing newline
   printf '' >"${dir}/empty.txt"          # 0 lines
   printf 'a\0b\n' >"${dir}/bin.dat"      # binary (NUL byte) -> empty
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -type f -printf '%{lines}|%{name}\n' 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -type f -printf '%{lines}|%{name}\n' 2>&1)"
   expect_output_contains "3|three.txt" "${out}"
   expect_output_contains "1|one.txt" "${out}"
   expect_output_contains "0|empty.txt" "${out}"
@@ -52,7 +52,7 @@ test::lines_field_empty_for_non_regular() {
   dir="$(test_tmpdir linesdir)"
   mkdir -p "${dir}"
   # The directory itself is non-regular, so {lines} renders empty (bracketed to show it).
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -maxdepth 0 -type d -printf '[%{lines}]\n' 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -maxdepth 0 -type d -printf '[%{lines}]\n' 2>&1)"
   expect_output_contains "[]" "${out}"
 }
 

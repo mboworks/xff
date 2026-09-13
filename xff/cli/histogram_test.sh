@@ -27,9 +27,9 @@ source "${mboworks_bashtest}"
 NL=$'\n'
 
 _xff_bin() {
-  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/xff"
+  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testing/xff"
   if [[ ! -x "${bin}" ]]; then
-    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/xff' 2>/dev/null | head -1)"
+    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/testing/xff' 2>/dev/null | head -1)"
   fi
   echo "${bin}"
 }
@@ -46,7 +46,7 @@ test::histogram_ascii_bars_scaled_to_tallest() {
   local dir out
   dir="$(test_tmpdir histascii)"
   _make_tree "${dir}"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=ext --unicode=never "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=ext --unicode=never "${dir}" -type f 2>&1)"
   # cc (3) and h (1) each get a bar of '#'; cc is the tallest so it is the widest.
   expect_matches "cc[[:space:]]+3[[:space:]]+#+" "${out}"
   expect_matches "h[[:space:]]+1[[:space:]]+#+" "${out}"
@@ -58,7 +58,7 @@ test::histogram_unicode_bars() {
   local dir out
   dir="$(test_tmpdir histuni)"
   _make_tree "${dir}"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=ext --unicode=always "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=ext --unicode=always "${dir}" -type f 2>&1)"
   # Unicode block bars use the full-block character.
   expect_output_contains "█" "${out}"
 }
@@ -67,7 +67,7 @@ test::histogram_combines_with_summary() {
   local dir out
   dir="$(test_tmpdir histsum)"
   _make_tree "${dir}"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --summary=type --histogram=ext --unicode=never "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --summary=type --histogram=ext --unicode=never "${dir}" -type f 2>&1)"
   # The --summary table (a total row) and the histogram bars both appear.
   expect_output_contains "total" "${out}"
   expect_matches "cc[[:space:]]+3[[:space:]]+#+" "${out}"
@@ -77,7 +77,7 @@ test::histogram_unknown_bucket_is_a_usage_error() {
   local dir out rc
   dir="$(test_tmpdir histerr)"
   mkdir -p "${dir}"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=bogus "${dir}" 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=bogus "${dir}" 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains "unknown --histogram bucket" "${out}"
 }
@@ -90,7 +90,7 @@ test::histogram_numeric_measure_aggregates_a_field() {
   printf 'd\ne\n' >"${dir}/y.cc"    # 2 lines
   printf 'z\n' >"${dir}/w.h"        # 1 line
   # ext:sum(lines): cc = 3 + 2 = 5 (tallest), h = 1.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram='ext:sum(lines)' --unicode=never "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram='ext:sum(lines)' --unicode=never "${dir}" -type f 2>&1)"
   expect_matches "cc[[:space:]]+5[[:space:]]+#+" "${out}"
   expect_matches "h[[:space:]]+1[[:space:]]+#+" "${out}"
 }
@@ -100,7 +100,7 @@ test::histogram_metric_without_aggregator_is_a_usage_error() {
   dir="$(test_tmpdir histnoagg)"
   mkdir -p "${dir}"
   # A numeric metric with no aggregator (ext:lines) is a usage error, per the design.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram='ext:lines' "${dir}" 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram='ext:lines' "${dir}" 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains "needs an aggregator" "${out}"
 }
@@ -112,7 +112,7 @@ test::histogram_numeric_range_buckets() {
   head -c 5 /dev/zero >"${dir}/small" # 5 bytes -> the "1-9" magnitude range
   head -c 150 /dev/zero >"${dir}/big" # 150 bytes -> the "100-999" range
   # A numeric size bucket groups by order of magnitude into ascending ranges (a distribution).
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=size --unicode=never "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=size --unicode=never "${dir}" -type f 2>&1)"
   expect_output_contains "1-9" "${out}"
   expect_output_contains "100-999" "${out}"
 }
@@ -125,7 +125,7 @@ test::histogram_by_mime_groups_by_media_type() {
   echo x >"${dir}/b.txt"
   echo x >"${dir}/c.md"
   # --histogram=mime reuses the {mime} field: text/plain (2, tallest), text/markdown (1).
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=mime --unicode=never "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=mime --unicode=never "${dir}" -type f 2>&1)"
   expect_matches "text/plain[[:space:]]+2[[:space:]]+#+" "${out}"
   expect_matches "text/markdown[[:space:]]+1[[:space:]]+#+" "${out}"
 }
@@ -139,7 +139,7 @@ test::histogram_by_user_groups_under_the_owner() {
   echo x >"${dir}/c.txt"
   # --histogram=user reuses the {user} field; all files share one owner (the test user), so one bar
   # of 3. The owner name is runtime-dependent, so assert the count and that the listing is suppressed.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=user --unicode=never "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=user --unicode=never "${dir}" -type f 2>&1)"
   expect_matches "3[[:space:]]+#+" "${out}"
   expect_output_not_contains "a.txt" "${out}"
 }
@@ -149,7 +149,7 @@ test::histogram_width_sets_the_bar_length() {
   dir="$(test_tmpdir histwidth)"
   _make_tree "${dir}" # cc=3 (tallest), h=1
   # --histogram-width=10: the tallest bar (cc) fills exactly 10 cells (default is 40).
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=ext --histogram-width=10 --unicode=never "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=ext --histogram-width=10 --unicode=never "${dir}" -type f 2>&1)"
   expect_matches "cc[[:space:]]+3[[:space:]]+##########(${NL}|\$)" "${out}"
 }
 

@@ -25,5 +25,5 @@ bashtest(
     name = "cookbook_test",
     size = "small",
     srcs = ["cookbook_test.sh"],
-    data = ["//xff/cli:xff"],
+    data = ["//xff/cli/testing:xff"],
 )

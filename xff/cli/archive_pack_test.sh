@@ -29,9 +29,9 @@ source "${mboworks_bashtest}"
 NL=$'\n'
 
 _xff_bin() {
-  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/xff_full"
+  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testing/xff_full"
   if [[ ! -x "${bin}" ]]; then
-    bin="$(find "${TEST_SRCDIR}" -type f -name xff_full -path '*xff/cli/xff_full' 2>/dev/null | head -1)"
+    bin="$(find "${TEST_SRCDIR}" -type f -name xff_full -path '*xff/cli/testing/xff_full' 2>/dev/null | head -1)"
   fi
   echo "${bin}"
 }
@@ -373,17 +373,17 @@ test::separate_policy_permits_new_archives_while_blocking_ordinary_writes() {
 --no-safe
 --no-safe-block-file-writing
 INI
-  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --pack="${root}/out.tar" >/dev/null
+  XFF_TEST_USER_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --pack="${root}/out.tar" >/dev/null
   expect_output_contains "a.cc" "$(tar -tf "${root}/out.tar")"
   status=0
-  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --config=unsafe -fprint "${root}/ordinary" >/dev/null 2>&1 || status=$?
+  XFF_TEST_USER_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --config=unsafe -fprint "${root}/ordinary" >/dev/null 2>&1 || status=$?
   expect_eq 2 "${status}"
   expect_eq 0 "$(find "${root}" -maxdepth 1 -name ordinary | wc -l | tr -d ' ')"
   status=0
-  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --pack="${root}/out.tar" --dry-run >/dev/null 2>&1 || status=$?
+  XFF_TEST_USER_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --pack="${root}/out.tar" --dry-run >/dev/null 2>&1 || status=$?
   expect_eq 2 "${status}"
   status=0
-  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --pack="${root}/out.tar" >/dev/null 2>&1 || status=$?
+  XFF_TEST_USER_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --pack="${root}/out.tar" >/dev/null 2>&1 || status=$?
   expect_eq 2 "${status}"
   expect_output_contains "a.cc" "$(tar -tf "${root}/out.tar")"
 }
@@ -393,10 +393,10 @@ test::default_file_policy_blocks_archive_writes_and_cli_cannot_switch_policy() {
   root="$(_tree)"
   echo '--block-file-writing' >"${root}/policy.ini"
   status=0
-  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --pack="${root}/out.tar" >/dev/null 2>&1 || status=$?
+  XFF_TEST_USER_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --pack="${root}/out.tar" >/dev/null 2>&1 || status=$?
   expect_eq 2 "${status}"
   status=0
-  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --detailed-block-policy=archive --pack="${root}/out.tar" >/dev/null 2>&1 || status=$?
+  XFF_TEST_USER_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --detailed-block-policy=archive --pack="${root}/out.tar" >/dev/null 2>&1 || status=$?
   expect_eq 2 "${status}"
   expect_eq 0 "$(find "${root}" -maxdepth 1 -name out.tar | wc -l | tr -d ' ')"
 }
@@ -410,13 +410,13 @@ test::archive_content_deletion_remains_independent_of_ordinary_deletion() {
 --block-file-writing
 --block-file-deletion
 INI
-  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/out.tar" --archive --archive-delete -name a.cc -delete >/dev/null
+  XFF_TEST_USER_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/out.tar" --archive --archive-delete -name a.cc -delete >/dev/null
   members="$(tar -tf "${root}/out.tar")"
   expect_output_not_contains "a.cc" "${members}"
   expect_output_contains "c.txt" "${members}"
   echo '--block-archive-content-deletion' >>"${root}/policy.ini"
   status=0
-  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/out.tar" --archive --archive-delete -name c.txt -delete --skip-unsupported >/dev/null 2>&1 || status=$?
+  XFF_TEST_USER_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/out.tar" --archive --archive-delete -name c.txt -delete --skip-unsupported >/dev/null 2>&1 || status=$?
   expect_eq 2 "${status}"
   expect_output_contains "c.txt" "$(tar -tf "${root}/out.tar")"
 }
@@ -435,15 +435,15 @@ test::output_scope_guards_archive_publication() {
 --block-file-writing
 --block-output-file-overwrite
 INI
-  XFF_CONFIG="${cfg}" "$(_xff_bin)" "${root}/src" --pack="${root}/output/new.tar"
+  XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" "${root}/src" --pack="${root}/output/new.tar"
   tar -tf "${root}/output/new.tar" >/dev/null
   status=0
-  XFF_CONFIG="${cfg}" "$(_xff_bin)" "${root}/src" --pack="${root}/outside.tar" >/dev/null 2>&1 || status=$?
+  XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" "${root}/src" --pack="${root}/outside.tar" >/dev/null 2>&1 || status=$?
   expect_eq "2" "${status}"
   [[ ! -e "${root}/outside.tar" ]] || fail "archive escaped the output policy"
   status=0
-  XFF_CONFIG="${cfg}" "$(_xff_bin)" "${root}/src" --pack="${root}/output/new.tar" >/dev/null 2>&1 || status=$?
+  XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" "${root}/src" --pack="${root}/output/new.tar" >/dev/null 2>&1 || status=$?
   expect_eq "2" "${status}"
-  XFF_CONFIG="${cfg}" "$(_xff_bin)" "${root}/src" --pack="${root}/output/preview.tar" --dry-run >/dev/null
+  XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" "${root}/src" --pack="${root}/output/preview.tar" --dry-run >/dev/null
   [[ ! -e "${root}/output/preview.tar" ]] || fail "dry run published archive"
 }

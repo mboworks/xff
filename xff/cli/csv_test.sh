@@ -27,9 +27,9 @@ set -euo pipefail
 source "${mboworks_bashtest}"
 
 _xff_bin() {
-  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/xff"
+  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testing/xff"
   if [[ ! -x "${bin}" ]]; then
-    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/xff' 2>/dev/null | head -1)"
+    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/testing/xff' 2>/dev/null | head -1)"
   fi
   echo "${bin}"
 }
@@ -40,7 +40,7 @@ test::csv_emits_a_header_then_quotes_a_comma_field() {
   mkdir -p "${dir}"
   : >"${dir}/plain.txt"
   : >"${dir}/with,comma.txt" # a comma in the name must be RFC-4180 quoted
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=csv "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=csv "${dir}" -type f 2>&1)"
   # The header row is emitted first (before any record).
   expect_eq "path" "$(head -1 <<<"${out}")"
   expect_output_contains "plain.txt" "${out}"
@@ -52,7 +52,7 @@ test::no_header_suppresses_the_header_row() {
   dir="$(test_tmpdir nohdr)"
   mkdir -p "${dir}"
   : >"${dir}/a.txt"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=csv --no-header "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=csv --no-header "${dir}" -type f 2>&1)"
   expect_ne "path" "$(head -1 <<<"${out}")" # first line is a record, not the header
   expect_output_contains "a.txt" "${out}"
 }
@@ -62,7 +62,7 @@ test::tsv_has_a_header_and_tab_separated_records() {
   dir="$(test_tmpdir tsv)"
   mkdir -p "${dir}"
   : >"${dir}/a.txt"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=tsv "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=tsv "${dir}" -type f 2>&1)"
   expect_eq "path" "$(head -1 <<<"${out}")"
   expect_output_contains "a.txt" "${out}"
 }
@@ -72,7 +72,7 @@ test::columns_produce_a_multi_column_table_with_a_header() {
   dir="$(test_tmpdir cols)"
   mkdir -p "${dir}"
   echo hi >"${dir}/a.txt" # 3 bytes (hi + newline)
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=csv --columns=name,size,type "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=csv --columns=name,size,type "${dir}" -type f 2>&1)"
   expect_eq "name,size,type" "$(head -1 <<<"${out}")" # the header is the column names
   expect_output_contains "a.txt,3,f" "${out}"
 }
@@ -83,15 +83,15 @@ test::columns_validation_is_a_usage_error() {
   mkdir -p "${dir}"
   : >"${dir}/a.txt"
   # An unknown column name.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=csv --columns=name,bogus "${dir}" 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=csv --columns=name,bogus "${dir}" 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains "unknown column 'bogus'" "${out}"
   # --columns without a tabular format.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --columns=name "${dir}" 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --columns=name "${dir}" 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains "needs a tabular --format" "${out}"
   # --format=csv with an output action (-ls) that suppresses the default listing.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=csv "${dir}" -ls 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=csv "${dir}" -ls 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains "format the default listing" "${out}"
 }
@@ -101,7 +101,7 @@ test::aligned_renders_a_padded_table_under_a_dashed_rule() {
   dir="$(test_tmpdir aligned)"
   mkdir -p "${dir}"
   echo hi >"${dir}/a.txt"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=aligned --columns=name,size "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=aligned --columns=name,size "${dir}" -type f 2>&1)"
   expect_output_contains "name" "${out}" # the header column names
   expect_output_contains "size" "${out}"
   expect_matches "----" "${out}" # a dashed underline separates the header from the rows
@@ -114,7 +114,7 @@ test::markdown_renders_a_github_table_and_md_is_its_alias() {
   mkdir -p "${dir}"
   echo hi >"${dir}/a.txt"
   # --format=md is the short alias of --format=markdown.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=md --columns=name,size "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=md --columns=name,size "${dir}" -type f 2>&1)"
   expect_matches "[|] -+ [|] -+ [|]" "${out}" # the padded | --- | --- | rule
   expect_output_contains "| a.txt" "${out}"
 }
@@ -128,7 +128,7 @@ test::buffer_bounds_the_aligned_table_without_dropping_rows() {
   : >"${dir}/ccc.txt"
   # --buffer=1 locks the column widths on the first row then streams the rest; every match
   # must still appear (bounded memory, no data loss) and the header rule is still emitted.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=aligned --buffer=1 --columns=name "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=aligned --buffer=1 --columns=name "${dir}" -type f 2>&1)"
   expect_output_contains "a.txt" "${out}"
   expect_output_contains "bb.txt" "${out}"
   expect_output_contains "ccc.txt" "${out}"
@@ -140,7 +140,7 @@ test::no_header_drops_the_buffered_table_header() {
   dir="$(test_tmpdir aligned_nohdr)"
   mkdir -p "${dir}"
   echo hi >"${dir}/a.txt"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=aligned --no-header --columns=name,size "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=aligned --no-header --columns=name,size "${dir}" -type f 2>&1)"
   expect_output_not_contains "name" "${out}" # the header row (and its rule) is gone
   expect_output_contains "a.txt" "${out}"
 }
@@ -151,12 +151,12 @@ test::tree_renders_a_directory_tree_with_ascii_connectors_under_no_unicode() {
   mkdir -p "${dir}/sub"
   : >"${dir}/a.txt"
   : >"${dir}/sub/b.txt"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=tree --unicode=never "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=tree --unicode=never "${dir}" -type f 2>&1)"
   expect_output_contains "a.txt" "${out}"
   expect_output_contains "b.txt" "${out}" # a deep match pulls in its ancestor dir
   expect_matches "[|]-- " "${out}"        # an ASCII tree connector
   # tree formats the default listing, so an output action is a usage error.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=tree "${dir}" -ls 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=tree "${dir}" -ls 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains "format the default listing" "${out}"
 }

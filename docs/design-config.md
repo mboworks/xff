@@ -26,16 +26,13 @@ Autoloading is off by default (`--rc-`). `--rc` loads `.xffrc` in directory sear
 `--rc+` includes descendants. No ancestor search occurs. Per-directory `.gitignore`, `.ignore`,
 and `.xffignore` files remain traversal inputs rather than configuration sources.
 
-The user-config path is selected in this order:
+The user config is always `<OS account home>/.config/xff/config`. The effective OS
+account record supplies the home directory; environment variables cannot redirect this policy
+file. There is no system directive for relocating it.
 
-1. non-empty `$XFF_CONFIG`;
-2. `$XDG_CONFIG_HOME/xff/config` when `$XDG_CONFIG_HOME` is non-empty;
-3. `$HOME/.config/xff/config` when `$HOME` is non-empty.
-
-Only the selected user path is consulted. `/etc/xff.ini`, that user path, and
-every explicit `--xffrc` path are reported by `--explain` as found or absent.
-The current reader represents missing and unreadable files the same way, so an
-unreadable path is reported as absent.
+Missing automatic system or user config files are normal. An explicit `--xffrc=FILE`
+must exist. Every existing config must be readable; permission failures and dangling symlinks
+are errors, including when a skip flag is requested. `--explain` reports consulted sources.
 
 The position-independent `--no-system-config` and `--no-user-config` suppress
 their respective automatic tiers; `--no-config` suppresses both and disables `.xffrc` autoloading regardless of flag order. A
@@ -485,8 +482,6 @@ set of option semantics.
 ## Known limits
 
 - Config argument quoting does not perform shell expansions or execute shell syntax.
-- The legacy system/user/explicit reader reports unreadable files as absent; autoload discovery
-  distinguishes these errors and fails.
 
 Directory-scoped temp/output permissions and root-declaration precedence are specified in
 [Directory-scoped safety controls](design-directory-safety.md).

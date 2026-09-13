@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("//xff:cc.bzl", "cc_binary")
+load("//xff:extras.bzl", "XFF_FULL_ONLY")
+load("//xff/cli:extras_deps.bzl", "FULL_DEPS")
+
+package(default_visibility = ["//visibility:private"])
+
+cc_binary(
+    name = "xff",
+    testonly = True,
+    srcs = ["entry_test.cc"],
+    visibility = ["//xff:__subpackages__"],
+    deps = [
+        "//xff/cli:main_cc",
+        "//xff/config:loader_cc",
+        "//xff/env:env_cc",
+        "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+cc_binary(
+    name = "xff_full",
+    testonly = True,
+    srcs = ["entry_test.cc"],
+    target_compatible_with = XFF_FULL_ONLY,
+    visibility = ["//xff:__subpackages__"],
+    deps = [
+        "//xff/cli:main_cc",
+        "//xff/config:loader_cc",
+        "//xff/env:env_cc",
+        "@abseil-cpp//absl/status:statusor",
+    ] + FULL_DEPS,
+)

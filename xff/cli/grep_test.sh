@@ -33,9 +33,9 @@ source "${mboworks_bashtest}"
 NL=$'\n'
 
 _xff_bin() {
-  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/xff"
+  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testing/xff"
   if [[ ! -x "${bin}" ]]; then
-    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/xff' 2>/dev/null | head -1)"
+    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/testing/xff' 2>/dev/null | head -1)"
   fi
   echo "${bin}"
 }
@@ -118,7 +118,7 @@ test::config_regextype_binds_the_expression_with_the_final_grammar() {
   mkdir -p "${root}"
   printf 'price 3.50\nprice 3X50\n' >"${root}/p.txt"
   printf -- '--regextype=EXACT\n' >"${cfg}"
-  out="$(XFF_CONFIG="${cfg}" _run "${root}" -type f -grep '3.50')"
+  out="$(XFF_TEST_USER_CONFIG="${cfg}" _run "${root}" -type f -grep '3.50')"
   expect_matches "/p\.txt:1:price 3\.50(\$|${NL})" "${out}"
   expect_not_matches '3X50' "${out}"
 }
@@ -130,7 +130,7 @@ test::re2_overrides_a_configured_grammar() {
   mkdir -p "${root}"
   printf 'price 3X50\n' >"${root}/p.txt"
   printf -- '--regextype=EXACT\n' >"${cfg}"
-  out="$(XFF_CONFIG="${cfg}" _run --re2 "${root}" -type f -grep '3.50')"
+  out="$(XFF_TEST_USER_CONFIG="${cfg}" _run --re2 "${root}" -type f -grep '3.50')"
   expect_matches '3X50' "${out}"
 }
 
@@ -141,7 +141,7 @@ test::bsd_e_uses_the_configured_extended_grammar() {
   mkdir -p "${root}"
   printf 'price 3.50\nprice 3X50\n' >"${root}/p.txt"
   printf -- '--regextype=EXACT\n' >"${cfg}"
-  out="$(XFF_CONFIG="${cfg}" _run -E "${root}" -type f -grep '3.50')"
+  out="$(XFF_TEST_USER_CONFIG="${cfg}" _run -E "${root}" -type f -grep '3.50')"
   expect_matches '3\.50' "${out}"
   expect_not_matches '3X50' "${out}"
 }

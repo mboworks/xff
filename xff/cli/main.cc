@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "xff/cli/main.h"
+
 #include <unistd.h>
 
 #include <array>
@@ -33,6 +35,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
+#include "mbo/status/status_macros.h"
 #include "xff/cli/config_validation.h"
 #include "xff/cli/globals.h"
 #include "xff/cli/help.h"
@@ -60,19 +63,15 @@
 
 namespace {
 
-// Environment variable as an optional (nullopt when unset), for config discovery.
-std::optional<std::string> EnvOpt(std::string_view name) {
-  return xff::env::Get(name);
-}
-
-// Reads a whole file, or nullopt if it cannot be opened: the config FileReader.
-std::optional<std::string> ReadFile(std::string_view path) {
+// Preserve failures for existing entries, including dangling symlinks.
+absl::StatusOr<std::string> ReadFile(std::string_view path) {
   const xff::vfs::LocalFs fs;
-  const absl::StatusOr<std::string> content = fs.ReadContent(path);
-  if (!content.ok()) {
-    return std::nullopt;
+  MBO_RETURN_IF_ERROR(fs.Stat(path, false).status());
+  auto content = fs.ReadContent(path);
+  if (absl::IsNotFound(content.status())) {
+    return absl::FailedPreconditionError("configuration entry exists but its contents are unavailable");
   }
-  return *content;
+  return content;
 }
 
 // The flavor feature-map: one row per style-scoped behavior, its controlling flag(s), each
@@ -411,12 +410,7 @@ absl::StatusOr<std::string> RenderTopic(std::string_view topic, xff::cli::HelpRe
 // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive dispatch
 // resolve config, dispatch meta flags, build + run the expression) is one cohesive sequence.
 // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive dispatch
-int RunMain(int argc, char** argv) {
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic): intentional
-  const std::vector<std::string> args(argv + 1, argv + argc);
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic): intentional
-  const char* const program = argv[0];
-
+int RunMain(std::string_view program, const std::vector<std::string>& args, xff::cli::ConfigPathsProvider paths) {
   // Read the fixed set of environment variables xff consults into the env cache up front, in one
   // locked pass, so every later read is a pure cache hit. Dynamic {env.NAME} field references are
   // not here (they are user-supplied); env::Get caches those lazily on first use.
@@ -435,7 +429,6 @@ int RunMain(int argc, char** argv) {
       "TMPDIR",
       "XDG_CONFIG_HOME",
       "XDG_RUNTIME_DIR",
-      "XFF_CONFIG",
       "XFF_MANPAGER",
       "XFF_PAGER",
   });
@@ -662,10 +655,18 @@ int RunMain(int argc, char** argv) {
   // selector, so an explicit --config still overrides it (design-config.md "CLI
   // selectors"). Prepended before discovery so [find]/[xff] .xffrc sections gate on it too.
   opts.configs.insert(opts.configs.begin(), std::string(xff::config::DefaultStyleForProgram(program)));
-  opts.xff_config = EnvOpt("XFF_CONFIG");
-  opts.xdg_config_home = EnvOpt("XDG_CONFIG_HOME");
-  opts.home = EnvOpt("HOME");
-  xff::config::ConfigInputs inputs = xff::config::DiscoverAutomatic(opts, ReadFile);
+  auto config_paths = paths();
+  if (!config_paths.ok()) {
+    std::cerr << "xff: " << config_paths.status().message() << "\n";
+    return 2;
+  }
+  opts.paths = *std::move(config_paths);
+  auto automatic = xff::config::DiscoverAutomatic(opts, ReadFile);
+  if (!automatic.ok()) {
+    std::cerr << "xff: " << automatic.status().message() << "\n";
+    return 2;
+  }
+  xff::config::ConfigInputs inputs = *std::move(automatic);
   xff::cli::ConfigFileValidation system_validation =
       xff::cli::ValidateConfigFile(std::move(inputs.system), opts.configs);
   inputs.system = std::move(system_validation.config);
@@ -690,7 +691,7 @@ int RunMain(int argc, char** argv) {
         system_validation.disabled_configs.end(), checked.disabled_configs.begin(), checked.disabled_configs.end());
     return std::move(checked.config);
   };
-  inputs.user = validate_file(std::move(inputs.user), xff::config::UserConfigPath(opts), xff::config::Source::kUser);
+  inputs.user = validate_file(std::move(inputs.user), opts.paths.user, xff::config::Source::kUser);
   if (const absl::Status status = xff::config::ValidateConfigSkips(inputs); !status.ok()) {
     std::cerr << "xff: " << status.message() << "\n";
     return 2;
@@ -703,7 +704,12 @@ int RunMain(int argc, char** argv) {
     return 2;
   }
   inputs = *std::move(discovered);
-  inputs = xff::config::DiscoverExplicit(std::move(inputs), ReadFile);
+  auto explicit_files = xff::config::DiscoverExplicit(std::move(inputs), ReadFile);
+  if (!explicit_files.ok()) {
+    std::cerr << "xff: " << explicit_files.status().message() << "\n";
+    return 2;
+  }
+  inputs = *std::move(explicit_files);
   // Explicit files cannot supply automatic-file permission controls.
   if (const absl::Status status = xff::config::ValidateConfigSkips(inputs); !status.ok()) {
     std::cerr << "xff: " << status.message() << "\n";
@@ -823,8 +829,8 @@ int RunMain(int argc, char** argv) {
 // guarantees the bytes are written regardless of what the exit path does next.
 }  // namespace
 
-int main(int argc, char** argv) {
-  const int exit_code = RunMain(argc, argv);
+int xff::cli::Run(std::string_view program, const std::vector<std::string>& args, ConfigPathsProvider paths) {
+  const int exit_code = RunMain(program, args, paths);
   std::cout.flush();
   return exit_code;
 }

@@ -411,7 +411,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "in application order with their provenance, rejected config directives, and the style-default "
                    "table with this run's effective values. It performs enabled `.xffrc` discovery but does not "
                    "evaluate the expression. "
-                   "Diagnostics about unreadable config paths are limited to the source being reported as absent.",
+                   "Existing unreadable config files and missing explicit `--xffrc` files are errors.",
         .topic = "config",
     },
     {
