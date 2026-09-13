@@ -18,6 +18,7 @@ module(
     version = "0.0.0",
 )
 
+bazel_dep(name = "bazel_skylib", version = "1.9.2")
 bazel_dep(name = "rules_cc", version = "0.2.22")
 bazel_dep(name = "abseil-cpp", version = "20260817.0")
 bazel_dep(name = "pcre2", version = "10.48")

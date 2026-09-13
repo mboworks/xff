@@ -58,3 +58,9 @@ pre-commit run clang-tidy --all-files --hook-stage manual
 
 As with other hooks, `pre-commit run -a` explicitly selects all files. Use `--files` for a focused
 verification; omit it to check staged changes.
+
+Generated dependency sources needed during compile-command extraction must be explicit build
+outputs in the owning extra. The PCRE2 extra exposes `chartables_source` for this purpose;
+`@xff_pcre2//:chartables_test` compares it byte-for-byte with PCRE2's versioned
+`pcre2_chartables.c.dist`. The compile-database preparation builds the extra's wildcard targets,
+so the generated source is requested even when the compiled library is cached.
