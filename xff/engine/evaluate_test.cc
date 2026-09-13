@@ -98,6 +98,7 @@ struct EvaluateTest : ::testing::Test {
         .visit = visit,
         .emit = sink,
         .emit_file = file_sink,
+        .archive_mutations = archive_mutations_,
         .fs = fs_,
         .now = now_,
         .tz = tz_,
@@ -163,7 +164,8 @@ struct EvaluateTest : ::testing::Test {
   // A fixed reference instant for age-test (-mtime/-mmin) cases; the entry's
   // mtime is set relative to this so the assertions are clock-independent.
   const absl::Time now_ = absl::FromUnixSeconds(1'700'000'000);
-  absl::TimeZone tz_ = absl::LocalTimeZone();   // zone Match feeds to EvalContext::tz (varied by -newermt cases)
+  absl::TimeZone tz_ = absl::LocalTimeZone();  // zone Match feeds to EvalContext::tz (varied by -newermt cases)
+  vfs::MutationPolicy archive_mutations_;
   Control control_;                             // set by Match from the most recent evaluation (-prune/-quit)
   bool exec_fields_ = false;                    // when true, Match enables --exec-fields token substitution
   bool fold_name_case_ = false;                 // when true, Match sets EvalContext::fold_name_case (FS-native fold)
@@ -1847,6 +1849,21 @@ TEST_F(EvaluateTest, PresentationVocabulariesHaveStableStorage) {
   EXPECT_THAT(LsColumns().data(), Eq(columns.data()));
   EXPECT_THAT(PrintfDocs().data(), Eq(printf_docs.data()));
   EXPECT_THAT(SizeUnitDocs().data(), Eq(size_docs.data()));
+}
+
+TEST_F(EvaluateTest, ArchiveDeletionRequiresBothDeletionAndRewritePermission) {
+  vfs::Metadata member;
+  member.type = vfs::FileType::kRegular;
+  member.source = vfs::Source::kArchiveMember;
+  const auto policies = std::to_array<vfs::MutationPolicy>(
+      {{.block_deletion = true}, {.block_writing = true}, {.block_overwrite = true}});
+  for (const auto policy : policies) {
+    archive_mutations_ = policy;
+    EXPECT_THAT(
+        Match({"-delete"}, Visit{.path = "box.tar!file", .name = "file", .depth = 1, .metadata = member}), IsFalse());
+    EXPECT_THAT(control_.mutation_error, StatusIs(absl::StatusCode::kPermissionDenied));
+    EXPECT_THAT(control_.unsupported, IsEmpty());
+  }
 }
 
 }  // namespace

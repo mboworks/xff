@@ -418,5 +418,11 @@ TEST_F(ConfigValidationTest, DisablementPropagatesAndSelectingItIsAHardError) {
   EXPECT_THAT(validation.config.named[0].name, Eq("independent"));
 }
 
+TEST_F(ConfigValidationTest, DetailedPolicyRequiresAnExplicitListEvenWhenEmpty) {
+  const auto result = ValidateConfigFile(config::ParseIni("--detailed-block-policy"), {}, "system.ini");
+  EXPECT_THAT(result.config.globals, IsEmpty());
+  EXPECT_THAT(result.diagnostics, ElementsAre(HasSubstr("requires =LIST")));
+}
+
 }  // namespace
 }  // namespace xff::cli

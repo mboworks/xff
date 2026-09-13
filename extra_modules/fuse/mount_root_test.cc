@@ -229,5 +229,26 @@ TEST_F(MountRootTest, SweepingNothingIsANoOp) {
   EXPECT_THAT(SweepStaleRoots([](std::string_view) {}, options_), 0U);
 }
 
+TEST_F(MountRootTest, InvalidBasenamesNeverCreateMountPoints) {
+  MBO_ASSERT_OK_AND_ASSIGN(auto root, MountRoot::Create(options_));
+  const std::vector<std::string_view> paths = {"", "box/", ".", "box/.."};
+  for (const std::string_view path : paths) {
+    EXPECT_THAT(root.MountPointFor(path), StatusIs(absl::StatusCode::kInvalidArgument));
+  }
+  EXPECT_THAT(stdfs::is_empty(root.path()), IsTrue());
+}
+
+TEST_F(MountRootTest, DeletionPolicyPreventsStaleRootUnmountAndCleanup) {
+  const std::string dead = absl::StrCat(base_, "/xff/999999999/box.tar");
+  ASSERT_THAT(stdfs::create_directories(dead), IsTrue());
+  options_.mutations.block_deletion = true;
+  EXPECT_THAT(SweepStaleRoots([](std::string_view) { ADD_FAILURE() << "must not unmount"; }, options_), 0);
+  EXPECT_THAT(stdfs::exists(dead), IsTrue());
+  options_.mutations.block_deletion = false;
+  options_.mutations.dry_run = true;
+  EXPECT_THAT(SweepStaleRoots([](std::string_view) { ADD_FAILURE() << "must not unmount"; }, options_), 0);
+  EXPECT_THAT(stdfs::exists(dead), IsTrue());
+}
+
 }  // namespace
 }  // namespace xff::fuse

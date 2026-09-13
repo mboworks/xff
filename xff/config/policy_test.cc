@@ -79,6 +79,8 @@ TEST_F(PolicyTest, ExplicitCompositionCannotArmTrustedNamedActions) {
   const auto indirect = GateConfig(inputs, false, {"--xffrc=task.rc"});
   EXPECT_THAT(indirect.drops, SizeIs(1));
   EXPECT_THAT(indirect.drops.front().reason, DropReason::kUntrustedSelection);
+  EXPECT_THAT(
+      DropMessage(indirect.drops.front()), HasSubstr("selected only through an explicit file, needs --allow-exec"));
   EXPECT_THAT(GateConfig(inputs, false, {"--config=task", "--xffrc=task.rc"}).drops, IsEmpty());
   EXPECT_THAT(GateConfig(inputs, true, {"--xffrc=task.rc"}).drops, IsEmpty());
   EXPECT_THAT(GateConfig(inputs, false, {}).drops, IsEmpty());

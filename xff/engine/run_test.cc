@@ -55,6 +55,7 @@ using ::testing::MatchesRegex;
 using ::testing::Ne;
 using ::testing::Not;
 using ::testing::PrintToString;
+using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
 // Fixture tree:
@@ -2613,6 +2614,87 @@ TEST_F(RunTest, FlavorFacetsHaveStableStorage) {
   EXPECT_THAT(roots, Eq("roots"));
   EXPECT_THAT(global, Eq("global"));
 }
+
+TEST_F(RunTest, DryRunRejectsOutputCollisionsAndUnstatableDestinations) {
+  const std::vector<std::string> targets = {Path("b.md"), Path("a.txt/child")};
+  for (const auto& target : targets) {
+    MBO_ASSERT_OK_AND_ASSIGN(
+        const auto command, parser::Parse({"--dry-run", "--block-file-overwrite", Path("a.txt"), "-fprint", target}));
+    std::vector<std::string> records;
+    std::vector<std::string> diagnostics;
+    const auto result = RunFind(
+        command, fs_, [&](std::string_view line) { records.emplace_back(line); },
+        [&](std::string_view, absl::Status status) { diagnostics.emplace_back(status.message()); });
+    EXPECT_THAT(result.errors, 1);
+    EXPECT_THAT(records, IsEmpty());
+    EXPECT_THAT(diagnostics, SizeIs(1));
+    EXPECT_THAT(fs::file_size(Path("b.md")), 1);
+  }
+}
+
+TEST_F(RunTest, PackRefusesAnUnstatableDestinationBeforeTraversal) {
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const auto command,
+      parser::Parse({"--block-archive-overwrite", "--pack=" + Path("a.txt/out.tar"), Path("a.txt")}));
+  EXPECT_THAT(
+      RunFind(
+          command, fs_, [](std::string_view) { ADD_FAILURE() << "must not traverse"; },
+          [](std::string_view, absl::Status status) {
+            EXPECT_THAT(status, StatusIs(absl::StatusCode::kFailedPrecondition));
+          })
+          .errors,
+      2);
+}
+
+TEST_F(RunTest, FileDeletionBlockAppliesEvenWhenArchiveDeletionIsAllowed) {
+  const std::vector<std::string> orders = {"--sort=none", "--sort=name"};
+  for (const std::string& order : orders) {
+    MBO_ASSERT_OK_AND_ASSIGN(
+        auto command, parser::Parse({"--block-file-deletion", "--skip-unsupported", order, Path("a.txt"), "-delete"}));
+    // Represents an INI file using separate archive controls, already expanded by the resolver.
+    command.safety_flags_expanded = true;
+    const auto result = RunFind(
+        command, fs_, [](std::string_view) {},
+        [](std::string_view, absl::Status status) {
+          EXPECT_THAT(status, StatusIs(absl::StatusCode::kPermissionDenied));
+        });
+    EXPECT_THAT(result.errors, 1);
+    EXPECT_THAT(fs::exists(Path("a.txt")), IsTrue());
+  }
+}
+
+TEST_F(RunTest, DryRunRendersExecFieldsAndStopsDeferredExpressions) {
+  const std::vector<std::string> orders = {"--sort=none", "--sort=name"};
+  for (const std::string& order : orders) {
+    MBO_ASSERT_OK_AND_ASSIGN(
+        const auto command, parser::Parse(
+                                {"--dry-run", "--exec-fields", order, Path("a.txt"), "-fuzzy", "a.txt", "-top", "1",
+                                 "-exec", "echo", "{name}", ";"}));
+    std::vector<std::string> records;
+    const auto result = RunFind(
+        command, fs_, [&](std::string_view line) { records.emplace_back(line); },
+        [](std::string_view, absl::Status status) {
+          EXPECT_THAT(status, StatusIs(absl::StatusCode::kFailedPrecondition));
+        });
+    EXPECT_THAT(result.errors, 1);
+    EXPECT_THAT(records, ElementsAre(AllOf(HasSubstr("would execute"), HasSubstr("a.txt"))));
+  }
+}
+
+#if defined(__linux__)
+TEST_F(RunTest, OutputWriteFailureIsReportedEvenWithSkipUnsupported) {
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const auto command, parser::Parse({"--skip-unsupported", Path("a.txt"), "-fprint", "/dev/full"}));
+  EXPECT_THAT(
+      RunFind(
+          command, fs_, [](std::string_view) {},
+          [](std::string_view, absl::Status status) {
+            EXPECT_THAT(status, StatusIs(absl::StatusCode::kResourceExhausted));
+          })
+          .errors,
+      1);
+}
+#endif
 
 }  // namespace
 }  // namespace xff::engine

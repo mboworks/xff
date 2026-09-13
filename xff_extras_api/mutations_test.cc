@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "xff/vfs/mutations.h"
 
+#include <fcntl.h>
+#include <unistd.h>
+
 #include <array>
 #include <filesystem>
 #include <fstream>
@@ -18,6 +21,7 @@ namespace {
 using ::mbo::testing::IsOk;
 using ::mbo::testing::StatusIs;
 using ::testing::Eq;
+using ::testing::Ge;
 using ::testing::HasSubstr;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
@@ -137,5 +141,39 @@ TEST_F(MutationsTest, MissingParentsAndEntriesReportErrors) {
       MutationPolicy{.block_overwrite = true}.Write(true),
       StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("overwrite")));
 }
+
+TEST_F(MutationsTest, DirectoryOperationsCreateAndRemoveOnlyTheRequestedTree) {
+  EXPECT_THAT(CreateHostDirectories(Path("tree/nested"), {}), IsOk());
+  ASSERT_OK_AND_ASSIGN(auto output, OpenHostOutput(Path("tree/nested/file"), true, {}));
+  EXPECT_THAT(output->Write("owned"), IsOk());
+  EXPECT_THAT(
+      CreateHostDirectories(Path("tree/nested/file/child"), {}), StatusIs(absl::StatusCode::kFailedPrecondition));
+  EXPECT_THAT(RemoveHostTree(Path("tree"), {}), IsOk());
+  EXPECT_THAT(std::filesystem::exists(Path("tree")), IsFalse());
+  EXPECT_THAT(std::filesystem::exists(root_->Path()), IsTrue());
+}
+
+TEST_F(MutationsTest, AReadOnlyDescriptorRejectsWritingAndLeavesTheDestinationUntouched) {
+  ASSERT_OK_AND_ASSIGN(auto output, TemporaryOutput::Create(Path("scratch"), {}));
+  // Replace the borrowed descriptor with a read-only handle while preserving ownership.
+  const int read_only = ::open(output->Path().c_str(), O_RDONLY | O_CLOEXEC);
+  ASSERT_THAT(read_only, Ge(0));
+  EXPECT_THAT(::dup2(read_only, output->Fd()), Eq(output->Fd()));
+  EXPECT_THAT(::close(read_only), Eq(0));
+  EXPECT_THAT(output->Write("must fail"), StatusIs(absl::StatusCode::kFailedPrecondition));
+  EXPECT_THAT(Read(output->Path()), Eq(""));
+}
+
+TEST_F(MutationsTest, FlushFailureDoesNotPublishAnArchive) {
+  ASSERT_OK_AND_ASSIGN(auto output, TemporaryOutput::Create(Path("scratch"), {}));
+  std::array<int, 2> pipe_fds{};
+  ASSERT_THAT(::pipe(pipe_fds.data()), Eq(0));
+  EXPECT_THAT(::dup2(pipe_fds.back(), output->Fd()), Eq(output->Fd()));
+  EXPECT_THAT(::close(pipe_fds.front()), Eq(0));
+  EXPECT_THAT(::close(pipe_fds.back()), Eq(0));
+  EXPECT_THAT(output->Publish(Path("target")), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("flush")));
+  EXPECT_THAT(std::filesystem::exists(Path("target")), IsFalse());
+}
+
 }  // namespace
 }  // namespace xff::vfs

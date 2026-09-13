@@ -441,4 +441,10 @@ test::the_maps_and_the_documents_carry_no_pointer() {
   done
 }
 
+test::help_rejects_config_only_policy() {
+  local out
+  out="$("$(_xff_bin)" --help=safety --detailed-block-policy=archive 2>&1)" && fail "config-only policy with help must fail"
+  expect_output_contains 'is a config-only directive' "${out}"
+}
+
 test_runner

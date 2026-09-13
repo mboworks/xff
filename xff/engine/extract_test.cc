@@ -202,5 +202,14 @@ TEST_F(ExtractTest, AMemberThatCannotBeReadIsAnErrorNotAnEmptyFile) {
   EXPECT_THAT(extracted.Held(), IsEmpty());
 }
 
+TEST_F(ExtractTest, InvalidMemberBasenamesCannotEscapeTheScratchDirectory) {
+  const std::vector<std::string_view> names = {"box.tar!", "box.tar!.", "box.tar!.."};
+  for (const std::string_view name : names) {
+    fs_.Add(std::string(name), "content");
+    ExtractedMembers extracted;
+    EXPECT_THAT(extracted.Extract(fs_, name), StatusIs(absl::StatusCode::kInvalidArgument));
+  }
+}
+
 }  // namespace
 }  // namespace xff::engine

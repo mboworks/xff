@@ -112,5 +112,17 @@ TEST_F(FuseBackendTest, ARegisteredFactoryReceivesOwnershipAndContainerName) {
   EXPECT_THAT(mount->PathFor("dir/file.txt"), "/tmp/mounted/dir/file.txt");
 }
 
+TEST_F(FuseBackendTest, BlockedWritingAndDryRunNeverCallTheMountFactory) {
+  RegisterMountFactory(
+      [](std::shared_ptr<const vfs::FileSystem>, std::string_view,
+         const vfs::MutationPolicy&) -> absl::StatusOr<std::unique_ptr<Mount>> {
+        ADD_FAILURE() << "blocked mount reached factory";
+        return absl::InternalError("unexpected mount");
+      });
+  const auto fs = std::make_shared<StubFileSystem>();
+  EXPECT_THAT(MountContainer(fs, "box.tar", {.block_writing = true}), StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(MountContainer(fs, "box.tar", {.dry_run = true}), StatusIs(absl::StatusCode::kFailedPrecondition));
+}
+
 }  // namespace
 }  // namespace xff::fuse
