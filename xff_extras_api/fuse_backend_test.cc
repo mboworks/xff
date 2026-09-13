@@ -114,6 +114,8 @@ TEST_F(FuseBackendTest, ARegisteredFactoryReceivesOwnershipAndContainerName) {
 
 TEST_F(FuseBackendTest, BlockedWritingAndDryRunNeverCallTheMountFactory) {
   RegisterMountFactory(
+      // Match MountFactory's owning signature even though this rejection sentinel never uses the owner.
+      // NOLINTNEXTLINE(performance-unnecessary-value-param)
       [](std::shared_ptr<const vfs::FileSystem>, std::string_view,
          const vfs::MutationPolicy&) -> absl::StatusOr<std::unique_ptr<Mount>> {
         ADD_FAILURE() << "blocked mount reached factory";
