@@ -21,8 +21,7 @@ for enforcement and presentation.
 
 ## Safety follow-up sequence
 
-1. Decide explicit `.xffrc` autoload behavior and controls.
-2. Resume the full configuration audit, including flag consistency, introductory documentation,
+1. Resume the full configuration audit, including flag consistency, introductory documentation,
    complete-file tests, and safety tradeoffs.
 
 The safety model and directory-scoped permissions are tracked in

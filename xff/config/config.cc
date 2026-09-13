@@ -41,8 +41,9 @@ constexpr std::string_view kRequireUserConfig = "--require-user-config";
 constexpr std::string_view kNoAllowXffrc = "--no-allow-xffrc";
 
 bool IsSkipPermission(std::string_view flag) {
-  return flag == kNoRequireSystemConfig || flag == kNoRequireUserConfig || flag == kRequireSystemConfig
-         || flag == kRequireUserConfig || flag == kAllowXffrc || flag == kNoAllowXffrc;
+  return flag == "--allow-rc-globals" || flag == "--no-allow-rc-globals" || flag == kNoRequireSystemConfig
+         || flag == kNoRequireUserConfig || flag == kRequireSystemConfig || flag == kRequireUserConfig
+         || flag == kAllowXffrc || flag == kNoAllowXffrc;
 }
 
 std::vector<std::string> ExpandSafetyTokens(const std::vector<std::string>& tokens, DetailedPolicy detailed) {
@@ -163,6 +164,9 @@ class OrderedResolver {
   std::vector<ResolvedFlag> Resolve(const std::vector<std::string>& cli_globals) {
     EmitSystem();
     EmitMatching();
+    while (next_file_ < inputs_.xffrc.size() && inputs_.xffrc[next_file_].automatic) {
+      LoadNextFile();
+    }
     for (const std::string& global : cli_globals) {
       for (const auto& flag : ExpandSafetyFlag(global, {})) {
         EmitFlag(flag, Source::kCli);
@@ -261,6 +265,10 @@ class OrderedResolver {
     if (!global.starts_with(kXffrc) || next_file_ >= inputs_.xffrc.size()) {
       return;
     }
+    LoadNextFile();
+  }
+
+  void LoadNextFile() {
     file_loaded_[next_file_] = true;
     EmitLines(file_entries_[next_file_], file_emitted_[next_file_], Source::kXffrc, next_file_ + 2);
     ++next_file_;

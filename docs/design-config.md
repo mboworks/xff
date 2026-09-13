@@ -12,19 +12,19 @@ not be able to grant itself permission to run a dangerous directive.
 
 ## Sources and precedence
 
-xff has three config-file tiers, followed by the command line:
+xff applies trusted defaults, opt-in project files, and the command line:
 
-| Precedence | Source         | Grammar | Trust and purpose                                                  |
-| ---------- | -------------- | ------- | ------------------------------------------------------------------ |
-| lowest     | `/etc/xff.ini` | INI     | root-owned defaults and authoritative controls                     |
-|            | user config    | INI     | trusted personal defaults and named configurations                 |
-|            | `--xffrc=FILE` | INI     | explicitly loaded, repeatable, non-arming files                    |
-| highest    | command line   | CLI     | explicit flags and selectors; later conflicting values usually win |
+| Precedence | Source              | Grammar | Trust and purpose                                                  |
+| ---------- | ------------------- | ------- | ------------------------------------------------------------------ |
+| lowest     | `/etc/xff.ini`      | INI     | root-owned defaults and authoritative controls                     |
+|            | user config         | INI     | trusted personal defaults and named configurations                 |
+|            | autoloaded `.xffrc` | INI     | opt-in, non-arming project files before CLI processing             |
+|            | `--xffrc=FILE`      | INI     | explicitly loaded, repeatable, non-arming files                    |
+| highest    | command line        | CLI     | explicit flags and selectors; later conflicting values usually win |
 
-There is no project tier. xff never discovers `.xffrc` below a search root or
-through its ancestors, and it has no `--project-config` option. Per-directory
-`.gitignore`, `.ignore`, and `.xffignore` files are traversal inputs rather than
-configuration sources.
+Autoloading is off by default (`--rc-`). `--rc` loads `.xffrc` in directory search roots;
+`--rc+` includes descendants. No ancestor search occurs. Per-directory `.gitignore`, `.ignore`,
+and `.xffignore` files remain traversal inputs rather than configuration sources.
 
 The user-config path is selected in this order:
 
@@ -38,7 +38,7 @@ The current reader represents missing and unreadable files the same way, so an
 unreadable path is reported as absent.
 
 The position-independent `--no-system-config` and `--no-user-config` suppress
-their respective automatic tiers; `--no-config` suppresses both. A
+their respective automatic tiers; `--no-config` suppresses both and disables `.xffrc` autoloading regardless of flag order. A
 present source is still inspected for the permission to suppress it and, for
 the system file, its authoritative controls. An explicit command-line `--xffrc=FILE`
 remains active: it is not ambient configuration. Ignore files remain
@@ -59,7 +59,7 @@ the user pair is `--require-user-config` / `--no-require-user-config`.
 
 A duplicate system global line is diagnosed and ignored.
 
-`--allow-xffrc` / `--no-allow-xffrc` control acceptance of explicit files. They may occur in system
+`--allow-xffrc` / `--no-allow-xffrc` control admission of both explicit files and automatic discovery. They may occur in system
 unsectioned globals or user blocks. A system global denial cannot be overridden by the user file,
 a named section, an explicit file, or suppression of system defaults.
 
@@ -75,7 +75,7 @@ source needs no permission because there is no configuration to suppress.
 
 ## Shared file grammar
 
-System, user, and explicit `.xffrc` files all accept the same INI grammar: unconditional
+System, user, and all `.xffrc` files accept the same INI grammar: unconditional
 options before the first section, then plain named configuration sections. Every section name, including `[global]`, `[defaults]`, and `[policy]`, is an ordinary
 named configuration:
 
@@ -346,9 +346,91 @@ Selecting a name does not discover files: `--config=quiet` alone does not load `
 Unsectioned flags can themselves include `--config=NAME` to select a section when the
 file loads. Config-only authority controls retain their source restrictions.
 
-No `.xffrc` is loaded automatically from the current directory, search roots, or
-ancestors. Each explicit file requires `--xffrc=FILE` and passes the admission and
-safety checks described above.
+Each explicit file requires `--xffrc=FILE` and passes the admission and safety checks above.
+Explicit loading is independent of the autoload mode and the globals permission described below.
+
+## Autoloaded `.xffrc` files
+
+| Mode    | Discovery                                              |
+| ------- | ------------------------------------------------------ |
+| `--rc-` | Off (default); explicit `--xffrc=FILE` remains active. |
+| `--rc`  | Only `.xffrc` directly in each directory search root.  |
+| `--rc+` | Root files and `.xffrc` in descendant directories.     |
+
+Modes may appear on the CLI or in applying system/user globals and named sections; the last
+setting wins. Discovery uses these trusted inputs before loading any `.xffrc`. An `.xffrc`
+cannot set discovery flags, nor trigger another discovery pass by selecting a trusted section.
+`--no-config` disables autoloading regardless of mode order. With no root argument, the root
+is `.`. File and symlink roots do not load a parent's configuration. There is no ancestor
+search, directory-symlink following, or discovery inside archives.
+
+Discovery completes before actions execute. It visits physical directories independently of
+ignore files, hidden-file settings, search predicates, depth limits, and pruning. Thus `--rc+`
+can inspect a large tree even when the search itself is narrow. This also applies to `--explain`.
+Missing `.xffrc` files are normal; unreadable files or directories and non-regular `.xffrc`
+files (including symlinks) abort loading. No actions run with a partially discovered configuration.
+
+Files affect the **whole invocation**, including other roots. Root arguments are processed in
+order; each tree uses parent-before-child depth-first order with lexically sorted siblings.
+Repeated or overlapping directories are discovered once. Discovered files follow trusted defaults
+and precede CLI processing. Explicit files keep their CLI positions; explicitly naming an
+autoloaded file applies it again at that position. Relative flag values are relative to the
+working directory, just as in other INI files.
+
+### Permission for unsectioned content
+
+By default, autoloaded files may contain only named sections. They use the same INI grammar as
+all other configs. Named sections apply when selected by `--config=NAME`, the invocation name,
+or composition from another applying section; loading alone does not select every section.
+
+```ini
+# project/.xffrc
+[checks]
+-type f
+```
+
+`xff project --rc --config=checks` applies this file-only filter. Without the selector,
+`[checks]` remains inactive.
+
+The config-only pair `--allow-rc-globals` / `--no-allow-rc-globals` controls whether discovered
+files may contain unsectioned content:
+
+- Each permitted system or user INI file may contain one member of the pair once, before sections.
+- A system denial is authoritative, including when system defaults are skipped.
+- Otherwise an applying user choice overrides the system setting; without any grant, globals are forbidden.
+- Named sections, explicit or autoloaded `.xffrc` files, and the CLI cannot set this permission.
+- Explicit `--xffrc=FILE` keeps its unsectioned-content behavior and does not need this grant.
+
+For example, a user INI can enable root discovery and permit globals:
+
+```ini
+--rc
+--allow-rc-globals
+```
+
+The discovered project file can then contain both unconditional options and a selected profile:
+
+```ini
+# project/.xffrc
+--hidden
+[quiet]
+--color=never
+```
+
+`xff project` applies `--hidden`; adding `--config=quiet` also applies `--color=never`.
+Without the grant, this file **fails loading before actions run**. Rejection covers all unsectioned
+directives, including expression primaries and `--config=NAME`, not just double-dash options.
+Blank lines and comments are allowed. Forbidden content is never silently ignored: dropping an
+intended filter or restriction could change the operation's meaning. The error identifies the
+file and the missing permission.
+
+Admission (`--allow-xffrc`), permission for globals (`--allow-rc-globals`), and action arming
+(`--allow-exec`) are separate decisions. Admission is checked before probing roots. Neither
+autoloading nor the globals grant arms dangerous directives. The non-arming gate, active safe
+profile, and unconditional `--block-*` controls apply to both explicit and autoloaded files.
+Trusted `--allow-exec` still permits dangerous directives through that gate, so combine it with
+mandatory blocks when execution or deletion must remain prohibited. Even ordinary options can
+change results across all roots: grant globals only when those configuration files are trusted.
 
 ## Resolution and inspection
 
@@ -357,10 +439,11 @@ applied in this order:
 
 1. system defaults;
 2. unconditional user-config lines and lines selected by the invocation name;
-3. original command-line globals, in their original order;
-4. immediately after each `--config=NAME`, system named sections, user and already-loaded explicit
+3. autoloaded files in discovery order, including their currently selected sections;
+4. original command-line globals, in their original order;
+5. immediately after each `--config=NAME`, system named sections, user and already-loaded `.xffrc`
    config lines newly activated by that selector;
-5. immediately after each `--xffrc=FILE`, currently applicable lines from that
+6. immediately after each `--xffrc=FILE`, currently applicable lines from that
    file. Later selectors may activate its remaining lines.
 
 Each config line is applied at most once. Consequently, selector placement is
@@ -373,7 +456,9 @@ The ordinary option resolvers then apply their documented conflict behavior,
 usually last value wins. This preserves provenance, command-line order, and one
 set of option semantics.
 
-`--explain` does not walk roots. It prints:
+`--explain` performs enabled rc discovery but does not evaluate the search expression or actions. It prints:
+
+- the autoload mode (`off`, `roots`, or `recursive`);
 
 - the active style;
 - every consulted path and whether it was found;
@@ -385,7 +470,8 @@ set of option semantics.
 ## Known limits
 
 - Config argument quoting does not perform shell expansions or execute shell syntax.
-- Missing and unreadable config files are not distinguished in discovery output.
+- The legacy system/user/explicit reader reports unreadable files as absent; autoload discovery
+  distinguishes these errors and fails.
 
 Directory-scoped temp/output permissions and root-declaration precedence are specified in
 [Directory-scoped safety controls](design-directory-safety.md).

@@ -62,18 +62,23 @@ bool IsXffrcControl(std::string_view flag) {
   return flag == kAllowXffrc || flag == kNoAllowXffrc;
 }
 
+bool IsRcGlobalsControl(std::string_view flag) {
+  return flag == "--allow-rc-globals" || flag == "--no-allow-rc-globals";
+}
+
 absl::Status ValidateSingleControl(
     const std::vector<std::string>& flags,
     bool (*is_control)(std::string_view),
     std::string_view message) {
-  if (absl::c_count_if(flags, is_control) > 1) {
+  if (absl::c_count_if(DirectiveTokens(flags), is_control) > 1) {
     return absl::InvalidArgumentError(message);
   }
   return absl::OkStatus();
 }
 
 absl::Status ValidateRootControls(const ConfigFile& file) {
-  for (const std::string_view name : std::to_array<std::string_view>({"--temp-root", "--output-root"})) {
+  static constexpr auto kRoots = std::to_array<std::string_view>({"--temp-root", "--output-root"});
+  for (const std::string_view name : kRoots) {
     std::size_t count = 0;
     for (const std::string_view token : DirectiveTokens(file.globals)) {
       if (token.substr(0, token.find('=')) == name && ++count > 1) {
@@ -89,6 +94,11 @@ absl::Status ValidateSystemControlLocations(const ConfigFile& system) {
     return roots;
   }
   if (const auto status = ValidateSingleControl(
+          system.globals, IsRcGlobalsControl, "the rc-globals permission pair may occur only once per file");
+      !status.ok()) {
+    return status;
+  }
+  if (const auto status = ValidateSingleControl(
           system.globals, IsDetailedPolicy, "--detailed-block-policy may occur only once in the system config");
       !status.ok()) {
     return status;
@@ -97,7 +107,7 @@ absl::Status ValidateSystemControlLocations(const ConfigFile& system) {
     for (const IniLine& line : section.lines) {
       for (const std::string_view flag : DirectiveTokens(line.tokens)) {
         if (IsSystemControl(flag) || IsUserControl(flag) || IsXffrcControl(flag) || IsDetailedPolicy(flag)
-            || IsDirectoryRoot(flag)) {
+            || IsDirectoryRoot(flag) || IsRcGlobalsControl(flag)) {
           return absl::InvalidArgumentError(absl::StrCat(flag, " must precede every system config section"));
         }
       }
@@ -148,6 +158,11 @@ absl::Status ValidateUserControlLocations(const ConfigFile& user) {
     return roots;
   }
   if (const auto status = ValidateSingleControl(
+          user.globals, IsRcGlobalsControl, "the rc-globals permission pair may occur only once per file");
+      !status.ok()) {
+    return status;
+  }
+  if (const auto status = ValidateSingleControl(
           user.globals, IsDetailedPolicy, "--detailed-block-policy may occur only once in the user config");
       !status.ok()) {
     return status;
@@ -158,8 +173,8 @@ absl::Status ValidateUserControlLocations(const ConfigFile& user) {
       if (IsSystemControl(flag)) {
         return absl::InvalidArgumentError(absl::StrCat(flag, " is permitted only in the system config"));
       }
-      if ((IsDetailedPolicy(flag) || IsDirectoryRoot(flag)) && !entry.name.empty()) {
-        return absl::InvalidArgumentError("--detailed-block-policy must precede every user config section");
+      if ((IsDetailedPolicy(flag) || IsDirectoryRoot(flag) || IsRcGlobalsControl(flag)) && !entry.name.empty()) {
+        return absl::InvalidArgumentError(absl::StrCat(flag, " must precede every user config section"));
       }
       if (IsUserControl(flag) && !entry.name.empty()) {
         return absl::InvalidArgumentError(
@@ -180,7 +195,8 @@ absl::Status ValidateExplicitControlLocations(const std::vector<ExplicitConfig>&
     for (const FileLine& entry : Lines(file.config)) {
       for (const std::string_view flag : DirectiveTokens(entry.line.tokens)) {
         if (IsSystemControl(flag) || IsUserControl(flag) || IsXffrcControl(flag) || IsDetailedPolicy(flag)
-            || IsDirectoryRoot(flag)) {
+            || IsDirectoryRoot(flag) || IsRcGlobalsControl(flag) || flag == "--rc" || flag == "--rc-"
+            || flag == "--rc+") {
           return absl::InvalidArgumentError(absl::StrCat(flag, " is not permitted in an --xffrc file"));
         }
       }
@@ -285,12 +301,32 @@ registry::Safety LineSafety(const IniLine& line) {
   return worst;
 }
 
+bool RcGlobalsAllowed(const ConfigInputs& inputs) {
+  bool allowed = false;
+  for (const auto flag : DirectiveTokens(inputs.system.globals)) {
+    if (flag == "--no-allow-rc-globals") {
+      return false;
+    }
+    if (flag == "--allow-rc-globals") {
+      allowed = true;
+    }
+  }
+  if (!inputs.no_user_config && !inputs.no_config) {
+    for (const auto flag : DirectiveTokens(inputs.user.globals)) {
+      if (IsRcGlobalsControl(flag)) {
+        allowed = flag == "--allow-rc-globals";
+      }
+    }
+  }
+  return allowed;
+}
+
 absl::Status ValidateConfigSkips(const ConfigInputs& inputs) {
   if (const absl::Status locations = ValidateControlLocations(inputs); !locations.ok()) {
     return locations;
   }
-  if (!inputs.xffrc.empty() && !XffrcAllowed(inputs)) {
-    return absl::PermissionDeniedError("--xffrc is disabled by the resolved --no-allow-xffrc setting");
+  if ((!inputs.xffrc.empty() || inputs.rc_mode != RcMode::kOff) && !XffrcAllowed(inputs)) {
+    return absl::PermissionDeniedError(".xffrc loading is disabled by the resolved --no-allow-xffrc setting");
   }
   const std::optional<bool> system_permission = SystemPermission(inputs, kNoRequireSystemConfig);
   const bool skip_system = inputs.no_config || inputs.no_system_config;

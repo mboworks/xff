@@ -110,7 +110,8 @@ TEST_F(LoaderTest, AutomaticDiscoveryDoesNotReadExplicitPaths) {
   };
   const ConfigInputs automatic = DiscoverAutomatic(opts, read);
   EXPECT_THAT(reads, ElementsAre("/etc/xff.ini"));
-  EXPECT_THAT(automatic.xffrc, ElementsAre(FieldsAre("/explicit", Field("globals", &ConfigFile::globals, IsEmpty()))));
+  EXPECT_THAT(
+      automatic.xffrc, ElementsAre(FieldsAre("/explicit", Field("globals", &ConfigFile::globals, IsEmpty()), false)));
   const ConfigInputs complete = DiscoverExplicit(automatic, read);
   EXPECT_THAT(reads, ElementsAre("/etc/xff.ini", "/explicit"));
   EXPECT_THAT(
@@ -136,7 +137,7 @@ TEST_F(LoaderTest, NoConfigStillInspectsAutomaticSourcesAndKeepsExplicitXffrc) {
   EXPECT_THAT(in.system.globals, ElementsAre("--color=auto", "--block-execution"));
 
   EXPECT_THAT(in.user.global_lines, SizeIs(1));
-  EXPECT_THAT(in.xffrc, ElementsAre(FieldsAre("/extra.rc", Field("globals", &ConfigFile::globals, IsEmpty()))));
+  EXPECT_THAT(in.xffrc, ElementsAre(FieldsAre("/extra.rc", Field("globals", &ConfigFile::globals, IsEmpty()), false)));
 }
 
 TEST_F(LoaderTest, MissingFilesYieldEmptyLayers) {

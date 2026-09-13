@@ -33,8 +33,8 @@ bool IsDirectoryRoot(std::string_view token) {
 bool IsSystemControl(std::string_view token) {
   return IsDirectoryRoot(token) || token == "--no-require-system-config" || token == "--require-system-config"
          || token == "--no-require-user-config" || token == "--require-user-config" || token == "--allow-xffrc"
-         || token == "--no-allow-xffrc" || token == "--detailed-block-policy"
-         || token.starts_with("--detailed-block-policy=");
+         || token == "--no-allow-xffrc" || token == "--allow-rc-globals" || token == "--no-allow-rc-globals"
+         || token == "--detailed-block-policy" || token.starts_with("--detailed-block-policy=");
 }
 
 absl::StatusOr<std::size_t> PrimaryArgumentCount(
@@ -60,12 +60,13 @@ absl::StatusOr<absl::flat_hash_set<std::string>> ValidateControls(
     const config::IniLine& line,
     absl::flat_hash_set<std::string> controls) {
   for (const std::string_view token : config::DirectiveTokens(line.tokens)) {
-    const std::string name = IsDirectoryRoot(token) ? std::string(token.substr(0, token.find('=')))
+    const std::string name = token == "--no-allow-rc-globals" ? "--allow-rc-globals"
+                             : IsDirectoryRoot(token)         ? std::string(token.substr(0, token.find('=')))
                              : token.starts_with("--detailed-block-policy=") ? "--detailed-block-policy"
                              : token.starts_with("--no-require-")            ? absl::StrCat("--", token.substr(5))
                                                                              : std::string(token);
     if ((IsDirectoryRoot(name) || name == "--require-system-config" || name == "--require-user-config"
-         || name == "--detailed-block-policy")
+         || name == "--detailed-block-policy" || name == "--allow-rc-globals")
         && !controls.insert(name).second) {
       return absl::InvalidArgumentError(absl::StrCat(name, " and its negative form may occur only once"));
     }

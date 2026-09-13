@@ -9,6 +9,17 @@ would otherwise be lost when the actionable backlog is simplified.
 The former combined roadmap and completion ledger through PR #683 is retained separately in
 [`history-roadmap.md`](history-roadmap.md).
 
+## Opt-in `.xffrc` autoloading
+
+Handled the first safety follow-up item: root-only `--rc`, recursive `--rc+`, and default-off
+`--rc-`, with deterministic discovery before execution through the VFS. Added the config-only
+rc-globals permission pair; unsectioned content without a grant is rejected rather than ignored.
+Autoloaded files share INI parsing, composition, validation, and non-arming safety gating with
+explicit files. Help and [the configuration design](design-config.md) describe scope, precedence,
+permissions, examples, and discovery costs. Tests cover in-memory discovery and real CLI files.
+Also moved the explain shell suite's runner below its previously unregistered directory-safety
+test and corrected that test's regex assertion.
+
 ## Directory-scoped safety controls
 
 Completed the safety follow-up's temp/output scope work: extended per-INI policy translation,

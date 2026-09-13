@@ -1007,17 +1007,19 @@ Section ConfigSection(bool in_full) {
       "layers win. A style (`find` / `xff` / `rg`) sets the baseline defaults, which the tiers and the "
       "command line then adjust. Run `--explain` to print exactly what resolved."));
 
-  static constexpr std::array<DocPair, 4> kLayers = {{
+  static constexpr std::array<DocPair, 5> kLayers = {{
       {"system config", "machine-wide defaults (plus root-owned global controls that can prohibit arming)"},
       {"user config", "your personal defaults"},
+      {"autoloaded .xffrc", "opt-in root discovery; a NON-ARMING tier before command-line processing"},
       {"--xffrc=FILE", "an explicitly named file (repeatable) - a NON-ARMING tier"},
       {"command line", "flags and `--config`, highest"},
   }};
   Subsection layers{.title = "Layers (lowest to highest precedence)"};
   layers.children.push_back(RowsOf(kLayers));
   layers.children.push_back(ProseOf(
-      "There is no project or ancestor `.xffrc` discovery: config comes from the system and user files "
-      "plus any `--xffrc` you name. `--no-config` suppresses the automatic system and user tiers when their "
+      "Autoloading defaults off (`--rc-`). `--rc` discovers `.xffrc` in directory search roots; `--rc+` "
+      "also discovers descendant files. No ancestor search occurs. `--no-config` disables discovery and "
+      "suppresses the automatic system and user tiers when their "
       "trusted permission directives allow it; those files may still be inspected for policy. An explicit "
       "command-line `--xffrc` remains active."));
   layers.children.push_back(ProseOf(
@@ -1036,9 +1038,9 @@ Section ConfigSection(bool in_full) {
       "of these controls. Separately, `--allow-xffrc` / `--no-allow-xffrc` is a normal config-only setting usable "
       "in system defaults or any user config block; user selection and precedence decide whether command-line "
       "`--xffrc=FILE` is accepted, and an unsectioned system denial cannot be overridden. Admission is checked before "
-      "explicit paths are opened."));
+      "any `.xffrc` discovery or explicit paths are opened. The admission pair also governs autoloading."));
   layers.children.push_back(ProseOf(
-      "System, user, and explicit `.xffrc` files share one INI grammar. Write unconditional options with their exact "
+      "System, user, and all `.xffrc` files share one INI grammar. Write unconditional options with their exact "
       "command-line spelling before the first "
       "section, and named configurations as plain `[NAME]` sections. For example, write `--color=auto`, then "
       "`[dev]` and `-E`; do not remove the option dashes or add a `config` section prefix. Global lines are "
@@ -1057,7 +1059,7 @@ Section ConfigSection(bool in_full) {
   layers.children.push_back(ProseOf(
       "Config files emulate the shell's quoting and escaping to produce arguments for the same CLI parser. "
       "The config reader removes comments before passing those arguments to the parser; config files are not "
-      "shell scripts. System, user, and explicit `.xffrc` files all use this rule. Single or double quotes group "
+      "shell scripts. System, user, and all `.xffrc` files all use this rule. Single or double quotes group "
       "arguments, including spaces and empty values; outside quotes, a backslash escapes the next character. "
       "Inside double quotes, backslash escapes only double quote, backslash, dollar, backtick, or newline. "
       "There is no variable, command, pathname, or tilde expansion. Use the same flag spelling as on the CLI: "
@@ -1075,7 +1077,7 @@ Section ConfigSection(bool in_full) {
       "diagnostic at its starting line number; no partial arguments are applied."));
   section.children.push_back(Content{.node = std::move(layers)});
 
-  static constexpr std::array<DocPair, 7> kConfigControls = {{
+  static constexpr std::array<DocPair, 9> kConfigControls = {{
       {"--no-require-system-config",
        "permits skipping the system file with `--no-system-config` or `--no-config`; system config only, before the "
        "first section, and at most one "
@@ -1093,19 +1095,27 @@ Section ConfigSection(bool in_full) {
        "config, and at most "
        "one of this pair per file; the system decision is authoritative"},
       {"--allow-xffrc",
-       "allows command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config "
+       "allows automatic discovery and command-line `--xffrc=FILE`; usable in system defaults or any user config "
+       "block, with normal config "
        "selection and last-value precedence"},
       {"--no-allow-xffrc",
-       "denies command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config "
+       "denies automatic discovery and command-line `--xffrc=FILE`; usable in system defaults or any user config "
+       "block, with normal config "
        "selection and last-value precedence; an unsectioned system denial is authoritative"},
+      {"--allow-rc-globals",
+       "permits unsectioned content in autoloaded `.xffrc` files; once per pair before sections in system/user INI; "
+       "a system denial wins, otherwise the applying user choice wins"},
+      {"--no-allow-rc-globals",
+       "rejects autoloaded files containing unsectioned content before actions run (default); same scope and "
+       "precedence as the positive form; explicit `--xffrc=FILE` is unaffected"},
       {"--detailed-block-policy=LIST",
        "selects the interpretation of blocks in this file, including its named sections; once before sections "
        "in system or user config; see `--help=safety` for the operation table"},
   }};
   Subsection controls{.title = "Config-only controls"};
   controls.children.push_back(ProseOf(
-      "These directives are accepted only inside the stated automatic config files, not on the command line or in "
-      "an explicitly loaded `--xffrc` file. An allow/deny pair is one setting: where a pair is limited to one "
+      "These directives are accepted only inside the stated system/user config files, not on the command line or in "
+      "any `.xffrc` file. An allow/deny pair is one setting: where a pair is limited to one "
       "occurrence, its positive and negative forms may not both appear."));
   controls.children.push_back(ProseOf(
       "The system pair is `--require-system-config` / `--no-require-system-config`; "
@@ -1123,8 +1133,9 @@ Section ConfigSection(bool in_full) {
   section.children.push_back(Content{.node = std::move(controls)});
 
   section.children.push_back(ProseOf(
-      "Explicit `.xffrc` files cannot contain the require/no-require pairs, `--allow-xffrc`, "
-      "`--no-allow-xffrc`, or `--detailed-block-policy`. The separate runtime flag `--allow-exec` "
+      "Neither explicit nor autoloaded `.xffrc` files may contain the require/no-require pairs, `--allow-xffrc`, "
+      "`--no-allow-xffrc`, the rc-globals permission pair, or `--detailed-block-policy`. The separate runtime flag "
+      "`--allow-exec` "
       "is accepted on the CLI and in config files, but an explicit file's own setting never arms its "
       "dangerous directives."));
 
@@ -1153,7 +1164,7 @@ Section ConfigSection(bool in_full) {
       "`xff . --xffrc=task.xffrc` applies `--hidden`; adding `--config=quiet` also applies `--color=never`. "
       "The invocation name or another config's `--config=quiet` can also select the section. A selector "
       "alone does not discover files. Unsectioned `--config=NAME` directives can select sections when "
-      "the file loads. There is no automatic `.xffrc` discovery."));
+      "the file loads. Autoloading is separately enabled with `--rc` or `--rc+`."));
   examples.children.push_back(ProseOf(
       "Permit only the user-file skip: these unsectioned system controls allow `--no-user-config`, reject "
       "`--no-config` and `--no-system-config`, and override the user file's own skip permission."));
@@ -1197,10 +1208,54 @@ Section ConfigSection(bool in_full) {
       "override."));
   section.children.push_back(Content{.node = std::move(style)});
 
+  Subsection autoload{.title = "Autoloading .xffrc files"};
+  static constexpr std::array<DocPair, 3> kRcModes = {{
+      {"--rc-", "disable automatic loading (default); explicit `--xffrc=FILE` remains active"},
+      {"--rc", "load `.xffrc` directly in each directory search root"},
+      {"--rc+", "also load `.xffrc` throughout descendant directories"},
+  }};
+  autoload.children.push_back(RowsOf(kRcModes));
+  autoload.children.push_back(ProseOf(
+      "Modes may be set on the CLI or in applying system/user configuration; the last setting wins. "
+      "`--no-config` suppresses all discovery regardless of mode order. An `.xffrc` cannot set its own "
+      "discovery mode. With no root argument the default root is `.`; file roots do not load a parent's "
+      "configuration. There is no ancestor search, directory-symlink following, or discovery inside archives. "
+      "Discovery visits physical directories before expression execution, independently of ignore files, "
+      "hidden-file settings, depth limits, and pruning. Recursive mode can therefore inspect a large tree, "
+      "even for `--explain`, which performs discovery but never evaluates actions."));
+  autoload.children.push_back(ProseOf(
+      "Each file affects the whole invocation, not just its subtree. Argument roots are processed in order; "
+      "within a tree, parents precede descendants and sibling names are sorted. Overlapping or repeated roots "
+      "do not automatically load the same directory twice. Discovered files follow system/user defaults and "
+      "precede CLI flags. Named sections retain the shared `--config=NAME` composition and selection rules. "
+      "Explicit files retain their CLI positions; explicitly naming a discovered file applies it again there. "
+      "Relative flag values remain relative to the working directory, as in every other INI file."));
+  autoload.children.push_back(ProseOf(
+      "By default an autoloaded file may contain only named sections. The config-only permission pair "
+      "`--allow-rc-globals` / `--no-allow-rc-globals` may appear once before sections in each system or user INI. "
+      "A system denial is authoritative; otherwise an applying user decision overrides the system default. "
+      "Neither named sections, `.xffrc` files, nor CLI arguments may set this permission. Explicit "
+      "`--xffrc=FILE` is unaffected. When globals are forbidden, any unsectioned directive fails loading "
+      "before actions run: this includes expression primaries and `--config=NAME`, not only double-dash "
+      "options. Nothing is silently discarded, because doing so could remove an intended restriction."));
+  autoload.children.push_back(ExampleOf("# project/.xffrc: no global permission needed\n[checks]\n-type f", "ini"));
+  autoload.children.push_back(ProseOf("`xff project --rc --config=checks` selects the shared file-only profile."));
+  autoload.children.push_back(ExampleOf("# user INI, before all sections\n--rc\n--allow-rc-globals", "ini"));
+  autoload.children.push_back(ExampleOf("# project/.xffrc\n--hidden\n[quiet]\n--color=never", "ini"));
+  autoload.children.push_back(ProseOf(
+      "With that grant, `xff project` applies `--hidden`, and `--config=quiet` also applies `--color=never`. "
+      "Without the grant the unsectioned `--hidden` causes an error. Missing `.xffrc` files are normal; "
+      "unreadable files/directories and non-regular config files fail discovery. `--explain` reports the mode "
+      "and every consulted config path. Autoloading and the globals grant never arm dangerous actions; "
+      "trusted `--allow-exec` and mandatory `--block-*` restrictions keep their existing meanings. "
+      "Ordinary options can still change results, so granting globals is a deliberate trust decision."));
+  section.children.push_back(Content{.node = std::move(autoload)});
+
   Subsection arming{.title = "Arming dangerous directives"};
   arming.children.push_back(ProseOf(
       "A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`, or `-delete`) "
-      "carried by an `--xffrc` file is inert unless `--allow-exec` is set from a trusted tier (the command "
+      "carried by an explicit or autoloaded `.xffrc` file is inert unless `--allow-exec` is set from a trusted tier "
+      "(the command "
       "line or the system/user config, never an `--xffrc` file itself). Unarmed lines are dropped with a "
       "warning. Arming cannot bypass unconditional safety blocks or an active safe profile."));
   section.children.push_back(Content{.node = std::move(arming)});

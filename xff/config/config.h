@@ -28,11 +28,12 @@ namespace xff::config {
 
 // Provenance of a resolved setting: which layer contributed it. Resolution is
 // last-non-unset-wins; kUnset is the "no override" sentinel and is never stored.
-// There is no auto-discovered project layer (dropped 2026-07-06, Option B): config
-// comes from system, user, and an explicit --xffrc=FILE only. Precedence order is
-// system < user < xffrc < cli; kXffrc is a NON-ARMING tier (a named --xffrc file
+// Config comes from system, user, discovered .xffrc files, and explicit --xffrc files.
+// kXffrc is a NON-ARMING tier (an .xffrc file
 // cannot self-authorize -exec/-delete; see the gate + --allow-exec).
 enum class Source { kUnset, kSystem, kUser, kXffrc, kCli };
+
+enum class RcMode { kOff, kRoots, kRecursive };
 
 // One resolved config flag plus the layer it came from.
 struct ResolvedFlag {
@@ -53,11 +54,12 @@ struct ConfigSource {
   bool found = false;
 };
 
-// One explicitly named --xffrc file. Files remain separate so resolution can
-// apply each file at the command-line position where it was selected.
+// One .xffrc file. Discovered files apply before CLI flags; explicit files retain
+// the command-line position at which they were selected.
 struct ExplicitConfig {
   std::string path;
   ConfigFile config;
+  bool automatic = false;
 };
 
 // The parsed layers + active selectors fed to ResolveConfig. CLI flags are NOT
@@ -65,24 +67,25 @@ struct ExplicitConfig {
 struct ConfigInputs {
   ConfigFile system;                  // parsed /etc/xff.ini globals + named configurations
   ConfigFile user;                    // parsed user INI
-  std::vector<ExplicitConfig> xffrc;  // parsed --xffrc=FILE files, kept separate and in order
+  std::vector<ExplicitConfig> xffrc;  // discovered files first, then explicit files in CLI order
   std::vector<std::string> configs;   // active --config=NAME selectors (styles and/or named configs)
-  bool no_config = false;             // --no-config: suppress both automatic tiers when authorized
+  bool no_config = false;             // --no-config: skip trusted defaults when authorized and disable rc discovery
   bool no_system_config = false;      // --no-system-config: suppress system configuration
   bool no_user_config = false;        // --no-user-config: suppress the user tier
+  RcMode rc_mode = RcMode::kOff;
   std::vector<ConfigSource> sources;  // every file consulted during discovery, for --explain (set by Discover)
 };
 
 // Resolves config-supplied flags using the legacy tier view, lowest precedence
 // first, each tagged with its Source. Prefer ResolveConfigInOrder for execution.
 // Each file contributes its unconditional globals and sections whose literal names are selected.
-// Gate the inputs first so an unarmed explicit-file action never reaches execution.
+// Gate the inputs first so an unarmed .xffrc action never reaches execution.
 std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& inputs);
 
 // Produces the complete application stream. Automatic system/user defaults and
-// the invocation selector apply first; command-line globals then retain their
+// the invocation selector apply first, followed by discovered files; CLI globals retain their
 // order. A --config selector expands newly matching user and already loaded
-// explicit-file lines at that exact point. A --xffrc selector loads that file's
+// .xffrc lines at that exact point. A --xffrc selector loads that file's
 // currently matching lines at its exact point; later selectors may activate
 // further lines from it. Each config line is emitted at most once.
 std::vector<ResolvedFlag> ResolveConfigInOrder(

@@ -654,19 +654,17 @@ int RunMain(int argc, char** argv) {
     return 2;
   }
 
-  // Load the layered config (system + user + explicit --xffrc) and resolve the
+  // Load the layered config (system + user + discovered/explicit .xffrc) and resolve the
   // effective flags. --explain writes that effective configuration and exits.
   xff::config::DiscoveryOptions opts = xff::config::SelectorsFromGlobals(command.globals);
   // argv[0] dispatch: the program name picks the base style (invoked as `find` ->
   // find expression style; as `xff` or any other alias -> modern xff) as the lowest-precedence
   // selector, so an explicit --config still overrides it (design-config.md "CLI
-  // selectors"). Prepended before discovery so find:/xff: .xffrc lines gate on it too.
+  // selectors"). Prepended before discovery so [find]/[xff] .xffrc sections gate on it too.
   opts.configs.insert(opts.configs.begin(), std::string(xff::config::DefaultStyleForProgram(program)));
   opts.xff_config = EnvOpt("XFF_CONFIG");
   opts.xdg_config_home = EnvOpt("XDG_CONFIG_HOME");
   opts.home = EnvOpt("HOME");
-  // Config is system + user + explicit --xffrc only; there is no auto-discovered project layer
-  // (Option B, 2026-07-06), so the search roots do not feed config discovery.
   xff::config::ConfigInputs inputs = xff::config::DiscoverAutomatic(opts, ReadFile);
   xff::cli::ConfigFileValidation system_validation =
       xff::cli::ValidateConfigFile(std::move(inputs.system), opts.configs);
@@ -697,6 +695,14 @@ int RunMain(int argc, char** argv) {
     std::cerr << "xff: " << status.message() << "\n";
     return 2;
   }
+  inputs.rc_mode = xff::config::ResolveRcMode(inputs, command.globals, xff::config::DefaultStyleForProgram(program));
+  const xff::vfs::LocalFs discovery_filesystem;
+  auto discovered = xff::config::DiscoverRc(std::move(inputs), command.roots, discovery_filesystem);
+  if (!discovered.ok()) {
+    std::cerr << "xff: " << discovered.status().message() << "\n";
+    return 2;
+  }
+  inputs = *std::move(discovered);
   inputs = xff::config::DiscoverExplicit(std::move(inputs), ReadFile);
   // Explicit files cannot supply automatic-file permission controls.
   if (const absl::Status status = xff::config::ValidateConfigSkips(inputs); !status.ok()) {
@@ -735,6 +741,7 @@ int RunMain(int argc, char** argv) {
   const xff::registry::Style style = xff::config::ActiveStyle(effective_configs);
   if (absl::c_contains(command.globals, "--explain")) {
     std::cout << xff::config::ExplainSources(inputs.sources, style);
+    std::cout << "rc-mode\t" << xff::config::RcModeName(inputs.rc_mode) << "\n";
     std::cout << xff::config::ExplainConfig(resolved);
     for (const xff::config::Drop& drop : gated.drops) {
       std::cout << "dropped\t" << xff::config::DropMessage(drop) << "\n";

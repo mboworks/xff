@@ -282,8 +282,6 @@ test::repeated_explicit_section_is_rejected_through_composition() {
   expect_output_contains 'selected config [checks] is disabled' "${out}"
 }
 
-test_runner
-
 test::directory_policy_limits_output_and_protects_roots() {
   local dir cfg out status
   dir="$(test_tmpdir directory_policy)"
@@ -314,7 +312,7 @@ INI
   expect_eq "2" "${status}"
   [[ ! -e "${dir}/outside" ]] || fail "created outside output scope"
   out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/source" -fprint "${dir}/output/preview" --dry-run)"
-  expect_matches '*would create*preview*' "${out}"
+  expect_matches 'would create .*preview' "${out}"
   [[ ! -e "${dir}/output/preview" ]] || fail "dry run wrote output"
   status=0
   XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/output" -maxdepth 0 -delete >/dev/null 2>&1 || status=$?
@@ -324,3 +322,56 @@ INI
   XFF_CONFIG="${cfg}" "$(_xff_bin)" . --output-root="${dir}" >/dev/null 2>&1 || status=$?
   expect_eq "2" "${status}"
 }
+
+test::rc_modes_and_named_sections_use_real_files() {
+  local dir cfg out
+  dir="$(test_tmpdir rc_modes)"
+  cfg="${dir}/user.ini"
+  mkdir -p "${dir}/root/sub"
+  printf '[checks]\n-type f\n' >"${dir}/root/.xffrc"
+  printf '[checks]\n--color=never\n' >"${dir}/root/sub/.xffrc"
+  : >"${cfg}"
+  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/root" --explain)"
+  expect_output_contains "$(printf 'rc-mode\toff')" "${out}"
+  expect_output_not_contains "${dir}/root/.xffrc" "${out}"
+  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/root" --rc --config=checks --explain)"
+  expect_output_contains "$(printf 'rc-mode\troots')" "${out}"
+  expect_output_contains "${dir}/root/.xffrc" "${out}"
+  expect_output_not_contains "${dir}/root/sub/.xffrc" "${out}"
+  expect_output_contains "$(printf 'xffrc\t-type')" "${out}"
+  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/root" --rc+ --config=checks --explain)"
+  expect_output_contains "$(printf 'rc-mode\trecursive')" "${out}"
+  expect_output_contains "${dir}/root/sub/.xffrc" "${out}"
+  expect_output_contains "$(printf 'xffrc\t--color=never')" "${out}"
+  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/root" --rc+ --rc- --explain)"
+  expect_output_not_contains "${dir}/root/.xffrc" "${out}"
+}
+
+test::rc_globals_fail_before_writes_and_need_a_trusted_grant() {
+  local dir cfg out status
+  dir="$(test_tmpdir rc_globals)"
+  cfg="${dir}/user.ini"
+  mkdir -p "${dir}/root"
+  printf -- '--hidden\n[quiet]\n--color=never\n' >"${dir}/root/.xffrc"
+  : >"${cfg}"
+  status=0
+  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/root" --rc -fprint "${dir}/output" 2>&1)" || status=$?
+  expect_eq 2 "${status}"
+  expect_output_contains 'globals require --allow-rc-globals' "${out}"
+  expect_output_contains "${dir}/root/.xffrc" "${out}"
+  [[ ! -e "${dir}/output" ]] || fail "wrote output after rejecting config"
+  printf -- '--rc\n--allow-rc-globals\n--no-require-user-config\n' >"${cfg}"
+  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/root" --config=quiet --explain)"
+  expect_output_contains "$(printf 'xffrc\t--hidden')" "${out}"
+  expect_output_contains "$(printf 'xffrc\t--color=never')" "${out}"
+  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/root" --no-config --rc+ --explain)"
+  expect_output_contains "$(printf 'rc-mode\toff')" "${out}"
+  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/root" --no-config --xffrc="${dir}/root/.xffrc" --explain)"
+  expect_output_contains "$(printf 'xffrc\t--hidden')" "${out}"
+  status=0
+  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" --allow-rc-globals --explain 2>&1)" || status=$?
+  expect_eq 2 "${status}"
+  expect_output_contains 'config-only' "${out}"
+}
+
+test_runner

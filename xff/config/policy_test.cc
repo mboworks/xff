@@ -45,6 +45,69 @@ using ::testing::SizeIs;
 
 struct PolicyTest : ::testing::Test {};
 
+TEST_F(PolicyTest, RcGlobalsPermissionUsesTrustedGlobalsAndSystemDenialWins) {
+  ConfigInputs inputs;
+  EXPECT_THAT(RcGlobalsAllowed(inputs), IsFalse());
+  inputs.system = ParseIni("--allow-rc-globals");
+  EXPECT_THAT(RcGlobalsAllowed(inputs), IsTrue());
+  inputs.user = ParseIni("--no-allow-rc-globals");
+  EXPECT_THAT(RcGlobalsAllowed(inputs), IsFalse());
+  inputs.no_user_config = true;
+  EXPECT_THAT(RcGlobalsAllowed(inputs), IsTrue());
+  inputs.no_user_config = false;
+  inputs.system = ParseIni("--no-allow-rc-globals");
+  inputs.user = ParseIni("--allow-rc-globals");
+  inputs.no_system_config = true;
+  EXPECT_THAT(RcGlobalsAllowed(inputs), IsFalse());
+  inputs.system = {};
+  EXPECT_THAT(RcGlobalsAllowed(inputs), IsTrue());
+  inputs.no_config = true;
+  EXPECT_THAT(RcGlobalsAllowed(inputs), IsFalse());
+}
+
+TEST_F(PolicyTest, RcGlobalsPermissionIsUniqueAndOnlyInTrustedUnsectionedContent) {
+  static constexpr auto kControls = std::to_array<std::string_view>({
+      "--allow-rc-globals",
+      "--no-allow-rc-globals",
+  });
+  for (const auto flag : kControls) {
+    ConfigInputs inputs;
+    inputs.system = ParseIni(flag);
+    inputs.user = ParseIni(flag);
+    EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+    inputs.system = ParseIni(absl::StrCat(flag, "\n", flag));
+    EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("once")));
+    inputs.system = {};
+    inputs.user = ParseIni("--allow-rc-globals\n--no-allow-rc-globals");
+    EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("once")));
+    inputs.user = ParseIni(absl::StrCat("[named]\n", flag));
+    EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("precede")));
+    inputs.system = inputs.user;
+    inputs.user = {};
+    EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("precede")));
+    inputs.system = {};
+    inputs.xffrc.push_back({.path = "task.rc", .config = ParseIni(flag)});
+    EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("not permitted")));
+    inputs.xffrc.front().config = ParseIni(absl::StrCat("[named]\n", flag));
+    EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("not permitted")));
+  }
+}
+
+TEST_F(PolicyTest, RcModesCannotBeSetByExplicitOrAutoloadedFiles) {
+  static constexpr auto kModes = std::to_array<std::string_view>({"--rc", "--rc-", "--rc+"});
+  for (const auto mode : kModes) {
+    ConfigInputs inputs;
+    inputs.system = ParseIni(absl::StrCat("[named]\n", mode));
+    inputs.user = inputs.system;
+    EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+    inputs.xffrc.push_back({.path = "task.rc", .config = ParseIni(mode)});
+    EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("not permitted")));
+    inputs.xffrc.front().automatic = true;
+    inputs.xffrc.front().config = ParseIni(absl::StrCat("[named]\n", mode));
+    EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("not permitted")));
+  }
+}
+
 TEST_F(PolicyTest, UserCannotDeclareTheSameDirectoryRootTwice) {
   ConfigInputs inputs;
   inputs.user = ParseIni("--output-root=/first\n--output-root=/second");
@@ -264,7 +327,7 @@ TEST_F(PolicyTest, XffrcDangerousLineIsInertUnlessArmed) {
   const GateResult unarmed = GateConfig(inputs, /*xffrc_armed=*/false);
   EXPECT_THAT(
       unarmed.config.xffrc,
-      ElementsAre(FieldsAre("/named", Field("globals", &ConfigFile::globals, ElementsAre("--color=never")))));
+      ElementsAre(FieldsAre("/named", Field("globals", &ConfigFile::globals, ElementsAre("--color=never")), false)));
   ASSERT_THAT(unarmed.drops, SizeIs(1));
   EXPECT_THAT(unarmed.drops.front().reason, DropReason::kUnarmedXffrc);
   EXPECT_THAT(unarmed.drops.front().layer, Source::kXffrc);
@@ -272,7 +335,7 @@ TEST_F(PolicyTest, XffrcDangerousLineIsInertUnlessArmed) {
   // Armed: the -exec line is honored (both lines survive).
   EXPECT_THAT(
       GateConfig(inputs, /*xffrc_armed=*/true).config.xffrc,
-      ElementsAre(FieldsAre("/named", Field("global_lines", &ConfigFile::global_lines, SizeIs(2)))));
+      ElementsAre(FieldsAre("/named", Field("global_lines", &ConfigFile::global_lines, SizeIs(2)), false)));
 }
 
 TEST_F(PolicyTest, ArmingGatesOnlyTheXffrcTierNotTheUserLayer) {

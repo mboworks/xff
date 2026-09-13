@@ -71,6 +71,9 @@ ConfigInputs DiscoverAutomatic(const DiscoveryOptions& opts, FileReader read) {
 
 ConfigInputs DiscoverExplicit(ConfigInputs inputs, FileReader read) {
   for (ExplicitConfig& file : inputs.xffrc) {
+    if (file.automatic) {
+      continue;
+    }
     const std::optional<std::string> text = read(file.path);
     inputs.sources.push_back({.path = file.path, .layer = Source::kXffrc, .found = text.has_value()});
     file.config = text.has_value() ? ParseIni(*text) : ConfigFile{};

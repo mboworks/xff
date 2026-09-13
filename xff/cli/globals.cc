@@ -110,6 +110,7 @@ constexpr std::array kSummaryValues = std::to_array<ValueDoc>({
 constexpr std::array kArchiveShorts = std::to_array<std::string_view>({"-z", "-z+", "-z++", "-z-"});
 constexpr std::array kArchiveWriteShorts = std::to_array<std::string_view>({"-Z", "-Z+", "-Z++", "-Z-"});
 constexpr std::array kGitignoreShorts = std::to_array<std::string_view>({"-g", "-g+", "-g-"});
+constexpr std::array kRcForms = std::to_array<std::string_view>({"--rc-", "--rc+"});
 constexpr std::array kCaseShorts = std::to_array<std::string_view>({"-s", "-s+", "-s-"});
 
 constexpr std::array kArchiveValues = std::to_array<ValueDoc>({
@@ -288,7 +289,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "config",
         .header = "Config",
         .summary = "suppress automatic system and user configuration when authorized",
-        .details = "Suppresses the automatic system defaults and user configuration. A present source is still "
+        .details = "Disables `.xffrc` autoloading and suppresses system defaults and user configuration. A present "
+                   "source is still "
                    "inspected for policy. Equivalent to requesting both `--no-system-config` and "
                    "`--no-user-config`: each existing file must permit its own suppression, or the entire "
                    "request is rejected. Missing files need no permission. An explicitly named "
@@ -324,6 +326,52 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .topic = "config",
     },
     {
+        .name = "--rc",
+        .display = "--rc[-|+]",
+        .group = "config",
+        .header = "Config",
+        .summary = "discover .xffrc in argument roots; minus disables, plus includes descendants",
+        .details = "Defaults to `--rc-` (off). `--rc` loads `.xffrc` in each directory search root; "
+                   "`--rc+` also searches descendant directories. With no roots, the default root is `.`. "
+                   "Discovery finishes before execution, in argument order, parent before children and "
+                   "lexicographically among siblings. Files contribute to the whole invocation, after trusted "
+                   "defaults and before CLI flags. Discovery ignores search filters and never follows directory "
+                   "symlinks or enters archives. Only system/user configuration and the CLI may set this mode. "
+                   "`--no-config` disables discovery. Unsectioned content requires a trusted "
+                   "`--allow-rc-globals` grant; otherwise loading fails. Explicit `--xffrc=FILE` remains independent.",
+        .affects = "--xffrc,--explain",
+        .topic = "config",
+        .sign_forms = kRcForms,
+    },
+    {
+        .name = "--allow-rc-globals",
+        .display = "--allow-rc-globals",
+        .group = "config",
+        .header = "Config",
+        .summary = "permit unsectioned content in automatically discovered .xffrc files",
+        .details = "Config-only: once per pair in unsectioned system/user configuration. A system "
+                   "`--no-allow-rc-globals` decision cannot be overridden. Without a grant, an autoloaded file "
+                   "containing unsectioned content fails before execution. Named sections remain available; "
+                   "explicit `--xffrc=FILE` is unaffected. This permission does not arm dangerous actions.",
+        .affects = "--rc",
+        .topic = "config",
+        .config_only = true,
+    },
+    {
+        .name = "--no-allow-rc-globals",
+        .display = "--no-allow-rc-globals",
+        .group = "config",
+        .header = "Config",
+        .summary = "reject unsectioned content in automatically discovered .xffrc files",
+        .details = "The default without an explicit grant. Config-only: once per pair before all sections "
+                   "in system/user configuration. A system denial is authoritative. Rejection includes "
+                   "unsectioned expressions and `--config=NAME`; nothing is silently dropped. "
+                   "Explicit `--xffrc=FILE` keeps its existing global and named-section behavior.",
+        .affects = "--rc",
+        .topic = "config",
+        .config_only = true,
+    },
+    {
         .name = "--xffrc",
         .display = "--xffrc=FILE",
         .group = "config",
@@ -343,9 +391,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--allow-exec",
         .group = "config",
         .header = "Config",
-        .summary = "arm dangerous directives loaded from an --xffrc file (exec family, -delete)",
+        .summary = "arm dangerous directives from explicit or autoloaded .xffrc files",
         .details = "Permits the sensitive/destructive directives (the exec family -exec/-execdir/-ok and -capture, "
-                   "and the destructive -delete) carried by an --xffrc-loaded file to actually run. Honored only from "
+                   "and the destructive -delete) carried by an explicit or autoloaded `.xffrc` file to actually run. "
+                   "Honored only from "
                    "a trusted tier - typed on the CLI, or set in the user/system config - never from an --xffrc file "
                    "(so a named config cannot authorize itself). Arming cannot bypass unconditional blocks or "
                    "the active safe profile; see `--help=safety`.",
@@ -360,7 +409,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "print the resolved configuration and exit",
         .details = "Prints the active style, every config source consulted and whether it was found, resolved flags "
                    "in application order with their provenance, rejected config directives, and the style-default "
-                   "table with this run's effective values. It does not walk roots or evaluate the expression. "
+                   "table with this run's effective values. It performs enabled `.xffrc` discovery but does not "
+                   "evaluate the expression. "
                    "Diagnostics about unreadable config paths are limited to the source being reported as absent.",
         .topic = "config",
     },
