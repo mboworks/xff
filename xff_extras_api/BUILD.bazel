@@ -327,6 +327,8 @@ cc_test(
         ],
         "//conditions:default": [],
     }),
+    # --wrap must see the VFS call sites in this executable, rather than a shared library.
+    linkstatic = True,
     deps = [
         ":vfs_cc",
         "@googletest//:gtest_main",
