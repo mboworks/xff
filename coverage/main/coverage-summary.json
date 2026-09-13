@@ -3,26 +3,26 @@
   "measurements": {
     "overall": {
       "lines": {
-        "covered": 19837,
-        "total": 20709,
-        "percent": 95.79
+        "covered": 20040,
+        "total": 20915,
+        "percent": 95.82
       },
       "functions": {
-        "covered": 1682,
-        "total": 1697,
+        "covered": 1693,
+        "total": 1708,
         "percent": 99.12
       },
       "branches": {
-        "covered": 9618,
-        "total": 10796,
-        "percent": 89.09
+        "covered": 9750,
+        "total": 10920,
+        "percent": 89.29
       }
     },
     "program / command line": {
       "lines": {
-        "covered": 3749,
-        "total": 3832,
-        "percent": 97.83
+        "covered": 3811,
+        "total": 3896,
+        "percent": 97.82
       },
       "functions": {
         "covered": 241,
@@ -30,26 +30,26 @@
         "percent": 99.18
       },
       "branches": {
-        "covered": 1327,
-        "total": 1436,
-        "percent": 92.41
+        "covered": 1334,
+        "total": 1446,
+        "percent": 92.25
       }
     },
     "program / configuration": {
       "lines": {
-        "covered": 984,
-        "total": 995,
-        "percent": 98.89
+        "covered": 1125,
+        "total": 1137,
+        "percent": 98.94
       },
       "functions": {
-        "covered": 92,
-        "total": 92,
+        "covered": 103,
+        "total": 103,
         "percent": 100.0
       },
       "branches": {
-        "covered": 607,
-        "total": 638,
-        "percent": 95.14
+        "covered": 721,
+        "total": 752,
+        "percent": 95.88
       }
     },
     "program / command grammar": {
@@ -81,9 +81,9 @@
         "percent": 97.82
       },
       "branches": {
-        "covered": 3471,
+        "covered": 3481,
         "total": 4026,
-        "percent": 86.21
+        "percent": 86.46
       }
     },
     "program / filesystem": {
@@ -98,9 +98,9 @@
         "percent": 98.36
       },
       "branches": {
-        "covered": 296,
+        "covered": 297,
         "total": 318,
-        "percent": 93.08
+        "percent": 93.4
       }
     },
     "program / matching": {
