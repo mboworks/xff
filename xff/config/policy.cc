@@ -235,15 +235,9 @@ bool XffrcAllowed(const ConfigInputs& inputs) {
   for (const std::string& name : inputs.configs) {
     selectors.push_back(absl::StrCat("--config=", name));
   }
-  std::vector<std::string> configs = inputs.configs;
-  for (const ResolvedFlag& flag : ResolveConfigInOrder(automatic, selectors, "")) {
-    if (!flag.is_argument && flag.flag.starts_with("--config=")) {
-      configs.push_back(flag.flag.substr(std::string_view("--config=").size()));
-    }
-  }
-  for (const FileLine& entry : Lines(inputs.user)) {
-    if (!inputs.no_user_config && (entry.name.empty() || absl::c_contains(configs, entry.name))) {
-      apply(entry.line.tokens);
+  for (const ResolvedFlag& flag : ResolveConfigInOrder(automatic, selectors, "", ConfigControls::kInclude)) {
+    if (flag.source == Source::kUser && !flag.is_argument && IsXffrcControl(flag.flag)) {
+      allowed = flag.flag == kAllowXffrc;
     }
   }
   return allowed;

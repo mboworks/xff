@@ -281,6 +281,48 @@ TEST_F(PolicyTest, SelectedUserSettingsControlExplicitXffrcFiles) {
       ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-allow-xffrc")));
 }
 
+TEST_F(PolicyTest, XffrcAdmissionFollowsSelectorOrderRegardlessOfSectionOrder) {
+  static constexpr auto kFiles = std::to_array<std::string_view>({
+      "[deny]\n--no-allow-xffrc\n[allow]\n--allow-xffrc",
+      "[allow]\n--allow-xffrc\n[deny]\n--no-allow-xffrc",
+  });
+  for (const auto file : kFiles) {
+    ConfigInputs inputs;
+    inputs.user = ParseIni(file);
+    inputs.xffrc = {{.path = "/not-opened"}};
+    inputs.configs = {"allow", "deny"};
+    EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied));
+    inputs.configs = {"deny", "allow"};
+    EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+    // Selecting a section again does not reapply its lines.
+    inputs.configs = {"allow", "deny", "allow"};
+    EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied));
+    inputs.no_user_config = true;
+    EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+    inputs.system = ParseIni("--no-allow-xffrc");
+    inputs.no_system_config = true;
+    EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied));
+  }
+}
+
+TEST_F(PolicyTest, AdmissionExpandsComposedSelectionsInPlaceAndIgnoresCommandArguments) {
+  ConfigInputs inputs;
+  inputs.rc_mode = RcMode::kRoots;
+  inputs.system = ParseIni("--config=allow");
+  inputs.user = ParseIni(
+      "[deny]\n--no-allow-xffrc\n[allow]\n--allow-xffrc\n[wrapper]\n--config=deny\n"
+      "-exec echo --allow-xffrc \\;\n");
+  inputs.configs = {"wrapper"};
+  EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied));
+  inputs.system = {};
+  inputs.configs = {"wrapper", "allow"};
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+  // An explicit file cannot select a trusted profile to admit itself.
+  inputs.configs = {"deny"};
+  inputs.xffrc = {{.path = "self", .config = ParseIni("--config=allow")}};
+  EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kPermissionDenied));
+}
+
 TEST_F(PolicyTest, AutomaticTransitiveSelectionControlsExplicitFileAdmission) {
   ConfigInputs inputs;
   inputs.system = ParseIni("--config=outer\n[outer]\n--config=locked");

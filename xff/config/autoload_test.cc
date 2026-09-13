@@ -135,6 +135,16 @@ TEST_F(AutoloadTest, DefaultOffAndDeniedAdmissionNeverProbeRoots) {
   EXPECT_THAT(filesystem.probes, IsEmpty());
 }
 
+TEST_F(AutoloadTest, LaterSelectedDenialStopsDiscoveryBeforeProbingAnyRoot) {
+  inputs.user = ParseIni("[deny]\n--no-allow-xffrc\n[allow]\n--allow-xffrc");
+  inputs.configs = {"allow", "deny"};
+  EXPECT_THAT(DiscoverRc(inputs, {"missing"}, filesystem), StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(filesystem.probes, IsEmpty());
+  inputs.configs = {"deny", "allow"};
+  ASSERT_OK_AND_ASSIGN(const auto found, DiscoverRc(inputs, {"root"}, filesystem));
+  EXPECT_THAT(Paths(found), ElementsAre("root/.xffrc"));
+}
+
 TEST_F(AutoloadTest, ModeUsesTrustedSelectionsAndCliOrderButNotExplicitFilesOrArguments) {
   inputs.system = ParseIni("--rc+\n[root-only]\n--rc");
   EXPECT_THAT(ResolveRcMode(inputs, {"--config=root-only"}, "xff"), Eq(RcMode::kRoots));

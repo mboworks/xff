@@ -61,7 +61,22 @@ A duplicate system global line is diagnosed and ignored.
 
 `--allow-xffrc` / `--no-allow-xffrc` control admission of both explicit files and automatic discovery. They may occur in system
 unsectioned globals or user blocks. A system global denial cannot be overridden by the user file,
-a named section, an explicit file, or suppression of system defaults.
+a named section, an explicit file, or suppression of system defaults. User decisions follow the
+same application order as ordinary settings, including in-place `--config=NAME` composition.
+Section declaration order does not override explicit selector order. Each section applies once.
+For example, with this user INI:
+
+```ini
+[deny]
+--no-allow-xffrc
+[allow]
+--allow-xffrc
+```
+
+`xff . --config=allow --config=deny --xffrc=task.rc` rejects loading before opening `task.rc`;
+reversing the two selectors permits loading. The same admission decision governs `--rc` and
+`--rc+`. Admission is resolved from trusted configuration before loading any `.xffrc`, so a file
+cannot select a section to authorize its own loading.
 
 Explicit `.xffrc` files cannot contain the require/no-require pairs or
 `--allow-xffrc` / `--no-allow-xffrc`; these controls govern automatic files or permission

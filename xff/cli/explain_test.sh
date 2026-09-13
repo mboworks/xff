@@ -374,4 +374,33 @@ test::rc_globals_fail_before_writes_and_need_a_trusted_grant() {
   expect_output_contains 'config-only' "${out}"
 }
 
+test::xffrc_admission_uses_selector_order_for_explicit_and_discovered_files() {
+  local dir cfg file mode out status
+  dir="$(test_tmpdir admission_order)"
+  cfg="${dir}/user.ini"
+  mkdir -p "${dir}/root"
+  file="${dir}/root/.xffrc"
+  printf '[deny]\n--no-allow-xffrc\n[allow]\n--allow-xffrc\n[wrapper]\n--config=deny\n' >"${cfg}"
+  printf '[checks]\n--hidden\n' >"${file}"
+  for mode in "--xffrc=${file}" --rc --rc+; do
+    status=0
+    out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/root" --config=allow --config=deny "${mode}" --config=checks --explain 2>&1)" || status=$?
+    expect_eq 2 "${status}"
+    expect_output_contains '.xffrc loading is disabled' "${out}"
+    out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/root" --config=deny --config=allow "${mode}" --config=checks --explain)"
+    expect_output_contains "$(printf 'xffrc\t--hidden')" "${out}"
+    status=0
+    out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/root" --config=allow --config=wrapper "${mode}" --explain 2>&1)" || status=$?
+    expect_eq 2 "${status}"
+    expect_output_contains '.xffrc loading is disabled' "${out}"
+  done
+  # A malformed explicit file must not be parsed after admission has been denied.
+  printf "'unfinished\n" >"${file}"
+  status=0
+  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/root" --config=allow --config=deny --xffrc="${file}" --explain 2>&1)" || status=$?
+  expect_eq 2 "${status}"
+  expect_output_contains '.xffrc loading is disabled' "${out}"
+  expect_output_not_contains 'unterminated' "${out}"
+}
+
 test_runner

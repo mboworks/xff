@@ -184,6 +184,20 @@ testing::Matcher<ResolvedFlag> FlagIs(const std::string& flag, Source source) {
   return AllOf(Field("flag", &ResolvedFlag::flag, flag), Field("source", &ResolvedFlag::source, source));
 }
 
+TEST_F(ConfigTest, PolicyControlsShareApplicationOrderButStayOutOfRuntimeFlags) {
+  ConfigInputs inputs;
+  inputs.user = ParseIni("[deny]\n--no-allow-xffrc\n[allow]\n--allow-xffrc\n");
+  const std::vector<std::string> cli = {"--config=allow", "--config=deny"};
+  EXPECT_THAT(
+      ResolveConfigInOrder(inputs, cli, "xff", ConfigControls::kInclude),
+      ElementsAre(
+          FlagIs("--config=allow", Source::kCli), FlagIs("--allow-xffrc", Source::kUser),
+          FlagIs("--config=deny", Source::kCli), FlagIs("--no-allow-xffrc", Source::kUser)));
+  EXPECT_THAT(
+      ResolveConfigInOrder(inputs, cli, "xff"),
+      ElementsAre(FlagIs("--config=allow", Source::kCli), FlagIs("--config=deny", Source::kCli)));
+}
+
 TEST_F(ConfigTest, NoConfigYieldsEmpty) {
   ConfigInputs in;
   in.system.globals = {"--color=auto"};
