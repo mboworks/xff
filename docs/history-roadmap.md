@@ -349,7 +349,7 @@ remains below is the design-forked / larger work.
       flag (`--archive-delete`); `--unstable` is not a way to arm something dangerous by list.
   - **The other two cases are covered or not yet real.** Post-1.0 behaviour-migration windows
     (`--feature=no-size-round-up` while a default changes) are a genuine use, but xff has no legacy
-    to carry before 1.0. Admin capability DENIAL is already the config `[policy]` tier's job, which
+    to carry before 1.0. Admin capability DENIAL was the config `[policy]` tier's job (superseded by trusted global controls), which
     knows flag names and needs no parallel capability namespace.
   - **So:** AGENTS.md's trigger is replaced by the rule the practice validated (prefer a named family
     member or a value on an existing flag), and `--feature` stays unbuilt. Revisit it after 1.0 if
@@ -689,7 +689,7 @@ remains below is the design-forked / larger work.
     (`-exec`/`-execdir`/`-ok`/`-capture`) or destructive (`-delete`) line loaded from an `--xffrc`
     file is inert (dropped + one-line warning) unless armed by `--allow-exec`, which is honored
     only from a trusted tier (CLI, or user/system config via `ArmedFromTrustedTier`) - never from
-    an `--xffrc` file itself - and the system `[policy]` can still hard-deny an armed line.
+    an `--xffrc` file itself - and the system could hard-deny an armed line through `[policy]` (now superseded by the unsectioned `--no-allow-exec` control).
 
 - **Archive diving (#83, `--archive`): libarchive, decided 2026-07-06.** Descend into archives and
   match/list their members as virtual paths via a read-only `vfs::FileSystem` backend, so the whole

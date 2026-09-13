@@ -299,6 +299,29 @@ TEST_F(ParserTest, OldEqualsQualifierSpellingsPointToColon) {
   }
 }
 
+TEST_F(ParserTest, TypeChoicesRejectUnknownAndEmptyListMembers) {
+  static constexpr std::array kInvalid = std::to_array<std::string_view>({
+      "garbage",
+      "z",
+      "",
+      "f,",
+      ",f",
+      "f,,d",
+      "f,z",
+      "fd",
+  });
+  static constexpr std::array kFlags = std::to_array<std::string_view>({"-type", "-xtype"});
+  for (const std::string_view flag : kFlags) {
+    for (const std::string_view value : kInvalid) {
+      SCOPED_TRACE(absl::StrCat(flag, " ", value));
+      EXPECT_THAT(
+          Parse({".", std::string(flag), std::string(value)}),
+          StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("accepted: b,c,d,f,l,p,s")));
+    }
+    EXPECT_THAT(Parse({".", std::string(flag), "b,c,d,f,l,p,s"}), IsOk());
+  }
+}
+
 TEST_F(ParserTest, Errors) {
   using ::absl::StatusCode;
   EXPECT_THAT(Parse({".", "-bogus"}), StatusIs(StatusCode::kInvalidArgument));              // unknown predicate

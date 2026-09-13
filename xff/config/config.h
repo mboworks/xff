@@ -38,7 +38,12 @@ enum class Source { kUnset, kSystem, kUser, kXffrc, kCli };
 struct ResolvedFlag {
   std::string flag;
   Source source;
+  bool is_argument = false;  // a literal primary argument, never a selector or arming directive
 };
+
+// Views of directive tokens, excluding literal primary arguments. The input strings must outlive
+// the returned views. Uses registry arities, including terminated command argument runs.
+std::vector<std::string_view> DirectiveTokens(const std::vector<std::string>& tokens);
 
 // One config file consulted during discovery, recorded for --explain's source
 // trace: its path, the layer it would feed, and whether it existed/was readable.
@@ -52,29 +57,26 @@ struct ConfigSource {
 // apply each file at the command-line position where it was selected.
 struct ExplicitConfig {
   std::string path;
-  std::vector<RcLine> lines;
+  ConfigFile config;
 };
 
 // The parsed layers + active selectors fed to ResolveConfig. CLI flags are NOT
 // here: the caller applies them last (highest precedence) after this resolution.
 struct ConfigInputs {
-  SystemConfig system;                // parsed /etc/xff.ini ([defaults] + [policy])
-  std::vector<RcLine> user;           // parsed user .xffrc
+  ConfigFile system;                  // parsed /etc/xff.ini globals + named configurations
+  ConfigFile user;                    // parsed user INI
   std::vector<ExplicitConfig> xffrc;  // parsed --xffrc=FILE files, kept separate and in order
   std::vector<std::string> configs;   // active --config=NAME selectors (styles and/or named configs)
   bool no_config = false;             // --no-config: suppress both automatic tiers when authorized
-  bool no_system_config = false;      // --no-system-config: suppress system defaults, retain policy
+  bool no_system_config = false;      // --no-system-config: suppress system configuration
   bool no_user_config = false;        // --no-user-config: suppress the user tier
   std::vector<ConfigSource> sources;  // every file consulted during discovery, for --explain (set by Discover)
 };
 
 // Resolves config-supplied flags using the legacy tier view, lowest precedence
 // first, each tagged with its Source. Prefer ResolveConfigInOrder for execution.
-// An .xffrc line contributes its flags when its
-// base selector is empty/"common" or names an active --config, AND its config
-// selector is empty or names an active --config. Suppressing both automatic tiers yields an empty result
-// (pure CLI + built-ins). Gate the inputs first (GateConfig) so a dangerous,
-// unarmed --xffrc line never reaches here.
+// Each file contributes its unconditional globals and sections whose literal names are selected.
+// Gate the inputs first so an unarmed explicit-file action never reaches execution.
 std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& inputs);
 
 // Produces the complete application stream. Automatic system/user defaults and
@@ -92,7 +94,7 @@ std::vector<ResolvedFlag> ResolveConfigInOrder(
 std::string_view SourceName(Source source);
 
 // Whether the arming flag `flag` (e.g. "--allow-exec") is active from a TRUSTED tier - the CLI
-// globals, the system [defaults], or an applying user .xffrc line (gated on inputs.configs) - but
+// globals, the unsectioned system configuration, or an applying user .xffrc line - but
 // NOT from an --xffrc-loaded file (inputs.xffrc is deliberately excluded). This is what lets a
 // named --xffrc file carry `-exec`/`-delete` yet not authorize itself: only a trusted tier arms.
 bool ArmedFromTrustedTier(
@@ -120,7 +122,7 @@ registry::Style ActiveStyle(const std::vector<std::string>& configs);
 // basename: a built-in style name ("find"/"xff"/"rg") selects that preset; an empty name defaults
 // to "xff"; ANY OTHER name (including "fd"/"xfd" - there is no magic remap) is returned verbatim as
 // a NAMED-config selector (e.g. a "mytool" symlink -> "mytool"), which activates a matching
-// `mytool:` config block while leaving the base style at the modern xff default (ActiveStyle
+// `[mytool]` config block while leaving the base style at the modern xff default (ActiveStyle
 // ignores a non-style selector). main() prepends this as the lowest-precedence selector, so an
 // explicit --config still stacks over it via ActiveStyle's last-wins (design-config.md "CLI
 // selectors"). The returned view aliases `argv0` for a passthrough name; copy it to retain.

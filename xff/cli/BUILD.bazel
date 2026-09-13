@@ -82,9 +82,13 @@ cc_library(
         ":globals_cc",
         "//xff/config:config_cc",
         "//xff/config:xffrc_cc",
+        "//xff/parser:parser_cc",
         "//xff/registry:registry_cc",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
         "@mboworks_mbo//mbo/types:optional_ref_cc",
     ],
 )
@@ -93,12 +97,21 @@ cc_test(
     name = "config_validation_test",
     size = "small",
     srcs = ["config_validation_test.cc"],
+    data = glob(["testdata/config_validation/**"]),
     deps = [
         ":config_validation_cc",
         "//xff/config:config_cc",
+        "//xff/config:ini_cc",
+        "//xff/config:policy_cc",
         "//xff/config:xffrc_cc",
+        "//xff/env:env_cc",
+        "//xff/parser:parser_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )
 
@@ -658,7 +671,10 @@ bashtest(
     name = "style_test",
     size = "small",
     srcs = ["style_test.sh"],
-    data = [":xff"],
+    data = [
+        "testdata/config_validation/multiple/user.rc",
+        ":xff",
+    ],
 )
 
 # End-to-end test of the content-search predicates (-content / -icontent / -rxc /

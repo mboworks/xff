@@ -31,61 +31,47 @@ namespace xff::config {
 // flags (registry Lookup; unknown tokens such as globals are kNone). A line
 // counts as sensitive/destructive when ANY of its flags is. An attached binding
 // like "-capture:tag" is classified by its base name before ':'.
-registry::Safety LineSafety(const RcLine& line);
-
-// Whether a `line` from `layer` is permitted under the system `policy`. With the
-// untrusted project layer gone (2026-07-06, Option B), no layer is denied by
-// default: the trusted system/user layers may do anything, so a line is permitted
-// unless the root-owned system [policy] explicitly DENIES it for this layer,
-// addressed by flag name or an @safe/@sensitive/@destructive class token. Only the
-// system layer supplies [policy].
-bool LinePermitted(const RcLine& line, Source layer, const SystemConfig& policy);
+registry::Safety LineSafety(const IniLine& line);
 
 // Validates requests to suppress automatic configuration. A present system config must explicitly
 // authorize suppressing its defaults; a present user config must authorize suppressing itself unless
-// the higher-trust system config already does. Each positive/negative permission pair controls only
-// its corresponding command-line skip flag and is unique per automatic config file.
-// system-skip control is system-only, user-skip control may occur in the system or user file, and
+// the higher-trust system config already does. Each require/no-require permission pair controls
+// whether its file may be skipped, including by --no-config, and is unique per automatic config file.
+// System-skip control is system-only, user-skip control may occur in the system or user file, and
 // every control precedes all sections. No control is accepted from an explicitly named --xffrc
 // file. Permission directives are config-only and never enter the resolved runtime flags.
 // --allow-xffrc/--no-allow-xffrc is a separate config-only setting resolved through ordinary
-// system/user selection and precedence; an explicit --xffrc file cannot admit itself.
+// system/user selection and precedence, with an authoritative system global denial; an explicit
+// --xffrc file cannot admit itself.
 absl::Status ValidateConfigSkips(const ConfigInputs& inputs);
 
-// Why the gate dropped a line: a safety-policy denial (its safety class bars it from the layer),
+// Why the gate dropped a line: a global --no-allow-exec prohibition,
 // a structural rule (it attaches behavior to a built-in preset, which no config file may do), or
 // an unarmed dangerous directive loaded from an --xffrc file (kSafety/kSecurity, no --allow-exec).
-enum class DropReason { kSafetyPolicy, kPresetOverload, kUnarmedXffrc };
+enum class DropReason { kSystemProhibition, kPresetOverload, kUnarmedXffrc };
 
 // A config line dropped by the gate: the line, the layer it came from, the safety class (relevant
-// to kSafetyPolicy), and why it was dropped (for the stderr warning and --explain).
+// to kSystemProhibition), and why it was dropped (for the stderr warning and --explain).
 struct Drop {
-  RcLine line;
+  IniLine line;
+  std::string config_name;
   Source layer;
   registry::Safety safety;
-  DropReason reason = DropReason::kSafetyPolicy;
+  DropReason reason = DropReason::kSystemProhibition;
 };
 
-// Whether `line` attaches behavior to a built-in preset: its base names a style (find/xff/rg)
-// with no named-config component (`xff: --flag`), so it would apply whenever that preset is active
-// and silently change what a plain `xff` run does. Config files customize via `common:` (always-on)
-// or named blocks (`myconfig:`, or the style-scoped `xff:myconfig:`) instead, so a preset stays
-// reproducible. Applies to every layer.
-bool OverloadsPreset(const RcLine& line);
+// Whether a section name exactly matches a built-in preset (find/xff/rg). User and explicit
+// files customize through unsectioned defaults or custom named sections instead.
+bool OverloadsPreset(std::string_view name);
 
 struct GateResult {
   ConfigInputs config;
   std::vector<Drop> drops;
 };
 
-// Filters the user + --xffrc .xffrc lines of `inputs` through the gate (with inputs.system as the
-// policy), returning both a copy with the denied lines removed and a record of every drop. Every
-// layer drops a preset-overloading
-// line (kPresetOverload) and a system-[policy]-denied line (kSafetyPolicy). The
-// --xffrc tier additionally drops a dangerous (kSafety/kSecurity) line as
-// kUnarmedXffrc unless `xffrc_armed` is set (--allow-exec from a trusted tier; see
-// ArmedFromTrustedTier). The system [defaults] are root-authored and never gated;
-// CLI flags are not config and never gated.
+// Filters user and explicit-file lines, recording preset overloads and dangerous lines denied by
+// the trusted global --no-allow-exec prohibition. Explicit-file dangerous lines also require arming.
+// System-authored flags and CLI expressions are not filtered by this gate.
 GateResult GateConfig(const ConfigInputs& inputs, bool xffrc_armed);
 
 // A one-line human description of a dropped line for the stderr warning and

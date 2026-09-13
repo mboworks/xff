@@ -878,7 +878,7 @@ Section ConfigSection(bool in_full) {
       "command line then adjust. Run `--explain` to print exactly what resolved."));
 
   static constexpr std::array<DocPair, 4> kLayers = {{
-      {"system config", "machine-wide defaults (plus a root-owned `[policy]` that can hard-deny arming)"},
+      {"system config", "machine-wide defaults (plus root-owned global controls that can prohibit arming)"},
       {"user config", "your personal defaults"},
       {"--xffrc=FILE", "an explicitly named file (repeatable) - a NON-ARMING tier"},
       {"command line", "flags and `--config`, highest"},
@@ -891,51 +891,141 @@ Section ConfigSection(bool in_full) {
       "trusted permission directives allow it; those files may still be inspected for policy. An explicit "
       "command-line `--xffrc` remains active."));
   layers.children.push_back(ProseOf(
-      "Skip permissions are config-only controls placed before the first section. The system file may set one of "
-      "`--allow-no-config` / `--no-allow-no-config` once, one of "
-      "`--allow-no-system-config` / `--no-allow-no-system-config` once and one of "
-      "`--allow-no-user-config` / `--no-allow-no-user-config` once. Each pair controls only its corresponding "
-      "command-line skip flag. The user file may set its user-control pair once before the first selector block. A "
+      "Permission flags (allow and require flags) are config-only directives, not command-line options. "
+      "Require flags precede the first section. `--no-require-*` makes a file "
+      "optional; "
+      "`--require-*` prevents skipping an existing file, without requiring a missing file to exist. The system file "
+      "may set one of "
+      "`--no-require-system-config` / `--require-system-config` once and one of "
+      "`--no-require-user-config` / `--require-user-config` once. Permissions govern which files may be skipped: "
+      "`--no-config` requests both skips and fails if either existing file refuses. Missing files need no "
+      "permission; an existing file without a grant cannot be skipped. The user file may set its user-control "
+      "pair once before the first section. A "
       "system "
       "user-control decision is authoritative over the user file. Explicit `--xffrc` files may not contain any "
       "of these controls. Separately, `--allow-xffrc` / `--no-allow-xffrc` is a normal config-only setting usable "
-      "in system defaults or any user config block; ordinary selection and precedence decide whether command-line "
-      "`--xffrc=FILE` is accepted, while system policy may forbid the user from enabling it."));
+      "in system defaults or any user config block; user selection and precedence decide whether command-line "
+      "`--xffrc=FILE` is accepted, and an unsectioned system denial cannot be overridden. Admission is checked before "
+      "explicit paths are opened."));
+  layers.children.push_back(ProseOf(
+      "System, user, and explicit `.xffrc` files share one INI grammar. Write unconditional options with their exact "
+      "command-line spelling before the first "
+      "section, and named configurations as plain `[NAME]` sections. For example, write `--color=auto`, then "
+      "`[dev]` and `-E`; do not remove the option dashes or add a `config` section prefix. Global lines are "
+      "validated independently and an invalid one is diagnosed and ignored. Named sections are atomic: one "
+      "invalid line disables the entire section. A name may be declared only once per file, including empty "
+      "sections; duplicate declarations disable that name. Other files may refine the same name. Disablement "
+      "propagates through `--config=NAME` references, and "
+      "selecting a disabled section is a usage error. Thus `-E development` disables its section because `-E` "
+      "takes no value and `development` is an unexpected token."));
+  layers.children.push_back(ProseOf(
+      "A line may contain multiple directives: `--hidden --color=never` or `-name foo -name bar`. Adjacent "
+      "predicates mean AND; use `-name foo -o -name bar` for either name. Config predicates and actions form "
+      "an expression that is ANDed as a group with the CLI expression. Each primary consumes only its own "
+      "arguments. Closed choices are validated by the shared CLI parser: `-type garbage` is invalid, while "
+      "`-type f,d` is a valid any-of list."));
   section.children.push_back(Content{.node = std::move(layers)});
 
-  static constexpr std::array<DocPair, 8> kConfigControls = {{
-      {"--allow-no-config",
-       "authorizes the command-line `--no-config` request to suppress both automatic tiers; system config only, "
-       "before the first section, and at most one of this pair"},
-      {"--no-allow-no-config",
-       "denies the command-line `--no-config` request; system config only, before the first section, and at most "
-       "one of this pair"},
-      {"--allow-no-system-config",
-       "authorizes command-line `--no-system-config`; system config only, before the first section, and at most one "
+  static constexpr std::array<DocPair, 7> kConfigControls = {{
+      {"--no-require-system-config",
+       "permits skipping the system file with `--no-system-config` or `--no-config`; system config only, before the "
+       "first section, and at most one "
        "of this pair"},
-      {"--no-allow-no-system-config",
-       "denies command-line `--no-system-config`; system config only, before the first section, and at most one of "
+      {"--require-system-config",
+       "forbids skipping the system file, including with `--no-config`; system config only, before the first section, "
+       "and at most one of "
        "this pair"},
-      {"--allow-no-user-config",
-       "authorizes command-line `--no-user-config`; before the first section in the system or user config, and at "
+      {"--no-require-user-config",
+       "permits skipping the user file with `--no-user-config` or `--no-config`; before the first section in the "
+       "system or user config, and at "
        "most one of this pair per file; the system decision is authoritative"},
-      {"--no-allow-no-user-config",
-       "denies command-line `--no-user-config`; before the first section in the system or user config, and at most "
+      {"--require-user-config",
+       "forbids skipping the user file, including with `--no-config`; before the first section in the system or user "
+       "config, and at most "
        "one of this pair per file; the system decision is authoritative"},
       {"--allow-xffrc",
        "allows command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config "
        "selection and last-value precedence"},
       {"--no-allow-xffrc",
        "denies command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config "
-       "selection and last-value precedence"},
+       "selection and last-value precedence; an unsectioned system denial is authoritative"},
+      {"--no-allow-exec",
+       "prohibits dangerous directives in user and explicit configs, even with CLI arming; system-only, before "
+       "the first section; remains authoritative when system defaults are suppressed"},
   }};
   Subsection controls{.title = "Config-only controls"};
   controls.children.push_back(ProseOf(
       "These directives are accepted only inside the stated automatic config files, not on the command line or in "
       "an explicitly loaded `--xffrc` file. An allow/deny pair is one setting: where a pair is limited to one "
       "occurrence, its positive and negative forms may not both appear."));
+  controls.children.push_back(ProseOf(
+      "The system pair is `--require-system-config` / `--no-require-system-config`; "
+      "the user pair is `--require-user-config` / `--no-require-user-config`."));
+  Bullets requirements;
+  requirements.items.push_back(ParseInline("System pair: unsectioned system config only."));
+  requirements.items.push_back(ParseInline("User pair: unsectioned system or user config; the system decision wins."));
+  requirements.items.push_back(ParseInline("Each pair may appear once per permitted file."));
+  requirements.items.push_back(
+      ParseInline("Neither pair is allowed in named sections, explicit `.xffrc` files, or on the CLI."));
+  requirements.items.push_back(
+      ParseInline("`--no-config` requests both skips and fails if either existing file requires application."));
+  controls.children.push_back(Content{.node = std::move(requirements)});
   controls.children.push_back(RowsOf(kConfigControls));
   section.children.push_back(Content{.node = std::move(controls)});
+
+  section.children.push_back(ProseOf(
+      "Explicit `.xffrc` files cannot contain the require/no-require pairs, `--allow-xffrc`, "
+      "`--no-allow-xffrc`, or the system-only `--no-allow-exec`. The separate runtime flag `--allow-exec` "
+      "is accepted on the CLI and in config files, but an explicit file's own setting never arms its "
+      "dangerous directives."));
+
+  Subsection examples{.title = "Tiny config examples"};
+  examples.children.push_back(ProseOf(
+      "Defaults and a named override in `/etc/xff.ini`: `xff . --config=dev` ends with `--color=never`; "
+      "adding `--color=always` after the selector overrides it."));
+  examples.children.push_back(ExampleOf("--color=auto\n[dev]\n--color=never", "ini"));
+  examples.children.push_back(ProseOf(
+      "Refine `[dev]` across files: the system file supplies `--color=auto`, the user file supplies "
+      "`--color=always`, and `task.xffrc` supplies `--color=never`. "
+      "`xff . --config=dev --xffrc=task.xffrc` ends with `--color=never`. Each file declares `[dev]` only once."));
+  examples.children.push_back(
+      ExampleOf("# user config\n[dev]\n--color=always\n--config=checks\n[checks]\n-type f", "ini"));
+  examples.children.push_back(ExampleOf("# task.xffrc\n[dev]\n--color=never", "ini"));
+  examples.children.push_back(ProseOf(
+      "`--config=checks` composes configurations; repeated references are allowed and each contributing line "
+      "applies at most once. Later-file refinements wait for the earlier file's section to finish. "
+      "Section names are literal: `[common]` is named, and `[xff:debug]` matches only "
+      "`--config=xff:debug`. Unconditional flags go before the first section."));
+  examples.children.push_back(ProseOf(
+      "An explicit `task.xffrc` uses exactly the same INI format. Its unsectioned flags apply when loaded; "
+      "named flags apply only when that configuration is selected:"));
+  examples.children.push_back(ExampleOf("--hidden\n\n[quiet]\n--color=never", "ini"));
+  examples.children.push_back(ProseOf(
+      "`xff . --xffrc=task.xffrc` applies `--hidden`; adding `--config=quiet` also applies `--color=never`. "
+      "The invocation name or another config's `--config=quiet` can also select the section. A selector "
+      "alone does not discover files. Unsectioned `--config=NAME` directives can select sections when "
+      "the file loads. There is no automatic `.xffrc` discovery."));
+  examples.children.push_back(ProseOf(
+      "Permit only the user-file skip: these unsectioned system controls allow `--no-user-config`, reject "
+      "`--no-config` and `--no-system-config`, and override the user file's own skip permission."));
+  examples.children.push_back(ExampleOf("--require-system-config\n--no-require-user-config", "ini"));
+  examples.children.push_back(ProseOf(
+      "`xff . --no-user-config` is allowed. `--no-system-config` and `--no-config` are rejected. "
+      "To permit both individual skips and `--no-config`, grant both file permissions in the system file:"));
+  examples.children.push_back(ExampleOf("--no-require-system-config\n--no-require-user-config", "ini"));
+  examples.children.push_back(ProseOf(
+      "To prevent dangerous directives from lower-trust configs, put `--no-allow-exec` before every section "
+      "in an administrator-owned `/etc/xff.ini` that those users cannot modify. User and explicit-file "
+      "dangerous lines are dropped even with CLI `--allow-exec`, and the prohibition survives suppression of "
+      "system defaults. Add `--no-allow-xffrc` to reject explicit files altogether:"));
+  examples.children.push_back(ExampleOf("--no-allow-exec\n--no-allow-xffrc", "ini"));
+  examples.children.push_back(ProseOf(
+      "Neither user `--allow-xffrc` nor an explicit file's own `--allow-exec` can undo those prohibitions. "
+      "These controls constrain config-file capabilities, not actions typed directly on the CLI. Runtime "
+      "`--safe`, `--dry-run`, and action-specific confirmation remain separate. Without a system prohibition, "
+      "`--allow-exec` from the CLI or an applying automatic config permits dangerous explicit-file lines "
+      "through the config gate; the explicit file cannot arm itself."));
+  section.children.push_back(Content{.node = std::move(examples)});
 
   Subsection style{.title = "Choosing a style"};
   style.children.push_back(ProseOf(
@@ -965,7 +1055,7 @@ Section ConfigSection(bool in_full) {
       "A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`, or `-delete`) "
       "carried by an `--xffrc` file is inert unless `--allow-exec` is set from a trusted tier (the command "
       "line or the system/user config, never an `--xffrc` file itself). Unarmed lines are dropped with a "
-      "warning; the root system `[policy]` can hard-deny even `--allow-exec`."));
+      "warning; the unsectioned system `--no-allow-exec` prohibition overrides even CLI arming."));
   section.children.push_back(Content{.node = std::move(arming)});
 
   if (!in_full) {

@@ -52,7 +52,7 @@ std::string UserConfigPath(const DiscoveryOptions& opts);
 // Discovers and parses the config layers into ConfigInputs (ready for
 // ResolveConfig), reading every file through `read`:
 //   - system: /etc/xff.ini,
-//   - user:   UserConfigPath(opts), in the .xffrc grammar,
+//   - user:   UserConfigPath(opts), in the shared INI grammar,
 //   - --xffrc=FILE: separate parsed files, in order - a NON-ARMING tier whose
 //     dangerous directives stay inert unless armed (naming the file is consent to load, not to arm).
 // There is no auto-discovered project layer (dropped 2026-07-06, Option B): xff never walks the
@@ -61,6 +61,13 @@ std::string UserConfigPath(const DiscoveryOptions& opts);
 // ordinary defaults are not applied. Explicit command-line --xffrc files remain selected by
 // --no-config.
 ConfigInputs Discover(const DiscoveryOptions& opts, FileReader read);
+
+// Reads automatic files and records explicit paths without opening them. Validate the automatic
+// system config and explicit-file admission before completing discovery with DiscoverExplicit.
+ConfigInputs DiscoverAutomatic(const DiscoveryOptions& opts, FileReader read);
+
+// Completes an automatic discovery by reading its explicit paths and recording their sources.
+ConfigInputs DiscoverExplicit(ConfigInputs inputs, FileReader read);
 
 // Extracts the config selectors among `globals` into a DiscoveryOptions (the env
 // fields are left unset for the caller): --no-config, --no-system-config, --no-user-config,

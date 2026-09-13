@@ -99,7 +99,7 @@ test::diff_ignore_is_configurable_and_cli_wins() {
   printf 'keep\nDEBUG y\nkeep2\n' >"${dir}/mr.txt"
 
   cfg="${dir}/xffrc"
-  printf 'common: --diff-ignore=trail --diff-ignore-matching=^DEBUG\n' >"${cfg}"
+  printf -- '--diff-ignore=trail --diff-ignore-matching=^DEBUG\n' >"${cfg}"
   out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}" -name left.txt -diff:none "${dir}/right.txt" -print 2>&1)"
   expect_output_contains 'left.txt' "${out}"
   out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --xffrc="${cfg}" "${dir}" -name ml.txt -diff:none "${dir}/mr.txt" -print 2>&1)"
@@ -111,7 +111,7 @@ test::diff_ignore_is_configurable_and_cli_wins() {
   expect_output_not_contains 'left.txt' "${out}"
 
   # Config values use the same pre-walk validation as CLI values.
-  printf 'common: --diff-ignore=bogus\n' >"${cfg}"
+  printf -- '--diff-ignore=bogus\n' >"${cfg}"
   out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}" -name left.txt -diff:none "${dir}/right.txt" 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains 'unknown --diff-ignore token' "${out}"
