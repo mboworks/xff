@@ -160,7 +160,9 @@ Names are literal, including colons: `[xff:debug]` requires `--config=xff:debug`
 mean that both `xff` and `debug` must be active. `[common]` is an ordinary named config.
 Unconditional flags belong before the first section.
 
-All three file types share shell-style argument quoting and escaping. Single quotes preserve
+The config reader emulates the shell's quoting and escaping to produce arguments for the same
+CLI parser. It removes comments before passing those arguments to the parser. System, user, and
+explicit `.xffrc` files all use this rule. Single quotes preserve
 literal content; double quotes group content and allow backslash escapes for `"`, `\`, `$`, and
 backtick. Outside quotes, a backslash escapes the next character. Adjacent quoted and unquoted
 pieces form one argument; empty quotes produce an empty argument. There is no variable, command,

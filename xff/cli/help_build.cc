@@ -925,7 +925,9 @@ Section ConfigSection(bool in_full) {
       "arguments. Closed choices are validated by the shared CLI parser: `-type garbage` is invalid, while "
       "`-type f,d` is a valid any-of list."));
   layers.children.push_back(ProseOf(
-      "All config files share shell-style argument quoting and escaping. Single or double quotes group "
+      "Config files emulate the shell's quoting and escaping to produce arguments for the same CLI parser. "
+      "The config reader removes comments before passing those arguments to the parser; config files are not "
+      "shell scripts. System, user, and explicit `.xffrc` files all use this rule. Single or double quotes group "
       "arguments, including spaces and empty values; outside quotes, a backslash escapes the next character. "
       "Inside double quotes, backslash escapes only double quote, backslash, dollar, backtick, or newline. "
       "There is no variable, command, pathname, or tilde expansion. Use the same flag spelling as on the CLI: "
@@ -936,7 +938,7 @@ Section ConfigSection(bool in_full) {
       "anywhere outside quotes. Both comment markers may follow any amount of whitespace. Quote or escape "
       "literal semicolons: `\\;` or `\";\"` supplies the `-exec` terminator, just as on the CLI. "
       "For example, `-exec echo x \\; ; comment` contains an exec action followed by a comment. "
-      "For example, `-name '#*' # Match names beginning with a hash` contains one predicate and a comment."));
+      "Likewise, `-name '#*' # Match names beginning with a hash` contains one predicate and a comment."));
   layers.children.push_back(ProseOf(
       "Quotes may span lines. Backslash-newline continues a logical line without adding a character, except "
       "inside single quotes. An unmatched quote or trailing backslash invalidates the logical line, with a "
