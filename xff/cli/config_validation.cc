@@ -27,8 +27,9 @@ namespace {
 
 bool IsSystemControl(std::string_view token) {
   return token == "--no-require-system-config" || token == "--require-system-config"
-         || token == "--no-require-user-config" || token == "--no-allow-exec" || token == "--require-user-config"
-         || token == "--allow-xffrc" || token == "--no-allow-xffrc";
+         || token == "--no-require-user-config" || token == "--require-user-config" || token == "--allow-xffrc"
+         || token == "--no-allow-xffrc" || token == "--archive-block-policy"
+         || token.starts_with("--archive-block-policy=");
 }
 
 absl::StatusOr<std::size_t> PrimaryArgumentCount(
@@ -55,6 +56,14 @@ absl::Status ValidateTokens(const std::vector<std::string>& tokens) {
   for (std::size_t pos = 0; pos < tokens.size(); ++pos) {
     const std::string_view token = tokens[pos];
     if (IsSystemControl(token)) {
+      if (token.starts_with("--archive-block-policy")) {
+        if (const auto status = ValidateGlobalValue(token); !status.ok()) {
+          return status;
+        }
+        if (token.find('=') == std::string_view::npos) {
+          return absl::InvalidArgumentError("--archive-block-policy requires file or separate");
+        }
+      }
       continue;
     }
     if (LookupGlobalArgument(token).has_value()) {
@@ -215,9 +224,10 @@ class ConfigFileValidator {
       auto next_controls = controls_;
       if (status.ok()) {
         for (const std::string_view token : config::DirectiveTokens(line.tokens)) {
-          const std::string name =
-              token.starts_with("--no-require-") ? absl::StrCat("--", token.substr(5)) : std::string(token);
-          if ((name == "--require-system-config" || name == "--require-user-config")
+          const std::string name = token.starts_with("--archive-block-policy=") ? "--archive-block-policy"
+                                   : token.starts_with("--no-require-")         ? absl::StrCat("--", token.substr(5))
+                                                                                : std::string(token);
+          if ((name == "--require-system-config" || name == "--require-user-config" || name == "--archive-block-policy")
               && !next_controls.insert(name).second) {
             status = absl::InvalidArgumentError(absl::StrCat(name, " and its negative form may occur only once"));
             break;
@@ -324,6 +334,7 @@ absl::StatusOr<parser::Command> ApplyResolvedConfig(
     parser::Command command,
     const std::vector<config::ResolvedFlag>& resolved) {
   command.globals.clear();
+  command.safety_flags_expanded = true;
   std::vector<std::string> expression = {"."};
   for (const config::ResolvedFlag& flag : resolved) {
     if (!flag.is_argument && (flag.source == config::Source::kCli || LookupGlobalArgument(flag.flag).has_value())) {

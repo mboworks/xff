@@ -64,6 +64,7 @@ cc_library(
         "@mboworks_mbo//mbo/status:status_macros_cc",
         "@xff_archive//:archive_register_cc",
         "@xff_extras_api//:archive_backend_cc",
+        "@xff_extras_api//:vfs_cc",
     ],
 )
 

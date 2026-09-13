@@ -412,6 +412,16 @@ TEST_F(HelpTest, StatsTopicDocumentsSummaryAndHistogram) {
           HasSubstr("--summary"), HasSubstr("--histogram"), HasSubstr("sum(lines)"), HasSubstr("needs an aggregator")));
 }
 
+TEST_F(HelpTest, SafetyTopicShowsBothArchivePoliciesAndAllRequiredControls) {
+  EXPECT_THAT(
+      RenderTopicDoc("safety"),
+      AllOf(
+          HasSubstr("--archive-block-policy=file|separate"), HasSubstr("Policy: file (default)"),
+          HasSubstr("Policy: separate"), HasSubstr("What switches"), HasSubstr("Pack new archive"),
+          HasSubstr("Pack replacement archive"), HasSubstr("archive-content-overwrite"), HasSubstr("Each file chooses"),
+          HasSubstr("regardless of member-editing restrictions"), HasSubstr("--dry-run")));
+}
+
 TEST_F(HelpTest, ConfigTopicDocumentsTiersStyleAndArming) {
   // `--help=config` renders from the model (TopicReference): the layered tiers, style
   // selector stacking (--config / argv[0]), policy-authorized config suppression, and the

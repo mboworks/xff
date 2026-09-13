@@ -124,8 +124,8 @@ TEST_F(MountedContainersTest, AMountKeepsTheReaderAliveAfterTheCallerDropsIt) {
   std::shared_ptr<const vfs::FileSystem> captured;
   fuse::RegisterMountFactory(
       [&captured](
-          std::shared_ptr<const vfs::FileSystem> mounted,
-          std::string_view container) -> absl::StatusOr<std::unique_ptr<fuse::Mount>> {
+          std::shared_ptr<const vfs::FileSystem> mounted, std::string_view container,
+          const vfs::MutationPolicy&) -> absl::StatusOr<std::unique_ptr<fuse::Mount>> {
         captured = std::move(mounted);  // what a real Mount does by storing it
         return std::make_unique<FakeMount>(std::string(container));
       });

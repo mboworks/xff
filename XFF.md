@@ -9,6 +9,7 @@ eXtended File Find, a find(1)-compatible file finder with modern extensions.
 - [Description](#description)
 - [Command structure](#command-structure)
 - [Configuration](#configuration)
+- [Safety](#safety)
 - [Options](#options)
 - [Expression](#expression)
 - [Output](#output)
@@ -105,9 +106,9 @@ The system pair is `--require-system-config` / `--no-require-system-config`; the
 - `--require-user-config` - forbids skipping the user file, including with `--no-config`; before the first section in the system or user config, and at most one of this pair per file; the system decision is authoritative
 - `--allow-xffrc` - allows command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config selection and last-value precedence
 - `--no-allow-xffrc` - denies command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config selection and last-value precedence; an unsectioned system denial is authoritative
-- `--no-allow-exec` - prohibits dangerous directives in user and explicit configs, even with CLI arming; system-only, before the first section; remains authoritative when system defaults are suppressed
+- `--archive-block-policy=file|separate` - selects the interpretation of blocks in this file, including its named sections; once before sections in system or user config; see `--help=safety` for the operation table
 
-Explicit `.xffrc` files cannot contain the require/no-require pairs, `--allow-xffrc`, `--no-allow-xffrc`, or the system-only `--no-allow-exec`. The separate runtime flag `--allow-exec` is accepted on the CLI and in config files, but an explicit file's own setting never arms its dangerous directives.
+Explicit `.xffrc` files cannot contain the require/no-require pairs, `--allow-xffrc`, `--no-allow-xffrc`, or `--archive-block-policy`. The separate runtime flag `--allow-exec` is accepted on the CLI and in config files, but an explicit file's own setting never arms its dangerous directives.
 
 ### Tiny config examples
 
@@ -163,14 +164,15 @@ Permit only the user-file skip: these unsectioned system controls allow `--no-us
 --no-require-user-config
 ```
 
-To prevent dangerous directives from lower-trust configs, put `--no-allow-exec` before every section in an administrator-owned `/etc/xff.ini` that those users cannot modify. User and explicit-file dangerous lines are dropped even with CLI `--allow-exec`, and the prohibition survives suppression of system defaults. Add `--no-allow-xffrc` to reject explicit files altogether:
+To prohibit execution regardless of its source, require an administrator-owned system file and set `--block-execution`. Add `--no-allow-xffrc` to reject explicit files altogether:
 
 ```ini
---no-allow-exec
+--require-system-config
+--block-execution
 --no-allow-xffrc
 ```
 
-Neither user `--allow-xffrc` nor an explicit file's own `--allow-exec` can undo those prohibitions. These controls constrain config-file capabilities, not actions typed directly on the CLI. Runtime `--safe`, `--dry-run`, and action-specific confirmation remain separate. Without a system prohibition, `--allow-exec` from the CLI or an applying automatic config permits dangerous explicit-file lines through the config gate; the explicit file cannot arm itself.
+Neither user `--allow-xffrc` nor an explicit file's own `--allow-exec` can undo those prohibitions. Execution blocks also constrain actions typed directly on the CLI. Runtime `--safe`, `--dry-run`, and action-specific confirmation remain separate. Without a system prohibition, `--allow-exec` from the CLI or an applying automatic config permits dangerous explicit-file lines through the config gate; the explicit file cannot arm itself.
 
 ### Choosing a style
 
@@ -182,7 +184,45 @@ Within one logical config section, repeating an overriding setting keeps the nor
 
 ### Arming dangerous directives
 
-A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`, or `-delete`) carried by an `--xffrc` file is inert unless `--allow-exec` is set from a trusted tier (the command line or the system/user config, never an `--xffrc` file itself). Unarmed lines are dropped with a warning; the unsectioned system `--no-allow-exec` prohibition overrides even CLI arming.
+A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`, or `-delete`) carried by an `--xffrc` file is inert unless `--allow-exec` is set from a trusted tier (the command line or the system/user config, never an `--xffrc` file itself). Unarmed lines are dropped with a warning. Arming cannot bypass unconditional safety blocks or an active safe profile.
+
+## Safety
+
+Without configured restrictions, operations are allowed. `--block-*` restrictions accumulate and cannot be cleared by later settings. `--safe` activates the configurable profile; `--no-safe` deactivates that profile without clearing unconditional blocks. Every `--safe-block-*` has a `--no-safe-block-*` counterpart; these profile settings use the last applied value. Initially the profile blocks every relevant capability. Activating it does not reset its definition.
+
+`--archive-block-policy=file|separate` selects the controls applied to archives. The default is `file`. This config-only directive may occur once in the unsectioned system config and once in the unsectioned user config; each file chooses its own policy. Named sections, explicit `.xffrc` files, and the CLI cannot set it. Require the policy file with `--require-system-config` or `--require-user-config` when users must not skip it.
+
+Each file's directives are translated before composition. Selecting `separate` in another file cannot remove mandatory restrictions already imposed. Use `separate` for precise control; `file` is the simple default. CLI file controls use `file` scope. Every control listed in a table cell must permit the operation. Names omit their prefixes: `file-writing` means both `--block-file-writing` and, when safe mode is active, `--safe-block-file-writing`. `execution` independently controls arbitrary command execution. The table defines permissions; it does not enable archive operations or add unsupported member-editing actions.
+
+| Operation                      | Policy: file (default)                      | Policy: separate                                                                       |
+| ------------------------------ | ------------------------------------------- | -------------------------------------------------------------------------------------- |
+| What switches                  | Archives and members use file controls      | Archive output and member edits use archive controls                                   |
+| Create ordinary file           | file-writing                                | file-writing                                                                           |
+| Overwrite ordinary file        | file-writing, file-overwrite                | file-writing, file-overwrite                                                           |
+| Delete file or entire archive  | file-deletion                               | file-deletion                                                                          |
+| Pack new archive and members   | file-writing                                | archive-writing                                                                        |
+| Pack replacement archive       | file-writing, file-overwrite                | archive-writing, archive-overwrite                                                     |
+| Add member to existing archive | file-writing, file-overwrite                | archive-writing, archive-overwrite, archive-content-writing                            |
+| Replace existing member        | file-writing, file-overwrite                | archive-writing, archive-overwrite, archive-content-writing, archive-content-overwrite |
+| Delete existing member         | file-writing, file-overwrite, file-deletion | archive-writing, archive-overwrite, archive-content-deletion                           |
+| Extract to new ordinary file   | file-writing                                | file-writing                                                                           |
+| Extract over existing file     | file-writing, file-overwrite                | file-writing, file-overwrite                                                           |
+
+
+Packing a new archive includes building its contents; member-editing controls do not apply. Replacing an entire archive replaces all its contents, regardless of member-editing restrictions. To preserve existing archives, block archive overwrite. Archive authorization covers only the selected archive output and its necessary owned temporary files, never extraction or unrelated writes. When overwrite is blocked, creation must atomically refuse an existing destination, including symlinks.
+
+```ini
+--require-system-config
+--archive-block-policy=separate
+--block-execution
+--block-file-writing
+--block-file-deletion
+--block-archive-overwrite
+```
+
+This system config allows packing new archives while blocking ordinary writes, deletion, execution, and replacement of existing archives. Child processes are not sandboxed by xff's file controls; block execution when those controls must not be bypassed by a command.
+
+`--dry-run` validates safety restrictions first, then previews actions without executing commands or modifying files. It never grants a blocked operation. Reading and normal terminal output remain allowed. A command's exit status or captured output cannot be predicted: preview stops evaluation of that entry and reports an incomplete preview rather than inventing subsequent matches.
 
 ## Options
 
@@ -200,7 +240,7 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
   Affects: --allow-exec
   Affected by: --allow-exec
 - `--allow-exec` - arm dangerous directives loaded from an --xffrc file (exec family, -delete) _(global, xff)_
-  Permits the sensitive/destructive directives (the exec family -exec/-execdir/-ok and -capture, and the destructive -delete) carried by an --xffrc-loaded file to actually run. Honored only from a trusted tier - typed on the CLI, or set in the user/system config - never from an --xffrc file (so a named config cannot authorize itself). The unsectioned system `--no-allow-exec` control can prohibit even this. Without it, such lines are inert (dropped + warned); -delete still obeys its own --safe/--dry-run guards.
+  Permits the sensitive/destructive directives (the exec family -exec/-execdir/-ok and -capture, and the destructive -delete) carried by an --xffrc-loaded file to actually run. Honored only from a trusted tier - typed on the CLI, or set in the user/system config - never from an --xffrc file (so a named config cannot authorize itself). Arming cannot bypass unconditional blocks or the active safe profile; see `--help=safety`.
   Affects: --xffrc
   Affected by: --xffrc
 - `--explain` - print the resolved configuration and exit _(global, xff)_
@@ -621,10 +661,72 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
 - `--exit-match` - keep output; exit 0 if anything matched, else 1 _(global, xff)_
 
 ### Safety
-- `--safe` - refuse destructive actions (-delete / -exec) _(global, xff)_
-  Rejects the run before traversal when its expression contains an armed `-delete` or exec-family action. This is a hard guard, not a preview: use `--dry-run` when the goal is to see what a supported write would do. `--safe` does not merely suppress the action after other expression terms have run.
-- `--dry-run` - preview supported writes without changing the filesystem _(global, xff)_
-  Makes `-delete` print each path it would remove, makes `--archive-delete` list member deletions without rewriting the container, and makes `--pack` report how many entries it would write without creating the archive. Traversal and matching still run normally, so the preview uses the real selected set.
+- `--archive-block-policy=file|separate` - select file or separate archive blocking controls (config only) _(global, xff)_
+  One of:
+
+  - `file` - archives use ordinary file controls (default)
+  - `separate` - archive output and member edits use dedicated archive controls
+
+  Allowed once before all sections in system or user configuration. Each file chooses its own policy, including for its named sections. Neither named sections, explicit `.xffrc` files, nor the CLI may set it. See `--help=safety` for the operation table and archive replacement tradeoff.
+- `--block-file-deletion` - unconditionally prohibit deletion; later flags cannot remove this block _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--safe-block-file-deletion` - include deletion in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--no-safe-block-file-deletion` - exclude deletion from the safe-mode profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--block-execution` - unconditionally prohibit execution; later flags cannot remove this block _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--safe-block-execution` - include execution in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--no-safe-block-execution` - exclude execution from the safe-mode profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--block-file-writing` - unconditionally prohibit writing; later flags cannot remove this block _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--safe-block-file-writing` - include writing in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--no-safe-block-file-writing` - exclude writing from the safe-mode profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--block-file-overwrite` - unconditionally prohibit overwrite; later flags cannot remove this block _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--safe-block-file-overwrite` - include overwrite in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--no-safe-block-file-overwrite` - exclude overwrite from the safe-mode profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--block-archive-writing` - unconditionally prohibit archive writing; later flags cannot remove this block _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--safe-block-archive-writing` - include archive writing in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--no-safe-block-archive-writing` - exclude archive writing from the safe-mode profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--block-archive-overwrite` - unconditionally prohibit archive overwrite; later flags cannot remove this block _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--safe-block-archive-overwrite` - include archive overwrite in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--no-safe-block-archive-overwrite` - exclude archive overwrite from the safe-mode profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--block-archive-content-writing` - unconditionally block archive content writing _(global, xff)_
+  Applies to member edits of existing archives under `--archive-block-policy=separate`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
+- `--safe-block-archive-content-writing` - include in the safe profile: archive content writing _(global, xff)_
+  Applies to member edits of existing archives under `--archive-block-policy=separate`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
+- `--no-safe-block-archive-content-writing` - exclude from the safe profile: archive content writing _(global, xff)_
+  Applies to member edits of existing archives under `--archive-block-policy=separate`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
+- `--block-archive-content-overwrite` - unconditionally block archive content overwrite _(global, xff)_
+  Applies to member edits of existing archives under `--archive-block-policy=separate`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
+- `--safe-block-archive-content-overwrite` - include in the safe profile: archive content overwrite _(global, xff)_
+  Applies to member edits of existing archives under `--archive-block-policy=separate`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
+- `--no-safe-block-archive-content-overwrite` - exclude from the safe profile: archive content overwrite _(global, xff)_
+  Applies to member edits of existing archives under `--archive-block-policy=separate`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
+- `--block-archive-content-deletion` - unconditionally prohibit archive deletion; later flags cannot remove this block _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--safe-block-archive-content-deletion` - include archive deletion in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--no-safe-block-archive-content-deletion` - exclude archive deletion from the safe-mode profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for capability coverage, profile composition, and dry-run limits.
+- `--no-safe` - disable the safe-mode profile; unconditional blocks remain enforced _(global, xff)_
+- `--safe` - activate the configured safe-mode profile _(global, xff)_
+  Initially the profile blocks execution and file/archive deletion, writing, and overwrite. `--safe-block-*` and `--no-safe-block-*` customize it without activating it. `--no-safe` deactivates the profile. Unconditional `--block-*` restrictions always apply. Prohibited actions are rejected before traversal; overwrite collisions are enforced at creation.
+- `--dry-run` - preview permitted actions without writes, deletion, or execution _(global, xff)_
+  Policy is checked first; dry run cannot bypass a block. Reads and normal output remain enabled. File output, deletion, and archives are previewed. Commands are reported but never launched. A skipped command or capture has no result: evaluation of that entry stops with an incomplete-preview error, rather than guessing which subsequent actions would run.
 - `--skip-unsupported` - warn and skip a predicate a filesystem cannot evaluate, not fail _(global, xff)_
   Applies when a predicate is unsupported for an entry's filesystem, most commonly an archive member that cannot provide an operation available on the host filesystem. Without this flag the unsupported operation is a hard error; with it the entry is skipped and the reason is reported. Ordinary I/O and traversal errors remain errors.
 

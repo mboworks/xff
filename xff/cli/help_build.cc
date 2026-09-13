@@ -870,6 +870,80 @@ Section CompareSection(bool in_full) {
 // TopicReference) and folded into the full reference. `in_full` (the folded-in case) drops
 // the per-flag "Config flags" subsection: the full reference's grouped Options section
 // already documents each flag, so the layering / style / arming prose is all that adds value.
+Section SafetySection(bool in_full) {
+  Section section{.title = "Safety"};
+  section.children.push_back(ProseOf(
+      "Without configured restrictions, operations are allowed. `--block-*` restrictions accumulate and "
+      "cannot be cleared by later settings. `--safe` activates the configurable profile; `--no-safe` "
+      "deactivates that profile without clearing unconditional blocks. Every `--safe-block-*` has a "
+      "`--no-safe-block-*` counterpart; these profile settings use the last applied value. Initially the "
+      "profile blocks every relevant capability. Activating it does not reset its definition."));
+  section.children.push_back(ProseOf(
+      "`--archive-block-policy=file|separate` selects the controls applied to archives. The default is "
+      "`file`. This config-only directive may occur once in the unsectioned system config and once in the "
+      "unsectioned user config; each file chooses its own policy. Named sections, explicit `.xffrc` files, and the "
+      "CLI cannot set it. Require the policy file with `--require-system-config` or `--require-user-config` "
+      "when users must not skip it."));
+  section.children.push_back(ProseOf(
+      "Each file's directives are translated before composition. Selecting `separate` in another file "
+      "cannot remove mandatory restrictions already imposed. Use `separate` for precise control; `file` "
+      "is the simple default. CLI file controls use `file` scope. Every control listed in a table cell must permit the "
+      "operation. Names omit their prefixes: "
+      "`file-writing` means both `--block-file-writing` and, when safe mode is active, "
+      "`--safe-block-file-writing`. `execution` independently controls arbitrary command execution. "
+      "The table defines permissions; it does not enable archive operations or add unsupported member-editing "
+      "actions."));
+  Table operations{
+      .header = {"Operation", "Policy: file (default)", "Policy: separate"},
+      .cells = {
+          {"What switches", "Archives and members use file controls",
+           "Archive output and member edits use archive controls"},
+          {"Create ordinary file", "file-writing", "file-writing"},
+          {"Overwrite ordinary file", "file-writing, file-overwrite", "file-writing, file-overwrite"},
+          {"Delete file or entire archive", "file-deletion", "file-deletion"},
+          {"Pack new archive and members", "file-writing", "archive-writing"},
+          {"Pack replacement archive", "file-writing, file-overwrite", "archive-writing, archive-overwrite"},
+          {"Add member to existing archive", "file-writing, file-overwrite",
+           "archive-writing, archive-overwrite, archive-content-writing"},
+          {"Replace existing member", "file-writing, file-overwrite",
+           "archive-writing, archive-overwrite, archive-content-writing, archive-content-overwrite"},
+          {"Delete existing member", "file-writing, file-overwrite, file-deletion",
+           "archive-writing, archive-overwrite, archive-content-deletion"},
+          {"Extract to new ordinary file", "file-writing", "file-writing"},
+          {"Extract over existing file", "file-writing, file-overwrite", "file-writing, file-overwrite"},
+      }};
+  section.children.push_back(Content{.node = std::move(operations)});
+  section.children.push_back(ProseOf(
+      "Packing a new archive includes building its contents; member-editing controls do not apply. "
+      "Replacing an entire archive replaces all its contents, regardless of member-editing restrictions. "
+      "To preserve existing archives, block archive overwrite. Archive authorization covers only the "
+      "selected archive output and its necessary owned temporary files, never extraction or unrelated writes. "
+      "When overwrite is blocked, creation must atomically refuse an existing destination, including symlinks."));
+  section.children.push_back(ExampleOf(
+      "--require-system-config\n--archive-block-policy=separate\n--block-execution\n"
+      "--block-file-writing\n--block-file-deletion\n--block-archive-overwrite",
+      "ini"));
+  section.children.push_back(ProseOf(
+      "This system config allows packing new archives while blocking ordinary writes, deletion, execution, "
+      "and replacement of existing archives. Child processes are not sandboxed by xff's file controls; "
+      "block execution when those controls must not be bypassed by a command."));
+  section.children.push_back(ProseOf(
+      "`--dry-run` validates safety restrictions first, then previews actions without executing commands "
+      "or modifying files. It never grants a blocked operation. Reading and normal terminal output remain "
+      "allowed. A command's exit status or captured output cannot be predicted: preview stops evaluation "
+      "of that entry and reports an incomplete preview rather than inventing subsequent matches."));
+  if (!in_full) {
+    Subsection flags{.title = "Safety flags"};
+    for (const GlobalFlag& flag : Globals()) {
+      if (flag.topic == "safety") {
+        flags.children.push_back(FlagEntry(flag));
+      }
+    }
+    section.children.push_back(Content{.node = std::move(flags)});
+  }
+  return section;
+}
+
 Section ConfigSection(bool in_full) {
   Section section{.title = "Configuration"};
   section.children.push_back(ProseOf(
@@ -968,9 +1042,9 @@ Section ConfigSection(bool in_full) {
       {"--no-allow-xffrc",
        "denies command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config "
        "selection and last-value precedence; an unsectioned system denial is authoritative"},
-      {"--no-allow-exec",
-       "prohibits dangerous directives in user and explicit configs, even with CLI arming; system-only, before "
-       "the first section; remains authoritative when system defaults are suppressed"},
+      {"--archive-block-policy=file|separate",
+       "selects the interpretation of blocks in this file, including its named sections; once before sections "
+       "in system or user config; see `--help=safety` for the operation table"},
   }};
   Subsection controls{.title = "Config-only controls"};
   controls.children.push_back(ProseOf(
@@ -994,7 +1068,7 @@ Section ConfigSection(bool in_full) {
 
   section.children.push_back(ProseOf(
       "Explicit `.xffrc` files cannot contain the require/no-require pairs, `--allow-xffrc`, "
-      "`--no-allow-xffrc`, or the system-only `--no-allow-exec`. The separate runtime flag `--allow-exec` "
+      "`--no-allow-xffrc`, or `--archive-block-policy`. The separate runtime flag `--allow-exec` "
       "is accepted on the CLI and in config files, but an explicit file's own setting never arms its "
       "dangerous directives."));
 
@@ -1033,14 +1107,12 @@ Section ConfigSection(bool in_full) {
       "To permit both individual skips and `--no-config`, grant both file permissions in the system file:"));
   examples.children.push_back(ExampleOf("--no-require-system-config\n--no-require-user-config", "ini"));
   examples.children.push_back(ProseOf(
-      "To prevent dangerous directives from lower-trust configs, put `--no-allow-exec` before every section "
-      "in an administrator-owned `/etc/xff.ini` that those users cannot modify. User and explicit-file "
-      "dangerous lines are dropped even with CLI `--allow-exec`, and the prohibition survives suppression of "
-      "system defaults. Add `--no-allow-xffrc` to reject explicit files altogether:"));
-  examples.children.push_back(ExampleOf("--no-allow-exec\n--no-allow-xffrc", "ini"));
+      "To prohibit execution regardless of its source, require an administrator-owned system file "
+      "and set `--block-execution`. Add `--no-allow-xffrc` to reject explicit files altogether:"));
+  examples.children.push_back(ExampleOf("--require-system-config\n--block-execution\n--no-allow-xffrc", "ini"));
   examples.children.push_back(ProseOf(
       "Neither user `--allow-xffrc` nor an explicit file's own `--allow-exec` can undo those prohibitions. "
-      "These controls constrain config-file capabilities, not actions typed directly on the CLI. Runtime "
+      "Execution blocks also constrain actions typed directly on the CLI. Runtime "
       "`--safe`, `--dry-run`, and action-specific confirmation remain separate. Without a system prohibition, "
       "`--allow-exec` from the CLI or an applying automatic config permits dangerous explicit-file lines "
       "through the config gate; the explicit file cannot arm itself."));
@@ -1074,7 +1146,7 @@ Section ConfigSection(bool in_full) {
       "A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`, or `-delete`) "
       "carried by an `--xffrc` file is inert unless `--allow-exec` is set from a trusted tier (the command "
       "line or the system/user config, never an `--xffrc` file itself). Unarmed lines are dropped with a "
-      "warning; the unsectioned system `--no-allow-exec` prohibition overrides even CLI arming."));
+      "warning. Arming cannot bypass unconditional safety blocks or an active safe profile."));
   section.children.push_back(Content{.node = std::move(arming)});
 
   if (!in_full) {
@@ -1472,6 +1544,8 @@ std::optional<Section> NamedTopicSection(std::string_view name) {
     return ArchiveSection(/*in_full=*/false);
   } else if (name == "stats") {
     return StatsSection(/*in_full=*/false);
+  } else if (name == "safety") {
+    return SafetySection(/*in_full=*/false);
   } else if (name == "config") {
     return ConfigSection(/*in_full=*/false);
   } else if (name == "environment" || name == "env") {
@@ -1542,6 +1616,7 @@ Document BuildReference(Audience audience) {
   doc.sections.push_back(DescriptionSection());
   doc.sections.push_back(CommandStructureSection());
   doc.sections.push_back(ConfigSection(/*in_full=*/true));
+  doc.sections.push_back(SafetySection(/*in_full=*/true));
   doc.sections.push_back(OptionsSection(/*with_details=*/true, audience));
   doc.sections.push_back(ExpressionSection(/*with_details=*/true));
 

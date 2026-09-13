@@ -33,6 +33,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
+#include "mbo/status/status_macros.h"
 
 namespace xff::fuse {
 namespace {
@@ -64,6 +65,7 @@ bool PidLives(pid_t pid) {
 // The pid encoded in a root's directory name, or -1 for a name that is not a pid (never staled: an
 // unknown directory under our shared base is not ours to remove).
 pid_t PidOfRootName(std::string_view name) {
+  name = name.substr(0, name.find('-'));
   int pid = 0;
   if (!absl::SimpleAtoi(name, &pid) || pid <= 0) {
     return -1;
@@ -74,43 +76,26 @@ pid_t PidOfRootName(std::string_view name) {
 }  // namespace
 
 absl::StatusOr<MountRoot> MountRoot::Create(const MountRootOptions& options) {
-  std::string base = SharedBase(options);
-  std::string path = absl::StrCat(base, "/", ::getpid());
-  std::error_code error;
-  // XFF_HOST_IO: FUSE adapter creates its explicitly selected runtime mount directory.
-  stdfs::create_directories(path, error);
-  if (error) {
-    return absl::UnavailableError(absl::StrCat("cannot create the mount root ", path, ": ", error.message()));
-  }
-  return MountRoot(std::move(path), std::move(base));
+  const std::string base = SharedBase(options);
+  MBO_RETURN_IF_ERROR(vfs::CreateHostDirectories(base, options.mutations));
+  MBO_ASSIGN_OR_RETURN(
+      auto root, vfs::TemporaryDirectory::Create(absl::StrCat(base, "/", ::getpid()), options.mutations));
+  return MountRoot(std::move(root), options.mutations);
 }
 
-MountRoot::MountRoot(MountRoot&& other) noexcept
-    : path_(std::exchange(other.path_, {})), base_(std::exchange(other.base_, {})), next_(other.next_) {}
+MountRoot::MountRoot(MountRoot&& other) noexcept = default;
 
 MountRoot& MountRoot::operator=(MountRoot&& other) noexcept {
-  if (this == &other) {
-    return *this;
+  if (this != &other) {
+    path_ = std::exchange(other.path_, {});
+    root_ = std::move(other.root_);
+    policy_ = other.policy_;
+    next_ = other.next_;
   }
-  if (!path_.empty()) {
-    std::error_code ignored;
-    // XFF_HOST_IO: FUSE adapter removes its explicitly selected runtime mount directory.
-    stdfs::remove_all(path_, ignored);
-  }
-  path_ = std::exchange(other.path_, {});
-  base_ = std::exchange(other.base_, {});
-  next_ = other.next_;
   return *this;
 }
 
-MountRoot::~MountRoot() {
-  if (path_.empty()) {
-    return;  // moved-from
-  }
-  std::error_code ignored;
-  // XFF_HOST_IO: FUSE adapter removes its explicitly selected runtime mount directory.
-  stdfs::remove_all(path_, ignored);  // best effort; a busy mount stays for the next stale sweep
-}
+MountRoot::~MountRoot() = default;
 
 absl::StatusOr<std::string> MountRoot::MountPointFor(std::string_view container) {
   const std::string_view::size_type slash = container.rfind('/');
@@ -119,12 +104,10 @@ absl::StatusOr<std::string> MountRoot::MountPointFor(std::string_view container)
   // the common case reads clean in `mount` output and in rendered `{}` paths.
   std::string point = next_ == 0 ? absl::StrCat(path_, "/", name) : absl::StrCat(path_, "/", name, ".", next_);
   ++next_;
-  std::error_code error;
-  // XFF_HOST_IO: FUSE adapter creates its explicitly selected mount point.
-  stdfs::create_directory(point, error);
-  if (error) {
-    return absl::UnavailableError(absl::StrCat("cannot create the mount point ", point, ": ", error.message()));
+  if (name.empty() || name == "." || name == "..") {
+    return absl::InvalidArgumentError("invalid container basename for mount point");
   }
+  MBO_RETURN_IF_ERROR(vfs::CreateHostDirectories(point, policy_));
   return point;
 }
 
@@ -146,6 +129,9 @@ std::vector<std::string> StaleRoots(const MountRootOptions& options) {
 std::size_t SweepStaleRoots(
     absl::FunctionRef<void(std::string_view mount_point)> unmount,
     const MountRootOptions& options) {
+  if (!options.mutations.Delete().ok()) {
+    return 0;
+  }
   std::size_t removed = 0;
   for (const std::string& root : StaleRoots(options)) {
     std::error_code error;
@@ -154,9 +140,7 @@ std::size_t SweepStaleRoots(
         unmount(entry.path().string());
       }
     }
-    // XFF_HOST_IO: FUSE adapter removes its explicitly selected temporary root.
-    stdfs::remove_all(root, error);
-    if (!error) {
+    if (vfs::RemoveHostTree(root, options.mutations).ok()) {
       ++removed;
     }
   }

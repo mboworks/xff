@@ -17,6 +17,8 @@
 #define XFF_ENGINE_EXTRACT_H_
 
 #include <cstdint>
+#include <map>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -24,6 +26,7 @@
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "xff/vfs/filesystem.h"
+#include "xff/vfs/mutations.h"
 
 namespace xff::engine {
 
@@ -63,7 +66,8 @@ namespace xff::engine {
 // thread.
 class ExtractedMembers {
  public:
-  ExtractedMembers() = default;
+  explicit ExtractedMembers(vfs::MutationPolicy policy = {}) : policy_(policy) {}
+
   ~ExtractedMembers();
 
   ExtractedMembers(const ExtractedMembers&) = delete;
@@ -85,7 +89,8 @@ class ExtractedMembers {
 
  private:
   std::vector<std::string> held_;  // full paths, each the only file in its own directory
-  int next_ = 0;                   // per-instance counter, so two extractions never share a directory
+  vfs::MutationPolicy policy_;
+  std::map<std::string, std::unique_ptr<vfs::TemporaryDirectory>> directories_;
 };
 
 }  // namespace xff::engine

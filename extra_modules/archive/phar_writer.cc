@@ -37,6 +37,7 @@
 #include "mbo/status/status_macros.h"
 #include "xff/archive/member_path.h"
 #include "xff/archive/phar_reader.h"
+#include "xff/vfs/mutations.h"
 
 namespace xff::archive {
 namespace {
@@ -123,16 +124,6 @@ absl::StatusOr<std::string> ReadWholeFile(const std::string& path) {
     return absl::UnavailableError(absl::StrCat("cannot read ", path));
   }
   return bytes;
-}
-
-absl::Status WriteWholeFile(const stdfs::path& path, std::string_view bytes) {
-  // XFF_HOST_IO: PHAR writer creates the explicitly selected host output file.
-  std::ofstream out(path, std::ios::binary | std::ios::trunc);
-  out.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
-  if (!out) {
-    return absl::UnavailableError(absl::StrCat("cannot write ", path.string()));
-  }
-  return absl::OkStatus();
 }
 
 // SELECT: which manifest entries survive the removal. A requested name that is not in the archive
@@ -227,7 +218,12 @@ bool IsSignedTarOrZipPhar(const std::vector<Member>& members) {
       members, [](const Member& member) { return NormalizeMemberName(member.path) == kPharSignatureMember; });
 }
 
-absl::Status RemovePharMembersOfFile(std::string_view path, const std::vector<std::string>& members) {
+absl::Status RemovePharMembersOfFile(
+    std::string_view path,
+    const std::vector<std::string>& members,
+    const vfs::MutationPolicy& policy) {
+  MBO_RETURN_IF_ERROR(policy.Delete());
+  MBO_RETURN_IF_ERROR(policy.Write(true));
   if (members.empty()) {
     return absl::OkStatus();
   }
@@ -251,21 +247,16 @@ absl::Status RemovePharMembersOfFile(std::string_view path, const std::vector<st
   MBO_RETURN_IF_ERROR(AppendSignature(path, bytes, layout, rebuilt));
 
   const stdfs::path target(path_string);
-  const stdfs::path temporary = stdfs::path(target).replace_filename(target.filename().string() + ".xff-rewrite");
-  MBO_RETURN_IF_ERROR(WriteWholeFile(temporary, rebuilt));
+  MBO_ASSIGN_OR_RETURN(const auto temporary, vfs::TemporaryOutput::Create(absl::StrCat(path, ".xff-rewrite"), policy));
+  MBO_RETURN_IF_ERROR(temporary->Write(rebuilt));
   std::error_code error;
-  // XFF_HOST_IO: PHAR writer inspects the explicitly selected output path metadata.
-  const stdfs::perms mode = stdfs::status(target, error).permissions();
-  // XFF_HOST_IO: PHAR writer publishes its explicitly selected output file.
-  stdfs::rename(temporary, target, error);
+  // XFF_HOST_IO: reads original permissions before publishing the owned replacement.
+  const auto mode = stdfs::status(target, error).permissions();
   if (error) {
-    std::error_code ignored;
-    // XFF_HOST_IO: PHAR writer removes its explicitly selected temporary output.
-    stdfs::remove(temporary, ignored);
-    return absl::UnavailableError(absl::StrCat("cannot replace ", path, ": ", error.message()));
+    return absl::UnavailableError(error.message());
   }
-  stdfs::permissions(target, mode, error);  // the replacement is the same file to its user
-  return absl::OkStatus();
+  MBO_RETURN_IF_ERROR(temporary->SetPermissions(static_cast<unsigned int>(mode)));
+  return temporary->Publish(path);
 }
 
 }  // namespace xff::archive

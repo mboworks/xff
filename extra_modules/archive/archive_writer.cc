@@ -34,6 +34,7 @@
 #include "mbo/status/status_macros.h"
 #include "xff/archive/archive_filters.h"
 #include "xff/archive/member_path.h"
+#include "xff/vfs/mutations.h"
 
 namespace xff::archive {
 namespace {
@@ -195,7 +196,7 @@ absl::Status RewriteWithout(struct ::archive& reader_ref, struct ::archive& writ
 absl::Status MatchWriterToReader(
     struct ::archive& reader_ref,
     struct ::archive& writer_ref,
-    const stdfs::path& temporary,
+    const vfs::TemporaryOutput& temporary,
     std::string_view path) {
   struct ::archive* const reader = &reader_ref;
   struct ::archive* const writer = &writer_ref;
@@ -217,8 +218,8 @@ absl::Status MatchWriterToReader(
               " compression back, so a member cannot be removed from ", path));
     }
   }
-  if (::archive_write_open_filename(writer, temporary.string().c_str()) != ARCHIVE_OK) {  // LCOV_EXCL_BR_LINE
-    return absl::UnavailableError(absl::StrCat("cannot write ", temporary.string(), ": ", LastError(writer)));
+  if (::archive_write_open_fd(writer, temporary.Fd()) != ARCHIVE_OK) {  // LCOV_EXCL_BR_LINE
+    return absl::UnavailableError(absl::StrCat("cannot write ", temporary.Path(), ": ", LastError(writer)));
   }
   return absl::OkStatus();
 }
@@ -250,7 +251,12 @@ absl::Status TransferFirstMember(
 
 }  // namespace
 
-absl::Status RemoveMembersOfFile(std::string_view path, const std::vector<std::string>& members) {
+absl::Status RemoveMembersOfFile(
+    std::string_view path,
+    const std::vector<std::string>& members,
+    const vfs::MutationPolicy& policy) {
+  MBO_RETURN_IF_ERROR(policy.Delete());
+  MBO_RETURN_IF_ERROR(policy.Write(true));
   if (members.empty()) {
     return absl::OkStatus();
   }
@@ -270,13 +276,13 @@ absl::Status RemoveMembersOfFile(std::string_view path, const std::vector<std::s
     return absl::DataLossError(LastError(reader.get()));
   }
   const stdfs::path target(path_string);
-  const stdfs::path temporary = stdfs::path(target).replace_filename(target.filename().string() + ".xff-rewrite");
+  MBO_ASSIGN_OR_RETURN(const auto temporary, vfs::TemporaryOutput::Create(absl::StrCat(path, ".xff-rewrite"), policy));
   {
     const WritePtr writer{::archive_write_new()};
     if (writer == nullptr) {  // LCOV_EXCL_BR_LINE: libarchive allocation failure injection.
       return absl::UnavailableError("cannot create a libarchive writer");
     }
-    MBO_RETURN_IF_ERROR(MatchWriterToReader(*reader, *writer, temporary, path));
+    MBO_RETURN_IF_ERROR(MatchWriterToReader(*reader, *writer, *temporary, path));
     RemovalTracker removals(members);
     // The peeked header is the first member, so handle it before the loop takes over the rest.
     absl::Status status = TransferFirstMember(*reader, *writer, *first, removals);
@@ -290,26 +296,19 @@ absl::Status RemoveMembersOfFile(std::string_view path, const std::vector<std::s
       // Close is where a zip writes its central directory, so a failure here is a failure to write.
       status = absl::UnavailableError(LastError(writer.get()));
     }
-    if (!status.ok()) {
-      std::error_code ignored;
-      // XFF_HOST_IO: archive writer removes its explicitly selected temporary output.
-      stdfs::remove(temporary, ignored);  // nothing half-written survives
-      return status;
+    MBO_RETURN_IF_ERROR(status);
+    if (::archive_write_close(writer.get()) != ARCHIVE_OK) {
+      return absl::UnavailableError("cannot finish archive rewrite");
     }
   }
   std::error_code error;
-  // XFF_HOST_IO: archive writer inspects the explicitly selected output path metadata.
-  const stdfs::perms mode = stdfs::status(target, error).permissions();
-  // XFF_HOST_IO: archive writer publishes its explicitly selected output file.
-  stdfs::rename(temporary, target, error);
+  // XFF_HOST_IO: reads original permissions before publishing the owned replacement.
+  const auto mode = stdfs::status(target, error).permissions();
   if (error) {
-    std::error_code ignored;
-    // XFF_HOST_IO: archive writer removes its explicitly selected temporary output.
-    stdfs::remove(temporary, ignored);
-    return absl::UnavailableError(absl::StrCat("cannot replace ", path, ": ", error.message()));
+    return absl::UnavailableError(error.message());
   }
-  stdfs::permissions(target, mode, error);  // the replacement is the same file to its user
-  return absl::OkStatus();
+  MBO_RETURN_IF_ERROR(temporary->SetPermissions(static_cast<unsigned int>(mode)));
+  return temporary->Publish(path);
 }
 
 }  // namespace xff::archive

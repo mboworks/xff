@@ -33,6 +33,7 @@
 
 #include "absl/status/statusor.h"
 #include "xff/vfs/filesystem.h"
+#include "xff/vfs/mutations.h"
 
 namespace xff::fuse {
 
@@ -66,8 +67,8 @@ class Mount {
 // while a mount outlived the dive, and every callback then served freed memory. A garbage reply is
 // what makes the kernel abort the connection, so it surfaced as ECONNABORTED on one architecture,
 // intermittently, and moved when unrelated lines were deleted. Take ownership; do not document it.
-using MountFactory = std::function<
-    absl::StatusOr<std::unique_ptr<Mount>>(std::shared_ptr<const vfs::FileSystem> fs, std::string_view container)>;
+using MountFactory = std::function<absl::StatusOr<std::unique_ptr<
+    Mount>>(std::shared_ptr<const vfs::FileSystem> fs, std::string_view container, const vfs::MutationPolicy& policy)>;
 
 // Records that the FUSE mount extra is linked in. Called once, at static-init, from the extra's
 // registration translation unit (which must be alwayslink so the registrar is not dropped).
@@ -88,7 +89,8 @@ void RegisterMountFactory(MountFactory factory);
 // (the lean build), so the caller reports "not built in" rather than guessing.
 absl::StatusOr<std::unique_ptr<Mount>> MountContainer(
     std::shared_ptr<const vfs::FileSystem> fs,
-    std::string_view container);
+    std::string_view container,
+    const vfs::MutationPolicy& policy = {});
 
 // Whether the FUSE mount extra is compiled into this binary. False in the lean build; true when
 // @xff_fuse's registration TU is linked (--//xff:xff_fuse / --//xff:xff_all).

@@ -27,6 +27,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include "xff/vfs/mutations.h"
+#include "mbo/status/status_macros.h"
 #if defined(__APPLE__)
 # include <sys/mount.h>  // statfs + f_fstypename (BSD/macOS report the name directly)
 # include <sys/param.h>
@@ -42,6 +45,7 @@
 #include <ctime>
 #include <fstream>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string>
@@ -236,25 +240,16 @@ absl::StatusOr<Metadata> LocalFs::Stat(std::string_view path, bool follow_symlin
 }
 
 absl::Status LocalFs::Remove(std::string_view path) const {
-  const std::string path_str(path);
-  if (::remove(path_str.c_str()) != 0) {  // unlink for files/symlinks, rmdir for empty dirs
-    return absl::ErrnoToStatus(errno, absl::StrCat("remove('", path, "')"));
-  }
-  return absl::OkStatus();
+  return RemoveHostEntry(path, {});
+}
+
+absl::StatusOr<std::unique_ptr<OutputFile>> LocalFs::OpenOutput(std::string_view path, bool exclusive) const {
+  return OpenHostOutput(path, exclusive, {});
 }
 
 absl::Status LocalFs::WriteContent(std::string_view path, std::string_view content) const {
-  // XFF_HOST_IO: LocalFs is the host-backed VFS write boundary.
-  std::ofstream output(std::string(path), std::ios::binary | std::ios::trunc);
-  if (!output) {
-    return absl::InternalError(absl::StrCat("cannot open ", path, " for writing"));
-  }
-  output.write(content.data(), static_cast<std::streamsize>(content.size()));
-  output.flush();
-  if (!output) {
-    return absl::InternalError(absl::StrCat("cannot write ", path));
-  }
-  return absl::OkStatus();
+  MBO_ASSIGN_OR_RETURN(const auto output, OpenOutput(path, false));
+  return output->Write(content);
 }
 
 bool LocalFs::Access(std::string_view path, AccessMode mode) const {

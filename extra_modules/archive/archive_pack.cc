@@ -17,10 +17,13 @@
 
 #include <archive.h>
 #include <archive_entry.h>
+#include <unistd.h>
 
 #include <array>
+#include <cerrno>
 #include <chrono>
 #include <cstddef>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <ios>
@@ -551,8 +554,8 @@ absl::Status PackFiles(std::string_view path, const std::vector<PackEntry>& entr
   }
   // Written beside the target and renamed over it, so a failure part way leaves no half archive -
   // and an existing file survives an attempt that fails. Same contract as the member rewrite.
-  const stdfs::path target(path);
-  const stdfs::path temporary = stdfs::path(target).concat(".xff-pack");
+  MBO_ASSIGN_OR_RETURN(
+      const auto temporary, vfs::TemporaryOutput::Create(absl::StrCat(path, ".xff-pack"), options.mutations));
   {
     const WritePtr writer{::archive_write_new()};
     if (writer == nullptr) {  // LCOV_EXCL_BR_LINE: libarchive allocation failure injection.
@@ -580,29 +583,17 @@ absl::Status PackFiles(std::string_view path, const std::vector<PackEntry>& entr
                 ::archive_error_string(writer.get())));
       }
     }
-    if (::archive_write_open_filename(writer.get(), temporary.string().c_str()) != ARCHIVE_OK) {  // LCOV_EXCL_BR_LINE
-      return absl::UnavailableError(
-          absl::StrCat("cannot create '", temporary.string(), "': ", ::archive_error_string(writer.get())));
+    if (::archive_write_open_fd(writer.get(), temporary->Fd()) != ARCHIVE_OK) {
+      return absl::UnavailableError(absl::StrCat("cannot open archive output: ", ::archive_error_string(writer.get())));
     }
     for (const PackEntry& entry : entries) {
-      if (const absl::Status status = WriteOne(*writer, entry); !status.ok()) {
-        std::error_code ignored;
-        // XFF_HOST_IO: archive pack removes its explicitly selected temporary output.
-        stdfs::remove(temporary, ignored);
-        return status;
-      }
+      MBO_RETURN_IF_ERROR(WriteOne(*writer, entry));
     }
-  }  // the deleter closes the writer, which is when zip writes its directory
-  std::error_code error;
-  // XFF_HOST_IO: archive pack publishes its explicitly selected output file.
-  stdfs::rename(temporary, target, error);
-  if (error) {
-    std::error_code ignored;
-    // XFF_HOST_IO: archive pack removes its explicitly selected temporary output.
-    stdfs::remove(temporary, ignored);
-    return absl::UnavailableError(absl::StrCat("cannot place '", path, "': ", error.message()));
+    if (::archive_write_close(writer.get()) != ARCHIVE_OK) {
+      return absl::UnavailableError(absl::StrCat("cannot finish archive: ", ::archive_error_string(writer.get())));
+    }
   }
-  return absl::OkStatus();
+  return temporary->Publish(path);
 }
 
 }  // namespace xff::archive

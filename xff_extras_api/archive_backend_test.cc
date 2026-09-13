@@ -104,7 +104,7 @@ TEST_F(ArchiveBackendTest, RegistrarObjectsInstallEachOptionalArchiveCapability)
       },
       {{.name = "test", .suffixes = {".test"}}}};
   const ContainerRemoverRegistrar remover{
-      [](std::string_view, const std::vector<std::string>&) { return absl::OkStatus(); }};
+      [](std::string_view, const std::vector<std::string>&, const vfs::MutationPolicy&) { return absl::OkStatus(); }};
   const ContainerPackerRegistrar packer{
       [](std::string_view, const std::vector<PackFile>&, const PackOptions&) { return absl::OkStatus(); },
       {"test"},
@@ -119,7 +119,8 @@ TEST_F(ArchiveBackendTest, ARegisteredRemoverReceivesTheContainerAndMembersUncha
   std::string removed_from;
   std::vector<std::string> removed_members;
   RegisterContainerMemberRemover(
-      [&removed_from, &removed_members](std::string_view container, const std::vector<std::string>& members) {
+      [&removed_from, &removed_members](
+          std::string_view container, const std::vector<std::string>& members, const vfs::MutationPolicy&) {
         removed_from = std::string(container);
         removed_members = members;
         return absl::OkStatus();
@@ -132,8 +133,9 @@ TEST_F(ArchiveBackendTest, ARegisteredRemoverReceivesTheContainerAndMembersUncha
 }
 
 TEST_F(ArchiveBackendTest, ARemoversErrorReachesTheCallerUnchanged) {
-  RegisterContainerMemberRemover(
-      [](std::string_view, const std::vector<std::string>&) { return absl::NotFoundError("member is absent"); });
+  RegisterContainerMemberRemover([](std::string_view, const std::vector<std::string>&, const vfs::MutationPolicy&) {
+    return absl::NotFoundError("member is absent");
+  });
   EXPECT_THAT(
       RemoveContainerMembers("some.tar", {"missing.txt"}),
       StatusIs(absl::StatusCode::kNotFound, HasSubstr("member is absent")));

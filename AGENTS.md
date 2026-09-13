@@ -29,6 +29,10 @@ descriptor calls, and path-based `mbo::file`/Abseil helpers. Route reads and wri
 VFS or a value-returning `absl::Status`/`absl::StatusOr<T>` adapter. Prefer pure functions over
 side-effecting output parameters. Narrow host-I/O adapters must carry `XFF_HOST_IO: <reason>` on
 the declaration or immediately preceding line; the pre-commit policy enforces this boundary.
+Host mutations must use `xff/vfs/mutations.h`; only `xff_extras_api/mutations.cc` may open writable
+host handles or mutate host paths. An `XFF_HOST_IO` annotation cannot exempt a new mutation path.
+Archive libraries receive authorized handles, never output filenames. The pager pipe is the
+explicit non-file write exception.
 
 ## Bazel package policy
 

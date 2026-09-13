@@ -15,6 +15,7 @@
 
 #include "xff/config/policy.h"
 
+#include <array>
 #include <string>
 #include <utility>
 #include <vector>
@@ -45,6 +46,41 @@ struct PolicyTest : ::testing::Test {};
 
 IniLine Line(std::vector<std::string> flags) {
   return IniLine{.tokens = std::move(flags)};
+}
+
+TEST_F(PolicyTest, ArchivePolicyIsUniqueAndRestrictedToTrustedGlobals) {
+  const auto policies = std::to_array<std::string>({"file", "separate"});
+  for (const std::string& value : policies) {
+    const std::string flag = "--archive-block-policy=" + value;
+    ConfigInputs inputs;
+    inputs.system = ParseIni(flag);
+    inputs.user = ParseIni(flag);
+    EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+    inputs.system = ParseIni(flag + "\n" + flag);
+    EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("only once")));
+    inputs.system = ParseIni("[named]\n" + flag);
+    EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("precede")));
+    inputs.system = {};
+    inputs.user = ParseIni("[named]\n" + flag);
+    EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("precede")));
+    inputs.user = ParseIni(flag + "\n" + flag);
+    EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("only once")));
+    inputs.user = {};
+    inputs.xffrc = {{.path = "task.rc", .config = ParseIni(flag)}};
+    EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("not permitted")));
+  }
+}
+
+TEST_F(PolicyTest, ExplicitCompositionCannotArmTrustedNamedActions) {
+  ConfigInputs inputs;
+  inputs.system = ParseIni("[task]\n-exec echo unsafe \\;");
+  inputs.xffrc = {{.path = "task.rc", .config = ParseIni("--config=task")}};
+  const auto indirect = GateConfig(inputs, false, {"--xffrc=task.rc"});
+  EXPECT_THAT(indirect.drops, SizeIs(1));
+  EXPECT_THAT(indirect.drops.front().reason, DropReason::kUntrustedSelection);
+  EXPECT_THAT(GateConfig(inputs, false, {"--config=task", "--xffrc=task.rc"}).drops, IsEmpty());
+  EXPECT_THAT(GateConfig(inputs, true, {"--xffrc=task.rc"}).drops, IsEmpty());
+  EXPECT_THAT(GateConfig(inputs, false, {}).drops, IsEmpty());
 }
 
 TEST_F(PolicyTest, LineSafetyTakesTheWorstFlag) {
@@ -211,37 +247,6 @@ TEST_F(PolicyTest, MissingSourcesNeedNoSkipPermission) {
   EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
 }
 
-TEST_F(PolicyTest, GateConfigDropsDeniedUserLinesAndRecordsThem) {
-  ConfigInputs inputs;
-  inputs.system.globals = {"--no-allow-exec"};
-  inputs.user = {.global_lines = {Line({"-exec", "rm", ";"}), Line({"--color=never"})}};
-  const GateResult gated = GateConfig(inputs, /*xffrc_armed=*/false);
-  ASSERT_THAT(gated.config.user.global_lines, SizeIs(1));
-  EXPECT_THAT(gated.config.user.global_lines.front().tokens, ElementsAre("--color=never"));  // only permitted survives
-  ASSERT_THAT(gated.drops, SizeIs(1));
-  EXPECT_THAT(gated.drops.front().layer, Source::kUser);
-  EXPECT_THAT(gated.drops.front().safety, registry::Safety::kSecurity);
-  EXPECT_THAT(gated.drops.front().line.tokens, ElementsAre("-exec", "rm", ";"));
-}
-
-TEST_F(PolicyTest, GateConfigAlwaysReturnsDroppedLines) {
-  ConfigInputs inputs;
-  inputs.system.globals = {"--no-allow-exec"};
-  inputs.user = {.global_lines = {Line({"-delete"})}};
-  const GateResult gated = GateConfig(inputs, /*xffrc_armed=*/false);
-  EXPECT_THAT(gated.config.user.global_lines, IsEmpty());
-  EXPECT_THAT(gated.drops, SizeIs(1));
-}
-
-TEST_F(PolicyTest, DropMessageNamesPrimaryLayerAndClass) {
-  const Drop drop{
-      .line = Line({"-exec", "rm", ";"}),
-      .layer = Source::kUser,
-      .safety = registry::Safety::kSecurity,
-  };
-  EXPECT_THAT(DropMessage(drop), "'-exec' from the user .xffrc (sensitive; system --no-allow-exec)");
-}
-
 TEST_F(PolicyTest, XffrcDangerousLineIsInertUnlessArmed) {
   ConfigInputs inputs;
   inputs.xffrc = {
@@ -265,19 +270,6 @@ TEST_F(PolicyTest, ArmingGatesOnlyTheXffrcTierNotTheUserLayer) {
   inputs.user = {
       .global_lines = {Line({"-exec", "rm", ";"})}};  // a dangerous USER line is honored regardless of the arm
   EXPECT_THAT(GateConfig(inputs, /*xffrc_armed=*/false).config.user.global_lines, SizeIs(1));
-}
-
-TEST_F(PolicyTest, SystemGlobalProhibitionHardDeniesAnArmedXffrcLine) {
-  ConfigInputs inputs;
-  inputs.system.globals = {"--no-allow-exec"};
-  inputs.xffrc = {{.path = "/named", .config = {.global_lines = {Line({"-exec", "rm", ";"})}}}};
-  const GateResult gated = GateConfig(inputs, /*xffrc_armed=*/true);
-  EXPECT_THAT(
-      gated.config.xffrc,
-      ElementsAre(FieldsAre(
-          "/named", Field("global_lines", &ConfigFile::global_lines, IsEmpty()))));  // armed, but policy denies
-  ASSERT_THAT(gated.drops, SizeIs(1));
-  EXPECT_THAT(gated.drops.front().reason, DropReason::kSystemProhibition);
 }
 
 TEST_F(PolicyTest, DropMessageForUnarmedXffrcNamesTheArm) {

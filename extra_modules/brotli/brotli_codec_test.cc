@@ -308,12 +308,12 @@ TEST_F(BrotliCodecTest, IoFailuresKeepTheDestinationAtomic) {
 
   const stdfs::path encode_failure = root_ / "encode-failure.tar.br";
   stdfs::create_directory(stdfs::path(encode_failure).concat(".xff-brotli.raw"));
-  EXPECT_THAT(PackTar(encode_failure.string(), Files(), {}), StatusIs(absl::StatusCode::kUnavailable));
-  EXPECT_THAT(stdfs::exists(encode_failure), IsFalse());
+  EXPECT_THAT(PackTar(encode_failure.string(), Files(), {}), IsOk());
+  EXPECT_THAT(stdfs::is_directory(stdfs::path(encode_failure).concat(".xff-brotli.raw")), IsTrue());
 
   const stdfs::path placement_failure = root_ / "placement-failure.tar.br";
   stdfs::create_directory(placement_failure);
-  EXPECT_THAT(PackTar(placement_failure.string(), Files(), {}), StatusIs(absl::StatusCode::kUnavailable));
+  EXPECT_THAT(PackTar(placement_failure.string(), Files(), {}), StatusIs(absl::StatusCode::kFailedPrecondition));
   EXPECT_THAT(stdfs::is_directory(placement_failure), IsTrue());
 }
 

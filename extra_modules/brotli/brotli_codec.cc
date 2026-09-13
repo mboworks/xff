@@ -30,6 +30,7 @@
 #include "mbo/status/status_macros.h"
 #include "xff/archive/archive_backend.h"
 #include "xff/archive/archive_register.h"
+#include "xff/vfs/mutations.h"
 
 namespace xff::brotli {
 namespace {
@@ -63,32 +64,6 @@ struct EncoderDeleter {
 
 using DecoderPtr = std::unique_ptr<BrotliDecoderState, DecoderDeleter>;
 using EncoderPtr = std::unique_ptr<BrotliEncoderState, EncoderDeleter>;
-
-class TemporaryFiles {
- public:
-  TemporaryFiles(stdfs::path tar, stdfs::path raw, stdfs::path compressed)
-      : tar_(std::move(tar)), raw_(std::move(raw)), compressed_(std::move(compressed)) {}
-
-  ~TemporaryFiles() {
-    std::error_code ignored;
-    // XFF_HOST_IO: Brotli adapter removes its explicitly selected temporary files.
-    stdfs::remove(tar_, ignored);
-    // XFF_HOST_IO: Brotli adapter removes its explicitly selected temporary files.
-    stdfs::remove(raw_, ignored);
-    // XFF_HOST_IO: Brotli adapter removes its explicitly selected temporary files.
-    stdfs::remove(compressed_, ignored);
-  }
-
-  TemporaryFiles(const TemporaryFiles&) = delete;
-  TemporaryFiles& operator=(const TemporaryFiles&) = delete;
-  TemporaryFiles(TemporaryFiles&&) = delete;
-  TemporaryFiles& operator=(TemporaryFiles&&) = delete;
-
- private:
-  stdfs::path tar_;
-  stdfs::path raw_;
-  stdfs::path compressed_;
-};
 
 void WriteVarint(std::ostream& output, std::uint64_t value) {
   while (true) {
@@ -156,16 +131,11 @@ absl::StatusOr<int> IntegerOption(
   return value;
 }
 
-absl::Status EncodeFile(const stdfs::path& source, const stdfs::path& destination, int quality, int window_bits) {
+absl::Status EncodeFile(const stdfs::path& source, vfs::TemporaryOutput& output, int quality, int window_bits) {
   // XFF_HOST_IO: Brotli adapter reads the explicitly selected host input file.
   std::ifstream input(source, std::ios::binary);
   if (!input.is_open()) {
     return absl::NotFoundError(absl::StrCat("cannot open temporary tar '", source.string(), "'"));
-  }
-  // XFF_HOST_IO: Brotli adapter writes the explicitly selected host output file.
-  std::ofstream output(destination, std::ios::binary | std::ios::trunc);
-  if (!output.is_open()) {
-    return absl::UnavailableError(absl::StrCat("cannot create '", destination.string(), "'"));
   }
   const EncoderPtr encoder{BrotliEncoderCreateInstance(nullptr, nullptr, nullptr)};
   if (encoder == nullptr) {
@@ -206,15 +176,12 @@ absl::Status EncodeFile(const stdfs::path& source, const stdfs::path& destinatio
     }
     const std::size_t produced = output_buffer.size() - available_output;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast) -- byte-oriented stream/C API boundary.
-    output.write(reinterpret_cast<const char*>(output_buffer.data()), static_cast<std::streamsize>(produced));
-    if (!output) {
-      return absl::UnavailableError(absl::StrCat("cannot write '", destination.string(), "'"));
-    }
+    MBO_RETURN_IF_ERROR(output.Write(std::string_view(reinterpret_cast<const char*>(output_buffer.data()), produced)));
   }
   return absl::OkStatus();
 }
 
-absl::Status WriteFramed(const stdfs::path& raw, const stdfs::path& destination, std::uint64_t uncompressed_size) {
+absl::Status WriteFramed(const stdfs::path& raw, vfs::TemporaryOutput& destination, std::uint64_t uncompressed_size) {
   std::error_code error;
   const std::uint64_t raw_size = stdfs::file_size(raw, error);
   if (error) {
@@ -225,11 +192,7 @@ absl::Status WriteFramed(const stdfs::path& raw, const stdfs::path& destination,
   if (!input.is_open()) {
     return absl::NotFoundError(absl::StrCat("cannot open '", raw.string(), "'"));
   }
-  // XFF_HOST_IO: Brotli adapter writes the explicitly selected host output file.
-  std::ofstream output(destination, std::ios::binary | std::ios::trunc);
-  if (!output.is_open()) {
-    return absl::UnavailableError(absl::StrCat("cannot create '", destination.string(), "'"));
-  }
+  std::ostringstream output;
   for (const std::uint8_t byte : kFramingSignature) {
     output.put(static_cast<char>(byte));
   }
@@ -240,15 +203,13 @@ absl::Status WriteFramed(const stdfs::path& raw, const stdfs::path& destination,
   output.put(2);  // RFC 7932 Brotli codec.
   WriteVarint(output, uncompressed_size);
   output.put(0);  // Ordinary extractable resource, no hash.
+  MBO_RETURN_IF_ERROR(destination.Write(output.str()));
   std::array<char, kBlockSize> buffer{};
   while (input.read(buffer.data(), static_cast<std::streamsize>(buffer.size())) || input.gcount() > 0) {
-    output.write(buffer.data(), input.gcount());
+    MBO_RETURN_IF_ERROR(destination.Write(std::string_view(buffer.data(), static_cast<std::size_t>(input.gcount()))));
   }
   if (input.bad()) {
     return absl::DataLossError(absl::StrCat("read failed part way through '", raw.string(), "'"));
-  }
-  if (!output) {
-    return absl::UnavailableError(absl::StrCat("cannot write '", destination.string(), "'"));
   }
   return absl::OkStatus();
 }
@@ -390,7 +351,7 @@ absl::StatusOr<EncodingOptions> ResolveEncodingOptions(const archive::PackOption
   return EncodingOptions{.quality = quality, .window_bits = window_bits, .raw = framing == "raw"};
 }
 
-absl::Status FrameEncodedTar(const stdfs::path& tar, const stdfs::path& raw, const stdfs::path& compressed) {
+absl::Status FrameEncodedTar(const stdfs::path& tar, const stdfs::path& raw, vfs::TemporaryOutput& compressed) {
   std::error_code size_error;
   const std::uint64_t tar_size = stdfs::file_size(tar, size_error);
   if (size_error) {
@@ -460,23 +421,20 @@ absl::Status PackTar(
     const archive::PackOptions& options) {
   MBO_ASSIGN_OR_RETURN(const EncodingOptions encoding, ResolveEncodingOptions(options));
 
-  const stdfs::path target(path);
-  const stdfs::path tar = stdfs::path(target).concat(".xff-brotli.tar");
-  const stdfs::path raw = stdfs::path(target).concat(".xff-brotli.raw");
-  const stdfs::path compressed = stdfs::path(target).concat(".xff-pack");
-  const TemporaryFiles cleanup(tar, raw, compressed);
-  MBO_RETURN_IF_ERROR(archive::PackNativeArchiveContainer(tar.string(), files, {}));
-  MBO_RETURN_IF_ERROR(EncodeFile(tar, encoding.raw ? compressed : raw, encoding.quality, encoding.window_bits));
-  if (!encoding.raw) {
-    MBO_RETURN_IF_ERROR(FrameEncodedTar(tar, raw, compressed));
+  MBO_ASSIGN_OR_RETURN(
+      auto scratch, vfs::TemporaryDirectory::Create(std::string(path) + ".xff-brotli", options.mutations));
+  const stdfs::path tar = stdfs::path(scratch->Path()) / "input.tar";
+  MBO_RETURN_IF_ERROR(archive::PackNativeArchiveContainer(tar.string(), files, {.mutations = options.mutations}));
+  MBO_ASSIGN_OR_RETURN(
+      auto compressed, vfs::TemporaryOutput::Create(std::string(path) + ".xff-pack", options.mutations));
+  if (encoding.raw) {
+    MBO_RETURN_IF_ERROR(EncodeFile(tar, *compressed, encoding.quality, encoding.window_bits));
+  } else {
+    MBO_ASSIGN_OR_RETURN(auto raw, vfs::TemporaryOutput::Create(scratch->Path() + "/raw", options.mutations));
+    MBO_RETURN_IF_ERROR(EncodeFile(tar, *raw, encoding.quality, encoding.window_bits));
+    MBO_RETURN_IF_ERROR(FrameEncodedTar(tar, raw->Path(), *compressed));
   }
-  std::error_code error;
-  // XFF_HOST_IO: Brotli adapter publishes its explicitly selected output file.
-  stdfs::rename(compressed, target, error);
-  if (error) {
-    return absl::UnavailableError(absl::StrCat("cannot place '", path, "': ", error.message()));
-  }
-  return absl::OkStatus();
+  return compressed->Publish(path);
 }
 
 }  // namespace xff::brotli

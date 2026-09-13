@@ -239,6 +239,7 @@ cc_library(
         ":extract_cc",
         ":mount_cc",
         ":walk_cc",
+        "//xff/config:config_cc",
         "//xff/content:line_match_cc",
         "//xff/datetime:datetime_cc",
         "//xff/env:env_cc",

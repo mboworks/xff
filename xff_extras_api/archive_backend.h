@@ -41,6 +41,7 @@
 #include "absl/types/span.h"
 #include "xff/archive/member_path.h"
 #include "xff/vfs/filesystem.h"
+#include "xff/vfs/mutations.h"
 
 namespace xff::archive {
 
@@ -127,7 +128,8 @@ struct ContainerRegistrar {
 // compressed file rather than an archive. A member it cannot find is NotFound; anything else is the
 // error that stopped it. The rewrite must be all-or-nothing: on failure `container` is unchanged.
 using ContainerMemberRemover =
-    absl::AnyInvocable<absl::Status(std::string_view, const std::vector<std::string>&) const>;
+    absl::AnyInvocable<absl::Status(std::string_view, const std::vector<std::string>&, const vfs::MutationPolicy&)
+                           const>;
 
 // Registers the process-wide member remover, like RegisterContainerOpener. Separate registrations so
 // a backend that can only read simply does not register this one.
@@ -145,7 +147,10 @@ struct ContainerRemoverRegistrar {
 
 // Removes `members` from `container` through the registered remover, or UnimplementedError when none
 // is linked.
-[[nodiscard]] absl::Status RemoveContainerMembers(std::string_view container, const std::vector<std::string>& members);
+[[nodiscard]] absl::Status RemoveContainerMembers(
+    std::string_view container,
+    const std::vector<std::string>& members,
+    const vfs::MutationPolicy& policy = {});
 
 // One file to write into a NEW container: the path to read, and the name it gets inside. The two are
 // separate because only the caller knows what a member should be called - the walk knows roots and
@@ -168,6 +173,7 @@ struct PackOption {
 // defaults; the last value given for a name wins.
 struct PackOptions {
   std::vector<PackOption> options;
+  vfs::MutationPolicy mutations;
 };
 
 // One entry of the vocabulary the linked backend accepts, for the pre-walk check and for the help

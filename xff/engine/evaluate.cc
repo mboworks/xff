@@ -43,6 +43,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
+#include "absl/strings/escaping.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
@@ -2020,6 +2021,14 @@ bool IsExtracted(const EvalContext& ctx, std::string_view path) {
 
 bool EvalDelete(const parser::Expr&, EvalContext& ctx) {
   if (ctx.visit.metadata.source != vfs::Source::kLocalFs) {
+    auto policy = ctx.archive_mutations;
+    policy.dry_run = false;  // permitted previews only queue names; publication remains disabled.
+    const auto deletion = policy.Delete();
+    const auto writing = policy.Write(true);
+    if (!deletion.ok() || !writing.ok()) {
+      ctx.control.mutation_error = !deletion.ok() ? deletion : writing;
+      return false;
+    }
     if (!ctx.archive_deletions.has_value()) {
       ctx.control.SetUnsupported(
           "-delete cannot remove an archive member: members are read-only"
@@ -2032,8 +2041,8 @@ bool EvalDelete(const parser::Expr&, EvalContext& ctx) {
     ctx.archive_deletions->emplace_back(ctx.visit.path);
     return true;
   }
-  static_cast<void>(ctx.fs.Remove(ctx.visit.path));  // failures set a nonzero exit; wired in the exit-code work
-  return true;
+  ctx.control.mutation_error = ctx.fs.Remove(ctx.visit.path);
+  return ctx.control.mutation_error.ok();
 }
 
 // Renders every -exec/-execdir token through the field vocabulary ({}, {name},
@@ -2499,7 +2508,7 @@ EvaluationResult EvaluateChild(const parser::Expr& node, EvalContext& context) {
   } else {
     context.fuzzy_score.reset();
   }
-  if (!result.deferred && context.deferred.has_value()) {
+  if (!(result.deferred || result.unknown) && context.deferred.has_value()) {
     context.deferred->memo.emplace(ExprIdentity{node}, result);
   }
   return result;
@@ -2536,14 +2545,14 @@ EvaluationResult EvaluateShardStatus(const parser::Expr& expr, EvalContext& cont
 
 EvaluationResult EvaluateAnd(const parser::Expr& expr, EvalContext& context) {
   EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
-  if (lhs.deferred || !lhs.matched) {
+  if ((lhs.deferred || lhs.unknown) || !lhs.matched) {
     return lhs;
   }
   const std::optional<int> outer_incoming = context.incoming_fuzzy_score;
   context.incoming_fuzzy_score = MinScore(outer_incoming, lhs.fuzzy);
   const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
   context.incoming_fuzzy_score = outer_incoming;
-  if (rhs.deferred) {
+  if ((rhs.deferred || rhs.unknown)) {
     return rhs;
   }
   return {.fuzzy = rhs.matched ? MinScore(lhs.fuzzy, rhs.fuzzy) : std::nullopt, .matched = rhs.matched};
@@ -2551,7 +2560,7 @@ EvaluationResult EvaluateAnd(const parser::Expr& expr, EvalContext& context) {
 
 EvaluationResult EvaluateOr(const parser::Expr& expr, EvalContext& context) {
   EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
-  if (lhs.deferred) {
+  if ((lhs.deferred || lhs.unknown)) {
     return lhs;
   }
   if (!lhs.matched) {
@@ -2559,7 +2568,7 @@ EvaluationResult EvaluateOr(const parser::Expr& expr, EvalContext& context) {
   }
   if (context.fuzzy_score.has_value() && IsFuzzyOnlyExpression(*expr.rhs)) {
     const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
-    if (rhs.deferred) {
+    if ((rhs.deferred || rhs.unknown)) {
       return rhs;
     }
     return {.fuzzy = rhs.matched ? MaxScore(lhs.fuzzy, rhs.fuzzy) : lhs.fuzzy, .matched = true};
@@ -2569,29 +2578,29 @@ EvaluationResult EvaluateOr(const parser::Expr& expr, EvalContext& context) {
 
 EvaluationResult EvaluateNand(const parser::Expr& expr, EvalContext& context) {
   const EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
-  if (lhs.deferred || !lhs.matched) {
-    return lhs.deferred ? lhs : EvaluationResult{.matched = true};
+  if ((lhs.deferred || lhs.unknown) || !lhs.matched) {
+    return (lhs.deferred || lhs.unknown) ? lhs : EvaluationResult{.matched = true};
   }
   const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
-  return rhs.deferred ? rhs : EvaluationResult{.matched = !rhs.matched};
+  return (rhs.deferred || rhs.unknown) ? rhs : EvaluationResult{.matched = !rhs.matched};
 }
 
 EvaluationResult EvaluateNor(const parser::Expr& expr, EvalContext& context) {
   const EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
-  if (lhs.deferred || lhs.matched) {
-    return lhs.deferred ? lhs : EvaluationResult{.matched = false};
+  if ((lhs.deferred || lhs.unknown) || lhs.matched) {
+    return (lhs.deferred || lhs.unknown) ? lhs : EvaluationResult{.matched = false};
   }
   const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
-  return rhs.deferred ? rhs : EvaluationResult{.matched = !rhs.matched};
+  return (rhs.deferred || rhs.unknown) ? rhs : EvaluationResult{.matched = !rhs.matched};
 }
 
 EvaluationResult EvaluateXor(const parser::Expr& expr, EvalContext& context) {
   const EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
-  if (lhs.deferred) {
+  if ((lhs.deferred || lhs.unknown)) {
     return lhs;
   }
   const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
-  if (rhs.deferred) {
+  if ((rhs.deferred || rhs.unknown)) {
     return rhs;
   }
   return {
@@ -2602,16 +2611,45 @@ EvaluationResult EvaluateXor(const parser::Expr& expr, EvalContext& context) {
 
 EvaluationResult EvaluateXnor(const parser::Expr& expr, EvalContext& context) {
   const EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
-  if (lhs.deferred) {
+  if ((lhs.deferred || lhs.unknown)) {
     return lhs;
   }
   const EvaluationResult rhs = EvaluateChild(*expr.rhs, context);
-  return rhs.deferred ? rhs : EvaluationResult{.matched = lhs.matched == rhs.matched};
+  return (rhs.deferred || rhs.unknown) ? rhs : EvaluationResult{.matched = lhs.matched == rhs.matched};
 }
 
 EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) {
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate: {
+      if (context.dry_run && expr.descriptor->safety == registry::Safety::kSecurity) {
+        std::string preview = absl::StrCat("would execute ", expr.descriptor->name, " for ", context.visit.path, ":");
+        const bool capture = expr.descriptor->name == "-capture" || expr.descriptor->name == "-capturedir";
+        const std::size_t first = capture ? 2 : 0;
+        const bool in_dir = expr.descriptor->name.ends_with("dir");
+        const auto target = SplitExecDir(context.visit.path);
+        std::vector<std::string> args;
+        if (context.exec_fields && !capture) {
+          args = RenderExecArgv(expr, context, context.visit.path);
+        } else {
+          for (std::size_t index = first; index < expr.args.size(); ++index) {
+            std::string arg = expr.args[index];
+            const std::string_view subst = in_dir ? std::string_view(target.brace) : context.visit.path;
+            for (std::size_t pos = 0; (pos = arg.find("{}", pos)) != std::string::npos; pos += subst.size()) {
+              arg.replace(pos, 2, subst);
+            }
+            args.push_back(std::move(arg));
+          }
+        }
+        for (const std::string& arg : args) {
+          absl::StrAppend(&preview, " '", absl::CEscape(arg), "'");
+        }
+        if (in_dir) {
+          absl::StrAppend(&preview, " (cwd ", target.dir, ")");
+        }
+        absl::StrAppend(&preview, "\n");
+        context.emit(preview);
+        return {.unknown = true};
+      }
       if (expr.descriptor->name == "-top") {
         return EvaluateTop(expr, context);
       }
@@ -2623,7 +2661,7 @@ EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) 
     }
     case parser::Expr::Kind::kNot: {
       const EvaluationResult value = EvaluateChild(*expr.lhs, context);
-      return value.deferred ? value : EvaluationResult{.matched = !value.matched};
+      return (value.deferred || value.unknown) ? value : EvaluationResult{.matched = !value.matched};
     }
     case parser::Expr::Kind::kAnd: return EvaluateAnd(expr, context);
     case parser::Expr::Kind::kOr: return EvaluateOr(expr, context);
@@ -2633,7 +2671,7 @@ EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) 
     case parser::Expr::Kind::kXnor: return EvaluateXnor(expr, context);
     case parser::Expr::Kind::kComma: {
       const EvaluationResult lhs = EvaluateChild(*expr.lhs, context);
-      return lhs.deferred ? lhs : EvaluateChild(*expr.rhs, context);
+      return (lhs.deferred || lhs.unknown) ? lhs : EvaluateChild(*expr.rhs, context);
     }
   }
   return {.matched = true};
@@ -2643,7 +2681,7 @@ EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) 
 
 bool Evaluate(const parser::Expr& expr, EvalContext& context) {
   const EvaluationResult result = EvaluateDeferred(expr, context);
-  return !result.deferred && result.matched;
+  return !(result.deferred || result.unknown) && result.matched;
 }
 
 EvaluationResult EvaluateDeferred(const parser::Expr& expr, EvalContext& context) {

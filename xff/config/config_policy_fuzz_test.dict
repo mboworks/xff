@@ -12,5 +12,5 @@
 "[find]"
 "[fuzz]"
 "[xff]"
-"--no-allow-exec"
+"--block-execution"
 "--no-allow-xffrc"

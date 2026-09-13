@@ -103,7 +103,7 @@ TEST_F(LocalFsTest, WriteContentReplacesFile) {
 TEST_F(LocalFsTest, WriteContentReportsOpenFailure) {
   EXPECT_THAT(
       local_fs_.WriteContent(Path("missing/sub/file.txt"), "data"),
-      StatusIs(absl::StatusCode::kInternal, HasSubstr("cannot open")));
+      StatusIs(absl::StatusCode::kNotFound, HasSubstr("cannot open")));
 }
 
 #if defined(__linux__)

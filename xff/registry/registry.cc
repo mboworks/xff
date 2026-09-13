@@ -1125,6 +1125,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "and the xff `-fprintln` / `-fprintfln`.",
         .kind = Kind::kAction,
         .arity = 1,
+        .writes_file = true,
     },
     {
         // xff: -fprint with the OS line ending (the file form of -println)
@@ -1134,6 +1135,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "handling; an xff extension `--config=find` rejects.",
         .kind = Kind::kAction,
         .arity = 1,
+        .writes_file = true,
         .style = Style::kXff,
     },
     {
@@ -1142,6 +1144,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .details = "The file form of `-print0` (NUL-terminated paths). See `-fprint` for the file handling.",
         .kind = Kind::kAction,
         .arity = 1,
+        .writes_file = true,
     },
     {
         .name = "-fprintf",
@@ -1150,6 +1153,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "for the directive vocabulary and `-fprint` for the file handling.",
         .kind = Kind::kAction,
         .arity = 2,
+        .writes_file = true,
     },
     {
         // xff: -fprintf with the OS line ending (the file form of -printfln)
@@ -1159,6 +1163,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "extension `--config=find` rejects; see `-fprint` for the file handling.",
         .kind = Kind::kAction,
         .arity = 2,
+        .writes_file = true,
         .style = Style::kXff,
     },
     {
@@ -1167,6 +1172,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .details = "The file form of `-ls` (the `ls -dils` line). See `-fprint` for the file handling.",
         .kind = Kind::kAction,
         .arity = 1,
+        .writes_file = true,
     },
     {
         .name = "-delete",

@@ -49,7 +49,7 @@ class MountedContainers {
  public:
   // `armed` is `--archive-mount`; a disarmed instance mounts nothing and answers nothing, so the
   // caller needs no second flag check.
-  explicit MountedContainers(bool armed = false) : armed_(armed) {}
+  explicit MountedContainers(bool armed = false, vfs::MutationPolicy policy = {}) : armed_(armed), policy_(policy) {}
 
   ~MountedContainers() = default;
 
@@ -74,6 +74,7 @@ class MountedContainers {
 
  private:
   bool armed_ = false;
+  vfs::MutationPolicy policy_;
 
   // Container path -> its mount. Insert-only for the run; a Mount unmounts when destroyed. The
   // mount holds its own share of the reader (see MountFactory), so nothing is tracked beside it.

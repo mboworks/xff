@@ -501,6 +501,10 @@ int RunMain(int argc, char** argv) {
     // Bad flags are hard errors even when help was asked for. Ignoring them because
     // help "wins" is how a typo silently vanishes behind 200 lines of output.
     for (const std::string& global : parsed->globals) {
+      if (const auto flag = xff::cli::LookupGlobalArgument(global); flag && flag->config_only) {
+        std::cerr << "xff: " << global << " is a config-only directive\n";
+        return 2;
+      }
       if (!xff::cli::IsKnownGlobal(global)) {
         std::cerr << "xff: unknown option '" << global << "'\n"
                   << "Try 'xff --help' for usage, or 'xff --help=NAME' for one option.\n";
@@ -589,6 +593,10 @@ int RunMain(int argc, char** argv) {
   // instead of silently ignoring it. Meta flags (--help / --version / --man) are already handled
   // above, so they never reach here.
   for (const std::string& global : command.globals) {
+    if (const auto flag = xff::cli::LookupGlobalArgument(global); flag && flag->config_only) {
+      std::cerr << "xff: " << global << " is a config-only directive\n";
+      return 2;
+    }
     if (!xff::cli::IsKnownGlobal(global)) {
       std::cerr << "xff: unknown option '" << global << "'\n"
                 << "Try 'xff --help' for usage, or 'xff --help=NAME' for one option.\n";
@@ -706,7 +714,8 @@ int RunMain(int argc, char** argv) {
   // so a named config cannot authorize its own -exec/-delete. The gate uses this to keep unarmed
   // --xffrc dangerous lines inert.
   const bool xffrc_armed = xff::config::ArmedFromTrustedTier(inputs, command.globals, "--allow-exec");
-  const xff::config::GateResult gated = xff::config::GateConfig(inputs, xffrc_armed);
+  const xff::config::GateResult gated =
+      xff::config::GateConfig(inputs, xffrc_armed, command.globals, xff::config::DefaultStyleForProgram(program));
   const std::string_view invocation_selector = xff::config::DefaultStyleForProgram(program);
   const std::vector<xff::config::ResolvedFlag> resolved =
       xff::config::ResolveConfigInOrder(gated.config, command.globals, invocation_selector);

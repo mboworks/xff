@@ -18,6 +18,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -31,6 +32,17 @@ namespace xff::vfs {
 // Permission to probe with `FileSystem::Access` (find's -readable/-writable/
 // -executable). Platform-neutral; LocalFs maps these to R_OK/W_OK/X_OK.
 enum class AccessMode { kRead, kWrite, kExecute };
+
+// An owned output stream. The backend enforces exclusive creation when requested; retaining
+// this handle prevents subsequent records from reopening a path that an attacker could replace.
+class OutputFile {
+ public:
+  OutputFile() = default;
+  virtual ~OutputFile() = default;
+  OutputFile(const OutputFile&) = delete;
+  OutputFile& operator=(const OutputFile&) = delete;
+  virtual absl::Status Write(std::string_view content) = 0;
+};
 
 // Abstraction over a source of files. `LocalFs` (the real filesystem) is the
 // only backend today; archive and remote backends slot in behind this same
@@ -66,6 +78,10 @@ class FileSystem {
 
   // Writes `content` to `path`, replacing any existing file. Read-only backends return an error.
   virtual absl::Status WriteContent(std::string_view path, std::string_view content) const;
+
+  // Opens named output, atomically rejecting any existing directory entry when exclusive is true.
+  // Read-only backends fail; there is no host-filesystem fallback.
+  virtual absl::StatusOr<std::unique_ptr<OutputFile>> OpenOutput(std::string_view path, bool exclusive) const;
 
   // True if `path` is accessible to the current (effective) user for `mode`
   // (find's -readable/-writable/-executable). Resolves symlinks and reflects

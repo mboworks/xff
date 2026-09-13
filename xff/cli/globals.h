@@ -107,7 +107,8 @@ struct GlobalFlag {
   // as an enum.
   enum class ValueCheck : std::uint8_t { kNone, kEnum, kEnumOrTemplate, kBool, kTristate };
   ValueCheck value_check = ValueCheck::kNone;
-  bool xff = true;  // false for a find-native option (-H/-L/-P); true for an xff extension
+  bool config_only = false;  // Accepted only through validated configuration files.
+  bool xff = true;           // false for a find-native option (-H/-L/-P); true for an xff extension
 };
 
 template<typename Sink>

@@ -167,7 +167,10 @@ namespace {
 
 // The write half, registered separately because it answers for FEWER containers than the opener: a
 // phar or a compressed single file opens here and cannot be rewritten, and the writer says so.
-absl::Status RemoveArchiveMembers(std::string_view container, const std::vector<std::string>& members) {
+absl::Status RemoveArchiveMembers(
+    std::string_view container,
+    const std::vector<std::string>& members,
+    const vfs::MutationPolicy& policy) {
   // A tar-based or zip-based phar is an ordinary tar / zip that libarchive would happily rewrite - and
   // the result would be a container PHP rejects, because such a phar keeps its signature in a MEMBER
   // computed over everything else. Refusing beats silently breaking it, and the check is cheap: the
@@ -181,14 +184,14 @@ absl::Status RemoveArchiveMembers(std::string_view container, const std::vector<
             " and removing anything would leave that signature stale, so PHP would reject the result"));
   }
   // Not const: it is returned by value, and a const local cannot move out of the function.
-  absl::Status libarchive = RemoveMembersOfFile(container, members);
+  absl::Status libarchive = RemoveMembersOfFile(container, members, policy);
   if (!absl::IsInvalidArgument(libarchive)) {
     return libarchive;
   }
   // libarchive said "not an archive", which for a container xff DIVED into means another reader opened
   // it. The native phar is the one such format xff can also write, so it gets its own attempt; its own
   // InvalidArgument then means neither reader owns this file as a rewritable archive.
-  absl::Status phar = RemovePharMembersOfFile(container, members);  // not const: see above
+  absl::Status phar = RemovePharMembersOfFile(container, members, policy);  // not const: see above
   if (!absl::IsInvalidArgument(phar)) {
     return phar;
   }
@@ -216,6 +219,7 @@ absl::Status PackNativeArchiveContainer(
     entries.push_back(PackEntry{.source = file.source, .name = file.name});
   }
   PackSettings settings;
+  settings.mutations = options.mutations;
   settings.options.reserve(options.options.size());
   for (const PackOption& option : options.options) {
     settings.options.push_back({.name = option.name, .value = option.value});

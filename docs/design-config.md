@@ -65,8 +65,8 @@ a named section, an explicit file, or suppression of system defaults.
 
 Explicit `.xffrc` files cannot contain the require/no-require pairs or
 `--allow-xffrc` / `--no-allow-xffrc`; these controls govern automatic files or permission
-to load an explicit file, so that file cannot grant itself permission. `--no-allow-exec`
-is also prohibited there because it is system-only. In contrast, `--allow-exec` is a
+to load an explicit file, so that file cannot grant itself permission. `--archive-block-policy`
+is also restricted to automatic config files. In contrast, `--allow-exec` is a
 separate runtime flag accepted on the CLI and in config files, but an explicit file's
 own `--allow-exec` never arms its dangerous directives.
 
@@ -118,8 +118,8 @@ example, `-E development` is invalid because `-E` takes no value; `development` 
 token, and the containing section is disabled.
 
 There is no special policy rule language. System-only controls belong before the first section;
-placing one in a named section disables that section atomically. `--no-allow-exec` is a system-only
-global control that prohibits dangerous directives from lower-trust config files.
+placing one in a named section disables that section atomically. `--archive-block-policy` selects how this file interprets its safety blocks, including in named sections.
+Its value never changes the interpretation of another file. See [Safety](design-safety.md).
 
 ### Names, refinements, and composition
 
@@ -223,12 +223,8 @@ gated temporarily by `--unstable=NAME` after its behavior is designed.
 
 Registry descriptors classify expression directives as safe, sensitive, or
 destructive. A config line receives the most restrictive class of any directive
-on that line; that aggregate class drives arming and diagnostics. The trusted unsectioned
-`--no-allow-exec` control drops sensitive and destructive lines from user and explicit configs,
-even when `--allow-exec` is supplied on the CLI. The prohibition remains authoritative when
-system defaults are suppressed. Rejected lines are reported by `--explain` and warned about
-during a normal run. Direct CLI expressions and system-authored directives retain their own
-runtime safety rules.
+on that line; that aggregate class drives arming and diagnostics. Unconditional `--block-*` restrictions apply to actions from every source, including the CLI.
+Use `--require-system-config` to prevent omission of a mandatory system policy.
 
 System and user configuration are trusted tiers. An explicit `--xffrc` file is a
 non-arming tier: naming it authorizes loading it, not executing dangerous content
@@ -240,7 +236,7 @@ from it. Sensitive or destructive directives in that tier are dropped unless
 - an applying user-config line.
 
 An explicit `--xffrc` file is deliberately excluded from that check, so it
-cannot authorize itself. The global `--no-allow-exec` prohibition takes precedence over arming. `--allow-exec` only controls config provenance; runtime protections such
+cannot authorize itself. Unconditional safety blocks take precedence over arming. `--allow-exec` only controls config provenance; runtime protections such
 as `--safe`, `--dry-run`, and action-specific confirmation remain independent.
 
 ## Tiny configuration examples
@@ -290,31 +286,29 @@ To permit all three command-line spellings, put both grants in `/etc/xff.ini`:
 --no-require-user-config
 ```
 
-### Prevent dangerous directives from lower-trust files
+### Require restrictions from system configuration
 
 Keep `/etc/xff.ini` administrator-owned and unwritable by users whose configs it constrains:
 
 ```ini
---no-allow-exec
+--require-system-config
+--block-execution
+--block-file-deletion
 ```
 
-A user or explicit-file line containing `-exec`, `-capture`, or `-delete` is dropped with a
-warning. Even `xff . --allow-exec --xffrc=task.rc` cannot arm dangerous lines in `task.rc`.
-Safe config lines remain usable. The prohibition is inspected even when system defaults are
-permitted to be skipped; `--allow-exec` inside a named section or user file cannot undo it.
+These restrictions apply to every source, including CLI expressions. Neither `--allow-exec`
+nor `--no-safe` clears them. Add `--no-allow-xffrc` to reject explicit files before opening them.
+This is an application policy, not an operating-system sandbox: someone able to replace the
+executable or its mandatory configuration can replace the policy too.
 
-To reject explicit files altogether, add one line:
+### Choose archive controls independently in each file
 
-```ini
---no-allow-exec
---no-allow-xffrc
-```
-
-Now `--xffrc=task.rc` is a usage error before `task.rc` is opened, including when a user block
-says `--allow-xffrc`.
-These controls constrain config-file capabilities; they do not prohibit actions typed directly
-on the command line or make a user-controlled executable an operating-system security boundary.
-Runtime `--safe`, `--dry-run`, and action-specific confirmation remain separate controls.
+`--archive-block-policy=file|separate` may occur once before sections in a system or user INI.
+It applies to that file's globals and named sections. Each file is translated independently;
+a user choosing `separate` cannot remove restrictions contributed by a system file using `file`.
+Use `separate` for precise control. The default `file` policy applies ordinary file blocks to archives.
+See `--help=safety` for the full operation table, including the distinction between packing a
+replacement archive and editing its members.
 
 ### Deliberately arm one explicit file
 

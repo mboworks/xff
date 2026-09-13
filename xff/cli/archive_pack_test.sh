@@ -360,4 +360,65 @@ test::a_member_of_another_archive_is_refused_rather_than_dropped() {
   expect_eq "0" "$(find "${root}" -maxdepth 1 -name 'out.tar' | wc -l | tr -d ' ')"
 }
 
+test::separate_policy_permits_new_archives_while_blocking_ordinary_writes() {
+  local root status
+  root="$(_tree)"
+  cat >"${root}/policy.ini" <<'INI'
+--archive-block-policy=separate
+--block-file-writing
+--block-file-deletion
+--block-execution
+--block-archive-overwrite
+[unsafe]
+--no-safe
+--no-safe-block-file-writing
+INI
+  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --pack="${root}/out.tar" >/dev/null
+  expect_output_contains "a.cc" "$(tar -tf "${root}/out.tar")"
+  status=0
+  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --config=unsafe -fprint "${root}/ordinary" >/dev/null 2>&1 || status=$?
+  expect_eq 2 "${status}"
+  expect_eq 0 "$(find "${root}" -maxdepth 1 -name ordinary | wc -l | tr -d ' ')"
+  status=0
+  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --pack="${root}/out.tar" --dry-run >/dev/null 2>&1 || status=$?
+  expect_eq 2 "${status}"
+  status=0
+  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --pack="${root}/out.tar" >/dev/null 2>&1 || status=$?
+  expect_eq 2 "${status}"
+  expect_output_contains "a.cc" "$(tar -tf "${root}/out.tar")"
+}
+
+test::default_file_policy_blocks_archive_writes_and_cli_cannot_switch_policy() {
+  local root status
+  root="$(_tree)"
+  echo '--block-file-writing' >"${root}/policy.ini"
+  status=0
+  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --pack="${root}/out.tar" >/dev/null 2>&1 || status=$?
+  expect_eq 2 "${status}"
+  status=0
+  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --archive-block-policy=separate --pack="${root}/out.tar" >/dev/null 2>&1 || status=$?
+  expect_eq 2 "${status}"
+  expect_eq 0 "$(find "${root}" -maxdepth 1 -name out.tar | wc -l | tr -d ' ')"
+}
+
+test::archive_content_deletion_remains_independent_of_ordinary_deletion() {
+  local root members status
+  root="$(_tree)"
+  "$(_xff_bin)" "${root}/src" --pack="${root}/out.tar" >/dev/null
+  cat >"${root}/policy.ini" <<'INI'
+--archive-block-policy=separate
+--block-file-writing
+--block-file-deletion
+INI
+  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/out.tar" -z --archive-delete -name a.cc -delete >/dev/null
+  members="$(tar -tf "${root}/out.tar")"
+  expect_output_not_contains "a.cc" "${members}"
+  expect_output_contains "c.txt" "${members}"
+  echo '--block-archive-content-deletion' >>"${root}/policy.ini"
+  status=0
+  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/out.tar" -z --archive-delete -name c.txt -delete --skip-unsupported >/dev/null 2>&1 || status=$?
+  expect_eq 2 "${status}"
+  expect_output_contains "c.txt" "$(tar -tf "${root}/out.tar")"
+}
+
 test_runner

@@ -184,6 +184,16 @@ TEST_F(ExtractTest, WhatIsStillHeldIsRemovedWhenTheRunEnds) {
   EXPECT_THAT(stdfs::exists(stdfs::path(path).parent_path()), IsFalse());
 }
 
+TEST_F(ExtractTest, BlockedWritingAndDryRunNeverMaterializeMembers) {
+  fs_.Add("a.tar!one.txt", "content");
+  ExtractedMembers blocked({.block_writing = true});
+  EXPECT_THAT(blocked.Extract(fs_, "a.tar!one.txt"), StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(blocked.Held(), IsEmpty());
+  ExtractedMembers preview({.dry_run = true});
+  EXPECT_THAT(preview.Extract(fs_, "a.tar!one.txt"), StatusIs(absl::StatusCode::kFailedPrecondition));
+  EXPECT_THAT(preview.Held(), IsEmpty());
+}
+
 TEST_F(ExtractTest, AMemberThatCannotBeReadIsAnErrorNotAnEmptyFile) {
   // Extraction is the step that can fail (a corrupt container, a truncated member); handing the child
   // an empty file would look like success and be wrong.

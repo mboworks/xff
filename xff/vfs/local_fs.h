@@ -18,6 +18,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -41,6 +42,7 @@ class LocalFs final : public FileSystem {
   absl::StatusOr<Metadata> Stat(std::string_view path, bool follow_symlinks) const override;
   absl::Status Remove(std::string_view path) const override;
   absl::Status WriteContent(std::string_view path, std::string_view content) const override;
+  absl::StatusOr<std::unique_ptr<OutputFile>> OpenOutput(std::string_view path, bool exclusive) const override;
   bool Access(std::string_view path, AccessMode mode) const override;
   absl::StatusOr<std::string> ReadLink(std::string_view path) const override;
   absl::StatusOr<std::string> FsType(std::string_view path) const override;

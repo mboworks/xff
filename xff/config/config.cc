@@ -25,6 +25,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/strings/str_cat.h"
 #include "xff/config/ini.h"
+#include "xff/config/safety.h"
 #include "xff/config/xffrc.h"
 #include "xff/registry/registry.h"
 
@@ -40,7 +41,56 @@ constexpr std::string_view kNoAllowXffrc = "--no-allow-xffrc";
 
 bool IsSkipPermission(std::string_view flag) {
   return flag == kNoRequireSystemConfig || flag == kNoRequireUserConfig || flag == kRequireSystemConfig
-         || flag == kRequireUserConfig || flag == kAllowXffrc || flag == kNoAllowXffrc || flag == "--no-allow-exec";
+         || flag == kRequireUserConfig || flag == kAllowXffrc || flag == kNoAllowXffrc;
+}
+
+std::vector<std::string> ExpandSafetyTokens(const std::vector<std::string>& tokens, bool separate) {
+  std::vector<std::string> result;
+  for (std::size_t pos = 0; pos < tokens.size(); ++pos) {
+    const auto expanded = ExpandSafetyFlag(tokens[pos], separate);
+    result.insert(result.end(), expanded.begin(), expanded.end());
+    const auto primary = registry::Lookup(tokens[pos].substr(0, tokens[pos].find(':')));
+    if (!primary) {
+      continue;
+    }
+    if (primary->arity < 0) {
+      while (++pos < tokens.size()) {
+        result.push_back(tokens[pos]);
+        if (tokens[pos] == ";" || tokens[pos] == "+") {
+          break;
+        }
+      }
+    } else {
+      for (int remaining = primary->arity; remaining > 0 && pos + 1 < tokens.size(); --remaining) {
+        result.push_back(tokens[++pos]);
+      }
+    }
+  }
+  return result;
+}
+
+ConfigFile ExpandFileSafety(ConfigFile file) {
+  const auto directives = DirectiveTokens(file.globals);
+  const bool separate = absl::c_contains(directives, "--archive-block-policy=separate");
+  file.globals = ExpandSafetyTokens(file.globals, separate);
+  for (auto& line : file.global_lines) {
+    line.tokens = ExpandSafetyTokens(line.tokens, separate);
+  }
+  for (auto& section : file.named) {
+    for (auto& line : section.lines) {
+      line.tokens = ExpandSafetyTokens(line.tokens, separate);
+    }
+  }
+  return file;
+}
+
+ConfigInputs ExpandInputSafety(ConfigInputs inputs) {
+  inputs.system = ExpandFileSafety(std::move(inputs.system));
+  inputs.user = ExpandFileSafety(std::move(inputs.user));
+  for (auto& file : inputs.xffrc) {
+    file.config = ExpandFileSafety(std::move(file.config));
+  }
+  return inputs;
 }
 
 struct ConfigEntry {
@@ -85,16 +135,16 @@ void AppendMatching(
 class OrderedResolver {
  public:
   OrderedResolver(const ConfigInputs& inputs, std::string_view invocation_selector)
-      : inputs_(inputs),
+      : inputs_(ExpandInputSafety(inputs)),
         selectors_{std::string(invocation_selector)},
         system_named_emitted_(inputs.system.named.size()),
-        user_entries_(Entries(inputs.user)),
+        user_entries_(Entries(inputs_.user)),
         user_emitted_(user_entries_.size()) {
     file_loaded_.resize(inputs.xffrc.size());
     file_emitted_.reserve(inputs.xffrc.size());
     file_entries_.reserve(inputs.xffrc.size());
     for (const ExplicitConfig& file : inputs.xffrc) {
-      file_entries_.push_back(Entries(file.config));
+      file_entries_.push_back(Entries(ExpandFileSafety(file.config)));
       file_emitted_.emplace_back(file_entries_.back().size());
     }
   }
@@ -103,7 +153,9 @@ class OrderedResolver {
     EmitSystem();
     EmitMatching();
     for (const std::string& global : cli_globals) {
-      EmitFlag(global, Source::kCli);
+      for (const auto& flag : ExpandSafetyFlag(global, false)) {
+        EmitFlag(flag, Source::kCli);
+      }
       LoadExplicitFile(global);
     }
     return std::move(application_);
@@ -203,7 +255,7 @@ class OrderedResolver {
     ++next_file_;
   }
 
-  const ConfigInputs& inputs_;
+  const ConfigInputs inputs_;
   std::vector<ResolvedFlag> application_;
   std::vector<std::string> selectors_;
   std::vector<bool> system_named_emitted_;
@@ -237,7 +289,8 @@ std::vector<std::string_view> DirectiveTokens(const std::vector<std::string>& to
   return result;
 }
 
-std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& inputs) {
+std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& raw_inputs) {
+  const ConfigInputs inputs = ExpandInputSafety(raw_inputs);
   std::vector<ResolvedFlag> resolved;
   if (!inputs.no_system_config) {
     for (const std::string& flag : inputs.system.globals) {
@@ -289,9 +342,6 @@ bool ArmedFromTrustedTier(
     const ConfigInputs& inputs,
     const std::vector<std::string>& cli_globals,
     std::string_view flag) {
-  if (flag == "--allow-exec" && absl::c_contains(DirectiveTokens(inputs.system.globals), "--no-allow-exec")) {
-    return false;
-  }
   // Expand selectors from automatic tiers too: a transitive named configuration may arm a file.
   // Explicit-file flags are excluded by provenance so an explicit file cannot authorize itself.
   std::vector<std::string> selectors;

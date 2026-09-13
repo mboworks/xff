@@ -96,7 +96,8 @@ TEST_F(FuseBackendTest, ARegisteredFactoryReceivesOwnershipAndContainerName) {
   std::shared_ptr<const vfs::FileSystem> seen_fs;
   std::string seen_container;
   RegisterMountFactory(
-      [&seen_fs, &seen_container](std::shared_ptr<const vfs::FileSystem> fs, std::string_view container) {
+      [&seen_fs, &seen_container](
+          std::shared_ptr<const vfs::FileSystem> fs, std::string_view container, const vfs::MutationPolicy&) {
         seen_fs = std::move(fs);
         seen_container = container;
         return absl::StatusOr<std::unique_ptr<Mount>>(std::make_unique<StubMount>());

@@ -43,6 +43,10 @@ constexpr std::array kCaseValues = std::to_array<ValueDoc>({
     {.value = "insensitive", .meaning = "fold case (-i)"},
     {.value = "smart", .meaning = "fold case unless the pattern contains ASCII uppercase (-s / -s+)"},
 });
+constexpr std::array kArchiveBlockPolicyValues = std::to_array<ValueDoc>({
+    {.value = "file", .meaning = "archives use ordinary file controls (default)"},
+    {.value = "separate", .meaning = "archive output and member edits use dedicated archive controls"},
+});
 constexpr std::array kMimeConflictValues = std::to_array<ValueDoc>({
     {.value = "error", .meaning = "reject two media types claiming one extension in the same file (default)"},
     {.value = "first", .meaning = "keep the first claim in that file"},
@@ -341,10 +345,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "Permits the sensitive/destructive directives (the exec family -exec/-execdir/-ok and -capture, "
                    "and the destructive -delete) carried by an --xffrc-loaded file to actually run. Honored only from "
                    "a trusted tier - typed on the CLI, or set in the user/system config - never from an --xffrc file "
-                   "(so a named config cannot authorize itself). The unsectioned system `--no-allow-exec` control can "
-                   "prohibit even "
-                   "this. Without it, such lines are inert (dropped + warned); -delete still obeys its own "
-                   "--safe/--dry-run guards.",
+                   "(so a named config cannot authorize itself). Arming cannot bypass unconditional blocks or "
+                   "the active safe profile; see `--help=safety`.",
         .affects = "--xffrc",
         .topic = "config",
     },
@@ -1541,26 +1543,301 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "keep output; exit 0 if anything matched, else 1",
     },
     {
+        .name = "--archive-block-policy",
+        .display = "--archive-block-policy=file|separate",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "select file or separate archive blocking controls (config only)",
+        .details = "Allowed once before all sections in system or user configuration. Each file chooses its own "
+                   "policy, including for its named sections. "
+                   "Neither named sections, explicit `.xffrc` files, nor the CLI may set it. "
+                   "See `--help=safety` for the operation table and archive replacement tradeoff.",
+        .values = kArchiveBlockPolicyValues,
+        .topic = "safety",
+        .value_check = GlobalFlag::ValueCheck::kEnum,
+        .config_only = true,
+    },
+    {
+        .name = "--block-file-deletion",
+        .display = "--block-file-deletion",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally prohibit deletion; later flags cannot remove this block",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-file-deletion",
+        .display = "--safe-block-file-deletion",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include deletion in the active safe-mode restrictions",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-file-deletion",
+        .display = "--no-safe-block-file-deletion",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude deletion from the safe-mode profile; unconditional blocks still apply",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--block-execution",
+        .display = "--block-execution",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally prohibit execution; later flags cannot remove this block",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-execution",
+        .display = "--safe-block-execution",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include execution in the active safe-mode restrictions",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-execution",
+        .display = "--no-safe-block-execution",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude execution from the safe-mode profile; unconditional blocks still apply",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--block-file-writing",
+        .display = "--block-file-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally prohibit writing; later flags cannot remove this block",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-file-writing",
+        .display = "--safe-block-file-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include writing in the active safe-mode restrictions",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-file-writing",
+        .display = "--no-safe-block-file-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude writing from the safe-mode profile; unconditional blocks still apply",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--block-file-overwrite",
+        .display = "--block-file-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally prohibit overwrite; later flags cannot remove this block",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-file-overwrite",
+        .display = "--safe-block-file-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include overwrite in the active safe-mode restrictions",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-file-overwrite",
+        .display = "--no-safe-block-file-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude overwrite from the safe-mode profile; unconditional blocks still apply",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--block-archive-writing",
+        .display = "--block-archive-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally prohibit archive writing; later flags cannot remove this block",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-archive-writing",
+        .display = "--safe-block-archive-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include archive writing in the active safe-mode restrictions",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-archive-writing",
+        .display = "--no-safe-block-archive-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude archive writing from the safe-mode profile; unconditional blocks still apply",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--block-archive-overwrite",
+        .display = "--block-archive-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally prohibit archive overwrite; later flags cannot remove this block",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-archive-overwrite",
+        .display = "--safe-block-archive-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include archive overwrite in the active safe-mode restrictions",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-archive-overwrite",
+        .display = "--no-safe-block-archive-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude archive overwrite from the safe-mode profile; unconditional blocks still apply",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--block-archive-content-writing",
+        .display = "--block-archive-content-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally block archive content writing",
+        .details = "Applies to member edits of existing archives under `--archive-block-policy=separate`. "
+                   "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-archive-content-writing",
+        .display = "--safe-block-archive-content-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include in the safe profile: archive content writing",
+        .details = "Applies to member edits of existing archives under `--archive-block-policy=separate`. "
+                   "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-archive-content-writing",
+        .display = "--no-safe-block-archive-content-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude from the safe profile: archive content writing",
+        .details = "Applies to member edits of existing archives under `--archive-block-policy=separate`. "
+                   "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
+        .topic = "safety",
+    },
+    {
+        .name = "--block-archive-content-overwrite",
+        .display = "--block-archive-content-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally block archive content overwrite",
+        .details = "Applies to member edits of existing archives under `--archive-block-policy=separate`. "
+                   "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-archive-content-overwrite",
+        .display = "--safe-block-archive-content-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include in the safe profile: archive content overwrite",
+        .details = "Applies to member edits of existing archives under `--archive-block-policy=separate`. "
+                   "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-archive-content-overwrite",
+        .display = "--no-safe-block-archive-content-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude from the safe profile: archive content overwrite",
+        .details = "Applies to member edits of existing archives under `--archive-block-policy=separate`. "
+                   "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
+        .topic = "safety",
+    },
+    {
+        .name = "--block-archive-content-deletion",
+        .display = "--block-archive-content-deletion",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally prohibit archive deletion; later flags cannot remove this block",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-archive-content-deletion",
+        .display = "--safe-block-archive-content-deletion",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include archive deletion in the active safe-mode restrictions",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-archive-content-deletion",
+        .display = "--no-safe-block-archive-content-deletion",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude archive deletion from the safe-mode profile; unconditional blocks still apply",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe",
+        .display = "--no-safe",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "disable the safe-mode profile; unconditional blocks remain enforced",
+        .topic = "safety",
+    },
+    {
         .name = "--safe",
         .display = "--safe",
         .group = "safety",
         .header = "Safety",
-        .summary = "refuse destructive actions (-delete / -exec)",
-        .details = "Rejects the run before traversal when its expression contains an armed `-delete` or exec-family "
-                   "action. This is a hard guard, not a preview: use `--dry-run` when the goal is to see what a "
-                   "supported write would do. `--safe` does not merely suppress the action after other expression "
-                   "terms have run.",
+        .summary = "activate the configured safe-mode profile",
+        .details = "Initially the profile blocks execution and file/archive deletion, writing, and overwrite. "
+                   "`--safe-block-*` and `--no-safe-block-*` customize it without activating it. "
+                   "`--no-safe` deactivates the profile. Unconditional `--block-*` restrictions always apply. "
+                   "Prohibited actions are rejected before traversal; overwrite collisions are enforced at creation.",
+        .topic = "safety",
     },
     {
         .name = "--dry-run",
         .display = "--dry-run",
         .group = "safety",
         .header = "Safety",
-        .summary = "preview supported writes without changing the filesystem",
-        .details = "Makes `-delete` print each path it would remove, makes `--archive-delete` list member deletions "
-                   "without rewriting the container, and makes `--pack` report how many entries it would write "
-                   "without creating the archive. Traversal and matching still run normally, so the preview uses "
-                   "the real selected set.",
+        .summary = "preview permitted actions without writes, deletion, or execution",
+        .details =
+            "Policy is checked first; dry run cannot bypass a block. Reads and normal output remain enabled. "
+            "File output, deletion, and archives are previewed. Commands are reported but never launched. "
+            "A skipped command or capture has no result: evaluation of that entry stops with an incomplete-preview "
+            "error, rather than guessing which subsequent actions would run.",
+        .topic = "safety",
     },
     {
         .name = "--skip-unsupported",

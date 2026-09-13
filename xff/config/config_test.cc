@@ -15,11 +15,13 @@
 
 #include "xff/config/config.h"
 
+#include <array>
 #include <string>
 #include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "xff/config/safety.h"
 #include "xff/config/xffrc.h"
 #include "xff/registry/descriptor.h"
 
@@ -28,6 +30,7 @@ namespace {
 
 using ::testing::AllOf;
 using ::testing::ElementsAre;
+using ::testing::Eq;
 using ::testing::Field;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
@@ -36,6 +39,111 @@ using ::testing::IsTrue;
 using ::testing::SizeIs;
 
 struct ConfigTest : ::testing::Test {};
+
+TEST_F(ConfigTest, SafetyDefaultsAndProfilesRemainSeparateFromUnconditionalBlocks) {
+  const auto capabilities = std::to_array<Capability>(
+      {Capability::kFileDeletion, Capability::kExecution, Capability::kFileWriting, Capability::kFileOverwrite,
+       Capability::kArchiveContentDeletion, Capability::kArchiveWriting, Capability::kArchiveOverwrite});
+  for (const auto capability : capabilities) {
+    const std::string name(CapabilityName(capability));
+    EXPECT_THAT(ResolveSafety({}).Blocks(capability), IsFalse());
+    EXPECT_THAT(ResolveSafety({"--safe"}).Blocks(capability), IsTrue());
+    EXPECT_THAT(ResolveSafety({"--no-safe-block-" + name, "--safe"}).Blocks(capability), IsFalse());
+    EXPECT_THAT(ResolveSafety({"--safe", "--no-safe-block-" + name}).Blocks(capability), IsFalse());
+    EXPECT_THAT(
+        ResolveSafety({"--no-safe-block-" + name, "--safe-block-" + name, "--safe"}).Blocks(capability), IsTrue());
+    EXPECT_THAT(ResolveSafety({"--safe", "--no-safe"}).Blocks(capability), IsFalse());
+    EXPECT_THAT(
+        ResolveSafety({"--block-" + name, "--no-safe", "--no-safe-block-" + name}).Blocks(capability), IsTrue());
+  }
+  EXPECT_THAT(ResolveSafety({"--dry-run"}).dry_run, IsTrue());
+}
+
+TEST_F(ConfigTest, ArchivePoliciesAreTranslatedIndependentlyBeforeComposition) {
+  const auto ordinary = ResolveSafety({"--block-file-writing", "--block-file-overwrite", "--block-file-deletion"});
+  EXPECT_THAT(ordinary.ArchiveMutations().block_writing, IsTrue());
+  EXPECT_THAT(ordinary.ArchiveMutations().block_overwrite, IsTrue());
+  EXPECT_THAT(ordinary.ArchiveMutations().block_deletion, IsTrue());
+  const auto policies = std::to_array<std::string>({"file", "separate"});
+  for (const std::string& system_choice : policies) {
+    ConfigInputs inputs;
+    inputs.system =
+        ParseIni("--archive-block-policy=" + system_choice + "\n--block-file-writing\n--block-archive-overwrite");
+    inputs.user = ParseIni("--archive-block-policy=" + std::string(system_choice == "file" ? "separate" : "file"));
+    std::vector<std::string> globals;
+    for (const auto& flag : ResolveConfigInOrder(inputs, {}, "xff")) {
+      globals.push_back(flag.flag);
+    }
+    const auto policy = ResolveSafety(globals, true);
+    EXPECT_THAT(policy.FileMutations().block_writing, IsTrue());
+    EXPECT_THAT(policy.ArchiveMutations().block_writing, Eq(system_choice == "file"));
+    EXPECT_THAT(policy.ArchiveMutations().block_overwrite, IsTrue());
+  }
+}
+
+TEST_F(ConfigTest, NamedSectionsKeepTheirOwnFileScopeAcrossLateComposition) {
+  ConfigInputs inputs;
+  inputs.system = ParseIni(R"ini(--archive-block-policy=separate
+--block-archive-overwrite
+[clean]
+--block-file-writing
+)ini");
+  inputs.user = ParseIni(R"ini([clean]
+--block-file-deletion
+--no-safe-block-file-writing
+)ini");
+  inputs.xffrc = {{.path = "task.rc", .config = ParseIni("--config=clean")}};
+  std::vector<std::string> globals;
+  for (const auto& flag : ResolveConfigInOrder(inputs, {"--xffrc=task.rc", "--no-safe"}, "xff")) {
+    globals.push_back(flag.flag);
+  }
+  const auto policy = ResolveSafety(globals, true);
+  EXPECT_THAT(policy.FileMutations().block_writing, IsTrue());
+  EXPECT_THAT(policy.ArchiveMutations().block_writing, IsFalse());
+  EXPECT_THAT(policy.ArchiveMutations().block_overwrite, IsTrue());
+  EXPECT_THAT(policy.FileMutations().block_deletion, IsTrue());
+  EXPECT_THAT(policy.ArchiveMutations().block_deletion, IsTrue());
+}
+
+TEST_F(ConfigTest, PolicyTranslationNeverRewritesPrimaryArguments) {
+  ConfigInputs inputs;
+  inputs.user = ParseIni(R"ini(--archive-block-policy=separate
+-exec echo --block-file-writing --archive-block-policy=file \;
+)ini");
+  const auto resolved = ResolveConfigInOrder(inputs, {}, "xff");
+  ASSERT_THAT(resolved, SizeIs(5));
+  EXPECT_THAT(resolved[2].flag, Eq("--block-file-writing"));
+  EXPECT_THAT(resolved[2].is_argument, IsTrue());
+  EXPECT_THAT(resolved[3].flag, Eq("--archive-block-policy=file"));
+  EXPECT_THAT(resolved[3].is_argument, IsTrue());
+}
+
+TEST_F(ConfigTest, SafetyPolicyComposesFullSystemUserAndExplicitFiles) {
+  ConfigInputs inputs;
+  inputs.system = ParseIni(R"ini(--block-execution
+--no-safe
+--no-safe-block-file-writing
+--no-safe-block-file-overwrite
+[safe]
+--safe
+)ini");
+  inputs.user = ParseIni(R"ini([unsafe]
+--no-safe
+--no-safe-block-execution
+--block-file-deletion
+)ini");
+  inputs.xffrc = {{.path = "task.rc", .config = ParseIni("--no-safe\n--no-safe-block-file-deletion")}};
+  const auto resolved = ResolveConfigInOrder(inputs, {"--config=safe", "--config=unsafe", "--xffrc=task.rc"}, "xff");
+  std::vector<std::string> globals;
+  for (const auto& flag : resolved) {
+    globals.push_back(flag.flag);
+  }
+  const auto policy = ResolveSafety(globals, true);
+  EXPECT_THAT(policy.safe, IsFalse());
+  EXPECT_THAT(policy.Blocks(Capability::kExecution), IsTrue());
+  EXPECT_THAT(policy.Blocks(Capability::kFileDeletion), IsTrue());
+  EXPECT_THAT(policy.Blocks(Capability::kFileWriting), IsFalse());
+}
 
 // Matches a ResolvedFlag by both its flag text and its provenance, so an
 // ElementsAre(...) assertion folds size, order, flag, and Source into one check.
@@ -90,16 +198,6 @@ TEST_F(ConfigTest, SelectedSystemSectionsResolveInFileOrderWithProvenance) {
                                  FlagIs("--jobs=2", Source::kSystem), FlagIs("--sort=none", Source::kSystem)));
   inputs.no_system_config = true;
   EXPECT_THAT(ResolveConfig(inputs), IsEmpty());
-}
-
-TEST_F(ConfigTest, SystemExecProhibitionOverridesEveryArmingTierEvenWhenDefaultsAreSkipped) {
-  ConfigInputs inputs;
-  inputs.system.globals = {"--no-allow-exec", "--allow-exec"};
-  inputs.user = ParseXffrc("--allow-exec");
-  inputs.xffrc = {{.path = "/named", .config = ParseXffrc("--allow-exec")}};
-  EXPECT_THAT(ArmedFromTrustedTier(inputs, {"--allow-exec"}, "--allow-exec"), IsFalse());
-  inputs.no_system_config = true;
-  EXPECT_THAT(ArmedFromTrustedTier(inputs, {"--allow-exec"}, "--allow-exec"), IsFalse());
 }
 
 TEST_F(ConfigTest, TransitiveAutomaticSelectorsCanArmAnExplicitFile) {

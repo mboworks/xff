@@ -53,12 +53,13 @@ absl::Mutex& RootMutex() {
 // container join the tree the first one created.
 //
 // Returns ownership BY VALUE, never a reference into this function's state.
-absl::StatusOr<std::shared_ptr<MountRoot>> RunRoot() ABSL_EXCLUSIVE_LOCKS_REQUIRED(RootMutex()) {
+absl::StatusOr<std::shared_ptr<MountRoot>> RunRoot(const vfs::MutationPolicy& policy)
+    ABSL_EXCLUSIVE_LOCKS_REQUIRED(RootMutex()) {
   static absl::NoDestructor<std::weak_ptr<MountRoot>> live;
   if (std::shared_ptr<MountRoot> root = live->lock(); root != nullptr) {
     return root;
   }
-  MBO_ASSIGN_OR_RETURN(MountRoot created, MountRoot::Create());
+  MBO_ASSIGN_OR_RETURN(MountRoot created, MountRoot::Create({.mutations = policy}));
   auto root = std::make_shared<MountRoot>(std::move(created));
   *live = root;
   return root;
@@ -85,14 +86,15 @@ class ServerMount final : public Mount {
 
 absl::StatusOr<std::unique_ptr<Mount>> MountThroughFuse(
     std::shared_ptr<const vfs::FileSystem> fs,
-    std::string_view container) {
+    std::string_view container,
+    const vfs::MutationPolicy& policy) {
   std::shared_ptr<MountRoot> root;
   std::string mount_point;
   {
     // One critical section for both steps: MountPointFor hands out a fresh directory by mutating
     // the root's counter, so acquiring the root and asking it for a mount point belong together.
     const absl::MutexLock lock(RootMutex());
-    MBO_ASSIGN_OR_RETURN(root, RunRoot());
+    MBO_ASSIGN_OR_RETURN(root, RunRoot(policy));
     MBO_ASSIGN_OR_RETURN(mount_point, root->MountPointFor(container));
   }
   MBO_ASSIGN_OR_RETURN(

@@ -69,7 +69,7 @@ TEST_F(MountRootTest, CreateMakesThePerRunTreeAndTheDestructorRemovesIt) {
   {
     MBO_ASSERT_OK_AND_ASSIGN(const MountRoot root, MountRoot::Create(options_));
     path = std::string(root.path());
-    EXPECT_THAT(path, AllOf(HasSubstr(absl::StrCat(base_, "/xff/")), EndsWith(absl::StrCat("/", ::getpid()))));
+    EXPECT_THAT(path, AllOf(HasSubstr(absl::StrCat(base_, "/xff/")), HasSubstr(absl::StrCat("/", ::getpid(), "-"))));
     EXPECT_THAT(stdfs::is_directory(path), IsTrue());
   }
   EXPECT_THAT(stdfs::exists(path), IsFalse());
@@ -126,7 +126,7 @@ TEST_F(MountRootTest, CreateReportsWhenTheSharedBaseCannotBeCreated) {
   blocker << "not a directory";
   blocker.close();
   EXPECT_THAT(
-      MountRoot::Create(options_), StatusIs(absl::StatusCode::kUnavailable, HasSubstr("cannot create the mount root")));
+      MountRoot::Create(options_), StatusIs(absl::StatusCode::kAlreadyExists, HasSubstr("cannot create directories")));
 }
 
 TEST_F(MountRootTest, MountPointsUseTheBasenameAndDisambiguateDuplicates) {
@@ -153,7 +153,7 @@ TEST_F(MountRootTest, MountPointReportsANameCollision) {
   blocker.close();
   EXPECT_THAT(
       root.MountPointFor("box.tgz"),
-      StatusIs(absl::StatusCode::kUnavailable, HasSubstr("cannot create the mount point")));
+      StatusIs(absl::StatusCode::kAlreadyExists, HasSubstr("cannot create directories")));
 }
 
 TEST_F(MountRootTest, AMovedFromRootOwnsNothing) {

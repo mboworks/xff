@@ -45,7 +45,8 @@ std::vector<std::string> DecodeArgs(std::string_view input) {
 
 bool IsIsolated(const xff::parser::Expr& expr) {
   if (expr.kind == xff::parser::Expr::Kind::kPredicate
-      && (!expr.descriptor.has_value() || expr.descriptor->safety != xff::registry::Safety::kNone)) {
+      && (!expr.descriptor.has_value() || expr.descriptor->safety != xff::registry::Safety::kNone
+          || expr.descriptor->writes_file)) {
     return false;
   }
   return (expr.lhs == nullptr || IsIsolated(*expr.lhs)) && (expr.rhs == nullptr || IsIsolated(*expr.rhs));
