@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-13 14:54:51</td>
+            <td class="headerValue">2026-09-13 15:42:42</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -98,27 +98,27 @@
 <span id="L18"><span class="lineNum">      18</span>                 :             :     &quot;archive-content-overwrite&quot;};</span>
 <span id="L19"><span class="lineNum">      19</span>                 :             : }  // namespace</span>
 <span id="L20"><span class="lineNum">      20</span>                 :             : </span>
-<span id="L21"><span class="lineNum">      21</span>                 :<span class="tlaGNC">       17813 : bool SafetyPolicy::Blocks(Capability capability) const {</span></span>
-<span id="L22"><span class="lineNum">      22</span>                 :<span class="tlaGNC">       17813 :   const auto index = static_cast&lt;std::size_t&gt;(capability);</span></span>
-<span id="L23"><span class="lineNum">      23</span> [<span class="tlaGBC" title="branch 0 was taken 88 times"> + </span><span class="tlaGBC" title="branch 1 was taken 17725 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 73 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 17652 times"> + </span>]:<span class="tlaGNC">       17813 :   return unconditional.at(index) || (safe &amp;&amp; profile.at(index));</span></span>
+<span id="L21"><span class="lineNum">      21</span>                 :<span class="tlaGNC">       17823 : bool SafetyPolicy::Blocks(Capability capability) const {</span></span>
+<span id="L22"><span class="lineNum">      22</span>                 :<span class="tlaGNC">       17823 :   const auto index = static_cast&lt;std::size_t&gt;(capability);</span></span>
+<span id="L23"><span class="lineNum">      23</span> [<span class="tlaGBC" title="branch 0 was taken 89 times"> + </span><span class="tlaGBC" title="branch 1 was taken 17734 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 73 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 17661 times"> + </span>]:<span class="tlaGNC">       17823 :   return unconditional.at(index) || (safe &amp;&amp; profile.at(index));</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 42 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 31 times"> + </span>]
-<span id="L24"><span class="lineNum">      24</span>                 :<span class="tlaGNC">       17813 : }</span></span>
+<span id="L24"><span class="lineNum">      24</span>                 :<span class="tlaGNC">       17823 : }</span></span>
 <span id="L25"><span class="lineNum">      25</span>                 :             : </span>
-<span id="L26"><span class="lineNum">      26</span>                 :<span class="tlaGNC">        1661 : vfs::MutationPolicy SafetyPolicy::FileMutations() const {</span></span>
-<span id="L27"><span class="lineNum">      27</span>                 :<span class="tlaGNC">        1661 :   return {</span></span>
-<span id="L28"><span class="lineNum">      28</span>                 :<span class="tlaGNC">        1661 :       .block_deletion = Blocks(Capability::kFileDeletion),</span></span>
-<span id="L29"><span class="lineNum">      29</span>                 :<span class="tlaGNC">        1661 :       .block_writing = Blocks(Capability::kFileWriting),</span></span>
-<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC">        1661 :       .block_overwrite = Blocks(Capability::kFileOverwrite),</span></span>
-<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">        1661 :       .dry_run = dry_run};</span></span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">        1661 : }</span></span>
+<span id="L26"><span class="lineNum">      26</span>                 :<span class="tlaGNC">        1664 : vfs::MutationPolicy SafetyPolicy::FileMutations() const {</span></span>
+<span id="L27"><span class="lineNum">      27</span>                 :<span class="tlaGNC">        1664 :   return {</span></span>
+<span id="L28"><span class="lineNum">      28</span>                 :<span class="tlaGNC">        1664 :       .block_deletion = Blocks(Capability::kFileDeletion),</span></span>
+<span id="L29"><span class="lineNum">      29</span>                 :<span class="tlaGNC">        1664 :       .block_writing = Blocks(Capability::kFileWriting),</span></span>
+<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC">        1664 :       .block_overwrite = Blocks(Capability::kFileOverwrite),</span></span>
+<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">        1664 :       .dry_run = dry_run};</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">        1664 : }</span></span>
 <span id="L33"><span class="lineNum">      33</span>                 :             : </span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">        4190 : vfs::MutationPolicy SafetyPolicy::ArchiveMutations() const {</span></span>
-<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">        4190 :   return {</span></span>
-<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">        4190 :       .block_deletion = Blocks(Capability::kArchiveContentDeletion),</span></span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">        4190 :       .block_writing = Blocks(Capability::kArchiveWriting),</span></span>
-<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">        4190 :       .block_overwrite = Blocks(Capability::kArchiveOverwrite),</span></span>
-<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">        4190 :       .dry_run = dry_run};</span></span>
-<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">        4190 : }</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">        4193 : vfs::MutationPolicy SafetyPolicy::ArchiveMutations() const {</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">        4193 :   return {</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">        4193 :       .block_deletion = Blocks(Capability::kArchiveContentDeletion),</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">        4193 :       .block_writing = Blocks(Capability::kArchiveWriting),</span></span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">        4193 :       .block_overwrite = Blocks(Capability::kArchiveOverwrite),</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">        4193 :       .dry_run = dry_run};</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">        4193 : }</span></span>
 <span id="L41"><span class="lineNum">      41</span>                 :             : </span>
 <span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">          20 : std::string_view CapabilityName(Capability capability) {</span></span>
 <span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">          20 :   return kNames.at(static_cast&lt;std::size_t&gt;(capability));</span></span>
