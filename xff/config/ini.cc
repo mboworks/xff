@@ -18,58 +18,151 @@
 #include <cstddef>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/ascii.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/str_split.h"
 
 namespace xff::config {
 namespace {
 
-// An INI option line -> a CLI token: "--color = auto" -> "--color=auto"; a bare
-// "--warn" stays "--warn".
-std::string DefaultFlag(std::string_view line) {
-  const std::string_view::size_type eq = line.find('=');
-  if (eq == std::string_view::npos) {
-    return std::string(absl::StripAsciiWhitespace(line));
-  }
-  return absl::StrCat(
-      absl::StripAsciiWhitespace(line.substr(0, eq)), "=", absl::StripAsciiWhitespace(line.substr(eq + 1)));
-}
+class IniLexer {
+ public:
+  explicit IniLexer(std::string_view text) : text_(text) {}
 
-std::vector<std::string> FlagTokens(std::string_view line) {
-  const std::string normalized = DefaultFlag(line);
-  std::vector<std::string> result;
-  for (const std::string_view token : absl::StrSplit(normalized, absl::ByAnyChar(" \t"), absl::SkipEmpty())) {
-    result.emplace_back(token);
+  bool Done() const { return pos_ == text_.size(); }
+
+  IniLine Next() {
+    const std::size_t start = pos_;
+    IniLine line{.number = number_};
+    std::size_t end = text_.size();
+    while (!Done()) {
+      const char ch = text_[pos_++];
+      if (ch == '\n') {
+        ++number_;
+        if (quote_ == '\0') {
+          end = pos_ - 1;
+          break;
+        }
+      }
+      if (quote_ == '\0' && (ch == ';' || (ch == '#' && !started_))) {
+        end = pos_ - 1;
+        SkipComment();
+        break;
+      }
+      ReadCharacter(ch);
+    }
+    if (quote_ != '\0') {
+      error_ = quote_ == '\'' ? "unterminated single quote" : "unterminated double quote";
+    }
+    Flush();
+    line.syntax_error = std::exchange(error_, {});
+    line.text = std::string(absl::StripAsciiWhitespace(text_.substr(start, end - start)));
+    if (line.syntax_error.empty()) {
+      line.tokens = std::move(words_);
+    }
+    words_.clear();
+    quote_ = '\0';
+    return line;
   }
-  return result;
-}
+
+ private:
+  void SkipComment() {
+    while (!Done() && text_[pos_] != '\n') {
+      ++pos_;
+    }
+    if (!Done()) {
+      ++pos_;
+      ++number_;
+    }
+  }
+
+  void ReadCharacter(char ch) {
+    if (quote_ != '\0') {
+      Quoted(ch);
+    } else if (absl::ascii_isspace(ch)) {
+      Flush();
+    } else if (ch == '\'' || ch == '"') {
+      quote_ = ch;
+      started_ = true;
+    } else if (ch == '\\') {
+      Escape(false);
+    } else {
+      Append(ch);
+    }
+  }
+
+  void Append(char ch) {
+    word_.push_back(ch);
+    started_ = true;
+  }
+
+  void Flush() {
+    if (started_) {
+      words_.push_back(std::move(word_));
+      word_ = {};
+      started_ = false;
+    }
+  }
+
+  void Escape(bool double_quoted) {
+    if (Done()) {
+      error_ = "trailing backslash";
+      return;
+    }
+    const char next = text_[pos_];
+    if (next == '\n') {
+      ++pos_;
+      ++number_;
+      return;
+    }
+    if (double_quoted && next != '$' && next != '`' && next != '"' && next != '\\') {
+      Append('\\');
+      return;
+    }
+    ++pos_;
+    Append(next);
+  }
+
+  void Quoted(char ch) {
+    if (ch == quote_) {
+      quote_ = '\0';
+    } else if (ch == '\\' && quote_ == '"') {
+      Escape(true);
+    } else {
+      Append(ch);
+    }
+  }
+
+  std::string_view text_;
+  std::size_t pos_ = 0;
+  std::size_t number_ = 1;
+  char quote_ = '\0';
+  bool started_ = false;
+  std::string word_;
+  std::string error_;
+  std::vector<std::string> words_;
+};
 
 }  // namespace
 
 ConfigFile ParseIni(std::string_view text) {
   ConfigFile config;
-  std::size_t line_number = 0;
-  for (const std::string_view raw : absl::StrSplit(text, '\n')) {
-    ++line_number;
-    const std::string_view line = absl::StripAsciiWhitespace(raw);
-    if (line.empty() || line.front() == '#' || line.front() == ';') {
-      continue;  // blank or comment
-    }
-    if (line.front() == '[' && line.back() == ']') {
-      const std::string_view name = absl::StripAsciiWhitespace(line.substr(1, line.size() - 2));
-      config.named.push_back({.name = std::string(name), .number = line_number});
+  IniLexer lexer(text);
+  while (!lexer.Done()) {
+    IniLine line = lexer.Next();
+    if (line.text.empty() && line.syntax_error.empty()) {
       continue;
     }
-    if (config.named.empty()) {
-      const IniLine parsed{.number = line_number, .text = std::string(line), .tokens = FlagTokens(line)};
-      config.globals.insert(config.globals.end(), parsed.tokens.begin(), parsed.tokens.end());
-      config.global_lines.push_back(parsed);
+    if (line.syntax_error.empty() && line.text.front() == '[' && line.text.back() == ']') {
+      const std::string_view name =
+          absl::StripAsciiWhitespace(std::string_view(line.text).substr(1, line.text.size() - 2));
+      config.named.push_back({.name = std::string(name), .number = line.number});
+    } else if (config.named.empty()) {
+      config.globals.insert(config.globals.end(), line.tokens.begin(), line.tokens.end());
+      config.global_lines.push_back(std::move(line));
     } else {
-      config.named.back().lines.push_back(
-          {.number = line_number, .text = std::string(line), .tokens = FlagTokens(line)});
+      config.named.back().lines.push_back(std::move(line));
     }
   }
   return config;

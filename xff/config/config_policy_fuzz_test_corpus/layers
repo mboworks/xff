@@ -1,5 +1,5 @@
---color = auto
---jobs = 4
+--color=auto
+--jobs=4
 --no-allow-exec
 
 [policy]

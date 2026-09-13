@@ -96,8 +96,9 @@ named configuration:
 ```
 
 The option spelling is exactly the command-line spelling: write `--color`, not `color`, and `-E`,
-not a derived configuration key. An entry written as `--color = auto` is normalized to
-`--color=auto`. Blank lines and lines beginning with `#` or `;` are ignored.
+not a derived configuration key. Use `--color=auto`: whitespace separates arguments, so
+`--color = auto` is not an alternate assignment syntax. The resulting arguments are validated
+by the same flag parser as command-line arguments.
 
 One line may contain multiple directives: `--hidden --color=never` or `-name foo -name bar`.
 Each primary consumes only its own arguments. Adjacent predicates mean AND, so the latter matches
@@ -159,8 +160,35 @@ Names are literal, including colons: `[xff:debug]` requires `--config=xff:debug`
 mean that both `xff` and `debug` must be active. `[common]` is an ordinary named config.
 Unconditional flags belong before the first section.
 
-The parser splits flags on spaces and tabs. It does not interpret shell quotes or escapes,
-so one token cannot contain whitespace. Blank lines and lines beginning with `#` or `;` are ignored.
+The config reader emulates the shell's quoting and escaping to produce arguments for the same
+CLI parser. It removes comments before passing those arguments to the parser. System, user, and
+explicit `.xffrc` files all use this rule. Single quotes preserve
+literal content; double quotes group content and allow backslash escapes for `"`, `\`, `$`, and
+backtick. Outside quotes, a backslash escapes the next character. Adjacent quoted and unquoted
+pieces form one argument; empty quotes produce an empty argument. There is no variable, command,
+pathname, or tilde expansion, and config text is never executed as a shell script.
+
+An unquoted `#` at the beginning of a word starts a comment through the end of that physical
+line. Thus `foo#bar`, `\#`, and `"#"` are literal arguments. An unquoted, unescaped `;` starts
+a comment anywhere outside quotes. Either marker may follow any amount of whitespace. Blank
+lines are ignored. Quote or escape a literal semicolon: `\;` or `";"` supplies the `-exec`
+terminator, just as on the command line. Comment text never reaches the CLI argument parser.
+
+```ini
+--color=never # Applies without a selector
+
+[hash] # Activated with --config=hash
+-name '#*' -o -name space\ name
+
+[command]
+-exec printf '%s\n' '#literal' \; ; Exec terminator before the comment
+```
+
+Quotes may span physical lines. A backslash followed by a newline continues the logical line
+without adding a character, except inside single quotes. Diagnostics identify the logical
+line's starting line number. An unmatched quote or a trailing backslash is a syntax error;
+no partial arguments from that line are applied. Invalid global lines are ignored with a
+diagnostic, while an invalid named-section line disables its entire section.
 
 User and explicit config files may not redefine the exact built-in preset names `[find]`, `[xff]`,
 or `[rg]`. Those lines are dropped with a warning. Use a custom named configuration and compose
@@ -293,7 +321,7 @@ Runtime `--safe`, `--dry-run`, and action-specific confirmation remain separate 
 With no system prohibition, `task.rc` may contain:
 
 ```text
--exec echo {} ;
+-exec echo {} \;
 ```
 
 `xff . --xffrc=task.rc` leaves that dangerous line inert. Supplying `--allow-exec` from the
@@ -359,5 +387,5 @@ set of option semantics.
 
 ## Known limits
 
-- xffrc values cannot contain whitespace because quoting is not implemented.
+- Config argument quoting does not perform shell expansions or execute shell syntax.
 - Missing and unreadable config files are not distinguished in discovery output.

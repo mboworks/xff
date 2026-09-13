@@ -3,6 +3,7 @@
 
 #include "xff/cli/config_validation.h"
 
+#include <array>
 #include <fstream>
 #include <iterator>
 #include <string>
@@ -55,6 +56,72 @@ absl::StatusOr<std::string> Fixture(std::string_view directory, std::string_view
   return text;
 }
 
+TEST_F(ConfigValidationTest, FullFileQuotingUsesTheSameGrammarForEveryTier) {
+  ASSERT_OK_AND_ASSIGN(const std::string fixture, Fixture("quoting", "shared.ini"));
+  const auto sources =
+      std::to_array<config::Source>({config::Source::kSystem, config::Source::kUser, config::Source::kXffrc});
+  for (const config::Source source : sources) {
+    const ConfigFileValidation validated =
+        ValidateConfigFile(config::ParseIni(fixture), {"hash", "space", "equals", "command"}, "shared.ini", source);
+    EXPECT_THAT(validated.diagnostics, IsEmpty());
+    EXPECT_THAT(validated.selected_configs_status, IsOk());
+    EXPECT_THAT(validated.config.globals, ElementsAre("--color=never", "--template=literal # text"));
+    ASSERT_THAT(validated.config.named, SizeIs(4));
+    EXPECT_THAT(validated.config.named[0].lines[0].tokens, ElementsAre("-name", "#*"));
+    EXPECT_THAT(validated.config.named[1].lines[0].tokens, ElementsAre("-name", "space name"));
+    EXPECT_THAT(validated.config.named[2].lines[0].tokens, ElementsAre("-name", "="));
+    EXPECT_THAT(validated.config.named[3].lines[0].tokens, ElementsAre("-exec", "echo", "#literal", "#", "{}", ";"));
+  }
+}
+
+TEST_F(ConfigValidationTest, UnterminatedQuotesDisableSelectedSectionWithItsStartingLine) {
+  const ConfigFileValidation result =
+      ValidateConfigFile(config::ParseIni("--hidden\n[broken]\n-name 'unfinished\n"), {"broken"}, "bad.ini");
+  EXPECT_THAT(result.selected_configs_status, StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(result.diagnostics, ElementsAre(AllOf(HasSubstr("bad.ini:3"), HasSubstr("unterminated single quote"))));
+  EXPECT_THAT(result.config.globals, ElementsAre("--hidden"));
+  EXPECT_THAT(result.config.named, IsEmpty());
+}
+
+TEST_F(ConfigValidationTest, InvalidGlobalSourceLinesCannotReturnDuringPolicyFiltering) {
+  const ConfigFileValidation validated = ValidateConfigFile(
+      config::ParseIni("--color=garbage\n--hidden\n-name 'unfinished"), {}, "task.xffrc", config::Source::kXffrc);
+  EXPECT_THAT(validated.diagnostics, SizeIs(2));
+  ASSERT_THAT(validated.config.global_lines, SizeIs(1));
+  config::ConfigInputs inputs;
+  inputs.xffrc = {{.path = "task.xffrc", .config = validated.config}};
+  const config::GateResult gated = config::GateConfig(inputs, false);
+  EXPECT_THAT(gated.config.xffrc[0].config.globals, ElementsAre("--hidden"));
+}
+
+TEST_F(ConfigValidationTest, SpacedAssignmentsAreNotAlternateFlagSyntax) {
+  const ConfigFileValidation validated =
+      ValidateConfigFile(config::ParseIni("--color = auto\n[empty]\n; comment\n"), {"empty"}, "bad.ini");
+  EXPECT_THAT(validated.diagnostics, SizeIs(1));
+  EXPECT_THAT(validated.config.globals, IsEmpty());
+  EXPECT_THAT(validated.selected_configs_status, IsOk());
+}
+
+TEST_F(ConfigValidationTest, ExecTerminationAndCommentsUseDistinctTokens) {
+  const ConfigFileValidation validated = ValidateConfigFile(
+      config::ParseIni(R"ini([escaped]
+-exec echo x \; ; comment
+[quoted]
+-exec echo x ";" # comment
+[trailing]
+-exec echo \; bla
+[missing]
+-exec echo x ; comment
+)ini"),
+      {"escaped", "quoted"}, "exec.ini");
+  EXPECT_THAT(validated.selected_configs_status, IsOk());
+  ASSERT_THAT(validated.config.named, SizeIs(2));
+  EXPECT_THAT(validated.config.named[0].lines[0].tokens, ElementsAre("-exec", "echo", "x", ";"));
+  EXPECT_THAT(validated.config.named[1].lines[0].tokens, ElementsAre("-exec", "echo", "x", ";"));
+  EXPECT_THAT(
+      validated.diagnostics, ElementsAre(AllOf(HasSubstr("[trailing]"), HasSubstr("bla")), HasSubstr("[missing]")));
+}
+
 TEST_F(ConfigValidationTest, ReportsCanonicalAliasAndNegatedOverrides) {
   config::ConfigInputs inputs;
   inputs.system.globals = {"--timezone=utc", "--tz=local"};
@@ -97,7 +164,7 @@ TEST_F(ConfigValidationTest, KeepsDifferentSectionsAndFilesIndependent) {
 
 TEST_F(ConfigValidationTest, DoesNotTreatPrimaryArgumentsAsGlobalSettings) {
   config::ConfigInputs inputs;
-  inputs.user = config::ParseXffrc("-exec echo --sort=tree ; --sort=global");
+  inputs.user = config::ParseXffrc("-exec echo --sort=tree \\; --sort=global");
   EXPECT_THAT(ConfigOverrideNotices(inputs), IsEmpty());
 }
 

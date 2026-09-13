@@ -208,8 +208,10 @@ class ConfigFileValidator {
     if (!result_.config.global_lines.empty()) {
       result_.config.globals.clear();
     }
+    std::vector<config::IniLine> valid_lines;
     for (const config::IniLine& line : result_.config.global_lines) {
-      absl::Status status = ValidateTokens(line.tokens);
+      absl::Status status =
+          line.syntax_error.empty() ? ValidateTokens(line.tokens) : absl::InvalidArgumentError(line.syntax_error);
       auto next_controls = controls_;
       if (status.ok()) {
         for (const std::string_view token : config::DirectiveTokens(line.tokens)) {
@@ -223,6 +225,7 @@ class ConfigFileValidator {
         }
       }
       if (status.ok()) {
+        valid_lines.push_back(line);
         controls_ = std::move(next_controls);
         result_.config.globals.insert(result_.config.globals.end(), line.tokens.begin(), line.tokens.end());
       } else {
@@ -231,6 +234,7 @@ class ConfigFileValidator {
                 path_, ":", line.number, ": invalid global config line '", line.text, "': ", status.message()));
       }
     }
+    result_.config.global_lines = std::move(valid_lines);
   }
 
   void ValidateNames() {
@@ -263,7 +267,8 @@ class ConfigFileValidator {
             });
         const absl::Status status =
             has_control ? absl::InvalidArgumentError("system controls must precede every system config section")
-                        : ValidateTokens(line.tokens);
+                        : (line.syntax_error.empty() ? ValidateTokens(line.tokens)
+                                                     : absl::InvalidArgumentError(line.syntax_error));
         if (!status.ok()) {
           disabled_.insert(section.name);
           result_.diagnostics.push_back(

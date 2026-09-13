@@ -31,7 +31,7 @@ using ::testing::SizeIs;
 struct XffrcTest : ::testing::Test {};
 
 TEST_F(XffrcTest, SharedGrammarPreservesGlobalsSectionsAndLocations) {
-  const ConfigFile file = ParseXffrc("# comment\n--color = auto\n[dev]\n-type f\n; comment");
+  const ConfigFile file = ParseXffrc("# comment\n--color=auto\n[dev]\n-type f\n# comment");
   EXPECT_THAT(file.globals, ElementsAre("--color=auto"));
   ASSERT_THAT(file.named, SizeIs(1));
   EXPECT_THAT(file.named[0].name, "dev");

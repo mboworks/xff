@@ -27,6 +27,7 @@ struct IniLine {
   std::size_t number = 0;
   std::string text;
   std::vector<std::string> tokens;
+  std::string syntax_error;  // lexical failure; no partial tokens are usable
 };
 
 struct IniSection {
@@ -42,12 +43,14 @@ struct ConfigFile {
   std::vector<IniSection> named;
 };
 
-// Parses INI `text`. A file-global or named-section "key = value" line renders to CLI
-// tokens ("--color = auto" -> "--color=auto"; a bare "--warn" stays "--warn").
-// Blank lines and '#'/';' comments are skipped; file-global lines are accepted only before the
-// first section. Every [NAME], including [policy], is an ordinary named configuration. Parse-only:
-// Every header is preserved, including empty and repeated sections, so duplicates can be
-// diagnosed rather than silently merged. Registry-aware validation and atomic section disabling happen in
+// Parses shared INI text with shell-style single/double quoting and backslash escaping.
+// Unquoted '#' begins a comment at a word boundary; unquoted ';' begins a comment anywhere.
+// Quote or escape literal semicolons, including exec terminators. No expansion or execution occurs.
+// Quoted newlines and escaped line
+// continuations are supported. Whitespace separates words; flags retain their exact CLI spelling.
+// Lexical errors retain their starting line and source text.
+// Unsectioned flags precede the first [NAME]. Every header is preserved, including empty and
+// repeated declarations. Registry-aware validation and atomic section disabling happen in
 // cli::ValidateConfigFile.
 ConfigFile ParseIni(std::string_view text);
 

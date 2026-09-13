@@ -1,0 +1,4 @@
+--template='literal # value' # comment
+[quoted] # comment
+-name "space name" -o -name \#*
+-exec echo "#literal" {} \; # terminator
