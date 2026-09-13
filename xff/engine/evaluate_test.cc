@@ -1857,7 +1857,7 @@ TEST_F(EvaluateTest, ArchiveDeletionRequiresBothDeletionAndRewritePermission) {
   member.source = vfs::Source::kArchiveMember;
   const auto policies = std::to_array<vfs::MutationPolicy>(
       {{.block_deletion = true}, {.block_writing = true}, {.block_overwrite = true}});
-  for (const auto policy : policies) {
+  for (const auto& policy : policies) {
     archive_mutations_ = policy;
     EXPECT_THAT(
         Match({"-delete"}, Visit{.path = "box.tar!file", .name = "file", .depth = 1, .metadata = member}), IsFalse());

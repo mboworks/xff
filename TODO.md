@@ -21,16 +21,12 @@ for enforcement and presentation.
 
 ## Safety follow-up sequence
 
-1. Finish the safety-policy PR: monotonic blocks, configurable safe profile, dry-run, per-INI archive
-   policy translation, shared mutation routing, operation tables, and regression coverage.
-2. Add path-scoped permissions in a separate PR: define temporary/output roots and permitted file
-   creation, overwrite, and deletion. Decide separate directory creation/deletion controls; recursive
-   removal must authorize each affected entry. Distinguish owned scratch from pre-existing files in
-   a temporary directory. Root scope is recursive over contents; the root itself remains protected.
-   Use one directory-permission model for outputs and temporary placement. Mandatory restrictions must survive user grants and symlink traversal.
-3. Decide explicit `.xffrc` autoload behavior and controls.
-4. Resume the full configuration audit, including flag consistency, introductory documentation,
+1. Decide explicit `.xffrc` autoload behavior and controls.
+2. Resume the full configuration audit, including flag consistency, introductory documentation,
    complete-file tests, and safety tradeoffs.
+
+The safety model and directory-scoped permissions are tracked in
+[the implementation record](docs/history.md#directory-scoped-safety-controls).
 
 ## Active engineering priorities
 

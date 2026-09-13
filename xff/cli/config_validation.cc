@@ -25,8 +25,13 @@
 namespace xff::cli {
 namespace {
 
+bool IsDirectoryRoot(std::string_view token) {
+  const auto name = token.substr(0, token.find('='));
+  return name == "--temp-root" || name == "--output-root";
+}
+
 bool IsSystemControl(std::string_view token) {
-  return token == "--no-require-system-config" || token == "--require-system-config"
+  return IsDirectoryRoot(token) || token == "--no-require-system-config" || token == "--require-system-config"
          || token == "--no-require-user-config" || token == "--require-user-config" || token == "--allow-xffrc"
          || token == "--no-allow-xffrc" || token == "--detailed-block-policy"
          || token.starts_with("--detailed-block-policy=");
@@ -55,10 +60,12 @@ absl::StatusOr<absl::flat_hash_set<std::string>> ValidateControls(
     const config::IniLine& line,
     absl::flat_hash_set<std::string> controls) {
   for (const std::string_view token : config::DirectiveTokens(line.tokens)) {
-    const std::string name = token.starts_with("--detailed-block-policy=") ? "--detailed-block-policy"
-                             : token.starts_with("--no-require-")          ? absl::StrCat("--", token.substr(5))
-                                                                           : std::string(token);
-    if ((name == "--require-system-config" || name == "--require-user-config" || name == "--detailed-block-policy")
+    const std::string name = IsDirectoryRoot(token) ? std::string(token.substr(0, token.find('=')))
+                             : token.starts_with("--detailed-block-policy=") ? "--detailed-block-policy"
+                             : token.starts_with("--no-require-")            ? absl::StrCat("--", token.substr(5))
+                                                                             : std::string(token);
+    if ((IsDirectoryRoot(name) || name == "--require-system-config" || name == "--require-user-config"
+         || name == "--detailed-block-policy")
         && !controls.insert(name).second) {
       return absl::InvalidArgumentError(absl::StrCat(name, " and its negative form may occur only once"));
     }
@@ -67,6 +74,14 @@ absl::StatusOr<absl::flat_hash_set<std::string>> ValidateControls(
 }
 
 absl::Status ValidateSystemControl(std::string_view token) {
+  if (IsDirectoryRoot(token)) {
+    const auto equals = token.find('=');
+    if (equals == std::string_view::npos || !token.substr(equals + 1).starts_with('/')
+        || token.substr(equals + 1) == "/") {
+      return absl::InvalidArgumentError("directory roots require =PATH with an absolute, non-root directory");
+    }
+    return absl::OkStatus();
+  }
   if (!token.starts_with("--detailed-block-policy")) {
     return absl::OkStatus();
   }

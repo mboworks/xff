@@ -2119,6 +2119,20 @@ class NoBtimeFs : public vfs::FileSystem {
   std::string root_;
 };
 
+TEST_F(RunTest, DirectoryPolicyCannotRedirectAnInMemoryFilesystemToTheHost) {
+  const NoBtimeFs fs("/fake");
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"/fake", "--output-root=/does-not-exist", "-delete"}));
+  std::vector<absl::Status> diagnostics;
+  const auto result = RunFind(
+      command, fs, [](std::string_view) {},
+      [&](std::string_view, absl::Status status) { diagnostics.push_back(std::move(status)); });
+  EXPECT_THAT(result.errors, Eq(2));
+  EXPECT_THAT(
+      diagnostics,
+      ElementsAre(
+          StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("filesystem does not support directory policies"))));
+}
+
 TEST_F(RunTest, BtimeOnEntryWithoutBirthtimeFailsByDefault) {
   // Impossible task: -Btime against a filesystem that does not record birth time is
   // a hard error (exit 2), reported once with a self-documenting message.

@@ -219,6 +219,7 @@ exports_files(["language_database.bzl"])
 cc_library(
     name = "vfs_cc",
     srcs = [
+        "directory_policy.cc",
         "filesystem.cc",
         "mutations.cc",
     ],

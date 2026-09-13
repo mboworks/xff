@@ -41,17 +41,24 @@ struct MutationsTest : ::testing::Test {
     return {std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
   }
 
+  std::string ScopePath(std::string_view name) const {
+    const auto root = std::filesystem::canonical(root_->Path());
+    return name.empty() ? root.string() : (root / name).string();
+  }
+
   std::unique_ptr<TemporaryDirectory> root_;
 };
 
 TEST_F(MutationsTest, WritingAndDryRunRefuseEveryCreationSurface) {
   const auto policies = std::to_array<MutationPolicy>({{.block_writing = true}, {.dry_run = true}});
-  for (const MutationPolicy policy : policies) {
+  for (const MutationPolicy& policy : policies) {
     const auto code = policy.dry_run ? absl::StatusCode::kFailedPrecondition : absl::StatusCode::kPermissionDenied;
     EXPECT_THAT(OpenHostOutput(Path("file"), false, policy), StatusIs(code));
     EXPECT_THAT(TemporaryOutput::Create(Path("scratch"), policy), StatusIs(code));
     EXPECT_THAT(TemporaryDirectory::Create(Path("directory"), policy), StatusIs(code));
-    EXPECT_THAT(CreateHostDirectories(Path("parents/child"), policy), StatusIs(code));
+    if (policy.dry_run) {
+      EXPECT_THAT(CreateHostDirectories(Path("parents/child"), policy), StatusIs(code));
+    }
     EXPECT_THAT(std::filesystem::is_empty(root_->Path()), IsTrue());
   }
 }
@@ -181,6 +188,145 @@ TEST_F(MutationsTest, FlushFailureDoesNotPublishAnArchive) {
   EXPECT_THAT(::close(pipe_fds.back()), Eq(0));
   EXPECT_THAT(output->Publish(Path("target")), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("flush")));
   EXPECT_THAT(std::filesystem::exists(Path("target")), IsFalse());
+}
+
+TEST_F(MutationsTest, InvalidRootsAndSymlinkRootsAreRejected) {
+  EXPECT_THAT(DirectoryPolicy::Create({{.root = "relative"}}), StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(DirectoryPolicy::Create({{.root = "/"}}), StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(DirectoryPolicy::Create({{.root = ScopePath("missing")}}), StatusIs(absl::StatusCode::kNotFound));
+  EXPECT_THAT(
+      DirectoryPolicy::Create({{.root = ScopePath("../escape")}}), StatusIs(absl::StatusCode::kPermissionDenied));
+  std::filesystem::create_directory_symlink(ScopePath(""), ScopePath("alias"));
+  EXPECT_THAT(DirectoryPolicy::Create({{.root = ScopePath("alias")}}), StatusIs(absl::StatusCode::kFailedPrecondition));
+}
+
+TEST_F(MutationsTest, PinnedRootCannotBeRedirectedByReplacingItsPathWithASymlink) {
+  EXPECT_THAT(CreateHostDirectories(ScopePath("allowed"), {}), IsOk());
+  EXPECT_THAT(CreateHostDirectories(ScopePath("outside"), {}), IsOk());
+  ASSERT_OK_AND_ASSIGN(const auto directories, DirectoryPolicy::Create({{.root = ScopePath("allowed")}}));
+  std::filesystem::rename(ScopePath("allowed"), ScopePath("retained"));
+  std::filesystem::create_directory_symlink(ScopePath("outside"), ScopePath("allowed"));
+  ASSERT_OK_AND_ASSIGN(
+      const auto output, OpenHostOutput(ScopePath("allowed/new"), false, {.directories = directories}));
+  EXPECT_THAT(output->Write("owned root"), IsOk());
+  EXPECT_THAT(Read(ScopePath("retained/new")), Eq("owned root"));
+  EXPECT_THAT(std::filesystem::exists(ScopePath("outside/new")), IsFalse());
+  EXPECT_THAT(
+      RemoveHostEntry(ScopePath("retained"), {.directories = directories}),
+      StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(
+      RemoveHostTree(ScopePath("retained"), {.directories = directories}),
+      StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(Read(ScopePath("retained/new")), Eq("owned root"));
+}
+
+TEST_F(MutationsTest, ScopedDirectoriesAreRecursiveAndDryRunCreatesNothing) {
+  ASSERT_OK_AND_ASSIGN(const auto directories, DirectoryPolicy::Create({{.root = ScopePath("")}}));
+  const MutationPolicy scoped{.block_directory_creation = true, .directories = directories};
+  EXPECT_THAT(CreateHostDirectories(ScopePath("nested/deeper"), scoped), IsOk());
+  EXPECT_THAT(CreateHostDirectories(ScopePath("nested/deeper"), scoped), IsOk());
+  const MutationPolicy preview{.dry_run = true, .directories = directories};
+  EXPECT_THAT(CreateHostDirectories(ScopePath("preview"), preview), StatusIs(absl::StatusCode::kFailedPrecondition));
+  EXPECT_THAT(OpenHostOutput(ScopePath("preview"), false, preview), StatusIs(absl::StatusCode::kFailedPrecondition));
+  EXPECT_THAT(TemporaryOutput::Create(ScopePath("preview"), preview), StatusIs(absl::StatusCode::kFailedPrecondition));
+  EXPECT_THAT(RemoveHostTree(ScopePath("nested"), preview), StatusIs(absl::StatusCode::kFailedPrecondition));
+  EXPECT_THAT(std::filesystem::exists(ScopePath("preview")), IsFalse());
+}
+
+TEST_F(MutationsTest, ArchiveRestrictionsRemainMandatoryInsideAnAllowedDirectory) {
+  ASSERT_OK_AND_ASSIGN(const auto directories, DirectoryPolicy::Create({{.root = ScopePath("")}}));
+  const MutationPolicy blocked{.block_writing = true, .archive = true, .directories = directories};
+  EXPECT_THAT(TemporaryOutput::Create(ScopePath("archive"), blocked), StatusIs(absl::StatusCode::kPermissionDenied));
+}
+
+TEST_F(MutationsTest, TemporaryDirectoriesRequireCreationPermissionButArchiveStagingBelongsToArchiveWriting) {
+  ASSERT_OK_AND_ASSIGN(
+      const auto directories,
+      DirectoryPolicy::Create({{.root = ScopePath(""), .blocks = {false, false, false, true, false}}}));
+  EXPECT_THAT(
+      TemporaryDirectory::Create(ScopePath("scratch"), {.directories = directories}),
+      StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(
+      TemporaryOutput::Create(ScopePath("scratch"), {.directories = directories}),
+      StatusIs(absl::StatusCode::kPermissionDenied));
+  ASSERT_OK_AND_ASSIGN(
+      const auto archive, TemporaryOutput::Create(ScopePath("archive"), {.archive = true, .directories = directories}));
+  EXPECT_THAT(archive->Write("archive bytes"), IsOk());
+  EXPECT_THAT(archive->Publish(ScopePath("result")), IsOk());
+}
+
+TEST_F(MutationsTest, ScopedWritingAllowsDescendantsButProtectsRootAndOutsidePaths) {
+  ASSERT_OK_AND_ASSIGN(const auto directories, DirectoryPolicy::Create({{.root = ScopePath("")}}));
+  const MutationPolicy policy{.block_writing = true, .directories = directories};
+  ASSERT_OK_AND_ASSIGN(const auto output, OpenHostOutput(ScopePath("new"), false, policy));
+  EXPECT_THAT(output->Write("allowed"), IsOk());
+  EXPECT_THAT(Read(ScopePath("new")), Eq("allowed"));
+  EXPECT_THAT(OpenHostOutput(ScopePath("") + "-sibling", false, policy), StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(RemoveHostEntry(ScopePath(""), policy), StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(OpenHostOutput(ScopePath(""), false, policy), StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(OpenHostOutput(ScopePath("child/../new"), false, policy), StatusIs(absl::StatusCode::kPermissionDenied));
+}
+
+TEST_F(MutationsTest, ScopedOutputNeverOverwritesHardLinkContentOrFollowsParentLinks) {
+  EXPECT_THAT(CreateHostDirectories(ScopePath("allowed"), {}), IsOk());
+  ASSERT_OK_AND_ASSIGN(const auto original, OpenHostOutput(ScopePath("outside"), false, {}));
+  EXPECT_THAT(original->Write("keep"), IsOk());
+  std::filesystem::create_hard_link(ScopePath("outside"), ScopePath("allowed/link"));
+  std::filesystem::create_directory_symlink(ScopePath(""), ScopePath("allowed/escape"));
+  ASSERT_OK_AND_ASSIGN(const auto directories, DirectoryPolicy::Create({{.root = ScopePath("allowed")}}));
+  const MutationPolicy policy{.block_writing = true, .directories = directories};
+  ASSERT_OK_AND_ASSIGN(const auto replacement, OpenHostOutput(ScopePath("allowed/link"), false, policy));
+  EXPECT_THAT(replacement->Write("replacement"), IsOk());
+  EXPECT_THAT(Read(ScopePath("outside")), Eq("keep"));
+  EXPECT_THAT(Read(ScopePath("allowed/link")), Eq("replacement"));
+  EXPECT_THAT(
+      OpenHostOutput(ScopePath("allowed/escape/outside"), false, policy).status(),
+      StatusIs(absl::StatusCode::kFailedPrecondition));
+  EXPECT_THAT(Read(ScopePath("outside")), Eq("keep"));
+}
+
+TEST_F(MutationsTest, OverlappingScopesIntersectAndOverwriteIsExclusive) {
+  EXPECT_THAT(CreateHostDirectories(ScopePath("nested"), {}), IsOk());
+  ASSERT_OK_AND_ASSIGN(
+      const auto directories, DirectoryPolicy::Create(
+                                  {{.root = ScopePath(""), .blocks = {false, true, false, false, false}},
+                                   {.root = ScopePath("nested"), .blocks = {true, false, false, false, false}}}));
+  const MutationPolicy policy{.directories = directories};
+  ASSERT_OK_AND_ASSIGN(const auto first, OpenHostOutput(ScopePath("new"), false, policy));
+  EXPECT_THAT(first->Write("keep"), IsOk());
+  EXPECT_THAT(OpenHostOutput(ScopePath("new"), false, policy), StatusIs(absl::StatusCode::kAlreadyExists));
+  EXPECT_THAT(OpenHostOutput(ScopePath("nested/new"), false, policy), StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(RemoveHostEntry(ScopePath("nested"), policy), StatusIs(absl::StatusCode::kPermissionDenied));
+}
+
+TEST_F(MutationsTest, RecursiveRemovalChecksFileAndDirectoryPermissionsSeparately) {
+  EXPECT_THAT(CreateHostDirectories(ScopePath("tree/child"), {}), IsOk());
+  ASSERT_OK_AND_ASSIGN(const auto output, OpenHostOutput(ScopePath("tree/child/keep"), false, {}));
+  EXPECT_THAT(output->Write("keep"), IsOk());
+  ASSERT_OK_AND_ASSIGN(
+      const auto directories,
+      DirectoryPolicy::Create({{.root = ScopePath(""), .blocks = {false, false, true, false, false}}}));
+  const MutationPolicy policy{.directories = directories};
+  EXPECT_THAT(RemoveHostTree(ScopePath("tree"), policy), StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(Read(ScopePath("tree/child/keep")), Eq("keep"));
+  EXPECT_THAT(RemoveHostEntry(ScopePath("tree/child/keep"), {.block_directory_deletion = true}), IsOk());
+  EXPECT_THAT(
+      RemoveHostEntry(ScopePath("tree/child"), {.block_directory_deletion = true}),
+      StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(RemoveHostTree(ScopePath("tree"), policy), IsOk());
+}
+
+TEST_F(MutationsTest, ScratchPublicationRechecksDestinationAndOwnedCleanupStaysConfined) {
+  EXPECT_THAT(CreateHostDirectories(ScopePath("allowed"), {}), IsOk());
+  ASSERT_OK_AND_ASSIGN(const auto directories, DirectoryPolicy::Create({{.root = ScopePath("allowed")}}));
+  const MutationPolicy policy{.block_deletion = true, .block_writing = true, .directories = directories};
+  ASSERT_OK_AND_ASSIGN(auto scratch, TemporaryOutput::Create(ScopePath("allowed/scratch"), policy));
+  EXPECT_THAT(scratch->Write("data"), IsOk());
+  EXPECT_THAT(scratch->Publish(ScopePath("outside")), StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(scratch->Publish(ScopePath("allowed/result")), IsOk());
+  scratch.reset();
+  EXPECT_THAT(Read(ScopePath("allowed/result")), Eq("data"));
+  EXPECT_THAT(std::filesystem::exists(ScopePath("outside")), IsFalse());
 }
 
 }  // namespace

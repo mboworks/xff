@@ -157,7 +157,7 @@ language, general `--feature` mechanism, or auto-discovered project config layer
 **Safety:** unrestricted by default. Unconditional `--block-*` restrictions accumulate; `--safe`
 activates a configurable `--safe-block-*` profile and `--no-safe` deactivates only that profile.
 `--dry-run` previews permitted actions without performing mutations or commands. Per-file
-`--detailed-block-policy=LIST` determines how each INI expresses archive restrictions.
+`--detailed-block-policy=LIST` determines how each INI expresses archive and directory restrictions.
 See [Safety policy and previews](design-safety.md) and `--help=safety` for coverage and tradeoffs.
 
 ### Virtual entries: archives & remote (review #3)
@@ -165,7 +165,7 @@ See [Safety policy and previews](design-safety.md) and `--help=safety` for cover
 Archive members and remote files have **no real filesystem path**. The VFS tags each entry by source - `real-fs` / `archive-member` / `remote` - with a **read-only** flag; everything downstream branches on it.
 
 - **Representation:** machine output (JSON) uses structured fields (`container` + `member`); human output uses the JAR-style marker `container!member`. The separator doubles as a relative/absolute indicator: `pkg.tar!foo/bar` (relative member, normal) vs `pkg.tar!/foo/bar` (**absolute** stored path - unusual, and exactly the Zip-Slip red flag → flagged). `!` needs shell-quoting and is escaped if it occurs in a real name.
-- **Actions are FS-only.** Virtual entries are read-only ⇒ excluded from `-delete`/`-exec`/`-execdir` with a self-documenting skip ("read-only archive member, action skipped [safety]"). **Tests/matching/printing/stats do apply** (content matching reads member bytes). Extract-to-temp for `-exec` is opt-in, **post-v1**.
+- **Virtual actions require explicit capabilities.** Archive members are read-only by default. Extraction, mounting, and member deletion require their respective archive options and safety permissions. Tests, matching, printing, and statistics read virtual entries normally. Temporary/output scope checks govern physical filesystem mutations, while archive controls also govern member edits.
 - **Diving is opt-in** (find-compat: an archive is one file). The control is the ordered enum `--archive[=none|roots|all]` with the short `-z-` / `-z` / `-z+` (bare `--archive` = `all`); `find` defaults to `none`, the xff-family flavors to `roots` (a named archive root dives, mid-walk ones need `all`). When on, members enumerate as virtual entries. **Size = uncompressed (logical)** in human output; compressed exposed in JSON. Stats label uncompressed totals (which can dwarf disk usage).
 - **Security (untrusted input - prime goal):** decompression-bomb limits (max expansion ratio / total bytes / member count / nesting depth); Zip-Slip sanitization (reject/flag `..`-escaping and absolute member paths); never follow archive symlinks out of bounds.
 - **Streaming:** virtual entries are sequential (no `mmap`); content + negative-match (#6) stream/decompress fully. Remote = network stream.
@@ -393,3 +393,6 @@ inflate its aggregate size.
 - ZIP split volumes (`.z01` … `.zip`): <https://en.wikipedia.org/wiki/ZIP_(file_format)>
 - WebDataset sharding (`shard-NNNNNN.tar`): <https://rom1504.github.io/webdataset/sharding/>
 - PyTorch large-dataset I/O: <https://pytorch.org/blog/efficient-pytorch-io-library-for-large-datasets-many-files-many-gpus/>
+
+Directory-scoped temp/output permissions and root-declaration precedence are specified in
+[Directory-scoped safety controls](design-directory-safety.md).

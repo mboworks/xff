@@ -30,6 +30,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "absl/functional/function_ref.h"
@@ -72,7 +73,7 @@ class MountRoot {
 
  private:
   MountRoot(std::unique_ptr<vfs::TemporaryDirectory> root, vfs::MutationPolicy policy)
-      : path_(root->Path()), root_(std::move(root)), policy_(policy) {}
+      : path_(root->Path()), root_(std::move(root)), policy_(std::move(policy)) {}
 
   std::string path_;  // empty in a moved-from instance, which then owns nothing
   std::unique_ptr<vfs::TemporaryDirectory> root_;

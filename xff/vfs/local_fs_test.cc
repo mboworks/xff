@@ -53,7 +53,6 @@ using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
 using ::testing::Not;
-using ::testing::StartsWith;
 using ::testing::UnorderedElementsAre;
 
 // Builds a small tree under a per-test temp directory:
@@ -125,8 +124,19 @@ TEST_F(LocalFsTest, ReadDirTagsEntriesAsWritableLocal) {
 
 TEST_F(LocalFsTest, StatAndReadDirRecognizeSpecialFileTypes) {
   ASSERT_THAT(::mkfifo(Path("pipe").c_str(), 0600), Eq(0));
+#ifdef SOCK_CLOEXEC
+  socket_fd_ = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+#else
+  // macOS has no SOCK_CLOEXEC; mark the private test socket immediately below.
+  // NOLINTNEXTLINE(android-cloexec-socket)
   socket_fd_ = ::socket(AF_UNIX, SOCK_STREAM, 0);
+#endif
   ASSERT_THAT(socket_fd_, Gt(-1));
+#ifndef SOCK_CLOEXEC
+  // POSIX fcntl requires a variadic descriptor argument.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
+  ASSERT_THAT(::fcntl(socket_fd_, F_SETFD, FD_CLOEXEC), Eq(0));
+#endif
   struct sockaddr_un address = {};
   address.sun_family = AF_UNIX;
   constexpr std::string_view kSocketName = "socket";
@@ -266,6 +276,7 @@ TEST_F(LocalFsTest, ReadDirRecognizesCharacterDeviceEntries) {
 }
 
 TEST_F(LocalFsTest, FsTypeUsesHexForAnUnmappedKernelMagic) {
+  using ::testing::StartsWith;
   if (!fs::exists("/dev/mqueue")) {
     GTEST_SKIP() << "/dev/mqueue is not mounted";
   }

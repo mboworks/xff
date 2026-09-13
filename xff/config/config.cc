@@ -45,10 +45,10 @@ bool IsSkipPermission(std::string_view flag) {
          || flag == kRequireUserConfig || flag == kAllowXffrc || flag == kNoAllowXffrc;
 }
 
-std::vector<std::string> ExpandSafetyTokens(const std::vector<std::string>& tokens, bool separate) {
+std::vector<std::string> ExpandSafetyTokens(const std::vector<std::string>& tokens, DetailedPolicy detailed) {
   std::vector<std::string> result;
   for (std::size_t pos = 0; pos < tokens.size(); ++pos) {
-    const auto expanded = ExpandSafetyFlag(tokens[pos], separate);
+    const auto expanded = ExpandSafetyFlag(tokens[pos], detailed);
     result.insert(result.end(), expanded.begin(), expanded.end());
     const auto primary = registry::Lookup(tokens[pos].substr(0, tokens[pos].find(':')));
     if (!primary) {
@@ -72,17 +72,24 @@ std::vector<std::string> ExpandSafetyTokens(const std::vector<std::string>& toke
 
 ConfigFile ExpandFileSafety(ConfigFile file) {
   const auto directives = DirectiveTokens(file.globals);
-  const bool separate = absl::c_any_of(directives, [](std::string_view token) {
+  DetailedPolicy detailed;
+  for (const std::string_view token : directives) {
     constexpr std::string_view kPrefix = "--detailed-block-policy=";
-    return token.starts_with(kPrefix) && absl::c_contains(absl::StrSplit(token.substr(kPrefix.size()), ','), "archive");
-  });
-  file.globals = ExpandSafetyTokens(file.globals, separate);
+    if (!token.starts_with(kPrefix)) {
+      continue;
+    }
+    const auto categories = absl::StrSplit(token.substr(kPrefix.size()), ',');
+    detailed.archive = absl::c_contains(categories, "archive");
+    detailed.temp = absl::c_contains(categories, "temp");
+    detailed.output = absl::c_contains(categories, "output");
+  }
+  file.globals = ExpandSafetyTokens(file.globals, detailed);
   for (auto& line : file.global_lines) {
-    line.tokens = ExpandSafetyTokens(line.tokens, separate);
+    line.tokens = ExpandSafetyTokens(line.tokens, detailed);
   }
   for (auto& section : file.named) {
     for (auto& line : section.lines) {
-      line.tokens = ExpandSafetyTokens(line.tokens, separate);
+      line.tokens = ExpandSafetyTokens(line.tokens, detailed);
     }
   }
   return file;
@@ -157,7 +164,7 @@ class OrderedResolver {
     EmitSystem();
     EmitMatching();
     for (const std::string& global : cli_globals) {
-      for (const auto& flag : ExpandSafetyFlag(global, false)) {
+      for (const auto& flag : ExpandSafetyFlag(global, {})) {
         EmitFlag(flag, Source::kCli);
       }
       LoadExplicitFile(global);

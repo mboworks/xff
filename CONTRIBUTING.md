@@ -35,6 +35,8 @@ select the affected translation units. A single coordinator runs at most two wor
 set `CLANG_TIDY_JOBS` to override that limit.
 
 When Trunk manages Git hooks, the repository's Trunk actions invoke this same pre-commit hook.
+Both Trunk actions explicitly forward `CLANG_TIDY_JOBS`, so a per-command worker override reaches
+the coordinator (for example `CLANG_TIDY_JOBS=8 git push`).
 The push action combines changed paths from the pushed refs into one invocation. Existing Trunk
 formatting and checks remain enabled; do not replace `core.hooksPath` to install competing hooks.
 

@@ -4,6 +4,8 @@
 #define XFF_CONFIG_SAFETY_H_
 
 #include <array>
+#include <cstddef>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -21,14 +23,43 @@ enum class Capability {
   kArchiveWriting,
   kArchiveOverwrite,
   kArchiveContentWriting,
-  kArchiveContentOverwrite
+  kArchiveContentOverwrite,
+  kDirectoryCreation,
+  kDirectoryDeletion,
+  kTempFileWriting,
+  kTempFileOverwrite,
+  kTempFileDeletion,
+  kTempDirectoryCreation,
+  kTempDirectoryDeletion,
+  kOutputFileWriting,
+  kOutputFileOverwrite,
+  kOutputFileDeletion,
+  kOutputDirectoryCreation,
+  kOutputDirectoryDeletion,
+  kCount
+};
+
+struct DetailedPolicy {
+  bool archive = false;
+  bool temp = false;
+  bool output = false;
 };
 
 struct SafetyPolicy {
-  std::array<bool, 9> unconditional = {};
-  std::array<bool, 9> profile = {true, true, true, true, true, true, true, true, true};
+  static constexpr std::size_t kCapabilities = static_cast<std::size_t>(Capability::kCount);
+  std::array<bool, kCapabilities> unconditional = {};
+  std::array<bool, kCapabilities> profile = [] {
+    std::array<bool, kCapabilities> values{};
+    values.fill(true);
+    return values;
+  }();
   bool safe = false;
   bool dry_run = false;
+  std::string temp_root;
+  std::string output_root;
+  std::shared_ptr<const vfs::DirectoryPolicy> directories;
+
+  absl::StatusOr<SafetyPolicy> PrepareDirectories() const;
 
   bool Blocks(Capability capability) const;
   vfs::MutationPolicy FileMutations() const;
@@ -39,7 +70,7 @@ struct SafetyPolicy {
 // accumulate; activation and individual profile settings are last-value-wins.
 // Config resolution expands each file's policy before combining flags. Raw CLI flags use file scope.
 SafetyPolicy ResolveSafety(const std::vector<std::string>& globals, bool expanded = false);
-std::vector<std::string> ExpandSafetyFlag(std::string_view flag, bool separate_archives);
+std::vector<std::string> ExpandSafetyFlag(std::string_view flag, DetailedPolicy detailed);
 std::string_view CapabilityName(Capability capability);
 
 }  // namespace xff::config

@@ -17,6 +17,7 @@
 #include "mbo/testing/status.h"
 #include "xff/config/config.h"
 #include "xff/config/policy.h"
+#include "xff/config/safety.h"
 #include "xff/config/xffrc.h"
 #include "xff/env/env.h"
 #include "xff/parser/parser.h"
@@ -52,6 +53,43 @@ absl::StatusOr<std::string> Fixture(std::string_view directory, std::string_view
     return absl::InternalError(absl::StrCat("cannot read fixture ", path));
   }
   return text;
+}
+
+TEST_F(ConfigValidationTest, DirectoryRootsAreGlobalTrustedAndSystemAuthoritative) {
+  ASSERT_OK_AND_ASSIGN(const auto system_text, Fixture("directories"));
+  ASSERT_OK_AND_ASSIGN(const auto user_text, Fixture("directories", "user.ini"));
+  const auto system =
+      ValidateConfigFile(config::ParseIni(system_text), {"report"}, "system.ini", config::Source::kSystem);
+  const auto user = ValidateConfigFile(config::ParseIni(user_text), {"report"}, "user.ini", config::Source::kUser);
+  EXPECT_THAT(system.diagnostics, IsEmpty());
+  EXPECT_THAT(user.disabled_configs, ElementsAre("invalid-root"));
+  EXPECT_THAT(user.selected_configs_status, IsOk());
+  const config::ConfigInputs inputs{.system = system.config, .user = user.config};
+  std::vector<std::string> globals;
+  for (const auto& flag : config::ResolveConfigInOrder(inputs, {"--config=report", "--no-safe"}, "xff")) {
+    globals.push_back(flag.flag);
+  }
+  const auto safety = config::ResolveSafety(globals, true);
+  EXPECT_THAT(safety.output_root, Eq("/srv/xff/results"));
+  EXPECT_THAT(safety.temp_root, Eq("/srv/xff/scratch"));
+  EXPECT_THAT(safety.Blocks(config::Capability::kOutputFileOverwrite), Eq(true));
+  EXPECT_THAT(safety.Blocks(config::Capability::kFileWriting), Eq(true));
+  EXPECT_THAT(safety.Blocks(config::Capability::kOutputFileWriting), Eq(false));
+}
+
+TEST_F(ConfigValidationTest, DirectoryRootsRejectDuplicateAndExplicitFileDeclarations) {
+  config::ConfigInputs duplicate;
+  duplicate.system = config::ParseIni("--output-root=/first\n--output-root=/second");
+  EXPECT_THAT(config::ValidateConfigSkips(duplicate), StatusIs(absl::StatusCode::kInvalidArgument));
+  config::ConfigInputs explicit_file;
+  explicit_file.xffrc = {{.path = "task.rc", .config = config::ParseIni("--temp-root=/scratch")}};
+  EXPECT_THAT(config::ValidateConfigSkips(explicit_file), StatusIs(absl::StatusCode::kInvalidArgument));
+  for (const std::string_view value :
+       std::to_array<std::string_view>({"--output-root", "--temp-root=relative", "--output-root=/"})) {
+    const auto invalid = ValidateConfigFile(config::ParseIni(value), {}, "user.ini", config::Source::kUser);
+    EXPECT_THAT(invalid.diagnostics, SizeIs(1));
+    EXPECT_THAT(invalid.config.globals, IsEmpty());
+  }
 }
 
 TEST_F(ConfigValidationTest, FullFileQuotingUsesTheSameGrammarForEveryTier) {
