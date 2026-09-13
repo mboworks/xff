@@ -631,7 +631,7 @@ jobs:
         run: |
           set -euo pipefail
           mapfile -t FILES <.clang-tidy-inputs
-          tools/clang_tidy.sh "${FILES[@]}"
+          CLANG_TIDY_JOBS="$(getconf _NPROCESSORS_ONLN)" tools/clang_tidy.sh "${FILES[@]}"
 
   # Single required status check: one job that gates merge on the whole matrix,
   # so branch protection needs only `done`. A yq/jq step self-checks that every

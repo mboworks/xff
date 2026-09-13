@@ -85,7 +85,18 @@ def main() -> int:
         raise SystemExit("usage: clang_tidy_scope.py COMPILE_COMMANDS [CHANGED_FILE ...]")
     with open(sys.argv[1], encoding="utf-8") as stream:
         database = json.load(stream)
-    for source in select_sources(database, sys.argv[2:], include_graph(pathlib.Path.cwd())):
+    changed = sys.argv[2:]
+    indexed = database_sources(database)
+    missing = sorted({path for path in changed if is_source(path) and path not in indexed})
+    if missing:
+        print(
+            "clang-tidy: requested sources missing from compile_commands.json: "
+            + ", ".join(missing)
+            + "; refresh it with ./compile_commands-update.sh",
+            file=sys.stderr,
+        )
+        return 1
+    for source in select_sources(database, changed, include_graph(pathlib.Path.cwd())):
         print(source)
     return 0
 

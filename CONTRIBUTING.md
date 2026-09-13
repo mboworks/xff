@@ -27,3 +27,34 @@ pre-commit run -a
 ```
 
 Without the `-a` only the modified and staged files will be checked.
+
+## Local clang-tidy scope
+
+The normal commit and push hooks run clang-tidy on their changed C++ files. Changed headers
+select the affected translation units. A single coordinator runs at most two workers by default;
+set `CLANG_TIDY_JOBS` to override that limit.
+
+When Trunk manages Git hooks, the repository's Trunk actions invoke this same pre-commit hook.
+The push action combines changed paths from the pushed refs into one invocation. Existing Trunk
+formatting and checks remain enabled; do not replace `core.hooksPath` to install competing hooks.
+
+Generate or refresh the compile database with `./compile_commands-update.sh`, including after
+adding sources or changing build configuration. Without the database or clang-tidy 22 or newer,
+the local hook reports a skip; the dedicated CI job supplies both and enforces the check. A requested
+source missing from an existing database fails with a refresh instruction instead of silently
+omitting that file.
+
+Check selected files, including previously committed files that failed CI:
+
+```sh
+pre-commit run clang-tidy --files xff_extras_api/mutations_test.cc xff_extras_api/fuse_backend_test.cc
+```
+
+A full scan is a separate, explicit invocation (not part of a normal commit or push):
+
+```sh
+pre-commit run clang-tidy --all-files --hook-stage manual
+```
+
+As with other hooks, `pre-commit run -a` explicitly selects all files. Use `--files` for a focused
+verification; omit it to check staged changes.

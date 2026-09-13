@@ -455,7 +455,7 @@ repos:
         files: ^tools/(trigger_release\.sh|trigger_release_test\.sh)$
         pass_filenames: false
       - id: clang-tidy
-        name: clang-tidy (opt-in locally; gated by the CI clang-tidy job)
+        name: clang-tidy (changed files; full scan is explicit)
         description: |
           Runs clang-tidy over the given C++ sources and header-dependent translation units via
           tools/clang_tidy.sh, a report-only
@@ -463,25 +463,25 @@ repos:
           gitignored local artifact; build it with ./compile_commands-update.sh) and a hermetic
           clang-tidy (>= clang-22 for this C++23 codebase); it SKIPS cleanly when either is
           missing, so it never forces the toolchain download on a fresh checkout.
-          `stages: [manual]` keeps it off the local commit hook (run it explicitly with
-          `pre-commit run clang-tidy --all-files --hook-stage manual`), but the dedicated CI
-          `clang-tidy` job owns it as a HARD GATE: that job builds the compile DB and invokes this
-          same script directly so per-file progress streams live, and `.clang-tidy` is
-          `WarningsAsErrors: '*'`, so any
-          finding fails CI. It is not run by trunk (trunk pinned clang-tidy 16, which mis-parses
-          C++23 - do not re-add it there).
+          Normal commits and pushes check their changed files. To check selected files, use
+          `pre-commit run clang-tidy --files PATH...`; a full scan is explicit:
+          `pre-commit run clang-tidy --all-files --hook-stage manual`.
+          One coordinator owns parallelism (two workers by default, configurable with
+          CLANG_TIDY_JOBS). The dedicated CI clang-tidy job builds the compile database and
+          invokes the same script directly as a hard gate. Findings fail through
+          `WarningsAsErrors: '*'`. Trunk does not run clang-tidy.
         language: script
         entry: tools/clang_tidy.sh
         # One coordinator owns parallelism; pre-commit must not start competing pools.
         require_serial: true
-        stages: [manual]
+        stages: [pre-commit, pre-push, manual]
         types: [file]
         files: (\.(cc|cpp|cxx|h|hh|hpp|hxx|inc|ipp|bzl)$|\.h\.in$)
       - id: clang-tidy-scope-test
         name: Test clang-tidy orchestration
         language: system
-        entry: python3 -m unittest tools/clang_tidy_compdb_test.py tools/clang_tidy_scope_test.py tools/clang_tidy_runner_test.py
-        files: ^tools/clang_tidy_(compdb|scope|runner)(_test)?\.py$
+        entry: python3 -m unittest tools/clang_tidy_compdb_test.py tools/clang_tidy_scope_test.py tools/clang_tidy_runner_test.py tools/clang_tidy_pre_push_test.py
+        files: ^tools/clang_tidy_(compdb|scope|runner|pre_push)(_test)?\.py$
         pass_filenames: false
       - id: host-io-policy-test
         name: Test host-I/O policy checker
