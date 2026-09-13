@@ -35,7 +35,7 @@
 ### Configuration and policy
 
 - Config tokenization tests cover shell-style quotes, escapes, empty arguments, multiline values,
-  continuations, word-boundary hash comments, literal hashes, and exec semicolons. Full config fixtures
+  continuations, word-boundary hash comments, semicolon comments, literal hashes, and escaped/quoted exec terminators. Full config fixtures
   run through all three tiers; CLI execution tests compare quoted predicates with command-line arguments.
   Malformed quoting and invalid global lines cannot survive validation or reappear during policy filtering.
 - All config tiers share the INI parser. Tests reject repeated declarations per file, preserve

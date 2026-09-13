@@ -167,9 +167,10 @@ pieces form one argument; empty quotes produce an empty argument. There is no va
 pathname, or tilde expansion, and config text is never executed as a shell script.
 
 An unquoted `#` at the beginning of a word starts a comment through the end of that physical
-line. Thus `foo#bar`, `\#`, and `"#"` are literal arguments. Blank lines are ignored. A semicolon
-is never a comment: an unquoted `;` is a separate token, including when adjacent to another word,
-and can terminate `-exec`. Quoted or escaped `;` also produces the argument expected by `-exec`.
+line. Thus `foo#bar`, `\#`, and `"#"` are literal arguments. An unquoted, unescaped `;` starts
+a comment anywhere outside quotes. Either marker may follow any amount of whitespace. Blank
+lines are ignored. Quote or escape a literal semicolon: `\;` or `";"` supplies the `-exec`
+terminator, just as on the command line. Comment text never reaches the CLI argument parser.
 
 ```ini
 --color=never # Applies without a selector
@@ -178,7 +179,7 @@ and can terminate `-exec`. Quoted or escaped `;` also produces the argument expe
 -name '#*' -o -name space\ name
 
 [command]
--exec printf '%s\n' '#literal' \; # Exec terminator before the comment
+-exec printf '%s\n' '#literal' \; ; Exec terminator before the comment
 ```
 
 Quotes may span physical lines. A backslash followed by a newline continues the logical line
@@ -318,7 +319,7 @@ Runtime `--safe`, `--dry-run`, and action-specific confirmation remain separate 
 With no system prohibition, `task.rc` may contain:
 
 ```text
--exec echo {} ;
+-exec echo {} \;
 ```
 
 `xff . --xffrc=task.rc` leaves that dangerous line inert. Supplying `--allow-exec` from the

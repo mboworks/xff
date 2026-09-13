@@ -126,7 +126,7 @@ TEST_F(ConfigTest, DirectiveTokensExcludeFixedAndTerminatedArguments) {
 TEST_F(ConfigTest, PrimaryArgumentsCannotSelectOrArmConfigurations) {
   ConfigInputs inputs;
   inputs.system = ParseIni("[inner]\n--color=never");
-  inputs.user = ParseXffrc("-exec echo --config=inner --allow-exec ;");
+  inputs.user = ParseXffrc("-exec echo --config=inner --allow-exec \\;");
   EXPECT_THAT(ArmedFromTrustedTier(inputs, {}, "--allow-exec"), IsFalse());
   EXPECT_THAT(ResolveConfigInOrder(inputs, {}, "xff"), SizeIs(5));
 }

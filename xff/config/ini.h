@@ -44,8 +44,9 @@ struct ConfigFile {
 };
 
 // Parses shared INI text with shell-style single/double quoting and backslash escaping.
-// Unquoted '#' begins a comment at a word boundary; ';' is an ordinary exec terminator,
-// never a comment. No expansion or execution occurs. Quoted newlines and escaped line
+// Unquoted '#' begins a comment at a word boundary; unquoted ';' begins a comment anywhere.
+// Quote or escape literal semicolons, including exec terminators. No expansion or execution occurs.
+// Quoted newlines and escaped line
 // continuations are supported. Whitespace separates words; flags retain their exact CLI spelling.
 // Lexical errors retain their starting line and source text.
 // Unsectioned flags precede the first [NAME]. Every header is preserved, including empty and

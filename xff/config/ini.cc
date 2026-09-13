@@ -45,7 +45,7 @@ class IniLexer {
           break;
         }
       }
-      if (quote_ == '\0' && ch == '#' && !started_) {
+      if (quote_ == '\0' && (ch == ';' || (ch == '#' && !started_))) {
         end = pos_ - 1;
         SkipComment();
         break;
@@ -87,9 +87,6 @@ class IniLexer {
       started_ = true;
     } else if (ch == '\\') {
       Escape(false);
-    } else if (ch == ';') {
-      Flush();
-      words_.push_back(";");
     } else {
       Append(ch);
     }

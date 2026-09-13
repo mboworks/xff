@@ -932,8 +932,10 @@ Section ConfigSection(bool in_full) {
       "`--color=auto`, not `--color = auto`. Whitespace separates arguments; it is not assignment syntax."));
   layers.children.push_back(ProseOf(
       "An unquoted `#` at the beginning of a word starts a comment through the end of the physical line. "
-      "`foo#bar`, `\\#`, and `\"#\"` are literal arguments. A semicolon never starts a comment: an unquoted "
-      "`;` forms a separate token and can terminate `-exec`. Quoted or escaped `;` also yields that argument. "
+      "`foo#bar`, `\\#`, and `\"#\"` are literal arguments. An unquoted, unescaped `;` starts a comment "
+      "anywhere outside quotes. Both comment markers may follow any amount of whitespace. Quote or escape "
+      "literal semicolons: `\\;` or `\";\"` supplies the `-exec` terminator, just as on the CLI. "
+      "For example, `-exec echo x \\; ; comment` contains an exec action followed by a comment. "
       "For example, `-name '#*' # Match names beginning with a hash` contains one predicate and a comment."));
   layers.children.push_back(ProseOf(
       "Quotes may span lines. Backslash-newline continues a logical line without adding a character, except "

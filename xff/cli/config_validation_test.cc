@@ -94,12 +94,32 @@ TEST_F(ConfigValidationTest, InvalidGlobalSourceLinesCannotReturnDuringPolicyFil
   EXPECT_THAT(gated.config.xffrc[0].config.globals, ElementsAre("--hidden"));
 }
 
-TEST_F(ConfigValidationTest, SpacedAssignmentsAndSemicolonCommentsAreNotAlternateFlagSyntax) {
+TEST_F(ConfigValidationTest, SpacedAssignmentsAreNotAlternateFlagSyntax) {
   const ConfigFileValidation validated =
-      ValidateConfigFile(config::ParseIni("--color = auto\n[bad]\n; comment\n"), {"bad"}, "bad.ini");
-  EXPECT_THAT(validated.diagnostics, SizeIs(2));
+      ValidateConfigFile(config::ParseIni("--color = auto\n[empty]\n; comment\n"), {"empty"}, "bad.ini");
+  EXPECT_THAT(validated.diagnostics, SizeIs(1));
   EXPECT_THAT(validated.config.globals, IsEmpty());
-  EXPECT_THAT(validated.selected_configs_status, StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(validated.selected_configs_status, IsOk());
+}
+
+TEST_F(ConfigValidationTest, ExecTerminationAndCommentsUseDistinctTokens) {
+  const ConfigFileValidation validated = ValidateConfigFile(
+      config::ParseIni(R"ini([escaped]
+-exec echo x \; ; comment
+[quoted]
+-exec echo x ";" # comment
+[trailing]
+-exec echo \; bla
+[missing]
+-exec echo x ; comment
+)ini"),
+      {"escaped", "quoted"}, "exec.ini");
+  EXPECT_THAT(validated.selected_configs_status, IsOk());
+  ASSERT_THAT(validated.config.named, SizeIs(2));
+  EXPECT_THAT(validated.config.named[0].lines[0].tokens, ElementsAre("-exec", "echo", "x", ";"));
+  EXPECT_THAT(validated.config.named[1].lines[0].tokens, ElementsAre("-exec", "echo", "x", ";"));
+  EXPECT_THAT(
+      validated.diagnostics, ElementsAre(AllOf(HasSubstr("[trailing]"), HasSubstr("bla")), HasSubstr("[missing]")));
 }
 
 TEST_F(ConfigValidationTest, ReportsCanonicalAliasAndNegatedOverrides) {
@@ -144,7 +164,7 @@ TEST_F(ConfigValidationTest, KeepsDifferentSectionsAndFilesIndependent) {
 
 TEST_F(ConfigValidationTest, DoesNotTreatPrimaryArgumentsAsGlobalSettings) {
   config::ConfigInputs inputs;
-  inputs.user = config::ParseXffrc("-exec echo --sort=tree ; --sort=global");
+  inputs.user = config::ParseXffrc("-exec echo --sort=tree \\; --sort=global");
   EXPECT_THAT(ConfigOverrideNotices(inputs), IsEmpty());
 }
 

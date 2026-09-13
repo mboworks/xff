@@ -57,7 +57,7 @@ test::config_comments_do_not_hide_a_quoted_exec_terminator() {
   local cfg out
   cfg="${TEST_TMPDIR}/quoted_exec.xffrc"
   cat >"${cfg}" <<'INI'
--exec /usr/bin/printf '%s' '#literal' \; # Comment after terminator
+-exec /usr/bin/printf '%s' '#literal' \; ; Comment after terminator
 INI
   out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${cfg}" --xffrc="${cfg}" --allow-exec)"
   expect_eq '#literal' "${out}"
@@ -232,7 +232,7 @@ test::xffrc_dangerous_line_is_inert_unless_armed() {
   # "needs --allow-exec" note unless --allow-exec is passed from a trusted tier (here, the CLI). A
   # safe line on the same file still applies.
   local rc="${TEST_TMPDIR}/arm.rc"
-  printf -- '--color=never\n-exec echo {} ;\n' >"${rc}"
+  printf -- '--color=never\n-exec echo {} \\;\n' >"${rc}"
   local out
   # Unarmed: the -exec is dropped; the safe --color line survives with xffrc provenance.
   out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --xffrc="${rc}" --explain 2>&1)"

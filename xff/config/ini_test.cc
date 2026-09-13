@@ -38,7 +38,7 @@ TEST_F(IniTest, HashCommentsRespectWordBoundariesQuotingAndEscaping) {
 -name foo#bar # trailing comment
 -name '#' -name "#" -name \# -name ''#suffix
 [dev] # section comment
--exec echo '#literal' {} ; # command terminator survives
+-exec echo '#literal' {} \; # command terminator survives
 )ini");
   EXPECT_THAT(
       cfg.globals, ElementsAre("-name", "foo#bar", "-name", "#", "-name", "#", "-name", "#", "-name", "#suffix"));
@@ -48,15 +48,26 @@ TEST_F(IniTest, HashCommentsRespectWordBoundariesQuotingAndEscaping) {
   EXPECT_THAT(cfg.named[0].lines[0].tokens, ElementsAre("-exec", "echo", "#literal", "{}", ";"));
 }
 
-TEST_F(IniTest, SemicolonsAreTokensAndNeverComments) {
-  const ConfigFile cfg = ParseIni("; not a comment\n-exec echo {};# comment\n");
-  EXPECT_THAT(cfg.globals, ElementsAre(";", "not", "a", "comment", "-exec", "echo", "{}", ";"));
+TEST_F(IniTest, SemicolonCommentsPreserveQuotedAndEscapedLiterals) {
+  const ConfigFile cfg = ParseIni(R"ini(; comment
+  ; indented comment
+-exec echo x \; ; comment
+-name 'a;b' -name "c;d" -name e\;f
+-name foo; comment without whitespace
+[dev] ; section comment
+--hidden ; ignored "unterminated quote
+)ini");
+  EXPECT_THAT(
+      cfg.globals,
+      ElementsAre("-exec", "echo", "x", ";", "-name", "a;b", "-name", "c;d", "-name", "e;f", "-name", "foo"));
+  ASSERT_THAT(cfg.named, SizeIs(1));
+  EXPECT_THAT(cfg.named[0].lines[0].tokens, ElementsAre("--hidden"));
 }
 
 TEST_F(IniTest, QuotesGroupArgumentsAndPreserveEmptyValuesWithoutExpansion) {
   const ConfigFile cfg = ParseIni(R"ini(-name 'a b' -name "c d" -name a\ b
 --template="" --hidden
--exec echo '$HOME' "$(touch marker)" '*.cc' ~ '';
+-exec echo '$HOME' "$(touch marker)" '*.cc' ~ '' \;
 )ini");
   EXPECT_THAT(
       cfg.globals, ElementsAre(
@@ -109,7 +120,7 @@ TEST_F(IniTest, LexicalErrorsNeverExposePartialTokens) {
 
 TEST_F(IniTest, WhitespaceSeparatesWordsWithoutAssignmentSugar) {
   const ConfigFile cfg = ParseIni(R"ini(--color = auto --jobs = 2
--name = -exec echo --color = auto ; --color = never
+-name = -exec echo --color = auto \; --color = never
 --template = 'a # b'
 -- -name =
 )ini");
