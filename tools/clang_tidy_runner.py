@@ -182,7 +182,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--clang-tidy", required=True)
     parser.add_argument("--compile-database", required=True)
-    parser.add_argument("--jobs", type=int, default=os.cpu_count() or 1)
+    parser.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 1) - 1))
     parser.add_argument("--output", required=True)
     parser.add_argument("--extra-arg-before", action="append", default=[])
     parser.add_argument("--source", action="append", default=[])

@@ -131,7 +131,7 @@ done
 # targeted, commented NOLINT rather than a blanket exemption for the whole test tree.
 readonly TEST_DISABLED_CHECKS='-readability-function-cognitive-complexity,-misc-override-with-different-visibility,-readability-identifier-naming'
 
-# Use the coordinator's detected CPU count unless explicitly overridden.
+# Reserve one detected CPU locally unless explicitly overridden (CI supplies its count).
 # The coordinator also caps workers to the number of selected tasks.
 PARALLELISM="${CLANG_TIDY_JOBS:-auto}"
 readonly PARALLELISM

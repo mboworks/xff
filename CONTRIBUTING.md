@@ -31,8 +31,8 @@ Without the `-a` only the modified and staged files will be checked.
 ## Local clang-tidy scope
 
 The normal commit and push hooks run clang-tidy on their changed C++ files. Changed headers
-select the affected translation units. A single coordinator defaults to the detected CPU count,
-capped by the number of selected files. Set `CLANG_TIDY_JOBS` to a positive integer to override
+select the affected translation units. A single coordinator defaults to the detected CPU count minus one
+(minimum one), capped by the number of selected files. This leaves one CPU available for other work. Set `CLANG_TIDY_JOBS` to a positive integer to override
 that count, or leave it unset (`auto`) to use CPU detection. GitHub CI explicitly supplies its
 runner CPU count; there is no fixed two-worker local limit.
 

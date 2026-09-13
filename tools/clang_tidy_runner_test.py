@@ -11,11 +11,28 @@ import sys
 import tempfile
 import textwrap
 import unittest
+from unittest import mock
 
 from tools import clang_tidy_runner
 
 
 class ClangTidyRunnerTest(unittest.TestCase):
+    def test_default_reserves_one_cpu_and_explicit_jobs_win(self):
+        arguments = [
+            "--clang-tidy", "clang-tidy",
+            "--compile-database", ".",
+            "--output", "diagnostics.txt",
+            "--test-disabled-checks=",
+        ]
+        for cpus, expected in ((18, 17), (2, 1), (1, 1), (None, 1)):
+            with self.subTest(cpus=cpus), mock.patch.object(
+                clang_tidy_runner.os, "cpu_count", return_value=cpus
+            ):
+                self.assertEqual(clang_tidy_runner.parse_args(arguments).jobs, expected)
+                self.assertEqual(
+                    clang_tidy_runner.parse_args(arguments + ["--jobs", "8"]).jobs, 8
+                )
+
     def test_progress_line(self):
         result = clang_tidy_runner.Result(
             clang_tidy_runner.Task("mbo/file/glob.cc"), 0, "", 4.25
