@@ -81,6 +81,12 @@ System, user, and explicit `.xffrc` files share one INI grammar. Write unconditi
 
 A line may contain multiple directives: `--hidden --color=never` or `-name foo -name bar`. Adjacent predicates mean AND; use `-name foo -o -name bar` for either name. Config predicates and actions form an expression that is ANDed as a group with the CLI expression. Each primary consumes only its own arguments. Closed choices are validated by the shared CLI parser: `-type garbage` is invalid, while `-type f,d` is a valid any-of list.
 
+All config files share shell-style argument quoting and escaping. Single or double quotes group arguments, including spaces and empty values; outside quotes, a backslash escapes the next character. Inside double quotes, backslash escapes only double quote, backslash, dollar, backtick, or newline. There is no variable, command, pathname, or tilde expansion. Use the same flag spelling as on the CLI: `--color=auto`, not `--color = auto`. Whitespace separates arguments; it is not assignment syntax.
+
+An unquoted `#` at the beginning of a word starts a comment through the end of the physical line. `foo#bar`, `\#`, and `"#"` are literal arguments. A semicolon never starts a comment: an unquoted `;` forms a separate token and can terminate `-exec`. Quoted or escaped `;` also yields that argument. For example, `-name '#*' # Match names beginning with a hash` contains one predicate and a comment.
+
+Quotes may span lines. Backslash-newline continues a logical line without adding a character, except inside single quotes. An unmatched quote or trailing backslash invalidates the logical line, with a diagnostic at its starting line number; no partial arguments are applied.
+
 ### Config-only controls
 
 These directives are accepted only inside the stated automatic config files, not on the command line or in an explicitly loaded `--xffrc` file. An allow/deny pair is one setting: where a pair is limited to one occurrence, its positive and negative forms may not both appear.

@@ -25,7 +25,8 @@ for enforcement and presentation.
    committed seed corpora, semantic invariants, ordinary-CI replay, and automatically discovered
    bounded CI campaigns. Continue with shard, stronger matcher/template, and regex targets; every
    new target is picked up by the campaign driver. Configuration coverage
-   includes both file grammars, policy gating, precedence resolution, and arming invariants.
+   includes the shared INI/xffrc argument grammar, quoting and comments, policy gating, precedence
+   resolution, and arming invariants.
    Expression-evaluation harnesses must exclude safety-classified descriptors and use a mutation-
    refusing in-memory filesystem; `--safe` text alone is not an isolation boundary.
 2. **Performance evidence.** The parser now has a reproducible manual benchmark alongside the existing

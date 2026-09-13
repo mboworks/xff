@@ -32,6 +32,37 @@ _xff_bin() {
   echo "${bin}"
 }
 
+test::config_quoted_patterns_match_the_same_files_as_cli_arguments() {
+  local dir cfg explicit cli configured
+  dir="$(test_tmpdir quoted_config)"
+  cfg="${dir}/user.ini"
+  explicit="${dir}/task.xffrc"
+  mkdir -p "${dir}/files"
+  : >"${dir}/files/#hash name"
+  : >"${dir}/files/plain"
+  cat >"${cfg}" <<'INI'
+# A comment
+[quoted] # Another comment
+-name '#hash name' # Literal hash inside quotes
+INI
+  cp "${cfg}" "${explicit}"
+  cli="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}/files" -name '#hash name')"
+  configured="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/files" --config=quoted)"
+  expect_eq "${cli}" "${configured}"
+  configured="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}/files" --xffrc="${explicit}" --config=quoted)"
+  expect_eq "${cli}" "${configured}"
+}
+
+test::config_comments_do_not_hide_a_quoted_exec_terminator() {
+  local cfg out
+  cfg="${TEST_TMPDIR}/quoted_exec.xffrc"
+  cat >"${cfg}" <<'INI'
+-exec /usr/bin/printf '%s' '#literal' \; # Comment after terminator
+INI
+  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${cfg}" --xffrc="${cfg}" --allow-exec)"
+  expect_eq '#literal' "${out}"
+}
+
 test::explain_reflects_effective_config() {
   local cfg="${TEST_TMPDIR}/xff_config"
   # Unsectioned defaults always apply; a named config (myx:) applies only when --config=myx is active; an
