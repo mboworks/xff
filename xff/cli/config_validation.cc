@@ -28,8 +28,8 @@ namespace {
 bool IsSystemControl(std::string_view token) {
   return token == "--no-require-system-config" || token == "--require-system-config"
          || token == "--no-require-user-config" || token == "--require-user-config" || token == "--allow-xffrc"
-         || token == "--no-allow-xffrc" || token == "--archive-block-policy"
-         || token.starts_with("--archive-block-policy=");
+         || token == "--no-allow-xffrc" || token == "--detailed-block-policy"
+         || token.starts_with("--detailed-block-policy=");
 }
 
 absl::StatusOr<std::size_t> PrimaryArgumentCount(
@@ -56,12 +56,13 @@ absl::Status ValidateTokens(const std::vector<std::string>& tokens) {
   for (std::size_t pos = 0; pos < tokens.size(); ++pos) {
     const std::string_view token = tokens[pos];
     if (IsSystemControl(token)) {
-      if (token.starts_with("--archive-block-policy")) {
+      if (token.starts_with("--detailed-block-policy")) {
         if (const auto status = ValidateGlobalValue(token); !status.ok()) {
           return status;
         }
         if (token.find('=') == std::string_view::npos) {
-          return absl::InvalidArgumentError("--archive-block-policy requires file or separate");
+          return absl::InvalidArgumentError(
+              "--detailed-block-policy requires =LIST (empty or comma-separated categories)");
         }
       }
       continue;
@@ -224,10 +225,11 @@ class ConfigFileValidator {
       auto next_controls = controls_;
       if (status.ok()) {
         for (const std::string_view token : config::DirectiveTokens(line.tokens)) {
-          const std::string name = token.starts_with("--archive-block-policy=") ? "--archive-block-policy"
-                                   : token.starts_with("--no-require-")         ? absl::StrCat("--", token.substr(5))
-                                                                                : std::string(token);
-          if ((name == "--require-system-config" || name == "--require-user-config" || name == "--archive-block-policy")
+          const std::string name = token.starts_with("--detailed-block-policy=") ? "--detailed-block-policy"
+                                   : token.starts_with("--no-require-")          ? absl::StrCat("--", token.substr(5))
+                                                                                 : std::string(token);
+          if ((name == "--require-system-config" || name == "--require-user-config"
+               || name == "--detailed-block-policy")
               && !next_controls.insert(name).second) {
             status = absl::InvalidArgumentError(absl::StrCat(name, " and its negative form may occur only once"));
             break;

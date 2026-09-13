@@ -200,20 +200,34 @@ TEST_F(GlobalsTest, IsKnownGlobalRejectsUnknownFlagsAndBadValuedKeys) {
 }
 
 TEST_F(GlobalsTest, EveryTableCheckedFlagHasAValueTableToCheckAgainst) {
-  // Both table-backed modes match named values against the flag's own `values` table, so an EMPTY
+  // Table-backed modes match named values against the flag's own `values` table, so an EMPTY
   // table would reject every named value while reporting an empty accepted-list.
   for (const GlobalFlag& flag : Globals()) {
-    if (flag.value_check == GlobalFlag::ValueCheck::kEnum
+    if (flag.value_check == GlobalFlag::ValueCheck::kEnumList || flag.value_check == GlobalFlag::ValueCheck::kEnum
         || flag.value_check == GlobalFlag::ValueCheck::kEnumOrTemplate) {
       EXPECT_THAT(flag.values, Not(IsEmpty())) << flag.name;
     }
   }
 }
 
+TEST_F(GlobalsTest, DetailedPolicyAcceptsOnlyImplementedCategories) {
+  EXPECT_THAT(ValidateGlobalValue("--detailed-block-policy="), IsOk());
+  EXPECT_THAT(ValidateGlobalValue("--detailed-block-policy=archive"), IsOk());
+  EXPECT_THAT(ValidateGlobalValue("--detailed-block-policy=archive,archive"), IsOk());
+  const auto invalid =
+      std::to_array<std::string_view>({"temp", "output", "archive,temp", "archive,", ",archive", "garbage"});
+  for (const auto value : invalid) {
+    EXPECT_THAT(
+        ValidateGlobalValue(absl::StrCat("--detailed-block-policy=", value)),
+        StatusIs(absl::StatusCode::kInvalidArgument));
+  }
+  EXPECT_THAT(IsKnownGlobal("--archive-block-policy=separate"), IsFalse());
+}
+
 TEST_F(GlobalsTest, ATableCheckedFlagAcceptsEveryValueItDocumentsAndRejectsATypo) {
   // The table is the SOT for the help AND the check, so what is printed is what is accepted.
   for (const GlobalFlag& flag : Globals()) {
-    if (flag.value_check != GlobalFlag::ValueCheck::kEnum
+    if (flag.value_check != GlobalFlag::ValueCheck::kEnum && flag.value_check != GlobalFlag::ValueCheck::kEnumList
         && flag.value_check != GlobalFlag::ValueCheck::kEnumOrTemplate) {
       continue;
     }

@@ -157,7 +157,7 @@ language, general `--feature` mechanism, or auto-discovered project config layer
 **Safety:** unrestricted by default. Unconditional `--block-*` restrictions accumulate; `--safe`
 activates a configurable `--safe-block-*` profile and `--no-safe` deactivates only that profile.
 `--dry-run` previews permitted actions without performing mutations or commands. Per-file
-`--archive-block-policy=file|separate` determines how each INI expresses archive restrictions.
+`--detailed-block-policy=LIST` determines how each INI expresses archive restrictions.
 See [Safety policy and previews](design-safety.md) and `--help=safety` for coverage and tradeoffs.
 
 ### Virtual entries: archives & remote (review #3)

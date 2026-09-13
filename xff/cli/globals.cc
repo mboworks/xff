@@ -24,6 +24,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_split.h"
 #include "absl/types/span.h"
 #include "xff/archive/archive_backend.h"
 #include "xff/fuse/fuse_backend.h"
@@ -43,9 +44,8 @@ constexpr std::array kCaseValues = std::to_array<ValueDoc>({
     {.value = "insensitive", .meaning = "fold case (-i)"},
     {.value = "smart", .meaning = "fold case unless the pattern contains ASCII uppercase (-s / -s+)"},
 });
-constexpr std::array kArchiveBlockPolicyValues = std::to_array<ValueDoc>({
-    {.value = "file", .meaning = "archives use ordinary file controls (default)"},
-    {.value = "separate", .meaning = "archive output and member edits use dedicated archive controls"},
+constexpr std::array kDetailedBlockPolicyValues = std::to_array<ValueDoc>({
+    {.value = "archive", .meaning = "use dedicated controls for archive output and member edits"},
 });
 constexpr std::array kMimeConflictValues = std::to_array<ValueDoc>({
     {.value = "error", .meaning = "reject two media types claiming one extension in the same file (default)"},
@@ -1543,18 +1543,20 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "keep output; exit 0 if anything matched, else 1",
     },
     {
-        .name = "--archive-block-policy",
-        .display = "--archive-block-policy=file|separate",
+        .name = "--detailed-block-policy",
+        .display = "--detailed-block-policy=LIST",
         .group = "safety",
         .header = "Safety",
-        .summary = "select file or separate archive blocking controls (config only)",
-        .details = "Allowed once before all sections in system or user configuration. Each file chooses its own "
+        .summary = "select categories with dedicated blocking controls (config only)",
+        .details = "A comma-separated category list; empty means ordinary file controls for all categories (default). "
+                   "Currently `archive` is supported. Allowed once before all sections in system or user "
+                   "configuration. Each file chooses its own "
                    "policy, including for its named sections. "
                    "Neither named sections, explicit `.xffrc` files, nor the CLI may set it. "
                    "See `--help=safety` for the operation table and archive replacement tradeoff.",
-        .values = kArchiveBlockPolicyValues,
+        .values = kDetailedBlockPolicyValues,
         .topic = "safety",
-        .value_check = GlobalFlag::ValueCheck::kEnum,
+        .value_check = GlobalFlag::ValueCheck::kEnumList,
         .config_only = true,
     },
     {
@@ -1725,7 +1727,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "safety",
         .header = "Safety",
         .summary = "unconditionally block archive content writing",
-        .details = "Applies to member edits of existing archives under `--archive-block-policy=separate`. "
+        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
                    "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
         .topic = "safety",
     },
@@ -1735,7 +1737,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "safety",
         .header = "Safety",
         .summary = "include in the safe profile: archive content writing",
-        .details = "Applies to member edits of existing archives under `--archive-block-policy=separate`. "
+        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
                    "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
         .topic = "safety",
     },
@@ -1745,7 +1747,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "safety",
         .header = "Safety",
         .summary = "exclude from the safe profile: archive content writing",
-        .details = "Applies to member edits of existing archives under `--archive-block-policy=separate`. "
+        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
                    "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
         .topic = "safety",
     },
@@ -1755,7 +1757,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "safety",
         .header = "Safety",
         .summary = "unconditionally block archive content overwrite",
-        .details = "Applies to member edits of existing archives under `--archive-block-policy=separate`. "
+        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
                    "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
         .topic = "safety",
     },
@@ -1765,7 +1767,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "safety",
         .header = "Safety",
         .summary = "include in the safe profile: archive content overwrite",
-        .details = "Applies to member edits of existing archives under `--archive-block-policy=separate`. "
+        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
                    "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
         .topic = "safety",
     },
@@ -1775,7 +1777,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "safety",
         .header = "Safety",
         .summary = "exclude from the safe profile: archive content overwrite",
-        .details = "Applies to member edits of existing archives under `--archive-block-policy=separate`. "
+        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
                    "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
         .topic = "safety",
     },
@@ -1969,6 +1971,13 @@ absl::Status ValidateGlobalValue(std::string_view arg) {
         return absl::OkStatus();
       }
       break;
+    case GlobalFlag::ValueCheck::kEnumList:
+      if (value.empty() || absl::c_all_of(absl::StrSplit(value, ','), [&](std::string_view item) {
+            return absl::c_any_of(flag->values, [item](const ValueDoc& doc) { return doc.value == item; });
+          })) {
+        return absl::OkStatus();
+      }
+      break;
     case GlobalFlag::ValueCheck::kEnum:
       if (absl::c_any_of(flag->values, [value](const ValueDoc& doc) { return doc.value == value; })) {
         return absl::OkStatus();
@@ -1984,7 +1993,7 @@ absl::Status ValidateGlobalValue(std::string_view arg) {
   // The accepted list comes from the same table the help prints (or from the shared vocabulary),
   // so the error and the documentation cannot disagree.
   std::string accepted;
-  if (flag->value_check == GlobalFlag::ValueCheck::kEnum
+  if (flag->value_check == GlobalFlag::ValueCheck::kEnumList || flag->value_check == GlobalFlag::ValueCheck::kEnum
       || flag->value_check == GlobalFlag::ValueCheck::kEnumOrTemplate) {
     for (const ValueDoc& doc : flag->values) {
       if (doc.hidden) {

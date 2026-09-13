@@ -65,7 +65,7 @@ a named section, an explicit file, or suppression of system defaults.
 
 Explicit `.xffrc` files cannot contain the require/no-require pairs or
 `--allow-xffrc` / `--no-allow-xffrc`; these controls govern automatic files or permission
-to load an explicit file, so that file cannot grant itself permission. `--archive-block-policy`
+to load an explicit file, so that file cannot grant itself permission. `--detailed-block-policy`
 is also restricted to automatic config files. In contrast, `--allow-exec` is a
 separate runtime flag accepted on the CLI and in config files, but an explicit file's
 own `--allow-exec` never arms its dangerous directives.
@@ -118,7 +118,7 @@ example, `-E development` is invalid because `-E` takes no value; `development` 
 token, and the containing section is disabled.
 
 There is no special policy rule language. System-only controls belong before the first section;
-placing one in a named section disables that section atomically. `--archive-block-policy` selects how this file interprets its safety blocks, including in named sections.
+placing one in a named section disables that section atomically. `--detailed-block-policy` selects how this file interprets its safety blocks, including in named sections.
 Its value never changes the interpretation of another file. See [Safety](design-safety.md).
 
 ### Names, refinements, and composition
@@ -303,10 +303,10 @@ executable or its mandatory configuration can replace the policy too.
 
 ### Choose archive controls independently in each file
 
-`--archive-block-policy=file|separate` may occur once before sections in a system or user INI.
+`--detailed-block-policy=LIST` may occur once before sections in a system or user INI.
 It applies to that file's globals and named sections. Each file is translated independently;
-a user choosing `separate` cannot remove restrictions contributed by a system file using `file`.
-Use `separate` for precise control. The default `file` policy applies ordinary file blocks to archives.
+a user selecting `archive` cannot remove restrictions contributed by a system file using the default empty list.
+Select `archive` for precise control. The default empty category list applies ordinary file blocks to archives.
 See `--help=safety` for the full operation table, including the distinction between packing a
 replacement archive and editing its members.
 

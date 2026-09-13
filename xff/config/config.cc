@@ -24,6 +24,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_split.h"
 #include "xff/config/ini.h"
 #include "xff/config/safety.h"
 #include "xff/config/xffrc.h"
@@ -71,7 +72,10 @@ std::vector<std::string> ExpandSafetyTokens(const std::vector<std::string>& toke
 
 ConfigFile ExpandFileSafety(ConfigFile file) {
   const auto directives = DirectiveTokens(file.globals);
-  const bool separate = absl::c_contains(directives, "--archive-block-policy=separate");
+  const bool separate = absl::c_any_of(directives, [](std::string_view token) {
+    constexpr std::string_view prefix = "--detailed-block-policy=";
+    return token.starts_with(prefix) && absl::c_contains(absl::StrSplit(token.substr(prefix.size()), ','), "archive");
+  });
   file.globals = ExpandSafetyTokens(file.globals, separate);
   for (auto& line : file.global_lines) {
     line.tokens = ExpandSafetyTokens(line.tokens, separate);

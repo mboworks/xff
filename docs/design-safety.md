@@ -7,7 +7,7 @@ confinement mechanism, or a guarantee against resource exhaustion.
 
 ## Capabilities
 
-File controls also cover archive operations under the default `file` policy. Under `separate`,
+File controls also cover archive operations under the default empty category list. With `archive` selected,
 archive operations use `archive-writing`, `archive-overwrite`, and the three
 `archive-content-writing`, `archive-content-overwrite`, `archive-content-deletion` controls instead.
 Each has an unconditional `--block-` flag and a positive/negative `--safe-block-` profile pair.
@@ -136,11 +136,11 @@ policy. Config-file requirement directives govern whether policy files may be sk
 
 ## Archive blocking policy
 
-`--archive-block-policy=file|separate` is config-only, once before sections in each system or user file. Each file chooses its own policy. Named sections, explicit `.xffrc` files and the CLI cannot set it. The default is `file`.
+`--detailed-block-policy=LIST` is config-only, once before sections in each system or user file. Each file chooses its own policy. Named sections, explicit `.xffrc` files and the CLI cannot set it. The default is an empty category list. The comma-separated list currently accepts `archive`; unknown categories are errors.
 
 Every control listed must permit the operation. Names omit `--block-` and the active `--safe-block-` prefixes.
 
-| Operation                      | Policy: file (default)                      | Policy: separate                                                                       |
+| Operation                      | archive not selected (default)              | archive selected                                                                       |
 | ------------------------------ | ------------------------------------------- | -------------------------------------------------------------------------------------- |
 | What switches                  | Archives and members use file controls      | Archive output and member edits use archive controls                                   |
 | Create ordinary file           | file-writing                                | file-writing                                                                           |

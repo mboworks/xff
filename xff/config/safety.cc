@@ -44,7 +44,7 @@ std::string_view CapabilityName(Capability capability) {
 }
 
 std::vector<std::string> ExpandSafetyFlag(std::string_view flag, bool separate_archives) {
-  if (flag.starts_with("--archive-block-policy=")) {
+  if (flag.starts_with("--detailed-block-policy=")) {
     return {};
   }
   std::vector<std::string> result{std::string(flag)};

@@ -364,7 +364,7 @@ test::separate_policy_permits_new_archives_while_blocking_ordinary_writes() {
   local root status
   root="$(_tree)"
   cat >"${root}/policy.ini" <<'INI'
---archive-block-policy=separate
+--detailed-block-policy=archive
 --block-file-writing
 --block-file-deletion
 --block-execution
@@ -396,7 +396,7 @@ test::default_file_policy_blocks_archive_writes_and_cli_cannot_switch_policy() {
   XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --pack="${root}/out.tar" >/dev/null 2>&1 || status=$?
   expect_eq 2 "${status}"
   status=0
-  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --archive-block-policy=separate --pack="${root}/out.tar" >/dev/null 2>&1 || status=$?
+  XFF_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/src" --detailed-block-policy=archive --pack="${root}/out.tar" >/dev/null 2>&1 || status=$?
   expect_eq 2 "${status}"
   expect_eq 0 "$(find "${root}" -maxdepth 1 -name out.tar | wc -l | tr -d ' ')"
 }
@@ -406,7 +406,7 @@ test::archive_content_deletion_remains_independent_of_ordinary_deletion() {
   root="$(_tree)"
   "$(_xff_bin)" "${root}/src" --pack="${root}/out.tar" >/dev/null
   cat >"${root}/policy.ini" <<'INI'
---archive-block-policy=separate
+--detailed-block-policy=archive
 --block-file-writing
 --block-file-deletion
 INI

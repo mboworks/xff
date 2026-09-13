@@ -105,7 +105,8 @@ struct GlobalFlag {
   // kTristate check against the shared vocabulary (values::ParseBool / ParseTristate), which accepts
   // more spellings than the table documents (`yes` / `1` beside `on`), so those must NOT be checked
   // as an enum.
-  enum class ValueCheck : std::uint8_t { kNone, kEnum, kEnumOrTemplate, kBool, kTristate };
+  // kEnumList accepts an empty list or comma-separated documented values.
+  enum class ValueCheck : std::uint8_t { kNone, kEnum, kEnumList, kEnumOrTemplate, kBool, kTristate };
   ValueCheck value_check = ValueCheck::kNone;
   bool config_only = false;  // Accepted only through validated configuration files.
   bool xff = true;           // false for a find-native option (-H/-L/-P); true for an xff extension

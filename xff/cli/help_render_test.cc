@@ -416,8 +416,8 @@ TEST_F(HelpTest, SafetyTopicShowsBothArchivePoliciesAndAllRequiredControls) {
   EXPECT_THAT(
       RenderTopicDoc("safety"),
       AllOf(
-          HasSubstr("--archive-block-policy=file|separate"), HasSubstr("Policy: file (default)"),
-          HasSubstr("Policy: separate"), HasSubstr("What switches"), HasSubstr("Pack new archive"),
+          HasSubstr("--detailed-block-policy=LIST"), HasSubstr("archive not selected (default)"),
+          HasSubstr("archive selected"), HasSubstr("What switches"), HasSubstr("Pack new archive"),
           HasSubstr("Pack replacement archive"), HasSubstr("archive-content-overwrite"), HasSubstr("Each file chooses"),
           HasSubstr("regardless of member-editing restrictions"), HasSubstr("--dry-run")));
 }

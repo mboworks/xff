@@ -879,22 +879,26 @@ Section SafetySection(bool in_full) {
       "`--no-safe-block-*` counterpart; these profile settings use the last applied value. Initially the "
       "profile blocks every relevant capability. Activating it does not reset its definition."));
   section.children.push_back(ProseOf(
-      "`--archive-block-policy=file|separate` selects the controls applied to archives. The default is "
-      "`file`. This config-only directive may occur once in the unsectioned system config and once in the "
+      "`--detailed-block-policy=LIST` selects categories that use dedicated controls. The list is "
+      "comma-separated; an empty list (the default) uses ordinary file controls throughout. "
+      "Currently `archive` is the supported category. Unknown categories are errors. This config-only directive may "
+      "occur once in the unsectioned system config and once in the "
       "unsectioned user config; each file chooses its own policy. Named sections, explicit `.xffrc` files, and the "
       "CLI cannot set it. Require the policy file with `--require-system-config` or `--require-user-config` "
       "when users must not skip it."));
   section.children.push_back(ProseOf(
-      "Each file's directives are translated before composition. Selecting `separate` in another file "
-      "cannot remove mandatory restrictions already imposed. Use `separate` for precise control; `file` "
-      "is the simple default. CLI file controls use `file` scope. Every control listed in a table cell must permit the "
+      "Each file's directives are translated before composition. Selecting `archive` in another file "
+      "cannot remove mandatory restrictions already imposed. Select `archive` for precise archive control; an empty "
+      "list "
+      "is the simple default. CLI file controls cover archives as well. Every control listed in a table cell must "
+      "permit the "
       "operation. Names omit their prefixes: "
       "`file-writing` means both `--block-file-writing` and, when safe mode is active, "
       "`--safe-block-file-writing`. `execution` independently controls arbitrary command execution. "
       "The table defines permissions; it does not enable archive operations or add unsupported member-editing "
       "actions."));
   Table operations{
-      .header = {"Operation", "Policy: file (default)", "Policy: separate"},
+      .header = {"Operation", "archive not selected (default)", "archive selected"},
       .cells = {
           {"What switches", "Archives and members use file controls",
            "Archive output and member edits use archive controls"},
@@ -920,7 +924,7 @@ Section SafetySection(bool in_full) {
       "selected archive output and its necessary owned temporary files, never extraction or unrelated writes. "
       "When overwrite is blocked, creation must atomically refuse an existing destination, including symlinks."));
   section.children.push_back(ExampleOf(
-      "--require-system-config\n--archive-block-policy=separate\n--block-execution\n"
+      "--require-system-config\n--detailed-block-policy=archive\n--block-execution\n"
       "--block-file-writing\n--block-file-deletion\n--block-archive-overwrite",
       "ini"));
   section.children.push_back(ProseOf(
@@ -1042,7 +1046,7 @@ Section ConfigSection(bool in_full) {
       {"--no-allow-xffrc",
        "denies command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config "
        "selection and last-value precedence; an unsectioned system denial is authoritative"},
-      {"--archive-block-policy=file|separate",
+      {"--detailed-block-policy=LIST",
        "selects the interpretation of blocks in this file, including its named sections; once before sections "
        "in system or user config; see `--help=safety` for the operation table"},
   }};
@@ -1068,7 +1072,7 @@ Section ConfigSection(bool in_full) {
 
   section.children.push_back(ProseOf(
       "Explicit `.xffrc` files cannot contain the require/no-require pairs, `--allow-xffrc`, "
-      "`--no-allow-xffrc`, or `--archive-block-policy`. The separate runtime flag `--allow-exec` "
+      "`--no-allow-xffrc`, or `--detailed-block-policy`. The separate runtime flag `--allow-exec` "
       "is accepted on the CLI and in config files, but an explicit file's own setting never arms its "
       "dangerous directives."));
 

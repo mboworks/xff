@@ -49,9 +49,9 @@ IniLine Line(std::vector<std::string> flags) {
 }
 
 TEST_F(PolicyTest, ArchivePolicyIsUniqueAndRestrictedToTrustedGlobals) {
-  const auto policies = std::to_array<std::string>({"file", "separate"});
+  const auto policies = std::to_array<std::string>({"", "archive"});
   for (const std::string& value : policies) {
-    const std::string flag = "--archive-block-policy=" + value;
+    const std::string flag = "--detailed-block-policy=" + value;
     ConfigInputs inputs;
     inputs.system = ParseIni(flag);
     inputs.user = ParseIni(flag);

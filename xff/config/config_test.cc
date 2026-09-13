@@ -64,26 +64,26 @@ TEST_F(ConfigTest, ArchivePoliciesAreTranslatedIndependentlyBeforeComposition) {
   EXPECT_THAT(ordinary.ArchiveMutations().block_writing, IsTrue());
   EXPECT_THAT(ordinary.ArchiveMutations().block_overwrite, IsTrue());
   EXPECT_THAT(ordinary.ArchiveMutations().block_deletion, IsTrue());
-  const auto policies = std::to_array<std::string>({"file", "separate"});
+  const auto policies = std::to_array<std::string>({"", "archive"});
   for (const std::string& system_choice : policies) {
     ConfigInputs inputs;
     inputs.system =
-        ParseIni("--archive-block-policy=" + system_choice + "\n--block-file-writing\n--block-archive-overwrite");
-    inputs.user = ParseIni("--archive-block-policy=" + std::string(system_choice == "file" ? "separate" : "file"));
+        ParseIni("--detailed-block-policy=" + system_choice + "\n--block-file-writing\n--block-archive-overwrite");
+    inputs.user = ParseIni("--detailed-block-policy=" + std::string(system_choice.empty() ? "archive" : ""));
     std::vector<std::string> globals;
     for (const auto& flag : ResolveConfigInOrder(inputs, {}, "xff")) {
       globals.push_back(flag.flag);
     }
     const auto policy = ResolveSafety(globals, true);
     EXPECT_THAT(policy.FileMutations().block_writing, IsTrue());
-    EXPECT_THAT(policy.ArchiveMutations().block_writing, Eq(system_choice == "file"));
+    EXPECT_THAT(policy.ArchiveMutations().block_writing, Eq(system_choice.empty()));
     EXPECT_THAT(policy.ArchiveMutations().block_overwrite, IsTrue());
   }
 }
 
 TEST_F(ConfigTest, NamedSectionsKeepTheirOwnFileScopeAcrossLateComposition) {
   ConfigInputs inputs;
-  inputs.system = ParseIni(R"ini(--archive-block-policy=separate
+  inputs.system = ParseIni(R"ini(--detailed-block-policy=archive
 --block-archive-overwrite
 [clean]
 --block-file-writing
@@ -107,14 +107,14 @@ TEST_F(ConfigTest, NamedSectionsKeepTheirOwnFileScopeAcrossLateComposition) {
 
 TEST_F(ConfigTest, PolicyTranslationNeverRewritesPrimaryArguments) {
   ConfigInputs inputs;
-  inputs.user = ParseIni(R"ini(--archive-block-policy=separate
--exec echo --block-file-writing --archive-block-policy=file \;
+  inputs.user = ParseIni(R"ini(--detailed-block-policy=archive
+-exec echo --block-file-writing --detailed-block-policy= \;
 )ini");
   const auto resolved = ResolveConfigInOrder(inputs, {}, "xff");
   ASSERT_THAT(resolved, SizeIs(5));
   EXPECT_THAT(resolved[2].flag, Eq("--block-file-writing"));
   EXPECT_THAT(resolved[2].is_argument, IsTrue());
-  EXPECT_THAT(resolved[3].flag, Eq("--archive-block-policy=file"));
+  EXPECT_THAT(resolved[3].flag, Eq("--detailed-block-policy="));
   EXPECT_THAT(resolved[3].is_argument, IsTrue());
 }
 
