@@ -18,6 +18,7 @@
 
 #include "absl/strings/str_cat.h"
 #include "mbo/status/status_macros.h"
+#include "xff/vfs/host_descriptors.h"
 
 namespace xff::vfs {
 namespace {
@@ -83,9 +84,7 @@ absl::Status RemoveAt(
     MBO_RETURN_IF_ERROR(directory ? effective.DeleteDirectory() : effective.Delete());
   }
   if (directory) {
-    // POSIX open/openat has a variadic ABI, including read-only directory opens.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
-    const int fd = ::openat(parent, name.c_str(), O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+    const int fd = host::OpenAt(parent, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
     if (fd < 0) {
       return absl::ErrnoToStatus(errno, "cannot open deletion directory");
     }
@@ -99,9 +98,7 @@ absl::Status RemoveAt(
 
 // XFF_HOST_IO: enumerates an anchored directory for per-entry checked removal or owned cleanup.
 absl::Status RemoveChildren(int fd, std::string_view path, const MutationPolicy& policy, bool owned) {
-  // POSIX fcntl requires a variadic descriptor argument.
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
-  const int copy = ::fcntl(fd, F_DUPFD_CLOEXEC, 0);
+  const int copy = host::Duplicate(fd);
   if (copy < 0) {
     return absl::ErrnoToStatus(errno, "cannot retain cleanup directory");
   }
@@ -137,9 +134,7 @@ absl::Status RemoveChildren(int fd, std::string_view path, const MutationPolicy&
 // XFF_HOST_IO: creates a new inode before replacing a scoped output entry, preserving hard-link targets.
 absl::StatusOr<int> OpenScopedOutput(const DirectoryPolicy::Target& target, bool exclusive) {
   MBO_RETURN_IF_ERROR(target.policy.Write());
-  // POSIX openat requires a variadic creation mode.
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
-  const int created = ::openat(target.parent_fd, target.name.c_str(), O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0666);
+  const int created = host::OpenAt(target.parent_fd, target.name, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0666);
   if (created >= 0) {
     return created;
   }
@@ -150,9 +145,7 @@ absl::StatusOr<int> OpenScopedOutput(const DirectoryPolicy::Target& target, bool
   static std::atomic<std::uint64_t> sequence{0};
   for (int attempt = 0; attempt < 100; ++attempt) {
     const std::string staging = absl::StrCat(".xff-output-", ::getpid(), "-", sequence.fetch_add(1));
-    // POSIX openat requires a variadic creation mode.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
-    const int fd = ::openat(target.parent_fd, staging.c_str(), O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0666);
+    const int fd = host::OpenAt(target.parent_fd, staging, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0666);
     if (fd < 0) {
       if (errno == EEXIST) {
         continue;
@@ -228,10 +221,8 @@ absl::StatusOr<std::unique_ptr<OutputFile>> OpenHostOutput(
     return status;
   }
   const std::string name(path);
-  // POSIX open requires a variadic mode argument when creating a file.
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
-  const int fd = ::open(
-      name.c_str(), O_WRONLY | O_CREAT | O_CLOEXEC | ((exclusive || policy.block_overwrite) ? O_EXCL : O_TRUNC), 0666);
+  const int fd = host::Open(
+      name, O_WRONLY | O_CREAT | O_CLOEXEC | ((exclusive || policy.block_overwrite) ? O_EXCL : O_TRUNC), 0666);
   if (fd < 0) {
     return absl::ErrnoToStatus(errno, absl::StrCat("cannot open output ", path));
   }
@@ -300,9 +291,7 @@ absl::Status RemoveHostTree(std::string_view path, const MutationPolicy& policy)
   }
   const std::filesystem::path name(path);
   const auto parent = name.parent_path().empty() ? std::filesystem::path(".") : name.parent_path();
-  // POSIX open/openat has a variadic ABI, including read-only directory opens.
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
-  const int fd = ::open(parent.c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+  const int fd = host::Open(parent, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
   if (fd < 0) {
     return absl::ErrnoToStatus(errno, "cannot open deletion parent");
   }
@@ -323,9 +312,7 @@ absl::StatusOr<std::unique_ptr<TemporaryOutput>> TemporaryOutput::Create(
     MutationPolicy policy) {
   MBO_ASSIGN_OR_RETURN(auto directory, TemporaryDirectory::Create(prefix, policy));
   const std::string path = directory->Path() + "/output";
-  // POSIX open requires a variadic mode argument when creating a file.
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
-  const int fd = ::openat(directory->Fd(), "output", O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
+  const int fd = host::OpenAt(directory->Fd(), "output", O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
   if (fd < 0) {
     return absl::ErrnoToStatus(errno, "cannot create temporary output");
   }
@@ -396,12 +383,8 @@ absl::StatusOr<std::unique_ptr<TemporaryDirectory>> TemporaryDirectory::Create(
   }
   const std::filesystem::path location(path);
   const auto parent_path = location.parent_path().empty() ? std::filesystem::path(".") : location.parent_path();
-  // POSIX open/openat has a variadic ABI, including read-only directory opens.
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
-  const int parent = ::open(parent_path.c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC);
-  // POSIX open/openat has a variadic ABI.
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
-  const int fd = ::open(path.c_str(), O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+  const int parent = host::Open(parent_path, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+  const int fd = host::Open(path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
   if (fd < 0 || parent < 0) {
     if (fd >= 0) {
       ::close(fd);
@@ -427,12 +410,8 @@ absl::StatusOr<std::unique_ptr<TemporaryDirectory>> TemporaryDirectory::CreateSc
       }
       return absl::ErrnoToStatus(errno, "cannot create scoped scratch directory");
     }
-    // POSIX open/openat has a variadic ABI, including read-only directory opens.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
-    const int fd = ::openat(target.parent_fd, name.c_str(), O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
-    // POSIX fcntl requires a variadic descriptor argument.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
-    const int parent = ::fcntl(target.parent_fd, F_DUPFD_CLOEXEC, 0);
+    const int fd = host::OpenAt(target.parent_fd, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+    const int parent = host::Duplicate(target.parent_fd);
     if (fd < 0 || parent < 0) {
       if (fd >= 0) {
         ::close(fd);

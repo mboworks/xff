@@ -216,8 +216,31 @@ exports_files(["language_database.bzl"])
 # into the core. Its only implementation is the correctness fallback for backends without efficient
 # random access. //xff/vfs re-exports it, so core code keeps including "xff/vfs/entry.h" and
 # "xff/vfs/filesystem.h" unchanged.
+# Fixed-signature host boundary is separately linked so failure tests can supply
+# their implementation without intercepting variadic C functions.
+cc_library(
+    name = "host_descriptors_interface_cc",
+    hdrs = ["host_descriptors.h"],
+    include_prefix = "xff/vfs",
+)
+
+cc_library(
+    name = "host_descriptors_cc",
+    srcs = ["host_descriptors.cc"],
+    deps = [":host_descriptors_interface_cc"],
+)
+
 cc_library(
     name = "vfs_cc",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":host_descriptors_cc",
+        ":vfs_implementation_cc",
+    ],
+)
+
+cc_library(
+    name = "vfs_implementation_cc",
     srcs = [
         "directory_policy.cc",
         "filesystem.cc",
@@ -229,8 +252,8 @@ cc_library(
         "mutations.h",
     ],
     include_prefix = "xff/vfs",
-    visibility = ["//visibility:public"],
     deps = [
+        ":host_descriptors_interface_cc",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
@@ -315,9 +338,6 @@ cc_test(
     srcs = ["mutations_fault_test.cc"],
     linkopts = select({
         "@platforms//os:linux": [
-            "-Wl,--wrap=open",
-            "-Wl,--wrap=openat",
-            "-Wl,--wrap=fcntl",
             "-Wl,--wrap=fstat",
             "-Wl,--wrap=fstatat",
             "-Wl,--wrap=mkdirat",
@@ -330,7 +350,8 @@ cc_test(
     # --wrap must see the VFS call sites in this executable, rather than a shared library.
     linkstatic = True,
     deps = [
-        ":vfs_cc",
+        ":host_descriptors_interface_cc",
+        ":vfs_implementation_cc",
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:status_cc",
     ],

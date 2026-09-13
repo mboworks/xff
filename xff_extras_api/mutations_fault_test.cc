@@ -7,7 +7,6 @@
 
 #include <array>
 #include <cerrno>
-#include <cstdarg>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -17,6 +16,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/status.h"
+#include "xff/vfs/host_descriptors.h"
 #include "xff/vfs/mutations.h"
 
 namespace xff::vfs::fault_test {
@@ -70,16 +70,41 @@ auto Inject(Failure value, Function&& function) {
 }  // namespace
 }  // namespace xff::vfs::fault_test
 
+// Substitute only the private fixed-signature descriptor boundary. There is no
+// C variadic forwarding and no production runtime hook.
+namespace xff::vfs::host {
+int Open(const std::string& path, int flags, mode_t mode) {
+  if (fault_test::Fail(fault_test::Operation::kOpen)) {
+    return -1;
+  }
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
+  return ::open(path.c_str(), flags, mode);
+}
+
+int OpenAt(int parent, const std::string& path, int flags, mode_t mode) {
+  if (fault_test::Fail(fault_test::Operation::kOpenAt)) {
+    return -1;
+  }
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
+  return ::openat(parent, path.c_str(), flags, mode);
+}
+
+int Duplicate(int descriptor) {
+  if (fault_test::Fail(fault_test::Operation::kDuplicate)) {
+    return -1;
+  }
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
+  return ::fcntl(descriptor, F_DUPFD_CLOEXEC, 0);
+}
+}  // namespace xff::vfs::host
+
 // Link wrapping is confined to this test executable. Production exposes no fault-injection switch.
 // The wrappers also compile on macOS, where the tests skip because Apple's linker has no --wrap.
 // Reserved symbols and the token-pasting alias are the linker ABI, not application identifiers.
-// NOLINTBEGIN(readability-identifier-naming,cppcoreguidelines-pro-type-vararg,hicpp-vararg,bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp,cppcoreguidelines-macro-usage)
+// NOLINTBEGIN(readability-identifier-naming,bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp,cppcoreguidelines-macro-usage)
 #if defined(__linux__)
 # define XFF_REAL(name) __real_##name
 extern "C" {
-decltype(::open) __real_open;
-decltype(::openat) __real_openat;
-decltype(::fcntl) __real_fcntl;
 decltype(::fstat) __real_fstat;
 decltype(::fstatat) __real_fstatat;
 decltype(::mkdirat) __real_mkdirat;
@@ -91,63 +116,9 @@ decltype(::readdir) __real_readdir;
 # define XFF_REAL(name) ::name
 #endif
 
-// POSIX ABI names, pointer parameters, and varargs are required by linker wrapping.
+// Fixed-signature POSIX wrappers remain confined to the test executable.
 using ::xff::vfs::fault_test::Fail;
 using ::xff::vfs::fault_test::Operation;
-
-// Linux va_list is an array; the required va_* macros decay it at the POSIX ABI boundary.
-// NOLINTBEGIN(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
-// XFF_ABI_POINTER: exact POSIX open wrapper ABI.
-extern "C" int __wrap_open(const char* path, int flags, ...) {
-  if (Fail(Operation::kOpen)) {
-    return -1;
-  }
-  if ((static_cast<unsigned>(flags) & static_cast<unsigned>(O_CREAT)) == 0) {
-    return XFF_REAL(open)(path, flags);
-  }
-  va_list args;
-  va_start(args, flags);
-  const mode_t mode = va_arg(args, int);
-  va_end(args);
-  return XFF_REAL(open)(path, flags, mode);
-}
-
-// XFF_ABI_POINTER: exact POSIX openat wrapper ABI.
-extern "C" int __wrap_openat(int parent, const char* path, int flags, ...) {
-  if (Fail(Operation::kOpenAt)) {
-    return -1;
-  }
-  if ((static_cast<unsigned>(flags) & static_cast<unsigned>(O_CREAT)) == 0) {
-    return XFF_REAL(openat)(parent, path, flags);
-  }
-  va_list args;
-  va_start(args, flags);
-  const mode_t mode = va_arg(args, int);
-  va_end(args);
-  return XFF_REAL(openat)(parent, path, flags, mode);
-}
-
-extern "C" int __wrap_fcntl(int fd, int command, ...) {
-  if (command == F_DUPFD_CLOEXEC && Fail(Operation::kDuplicate)) {
-    return -1;
-  }
-  if (command == F_GETFD || command == F_GETFL || command == F_GETOWN) {
-    return XFF_REAL(fcntl)(fd, command);
-  }
-  va_list args;
-  va_start(args, command);
-  if (command == F_GETLK || command == F_SETLK || command == F_SETLKW) {
-    // XFF_ABI_POINTER: POSIX fcntl lock commands require a borrowed flock argument.
-    auto* lock = va_arg(args, struct flock*);
-    va_end(args);
-    return XFF_REAL(fcntl)(fd, command, lock);
-  }
-  const int argument = va_arg(args, int);
-  va_end(args);
-  return XFF_REAL(fcntl)(fd, command, argument);
-}
-
-// NOLINTEND(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
 
 // XFF_ABI_POINTER: exact POSIX fstat wrapper ABI.
 extern "C" int __wrap_fstat(int fd, struct stat* metadata) {
@@ -180,7 +151,7 @@ extern "C" struct dirent* __wrap_readdir(DIR* stream) {
   return Fail(Operation::kRead) ? nullptr : XFF_REAL(readdir)(stream);
 }
 
-// NOLINTEND(readability-identifier-naming,cppcoreguidelines-pro-type-vararg,hicpp-vararg,bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp,cppcoreguidelines-macro-usage)
+// NOLINTEND(readability-identifier-naming,bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp,cppcoreguidelines-macro-usage)
 #undef XFF_REAL
 
 namespace xff::vfs {

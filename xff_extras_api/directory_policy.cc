@@ -10,6 +10,7 @@
 
 #include "absl/strings/str_cat.h"
 #include "mbo/status/status_macros.h"
+#include "xff/vfs/host_descriptors.h"
 #include "xff/vfs/mutations.h"
 
 namespace xff::vfs {
@@ -39,16 +40,12 @@ absl::StatusOr<std::string> AbsolutePath(std::string_view path) {
 
 // XFF_HOST_IO: opens normalized relative directory components, refusing symlinks at each step.
 absl::StatusOr<int> Descend(int start, const std::filesystem::path& relative) {
-  // POSIX fcntl requires a variadic descriptor argument.
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
-  int current = ::fcntl(start, F_DUPFD_CLOEXEC, 0);
+  int current = host::Duplicate(start);
   if (current < 0) {
     return absl::ErrnoToStatus(errno, "cannot retain policy directory");
   }
   for (const auto& part : relative) {
-    // POSIX open/openat has a variadic ABI, including read-only directory opens.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
-    const int next = ::openat(current, part.c_str(), O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+    const int next = host::OpenAt(current, part.string(), O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
     const int saved_error = errno;
     ::close(current);
     if (next < 0) {
@@ -94,9 +91,7 @@ DirectoryPolicy::~DirectoryPolicy() {
 // XFF_HOST_IO: pins explicitly declared, existing directory roots before evaluation.
 absl::StatusOr<std::shared_ptr<const DirectoryPolicy>> DirectoryPolicy::Create(std::vector<DirectoryRule> rules) {
   auto policy = std::shared_ptr<DirectoryPolicy>(new DirectoryPolicy({}));
-  // POSIX open/openat has a variadic ABI, including read-only directory opens.
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
-  const int filesystem_root = ::open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+  const int filesystem_root = host::Open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
   if (filesystem_root < 0) {
     return absl::ErrnoToStatus(errno, "cannot open filesystem root");
   }
@@ -169,9 +164,7 @@ absl::StatusOr<DirectoryPolicy::Target> DirectoryPolicy::Resolve(std::string_vie
     if (ordinary.outside_directory_blocks) {
       selected = WithBlocks(std::move(selected), *ordinary.outside_directory_blocks);
     }
-    // POSIX open/openat has a variadic ABI, including read-only directory opens.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
-    const int fd = ::open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    const int fd = host::Open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
     if (fd < 0) {
       return absl::ErrnoToStatus(errno, "cannot open filesystem root");
     }
