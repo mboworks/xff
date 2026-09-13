@@ -16,19 +16,22 @@
 #ifndef XFF_CLI_MAIN_H_
 #define XFF_CLI_MAIN_H_
 
-#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include "absl/functional/function_ref.h"
+#include "absl/status/statusor.h"
 #include "xff/config/loader.h"
 
 namespace xff::cli {
+using ConfigPathsProvider = absl::FunctionRef<absl::StatusOr<config::ConfigPaths>()>;
+
 // Runs the CLI. Only test entry points inject paths; production uses the OS account.
 int Run(
     std::string_view program,
     const std::vector<std::string>& args,
-    const std::optional<config::ConfigPaths>& paths = std::nullopt);
+    ConfigPathsProvider paths = config::DefaultConfigPaths);
 }  // namespace xff::cli
 
 #endif  // XFF_CLI_MAIN_H_

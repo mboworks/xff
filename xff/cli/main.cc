@@ -410,10 +410,7 @@ absl::StatusOr<std::string> RenderTopic(std::string_view topic, xff::cli::HelpRe
 // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive dispatch
 // resolve config, dispatch meta flags, build + run the expression) is one cohesive sequence.
 // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive dispatch
-int RunMain(
-    std::string_view program,
-    const std::vector<std::string>& args,
-    const std::optional<xff::config::ConfigPaths>& paths) {
+int RunMain(std::string_view program, const std::vector<std::string>& args, xff::cli::ConfigPathsProvider paths) {
   // Read the fixed set of environment variables xff consults into the env cache up front, in one
   // locked pass, so every later read is a pure cache hit. Dynamic {env.NAME} field references are
   // not here (they are user-supplied); env::Get caches those lazily on first use.
@@ -658,7 +655,7 @@ int RunMain(
   // selector, so an explicit --config still overrides it (design-config.md "CLI
   // selectors"). Prepended before discovery so [find]/[xff] .xffrc sections gate on it too.
   opts.configs.insert(opts.configs.begin(), std::string(xff::config::DefaultStyleForProgram(program)));
-  auto config_paths = paths ? absl::StatusOr<xff::config::ConfigPaths>(*paths) : xff::config::DefaultConfigPaths();
+  auto config_paths = paths();
   if (!config_paths.ok()) {
     std::cerr << "xff: " << config_paths.status().message() << "\n";
     return 2;
@@ -832,10 +829,7 @@ int RunMain(
 // guarantees the bytes are written regardless of what the exit path does next.
 }  // namespace
 
-int xff::cli::Run(
-    std::string_view program,
-    const std::vector<std::string>& args,
-    const std::optional<config::ConfigPaths>& paths) {
+int xff::cli::Run(std::string_view program, const std::vector<std::string>& args, ConfigPathsProvider paths) {
   const int exit_code = RunMain(program, args, paths);
   std::cout.flush();
   return exit_code;

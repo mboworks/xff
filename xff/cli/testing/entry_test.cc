@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/status/statusor.h"
 #include "xff/cli/main.h"
 #include "xff/env/env.h"
 
@@ -27,5 +28,5 @@ int main(int argc, char** argv) {
       .system = xff::env::Get("XFF_TEST_SYSTEM_CONFIG").value_or("/nonexistent/xff-test-system.ini"),
       .user = xff::env::Get("XFF_TEST_USER_CONFIG").value_or("/nonexistent/xff-test-user.ini"),
   };
-  return xff::cli::Run(*argv, args, paths);
+  return xff::cli::Run(*argv, args, [&paths]() -> absl::StatusOr<xff::config::ConfigPaths> { return paths; });
 }

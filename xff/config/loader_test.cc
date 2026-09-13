@@ -16,10 +16,12 @@
 #include "xff/config/loader.h"
 
 #include <array>
+#include <cstddef>
 #include <map>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -34,6 +36,7 @@ using ::mbo::testing::StatusIs;
 using ::testing::AllOf;
 using ::testing::ElementsAre;
 using ::testing::EndsWith;
+using ::testing::Eq;
 using ::testing::Field;
 using ::testing::FieldsAre;
 using ::testing::HasSubstr;
@@ -209,6 +212,50 @@ TEST_F(LoaderTest, ReadFailuresCannotBypassTrustedConfigEvenWithSkipFlags) {
       EXPECT_THAT(Discover(opts, read), StatusIs(code, HasSubstr(std::string(blocked_path))));
     }
   }
+}
+
+TEST_F(LoaderTest, AccountLookupRetriesOnlyBufferExhaustion) {
+  std::vector<std::size_t> sizes;
+  const auto lookup = [&](std::size_t size) -> absl::StatusOr<std::string> {
+    sizes.push_back(size);
+    if (size < 65'536) {
+      return absl::OutOfRangeError("account record exceeds buffer");
+    }
+    return "/account";
+  };
+  EXPECT_THAT(
+      ConfigPathsFromAccountLookup(lookup), IsOkAndHolds(Field(&ConfigPaths::user, "/account/.config/xff/config")));
+  EXPECT_THAT(sizes, ElementsAre(16'384, 32'768, 65'536));
+}
+
+TEST_F(LoaderTest, AccountLookupStopsAtTheBufferLimit) {
+  std::vector<std::size_t> sizes;
+  const auto lookup = [&](std::size_t size) -> absl::StatusOr<std::string> {
+    sizes.push_back(size);
+    return absl::OutOfRangeError("record too large");
+  };
+  EXPECT_THAT(
+      ConfigPathsFromAccountLookup(lookup), StatusIs(absl::StatusCode::kOutOfRange, HasSubstr("record too large")));
+  EXPECT_THAT(sizes, ElementsAre(16'384, 32'768, 65'536, 131'072, 262'144, 524'288, 1'048'576));
+}
+
+TEST_F(LoaderTest, AccountLookupPropagatesFailuresWithoutRetryingOrFallingBack) {
+  constexpr auto kCodes =
+      std::to_array({absl::StatusCode::kNotFound, absl::StatusCode::kPermissionDenied, absl::StatusCode::kUnavailable});
+  for (const auto code : kCodes) {
+    int calls = 0;
+    const auto lookup = [&](std::size_t) -> absl::StatusOr<std::string> {
+      ++calls;
+      return absl::Status(code, "account lookup failed");
+    };
+    EXPECT_THAT(ConfigPathsFromAccountLookup(lookup), StatusIs(code, HasSubstr("account lookup failed")));
+    EXPECT_THAT(calls, Eq(1));
+  }
+}
+
+TEST_F(LoaderTest, AccountLookupRejectsAnInvalidHomeWithoutFallback) {
+  const auto lookup = [](std::size_t) -> absl::StatusOr<std::string> { return "relative"; };
+  EXPECT_THAT(ConfigPathsFromAccountLookup(lookup), StatusIs(absl::StatusCode::kInvalidArgument));
 }
 
 TEST_F(LoaderTest, DefaultPathsUseAnAbsoluteOsAccountHome) {

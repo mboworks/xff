@@ -21,39 +21,36 @@
 #include <pwd.h>
 #include <unistd.h>
 
-#include <cerrno>
+#include <cstddef>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "absl/status/status.h"
-#include "absl/strings/str_cat.h"
-#include "mbo/status/status_macros.h"
 #include "xff/config/loader.h"
 
 namespace xff::config {
+namespace {
 
 // XFF_HOST_IO: query the effective OS account independently of environment overrides.
-absl::StatusOr<ConfigPaths> DefaultConfigPaths() {
-  std::vector<char> buffer(16'384);
+absl::StatusOr<std::string> ReadAccountHome(std::size_t buffer_size) {
+  std::vector<char> buffer(buffer_size);
   struct passwd account{};
   // XFF_ABI_POINTER: getpwuid_r returns an observer into account and buffer.
   struct passwd* result = nullptr;
-  for (;;) {
-    const int error = getpwuid_r(geteuid(), &account, buffer.data(), buffer.size(), &result);
-    if (error == ERANGE && buffer.size() < 1'048'576) {
-      buffer.resize(buffer.size() * 2);
-      continue;
-    }
-    if (error != 0) {
-      return absl::InternalError(absl::StrCat("cannot resolve the effective OS account: ", error));
-    }
-    if (result == nullptr || account.pw_dir == nullptr) {
-      return absl::NotFoundError("the effective OS account has no home directory");
-    }
-    MBO_ASSIGN_OR_RETURN(auto user, UserConfigPath(account.pw_dir));
-    return ConfigPaths{.user = std::move(user)};
+  const int error = getpwuid_r(geteuid(), &account, buffer.data(), buffer.size(), &result);
+  if (error != 0) {
+    return absl::ErrnoToStatus(error, "cannot resolve the effective OS account");
   }
+  if (result == nullptr || account.pw_dir == nullptr) {
+    return absl::NotFoundError("the effective OS account has no home directory");
+  }
+  return std::string(account.pw_dir);
+}
+
+}  // namespace
+
+absl::StatusOr<ConfigPaths> DefaultConfigPaths() {
+  return ConfigPathsFromAccountLookup(ReadAccountHome);
 }
 
 }  // namespace xff::config

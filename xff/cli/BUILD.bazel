@@ -67,6 +67,7 @@ cc_library(
         "//xff/vfs:local_fs_cc",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/functional:function_ref",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/types:span",
@@ -1079,5 +1080,18 @@ bashtest(
     data = [
         ":xff",
         "//xff/cli/testing:xff",
+    ],
+)
+
+cc_test(
+    name = "main_test",
+    size = "small",
+    srcs = ["main_test.cc"],
+    deps = [
+        ":main_cc",
+        "//xff/config:loader_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest_main",
     ],
 )

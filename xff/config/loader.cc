@@ -15,7 +15,7 @@
 
 #include "xff/config/loader.h"
 
-#include <optional>
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -46,6 +46,19 @@ absl::StatusOr<ReadSource> ReadConfigSource(std::string_view path, Source layer,
   return ReadSource{.source = {.path = std::string(path), .layer = layer, .found = true}, .config = ParseIni(*text)};
 }
 }  // namespace
+
+absl::StatusOr<ConfigPaths> ConfigPathsFromAccountLookup(AccountHomeLookup lookup) {
+  constexpr std::size_t kMaxBuffer = 1'048'576;
+  for (std::size_t buffer_size = 16'384;; buffer_size *= 2) {
+    auto home = lookup(buffer_size);
+    if (absl::IsOutOfRange(home.status()) && buffer_size < kMaxBuffer) {
+      continue;
+    }
+    MBO_ASSIGN_OR_RETURN(const auto account_home, std::move(home));
+    MBO_ASSIGN_OR_RETURN(auto user, UserConfigPath(account_home));
+    return ConfigPaths{.user = std::move(user)};
+  }
+}
 
 absl::StatusOr<std::string> UserConfigPath(std::string_view account_home) {
   if (!account_home.starts_with('/')) {

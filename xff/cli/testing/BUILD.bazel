@@ -16,6 +16,7 @@ cc_binary(
         "//xff/cli:main_cc",
         "//xff/config:loader_cc",
         "//xff/env:env_cc",
+        "@abseil-cpp//absl/status:statusor",
     ],
 )
 
@@ -29,5 +30,6 @@ cc_binary(
         "//xff/cli:main_cc",
         "//xff/config:loader_cc",
         "//xff/env:env_cc",
+        "@abseil-cpp//absl/status:statusor",
     ] + FULL_DEPS,
 )

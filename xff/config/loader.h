@@ -16,6 +16,7 @@
 #ifndef XFF_CONFIG_LOADER_H_
 #define XFF_CONFIG_LOADER_H_
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -37,6 +38,11 @@ struct ConfigPaths {
 
 // The effective OS account supplies the home; environment variables cannot redirect policy.
 absl::StatusOr<ConfigPaths> DefaultConfigPaths();
+
+// An account lookup receives its scratch-buffer size and returns a home directory.
+// OutOfRange requests a larger buffer. Other errors propagate without an environment fallback.
+using AccountHomeLookup = absl::FunctionRef<absl::StatusOr<std::string>(std::size_t buffer_size)>;
+absl::StatusOr<ConfigPaths> ConfigPathsFromAccountLookup(AccountHomeLookup lookup);
 absl::StatusOr<std::string> UserConfigPath(std::string_view account_home);
 
 // CLI selectors and explicitly injected paths for discovery.
