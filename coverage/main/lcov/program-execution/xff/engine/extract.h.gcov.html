@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-13 10:53:42</td>
+            <td class="headerValue">2026-09-13 14:54:51</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -88,80 +88,85 @@
 <span id="L17"><span class="lineNum">      17</span>              : #define XFF_ENGINE_EXTRACT_H_</span>
 <span id="L18"><span class="lineNum">      18</span>              : </span>
 <span id="L19"><span class="lineNum">      19</span>              : #include &lt;cstdint&gt;</span>
-<span id="L20"><span class="lineNum">      20</span>              : #include &lt;string&gt;</span>
-<span id="L21"><span class="lineNum">      21</span>              : #include &lt;string_view&gt;</span>
-<span id="L22"><span class="lineNum">      22</span>              : #include &lt;vector&gt;</span>
-<span id="L23"><span class="lineNum">      23</span>              : </span>
-<span id="L24"><span class="lineNum">      24</span>              : #include &quot;absl/status/statusor.h&quot;</span>
-<span id="L25"><span class="lineNum">      25</span>              : #include &quot;absl/types/span.h&quot;</span>
-<span id="L26"><span class="lineNum">      26</span>              : #include &quot;xff/vfs/filesystem.h&quot;</span>
-<span id="L27"><span class="lineNum">      27</span>              : </span>
-<span id="L28"><span class="lineNum">      28</span>              : namespace xff::engine {</span>
-<span id="L29"><span class="lineNum">      29</span>              : </span>
-<span id="L30"><span class="lineNum">      30</span>              : // Picks the directory an extracted member should be written to, preferring a MEMORY-backed one.</span>
-<span id="L31"><span class="lineNum">      31</span>              : //</span>
-<span id="L32"><span class="lineNum">      32</span>              : // The point of the preference: on Linux `$XDG_RUNTIME_DIR` and `/dev/shm` are tmpfs, so a member</span>
-<span id="L33"><span class="lineNum">      33</span>              : // written there never reaches a disk, while the child process still gets an ordinary path - which is</span>
-<span id="L34"><span class="lineNum">      34</span>              : // the whole reason extraction exists. It is a directory choice, not a mechanism: nothing else about</span>
-<span id="L35"><span class="lineNum">      35</span>              : // extraction changes, and a platform without a tmpfs (macOS) simply falls through to `$TMPDIR`.</span>
-<span id="L36"><span class="lineNum">      36</span>              : //</span>
-<span id="L37"><span class="lineNum">      37</span>              : // A tmpfs is RAM, though, and a shared, capped one: writing a huge member there can fail or squeeze</span>
-<span id="L38"><span class="lineNum">      38</span>              : // everything else on the machine. So a candidate is only taken when the member comfortably fits in the</span>
-<span id="L39"><span class="lineNum">      39</span>              : // space it reports free - otherwise the next candidate is tried, and the last one (the ordinary</span>
-<span id="L40"><span class="lineNum">      40</span>              : // temporary directory) is used whether it fits or not, because by then there is nowhere else to go.</span>
-<span id="L41"><span class="lineNum">      41</span>              : //</span>
-<span id="L42"><span class="lineNum">      42</span>              : // `candidates` is injectable so a test can describe a filesystem layout instead of depending on the</span>
-<span id="L43"><span class="lineNum">      43</span>              : // machine it runs on; the default order is</span>
-<span id="L44"><span class="lineNum">      44</span>              : // `$XDG_RUNTIME_DIR` (user-private tmpfs), `/dev/shm`, `std::filesystem::temp_directory_path()`.</span>
-<span id="L45"><span class="lineNum">      45</span>              : [[nodiscard]] std::vector&lt;std::string&gt; DefaultExtractDirectories();</span>
-<span id="L46"><span class="lineNum">      46</span>              : </span>
-<span id="L47"><span class="lineNum">      47</span>              : [[nodiscard]] std::string ChooseExtractDirectory(std::uint64_t member_size, absl::Span&lt;const std::string&gt; candidates);</span>
-<span id="L48"><span class="lineNum">      48</span>              : </span>
-<span id="L49"><span class="lineNum">      49</span>              : // Gives an archive member a real path for the length of one run (`--archive-extract`).</span>
-<span id="L50"><span class="lineNum">      50</span>              : //</span>
-<span id="L51"><span class="lineNum">      51</span>              : // A member is bytes inside a container: there is no path a child process can open, which is why</span>
-<span id="L52"><span class="lineNum">      52</span>              : // -exec on one is refused by default. Extracting it to a temporary file is the way to run a tool</span>
-<span id="L53"><span class="lineNum">      53</span>              : // over it anyway, and the temporary file is exactly as real as any other - so the child needs no</span>
-<span id="L54"><span class="lineNum">      54</span>              : // knowledge of archives, and a member reads as the file it would be if unpacked.</span>
-<span id="L55"><span class="lineNum">      55</span>              : //</span>
-<span id="L56"><span class="lineNum">      56</span>              : // Each member gets its OWN directory (`&lt;tmp&gt;/xff-&lt;pid&gt;-&lt;n&gt;/`) holding a file with the member's own</span>
-<span id="L57"><span class="lineNum">      57</span>              : // basename: two members named `README` in different containers cannot collide, and a tool that</span>
-<span id="L58"><span class="lineNum">      58</span>              : // keys on the name or the extension sees what it expects. Everything created is removed by</span>
-<span id="L59"><span class="lineNum">      59</span>              : // `Release` or, for anything still held (a `+` batch runs after the walk), by the destructor - so</span>
-<span id="L60"><span class="lineNum">      60</span>              : // nothing survives the run even when the child fails or a signal ends the walk early.</span>
-<span id="L61"><span class="lineNum">      61</span>              : //</span>
-<span id="L62"><span class="lineNum">      62</span>              : // Not thread-safe: the evaluator is single-threaded, and a `-j` child is launched from that same</span>
-<span id="L63"><span class="lineNum">      63</span>              : // thread.</span>
-<span id="L64"><span class="lineNum">      64</span>              : class ExtractedMembers {</span>
-<span id="L65"><span class="lineNum">      65</span>              :  public:</span>
-<span id="L66"><span class="lineNum">      66</span> <span class="tlaGNC">         805 :   ExtractedMembers() = default;</span></span>
-<span id="L67"><span class="lineNum">      67</span>              :   ~ExtractedMembers();</span>
-<span id="L68"><span class="lineNum">      68</span>              : </span>
-<span id="L69"><span class="lineNum">      69</span>              :   ExtractedMembers(const ExtractedMembers&amp;) = delete;</span>
-<span id="L70"><span class="lineNum">      70</span>              :   ExtractedMembers&amp; operator=(const ExtractedMembers&amp;) = delete;</span>
-<span id="L71"><span class="lineNum">      71</span>              :   ExtractedMembers(ExtractedMembers&amp;&amp;) = delete;</span>
-<span id="L72"><span class="lineNum">      72</span>              :   ExtractedMembers&amp; operator=(ExtractedMembers&amp;&amp;) = delete;</span>
-<span id="L73"><span class="lineNum">      73</span>              : </span>
-<span id="L74"><span class="lineNum">      74</span>              :   // Reads `member` through `fs` (the container's filesystem, not the local one) and writes it to a</span>
-<span id="L75"><span class="lineNum">      75</span>              :   // fresh temporary file, returning that file's path. The bytes are the member's real, decompressed</span>
-<span id="L76"><span class="lineNum">      76</span>              :   // content, so the temporary file's size is the size xff reports for the member.</span>
-<span id="L77"><span class="lineNum">      77</span>              :   absl::StatusOr&lt;std::string&gt; Extract(const vfs::FileSystem&amp; fs, std::string_view member);</span>
-<span id="L78"><span class="lineNum">      78</span>              : </span>
-<span id="L79"><span class="lineNum">      79</span>              :   // Removes one extracted file and its directory. A path this instance did not hand out is ignored,</span>
-<span id="L80"><span class="lineNum">      80</span>              :   // so a caller may release unconditionally.</span>
-<span id="L81"><span class="lineNum">      81</span>              :   void Release(std::string_view path);</span>
+<span id="L20"><span class="lineNum">      20</span>              : #include &lt;map&gt;</span>
+<span id="L21"><span class="lineNum">      21</span>              : #include &lt;memory&gt;</span>
+<span id="L22"><span class="lineNum">      22</span>              : #include &lt;string&gt;</span>
+<span id="L23"><span class="lineNum">      23</span>              : #include &lt;string_view&gt;</span>
+<span id="L24"><span class="lineNum">      24</span>              : #include &lt;vector&gt;</span>
+<span id="L25"><span class="lineNum">      25</span>              : </span>
+<span id="L26"><span class="lineNum">      26</span>              : #include &quot;absl/status/statusor.h&quot;</span>
+<span id="L27"><span class="lineNum">      27</span>              : #include &quot;absl/types/span.h&quot;</span>
+<span id="L28"><span class="lineNum">      28</span>              : #include &quot;xff/vfs/filesystem.h&quot;</span>
+<span id="L29"><span class="lineNum">      29</span>              : #include &quot;xff/vfs/mutations.h&quot;</span>
+<span id="L30"><span class="lineNum">      30</span>              : </span>
+<span id="L31"><span class="lineNum">      31</span>              : namespace xff::engine {</span>
+<span id="L32"><span class="lineNum">      32</span>              : </span>
+<span id="L33"><span class="lineNum">      33</span>              : // Picks the directory an extracted member should be written to, preferring a MEMORY-backed one.</span>
+<span id="L34"><span class="lineNum">      34</span>              : //</span>
+<span id="L35"><span class="lineNum">      35</span>              : // The point of the preference: on Linux `$XDG_RUNTIME_DIR` and `/dev/shm` are tmpfs, so a member</span>
+<span id="L36"><span class="lineNum">      36</span>              : // written there never reaches a disk, while the child process still gets an ordinary path - which is</span>
+<span id="L37"><span class="lineNum">      37</span>              : // the whole reason extraction exists. It is a directory choice, not a mechanism: nothing else about</span>
+<span id="L38"><span class="lineNum">      38</span>              : // extraction changes, and a platform without a tmpfs (macOS) simply falls through to `$TMPDIR`.</span>
+<span id="L39"><span class="lineNum">      39</span>              : //</span>
+<span id="L40"><span class="lineNum">      40</span>              : // A tmpfs is RAM, though, and a shared, capped one: writing a huge member there can fail or squeeze</span>
+<span id="L41"><span class="lineNum">      41</span>              : // everything else on the machine. So a candidate is only taken when the member comfortably fits in the</span>
+<span id="L42"><span class="lineNum">      42</span>              : // space it reports free - otherwise the next candidate is tried, and the last one (the ordinary</span>
+<span id="L43"><span class="lineNum">      43</span>              : // temporary directory) is used whether it fits or not, because by then there is nowhere else to go.</span>
+<span id="L44"><span class="lineNum">      44</span>              : //</span>
+<span id="L45"><span class="lineNum">      45</span>              : // `candidates` is injectable so a test can describe a filesystem layout instead of depending on the</span>
+<span id="L46"><span class="lineNum">      46</span>              : // machine it runs on; the default order is</span>
+<span id="L47"><span class="lineNum">      47</span>              : // `$XDG_RUNTIME_DIR` (user-private tmpfs), `/dev/shm`, `std::filesystem::temp_directory_path()`.</span>
+<span id="L48"><span class="lineNum">      48</span>              : [[nodiscard]] std::vector&lt;std::string&gt; DefaultExtractDirectories();</span>
+<span id="L49"><span class="lineNum">      49</span>              : </span>
+<span id="L50"><span class="lineNum">      50</span>              : [[nodiscard]] std::string ChooseExtractDirectory(std::uint64_t member_size, absl::Span&lt;const std::string&gt; candidates);</span>
+<span id="L51"><span class="lineNum">      51</span>              : </span>
+<span id="L52"><span class="lineNum">      52</span>              : // Gives an archive member a real path for the length of one run (`--archive-extract`).</span>
+<span id="L53"><span class="lineNum">      53</span>              : //</span>
+<span id="L54"><span class="lineNum">      54</span>              : // A member is bytes inside a container: there is no path a child process can open, which is why</span>
+<span id="L55"><span class="lineNum">      55</span>              : // -exec on one is refused by default. Extracting it to a temporary file is the way to run a tool</span>
+<span id="L56"><span class="lineNum">      56</span>              : // over it anyway, and the temporary file is exactly as real as any other - so the child needs no</span>
+<span id="L57"><span class="lineNum">      57</span>              : // knowledge of archives, and a member reads as the file it would be if unpacked.</span>
+<span id="L58"><span class="lineNum">      58</span>              : //</span>
+<span id="L59"><span class="lineNum">      59</span>              : // Each member gets its OWN directory (`&lt;tmp&gt;/xff-&lt;pid&gt;-&lt;n&gt;/`) holding a file with the member's own</span>
+<span id="L60"><span class="lineNum">      60</span>              : // basename: two members named `README` in different containers cannot collide, and a tool that</span>
+<span id="L61"><span class="lineNum">      61</span>              : // keys on the name or the extension sees what it expects. Everything created is removed by</span>
+<span id="L62"><span class="lineNum">      62</span>              : // `Release` or, for anything still held (a `+` batch runs after the walk), by the destructor - so</span>
+<span id="L63"><span class="lineNum">      63</span>              : // nothing survives the run even when the child fails or a signal ends the walk early.</span>
+<span id="L64"><span class="lineNum">      64</span>              : //</span>
+<span id="L65"><span class="lineNum">      65</span>              : // Not thread-safe: the evaluator is single-threaded, and a `-j` child is launched from that same</span>
+<span id="L66"><span class="lineNum">      66</span>              : // thread.</span>
+<span id="L67"><span class="lineNum">      67</span>              : class ExtractedMembers {</span>
+<span id="L68"><span class="lineNum">      68</span>              :  public:</span>
+<span id="L69"><span class="lineNum">      69</span> <span class="tlaGNC">         840 :   explicit ExtractedMembers(vfs::MutationPolicy policy = {}) : policy_(policy) {}</span></span>
+<span id="L70"><span class="lineNum">      70</span>              : </span>
+<span id="L71"><span class="lineNum">      71</span>              :   ~ExtractedMembers();</span>
+<span id="L72"><span class="lineNum">      72</span>              : </span>
+<span id="L73"><span class="lineNum">      73</span>              :   ExtractedMembers(const ExtractedMembers&amp;) = delete;</span>
+<span id="L74"><span class="lineNum">      74</span>              :   ExtractedMembers&amp; operator=(const ExtractedMembers&amp;) = delete;</span>
+<span id="L75"><span class="lineNum">      75</span>              :   ExtractedMembers(ExtractedMembers&amp;&amp;) = delete;</span>
+<span id="L76"><span class="lineNum">      76</span>              :   ExtractedMembers&amp; operator=(ExtractedMembers&amp;&amp;) = delete;</span>
+<span id="L77"><span class="lineNum">      77</span>              : </span>
+<span id="L78"><span class="lineNum">      78</span>              :   // Reads `member` through `fs` (the container's filesystem, not the local one) and writes it to a</span>
+<span id="L79"><span class="lineNum">      79</span>              :   // fresh temporary file, returning that file's path. The bytes are the member's real, decompressed</span>
+<span id="L80"><span class="lineNum">      80</span>              :   // content, so the temporary file's size is the size xff reports for the member.</span>
+<span id="L81"><span class="lineNum">      81</span>              :   absl::StatusOr&lt;std::string&gt; Extract(const vfs::FileSystem&amp; fs, std::string_view member);</span>
 <span id="L82"><span class="lineNum">      82</span>              : </span>
-<span id="L83"><span class="lineNum">      83</span>              :   // Extracted files not yet released, for tests and for the end-of-run sweep.</span>
-<span id="L84"><span class="lineNum">      84</span>              :   [[nodiscard]] std::vector&lt;std::string&gt; Held() const;</span>
-<span id="L85"><span class="lineNum">      85</span>              : </span>
-<span id="L86"><span class="lineNum">      86</span>              :  private:</span>
-<span id="L87"><span class="lineNum">      87</span>              :   std::vector&lt;std::string&gt; held_;  // full paths, each the only file in its own directory</span>
-<span id="L88"><span class="lineNum">      88</span>              :   int next_ = 0;                   // per-instance counter, so two extractions never share a directory</span>
-<span id="L89"><span class="lineNum">      89</span>              : };</span>
-<span id="L90"><span class="lineNum">      90</span>              : </span>
-<span id="L91"><span class="lineNum">      91</span>              : }  // namespace xff::engine</span>
-<span id="L92"><span class="lineNum">      92</span>              : </span>
-<span id="L93"><span class="lineNum">      93</span>              : #endif  // XFF_ENGINE_EXTRACT_H_</span>
+<span id="L83"><span class="lineNum">      83</span>              :   // Removes one extracted file and its directory. A path this instance did not hand out is ignored,</span>
+<span id="L84"><span class="lineNum">      84</span>              :   // so a caller may release unconditionally.</span>
+<span id="L85"><span class="lineNum">      85</span>              :   void Release(std::string_view path);</span>
+<span id="L86"><span class="lineNum">      86</span>              : </span>
+<span id="L87"><span class="lineNum">      87</span>              :   // Extracted files not yet released, for tests and for the end-of-run sweep.</span>
+<span id="L88"><span class="lineNum">      88</span>              :   [[nodiscard]] std::vector&lt;std::string&gt; Held() const;</span>
+<span id="L89"><span class="lineNum">      89</span>              : </span>
+<span id="L90"><span class="lineNum">      90</span>              :  private:</span>
+<span id="L91"><span class="lineNum">      91</span>              :   std::vector&lt;std::string&gt; held_;  // full paths, each the only file in its own directory</span>
+<span id="L92"><span class="lineNum">      92</span>              :   vfs::MutationPolicy policy_;</span>
+<span id="L93"><span class="lineNum">      93</span>              :   std::map&lt;std::string, std::unique_ptr&lt;vfs::TemporaryDirectory&gt;&gt; directories_;</span>
+<span id="L94"><span class="lineNum">      94</span>              : };</span>
+<span id="L95"><span class="lineNum">      95</span>              : </span>
+<span id="L96"><span class="lineNum">      96</span>              : }  // namespace xff::engine</span>
+<span id="L97"><span class="lineNum">      97</span>              : </span>
+<span id="L98"><span class="lineNum">      98</span>              : #endif  // XFF_ENGINE_EXTRACT_H_</span>
         </pre>
               </td>
             </tr>

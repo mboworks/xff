@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-13 10:53:42</td>
+            <td class="headerValue">2026-09-13 14:54:51</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -126,16 +126,16 @@
 <span id="L46"><span class="lineNum">      46</span>                 :             : // Replaces every &quot;{}&quot; in `token` with `path` (find's -exec placeholder).</span>
 <span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">         271 : std::string SubstitutePlaceholder(std::string_view token, std::string_view path) {</span></span>
 <span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">         271 :   std::string out;</span></span>
-<span id="L49"><span class="lineNum">      49</span>         [<span class="tlaGBC" title="branch 0 was taken 3115 times"> + </span><span class="tlaGBC" title="branch 1 was taken 271 times"> + </span>]:<span class="tlaGNC">        3386 :   for (std::string_view::size_type i = 0; i &lt; token.size();) {</span></span>
-<span id="L50"><span class="lineNum">      50</span> [<span class="tlaGBC" title="branch 0 was taken 2881 times"> + </span><span class="tlaGBC" title="branch 1 was taken 234 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 59 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2822 times"> + </span>]:<span class="tlaGNC">        3115 :     if (i + 1 &lt; token.size() &amp;&amp; token[i] == '{' &amp;&amp; token[i + 1] == '}') {</span></span>
+<span id="L49"><span class="lineNum">      49</span>         [<span class="tlaGBC" title="branch 0 was taken 3121 times"> + </span><span class="tlaGBC" title="branch 1 was taken 271 times"> + </span>]:<span class="tlaGNC">        3392 :   for (std::string_view::size_type i = 0; i &lt; token.size();) {</span></span>
+<span id="L50"><span class="lineNum">      50</span> [<span class="tlaGBC" title="branch 0 was taken 2887 times"> + </span><span class="tlaGBC" title="branch 1 was taken 234 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 59 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2828 times"> + </span>]:<span class="tlaGNC">        3121 :     if (i + 1 &lt; token.size() &amp;&amp; token[i] == '{' &amp;&amp; token[i + 1] == '}') {</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 56 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 3 times"> + </span>]
 <span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">          56 :       out.append(path);</span></span>
 <span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">          56 :       i += 2;</span></span>
-<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">        3059 :     } else {</span></span>
-<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">        3059 :       out.push_back(token[i]);</span></span>
-<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">        3059 :       ++i;</span></span>
-<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">        3059 :     }</span></span>
-<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">        3115 :   }</span></span>
+<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">        3065 :     } else {</span></span>
+<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">        3065 :       out.push_back(token[i]);</span></span>
+<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">        3065 :       ++i;</span></span>
+<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">        3065 :     }</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">        3121 :   }</span></span>
 <span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">         271 :   return out;</span></span>
 <span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">         271 : }</span></span>
 <span id="L60"><span class="lineNum">      60</span>                 :             : </span>
@@ -277,12 +277,12 @@
 <span id="L196"><span class="lineNum">     196</span>                 :<span class="tlaGNC">          29 :   }</span></span>
 <span id="L197"><span class="lineNum">     197</span>                 :<span class="tlaGNC">          62 : }</span></span>
 <span id="L198"><span class="lineNum">     198</span>                 :             : </span>
-<span id="L199"><span class="lineNum">     199</span>                 :<span class="tlaGNC">        1580 : std::size_t ParallelExec::Drain() {</span></span>
-<span id="L200"><span class="lineNum">     200</span>         [<span class="tlaGBC" title="branch 0 was taken 36 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1580 times"> + </span>]:<span class="tlaGNC">        1616 :   while (outstanding_ &gt; 0) {</span></span>
+<span id="L199"><span class="lineNum">     199</span>                 :<span class="tlaGNC">        1632 : std::size_t ParallelExec::Drain() {</span></span>
+<span id="L200"><span class="lineNum">     200</span>         [<span class="tlaGBC" title="branch 0 was taken 36 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1632 times"> + </span>]:<span class="tlaGNC">        1668 :   while (outstanding_ &gt; 0) {</span></span>
 <span id="L201"><span class="lineNum">     201</span>                 :<span class="tlaGNC">          36 :     ReapOne();</span></span>
 <span id="L202"><span class="lineNum">     202</span>                 :<span class="tlaGNC">          36 :   }</span></span>
-<span id="L203"><span class="lineNum">     203</span>                 :<span class="tlaGNC">        1580 :   return failures_;</span></span>
-<span id="L204"><span class="lineNum">     204</span>                 :<span class="tlaGNC">        1580 : }</span></span>
+<span id="L203"><span class="lineNum">     203</span>                 :<span class="tlaGNC">        1632 :   return failures_;</span></span>
+<span id="L204"><span class="lineNum">     204</span>                 :<span class="tlaGNC">        1632 : }</span></span>
 <span id="L205"><span class="lineNum">     205</span>                 :             : </span>
 <span id="L206"><span class="lineNum">     206</span>                 :<span class="tlaGNC">          11 : bool ExecuteInDir(const std::vector&lt;std::string&gt;&amp; command, std::string_view dir, std::string_view name) {</span></span>
 <span id="L207"><span class="lineNum">     207</span>                 :<span class="tlaGNC">          11 :   std::vector&lt;std::string&gt; args;</span></span>

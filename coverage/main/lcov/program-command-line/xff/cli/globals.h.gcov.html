@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-13 10:53:42</td>
+            <td class="headerValue">2026-09-13 14:54:51</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryLo">50.0&nbsp;%</td>
@@ -176,64 +176,66 @@
 <span id="L105"><span class="lineNum">     105</span>              :   // kTristate check against the shared vocabulary (values::ParseBool / ParseTristate), which accepts</span>
 <span id="L106"><span class="lineNum">     106</span>              :   // more spellings than the table documents (`yes` / `1` beside `on`), so those must NOT be checked</span>
 <span id="L107"><span class="lineNum">     107</span>              :   // as an enum.</span>
-<span id="L108"><span class="lineNum">     108</span>              :   enum class ValueCheck : std::uint8_t { kNone, kEnum, kEnumOrTemplate, kBool, kTristate };</span>
-<span id="L109"><span class="lineNum">     109</span>              :   ValueCheck value_check = ValueCheck::kNone;</span>
-<span id="L110"><span class="lineNum">     110</span>              :   bool xff = true;  // false for a find-native option (-H/-L/-P); true for an xff extension</span>
-<span id="L111"><span class="lineNum">     111</span>              : };</span>
-<span id="L112"><span class="lineNum">     112</span>              : </span>
-<span id="L113"><span class="lineNum">     113</span>              : template&lt;typename Sink&gt;</span>
-<span id="L114"><span class="lineNum">     114</span> <span class="tlaGNC">           1 : void AbslStringify(Sink&amp; sink, const GlobalFlag&amp; flag) {</span></span>
-<span id="L115"><span class="lineNum">     115</span> <span class="tlaGNC">           1 :   sink.Append(flag.name);</span></span>
-<span id="L116"><span class="lineNum">     116</span> <span class="tlaGNC">           1 : }</span></span>
-<span id="L117"><span class="lineNum">     117</span>              : </span>
-<span id="L118"><span class="lineNum">     118</span>              : // Whether the build-time extra `key` (e.g. &quot;archive&quot;) is compiled into this binary. Reads the</span>
-<span id="L119"><span class="lineNum">     119</span>              : // `XFF_WITH_*` defines the Bazel `//xff:&lt;extra&gt;` flags add via select(); an unknown key is false.</span>
-<span id="L120"><span class="lineNum">     120</span>              : // The single point that maps an extra key to its compile-time availability, shared by main (the</span>
-<span id="L121"><span class="lineNum">     121</span>              : // used-but-unavailable hard error) and the help system (the &quot;Extras (not built in)&quot; grouping).</span>
-<span id="L122"><span class="lineNum">     122</span>              : bool ExtraEnabled(std::string_view key);</span>
-<span id="L123"><span class="lineNum">     123</span>              : </span>
-<span id="L124"><span class="lineNum">     124</span>              : // The Bazel flag label that turns the extra `key` on, e.g. &quot;--//xff:xff_archive&quot; - what an error</span>
-<span id="L125"><span class="lineNum">     125</span>              : // message tells the user to rebuild with. Empty for an unknown extra, so a caller omits the hint</span>
-<span id="L126"><span class="lineNum">     126</span>              : // rather than naming a flag that does not exist. Kept beside ExtraEnabled so the two cannot drift.</span>
-<span id="L127"><span class="lineNum">     127</span>              : std::string_view ExtraBuildFlag(std::string_view key);</span>
-<span id="L128"><span class="lineNum">     128</span>              : </span>
-<span id="L129"><span class="lineNum">     129</span>              : // The extras compiled into THIS binary, by key, in a stable order - what the notice line and any</span>
-<span id="L130"><span class="lineNum">     130</span>              : // &quot;which extras do I have&quot; surface print. Empty for a lean build.</span>
-<span id="L131"><span class="lineNum">     131</span>              : [[nodiscard]] std::vector&lt;std::string&gt; EnabledExtras();</span>
-<span id="L132"><span class="lineNum">     132</span>              : </span>
-<span id="L133"><span class="lineNum">     133</span>              : // All global options, in display order. The single enumeration point for the help</span>
-<span id="L134"><span class="lineNum">     134</span>              : // system and the planned doc generators.</span>
-<span id="L135"><span class="lineNum">     135</span>              : absl::Span&lt;const GlobalFlag&gt; Globals();</span>
-<span id="L136"><span class="lineNum">     136</span>              : </span>
-<span id="L137"><span class="lineNum">     137</span>              : // The global option named `name` (matching the canonical name or an alias), or no reference if</span>
-<span id="L138"><span class="lineNum">     138</span>              : // none. `name` carries its leading dashes (e.g. &quot;--sort&quot;, &quot;-j&quot;).</span>
-<span id="L139"><span class="lineNum">     139</span>              : mbo::types::OptionalRef&lt;const GlobalFlag&gt; LookupGlobal(std::string_view name);</span>
-<span id="L140"><span class="lineNum">     140</span>              : </span>
-<span id="L141"><span class="lineNum">     141</span>              : // The global option represented by the complete argument `arg`, normalized to its registry entry.</span>
-<span id="L142"><span class="lineNum">     142</span>              : // Accepts the same exact, valued, sign-suffixed, and compatibility forms as IsKnownGlobal. This is</span>
-<span id="L143"><span class="lineNum">     143</span>              : // useful when callers need the canonical option identity rather than only a yes/no classification.</span>
-<span id="L144"><span class="lineNum">     144</span>              : mbo::types::OptionalRef&lt;const GlobalFlag&gt; LookupGlobalArgument(std::string_view arg);</span>
-<span id="L145"><span class="lineNum">     145</span>              : </span>
-<span id="L146"><span class="lineNum">     146</span>              : // Whether `arg` is a recognized whole-run global token, so `main` can reject an</span>
-<span id="L147"><span class="lineNum">     147</span>              : // unknown leading option instead of silently ignoring it. Accepts: an exact name or</span>
-<span id="L148"><span class="lineNum">     148</span>              : // alias; a valued `name=VALUE` / `alias=VALUE` form when the flag advertises a value</span>
-<span id="L149"><span class="lineNum">     149</span>              : // (its `display` contains '='); and the compat</span>
-<span id="L150"><span class="lineNum">     150</span>              : // aliases not in the table (`-0`, `-g+`, `-g-`). The meta flags `--help` / `--version`</span>
-<span id="L151"><span class="lineNum">     151</span>              : // / `--man` / formatted full help are consumed before parsing and are not checked here.</span>
-<span id="L152"><span class="lineNum">     152</span>              : bool IsKnownGlobal(std::string_view arg);</span>
-<span id="L153"><span class="lineNum">     153</span>              : </span>
-<span id="L154"><span class="lineNum">     154</span>              : // Checks the VALUE of one `name=VALUE` global against the flag's declared vocabulary, so a</span>
-<span id="L155"><span class="lineNum">     155</span>              : // mistyped value fails the run instead of silently selecting the default. Returns OK for a flag</span>
-<span id="L156"><span class="lineNum">     156</span>              : // that takes free text (ValueCheck::kNone), for a token with no '=' (a bare or sign-suffixed</span>
-<span id="L157"><span class="lineNum">     157</span>              : // form), and for an unknown flag (IsKnownGlobal reports that, with its own message).</span>
-<span id="L158"><span class="lineNum">     158</span>              : //</span>
-<span id="L159"><span class="lineNum">     159</span>              : // The error message lists the accepted values, generated from the flag's `values` table (or the</span>
-<span id="L160"><span class="lineNum">     160</span>              : // shared vocabulary for a bool / tri-state), so it cannot drift from what the help prints.</span>
-<span id="L161"><span class="lineNum">     161</span>              : absl::Status ValidateGlobalValue(std::string_view arg);</span>
-<span id="L162"><span class="lineNum">     162</span>              : </span>
-<span id="L163"><span class="lineNum">     163</span>              : }  // namespace xff::cli</span>
+<span id="L108"><span class="lineNum">     108</span>              :   // kEnumList accepts an empty list or comma-separated documented values.</span>
+<span id="L109"><span class="lineNum">     109</span>              :   enum class ValueCheck : std::uint8_t { kNone, kEnum, kEnumList, kEnumOrTemplate, kBool, kTristate };</span>
+<span id="L110"><span class="lineNum">     110</span>              :   ValueCheck value_check = ValueCheck::kNone;</span>
+<span id="L111"><span class="lineNum">     111</span>              :   bool config_only = false;  // Accepted only through validated configuration files.</span>
+<span id="L112"><span class="lineNum">     112</span>              :   bool xff = true;           // false for a find-native option (-H/-L/-P); true for an xff extension</span>
+<span id="L113"><span class="lineNum">     113</span>              : };</span>
+<span id="L114"><span class="lineNum">     114</span>              : </span>
+<span id="L115"><span class="lineNum">     115</span>              : template&lt;typename Sink&gt;</span>
+<span id="L116"><span class="lineNum">     116</span> <span class="tlaGNC">           1 : void AbslStringify(Sink&amp; sink, const GlobalFlag&amp; flag) {</span></span>
+<span id="L117"><span class="lineNum">     117</span> <span class="tlaGNC">           1 :   sink.Append(flag.name);</span></span>
+<span id="L118"><span class="lineNum">     118</span> <span class="tlaGNC">           1 : }</span></span>
+<span id="L119"><span class="lineNum">     119</span>              : </span>
+<span id="L120"><span class="lineNum">     120</span>              : // Whether the build-time extra `key` (e.g. &quot;archive&quot;) is compiled into this binary. Reads the</span>
+<span id="L121"><span class="lineNum">     121</span>              : // `XFF_WITH_*` defines the Bazel `//xff:&lt;extra&gt;` flags add via select(); an unknown key is false.</span>
+<span id="L122"><span class="lineNum">     122</span>              : // The single point that maps an extra key to its compile-time availability, shared by main (the</span>
+<span id="L123"><span class="lineNum">     123</span>              : // used-but-unavailable hard error) and the help system (the &quot;Extras (not built in)&quot; grouping).</span>
+<span id="L124"><span class="lineNum">     124</span>              : bool ExtraEnabled(std::string_view key);</span>
+<span id="L125"><span class="lineNum">     125</span>              : </span>
+<span id="L126"><span class="lineNum">     126</span>              : // The Bazel flag label that turns the extra `key` on, e.g. &quot;--//xff:xff_archive&quot; - what an error</span>
+<span id="L127"><span class="lineNum">     127</span>              : // message tells the user to rebuild with. Empty for an unknown extra, so a caller omits the hint</span>
+<span id="L128"><span class="lineNum">     128</span>              : // rather than naming a flag that does not exist. Kept beside ExtraEnabled so the two cannot drift.</span>
+<span id="L129"><span class="lineNum">     129</span>              : std::string_view ExtraBuildFlag(std::string_view key);</span>
+<span id="L130"><span class="lineNum">     130</span>              : </span>
+<span id="L131"><span class="lineNum">     131</span>              : // The extras compiled into THIS binary, by key, in a stable order - what the notice line and any</span>
+<span id="L132"><span class="lineNum">     132</span>              : // &quot;which extras do I have&quot; surface print. Empty for a lean build.</span>
+<span id="L133"><span class="lineNum">     133</span>              : [[nodiscard]] std::vector&lt;std::string&gt; EnabledExtras();</span>
+<span id="L134"><span class="lineNum">     134</span>              : </span>
+<span id="L135"><span class="lineNum">     135</span>              : // All global options, in display order. The single enumeration point for the help</span>
+<span id="L136"><span class="lineNum">     136</span>              : // system and the planned doc generators.</span>
+<span id="L137"><span class="lineNum">     137</span>              : absl::Span&lt;const GlobalFlag&gt; Globals();</span>
+<span id="L138"><span class="lineNum">     138</span>              : </span>
+<span id="L139"><span class="lineNum">     139</span>              : // The global option named `name` (matching the canonical name or an alias), or no reference if</span>
+<span id="L140"><span class="lineNum">     140</span>              : // none. `name` carries its leading dashes (e.g. &quot;--sort&quot;, &quot;-j&quot;).</span>
+<span id="L141"><span class="lineNum">     141</span>              : mbo::types::OptionalRef&lt;const GlobalFlag&gt; LookupGlobal(std::string_view name);</span>
+<span id="L142"><span class="lineNum">     142</span>              : </span>
+<span id="L143"><span class="lineNum">     143</span>              : // The global option represented by the complete argument `arg`, normalized to its registry entry.</span>
+<span id="L144"><span class="lineNum">     144</span>              : // Accepts the same exact, valued, sign-suffixed, and compatibility forms as IsKnownGlobal. This is</span>
+<span id="L145"><span class="lineNum">     145</span>              : // useful when callers need the canonical option identity rather than only a yes/no classification.</span>
+<span id="L146"><span class="lineNum">     146</span>              : mbo::types::OptionalRef&lt;const GlobalFlag&gt; LookupGlobalArgument(std::string_view arg);</span>
+<span id="L147"><span class="lineNum">     147</span>              : </span>
+<span id="L148"><span class="lineNum">     148</span>              : // Whether `arg` is a recognized whole-run global token, so `main` can reject an</span>
+<span id="L149"><span class="lineNum">     149</span>              : // unknown leading option instead of silently ignoring it. Accepts: an exact name or</span>
+<span id="L150"><span class="lineNum">     150</span>              : // alias; a valued `name=VALUE` / `alias=VALUE` form when the flag advertises a value</span>
+<span id="L151"><span class="lineNum">     151</span>              : // (its `display` contains '='); and the compat</span>
+<span id="L152"><span class="lineNum">     152</span>              : // aliases not in the table (`-0`, `-g+`, `-g-`). The meta flags `--help` / `--version`</span>
+<span id="L153"><span class="lineNum">     153</span>              : // / `--man` / formatted full help are consumed before parsing and are not checked here.</span>
+<span id="L154"><span class="lineNum">     154</span>              : bool IsKnownGlobal(std::string_view arg);</span>
+<span id="L155"><span class="lineNum">     155</span>              : </span>
+<span id="L156"><span class="lineNum">     156</span>              : // Checks the VALUE of one `name=VALUE` global against the flag's declared vocabulary, so a</span>
+<span id="L157"><span class="lineNum">     157</span>              : // mistyped value fails the run instead of silently selecting the default. Returns OK for a flag</span>
+<span id="L158"><span class="lineNum">     158</span>              : // that takes free text (ValueCheck::kNone), for a token with no '=' (a bare or sign-suffixed</span>
+<span id="L159"><span class="lineNum">     159</span>              : // form), and for an unknown flag (IsKnownGlobal reports that, with its own message).</span>
+<span id="L160"><span class="lineNum">     160</span>              : //</span>
+<span id="L161"><span class="lineNum">     161</span>              : // The error message lists the accepted values, generated from the flag's `values` table (or the</span>
+<span id="L162"><span class="lineNum">     162</span>              : // shared vocabulary for a bool / tri-state), so it cannot drift from what the help prints.</span>
+<span id="L163"><span class="lineNum">     163</span>              : absl::Status ValidateGlobalValue(std::string_view arg);</span>
 <span id="L164"><span class="lineNum">     164</span>              : </span>
-<span id="L165"><span class="lineNum">     165</span>              : #endif  // XFF_CLI_GLOBALS_H_</span>
+<span id="L165"><span class="lineNum">     165</span>              : }  // namespace xff::cli</span>
+<span id="L166"><span class="lineNum">     166</span>              : </span>
+<span id="L167"><span class="lineNum">     167</span>              : #endif  // XFF_CLI_GLOBALS_H_</span>
         </pre>
               </td>
             </tr>

@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-13 10:53:42</td>
+            <td class="headerValue">2026-09-13 14:54:51</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -120,9 +120,9 @@
 <span id="L49"><span class="lineNum">      49</span>              :  public:</span>
 <span id="L50"><span class="lineNum">      50</span>              :   // `armed` is `--archive-mount`; a disarmed instance mounts nothing and answers nothing, so the</span>
 <span id="L51"><span class="lineNum">      51</span>              :   // caller needs no second flag check.</span>
-<span id="L52"><span class="lineNum">      52</span> <span class="tlaGNC">         804 :   explicit MountedContainers(bool armed = false) : armed_(armed) {}</span></span>
+<span id="L52"><span class="lineNum">      52</span> <span class="tlaGNC">         834 :   explicit MountedContainers(bool armed = false, vfs::MutationPolicy policy = {}) : armed_(armed), policy_(policy) {}</span></span>
 <span id="L53"><span class="lineNum">      53</span>              : </span>
-<span id="L54"><span class="lineNum">      54</span> <span class="tlaGNC">         804 :   ~MountedContainers() = default;</span></span>
+<span id="L54"><span class="lineNum">      54</span> <span class="tlaGNC">         830 :   ~MountedContainers() = default;</span></span>
 <span id="L55"><span class="lineNum">      55</span>              : </span>
 <span id="L56"><span class="lineNum">      56</span>              :   MountedContainers(const MountedContainers&amp;) = delete;</span>
 <span id="L57"><span class="lineNum">      57</span>              :   MountedContainers&amp; operator=(const MountedContainers&amp;) = delete;</span>
@@ -139,22 +139,23 @@
 <span id="L68"><span class="lineNum">      68</span>              : </span>
 <span id="L69"><span class="lineNum">      69</span>              :   // Why mounting did not happen, empty until a mount is actually attempted and fails. Recorded</span>
 <span id="L70"><span class="lineNum">      70</span>              :   // once (the first failure), because every later member of every container would repeat it.</span>
-<span id="L71"><span class="lineNum">      71</span> <span class="tlaGNC">         786 :   [[nodiscard]] std::string_view DegradeReason() const { return degrade_reason_; }</span></span>
+<span id="L71"><span class="lineNum">      71</span> <span class="tlaGNC">         809 :   [[nodiscard]] std::string_view DegradeReason() const { return degrade_reason_; }</span></span>
 <span id="L72"><span class="lineNum">      72</span>              : </span>
 <span id="L73"><span class="lineNum">      73</span> <span class="tlaGNC">           2 :   [[nodiscard]] bool Armed() const { return armed_; }</span></span>
 <span id="L74"><span class="lineNum">      74</span>              : </span>
 <span id="L75"><span class="lineNum">      75</span>              :  private:</span>
 <span id="L76"><span class="lineNum">      76</span>              :   bool armed_ = false;</span>
-<span id="L77"><span class="lineNum">      77</span>              : </span>
-<span id="L78"><span class="lineNum">      78</span>              :   // Container path -&gt; its mount. Insert-only for the run; a Mount unmounts when destroyed. The</span>
-<span id="L79"><span class="lineNum">      79</span>              :   // mount holds its own share of the reader (see MountFactory), so nothing is tracked beside it.</span>
-<span id="L80"><span class="lineNum">      80</span>              :   absl::flat_hash_map&lt;std::string, std::unique_ptr&lt;fuse::Mount&gt;&gt; mounts_;</span>
-<span id="L81"><span class="lineNum">      81</span>              :   std::string degrade_reason_;</span>
-<span id="L82"><span class="lineNum">      82</span>              : };</span>
-<span id="L83"><span class="lineNum">      83</span>              : </span>
-<span id="L84"><span class="lineNum">      84</span>              : }  // namespace xff::engine</span>
-<span id="L85"><span class="lineNum">      85</span>              : </span>
-<span id="L86"><span class="lineNum">      86</span>              : #endif  // XFF_ENGINE_MOUNT_H_</span>
+<span id="L77"><span class="lineNum">      77</span>              :   vfs::MutationPolicy policy_;</span>
+<span id="L78"><span class="lineNum">      78</span>              : </span>
+<span id="L79"><span class="lineNum">      79</span>              :   // Container path -&gt; its mount. Insert-only for the run; a Mount unmounts when destroyed. The</span>
+<span id="L80"><span class="lineNum">      80</span>              :   // mount holds its own share of the reader (see MountFactory), so nothing is tracked beside it.</span>
+<span id="L81"><span class="lineNum">      81</span>              :   absl::flat_hash_map&lt;std::string, std::unique_ptr&lt;fuse::Mount&gt;&gt; mounts_;</span>
+<span id="L82"><span class="lineNum">      82</span>              :   std::string degrade_reason_;</span>
+<span id="L83"><span class="lineNum">      83</span>              : };</span>
+<span id="L84"><span class="lineNum">      84</span>              : </span>
+<span id="L85"><span class="lineNum">      85</span>              : }  // namespace xff::engine</span>
+<span id="L86"><span class="lineNum">      86</span>              : </span>
+<span id="L87"><span class="lineNum">      87</span>              : #endif  // XFF_ENGINE_MOUNT_H_</span>
         </pre>
               </td>
             </tr>

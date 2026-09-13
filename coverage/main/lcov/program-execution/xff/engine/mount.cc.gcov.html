@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-13 10:53:42</td>
+            <td class="headerValue">2026-09-13 14:54:51</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -125,7 +125,7 @@
 <span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">           6 :   const std::string container(parts-&gt;container);</span></span>
 <span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">           6 :   auto found = mounts_.find(container);</span></span>
 <span id="L47"><span class="lineNum">      47</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">           6 :   if (found == mounts_.end()) {</span></span>
-<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">           6 :     absl::StatusOr&lt;std::unique_ptr&lt;fuse::Mount&gt;&gt; mount = fuse::MountContainer(std::move(fs), container);</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">           6 :     absl::StatusOr&lt;std::unique_ptr&lt;fuse::Mount&gt;&gt; mount = fuse::MountContainer(std::move(fs), container, policy_);</span></span>
 <span id="L49"><span class="lineNum">      49</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">           6 :     if (!mount.ok()) {</span></span>
 <span id="L50"><span class="lineNum">      50</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           3 :       if (degrade_reason_.empty()) {</span></span>
 <span id="L51"><span class="lineNum">      51</span>                 :             :         // Once per run: every member of every container would otherwise repeat the same sentence.</span>
