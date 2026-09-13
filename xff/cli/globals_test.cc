@@ -214,8 +214,8 @@ TEST_F(GlobalsTest, DetailedPolicyAcceptsOnlyImplementedCategories) {
   EXPECT_THAT(ValidateGlobalValue("--detailed-block-policy="), IsOk());
   EXPECT_THAT(ValidateGlobalValue("--detailed-block-policy=archive"), IsOk());
   EXPECT_THAT(ValidateGlobalValue("--detailed-block-policy=archive,archive"), IsOk());
-  const auto invalid =
-      std::to_array<std::string_view>({"temp", "output", "archive,temp", "archive,", ",archive", "garbage"});
+  EXPECT_THAT(ValidateGlobalValue("--detailed-block-policy=archive,temp,output"), IsOk());
+  const auto invalid = std::to_array<std::string_view>({"archive,", ",archive", "garbage"});
   for (const auto value : invalid) {
     EXPECT_THAT(
         ValidateGlobalValue(absl::StrCat("--detailed-block-policy=", value)),

@@ -190,7 +190,7 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
 
 Without configured restrictions, operations are allowed. `--block-*` restrictions accumulate and cannot be cleared by later settings. `--safe` activates the configurable profile; `--no-safe` deactivates that profile without clearing unconditional blocks. Every `--safe-block-*` has a `--no-safe-block-*` counterpart; these profile settings use the last applied value. Initially the profile blocks every relevant capability. Activating it does not reset its definition.
 
-`--detailed-block-policy=LIST` selects categories that use dedicated controls. The list is comma-separated; an empty list (the default) uses ordinary file controls throughout. Currently `archive` is the supported category. Unknown categories are errors. This config-only directive may occur once in the unsectioned system config and once in the unsectioned user config; each file chooses its own policy. Named sections, explicit `.xffrc` files, and the CLI cannot set it. Require the policy file with `--require-system-config` or `--require-user-config` when users must not skip it.
+`--detailed-block-policy=LIST` selects categories that use dedicated controls. The list is comma-separated; an empty list (the default) uses ordinary file controls throughout. `archive`, `temp`, and `output` are supported categories. Unknown categories are errors. This config-only directive may occur once in the unsectioned system config and once in the unsectioned user config; each file chooses its own policy. Named sections, explicit `.xffrc` files, and the CLI cannot set it. Require the policy file with `--require-system-config` or `--require-user-config` when users must not skip it.
 
 Each file's directives are translated before composition. Selecting `archive` in another file cannot remove mandatory restrictions already imposed. Select `archive` for precise archive control; an empty list is the simple default. CLI file controls cover archives as well. Every control listed in a table cell must permit the operation. Names omit their prefixes: `file-writing` means both `--block-file-writing` and, when safe mode is active, `--safe-block-file-writing`. `execution` independently controls arbitrary command execution. The table defines permissions; it does not enable archive operations or add unsupported member-editing actions.
 
@@ -209,6 +209,38 @@ Each file's directives are translated before composition. Selecting `archive` in
 | Extract over existing file     | file-writing, file-overwrite                | file-writing, file-overwrite                                                           |
 
 
+`--temp-root=PATH` and `--output-root=PATH` are config-only, once per unsectioned system or user INI. The system declaration wins. Roots must be existing absolute directories without symlink components; use physical paths (for example `/private/tmp` on macOS). Permissions cover all descendants, including subdirectories, but never deletion or replacement of the root itself. Root declarations do not redirect output filenames. The temp root also selects extraction and mount scratch placement; environment variables cannot grant a directory exception.
+
+| Operation                         | Ordinary path                | temp selected                          | output selected                            |
+| --------------------------------- | ---------------------------- | -------------------------------------- | ------------------------------------------ |
+| Create file                       | file-writing                 | temp-file-writing                      | output-file-writing                        |
+| Overwrite file                    | file-writing, file-overwrite | temp-file-writing, temp-file-overwrite | output-file-writing, output-file-overwrite |
+| Delete file or symlink            | file-deletion                | temp-file-deletion                     | output-file-deletion                       |
+| Create directory                  | directory-creation           | temp-directory-creation                | output-directory-creation                  |
+| Delete empty directory            | directory-deletion           | temp-directory-deletion                | output-directory-deletion                  |
+| Recursive deletion                | Check every entry            | Check every entry                      | Check every entry                          |
+| Delete or replace a declared root | Prohibited                   | Prohibited                             | Prohibited                                 |
+
+
+Unselected directory categories inherit ordinary controls through per-INI expansion. Overlapping temp/output scopes require both sets of permissions. Explicit archive restrictions also apply to archives within directory scopes. With declared roots, archive output outside all roots also needs ordinary file writing/overwrite permission. Select `archive` alongside directory categories to allow archives inside them while blocking ordinary writes elsewhere. Scoped paths reject parent traversal (`..`) and symlink traversal. Scoped overwrite replaces the directory entry rather than modifying a shared hard-link inode. Ordinary extraction and mount scratch require writing and directory-creation permission. Archive-owned staging is part of an authorized archive write, remains on the destination filesystem for archive publication, and is cleaned through retained handles. It does not grant access to other pre-existing temporary files. User-directed directory creation and deletion have separate controls.
+
+```ini
+--require-system-config
+--detailed-block-policy=archive,temp,output
+--output-root=/srv/xff/results
+--temp-root=/srv/xff/scratch
+--block-execution
+--block-file-writing
+--block-file-deletion
+--block-directory-creation
+--block-directory-deletion
+--block-output-file-overwrite
+--block-output-file-deletion
+--block-output-directory-deletion
+```
+
+With those existing roots, this system policy permits new output and scratch work while prohibiting ordinary writes, ordinary deletion, execution, and overwrite/deletion of output contents. An unselected category in another mandatory file can impose additional restrictions. To prohibit an operation everywhere, leave its categories unselected when imposing the ordinary block, or explicitly block every dedicated category as well.
+
 Packing a new archive includes building its contents; member-editing controls do not apply. Replacing an entire archive replaces all its contents, regardless of member-editing restrictions. To preserve existing archives, block archive overwrite. Archive authorization covers only the selected archive output and its necessary owned temporary files, never extraction or unrelated writes. When overwrite is blocked, creation must atomically refuse an existing destination, including symlinks.
 
 ```ini
@@ -217,6 +249,8 @@ Packing a new archive includes building its contents; member-editing controls do
 --block-execution
 --block-file-writing
 --block-file-deletion
+--block-directory-creation
+--block-directory-deletion
 --block-archive-overwrite
 ```
 
@@ -667,43 +701,121 @@ Explicit-file arming with `--allow-exec` covers execution and deletion. It does 
   One of:
 
   - `archive` - use dedicated controls for archive output and member edits
+  - `temp` - use dedicated controls within the declared temporary root
+  - `output` - use dedicated controls within the declared output root
 
-  A comma-separated category list; empty means ordinary file controls for all categories (default). Currently `archive` is supported. Allowed once before all sections in system or user configuration. Each file chooses its own policy, including for its named sections. Neither named sections, explicit `.xffrc` files, nor the CLI may set it. See `--help=safety` for the operation table and archive replacement tradeoff.
+  A comma-separated category list; empty means ordinary file controls for all categories (default). `archive`, `temp`, and `output` are supported. Allowed once before all sections in system or user configuration. Each file chooses its own policy, including for its named sections. Neither named sections, explicit `.xffrc` files, nor the CLI may set it. See `--help=safety` for the operation table and archive replacement tradeoff.
+- `--temp-root=PATH` - declare an existing absolute temp root (config only) _(global, xff)_
+  Allowed once in unsectioned system or user INI; a system declaration wins. Permissions cover descendants recursively; the root itself remains protected. Roots and descendant traversal must not contain symlinks. See `--help=safety`.
+- `--output-root=PATH` - declare an existing absolute output root (config only) _(global, xff)_
+  Allowed once in unsectioned system or user INI; a system declaration wins. Permissions cover descendants recursively; the root itself remains protected. Roots and descendant traversal must not contain symlinks. See `--help=safety`.
+- `--block-directory-creation` - unconditionally prohibit directory creation; later settings cannot clear it _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--safe-block-directory-creation` - include directory creation in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--no-safe-block-directory-creation` - exclude directory creation from the safe profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--block-directory-deletion` - unconditionally prohibit directory deletion; later settings cannot clear it _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--safe-block-directory-deletion` - include directory deletion in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--no-safe-block-directory-deletion` - exclude directory deletion from the safe profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--block-temp-file-writing` - unconditionally prohibit temp file writing; later settings cannot clear it _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--safe-block-temp-file-writing` - include temp file writing in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--no-safe-block-temp-file-writing` - exclude temp file writing from the safe profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--block-temp-file-overwrite` - unconditionally prohibit temp file overwrite; later settings cannot clear it _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--safe-block-temp-file-overwrite` - include temp file overwrite in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--no-safe-block-temp-file-overwrite` - exclude temp file overwrite from the safe profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--block-temp-file-deletion` - unconditionally prohibit temp file deletion; later settings cannot clear it _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--safe-block-temp-file-deletion` - include temp file deletion in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--no-safe-block-temp-file-deletion` - exclude temp file deletion from the safe profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--block-temp-directory-creation` - unconditionally prohibit temp directory creation; later settings cannot clear it _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--safe-block-temp-directory-creation` - include temp directory creation in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--no-safe-block-temp-directory-creation` - exclude temp directory creation from the safe profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--block-temp-directory-deletion` - unconditionally prohibit temp directory deletion; later settings cannot clear it _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--safe-block-temp-directory-deletion` - include temp directory deletion in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--no-safe-block-temp-directory-deletion` - exclude temp directory deletion from the safe profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--block-output-file-writing` - unconditionally prohibit output file writing; later settings cannot clear it _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--safe-block-output-file-writing` - include output file writing in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--no-safe-block-output-file-writing` - exclude output file writing from the safe profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--block-output-file-overwrite` - unconditionally prohibit output file overwrite; later settings cannot clear it _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--safe-block-output-file-overwrite` - include output file overwrite in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--no-safe-block-output-file-overwrite` - exclude output file overwrite from the safe profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--block-output-file-deletion` - unconditionally prohibit output file deletion; later settings cannot clear it _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--safe-block-output-file-deletion` - include output file deletion in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--no-safe-block-output-file-deletion` - exclude output file deletion from the safe profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--block-output-directory-creation` - unconditionally prohibit output directory creation; later settings cannot clear it _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--safe-block-output-directory-creation` - include output directory creation in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--no-safe-block-output-directory-creation` - exclude output directory creation from the safe profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--block-output-directory-deletion` - unconditionally prohibit output directory deletion; later settings cannot clear it _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--safe-block-output-directory-deletion` - include output directory deletion in the active safe-mode restrictions _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
+- `--no-safe-block-output-directory-deletion` - exclude output directory deletion from the safe profile; unconditional blocks still apply _(global, xff)_
+  See `--help=safety` for directory scope, capability composition, and dry-run limits.
 - `--block-file-deletion` - unconditionally prohibit deletion; later flags cannot remove this block _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
 - `--safe-block-file-deletion` - include deletion in the active safe-mode restrictions _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-- `--no-safe-block-file-deletion` - exclude deletion from the safe-mode profile; unconditional blocks still apply _(global, xff)_
+- `--no-safe-block-file-deletion` - exclude deletion from the safe profile; unconditional blocks still apply _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
 - `--block-execution` - unconditionally prohibit execution; later flags cannot remove this block _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
 - `--safe-block-execution` - include execution in the active safe-mode restrictions _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-- `--no-safe-block-execution` - exclude execution from the safe-mode profile; unconditional blocks still apply _(global, xff)_
+- `--no-safe-block-execution` - exclude execution from the safe profile; unconditional blocks still apply _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
 - `--block-file-writing` - unconditionally prohibit writing; later flags cannot remove this block _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
 - `--safe-block-file-writing` - include writing in the active safe-mode restrictions _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-- `--no-safe-block-file-writing` - exclude writing from the safe-mode profile; unconditional blocks still apply _(global, xff)_
+- `--no-safe-block-file-writing` - exclude writing from the safe profile; unconditional blocks still apply _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
 - `--block-file-overwrite` - unconditionally prohibit overwrite; later flags cannot remove this block _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
 - `--safe-block-file-overwrite` - include overwrite in the active safe-mode restrictions _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-- `--no-safe-block-file-overwrite` - exclude overwrite from the safe-mode profile; unconditional blocks still apply _(global, xff)_
+- `--no-safe-block-file-overwrite` - exclude overwrite from the safe profile; unconditional blocks still apply _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
 - `--block-archive-writing` - unconditionally prohibit archive writing; later flags cannot remove this block _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
 - `--safe-block-archive-writing` - include archive writing in the active safe-mode restrictions _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-- `--no-safe-block-archive-writing` - exclude archive writing from the safe-mode profile; unconditional blocks still apply _(global, xff)_
+- `--no-safe-block-archive-writing` - exclude archive writing from the safe profile; unconditional blocks still apply _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
 - `--block-archive-overwrite` - unconditionally prohibit archive overwrite; later flags cannot remove this block _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
 - `--safe-block-archive-overwrite` - include archive overwrite in the active safe-mode restrictions _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-- `--no-safe-block-archive-overwrite` - exclude archive overwrite from the safe-mode profile; unconditional blocks still apply _(global, xff)_
+- `--no-safe-block-archive-overwrite` - exclude archive overwrite from the safe profile; unconditional blocks still apply _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
 - `--block-archive-content-writing` - unconditionally block archive content writing _(global, xff)_
   Applies to member edits of existing archives under `--detailed-block-policy=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
@@ -721,7 +833,7 @@ Explicit-file arming with `--allow-exec` covers execution and deletion. It does 
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
 - `--safe-block-archive-content-deletion` - include archive deletion in the active safe-mode restrictions _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
-- `--no-safe-block-archive-content-deletion` - exclude archive deletion from the safe-mode profile; unconditional blocks still apply _(global, xff)_
+- `--no-safe-block-archive-content-deletion` - exclude archive deletion from the safe profile; unconditional blocks still apply _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
 - `--no-safe` - disable the safe-mode profile; unconditional blocks remain enforced _(global, xff)_
 - `--safe` - activate the configured safe-mode profile _(global, xff)_

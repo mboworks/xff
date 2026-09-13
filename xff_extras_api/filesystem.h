@@ -29,6 +29,8 @@
 
 namespace xff::vfs {
 
+struct MutationPolicy;
+
 // Permission to probe with `FileSystem::Access` (find's -readable/-writable/
 // -executable). Platform-neutral; LocalFs maps these to R_OK/W_OK/X_OK.
 enum class AccessMode { kRead, kWrite, kExecute };
@@ -84,6 +86,15 @@ class FileSystem {
   // Opens named output, atomically rejecting any existing directory entry when exclusive is true.
   // Read-only backends fail; there is no host-filesystem fallback.
   virtual absl::StatusOr<std::unique_ptr<OutputFile>> OpenOutput(std::string_view path, bool exclusive) const;
+
+  virtual bool SupportsDirectoryPolicies() const { return false; }
+
+  // Policy-aware mutation entry points. Backends without anchored path support reject scopes.
+  virtual absl::Status RemoveControlled(std::string_view path, const MutationPolicy& policy) const;
+  virtual absl::StatusOr<std::unique_ptr<OutputFile>> OpenControlledOutput(
+      std::string_view path,
+      bool exclusive,
+      const MutationPolicy& policy) const;
 
   // True if `path` is accessible to the current (effective) user for `mode`
   // (find's -readable/-writable/-executable). Resolves symlinks and reflects

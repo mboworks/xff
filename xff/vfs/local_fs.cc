@@ -239,6 +239,17 @@ absl::StatusOr<Metadata> LocalFs::Stat(std::string_view path, bool follow_symlin
   return MetadataFromStat(st, BirthTime(st, path_str, follow_symlinks));
 }
 
+absl::Status LocalFs::RemoveControlled(std::string_view path, const MutationPolicy& policy) const {
+  return RemoveHostEntry(path, policy);
+}
+
+absl::StatusOr<std::unique_ptr<OutputFile>> LocalFs::OpenControlledOutput(
+    std::string_view path,
+    bool exclusive,
+    const MutationPolicy& policy) const {
+  return OpenHostOutput(path, exclusive, policy);
+}
+
 absl::Status LocalFs::Remove(std::string_view path) const {
   return RemoveHostEntry(path, {});
 }

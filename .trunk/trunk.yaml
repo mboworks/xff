@@ -71,12 +71,18 @@ actions:
     - id: xff-clang-tidy-pre-commit
       description: Run the changed-file clang-tidy pre-commit hook
       run: pre-commit run clang-tidy --hook-stage pre-commit
+      environment:
+        - name: CLANG_TIDY_JOBS
+          value: ${env.CLANG_TIDY_JOBS:-auto}
       interactive: optional
       triggers:
         - git_hooks: [pre-commit]
     - id: xff-clang-tidy-pre-push
       description: Run clang-tidy once for files changed by the pushed refs
       run: python3 tools/clang_tidy_pre_push.py '${hook_stdin_path}'
+      environment:
+        - name: CLANG_TIDY_JOBS
+          value: ${env.CLANG_TIDY_JOBS:-auto}
       interactive: optional
       triggers:
         - git_hooks: [pre-push]

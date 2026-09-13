@@ -881,7 +881,8 @@ Section SafetySection(bool in_full) {
   section.children.push_back(ProseOf(
       "`--detailed-block-policy=LIST` selects categories that use dedicated controls. The list is "
       "comma-separated; an empty list (the default) uses ordinary file controls throughout. "
-      "Currently `archive` is the supported category. Unknown categories are errors. This config-only directive may "
+      "`archive`, `temp`, and `output` are supported categories. Unknown categories are errors. This config-only "
+      "directive may "
       "occur once in the unsectioned system config and once in the "
       "unsectioned user config; each file chooses its own policy. Named sections, explicit `.xffrc` files, and the "
       "CLI cannot set it. Require the policy file with `--require-system-config` or `--require-user-config` "
@@ -918,6 +919,52 @@ Section SafetySection(bool in_full) {
       }};
   section.children.push_back(Content{.node = std::move(operations)});
   section.children.push_back(ProseOf(
+      "`--temp-root=PATH` and `--output-root=PATH` are config-only, once per unsectioned system or user INI. "
+      "The system declaration wins. Roots must be existing absolute directories without symlink components; "
+      "use physical paths (for example `/private/tmp` on macOS). Permissions cover all descendants, "
+      "including subdirectories, but never deletion or replacement of the root itself. "
+      "Root declarations do not redirect output filenames. The temp root also selects extraction and mount "
+      "scratch placement; environment variables cannot grant a directory exception."));
+  Table directory_operations{
+      .header = {"Operation", "Ordinary path", "temp selected", "output selected"},
+      .cells = {
+          {"Create file", "file-writing", "temp-file-writing", "output-file-writing"},
+          {"Overwrite file", "file-writing, file-overwrite", "temp-file-writing, temp-file-overwrite",
+           "output-file-writing, output-file-overwrite"},
+          {"Delete file or symlink", "file-deletion", "temp-file-deletion", "output-file-deletion"},
+          {"Create directory", "directory-creation", "temp-directory-creation", "output-directory-creation"},
+          {"Delete empty directory", "directory-deletion", "temp-directory-deletion", "output-directory-deletion"},
+          {"Recursive deletion", "Check every entry", "Check every entry", "Check every entry"},
+          {"Delete or replace a declared root", "Prohibited", "Prohibited", "Prohibited"},
+      }};
+  section.children.push_back(Content{.node = std::move(directory_operations)});
+  section.children.push_back(ProseOf(
+      "Unselected directory categories inherit ordinary controls through per-INI expansion. Overlapping "
+      "temp/output scopes require both sets of permissions. Explicit archive restrictions also apply to "
+      "archives within directory scopes. With declared roots, archive output outside all roots also needs "
+      "ordinary file writing/overwrite permission. Select `archive` alongside directory categories to allow "
+      "archives inside them while blocking ordinary writes elsewhere. Scoped paths reject parent traversal "
+      "(`..`) and symlink traversal. "
+      "Scoped overwrite replaces the directory entry rather than modifying a shared hard-link inode. "
+      "Ordinary extraction and mount scratch require writing and directory-creation permission. "
+      "Archive-owned staging is part of an authorized archive write, remains on the destination filesystem for "
+      "archive publication, and is cleaned through retained handles. It does not grant access to other "
+      "pre-existing temporary files. User-directed directory creation and deletion have separate controls."));
+  section.children.push_back(ExampleOf(
+      "--require-system-config\n--detailed-block-policy=archive,temp,output\n"
+      "--output-root=/srv/xff/results\n--temp-root=/srv/xff/scratch\n"
+      "--block-execution\n--block-file-writing\n--block-file-deletion\n"
+      "--block-directory-creation\n--block-directory-deletion\n"
+      "--block-output-file-overwrite\n--block-output-file-deletion\n"
+      "--block-output-directory-deletion",
+      "ini"));
+  section.children.push_back(ProseOf(
+      "With those existing roots, this system policy permits new output and scratch work while prohibiting "
+      "ordinary writes, ordinary deletion, execution, and overwrite/deletion of output contents. "
+      "An unselected category in another mandatory file can impose additional restrictions. "
+      "To prohibit an operation everywhere, leave its categories unselected when imposing the ordinary block, "
+      "or explicitly block every dedicated category as well."));
+  section.children.push_back(ProseOf(
       "Packing a new archive includes building its contents; member-editing controls do not apply. "
       "Replacing an entire archive replaces all its contents, regardless of member-editing restrictions. "
       "To preserve existing archives, block archive overwrite. Archive authorization covers only the "
@@ -925,7 +972,8 @@ Section SafetySection(bool in_full) {
       "When overwrite is blocked, creation must atomically refuse an existing destination, including symlinks."));
   section.children.push_back(ExampleOf(
       "--require-system-config\n--detailed-block-policy=archive\n--block-execution\n"
-      "--block-file-writing\n--block-file-deletion\n--block-archive-overwrite",
+      "--block-file-writing\n--block-file-deletion\n--block-directory-creation\n"
+      "--block-directory-deletion\n--block-archive-overwrite",
       "ini"));
   section.children.push_back(ProseOf(
       "This system config allows packing new archives while blocking ordinary writes, deletion, execution, "

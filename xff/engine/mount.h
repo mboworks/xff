@@ -38,6 +38,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include "absl/container/flat_hash_map.h"
 #include "xff/fuse/fuse_backend.h"
@@ -49,7 +50,8 @@ class MountedContainers {
  public:
   // `armed` is `--archive-mount`; a disarmed instance mounts nothing and answers nothing, so the
   // caller needs no second flag check.
-  explicit MountedContainers(bool armed = false, vfs::MutationPolicy policy = {}) : armed_(armed), policy_(policy) {}
+  explicit MountedContainers(bool armed = false, vfs::MutationPolicy policy = {})
+      : armed_(armed), policy_(std::move(policy)) {}
 
   ~MountedContainers() = default;
 

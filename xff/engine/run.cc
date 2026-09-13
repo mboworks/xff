@@ -979,24 +979,24 @@ class ControlledFileSystem : public vfs::FileSystem {
   }
 
   absl::Status Remove(std::string_view path) const override {
-    if (policy_.Blocks(config::Capability::kFileDeletion)) {
-      return absl::PermissionDeniedError("blocked deletion");
-    }
+    auto mutations = policy_.FileMutations();
     if (policy_.dry_run) {
+      if (mutations.directories) {
+        MBO_ASSIGN_OR_RETURN(const auto target, mutations.directories->Resolve(path, mutations));
+        mutations = target.policy;
+      }
+      mutations.dry_run = false;
+      MBO_ASSIGN_OR_RETURN(const auto metadata, fs_.Stat(path, false));
+      MBO_RETURN_IF_ERROR(
+          metadata.type == vfs::FileType::kDirectory ? mutations.DeleteDirectory() : mutations.Delete());
       preview_(absl::StrCat(path, "\n"));
       return absl::OkStatus();
     }
-    return fs_.Remove(path);
+    return fs_.RemoveControlled(path, mutations);
   }
 
   absl::StatusOr<std::unique_ptr<vfs::OutputFile>> OpenOutput(std::string_view path, bool exclusive) const override {
-    if (policy_.Blocks(config::Capability::kFileWriting)) {
-      return absl::PermissionDeniedError("blocked writing");
-    }
-    if (policy_.dry_run) {
-      return absl::FailedPreconditionError("dry run cannot open output");
-    }
-    return fs_.OpenOutput(path, exclusive || policy_.Blocks(config::Capability::kFileOverwrite));
+    return fs_.OpenControlledOutput(path, exclusive, policy_.FileMutations());
   }
 
   absl::Status WriteContent(std::string_view path, std::string_view content) const override {
@@ -1027,9 +1027,11 @@ std::optional<config::Capability> ActionCapability(const registry::Descriptor& d
 std::optional<std::string> BlockedAction(const parser::Expr& expr, const config::SafetyPolicy& policy) {
   if (expr.kind == parser::Expr::Kind::kPredicate) {
     const auto capability = ActionCapability(*expr.descriptor);
-    if (capability.has_value() && policy.Blocks(*capability)
+    if (capability.has_value() && (!policy.directories || *capability == config::Capability::kExecution)
+        && policy.Blocks(*capability)
         && (*capability != config::Capability::kFileDeletion
-            || policy.Blocks(config::Capability::kArchiveContentDeletion))) {
+            || (policy.Blocks(config::Capability::kArchiveContentDeletion)
+                && policy.Blocks(config::Capability::kDirectoryDeletion)))) {
       return absl::StrCat(expr.descriptor->name, ": blocked ", config::CapabilityName(*capability));
     }
     return std::nullopt;
@@ -3488,7 +3490,18 @@ RunResult RunFindCore(
   const bool has_action = expression.has_value() && ContainsAction(*expression);
   // --implicit-print=yes|no overrides find's default-print rule (otherwise !has_action).
   const bool implicit_print = ResolveImplicitPrint(command.globals).value_or(!has_action && !compare_listing);
-  const config::SafetyPolicy safety = config::ResolveSafety(command.globals, command.safety_flags_expanded);
+  const auto requested_safety = config::ResolveSafety(command.globals, command.safety_flags_expanded);
+  if ((!requested_safety.temp_root.empty() || !requested_safety.output_root.empty())
+      && !fs.SupportsDirectoryPolicies()) {
+    on_error("safety", absl::PermissionDeniedError("filesystem does not support directory policies"));
+    return RunResult{.errors = 2};
+  }
+  auto prepared_safety = requested_safety.PrepareDirectories();
+  if (!prepared_safety.ok()) {
+    on_error("safety", prepared_safety.status());
+    return RunResult{.errors = 2};
+  }
+  const config::SafetyPolicy safety = *std::move(prepared_safety);
   if (expression.has_value()) {
     if (const auto blocked = BlockedAction(*expression, safety); blocked.has_value()) {
       on_error("safety", absl::PermissionDeniedError(*blocked));
@@ -3932,7 +3945,21 @@ RunResult RunFindCore(
   // --summary. Everything that can be checked without walking is checked here: a missing extra and an
   // output name that carries no writable format both cost a whole traversal if found out afterwards.
   const std::optional<std::string> pack_target = ReadPackTarget(command.globals);
-  if (pack_target && safety.ArchiveMutations().block_overwrite) {
+  auto pack_mutations = safety.ArchiveMutations();
+  if (pack_target && pack_mutations.directories) {
+    const auto target = pack_mutations.directories->Resolve(*pack_target, pack_mutations);
+    if (!target.ok()) {
+      on_error(*pack_target, target.status());
+      return RunResult{.errors = 2};
+    }
+    pack_mutations = target->policy;
+    pack_mutations.dry_run = false;
+    if (const auto allowed = pack_mutations.Write(); !allowed.ok()) {
+      on_error(*pack_target, allowed);
+      return RunResult{.errors = 2};
+    }
+  }
+  if (pack_target && pack_mutations.block_overwrite) {
     const auto existing = fs.Stat(*pack_target, false);
     if (existing.ok()) {
       on_error(*pack_target, absl::PermissionDeniedError("blocked archive overwrite: destination already exists"));
@@ -4070,11 +4097,27 @@ RunResult RunFindCore(
   const auto emit_file = [&](std::string_view file, std::string_view record) {
     if (safety.dry_run) {
       if (previewed_files.insert(std::string(file)).second) {
+        auto mutations = safety.FileMutations();
+        if (mutations.directories) {
+          const auto target = mutations.directories->Resolve(file, mutations);
+          if (!target.ok()) {
+            ++errors;
+            on_error(file, target.status());
+            return;
+          }
+          mutations = target->policy;
+        }
+        mutations.dry_run = false;
         const auto existing = fs.Stat(file, false);
+        if (const auto allowed = mutations.Write(existing.ok()); !allowed.ok()) {
+          ++errors;
+          on_error(file, allowed);
+          return;
+        }
         if (!existing.ok() && existing.status().code() != absl::StatusCode::kNotFound) {
           ++errors;
           on_error(file, existing.status());
-        } else if (existing.ok() && safety.Blocks(config::Capability::kFileOverwrite)) {
+        } else if (existing.ok() && mutations.block_overwrite) {
           ++errors;
           on_error(file, absl::AlreadyExistsError("blocked overwrite: output already exists"));
         } else {
@@ -4085,7 +4128,7 @@ RunResult RunFindCore(
     }
     auto sink = file_sinks.find(std::string(file));
     if (sink == file_sinks.end()) {
-      auto opened = walk_fs.OpenOutput(file, safety.Blocks(config::Capability::kFileOverwrite));
+      auto opened = walk_fs.OpenOutput(file, false);
       if (!opened.ok()) {
         ++errors;
         on_error(file, opened.status());

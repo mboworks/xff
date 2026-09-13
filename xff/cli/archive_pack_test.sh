@@ -422,3 +422,28 @@ INI
 }
 
 test_runner
+
+test::output_scope_guards_archive_publication() {
+  local root cfg status
+  root="$(_tree)"
+  root="$(cd "${root}" && pwd -P)"
+  mkdir -p "${root}/output"
+  cfg="${root}/user.ini"
+  cat >"${cfg}" <<INI
+--detailed-block-policy=archive,output
+--output-root=${root}/output
+--block-file-writing
+--block-output-file-overwrite
+INI
+  XFF_CONFIG="${cfg}" "$(_xff_bin)" "${root}/src" --pack="${root}/output/new.tar"
+  tar -tf "${root}/output/new.tar" >/dev/null
+  status=0
+  XFF_CONFIG="${cfg}" "$(_xff_bin)" "${root}/src" --pack="${root}/outside.tar" >/dev/null 2>&1 || status=$?
+  expect_eq "2" "${status}"
+  [[ ! -e "${root}/outside.tar" ]] || fail "archive escaped the output policy"
+  status=0
+  XFF_CONFIG="${cfg}" "$(_xff_bin)" "${root}/src" --pack="${root}/output/new.tar" >/dev/null 2>&1 || status=$?
+  expect_eq "2" "${status}"
+  XFF_CONFIG="${cfg}" "$(_xff_bin)" "${root}/src" --pack="${root}/output/preview.tar" --dry-run >/dev/null
+  [[ ! -e "${root}/output/preview.tar" ]] || fail "dry run published archive"
+}

@@ -118,14 +118,18 @@ std::string ChooseExtractDirectory(std::uint64_t member_size, absl::Span<const s
 ExtractedMembers::~ExtractedMembers() = default;
 
 absl::StatusOr<std::string> ExtractedMembers::Extract(const vfs::FileSystem& fs, std::string_view member) {
-  MBO_RETURN_IF_ERROR(policy_.Write());
+  if (!policy_.directories) {
+    MBO_RETURN_IF_ERROR(policy_.Write());
+  }
   MBO_ASSIGN_OR_RETURN(const std::string content, fs.ReadContent(member));
   const std::string_view name = MemberName(member);
   if (name.empty() || name == "." || name == "..") {
     return absl::InvalidArgumentError("invalid extracted member basename");
   }
-  const std::string prefix =
-      absl::StrCat(ChooseExtractDirectory(content.size(), DefaultExtractDirectories()), "/xff-extract");
+  const std::string prefix = absl::StrCat(
+      policy_.temporary_root.empty() ? ChooseExtractDirectory(content.size(), DefaultExtractDirectories())
+                                     : policy_.temporary_root,
+      "/xff-extract");
   MBO_ASSIGN_OR_RETURN(auto directory, vfs::TemporaryDirectory::Create(prefix, policy_));
   std::string path = absl::StrCat(directory->Path(), "/", name);
   MBO_ASSIGN_OR_RETURN(const auto output, vfs::OpenHostOutput(path, true, policy_));

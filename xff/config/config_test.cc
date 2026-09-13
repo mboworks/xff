@@ -41,11 +41,8 @@ using ::testing::SizeIs;
 struct ConfigTest : ::testing::Test {};
 
 TEST_F(ConfigTest, SafetyDefaultsAndProfilesRemainSeparateFromUnconditionalBlocks) {
-  const auto capabilities = std::to_array<Capability>(
-      {Capability::kFileDeletion, Capability::kExecution, Capability::kFileWriting, Capability::kFileOverwrite,
-       Capability::kArchiveContentDeletion, Capability::kArchiveWriting, Capability::kArchiveOverwrite,
-       Capability::kArchiveContentWriting, Capability::kArchiveContentOverwrite});
-  for (const auto capability : capabilities) {
+  for (std::size_t index = 0; index < SafetyPolicy::kCapabilities; ++index) {
+    const auto capability = static_cast<Capability>(index);
     const std::string name(CapabilityName(capability));
     EXPECT_THAT(ResolveSafety({}).Blocks(capability), IsFalse());
     EXPECT_THAT(ResolveSafety({"--safe"}).Blocks(capability), IsTrue());
@@ -58,6 +55,40 @@ TEST_F(ConfigTest, SafetyDefaultsAndProfilesRemainSeparateFromUnconditionalBlock
         ResolveSafety({"--block-" + name, "--no-safe", "--no-safe-block-" + name}).Blocks(capability), IsTrue());
   }
   EXPECT_THAT(ResolveSafety({"--dry-run"}).dry_run, IsTrue());
+}
+
+TEST_F(ConfigTest, DirectoryPolicyTranslationPreservesEarlierMandatoryBlocks) {
+  for (const std::string_view categories :
+       std::to_array<std::string_view>({"", "temp", "output", "temp,output", "archive,temp,output"})) {
+    ConfigInputs inputs;
+    inputs.system = ParseIni(std::string("--detailed-block-policy=") + std::string(categories) + R"ini(
+--temp-root=/system/temp
+--output-root=/system/output
+--block-file-writing
+--block-directory-deletion
+[restricted]
+--block-output-file-overwrite
+)ini");
+    inputs.user = ParseIni(R"ini(--detailed-block-policy=temp,output
+--temp-root=/user/temp
+--output-root=/user/output
+--no-safe
+[restricted]
+--no-safe-block-output-file-overwrite
+)ini");
+    std::vector<std::string> globals;
+    for (const auto& flag : ResolveConfigInOrder(inputs, {"--config=restricted"}, "xff")) {
+      globals.push_back(flag.flag);
+    }
+    const auto policy = ResolveSafety(globals, true);
+    EXPECT_THAT(policy.temp_root, Eq("/system/temp"));
+    EXPECT_THAT(policy.output_root, Eq("/system/output"));
+    EXPECT_THAT(policy.Blocks(Capability::kTempFileWriting), Eq(!categories.contains("temp")));
+    EXPECT_THAT(policy.Blocks(Capability::kOutputFileWriting), Eq(!categories.contains("output")));
+    EXPECT_THAT(policy.Blocks(Capability::kTempDirectoryDeletion), Eq(!categories.contains("temp")));
+    EXPECT_THAT(policy.Blocks(Capability::kOutputDirectoryDeletion), Eq(!categories.contains("output")));
+    EXPECT_THAT(policy.Blocks(Capability::kOutputFileOverwrite), IsTrue());
+  }
 }
 
 TEST_F(ConfigTest, ArchivePoliciesAreTranslatedIndependentlyBeforeComposition) {

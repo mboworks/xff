@@ -43,6 +43,14 @@ class LocalFs final : public FileSystem {
   absl::Status Remove(std::string_view path) const override;
   absl::Status WriteContent(std::string_view path, std::string_view content) const override;
   absl::StatusOr<std::unique_ptr<OutputFile>> OpenOutput(std::string_view path, bool exclusive) const override;
+
+  bool SupportsDirectoryPolicies() const override { return true; }
+
+  absl::Status RemoveControlled(std::string_view path, const MutationPolicy& policy) const override;
+  absl::StatusOr<std::unique_ptr<OutputFile>> OpenControlledOutput(
+      std::string_view path,
+      bool exclusive,
+      const MutationPolicy& policy) const override;
   bool Access(std::string_view path, AccessMode mode) const override;
   absl::StatusOr<std::string> ReadLink(std::string_view path) const override;
   absl::StatusOr<std::string> FsType(std::string_view path) const override;

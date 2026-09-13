@@ -5,6 +5,7 @@
     "CONTRIBUTING.md": "CONTRIBUTING.html",
     "docs/coverage.md": "docs/coverage.html",
     "docs/design-config.md": "docs/design-config.html",
+    "docs/design-directory-safety.md": "docs/design-directory-safety.html",
     "docs/design-find-flavors.md": "docs/design-find-flavors.html",
     "docs/design-help-model.md": "docs/design-help-model.html",
     "docs/design-near-duplicates.md": "docs/design-near-duplicates.html",

@@ -45,6 +45,13 @@ using ::testing::SizeIs;
 
 struct PolicyTest : ::testing::Test {};
 
+TEST_F(PolicyTest, UserCannotDeclareTheSameDirectoryRootTwice) {
+  ConfigInputs inputs;
+  inputs.user = ParseIni("--output-root=/first\n--output-root=/second");
+  EXPECT_THAT(
+      ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("may occur only once")));
+}
+
 IniLine Line(std::vector<std::string> flags) {
   return IniLine{.tokens = std::move(flags)};
 }

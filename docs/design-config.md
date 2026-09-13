@@ -306,7 +306,10 @@ executable or its mandatory configuration can replace the policy too.
 `--detailed-block-policy=LIST` may occur once before sections in a system or user INI.
 It applies to that file's globals and named sections. Each file is translated independently;
 a user selecting `archive` cannot remove restrictions contributed by a system file using the default empty list.
-Select `archive` for precise control. The default empty category list applies ordinary file blocks to archives.
+Select `archive`, `temp`, and/or `output` for dedicated controls. The default empty category list
+applies ordinary file and directory blocks to every corresponding category. `--temp-root=PATH`
+and `--output-root=PATH` are each permitted once in unsectioned system/user INI; system declarations
+win. Named sections, explicit files, and CLI flags cannot declare these roots.
 See `--help=safety` for the full operation table, including the distinction between packing a
 replacement archive and editing its members.
 
@@ -383,3 +386,6 @@ set of option semantics.
 
 - Config argument quoting does not perform shell expansions or execute shell syntax.
 - Missing and unreadable config files are not distinguished in discovery output.
+
+Directory-scoped temp/output permissions and root-declaration precedence are specified in
+[Directory-scoped safety controls](design-directory-safety.md).

@@ -283,3 +283,44 @@ test::repeated_explicit_section_is_rejected_through_composition() {
 }
 
 test_runner
+
+test::directory_policy_limits_output_and_protects_roots() {
+  local dir cfg out status
+  dir="$(test_tmpdir directory_policy)"
+  dir="$(cd "${dir}" && pwd -P)"
+  cfg="${dir}/user.ini"
+  mkdir -p "${dir}/source" "${dir}/output/nested" "${dir}/scratch"
+  printf 'source\n' >"${dir}/source/file"
+  cat >"${cfg}" <<INI
+--detailed-block-policy=temp,output
+--temp-root=${dir}/scratch
+--output-root=${dir}/output
+--block-file-writing
+--block-file-deletion
+--block-directory-deletion
+--block-output-file-overwrite
+[write]
+-fprint ${dir}/output/nested/list
+INI
+  XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/source" --config=write
+  expect_eq "${dir}/source/file" "$(tail -1 "${dir}/output/nested/list")"
+  XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/source" -fprint "${dir}/scratch/list"
+  expect_eq "${dir}/source/file" "$(tail -1 "${dir}/scratch/list")"
+  status=0
+  XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/source" --config=write >/dev/null 2>&1 || status=$?
+  expect_eq "2" "${status}"
+  status=0
+  XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/source" -fprint "${dir}/outside" >/dev/null 2>&1 || status=$?
+  expect_eq "2" "${status}"
+  [[ ! -e "${dir}/outside" ]] || fail "created outside output scope"
+  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/source" -fprint "${dir}/output/preview" --dry-run)"
+  expect_matches '*would create*preview*' "${out}"
+  [[ ! -e "${dir}/output/preview" ]] || fail "dry run wrote output"
+  status=0
+  XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/output" -maxdepth 0 -delete >/dev/null 2>&1 || status=$?
+  expect_eq "2" "${status}"
+  [[ -d "${dir}/output" ]] || fail "removed protected root"
+  status=0
+  XFF_CONFIG="${cfg}" "$(_xff_bin)" . --output-root="${dir}" >/dev/null 2>&1 || status=$?
+  expect_eq "2" "${status}"
+}

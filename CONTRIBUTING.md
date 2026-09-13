@@ -31,10 +31,14 @@ Without the `-a` only the modified and staged files will be checked.
 ## Local clang-tidy scope
 
 The normal commit and push hooks run clang-tidy on their changed C++ files. Changed headers
-select the affected translation units. A single coordinator runs at most two workers by default;
-set `CLANG_TIDY_JOBS` to override that limit.
+select the affected translation units. A single coordinator defaults to the detected CPU count minus one
+(minimum one), capped by the number of selected files. This leaves one CPU available for other work. Set `CLANG_TIDY_JOBS` to a positive integer to override
+that count, or leave it unset (`auto`) to use CPU detection. GitHub CI explicitly supplies its
+runner CPU count; there is no fixed two-worker local limit.
 
 When Trunk manages Git hooks, the repository's Trunk actions invoke this same pre-commit hook.
+Both Trunk actions explicitly forward `CLANG_TIDY_JOBS`, so a per-command worker override reaches
+the coordinator (for example `CLANG_TIDY_JOBS=8 git push`).
 The push action combines changed paths from the pushed refs into one invocation. Existing Trunk
 formatting and checks remain enabled; do not replace `core.hooksPath` to install competing hooks.
 

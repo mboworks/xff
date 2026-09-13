@@ -9,6 +9,20 @@ would otherwise be lost when the actionable backlog is simplified.
 The former combined roadmap and completion ledger through PR #683 is retained separately in
 [`history-roadmap.md`](history-roadmap.md).
 
+## Directory-scoped safety controls
+
+Completed the safety follow-up's temp/output scope work: extended per-INI policy translation,
+config-only roots with system precedence, recursive descendant scope with protected roots,
+separate directory creation/deletion controls, and descriptor-relative mutation routing.
+Scoped overwrite replaces the directory entry to preserve other hard links. Archive publication
+rechecks its destination; owned scratch cleanup uses retained handles. Real CLI tests cover INI
+selection, scoped output, root protection, collision handling, archive publication, and dry-run.
+The core and extra regression suite passed (184 tests) using Apple's linker locally because the
+installed macOS SDK's new architecture tags are not recognized by hermetic LLD. The repository
+linker configuration is unchanged. Remaining roadmap items are explicit rc autoloading and the
+full configuration audit. Current behavior is documented in
+[Directory-scoped safety controls](design-directory-safety.md).
+
 ## Resolved decisions
 
 - **IMPLEMENTED (2026-09-06): Linux release binaries use measured, semantics-preserving LLD size

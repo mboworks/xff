@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "absl/status/statusor.h"
@@ -66,7 +67,7 @@ namespace xff::engine {
 // thread.
 class ExtractedMembers {
  public:
-  explicit ExtractedMembers(vfs::MutationPolicy policy = {}) : policy_(policy) {}
+  explicit ExtractedMembers(vfs::MutationPolicy policy = {}) : policy_(std::move(policy)) {}
 
   ~ExtractedMembers();
 

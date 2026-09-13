@@ -4,8 +4,8 @@ xff starts unrestricted when no configuration requests restrictions. Safety has 
 parts: unconditional capability blocks, a configurable safe-mode profile, and dry-run previews.
 Explicit-file arming (`--allow-exec`) covers execution and deletion only. An unarmed explicit file
 can request file/archive output, including overwrite, when the safety policy permits it.
-These controls govern xff's actions. They are not a sandbox around child programs, an output-directory
-confinement mechanism, or a guarantee against resource exhaustion.
+These controls govern xff's actions. They are not a sandbox around child programs, a guarantee against resource exhaustion. Directory-scoped exceptions are described in
+[Directory-scoped safety controls](design-directory-safety.md).
 
 ## Capabilities
 
@@ -17,10 +17,15 @@ The operation table below specifies every required control.
 
 | Capability | Unconditional flag       | Profile pair                                                     | Operations covered                                                                      |
 | ---------- | ------------------------ | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| Deletion   | `--block-file-deletion`  | `--safe-block-file-deletion` / `--no-safe-block-file-deletion`   | Filesystem entry removal and archive-member deletion                                    |
+| Deletion   | `--block-file-deletion`  | `--safe-block-file-deletion` / `--no-safe-block-file-deletion`   | File/symlink removal and archive-member deletion                                        |
 | Execution  | `--block-execution`      | `--safe-block-execution` / `--no-safe-block-execution`           | `-exec`, `-execdir`, `-ok`, `-okdir`, `-capture`, and `-capturedir`                     |
 | Writing    | `--block-file-writing`   | `--safe-block-file-writing` / `--no-safe-block-file-writing`     | Named file output, archive creation/modification, and temporary extraction for commands |
 | Overwrite  | `--block-file-overwrite` | `--safe-block-file-overwrite` / `--no-safe-block-file-overwrite` | Truncating, modifying, or replacing existing content, including archive rewrites        |
+
+Directory creation and directory deletion are independent capabilities, controlled by
+`--block-directory-creation` and `--block-directory-deletion` and their safe-profile pairs.
+A file-deletion block does not prohibit removing an empty directory; a directory-deletion block
+does not prohibit removing a file. Recursive removal checks every affected entry.
 
 Writing includes overwriting. Allowing writing while blocking overwrite permits only new output.
 Deletion is separate: unlinking an entry is not classified as a content write. Removing an archive
@@ -70,6 +75,7 @@ An administrator can instead provide an optional profile that only blocks execut
 --safe-block-file-deletion
 --no-safe-block-file-writing
 --no-safe-block-file-overwrite
+--no-safe-block-directory-creation
 
 [safe]
 --safe
@@ -86,8 +92,9 @@ xff's other capability settings. Use `--block-execution` for a mandatory boundar
 
 ## Enforcement and collisions
 
-Statically prohibited actions are rejected before traversal, including actions in branches that
-might never match. Diagnostics name the prohibited capability and action. Config authorization
+Actions prohibited for every possible destination are rejected before traversal, including actions
+in branches that might never match. With directory exceptions, destination-specific checks occur
+when a target becomes known and again inside the mutation adapter. Diagnostics name the prohibited capability and action. Config authorization
 cannot bypass a capability block.
 
 When overwrite is blocked, output-file creation must be atomic and exclusive. Existing regular
@@ -97,8 +104,8 @@ subsequent records through the same retained output handle.
 
 Archive generation uses a unique, exclusively created temporary output and publishes without
 replacing an existing destination when overwrite is blocked. Failed publication preserves the
-existing destination. Parent-directory symlinks remain supported; this is content protection,
-not confinement to a designated directory tree.
+existing destination. Without directory policies, parent-directory symlinks remain supported. With declared roots,
+scoped mutation uses retained directory handles and refuses symlink traversal.
 
 Safe mode does not promise rollback: new files or earlier permitted actions can remain after a
 later error. Ordinary creation can consume disk space. Internal temporary-file cleanup remains
@@ -112,7 +119,7 @@ diagnostics still occur; output destinations are not created, truncated, or repl
 
 | Operation                             | Preview                                                                          |
 | ------------------------------------- | -------------------------------------------------------------------------------- |
-| File/directory deletion               | Report the selected path without removing it                                     |
+| File or directory deletion            | Report the selected path without removing it                                     |
 | Archive-member deletion               | Report members without rewriting the archive                                     |
 | Named file output                     | Report the destination and whether output would create or replace content        |
 | Archive generation                    | Report the destination and selected entry count without writing an archive       |
@@ -138,7 +145,7 @@ policy. Config-file requirement directives govern whether policy files may be sk
 
 ## Archive blocking policy
 
-`--detailed-block-policy=LIST` is config-only, once before sections in each system or user file. Each file chooses its own policy. Named sections, explicit `.xffrc` files and the CLI cannot set it. The default is an empty category list. The comma-separated list currently accepts `archive`; unknown categories are errors.
+`--detailed-block-policy=LIST` is config-only, once before sections in each system or user file. Each file chooses its own policy. Named sections, explicit `.xffrc` files and the CLI cannot set it. The default is an empty category list. The comma-separated list accepts `archive`, `temp`, and `output`; unknown categories are errors.
 
 Every control listed must permit the operation. Names omit `--block-` and the active `--safe-block-` prefixes.
 

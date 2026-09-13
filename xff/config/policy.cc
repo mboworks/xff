@@ -16,6 +16,7 @@
 #include "xff/config/policy.h"
 
 #include <algorithm>
+#include <array>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -39,6 +40,11 @@ constexpr std::string_view kAllowXffrc = "--allow-xffrc";
 constexpr std::string_view kRequireSystemConfig = "--require-system-config";
 constexpr std::string_view kRequireUserConfig = "--require-user-config";
 constexpr std::string_view kNoAllowXffrc = "--no-allow-xffrc";
+
+bool IsDirectoryRoot(std::string_view flag) {
+  const auto name = flag.substr(0, flag.find('='));
+  return name == "--temp-root" || name == "--output-root";
+}
 
 bool IsDetailedPolicy(std::string_view flag) {
   return flag == "--detailed-block-policy" || flag.starts_with("--detailed-block-policy=");
@@ -66,7 +72,22 @@ absl::Status ValidateSingleControl(
   return absl::OkStatus();
 }
 
+absl::Status ValidateRootControls(const ConfigFile& file) {
+  for (const std::string_view name : std::to_array<std::string_view>({"--temp-root", "--output-root"})) {
+    std::size_t count = 0;
+    for (const std::string_view token : DirectiveTokens(file.globals)) {
+      if (token.substr(0, token.find('=')) == name && ++count > 1) {
+        return absl::InvalidArgumentError(absl::StrCat(name, " may occur only once per file"));
+      }
+    }
+  }
+  return absl::OkStatus();
+}
+
 absl::Status ValidateSystemControlLocations(const ConfigFile& system) {
+  if (const auto roots = ValidateRootControls(system); !roots.ok()) {
+    return roots;
+  }
   if (const auto status = ValidateSingleControl(
           system.globals, IsDetailedPolicy, "--detailed-block-policy may occur only once in the system config");
       !status.ok()) {
@@ -75,7 +96,8 @@ absl::Status ValidateSystemControlLocations(const ConfigFile& system) {
   for (const IniSection& section : system.named) {
     for (const IniLine& line : section.lines) {
       for (const std::string_view flag : DirectiveTokens(line.tokens)) {
-        if (IsSystemControl(flag) || IsUserControl(flag) || IsXffrcControl(flag) || IsDetailedPolicy(flag)) {
+        if (IsSystemControl(flag) || IsUserControl(flag) || IsXffrcControl(flag) || IsDetailedPolicy(flag)
+            || IsDirectoryRoot(flag)) {
           return absl::InvalidArgumentError(absl::StrCat(flag, " must precede every system config section"));
         }
       }
@@ -122,6 +144,9 @@ std::vector<FileLine> Lines(const ConfigFile& file) {
 }
 
 absl::Status ValidateUserControlLocations(const ConfigFile& user) {
+  if (const auto roots = ValidateRootControls(user); !roots.ok()) {
+    return roots;
+  }
   if (const auto status = ValidateSingleControl(
           user.globals, IsDetailedPolicy, "--detailed-block-policy may occur only once in the user config");
       !status.ok()) {
@@ -133,7 +158,7 @@ absl::Status ValidateUserControlLocations(const ConfigFile& user) {
       if (IsSystemControl(flag)) {
         return absl::InvalidArgumentError(absl::StrCat(flag, " is permitted only in the system config"));
       }
-      if (IsDetailedPolicy(flag) && !entry.name.empty()) {
+      if ((IsDetailedPolicy(flag) || IsDirectoryRoot(flag)) && !entry.name.empty()) {
         return absl::InvalidArgumentError("--detailed-block-policy must precede every user config section");
       }
       if (IsUserControl(flag) && !entry.name.empty()) {
@@ -154,7 +179,8 @@ absl::Status ValidateExplicitControlLocations(const std::vector<ExplicitConfig>&
   for (const ExplicitConfig& file : files) {
     for (const FileLine& entry : Lines(file.config)) {
       for (const std::string_view flag : DirectiveTokens(entry.line.tokens)) {
-        if (IsSystemControl(flag) || IsUserControl(flag) || IsXffrcControl(flag) || IsDetailedPolicy(flag)) {
+        if (IsSystemControl(flag) || IsUserControl(flag) || IsXffrcControl(flag) || IsDetailedPolicy(flag)
+            || IsDirectoryRoot(flag)) {
           return absl::InvalidArgumentError(absl::StrCat(flag, " is not permitted in an --xffrc file"));
         }
       }

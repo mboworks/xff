@@ -43,6 +43,9 @@ namespace stdfs = ::std::filesystem;
 // `<base>/xff/`, the level shared across runs. Reads the environment once per call; this runs at
 // startup and in tests, never on the walk's hot path.
 std::string SharedBase(const MountRootOptions& options) {
+  if (!options.mutations.temporary_root.empty()) {
+    return absl::StrCat(options.mutations.temporary_root, "/xff");
+  }
   if (!options.base_override.empty()) {
     return absl::StrCat(options.base_override, "/xff");
   }
