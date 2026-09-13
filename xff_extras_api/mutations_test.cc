@@ -11,7 +11,9 @@
 #include <iterator>
 #include <memory>
 #include <string>
+#include <system_error>
 
+#include "absl/cleanup/cleanup.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/status.h"
@@ -198,6 +200,36 @@ TEST_F(MutationsTest, InvalidRootsAndSymlinkRootsAreRejected) {
       DirectoryPolicy::Create({{.root = ScopePath("../escape")}}), StatusIs(absl::StatusCode::kPermissionDenied));
   std::filesystem::create_directory_symlink(ScopePath(""), ScopePath("alias"));
   EXPECT_THAT(DirectoryPolicy::Create({{.root = ScopePath("alias")}}), StatusIs(absl::StatusCode::kFailedPrecondition));
+}
+
+TEST_F(MutationsTest, ScopedPathsRejectEmptyAndNulInputsAndNormalizeTrailingSlashes) {
+  ASSERT_OK_AND_ASSIGN(const auto directories, DirectoryPolicy::Create({{.root = ScopePath("") + "/"}}));
+  EXPECT_THAT(directories->Resolve("", {}), StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(directories->Resolve(std::string("a\0b", 3), {}), StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(directories->Resolve(ScopePath("") + "/", {}), StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(
+      RemoveHostEntry(ScopePath("missing"), {.directories = directories}), StatusIs(absl::StatusCode::kNotFound));
+  EXPECT_THAT(RemoveHostTree(ScopePath("missing"), {}), StatusIs(absl::StatusCode::kNotFound));
+  EXPECT_THAT(RemoveHostTree(ScopePath("missing/child"), {}), StatusIs(absl::StatusCode::kNotFound));
+  ASSERT_OK_AND_ASSIGN(const auto output, OpenHostOutput(ScopePath("file"), false, {.directories = directories}));
+  EXPECT_THAT(
+      CreateHostDirectories(ScopePath("file"), {.directories = directories}),
+      StatusIs(absl::StatusCode::kFailedPrecondition));
+}
+
+TEST_F(MutationsTest, ADeletedWorkingDirectoryCannotAuthorizeRelativeMutationPaths) {
+  ASSERT_OK_AND_ASSIGN(const auto directories, DirectoryPolicy::Create({{.root = ScopePath("")}}));
+  const auto original = std::filesystem::current_path();
+  const absl::Cleanup restore = [original] {
+    std::error_code error;
+    std::filesystem::current_path(original, error);
+  };
+  const auto removed = ScopePath("removed-cwd");
+  std::filesystem::create_directory(removed);
+  std::filesystem::current_path(removed);
+  std::filesystem::remove(removed);
+  EXPECT_THAT(directories->Resolve("child", {}), StatusIs(absl::StatusCode::kNotFound));
+  EXPECT_THAT(CreateHostDirectories("child", {.directories = directories}), StatusIs(absl::StatusCode::kNotFound));
 }
 
 TEST_F(MutationsTest, PinnedRootCannotBeRedirectedByReplacingItsPathWithASymlink) {

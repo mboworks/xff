@@ -37,7 +37,7 @@ absl::StatusOr<std::string> AbsolutePath(std::string_view path) {
   return result;
 }
 
-// XFF_HOST_IO: opens only directory components, refusing symlink traversal at each step.
+// XFF_HOST_IO: opens normalized relative directory components, refusing symlinks at each step.
 absl::StatusOr<int> Descend(int start, const std::filesystem::path& relative) {
   // POSIX fcntl requires a variadic descriptor argument.
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
@@ -46,9 +46,6 @@ absl::StatusOr<int> Descend(int start, const std::filesystem::path& relative) {
     return absl::ErrnoToStatus(errno, "cannot retain policy directory");
   }
   for (const auto& part : relative) {
-    if (part.empty() || part == ".") {
-      continue;
-    }
     // POSIX open/openat has a variadic ABI, including read-only directory opens.
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
     const int next = ::openat(current, part.c_str(), O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);

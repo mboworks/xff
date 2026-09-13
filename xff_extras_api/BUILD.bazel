@@ -300,9 +300,35 @@ cc_test(
     srcs = ["mutations_test.cc"],
     deps = [
         ":vfs_cc",
+        "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+cc_test(
+    name = "mutations_fault_test",
+    size = "small",
+    srcs = ["mutations_fault_test.cc"],
+    linkopts = select({
+        "@platforms//os:linux": [
+            "-Wl,--wrap=open",
+            "-Wl,--wrap=openat",
+            "-Wl,--wrap=fcntl",
+            "-Wl,--wrap=fstat",
+            "-Wl,--wrap=fstatat",
+            "-Wl,--wrap=mkdirat",
+            "-Wl,--wrap=renameat",
+            "-Wl,--wrap=fdopendir",
+            "-Wl,--wrap=readdir",
+        ],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":vfs_cc",
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:status_cc",
     ],

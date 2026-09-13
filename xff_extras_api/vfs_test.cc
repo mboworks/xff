@@ -24,6 +24,7 @@
 #include "mbo/testing/status.h"
 #include "xff/vfs/entry.h"
 #include "xff/vfs/filesystem.h"
+#include "xff/vfs/mutations.h"
 
 namespace xff::vfs {
 namespace {
@@ -56,6 +57,9 @@ class ReadOnlyFakeFs : public FileSystem {
   }
 
   absl::StatusOr<Metadata> Stat(std::string_view path, bool /*follow_symlinks*/) const override {
+    if (path == "/box") {
+      return Metadata{.type = FileType::kDirectory};
+    }
     if (path != "/box/member.txt") {
       return absl::NotFoundError("no such path");
     }
@@ -107,6 +111,33 @@ TEST_F(VfsSeamTest, AnExtraCanImplementTheInterfaceUsingOnlyThisModule) {
 TEST_F(VfsSeamTest, ReadOnlyBackendNeverFallsBackToHostOutput) {
   const ReadOnlyFakeFs fs;
   EXPECT_THAT(fs.OpenOutput("/box/member.txt", false), StatusIs(absl::StatusCode::kUnimplemented));
+}
+
+TEST_F(VfsSeamTest, ControlledOperationsRetainBackendRestrictionsAndRejectHostScopes) {
+  const ReadOnlyFakeFs fs;
+  EXPECT_THAT(fs.SupportsDirectoryPolicies(), IsFalse());
+  EXPECT_THAT(fs.RemoveControlled("/missing", {}), StatusIs(absl::StatusCode::kNotFound));
+  EXPECT_THAT(fs.RemoveControlled("/box/member.txt", {}), StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(
+      fs.RemoveControlled("/box", {.block_directory_deletion = true}), StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(fs.RemoveControlled("/box", {}), StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(
+      fs.RemoveControlled("/box/member.txt", {.block_deletion = true}), StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(fs.OpenControlledOutput("/box/member.txt", false, {}), StatusIs(absl::StatusCode::kUnimplemented));
+  EXPECT_THAT(
+      fs.OpenControlledOutput("/box/member.txt", false, {.block_writing = true}),
+      StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(
+      fs.OpenControlledOutput("/box/member.txt", false, {.block_overwrite = true}),
+      StatusIs(absl::StatusCode::kUnimplemented));
+  EXPECT_THAT(fs.OpenControlledOutput("/box/member.txt", true, {}), StatusIs(absl::StatusCode::kUnimplemented));
+  ASSERT_OK_AND_ASSIGN(const auto directories, DirectoryPolicy::Create({}));
+  EXPECT_THAT(
+      fs.RemoveControlled("/box/member.txt", {.directories = directories}),
+      StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(
+      fs.OpenControlledOutput("/box/member.txt", false, {.directories = directories}),
+      StatusIs(absl::StatusCode::kPermissionDenied));
 }
 
 TEST_F(VfsSeamTest, PerPathFailuresAreStatusesSoTheWalkCanContinue) {
