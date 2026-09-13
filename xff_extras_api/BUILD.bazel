@@ -104,6 +104,7 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
     ],
 )
 
@@ -217,16 +218,21 @@ exports_files(["language_database.bzl"])
 # "xff/vfs/filesystem.h" unchanged.
 cc_library(
     name = "vfs_cc",
-    srcs = ["filesystem.cc"],
+    srcs = [
+        "filesystem.cc",
+        "mutations.cc",
+    ],
     hdrs = [
         "entry.h",
         "filesystem.h",
+        "mutations.h",
     ],
     include_prefix = "xff/vfs",
     visibility = ["//visibility:public"],
     deps = [
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
         "@mboworks_mbo//mbo/status:status_macros_cc",
     ],
@@ -279,6 +285,20 @@ cc_test(
     srcs = ["backend_test.cc"],
     deps = [
         ":regex_backend_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+cc_test(
+    name = "mutations_test",
+    size = "small",
+    srcs = ["mutations_test.cc"],
+    deps = [
+        ":vfs_cc",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@googletest//:gtest",

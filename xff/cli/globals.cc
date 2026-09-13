@@ -24,6 +24,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_split.h"
 #include "absl/types/span.h"
 #include "xff/archive/archive_backend.h"
 #include "xff/fuse/fuse_backend.h"
@@ -42,6 +43,9 @@ constexpr std::array kCaseValues = std::to_array<ValueDoc>({
     {.value = "sensitive", .meaning = "match exactly (-s-)"},
     {.value = "insensitive", .meaning = "fold case (-i)"},
     {.value = "smart", .meaning = "fold case unless the pattern contains ASCII uppercase (-s / -s+)"},
+});
+constexpr std::array kDetailedBlockPolicyValues = std::to_array<ValueDoc>({
+    {.value = "archive", .meaning = "use dedicated controls for archive output and member edits"},
 });
 constexpr std::array kMimeConflictValues = std::to_array<ValueDoc>({
     {.value = "error", .meaning = "reject two media types claiming one extension in the same file (default)"},
@@ -324,8 +328,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Config",
         .summary = "also load a specific config file (a non-arming tier; see --allow-exec)",
         .details = "Loads FILE as a config tier above the user config (naming it is consent to LOAD it). It is a "
-                   "NON-ARMING tier: safe directives apply, but a dangerous one - the exec family (-exec/-execdir/-ok, "
-                   "-capture) or -delete - is inert unless --allow-exec is set from a trusted tier (the CLI or the "
+                   "NON-ARMING tier: execution and deletion actions - the exec family (-exec/-execdir/-ok, "
+                   "-capture) or -delete - are inert unless --allow-exec is set from a trusted tier (the CLI or the "
                    "user/system config, never from an --xffrc file itself). An unarmed dangerous line is dropped with "
                    "a one-line warning. Repeatable; later files win.",
         .affects = "--allow-exec",
@@ -341,10 +345,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "Permits the sensitive/destructive directives (the exec family -exec/-execdir/-ok and -capture, "
                    "and the destructive -delete) carried by an --xffrc-loaded file to actually run. Honored only from "
                    "a trusted tier - typed on the CLI, or set in the user/system config - never from an --xffrc file "
-                   "(so a named config cannot authorize itself). The unsectioned system `--no-allow-exec` control can "
-                   "prohibit even "
-                   "this. Without it, such lines are inert (dropped + warned); -delete still obeys its own "
-                   "--safe/--dry-run guards.",
+                   "(so a named config cannot authorize itself). Arming cannot bypass unconditional blocks or "
+                   "the active safe profile; see `--help=safety`.",
         .affects = "--xffrc",
         .topic = "config",
     },
@@ -1541,26 +1543,303 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "keep output; exit 0 if anything matched, else 1",
     },
     {
+        .name = "--detailed-block-policy",
+        .display = "--detailed-block-policy=LIST",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "select categories with dedicated blocking controls (config only)",
+        .details = "A comma-separated category list; empty means ordinary file controls for all categories (default). "
+                   "Currently `archive` is supported. Allowed once before all sections in system or user "
+                   "configuration. Each file chooses its own "
+                   "policy, including for its named sections. "
+                   "Neither named sections, explicit `.xffrc` files, nor the CLI may set it. "
+                   "See `--help=safety` for the operation table and archive replacement tradeoff.",
+        .values = kDetailedBlockPolicyValues,
+        .topic = "safety",
+        .value_check = GlobalFlag::ValueCheck::kEnumList,
+        .config_only = true,
+    },
+    {
+        .name = "--block-file-deletion",
+        .display = "--block-file-deletion",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally prohibit deletion; later flags cannot remove this block",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-file-deletion",
+        .display = "--safe-block-file-deletion",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include deletion in the active safe-mode restrictions",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-file-deletion",
+        .display = "--no-safe-block-file-deletion",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude deletion from the safe-mode profile; unconditional blocks still apply",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--block-execution",
+        .display = "--block-execution",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally prohibit execution; later flags cannot remove this block",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-execution",
+        .display = "--safe-block-execution",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include execution in the active safe-mode restrictions",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-execution",
+        .display = "--no-safe-block-execution",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude execution from the safe-mode profile; unconditional blocks still apply",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--block-file-writing",
+        .display = "--block-file-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally prohibit writing; later flags cannot remove this block",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-file-writing",
+        .display = "--safe-block-file-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include writing in the active safe-mode restrictions",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-file-writing",
+        .display = "--no-safe-block-file-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude writing from the safe-mode profile; unconditional blocks still apply",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--block-file-overwrite",
+        .display = "--block-file-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally prohibit overwrite; later flags cannot remove this block",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-file-overwrite",
+        .display = "--safe-block-file-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include overwrite in the active safe-mode restrictions",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-file-overwrite",
+        .display = "--no-safe-block-file-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude overwrite from the safe-mode profile; unconditional blocks still apply",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--block-archive-writing",
+        .display = "--block-archive-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally prohibit archive writing; later flags cannot remove this block",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-archive-writing",
+        .display = "--safe-block-archive-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include archive writing in the active safe-mode restrictions",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-archive-writing",
+        .display = "--no-safe-block-archive-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude archive writing from the safe-mode profile; unconditional blocks still apply",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--block-archive-overwrite",
+        .display = "--block-archive-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally prohibit archive overwrite; later flags cannot remove this block",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-archive-overwrite",
+        .display = "--safe-block-archive-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include archive overwrite in the active safe-mode restrictions",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-archive-overwrite",
+        .display = "--no-safe-block-archive-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude archive overwrite from the safe-mode profile; unconditional blocks still apply",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--block-archive-content-writing",
+        .display = "--block-archive-content-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally block archive content writing",
+        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
+                   "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-archive-content-writing",
+        .display = "--safe-block-archive-content-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include in the safe profile: archive content writing",
+        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
+                   "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-archive-content-writing",
+        .display = "--no-safe-block-archive-content-writing",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude from the safe profile: archive content writing",
+        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
+                   "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
+        .topic = "safety",
+    },
+    {
+        .name = "--block-archive-content-overwrite",
+        .display = "--block-archive-content-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally block archive content overwrite",
+        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
+                   "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-archive-content-overwrite",
+        .display = "--safe-block-archive-content-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include in the safe profile: archive content overwrite",
+        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
+                   "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-archive-content-overwrite",
+        .display = "--no-safe-block-archive-content-overwrite",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude from the safe profile: archive content overwrite",
+        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
+                   "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
+        .topic = "safety",
+    },
+    {
+        .name = "--block-archive-content-deletion",
+        .display = "--block-archive-content-deletion",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "unconditionally prohibit archive deletion; later flags cannot remove this block",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--safe-block-archive-content-deletion",
+        .display = "--safe-block-archive-content-deletion",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "include archive deletion in the active safe-mode restrictions",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe-block-archive-content-deletion",
+        .display = "--no-safe-block-archive-content-deletion",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "exclude archive deletion from the safe-mode profile; unconditional blocks still apply",
+        .details = "See `--help=safety` for capability coverage, profile composition, and dry-run limits.",
+        .topic = "safety",
+    },
+    {
+        .name = "--no-safe",
+        .display = "--no-safe",
+        .group = "safety",
+        .header = "Safety",
+        .summary = "disable the safe-mode profile; unconditional blocks remain enforced",
+        .topic = "safety",
+    },
+    {
         .name = "--safe",
         .display = "--safe",
         .group = "safety",
         .header = "Safety",
-        .summary = "refuse destructive actions (-delete / -exec)",
-        .details = "Rejects the run before traversal when its expression contains an armed `-delete` or exec-family "
-                   "action. This is a hard guard, not a preview: use `--dry-run` when the goal is to see what a "
-                   "supported write would do. `--safe` does not merely suppress the action after other expression "
-                   "terms have run.",
+        .summary = "activate the configured safe-mode profile",
+        .details = "Initially the profile blocks execution and file/archive deletion, writing, and overwrite. "
+                   "`--safe-block-*` and `--no-safe-block-*` customize it without activating it. "
+                   "`--no-safe` deactivates the profile. Unconditional `--block-*` restrictions always apply. "
+                   "Prohibited actions are rejected before traversal; overwrite collisions are enforced at creation.",
+        .topic = "safety",
     },
     {
         .name = "--dry-run",
         .display = "--dry-run",
         .group = "safety",
         .header = "Safety",
-        .summary = "preview supported writes without changing the filesystem",
-        .details = "Makes `-delete` print each path it would remove, makes `--archive-delete` list member deletions "
-                   "without rewriting the container, and makes `--pack` report how many entries it would write "
-                   "without creating the archive. Traversal and matching still run normally, so the preview uses "
-                   "the real selected set.",
+        .summary = "preview permitted actions without writes, deletion, or execution",
+        .details =
+            "Policy is checked first; dry run cannot bypass a block. Reads and normal output remain enabled. "
+            "File output, deletion, and archives are previewed. Commands are reported but never launched. "
+            "A skipped command or capture has no result: evaluation of that entry stops with an incomplete-preview "
+            "error, rather than guessing which subsequent actions would run.",
+        .topic = "safety",
     },
     {
         .name = "--skip-unsupported",
@@ -1669,6 +1948,36 @@ mbo::types::OptionalRef<const GlobalFlag> LookupGlobalArgument(std::string_view 
   return std::nullopt;
 }
 
+namespace {
+bool AcceptsEnumValue(const GlobalFlag& flag, std::string_view value) {
+  return absl::c_any_of(flag.values, [value](const ValueDoc& doc) { return doc.value == value; });
+}
+
+bool AcceptsEnumList(const GlobalFlag& flag, std::string_view value) {
+  return value.empty() || absl::c_all_of(absl::StrSplit(value, ','), [&](std::string_view item) {
+           return AcceptsEnumValue(flag, item);
+         });
+}
+
+std::string AcceptedValues(const GlobalFlag& flag) {
+  std::string accepted;
+  if (flag.value_check == GlobalFlag::ValueCheck::kEnumList || flag.value_check == GlobalFlag::ValueCheck::kEnum
+      || flag.value_check == GlobalFlag::ValueCheck::kEnumOrTemplate) {
+    for (const ValueDoc& doc : flag.values) {
+      if (doc.hidden) {
+        continue;  // accepted, but not something to suggest
+      }
+      absl::StrAppend(&accepted, accepted.empty() ? "" : ", ", doc.value);
+    }
+  } else {
+    accepted = flag.value_check == GlobalFlag::ValueCheck::kBool
+                   ? "yes, no, on, off, true, false, 1, 0"
+                   : "auto, always, never, on, off, yes, no, true, false, 1, 0";
+  }
+  return accepted;
+}
+}  // namespace
+
 absl::Status ValidateGlobalValue(std::string_view arg) {
   const std::string_view::size_type equals = arg.find('=');
   if (equals == std::string_view::npos) {
@@ -1692,36 +2001,26 @@ absl::Status ValidateGlobalValue(std::string_view arg) {
         return absl::OkStatus();
       }
       break;
+    case GlobalFlag::ValueCheck::kEnumList:
+      if (AcceptsEnumList(*flag, value)) {
+        return absl::OkStatus();
+      }
+      break;
     case GlobalFlag::ValueCheck::kEnum:
-      if (absl::c_any_of(flag->values, [value](const ValueDoc& doc) { return doc.value == value; })) {
+      if (AcceptsEnumValue(*flag, value)) {
         return absl::OkStatus();
       }
       break;
     case GlobalFlag::ValueCheck::kEnumOrTemplate:
-      if (value.starts_with('{')
-          || absl::c_any_of(flag->values, [value](const ValueDoc& doc) { return doc.value == value; })) {
+      if (value.starts_with('{') || AcceptsEnumValue(*flag, value)) {
         return absl::OkStatus();
       }
       break;
   }
   // The accepted list comes from the same table the help prints (or from the shared vocabulary),
   // so the error and the documentation cannot disagree.
-  std::string accepted;
-  if (flag->value_check == GlobalFlag::ValueCheck::kEnum
-      || flag->value_check == GlobalFlag::ValueCheck::kEnumOrTemplate) {
-    for (const ValueDoc& doc : flag->values) {
-      if (doc.hidden) {
-        continue;  // accepted, but not something to suggest
-      }
-      absl::StrAppend(&accepted, accepted.empty() ? "" : ", ", doc.value);
-    }
-  } else {
-    accepted = flag->value_check == GlobalFlag::ValueCheck::kBool
-                   ? "yes, no, on, off, true, false, 1, 0"
-                   : "auto, always, never, on, off, yes, no, true, false, 1, 0";
-  }
   return absl::InvalidArgumentError(
-      absl::StrCat("unknown value '", value, "' for ", flag->name, " (accepted: ", accepted, ")"));
+      absl::StrCat("unknown value '", value, "' for ", flag->name, " (accepted: ", AcceptedValues(*flag), ")"));
 }
 
 bool IsKnownGlobal(std::string_view arg) {

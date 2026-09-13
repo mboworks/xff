@@ -62,7 +62,7 @@ _Concrete capabilities. (Captured from Marcus's list - discussion deferred.)_
 
 _Accepted._
 
-- **Safety:** dry-run + `--confirm` required for any destructive action (delete / move / overwrite); safe defaults.
+- **Safety:** unrestricted by default; configurable safe profiles, mandatory blocks, and dry-run previews.
 - **Determinism:** parallel traversal is unordered - offer `--sort` / deterministic mode for reproducible output (tests, diffs).
 - **`--explain`:** print the parsed predicate tree / execution plan for a query (debugging + teaching the expression syntax).
 - **Shell completions:** generate bash / zsh / fish completions.
@@ -142,7 +142,7 @@ _All default to find-compatible (ignore nothing / show everything); a user's con
 A **prime goal** (see Goals). Two strands:
 
 - **Security** (untrusted external input - configs, archives, remote sources): always paramount; no `find`-compat tension since find lacks these features.
-- **Safety** (the user's own destructive ops): paramount on xff's own surface. On the `find` drop-in surface, find primaries keep find behaviour (e.g. `-delete` deletes) for fidelity - but xff emits a **visible, suppressible safety warning** (stderr; behaviour unchanged, so scripts are unaffected). xff's _own_ destructive actions are guarded (dry-run + `--confirm`); a global `--dry-run` is always available; find's `-ok`/`-okdir` are honoured.
+- **Safety:** operation restrictions apply consistently to CLI and config actions. `-ok` and `-okdir` additionally request confirmation; `--dry-run` never prompts or executes a command.
 
 **Config system (detailed spec):** [`design-config.md`](design-config.md) is authoritative. System
 `/etc/xff.ini` contains unsectioned globals and plain named sections; trusted global controls govern
@@ -154,7 +154,11 @@ select configurations. Invalid global lines are ignored individually with diagno
 invalid named sections are disabled atomically and transitively. There is no special policy-section
 language, general `--feature` mechanism, or auto-discovered project config layer.
 
-**Safe mode:** opt-in `--safe` (a.k.a. `--no-destructive`) **hard-refuses** destructive (`-delete`, future built-in mutators) and dangerous (`-exec`/`-execdir`/`-ok`) operations - distinct from `--dry-run` (which previews). Off by default (preserves drop-in), but a cautious user sets it as their personal default in user-global config; override per-invocation with `--no-safe` (CLI > config). Granular `--no-exec` / `--no-delete` available. Ideal as a CI guardrail. Refusals self-documenting.
+**Safety:** unrestricted by default. Unconditional `--block-*` restrictions accumulate; `--safe`
+activates a configurable `--safe-block-*` profile and `--no-safe` deactivates only that profile.
+`--dry-run` previews permitted actions without performing mutations or commands. Per-file
+`--detailed-block-policy=LIST` determines how each INI expresses archive restrictions.
+See [Safety policy and previews](design-safety.md) and `--help=safety` for coverage and tradeoffs.
 
 ### Virtual entries: archives & remote (review #3)
 

@@ -40,6 +40,10 @@ constexpr std::string_view kRequireSystemConfig = "--require-system-config";
 constexpr std::string_view kRequireUserConfig = "--require-user-config";
 constexpr std::string_view kNoAllowXffrc = "--no-allow-xffrc";
 
+bool IsDetailedPolicy(std::string_view flag) {
+  return flag == "--detailed-block-policy" || flag.starts_with("--detailed-block-policy=");
+}
+
 bool IsSystemControl(std::string_view flag) {
   return flag == kNoRequireSystemConfig || flag == kRequireSystemConfig;
 }
@@ -63,10 +67,15 @@ absl::Status ValidateSingleControl(
 }
 
 absl::Status ValidateSystemControlLocations(const ConfigFile& system) {
+  if (const auto status = ValidateSingleControl(
+          system.globals, IsDetailedPolicy, "--detailed-block-policy may occur only once in the system config");
+      !status.ok()) {
+    return status;
+  }
   for (const IniSection& section : system.named) {
     for (const IniLine& line : section.lines) {
       for (const std::string_view flag : DirectiveTokens(line.tokens)) {
-        if (IsSystemControl(flag) || IsUserControl(flag) || IsXffrcControl(flag) || flag == "--no-allow-exec") {
+        if (IsSystemControl(flag) || IsUserControl(flag) || IsXffrcControl(flag) || IsDetailedPolicy(flag)) {
           return absl::InvalidArgumentError(absl::StrCat(flag, " must precede every system config section"));
         }
       }
@@ -113,11 +122,19 @@ std::vector<FileLine> Lines(const ConfigFile& file) {
 }
 
 absl::Status ValidateUserControlLocations(const ConfigFile& user) {
+  if (const auto status = ValidateSingleControl(
+          user.globals, IsDetailedPolicy, "--detailed-block-policy may occur only once in the user config");
+      !status.ok()) {
+    return status;
+  }
   std::size_t user_controls = 0;
   for (const FileLine& entry : Lines(user)) {
     for (const std::string_view flag : DirectiveTokens(entry.line.tokens)) {
-      if (IsSystemControl(flag) || flag == "--no-allow-exec") {
+      if (IsSystemControl(flag)) {
         return absl::InvalidArgumentError(absl::StrCat(flag, " is permitted only in the system config"));
+      }
+      if (IsDetailedPolicy(flag) && !entry.name.empty()) {
+        return absl::InvalidArgumentError("--detailed-block-policy must precede every user config section");
       }
       if (IsUserControl(flag) && !entry.name.empty()) {
         return absl::InvalidArgumentError(
@@ -137,7 +154,7 @@ absl::Status ValidateExplicitControlLocations(const std::vector<ExplicitConfig>&
   for (const ExplicitConfig& file : files) {
     for (const FileLine& entry : Lines(file.config)) {
       for (const std::string_view flag : DirectiveTokens(entry.line.tokens)) {
-        if (IsSystemControl(flag) || IsUserControl(flag) || IsXffrcControl(flag) || flag == "--no-allow-exec") {
+        if (IsSystemControl(flag) || IsUserControl(flag) || IsXffrcControl(flag) || IsDetailedPolicy(flag)) {
           return absl::InvalidArgumentError(absl::StrCat(flag, " is not permitted in an --xffrc file"));
         }
       }
@@ -278,12 +295,29 @@ namespace {
 
 class ConfigGate {
  public:
-  ConfigGate(const ConfigInputs& inputs, bool armed)
-      : result_{.config = inputs},
-        armed_(armed),
-        prohibited_(absl::c_contains(DirectiveTokens(inputs.system.globals), "--no-allow-exec")) {}
+  ConfigGate(const ConfigInputs& inputs, bool armed, const std::vector<std::string>& cli, std::string_view invocation)
+      : result_{.config = inputs}, armed_(armed), trusted_names_{std::string(invocation)} {
+    ConfigInputs trusted = inputs;
+    trusted.xffrc.clear();
+    std::erase_if(trusted.user.named, [](const IniSection& section) { return OverloadsPreset(section.name); });
+    std::vector<std::string> selectors = cli;
+    for (const auto& name : inputs.configs) {
+      selectors.push_back(absl::StrCat("--config=", name));
+    }
+    for (const auto& flag : ResolveConfigInOrder(inputs, selectors, invocation)) {
+      if (!flag.is_argument && flag.flag.starts_with("--config=")) {
+        active_names_.push_back(flag.flag.substr(9));
+      }
+    }
+    for (const auto& flag : ResolveConfigInOrder(trusted, selectors, invocation)) {
+      if (!flag.is_argument && flag.flag.starts_with("--config=")) {
+        trusted_names_.push_back(flag.flag.substr(9));
+      }
+    }
+  }
 
   GateResult Apply() {
+    result_.config.system = Filter(result_.config.system, Source::kSystem);
     result_.config.user = result_.config.no_user_config ? ConfigFile{} : Filter(result_.config.user, Source::kUser);
     for (ExplicitConfig& file : result_.config.xffrc) {
       file.config = Filter(file.config, Source::kXffrc);
@@ -293,14 +327,15 @@ class ConfigGate {
 
  private:
   std::optional<DropReason> Reason(const IniLine& line, std::string_view name, Source layer) const {
-    if (OverloadsPreset(name)) {
+    if (layer != Source::kSystem && OverloadsPreset(name)) {
       return DropReason::kPresetOverload;
     }
     if (LineSafety(line) == registry::Safety::kNone) {
       return std::nullopt;
     }
-    if (prohibited_) {
-      return DropReason::kSystemProhibition;
+    if (!armed_ && !name.empty() && layer != Source::kXffrc && absl::c_contains(active_names_, name)
+        && !absl::c_contains(trusted_names_, name)) {
+      return DropReason::kUntrustedSelection;
     }
     if (layer == Source::kXffrc && !armed_) {
       return DropReason::kUnarmedXffrc;
@@ -339,13 +374,18 @@ class ConfigGate {
 
   GateResult result_;
   bool armed_;
-  bool prohibited_;
+  std::vector<std::string> trusted_names_;
+  std::vector<std::string> active_names_;
 };
 
 }  // namespace
 
-GateResult GateConfig(const ConfigInputs& inputs, bool xffrc_armed) {
-  return ConfigGate(inputs, xffrc_armed).Apply();
+GateResult GateConfig(
+    const ConfigInputs& inputs,
+    bool xffrc_armed,
+    const std::vector<std::string>& cli_globals,
+    std::string_view invocation_selector) {
+  return ConfigGate(inputs, xffrc_armed, cli_globals, invocation_selector).Apply();
 }
 
 std::string DropMessage(const Drop& drop) {
@@ -359,7 +399,7 @@ std::string DropMessage(const Drop& drop) {
   }
   return absl::StrCat(
       "'", primary, "' from the ", SourceName(drop.layer), " .xffrc (", ClassName(drop.safety),
-      "; system --no-allow-exec)");
+      "; selected only through an explicit file, needs --allow-exec)");
 }
 
 }  // namespace xff::config

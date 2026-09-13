@@ -1,6 +1,6 @@
 --color=auto
 --jobs=4
---no-allow-exec
+--block-execution
 
 [policy]
 --color=never

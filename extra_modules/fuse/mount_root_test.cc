@@ -69,7 +69,7 @@ TEST_F(MountRootTest, CreateMakesThePerRunTreeAndTheDestructorRemovesIt) {
   {
     MBO_ASSERT_OK_AND_ASSIGN(const MountRoot root, MountRoot::Create(options_));
     path = std::string(root.path());
-    EXPECT_THAT(path, AllOf(HasSubstr(absl::StrCat(base_, "/xff/")), EndsWith(absl::StrCat("/", ::getpid()))));
+    EXPECT_THAT(path, AllOf(HasSubstr(absl::StrCat(base_, "/xff/")), HasSubstr(absl::StrCat("/", ::getpid(), "-"))));
     EXPECT_THAT(stdfs::is_directory(path), IsTrue());
   }
   EXPECT_THAT(stdfs::exists(path), IsFalse());
@@ -126,7 +126,7 @@ TEST_F(MountRootTest, CreateReportsWhenTheSharedBaseCannotBeCreated) {
   blocker << "not a directory";
   blocker.close();
   EXPECT_THAT(
-      MountRoot::Create(options_), StatusIs(absl::StatusCode::kUnavailable, HasSubstr("cannot create the mount root")));
+      MountRoot::Create(options_), StatusIs(absl::StatusCode::kAlreadyExists, HasSubstr("cannot create directories")));
 }
 
 TEST_F(MountRootTest, MountPointsUseTheBasenameAndDisambiguateDuplicates) {
@@ -153,7 +153,7 @@ TEST_F(MountRootTest, MountPointReportsANameCollision) {
   blocker.close();
   EXPECT_THAT(
       root.MountPointFor("box.tgz"),
-      StatusIs(absl::StatusCode::kUnavailable, HasSubstr("cannot create the mount point")));
+      StatusIs(absl::StatusCode::kAlreadyExists, HasSubstr("cannot create directories")));
 }
 
 TEST_F(MountRootTest, AMovedFromRootOwnsNothing) {
@@ -227,6 +227,27 @@ TEST_F(MountRootTest, SweepUnmountsEachMountPointThenRemovesTheRoot) {
 TEST_F(MountRootTest, SweepingNothingIsANoOp) {
   EXPECT_THAT(StaleRoots(options_), IsEmpty());
   EXPECT_THAT(SweepStaleRoots([](std::string_view) {}, options_), 0U);
+}
+
+TEST_F(MountRootTest, InvalidBasenamesNeverCreateMountPoints) {
+  MBO_ASSERT_OK_AND_ASSIGN(auto root, MountRoot::Create(options_));
+  const std::vector<std::string_view> paths = {"", "box/", ".", "box/.."};
+  for (const std::string_view path : paths) {
+    EXPECT_THAT(root.MountPointFor(path), StatusIs(absl::StatusCode::kInvalidArgument));
+  }
+  EXPECT_THAT(stdfs::is_empty(root.path()), IsTrue());
+}
+
+TEST_F(MountRootTest, DeletionPolicyPreventsStaleRootUnmountAndCleanup) {
+  const std::string dead = absl::StrCat(base_, "/xff/999999999/box.tar");
+  ASSERT_THAT(stdfs::create_directories(dead), IsTrue());
+  options_.mutations.block_deletion = true;
+  EXPECT_THAT(SweepStaleRoots([](std::string_view) { ADD_FAILURE() << "must not unmount"; }, options_), 0);
+  EXPECT_THAT(stdfs::exists(dead), IsTrue());
+  options_.mutations.block_deletion = false;
+  options_.mutations.dry_run = true;
+  EXPECT_THAT(SweepStaleRoots([](std::string_view) { ADD_FAILURE() << "must not unmount"; }, options_), 0);
+  EXPECT_THAT(stdfs::exists(dead), IsTrue());
 }
 
 }  // namespace

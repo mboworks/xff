@@ -30,10 +30,8 @@ using ::testing::AllOf;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
-using ::testing::FieldsAre;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
-using ::testing::IsFalse;
 using ::testing::NotNull;
 using ::testing::SizeIs;
 
@@ -311,7 +309,7 @@ TEST_F(ConfigValidationTest, SystemControlsDisableNamedSectionsAndFormerReserved
   const ConfigFileValidation validation =
       ValidateConfigFile(config::ParseIni(fixture), {"policy", "defaults", "global"});
   EXPECT_THAT(validation.selected_configs_status, IsOk());
-  EXPECT_THAT(validation.config.globals, ElementsAre("--no-allow-exec", "--no-allow-xffrc"));
+  EXPECT_THAT(validation.config.globals, ElementsAre("--block-execution", "--no-allow-xffrc"));
   EXPECT_THAT(validation.diagnostics, ElementsAre(HasSubstr("must precede every system config section")));
   EXPECT_THAT(validation.disabled_configs, ElementsAre("invalid"));
   EXPECT_THAT(validation.config.named, SizeIs(3));
@@ -326,28 +324,6 @@ TEST_F(ConfigValidationTest, SkipControlPairsKeepFirstGlobalDecisionAndDisableMi
   EXPECT_THAT(validation.diagnostics, SizeIs(4));
   EXPECT_THAT(validation.config.named, IsEmpty());
   EXPECT_THAT(validation.disabled_configs, ElementsAre("system", "user"));
-}
-
-TEST_F(ConfigValidationTest, TrustedGlobalProhibitionSurvivesCliUserAndExplicitArming) {
-  ASSERT_OK_AND_ASSIGN(const std::string fixture, Fixture("safety"));
-  ASSERT_OK_AND_ASSIGN(const std::string user_fixture, Fixture("safety", "user.rc"));
-  ASSERT_OK_AND_ASSIGN(const std::string task_fixture, Fixture("safety", "task.rc"));
-  const ConfigFileValidation validation = ValidateConfigFile(config::ParseIni(fixture), {});
-  EXPECT_THAT(validation.diagnostics, IsEmpty());
-  config::ConfigInputs inputs;
-  inputs.system = validation.config;
-  inputs.user = config::ParseXffrc(user_fixture);
-  inputs.xffrc = {{.path = "task.rc", .config = config::ParseXffrc(task_fixture)}};
-  inputs.no_system_config = true;
-  EXPECT_THAT(config::ValidateConfigSkips(inputs), IsOk());
-  const bool armed = config::ArmedFromTrustedTier(inputs, {"--allow-exec"}, "--allow-exec");
-  EXPECT_THAT(armed, IsFalse());
-  const config::GateResult gated = config::GateConfig(inputs, armed);
-  EXPECT_THAT(gated.config.user.globals, ElementsAre("--allow-exec"));
-  EXPECT_THAT(
-      gated.config.xffrc,
-      ElementsAre(FieldsAre("task.rc", Field("global_lines", &config::ConfigFile::global_lines, SizeIs(2)))));
-  EXPECT_THAT(gated.drops, SizeIs(2));
 }
 
 TEST_F(ConfigValidationTest, PrimaryArgumentsAreNeitherDependenciesNorSystemControls) {
@@ -440,6 +416,12 @@ TEST_F(ConfigValidationTest, DisablementPropagatesAndSelectingItIsAHardError) {
   EXPECT_THAT(validation.diagnostics[2], AllOf(HasSubstr("[outer]"), HasSubstr("[middle]")));
   ASSERT_THAT(validation.config.named, SizeIs(1));
   EXPECT_THAT(validation.config.named[0].name, Eq("independent"));
+}
+
+TEST_F(ConfigValidationTest, DetailedPolicyRequiresAnExplicitListEvenWhenEmpty) {
+  const auto result = ValidateConfigFile(config::ParseIni("--detailed-block-policy"), {}, "system.ini");
+  EXPECT_THAT(result.config.globals, IsEmpty());
+  EXPECT_THAT(result.diagnostics, ElementsAre(HasSubstr("requires =LIST")));
 }
 
 }  // namespace

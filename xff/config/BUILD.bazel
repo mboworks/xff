@@ -68,8 +68,14 @@ cc_test(
 # provenance-tagged flag list.
 cc_library(
     name = "config_cc",
-    srcs = ["config.cc"],
-    hdrs = ["config.h"],
+    srcs = [
+        "config.cc",
+        "safety.cc",
+    ],
+    hdrs = [
+        "config.h",
+        "safety.h",
+    ],
     visibility = ["//xff:__subpackages__"],
     deps = [
         ":ini_cc",
@@ -77,6 +83,7 @@ cc_library(
         "//xff/registry:registry_cc",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/strings",
+        "@xff_extras_api//:vfs_cc",
     ],
 )
 

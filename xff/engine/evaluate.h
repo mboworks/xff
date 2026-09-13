@@ -41,6 +41,7 @@
 #include "xff/parser/ast.h"
 #include "xff/presentation/format/format.h"
 #include "xff/vfs/filesystem.h"
+#include "xff/vfs/mutations.h"
 
 namespace xff::exec {
 class ParallelExec;  // bounded concurrent `-exec/-execdir ... ;` runner (xff/exec/exec.h)
@@ -58,6 +59,7 @@ using EmitFn = absl::FunctionRef<void(std::string_view)>;
 // fire as a side effect of reaching the action node, so short-circuit governs
 // whether they are set.
 struct Control {
+  absl::Status mutation_error;  // Never downgraded by --skip-unsupported.
   bool prune = false;
   bool quit = false;
   // Set by a predicate that cannot be evaluated correctly on this entry's
@@ -106,6 +108,7 @@ struct EvaluationResult {
   std::optional<int> fuzzy;
   bool matched = false;
   bool deferred = false;
+  bool unknown = false;  // dry-run execution has no truth value; stop this entry
 };
 
 using DeferredDecisions = std::map<ExprIdentity, bool>;
@@ -133,6 +136,8 @@ struct EvalContext {
   // driver appends to each named file (opened once, truncating); empty -> the
   // file actions are inert (in-process callers that wire no sink).
   std::function<void(std::string_view, std::string_view)> emit_file;
+  bool dry_run = false;
+  vfs::MutationPolicy archive_mutations;
   // Row sink for -ls's aligned output: receives the entry's -ls columns as cells
   // (inode, blocks, perms, ...) for the driver to feed to a format::ColumnBuffer.
   // Empty -> -ls falls back to a single-space-joined line (in-process callers).

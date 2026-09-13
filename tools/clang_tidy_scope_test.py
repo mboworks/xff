@@ -3,6 +3,8 @@
 # SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
 # SPDX-License-Identifier: Apache-2.0
 
+import subprocess
+import sys
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -11,6 +13,20 @@ from tools import clang_tidy_scope
 
 
 class ClangTidyScopeTest(unittest.TestCase):
+    def test_missing_requested_source_fails_instead_of_reporting_a_clean_run(self):
+        with TemporaryDirectory() as directory:
+            database = Path(directory) / "compile_commands.json"
+            database.write_text('[{"file": "xff/old.cc"}]', encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(Path(clang_tidy_scope.__file__).resolve()),
+                 str(database), "xff/new.cc"],
+                cwd=directory, capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(result.stdout, "")
+            self.assertIn("xff/new.cc", result.stderr)
+            self.assertIn("./compile_commands-update.sh", result.stderr)
+
     def test_source_changes_are_narrow_and_sorted(self):
         database = [{"file": "xff/z.cc"}, {"file": "xff/a.cc"}, {"file": "external/x.cc"}]
         self.assertEqual(

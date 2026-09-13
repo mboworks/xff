@@ -131,6 +131,7 @@ absl::Span<const HelpTopic> HelpTopics() {
   static constexpr auto kLicenseAliases = std::to_array<std::string_view>({"licenses"});
   static constexpr auto kFullAliases = std::to_array<std::string_view>({"long"});
   static constexpr auto kTopics = std::to_array<HelpTopic>({
+      {.name = "safety", .summary = "mandatory blocks, safe profiles, archive policy, and dry-run", .in_full = true},
       {.name = "help", .aliases = {}, .summary = "how the help system works, and the topics here"},
       {.name = "list", .aliases = kListAliases, .summary = "this list of help topics"},
       {.name = "all", .aliases = {}, .summary = "every option and primary, summaries only"},

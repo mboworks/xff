@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "xff/vfs/mutations.h"
 
 namespace xff::archive {
 
@@ -45,7 +46,10 @@ namespace xff::archive {
 // name in `members` is not in the archive (nothing is written then, so a typo cannot silently do
 // half the job); DataLoss when the read fails part way; Unavailable when the temporary file or the
 // rename fails.
-[[nodiscard]] absl::Status RemoveMembersOfFile(std::string_view path, const std::vector<std::string>& members);
+[[nodiscard]] absl::Status RemoveMembersOfFile(
+    std::string_view path,
+    const std::vector<std::string>& members,
+    const vfs::MutationPolicy& policy = {});
 
 }  // namespace xff::archive
 

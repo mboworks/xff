@@ -120,7 +120,7 @@ TEST_F(LoaderTest, AutomaticDiscoveryDoesNotReadExplicitPaths) {
 
 TEST_F(LoaderTest, NoConfigStillInspectsAutomaticSourcesAndKeepsExplicitXffrc) {
   FakeFs fs;
-  fs.files["/etc/xff.ini"] = "--color=auto\n--no-allow-exec\n";
+  fs.files["/etc/xff.ini"] = "--color=auto\n--block-execution\n";
   fs.files["/home/u/.config/xff/config"] = "--sort\n";
   DiscoveryOptions opts;
   opts.home = "/home/u";
@@ -133,7 +133,7 @@ TEST_F(LoaderTest, NoConfigStillInspectsAutomaticSourcesAndKeepsExplicitXffrc) {
       ElementsAre(
           SourceIs("/etc/xff.ini", Source::kSystem, true), SourceIs("/home/u/.config/xff/config", Source::kUser, true),
           SourceIs("/extra.rc", Source::kXffrc, false)));
-  EXPECT_THAT(in.system.globals, ElementsAre("--color=auto", "--no-allow-exec"));
+  EXPECT_THAT(in.system.globals, ElementsAre("--color=auto", "--block-execution"));
 
   EXPECT_THAT(in.user.global_lines, SizeIs(1));
   EXPECT_THAT(in.xffrc, ElementsAre(FieldsAre("/extra.rc", Field("globals", &ConfigFile::globals, IsEmpty()))));

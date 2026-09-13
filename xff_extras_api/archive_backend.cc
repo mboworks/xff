@@ -32,6 +32,7 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "mbo/status/status_macros.h"
 #include "xff/archive/member_path.h"
 #include "xff/vfs/filesystem.h"
 
@@ -140,11 +141,16 @@ bool ContainerRemovalAvailable() {
   return static_cast<bool>(ContainerMemberRemoverSlot());
 }
 
-absl::Status RemoveContainerMembers(std::string_view container, const std::vector<std::string>& members) {
+absl::Status RemoveContainerMembers(
+    std::string_view container,
+    const std::vector<std::string>& members,
+    const vfs::MutationPolicy& policy) {
+  MBO_RETURN_IF_ERROR(policy.Delete());
+  MBO_RETURN_IF_ERROR(policy.Write(true));
   if (!ContainerRemovalAvailable()) {
     return absl::UnimplementedError("this binary was built without archive support");
   }
-  return ContainerMemberRemoverSlot()(container, members);
+  return ContainerMemberRemoverSlot()(container, members, policy);
 }
 
 void RegisterContainerPacker(
@@ -180,6 +186,7 @@ std::string ContainerPackFormatFor(std::string_view path) {
 }
 
 absl::Status PackContainer(std::string_view path, const std::vector<PackFile>& files, const PackOptions& options) {
+  MBO_RETURN_IF_ERROR(options.mutations.Write());
   if (!ContainerPackingAvailable()) {
     return absl::UnimplementedError("this binary was built without archive support");
   }

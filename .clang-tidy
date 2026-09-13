@@ -102,8 +102,10 @@ CheckOptions:
     value:           'NULL'
   - key:             performance-unnecessary-value-param.AllowedTypes
     value:           'absl::Status;absl::StatusOr;std::string_view'
+  # MBO_RETURN_IF_ERROR contributes four points and MBO_ASSIGN_OR_RETURN one;
+  # allow modest error-propagation overhead while still flagging complex control flow.
   - key:             readability-function-cognitive-complexity.Threshold
-    value:           '25'
+    value:           '30'
   - key:             readability-braces-around-statements.ShortStatementLines
     value:           '1'
   # r/w/x are the chmod-standard permission-bit names (fields.cc's access-string triples);

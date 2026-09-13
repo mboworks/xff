@@ -96,7 +96,8 @@ TEST_F(FuseBackendTest, ARegisteredFactoryReceivesOwnershipAndContainerName) {
   std::shared_ptr<const vfs::FileSystem> seen_fs;
   std::string seen_container;
   RegisterMountFactory(
-      [&seen_fs, &seen_container](std::shared_ptr<const vfs::FileSystem> fs, std::string_view container) {
+      [&seen_fs, &seen_container](
+          std::shared_ptr<const vfs::FileSystem> fs, std::string_view container, const vfs::MutationPolicy&) {
         seen_fs = std::move(fs);
         seen_container = container;
         return absl::StatusOr<std::unique_ptr<Mount>>(std::make_unique<StubMount>());
@@ -109,6 +110,20 @@ TEST_F(FuseBackendTest, ARegisteredFactoryReceivesOwnershipAndContainerName) {
   EXPECT_THAT(mount.get(), NotNull());
   EXPECT_THAT(mount->MountPoint(), "/tmp/mounted");
   EXPECT_THAT(mount->PathFor("dir/file.txt"), "/tmp/mounted/dir/file.txt");
+}
+
+TEST_F(FuseBackendTest, BlockedWritingAndDryRunNeverCallTheMountFactory) {
+  RegisterMountFactory(
+      // Match MountFactory's owning signature even though this rejection sentinel never uses the owner.
+      // NOLINTNEXTLINE(performance-unnecessary-value-param)
+      [](std::shared_ptr<const vfs::FileSystem>, std::string_view,
+         const vfs::MutationPolicy&) -> absl::StatusOr<std::unique_ptr<Mount>> {
+        ADD_FAILURE() << "blocked mount reached factory";
+        return absl::InternalError("unexpected mount");
+      });
+  const auto fs = std::make_shared<StubFileSystem>();
+  EXPECT_THAT(MountContainer(fs, "box.tar", {.block_writing = true}), StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(MountContainer(fs, "box.tar", {.dry_run = true}), StatusIs(absl::StatusCode::kFailedPrecondition));
 }
 
 }  // namespace

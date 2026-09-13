@@ -27,12 +27,14 @@
 // everything here is plain filesystem work, testable without FUSE.
 
 #include <cstddef>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include "absl/functional/function_ref.h"
 #include "absl/status/statusor.h"
+#include "xff/vfs/mutations.h"
 
 namespace xff::fuse {
 
@@ -40,6 +42,7 @@ namespace xff::fuse {
 // test owns the whole tree it creates and sweeps.
 struct MountRootOptions {
   std::string base_override;
+  vfs::MutationPolicy mutations;
 };
 
 class MountRoot {
@@ -68,10 +71,12 @@ class MountRoot {
   absl::StatusOr<std::string> MountPointFor(std::string_view container);
 
  private:
-  MountRoot(std::string path, std::string base) : path_(std::move(path)), base_(std::move(base)) {}
+  MountRoot(std::unique_ptr<vfs::TemporaryDirectory> root, vfs::MutationPolicy policy)
+      : path_(root->Path()), root_(std::move(root)), policy_(policy) {}
 
   std::string path_;  // empty in a moved-from instance, which then owns nothing
-  std::string base_;
+  std::unique_ptr<vfs::TemporaryDirectory> root_;
+  vfs::MutationPolicy policy_;
   std::size_t next_ = 0;
 };
 

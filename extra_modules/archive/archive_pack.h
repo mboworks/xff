@@ -23,6 +23,7 @@
 
 #include "absl/status/status.h"
 #include "absl/types/span.h"
+#include "xff/vfs/mutations.h"
 
 namespace xff::archive {
 
@@ -48,6 +49,7 @@ struct PackSetting {
 // a name wins, so a caller can append without first removing.
 struct PackSettings {
   std::vector<PackSetting> options;
+  vfs::MutationPolicy mutations;
 };
 
 // One entry of the option vocabulary, for the usage error and for the generated help. `formats` is

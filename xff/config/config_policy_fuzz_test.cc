@@ -57,16 +57,11 @@ void CheckGate(const xff::config::ConfigInputs& inputs) {
   const xff::config::GateResult unarmed = xff::config::GateConfig(inputs, /*xffrc_armed=*/false);
   const xff::config::GateResult armed = xff::config::GateConfig(inputs, /*xffrc_armed=*/true);
 
-  const std::vector<std::string_view> directives = xff::config::DirectiveTokens(inputs.system.globals);
-  const bool prohibited = std::ranges::find(directives, "--no-allow-exec") != directives.end();
-  if (prohibited) {
-    Require(!xff::config::ArmedFromTrustedTier(inputs, {"--allow-exec"}, "--allow-exec"));
-  }
-  CheckRetainedLines(unarmed.config.user, prohibited);
+  CheckRetainedLines(unarmed.config.user, /*require_safe=*/false);
   CheckRetainedLines(unarmed.config.xffrc.front().config, /*require_safe=*/true);
-  CheckRetainedLines(armed.config.user, prohibited);
-  CheckRetainedLines(armed.config.xffrc.front().config, prohibited);
-  Require(LineCount(unarmed.config.user) == LineCount(armed.config.user));
+  CheckRetainedLines(armed.config.user, /*require_safe=*/false);
+  CheckRetainedLines(armed.config.xffrc.front().config, /*require_safe=*/false);
+  Require(LineCount(unarmed.config.user) <= LineCount(armed.config.user));
   Require(LineCount(unarmed.config.xffrc.front().config) <= LineCount(armed.config.xffrc.front().config));
   CheckDrops(unarmed.drops);
   CheckDrops(armed.drops);

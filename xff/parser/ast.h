@@ -119,6 +119,8 @@ struct Command {
   // The final regex grammar for every matcher in this command. Parsing records patterns only;
   // BindMatchers sets this after configuration resolution and compiles each matcher once.
   regex::Grammar grammar = regex::Grammar::kRe2;
+  // Configuration resolution has translated per-file safety scope into concrete capability flags.
+  bool safety_flags_expanded = false;
 };
 
 }  // namespace xff::parser

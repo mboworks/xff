@@ -31,6 +31,7 @@
 #include <mutex>
 #include <optional>
 #include <ranges>
+#include <set>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -58,6 +59,7 @@
 #include "nlohmann/json.hpp"
 #include "xff/archive/archive_backend.h"
 #include "xff/archive/member_path.h"
+#include "xff/config/safety.h"
 #include "xff/content/line_match.h"
 #include "xff/datetime/datetime.h"
 #include "xff/engine/collect.h"
@@ -950,9 +952,10 @@ datetime::ZoneSuffix ResolveZoneSuffix(const std::vector<std::string>& globals) 
 
 // Wraps a FileSystem so Remove previews (emits the path) instead of deleting:
 // backs --dry-run for -delete. ReadDir/Stat pass through unchanged.
-class DryRunFileSystem : public vfs::FileSystem {
+class ControlledFileSystem : public vfs::FileSystem {
  public:
-  DryRunFileSystem(const vfs::FileSystem& fs, EmitFn preview) : fs_(fs), preview_(preview) {}
+  ControlledFileSystem(const vfs::FileSystem& fs, const config::SafetyPolicy& policy, EmitFn preview)
+      : fs_(fs), policy_(policy), preview_(preview) {}
 
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view dir) const override { return fs_.ReadDir(dir); }
 
@@ -970,32 +973,71 @@ class DryRunFileSystem : public vfs::FileSystem {
 
   absl::StatusOr<std::string> ReadContent(std::string_view path) const override { return fs_.ReadContent(path); }
 
+  absl::StatusOr<std::string> ReadContentRange(std::string_view path, std::uint64_t offset, std::size_t length)
+      const override {
+    return fs_.ReadContentRange(path, offset, length);
+  }
+
   absl::Status Remove(std::string_view path) const override {
-    preview_(absl::StrCat(path, "\n"));  // would-delete preview; nothing is removed
-    return absl::OkStatus();
+    if (policy_.Blocks(config::Capability::kFileDeletion)) {
+      return absl::PermissionDeniedError("blocked deletion");
+    }
+    if (policy_.dry_run) {
+      preview_(absl::StrCat(path, "\n"));
+      return absl::OkStatus();
+    }
+    return fs_.Remove(path);
+  }
+
+  absl::StatusOr<std::unique_ptr<vfs::OutputFile>> OpenOutput(std::string_view path, bool exclusive) const override {
+    if (policy_.Blocks(config::Capability::kFileWriting)) {
+      return absl::PermissionDeniedError("blocked writing");
+    }
+    if (policy_.dry_run) {
+      return absl::FailedPreconditionError("dry run cannot open output");
+    }
+    return fs_.OpenOutput(path, exclusive || policy_.Blocks(config::Capability::kFileOverwrite));
+  }
+
+  absl::Status WriteContent(std::string_view path, std::string_view content) const override {
+    MBO_ASSIGN_OR_RETURN(const auto output, OpenOutput(path, false));
+    return output->Write(content);
   }
 
  private:
   const vfs::FileSystem& fs_;
+  const config::SafetyPolicy& policy_;
   EmitFn preview_;
 };
 
-// True if the expression contains an armed (effectful) action -- -delete or
-// -exec. --safe refuses these. (-delete additionally implies -depth, applied
-// by ResolveDepthOptions.)
-bool ContainsArmedAction(const parser::Expr& expr) {
-  switch (expr.kind) {
-    case parser::Expr::Kind::kPredicate: return expr.descriptor->name == "-delete" || expr.descriptor->name == "-exec";
-    case parser::Expr::Kind::kNot: return ContainsArmedAction(*expr.lhs);
-    case parser::Expr::Kind::kAnd:
-    case parser::Expr::Kind::kOr:
-    case parser::Expr::Kind::kNand:
-    case parser::Expr::Kind::kNor:
-    case parser::Expr::Kind::kXor:
-    case parser::Expr::Kind::kXnor:
-    case parser::Expr::Kind::kComma: return ContainsArmedAction(*expr.lhs) || ContainsArmedAction(*expr.rhs);
+// Classify through registry metadata so aliases and every execution-family member agree.
+std::optional<config::Capability> ActionCapability(const registry::Descriptor& descriptor) {
+  if (descriptor.safety == registry::Safety::kSecurity) {
+    return config::Capability::kExecution;
   }
-  return false;
+  if (descriptor.safety == registry::Safety::kSafety) {
+    return config::Capability::kFileDeletion;
+  }
+  if (descriptor.writes_file) {
+    return config::Capability::kFileWriting;
+  }
+  return std::nullopt;
+}
+
+std::optional<std::string> BlockedAction(const parser::Expr& expr, const config::SafetyPolicy& policy) {
+  if (expr.kind == parser::Expr::Kind::kPredicate) {
+    const auto capability = ActionCapability(*expr.descriptor);
+    if (capability.has_value() && policy.Blocks(*capability)
+        && (*capability != config::Capability::kFileDeletion
+            || policy.Blocks(config::Capability::kArchiveContentDeletion))) {
+      return absl::StrCat(expr.descriptor->name, ": blocked ", config::CapabilityName(*capability));
+    }
+    return std::nullopt;
+  }
+  if (const auto blocked = BlockedAction(*expr.lhs, policy); blocked.has_value()) {
+    return blocked;
+  }
+  return expr.rhs ? BlockedAction(*expr.rhs, policy) : std::nullopt;
 }
 
 // True if the expression mentions the primary `name` anywhere. Used for the
@@ -2848,6 +2890,7 @@ std::string JsonQuote(std::string_view text) {
 int FlushArchiveDeletions(
     const std::vector<std::string>& members,
     const archive::MemberPathOptions& member_path_options,
+    const vfs::MutationPolicy& mutations,
     bool dry_run,
     EmitFn emit,
     WalkErrorFn on_error) {
@@ -2875,7 +2918,7 @@ int FlushArchiveDeletions(
       }
       continue;
     }
-    if (const absl::Status status = archive::RemoveContainerMembers(container, names); !status.ok()) {
+    if (const absl::Status status = archive::RemoveContainerMembers(container, names, mutations); !status.ok()) {
       ++errors;
       on_error(container, status);
     }
@@ -3283,7 +3326,10 @@ RunResult RunTreeCompare(
       entries.at(side).emplace(
           relative.empty() ? "." : std::string(relative),
           TreeCompareEntry{
-              .path = std::string(visit.path), .metadata = visit.metadata, .fs = visit.fs, .fs_owner = visit.fs_owner});
+              .path = std::string(visit.path),
+              .metadata = visit.metadata,
+              .fs = visit.fs_owner ? visit.fs : mbo::types::OptionalRef<const vfs::FileSystem>(fs),
+              .fs_owner = visit.fs_owner});
     };
     const auto emit_callback = [&](std::string_view text) {
       const std::scoped_lock lock(callback_mutex);
@@ -3442,10 +3488,18 @@ RunResult RunFindCore(
   const bool has_action = expression.has_value() && ContainsAction(*expression);
   // --implicit-print=yes|no overrides find's default-print rule (otherwise !has_action).
   const bool implicit_print = ResolveImplicitPrint(command.globals).value_or(!has_action && !compare_listing);
-  if (HasGlobal(command.globals, "--safe") && expression.has_value() && ContainsArmedAction(*expression)) {
-    on_error("-delete", absl::FailedPreconditionError("refused: --safe forbids destructive actions"));
-    return RunResult{.errors = 2};  // do not traverse
+  const config::SafetyPolicy safety = config::ResolveSafety(command.globals, command.safety_flags_expanded);
+  if (expression.has_value()) {
+    if (const auto blocked = BlockedAction(*expression, safety); blocked.has_value()) {
+      on_error("safety", absl::PermissionDeniedError(*blocked));
+      return RunResult{.errors = 2};
+    }
   }
+  if (ReadPackTarget(command.globals).has_value() && safety.Blocks(config::Capability::kArchiveWriting)) {
+    on_error("--pack", absl::PermissionDeniedError("blocked writing"));
+    return RunResult{.errors = 2};
+  }
+
   // A NAME bound twice by -capture or -collect is a usage error before the walk (see
   // ReportDuplicateBindingName for why each one fails closed).
   if (expression.has_value() && ReportDuplicateBindingName(*expression, on_error)) {
@@ -3864,11 +3918,11 @@ RunResult RunFindCore(
   // child both outlive the entry, and removes everything it made when the run ends.
   const ArchiveWrite archive_write = ResolveArchiveWrite(command.globals);
   const bool archive_extract = archive_write.extract;
-  ExtractedMembers extracted_members;
+  ExtractedMembers extracted_members(safety.FileMutations());
   // --archive-mount: serve a member from a read-only MOUNT of its container instead of a copy.
   // Preferred over extraction where the machine can mount; where it cannot, the provider answers
   // nothing, extraction takes over, and the reason is reported once after the walk.
-  MountedContainers mounted_containers(absl::c_contains(command.globals, "--archive-mount"));
+  MountedContainers mounted_containers(absl::c_contains(command.globals, "--archive-mount"), safety.FileMutations());
   // --archive-delete: `-delete` on a member records it here instead of refusing; the containers are
   // rewritten after the walk (see the flush below), because a member cannot be removed from a
   // container the walk is reading at that moment.
@@ -3878,6 +3932,18 @@ RunResult RunFindCore(
   // --summary. Everything that can be checked without walking is checked here: a missing extra and an
   // output name that carries no writable format both cost a whole traversal if found out afterwards.
   const std::optional<std::string> pack_target = ReadPackTarget(command.globals);
+  if (pack_target && safety.ArchiveMutations().block_overwrite) {
+    const auto existing = fs.Stat(*pack_target, false);
+    if (existing.ok()) {
+      on_error(*pack_target, absl::PermissionDeniedError("blocked archive overwrite: destination already exists"));
+      return RunResult{.errors = 2};
+    }
+    if (existing.status().code() != absl::StatusCode::kNotFound) {
+      on_error(*pack_target, existing.status());
+      return RunResult{.errors = 2};
+    }
+  }
+
   const absl::StatusOr<std::vector<archive::PackOption>> pack_options = ReadPackOptions(command.globals);
   if (!pack_options.ok()) {
     on_error("--pack-option", pack_options.status());
@@ -3945,9 +4011,9 @@ RunResult RunFindCore(
 
   // --dry-run: route deletions through a previewing wrapper, so -delete reports
   // what it would remove without touching the filesystem.
-  const DryRunFileSystem dry_run_fs(fs, emit);
+  const ControlledFileSystem controlled_fs(fs, safety, emit);
   const bool dry_run = HasGlobal(command.globals, "--dry-run");
-  const vfs::FileSystem& walk_fs = dry_run ? dry_run_fs : fs;
+  const vfs::FileSystem& walk_fs = controlled_fs;
   // --ignore-files: honor per-directory .ignore / .xffignore files (off by default,
   // find-compatible; -u / --no-ignore forces it off). Reads through walk_fs, so a
   // --dry-run still consults them. Inactive is zero overhead.
@@ -3999,20 +4065,38 @@ RunResult RunFindCore(
     return !line.empty() && (line[0] == 'y' || line[0] == 'Y');
   };
 
-  // File-output actions (-fprint/-fprint0/-fprintf/-fls) append to a named file,
-  // opened once (truncating) on first write and held open for the whole walk. The
-  // visitor is single-threaded, so the sink map needs no synchronisation. Streams
-  // close (flushing) when `file_sinks` goes out of scope after the walk.
-  // XFF_HOST_IO: -fprint-family actions intentionally write user-selected host output files.
-  std::map<std::string, std::ofstream> file_sinks;
-  const auto emit_file = [&file_sinks](std::string_view file, std::string_view record) {
-    const std::string name(file);
-    auto it = file_sinks.find(name);
-    if (it == file_sinks.end()) {
-      // XFF_HOST_IO: open the explicit output path selected by the -fprint-family action.
-      it = file_sinks.emplace(name, std::ofstream(name, std::ios::binary | std::ios::trunc)).first;
+  std::map<std::string, std::unique_ptr<vfs::OutputFile>> file_sinks;
+  std::set<std::string> previewed_files;
+  const auto emit_file = [&](std::string_view file, std::string_view record) {
+    if (safety.dry_run) {
+      if (previewed_files.insert(std::string(file)).second) {
+        const auto existing = fs.Stat(file, false);
+        if (!existing.ok() && existing.status().code() != absl::StatusCode::kNotFound) {
+          ++errors;
+          on_error(file, existing.status());
+        } else if (existing.ok() && safety.Blocks(config::Capability::kFileOverwrite)) {
+          ++errors;
+          on_error(file, absl::AlreadyExistsError("blocked overwrite: output already exists"));
+        } else {
+          emit(absl::StrCat("would ", existing.ok() ? "overwrite " : "create ", file, "\n"));
+        }
+      }
+      return;
     }
-    it->second.write(record.data(), static_cast<std::streamsize>(record.size()));
+    auto sink = file_sinks.find(std::string(file));
+    if (sink == file_sinks.end()) {
+      auto opened = walk_fs.OpenOutput(file, safety.Blocks(config::Capability::kFileOverwrite));
+      if (!opened.ok()) {
+        ++errors;
+        on_error(file, opened.status());
+        return;
+      }
+      sink = file_sinks.emplace(std::string(file), *std::move(opened)).first;
+    }
+    if (const absl::Status status = sink->second->Write(record); !status.ok()) {
+      ++errors;
+      on_error(file, status);
+    }
   };
 
   // -ls aligned output: each -ls row's cells feed a ColumnBuffer (per --buffer), whose
@@ -4320,6 +4404,8 @@ RunResult RunFindCore(
             .visit = visit,
             .emit = emit,
             .emit_file = emit_file,
+            .dry_run = safety.dry_run,
+            .archive_mutations = safety.ArchiveMutations(),
             .emit_ls_row = emit_ls_row,
             .ls_color = entry_color,
             .ls_size_units = human,
@@ -4378,7 +4464,18 @@ RunResult RunFindCore(
                .score = evaluated.fuzzy.value_or(0),
                .order = deferred_order++});
         } else {
-          finish_entry(visit, outputs, evaluated.matched, hash_verification);
+          if (evaluated.unknown) {
+            ++errors;
+            on_error(
+                visit.path, absl::FailedPreconditionError(
+                                "incomplete dry run: command result unavailable; remaining expression skipped"));
+          } else {
+            finish_entry(visit, outputs, evaluated.matched, hash_verification);
+          }
+        }
+        if (!control.mutation_error.ok()) {
+          ++errors;
+          on_error(visit.path, control.mutation_error);
         }
         if (!control.unsupported.empty() && !unsupported_reported) {
           unsupported_reported = true;  // once per run, not per entry
@@ -4442,6 +4539,8 @@ RunResult RunFindCore(
           .visit = visit,
           .emit = emit,
           .emit_file = emit_file,
+          .dry_run = safety.dry_run,
+          .archive_mutations = safety.ArchiveMutations(),
           .emit_ls_row = emit_ls_row,
           .ls_color = entry_color,
           .ls_size_units = human,
@@ -4490,7 +4589,18 @@ RunResult RunFindCore(
         candidate.score = evaluated.fuzzy.value_or(0);
         next_round.push_back(std::move(candidate));
       } else {
-        finish_entry(visit, candidate.outputs, evaluated.matched, candidate.hash_verification);
+        if (evaluated.unknown) {
+          ++errors;
+          on_error(
+              visit.path, absl::FailedPreconditionError(
+                              "incomplete dry run: command result unavailable; remaining expression skipped"));
+        } else {
+          finish_entry(visit, candidate.outputs, evaluated.matched, candidate.hash_verification);
+        }
+      }
+      if (!control.mutation_error.ok()) {
+        ++errors;
+        on_error(visit.path, control.mutation_error);
       }
       if (!control.unsupported.empty() && !unsupported_reported) {
         unsupported_reported = true;
@@ -4567,7 +4677,8 @@ RunResult RunFindCore(
   // container and applied once per container, so an archive is rewritten a single time however many
   // of its members matched - and only now, with the walk (and its open readers) finished.
   if (!archive_deletions.empty()) {
-    errors += FlushArchiveDeletions(archive_deletions, member_path_options, dry_run, emit, on_error);
+    errors += FlushArchiveDeletions(
+        archive_deletions, member_path_options, safety.ArchiveMutations(), dry_run, emit, on_error);
   }
 
   // --pack: write the archive, now that the walk has produced every member and released the readers
@@ -4588,8 +4699,9 @@ RunResult RunFindCore(
       // Kept out of the `else if` condition: an init-statement with an initializer this long is the
       // one construct the pinned and the hermetic clang-format lay out differently, so each undoes
       // the other's work.
-      const absl::Status packed =
-          archive::PackContainer(*pack_target, pack_files, archive::PackOptions{.options = *pack_options});
+      const absl::Status packed = archive::PackContainer(
+          *pack_target, pack_files,
+          archive::PackOptions{.options = *pack_options, .mutations = safety.ArchiveMutations()});
       if (!packed.ok()) {
         ++errors;
         on_error("--pack", packed);

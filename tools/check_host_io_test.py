@@ -35,6 +35,22 @@ class CheckHostIoTest(unittest.TestCase):
             path.write_text("void f() { std::filesystem::remove(\"x\"); }\n", encoding="utf-8")
             self.assertEqual(len(check_host_io.check(path)), 1)
 
+    def test_annotation_cannot_bypass_mutation_routing(self) -> None:
+        examples = [
+            'std::ofstream output("x");',
+            'stdfs::remove_all("x", error);',
+            '::unlink("x");',
+            '::open("x", O_WRONLY | O_CREAT, 0600);',
+            'archive_write_open_filename(writer, "x");',
+            '::write(fd, data, size);',
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            path = pathlib.Path(directory) / "sample.cc"
+            for text in examples:
+                with self.subTest(text=text):
+                    path.write_text("// XFF_HOST_IO: attempted bypass\n" + text + "\n", encoding="utf-8")
+                    self.assertEqual(len(check_host_io.check(path)), 1)
+
     def test_accepts_annotated_filesystem_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = pathlib.Path(directory) / "sample.cc"

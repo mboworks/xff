@@ -29,10 +29,10 @@
 set -euo pipefail
 
 # The minimum clang-tidy major version. Below this, C++23 parsing is unreliable.
-readonly MIN_MAJOR=18
+readonly MIN_MAJOR=22
 
 function skip() {
-  echo "clang-tidy: skipped (${*}). It is a local-only aid; CI relies on the bazel -Werror gate." 1>&2
+  echo "clang-tidy: skipped (${*}). The dedicated CI clang-tidy job supplies these prerequisites." 1>&2
   exit 0
 }
 
@@ -131,17 +131,22 @@ done
 # targeted, commented NOLINT rather than a blanket exemption for the whole test tree.
 readonly TEST_DISABLED_CHECKS='-readability-function-cognitive-complexity,-misc-override-with-different-visibility,-readability-identifier-naming'
 
-PARALLELISM="${CLANG_TIDY_JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)}"
+# Keep local checks bounded even on machines with many logical CPUs. CI explicitly
+# supplies its available CPU count; the runner also caps workers to selected tasks.
+PARALLELISM="${CLANG_TIDY_JOBS:-2}"
 readonly PARALLELISM
 
+# Preserve scope-selection failures; process substitution would hide a stale database error.
+SCOPE="$(python3 tools/clang_tidy_scope.py compile_commands.json "${@}")"
 declare -a SOURCES=()
 declare -a TESTS=()
 while IFS= read -r FILE; do
+  [ -n "${FILE}" ] || continue
   case "${FILE}" in
     *_test.cc | *_test.cpp | *_test.cxx) TESTS+=("${FILE}") ;;
     *) SOURCES+=("${FILE}") ;;
   esac
-done < <(python3 tools/clang_tidy_scope.py compile_commands.json "${@}")
+done <<<"${SCOPE}"
 
 # Report only: --header-filter restricts diagnostics to this repo's own headers
 # (not the toolchain's force-included / system headers), -p points at the compile

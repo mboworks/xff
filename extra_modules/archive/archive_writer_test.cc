@@ -180,17 +180,15 @@ TEST_F(ArchiveWriterTest, APlainFileIsNotAnArchive) {
   EXPECT_THAT(RemoveMembersOfFile(path, {"one.txt"}), StatusIs(absl::StatusCode::kInvalidArgument));
 }
 
-TEST_F(ArchiveWriterTest, AnUnusableRewritePathLeavesTheArchiveIntact) {
+TEST_F(ArchiveWriterTest, UnrelatedOldScratchNamesRemainUntouched) {
   const std::string path = WriteArchive(
       {{.path = "one.txt", .content = "one\n"}, {.path = "two.txt", .content = "two\n"}}, "blocked-rewrite.tar");
-  const std::string before = Bytes(path);
   const std::string rewrite_path = path + ".xff-rewrite";
   ASSERT_THAT(stdfs::create_directory(rewrite_path), IsTrue());
 
-  EXPECT_THAT(
-      RemoveMembersOfFile(path, {"one.txt"}), StatusIs(absl::StatusCode::kUnavailable, HasSubstr("cannot write")));
-  EXPECT_THAT(Bytes(path), before);
-  EXPECT_THAT(MemberNames(path), UnorderedElementsAre("one.txt", "two.txt"));
+  EXPECT_THAT(RemoveMembersOfFile(path, {"one.txt"}), IsOk());
+  EXPECT_THAT(stdfs::is_directory(rewrite_path), IsTrue());
+  EXPECT_THAT(MemberNames(path), UnorderedElementsAre("two.txt"));
 }
 
 TEST_F(ArchiveWriterTest, RemovingNothingIsNotAWrite) {

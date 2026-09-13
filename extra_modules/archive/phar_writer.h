@@ -22,6 +22,7 @@
 
 #include "absl/status/status.h"
 #include "xff/archive/archive_reader.h"
+#include "xff/vfs/mutations.h"
 
 namespace xff::archive {
 
@@ -46,7 +47,10 @@ namespace xff::archive {
 // does not check out; NotFound when a name in `members` is not in the archive (nothing is written
 // then); Unimplemented for a signature this build cannot recompute; Unavailable when the temporary
 // file or the rename fails.
-[[nodiscard]] absl::Status RemovePharMembersOfFile(std::string_view path, const std::vector<std::string>& members);
+[[nodiscard]] absl::Status RemovePharMembersOfFile(
+    std::string_view path,
+    const std::vector<std::string>& members,
+    const vfs::MutationPolicy& policy = {});
 
 // The member a TAR-based or ZIP-based phar keeps its signature in (php-src phar_tar.c / phar_zip.c
 // write `.phar/signature.bin`). Those variants are ordinary tars and zips, so the libarchive writer

@@ -14,6 +14,10 @@
 
 namespace xff::vfs {
 
+absl::StatusOr<std::unique_ptr<OutputFile>> FileSystem::OpenOutput(std::string_view, bool) const {
+  return absl::UnimplementedError("filesystem does not support output handles");
+}
+
 absl::StatusOr<std::string> FileSystem::ReadContentRange(
     std::string_view path,
     std::uint64_t offset,

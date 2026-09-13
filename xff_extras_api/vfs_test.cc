@@ -104,6 +104,11 @@ TEST_F(VfsSeamTest, AnExtraCanImplementTheInterfaceUsingOnlyThisModule) {
   EXPECT_THAT(seam.IsCaseSensitive("/box"), IsOkAndHolds(true));
 }
 
+TEST_F(VfsSeamTest, ReadOnlyBackendNeverFallsBackToHostOutput) {
+  const ReadOnlyFakeFs fs;
+  EXPECT_THAT(fs.OpenOutput("/box/member.txt", false), StatusIs(absl::StatusCode::kUnimplemented));
+}
+
 TEST_F(VfsSeamTest, PerPathFailuresAreStatusesSoTheWalkCanContinue) {
   // The contract is that a per-path failure is REPORTED, not thrown or fatal: the engine keeps
   // traversing and folds it into the exit code.

@@ -87,6 +87,7 @@ struct Descriptor {
   // keying off the leading 'i' in the primary's name.
   bool fold_case = false;
   Safety safety = Safety::kNone;
+  bool writes_file = false;    // named file output; runtime writing/overwrite policy applies
   Style style = Style::kFind;  // find-native by default; set kXff to mark an xff extension
   Cost cost = Cost::kCheap;
   bool pure = true;  // side-effect-free (reorderable within a conjunction)

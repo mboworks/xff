@@ -55,6 +55,7 @@ using ::testing::MatchesRegex;
 using ::testing::Ne;
 using ::testing::Not;
 using ::testing::PrintToString;
+using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
 // Fixture tree:
@@ -1268,6 +1269,91 @@ TEST_F(RunTest, SafeRefusesExec) {
       RunFind(command, fs_, [](std::string_view) {}, [](std::string_view, absl::Status) {});
   EXPECT_THAT(errors, 2);
   EXPECT_THAT(fs::exists(root_ / "a.txt.ran"), IsFalse());  // refused: command not run
+}
+
+TEST_F(RunTest, SafetyRejectsEveryExecutionFamilyMemberBeforeTraversal) {
+  const std::vector<std::string> primaries = {"-exec", "-execdir", "-ok", "-okdir", "-capture:x", "-capturedir:x"};
+  for (const auto& primary : primaries) {
+    MBO_ASSERT_OK_AND_ASSIGN(
+        const auto command,
+        parser::Parse({"--safe", Path("a.txt"), "-false", "-a", primary, "/usr/bin/printf", "unsafe", ";"}));
+    std::vector<std::string> records;
+    std::vector<std::string> diagnostics;
+    const auto result = RunFind(
+        command, fs_, [&](std::string_view r) { records.emplace_back(r); },
+        [&](std::string_view, absl::Status status) { diagnostics.emplace_back(status.message()); });
+    EXPECT_THAT(result.errors, 2) << primary;
+    EXPECT_THAT(records, IsEmpty());
+    EXPECT_THAT(diagnostics, ElementsAre(HasSubstr("blocked execution")));
+  }
+}
+
+TEST_F(RunTest, DryRunCommandsNeverExecuteOrInventSubsequentMatches) {
+  const std::vector<std::string> operators = {"-a", "-o", ",", "-xor", "-nand", "-nor", "-xnor"};
+  for (const auto& op : operators) {
+    MBO_ASSERT_OK_AND_ASSIGN(
+        const auto command, parser::Parse(
+                                {"--dry-run", Path("a.txt"), "!", "-exec", "/bin/sh", "-c", "touch " + Path("executed"),
+                                 ";", op, "-fprint", Path("out")}));
+    std::vector<std::string> records;
+    const auto result = RunFind(
+        command, fs_, [&](std::string_view r) { records.emplace_back(r); }, [](std::string_view, absl::Status) {});
+    EXPECT_THAT(result.errors, 1) << op;
+    EXPECT_THAT(records, ElementsAre(HasSubstr("would execute")));
+    EXPECT_THAT(fs::exists(Path("executed")), IsFalse());
+    EXPECT_THAT(fs::exists(Path("out")), IsFalse());
+  }
+}
+
+TEST_F(RunTest, DryRunCoversPromptedBatchedAndCaptureExecution) {
+  const std::vector<std::string> primaries = {"-execdir", "-ok", "-okdir", "-capture:x", "-capturedir:x"};
+  for (const auto& primary : primaries) {
+    MBO_ASSERT_OK_AND_ASSIGN(
+        const auto command, parser::Parse(
+                                {"--dry-run", "--template={capture.x}", Path("a.txt"), primary, "/bin/sh", "-c",
+                                 "touch " + Path("executed"), ";"}));
+    const auto result = RunFind(command, fs_, [](std::string_view) {}, [](std::string_view, absl::Status) {});
+    EXPECT_THAT(result.errors, 1) << primary;
+    EXPECT_THAT(fs::exists(Path("executed")), IsFalse());
+  }
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const auto batch,
+      parser::Parse(
+          {"--dry-run", "-j2", Path("a.txt"), "-exec", "/bin/sh", "-c", "touch " + Path("executed"), "{}", "+"}));
+  EXPECT_THAT(RunFind(batch, fs_, [](std::string_view) {}, [](std::string_view, absl::Status) {}).errors, 1);
+  EXPECT_THAT(fs::exists(Path("executed")), IsFalse());
+}
+
+TEST_F(RunTest, NewFileOnlyOutputRetainsItsHandleAndRejectsCollisions) {
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const auto fresh,
+      parser::Parse(
+          {"--safe", "--no-safe-block-file-writing", Path("a.txt"), "-fprint", Path("new"), "-fprint", Path("new")}));
+  EXPECT_THAT(RunFind(fresh, fs_, [](std::string_view) {}, [](std::string_view, absl::Status) {}).errors, 0);
+  EXPECT_THAT(fs::file_size(Path("new")), 2 * (Path("a.txt").size() + 1));
+  EXPECT_THAT(RunFind(fresh, fs_, [](std::string_view) {}, [](std::string_view, absl::Status) {}).errors, 2);
+  fs::create_symlink(Path("missing"), Path("link"));
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const auto link, parser::Parse({"--block-file-overwrite", Path("a.txt"), "-fprint", Path("link")}));
+  EXPECT_THAT(RunFind(link, fs_, [](std::string_view) {}, [](std::string_view, absl::Status) {}).errors, 1);
+  EXPECT_THAT(fs::exists(Path("missing")), IsFalse());
+}
+
+TEST_F(RunTest, WritingBlocksCannotBeRemovedAndDryRunPreservesExistingOutput) {
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const auto blocked, parser::Parse({"--block-file-writing", "--no-safe", Path("a.txt"), "-fprint", Path("b.md")}));
+  EXPECT_THAT(RunFind(blocked, fs_, [](std::string_view) {}, [](std::string_view, absl::Status) {}).errors, 2);
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const auto preview, parser::Parse({"--dry-run", Path("a.txt"), "-fprint", Path("b.md"), "-fprint", Path("new")}));
+  std::vector<std::string> records;
+  EXPECT_THAT(
+      RunFind(
+          preview, fs_, [&](std::string_view r) { records.emplace_back(r); }, [](std::string_view, absl::Status) {})
+          .errors,
+      0);
+  EXPECT_THAT(records, ElementsAre(HasSubstr("would overwrite"), HasSubstr("would create")));
+  EXPECT_THAT(fs::file_size(Path("b.md")), 1);
+  EXPECT_THAT(fs::exists(Path("new")), IsFalse());
 }
 
 TEST_F(RunTest, UnknownTimezoneIsRefusedBeforeTraversal) {
@@ -2528,6 +2614,87 @@ TEST_F(RunTest, FlavorFacetsHaveStableStorage) {
   EXPECT_THAT(roots, Eq("roots"));
   EXPECT_THAT(global, Eq("global"));
 }
+
+TEST_F(RunTest, DryRunRejectsOutputCollisionsAndUnstatableDestinations) {
+  const std::vector<std::string> targets = {Path("b.md"), Path("a.txt/child")};
+  for (const auto& target : targets) {
+    MBO_ASSERT_OK_AND_ASSIGN(
+        const auto command, parser::Parse({"--dry-run", "--block-file-overwrite", Path("a.txt"), "-fprint", target}));
+    std::vector<std::string> records;
+    std::vector<std::string> diagnostics;
+    const auto result = RunFind(
+        command, fs_, [&](std::string_view line) { records.emplace_back(line); },
+        [&](std::string_view, absl::Status status) { diagnostics.emplace_back(status.message()); });
+    EXPECT_THAT(result.errors, 1);
+    EXPECT_THAT(records, IsEmpty());
+    EXPECT_THAT(diagnostics, SizeIs(1));
+    EXPECT_THAT(fs::file_size(Path("b.md")), 1);
+  }
+}
+
+TEST_F(RunTest, PackRefusesAnUnstatableDestinationBeforeTraversal) {
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const auto command,
+      parser::Parse({"--block-archive-overwrite", "--pack=" + Path("a.txt/out.tar"), Path("a.txt")}));
+  EXPECT_THAT(
+      RunFind(
+          command, fs_, [](std::string_view) { ADD_FAILURE() << "must not traverse"; },
+          [](std::string_view, absl::Status status) {
+            EXPECT_THAT(status, StatusIs(absl::StatusCode::kFailedPrecondition));
+          })
+          .errors,
+      2);
+}
+
+TEST_F(RunTest, FileDeletionBlockAppliesEvenWhenArchiveDeletionIsAllowed) {
+  const std::vector<std::string> orders = {"--sort=none", "--sort=name"};
+  for (const std::string& order : orders) {
+    MBO_ASSERT_OK_AND_ASSIGN(
+        auto command, parser::Parse({"--block-file-deletion", "--skip-unsupported", order, Path("a.txt"), "-delete"}));
+    // Represents an INI file using separate archive controls, already expanded by the resolver.
+    command.safety_flags_expanded = true;
+    const auto result = RunFind(
+        command, fs_, [](std::string_view) {},
+        [](std::string_view, absl::Status status) {
+          EXPECT_THAT(status, StatusIs(absl::StatusCode::kPermissionDenied));
+        });
+    EXPECT_THAT(result.errors, 1);
+    EXPECT_THAT(fs::exists(Path("a.txt")), IsTrue());
+  }
+}
+
+TEST_F(RunTest, DryRunRendersExecFieldsAndStopsDeferredExpressions) {
+  const std::vector<std::string> orders = {"--sort=none", "--sort=name"};
+  for (const std::string& order : orders) {
+    MBO_ASSERT_OK_AND_ASSIGN(
+        const auto command, parser::Parse(
+                                {"--dry-run", "--exec-fields", order, Path("a.txt"), "-fuzzy", "a.txt", "-top", "1",
+                                 "-exec", "echo", "{name}", ";"}));
+    std::vector<std::string> records;
+    const auto result = RunFind(
+        command, fs_, [&](std::string_view line) { records.emplace_back(line); },
+        [](std::string_view, absl::Status status) {
+          EXPECT_THAT(status, StatusIs(absl::StatusCode::kFailedPrecondition));
+        });
+    EXPECT_THAT(result.errors, 1);
+    EXPECT_THAT(records, ElementsAre(AllOf(HasSubstr("would execute"), HasSubstr("a.txt"))));
+  }
+}
+
+#if defined(__linux__)
+TEST_F(RunTest, OutputWriteFailureIsReportedEvenWithSkipUnsupported) {
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const auto command, parser::Parse({"--skip-unsupported", Path("a.txt"), "-fprint", "/dev/full"}));
+  EXPECT_THAT(
+      RunFind(
+          command, fs_, [](std::string_view) {},
+          [](std::string_view, absl::Status status) {
+            EXPECT_THAT(status, StatusIs(absl::StatusCode::kResourceExhausted));
+          })
+          .errors,
+      1);
+}
+#endif
 
 }  // namespace
 }  // namespace xff::engine

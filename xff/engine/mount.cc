@@ -45,7 +45,7 @@ std::optional<std::string> MountedContainers::PathFor(
   const std::string container(parts->container);
   auto found = mounts_.find(container);
   if (found == mounts_.end()) {
-    absl::StatusOr<std::unique_ptr<fuse::Mount>> mount = fuse::MountContainer(std::move(fs), container);
+    absl::StatusOr<std::unique_ptr<fuse::Mount>> mount = fuse::MountContainer(std::move(fs), container, policy_);
     if (!mount.ok()) {
       if (degrade_reason_.empty()) {
         // Once per run: every member of every container would otherwise repeat the same sentence.

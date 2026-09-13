@@ -45,19 +45,19 @@ registry::Safety LineSafety(const IniLine& line);
 // --xffrc file cannot admit itself.
 absl::Status ValidateConfigSkips(const ConfigInputs& inputs);
 
-// Why the gate dropped a line: a global --no-allow-exec prohibition,
+// Why the gate dropped a line: activation only through explicit-file composition,
 // a structural rule (it attaches behavior to a built-in preset, which no config file may do), or
 // an unarmed dangerous directive loaded from an --xffrc file (kSafety/kSecurity, no --allow-exec).
-enum class DropReason { kSystemProhibition, kPresetOverload, kUnarmedXffrc };
+enum class DropReason { kUntrustedSelection, kPresetOverload, kUnarmedXffrc };
 
 // A config line dropped by the gate: the line, the layer it came from, the safety class (relevant
-// to kSystemProhibition), and why it was dropped (for the stderr warning and --explain).
+// to kUntrustedSelection), and why it was dropped (for the stderr warning and --explain).
 struct Drop {
   IniLine line;
   std::string config_name;
   Source layer;
   registry::Safety safety;
-  DropReason reason = DropReason::kSystemProhibition;
+  DropReason reason = DropReason::kUntrustedSelection;
 };
 
 // Whether a section name exactly matches a built-in preset (find/xff/rg). User and explicit
@@ -69,10 +69,14 @@ struct GateResult {
   std::vector<Drop> drops;
 };
 
-// Filters user and explicit-file lines, recording preset overloads and dangerous lines denied by
-// the trusted global --no-allow-exec prohibition. Explicit-file dangerous lines also require arming.
-// System-authored flags and CLI expressions are not filtered by this gate.
-GateResult GateConfig(const ConfigInputs& inputs, bool xffrc_armed);
+// Filters preset overloads and unarmed actions supplied or activated by explicit config files.
+// Trusted named actions require selection reachable without explicit files, or explicit arming.
+// Unconditional capability blocks are enforced separately at runtime.
+GateResult GateConfig(
+    const ConfigInputs& inputs,
+    bool xffrc_armed,
+    const std::vector<std::string>& cli_globals = {},
+    std::string_view invocation_selector = "xff");
 
 // A one-line human description of a dropped line for the stderr warning and
 // --explain, e.g. "'-exec' from the --xffrc file (sensitive; needs --allow-exec)".

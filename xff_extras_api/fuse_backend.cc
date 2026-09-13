@@ -53,14 +53,18 @@ void RegisterMountFactory(MountFactory factory) {
 
 absl::StatusOr<std::unique_ptr<Mount>> MountContainer(
     std::shared_ptr<const vfs::FileSystem> fs,
-    std::string_view container) {
+    std::string_view container,
+    const vfs::MutationPolicy& policy) {
+  if (auto status = policy.Write(); !status.ok()) {
+    return status;
+  }
   if (fs == nullptr) {
     return absl::InvalidArgumentError("cannot mount a null filesystem");
   }
   if (!FactorySlot()) {
     return absl::UnimplementedError("this binary has no FUSE mount support (rebuild with --//xff:xff_fuse)");
   }
-  return FactorySlot()(std::move(fs), container);
+  return FactorySlot()(std::move(fs), container, policy);
 }
 
 }  // namespace xff::fuse
