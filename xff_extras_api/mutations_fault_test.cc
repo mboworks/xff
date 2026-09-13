@@ -95,6 +95,8 @@ decltype(::readdir) __real_readdir;
 using ::xff::vfs::fault_test::Fail;
 using ::xff::vfs::fault_test::Operation;
 
+// Linux va_list is an array; the required va_* macros decay it at the POSIX ABI boundary.
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
 // XFF_ABI_POINTER: exact POSIX open wrapper ABI.
 extern "C" int __wrap_open(const char* path, int flags, ...) {
   if (Fail(Operation::kOpen)) {
@@ -144,6 +146,8 @@ extern "C" int __wrap_fcntl(int fd, int command, ...) {
   va_end(args);
   return XFF_REAL(fcntl)(fd, command, argument);
 }
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
 
 // XFF_ABI_POINTER: exact POSIX fstat wrapper ABI.
 extern "C" int __wrap_fstat(int fd, struct stat* metadata) {
