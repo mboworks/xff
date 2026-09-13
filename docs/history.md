@@ -9,6 +9,16 @@ would otherwise be lost when the actionable backlog is simplified.
 The former combined roadmap and completion ledger through PR #683 is retained separately in
 [`history-roadmap.md`](history-roadmap.md).
 
+## `.xffrc` admission order
+
+The release quick check identified admission resolving selected user sections in declaration order.
+Admission now consumes config-only controls through the shared ordered resolver, preserving CLI
+selection, in-place composition, one-time application, and authoritative system denial. Regression
+coverage includes both INI declaration orders, reversed selectors, literal command arguments,
+explicit-file self-admission, and denial before autoload discovery probes a root. Runtime resolution
+still omits config-only controls. This handles the confirmed admission inconsistency; the broader
+configuration audit remains on the roadmap before release.
+
 ## Opt-in `.xffrc` autoloading
 
 Handled the first safety follow-up item: root-only `--rc`, recursive `--rc+`, and default-off

@@ -82,6 +82,10 @@ struct ConfigInputs {
 // Gate the inputs first so an unarmed .xffrc action never reaches execution.
 std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& inputs);
 
+// Policy consumers can retain config-only controls in the same ordered stream. Runtime
+// consumers omit them so these directives never become execution flags.
+enum class ConfigControls { kOmit, kInclude };
+
 // Produces the complete application stream. Automatic system/user defaults and
 // the invocation selector apply first, followed by discovered files; CLI globals retain their
 // order. A --config selector expands newly matching user and already loaded
@@ -91,7 +95,8 @@ std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& inputs);
 std::vector<ResolvedFlag> ResolveConfigInOrder(
     const ConfigInputs& inputs,
     const std::vector<std::string>& cli_globals,
-    std::string_view invocation_selector);
+    std::string_view invocation_selector,
+    ConfigControls controls = ConfigControls::kOmit);
 
 // The lowercase layer name for a Source: "unset"/"system"/"user"/"xffrc"/"cli".
 std::string_view SourceName(Source source);

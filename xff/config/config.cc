@@ -146,8 +146,9 @@ void AppendMatching(
 
 class OrderedResolver {
  public:
-  OrderedResolver(const ConfigInputs& inputs, std::string_view invocation_selector)
+  OrderedResolver(const ConfigInputs& inputs, std::string_view invocation_selector, ConfigControls controls)
       : inputs_(ExpandInputSafety(inputs)),
+        controls_(controls),
         selectors_{std::string(invocation_selector)},
         system_named_emitted_(inputs.system.named.size()),
         user_entries_(Entries(inputs_.user)),
@@ -228,7 +229,7 @@ class OrderedResolver {
     const auto previous_file = std::exchange(active_file_, file_index);
     for (std::size_t pos = 0; pos < tokens.size(); ++pos) {
       const std::string& token = tokens[pos];
-      if (!IsSkipPermission(token)) {
+      if (controls_ == ConfigControls::kInclude || !IsSkipPermission(token)) {
         EmitFlag(token, source);
       }
       const auto primary = registry::Lookup(token.substr(0, token.find(':')));
@@ -275,6 +276,7 @@ class OrderedResolver {
   }
 
   const ConfigInputs inputs_;
+  const ConfigControls controls_;
   std::vector<ResolvedFlag> application_;
   std::vector<std::string> selectors_;
   std::vector<bool> system_named_emitted_;
@@ -342,8 +344,9 @@ std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& raw_inputs) {
 std::vector<ResolvedFlag> ResolveConfigInOrder(
     const ConfigInputs& inputs,
     const std::vector<std::string>& cli_globals,
-    std::string_view invocation_selector) {
-  return OrderedResolver(inputs, invocation_selector).Resolve(cli_globals);
+    std::string_view invocation_selector,
+    ConfigControls controls) {
+  return OrderedResolver(inputs, invocation_selector, controls).Resolve(cli_globals);
 }
 
 std::string_view SourceName(Source source) {

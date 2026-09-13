@@ -1038,7 +1038,13 @@ Section ConfigSection(bool in_full) {
       "of these controls. Separately, `--allow-xffrc` / `--no-allow-xffrc` is a normal config-only setting usable "
       "in system defaults or any user config block; user selection and precedence decide whether command-line "
       "`--xffrc=FILE` is accepted, and an unsectioned system denial cannot be overridden. Admission is checked before "
-      "any `.xffrc` discovery or explicit paths are opened. The admission pair also governs autoloading."));
+      "any `.xffrc` discovery or explicit paths are opened. The admission pair also governs autoloading. "
+      "User decisions follow ordinary application order, including in-place `--config=NAME` composition; "
+      "INI section order never overrides explicit selector order. Each section applies once."));
+  layers.children.push_back(ExampleOf("[deny]\n--no-allow-xffrc\n[allow]\n--allow-xffrc", "ini"));
+  layers.children.push_back(ProseOf(
+      "With that user INI, `xff . --config=allow --config=deny --xffrc=task.rc` rejects loading before opening "
+      "`task.rc`; reversing the selectors permits loading. The same rule applies to `--rc` and `--rc+`."));
   layers.children.push_back(ProseOf(
       "System, user, and all `.xffrc` files share one INI grammar. Write unconditional options with their exact "
       "command-line spelling before the first "
