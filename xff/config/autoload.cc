@@ -41,11 +41,8 @@ class RcDiscovery {
 
  private:
   absl::StatusOr<std::vector<std::string>> Visit(const std::string& directory) {
-    const auto metadata = filesystem_.Stat(directory, false);
-    if (!metadata.ok()) {
-      return metadata.status();
-    }
-    if (metadata->type != vfs::FileType::kDirectory || !NewDirectory(directory, *metadata)) {
+    MBO_ASSIGN_OR_RETURN(const auto metadata, filesystem_.Stat(directory, false));
+    if (metadata.type != vfs::FileType::kDirectory || !NewDirectory(directory, metadata)) {
       return std::vector<std::string>{};
     }
     MBO_RETURN_IF_ERROR(ReadConfig(directory));

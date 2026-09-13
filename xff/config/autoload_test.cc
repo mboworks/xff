@@ -24,6 +24,7 @@ using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
+using ::testing::Not;
 using ::testing::SizeIs;
 
 struct DiscoveryFs final : vfs::FileSystem {
@@ -166,7 +167,7 @@ TEST_F(AutoloadTest, RecursiveOrderIsStableAndOverlappingRootsAreNotLoadedTwice)
   ASSERT_OK_AND_ASSIGN(const auto found, DiscoverRc(inputs, {"root", "root/a", "alias"}, filesystem));
   EXPECT_THAT(Paths(found), ElementsAre("root/.xffrc", "root/a/.xffrc", "root/b/.xffrc"));
   EXPECT_THAT(Flags(found, {"--config=checks"}), ElementsAre("--config=checks", "--color=never", "--hidden", "--sort"));
-  EXPECT_THAT(filesystem.probes, ::testing::Not(Contains("root/link/.xffrc")));
+  EXPECT_THAT(filesystem.probes, Not(Contains("root/link/.xffrc")));
 }
 
 TEST_F(AutoloadTest, UnknownEntryTypesAndMissingConfigFilesWorkWithoutFileIdentities) {
