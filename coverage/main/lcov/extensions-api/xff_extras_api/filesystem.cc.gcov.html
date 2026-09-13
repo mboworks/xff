@@ -41,17 +41,17 @@
             <td></td>
             <td class="headerItem">Lines:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">14</td>
-            <td class="headerCovTableEntry">14</td>
+            <td class="headerCovTableEntry">29</td>
+            <td class="headerCovTableEntry">29</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-13 15:42:42</td>
+            <td class="headerValue">2026-09-13 19:58:23</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">3</td>
-            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntry">5</td>
+            <td class="headerCovTableEntry">5</td>
           </tr>
           <tr>
             <td></td>
@@ -59,8 +59,8 @@
             <td></td>
             <td class="headerItem">Branches:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">6</td>
-            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntry">20</td>
+            <td class="headerCovTableEntry">20</td>
           </tr>
                   <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
                 </table>
@@ -91,30 +91,51 @@
 <span id="L11"><span class="lineNum">      11</span>                 :             : </span>
 <span id="L12"><span class="lineNum">      12</span>                 :             : #include &quot;absl/status/statusor.h&quot;</span>
 <span id="L13"><span class="lineNum">      13</span>                 :             : #include &quot;mbo/status/status_macros.h&quot;</span>
-<span id="L14"><span class="lineNum">      14</span>                 :             : </span>
-<span id="L15"><span class="lineNum">      15</span>                 :             : namespace xff::vfs {</span>
-<span id="L16"><span class="lineNum">      16</span>                 :             : </span>
-<span id="L17"><span class="lineNum">      17</span>                 :<span class="tlaGNC">           1 : absl::StatusOr&lt;std::unique_ptr&lt;OutputFile&gt;&gt; FileSystem::OpenOutput(std::string_view, bool) const {</span></span>
-<span id="L18"><span class="lineNum">      18</span>                 :<span class="tlaGNC">           1 :   return absl::UnimplementedError(&quot;filesystem does not support output handles&quot;);</span></span>
-<span id="L19"><span class="lineNum">      19</span>                 :<span class="tlaGNC">           1 : }</span></span>
-<span id="L20"><span class="lineNum">      20</span>                 :             : </span>
-<span id="L21"><span class="lineNum">      21</span>                 :             : absl::StatusOr&lt;std::string&gt; FileSystem::ReadContentRange(</span>
-<span id="L22"><span class="lineNum">      22</span>                 :             :     std::string_view path,</span>
-<span id="L23"><span class="lineNum">      23</span>                 :             :     std::uint64_t offset,</span>
-<span id="L24"><span class="lineNum">      24</span>                 :<span class="tlaGNC">           4 :     std::size_t length) const {</span></span>
-<span id="L25"><span class="lineNum">      25</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">           4 :   MBO_ASSIGN_OR_RETURN(const std::string content, ReadContent(path));</span></span>
-<span id="L26"><span class="lineNum">      26</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">           3 :   if (offset &gt;= content.size() || length == 0) {</span></span>
-<span id="L27"><span class="lineNum">      27</span>                 :<span class="tlaGNC">           2 :     return std::string();</span></span>
-<span id="L28"><span class="lineNum">      28</span>                 :<span class="tlaGNC">           2 :   }</span></span>
-<span id="L29"><span class="lineNum">      29</span>                 :<span class="tlaGNC">           1 :   const auto begin = static_cast&lt;std::size_t&gt;(offset);</span></span>
-<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC">           1 :   return content.substr(begin, std::min(length, content.size() - begin));</span></span>
-<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">           3 : }</span></span>
-<span id="L32"><span class="lineNum">      32</span>                 :             : </span>
-<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">           1 : absl::Status FileSystem::WriteContent(std::string_view /*path*/, std::string_view /*content*/) const {</span></span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">           1 :   return absl::UnimplementedError(&quot;filesystem backend does not support writing&quot;);</span></span>
-<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">           1 : }</span></span>
-<span id="L36"><span class="lineNum">      36</span>                 :             : </span>
-<span id="L37"><span class="lineNum">      37</span>                 :             : }  // namespace xff::vfs</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : #include &quot;xff/vfs/mutations.h&quot;</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : </span>
+<span id="L16"><span class="lineNum">      16</span>                 :             : namespace xff::vfs {</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             : </span>
+<span id="L18"><span class="lineNum">      18</span>                 :<span class="tlaGNC">           6 : absl::Status FileSystem::RemoveControlled(std::string_view path, const MutationPolicy&amp; policy) const {</span></span>
+<span id="L19"><span class="lineNum">      19</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">           6 :   if (policy.directories) {</span></span>
+<span id="L20"><span class="lineNum">      20</span>                 :<span class="tlaGNC">           1 :     return absl::PermissionDeniedError(&quot;filesystem does not support directory-scoped mutations&quot;);</span></span>
+<span id="L21"><span class="lineNum">      21</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L22"><span class="lineNum">      22</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 4 times"> + </span>]:<span class="tlaGNC">           9 :   MBO_ASSIGN_OR_RETURN(const auto metadata, Stat(path, false));</span></span>
+<span id="L23"><span class="lineNum">      23</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">           9 :   MBO_RETURN_IF_ERROR(metadata.type == FileType::kDirectory ? policy.DeleteDirectory() : policy.Delete());</span></span>
+<span id="L24"><span class="lineNum">      24</span>                 :<span class="tlaGNC">           2 :   return Remove(path);</span></span>
+<span id="L25"><span class="lineNum">      25</span>                 :<span class="tlaGNC">           9 : }</span></span>
+<span id="L26"><span class="lineNum">      26</span>                 :             : </span>
+<span id="L27"><span class="lineNum">      27</span>                 :             : absl::StatusOr&lt;std::unique_ptr&lt;OutputFile&gt;&gt; FileSystem::OpenControlledOutput(</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             :     std::string_view path,</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             :     bool exclusive,</span>
+<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC">           5 :     const MutationPolicy&amp; policy) const {</span></span>
+<span id="L31"><span class="lineNum">      31</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 4 times"> + </span>]:<span class="tlaGNC">           5 :   if (policy.directories) {</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">           1 :     return absl::PermissionDeniedError(&quot;filesystem does not support directory-scoped mutations&quot;);</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L34"><span class="lineNum">      34</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">           5 :   MBO_RETURN_IF_ERROR(policy.Write());</span></span>
+<span id="L35"><span class="lineNum">      35</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">           3 :   return OpenOutput(path, exclusive || policy.block_overwrite);</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">           4 : }</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :             : </span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">           4 : absl::StatusOr&lt;std::unique_ptr&lt;OutputFile&gt;&gt; FileSystem::OpenOutput(std::string_view, bool) const {</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">           4 :   return absl::UnimplementedError(&quot;filesystem does not support output handles&quot;);</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">           4 : }</span></span>
+<span id="L41"><span class="lineNum">      41</span>                 :             : </span>
+<span id="L42"><span class="lineNum">      42</span>                 :             : absl::StatusOr&lt;std::string&gt; FileSystem::ReadContentRange(</span>
+<span id="L43"><span class="lineNum">      43</span>                 :             :     std::string_view path,</span>
+<span id="L44"><span class="lineNum">      44</span>                 :             :     std::uint64_t offset,</span>
+<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">           4 :     std::size_t length) const {</span></span>
+<span id="L46"><span class="lineNum">      46</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">           4 :   MBO_ASSIGN_OR_RETURN(const std::string content, ReadContent(path));</span></span>
+<span id="L47"><span class="lineNum">      47</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">           3 :   if (offset &gt;= content.size() || length == 0) {</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">           2 :     return std::string();</span></span>
+<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">           2 :   }</span></span>
+<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">           1 :   const auto begin = static_cast&lt;std::size_t&gt;(offset);</span></span>
+<span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">           1 :   return content.substr(begin, std::min(length, content.size() - begin));</span></span>
+<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">           3 : }</span></span>
+<span id="L53"><span class="lineNum">      53</span>                 :             : </span>
+<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">           1 : absl::Status FileSystem::WriteContent(std::string_view /*path*/, std::string_view /*content*/) const {</span></span>
+<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">           1 :   return absl::UnimplementedError(&quot;filesystem backend does not support writing&quot;);</span></span>
+<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">           1 : }</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :             : </span>
+<span id="L58"><span class="lineNum">      58</span>                 :             : }  // namespace xff::vfs</span>
         </pre>
               </td>
             </tr>

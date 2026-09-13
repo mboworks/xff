@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-13 15:42:42</td>
+            <td class="headerValue">2026-09-13 19:58:23</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -123,24 +123,24 @@
 <span id="L43"><span class="lineNum">      43</span>                 :             : </span>
 <span id="L44"><span class="lineNum">      44</span>                 :             : // Wraps `text` in `code` (+ reset) when `color`, else returns it unchanged. Resolving</span>
 <span id="L45"><span class="lineNum">      45</span>                 :             : // auto vs always (and NO_COLOR) happens at the CLI boundary; here `color` is the decision.</span>
-<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">       22389 : std::string Sgr(std::string_view text, std::string_view code, bool color) {</span></span>
-<span id="L47"><span class="lineNum">      47</span>         [<span class="tlaGBC" title="branch 0 was taken 1017 times"> + </span><span class="tlaGBC" title="branch 1 was taken 21372 times"> + </span>]:<span class="tlaGNC">       22389 :   return color ? absl::StrCat(code, text, kReset) : std::string(text);</span></span>
-<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">       22389 : }</span></span>
+<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">       24232 : std::string Sgr(std::string_view text, std::string_view code, bool color) {</span></span>
+<span id="L47"><span class="lineNum">      47</span>         [<span class="tlaGBC" title="branch 0 was taken 1112 times"> + </span><span class="tlaGBC" title="branch 1 was taken 23120 times"> + </span>]:<span class="tlaGNC">       24232 :   return color ? absl::StrCat(code, text, kReset) : std::string(text);</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">       24232 : }</span></span>
 <span id="L49"><span class="lineNum">      49</span>                 :             : </span>
 <span id="L50"><span class="lineNum">      50</span>                 :             : // Reconstructs the authored inline string, keeping `code` backticks - a term, a row</span>
 <span id="L51"><span class="lineNum">      51</span>                 :             : // description, and an entry's summary / detail pass through with their markup (as the</span>
 <span id="L52"><span class="lineNum">      52</span>                 :             : // hand-written plain help did), unlike free prose which drops it.</span>
-<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">       21242 : std::string RenderInlinesRaw(const Inlines&amp; runs) {</span></span>
-<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">       21242 :   std::string out;</span></span>
-<span id="L55"><span class="lineNum">      55</span>         [<span class="tlaGBC" title="branch 0 was taken 57693 times"> + </span><span class="tlaGBC" title="branch 1 was taken 21242 times"> + </span>]:<span class="tlaGNC">       57693 :   for (const Inline&amp; run : runs) {</span></span>
-<span id="L56"><span class="lineNum">      56</span>         [<span class="tlaGBC" title="branch 0 was taken 18370 times"> + </span><span class="tlaGBC" title="branch 1 was taken 39323 times"> + </span>]:<span class="tlaGNC">       57693 :     if (run.style == Inline::Style::kCode) {</span></span>
-<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">       18370 :       absl::StrAppend(&amp;out, &quot;`&quot;, run.text, &quot;`&quot;);</span></span>
-<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">       39323 :     } else {</span></span>
-<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">       39323 :       absl::StrAppend(&amp;out, run.text);</span></span>
-<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">       39323 :     }</span></span>
-<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">       57693 :   }</span></span>
-<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">       21242 :   return out;</span></span>
-<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">       21242 : }</span></span>
+<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">       23400 : std::string RenderInlinesRaw(const Inlines&amp; runs) {</span></span>
+<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">       23400 :   std::string out;</span></span>
+<span id="L55"><span class="lineNum">      55</span>         [<span class="tlaGBC" title="branch 0 was taken 61051 times"> + </span><span class="tlaGBC" title="branch 1 was taken 23400 times"> + </span>]:<span class="tlaGNC">       61051 :   for (const Inline&amp; run : runs) {</span></span>
+<span id="L56"><span class="lineNum">      56</span>         [<span class="tlaGBC" title="branch 0 was taken 18970 times"> + </span><span class="tlaGBC" title="branch 1 was taken 42081 times"> + </span>]:<span class="tlaGNC">       61051 :     if (run.style == Inline::Style::kCode) {</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">       18970 :       absl::StrAppend(&amp;out, &quot;`&quot;, run.text, &quot;`&quot;);</span></span>
+<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">       42081 :     } else {</span></span>
+<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">       42081 :       absl::StrAppend(&amp;out, run.text);</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">       42081 :     }</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">       61051 :   }</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">       23400 :   return out;</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">       23400 : }</span></span>
 <span id="L64"><span class="lineNum">      64</span>                 :             : </span>
 <span id="L65"><span class="lineNum">      65</span>                 :             : }  // namespace</span>
 <span id="L66"><span class="lineNum">      66</span>                 :             : </span>
@@ -156,26 +156,26 @@
 <span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaUNC">           0 :   return target.id;</span></span>
 <span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaGNC">           7 : }</span></span>
 <span id="L78"><span class="lineNum">      78</span>                 :             : </span>
-<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">        2219 : std::string RenderInlinesPlain(const Inlines&amp; runs) {</span></span>
-<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">        2219 :   std::string out;</span></span>
-<span id="L81"><span class="lineNum">      81</span>         [<span class="tlaGBC" title="branch 0 was taken 15155 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2219 times"> + </span>]:<span class="tlaGNC">       15155 :   for (const Inline&amp; run : runs) {</span></span>
+<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">        2264 : std::string RenderInlinesPlain(const Inlines&amp; runs) {</span></span>
+<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">        2264 :   std::string out;</span></span>
+<span id="L81"><span class="lineNum">      81</span>         [<span class="tlaGBC" title="branch 0 was taken 15395 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2264 times"> + </span>]:<span class="tlaGNC">       15395 :   for (const Inline&amp; run : runs) {</span></span>
 <span id="L82"><span class="lineNum">      82</span>                 :             :     // Free prose drops emphasis markup; a ref shows its label, or its plain locator</span>
 <span id="L83"><span class="lineNum">      83</span>                 :             :     // when the label is empty. All other styles are literal text.</span>
-<span id="L84"><span class="lineNum">      84</span> [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 15152 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">       15155 :     if (run.style == Inline::Style::kRef &amp;&amp; run.text.empty() &amp;&amp; run.target.has_value()) {</span></span>
+<span id="L84"><span class="lineNum">      84</span> [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 15392 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">       15395 :     if (run.style == Inline::Style::kRef &amp;&amp; run.text.empty() &amp;&amp; run.target.has_value()) {</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 2 times"> + </span><span class="tlaUNC" title="branch &quot;5&quot; was not taken"> - </span>]
 <span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaGNC">           2 :       absl::StrAppend(&amp;out, PlainRefLocator(*run.target));</span></span>
-<span id="L86"><span class="lineNum">      86</span>                 :<span class="tlaGNC">       15153 :     } else {</span></span>
-<span id="L87"><span class="lineNum">      87</span>                 :<span class="tlaGNC">       15153 :       absl::StrAppend(&amp;out, run.text);</span></span>
-<span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaGNC">       15153 :     }</span></span>
-<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">       15155 :   }</span></span>
-<span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">        2219 :   return out;</span></span>
-<span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">        2219 : }</span></span>
+<span id="L86"><span class="lineNum">      86</span>                 :<span class="tlaGNC">       15393 :     } else {</span></span>
+<span id="L87"><span class="lineNum">      87</span>                 :<span class="tlaGNC">       15393 :       absl::StrAppend(&amp;out, run.text);</span></span>
+<span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaGNC">       15393 :     }</span></span>
+<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">       15395 :   }</span></span>
+<span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">        2264 :   return out;</span></span>
+<span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">        2264 : }</span></span>
 <span id="L92"><span class="lineNum">      92</span>                 :             : </span>
-<span id="L93"><span class="lineNum">      93</span>                 :<span class="tlaGNC">       16213 : void PlainTextBackend::StartBlock() {</span></span>
-<span id="L94"><span class="lineNum">      94</span>         [<span class="tlaGBC" title="branch 0 was taken 16016 times"> + </span><span class="tlaGBC" title="branch 1 was taken 197 times"> + </span>]:<span class="tlaGNC">       16213 :   if (!out_.empty()) {</span></span>
-<span id="L95"><span class="lineNum">      95</span>                 :<span class="tlaGNC">       16016 :     absl::StrAppend(&amp;out_, &quot;\n&quot;);</span></span>
-<span id="L96"><span class="lineNum">      96</span>                 :<span class="tlaGNC">       16016 :   }</span></span>
-<span id="L97"><span class="lineNum">      97</span>                 :<span class="tlaGNC">       16213 : }</span></span>
+<span id="L93"><span class="lineNum">      93</span>                 :<span class="tlaGNC">       17846 : void PlainTextBackend::StartBlock() {</span></span>
+<span id="L94"><span class="lineNum">      94</span>         [<span class="tlaGBC" title="branch 0 was taken 17649 times"> + </span><span class="tlaGBC" title="branch 1 was taken 197 times"> + </span>]:<span class="tlaGNC">       17846 :   if (!out_.empty()) {</span></span>
+<span id="L95"><span class="lineNum">      95</span>                 :<span class="tlaGNC">       17649 :     absl::StrAppend(&amp;out_, &quot;\n&quot;);</span></span>
+<span id="L96"><span class="lineNum">      96</span>                 :<span class="tlaGNC">       17649 :   }</span></span>
+<span id="L97"><span class="lineNum">      97</span>                 :<span class="tlaGNC">       17846 : }</span></span>
 <span id="L98"><span class="lineNum">      98</span>                 :             : </span>
 <span id="L99"><span class="lineNum">      99</span>                 :<span class="tlaGNC">         197 : void PlainTextBackend::Preamble(const Document&amp; doc) {</span></span>
 <span id="L100"><span class="lineNum">     100</span>         [<span class="tlaGBC" title="branch 0 was taken 162 times"> + </span><span class="tlaGBC" title="branch 1 was taken 35 times"> + </span>]:<span class="tlaGNC">         197 :   if (doc.name.empty()) {</span></span>
@@ -205,12 +205,12 @@
 <span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">         446 :   }</span></span>
 <span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">         524 : }</span></span>
 <span id="L126"><span class="lineNum">     126</span>                 :             : </span>
-<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">       32780 : std::string PlainTextBackend::BodyIndent() const {</span></span>
+<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">       36541 : std::string PlainTextBackend::BodyIndent() const {</span></span>
 <span id="L128"><span class="lineNum">     128</span>                 :             :   // The (count, char) constructor is intended; a braced `{count, ' '}` would list-initialize as</span>
 <span id="L129"><span class="lineNum">     129</span>                 :             :   // initializer_list&lt;char&gt; (the classic std::string gotcha), not repeat the space.</span>
 <span id="L130"><span class="lineNum">     130</span>                 :             :   // NOLINTNEXTLINE(modernize-return-braced-init-list)</span>
-<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">       32780 :   return std::string(static_cast&lt;std::size_t&gt;(2 * depth_), ' ');</span></span>
-<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">       32780 : }</span></span>
+<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">       36541 :   return std::string(static_cast&lt;std::size_t&gt;(2 * depth_), ' ');</span></span>
+<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">       36541 : }</span></span>
 <span id="L133"><span class="lineNum">     133</span>                 :             : </span>
 <span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">        2239 : void PlainTextBackend::BeginSubsection(const Subsection&amp; subsection) {</span></span>
 <span id="L135"><span class="lineNum">     135</span>                 :             :   // A title-less subsection carries no heading; it just indents its children one level</span>
@@ -228,52 +228,52 @@
 <span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">        2239 :   --depth_;</span></span>
 <span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">        2239 : }</span></span>
 <span id="L149"><span class="lineNum">     149</span>                 :             : </span>
-<span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">       11078 : void PlainTextBackend::BeginEntry(const Entry&amp; entry) {</span></span>
-<span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">       11078 :   StartBlock();</span></span>
+<span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">       12636 : void PlainTextBackend::BeginEntry(const Entry&amp; entry) {</span></span>
+<span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">       12636 :   StartBlock();</span></span>
 <span id="L152"><span class="lineNum">     152</span>                 :             :   // Classification tags after the term: the explicit list when present, else the</span>
 <span id="L153"><span class="lineNum">     153</span>                 :             :   // bare xff marker (kept until every entry carries tags).</span>
-<span id="L154"><span class="lineNum">     154</span>                 :<span class="tlaGNC">       11078 :   std::string tag;</span></span>
-<span id="L155"><span class="lineNum">     155</span>         [<span class="tlaGBC" title="branch 0 was taken 11012 times"> + </span><span class="tlaGBC" title="branch 1 was taken 66 times"> + </span>]:<span class="tlaGNC">       11078 :   if (!entry.tags.empty()) {</span></span>
-<span id="L156"><span class="lineNum">     156</span>                 :<span class="tlaGNC">       11012 :     tag = absl::StrCat(&quot;  (&quot;, absl::StrJoin(entry.tags, &quot;, &quot;), &quot;)&quot;);</span></span>
-<span id="L157"><span class="lineNum">     157</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 65 times"> + </span>]:<span class="tlaGNC">       11042 :   } else if (entry.xff) {</span></span>
+<span id="L154"><span class="lineNum">     154</span>                 :<span class="tlaGNC">       12636 :   std::string tag;</span></span>
+<span id="L155"><span class="lineNum">     155</span>         [<span class="tlaGBC" title="branch 0 was taken 12570 times"> + </span><span class="tlaGBC" title="branch 1 was taken 66 times"> + </span>]:<span class="tlaGNC">       12636 :   if (!entry.tags.empty()) {</span></span>
+<span id="L156"><span class="lineNum">     156</span>                 :<span class="tlaGNC">       12570 :     tag = absl::StrCat(&quot;  (&quot;, absl::StrJoin(entry.tags, &quot;, &quot;), &quot;)&quot;);</span></span>
+<span id="L157"><span class="lineNum">     157</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 65 times"> + </span>]:<span class="tlaGNC">       12600 :   } else if (entry.xff) {</span></span>
 <span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">           1 :     tag = &quot;  (xff)&quot;;</span></span>
 <span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">       11078 :   absl::StrAppend(&amp;out_, BodyIndent(), Sgr(entry.term, kName, Context().color), tag, &quot;\n&quot;);</span></span>
-<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">       11078 :   ++depth_;  // the summary + detail indent under the term</span></span>
-<span id="L162"><span class="lineNum">     162</span>                 :<span class="tlaGNC">       11078 :   const std::string indent = BodyIndent();</span></span>
-<span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">       11078 :   absl::StrAppend(&amp;out_, WrapText(RenderInlinesRaw(entry.summary), Context().width, indent, indent));</span></span>
-<span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">       11078 :   in_entry_ = true;</span></span>
-<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">       11078 : }</span></span>
+<span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">       12636 :   absl::StrAppend(&amp;out_, BodyIndent(), Sgr(entry.term, kName, Context().color), tag, &quot;\n&quot;);</span></span>
+<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">       12636 :   ++depth_;  // the summary + detail indent under the term</span></span>
+<span id="L162"><span class="lineNum">     162</span>                 :<span class="tlaGNC">       12636 :   const std::string indent = BodyIndent();</span></span>
+<span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">       12636 :   absl::StrAppend(&amp;out_, WrapText(RenderInlinesRaw(entry.summary), Context().width, indent, indent));</span></span>
+<span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">       12636 :   in_entry_ = true;</span></span>
+<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">       12636 : }</span></span>
 <span id="L166"><span class="lineNum">     166</span>                 :             : </span>
-<span id="L167"><span class="lineNum">     167</span>                 :<span class="tlaGNC">       11078 : void PlainTextBackend::EndEntry(const Entry&amp; /*entry*/) {</span></span>
-<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">       11078 :   in_entry_ = false;</span></span>
-<span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">       11078 :   --depth_;</span></span>
-<span id="L170"><span class="lineNum">     170</span>                 :<span class="tlaGNC">       11078 : }</span></span>
+<span id="L167"><span class="lineNum">     167</span>                 :<span class="tlaGNC">       12636 : void PlainTextBackend::EndEntry(const Entry&amp; /*entry*/) {</span></span>
+<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">       12636 :   in_entry_ = false;</span></span>
+<span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">       12636 :   --depth_;</span></span>
+<span id="L170"><span class="lineNum">     170</span>                 :<span class="tlaGNC">       12636 : }</span></span>
 <span id="L171"><span class="lineNum">     171</span>                 :             : </span>
-<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">        6663 : void PlainTextBackend::EmitProse(const Prose&amp; prose) {</span></span>
-<span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">        6663 :   const std::string indent = BodyIndent();</span></span>
-<span id="L174"><span class="lineNum">     174</span>         [<span class="tlaGBC" title="branch 0 was taken 4659 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2004 times"> + </span>]:<span class="tlaGNC">        6663 :   if (in_entry_) {</span></span>
+<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">        7278 : void PlainTextBackend::EmitProse(const Prose&amp; prose) {</span></span>
+<span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">        7278 :   const std::string indent = BodyIndent();</span></span>
+<span id="L174"><span class="lineNum">     174</span>         [<span class="tlaGBC" title="branch 0 was taken 5229 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2049 times"> + </span>]:<span class="tlaGNC">        7278 :   if (in_entry_) {</span></span>
 <span id="L175"><span class="lineNum">     175</span>                 :             :     // An entry's detail line, under its term indent (keeps `code` markup, no blank line).</span>
-<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">        4659 :     absl::StrAppend(&amp;out_, WrapText(RenderInlinesRaw(prose.runs), Context().width, indent, indent));</span></span>
-<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">        4659 :     return;</span></span>
-<span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC">        4659 :   }</span></span>
-<span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">        2004 :   StartBlock();</span></span>
-<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">        2004 :   absl::StrAppend(&amp;out_, WrapText(RenderInlinesPlain(prose.runs), Context().width, indent, indent));</span></span>
-<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">        2004 : }</span></span>
+<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">        5229 :     absl::StrAppend(&amp;out_, WrapText(RenderInlinesRaw(prose.runs), Context().width, indent, indent));</span></span>
+<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">        5229 :     return;</span></span>
+<span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC">        5229 :   }</span></span>
+<span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">        2049 :   StartBlock();</span></span>
+<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">        2049 :   absl::StrAppend(&amp;out_, WrapText(RenderInlinesPlain(prose.runs), Context().width, indent, indent));</span></span>
+<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">        2049 : }</span></span>
 <span id="L182"><span class="lineNum">     182</span>                 :             : </span>
-<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">         818 : void PlainTextBackend::EmitExample(const Example&amp; example) {</span></span>
-<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">         818 :   StartBlock();</span></span>
-<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">         818 :   const std::string indent = BodyIndent();</span></span>
+<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">         833 : void PlainTextBackend::EmitExample(const Example&amp; example) {</span></span>
+<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">         833 :   StartBlock();</span></span>
+<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">         833 :   const std::string indent = BodyIndent();</span></span>
 <span id="L186"><span class="lineNum">     186</span>                 :             :   // Verbatim, but each line carries the current subsection body indent so a recipe's</span>
 <span id="L187"><span class="lineNum">     187</span>                 :             :   // command sits under its heading.</span>
-<span id="L188"><span class="lineNum">     188</span>                 :<span class="tlaGNC">         818 :   std::string_view text = example.text;</span></span>
-<span id="L189"><span class="lineNum">     189</span> [<span class="tlaGBC" title="branch 0 was taken 818 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 18 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 800 times"> + </span>]:<span class="tlaGNC">         818 :   if (!text.empty() &amp;&amp; text.back() == '\n') {</span></span>
+<span id="L188"><span class="lineNum">     188</span>                 :<span class="tlaGNC">         833 :   std::string_view text = example.text;</span></span>
+<span id="L189"><span class="lineNum">     189</span> [<span class="tlaGBC" title="branch 0 was taken 833 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 18 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 815 times"> + </span>]:<span class="tlaGNC">         833 :   if (!text.empty() &amp;&amp; text.back() == '\n') {</span></span>
 <span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">          18 :     text.remove_suffix(1);  // avoid a trailing indent-only line from a final newline</span></span>
 <span id="L191"><span class="lineNum">     191</span>                 :<span class="tlaGNC">          18 :   }</span></span>
-<span id="L192"><span class="lineNum">     192</span>         [<span class="tlaGBC" title="branch 0 was taken 3469 times"> + </span><span class="tlaGBC" title="branch 1 was taken 818 times"> + </span>]:<span class="tlaGNC">        3469 :   for (const std::string_view line : absl::StrSplit(text, '\n')) {</span></span>
-<span id="L193"><span class="lineNum">     193</span>                 :<span class="tlaGNC">        3469 :     absl::StrAppend(&amp;out_, indent, Sgr(line, kExample, Context().color), &quot;\n&quot;);</span></span>
-<span id="L194"><span class="lineNum">     194</span>                 :<span class="tlaGNC">        3469 :   }</span></span>
-<span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">         818 : }</span></span>
+<span id="L192"><span class="lineNum">     192</span>         [<span class="tlaGBC" title="branch 0 was taken 3679 times"> + </span><span class="tlaGBC" title="branch 1 was taken 833 times"> + </span>]:<span class="tlaGNC">        3679 :   for (const std::string_view line : absl::StrSplit(text, '\n')) {</span></span>
+<span id="L193"><span class="lineNum">     193</span>                 :<span class="tlaGNC">        3679 :     absl::StrAppend(&amp;out_, indent, Sgr(line, kExample, Context().color), &quot;\n&quot;);</span></span>
+<span id="L194"><span class="lineNum">     194</span>                 :<span class="tlaGNC">        3679 :   }</span></span>
+<span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">         833 : }</span></span>
 <span id="L196"><span class="lineNum">     196</span>                 :             : </span>
 <span id="L197"><span class="lineNum">     197</span>                 :<span class="tlaGNC">          46 : void PlainTextBackend::EmitBullets(const Bullets&amp; bullets) {</span></span>
 <span id="L198"><span class="lineNum">     198</span>                 :             :   // Glued directly under its heading (no leading blank line), at the body indent.</span>
@@ -290,13 +290,13 @@
 <span id="L209"><span class="lineNum">     209</span>                 :<span class="tlaGNC">         833 :   const std::string indent = BodyIndent();</span></span>
 <span id="L210"><span class="lineNum">     210</span>                 :<span class="tlaGNC">         833 :   std::vector&lt;std::string&gt; descriptions;</span></span>
 <span id="L211"><span class="lineNum">     211</span>                 :<span class="tlaGNC">         833 :   descriptions.reserve(rows.rows.size());</span></span>
-<span id="L212"><span class="lineNum">     212</span>         [<span class="tlaGBC" title="branch 0 was taken 5505 times"> + </span><span class="tlaGBC" title="branch 1 was taken 833 times"> + </span>]:<span class="tlaGNC">        5505 :   for (const Row&amp; row : rows.rows) {</span></span>
-<span id="L213"><span class="lineNum">     213</span>                 :<span class="tlaGNC">        5505 :     descriptions.push_back(RenderInlinesRaw(row.description));</span></span>
-<span id="L214"><span class="lineNum">     214</span>                 :<span class="tlaGNC">        5505 :   }</span></span>
+<span id="L212"><span class="lineNum">     212</span>         [<span class="tlaGBC" title="branch 0 was taken 5535 times"> + </span><span class="tlaGBC" title="branch 1 was taken 833 times"> + </span>]:<span class="tlaGNC">        5535 :   for (const Row&amp; row : rows.rows) {</span></span>
+<span id="L213"><span class="lineNum">     213</span>                 :<span class="tlaGNC">        5535 :     descriptions.push_back(RenderInlinesRaw(row.description));</span></span>
+<span id="L214"><span class="lineNum">     214</span>                 :<span class="tlaGNC">        5535 :   }</span></span>
 <span id="L215"><span class="lineNum">     215</span>                 :<span class="tlaGNC">         833 :   std::size_t term_width = 0;</span></span>
-<span id="L216"><span class="lineNum">     216</span>         [<span class="tlaGBC" title="branch 0 was taken 5505 times"> + </span><span class="tlaGBC" title="branch 1 was taken 833 times"> + </span>]:<span class="tlaGNC">        5505 :   for (const Row&amp; row : rows.rows) {</span></span>
-<span id="L217"><span class="lineNum">     217</span>                 :<span class="tlaGNC">        5505 :     term_width = std::max(term_width, row.term.size());</span></span>
-<span id="L218"><span class="lineNum">     218</span>                 :<span class="tlaGNC">        5505 :   }</span></span>
+<span id="L216"><span class="lineNum">     216</span>         [<span class="tlaGBC" title="branch 0 was taken 5535 times"> + </span><span class="tlaGBC" title="branch 1 was taken 833 times"> + </span>]:<span class="tlaGNC">        5535 :   for (const Row&amp; row : rows.rows) {</span></span>
+<span id="L217"><span class="lineNum">     217</span>                 :<span class="tlaGNC">        5535 :     term_width = std::max(term_width, row.term.size());</span></span>
+<span id="L218"><span class="lineNum">     218</span>                 :<span class="tlaGNC">        5535 :   }</span></span>
 <span id="L219"><span class="lineNum">     219</span>                 :<span class="tlaGNC">         833 :   term_width += 2;  // a 2-space gap after the widest term</span></span>
 <span id="L220"><span class="lineNum">     220</span>                 :             : </span>
 <span id="L221"><span class="lineNum">     221</span>                 :             :   // The description column hangs under the padded term column. WrapText with width==0</span>
@@ -305,56 +305,56 @@
 <span id="L224"><span class="lineNum">     224</span>                 :             :   // item; padding uses the raw term length (the color escapes are zero-width) so the</span>
 <span id="L225"><span class="lineNum">     225</span>                 :             :   // column still lines up, and WrapText measures visible width for the same reason.</span>
 <span id="L226"><span class="lineNum">     226</span>                 :<span class="tlaGNC">         833 :   const std::string hang = indent + std::string(term_width, ' ');</span></span>
-<span id="L227"><span class="lineNum">     227</span>         [<span class="tlaGBC" title="branch 0 was taken 5505 times"> + </span><span class="tlaGBC" title="branch 1 was taken 833 times"> + </span>]:<span class="tlaGNC">        6338 :   for (std::size_t i = 0; i &lt; rows.rows.size(); ++i) {</span></span>
-<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">        5505 :     const std::string_view term = rows.rows[i].term;</span></span>
-<span id="L229"><span class="lineNum">     229</span>                 :<span class="tlaGNC">        5505 :     const std::string prefix =</span></span>
-<span id="L230"><span class="lineNum">     230</span>                 :<span class="tlaGNC">        5505 :         absl::StrCat(indent, Sgr(term, kValue, Context().color), std::string(term_width - term.size(), ' '));</span></span>
-<span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaGNC">        5505 :     absl::StrAppend(&amp;out_, WrapText(descriptions[i], Context().width, prefix, hang));</span></span>
-<span id="L232"><span class="lineNum">     232</span>                 :<span class="tlaGNC">        5505 :   }</span></span>
+<span id="L227"><span class="lineNum">     227</span>         [<span class="tlaGBC" title="branch 0 was taken 5535 times"> + </span><span class="tlaGBC" title="branch 1 was taken 833 times"> + </span>]:<span class="tlaGNC">        6368 :   for (std::size_t i = 0; i &lt; rows.rows.size(); ++i) {</span></span>
+<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">        5535 :     const std::string_view term = rows.rows[i].term;</span></span>
+<span id="L229"><span class="lineNum">     229</span>                 :<span class="tlaGNC">        5535 :     const std::string prefix =</span></span>
+<span id="L230"><span class="lineNum">     230</span>                 :<span class="tlaGNC">        5535 :         absl::StrCat(indent, Sgr(term, kValue, Context().color), std::string(term_width - term.size(), ' '));</span></span>
+<span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaGNC">        5535 :     absl::StrAppend(&amp;out_, WrapText(descriptions[i], Context().width, prefix, hang));</span></span>
+<span id="L232"><span class="lineNum">     232</span>                 :<span class="tlaGNC">        5535 :   }</span></span>
 <span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">         833 : }</span></span>
 <span id="L234"><span class="lineNum">     234</span>                 :             : </span>
-<span id="L235"><span class="lineNum">     235</span>                 :<span class="tlaGNC">          17 : void PlainTextBackend::EmitTable(const Table&amp; table) {</span></span>
+<span id="L235"><span class="lineNum">     235</span>                 :<span class="tlaGNC">          32 : void PlainTextBackend::EmitTable(const Table&amp; table) {</span></span>
 <span id="L236"><span class="lineNum">     236</span>                 :             :   // Width-aligned columns under the body indent: every column but the LAST is padded to its widest</span>
 <span id="L237"><span class="lineNum">     237</span>                 :             :   // cell (2-space gap), the last wraps to the page width with continuation lines hanging under its</span>
 <span id="L238"><span class="lineNum">     238</span>                 :             :   // own column - the model's contract that the prose-length column goes last. A dash rule under the</span>
 <span id="L239"><span class="lineNum">     239</span>                 :             :   // header marks it without stealing a color.</span>
-<span id="L240"><span class="lineNum">     240</span>                 :<span class="tlaGNC">          17 :   StartBlock();</span></span>
-<span id="L241"><span class="lineNum">     241</span>                 :<span class="tlaGNC">          17 :   const std::string indent = BodyIndent();</span></span>
-<span id="L242"><span class="lineNum">     242</span>                 :<span class="tlaGNC">          17 :   std::vector&lt;std::size_t&gt; widths(table.header.size(), 0);</span></span>
-<span id="L243"><span class="lineNum">     243</span>         [<span class="tlaGBC" title="branch 0 was taken 51 times"> + </span><span class="tlaGBC" title="branch 1 was taken 17 times"> + </span>]:<span class="tlaGNC">          68 :   for (std::size_t i = 0; i &lt; table.header.size(); ++i) {</span></span>
-<span id="L244"><span class="lineNum">     244</span>                 :<span class="tlaGNC">          51 :     widths[i] = table.header[i].size();</span></span>
-<span id="L245"><span class="lineNum">     245</span>                 :<span class="tlaGNC">          51 :   }</span></span>
-<span id="L246"><span class="lineNum">     246</span>         [<span class="tlaGBC" title="branch 0 was taken 182 times"> + </span><span class="tlaGBC" title="branch 1 was taken 17 times"> + </span>]:<span class="tlaGNC">         182 :   for (const std::vector&lt;std::string&gt;&amp; row : table.cells) {</span></span>
-<span id="L247"><span class="lineNum">     247</span> [<span class="tlaGBC" title="branch 0 was taken 377 times"> + </span><span class="tlaGBC" title="branch 1 was taken 182 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 377 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">         559 :     for (std::size_t i = 0; i + 1 &lt; row.size() &amp;&amp; i &lt; widths.size(); ++i) {</span></span>
-<span id="L248"><span class="lineNum">     248</span>                 :<span class="tlaGNC">         377 :       widths[i] = std::max(widths[i], row[i].size());</span></span>
-<span id="L249"><span class="lineNum">     249</span>                 :<span class="tlaGNC">         377 :     }</span></span>
-<span id="L250"><span class="lineNum">     250</span>                 :<span class="tlaGNC">         182 :   }</span></span>
-<span id="L251"><span class="lineNum">     251</span>                 :<span class="tlaGNC">          17 :   std::size_t hang_width = 0;</span></span>
-<span id="L252"><span class="lineNum">     252</span>         [<span class="tlaGBC" title="branch 0 was taken 34 times"> + </span><span class="tlaGBC" title="branch 1 was taken 17 times"> + </span>]:<span class="tlaGNC">          51 :   for (std::size_t i = 0; i + 1 &lt; widths.size(); ++i) {</span></span>
-<span id="L253"><span class="lineNum">     253</span>                 :<span class="tlaGNC">          34 :     hang_width += widths[i] + 2;</span></span>
-<span id="L254"><span class="lineNum">     254</span>                 :<span class="tlaGNC">          34 :   }</span></span>
-<span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">          17 :   const std::string hang = indent + std::string(hang_width, ' ');</span></span>
-<span id="L256"><span class="lineNum">     256</span>                 :<span class="tlaGNC">         216 :   const auto emit_row = [&amp;](const std::vector&lt;std::string&gt;&amp; row, bool colored) {</span></span>
-<span id="L257"><span class="lineNum">     257</span>                 :<span class="tlaGNC">         216 :     std::string prefix = indent;</span></span>
-<span id="L258"><span class="lineNum">     258</span>         [<span class="tlaGBC" title="branch 0 was taken 445 times"> + </span><span class="tlaGBC" title="branch 1 was taken 216 times"> + </span>]:<span class="tlaGNC">         661 :     for (std::size_t i = 0; i + 1 &lt; row.size(); ++i) {</span></span>
-<span id="L259"><span class="lineNum">     259</span>                 :<span class="tlaGNC">         445 :       const std::string_view cell = row[i];</span></span>
-<span id="L260"><span class="lineNum">     260</span>                 :<span class="tlaGNC">         445 :       absl::StrAppend(</span></span>
-<span id="L261"><span class="lineNum">     261</span>         [<span class="tlaGBC" title="branch 0 was taken 34 times"> + </span><span class="tlaGBC" title="branch 1 was taken 411 times"> + </span>]:<span class="tlaGNC">         445 :           &amp;prefix, colored ? Sgr(cell, kValue, Context().color) : std::string(cell),</span></span>
-<span id="L262"><span class="lineNum">     262</span>                 :<span class="tlaGNC">         445 :           std::string(widths[i] + 2 - cell.size(), ' '));</span></span>
-<span id="L263"><span class="lineNum">     263</span>                 :<span class="tlaGNC">         445 :     }</span></span>
-<span id="L264"><span class="lineNum">     264</span>                 :<span class="tlaGNC">         216 :     absl::StrAppend(&amp;out_, WrapText(row.back(), Context().width, prefix, hang));</span></span>
-<span id="L265"><span class="lineNum">     265</span>                 :<span class="tlaGNC">         216 :   };</span></span>
-<span id="L266"><span class="lineNum">     266</span>                 :<span class="tlaGNC">          17 :   emit_row(table.header, /*colored=*/true);</span></span>
-<span id="L267"><span class="lineNum">     267</span>                 :<span class="tlaGNC">          17 :   std::vector&lt;std::string&gt; rule;</span></span>
-<span id="L268"><span class="lineNum">     268</span>                 :<span class="tlaGNC">          17 :   rule.reserve(widths.size());</span></span>
-<span id="L269"><span class="lineNum">     269</span>         [<span class="tlaGBC" title="branch 0 was taken 51 times"> + </span><span class="tlaGBC" title="branch 1 was taken 17 times"> + </span>]:<span class="tlaGNC">          51 :   for (const std::size_t width : widths) {</span></span>
-<span id="L270"><span class="lineNum">     270</span>                 :<span class="tlaGNC">          51 :     rule.emplace_back(width, '-');</span></span>
-<span id="L271"><span class="lineNum">     271</span>                 :<span class="tlaGNC">          51 :   }</span></span>
-<span id="L272"><span class="lineNum">     272</span>                 :<span class="tlaGNC">          17 :   emit_row(rule, /*colored=*/false);</span></span>
-<span id="L273"><span class="lineNum">     273</span>         [<span class="tlaGBC" title="branch 0 was taken 182 times"> + </span><span class="tlaGBC" title="branch 1 was taken 17 times"> + </span>]:<span class="tlaGNC">         182 :   for (const std::vector&lt;std::string&gt;&amp; row : table.cells) {</span></span>
-<span id="L274"><span class="lineNum">     274</span>                 :<span class="tlaGNC">         182 :     emit_row(row, /*colored=*/false);</span></span>
-<span id="L275"><span class="lineNum">     275</span>                 :<span class="tlaGNC">         182 :   }</span></span>
-<span id="L276"><span class="lineNum">     276</span>                 :<span class="tlaGNC">          17 : }</span></span>
+<span id="L240"><span class="lineNum">     240</span>                 :<span class="tlaGNC">          32 :   StartBlock();</span></span>
+<span id="L241"><span class="lineNum">     241</span>                 :<span class="tlaGNC">          32 :   const std::string indent = BodyIndent();</span></span>
+<span id="L242"><span class="lineNum">     242</span>                 :<span class="tlaGNC">          32 :   std::vector&lt;std::size_t&gt; widths(table.header.size(), 0);</span></span>
+<span id="L243"><span class="lineNum">     243</span>         [<span class="tlaGBC" title="branch 0 was taken 111 times"> + </span><span class="tlaGBC" title="branch 1 was taken 32 times"> + </span>]:<span class="tlaGNC">         143 :   for (std::size_t i = 0; i &lt; table.header.size(); ++i) {</span></span>
+<span id="L244"><span class="lineNum">     244</span>                 :<span class="tlaGNC">         111 :     widths[i] = table.header[i].size();</span></span>
+<span id="L245"><span class="lineNum">     245</span>                 :<span class="tlaGNC">         111 :   }</span></span>
+<span id="L246"><span class="lineNum">     246</span>         [<span class="tlaGBC" title="branch 0 was taken 287 times"> + </span><span class="tlaGBC" title="branch 1 was taken 32 times"> + </span>]:<span class="tlaGNC">         287 :   for (const std::vector&lt;std::string&gt;&amp; row : table.cells) {</span></span>
+<span id="L247"><span class="lineNum">     247</span> [<span class="tlaGBC" title="branch 0 was taken 692 times"> + </span><span class="tlaGBC" title="branch 1 was taken 287 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 692 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">         979 :     for (std::size_t i = 0; i + 1 &lt; row.size() &amp;&amp; i &lt; widths.size(); ++i) {</span></span>
+<span id="L248"><span class="lineNum">     248</span>                 :<span class="tlaGNC">         692 :       widths[i] = std::max(widths[i], row[i].size());</span></span>
+<span id="L249"><span class="lineNum">     249</span>                 :<span class="tlaGNC">         692 :     }</span></span>
+<span id="L250"><span class="lineNum">     250</span>                 :<span class="tlaGNC">         287 :   }</span></span>
+<span id="L251"><span class="lineNum">     251</span>                 :<span class="tlaGNC">          32 :   std::size_t hang_width = 0;</span></span>
+<span id="L252"><span class="lineNum">     252</span>         [<span class="tlaGBC" title="branch 0 was taken 79 times"> + </span><span class="tlaGBC" title="branch 1 was taken 32 times"> + </span>]:<span class="tlaGNC">         111 :   for (std::size_t i = 0; i + 1 &lt; widths.size(); ++i) {</span></span>
+<span id="L253"><span class="lineNum">     253</span>                 :<span class="tlaGNC">          79 :     hang_width += widths[i] + 2;</span></span>
+<span id="L254"><span class="lineNum">     254</span>                 :<span class="tlaGNC">          79 :   }</span></span>
+<span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">          32 :   const std::string hang = indent + std::string(hang_width, ' ');</span></span>
+<span id="L256"><span class="lineNum">     256</span>                 :<span class="tlaGNC">         351 :   const auto emit_row = [&amp;](const std::vector&lt;std::string&gt;&amp; row, bool colored) {</span></span>
+<span id="L257"><span class="lineNum">     257</span>                 :<span class="tlaGNC">         351 :     std::string prefix = indent;</span></span>
+<span id="L258"><span class="lineNum">     258</span>         [<span class="tlaGBC" title="branch 0 was taken 850 times"> + </span><span class="tlaGBC" title="branch 1 was taken 351 times"> + </span>]:<span class="tlaGNC">        1201 :     for (std::size_t i = 0; i + 1 &lt; row.size(); ++i) {</span></span>
+<span id="L259"><span class="lineNum">     259</span>                 :<span class="tlaGNC">         850 :       const std::string_view cell = row[i];</span></span>
+<span id="L260"><span class="lineNum">     260</span>                 :<span class="tlaGNC">         850 :       absl::StrAppend(</span></span>
+<span id="L261"><span class="lineNum">     261</span>         [<span class="tlaGBC" title="branch 0 was taken 79 times"> + </span><span class="tlaGBC" title="branch 1 was taken 771 times"> + </span>]:<span class="tlaGNC">         850 :           &amp;prefix, colored ? Sgr(cell, kValue, Context().color) : std::string(cell),</span></span>
+<span id="L262"><span class="lineNum">     262</span>                 :<span class="tlaGNC">         850 :           std::string(widths[i] + 2 - cell.size(), ' '));</span></span>
+<span id="L263"><span class="lineNum">     263</span>                 :<span class="tlaGNC">         850 :     }</span></span>
+<span id="L264"><span class="lineNum">     264</span>                 :<span class="tlaGNC">         351 :     absl::StrAppend(&amp;out_, WrapText(row.back(), Context().width, prefix, hang));</span></span>
+<span id="L265"><span class="lineNum">     265</span>                 :<span class="tlaGNC">         351 :   };</span></span>
+<span id="L266"><span class="lineNum">     266</span>                 :<span class="tlaGNC">          32 :   emit_row(table.header, /*colored=*/true);</span></span>
+<span id="L267"><span class="lineNum">     267</span>                 :<span class="tlaGNC">          32 :   std::vector&lt;std::string&gt; rule;</span></span>
+<span id="L268"><span class="lineNum">     268</span>                 :<span class="tlaGNC">          32 :   rule.reserve(widths.size());</span></span>
+<span id="L269"><span class="lineNum">     269</span>         [<span class="tlaGBC" title="branch 0 was taken 111 times"> + </span><span class="tlaGBC" title="branch 1 was taken 32 times"> + </span>]:<span class="tlaGNC">         111 :   for (const std::size_t width : widths) {</span></span>
+<span id="L270"><span class="lineNum">     270</span>                 :<span class="tlaGNC">         111 :     rule.emplace_back(width, '-');</span></span>
+<span id="L271"><span class="lineNum">     271</span>                 :<span class="tlaGNC">         111 :   }</span></span>
+<span id="L272"><span class="lineNum">     272</span>                 :<span class="tlaGNC">          32 :   emit_row(rule, /*colored=*/false);</span></span>
+<span id="L273"><span class="lineNum">     273</span>         [<span class="tlaGBC" title="branch 0 was taken 287 times"> + </span><span class="tlaGBC" title="branch 1 was taken 32 times"> + </span>]:<span class="tlaGNC">         287 :   for (const std::vector&lt;std::string&gt;&amp; row : table.cells) {</span></span>
+<span id="L274"><span class="lineNum">     274</span>                 :<span class="tlaGNC">         287 :     emit_row(row, /*colored=*/false);</span></span>
+<span id="L275"><span class="lineNum">     275</span>                 :<span class="tlaGNC">         287 :   }</span></span>
+<span id="L276"><span class="lineNum">     276</span>                 :<span class="tlaGNC">          32 : }</span></span>
 <span id="L277"><span class="lineNum">     277</span>                 :             : </span>
 <span id="L278"><span class="lineNum">     278</span>                 :<span class="tlaGNC">          14 : void PlainTextBackend::EmitSeeAlso(const SeeAlso&amp; see_also) {</span></span>
 <span id="L279"><span class="lineNum">     279</span>                 :<span class="tlaGNC">          14 :   StartBlock();</span></span>

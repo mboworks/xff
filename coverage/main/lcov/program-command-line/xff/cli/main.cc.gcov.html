@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-13 15:42:42</td>
+            <td class="headerValue">2026-09-13 19:58:23</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -311,11 +311,11 @@
 <span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaGNC">           8 :   row(&quot;squashfs&quot;, xff::cli::ExtraEnabled(&quot;squashfs&quot;), xff::cli::ExtraBuildFlag(&quot;squashfs&quot;),</span></span>
 <span id="L232"><span class="lineNum">     232</span>                 :<span class="tlaGNC">           8 :       &quot;read SquashFS images, Snap packages, and AppImage payloads as virtual filesystems&quot;);</span></span>
 <span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">           8 :   absl::flat_hash_set&lt;std::string_view&gt; seen;</span></span>
-<span id="L234"><span class="lineNum">     234</span>         [<span class="tlaGBC" title="branch 0 was taken 1000 times"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">        1000 :   for (const xff::cli::GlobalFlag&amp; flag : xff::cli::Globals()) {</span></span>
-<span id="L235"><span class="lineNum">     235</span> [<span class="tlaGBC" title="branch 0 was taken 136 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1864 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 24 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 88 times"> + </span>]:<span class="tlaGNC">        1000 :     if (!flag.extra.empty() &amp;&amp; seen.insert(flag.extra).second) {</span></span>
+<span id="L234"><span class="lineNum">     234</span>         [<span class="tlaGBC" title="branch 0 was taken 1304 times"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">        1304 :   for (const xff::cli::GlobalFlag&amp; flag : xff::cli::Globals()) {</span></span>
+<span id="L235"><span class="lineNum">     235</span> [<span class="tlaGBC" title="branch 0 was taken 136 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2472 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 24 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 88 times"> + </span>]:<span class="tlaGNC">        1304 :     if (!flag.extra.empty() &amp;&amp; seen.insert(flag.extra).second) {</span></span>
 <span id="L236"><span class="lineNum">     236</span>                 :<span class="tlaGNC">          24 :       row(flag.extra, xff::cli::ExtraEnabled(flag.extra), xff::cli::ExtraBuildFlag(flag.extra), flag.summary);</span></span>
 <span id="L237"><span class="lineNum">     237</span>                 :<span class="tlaGNC">          24 :     }</span></span>
-<span id="L238"><span class="lineNum">     238</span>                 :<span class="tlaGNC">        1000 :   }</span></span>
+<span id="L238"><span class="lineNum">     238</span>                 :<span class="tlaGNC">        1304 :   }</span></span>
 <span id="L239"><span class="lineNum">     239</span>                 :<span class="tlaGNC">           8 :   return out;</span></span>
 <span id="L240"><span class="lineNum">     240</span>                 :<span class="tlaGNC">           8 : }</span></span>
 <span id="L241"><span class="lineNum">     241</span>                 :             : </span>
@@ -805,11 +805,11 @@
 <span id="L721"><span class="lineNum">     721</span>                 :<span class="tlaGNC">         555 :       xff::config::ResolveConfigInOrder(gated.config, command.globals, invocation_selector);</span></span>
 <span id="L722"><span class="lineNum">     722</span>                 :<span class="tlaGNC">         555 :   std::vector&lt;std::string&gt; effective_configs = {std::string(invocation_selector)};</span></span>
 <span id="L723"><span class="lineNum">     723</span>                 :<span class="tlaGNC">         555 :   constexpr std::string_view kConfigPrefix = &quot;--config=&quot;;</span></span>
-<span id="L724"><span class="lineNum">     724</span>         [<span class="tlaGBC" title="branch 0 was taken 826 times"> + </span><span class="tlaGBC" title="branch 1 was taken 555 times"> + </span>]:<span class="tlaGNC">         878 :   for (const xff::config::ResolvedFlag&amp; flag : resolved) {</span></span>
-<span id="L725"><span class="lineNum">     725</span> [<span class="tlaGBC" title="branch 0 was taken 812 times"> + </span><span class="tlaGBC" title="branch 1 was taken 14 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 59 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 753 times"> + </span>]:<span class="tlaGNC">         826 :     if (!flag.is_argument &amp;&amp; flag.flag.starts_with(kConfigPrefix)) {</span></span>
+<span id="L724"><span class="lineNum">     724</span>         [<span class="tlaGBC" title="branch 0 was taken 854 times"> + </span><span class="tlaGBC" title="branch 1 was taken 555 times"> + </span>]:<span class="tlaGNC">         906 :   for (const xff::config::ResolvedFlag&amp; flag : resolved) {</span></span>
+<span id="L725"><span class="lineNum">     725</span> [<span class="tlaGBC" title="branch 0 was taken 840 times"> + </span><span class="tlaGBC" title="branch 1 was taken 14 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 59 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 781 times"> + </span>]:<span class="tlaGNC">         854 :     if (!flag.is_argument &amp;&amp; flag.flag.starts_with(kConfigPrefix)) {</span></span>
 <span id="L726"><span class="lineNum">     726</span>                 :<span class="tlaGNC">          59 :       effective_configs.push_back(flag.flag.substr(kConfigPrefix.size()));</span></span>
 <span id="L727"><span class="lineNum">     727</span>                 :<span class="tlaGNC">          59 :     }</span></span>
-<span id="L728"><span class="lineNum">     728</span>                 :<span class="tlaGNC">         826 :   }</span></span>
+<span id="L728"><span class="lineNum">     728</span>                 :<span class="tlaGNC">         854 :   }</span></span>
 <span id="L729"><span class="lineNum">     729</span>         [<span class="tlaGBC" title="branch 0 was taken 614 times"> + </span><span class="tlaGBC" title="branch 1 was taken 553 times"> + </span>]:<span class="tlaGNC">         614 :   for (const std::string&amp; selected : effective_configs) {</span></span>
 <span id="L730"><span class="lineNum">     730</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 612 times"> + </span>]:<span class="tlaGNC">         614 :     if (absl::c_contains(system_validation.disabled_configs, selected)) {</span></span>
 <span id="L731"><span class="lineNum">     731</span>                 :<span class="tlaGNC">           2 :       std::cerr &lt;&lt; &quot;xff: selected config [&quot; &lt;&lt; selected &lt;&lt; &quot;] is disabled; see earlier diagnostics\n&quot;;</span></span>

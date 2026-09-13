@@ -40,13 +40,13 @@
             <td class="headerValue">xff production coverage</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntryMed">91.3&nbsp;%</td>
-            <td class="headerCovTableEntry">69</td>
-            <td class="headerCovTableEntry">63</td>
+            <td class="headerCovTableEntryMed">91.8&nbsp;%</td>
+            <td class="headerCovTableEntry">73</td>
+            <td class="headerCovTableEntry">67</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-13 15:42:42</td>
+            <td class="headerValue">2026-09-13 19:58:23</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -58,9 +58,9 @@
             <td></td>
             <td></td>
             <td class="headerItem">Branches:</td>
-            <td class="headerCovTableEntryLo">73.7&nbsp;%</td>
-            <td class="headerCovTableEntry">38</td>
-            <td class="headerCovTableEntry">28</td>
+            <td class="headerCovTableEntryLo">71.4&nbsp;%</td>
+            <td class="headerCovTableEntry">42</td>
+            <td class="headerCovTableEntry">30</td>
           </tr>
                   <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
                 </table>
@@ -195,37 +195,41 @@
 <span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">           3 :   return candidates.back();</span></span>
 <span id="L116"><span class="lineNum">     116</span>                 :<span class="tlaGNC">          16 : }</span></span>
 <span id="L117"><span class="lineNum">     117</span>                 :             : </span>
-<span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">         840 : ExtractedMembers::~ExtractedMembers() = default;</span></span>
+<span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">         857 : ExtractedMembers::~ExtractedMembers() = default;</span></span>
 <span id="L119"><span class="lineNum">     119</span>                 :             : </span>
 <span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaGNC">          19 : absl::StatusOr&lt;std::string&gt; ExtractedMembers::Extract(const vfs::FileSystem&amp; fs, std::string_view member) {</span></span>
-<span id="L121"><span class="lineNum">     121</span>         [<span class="tlaGBC" title="branch 0 was taken 36 times"> + </span><span class="tlaGBC" title="branch 1 was taken 21 times"> + </span>]:<span class="tlaGNC">          19 :   MBO_RETURN_IF_ERROR(policy_.Write());</span></span>
-<span id="L122"><span class="lineNum">     122</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 16 times"> + </span>]:<span class="tlaGNC">          33 :   MBO_ASSIGN_OR_RETURN(const std::string content, fs.ReadContent(member));</span></span>
-<span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">          33 :   const std::string_view name = MemberName(member);</span></span>
-<span id="L124"><span class="lineNum">     124</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 15 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 14 times"> + </span>]:<span class="tlaGNC">          33 :   if (name.empty() || name == &quot;.&quot; || name == &quot;..&quot;) {</span></span>
+<span id="L121"><span class="lineNum">     121</span>         [<span class="tlaGBC" title="branch 0 was taken 19 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          19 :   if (!policy_.directories) {</span></span>
+<span id="L122"><span class="lineNum">     122</span>         [<span class="tlaGBC" title="branch 0 was taken 36 times"> + </span><span class="tlaGBC" title="branch 1 was taken 21 times"> + </span>]:<span class="tlaGNC">          19 :     MBO_RETURN_IF_ERROR(policy_.Write());</span></span>
+<span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">          19 :   }</span></span>
+<span id="L124"><span class="lineNum">     124</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 16 times"> + </span>]:<span class="tlaGNC">          33 :   MBO_ASSIGN_OR_RETURN(const std::string content, fs.ReadContent(member));</span></span>
+<span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">          33 :   const std::string_view name = MemberName(member);</span></span>
+<span id="L126"><span class="lineNum">     126</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 15 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 14 times"> + </span>]:<span class="tlaGNC">          33 :   if (name.empty() || name == &quot;.&quot; || name == &quot;..&quot;) {</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 13 times"> + </span>]
-<span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">           3 :     return absl::InvalidArgumentError(&quot;invalid extracted member basename&quot;);</span></span>
-<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">           3 :   }</span></span>
-<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">          13 :   const std::string prefix =</span></span>
-<span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">          13 :       absl::StrCat(ChooseExtractDirectory(content.size(), DefaultExtractDirectories()), &quot;/xff-extract&quot;);</span></span>
-<span id="L129"><span class="lineNum">     129</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 13 times"> + </span>]:<span class="tlaGNC">          13 :   MBO_ASSIGN_OR_RETURN(auto directory, vfs::TemporaryDirectory::Create(prefix, policy_));</span></span>
-<span id="L130"><span class="lineNum">     130</span>                 :<span class="tlaGNC">          13 :   std::string path = absl::StrCat(directory-&gt;Path(), &quot;/&quot;, name);</span></span>
-<span id="L131"><span class="lineNum">     131</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 13 times"> + </span>]:<span class="tlaGNC">          13 :   MBO_ASSIGN_OR_RETURN(const auto output, vfs::OpenHostOutput(path, true, policy_));</span></span>
-<span id="L132"><span class="lineNum">     132</span>         [<span class="tlaGBC" title="branch 0 was taken 26 times"> + </span><span class="tlaGBC" title="branch 1 was taken 13 times"> + </span>]:<span class="tlaGNC">          13 :   MBO_RETURN_IF_ERROR(output-&gt;Write(content));</span></span>
-<span id="L133"><span class="lineNum">     133</span>                 :<span class="tlaGNC">          13 :   directories_.emplace(path, std::move(directory));</span></span>
-<span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">          13 :   held_.push_back(path);</span></span>
-<span id="L135"><span class="lineNum">     135</span>                 :<span class="tlaGNC">          13 :   return path;</span></span>
-<span id="L136"><span class="lineNum">     136</span>                 :<span class="tlaGNC">          13 : }</span></span>
-<span id="L137"><span class="lineNum">     137</span>                 :             : </span>
-<span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">           2 : void ExtractedMembers::Release(std::string_view path) {</span></span>
-<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">           2 :   directories_.erase(std::string(path));</span></span>
-<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">           2 :   std::erase(held_, path);</span></span>
-<span id="L141"><span class="lineNum">     141</span>                 :<span class="tlaGNC">           2 : }</span></span>
-<span id="L142"><span class="lineNum">     142</span>                 :             : </span>
-<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">           6 : std::vector&lt;std::string&gt; ExtractedMembers::Held() const {</span></span>
-<span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">           6 :   return held_;</span></span>
-<span id="L145"><span class="lineNum">     145</span>                 :<span class="tlaGNC">           6 : }</span></span>
+<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">           3 :     return absl::InvalidArgumentError(&quot;invalid extracted member basename&quot;);</span></span>
+<span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">           3 :   }</span></span>
+<span id="L129"><span class="lineNum">     129</span>                 :<span class="tlaGNC">          13 :   const std::string prefix = absl::StrCat(</span></span>
+<span id="L130"><span class="lineNum">     130</span>         [<span class="tlaGBC" title="branch 0 was taken 13 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          13 :       policy_.temporary_root.empty() ? ChooseExtractDirectory(content.size(), DefaultExtractDirectories())</span></span>
+<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">          13 :                                      : policy_.temporary_root,</span></span>
+<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">          13 :       &quot;/xff-extract&quot;);</span></span>
+<span id="L133"><span class="lineNum">     133</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 13 times"> + </span>]:<span class="tlaGNC">          13 :   MBO_ASSIGN_OR_RETURN(auto directory, vfs::TemporaryDirectory::Create(prefix, policy_));</span></span>
+<span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">          13 :   std::string path = absl::StrCat(directory-&gt;Path(), &quot;/&quot;, name);</span></span>
+<span id="L135"><span class="lineNum">     135</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 13 times"> + </span>]:<span class="tlaGNC">          13 :   MBO_ASSIGN_OR_RETURN(const auto output, vfs::OpenHostOutput(path, true, policy_));</span></span>
+<span id="L136"><span class="lineNum">     136</span>         [<span class="tlaGBC" title="branch 0 was taken 26 times"> + </span><span class="tlaGBC" title="branch 1 was taken 13 times"> + </span>]:<span class="tlaGNC">          13 :   MBO_RETURN_IF_ERROR(output-&gt;Write(content));</span></span>
+<span id="L137"><span class="lineNum">     137</span>                 :<span class="tlaGNC">          13 :   directories_.emplace(path, std::move(directory));</span></span>
+<span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">          13 :   held_.push_back(path);</span></span>
+<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">          13 :   return path;</span></span>
+<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">          13 : }</span></span>
+<span id="L141"><span class="lineNum">     141</span>                 :             : </span>
+<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">           2 : void ExtractedMembers::Release(std::string_view path) {</span></span>
+<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">           2 :   directories_.erase(std::string(path));</span></span>
+<span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">           2 :   std::erase(held_, path);</span></span>
+<span id="L145"><span class="lineNum">     145</span>                 :<span class="tlaGNC">           2 : }</span></span>
 <span id="L146"><span class="lineNum">     146</span>                 :             : </span>
-<span id="L147"><span class="lineNum">     147</span>                 :             : }  // namespace xff::engine</span>
+<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">           6 : std::vector&lt;std::string&gt; ExtractedMembers::Held() const {</span></span>
+<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">           6 :   return held_;</span></span>
+<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">           6 : }</span></span>
+<span id="L150"><span class="lineNum">     150</span>                 :             : </span>
+<span id="L151"><span class="lineNum">     151</span>                 :             : }  // namespace xff::engine</span>
         </pre>
               </td>
             </tr>
