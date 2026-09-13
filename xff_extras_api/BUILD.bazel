@@ -225,16 +225,11 @@ cc_library(
 )
 
 cc_library(
-    name = "host_descriptors_cc",
-    srcs = ["host_descriptors.cc"],
-    deps = [":host_descriptors_interface_cc"],
-)
-
-cc_library(
     name = "vfs_cc",
+    srcs = ["host_descriptors.cc"],
     visibility = ["//visibility:public"],
     deps = [
-        ":host_descriptors_cc",
+        ":host_descriptors_interface_cc",
         ":vfs_implementation_cc",
     ],
 )
