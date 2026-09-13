@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-13 21:01:15</td>
+            <td class="headerValue">2026-09-13 22:59:09</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -58,9 +58,9 @@
             <td></td>
             <td></td>
             <td class="headerItem">Branches:</td>
-            <td class="headerCovTableEntryHi">88.4&nbsp;%</td>
+            <td class="headerCovTableEntryHi">87.9&nbsp;%</td>
             <td class="headerCovTableEntry">232</td>
-            <td class="headerCovTableEntry">205</td>
+            <td class="headerCovTableEntry">204</td>
           </tr>
                   <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
                 </table>
@@ -123,13 +123,13 @@
 <span id="L43"><span class="lineNum">      43</span>                 :             : namespace {</span>
 <span id="L44"><span class="lineNum">      44</span>                 :             : </span>
 <span id="L45"><span class="lineNum">      45</span>                 :             : // Final path component, tolerating a single trailing '/' (but not a lone &quot;/&quot;).</span>
-<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">         882 : std::string_view Basename(std::string_view path) {</span></span>
-<span id="L47"><span class="lineNum">      47</span> [<span class="tlaGBC" title="branch 0 was taken 830 times"> + </span><span class="tlaGBC" title="branch 1 was taken 52 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 830 times"> + </span>]:<span class="tlaGNC">         882 :   if (path.size() &gt; 1 &amp;&amp; path.back() == '/') {</span></span>
+<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">         881 : std::string_view Basename(std::string_view path) {</span></span>
+<span id="L47"><span class="lineNum">      47</span> [<span class="tlaGBC" title="branch 0 was taken 830 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4294967347 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 830 times"> + </span>]:<span class="tlaGNC">         882 :   if (path.size() &gt; 1 &amp;&amp; path.back() == '/') {</span></span>
 <span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaUNC">           0 :     path.remove_suffix(1);</span></span>
 <span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaUNC">           0 :   }</span></span>
-<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">         882 :   const std::string_view::size_type slash = path.rfind('/');</span></span>
-<span id="L51"><span class="lineNum">      51</span>         [<span class="tlaGBC" title="branch 0 was taken 73 times"> + </span><span class="tlaGBC" title="branch 1 was taken 809 times"> + </span>]:<span class="tlaGNC">         882 :   return slash == std::string_view::npos ? path : path.substr(slash + 1);</span></span>
-<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">         882 : }</span></span>
+<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">         881 :   const std::string_view::size_type slash = path.rfind('/');</span></span>
+<span id="L51"><span class="lineNum">      51</span>         [<span class="tlaGBC" title="branch 0 was taken 73 times"> + </span><span class="tlaGBC" title="branch 1 was taken 808 times"> + </span>]:<span class="tlaGNC">         881 :   return slash == std::string_view::npos ? path : path.substr(slash + 1);</span></span>
+<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">         881 : }</span></span>
 <span id="L53"><span class="lineNum">      53</span>                 :             : </span>
 <span id="L54"><span class="lineNum">      54</span>                 :             : // One child of a directory, already stat'd by a read job.</span>
 <span id="L55"><span class="lineNum">      55</span>                 :             : struct Stated {</span>
@@ -192,24 +192,24 @@
 <span id="L112"><span class="lineNum">     112</span>                 :             :  private:</span>
 <span id="L113"><span class="lineNum">     113</span>                 :             :   // A job is ready or the pool is stopping. `absl::Mutex::Await` evaluates this</span>
 <span id="L114"><span class="lineNum">     114</span>                 :             :   // with `mutex_` held, so it requires the lock.</span>
-<span id="L115"><span class="lineNum">     115</span> [<span class="tlaGBC" title="branch 0 was taken 3163 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5205 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1519 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 3686 times"> + </span>]:<span class="tlaGNC">        8368 :   bool Pending() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) { return stop_ || !queue_.empty(); }</span></span>
+<span id="L115"><span class="lineNum">     115</span> [<span class="tlaGBC" title="branch 0 was taken 3101 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5070 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1502 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 3568 times"> + </span>]:<span class="tlaGNC">        8171 :   bool Pending() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) { return stop_ || !queue_.empty(); }</span></span>
 <span id="L116"><span class="lineNum">     116</span>                 :             : </span>
 <span id="L117"><span class="lineNum">     117</span>                 :             :   // Worker loop: drain jobs until stopped and the queue is empty. Caller (the</span>
 <span id="L118"><span class="lineNum">     118</span>                 :             :   // worker thread) must NOT hold `mutex_`.</span>
-<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">        1765 :   void Run() ABSL_LOCKS_EXCLUDED(mutex_) {</span></span>
-<span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaGNC">        2622 :     for (;;) {</span></span>
-<span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">        2622 :       std::function&lt;void()&gt; job;</span></span>
-<span id="L122"><span class="lineNum">     122</span>                 :<span class="tlaGNC">        2622 :       {</span></span>
-<span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">        2622 :         const absl::MutexLock lock(mutex_, absl::Condition(this, &amp;ReadPool::Pending));</span></span>
-<span id="L124"><span class="lineNum">     124</span> [<span class="tlaGBC" title="branch 0 was taken 1772 times"> + </span><span class="tlaGBC" title="branch 1 was taken 850 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1766 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 6 times"> + </span>]:<span class="tlaGNC">        2622 :         if (stop_ &amp;&amp; queue_.empty()) {</span></span>
+<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">        1766 :   void Run() ABSL_LOCKS_EXCLUDED(mutex_) {</span></span>
+<span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaGNC">        2623 :     for (;;) {</span></span>
+<span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">        2623 :       std::function&lt;void()&gt; job;</span></span>
+<span id="L122"><span class="lineNum">     122</span>                 :<span class="tlaGNC">        2623 :       {</span></span>
+<span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">        2623 :         const absl::MutexLock lock(mutex_, absl::Condition(this, &amp;ReadPool::Pending));</span></span>
+<span id="L124"><span class="lineNum">     124</span> [<span class="tlaGBC" title="branch 0 was taken 1773 times"> + </span><span class="tlaGBC" title="branch 1 was taken 850 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1766 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 7 times"> + </span>]:<span class="tlaGNC">        2623 :         if (stop_ &amp;&amp; queue_.empty()) {</span></span>
 <span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">        1766 :           return;</span></span>
 <span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">        1766 :         }</span></span>
-<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">         856 :         job = std::move(queue_.front());</span></span>
-<span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">         856 :         queue_.pop();</span></span>
-<span id="L129"><span class="lineNum">     129</span>                 :<span class="tlaGNC">         856 :       }</span></span>
+<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">         857 :         job = std::move(queue_.front());</span></span>
+<span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">         857 :         queue_.pop();</span></span>
+<span id="L129"><span class="lineNum">     129</span>                 :<span class="tlaGNC">         857 :       }</span></span>
 <span id="L130"><span class="lineNum">     130</span>                 :<span class="tlaUNC">           0 :       job();</span></span>
-<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">         856 :     }</span></span>
-<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">        1765 :   }</span></span>
+<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">         857 :     }</span></span>
+<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">        1766 :   }</span></span>
 <span id="L133"><span class="lineNum">     133</span>                 :             : </span>
 <span id="L134"><span class="lineNum">     134</span>                 :             :   mutable absl::Mutex mutex_;</span>
 <span id="L135"><span class="lineNum">     135</span>                 :             :   std::queue&lt;std::function&lt;void()&gt;&gt; queue_ ABSL_GUARDED_BY(mutex_);</span>
@@ -237,16 +237,16 @@
 <span id="L157"><span class="lineNum">     157</span>                 :             :   // paths named on the command line (depth 0), `kAll` offers every file met; `kNone` never asks.</span>
 <span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">        4308 :   bool ShouldTryMount(const Stated&amp; stated, int depth) const {</span></span>
 <span id="L159"><span class="lineNum">     159</span> [<span class="tlaGBC" title="branch 0 was taken 110 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4198 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3604 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 594 times"> + </span>]:<span class="tlaGNC">        4308 :     if (!mount_container_.has_value() || options_.archive == ArchiveDive::kNone) {</span></span>
-<span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">        3713 :       return false;</span></span>
-<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">        3713 :     }</span></span>
-<span id="L162"><span class="lineNum">     162</span>         [<span class="tlaGBC" title="branch 0 was taken 241 times"> + </span><span class="tlaGBC" title="branch 1 was taken 354 times"> + </span>]:<span class="tlaGNC">         595 :     if (container_depth_ &gt;= options_.archive_depth) {</span></span>
+<span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">        3714 :       return false;</span></span>
+<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">        3714 :     }</span></span>
+<span id="L162"><span class="lineNum">     162</span>         [<span class="tlaGBC" title="branch 0 was taken 241 times"> + </span><span class="tlaGBC" title="branch 1 was taken 353 times"> + </span>]:<span class="tlaGNC">         594 :     if (container_depth_ &gt;= options_.archive_depth) {</span></span>
 <span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">         241 :       return false;  // --archive-depth: this walk is already as many containers deep as allowed</span></span>
 <span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">         241 :     }</span></span>
-<span id="L165"><span class="lineNum">     165</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 353 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 100 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 253 times"> + </span>]:<span class="tlaGNC">         354 :     if (!stated.ok || stated.metadata.type != vfs::FileType::kRegular) {</span></span>
+<span id="L165"><span class="lineNum">     165</span> [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 353 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 100 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 253 times"> + </span>]:<span class="tlaGNC">         353 :     if (!stated.ok || stated.metadata.type != vfs::FileType::kRegular) {</span></span>
 <span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">         100 :       return false;</span></span>
 <span id="L167"><span class="lineNum">     167</span>                 :<span class="tlaGNC">         100 :     }</span></span>
-<span id="L168"><span class="lineNum">     168</span> [<span class="tlaGBC" title="branch 0 was taken 59 times"> + </span><span class="tlaGBC" title="branch 1 was taken 195 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 62 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 133 times"> + </span>]:<span class="tlaGNC">         254 :     return options_.archive == ArchiveDive::kAll || depth == 0;</span></span>
-<span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">         354 :   }</span></span>
+<span id="L168"><span class="lineNum">     168</span> [<span class="tlaGBC" title="branch 0 was taken 58 times"> + </span><span class="tlaGBC" title="branch 1 was taken 195 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 62 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 133 times"> + </span>]:<span class="tlaGNC">         253 :     return options_.archive == ArchiveDive::kAll || depth == 0;</span></span>
+<span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">         353 :   }</span></span>
 <span id="L170"><span class="lineNum">     170</span>                 :             : </span>
 <span id="L171"><span class="lineNum">     171</span>                 :             :   // Opens `container`, or answers null. A failed open is not automatically an error: InvalidArgument</span>
 <span id="L172"><span class="lineNum">     172</span>                 :             :   // means &quot;not an archive&quot;, the answer for every ordinary file the walk offers, and the file is simply</span>
@@ -330,17 +330,17 @@
 <span id="L250"><span class="lineNum">     250</span> [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 870 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 867 times"> + </span>]:<span class="tlaGNC">         873 :     if (options_.sort == SortOrder::kRoots || options_.sort == SortOrder::kGlobal) {</span></span>
 <span id="L251"><span class="lineNum">     251</span>                 :<span class="tlaGNC">           6 :       absl::c_stable_sort(ordered_roots);</span></span>
 <span id="L252"><span class="lineNum">     252</span>                 :<span class="tlaGNC">           6 :     }</span></span>
-<span id="L253"><span class="lineNum">     253</span>         [<span class="tlaGBC" title="branch 0 was taken 882 times"> + </span><span class="tlaGBC" title="branch 1 was taken 872 times"> + </span>]:<span class="tlaGNC">         882 :     for (const std::string&amp; root : ordered_roots) {</span></span>
-<span id="L254"><span class="lineNum">     254</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 881 times"> + </span>]:<span class="tlaGNC">         882 :       if (stopped_) {</span></span>
+<span id="L253"><span class="lineNum">     253</span>         [<span class="tlaGBC" title="branch 0 was taken 883 times"> + </span><span class="tlaGBC" title="branch 1 was taken 872 times"> + </span>]:<span class="tlaGNC">         883 :     for (const std::string&amp; root : ordered_roots) {</span></span>
+<span id="L254"><span class="lineNum">     254</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 882 times"> + </span>]:<span class="tlaGNC">         883 :       if (stopped_) {</span></span>
 <span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">           1 :         return;</span></span>
 <span id="L256"><span class="lineNum">     256</span>                 :<span class="tlaGNC">           1 :       }</span></span>
 <span id="L257"><span class="lineNum">     257</span>                 :             :       // -P never follows, -H follows command-line operands (depth 0), -L all.</span>
-<span id="L258"><span class="lineNum">     258</span>                 :<span class="tlaGNC">         881 :       const bool follow = options_.symlinks != SymlinkMode::kNever;</span></span>
-<span id="L259"><span class="lineNum">     259</span>                 :<span class="tlaGNC">         881 :       const Stated stated = StatNode(root, follow);</span></span>
-<span id="L260"><span class="lineNum">     260</span>         [<span class="tlaGBC" title="branch 0 was taken 874 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>]:<span class="tlaGNC">         881 :       root_dev_ = stated.ok ? stated.metadata.dev : 0;</span></span>
-<span id="L261"><span class="lineNum">     261</span>                 :<span class="tlaGNC">         881 :       current_root_ = root;</span></span>
-<span id="L262"><span class="lineNum">     262</span>                 :<span class="tlaGNC">         881 :       VisitSubtree(stated, /*depth=*/0, /*prefetched=*/{});</span></span>
-<span id="L263"><span class="lineNum">     263</span>                 :<span class="tlaGNC">         881 :     }</span></span>
+<span id="L258"><span class="lineNum">     258</span>                 :<span class="tlaGNC">         882 :       const bool follow = options_.symlinks != SymlinkMode::kNever;</span></span>
+<span id="L259"><span class="lineNum">     259</span>                 :<span class="tlaGNC">         882 :       const Stated stated = StatNode(root, follow);</span></span>
+<span id="L260"><span class="lineNum">     260</span>         [<span class="tlaGBC" title="branch 0 was taken 874 times"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">         882 :       root_dev_ = stated.ok ? stated.metadata.dev : 0;</span></span>
+<span id="L261"><span class="lineNum">     261</span>                 :<span class="tlaGNC">         882 :       current_root_ = root;</span></span>
+<span id="L262"><span class="lineNum">     262</span>                 :<span class="tlaGNC">         882 :       VisitSubtree(stated, /*depth=*/0, /*prefetched=*/{});</span></span>
+<span id="L263"><span class="lineNum">     263</span>                 :<span class="tlaGNC">         882 :     }</span></span>
 <span id="L264"><span class="lineNum">     264</span>                 :<span class="tlaGNC">         873 :   }</span></span>
 <span id="L265"><span class="lineNum">     265</span>                 :             : </span>
 <span id="L266"><span class="lineNum">     266</span>                 :             :  private:</span>
@@ -420,20 +420,20 @@
 <span id="L339"><span class="lineNum">     339</span>                 :             :   // Pre-order by default; post-order (`-depth`) descends first, then visits, and</span>
 <span id="L340"><span class="lineNum">     340</span>                 :             :   // `-prune` has no effect (matching find). `prefetched` is the directory's</span>
 <span id="L341"><span class="lineNum">     341</span>                 :             :   // already-submitted listing read (from the parent's batch), or empty to read now.</span>
-<span id="L342"><span class="lineNum">     342</span>                 :<span class="tlaGNC">        1197 :   void VisitSubtree(const Stated&amp; stated, int depth, mbo::types::OptionalRef&lt;std::future&lt;Listing&gt;&gt; prefetched) {</span></span>
-<span id="L343"><span class="lineNum">     343</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 1197 times"> + </span>]:<span class="tlaGNC">        1197 :     if (stopped_) {</span></span>
+<span id="L342"><span class="lineNum">     342</span>                 :<span class="tlaGNC">        1198 :   void VisitSubtree(const Stated&amp; stated, int depth, mbo::types::OptionalRef&lt;std::future&lt;Listing&gt;&gt; prefetched) {</span></span>
+<span id="L343"><span class="lineNum">     343</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 1198 times"> + </span>]:<span class="tlaGNC">        1198 :     if (stopped_) {</span></span>
 <span id="L344"><span class="lineNum">     344</span>                 :<span class="tlaUNC">           0 :       return;</span></span>
 <span id="L345"><span class="lineNum">     345</span>                 :<span class="tlaUNC">           0 :     }</span></span>
-<span id="L346"><span class="lineNum">     346</span>                 :<span class="tlaGNC">        1197 :     const bool descend = Descendable(stated, depth);</span></span>
-<span id="L347"><span class="lineNum">     347</span>                 :<span class="tlaGNC">        1197 :     const bool dive = ShouldTryMount(stated, depth);</span></span>
+<span id="L346"><span class="lineNum">     346</span>                 :<span class="tlaGNC">        1198 :     const bool descend = Descendable(stated, depth);</span></span>
+<span id="L347"><span class="lineNum">     347</span>                 :<span class="tlaGNC">        1198 :     const bool dive = ShouldTryMount(stated, depth);</span></span>
 <span id="L348"><span class="lineNum">     348</span>                 :             :     // Under `mount_before_visit` the container is opened here, so the visit can be told whether its</span>
 <span id="L349"><span class="lineNum">     349</span>                 :             :     // members follow; the open is kept and reused for the dive below. Otherwise the open happens at</span>
 <span id="L350"><span class="lineNum">     350</span>                 :             :     // the dive, which is what lets `-prune` skip it altogether.</span>
-<span id="L351"><span class="lineNum">     351</span>                 :<span class="tlaGNC">        1197 :     const std::shared_ptr&lt;const vfs::FileSystem&gt; mounted =</span></span>
-<span id="L352"><span class="lineNum">     352</span> [<span class="tlaGBC" title="branch 0 was taken 75 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1122 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 5 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 70 times"> + </span>]:<span class="tlaGNC">        1197 :         dive &amp;&amp; options_.mount_before_visit ? MountContainer(stated, depth) : nullptr;</span></span>
-<span id="L353"><span class="lineNum">     353</span> [<span class="tlaGBC" title="branch 0 was taken 75 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1122 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 70 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 5 times"> + </span>]:<span class="tlaGNC">        1197 :     const bool dived = dive &amp;&amp; (!options_.mount_before_visit || mounted != nullptr);</span></span>
+<span id="L351"><span class="lineNum">     351</span>                 :<span class="tlaGNC">        1198 :     const std::shared_ptr&lt;const vfs::FileSystem&gt; mounted =</span></span>
+<span id="L352"><span class="lineNum">     352</span> [<span class="tlaGBC" title="branch 0 was taken 75 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1123 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 5 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 70 times"> + </span>]:<span class="tlaGNC">        1198 :         dive &amp;&amp; options_.mount_before_visit ? MountContainer(stated, depth) : nullptr;</span></span>
+<span id="L353"><span class="lineNum">     353</span> [<span class="tlaGBC" title="branch 0 was taken 75 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1123 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 70 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 5 times"> + </span>]:<span class="tlaGNC">        1198 :     const bool dived = dive &amp;&amp; (!options_.mount_before_visit || mounted != nullptr);</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 2 times"> + </span>]
-<span id="L354"><span class="lineNum">     354</span>         [<span class="tlaGBC" title="branch 0 was taken 107 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1090 times"> + </span>]:<span class="tlaGNC">        1197 :     if (options_.post_order) {</span></span>
+<span id="L354"><span class="lineNum">     354</span>         [<span class="tlaGBC" title="branch 0 was taken 107 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1091 times"> + </span>]:<span class="tlaGNC">        1198 :     if (options_.post_order) {</span></span>
 <span id="L355"><span class="lineNum">     355</span>         [<span class="tlaGBC" title="branch 0 was taken 31 times"> + </span><span class="tlaGBC" title="branch 1 was taken 76 times"> + </span>]:<span class="tlaGNC">         107 :       if (descend) {</span></span>
 <span id="L356"><span class="lineNum">     356</span>                 :<span class="tlaGNC">          31 :         Descend(stated, depth, prefetched);</span></span>
 <span id="L357"><span class="lineNum">     357</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 76 times"> + </span>]:<span class="tlaGNC">          76 :       } else if (mounted != nullptr) {</span></span>
@@ -446,20 +446,20 @@
 <span id="L364"><span class="lineNum">     364</span>                 :<span class="tlaGNC">         107 :       }</span></span>
 <span id="L365"><span class="lineNum">     365</span>                 :<span class="tlaGNC">         107 :       return;</span></span>
 <span id="L366"><span class="lineNum">     366</span>                 :<span class="tlaGNC">         107 :     }</span></span>
-<span id="L367"><span class="lineNum">     367</span> [<span class="tlaGBC" title="branch 0 was taken 36 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1054 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 33 times"> + </span>]:<span class="tlaGNC">        1090 :     const WalkAction action = VisitOne(stated, depth, options_.mount_before_visit &amp;&amp; dived);</span></span>
-<span id="L368"><span class="lineNum">     368</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1089 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1086 times"> + </span>]:<span class="tlaGNC">        1090 :     if (stopped_ || action == WalkAction::kPrune) {</span></span>
+<span id="L367"><span class="lineNum">     367</span> [<span class="tlaGBC" title="branch 0 was taken 36 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1055 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 33 times"> + </span>]:<span class="tlaGNC">        1091 :     const WalkAction action = VisitOne(stated, depth, options_.mount_before_visit &amp;&amp; dived);</span></span>
+<span id="L368"><span class="lineNum">     368</span> [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1089 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1087 times"> + </span>]:<span class="tlaGNC">        1091 :     if (stopped_ || action == WalkAction::kPrune) {</span></span>
 <span id="L369"><span class="lineNum">     369</span>                 :<span class="tlaGNC">           4 :       return;</span></span>
 <span id="L370"><span class="lineNum">     370</span>                 :<span class="tlaGNC">           4 :     }</span></span>
-<span id="L371"><span class="lineNum">     371</span>         [<span class="tlaGBC" title="branch 0 was taken 796 times"> + </span><span class="tlaGBC" title="branch 1 was taken 290 times"> + </span>]:<span class="tlaGNC">        1086 :     if (descend) {</span></span>
+<span id="L371"><span class="lineNum">     371</span>         [<span class="tlaGBC" title="branch 0 was taken 796 times"> + </span><span class="tlaGBC" title="branch 1 was taken 291 times"> + </span>]:<span class="tlaGNC">        1087 :     if (descend) {</span></span>
 <span id="L372"><span class="lineNum">     372</span>                 :<span class="tlaGNC">         796 :       Descend(stated, depth, prefetched);</span></span>
-<span id="L373"><span class="lineNum">     373</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 287 times"> + </span>]:<span class="tlaGNC">         909 :     } else if (mounted != nullptr) {</span></span>
+<span id="L373"><span class="lineNum">     373</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 288 times"> + </span>]:<span class="tlaGNC">         909 :     } else if (mounted != nullptr) {</span></span>
 <span id="L374"><span class="lineNum">     374</span>                 :             :       // A container is a FILE, so it never reaches Descend; -prune above still applies to it, which is</span>
 <span id="L375"><span class="lineNum">     375</span>                 :             :       // what makes `-name '*.tar' -prune` skip diving without skipping the file itself.</span>
 <span id="L376"><span class="lineNum">     376</span>                 :<span class="tlaGNC">           3 :       DescendMounted(mounted, stated, depth);</span></span>
-<span id="L377"><span class="lineNum">     377</span> [<span class="tlaGBC" title="branch 0 was taken 58 times"> + </span><span class="tlaGBC" title="branch 1 was taken 229 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 56 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2 times"> + </span>]:<span class="tlaGNC">         287 :     } else if (dive &amp;&amp; !options_.mount_before_visit) {</span></span>
+<span id="L377"><span class="lineNum">     377</span> [<span class="tlaGBC" title="branch 0 was taken 58 times"> + </span><span class="tlaGBC" title="branch 1 was taken 230 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 56 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2 times"> + </span>]:<span class="tlaGNC">         288 :     } else if (dive &amp;&amp; !options_.mount_before_visit) {</span></span>
 <span id="L378"><span class="lineNum">     378</span>                 :<span class="tlaGNC">          56 :       DescendContainer(stated, depth);</span></span>
 <span id="L379"><span class="lineNum">     379</span>                 :<span class="tlaGNC">          56 :     }</span></span>
-<span id="L380"><span class="lineNum">     380</span>                 :<span class="tlaGNC">        1086 :   }</span></span>
+<span id="L380"><span class="lineNum">     380</span>                 :<span class="tlaGNC">        1087 :   }</span></span>
 <span id="L381"><span class="lineNum">     381</span>                 :             : </span>
 <span id="L382"><span class="lineNum">     382</span>                 :             :   // Reads `dir` (from its prefetched future, or now) and recurses its children,</span>
 <span id="L383"><span class="lineNum">     383</span>                 :             :   // guarding against filesystem loops (only possible when following symlinks).</span>
@@ -479,7 +479,7 @@
 <span id="L397"><span class="lineNum">     397</span>                 :<span class="tlaUNC">           0 :       return;</span></span>
 <span id="L398"><span class="lineNum">     398</span>                 :<span class="tlaUNC">           0 :     }</span></span>
 <span id="L399"><span class="lineNum">     399</span> [<span class="tlaGBC" title="branch 0 was taken 740 times"> + </span><span class="tlaGBC" title="branch 1 was taken 685 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 733 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 7 times"> + </span>]:<span class="tlaGNC">        1425 :     if (options_.sort != SortOrder::kNone &amp;&amp; options_.sort != SortOrder::kRoots) {</span></span>
-<span id="L400"><span class="lineNum">     400</span>                 :<span class="tlaGNC">        1884 :       absl::c_sort(*listing, [](const Stated&amp; lhs, const Stated&amp; rhs) { return lhs.path &lt; rhs.path; });</span></span>
+<span id="L400"><span class="lineNum">     400</span>                 :<span class="tlaGNC">        1883 :       absl::c_sort(*listing, [](const Stated&amp; lhs, const Stated&amp; rhs) { return lhs.path &lt; rhs.path; });</span></span>
 <span id="L401"><span class="lineNum">     401</span>                 :<span class="tlaGNC">         733 :     }</span></span>
 <span id="L402"><span class="lineNum">     402</span>                 :<span class="tlaGNC">        1425 :     HandleChildren(*listing, depth + 1);</span></span>
 <span id="L403"><span class="lineNum">     403</span>                 :<span class="tlaGNC">        1425 :     ancestors_.erase(id);</span></span>
