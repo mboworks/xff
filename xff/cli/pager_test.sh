@@ -39,11 +39,11 @@ test::pager_never_prints_help_to_stdout() {
   expect_output_contains "eXtended File Find" "$("$(_xff_bin)" --pager=never --help 2>&1)"
 }
 
-test::removed_pager_all_is_a_usage_error() {
+test::invalid_pager_all_is_a_usage_error() {
   local out status=0
   out="$("$(_xff_bin)" --pager=all --help 2>&1)" || status=$?
   expect_eq "2" "${status}"
-  expect_output_contains "--pager=all was removed" "${out}"
+  expect_output_contains "invalid --pager value: all" "${out}"
 }
 
 test::failed_explicit_pager_falls_back_to_stdout() {

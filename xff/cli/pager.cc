@@ -107,7 +107,7 @@ absl::StatusOr<PagerConfig> ResolvePager(const std::vector<std::string>& args) {
     } else if (arg == "--pager=auto") {
       pager = {.when = PagerWhen::kAuto};
     } else if (arg == "--pager=all") {
-      return absl::InvalidArgumentError("--pager=all was removed; use --pager=auto or --pager=always");
+      return absl::InvalidArgumentError("invalid --pager value: all; use --pager=auto or --pager=always");
     } else if (arg.starts_with("--pager=")) {
       const std::string_view command = arg.substr(std::string_view("--pager=").size());
       if (command.empty()) {

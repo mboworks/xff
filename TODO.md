@@ -21,8 +21,12 @@ for enforcement and presentation.
 
 ## Safety follow-up sequence
 
-1. Resume the full configuration audit, including flag consistency, introductory documentation,
-   complete-file tests, and safety tradeoffs.
+1. Discuss whether pager-command allowlisting is useful and define its trust and configuration
+   model before implementing it. Pager commands remain separate from execution blocks and dry-run.
+
+The configuration audit findings and verification map are recorded in
+[the audit implementation record](docs/history.md#configuration-validation-and-documentation-audit).
+PR #821 carries the fixes; final CI and release-artifact verification gate release readiness.
 
 The safety model and directory-scoped permissions are tracked in
 [the implementation record](docs/history.md#directory-scoped-safety-controls).

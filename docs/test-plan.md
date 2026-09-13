@@ -40,13 +40,18 @@
   Malformed quoting and invalid global lines cannot survive validation or reappear during policy filtering.
 - All config tiers share the INI parser. Tests reject repeated declarations per file, preserve
   cross-file refinements and repeated composition references, and exercise literal colon names.
-- Real INI fixtures cover independent invalid global lines, atomic named-section disablement,
-  transitive references, plain section names, and the scope and uniqueness of skip-control pairs.
+- Real INI fixtures cover invalid globals failing before deletion, atomic named-section disablement,
+  transitive and undefined references, cross-file forward composition, plain section names, and
+  the scope and uniqueness of skip-control pairs. Registry-driven cases reject command-line-only
+  bootstrap options in INI globals and named sections.
 - Global execution and explicit-file prohibitions remain authoritative over lower-trust arming and
   permission grants, including when automatic defaults are suppressed.
-- Discovery tests cover system and user locations, environment precedence,
+- Discovery tests cover fixed system and effective-account user locations, environment non-redirection,
   explicitly named `--xffrc` files, missing/unreadable files, granular config-source suppression,
-  permission enforcement, and `--no-config`.
+  permission enforcement, and `--no-config`. Regular-file checks cover directories, FIFOs,
+  dangling links, and intentional symlinks to regular files.
+- Listing pager tests cover resolved global/named INI values, CLI overrides, and independence
+  from execution blocks.
 - Resolution tests cover selector order, invocation-name defaults, `_full`
   normalization, repeated values, provenance, and CLI precedence.
 - Policy tests cover authoritative global prohibitions, preset-overload

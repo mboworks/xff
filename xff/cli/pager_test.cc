@@ -62,7 +62,9 @@ TEST_F(PagerWhenTest, ExplicitValuesResolve) {
 }
 
 TEST_F(PagerWhenTest, RemovedAllAndAnEmptyCommandAreErrors) {
-  EXPECT_THAT(ResolvePager({"--pager=all"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("removed")));
+  EXPECT_THAT(
+      ResolvePager({"--pager=all"}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("invalid --pager value: all")));
   EXPECT_THAT(ResolvePager({"--pager="}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("requires")));
 }
 

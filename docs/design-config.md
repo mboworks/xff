@@ -216,7 +216,7 @@ terminator, just as on the command line. Comment text never reaches the CLI argu
 Quotes may span physical lines. A backslash followed by a newline continues the logical line
 without adding a character, except inside single quotes. Diagnostics identify the logical
 line's starting line number. An unmatched quote or a trailing backslash is a syntax error;
-no partial arguments from that line are applied. Invalid global lines are ignored with a
+no partial arguments from that line are applied. Invalid global lines fail the invocation with a
 diagnostic, while an invalid named-section line disables its entire section.
 
 User and explicit config files may not redefine the exact built-in preset names `[find]`, `[xff]`,
