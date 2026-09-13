@@ -100,7 +100,10 @@ absl::Status ValidateTokens(const std::vector<std::string>& tokens) {
       MBO_RETURN_IF_ERROR(ValidateSystemControl(token));
       continue;
     }
-    if (LookupGlobalArgument(token).has_value()) {
+    if (const auto flag = LookupGlobalArgument(token); flag.has_value()) {
+      if (flag->cli_only) {
+        return absl::InvalidArgumentError(absl::StrCat(flag->name, " is command-line only"));
+      }
       if (const absl::Status status = ValidateGlobalValue(token); !status.ok()) {
         return status;
       }
@@ -220,9 +223,7 @@ void FindFileOverrides(const config::ConfigFile& file, std::string_view path, st
 class ConfigFileValidator {
  public:
   ConfigFileValidator(config::ConfigFile config, std::string_view path, config::Source source)
-      : result_{.config = std::move(config), .selected_configs_status = absl::OkStatus()},
-        path_(path),
-        source_(source) {}
+      : result_{.config = std::move(config), .status = absl::OkStatus()}, path_(path), source_(source) {}
 
   ConfigFileValidation Validate(const std::vector<std::string>& selected_configs) {
     ValidateGlobals();
@@ -238,7 +239,7 @@ class ConfigFileValidator {
         result_.config.named.end());
     for (const std::string& selected : selected_configs) {
       if (disabled_.contains(selected)) {
-        result_.selected_configs_status = absl::InvalidArgumentError(
+        result_.status = absl::InvalidArgumentError(
             absl::StrCat("selected config [", selected, "] is disabled; see earlier diagnostics"));
         break;
       }
@@ -267,6 +268,7 @@ class ConfigFileValidator {
         result_.diagnostics.push_back(
             absl::StrCat(
                 path_, ":", line.number, ": invalid global config line '", line.text, "': ", status.message()));
+        result_.status.Update(absl::InvalidArgumentError(result_.diagnostics.back()));
       }
     }
     result_.config.global_lines = std::move(valid_lines);
@@ -353,6 +355,37 @@ ConfigFileValidation ValidateConfigFile(
     std::string_view path,
     config::Source source) {
   return ConfigFileValidator(std::move(file), path, source).Validate(selected_configs);
+}
+
+absl::Status ValidateConfigSelections(
+    const config::ConfigInputs& inputs,
+    const std::vector<config::ResolvedFlag>& resolved) {
+  absl::flat_hash_set<std::string> names;
+  const auto collect = [&](const config::ConfigFile& file) {
+    for (const config::IniSection& section : file.named) {
+      names.insert(section.name);
+    }
+  };
+  if (!inputs.no_system_config) {
+    collect(inputs.system);
+  }
+  if (!inputs.no_user_config) {
+    collect(inputs.user);
+  }
+  for (const config::ExplicitConfig& file : inputs.xffrc) {
+    collect(file.config);
+  }
+  constexpr std::string_view kPrefix = "--config=";
+  for (const config::ResolvedFlag& flag : resolved) {
+    if (flag.is_argument || !flag.flag.starts_with(kPrefix)) {
+      continue;
+    }
+    const std::string_view name = std::string_view(flag.flag).substr(kPrefix.size());
+    if (!config::IsBuiltinStyle(name) && !names.contains(name)) {
+      return absl::InvalidArgumentError(absl::StrCat("selected config [", name, "] is not defined in an active file"));
+    }
+  }
+  return absl::OkStatus();
 }
 
 absl::StatusOr<parser::Command> ApplyResolvedConfig(

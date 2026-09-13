@@ -167,4 +167,21 @@ test::help_documents_pager() {
   expect_output_contains "-ok" "${out}" # the primaries that suppress it
 }
 
+test::config_pager_follows_resolution_order_and_is_separate_from_safe_mode() {
+  local dir out
+  dir="$(test_tmpdir config_pager)"
+  printf '%s' content >"${dir}/victim"
+  cat >"${dir}/user.ini" <<'INI'
+--pager="sed 's/^/CONFIG:/'"
+[plain]
+--no-pager
+INI
+  out="$(XFF_TEST_USER_CONFIG="${dir}/user.ini" "$(_xff_bin)" "${dir}/victim" --safe --block-execution -printf '%f\n')"
+  expect_eq 'CONFIG:victim' "${out}"
+  out="$(XFF_TEST_USER_CONFIG="${dir}/user.ini" "$(_xff_bin)" "${dir}/victim" --config=plain -printf '%f\n')"
+  expect_eq victim "${out}"
+  out="$(XFF_TEST_USER_CONFIG="${dir}/user.ini" "$(_xff_bin)" "${dir}/victim" --no-pager -printf '%f\n')"
+  expect_eq victim "${out}"
+}
+
 test_runner

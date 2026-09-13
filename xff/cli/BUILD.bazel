@@ -73,6 +73,7 @@ cc_library(
         "@abseil-cpp//absl/types:span",
         "@mboworks_mbo//mbo/status:status_macros_cc",
         "@mboworks_mbo//mbo/types:optional_ref_cc",
+        "@xff_extras_api//:vfs_cc",
     ],
 )
 
@@ -102,6 +103,7 @@ cc_test(
     data = glob(["testdata/config_validation/**"]),
     deps = [
         ":config_validation_cc",
+        ":globals_cc",
         "//xff/config:config_cc",
         "//xff/config:ini_cc",
         "//xff/config:policy_cc",

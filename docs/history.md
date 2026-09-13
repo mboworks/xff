@@ -9,6 +9,22 @@ would otherwise be lost when the actionable backlog is simplified.
 The former combined roadmap and completion ledger through PR #683 is retained separately in
 [`history-roadmap.md`](history-roadmap.md).
 
+## Configuration validation and documentation audit
+
+The follow-up to PR #820 found invalid global lines could discard a mandatory block while the
+invocation continued, unknown selected names were ignored, bootstrap-only flags were accepted in
+INI without effect, and INI pager settings did not reach listing output. Validation now fails
+before actions for invalid globals and undefined explicit/composed selectors; inactive invalid named
+sections remain disabled atomically. Registry metadata rejects bootstrap flags in INI and documents
+config-only permission directives individually. Listing pager selection uses resolved configuration.
+Trusted and explicit configuration readers reject special files before reading, matching autoload's
+regular-file requirement while retaining intentional trusted/explicit symlinks to regular files.
+
+Complete-file regressions cover each source tier, deletion refusal on malformed policy, selector
+composition, pager precedence, and special-file rejection. The design overview now describes current
+flag types, configuration, safety boundaries, and implementation contracts. Pager allowlisting remains
+a separate design discussion; execution blocks deliberately do not govern pager commands.
+
 ## `.xffrc` admission order
 
 The release quick check identified admission resolving selected user sections in declaration order.

@@ -3,6 +3,10 @@
 
 # 0.4.0
 
+- Fail before actions on invalid configuration globals and undefined selected or composed configs.
+- Reject command-line-only options and non-regular configuration targets; document directive scopes
+  in individual help entries and apply INI pager settings to listing output.
+
 - Fix the user config location at the effective OS account home under `.config/xff/config`;
   environment variables cannot redirect trusted configuration.
 - Reject missing explicit `--xffrc` files and unreadable existing configuration, including
@@ -12,9 +16,10 @@
 - Add policy-aware `--no-system-config` and `--no-user-config` controls, and make
   `--no-config` suppress automatic configuration without bypassing mandatory
   system policy or an explicitly selected `--xffrc` file.
-- Add explicit negative skip-permission controls, require every permission control before the
-  first config section, enforce its trust-tier and uniqueness rules, and reject permissions from
-  explicitly selected `--xffrc` files. Each permission pair governs only its matching skip flag.
+- Add config-only `--require-system-config` / `--no-require-system-config` and
+  `--require-user-config` / `--no-require-user-config` pairs. Each pair appears once per permitted
+  file, in unsectioned globals; the system decision wins for user configuration. `--no-config`
+  requests both skips and fails if either existing file requires application.
 - Add config-selectable `--allow-xffrc` / `--no-allow-xffrc` controls for explicitly named config
   files, subject to the system policy gate and unavailable to the file being admitted.
 - Document every config-only allow/deny control individually in `--help=config`, including its

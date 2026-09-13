@@ -388,7 +388,7 @@ registry::Style ActiveStyle(const std::vector<std::string>& configs) {
   registry::Style style = registry::Style::kXff;  // the modern xff style is the default
   for (const std::string& name : configs) {
     std::string_view base = name;
-    base = base.substr(0, base.find(':'));  // "xff:2" pins an epoch; the base picks the style
+    base = base.substr(0, base.find(':'));  // The prefix picks the style; the full name selects a declared section.
     if (base == "find") {
       style = registry::Style::kFind;
     } else if (base == "xff") {

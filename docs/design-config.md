@@ -31,7 +31,9 @@ account record supplies the home directory; environment variables cannot redirec
 file. There is no system directive for relocating it.
 
 Missing automatic system or user config files are normal. An explicit `--xffrc=FILE`
-must exist. Every existing config must be readable; permission failures and dangling symlinks
+must exist. Automatic and explicit config paths must resolve to regular files; directory and FIFO inputs are errors.
+Symlinks to regular files are permitted for trusted/explicit paths, while autoloaded entries must
+themselves be regular files to avoid discovering configurations through links. Every existing config must be readable; permission failures and dangling symlinks
 are errors, including when a skip flag is requested. `--explain` reports consulted sources.
 
 The position-independent `--no-system-config` and `--no-user-config` suppress
@@ -54,7 +56,7 @@ the user pair is `--require-user-config` / `--no-require-user-config`.
 - Neither pair is allowed in named sections, explicit `.xffrc` files, or on the CLI.
 - `--no-config` requests both skips and fails if either existing file requires application.
 
-A duplicate system global line is diagnosed and ignored.
+A duplicate require directive is a hard error, even if both occurrences have the same value.
 
 `--allow-xffrc` / `--no-allow-xffrc` control admission of both explicit files and automatic discovery. They may occur in system
 unsectioned globals or user blocks. A system global denial cannot be overridden by the user file,
@@ -118,11 +120,12 @@ nothing; use `-name foo -o -name bar` for either name. Parentheses group express
 predicates and actions are parsed as an expression, then ANDed as a group with the command-line
 expression; global options retain their application order. `-type` and `-xtype` accept only the
 registered letters `b,c,d,f,l,p,s`, individually or as non-empty comma lists. `-type garbage` is
-a usage error on the CLI and invalidates its line or named section in any config file.
+a usage error on the CLI and in config globals; in a named section it disables that section.
 
-Every unconditional line is validated independently. An invalid line is diagnosed with its file,
-line number, source text, and command-line validation error, then ignored without suppressing other
-unconditional options. A named section is atomic: one invalid line disables the complete section,
+Every unconditional line is validated. An invalid line is a hard error with its file,
+line number, source text, and command-line validation error. Execution never continues with only
+part of the globals applied: a malformed option must not discard a restriction on the same line.
+This also applies when skipping a trusted file, which must still be inspected for mandatory policy. A named section is atomic: one invalid line disables the complete section,
 so a partially applied configuration is impossible. A section that selects a disabled section with
 `--config=NAME` is disabled transitively. Loading continues so independent sections remain usable,
 but explicitly selecting any directly or transitively disabled section is a usage error. For
@@ -133,7 +136,21 @@ There is no special policy rule language. System-only controls belong before the
 placing one in a named section disables that section atomically. `--detailed-block-policy` selects how this file interprets its safety blocks, including in named sections.
 Its value never changes the interpretation of another file. See [Safety](design-safety.md).
 
+Bootstrap flags `--no-config`, `--no-system-config`, `--no-user-config`, `--xffrc`,
+`--explain`, and help-only `--width` are command-line only. Using one in config globals
+fails; using one in a named section disables that section. Metadata requests such as
+`--help`, `--man`, and `--version` likewise belong on the CLI.
+Listing `--pager` / `--no-pager` settings follow normal configuration order. Metadata output
+is resolved before config loading, so its pager comes from CLI/environment settings.
+Pager command restrictions are separate from safety blocks and remain a deferred design topic.
+
 ### Names, refinements, and composition
+
+An explicit or composed `--config=NAME` must match a declaration in an active, admitted
+file. Validation happens after all files are available, allowing forward and cross-file references.
+Only the plain built-in styles `find`, `xff`, and `rg` need no declaration. An implicit
+invocation-name selector may have no matching section. A name such as `xff:2` still needs a
+declaration; its prefix selects a style, not a bundled version snapshot.
 
 Declare each `[NAME]` at most once in a file, including empty sections. Repeating a name disables
 all its declarations in that file; selecting it directly or through composition is a usage error.
@@ -227,9 +244,8 @@ choose a later built-in style. Styles set baseline traversal and presentation
 defaults; the find style restricts expression primaries, operators, and values,
 but explicitly supplied xff global controls remain available.
 
-There is no general `--feature` registry. Boolean capabilities use their own
-flag family or an existing valued option. A genuinely unsettled spelling may be
-gated temporarily by `--unstable=NAME` after its behavior is designed.
+Boolean capabilities use their own flag families or an existing option’s value set.
+Proposed spelling gates remain roadmap work in [TODO.md](../TODO.md).
 
 ## Safety and arming
 

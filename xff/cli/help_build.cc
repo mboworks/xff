@@ -80,7 +80,13 @@ Content RowsOf(absl::Span<const DocPair> pairs) {
 
 // The classification tags after a flag's term, e.g. (global, xff).
 std::vector<std::string> FlagTags(const GlobalFlag& flag) {
-  return {"global", flag.xff ? "xff" : "find"};
+  std::vector<std::string> tags = {"global", flag.xff ? "xff" : "find"};
+  if (flag.config_only) {
+    tags.emplace_back("config-only");
+  } else if (flag.cli_only) {
+    tags.emplace_back("command-line-only");
+  }
+  return tags;
 }
 
 // The classification tags after a primary's term, e.g. (test, find) or
@@ -174,6 +180,9 @@ Content FlagEntry(const GlobalFlag& flag, bool with_details = true, Audience aud
       Subsection group;
       group.children.push_back(Content{.node = std::move(rows)});
       details.push_back(Content{.node = std::move(group)});
+    }
+    if (flag.cli_only) {
+      details.push_back(ProseOf("Command-line only; rejected in configuration files."));
     }
     for (Content& block : ParseBlocks(flag.details)) {
       details.push_back(std::move(block));
@@ -1052,7 +1061,8 @@ Section ConfigSection(bool in_full) {
       "command-line spelling before the first "
       "section, and named configurations as plain `[NAME]` sections. For example, write `--color=auto`, then "
       "`[dev]` and `-E`; do not remove the option dashes or add a `config` section prefix. Global lines are "
-      "validated independently and an invalid one is diagnosed and ignored. Named sections are atomic: one "
+      "validated and an invalid one fails the run, including when a trusted file is requested to be skipped. Named "
+      "sections are atomic: one "
       "invalid line disables the entire section. A name may be declared only once per file, including empty "
       "sections; duplicate declarations disable that name. Other files may refine the same name. Disablement "
       "propagates through `--config=NAME` references, and "
@@ -1423,7 +1433,7 @@ Section CommandStructureSection() {
 
   Bullets rules;
   rules.items.push_back(ParseInline(
-      "Whole-run `--long` options are position-independent, so `--summary=ext` may appear before the paths or "
+      "Whole-run double-dash options are position-independent, so `--summary=ext` may appear before the paths or "
       "after the expression. They remain literal arguments inside an argument-taking primary such as `-exec` "
       "or `-printf`."));
   rules.items.push_back(ParseInline(

@@ -38,7 +38,7 @@ xff has two flavors selected by the program name: invoked as `find` it restricts
 
 A command consists of whole-run options, zero or more starting paths, and an optional expression. Starting paths come before the expression; the first expression primary begins with a single dash.
 
-- Whole-run `--long` options are position-independent, so `--summary=ext` may appear before the paths or after the expression. They remain literal arguments inside an argument-taking primary such as `-exec` or `-printf`.
+- Whole-run double-dash options are position-independent, so `--summary=ext` may appear before the paths or after the expression. They remain literal arguments inside an argument-taking primary such as `-exec` or `-printf`.
 - The compatibility globals `-H`, `-L`, `-P`, `-g`, `-j`, and `-z` are leading-only because a single-dash word can otherwise be an expression primary.
 - Adjacent tests and actions have an implicit `-a` (AND). Use `!` for NOT, `-o` for OR, and shell-quoted or escaped `(` and `)` for grouping. Evaluation is left to right and short-circuits.
 - With no starting path, xff uses `.`. With no explicit action, it prints each matching entry. A bare `--` ends option parsing so a path beginning with `-` can be named unambiguously.
@@ -88,7 +88,7 @@ File-requirement directives and the `--allow-xffrc` pair are config-only, not co
 
 With that user INI, `xff . --config=allow --config=deny --xffrc=task.rc` rejects loading before opening `task.rc`; reversing the selectors permits loading. The same rule applies to `--rc` and `--rc+`.
 
-System, user, and all `.xffrc` files share one INI grammar. Write unconditional options with their exact command-line spelling before the first section, and named configurations as plain `[NAME]` sections. For example, write `--color=auto`, then `[dev]` and `-E`; do not remove the option dashes or add a `config` section prefix. Global lines are validated independently and an invalid one is diagnosed and ignored. Named sections are atomic: one invalid line disables the entire section. A name may be declared only once per file, including empty sections; duplicate declarations disable that name. Other files may refine the same name. Disablement propagates through `--config=NAME` references, and selecting a disabled section is a usage error. Thus `-E development` disables its section because `-E` takes no value and `development` is an unexpected token.
+System, user, and all `.xffrc` files share one INI grammar. Write unconditional options with their exact command-line spelling before the first section, and named configurations as plain `[NAME]` sections. For example, write `--color=auto`, then `[dev]` and `-E`; do not remove the option dashes or add a `config` section prefix. Global lines are validated and an invalid one fails the run, including when a trusted file is requested to be skipped. Named sections are atomic: one invalid line disables the entire section. A name may be declared only once per file, including empty sections; duplicate declarations disable that name. Other files may refine the same name. Disablement propagates through `--config=NAME` references, and selecting a disabled section is a usage error. Thus `-E development` disables its section because `-E` takes no value and `development` is an unexpected token.
 
 A line may contain multiple directives: `--hidden --color=never` or `-name foo -name bar`. Adjacent predicates mean AND; use `-name foo -o -name bar` for either name. Config predicates and actions form an expression that is ANDed as a group with the CLI expression. Each primary consumes only its own arguments. Closed choices are validated by the shared CLI parser: `-type garbage` is invalid, while `-type f,d` is a valid any-of list.
 
@@ -311,24 +311,40 @@ Explicit-file arming with `--allow-exec` covers execution and deletion. It does 
 
 ### Config
 - `--config=NAME` - activate a named config or select the find, xff, or rg style; repeatable _(global, xff)_
-  A config style sets the defaults for ignore files, hidden files, sizes, sort order, and case. find restricts the expression to find-compatible vocabulary and defaults; whole-run xff globals remain available as explicit overrides. xff keeps find's grammar but sorts and prints human sizes; rg is opinionated (respect `.gitignore`, skip hidden, smart case). Every occurrence remains an active selector, so several named config blocks can apply. All config files use INI sections; each name is declared once per file and may be refined in other files. `--config=NAME` inside a section composes it with another config. Among the built-in style selectors, the last `find`, `xff`, or `rg` occurrence chooses the baseline; custom names do not change it. A `STYLE:EPOCH` spelling such as `xff:2` selects `STYLE` while retaining the full name as a config selector. See `--help=styles` for the per-style defaults and `--help=config` for layering.
-- `--no-config` - suppress automatic system and user configuration when authorized _(global, xff)_
+  A config style sets the defaults for ignore files, hidden files, sizes, sort order, and case. find restricts the expression to find-compatible vocabulary and defaults; whole-run xff globals remain available as explicit overrides. xff keeps find's grammar but sorts and prints human sizes; rg is opinionated (respect `.gitignore`, skip hidden, smart case). Every occurrence remains an active selector, so several named config blocks can apply. All config files use INI sections; each name is declared once per file and may be refined in other files. `--config=NAME` inside a section composes it with another config. Among the built-in style selectors, the last `find`, `xff`, or `rg` occurrence chooses the baseline; custom names do not change it. A `STYLE:EPOCH` spelling such as `xff:2` selects `STYLE` while retaining the full name as a config selector, which must be declared in an active config file. Only plain `find`, `xff`, and `rg` need no declaration. See `--help=styles` for the per-style defaults and `--help=config` for layering.
+- `--require-system-config` - require application of an existing system config _(global, xff, config-only)_
+  Config-only: unsectioned system config only, once per positive/negative pair. Prevents `--no-system-config` and `--no-config` from skipping an existing system file. Absence remains normal.
+- `--no-require-system-config` - permit skipping the system config _(global, xff, config-only)_
+  Config-only: unsectioned system config only, once per pair. Permits `--no-system-config` to suppress system defaults. Authoritative system controls are still inspected.
+- `--require-user-config` - require application of an existing user config _(global, xff, config-only)_
+  Config-only: unsectioned system or user config, once per pair per file. The system decision wins. Prevents `--no-user-config` and `--no-config` from skipping an existing user file.
+- `--no-require-user-config` - permit skipping the user config _(global, xff, config-only)_
+  Config-only: unsectioned system or user config, once per pair per file. The system decision wins. Without an applicable grant, an existing user file cannot be skipped.
+- `--allow-xffrc` - permit explicit and automatic .xffrc loading _(global, xff, config-only)_
+  Config-only: unsectioned system config or any user section. User decisions follow configuration application order, including composed sections. A system denial remains authoritative. Neither the CLI nor an .xffrc file may grant admission.
+- `--no-allow-xffrc` - reject explicit and automatic .xffrc loading _(global, xff, config-only)_
+  Config-only: unsectioned system config or any user section. A system denial cannot be overridden by user or .xffrc content, or by skipping system defaults. Admission is checked before files are opened.
+- `--no-config` - suppress automatic system and user configuration when authorized _(global, xff, command-line-only)_
+  Command-line only; rejected in configuration files.
   Disables `.xffrc` autoloading and suppresses system defaults and user configuration. A present source is still inspected for policy. Equivalent to requesting both `--no-system-config` and `--no-user-config`: each existing file must permit its own suppression, or the entire request is rejected. Missing files need no permission. An explicitly named `--xffrc=FILE` remains active. Ignore files such as `.gitignore` and `.xffignore` are traversal inputs, not config files, and are unaffected.
-- `--no-system-config` - suppress system defaults when the system config permits it _(global, xff)_
+- `--no-system-config` - suppress system defaults when the system config permits it _(global, xff, command-line-only)_
+  Command-line only; rejected in configuration files.
   Suppresses `/etc/xff.ini` defaults but still reads its leading authoritative config-only permission controls. A present file must grant permission with `--no-require-system-config`; `--require-system-config` explicitly denies it. Without a grant, the request is a usage error. The user config and explicit `--xffrc` files remain active.
-- `--no-user-config` - suppress user configuration when an authoritative config permits it _(global, xff)_
+- `--no-user-config` - suppress user configuration when an authoritative config permits it _(global, xff, command-line-only)_
+  Command-line only; rejected in configuration files.
   Suppresses the selected user config after inspecting it for permission. The system config may authoritatively grant or deny permission with `--no-require-user-config` / `--require-user-config`; without either, the user file may decide for itself with the same pair. Without a grant, skipping a present user file is a usage error. System defaults and explicit `--xffrc` files remain active.
 - `--rc[-|+]` - discover .xffrc in argument roots; minus disables, plus includes descendants _(global, xff)_
   Defaults to `--rc-` (off). `--rc` loads `.xffrc` in each directory search root; `--rc+` also searches descendant directories. With no roots, the default root is `.`. Discovery finishes before execution, in argument order, parent before children and lexicographically among siblings. Files contribute to the whole invocation, after trusted defaults and before CLI flags. Discovery ignores search filters and never follows directory symlinks or enters archives. Only system/user configuration and the CLI may set this mode. `--no-config` disables discovery. Unsectioned content requires a trusted `--allow-rc-globals` grant; otherwise loading fails. Explicit `--xffrc=FILE` remains independent.
   Affects: --xffrc, --explain
   Affected by: --allow-rc-globals, --no-allow-rc-globals
-- `--allow-rc-globals` - permit unsectioned content in automatically discovered .xffrc files _(global, xff)_
+- `--allow-rc-globals` - permit unsectioned content in automatically discovered .xffrc files _(global, xff, config-only)_
   Config-only: once per pair in unsectioned system/user configuration. A system `--no-allow-rc-globals` decision cannot be overridden. Without a grant, an autoloaded file containing unsectioned content fails before execution. Named sections remain available; explicit `--xffrc=FILE` is unaffected. This permission does not arm dangerous actions.
   Affects: --rc
-- `--no-allow-rc-globals` - reject unsectioned content in automatically discovered .xffrc files _(global, xff)_
+- `--no-allow-rc-globals` - reject unsectioned content in automatically discovered .xffrc files _(global, xff, config-only)_
   The default without an explicit grant. Config-only: once per pair before all sections in system/user configuration. A system denial is authoritative. Rejection includes unsectioned expressions and `--config=NAME`; nothing is silently dropped. Explicit `--xffrc=FILE` keeps its existing global and named-section behavior.
   Affects: --rc
-- `--xffrc=FILE` - also load a specific config file (a non-arming tier; see --allow-exec) _(global, xff)_
+- `--xffrc=FILE` - also load a specific config file (a non-arming tier; see --allow-exec) _(global, xff, command-line-only)_
+  Command-line only; rejected in configuration files.
   Loads FILE as a config tier above the user config (naming it is consent to LOAD it). It is a NON-ARMING tier: execution and deletion actions - the exec family (-exec/-execdir/-ok, -capture) or -delete - are inert unless --allow-exec is set from a trusted tier (the CLI or the user/system config, never from an --xffrc file itself). An unarmed dangerous line is dropped with a one-line warning. Repeatable; later files win.
   Affects: --allow-exec
   Affected by: --rc, --allow-exec
@@ -336,7 +352,8 @@ Explicit-file arming with `--allow-exec` covers execution and deletion. It does 
   Permits the sensitive/destructive directives (the exec family -exec/-execdir/-ok and -capture, and the destructive -delete) carried by an explicit or autoloaded `.xffrc` file to actually run. Honored only from a trusted tier - typed on the CLI, or set in the user/system config - never from an --xffrc file (so a named config cannot authorize itself). Arming cannot bypass unconditional blocks or the active safe profile; see `--help=safety`.
   Affects: --xffrc
   Affected by: --xffrc
-- `--explain` - print the resolved configuration and exit _(global, xff)_
+- `--explain` - print the resolved configuration and exit _(global, xff, command-line-only)_
+  Command-line only; rejected in configuration files.
   Prints the active style, every config source consulted and whether it was found, resolved flags in application order with their provenance, rejected config directives, and the style-default table with this run's effective values. It performs enabled `.xffrc` discovery but does not evaluate the expression. Existing unreadable config files and missing explicit `--xffrc` files are errors.
   Affected by: --rc
 
@@ -736,7 +753,8 @@ Explicit-file arming with `--allow-exec` covers execution and deletion. It does 
 - `--si` - human sizes in SI (kB/MB, 1000^N); an alias for --human=si (the --human default) _(global, xff)_
 - `--buffer[=auto|off|all|N[kMGT]|NMB|NMiB]` - buffer to size columns (-ls / tables): auto, off, all, N[kMGT] rows, or NMB/NMiB bytes _(global, xff)_
   Row windows use a bare count or decimal `k`/`M`/`G`/`T` multiplier. Byte budgets require an explicit trailing `B`: `B`/`kB`/`MB`/.../`EB` are SI, while `KiB`/`MiB`/.../`EiB` are IEC. The distinct suffixes keep rows and bytes unambiguous.
-- `--width[=auto|none|COLS]` - wrap column for plain --help text: auto (terminal width, else unwrapped), none, or a count _(global, xff)_
+- `--width[=auto|none|COLS]` - wrap column for plain --help text: auto (terminal width, else unwrapped), none, or a count _(global, xff, command-line-only)_
+  Command-line only; rejected in configuration files.
   Wraps the flowing text of --help and --help=TOPIC (option and topic descriptions) to a column width. auto uses the terminal width when stdout is a terminal (honoring $COLUMNS), and leaves output unwrapped when it is not (a pipe or file); none (or 0) disables wrapping; a positive integer sets a fixed width. Aligned vocabulary tables and example blocks keep their own layout. Does not affect the file listing, `--man`, or formatted full help.
 - `--pager[=help|auto|always|never|COMMAND]` - page output: help only, auto (all on a tty), always, never, or an explicit command _(global, xff)_
   One of:
@@ -755,7 +773,7 @@ Explicit-file arming with `--allow-exec` covers execution and deletion. It does 
 - `--exit-match` - keep output; exit 0 if anything matched, else 1 _(global, xff)_
 
 ### Safety
-- `--detailed-block-policy=LIST` - select categories with dedicated blocking controls (config only) _(global, xff)_
+- `--detailed-block-policy=LIST` - select categories with dedicated blocking controls (config only) _(global, xff, config-only)_
   One of:
 
   - `archive` - use dedicated controls for archive output and member edits
@@ -763,9 +781,9 @@ Explicit-file arming with `--allow-exec` covers execution and deletion. It does 
   - `output` - use dedicated controls within the declared output root
 
   A comma-separated category list; empty means ordinary file controls for all categories (default). `archive`, `temp`, and `output` are supported. Allowed once before all sections in system or user configuration. Each file chooses its own policy, including for its named sections. Neither named sections, explicit `.xffrc` files, nor the CLI may set it. See `--help=safety` for the operation table and archive replacement tradeoff.
-- `--temp-root=PATH` - declare an existing absolute temp root (config only) _(global, xff)_
+- `--temp-root=PATH` - declare an existing absolute temp root (config only) _(global, xff, config-only)_
   Allowed once in unsectioned system or user INI; a system declaration wins. Permissions cover descendants recursively; the root itself remains protected. Roots and descendant traversal must not contain symlinks. See `--help=safety`.
-- `--output-root=PATH` - declare an existing absolute output root (config only) _(global, xff)_
+- `--output-root=PATH` - declare an existing absolute output root (config only) _(global, xff, config-only)_
   Allowed once in unsectioned system or user INI; a system declaration wins. Permissions cover descendants recursively; the root itself remains protected. Roots and descendant traversal must not contain symlinks. See `--help=safety`.
 - `--block-directory-creation` - unconditionally prohibit directory creation; later settings cannot clear it _(global, xff)_
   See `--help=safety` for directory scope, capability composition, and dry-run limits.
