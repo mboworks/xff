@@ -17,6 +17,7 @@ load("@mboworks_bashtest//bashtest:bashtest.bzl", "bashtest")
 load("@mboworks_mbo//mbo/diff:diff.bzl", "diff_test")
 load("//xff:cc.bzl", "cc_binary", "cc_library", "cc_test")
 load("//xff:extras.bzl", "XFF_ARCHIVE_ONLY", "XFF_FULL_ONLY")  # target_compatible_with gates for the extras builds
+load(":extras_deps.bzl", "FULL_DEPS")
 load(":golden.bzl", "xff_golden_cases")
 
 package(default_visibility = ["//visibility:private"])
@@ -33,13 +34,12 @@ RELEASE_ELF_LINKOPTS = select({
     "//conditions:default": [],
 })
 
-# main.cc (the CLI entry point, `main()` included) as a library, so the lean `xff` and the extended
-# `xff_full` are both thin binaries over it: main.cc compiles once, neither binary carries its own
-# main(), and `xff_full` differs only by the composable extras it additionally links (see
-# xff/BUILD.bazel). Sharing one main() is why the two cannot drift.
+# Shared CLI implementation; production and isolated test entry points supply arguments.
 cc_library(
     name = "main_cc",
     srcs = ["main.cc"],
+    hdrs = ["main.h"],
+    visibility = ["//xff/cli/testing:__pkg__"],
     deps = [
         ":config_validation_cc",
         ":globals_cc",
@@ -70,6 +70,7 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/types:span",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
         "@mboworks_mbo//mbo/types:optional_ref_cc",
     ],
 )
@@ -119,6 +120,7 @@ cc_test(
 # runs against, and the one built by `//...`.
 cc_binary(
     name = "xff",
+    srcs = ["entry.cc"],
     linkopts = RELEASE_ELF_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [":main_cc"],
@@ -131,34 +133,11 @@ cc_binary(
 # extras present. The PCRE2 backend (@xff_pcre2) links in via the `select` on //xff:xff_pcre_enabled.
 cc_binary(
     name = "xff_full",
+    srcs = ["entry.cc"],
     linkopts = RELEASE_ELF_LINKOPTS,
     target_compatible_with = XFF_FULL_ONLY,
     visibility = ["//visibility:public"],
-    deps = [":main_cc"] + select({
-        "//xff:xff_archive_on": ["@xff_archive//:archive_register_cc"],
-        "//conditions:default": [],
-    }) + select({
-        "//xff:xff_asar_on": ["@xff_asar//:asar_register_cc"],
-        "//conditions:default": [],
-    }) + select({
-        "//xff:xff_brotli_on": ["@xff_brotli//:brotli_register_cc"],
-        "//conditions:default": [],
-    }) + select({
-        "//xff:xff_fuse_on": ["@xff_fuse//:fuse_register_cc"],
-        "//conditions:default": [],
-    }) + select({
-        "//xff:xff_language_db_on": ["@xff_language_db//:language_db_register_cc"],
-        "//conditions:default": [],
-    }) + select({
-        "//xff:xff_mime_db_on": ["@xff_mime_db//:mime_db_register_cc"],
-        "//conditions:default": [],
-    }) + select({
-        "//xff:xff_pcre_on": ["@xff_pcre2//:pcre2_backend_cc"],
-        "//conditions:default": [],
-    }) + select({
-        "//xff:xff_squashfs_on": ["@xff_squashfs//:squashfs_register_cc"],
-        "//conditions:default": [],
-    }),
+    deps = [":main_cc"] + FULL_DEPS,
 )
 
 # The single SOT behind every generated reference: BuildReference() (help_build.cc) assembles
@@ -563,7 +542,7 @@ genrule(
         "//conditions:default": [],
     }),
     outs = ["NOTICE.actual"],
-    cmd = "XFF_CONFIG=/nonexistent $(location :xff_full) --help=notice > $@",
+    cmd = "$(location :xff_full) --help=notice > $@",
     target_compatible_with = XFF_FULL_ONLY,
     tools = [":xff_full"],
 )
@@ -645,13 +624,13 @@ cc_test(
 )
 
 # Binary-level test of `xff --explain`: exercises cli/main.cc's real config
-# wiring (XFF_CONFIG discovery -> resolve -> effective-config dump) end to end,
+# wiring (injected config discovery -> resolve -> effective-config dump) end to end,
 # via mboworks/bashtest (expect_* helpers).
 bashtest(
     name = "explain_test",
     size = "small",
     srcs = ["explain_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of the composable-extras UX in the lean (default) build: a disabled extra flag
@@ -661,7 +640,7 @@ bashtest(
     name = "extras_test",
     size = "small",
     srcs = ["extras_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # Binary-level test of the strict find style: cli/main.cc's ActiveStyle +
@@ -673,7 +652,7 @@ bashtest(
     srcs = ["style_test.sh"],
     data = [
         "testdata/config_validation/multiple/user.rc",
-        ":xff",
+        "//xff/cli/testing:xff",
     ],
 )
 
@@ -685,7 +664,7 @@ bashtest(
     name = "content_test",
     size = "small",
     srcs = ["content_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of -cmp: byte-exact content comparison (TRUE = identical); `! -cmp`
@@ -695,7 +674,7 @@ bashtest(
     name = "cmp_test",
     size = "small",
     srcs = ["cmp_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of -similar's reference-file word-shingle Jaccard matcher: default and explicit
@@ -704,7 +683,7 @@ bashtest(
     name = "similarity_test",
     size = "small",
     srcs = ["similarity_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of --color=auto|always|never: only --color=always forces the
@@ -714,7 +693,7 @@ bashtest(
     name = "color_test",
     size = "small",
     srcs = ["color_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of --pager: never prints to stdout, always pipes through the pager
@@ -724,7 +703,7 @@ bashtest(
     name = "pager_test_sh",
     size = "small",
     srcs = ["pager_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of the -grep action: prints path:line:text per matching content
@@ -735,42 +714,42 @@ bashtest(
     name = "collect_test",
     size = "small",
     srcs = ["collect_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 bashtest(
     name = "first_test",
     size = "small",
     srcs = ["first_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 bashtest(
     name = "top_test",
     size = "small",
     srcs = ["top_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 bashtest(
     name = "max_results_test",
     size = "small",
     srcs = ["max_results_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 bashtest(
     name = "fuzzy_test",
     size = "small",
     srcs = ["fuzzy_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 bashtest(
     name = "grep_test",
     size = "small",
     srcs = ["grep_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of the extended `xff_full` binary: its `_full` invocation name resolves to the xff
@@ -780,7 +759,7 @@ bashtest(
     name = "full_binary_test",
     size = "small",
     srcs = ["full_binary_test.sh"],
-    data = [":xff_full"],
+    data = ["//xff/cli/testing:xff_full"],
     tags = ["release-binary"],
     target_compatible_with = XFF_FULL_ONLY,
 )
@@ -793,7 +772,7 @@ bashtest(
     size = "small",
     srcs = ["full_extras_test.sh"],
     data = [
-        ":xff_full",
+        "//xff/cli/testing:xff_full",
         "@xff_archive//:mini_tar",
         "@xff_squashfs//:mini_sqfs",
     ],
@@ -827,8 +806,8 @@ bashtest(
     size = "small",
     srcs = ["parity_test.sh"],
     data = [
-        ":xff",
-        ":xff_full",
+        "//xff/cli/testing:xff",
+        "//xff/cli/testing:xff_full",
     ],
     target_compatible_with = XFF_FULL_ONLY,
 )
@@ -860,7 +839,7 @@ bashtest(
     name = "ignore_test",
     size = "small",
     srcs = ["ignore_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of per-directory ignore files (--ignore-files): .ignore /
@@ -870,7 +849,7 @@ bashtest(
     name = "ignore_files_test",
     size = "small",
     srcs = ["ignore_files_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of -g / --gitignore: per-directory .gitignore is opt-in (off by
@@ -879,7 +858,7 @@ bashtest(
     name = "ignore_gitignore_test",
     size = "small",
     srcs = ["ignore_gitignore_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of every --sort mode + -j / --jobs: whole-tree coverage, deterministic tree
@@ -888,7 +867,7 @@ bashtest(
     name = "sort_test",
     size = "small",
     srcs = ["sort_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of --summary output: right-aligned human table (grouped digits)
@@ -897,7 +876,7 @@ bashtest(
     name = "summary_test",
     size = "small",
     srcs = ["summary_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of --format=csv / --format=tsv: the header row is emitted by default
@@ -907,7 +886,7 @@ bashtest(
     name = "csv_test",
     size = "small",
     srcs = ["csv_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of -diff (mbo::diff backend): a unified diff by default, the -diff:STYLE
@@ -916,7 +895,7 @@ bashtest(
     name = "diff_test",
     size = "small",
     srcs = ["diff_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of -hash (xff/hash -> mbo::digest): the `<digest>  <path>` sha256sum layout,
@@ -926,7 +905,7 @@ bashtest(
     name = "hash_test",
     size = "small",
     srcs = ["hash_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of -hasheq (the manifest-verification companion of -hash): TRUE when the file's
@@ -939,7 +918,7 @@ bashtest(
     name = "archive_test",
     size = "small",
     srcs = ["archive_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # The diving half of the --archive surface, in a binary that HAS the reader (XFF_ARCHIVE_ONLY, so a
@@ -949,7 +928,7 @@ bashtest(
     name = "archive_dive_test",
     size = "small",
     srcs = ["archive_dive_test.sh"],
-    data = [":xff_full"],
+    data = ["//xff/cli/testing:xff_full"],
     target_compatible_with = XFF_ARCHIVE_ONLY,
 )
 
@@ -960,7 +939,7 @@ bashtest(
     name = "archive_pack_test",
     size = "small",
     srcs = ["archive_pack_test.sh"],
-    data = [":xff_full"],
+    data = ["//xff/cli/testing:xff_full"],
     target_compatible_with = XFF_ARCHIVE_ONLY,
 )
 
@@ -968,7 +947,7 @@ bashtest(
     name = "hasheq_test",
     size = "small",
     srcs = ["hasheq_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of --histogram: ASCII vs Unicode bars (--unicode), count-per-bucket sorted by
@@ -977,7 +956,7 @@ bashtest(
     name = "histogram_test",
     size = "small",
     srcs = ["histogram_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # Golden output of -diff per mode: xff walks tree `a` and diffs each file against `b/{relpath}`,
@@ -1020,7 +999,7 @@ bashtest(
     name = "lines_test",
     size = "small",
     srcs = ["lines_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of -ls column alignment (via the ColumnBuffer) and the --buffer
@@ -1029,7 +1008,7 @@ bashtest(
     name = "ls_test",
     size = "small",
     srcs = ["ls_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test of --exact / FS-native name matching: --exact forces byte-exact,
@@ -1039,7 +1018,7 @@ bashtest(
     name = "exact_test",
     size = "small",
     srcs = ["exact_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # Binary-level test of -exec, which spawns real children: the `+` batch form runs
@@ -1049,7 +1028,7 @@ bashtest(
     name = "exec_test",
     size = "small",
     srcs = ["exec_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # Binary-level test of the exit-code model: default find semantics (0/2, match
@@ -1060,7 +1039,7 @@ bashtest(
     name = "exit_test",
     size = "small",
     srcs = ["exit_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # Binary-level test that --help / -h print a real usage page (not a stub) and exit
@@ -1069,7 +1048,7 @@ bashtest(
     name = "help_test",
     size = "small",
     srcs = ["help_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
     tags = ["release-binary"],
 )
 
@@ -1079,7 +1058,7 @@ bashtest(
     name = "help_topic_test",
     size = "small",
     srcs = ["help_topic_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
 )
 
 # End-to-end test that `xff --man` emits roff that renders through a real formatter
@@ -1090,5 +1069,15 @@ bashtest(
     name = "man_test",
     size = "small",
     srcs = ["man_test.sh"],
-    data = [":xff"],
+    data = ["//xff/cli/testing:xff"],
+)
+
+bashtest(
+    name = "config_paths_test",
+    size = "small",
+    srcs = ["config_paths_test.sh"],
+    data = [
+        ":xff",
+        "//xff/cli/testing:xff",
+    ],
 )

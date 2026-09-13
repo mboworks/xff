@@ -28,9 +28,9 @@ set -euo pipefail
 source "${mboworks_bashtest}"
 
 _xff_bin() {
-  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/xff"
+  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testing/xff"
   if [[ ! -x "${bin}" ]]; then
-    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/xff' 2>/dev/null | head -1)"
+    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/testing/xff' 2>/dev/null | head -1)"
   fi
   echo "${bin}"
 }
@@ -39,10 +39,10 @@ XFF_BIN="$(_xff_bin)"
 readonly XFF_BIN
 readonly TAB=$'\t'
 
-# Isolate from any real user/system config (XFF_CONFIG points at a nonexistent path), and keep
+# Isolate from any real user/system config (XFF_TEST_USER_CONFIG points at a nonexistent path), and keep
 # git from reading a developer's global identity. `xff ...` then reads exactly as the recipes do.
 export GIT_CONFIG_NOSYSTEM=1
-xff() { XFF_CONFIG="${TEST_TMPDIR}/none" "${XFF_BIN}" "$@"; }
+xff() { XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "${XFF_BIN}" "$@"; }
 
 FIX="$(test_tmpdir fixture)"
 readonly FIX

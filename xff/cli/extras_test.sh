@@ -26,16 +26,16 @@ set -euo pipefail
 source "${mboworks_bashtest}"
 
 _xff_bin() {
-  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/xff"
+  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testing/xff"
   if [[ ! -x "${bin}" ]]; then
-    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/xff' 2>/dev/null | head -1)"
+    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/testing/xff' 2>/dev/null | head -1)"
   fi
   echo "${bin}"
 }
 
 test::disabled_extra_flag_is_a_hard_error_when_used() {
   local out rc
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --archive . 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --archive . 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains "no archive support" "${out}"
   expect_output_contains "--//xff:xff_archive" "${out}" # names what to rebuild with
@@ -45,7 +45,7 @@ test::disabled_extra_flag_is_listed_with_a_not_built_note() {
   # The flag is NOT hidden or reported as unknown: --help lists it in its group with a
   # note that its build extra is absent and what to rebuild with.
   local out
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --help 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --help 2>&1)"
   expect_matches "\-\-archive" "${out}" # listed, not hidden
   expect_output_contains "NOT built into this binary" "${out}"
   expect_output_contains "--//xff:xff_archive" "${out}" # names what to rebuild with
@@ -53,7 +53,7 @@ test::disabled_extra_flag_is_listed_with_a_not_built_note() {
 
 test::disabled_extra_help_topic_marks_it_not_built_in() {
   local out rc
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --help=--archive 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --help=--archive 2>&1)" && rc=0 || rc=$?
   expect_eq "0" "${rc}"
   expect_matches "\-\-archive" "${out}"
   expect_output_contains "NOT built into this binary" "${out}"
@@ -65,7 +65,7 @@ test::help_extras_lists_every_build_extra_and_availability() {
   # Neither pcre2 (the --regextype value extra) nor archive (a flag extra) is built in here, and
   # each names the flag to rebuild with.
   local out rc
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --help=extras 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --help=extras 2>&1)" && rc=0 || rc=$?
   expect_eq "0" "${rc}"
   expect_output_contains "build extras" "${out}"
   expect_matches "pcre2.*not built in" "${out}"

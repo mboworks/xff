@@ -52,11 +52,11 @@ load("@mboworks_mbo//mbo/diff:diff.bzl", "diff_test")
 # stdout through the optional normalizer, and capture it. Placeholders are substituted with str
 # .replace (not .format) so `{relpath}` / `{name}` field templates in `args` survive verbatim; the
 # `__...__` tokens avoid `@@` (Bazel canonical-repo syntax, which buildifier flags) and `{}` (field
-# templates). XFF_CONFIG points off any real .xffrc so the run is hermetic.
+# templates). The test entry point injects absent trusted config paths so the run is hermetic.
 _CMD = (
     "tmp=$$(mktemp -d) && cp $(location __SETUP__) $$tmp/setup.sh && " +
-    "bin=$$(pwd)/$(location //xff/cli:xff) && " +
-    "( cd $$tmp && bash setup.sh && XFF_CONFIG=/nonexistent $$bin __FLAGS__ ) __NORM__ > $@"
+    "bin=$$(pwd)/$(location //xff/cli/testing:xff) && " +
+    "( cd $$tmp && bash setup.sh && $$bin __FLAGS__ ) __NORM__ > $@"
 )
 
 def xff_golden_cases(name, setup, cases, sort = "tree", normalize = None):
@@ -100,7 +100,7 @@ def xff_golden_cases(name, setup, cases, sort = "tree", normalize = None):
                 "//conditions:default": [],
             }),
             outs = [actual],
-            tools = ["//xff/cli:xff"],
+            tools = ["//xff/cli/testing:xff"],
             cmd = cmd,
         )
         diff_test(

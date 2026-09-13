@@ -27,8 +27,8 @@ trap cleanup EXIT
 
 markdown_tmp="$(mktemp "${markdown_output}.tmp.XXXXXX")"
 html_tmp="$(mktemp "${html_output}.tmp.XXXXXX")"
-XFF_CONFIG=/nonexistent "${binary}" --help=full:markdown >"${markdown_tmp}"
-XFF_CONFIG=/nonexistent "${binary}" --help=full:html >"${html_tmp}"
+"${binary}" --help=full:markdown >"${markdown_tmp}"
+"${binary}" --help=full:html >"${html_tmp}"
 
 [[ -s "${markdown_tmp}" ]] || {
   echo "generate_reference: empty Markdown output" >&2

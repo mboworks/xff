@@ -108,6 +108,7 @@ cc_library(
     name = "loader_cc",
     srcs = [
         "autoload.cc",
+        "host_paths.cc",
         "loader.cc",
     ],
     hdrs = ["loader.h"],
@@ -136,6 +137,7 @@ cc_test(
         ":loader_cc",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )
 

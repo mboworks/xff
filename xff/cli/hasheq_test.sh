@@ -25,9 +25,9 @@ set -euo pipefail
 source "${mboworks_bashtest}"
 
 _xff_bin() {
-  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/xff"
+  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testing/xff"
   if [[ ! -x "${bin}" ]]; then
-    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/xff' 2>/dev/null | head -1)"
+    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/testing/xff' 2>/dev/null | head -1)"
   fi
   echo "${bin}"
 }
@@ -44,10 +44,10 @@ test::hasheq_matches_and_mismatches() {
   mkdir -p "${dir}"
   printf 'abc' >"${dir}/f.txt"
   # A matching EXPECTED (the sha256 of "abc") makes -hasheq true, so the implicit print emits it.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hasheq "${_SHA256_ABC}" 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hasheq "${_SHA256_ABC}" 2>&1)"
   expect_output_contains "${dir}/f.txt" "${out}"
   # A non-matching EXPECTED makes -hasheq false, so nothing prints.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hasheq "deadbeef" 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hasheq "deadbeef" 2>&1)"
   expect_output_not_contains "${dir}/f.txt" "${out}"
 }
 
@@ -57,7 +57,7 @@ test::hasheq_reads_expected_from_a_define() {
   mkdir -p "${dir}"
   printf 'abc' >"${dir}/f.txt"
   # EXPECTED is a field template, so a {def.NAME} value drives the comparison (a sidecar manifest).
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --define="SUMS=${_SHA256_ABC}" \
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --define="SUMS=${_SHA256_ABC}" \
     "${dir}" -name f.txt -hasheq '{def.SUMS}' 2>&1)"
   expect_output_contains "${dir}/f.txt" "${out}"
 }
@@ -69,7 +69,7 @@ test::hasheq_hex_is_case_insensitive() {
   printf 'abc' >"${dir}/f.txt"
   upper="$(printf '%s' "${_SHA256_ABC}" | tr 'a-f' 'A-F')"
   # An upper-cased hex expected still matches the lower-cased computed digest (hex folds case).
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hasheq "${upper}" 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hasheq "${upper}" 2>&1)"
   expect_output_contains "${dir}/f.txt" "${out}"
 }
 
@@ -79,10 +79,10 @@ test::hasheq_algo_and_encoding_selectors() {
   mkdir -p "${dir}"
   printf 'abc' >"${dir}/f.txt"
   # -hasheq:md5 checks against the md5 digest ...
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hasheq:md5 "${_MD5_ABC}" 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hasheq:md5 "${_MD5_ABC}" 2>&1)"
   expect_output_contains "${dir}/f.txt" "${out}"
   # ... and -hasheq:sha256/base64 against the base64-encoded digest.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hasheq:sha256/base64 "${_B64_ABC}" 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hasheq:sha256/base64 "${_B64_ABC}" 2>&1)"
   expect_output_contains "${dir}/f.txt" "${out}"
 }
 
@@ -93,7 +93,7 @@ test::not_hasheq_selects_drift() {
   printf 'abc' >"${dir}/good.txt"
   printf 'xyz' >"${dir}/bad.txt"
   # `! -hasheq EXPECTED` with the sha256 of "abc" selects the file whose content changed.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -type f ! -hasheq "${_SHA256_ABC}" 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -type f ! -hasheq "${_SHA256_ABC}" 2>&1)"
   expect_output_contains "${dir}/bad.txt" "${out}"
   expect_output_not_contains "${dir}/good.txt" "${out}"
 }
@@ -104,11 +104,11 @@ test::hasheq_bad_spec_and_find_style_are_usage_errors() {
   mkdir -p "${dir}"
   printf 'abc' >"${dir}/f.txt"
   # An unknown algorithm in -hasheq:ALGO is a usage error.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hasheq:crc32 x 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hasheq:crc32 x 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains 'unknown algorithm or encoding' "${out}"
   # -hasheq is an xff extension; the find style rejects it.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --config=find "${dir}" -hasheq x 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --config=find "${dir}" -hasheq x 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains 'find style' "${out}"
 }

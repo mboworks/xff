@@ -15,6 +15,7 @@
 
 #include "xff/config/loader.h"
 
+#include <array>
 #include <map>
 #include <optional>
 #include <string>
@@ -22,29 +23,35 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/testing/status.h"
 #include "xff/config/config.h"
 
 namespace xff::config {
 namespace {
 
+using ::mbo::testing::IsOkAndHolds;
+using ::mbo::testing::StatusIs;
 using ::testing::AllOf;
 using ::testing::ElementsAre;
+using ::testing::EndsWith;
 using ::testing::Field;
 using ::testing::FieldsAre;
+using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsTrue;
 using ::testing::SizeIs;
+using ::testing::StartsWith;
 
 // A FileReader backed by an in-memory path->contents map; absent paths read as
-// nullopt (missing file).
+// NotFound (missing file).
 struct FakeFs {
   std::map<std::string, std::string> files;
 
-  std::optional<std::string> Read(std::string_view path) const {
+  absl::StatusOr<std::string> Read(std::string_view path) const {
     if (const auto it = files.find(std::string(path)); it != files.end()) {
       return it->second;
     }
-    return std::nullopt;
+    return absl::NotFoundError("missing");
   }
 };
 
@@ -60,18 +67,12 @@ testing::Matcher<ConfigSource> SourceIs(const std::string& path, Source layer, b
 
 struct LoaderTest : ::testing::Test {};
 
-TEST_F(LoaderTest, UserConfigPathPrefersXffConfigThenXdgThenHome) {
-  DiscoveryOptions opts;
-  opts.home = "/home/u";
-  EXPECT_THAT(UserConfigPath(opts), "/home/u/.config/xff/config");
-  opts.xdg_config_home = "/xdg";
-  EXPECT_THAT(UserConfigPath(opts), "/xdg/xff/config");
-  opts.xff_config = "/explicit/rc";
-  EXPECT_THAT(UserConfigPath(opts), "/explicit/rc");
-}
-
-TEST_F(LoaderTest, UserConfigPathEmptyWhenNoEnv) {
-  EXPECT_THAT(UserConfigPath(DiscoveryOptions{}), IsEmpty());
+TEST_F(LoaderTest, UserConfigPathUsesOnlyAccountHome) {
+  EXPECT_THAT(UserConfigPath("/home/u"), IsOkAndHolds("/home/u/.config/xff/config"));
+  EXPECT_THAT(UserConfigPath("/home/u/"), IsOkAndHolds("/home/u/.config/xff/config"));
+  EXPECT_THAT(UserConfigPath("/"), IsOkAndHolds("/.config/xff/config"));
+  EXPECT_THAT(UserConfigPath(""), StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(UserConfigPath("relative"), StatusIs(absl::StatusCode::kInvalidArgument));
 }
 
 TEST_F(LoaderTest, DiscoverAppliesSystemThenUserLayersWithActiveConfig) {
@@ -79,9 +80,9 @@ TEST_F(LoaderTest, DiscoverAppliesSystemThenUserLayersWithActiveConfig) {
   fs.files["/etc/xff.ini"] = "--color=auto\n";
   fs.files["/home/u/.config/xff/config"] = "--sort\n\n[xff]\n--format=jsonl\n[find]\n--warn";
   DiscoveryOptions opts;
-  opts.home = "/home/u";
+  opts.paths.user = "/home/u/.config/xff/config";
   opts.configs = {"xff"};  // the find: line stays inert
-  const ConfigInputs in = Discover(opts, [&fs](std::string_view path) { return fs.Read(path); });
+  ASSERT_OK_AND_ASSIGN(const auto in, Discover(opts, [&fs](std::string_view path) { return fs.Read(path); }));
   EXPECT_THAT(
       ResolveConfig(in), ElementsAre(
                              FlagIs("--color=auto", Source::kSystem), FlagIs("--sort", Source::kUser),
@@ -94,7 +95,7 @@ TEST_F(LoaderTest, ExplicitXffrcFilesFormTheirOwnTierInOrder) {
   fs.files["/extra.rc"] = "--color=never\n";
   DiscoveryOptions opts;
   opts.xffrc_files = {"/explicit.rc", "/extra.rc"};
-  const ConfigInputs in = Discover(opts, [&fs](std::string_view path) { return fs.Read(path); });
+  ASSERT_OK_AND_ASSIGN(const auto in, Discover(opts, [&fs](std::string_view path) { return fs.Read(path); }));
   // --xffrc files land in the xffrc tier (not the user layer), in order.
   EXPECT_THAT(
       ResolveConfig(in), ElementsAre(FlagIs("--jobs=2", Source::kXffrc), FlagIs("--color=never", Source::kXffrc)));
@@ -104,36 +105,40 @@ TEST_F(LoaderTest, AutomaticDiscoveryDoesNotReadExplicitPaths) {
   DiscoveryOptions opts;
   opts.xffrc_files = {"/explicit"};
   std::vector<std::string> reads;
-  const auto read = [&reads](std::string_view path) -> std::optional<std::string> {
+  const auto read = [&reads](std::string_view path) -> absl::StatusOr<std::string> {
     reads.emplace_back(path);
-    return std::nullopt;
+    if (path == "/explicit") {
+      return std::string();
+    }
+    return absl::NotFoundError("missing");
   };
-  const ConfigInputs automatic = DiscoverAutomatic(opts, read);
+  ASSERT_OK_AND_ASSIGN(const auto automatic, DiscoverAutomatic(opts, read));
   EXPECT_THAT(reads, ElementsAre("/etc/xff.ini"));
   EXPECT_THAT(
       automatic.xffrc, ElementsAre(FieldsAre("/explicit", Field("globals", &ConfigFile::globals, IsEmpty()), false)));
-  const ConfigInputs complete = DiscoverExplicit(automatic, read);
+  ASSERT_OK_AND_ASSIGN(const auto complete, DiscoverExplicit(automatic, read));
   EXPECT_THAT(reads, ElementsAre("/etc/xff.ini", "/explicit"));
   EXPECT_THAT(
       complete.sources,
-      ElementsAre(SourceIs("/etc/xff.ini", Source::kSystem, false), SourceIs("/explicit", Source::kXffrc, false)));
+      ElementsAre(SourceIs("/etc/xff.ini", Source::kSystem, false), SourceIs("/explicit", Source::kXffrc, true)));
 }
 
 TEST_F(LoaderTest, NoConfigStillInspectsAutomaticSourcesAndKeepsExplicitXffrc) {
   FakeFs fs;
+  fs.files["/extra.rc"] = "";
   fs.files["/etc/xff.ini"] = "--color=auto\n--block-execution\n";
   fs.files["/home/u/.config/xff/config"] = "--sort\n";
   DiscoveryOptions opts;
-  opts.home = "/home/u";
+  opts.paths.user = "/home/u/.config/xff/config";
   opts.xffrc_files = {"/extra.rc"};
   opts.no_system_config = true;
   opts.no_user_config = true;
-  const ConfigInputs in = Discover(opts, [&fs](std::string_view path) { return fs.Read(path); });
+  ASSERT_OK_AND_ASSIGN(const auto in, Discover(opts, [&fs](std::string_view path) { return fs.Read(path); }));
   EXPECT_THAT(
       in.sources,
       ElementsAre(
           SourceIs("/etc/xff.ini", Source::kSystem, true), SourceIs("/home/u/.config/xff/config", Source::kUser, true),
-          SourceIs("/extra.rc", Source::kXffrc, false)));
+          SourceIs("/extra.rc", Source::kXffrc, true)));
   EXPECT_THAT(in.system.globals, ElementsAre("--color=auto", "--block-execution"));
 
   EXPECT_THAT(in.user.global_lines, SizeIs(1));
@@ -143,8 +148,8 @@ TEST_F(LoaderTest, NoConfigStillInspectsAutomaticSourcesAndKeepsExplicitXffrc) {
 TEST_F(LoaderTest, MissingFilesYieldEmptyLayers) {
   FakeFs fs;  // nothing on disk
   DiscoveryOptions opts;
-  opts.home = "/home/u";
-  const ConfigInputs in = Discover(opts, [&fs](std::string_view path) { return fs.Read(path); });
+  opts.paths.user = "/home/u/.config/xff/config";
+  ASSERT_OK_AND_ASSIGN(const auto in, Discover(opts, [&fs](std::string_view path) { return fs.Read(path); }));
   EXPECT_THAT(in.system.globals, IsEmpty());
   EXPECT_THAT(ResolveConfig(in), IsEmpty());
 }
@@ -165,9 +170,9 @@ TEST_F(LoaderTest, DiscoverRecordsConsultedSourcesForExplain) {
   fs.files["/etc/xff.ini"] = "--color=auto\n";  // present
   fs.files["/extra.rc"] = "--sort\n";           // present (explicit --xffrc)
   DiscoveryOptions opts;
-  opts.home = "/home/u";             // user path computed, but the file is absent
-  opts.xffrc_files = {"/extra.rc"};  // explicit file, present
-  const ConfigInputs in = Discover(opts, [&fs](std::string_view path) { return fs.Read(path); });
+  opts.paths.user = "/home/u/.config/xff/config";  // user path computed, but the file is absent
+  opts.xffrc_files = {"/extra.rc"};                // explicit file, present
+  ASSERT_OK_AND_ASSIGN(const auto in, Discover(opts, [&fs](std::string_view path) { return fs.Read(path); }));
   // Every consulted path is recorded in precedence order with its found/absent state. There is no
   // Only system, the user path, and the explicit --xffrc file are consulted.
   EXPECT_THAT(
@@ -175,6 +180,41 @@ TEST_F(LoaderTest, DiscoverRecordsConsultedSourcesForExplain) {
       ElementsAre(
           SourceIs("/etc/xff.ini", Source::kSystem, true), SourceIs("/home/u/.config/xff/config", Source::kUser, false),
           SourceIs("/extra.rc", Source::kXffrc, true)));
+}
+
+TEST_F(LoaderTest, MissingExplicitFileIsAnErrorEvenWhenAutomaticConfigIsSkipped) {
+  const FakeFs fs;
+  DiscoveryOptions opts;
+  opts.no_config = true;
+  opts.xffrc_files = {"/missing.rc"};
+  EXPECT_THAT(
+      Discover(opts, [&fs](std::string_view path) { return fs.Read(path); }),
+      StatusIs(absl::StatusCode::kNotFound, HasSubstr("/missing.rc")));
+}
+
+TEST_F(LoaderTest, ReadFailuresCannotBypassTrustedConfigEvenWithSkipFlags) {
+  constexpr auto kCodes = std::to_array({absl::StatusCode::kPermissionDenied, absl::StatusCode::kUnavailable});
+  constexpr auto kPaths = std::to_array<std::string_view>({"/etc/xff.ini", "/user.ini"});
+  for (const auto code : kCodes) {
+    for (const std::string_view blocked_path : kPaths) {
+      DiscoveryOptions opts;
+      opts.paths.user = "/user.ini";
+      opts.no_config = true;
+      const auto read = [&](std::string_view path) -> absl::StatusOr<std::string> {
+        if (path == blocked_path) {
+          return absl::Status(code, "cannot read");
+        }
+        return std::string();
+      };
+      EXPECT_THAT(Discover(opts, read), StatusIs(code, HasSubstr(std::string(blocked_path))));
+    }
+  }
+}
+
+TEST_F(LoaderTest, DefaultPathsUseAnAbsoluteOsAccountHome) {
+  ASSERT_OK_AND_ASSIGN(const auto paths, DefaultConfigPaths());
+  EXPECT_THAT(paths.system, "/etc/xff.ini");
+  EXPECT_THAT(paths.user, AllOf(StartsWith("/"), EndsWith("/.config/xff/config")));
 }
 
 }  // namespace

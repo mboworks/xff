@@ -25,9 +25,9 @@ set -euo pipefail
 source "${mboworks_bashtest}"
 
 _xff_bin() {
-  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/xff"
+  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testing/xff"
   if [[ ! -x "${bin}" ]]; then
-    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/xff' 2>/dev/null | head -1)"
+    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/testing/xff' 2>/dev/null | head -1)"
   fi
   echo "${bin}"
 }
@@ -44,12 +44,12 @@ test::hash_action_prints_digest_and_path() {
   mkdir -p "${dir}"
   printf 'abc' >"${dir}/f.txt"
   # -hash prints `<digest>  <path>` (default sha256), the sha256sum layout.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hash 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hash 2>&1)"
   expect_output_contains "${_SHA256_ABC}  ${dir}/f.txt" "${out}"
   # -hash:ALGO / -hash:ALGO/ENCODING pick the algorithm and encoding.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hash:md5 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hash:md5 2>&1)"
   expect_output_contains "${_MD5_ABC}  ${dir}/f.txt" "${out}"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hash:sha256/base64 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hash:sha256/base64 2>&1)"
   expect_output_contains "${_B64_ABC}  ${dir}/f.txt" "${out}"
 }
 
@@ -59,13 +59,13 @@ test::hash_global_default_applies_to_action_and_field() {
   mkdir -p "${dir}"
   printf 'abc' >"${dir}/f.txt"
   # --hash-algorithm=md5 is the default for a bare -hash ...
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --hash-algorithm=md5 "${dir}" -name f.txt -hash 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --hash-algorithm=md5 "${dir}" -name f.txt -hash 2>&1)"
   expect_output_contains "${_MD5_ABC}  ${dir}/f.txt" "${out}"
   # ... and for a bare {hash} field via the %{hash} printf escape.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --hash-algorithm=md5 "${dir}" -name f.txt -printf '%{hash}\n' 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --hash-algorithm=md5 "${dir}" -name f.txt -printf '%{hash}\n' 2>&1)"
   expect_output_contains "${_MD5_ABC}" "${out}"
   # --hash-encoding=base64 renders the digest in base64.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --hash-encoding=base64 "${dir}" -name f.txt -hash 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --hash-encoding=base64 "${dir}" -name f.txt -hash 2>&1)"
   expect_output_contains "${_B64_ABC}  ${dir}/f.txt" "${out}"
 }
 
@@ -75,17 +75,17 @@ test::hash_bad_spec_and_find_style_are_usage_errors() {
   mkdir -p "${dir}"
   printf 'abc' >"${dir}/f.txt"
   # An unknown algorithm in -hash:ALGO is a usage error.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hash:crc32 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name f.txt -hash:crc32 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains 'unknown algorithm or encoding' "${out}"
   # A bad --hash-encoding is a usage error.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --hash-encoding=b64 "${dir}" -name f.txt -hash 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --hash-encoding=b64 "${dir}" -name f.txt -hash 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   # The shared value check reports it first, naming the flag and its accepted values.
   expect_output_contains 'unknown value' "${out}"
   expect_output_contains '--hash-encoding' "${out}"
   # -hash is an xff extension; the find style rejects it.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --config=find "${dir}" -hash 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --config=find "${dir}" -hash 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains 'find style' "${out}"
 }

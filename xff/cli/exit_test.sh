@@ -27,9 +27,9 @@ source "${mboworks_bashtest}"
 
 # Path to the built xff binary in the test runfiles.
 _xff_bin() {
-  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/xff"
+  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testing/xff"
   if [[ ! -x "${bin}" ]]; then
-    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/xff' 2>/dev/null | head -1)"
+    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/testing/xff' 2>/dev/null | head -1)"
   fi
   echo "${bin}"
 }
@@ -48,14 +48,14 @@ test::default_no_match_still_exits_zero() {
   # No --quiet/--exit-match: match status must not affect the exit (find semantics).
   # Nothing matches "nope.zzz", yet the run exits 0 because it ran without error.
   local rc
-  XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name 'nope.zzz' >/dev/null 2>&1 && rc=0 || rc=$?
+  XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name 'nope.zzz' >/dev/null 2>&1 && rc=0 || rc=$?
   expect_eq "0" "${rc}"
 }
 
 test::quiet_match_exits_zero_with_no_output() {
   local dir out rc
   dir="$(_tree qmatch)"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --quiet "${dir}" -name a.txt 2>/dev/null)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --quiet "${dir}" -name a.txt 2>/dev/null)" && rc=0 || rc=$?
   expect_eq "0" "${rc}"
   expect_eq "" "${out}" # --quiet suppresses output
 }
@@ -63,7 +63,7 @@ test::quiet_match_exits_zero_with_no_output() {
 test::quiet_no_match_exits_one() {
   local dir out rc
   dir="$(_tree qnomatch)"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --quiet "${dir}" -name 'nope.zzz' 2>/dev/null)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --quiet "${dir}" -name 'nope.zzz' 2>/dev/null)" && rc=0 || rc=$?
   expect_eq "1" "${rc}"
   expect_eq "" "${out}"
 }
@@ -72,7 +72,7 @@ test::exit_match_keeps_output_on_match() {
   local dir out rc
   dir="$(_tree emmatch)"
   # --exit-match exits by match but, unlike --quiet, keeps the normal output.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --exit-match "${dir}" -name a.txt 2>/dev/null)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --exit-match "${dir}" -name a.txt 2>/dev/null)" && rc=0 || rc=$?
   expect_eq "0" "${rc}"
   local lines=()
   local line
@@ -83,7 +83,7 @@ test::exit_match_keeps_output_on_match() {
 test::exit_match_no_match_exits_one() {
   local dir rc
   dir="$(_tree emnomatch)"
-  XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --exit-match "${dir}" -name 'nope.zzz' >/dev/null 2>&1 && rc=0 || rc=$?
+  XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --exit-match "${dir}" -name 'nope.zzz' >/dev/null 2>&1 && rc=0 || rc=$?
   expect_eq "1" "${rc}"
 }
 
@@ -91,7 +91,7 @@ test::error_outranks_match_status() {
   local rc
   # A missing root is a per-path error; even under --quiet (where no match would be
   # exit 1) the error wins and the exit is 2.
-  XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --quiet "${TEST_TMPDIR}/does-not-exist" >/dev/null 2>&1 && rc=0 || rc=$?
+  XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --quiet "${TEST_TMPDIR}/does-not-exist" >/dev/null 2>&1 && rc=0 || rc=$?
   expect_eq "2" "${rc}"
 }
 
@@ -99,10 +99,10 @@ test::dash_q_is_a_grep_alias_of_quiet() {
   local dir out rc
   dir="$(_tree qalias)"
   # -q behaves exactly like --quiet: suppress output, exit by match.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" -q "${dir}" -name a.txt 2>/dev/null)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" -q "${dir}" -name a.txt 2>/dev/null)" && rc=0 || rc=$?
   expect_eq "0" "${rc}"
   expect_eq "" "${out}"
-  XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" -q "${dir}" -name 'nope.zzz' >/dev/null 2>&1 && rc=0 || rc=$?
+  XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" -q "${dir}" -name 'nope.zzz' >/dev/null 2>&1 && rc=0 || rc=$?
   expect_eq "1" "${rc}"
 }
 
@@ -110,7 +110,7 @@ test::unknown_global_flag_is_a_usage_error() {
   local dir out rc
   dir="$(_tree unknownflag)"
   # An unrecognized leading option is a usage error (exit 2), not silently ignored.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --bogus-flag "${dir}" 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --bogus-flag "${dir}" 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains "unknown option" "${out}" # prominent, actionable message
   expect_output_contains "--bogus-flag" "${out}"   # names the offending flag
@@ -122,7 +122,7 @@ test::unknown_flag_value_is_a_usage_error() {
   # the bad value, and what the flag accepts.
   local dir out rc
   dir="$(_tree unknownvalue)"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --case=insensitve "${dir}" 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --case=insensitve "${dir}" 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains "unknown value" "${out}"
   expect_output_contains "insensitve" "${out}" # names the offending value
@@ -134,7 +134,7 @@ test::a_free_text_value_is_never_rejected() {
   # Most valued flags take a path / format / regex, so the check must stay out of their way.
   local dir rc
   dir="$(_tree freetext)"
-  XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --define=A=B --template='{path}' "${dir}" >/dev/null 2>&1 \
+  XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --define=A=B --template='{path}' "${dir}" >/dev/null 2>&1 \
     && rc=0 || rc=$?
   expect_eq "0" "${rc}"
 }
@@ -145,7 +145,7 @@ test::the_shared_vocabulary_spellings_are_accepted() {
   local dir rc spelling
   dir="$(_tree vocabulary)"
   for spelling in on off yes no true false 1 0 auto; do
-    XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "--gitignore=${spelling}" "${dir}" >/dev/null 2>&1 \
+    XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "--gitignore=${spelling}" "${dir}" >/dev/null 2>&1 \
       && rc=0 || rc=$?
     expect_eq "0" "${rc}"
   done
@@ -155,7 +155,7 @@ test::known_global_flag_is_accepted() {
   local dir rc
   dir="$(_tree knownflag)"
   # A valid leading global (--sort) is accepted; the run exits 0.
-  XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --sort "${dir}" -name a.txt >/dev/null 2>&1 && rc=0 || rc=$?
+  XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --sort "${dir}" -name a.txt >/dev/null 2>&1 && rc=0 || rc=$?
   expect_eq "0" "${rc}"
 }
 

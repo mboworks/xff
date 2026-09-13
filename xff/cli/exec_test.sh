@@ -27,15 +27,15 @@ source "${mboworks_bashtest}"
 
 # Path to the built xff binary in the test runfiles.
 _xff_bin() {
-  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/xff"
+  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testing/xff"
   if [[ ! -x "${bin}" ]]; then
-    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/xff' 2>/dev/null | head -1)"
+    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/testing/xff' 2>/dev/null | head -1)"
   fi
   echo "${bin}"
 }
 
 # A directory with two .txt files (matches) and one non-match, isolated from any
-# ambient config (XFF_CONFIG points at a nonexistent path in each run).
+# ambient config (XFF_TEST_USER_CONFIG points at a nonexistent path in each run).
 _tree() {
   local dir
   dir="$(test_tmpdir "$1")"
@@ -59,7 +59,7 @@ test::exec_plus_runs_once_with_all_matches() {
   out="${TEST_TMPDIR}/plus.out"
   : >"${out}"
   # shellcheck disable=SC2016  # the single-quoted script runs in the spawned sh, which expands $OUT/$@/$p
-  XFF_CONFIG="${TEST_TMPDIR}/none" OUT="${out}" "$(_xff_bin)" "${dir}" -name '*.txt' \
+  XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" OUT="${out}" "$(_xff_bin)" "${dir}" -name '*.txt' \
     -exec sh -c 'echo RUN >>"$OUT"; for p in "$@"; do echo "$p" >>"$OUT"; done' _ '{}' +
   _read_lines "${out}"
   # One RUN marker (a single batched invocation) plus the two matched paths.
@@ -79,7 +79,7 @@ test::exec_semicolon_runs_once_per_match() {
   out="${TEST_TMPDIR}/semi.out"
   : >"${out}"
   # shellcheck disable=SC2016  # the single-quoted script runs in the spawned sh, which expands $OUT
-  XFF_CONFIG="${TEST_TMPDIR}/none" OUT="${out}" "$(_xff_bin)" "${dir}" -name '*.txt' \
+  XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" OUT="${out}" "$(_xff_bin)" "${dir}" -name '*.txt' \
     -exec sh -c 'echo RUN >>"$OUT"' \;
   _read_lines "${out}"
   # Two matches, the `\;` form spawns the command once per match: two RUN lines.
@@ -95,7 +95,7 @@ test::exec_semicolon_under_parallel_jobs_runs_every_match() {
   # two matches still runs exactly once; the children append their path (one short,
   # O_APPEND-atomic line each), so order is unspecified but both must appear.
   # shellcheck disable=SC2016  # the single-quoted script runs in the spawned sh, which expands $OUT
-  XFF_CONFIG="${TEST_TMPDIR}/none" OUT="${out}" "$(_xff_bin)" -j 2 "${dir}" -name '*.txt' \
+  XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" OUT="${out}" "$(_xff_bin)" -j 2 "${dir}" -name '*.txt' \
     -exec sh -c 'echo "$1" >>"$OUT"' _ '{}' \;
   _read_lines "${out}"
   expect_eq "2" "${#_lines[@]}"
@@ -111,7 +111,7 @@ test::execdir_plus_runs_in_each_directory_with_basenames() {
   # -execdir ... + runs in each entry's directory (cwd = that dir) with ./basename
   # arguments. Both matches are in one directory here, so PWD is that directory.
   # shellcheck disable=SC2016  # the single-quoted script runs in the spawned sh, which expands $OUT/$@/$p
-  XFF_CONFIG="${TEST_TMPDIR}/none" OUT="${out}" "$(_xff_bin)" "${dir}" -name '*.txt' \
+  XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" OUT="${out}" "$(_xff_bin)" "${dir}" -name '*.txt' \
     -execdir sh -c 'echo "PWD=$PWD" >>"$OUT"; for p in "$@"; do echo "$p" >>"$OUT"; done' _ '{}' +
   _read_lines "${out}"
   expect_contains "PWD=${dir}" "${_lines[@]}"

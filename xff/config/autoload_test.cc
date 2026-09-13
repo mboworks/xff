@@ -219,8 +219,9 @@ TEST_F(AutoloadTest, GlobalGrantCannotOverrideSystemDenialAndExplicitGlobalsRema
   inputs.rc_mode = RcMode::kOff;
   inputs.xffrc = {{.path = "task"}};
   ASSERT_OK_AND_ASSIGN(auto explicit_only, DiscoverRc(inputs, {"root"}, filesystem));
-  explicit_only = DiscoverExplicit(
-      std::move(explicit_only), [](std::string_view) { return std::optional<std::string>("--hidden"); });
+  ASSERT_OK_AND_ASSIGN(explicit_only, DiscoverExplicit(std::move(explicit_only), [](std::string_view) {
+                         return absl::StatusOr<std::string>("--hidden");
+                       }));
   EXPECT_THAT(Flags(explicit_only, {"--xffrc=task"}), ElementsAre("--xffrc=task", "--hidden"));
 }
 
@@ -229,8 +230,9 @@ TEST_F(AutoloadTest, ExplicitFileRetainsItsCliPositionAfterAutoloadedDefaults) {
   inputs.xffrc = {{.path = "task"}};
   filesystem.contents["root/.xffrc"] = "--color=never";
   ASSERT_OK_AND_ASSIGN(auto found, DiscoverRc(inputs, {"root"}, filesystem));
-  found =
-      DiscoverExplicit(std::move(found), [](std::string_view) { return std::optional<std::string>("--color=always"); });
+  ASSERT_OK_AND_ASSIGN(found, DiscoverExplicit(std::move(found), [](std::string_view) {
+                         return absl::StatusOr<std::string>("--color=always");
+                       }));
   EXPECT_THAT(
       Flags(found, {"--color=auto", "--xffrc=task"}),
       ElementsAre("--color=auto", "--color=never", "--color=auto", "--xffrc=task", "--color=always"));

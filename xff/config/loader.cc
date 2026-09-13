@@ -22,46 +22,52 @@
 #include <vector>
 
 #include "absl/strings/str_cat.h"
+#include "mbo/status/status_macros.h"
 #include "xff/config/config.h"
 #include "xff/config/ini.h"
 #include "xff/config/xffrc.h"
 
 namespace xff::config {
-std::string UserConfigPath(const DiscoveryOptions& opts) {
-  if (opts.xff_config.has_value() && !opts.xff_config->empty()) {
-    return *opts.xff_config;
+namespace {
+struct ReadSource {
+  ConfigSource source;
+  ConfigFile config;
+};
+
+absl::StatusOr<ReadSource> ReadConfigSource(std::string_view path, Source layer, FileReader read, bool required) {
+  auto text = read(path);
+  if (!text.ok()) {
+    if (!required && absl::IsNotFound(text.status())) {
+      return ReadSource{.source = {.path = std::string(path), .layer = layer}};
+    }
+    return absl::Status(
+        text.status().code(), absl::StrCat("cannot read configuration '", path, "': ", text.status().message()));
   }
-  if (opts.xdg_config_home.has_value() && !opts.xdg_config_home->empty()) {
-    return absl::StrCat(*opts.xdg_config_home, "/xff/config");
+  return ReadSource{.source = {.path = std::string(path), .layer = layer, .found = true}, .config = ParseIni(*text)};
+}
+}  // namespace
+
+absl::StatusOr<std::string> UserConfigPath(std::string_view account_home) {
+  if (!account_home.starts_with('/')) {
+    return absl::InvalidArgumentError("the OS account home must be an absolute path");
   }
-  if (opts.home.has_value() && !opts.home->empty()) {
-    return absl::StrCat(*opts.home, "/.config/xff/config");
-  }
-  return "";
+  return absl::StrCat(account_home, account_home.ends_with('/') ? "" : "/", ".config/xff/config");
 }
 
-ConfigInputs DiscoverAutomatic(const DiscoveryOptions& opts, FileReader read) {
+absl::StatusOr<ConfigInputs> DiscoverAutomatic(const DiscoveryOptions& opts, FileReader read) {
   ConfigInputs inputs;
   inputs.no_config = opts.no_config;
   inputs.no_system_config = opts.no_system_config;
   inputs.no_user_config = opts.no_user_config;
   inputs.configs = opts.configs;
 
-  // System globals and named configurations, at the lowest-precedence config tier.
-  {
-    const std::optional<std::string> text = read("/etc/xff.ini");
-    inputs.sources.push_back({.path = "/etc/xff.ini", .layer = Source::kSystem, .found = text.has_value()});
-    if (text.has_value()) {
-      inputs.system = ParseIni(*text);
-    }
-  }
-  // User: the first existing of $XFF_CONFIG / $XDG_CONFIG_HOME/xff/config / ~/.config/xff/config.
-  if (const std::string user_path = UserConfigPath(opts); !user_path.empty()) {
-    const std::optional<std::string> text = read(user_path);
-    inputs.sources.push_back({.path = user_path, .layer = Source::kUser, .found = text.has_value()});
-    if (text.has_value()) {
-      inputs.user = ParseIni(*text);
-    }
+  MBO_ASSIGN_OR_RETURN(auto system, ReadConfigSource(opts.paths.system, Source::kSystem, read, false));
+  inputs.sources.push_back(std::move(system.source));
+  inputs.system = std::move(system.config);
+  if (!opts.paths.user.empty()) {
+    MBO_ASSIGN_OR_RETURN(auto user, ReadConfigSource(opts.paths.user, Source::kUser, read, false));
+    inputs.sources.push_back(std::move(user.source));
+    inputs.user = std::move(user.config);
   }
   for (const std::string& path : opts.xffrc_files) {
     inputs.xffrc.push_back(ExplicitConfig{.path = path});
@@ -69,20 +75,21 @@ ConfigInputs DiscoverAutomatic(const DiscoveryOptions& opts, FileReader read) {
   return inputs;
 }
 
-ConfigInputs DiscoverExplicit(ConfigInputs inputs, FileReader read) {
+absl::StatusOr<ConfigInputs> DiscoverExplicit(ConfigInputs inputs, FileReader read) {
   for (ExplicitConfig& file : inputs.xffrc) {
     if (file.automatic) {
       continue;
     }
-    const std::optional<std::string> text = read(file.path);
-    inputs.sources.push_back({.path = file.path, .layer = Source::kXffrc, .found = text.has_value()});
-    file.config = text.has_value() ? ParseIni(*text) : ConfigFile{};
+    MBO_ASSIGN_OR_RETURN(auto source, ReadConfigSource(file.path, Source::kXffrc, read, true));
+    inputs.sources.push_back(std::move(source.source));
+    file.config = std::move(source.config);
   }
   return inputs;
 }
 
-ConfigInputs Discover(const DiscoveryOptions& opts, FileReader read) {
-  return DiscoverExplicit(DiscoverAutomatic(opts, read), read);
+absl::StatusOr<ConfigInputs> Discover(const DiscoveryOptions& opts, FileReader read) {
+  MBO_ASSIGN_OR_RETURN(auto automatic, DiscoverAutomatic(opts, read));
+  return DiscoverExplicit(std::move(automatic), read);
 }
 
 DiscoveryOptions SelectorsFromGlobals(const std::vector<std::string>& globals) {

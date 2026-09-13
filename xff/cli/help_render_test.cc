@@ -359,7 +359,7 @@ TEST_F(HelpTest, EnvironmentTopicListsTheVariables) {
   EXPECT_THAT(
       env, AllOf(
                HasSubstr("NO_COLOR"), HasSubstr("XFF_PAGER"), HasSubstr("XFF_MANPAGER"), HasSubstr("COLUMNS"),
-               HasSubstr("XFF_CONFIG"), HasSubstr("{env.NAME}")));
+               HasSubstr("XDG_CONFIG_HOME"), HasSubstr("{env.NAME}")));
   EXPECT_THAT(RenderTopicDoc("env"), Eq(env));  // the alias renders identically
 }
 

@@ -3,6 +3,12 @@
 
 # 0.4.0
 
+- Fix the user config location at the effective OS account home under `.config/xff/config`;
+  environment variables cannot redirect trusted configuration.
+- Reject missing explicit `--xffrc` files and unreadable existing configuration, including
+  dangling symlinks and requested skips. Missing automatic system/user files remain normal.
+- Evaluate `.xffrc` admission controls in requested selector order, including composed configs.
+
 - Add policy-aware `--no-system-config` and `--no-user-config` controls, and make
   `--no-config` suppress automatic configuration without bypassing mandatory
   system policy or an explicitly selected `--xffrc` file.

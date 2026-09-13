@@ -26,9 +26,9 @@ source "${mboworks_bashtest}"
 
 # Path to the built xff binary in the test runfiles.
 _xff_bin() {
-  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/xff"
+  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testing/xff"
   if [[ ! -x "${bin}" ]]; then
-    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/xff' 2>/dev/null | head -1)"
+    bin="$(find "${TEST_SRCDIR}" -type f -name xff -path '*xff/cli/testing/xff' 2>/dev/null | head -1)"
   fi
   echo "${bin}"
 }
@@ -47,7 +47,7 @@ test::strict_find_style_rejects_xff_extensions() {
   # -println is an xff extension; under --config=find it is rejected before the
   # run starts, with a self-documenting error and exit code 2.
   local out rc
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --config=find "${dir}" -println 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --config=find "${dir}" -println 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   local lines=()
   local line
@@ -62,7 +62,7 @@ test::strict_find_style_accepts_find_vocabulary() {
   dir="$(_tree findvocab)"
   # A pure-find expression runs normally under --config=find (exit 0).
   local out rc
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --config=find "${dir}" -name a.txt 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --config=find "${dir}" -name a.txt 2>&1)" && rc=0 || rc=$?
   expect_eq "0" "${rc}"
 }
 
@@ -73,10 +73,10 @@ test::xff_style_accepts_xff_extensions() {
   xff="$(_xff_bin)"
   # The default (no --config) modern style runs -println fine.
   local rc
-  XFF_CONFIG="${TEST_TMPDIR}/none" "${xff}" "${dir}" -name a.txt -println >/dev/null 2>&1 && rc=0 || rc=$?
+  XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "${xff}" "${dir}" -name a.txt -println >/dev/null 2>&1 && rc=0 || rc=$?
   expect_eq "0" "${rc}"
   # And explicitly under --config=xff.
-  XFF_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=xff "${dir}" -name a.txt -println >/dev/null 2>&1 && rc=0 || rc=$?
+  XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=xff "${dir}" -name a.txt -println >/dev/null 2>&1 && rc=0 || rc=$?
   expect_eq "0" "${rc}"
 }
 
@@ -97,12 +97,12 @@ test::rg_style_respects_ignore_files_by_default() {
   local dir out
   dir="$(_ignore_tree rgignore)"
   # --config=rg turns on .gitignore + .ignore with no flags (ripgrep's headline default).
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --config=rg "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --config=rg "${dir}" -type f 2>&1)"
   expect_output_contains "keep.txt" "${out}"
   expect_output_not_contains "out.o" "${out}"    # .gitignore build/
   expect_output_not_contains "junk.tmp" "${out}" # .ignore *.tmp
   # The find style leaves ignore files off, so it sees everything.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --config=find "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --config=find "${dir}" -type f 2>&1)"
   expect_output_contains "out.o" "${out}"
   expect_output_contains "junk.tmp" "${out}"
 }
@@ -111,7 +111,7 @@ test::rg_style_accepts_xff_extensions() {
   local dir rc
   dir="$(_tree rgvocab)"
   # rg uses the full xff vocabulary; only the strict find style rejects extensions.
-  XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --config=rg "${dir}" -name a.txt -println >/dev/null 2>&1 && rc=0 || rc=$?
+  XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --config=rg "${dir}" -name a.txt -println >/dev/null 2>&1 && rc=0 || rc=$?
   expect_eq "0" "${rc}"
 }
 
@@ -121,7 +121,7 @@ test::argv0_fd_alias_is_a_plain_name_not_opinionated() {
   # xfd was dropped and fd is not a built-in style: through an `fd`-named symlink, xff is the base
   # with no opinionated defaults (no magic remap to rg), so ignore files are NOT respected.
   ln -sf "$(_xff_bin)" "${TEST_TMPDIR}/fd"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "${TEST_TMPDIR}/fd" "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "${TEST_TMPDIR}/fd" "${dir}" -type f 2>&1)"
   expect_output_contains "keep.txt" "${out}"
   expect_output_contains "out.o" "${out}" # .gitignore NOT applied -> fd is a plain name (xff base)
 }
@@ -136,10 +136,10 @@ test::argv0_custom_alias_activates_same_named_config() {
   printf -- '[mytool]\n--format=jsonl\n' >"${cfg}"
   ln -sf "$(_xff_bin)" "${TEST_TMPDIR}/mytool"
   local out
-  out="$(XFF_CONFIG="${cfg}" "${TEST_TMPDIR}/mytool" "${dir}" -name a.txt 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${cfg}" "${TEST_TMPDIR}/mytool" "${dir}" -name a.txt 2>&1)"
   expect_output_contains "{" "${out}" # --format=jsonl from the [mytool] block -> a JSON object
   # A plain xff run does not activate [mytool], so output stays plain (no JSON object).
-  out="$(XFF_CONFIG="${cfg}" "$(_xff_bin)" "${dir}" -name a.txt 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" "${dir}" -name a.txt 2>&1)"
   expect_output_not_contains "{" "${out}"
 }
 
@@ -157,15 +157,15 @@ test::hidden_dotfiles_skipped_by_opinionated_styles() {
   dir="$(_hidden_tree hid)"
   xff="$(_xff_bin)"
   # find / xff (conservative) show dotfiles; rg (opinionated) skips them.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=xff "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=xff "${dir}" -type f 2>&1)"
   expect_output_contains ".secret" "${out}"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=rg "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=rg "${dir}" -type f 2>&1)"
   expect_output_contains "visible.txt" "${out}"
   expect_output_not_contains ".secret" "${out}"
   # --hidden opts the opinionated style back in; --no-hidden opts the conservative out.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=rg --hidden "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=rg --hidden "${dir}" -type f 2>&1)"
   expect_output_contains ".secret" "${out}"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=xff --no-hidden "${dir}" -type f 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=xff --no-hidden "${dir}" -type f 2>&1)"
   expect_output_not_contains ".secret" "${out}"
 }
 
@@ -177,21 +177,21 @@ test::case_smart_and_overrides() {
   # Use the find style for globs (no FS-native folding), so the case flags are the only
   # case input on any platform. smart: an all-lowercase pattern folds; one with an
   # uppercase letter stays exact.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=find --case=smart "${dir}" -name 'readme*' 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=find --case=smart "${dir}" -name 'readme*' 2>&1)"
   expect_output_contains "README.md" "${out}"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=find --case=smart "${dir}" -name 'Readme*' 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=find --case=smart "${dir}" -name 'Readme*' 2>&1)"
   expect_output_not_contains "README.md" "${out}" # uppercase in pattern -> exact
   # sensitive (find default): a lowercase pattern does not match the uppercase file.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=find "${dir}" -name 'readme*' 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=find "${dir}" -name 'readme*' 2>&1)"
   expect_output_not_contains "README.md" "${out}"
   # -i forces insensitive.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=find -i "${dir}" -name 'readme*' 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=find -i "${dir}" -name 'readme*' 2>&1)"
   expect_output_contains "README.md" "${out}"
   # rg defaults to smart; a lowercase regex folds (regex ignores FS-native, so portable),
   # and -s- forces sensitive back off.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=rg "${dir}" -regex '.*readme.*' 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=rg "${dir}" -regex '.*readme.*' 2>&1)"
   expect_output_contains "README.md" "${out}"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=rg -s- "${dir}" -regex '.*readme.*' 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "${xff}" --config=rg -s- "${dir}" -regex '.*readme.*' 2>&1)"
   expect_output_not_contains "README.md" "${out}"
 }
 
@@ -232,7 +232,7 @@ test::help_styles_shows_the_flavor_comparison() {
 test::explain_adds_the_current_flavor_column() {
   local out
   # --explain prints the flavor table with a `current` column resolved for this run.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --config=rg --explain 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --config=rg --explain 2>&1)"
   expect_output_contains "current" "${out}"
   expect_output_contains "Relevant to this run:" "${out}" # the two-tier lead heading
   expect_matches 'letter case.*smart' "${out}"            # rg resolves case -> smart
@@ -243,9 +243,9 @@ test::no_ignore_wins_in_the_explain_flavor_column() {
   local NL=$'\n'
   # The ignore-files facet resolves the -g ternary: -g+ forces on (the row ends with the
   # current column), and -u / --no-ignore is the master switch that overrules it to off.
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" -g+ --explain 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" -g+ --explain 2>&1)"
   expect_matches "ignore files[^${NL}]*on[[:space:]]*(\$|${NL})" "${out}"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" -g+ -u --explain 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" -g+ -u --explain 2>&1)"
   expect_matches "ignore files[^${NL}]*off[[:space:]]*(\$|${NL})" "${out}"
 }
 
@@ -256,7 +256,7 @@ test::argv0_find_alias_defaults_to_strict_style() {
   # (no --config needed): an xff extension is rejected with exit 2.
   ln -sf "$(_xff_bin)" "${TEST_TMPDIR}/find"
   local out rc
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "${TEST_TMPDIR}/find" "${dir}" -println 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "${TEST_TMPDIR}/find" "${dir}" -println 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   local lines=()
   local line
@@ -271,7 +271,7 @@ test::argv0_xff_alias_defaults_to_modern_style() {
   dir="$(_tree argv0xff)"
   # Invoked as xff (its real name), the modern style is the default: -println runs.
   local rc
-  XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name a.txt -println >/dev/null 2>&1 && rc=0 || rc=$?
+  XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -name a.txt -println >/dev/null 2>&1 && rc=0 || rc=$?
   expect_eq "0" "${rc}"
 }
 
@@ -282,20 +282,20 @@ test::config_multiple_predicates_are_evaluated() {
   : >"${dir}/bar"
   : >"${dir}/other"
   config="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testdata/config_validation/multiple/user.rc"
-  out="$(XFF_CONFIG="${config}" "$(_xff_bin)" --config=both "${dir}" -type f -printf '%f\n')"
+  out="$(XFF_TEST_USER_CONFIG="${config}" "$(_xff_bin)" --config=both "${dir}" -type f -printf '%f\n')"
   expect_eq "" "${out}"
-  out="$(XFF_CONFIG="${config}" "$(_xff_bin)" --config=either "${dir}" -type f -printf '%f\n')"
+  out="$(XFF_TEST_USER_CONFIG="${config}" "$(_xff_bin)" --config=either "${dir}" -type f -printf '%f\n')"
   expect_output_contains "foo" "${out}"
   expect_output_contains "bar" "${out}"
   expect_output_not_contains "other" "${out}"
-  out="$(XFF_CONFIG="${config}" "$(_xff_bin)" --config=mixed "${dir}" -type f -printf '%f\n')"
+  out="$(XFF_TEST_USER_CONFIG="${config}" "$(_xff_bin)" --config=mixed "${dir}" -type f -printf '%f\n')"
   expect_eq "foo" "${out}"
 }
 
 test::type_choices_reject_unknown_values() {
   local dir out rc
   dir="$(_tree invalidtype)"
-  out="$(XFF_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -type garbage 2>&1)" && rc=0 || rc=$?
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -type garbage 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains "unknown value 'garbage' for -type" "${out}"
 }

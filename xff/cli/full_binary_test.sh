@@ -30,9 +30,9 @@ source "${mboworks_bashtest}"
 # test names out of printed paths, where a name could accidentally satisfy a negative assertion.
 
 _xff_full_bin() {
-  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/xff_full"
+  local bin="${TEST_SRCDIR}/${TEST_WORKSPACE}/xff/cli/testing/xff_full"
   if [[ ! -x "${bin}" ]]; then
-    bin="$(find "${TEST_SRCDIR}" -type f -name xff_full -path '*xff/cli/xff_full' 2>/dev/null | head -1)"
+    bin="$(find "${TEST_SRCDIR}" -type f -name xff_full -path '*xff/cli/testing/xff_full' 2>/dev/null | head -1)"
   fi
   echo "${bin}"
 }
