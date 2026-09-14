@@ -51,6 +51,6 @@ local_path_override(
     path = "xff_extras_api",
 )
 
-bazel_dep(name = "mboworks_mbo", version = "0.14.0")
+bazel_dep(name = "mboworks_mbo", version = "0.15.0")
 bazel_dep(name = "nlohmann_json", version = "3.12.0.bcr.2")
 bazel_dep(name = "mboworks_bashtest", version = "0.6.1")

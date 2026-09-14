@@ -13,4 +13,4 @@ bazel_dep(name = "nlohmann_json", version = "3.12.0.bcr.2")
 bazel_dep(name = "xff_extras_api", version = "0.0.0")
 
 bazel_dep(name = "googletest", version = "1.18.0.bcr.1")
-bazel_dep(name = "mboworks_mbo", version = "0.14.0")
+bazel_dep(name = "mboworks_mbo", version = "0.15.0")
