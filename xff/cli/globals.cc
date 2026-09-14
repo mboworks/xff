@@ -285,47 +285,50 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .repetition = GlobalFlag::Repetition::kAccumulate,
     },
     {
-        .name = "--require-system-config",
-        .display = "--require-system-config",
+        .name = "--require-system-globals",
+        .display = "--require-system-globals",
         .group = "config",
         .header = "Config",
-        .summary = "require application of an existing system config",
-        .details =
-            "Config-only: unsectioned system config only, once per positive/negative pair. Prevents "
-            "`--no-system-config` and `--no-config` from skipping an existing system file. Absence remains normal.",
+        .summary = "keep existing system globals active when named configs are skipped",
+        .details = "Config-only: unsectioned system config only, once per positive/negative pair. System globals "
+                   "remain active with `--no-system-config` or `--no-config`. This is the default; missing files "
+                   "remain normal. Named sections can still be excluded.",
         .topic = "config",
         .config_only = true,
     },
     {
-        .name = "--no-require-system-config",
-        .display = "--no-require-system-config",
+        .name = "--no-require-system-globals",
+        .display = "--no-require-system-globals",
         .group = "config",
         .header = "Config",
-        .summary = "permit skipping the system config",
-        .details = "Config-only: unsectioned system config only, once per pair. Permits `--no-system-config` to "
-                   "suppress system defaults. Authoritative system controls are still inspected.",
+        .summary = "permit skipping system globals along with named configs",
+        .details = "Config-only: unsectioned system config only, once per pair. `--no-system-config` or `--no-config` "
+                   "then excludes globals as well as named sections. Without a skip request, globals still apply. "
+                   "Authoritative system admission and requirement controls are still inspected.",
         .topic = "config",
         .config_only = true,
     },
     {
-        .name = "--require-user-config",
-        .display = "--require-user-config",
+        .name = "--require-user-globals",
+        .display = "--require-user-globals",
         .group = "config",
         .header = "Config",
-        .summary = "require application of an existing user config",
+        .summary = "keep existing user globals active when named configs are skipped",
         .details = "Config-only: unsectioned system or user config, once per pair per file. The system decision wins. "
-                   "Prevents `--no-user-config` and `--no-config` from skipping an existing user file.",
+                   "User globals remain active with `--no-user-config` or `--no-config`. This is the default; missing "
+                   "files remain normal. Named sections can still be excluded.",
         .topic = "config",
         .config_only = true,
     },
     {
-        .name = "--no-require-user-config",
-        .display = "--no-require-user-config",
+        .name = "--no-require-user-globals",
+        .display = "--no-require-user-globals",
         .group = "config",
         .header = "Config",
-        .summary = "permit skipping the user config",
+        .summary = "permit skipping user globals along with named configs",
         .details = "Config-only: unsectioned system or user config, once per pair per file. The system decision wins. "
-                   "Without an applicable grant, an existing user file cannot be skipped.",
+                   "`--no-user-config` or `--no-config` then excludes user globals as well as named sections. Without "
+                   "a skip request, globals still apply.",
         .topic = "config",
         .config_only = true,
     },
@@ -358,14 +361,12 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--no-config",
         .group = "config",
         .header = "Config",
-        .summary = "suppress automatic system and user configuration when authorized",
-        .details = "Disables `.xffrc` autoloading and suppresses system defaults and user configuration. A present "
-                   "source is still "
-                   "inspected for policy. Equivalent to requesting both `--no-system-config` and "
-                   "`--no-user-config`: each existing file must permit its own suppression, or the entire "
-                   "request is rejected. Missing files need no permission. An explicitly named "
-                   "`--xffrc=FILE` remains active. Ignore files such as `.gitignore` and `.xffignore` are traversal "
-                   "inputs, not config files, and are unaffected.",
+        .summary = "exclude named system and user configs and disable rc autoloading",
+        .details = "Excludes named system and user sections and disables `.xffrc` autoloading regardless of flag "
+                   "order. Existing globals remain active by default; the applicable `--no-require-system-globals` or "
+                   "`--no-require-user-globals` permits excluding the corresponding globals too. Both files are still "
+                   "read and validated. Missing automatic files remain normal. Explicit `--xffrc=FILE` inputs and "
+                   "ignore files remain active.",
         .topic = "config",
         .cli_only = true,
     },
@@ -374,13 +375,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--no-system-config",
         .group = "config",
         .header = "Config",
-        .summary = "suppress system defaults when the system config permits it",
-        .details = "Suppresses `/etc/xff.ini` defaults but still reads its leading authoritative config-only "
-                   "permission controls. A present file must grant permission with `--no-require-system-config`; "
-                   "`--require-system-config` explicitly denies it. "
-                   "Without a grant, the request is a usage error. The user config and explicit `--xffrc` "
-                   "files remain "
-                   "active.",
+        .summary = "exclude named system config sections while retaining required globals",
+        .details = "Excludes named sections in `/etc/xff.ini`. Unsectioned globals remain active by default or with "
+                   "`--require-system-globals`; `--no-require-system-globals` allows excluding them too. The file is "
+                   "still read and validated. User and explicit `.xffrc` configurations remain active.",
         .topic = "config",
         .cli_only = true,
     },
@@ -389,12 +387,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--no-user-config",
         .group = "config",
         .header = "Config",
-        .summary = "suppress user configuration when an authoritative config permits it",
-        .details = "Suppresses the selected user config after inspecting it for permission. The system config may "
-                   "authoritatively grant or deny permission with `--no-require-user-config` / "
-                   "`--require-user-config`; without either, the user file may decide for itself with the same "
-                   "pair. Without a grant, skipping a present user file is a usage error. "
-                   "System defaults and explicit `--xffrc` files remain active.",
+        .summary = "exclude named user config sections while retaining required globals",
+        .details = "Excludes named user sections. Unsectioned globals remain active by default or with "
+                   "`--require-user-globals`; `--no-require-user-globals` allows excluding them too. The system "
+                   "decision takes precedence over the user declaration. The file is still read and validated. System "
+                   "and explicit `.xffrc` configurations remain active.",
         .topic = "config",
         .cli_only = true,
     },

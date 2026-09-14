@@ -13,13 +13,12 @@
   dangling symlinks and requested skips. Missing automatic system/user files remain normal.
 - Evaluate `.xffrc` admission controls in requested selector order, including composed configs.
 
-- Add policy-aware `--no-system-config` and `--no-user-config` controls, and make
-  `--no-config` suppress automatic configuration without bypassing mandatory
-  system policy or an explicitly selected `--xffrc` file.
-- Add config-only `--require-system-config` / `--no-require-system-config` and
-  `--require-user-config` / `--no-require-user-config` pairs. Each pair appears once per permitted
-  file, in unsectioned globals; the system decision wins for user configuration. `--no-config`
-  requests both skips and fails if either existing file requires application.
+- Make `--no-system-config` and `--no-user-config` exclude named sections while retaining existing
+  globals by default. `--no-config` combines those exclusions and disables `.xffrc` autoloading.
+- Add config-only `--require-system-globals` / `--no-require-system-globals` and
+  `--require-user-globals` / `--no-require-user-globals` pairs. Each pair appears once per permitted
+  file, in unsectioned globals; the system decision wins for user globals. Optional globals are
+  excluded only when a skip is requested. Missing automatic files remain normal.
 - Add config-selectable `--allow-xffrc` / `--no-allow-xffrc` controls for explicitly named config
   files, subject to the system policy gate and unavailable to the file being admitted.
 - Document every config-only allow/deny control individually in `--help=config`, including its

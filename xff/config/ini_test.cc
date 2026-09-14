@@ -131,8 +131,8 @@ TEST_F(IniTest, WhitespaceSeparatesWordsWithoutAssignmentSugar) {
 }
 
 TEST_F(IniTest, GlobalLinesRenderToCliTokens) {
-  const ConfigFile cfg = ParseIni("--no-require-system-config\n--color=auto\n-E\n");
-  EXPECT_THAT(cfg.globals, ElementsAre("--no-require-system-config", "--color=auto", "-E"));
+  const ConfigFile cfg = ParseIni("--no-require-system-globals\n--color=auto\n-E\n");
+  EXPECT_THAT(cfg.globals, ElementsAre("--no-require-system-globals", "--color=auto", "-E"));
   EXPECT_THAT(cfg.global_lines, SizeIs(3));
 }
 
@@ -169,7 +169,7 @@ TEST_F(IniTest, EverySectionNameDefinesAConfig) {
 
 TEST_F(IniTest, ParsesGlobalOptionsAndPlainNamedSectionsWithSourceLines) {
   const ConfigFile cfg = ParseIni(
-      "--no-require-system-config\n"
+      "--no-require-system-globals\n"
       "--color=auto\n"
       "[dev]\n"
       "--color=always\n"
@@ -178,7 +178,7 @@ TEST_F(IniTest, ParsesGlobalOptionsAndPlainNamedSectionsWithSourceLines) {
       "--color=never\n");
 
   ASSERT_THAT(cfg.global_lines, SizeIs(2));
-  EXPECT_THAT(cfg.global_lines[0].tokens, ElementsAre("--no-require-system-config"));
+  EXPECT_THAT(cfg.global_lines[0].tokens, ElementsAre("--no-require-system-globals"));
   ASSERT_THAT(cfg.named, SizeIs(2));
   EXPECT_THAT(cfg.named[0].name, Eq("dev"));
   EXPECT_THAT(cfg.named[0].lines, SizeIs(2));

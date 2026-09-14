@@ -75,6 +75,10 @@ void CheckGate(const xff::config::ConfigInputs& inputs) {
   static_cast<void>(xff::config::ExplainConfig(armed_flags));
 
   xff::config::ConfigInputs disabled = inputs;
+  disabled.system.globals.clear();
+  disabled.system.global_lines.clear();
+  disabled.user.globals.clear();
+  disabled.user.global_lines.clear();
   disabled.no_system_config = true;
   disabled.no_user_config = true;
   for (const xff::config::ResolvedFlag& flag : xff::config::ResolveConfig(disabled)) {

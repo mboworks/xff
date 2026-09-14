@@ -31,8 +31,8 @@ bool IsDirectoryRoot(std::string_view token) {
 }
 
 bool IsSystemControl(std::string_view token) {
-  return IsDirectoryRoot(token) || token == "--no-require-system-config" || token == "--require-system-config"
-         || token == "--no-require-user-config" || token == "--require-user-config" || token == "--allow-xffrc"
+  return IsDirectoryRoot(token) || token == "--no-require-system-globals" || token == "--require-system-globals"
+         || token == "--no-require-user-globals" || token == "--require-user-globals" || token == "--allow-xffrc"
          || token == "--no-allow-xffrc" || token == "--allow-rc-globals" || token == "--no-allow-rc-globals"
          || token == "--detailed-block-policy" || token.starts_with("--detailed-block-policy=");
 }
@@ -65,7 +65,7 @@ absl::StatusOr<absl::flat_hash_set<std::string>> ValidateControls(
                              : token.starts_with("--detailed-block-policy=") ? "--detailed-block-policy"
                              : token.starts_with("--no-require-")            ? absl::StrCat("--", token.substr(5))
                                                                              : std::string(token);
-    if ((IsDirectoryRoot(name) || name == "--require-system-config" || name == "--require-user-config"
+    if ((IsDirectoryRoot(name) || name == "--require-system-globals" || name == "--require-user-globals"
          || name == "--detailed-block-policy" || name == "--allow-rc-globals")
         && !controls.insert(name).second) {
       return absl::InvalidArgumentError(absl::StrCat(name, " and its negative form may occur only once"));
@@ -366,13 +366,10 @@ absl::Status ValidateConfigSelections(
       names.insert(section.name);
     }
   };
-  if (!inputs.no_system_config) {
-    collect(inputs.system);
-  }
-  if (!inputs.no_user_config) {
-    collect(inputs.user);
-  }
-  for (const config::ExplicitConfig& file : inputs.xffrc) {
+  const config::ConfigInputs applying = config::ApplyConfigSkips(inputs);
+  collect(applying.system);
+  collect(applying.user);
+  for (const config::ExplicitConfig& file : applying.xffrc) {
     collect(file.config);
   }
   constexpr std::string_view kPrefix = "--config=";

@@ -430,11 +430,10 @@ TEST_F(HelpTest, ConfigTopicDocumentsTiersStyleAndArming) {
       RenderTopicDoc("config"),
       AllOf(
           HasSubstr("system config"), HasSubstr("command line"), HasSubstr("--config"),
-          HasSubstr("multiple named blocks can apply"), HasSubstr("argv[0]"),
-          HasSubstr("may still be inspected for policy"), HasSubstr("--allow-exec"), HasSubstr("Config-only controls"),
-          HasSubstr("--no-require-system-config"), HasSubstr("--require-system-config"),
-          HasSubstr("--no-require-user-config"), HasSubstr("--require-user-config"), HasSubstr("--allow-xffrc"),
-          HasSubstr("--no-allow-xffrc")));
+          HasSubstr("multiple named blocks can apply"), HasSubstr("argv[0]"), HasSubstr("still read and validated"),
+          HasSubstr("--allow-exec"), HasSubstr("Config-only controls"), HasSubstr("--no-require-system-globals"),
+          HasSubstr("--require-system-globals"), HasSubstr("--no-require-user-globals"),
+          HasSubstr("--require-user-globals"), HasSubstr("--allow-xffrc"), HasSubstr("--no-allow-xffrc")));
 }
 
 TEST_F(HelpTest, NoticeTopicRendersTheManifest) {

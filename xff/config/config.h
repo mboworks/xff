@@ -69,17 +69,20 @@ struct ConfigInputs {
   ConfigFile user;                    // parsed user INI
   std::vector<ExplicitConfig> xffrc;  // discovered files first, then explicit files in CLI order
   std::vector<std::string> configs;   // active --config=NAME selectors (styles and/or named configs)
-  bool no_config = false;             // --no-config: skip trusted defaults when authorized and disable rc discovery
-  bool no_system_config = false;      // --no-system-config: suppress system configuration
-  bool no_user_config = false;        // --no-user-config: suppress the user tier
+  bool no_config = false;             // --no-config: exclude both sets of named sections and disable rc discovery
+  bool no_system_config = false;      // --no-system-config: exclude system sections and optional system globals
+  bool no_user_config = false;        // --no-user-config: exclude user sections and optional user globals
   RcMode rc_mode = RcMode::kOff;
   std::vector<ConfigSource> sources;  // every file consulted during discovery, for --explain (set by Discover)
 };
 
-// Resolves config-supplied flags using the legacy tier view, lowest precedence
-// first, each tagged with its Source. Prefer ResolveConfigInOrder for execution.
-// Each file contributes its unconditional globals and sections whose literal names are selected.
-// Gate the inputs first so an unarmed .xffrc action never reaches execution.
+// Applies skip requests to named sections and to globals only when their trusted policy permits it.
+// System globals are required by default. The system decision for user globals overrides the user.
+ConfigInputs ApplyConfigSkips(ConfigInputs inputs);
+
+// Resolves config-supplied flags using the tier view, lowest precedence first, with provenance.
+// Prefer ResolveConfigInOrder for execution. Gate the inputs first so unarmed .xffrc actions
+// never reach execution. Required globals remain active when named sections are excluded.
 std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& inputs);
 
 // Policy consumers can retain config-only controls in the same ordered stream. Runtime

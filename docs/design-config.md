@@ -36,25 +36,39 @@ Symlinks to regular files are permitted for trusted/explicit paths, while autolo
 themselves be regular files to avoid discovering configurations through links. Every existing config must be readable; permission failures and dangling symlinks
 are errors, including when a skip flag is requested. `--explain` reports consulted sources.
 
-The position-independent `--no-system-config` and `--no-user-config` suppress
-their respective automatic tiers; `--no-config` suppresses both and disables `.xffrc` autoloading regardless of flag order. A
-present source is still inspected for the permission to suppress it and, for
-the system file, its authoritative controls. An explicit command-line `--xffrc=FILE`
-remains active: it is not ambient configuration. Ignore files remain
-unaffected.
+The position-independent `--no-system-config` and `--no-user-config` exclude the named
+sections in their respective files. `--no-config` excludes both sets and disables `.xffrc`
+autoloading regardless of flag order. Explicit `--xffrc=FILE` inputs and ignore files remain active.
 
-File-requirement directives and the `--allow-xffrc` pair are config-only, not command-line options. `--no-require-*` makes the corresponding file optional so it may be skipped;
-`--require-*` prevents skipping a file that exists. Neither requires a missing file to exist.
-Without an applicable `--no-require-*`, a present file is required:
+**Existing unsectioned globals remain active by default.** A corresponding
+`--no-require-system-globals` or `--no-require-user-globals` permits excluding those globals too
+when a skip is requested. The permission alone does not skip anything. Missing automatic files
+remain normal; neither requirement makes a missing file mandatory. Every existing file is still
+read and validated, including when all of its ordinary settings are skipped.
 
-The system pair is `--require-system-config` / `--no-require-system-config`;
-the user pair is `--require-user-config` / `--no-require-user-config`.
+| Policy                           | No skip requested | Corresponding skip requested               |
+| -------------------------------- | ----------------- | ------------------------------------------ |
+| Omitted or `--require-*-globals` | Globals apply     | Globals apply; named sections are excluded |
+| `--no-require-*-globals`         | Globals apply     | Globals and named sections are excluded    |
 
-- System pair: unsectioned system config only.
-- User pair: unsectioned system or user config; the system decision wins.
+- System pair: `--require-system-globals` / `--no-require-system-globals`, unsectioned system config only.
+- User pair: `--require-user-globals` / `--no-require-user-globals`, unsectioned system or user config; the system decision wins, even if its own ordinary globals are skipped.
 - Each pair may appear once per permitted file.
 - Neither pair is allowed in named sections, explicit `.xffrc` files, or on the CLI.
-- `--no-config` requests both skips and fails if either existing file requires application.
+- `--no-config` applies both decisions independently. Required globals are retained; the skip itself is not an error.
+- A named section excluded from one tier may still be selected from another tier. A name absent
+  from every active file is an error, including a composition reference from a retained global.
+
+For example, this system file keeps its deletion block active under `--no-system-config` or
+`--no-config`, while the named section is excluded:
+
+```ini
+--require-system-globals
+--block-file-deletion
+
+[listing]
+--color=never
+```
 
 A duplicate require directive is a hard error, even if both occurrences have the same value.
 
@@ -84,8 +98,8 @@ is also restricted to automatic config files. In contrast, `--allow-exec` is a
 separate runtime flag accepted on the CLI and in config files, but an explicit file's
 own `--allow-exec` never arms its dangerous directives.
 
-A requested skip of a present, unauthorized source is a usage error. A missing
-source needs no permission because there is no configuration to suppress.
+A skip request never discards required globals. An unavailable selected name or an invalid existing
+file remains an error.
 
 ## Shared file grammar
 
@@ -94,8 +108,8 @@ options before the first section, then plain named configuration sections. Every
 named configuration:
 
 ```ini
---no-require-system-config
---no-require-user-config
+--no-require-system-globals
+--no-require-user-globals
 --color=auto
 
 [dev]
@@ -252,7 +266,7 @@ Proposed spelling gates remain roadmap work in [TODO.md](../TODO.md).
 Registry descriptors classify expression directives as safe, sensitive, or
 destructive. A config line receives the most restrictive class of any directive
 on that line; that aggregate class drives arming and diagnostics. Unconditional `--block-*` restrictions apply to actions from every source, including the CLI.
-Use `--require-system-config` to prevent omission of a mandatory system policy.
+Use `--require-system-globals` to prevent omission of a mandatory system policy.
 
 System and user configuration are trusted tiers. An explicit `--xffrc` file is a
 non-arming tier: naming it authorizes loading it, not executing dangerous content
@@ -283,43 +297,42 @@ as `--safe`, `--dry-run`, and action-specific confirmation remain independent.
 ends with `always`. `[dev]` is optional configuration; the unsectioned line applies on every run.
 `[global]` would simply define another optional named configuration.
 
-### Who may skip which file
+### Which globals survive a skip
 
 `/etc/xff.ini`:
 
 ```ini
---require-system-config
---no-require-user-config
+--require-system-globals
+--no-require-user-globals
+--block-execution
 ```
 
-`xff . --no-user-config` is allowed. `--no-system-config` and `--no-config` are rejected.
-The combined skip fails because the system file refuses to be skipped. A user-file
-`--require-user-config` cannot override the system grant. If the system omits its user-skip
-pair, this user config instead decides for itself:
+`xff . --no-config` retains the system execution block, excludes user globals and both sets
+of named sections, and disables `.xffrc` autoloading. `--no-system-config` also retains the system
+block while leaving user configuration active. A user `--require-user-globals` cannot override the
+system grant. If the system omits its user pair, the user file decides for itself:
 
 ```ini
---no-require-user-config
+--no-require-user-globals
 --color=never
 ```
 
-All skip controls precede sections. Each pair may occur only once in its file.
-
-`--no-config` requests both `--no-system-config` and `--no-user-config`. Each existing
-file must permit its own skip; if either refuses, the entire request fails. A missing file
-needs no permission. Without an applicable grant, an existing file cannot be skipped.
-To permit all three command-line spellings, put both grants in `/etc/xff.ini`:
+The color applies normally and is omitted with `--no-user-config` or `--no-config`.
+To permit excluding globals from both files, put these in the system file:
 
 ```ini
---no-require-system-config
---no-require-user-config
+--no-require-system-globals
+--no-require-user-globals
 ```
+
+All requirement controls precede sections. Each pair may occur only once per permitted file.
 
 ### Require restrictions from system configuration
 
 Keep `/etc/xff.ini` administrator-owned and unwritable by users whose configs it constrains:
 
 ```ini
---require-system-config
+--require-system-globals
 --block-execution
 --block-file-deletion
 ```

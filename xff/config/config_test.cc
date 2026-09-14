@@ -198,19 +198,19 @@ TEST_F(ConfigTest, PolicyControlsShareApplicationOrderButStayOutOfRuntimeFlags) 
       ElementsAre(FlagIs("--config=allow", Source::kCli), FlagIs("--config=deny", Source::kCli)));
 }
 
-TEST_F(ConfigTest, NoConfigYieldsEmpty) {
+TEST_F(ConfigTest, SkipsKeepRequiredGlobals) {
   ConfigInputs in;
   in.system.globals = {"--color=auto"};
   in.user = ParseXffrc("--sort");
   in.no_system_config = true;
   in.no_user_config = true;
-  EXPECT_THAT(ResolveConfig(in), IsEmpty());
+  EXPECT_THAT(ResolveConfig(in), ElementsAre(FlagIs("--color=auto", Source::kSystem), FlagIs("--sort", Source::kUser)));
 }
 
 TEST_F(ConfigTest, GranularSkipControlsSuppressOnlyTheirAutomaticTier) {
   ConfigInputs in;
-  in.system.globals = {"--color=auto", "--no-require-system-config"};
-  in.user = ParseXffrc("--sort\n--no-require-user-config");
+  in.system.globals = {"--color=auto", "--no-require-system-globals"};
+  in.user = ParseXffrc("--sort\n--no-require-user-globals");
   in.xffrc = {{.path = "/named", .config = ParseXffrc("--jobs=2")}};
   in.no_system_config = true;
   EXPECT_THAT(ResolveConfig(in), ElementsAre(FlagIs("--sort", Source::kUser), FlagIs("--jobs=2", Source::kXffrc)));
@@ -220,10 +220,55 @@ TEST_F(ConfigTest, GranularSkipControlsSuppressOnlyTheirAutomaticTier) {
       ResolveConfig(in), ElementsAre(FlagIs("--color=auto", Source::kSystem), FlagIs("--jobs=2", Source::kXffrc)));
 }
 
+TEST_F(ConfigTest, SkipRequestsRemoveNamedSectionsButRetainRequiredGlobalsInBothResolvers) {
+  ConfigInputs inputs;
+  inputs.system = ParseIni("--color=auto\n[profile]\n--hidden\n");
+  inputs.user = ParseIni("--jobs=3\n[profile]\n--sort\n");
+  inputs.configs = {"profile"};
+  inputs.no_config = true;
+  EXPECT_THAT(
+      ResolveConfig(inputs), ElementsAre(FlagIs("--color=auto", Source::kSystem), FlagIs("--jobs=3", Source::kUser)));
+  EXPECT_THAT(
+      ResolveConfigInOrder(inputs, {"--config=profile"}, "xff"),
+      ElementsAre(
+          FlagIs("--color=auto", Source::kSystem), FlagIs("--jobs=3", Source::kUser),
+          FlagIs("--config=profile", Source::kCli)));
+}
+
+TEST_F(ConfigTest, SystemDecidesWhetherUserGlobalsSurviveEvenWhenSystemGlobalsAreSkipped) {
+  ConfigInputs inputs;
+  inputs.system = ParseIni("--no-require-system-globals\n--require-user-globals\n--color=auto\n");
+  inputs.user = ParseIni("--no-require-user-globals\n--jobs=3\n");
+  inputs.no_config = true;
+  EXPECT_THAT(ResolveConfigInOrder(inputs, {}, "xff"), ElementsAre(FlagIs("--jobs=3", Source::kUser)));
+  inputs.system = ParseIni("--no-require-system-globals\n--no-require-user-globals\n--color=auto\n");
+  inputs.user = ParseIni("--require-user-globals\n--jobs=3\n");
+  EXPECT_THAT(ResolveConfigInOrder(inputs, {}, "xff"), IsEmpty());
+  inputs.no_config = false;
+  EXPECT_THAT(
+      ResolveConfigInOrder(inputs, {}, "xff"),
+      ElementsAre(FlagIs("--color=auto", Source::kSystem), FlagIs("--jobs=3", Source::kUser)));
+}
+
+TEST_F(ConfigTest, OptionalGlobalsAreSkippedOnlyOnRequestAndLiteralArgumentsDoNotGrantPermission) {
+  ConfigInputs inputs;
+  inputs.user = ParseIni("--no-require-user-globals\n--jobs=3\n");
+  EXPECT_THAT(ResolveConfigInOrder(inputs, {}, "xff"), ElementsAre(FlagIs("--jobs=3", Source::kUser)));
+  inputs.no_user_config = true;
+  EXPECT_THAT(ResolveConfigInOrder(inputs, {}, "xff"), IsEmpty());
+  inputs.system = ParseIni("-name '--no-require-system-globals'\n--color=auto\n");
+  inputs.no_system_config = true;
+  EXPECT_THAT(
+      ResolveConfigInOrder(inputs, {}, "xff"),
+      ElementsAre(
+          FlagIs("-name", Source::kSystem), FlagIs("--no-require-system-globals", Source::kSystem),
+          FlagIs("--color=auto", Source::kSystem)));
+}
+
 TEST_F(ConfigTest, SkipPermissionDirectivesNeverBecomeRuntimeGlobals) {
   ConfigInputs in;
-  in.system.globals = {"--no-require-system-config", "--no-require-user-config", "--color=auto"};
-  in.user = ParseXffrc("--no-require-user-config --sort");
+  in.system.globals = {"--no-require-system-globals", "--no-require-user-globals", "--color=auto"};
+  in.user = ParseXffrc("--no-require-user-globals --sort");
   EXPECT_THAT(ResolveConfig(in), ElementsAre(FlagIs("--color=auto", Source::kSystem), FlagIs("--sort", Source::kUser)));
 }
 
@@ -244,7 +289,7 @@ TEST_F(ConfigTest, SelectedSystemSectionsResolveInFileOrderWithProvenance) {
                                  FlagIs("--color=auto", Source::kSystem), FlagIs("--hidden", Source::kSystem),
                                  FlagIs("--jobs=2", Source::kSystem), FlagIs("--sort=none", Source::kSystem)));
   inputs.no_system_config = true;
-  EXPECT_THAT(ResolveConfig(inputs), IsEmpty());
+  EXPECT_THAT(ResolveConfig(inputs), ElementsAre(FlagIs("--color=auto", Source::kSystem)));
 }
 
 TEST_F(ConfigTest, TransitiveAutomaticSelectorsCanArmAnExplicitFile) {

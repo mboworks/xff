@@ -114,13 +114,13 @@ TEST_F(GlobalsTest, ConfigAndSymlinkFlagsDocumentTheirNonObviousBoundaries) {
       Optional(Field("details", &GlobalFlag::details, HasSubstr("Every occurrence remains an active selector"))));
   EXPECT_THAT(
       LookupGlobal("--no-config"),
-      Optional(Field("details", &GlobalFlag::details, HasSubstr("still inspected for policy"))));
+      Optional(Field("details", &GlobalFlag::details, HasSubstr("still read and validated"))));
   EXPECT_THAT(
       LookupGlobal("--no-system-config"),
-      Optional(Field("details", &GlobalFlag::details, HasSubstr("--no-require-system-config"))));
+      Optional(Field("details", &GlobalFlag::details, HasSubstr("--no-require-system-globals"))));
   EXPECT_THAT(
       LookupGlobal("--no-user-config"),
-      Optional(Field("details", &GlobalFlag::details, HasSubstr("--no-require-user-config"))));
+      Optional(Field("details", &GlobalFlag::details, HasSubstr("--no-require-user-globals"))));
   EXPECT_THAT(
       LookupGlobal("--explain"),
       Optional(Field("details", &GlobalFlag::details, HasSubstr("does not evaluate the expression"))));

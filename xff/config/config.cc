@@ -33,16 +33,16 @@
 namespace xff::config {
 namespace {
 
-constexpr std::string_view kNoRequireSystemConfig = "--no-require-system-config";
-constexpr std::string_view kNoRequireUserConfig = "--no-require-user-config";
+constexpr std::string_view kNoRequireSystemGlobals = "--no-require-system-globals";
+constexpr std::string_view kNoRequireUserGlobals = "--no-require-user-globals";
 constexpr std::string_view kAllowXffrc = "--allow-xffrc";
-constexpr std::string_view kRequireSystemConfig = "--require-system-config";
-constexpr std::string_view kRequireUserConfig = "--require-user-config";
+constexpr std::string_view kRequireSystemGlobals = "--require-system-globals";
+constexpr std::string_view kRequireUserGlobals = "--require-user-globals";
 constexpr std::string_view kNoAllowXffrc = "--no-allow-xffrc";
 
 bool IsSkipPermission(std::string_view flag) {
-  return flag == "--allow-rc-globals" || flag == "--no-allow-rc-globals" || flag == kNoRequireSystemConfig
-         || flag == kNoRequireUserConfig || flag == kRequireSystemConfig || flag == kRequireUserConfig
+  return flag == "--allow-rc-globals" || flag == "--no-allow-rc-globals" || flag == kNoRequireSystemGlobals
+         || flag == kNoRequireUserGlobals || flag == kRequireSystemGlobals || flag == kRequireUserGlobals
          || flag == kAllowXffrc || flag == kNoAllowXffrc;
 }
 
@@ -147,7 +147,7 @@ void AppendMatching(
 class OrderedResolver {
  public:
   OrderedResolver(const ConfigInputs& inputs, std::string_view invocation_selector, ConfigControls controls)
-      : inputs_(ExpandInputSafety(inputs)),
+      : inputs_(ExpandInputSafety(ApplyConfigSkips(inputs))),
         controls_(controls),
         selectors_{std::string(invocation_selector)},
         system_named_emitted_(inputs.system.named.size()),
@@ -178,15 +178,10 @@ class OrderedResolver {
   }
 
  private:
-  void EmitSystem() {
-    if (inputs_.no_system_config) {
-      return;
-    }
-    EmitTokens(inputs_.system.globals, Source::kSystem, 0);
-  }
+  void EmitSystem() { EmitTokens(inputs_.system.globals, Source::kSystem, 0); }
 
   void EmitMatching() {
-    if (!inputs_.no_system_config) {
+    if (!inputs_.system.named.empty()) {
       for (std::size_t index = 0; index < inputs_.system.named.size(); ++index) {
         const IniSection& section = inputs_.system.named[index];
         if (system_named_emitted_[index] || !absl::c_contains(selectors_, section.name)) {
@@ -198,7 +193,7 @@ class OrderedResolver {
         }
       }
     }
-    if (!inputs_.no_user_config && CanEmit(1)) {
+    if (CanEmit(1)) {
       EmitLines(user_entries_, user_emitted_, Source::kUser, 1);
     }
     for (std::size_t index = 0; index < inputs_.xffrc.size(); ++index) {
@@ -310,31 +305,43 @@ std::vector<std::string_view> DirectiveTokens(const std::vector<std::string>& to
   return result;
 }
 
+ConfigInputs ApplyConfigSkips(ConfigInputs inputs) {
+  const auto requirement = [](const ConfigFile& file, std::string_view positive, std::string_view negative) {
+    std::optional<bool> required;
+    for (const std::string_view token : DirectiveTokens(file.globals)) {
+      if (token == positive) {
+        required = true;
+      } else if (token == negative) {
+        required = false;
+      }
+    }
+    return required;
+  };
+  const bool system_required =
+      requirement(inputs.system, kRequireSystemGlobals, kNoRequireSystemGlobals).value_or(true);
+  const bool user_required =
+      requirement(inputs.system, kRequireUserGlobals, kNoRequireUserGlobals)
+          .value_or(requirement(inputs.user, kRequireUserGlobals, kNoRequireUserGlobals).value_or(true));
+  const auto skip = [](ConfigFile& file, bool requested, bool required) {
+    if (!requested) {
+      return;
+    }
+    file.named.clear();
+    if (!required) {
+      file.globals.clear();
+      file.global_lines.clear();
+    }
+  };
+  skip(inputs.system, inputs.no_config || inputs.no_system_config, system_required);
+  skip(inputs.user, inputs.no_config || inputs.no_user_config, user_required);
+  return inputs;
+}
+
 std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& raw_inputs) {
-  const ConfigInputs inputs = ExpandInputSafety(raw_inputs);
+  const ConfigInputs inputs = ExpandInputSafety(ApplyConfigSkips(raw_inputs));
   std::vector<ResolvedFlag> resolved;
-  if (!inputs.no_system_config) {
-    for (const std::string& flag : inputs.system.globals) {
-      if (!IsSkipPermission(flag)) {
-        resolved.push_back(ResolvedFlag{.flag = flag, .source = Source::kSystem});
-      }
-    }
-    for (const IniSection& section : inputs.system.named) {
-      if (!absl::c_contains(inputs.configs, section.name)) {
-        continue;
-      }
-      for (const IniLine& line : section.lines) {
-        for (const std::string& flag : line.tokens) {
-          if (!IsSkipPermission(flag)) {
-            resolved.push_back(ResolvedFlag{.flag = flag, .source = Source::kSystem});
-          }
-        }
-      }
-    }
-  }
-  if (!inputs.no_user_config) {
-    AppendMatching(resolved, inputs.user, inputs.configs, Source::kUser);
-  }
+  AppendMatching(resolved, inputs.system, inputs.configs, Source::kSystem);
+  AppendMatching(resolved, inputs.user, inputs.configs, Source::kUser);
   for (const ExplicitConfig& file : inputs.xffrc) {
     AppendMatching(resolved, file.config, inputs.configs, Source::kXffrc);
   }

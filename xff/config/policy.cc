@@ -34,11 +34,11 @@
 namespace xff::config {
 namespace {
 
-constexpr std::string_view kNoRequireSystemConfig = "--no-require-system-config";
-constexpr std::string_view kNoRequireUserConfig = "--no-require-user-config";
+constexpr std::string_view kNoRequireSystemGlobals = "--no-require-system-globals";
+constexpr std::string_view kNoRequireUserGlobals = "--no-require-user-globals";
 constexpr std::string_view kAllowXffrc = "--allow-xffrc";
-constexpr std::string_view kRequireSystemConfig = "--require-system-config";
-constexpr std::string_view kRequireUserConfig = "--require-user-config";
+constexpr std::string_view kRequireSystemGlobals = "--require-system-globals";
+constexpr std::string_view kRequireUserGlobals = "--require-user-globals";
 constexpr std::string_view kNoAllowXffrc = "--no-allow-xffrc";
 
 bool IsDirectoryRoot(std::string_view flag) {
@@ -51,11 +51,11 @@ bool IsDetailedPolicy(std::string_view flag) {
 }
 
 bool IsSystemControl(std::string_view flag) {
-  return flag == kNoRequireSystemConfig || flag == kRequireSystemConfig;
+  return flag == kNoRequireSystemGlobals || flag == kRequireSystemGlobals;
 }
 
 bool IsUserControl(std::string_view flag) {
-  return flag == kNoRequireUserConfig || flag == kRequireUserConfig;
+  return flag == kNoRequireUserGlobals || flag == kRequireUserGlobals;
 }
 
 bool IsXffrcControl(std::string_view flag) {
@@ -115,13 +115,13 @@ absl::Status ValidateSystemControlLocations(const ConfigFile& system) {
   }
   if (absl::Status status = ValidateSingleControl(
           system.globals, IsSystemControl,
-          "the system config may set --no-require-system-config or --require-system-config only once");
+          "the system config may set --no-require-system-globals or --require-system-globals only once");
       !status.ok()) {
     return status;
   }
   return ValidateSingleControl(
       system.globals, IsUserControl,
-      "the system config may set --no-require-user-config or --require-user-config only once");
+      "the system config may set --no-require-user-globals or --require-user-globals only once");
 }
 
 struct FileLine {
@@ -178,14 +178,14 @@ absl::Status ValidateUserControlLocations(const ConfigFile& user) {
       }
       if (IsUserControl(flag) && !entry.name.empty()) {
         return absl::InvalidArgumentError(
-            "--no-require-user-config and --require-user-config must precede every user config section");
+            "--no-require-user-globals and --require-user-globals must precede every user config section");
       }
       user_controls += IsUserControl(flag) ? 1 : 0;
     }
   }
   if (user_controls > 1) {
     return absl::InvalidArgumentError(
-        "the user config may set --no-require-user-config or --require-user-config only once");
+        "the user config may set --no-require-user-globals or --require-user-globals only once");
   }
   return absl::OkStatus();
 }
@@ -261,25 +261,6 @@ std::string_view ClassName(registry::Safety safety) {
   return "safe";
 }
 
-std::optional<bool> SystemPermission(const ConfigInputs& inputs, std::string_view permission) {
-  std::optional<bool> allowed;
-  for (const std::string_view flag : DirectiveTokens(inputs.system.globals)) {
-    if (flag == permission) {
-      allowed = true;
-    } else if (
-        (permission == kNoRequireSystemConfig && flag == kRequireSystemConfig)
-        || (permission == kNoRequireUserConfig && flag == kRequireUserConfig)) {
-      allowed = false;
-    }
-  }
-  return allowed;
-}
-
-bool SourceWasFound(const ConfigInputs& inputs, Source layer) {
-  return absl::c_any_of(
-      inputs.sources, [layer](const ConfigSource& source) { return source.layer == layer && source.found; });
-}
-
 }  // namespace
 
 registry::Safety LineSafety(const IniLine& line) {
@@ -305,8 +286,9 @@ bool RcGlobalsAllowed(const ConfigInputs& inputs) {
       allowed = true;
     }
   }
-  if (!inputs.no_user_config && !inputs.no_config) {
-    for (const auto flag : DirectiveTokens(inputs.user.globals)) {
+  {
+    const ConfigInputs applying = ApplyConfigSkips(inputs);
+    for (const auto flag : DirectiveTokens(applying.user.globals)) {
       if (IsRcGlobalsControl(flag)) {
         allowed = flag == "--allow-rc-globals";
       }
@@ -321,24 +303,6 @@ absl::Status ValidateConfigSkips(const ConfigInputs& inputs) {
   }
   if ((!inputs.xffrc.empty() || inputs.rc_mode != RcMode::kOff) && !XffrcAllowed(inputs)) {
     return absl::PermissionDeniedError(".xffrc loading is disabled by the resolved --no-allow-xffrc setting");
-  }
-  const std::optional<bool> system_permission = SystemPermission(inputs, kNoRequireSystemConfig);
-  const bool skip_system = inputs.no_config || inputs.no_system_config;
-  if (skip_system && SourceWasFound(inputs, Source::kSystem) && !system_permission.value_or(false)) {
-    return absl::PermissionDeniedError("--no-system-config requires --no-require-system-config in /etc/xff.ini");
-  }
-  std::optional<bool> user_permission;
-  for (const std::string_view flag : DirectiveTokens(inputs.user.globals)) {
-    if (IsUserControl(flag)) {
-      user_permission = flag == kNoRequireUserConfig;
-    }
-  }
-  const std::optional<bool> authoritative_user_permission = SystemPermission(inputs, kNoRequireUserConfig);
-  const bool skip_user = inputs.no_config || inputs.no_user_config;
-  if (skip_user && SourceWasFound(inputs, Source::kUser)
-      && !authoritative_user_permission.value_or(user_permission.value_or(false))) {
-    return absl::PermissionDeniedError(
-        "--no-user-config requires --no-require-user-config in the system or user config");
   }
   return absl::OkStatus();
 }
@@ -374,7 +338,7 @@ class ConfigGate {
 
   GateResult Apply() {
     result_.config.system = Filter(result_.config.system, Source::kSystem);
-    result_.config.user = result_.config.no_user_config ? ConfigFile{} : Filter(result_.config.user, Source::kUser);
+    result_.config.user = Filter(result_.config.user, Source::kUser);
     for (ExplicitConfig& file : result_.config.xffrc) {
       file.config = Filter(file.config, Source::kXffrc);
     }

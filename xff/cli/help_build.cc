@@ -892,8 +892,8 @@ Section SafetySection(bool in_full) {
       "directive may "
       "occur once in the unsectioned system config and once in the "
       "unsectioned user config; each file chooses its own policy. Named sections, explicit `.xffrc` files, and the "
-      "CLI cannot set it. Require the policy file with `--require-system-config` or `--require-user-config` "
-      "when users must not skip it."));
+      "CLI cannot set it. Keep policy globals active with `--require-system-globals` or `--require-user-globals` "
+      "when users must not skip them."));
   section.children.push_back(ProseOf(
       "Each file's directives are translated before composition. Selecting `archive` in another file "
       "cannot remove mandatory restrictions already imposed. Select `archive` for precise archive control; an empty "
@@ -958,7 +958,7 @@ Section SafetySection(bool in_full) {
       "archive publication, and is cleaned through retained handles. It does not grant access to other "
       "pre-existing temporary files. User-directed directory creation and deletion have separate controls."));
   section.children.push_back(ExampleOf(
-      "--require-system-config\n--detailed-block-policy=archive,temp,output\n"
+      "--require-system-globals\n--detailed-block-policy=archive,temp,output\n"
       "--output-root=/srv/xff/results\n--temp-root=/srv/xff/scratch\n"
       "--block-execution\n--block-file-writing\n--block-file-deletion\n"
       "--block-directory-creation\n--block-directory-deletion\n"
@@ -978,7 +978,7 @@ Section SafetySection(bool in_full) {
       "selected archive output and its necessary owned temporary files, never extraction or unrelated writes. "
       "When overwrite is blocked, creation must atomically refuse an existing destination, including symlinks."));
   section.children.push_back(ExampleOf(
-      "--require-system-config\n--detailed-block-policy=archive\n--block-execution\n"
+      "--require-system-globals\n--detailed-block-policy=archive\n--block-execution\n"
       "--block-file-writing\n--block-file-deletion\n--block-directory-creation\n"
       "--block-directory-deletion\n--block-archive-overwrite",
       "ini"));
@@ -1026,26 +1026,23 @@ Section ConfigSection(bool in_full) {
   layers.children.push_back(ProseOf(
       "Autoloading defaults off (`--rc-`). `--rc` discovers `.xffrc` in directory search roots; `--rc+` "
       "also discovers descendant files. No ancestor search occurs. `--no-config` disables discovery and "
-      "suppresses the automatic system and user tiers when their "
-      "trusted permission directives allow it; those files may still be inspected for policy. An explicit "
+      "excludes named system and user sections. Existing globals remain active by default; the corresponding "
+      "`--no-require-*-globals` permits excluding them too. Both files are still read and validated. An explicit "
       "command-line `--xffrc` remains active."));
   layers.children.push_back(ProseOf(
-      "File-requirement directives and the `--allow-xffrc` pair are config-only, not command-line options. "
-      "Require flags precede the first section. `--no-require-*` makes a file "
-      "optional; "
-      "The user config is always `<OS account home>/.config/xff/config`, using the effective OS account record, "
-      "independent of environment variables. Missing automatic system/user files are normal. "
-      "An explicit `--xffrc=FILE` must exist; existing unreadable configs and dangling symlinks are errors, "
-      "even when a skip is requested. "
-      "`--require-*` prevents skipping an existing file, without requiring a missing file to exist. The system file "
-      "may set one of "
-      "`--no-require-system-config` / `--require-system-config` once and one of "
-      "`--no-require-user-config` / `--require-user-config` once. Permissions govern which files may be skipped: "
-      "`--no-config` requests both skips and fails if either existing file refuses. Missing files need no "
-      "permission; an existing file without a grant cannot be skipped. The user file may set its user-control "
-      "pair once before the first section. A "
-      "system "
-      "user-control decision is authoritative over the user file. Explicit `--xffrc` files may not contain any "
+      "Globals-requirement directives and the `--allow-xffrc` pair are config-only, not command-line options. "
+      "Existing globals are required by default; missing automatic files remain normal. "
+      "The user config is `<OS account home>/.config/xff/config`, independent of environment variables. "
+      "Explicit `--xffrc=FILE` must exist. Existing unreadable configs and dangling symlinks are errors, "
+      "even when a skip is requested. The system pair `--require-system-globals` / `--no-require-system-globals` "
+      "is allowed only in unsectioned system globals, once per pair. The user pair `--require-user-globals` / "
+      "`--no-require-user-globals` is allowed in unsectioned system or user globals, once per pair per file; "
+      "the system decision wins, even if its own globals are skipped. Required globals stay active while "
+      "named sections are excluded; optional globals are also excluded when the corresponding skip is requested. "
+      "A permission alone does not skip anything. `--no-config` requests both exclusions and disables autoloading. "
+      "Named sections remain optional; selecting a name unavailable in every active file is an error. "
+      "Neither the CLI nor named sections or `.xffrc` files may set these requirement directives. "
+      "Explicit `--xffrc` files may not contain any "
       "of these controls. Separately, `--allow-xffrc` / `--no-allow-xffrc` is a normal config-only setting usable "
       "in system defaults or any user config block; user selection and precedence decide whether command-line "
       "`--xffrc=FILE` is accepted, and an unsectioned system denial cannot be overridden. Admission is checked before "
@@ -1096,20 +1093,20 @@ Section ConfigSection(bool in_full) {
   section.children.push_back(Content{.node = std::move(layers)});
 
   static constexpr std::array<DocPair, 9> kConfigControls = {{
-      {"--no-require-system-config",
-       "permits skipping the system file with `--no-system-config` or `--no-config`; system config only, before the "
+      {"--no-require-system-globals",
+       "permits skipping system globals with `--no-system-config` or `--no-config`; system config only, before the "
        "first section, and at most one "
        "of this pair"},
-      {"--require-system-config",
-       "forbids skipping the system file, including with `--no-config`; system config only, before the first section, "
+      {"--require-system-globals",
+       "keeps system globals active, including with `--no-config`; system config only, before the first section, "
        "and at most one of "
        "this pair"},
-      {"--no-require-user-config",
-       "permits skipping the user file with `--no-user-config` or `--no-config`; before the first section in the "
+      {"--no-require-user-globals",
+       "permits skipping user globals with `--no-user-config` or `--no-config`; before the first section in the "
        "system or user config, and at "
        "most one of this pair per file; the system decision is authoritative"},
-      {"--require-user-config",
-       "forbids skipping the user file, including with `--no-config`; before the first section in the system or user "
+      {"--require-user-globals",
+       "keeps user globals active, including with `--no-config`; before the first section in the system or user "
        "config, and at most "
        "one of this pair per file; the system decision is authoritative"},
       {"--allow-xffrc",
@@ -1136,16 +1133,16 @@ Section ConfigSection(bool in_full) {
       "any `.xffrc` file. An allow/deny pair is one setting: where a pair is limited to one "
       "occurrence, its positive and negative forms may not both appear."));
   controls.children.push_back(ProseOf(
-      "The system pair is `--require-system-config` / `--no-require-system-config`; "
-      "the user pair is `--require-user-config` / `--no-require-user-config`."));
+      "The system pair is `--require-system-globals` / `--no-require-system-globals`; "
+      "the user pair is `--require-user-globals` / `--no-require-user-globals`."));
   Bullets requirements;
   requirements.items.push_back(ParseInline("System pair: unsectioned system config only."));
   requirements.items.push_back(ParseInline("User pair: unsectioned system or user config; the system decision wins."));
   requirements.items.push_back(ParseInline("Each pair may appear once per permitted file."));
   requirements.items.push_back(
       ParseInline("Neither pair is allowed in named sections, explicit `.xffrc` files, or on the CLI."));
-  requirements.items.push_back(
-      ParseInline("`--no-config` requests both skips and fails if either existing file requires application."));
+  requirements.items.push_back(ParseInline(
+      "`--no-config` excludes both sets of named sections, retains required globals, and disables rc autoloading."));
   controls.children.push_back(Content{.node = std::move(requirements)});
   controls.children.push_back(RowsOf(kConfigControls));
   section.children.push_back(Content{.node = std::move(controls)});
@@ -1184,17 +1181,17 @@ Section ConfigSection(bool in_full) {
       "alone does not discover files. Unsectioned `--config=NAME` directives can select sections when "
       "the file loads. Autoloading is separately enabled with `--rc` or `--rc+`."));
   examples.children.push_back(ProseOf(
-      "Permit only the user-file skip: these unsectioned system controls allow `--no-user-config`, reject "
-      "`--no-config` and `--no-system-config`, and override the user file's own skip permission."));
-  examples.children.push_back(ExampleOf("--require-system-config\n--no-require-user-config", "ini"));
+      "Keep system globals mandatory while permitting user globals to be skipped. These system controls "
+      "override the user file's own globals requirement."));
+  examples.children.push_back(ExampleOf("--require-system-globals\n--no-require-user-globals", "ini"));
   examples.children.push_back(ProseOf(
-      "`xff . --no-user-config` is allowed. `--no-system-config` and `--no-config` are rejected. "
-      "To permit both individual skips and `--no-config`, grant both file permissions in the system file:"));
-  examples.children.push_back(ExampleOf("--no-require-system-config\n--no-require-user-config", "ini"));
+      "`xff . --no-config` retains system globals, excludes user globals, excludes both sets of named sections, "
+      "and disables autoloading. To permit excluding globals from both files, use:"));
+  examples.children.push_back(ExampleOf("--no-require-system-globals\n--no-require-user-globals", "ini"));
   examples.children.push_back(ProseOf(
-      "To prohibit execution regardless of its source, require an administrator-owned system file "
+      "To prohibit execution regardless of its source, require globals in an administrator-owned system file "
       "and set `--block-execution`. Add `--no-allow-xffrc` to reject explicit files altogether:"));
-  examples.children.push_back(ExampleOf("--require-system-config\n--block-execution\n--no-allow-xffrc", "ini"));
+  examples.children.push_back(ExampleOf("--require-system-globals\n--block-execution\n--no-allow-xffrc", "ini"));
   examples.children.push_back(ProseOf(
       "Neither user `--allow-xffrc` nor an explicit file's own `--allow-exec` can undo those prohibitions. "
       "Execution blocks also constrain actions typed directly on the CLI. Runtime "
