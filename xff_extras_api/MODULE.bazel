@@ -31,4 +31,4 @@ bazel_dep(name = "bazel_skylib", version = "1.9.2")
 
 # mboworks_mbo resolves via the root module's override (overrides are root-global).
 bazel_dep(name = "googletest", version = "1.18.0.bcr.1")
-bazel_dep(name = "mboworks_mbo", version = "0.14.0")
+bazel_dep(name = "mboworks_mbo", version = "0.15.0")
