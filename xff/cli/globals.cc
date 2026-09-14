@@ -94,6 +94,8 @@ constexpr std::array kFormatValues = std::to_array<ValueDoc>({
     {.value = "md", .meaning = "", .hidden = true},  // the alias `markdown`'s meaning already names
 });
 constexpr std::array kSummaryValues = std::to_array<ValueDoc>({
+    {.value = "none", .meaning = "clear all previously requested summaries"},
+    {.value = "compare", .meaning = "comparison counts and percentages by status; requires `--compare`"},
     {.value = "overall", .meaning = "one row aggregated over all matches"},
     {.value = "type", .meaning = "by file type"},
     {.value = "ext", .meaning = "by extension"},
@@ -205,6 +207,7 @@ constexpr std::array kDiffFormatValues = std::to_array<ValueDoc>({
     {.value = "side-by-side", .meaning = "", .hidden = true},
 });
 constexpr std::array kCompareValues = std::to_array<ValueDoc>({
+    {.value = "summary", .meaning = "shorthand for `--compare=status --compare-select=none --summary=compare`"},
     {.value = "status", .meaning = "one tab-separated selected result kind and relative path per record"},
     {.value = "diff", .meaning = "a unified tree diff suitable for saving as a patch"},
 });
@@ -1128,11 +1131,13 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     },
     {
         .name = "--compare",
-        .display = "--compare[=status|diff]",
+        .display = "--compare[=status|diff|summary]",
         .group = "diff",
         .header = "Tree comparison and diffs",
-        .summary = "compare two roots as selected statuses or a unified diff",
-        .details = "Requires exactly two roots. Bare `--compare` and "
+        .summary = "compare two roots as selected statuses, a unified diff, or a summary",
+        .details = "Requires exactly two roots. `--compare=summary` expands at its position to "
+                   "`--compare=status --compare-select=none --summary=compare`; later flags may override its settings. "
+                   "Bare `--compare` and "
                    "`--compare=status` emit only discrepancies as tab-separated `left-only`, `right-only`, or "
                    "`different` records. `--compare=diff` emits one unified tree diff, suitable for redirecting to "
                    "a patch file; `--diff-context` and `--diff-algorithm` tune it. Unlike `-diff TARGET`, which is "
@@ -1143,7 +1148,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "none of them. Regular files are compared byte for byte (text and binary). Unfollowed symlinks "
                    "are compared by target. Both walks complete before comparison records are emitted in bytewise "
                    "relative-path order; `--sort` affects each walk, not that final order. In status mode, "
-                   "`--path-encoding=escape` makes control bytes in the relative path unambiguous.",
+                   "`--path-encoding=escape` makes control bytes in the relative path unambiguous. "
+                   "`--summary` / `--summary=compare` append comparison counts and percentages by status and "
+                   "a total. "
+                   "Other summary groupings still describe each input tree separately.",
         .values = kCompareValues,
         .topic = "compare",
         .value_check = GlobalFlag::ValueCheck::kEnum,
@@ -1153,9 +1161,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--compare-select=KIND,...",
         .group = "diff",
         .header = "Tree comparison and diffs",
-        .summary = "tree-comparison results to emit: left-only, right-only, identical, different, or all",
+        .summary = "tree-comparison results to emit: left-only, right-only, identical, different, all, or none",
         .details = "Selects comma-separated result kinds for `--compare`. The default is "
                    "`left-only,right-only,different`, so equal files stay silent. `all` selects every kind. "
+                   "`none` or an empty value suppresses per-path output; comparison summaries still count all results. "
                    "`identical` is available with status output and is rejected with `--compare=diff`, where an "
                    "unchanged file has no patch representation.",
         .affects = "--compare",
@@ -1336,7 +1345,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "stats",
         .header = "Statistics",
         .summary = "aligned count + size table (or --format=jsonl rows) instead of each match; repeatable",
-        .details = "Replaces the per-match listing with an aggregate table: match count and total size per group "
+        .details = "With `--compare`, bare `--summary` or `--summary=compare` appends result counts and "
+                   "percentages by "
+                   "status and a total after the comparison output. Other groupings summarize each input tree. "
+                   "Outside comparison, replaces the per-match listing with an aggregate table: match count and total "
+                   "size per group "
                    "(overall, by type, extension, programming language, media (MIME) type, user (owner), owning "
                    "group, file digest, or hash-verification result). The categorical keys reuse the "
                    "{mime}/{user}/{group}/{hash} field "

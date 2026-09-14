@@ -292,6 +292,7 @@ absl::StatusOr<std::size_t> ResolveJobs(const std::vector<std::string>& globals,
 enum class SummaryMode : std::uint8_t {
   kOff,
   kOverall,
+  kCompare,
   kType,
   kExt,
   kLanguage,
@@ -313,19 +314,22 @@ struct SummarySpec {
 // Parses every --summary[=X] into an ordered list of sinks (each occurrence appends one); the value
 // selects the mode, `--summary=none` clears the list (turns every summary off). No last-wins
 // collapse: two distinct --summary flags produce two tables.
-std::vector<SummarySpec> ResolveSummaries(const std::vector<std::string>& globals) {
+std::vector<SummarySpec> ResolveSummaries(const std::vector<std::string>& globals, bool compare = false) {
   using ModePair = std::pair<std::string_view, SummaryMode>;
   static constexpr auto kModes = mbo::container::MakeLimitedMap(
-      ModePair{"--summary", SummaryMode::kOverall}, ModePair{"--summary=ext", SummaryMode::kExt},
-      ModePair{"--summary=group", SummaryMode::kGroup}, ModePair{"--summary=hash", SummaryMode::kHash},
-      ModePair{"--summary=lang", SummaryMode::kLanguage}, ModePair{"--summary=mime", SummaryMode::kMime},
-      ModePair{"--summary=overall", SummaryMode::kOverall}, ModePair{"--summary=owner", SummaryMode::kUser},
-      ModePair{"--summary=type", SummaryMode::kType}, ModePair{"--summary=user", SummaryMode::kUser},
+      ModePair{"--summary=compare", SummaryMode::kCompare}, ModePair{"--summary", SummaryMode::kOverall},
+      ModePair{"--summary=ext", SummaryMode::kExt}, ModePair{"--summary=group", SummaryMode::kGroup},
+      ModePair{"--summary=hash", SummaryMode::kHash}, ModePair{"--summary=lang", SummaryMode::kLanguage},
+      ModePair{"--summary=mime", SummaryMode::kMime}, ModePair{"--summary=overall", SummaryMode::kOverall},
+      ModePair{"--summary=owner", SummaryMode::kUser}, ModePair{"--summary=type", SummaryMode::kType},
+      ModePair{"--summary=user", SummaryMode::kUser},
       ModePair{"--summary=hash-verification", SummaryMode::kHashVerification});
   constexpr std::string_view kPrefix = "--summary=";
   std::vector<SummarySpec> specs;
   for (const std::string& global : globals) {
-    if (global == "--summary=none") {
+    if (global == "--compare=summary" || (global == "--summary" && compare)) {
+      specs.push_back({.mode = SummaryMode::kCompare});
+    } else if (global == "--summary=none") {
       specs.clear();
     } else if (global.starts_with("--summary={")) {
       specs.push_back({.mode = SummaryMode::kTemplate, .key_template = global.substr(kPrefix.size())});
@@ -3176,10 +3180,18 @@ absl::StatusOr<TreeCompareSelection> ResolveTreeCompareSelection(const std::vect
   constexpr std::string_view kPrefix = "--compare-select=";
   TreeCompareSelection selection;
   for (const std::string& global : globals) {
+    if (global == "--compare=summary") {
+      selection = {.left_only = false, .right_only = false, .identical = false, .different = false};
+      continue;
+    }
     if (!global.starts_with(kPrefix)) {
       continue;
     }
     selection = {.left_only = false, .right_only = false, .identical = false, .different = false};
+    const std::string_view value = std::string_view(global).substr(kPrefix.size());
+    if (value.empty() || value == "none") {
+      continue;
+    }
     for (const std::string_view kind : absl::StrSplit(global.substr(kPrefix.size()), ',')) {
       if (kind == "all") {
         selection = {.left_only = true, .right_only = true, .identical = true, .different = true};
@@ -3194,7 +3206,8 @@ absl::StatusOr<TreeCompareSelection> ResolveTreeCompareSelection(const std::vect
       } else {
         return absl::InvalidArgumentError(
             absl::StrCat(
-                "unknown comparison result '", kind, "' (use left-only, right-only, identical, different, or all)"));
+                "unknown comparison result '", kind,
+                "' (use left-only, right-only, identical, different, all, or none)"));
       }
     }
   }
@@ -3271,6 +3284,44 @@ RunResult RunFindCore(
     std::optional<registry::Style> style,
     mbo::types::OptionalRef<const MatchedEntryFn> matched_entry,
     bool compare_listing);
+
+struct TreeCompareCounts {
+  std::uint64_t left_only = 0;
+  std::uint64_t right_only = 0;
+  std::uint64_t different = 0;
+  std::uint64_t identical = 0;
+};
+
+void EmitTreeCompareSummary(const std::vector<std::string>& globals, const TreeCompareCounts& counts, EmitFn emit) {
+  const auto rows = std::to_array<std::pair<std::string_view, std::uint64_t>>({
+      {"left-only", counts.left_only},
+      {"right-only", counts.right_only},
+      {"different", counts.different},
+      {"identical", counts.identical},
+      {"total", counts.left_only + counts.right_only + counts.different + counts.identical},
+  });
+  const std::uint64_t total = counts.left_only + counts.right_only + counts.different + counts.identical;
+  const unsigned precision = ResolveSummaryPrecision(globals);
+  const render::Format output_format = ResolveFormat(globals);
+  for (const SummarySpec& summary : ResolveSummaries(globals, true)) {
+    if (summary.mode != SummaryMode::kCompare) {
+      continue;
+    }
+    format::Table table({format::Align::kLeft, format::Align::kRight, format::Align::kRight});
+    for (const auto& [group, count] : rows) {
+      const double percent = total == 0 ? 0.0 : 100.0 * static_cast<double>(count) / static_cast<double>(total);
+      const std::string percentage = absl::StrFormat("%.*f", precision, percent);
+      if (output_format == render::Format::kJsonl) {
+        emit(absl::StrCat("{\"group\":", JsonQuote(group), ",\"count\":", count, ",\"percent\":", percentage, "}\n"));
+      } else {
+        table.AddRow({std::string(group), format::Int(count, ','), absl::StrCat(percentage, "%")});
+      }
+    }
+    if (output_format != render::Format::kJsonl) {
+      emit(table.Render());
+    }
+  }
+}
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive two-tree merge dispatch
 RunResult RunTreeCompare(
@@ -3358,6 +3409,7 @@ RunResult RunTreeCompare(
   }
 
   bool different = false;
+  TreeCompareCounts counts;
   const auto emit_status = [&](std::string_view status, std::string_view relative_path) {
     emit(absl::StrCat(status, "\t", status_renderer.Record(relative_path)));
   };
@@ -3365,6 +3417,9 @@ RunResult RunTreeCompare(
   auto right = entries[1].begin();
   while (left != entries[0].end() || right != entries[1].end()) {
     if (right == entries[1].end() || (left != entries[0].end() && left->first < right->first)) {
+      if (left->second.metadata.type != vfs::FileType::kDirectory) {
+        ++counts.left_only;
+      }
       if (left->second.metadata.type != vfs::FileType::kDirectory && selection.left_only) {
         if (output == TreeCompareOutput::kStatus) {
           emit_status("left-only", left->first);
@@ -3381,6 +3436,9 @@ RunResult RunTreeCompare(
       different = different || left->second.metadata.type != vfs::FileType::kDirectory;
       ++left;
     } else if (left == entries[0].end() || right->first < left->first) {
+      if (right->second.metadata.type != vfs::FileType::kDirectory) {
+        ++counts.right_only;
+      }
       if (right->second.metadata.type != vfs::FileType::kDirectory && selection.right_only) {
         if (output == TreeCompareOutput::kStatus) {
           emit_status("right-only", right->first);
@@ -3402,6 +3460,11 @@ RunResult RunTreeCompare(
         on_error(left->first, same.status());
         return RunResult{.errors = 1};
       }
+      if (*same && left->second.metadata.type != vfs::FileType::kDirectory) {
+        ++counts.identical;
+      } else if (!*same) {
+        ++counts.different;
+      }
       if (*same && left->second.metadata.type != vfs::FileType::kDirectory && selection.identical) {
         emit_status("identical", left->first);
       } else if (!*same && selection.different) {
@@ -3422,6 +3485,7 @@ RunResult RunTreeCompare(
       ++right;
     }
   }
+  EmitTreeCompareSummary(command.globals, counts, emit);
   return RunResult{.errors = 0, .any_match = different};
 }
 
@@ -3828,7 +3892,15 @@ RunResult RunFindCore(
   // reducer-terminated m// like `;join(...)`, which is scalar) one key per matched entry. A template
   // mixing an UNREDUCED extraction with other text has no single key and is a usage error refused
   // before the walk; a reduced extraction is scalar and mixes fine.
-  const std::vector<SummarySpec> summaries = ResolveSummaries(command.globals);
+  std::vector<SummarySpec> summaries = ResolveSummaries(command.globals, compare_listing);
+  if (compare_listing) {
+    std::erase_if(summaries, [](const SummarySpec& summary) { return summary.mode == SummaryMode::kCompare; });
+  } else if (absl::c_any_of(summaries, [](const SummarySpec& summary) {
+               return summary.mode == SummaryMode::kCompare;
+             })) {
+    on_error("--summary=compare", absl::InvalidArgumentError("requires --compare"));
+    return RunResult{.errors = 2};
+  }
   const bool hash_verification_summary =
       absl::c_any_of(summaries, [](const SummarySpec& spec) { return spec.mode == SummaryMode::kHashVerification; });
   if (hash_verification_summary) {
