@@ -29,7 +29,7 @@ predicates mean AND. Config expressions are grouped and ANDed with the CLI expre
 | Expression action        | `-printf '%p\n'`         | Produces output or requests an operation                 |
 | Expression operator      | `-o`, `!`, parentheses   | Combines expressions using the documented precedence     |
 | Compatibility alias      | `-h`, `-q`               | A specifically supported alias with documented placement |
-| Config-only directive    | `--require-user-config`  | Valid only in permitted config locations                 |
+| Config-only directive    | `--require-user-globals` | Valid only in permitted config locations                 |
 | Command-line-only option | `--xffrc=task.rc`        | Controls bootstrap/discovery; rejected inside INI files  |
 | Sign-suffixed control    | `--rc`, `--rc-`, `--rc+` | Uses that family's documented modes                      |
 

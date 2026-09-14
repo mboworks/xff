@@ -110,7 +110,7 @@ Both directories must already exist. This system INI permits new result files an
 while blocking ordinary writes, execution, and replacement or deletion of existing results.
 
 ```ini
---require-system-config
+--require-system-globals
 --detailed-block-policy=archive,temp,output
 --output-root=/srv/xff/results
 --temp-root=/srv/xff/scratch

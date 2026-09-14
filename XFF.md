@@ -75,9 +75,9 @@ xff configuration. Options resolve from layered config tiers, then the command l
 - `--xffrc=FILE` - an explicitly named file (repeatable) - a NON-ARMING tier
 - `command line` - flags and `--config`, highest
 
-Autoloading defaults off (`--rc-`). `--rc` discovers `.xffrc` in directory search roots; `--rc+` also discovers descendant files. No ancestor search occurs. `--no-config` disables discovery and suppresses the automatic system and user tiers when their trusted permission directives allow it; those files may still be inspected for policy. An explicit command-line `--xffrc` remains active.
+Autoloading defaults off (`--rc-`). `--rc` discovers `.xffrc` in directory search roots; `--rc+` also discovers descendant files. No ancestor search occurs. `--no-config` disables discovery and excludes named system and user sections. Existing globals remain active by default; the corresponding `--no-require-*-globals` permits excluding them too. Both files are still read and validated. An explicit command-line `--xffrc` remains active.
 
-File-requirement directives and the `--allow-xffrc` pair are config-only, not command-line options. Require flags precede the first section. `--no-require-*` makes a file optional; The user config is always `<OS account home>/.config/xff/config`, using the effective OS account record, independent of environment variables. Missing automatic system/user files are normal. An explicit `--xffrc=FILE` must exist; existing unreadable configs and dangling symlinks are errors, even when a skip is requested. `--require-*` prevents skipping an existing file, without requiring a missing file to exist. The system file may set one of `--no-require-system-config` / `--require-system-config` once and one of `--no-require-user-config` / `--require-user-config` once. Permissions govern which files may be skipped: `--no-config` requests both skips and fails if either existing file refuses. Missing files need no permission; an existing file without a grant cannot be skipped. The user file may set its user-control pair once before the first section. A system user-control decision is authoritative over the user file. Explicit `--xffrc` files may not contain any of these controls. Separately, `--allow-xffrc` / `--no-allow-xffrc` is a normal config-only setting usable in system defaults or any user config block; user selection and precedence decide whether command-line `--xffrc=FILE` is accepted, and an unsectioned system denial cannot be overridden. Admission is checked before any `.xffrc` discovery or explicit paths are opened. The admission pair also governs autoloading. User decisions follow ordinary application order, including in-place `--config=NAME` composition; INI section order never overrides explicit selector order. Each section applies once.
+Globals-requirement directives and the `--allow-xffrc` pair are config-only, not command-line options. Existing globals are required by default; missing automatic files remain normal. The user config is `<OS account home>/.config/xff/config`, independent of environment variables. Explicit `--xffrc=FILE` must exist. Existing unreadable configs and dangling symlinks are errors, even when a skip is requested. The system pair `--require-system-globals` / `--no-require-system-globals` is allowed only in unsectioned system globals, once per pair. The user pair `--require-user-globals` / `--no-require-user-globals` is allowed in unsectioned system or user globals, once per pair per file; the system decision wins, even if its own globals are skipped. Required globals stay active while named sections are excluded; optional globals are also excluded when the corresponding skip is requested. A permission alone does not skip anything. `--no-config` requests both exclusions and disables autoloading. Named sections remain optional; selecting a name unavailable in every active file is an error. Neither the CLI nor named sections or `.xffrc` files may set these requirement directives. Explicit `--xffrc` files may not contain any of these controls. Separately, `--allow-xffrc` / `--no-allow-xffrc` is a normal config-only setting usable in system defaults or any user config block; user selection and precedence decide whether command-line `--xffrc=FILE` is accepted, and an unsectioned system denial cannot be overridden. Admission is checked before any `.xffrc` discovery or explicit paths are opened. The admission pair also governs autoloading. User decisions follow ordinary application order, including in-place `--config=NAME` composition; INI section order never overrides explicit selector order. Each section applies once.
 
 ```ini
 [deny]
@@ -102,18 +102,18 @@ Quotes may span lines. Backslash-newline continues a logical line without adding
 
 These directives are accepted only inside the stated system/user config files, not on the command line or in any `.xffrc` file. An allow/deny pair is one setting: where a pair is limited to one occurrence, its positive and negative forms may not both appear.
 
-The system pair is `--require-system-config` / `--no-require-system-config`; the user pair is `--require-user-config` / `--no-require-user-config`.
+The system pair is `--require-system-globals` / `--no-require-system-globals`; the user pair is `--require-user-globals` / `--no-require-user-globals`.
 
 - System pair: unsectioned system config only.
 - User pair: unsectioned system or user config; the system decision wins.
 - Each pair may appear once per permitted file.
 - Neither pair is allowed in named sections, explicit `.xffrc` files, or on the CLI.
-- `--no-config` requests both skips and fails if either existing file requires application.
+- `--no-config` excludes both sets of named sections, retains required globals, and disables rc autoloading.
 
-- `--no-require-system-config` - permits skipping the system file with `--no-system-config` or `--no-config`; system config only, before the first section, and at most one of this pair
-- `--require-system-config` - forbids skipping the system file, including with `--no-config`; system config only, before the first section, and at most one of this pair
-- `--no-require-user-config` - permits skipping the user file with `--no-user-config` or `--no-config`; before the first section in the system or user config, and at most one of this pair per file; the system decision is authoritative
-- `--require-user-config` - forbids skipping the user file, including with `--no-config`; before the first section in the system or user config, and at most one of this pair per file; the system decision is authoritative
+- `--no-require-system-globals` - permits skipping system globals with `--no-system-config` or `--no-config`; system config only, before the first section, and at most one of this pair
+- `--require-system-globals` - keeps system globals active, including with `--no-config`; system config only, before the first section, and at most one of this pair
+- `--no-require-user-globals` - permits skipping user globals with `--no-user-config` or `--no-config`; before the first section in the system or user config, and at most one of this pair per file; the system decision is authoritative
+- `--require-user-globals` - keeps user globals active, including with `--no-config`; before the first section in the system or user config, and at most one of this pair per file; the system decision is authoritative
 - `--allow-xffrc` - allows automatic discovery and command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config selection and last-value precedence
 - `--no-allow-xffrc` - denies automatic discovery and command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config selection and last-value precedence; an unsectioned system denial is authoritative
 - `--allow-rc-globals` - permits unsectioned content in autoloaded `.xffrc` files; once per pair before sections in system/user INI; a system denial wins, otherwise the applying user choice wins
@@ -162,24 +162,24 @@ An explicit `task.xffrc` uses exactly the same INI format. Its unsectioned flags
 
 `xff . --xffrc=task.xffrc` applies `--hidden`; adding `--config=quiet` also applies `--color=never`. The invocation name or another config's `--config=quiet` can also select the section. A selector alone does not discover files. Unsectioned `--config=NAME` directives can select sections when the file loads. Autoloading is separately enabled with `--rc` or `--rc+`.
 
-Permit only the user-file skip: these unsectioned system controls allow `--no-user-config`, reject `--no-config` and `--no-system-config`, and override the user file's own skip permission.
+Keep system globals mandatory while permitting user globals to be skipped. These system controls override the user file's own globals requirement.
 
 ```ini
---require-system-config
---no-require-user-config
+--require-system-globals
+--no-require-user-globals
 ```
 
-`xff . --no-user-config` is allowed. `--no-system-config` and `--no-config` are rejected. To permit both individual skips and `--no-config`, grant both file permissions in the system file:
+`xff . --no-config` retains system globals, excludes user globals, excludes both sets of named sections, and disables autoloading. To permit excluding globals from both files, use:
 
 ```ini
---no-require-system-config
---no-require-user-config
+--no-require-system-globals
+--no-require-user-globals
 ```
 
-To prohibit execution regardless of its source, require an administrator-owned system file and set `--block-execution`. Add `--no-allow-xffrc` to reject explicit files altogether:
+To prohibit execution regardless of its source, require globals in an administrator-owned system file and set `--block-execution`. Add `--no-allow-xffrc` to reject explicit files altogether:
 
 ```ini
---require-system-config
+--require-system-globals
 --block-execution
 --no-allow-xffrc
 ```
@@ -237,7 +237,7 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
 
 Without configured restrictions, operations are allowed. `--block-*` restrictions accumulate and cannot be cleared by later settings. `--safe` activates the configurable profile; `--no-safe` deactivates that profile without clearing unconditional blocks. Every `--safe-block-*` has a `--no-safe-block-*` counterpart; these profile settings use the last applied value. Initially the profile blocks every relevant capability. Activating it does not reset its definition.
 
-`--detailed-block-policy=LIST` selects categories that use dedicated controls. The list is comma-separated; an empty list (the default) uses ordinary file controls throughout. `archive`, `temp`, and `output` are supported categories. Unknown categories are errors. This config-only directive may occur once in the unsectioned system config and once in the unsectioned user config; each file chooses its own policy. Named sections, explicit `.xffrc` files, and the CLI cannot set it. Require the policy file with `--require-system-config` or `--require-user-config` when users must not skip it.
+`--detailed-block-policy=LIST` selects categories that use dedicated controls. The list is comma-separated; an empty list (the default) uses ordinary file controls throughout. `archive`, `temp`, and `output` are supported categories. Unknown categories are errors. This config-only directive may occur once in the unsectioned system config and once in the unsectioned user config; each file chooses its own policy. Named sections, explicit `.xffrc` files, and the CLI cannot set it. Keep policy globals active with `--require-system-globals` or `--require-user-globals` when users must not skip them.
 
 Each file's directives are translated before composition. Selecting `archive` in another file cannot remove mandatory restrictions already imposed. Select `archive` for precise archive control; an empty list is the simple default. CLI file controls cover archives as well. Every control listed in a table cell must permit the operation. Names omit their prefixes: `file-writing` means both `--block-file-writing` and, when safe mode is active, `--safe-block-file-writing`. `execution` independently controls arbitrary command execution. The table defines permissions; it does not enable archive operations or add unsupported member-editing actions.
 
@@ -272,7 +272,7 @@ Each file's directives are translated before composition. Selecting `archive` in
 Unselected directory categories inherit ordinary controls through per-INI expansion. Overlapping temp/output scopes require both sets of permissions. Explicit archive restrictions also apply to archives within directory scopes. With declared roots, archive output outside all roots also needs ordinary file writing/overwrite permission. Select `archive` alongside directory categories to allow archives inside them while blocking ordinary writes elsewhere. Scoped paths reject parent traversal (`..`) and symlink traversal. Scoped overwrite replaces the directory entry rather than modifying a shared hard-link inode. Ordinary extraction and mount scratch require writing and directory-creation permission. Archive-owned staging is part of an authorized archive write, remains on the destination filesystem for archive publication, and is cleaned through retained handles. It does not grant access to other pre-existing temporary files. User-directed directory creation and deletion have separate controls.
 
 ```ini
---require-system-config
+--require-system-globals
 --detailed-block-policy=archive,temp,output
 --output-root=/srv/xff/results
 --temp-root=/srv/xff/scratch
@@ -291,7 +291,7 @@ With those existing roots, this system policy permits new output and scratch wor
 Packing a new archive includes building its contents; member-editing controls do not apply. Replacing an entire archive replaces all its contents, regardless of member-editing restrictions. To preserve existing archives, block archive overwrite. Archive authorization covers only the selected archive output and its necessary owned temporary files, never extraction or unrelated writes. When overwrite is blocked, creation must atomically refuse an existing destination, including symlinks.
 
 ```ini
---require-system-config
+--require-system-globals
 --detailed-block-policy=archive
 --block-execution
 --block-file-writing
@@ -312,27 +312,27 @@ Explicit-file arming with `--allow-exec` covers execution and deletion. It does 
 ### Config
 - `--config=NAME` - activate a named config or select the find, xff, or rg style; repeatable _(global, xff)_
   A config style sets the defaults for ignore files, hidden files, sizes, sort order, and case. find restricts the expression to find-compatible vocabulary and defaults; whole-run xff globals remain available as explicit overrides. xff keeps find's grammar but sorts and prints human sizes; rg is opinionated (respect `.gitignore`, skip hidden, smart case). Every occurrence remains an active selector, so several named config blocks can apply. All config files use INI sections; each name is declared once per file and may be refined in other files. `--config=NAME` inside a section composes it with another config. Among the built-in style selectors, the last `find`, `xff`, or `rg` occurrence chooses the baseline; custom names do not change it. A `STYLE:EPOCH` spelling such as `xff:2` selects `STYLE` while retaining the full name as a config selector, which must be declared in an active config file. Only plain `find`, `xff`, and `rg` need no declaration. See `--help=styles` for the per-style defaults and `--help=config` for layering.
-- `--require-system-config` - require application of an existing system config _(global, xff, config-only)_
-  Config-only: unsectioned system config only, once per positive/negative pair. Prevents `--no-system-config` and `--no-config` from skipping an existing system file. Absence remains normal.
-- `--no-require-system-config` - permit skipping the system config _(global, xff, config-only)_
-  Config-only: unsectioned system config only, once per pair. Permits `--no-system-config` to suppress system defaults. Authoritative system controls are still inspected.
-- `--require-user-config` - require application of an existing user config _(global, xff, config-only)_
-  Config-only: unsectioned system or user config, once per pair per file. The system decision wins. Prevents `--no-user-config` and `--no-config` from skipping an existing user file.
-- `--no-require-user-config` - permit skipping the user config _(global, xff, config-only)_
-  Config-only: unsectioned system or user config, once per pair per file. The system decision wins. Without an applicable grant, an existing user file cannot be skipped.
+- `--require-system-globals` - keep existing system globals active when named configs are skipped _(global, xff, config-only)_
+  Config-only: unsectioned system config only, once per positive/negative pair. System globals remain active with `--no-system-config` or `--no-config`. This is the default; missing files remain normal. Named sections can still be excluded.
+- `--no-require-system-globals` - permit skipping system globals along with named configs _(global, xff, config-only)_
+  Config-only: unsectioned system config only, once per pair. `--no-system-config` or `--no-config` then excludes globals as well as named sections. Without a skip request, globals still apply. Authoritative system admission and requirement controls are still inspected.
+- `--require-user-globals` - keep existing user globals active when named configs are skipped _(global, xff, config-only)_
+  Config-only: unsectioned system or user config, once per pair per file. The system decision wins. User globals remain active with `--no-user-config` or `--no-config`. This is the default; missing files remain normal. Named sections can still be excluded.
+- `--no-require-user-globals` - permit skipping user globals along with named configs _(global, xff, config-only)_
+  Config-only: unsectioned system or user config, once per pair per file. The system decision wins. `--no-user-config` or `--no-config` then excludes user globals as well as named sections. Without a skip request, globals still apply.
 - `--allow-xffrc` - permit explicit and automatic .xffrc loading _(global, xff, config-only)_
   Config-only: unsectioned system config or any user section. User decisions follow configuration application order, including composed sections. A system denial remains authoritative. Neither the CLI nor an .xffrc file may grant admission.
 - `--no-allow-xffrc` - reject explicit and automatic .xffrc loading _(global, xff, config-only)_
   Config-only: unsectioned system config or any user section. A system denial cannot be overridden by user or .xffrc content, or by skipping system defaults. Admission is checked before files are opened.
-- `--no-config` - suppress automatic system and user configuration when authorized _(global, xff, command-line-only)_
+- `--no-config` - exclude named system and user configs and disable rc autoloading _(global, xff, command-line-only)_
   Command-line only; rejected in configuration files.
-  Disables `.xffrc` autoloading and suppresses system defaults and user configuration. A present source is still inspected for policy. Equivalent to requesting both `--no-system-config` and `--no-user-config`: each existing file must permit its own suppression, or the entire request is rejected. Missing files need no permission. An explicitly named `--xffrc=FILE` remains active. Ignore files such as `.gitignore` and `.xffignore` are traversal inputs, not config files, and are unaffected.
-- `--no-system-config` - suppress system defaults when the system config permits it _(global, xff, command-line-only)_
+  Excludes named system and user sections and disables `.xffrc` autoloading regardless of flag order. Existing globals remain active by default; the applicable `--no-require-system-globals` or `--no-require-user-globals` permits excluding the corresponding globals too. Both files are still read and validated. Missing automatic files remain normal. Explicit `--xffrc=FILE` inputs and ignore files remain active.
+- `--no-system-config` - exclude named system config sections while retaining required globals _(global, xff, command-line-only)_
   Command-line only; rejected in configuration files.
-  Suppresses `/etc/xff.ini` defaults but still reads its leading authoritative config-only permission controls. A present file must grant permission with `--no-require-system-config`; `--require-system-config` explicitly denies it. Without a grant, the request is a usage error. The user config and explicit `--xffrc` files remain active.
-- `--no-user-config` - suppress user configuration when an authoritative config permits it _(global, xff, command-line-only)_
+  Excludes named sections in `/etc/xff.ini`. Unsectioned globals remain active by default or with `--require-system-globals`; `--no-require-system-globals` allows excluding them too. The file is still read and validated. User and explicit `.xffrc` configurations remain active.
+- `--no-user-config` - exclude named user config sections while retaining required globals _(global, xff, command-line-only)_
   Command-line only; rejected in configuration files.
-  Suppresses the selected user config after inspecting it for permission. The system config may authoritatively grant or deny permission with `--no-require-user-config` / `--require-user-config`; without either, the user file may decide for itself with the same pair. Without a grant, skipping a present user file is a usage error. System defaults and explicit `--xffrc` files remain active.
+  Excludes named user sections. Unsectioned globals remain active by default or with `--require-user-globals`; `--no-require-user-globals` allows excluding them too. The system decision takes precedence over the user declaration. The file is still read and validated. System and explicit `.xffrc` configurations remain active.
 - `--rc[-|+]` - discover .xffrc in argument roots; minus disables, plus includes descendants _(global, xff)_
   Defaults to `--rc-` (off). `--rc` loads `.xffrc` in each directory search root; `--rc+` also searches descendant directories. With no roots, the default root is `.`. Discovery finishes before execution, in argument order, parent before children and lexicographically among siblings. Files contribute to the whole invocation, after trusted defaults and before CLI flags. Discovery ignores search filters and never follows directory symlinks or enters archives. Only system/user configuration and the CLI may set this mode. `--no-config` disables discovery. Unsectioned content requires a trusted `--allow-rc-globals` grant; otherwise loading fails. Explicit `--xffrc=FILE` remains independent.
   Affects: --xffrc, --explain

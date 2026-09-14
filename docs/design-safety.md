@@ -51,15 +51,16 @@ blocked = unconditional block OR (safe mode active AND profile block)
 ```
 
 These flags may be supplied globally or in named configuration sections and on the CLI. A mandatory
-administrator policy belongs in unconditional system globals. `--require-system-config` prevents
-skipping that file; `--require-user-config` can similarly ensure user policy is applied. Permission
-to skip a policy file intentionally permits omitting its policy. Mutable profiles are not mandatory
+administrator policy belongs in unconditional system globals. `--require-system-globals` prevents
+skipping those globals; `--require-user-globals` can similarly ensure user policy is applied. Permission
+to skip globals intentionally permits omitting their policy. Named sections are always optional
+when the corresponding skip is requested. Mutable profiles are not mandatory
 prohibitions.
 
 A system policy that always forbids execution, but offers other operations in an unsafe profile:
 
 ```ini
---require-system-config
+--require-system-globals
 --block-execution
 --safe
 
@@ -143,7 +144,7 @@ exclusive creation again.
 The safety vocabulary is `--block-*`, `--safe`, `--no-safe`, the `--safe-block-*` pairs, and
 `--dry-run`. No separate activation requirement, default-safe setting, force switch, or unsafe
 alias is necessary. Archive capability flags still select archive features; they do not override
-policy. Config-file requirement directives govern whether policy files may be skipped.
+policy. Globals-requirement directives govern whether unsectioned policy survives a skip.
 
 ## Archive blocking policy
 

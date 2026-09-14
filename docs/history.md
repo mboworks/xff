@@ -9,6 +9,22 @@ would otherwise be lost when the actionable backlog is simplified.
 The former combined roadmap and completion ledger through PR #683 is retained separately in
 [`history-roadmap.md`](history-roadmap.md).
 
+## Required globals and optional named sections
+
+The globals-requirement adjustment replaces the four require-config spellings with
+`--require-system-globals` / `--no-require-system-globals` and
+`--require-user-globals` / `--no-require-user-globals`. Skip flags always exclude named sections;
+existing globals remain active by default and are excluded only when the applicable policy permits
+it. No separate skip-globals flags or compatibility aliases are introduced. System policy for user
+globals remains authoritative even when the system's ordinary globals are skipped.
+
+The shared resolver applies the policy before section selection and safety expansion. Policy gating,
+action arming, user admission decisions, and autoload globals permission therefore see retained
+required globals. `--no-config` still disables autoloading. Files are read and validated even when
+ordinary globals may be skipped. Complete-file tests verify deletion refusal under every skip form,
+per-tier named-section exclusion, explicit-file selection, optional globals, system precedence, and
+rejection of unsupported spellings. Missing automatic files remain normal.
+
 ## Configuration validation and documentation audit
 
 The follow-up to PR #820 found invalid global lines could discard a mandatory block while the

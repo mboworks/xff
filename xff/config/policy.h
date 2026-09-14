@@ -33,13 +33,11 @@ namespace xff::config {
 // like "-capture:tag" is classified by its base name before ':'.
 registry::Safety LineSafety(const IniLine& line);
 
-// Validates requests to suppress automatic configuration. A present system config must explicitly
-// authorize suppressing its defaults; a present user config must authorize suppressing itself unless
-// the higher-trust system config already does. Each require/no-require permission pair controls
-// whether its file may be skipped, including by --no-config, and is unique per automatic config file.
-// System-skip control is system-only, user-skip control may occur in the system or user file, and
-// every control precedes all sections. No control is accepted from an explicitly named --xffrc
-// file. Permission directives are config-only and never enter the resolved runtime flags.
+// Validates trusted control placement, uniqueness and xffrc admission for skip requests.
+// Require/no-require globals pairs decide whether existing globals survive a skip; named sections
+// are always excluded by a skip. System-global policy is system-only; user-global policy may be
+// set by system or user globals, with the system decision authoritative. Each pair may appear
+// once per permitted file, before any sections. These directives are config-only.
 // --allow-xffrc/--no-allow-xffrc is a separate config-only setting resolved through ordinary
 // system/user selection and precedence, with an authoritative system global denial; an explicit
 // --xffrc file cannot admit itself.

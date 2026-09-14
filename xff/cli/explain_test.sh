@@ -173,19 +173,19 @@ test::config_expands_at_the_selector_position() {
   expect_output_contains "${expected}" "${out}"
 }
 
-test::no_user_config_requires_permission_from_a_present_user_file() {
+test::no_user_config_preserves_required_user_globals() {
   local cfg="${TEST_TMPDIR}/user_skip_denied"
   printf -- '--format=jsonl\n' >"${cfg}"
   local out rc
   out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" --no-user-config --explain 2>&1)" && rc=0 || rc=$?
-  expect_eq "2" "${rc}"
-  expect_output_contains '--no-require-user-config' "${out}"
+  expect_eq "0" "${rc}"
+  expect_matches 'user[[:space:]]+--format=jsonl' "${out}"
 }
 
 test::authorized_no_user_config_suppresses_user_defaults_but_keeps_explicit_xffrc() {
   local cfg="${TEST_TMPDIR}/user_skip_allowed"
   local explicit="${TEST_TMPDIR}/explicit_with_no_config"
-  printf -- '%s\n' '--no-require-user-config' '--format=jsonl' >"${cfg}"
+  printf -- '%s\n' '--no-require-user-globals' '--format=jsonl' >"${cfg}"
   printf -- '--color=never\n' >"${explicit}"
   local out
   out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" --no-user-config --xffrc="${explicit}" --explain)"
@@ -197,11 +197,11 @@ test::combined_skip_obeys_user_requirement_and_keeps_explicit_config() {
   local cfg="${TEST_TMPDIR}/combined_user_skip"
   local explicit="${TEST_TMPDIR}/combined_explicit"
   local out rc
-  printf -- '%s\n' '--require-user-config' '--format=jsonl' >"${cfg}"
+  printf -- '%s\n' '--require-user-globals' '--format=jsonl' >"${cfg}"
   out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" --no-config --explain 2>&1)" && rc=0 || rc=$?
-  expect_eq "2" "${rc}"
-  expect_output_contains '--no-require-user-config' "${out}"
-  printf -- '%s\n' '--no-require-user-config' '--format=jsonl' >"${cfg}"
+  expect_eq "0" "${rc}"
+  expect_matches 'user[[:space:]]+--format=jsonl' "${out}"
+  printf -- '%s\n' '--no-require-user-globals' '--format=jsonl' >"${cfg}"
   printf -- '%s\n' '--color=never' >"${explicit}"
   out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" --no-config --xffrc="${explicit}" --explain)"
   expect_not_matches 'user[[:space:]]+--format=jsonl' "${out}"
@@ -210,7 +210,7 @@ test::combined_skip_obeys_user_requirement_and_keeps_explicit_config() {
 
 test::require_controls_are_config_only() {
   local flag out rc
-  for flag in --require-system-config --no-require-system-config --require-user-config --no-require-user-config; do
+  for flag in --require-system-globals --no-require-system-globals --require-user-globals --no-require-user-globals; do
     out="$("$(_xff_bin)" "${flag}" --explain 2>&1)" && rc=0 || rc=$?
     expect_eq "2" "${rc}"
     expect_output_contains "${flag}" "${out}"
@@ -360,7 +360,7 @@ test::rc_globals_fail_before_writes_and_need_a_trusted_grant() {
   expect_output_contains 'globals require --allow-rc-globals' "${out}"
   expect_output_contains "${dir}/root/.xffrc" "${out}"
   [[ ! -e "${dir}/output" ]] || fail "wrote output after rejecting config"
-  printf -- '--rc\n--allow-rc-globals\n--no-require-user-config\n' >"${cfg}"
+  printf -- '--rc\n--allow-rc-globals\n--no-require-user-globals\n' >"${cfg}"
   out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/root" --config=quiet --explain)"
   expect_output_contains "$(printf 'xffrc\t--hidden')" "${out}"
   expect_output_contains "$(printf 'xffrc\t--color=never')" "${out}"

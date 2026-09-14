@@ -53,6 +53,8 @@ TEST_F(PolicyTest, RcGlobalsPermissionUsesTrustedGlobalsAndSystemDenialWins) {
   inputs.user = ParseIni("--no-allow-rc-globals");
   EXPECT_THAT(RcGlobalsAllowed(inputs), IsFalse());
   inputs.no_user_config = true;
+  EXPECT_THAT(RcGlobalsAllowed(inputs), IsFalse());
+  inputs.user = ParseIni("--no-require-user-globals\n--no-allow-rc-globals");
   EXPECT_THAT(RcGlobalsAllowed(inputs), IsTrue());
   inputs.no_user_config = false;
   inputs.system = ParseIni("--no-allow-rc-globals");
@@ -62,7 +64,7 @@ TEST_F(PolicyTest, RcGlobalsPermissionUsesTrustedGlobalsAndSystemDenialWins) {
   inputs.system = {};
   EXPECT_THAT(RcGlobalsAllowed(inputs), IsTrue());
   inputs.no_config = true;
-  EXPECT_THAT(RcGlobalsAllowed(inputs), IsFalse());
+  EXPECT_THAT(RcGlobalsAllowed(inputs), IsTrue());
 }
 
 TEST_F(PolicyTest, RcGlobalsPermissionIsUniqueAndOnlyInTrustedUnsectionedContent) {
@@ -164,30 +166,22 @@ TEST_F(PolicyTest, LineSafetyTakesTheWorstFlag) {
   EXPECT_THAT(LineSafety(Line({"-name", "x", "-exec", "rm", ";"})), registry::Safety::kSecurity);  // worst wins
 }
 
-TEST_F(PolicyTest, CombinedSkipRequiresPermissionForEachPresentFile) {
+TEST_F(PolicyTest, CombinedSkipAcceptsRequiredAndOptionalGlobals) {
   ConfigInputs inputs;
   inputs.sources = {
       {.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true},
       {.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true},
   };
   inputs.no_config = true;
-  EXPECT_THAT(
-      ValidateConfigSkips(inputs),
-      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-require-system-config")));
-  inputs.system = ParseIni("--no-require-system-config");
-  EXPECT_THAT(
-      ValidateConfigSkips(inputs),
-      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-require-user-config")));
-  inputs.user = ParseIni("--no-require-user-config");
   EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
-  inputs.system = ParseIni("--no-require-system-config\n--require-user-config");
-  EXPECT_THAT(
-      ValidateConfigSkips(inputs),
-      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-require-user-config")));
-  inputs.system = ParseIni("--require-system-config\n--no-require-user-config");
-  EXPECT_THAT(
-      ValidateConfigSkips(inputs),
-      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-require-system-config")));
+  inputs.system = ParseIni("--no-require-system-globals");
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+  inputs.user = ParseIni("--no-require-user-globals");
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+  inputs.system = ParseIni("--no-require-system-globals\n--require-user-globals");
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
+  inputs.system = ParseIni("--require-system-globals\n--no-require-user-globals");
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
 }
 
 TEST_F(PolicyTest, SystemGrantOverridesUserRequirementForIndividualAndCombinedSkips) {
@@ -196,8 +190,8 @@ TEST_F(PolicyTest, SystemGrantOverridesUserRequirementForIndividualAndCombinedSk
       {.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true},
       {.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true},
   };
-  inputs.system = ParseIni("--no-require-system-config\n--no-require-user-config");
-  inputs.user = ParseIni("--require-user-config");
+  inputs.system = ParseIni("--no-require-system-globals\n--no-require-user-globals");
+  inputs.user = ParseIni("--require-user-globals");
   inputs.no_user_config = true;
   EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
   inputs.no_user_config = false;
@@ -205,19 +199,17 @@ TEST_F(PolicyTest, SystemGrantOverridesUserRequirementForIndividualAndCombinedSk
   EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
 }
 
-TEST_F(PolicyTest, CombinedSkipNeedsNoPermissionForMissingFiles) {
+TEST_F(PolicyTest, CombinedSkipAcceptsMissingFilesAndEmptyGlobals) {
   ConfigInputs inputs;
   inputs.no_config = true;
   EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
   inputs.sources = {{.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true}};
-  inputs.user = ParseIni("--no-require-user-config");
+  inputs.user = ParseIni("--no-require-user-globals");
   EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
   inputs.user = {};
-  EXPECT_THAT(
-      ValidateConfigSkips(inputs),
-      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-require-user-config")));
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
   inputs.sources = {{.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true}};
-  inputs.system = ParseIni("--no-require-system-config\n--require-user-config");
+  inputs.system = ParseIni("--no-require-system-globals\n--require-user-globals");
   EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
 }
 
@@ -227,45 +219,43 @@ TEST_F(PolicyTest, UserMayAuthorizeSkippingItselfButNotTheSystemConfig) {
       {.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true},
       {.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true},
   };
-  inputs.user = ParseXffrc("--no-require-user-config");
+  inputs.user = ParseXffrc("--no-require-user-globals");
   inputs.no_user_config = true;
   EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
 
   inputs.no_user_config = false;
   inputs.no_system_config = true;
-  EXPECT_THAT(
-      ValidateConfigSkips(inputs),
-      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-require-system-config")));
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
 }
 
 TEST_F(PolicyTest, SystemControlsMustPrecedeEveryIniSection) {
   ConfigInputs inputs;
-  inputs.system = ParseIni("[named]\n--no-require-system-config");
+  inputs.system = ParseIni("[named]\n--no-require-system-globals");
   EXPECT_THAT(
       ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("precede every system")));
 }
 
 TEST_F(PolicyTest, ConfigControlPairsMayOccurOnlyOncePerPermittedFile) {
   ConfigInputs inputs;
-  inputs.system.globals = {"--no-require-system-config", "--require-system-config"};
+  inputs.system.globals = {"--no-require-system-globals", "--require-system-globals"};
   EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("system config")));
 
-  inputs.system.globals = {"--no-require-user-config", "--require-user-config"};
+  inputs.system.globals = {"--no-require-user-globals", "--require-user-globals"};
   EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("system config")));
 
   inputs.system.globals.clear();
-  inputs.user = ParseXffrc("--no-require-user-config\n[debug]\n--require-user-config");
+  inputs.user = ParseXffrc("--no-require-user-globals\n[debug]\n--require-user-globals");
   EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("user config")));
 }
 
 TEST_F(PolicyTest, ConfigControlsAreRestrictedToTheirTrustedFiles) {
   ConfigInputs inputs;
-  inputs.user = ParseXffrc("--no-require-system-config");
+  inputs.user = ParseXffrc("--no-require-system-globals");
   EXPECT_THAT(
       ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("only in the system")));
 
   inputs.user = {};
-  inputs.xffrc = {{.path = "/named", .config = ParseXffrc("--no-require-user-config")}};
+  inputs.xffrc = {{.path = "/named", .config = ParseXffrc("--no-require-user-globals")}};
   EXPECT_THAT(ValidateConfigSkips(inputs), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("not permitted")));
 }
 
@@ -347,12 +337,10 @@ TEST_F(PolicyTest, SystemGlobalProhibitionMayPreventUserConfigFromEnablingXffrc)
 TEST_F(PolicyTest, SystemGlobalProhibitionMayDenyTheUsersSelfSkipPermission) {
   ConfigInputs inputs;
   inputs.sources = {{.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true}};
-  inputs.system.globals = {"--require-user-config"};
-  inputs.user = ParseXffrc("--no-require-user-config");
+  inputs.system.globals = {"--require-user-globals"};
+  inputs.user = ParseXffrc("--no-require-user-globals");
   inputs.no_user_config = true;
-  EXPECT_THAT(
-      ValidateConfigSkips(inputs),
-      StatusIs(absl::StatusCode::kPermissionDenied, HasSubstr("--no-require-user-config")));
+  EXPECT_THAT(ValidateConfigSkips(inputs), IsOk());
 }
 
 TEST_F(PolicyTest, MissingSourcesNeedNoSkipPermission) {

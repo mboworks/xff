@@ -359,7 +359,7 @@ TEST_F(ConfigValidationTest, SkipControlPairsKeepFirstGlobalDecisionAndDisableMi
   const ConfigFileValidation validation = ValidateConfigFile(config::ParseIni(fixture), {});
   EXPECT_THAT(validation.status, StatusIs(absl::StatusCode::kInvalidArgument));
   EXPECT_THAT(
-      validation.config.globals, ElementsAre("--require-system-config", "--require-user-config", "--color=auto"));
+      validation.config.globals, ElementsAre("--require-system-globals", "--require-user-globals", "--color=auto"));
   EXPECT_THAT(validation.diagnostics, SizeIs(4));
   EXPECT_THAT(validation.config.named, IsEmpty());
   EXPECT_THAT(validation.disabled_configs, ElementsAre("system", "user"));
@@ -422,7 +422,7 @@ TEST_F(ConfigValidationTest, InvalidGlobalLineFailsValidation) {
   EXPECT_THAT(validation.diagnostics, ElementsAre(AllOf(HasSubstr("globals/system.ini:5"), HasSubstr("development"))));
   EXPECT_THAT(
       validation.config.globals,
-      ElementsAre("--no-require-system-config", "--no-require-user-config", "--color=auto", "--hidden"));
+      ElementsAre("--no-require-system-globals", "--no-require-user-globals", "--color=auto", "--hidden"));
   ASSERT_THAT(validation.config.named, SizeIs(2));
 }
 
@@ -478,6 +478,19 @@ TEST_F(ConfigValidationTest, ApplyingSelectionsMustExistInActiveFiles) {
   inputs.no_user_config = true;
   EXPECT_THAT(resolve({"--config=user"}), StatusIs(absl::StatusCode::kInvalidArgument));
   EXPECT_THAT(resolve({"--config=explicit", "--config=find", "--config=rg"}), IsOk());
+}
+
+TEST_F(ConfigValidationTest, CombinedSkipMakesOnlyTrustedNamedSectionsUnavailable) {
+  config::ConfigInputs inputs;
+  inputs.system = config::ParseIni("[system]\n--hidden");
+  inputs.user = config::ParseIni("[user]\n--sort");
+  inputs.xffrc = {{.path = "explicit", .config = config::ParseIni("[explicit]\n--color=never")}};
+  inputs.no_config = true;
+  EXPECT_THAT(
+      ValidateConfigSelections(inputs, {{.flag = "--config=system"}}), StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(
+      ValidateConfigSelections(inputs, {{.flag = "--config=user"}}), StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(ValidateConfigSelections(inputs, {{.flag = "--config=explicit"}}), IsOk());
 }
 
 TEST_F(ConfigValidationTest, CompositionMayReferenceLaterFilesButNotMissingNames) {
