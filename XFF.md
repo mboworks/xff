@@ -1448,7 +1448,20 @@ Bare `--compare` (or `--compare=status`) writes tab-separated `STATUS` and relat
 
 `--compare=diff` writes one unified patch for added, removed, and changed regular files. Text files get hunks; binary and non-regular differences get a diagnostic line. `--diff-algorithm` and `--diff-context` tune this mode. `identical` is rejected because an unchanged entry has no patch representation.
 
+### See also
+
+- `--summary=compare`: counts and percentages for all comparison results.
+- `--compare-select`: choose per-path records; `none` suppresses the listing.
+- `--summary-precision`: decimal places in summary percentages.
+- `--format=jsonl`: machine-readable comparison summary rows.
+
 ### Examples
+
+```sh
+xff --compare=summary left-tree right-tree
+```
+
+show only counts and percentages, with no per-path records
 
 ```sh
 xff --compare left-tree right-tree

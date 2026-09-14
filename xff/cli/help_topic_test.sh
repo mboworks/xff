@@ -454,6 +454,9 @@ test::comparison_help_includes_summary_context() {
     expect_output_contains '--compare=summary' "${out}"
     expect_output_contains '--summary=compare' "${out}"
     expect_output_contains 'Status output' "${out}"
+    expect_output_contains 'See also' "${out}"
+    expect_output_contains '--summary-precision' "${out}"
+    expect_output_contains 'xff --compare=summary left-tree right-tree' "${out}"
     expect_output_contains 'Percentages use all compared results' "${out}"
   done
 }

@@ -869,7 +869,18 @@ Section CompareSection(bool in_full) {
     section.children.push_back(Content{.node = std::move(flags)});
   }
 
+  Subsection related{.title = "See also"};
+  Bullets links;
+  links.items.push_back(ParseInline("`--summary=compare`: counts and percentages for all comparison results."));
+  links.items.push_back(ParseInline("`--compare-select`: choose per-path records; `none` suppresses the listing."));
+  links.items.push_back(ParseInline("`--summary-precision`: decimal places in summary percentages."));
+  links.items.push_back(ParseInline("`--format=jsonl`: machine-readable comparison summary rows."));
+  related.children.push_back(Content{.node = std::move(links)});
+  section.children.push_back(Content{.node = std::move(related)});
+
   Subsection examples{.title = "Examples"};
+  examples.children.push_back(ExampleOf("xff --compare=summary left-tree right-tree", "sh"));
+  examples.children.push_back(ProseOf("show only counts and percentages, with no per-path records"));
   examples.children.push_back(ExampleOf("xff --compare left-tree right-tree", "sh"));
   examples.children.push_back(ProseOf("print only paths present on one side or different on both sides"));
   examples.children.push_back(ExampleOf("xff --compare --compare-select=all left-tree right-tree", "sh"));
