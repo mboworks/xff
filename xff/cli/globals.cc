@@ -896,6 +896,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "see whether THIS binary includes `PCRE2`. See `--help=grammars` for a full description of "
                    "each grammar (`GLOB`/`SHGLOB` are not POSIX glob(7)).",
         .values = kRegextypeValues,
+        .help_context = "grammars",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
@@ -907,6 +908,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "A convenient command-line spelling of `--regextype=RE2`. It overrides a grammar selected "
                    "by configuration; among grammar selectors, the last occurrence wins.",
         .affects = "--regextype,-regex,-iregex,-rxc,-irxc,-grep,-capture,-capturedir",
+        .help_context = "grammars",
     },
     {
         .name = "--pcre",
@@ -918,6 +920,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "by configuration; among grammar selectors, the last occurrence wins. PCRE2 is available "
                    "only in a full build, and selecting it in a lean build is a usage error.",
         .affects = "--regextype,-regex,-iregex,-rxc,-irxc,-grep,-capture,-capturedir",
+        .help_context = "grammars",
         .extra = "pcre2",
     },
     {
@@ -1154,6 +1157,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "Other summary groupings still describe each input tree separately.",
         .values = kCompareValues,
         .topic = "compare",
+        .help_context = "compare",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
@@ -1169,6 +1173,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "unchanged file has no patch representation.",
         .affects = "--compare",
         .topic = "compare",
+        .help_context = "compare",
     },
     {
         .name = "--diff-algorithm",

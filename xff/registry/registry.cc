@@ -121,6 +121,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "select the regex dialect for the following -regex/-iregex",
         .kind = Kind::kTest,
         .arity = 1,
+        .help_context = "grammars",
     },
     // xff content-search predicates: match the file's CONTENT, not its path. The
     // literal pair (-content/-icontent) sidesteps grep's regex-flavor ambiguity; the

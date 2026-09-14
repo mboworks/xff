@@ -81,6 +81,7 @@ std::string RenderDoc(const Document& doc) {
   return backend.Take();
 }
 
+using ::testing::_;
 using ::testing::AllOf;
 using ::testing::Eq;
 using ::testing::HasSubstr;
@@ -88,6 +89,7 @@ using ::testing::IsEmpty;
 using ::testing::IsTrue;
 using ::testing::Lt;
 using ::testing::Not;
+using ::testing::Optional;
 using ::testing::SizeIs;
 
 struct HelpTest : ::testing::Test {};
@@ -282,6 +284,24 @@ TEST_F(HelpTest, ValuedFlagDocumentsItsPlaceholderValues) {
       regextype, AllOf(
                      HasSubstr("--regextype=<GRAMMAR>"), HasSubstr("GRAMMAR is one of:"), HasSubstr("RE2"),
                      HasSubstr("linear-time"), HasSubstr("PCRE2")));
+}
+
+TEST_F(HelpTest, FlagContextsResolveAndFollowTheFlagEntry) {
+  for (const GlobalFlag& flag : Globals()) {
+    if (flag.help_context.empty()) {
+      continue;
+    }
+    const auto topic = TopicReference(flag.help_context);
+    EXPECT_THAT(topic, Optional(_)) << flag.name;
+    const auto entry = EntryReference(flag.name);
+    EXPECT_THAT(entry, Optional(_)) << flag.name;
+    if (!topic.has_value() || !entry.has_value()) {
+      continue;
+    }
+    ASSERT_THAT(entry->sections.size(), Eq(2)) << flag.name;
+    EXPECT_THAT(entry->sections.front().title, IsEmpty()) << flag.name;
+    EXPECT_THAT(entry->sections.back().title, Eq(topic->sections.front().title)) << flag.name;
+  }
 }
 
 TEST_F(HelpTest, ColorContextEmitsThePalette) {

@@ -3,6 +3,8 @@
 
 # 0.5.0
 
+- Include broader comparison and regex grammar context after individual flag help.
+
 - Add `--compare=summary` as shorthand for status comparison with per-path output disabled and
   a comparison summary enabled. `--compare-select=none` or an empty value suppresses records;
   summaries always count all comparison outcomes.

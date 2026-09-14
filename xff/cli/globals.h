@@ -73,6 +73,9 @@ struct GlobalFlag {
   // topic straight from this table, so the topic's flag list is the SOT and cannot drift. Empty
   // means the flag belongs to no topic body (it still appears in the grouped `--help` options).
   std::string_view topic;
+  // Optional broader topic appended after this flag in standalone help. Separate from
+  // topic membership: opt in only when understanding the flag needs the full context.
+  std::string_view help_context;
   // The build-time "composable extra" this flag needs, e.g. "archive" (the `//xff:xff_archive` Bazel
   // flag + its `XFF_WITH_ARCHIVE` define). Empty = a core flag, always available. When set and that
   // extra is NOT compiled in (ExtraEnabled), the flag stays listed but is a hard error if used, and

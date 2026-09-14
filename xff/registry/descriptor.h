@@ -94,6 +94,8 @@ struct Descriptor {
   // The help topic (--help=TOPIC) this primary belongs to, or empty for none. The counterpart of
   // cli::GlobalFlag::topic: a topic page pulls its family from this tag, so the list cannot drift.
   std::string_view topic;
+  // Broader topic appended after this primary in standalone help, when needed for context.
+  std::string_view help_context;
   // The primary may take the TERMINAL for itself: it prompts and reads a reply (-ok / -okdir), or it
   // hands our stdin / stdout to a child that might (an editor under -exec / -execdir). Read by the
   // CLI to suppress the listing pager, which would otherwise sit between that primary and the user.

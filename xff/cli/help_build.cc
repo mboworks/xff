@@ -1576,6 +1576,7 @@ Section GuideSection() {
       ProseOf(
           "xff has no subcommands; every kind of help is a flag. `--help` is this usage overview; "
           "`--help=NAME` documents one option or primary (e.g. `--help=-regex`, `--help=--sort`); "
+          "Selected option and primary pages append their broader topic after the entry for context. "
           "`--help=TOPIC` opens one of the topics below; `--help=full` is the complete detailed reference. "
           "Append `:markdown` (or `:md`), `:html`, or `:roff` to select a non-console renderer, for example "
           "`--help=full:html`; `--man` is the conventional alias for `--help=full:roff`. On a terminal this help "
@@ -1741,6 +1742,12 @@ std::optional<Document> EntryReference(std::string_view name) {
   section.children.push_back(descriptor.has_value() ? PrimaryEntry(*descriptor) : FlagEntry(*flag));
   Document doc;
   doc.sections.push_back(std::move(section));
+  const std::string_view context_name = descriptor.has_value() ? descriptor->help_context : flag->help_context;
+  if (!context_name.empty()) {
+    if (std::optional<Section> context = NamedTopicSection(context_name); context.has_value()) {
+      doc.sections.push_back(*std::move(context));
+    }
+  }
   return doc;
 }
 

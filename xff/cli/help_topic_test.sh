@@ -447,4 +447,24 @@ test::help_rejects_config_only_policy() {
   expect_output_contains 'is a config-only directive' "${out}"
 }
 
+test::comparison_help_includes_summary_context() {
+  local topic out
+  for topic in compare --compare compare-select --compare-select; do
+    out="$("$(_xff_bin)" "--help=${topic}" --width=0)"
+    expect_output_contains '--compare=summary' "${out}"
+    expect_output_contains '--summary=compare' "${out}"
+    expect_output_contains 'Status output' "${out}"
+    expect_output_contains 'Percentages use all compared results' "${out}"
+  done
+}
+
+test::grammar_selector_help_includes_regex_topic() {
+  local topic out
+  for topic in regextype -regextype --regextype re2 pcre; do
+    out="$("$(_xff_bin)" "--help=${topic}" --width=0)"
+    expect_output_contains 'REGEX GRAMMARS' "${out}"
+    expect_output_contains 'canonical external references' "${out}"
+  done
+}
+
 test_runner
