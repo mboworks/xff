@@ -153,6 +153,7 @@ TEST_F(BuildReferenceTest, SectionsAppearInReferenceOrder) {
                               "Time formats",
                               "Size units",
                               "Regex grammars",
+                              "Regex matching",
                               "Content",
                               "Comparing trees",
                               "Ignore and VCS traversal",

@@ -380,8 +380,8 @@ TEST_F(RegexTest, ShglobKeepsGlobPathSemantics) {
   EXPECT_THAT(matcher.FullMatch("lib/a.cc"), IsFalse());
 }
 
-TEST_F(RegexTest, GrammarDocsCoverEveryGrammarInValueOrder) {
-  // Anti-drift for --help=grammars: exactly one doc row per Grammar, in --regextype value order.
+TEST_F(RegexTest, GrammarDocsCoverEveryGrammarAlphabetically) {
+  // Anti-drift for --help=grammars: exactly one doc row per Grammar, in alphabetical --regextype value order.
   // kAllGrammars mirrors the enum; adding a Grammar means listing it here (proving it compiles below)
   // and adding a GrammarDocs row, or the SizeIs check fails.
   static constexpr std::array<Grammar, 7> kAllGrammars = {
@@ -395,7 +395,7 @@ TEST_F(RegexTest, GrammarDocsCoverEveryGrammarInValueOrder) {
     names.push_back(name);
     EXPECT_THAT(description, Not(IsEmpty()));  // every grammar carries an explanation
   }
-  EXPECT_THAT(names, ElementsAre("RE2", "EXACT", "FNMATCH", "GLOB", "SHGLOB", "ERE", "PCRE2"));
+  EXPECT_THAT(names, ElementsAre("ERE", "EXACT", "FNMATCH", "GLOB", "PCRE2", "RE2", "SHGLOB"));
 }
 
 TEST_F(RegexTest, GrammarDocsHaveStableStorage) {
