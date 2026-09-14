@@ -279,9 +279,79 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
             "composes it with another config. Among the built-in style selectors, "
             "the last `find`, `xff`, or `rg` occurrence chooses the baseline; custom names do not change it. "
             "A `STYLE:EPOCH` spelling such as `xff:2` selects `STYLE` while retaining the full name as a config "
-            "selector. See `--help=styles` for the per-style defaults and `--help=config` for layering.",
+            "selector, which must be declared in an active config file. Only plain `find`, `xff`, and `rg` need no "
+            "declaration. See `--help=styles` for the per-style defaults and `--help=config` for layering.",
         .topic = "config",
         .repetition = GlobalFlag::Repetition::kAccumulate,
+    },
+    {
+        .name = "--require-system-config",
+        .display = "--require-system-config",
+        .group = "config",
+        .header = "Config",
+        .summary = "require application of an existing system config",
+        .details =
+            "Config-only: unsectioned system config only, once per positive/negative pair. Prevents "
+            "`--no-system-config` and `--no-config` from skipping an existing system file. Absence remains normal.",
+        .topic = "config",
+        .config_only = true,
+    },
+    {
+        .name = "--no-require-system-config",
+        .display = "--no-require-system-config",
+        .group = "config",
+        .header = "Config",
+        .summary = "permit skipping the system config",
+        .details = "Config-only: unsectioned system config only, once per pair. Permits `--no-system-config` to "
+                   "suppress system defaults. Authoritative system controls are still inspected.",
+        .topic = "config",
+        .config_only = true,
+    },
+    {
+        .name = "--require-user-config",
+        .display = "--require-user-config",
+        .group = "config",
+        .header = "Config",
+        .summary = "require application of an existing user config",
+        .details = "Config-only: unsectioned system or user config, once per pair per file. The system decision wins. "
+                   "Prevents `--no-user-config` and `--no-config` from skipping an existing user file.",
+        .topic = "config",
+        .config_only = true,
+    },
+    {
+        .name = "--no-require-user-config",
+        .display = "--no-require-user-config",
+        .group = "config",
+        .header = "Config",
+        .summary = "permit skipping the user config",
+        .details = "Config-only: unsectioned system or user config, once per pair per file. The system decision wins. "
+                   "Without an applicable grant, an existing user file cannot be skipped.",
+        .topic = "config",
+        .config_only = true,
+    },
+    {
+        .name = "--allow-xffrc",
+        .display = "--allow-xffrc",
+        .group = "config",
+        .header = "Config",
+        .summary = "permit explicit and automatic .xffrc loading",
+        .details = "Config-only: unsectioned system config or any user section. User decisions follow configuration "
+                   "application order, including composed sections. A system denial remains authoritative. Neither the "
+                   "CLI nor an .xffrc file may grant admission.",
+        .topic = "config",
+        .config_only = true,
+    },
+    {
+        .name = "--no-allow-xffrc",
+        .display = "--no-allow-xffrc",
+        .group = "config",
+        .header = "Config",
+        .summary = "reject explicit and automatic .xffrc loading",
+        .details =
+            "Config-only: unsectioned system config or any user section. A system denial cannot be overridden by user "
+            "or .xffrc content, or by skipping system defaults. Admission is checked before files are opened.",
+        .topic = "config",
+        .config_only = true,
     },
     {
         .name = "--no-config",
@@ -297,6 +367,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "`--xffrc=FILE` remains active. Ignore files such as `.gitignore` and `.xffignore` are traversal "
                    "inputs, not config files, and are unaffected.",
         .topic = "config",
+        .cli_only = true,
     },
     {
         .name = "--no-system-config",
@@ -311,6 +382,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "files remain "
                    "active.",
         .topic = "config",
+        .cli_only = true,
     },
     {
         .name = "--no-user-config",
@@ -324,6 +396,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "pair. Without a grant, skipping a present user file is a usage error. "
                    "System defaults and explicit `--xffrc` files remain active.",
         .topic = "config",
+        .cli_only = true,
     },
     {
         .name = "--rc",
@@ -385,6 +458,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "--allow-exec",
         .topic = "config",
         .repetition = GlobalFlag::Repetition::kAccumulate,
+        .cli_only = true,
     },
     {
         .name = "--allow-exec",
@@ -413,6 +487,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "evaluate the expression. "
                    "Existing unreadable config files and missing explicit `--xffrc` files are errors.",
         .topic = "config",
+        .cli_only = true,
     },
     {
         .name = "-E",
@@ -1549,6 +1624,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "and leaves output unwrapped when it is not (a pipe or file); none (or 0) disables wrapping; "
                    "a positive integer sets a fixed width. Aligned vocabulary tables and example blocks keep "
                    "their own layout. Does not affect the file listing, `--man`, or formatted full help.",
+        .cli_only = true,
     },
     {
         .name = "--pager",

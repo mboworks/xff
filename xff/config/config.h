@@ -110,8 +110,8 @@ bool ArmedFromTrustedTier(
     const std::vector<std::string>& cli_globals,
     std::string_view flag);
 
-// Whether `name` is one of the reserved built-in style names (find / xff / rg). Tests the base of
-// a selector (so "xff:2" should be reduced to "xff" first). Those names are reserved: a config
+// Whether `name` is one of the reserved built-in style names (find / xff / rg). Matches exact names;
+// a name such as "xff:2" is a separately declared selector. Those names are reserved: a config
 // file may not attach behavior to a preset (see GateConfig's preset-overload rule), and argv[0]
 // dispatch uses this to tell a preset invocation name from a custom alias (which selects a named
 // config instead). There is no `xfd`; it is just another name (a named-config selector).

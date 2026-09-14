@@ -9,6 +9,50 @@ would otherwise be lost when the actionable backlog is simplified.
 The former combined roadmap and completion ledger through PR #683 is retained separately in
 [`history-roadmap.md`](history-roadmap.md).
 
+## Configuration validation and documentation audit
+
+The follow-up to PR #820 found invalid global lines could discard a mandatory block while the
+invocation continued, unknown selected names were ignored, bootstrap-only flags were accepted in
+INI without effect, and INI pager settings did not reach listing output. Validation now fails
+before actions for invalid globals and undefined explicit/composed selectors; inactive invalid named
+sections remain disabled atomically. Registry metadata rejects bootstrap flags in INI and documents
+config-only permission directives individually. Listing pager selection uses resolved configuration.
+Trusted and explicit configuration readers reject special files before reading, matching autoload's
+regular-file requirement while retaining intentional trusted/explicit symlinks to regular files.
+
+Complete-file regressions cover each source tier, deletion refusal on malformed policy, selector
+composition, pager precedence, and special-file rejection. The design overview now describes current
+flag types, configuration, safety boundaries, and implementation contracts. Pager allowlisting remains
+a separate design discussion; execution blocks deliberately do not govern pager commands.
+
+The verification map for this audit is:
+
+- `xff/config/config_test.cc`: defaults, mutable profiles, accumulating blocks, per-file detailed
+  policy translation, cross-file refinements, composition, argument boundaries, and selector order.
+- `xff/config/policy_test.cc`: require-pair scope and uniqueness, system precedence, missing automatic
+  files, combined skips, ordered admission, and explicit-file non-arming.
+- `xff/config/autoload_test.cc`: default-off discovery, root/recursive modes, deterministic ordering,
+  overlapping roots, globals grants, system denial, special files, and discovery errors.
+- `xff/cli/config_validation_test.cc` and `config_paths_test.sh`: shared grammar, enum and primary
+  validation, duplicate declarations, invalid globals failing before deletion, undefined selectors,
+  config-only/CLI-only scopes, fixed account discovery, and regular-file requirements.
+- `xff/cli/pager_test.sh`: resolved INI settings and CLI precedence, with execution blocks and safe
+  mode leaving the pager boundary independent.
+- `xff_extras_api/mutations_test.cc`, `mutations_fault_test.cc`, and engine directory-safety tests:
+  exclusive creation, overwrite/deletion refusal, symlink and hardlink collisions, pinned and
+  overlapping roots, archive publication, failure cleanup, and owned scratch storage.
+- `tools/check_host_io.py`: all tracked production C++ files, including extras, checked for host-I/O
+  routing; the mutation adapter remains the common enforcement surface.
+- Generated-reference and cookbook checks: registry help matches the published reference and
+  executable recipes. The design overview and focused guides describe current flag types and
+  the deliberate differences between trusted, explicit, and autoloaded configuration.
+
+Local macOS all-extras tests, Linux GCC tests, and changed-file clang-tidy passed. Linux LLVM patch
+coverage was 96.47% lines and 92.31% branches without weakening thresholds. Release preparation for
+`v0.4.0` passed in an isolated commit snapshot, including version stamping, module verification, and
+release-note generation. Full CI on the final PR revision and staged release-artifact smoke tests
+remain the integration gates; local results alone do not establish release readiness.
+
 ## `.xffrc` admission order
 
 The release quick check identified admission resolving selected user sections in declaration order.

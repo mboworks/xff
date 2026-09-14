@@ -4,7 +4,9 @@ xff starts unrestricted when no configuration requests restrictions. Safety has 
 parts: unconditional capability blocks, a configurable safe-mode profile, and dry-run previews.
 Explicit-file arming (`--allow-exec`) covers execution and deletion only. An unarmed explicit file
 can request file/archive output, including overwrite, when the safety policy permits it.
-These controls govern xff's actions. They are not a sandbox around child programs, a guarantee against resource exhaustion. Directory-scoped exceptions are described in
+These controls govern xff's actions. They are not a sandbox around child programs or a guarantee against resource exhaustion.
+Pager commands are separate from execution blocks and dry-run. Restricting which pagers may be
+selected requires a separate policy discussion. Directory-scoped exceptions are described in
 [Directory-scoped safety controls](design-directory-safety.md).
 
 ## Capabilities

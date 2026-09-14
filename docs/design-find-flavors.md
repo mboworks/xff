@@ -34,7 +34,7 @@ Rationale:
    find dialect you wrote.
 4. If an "enforce GNU-portability" need ever appears, that is a future named
    configuration or style decision, not a reason to fork the core now. The
-   rejected general `--feature` registry is not a migration mechanism.
+   general capability registry is not part of the implemented flag model.
 
 ## Divergence survey
 
@@ -74,9 +74,9 @@ most-capable reading:
   `k`/`M`/`G`); accept BSD's extra `T`/`P` as a superset.
 - **regex default flavor**: GNU emacs / BSD basic / xff RE2 - xff uses its RE2
   module with `-regextype` to select, documented as xff's choice.
-- **BSD `-E`**: xff does not use this spelling to select extended regular
-  expressions; use `-regextype`. The spelling remains reserved for the planned
-  input-content `--encoding` shorthand, matching ripgrep rather than BSD find.
+- **BSD `-E`**: xff supports the leading compatibility alias for extended regular
+  expressions, using the configured extended grammar. `--regextype=ERE` explicitly selects
+  the native POSIX extended engine. No input-content encoding shorthand is implemented.
 
 ## Consequence for the time predicates
 

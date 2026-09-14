@@ -15,6 +15,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/status.h"
+#include "xff/cli/globals.h"
 #include "xff/config/config.h"
 #include "xff/config/policy.h"
 #include "xff/config/safety.h"
@@ -63,7 +64,7 @@ TEST_F(ConfigValidationTest, DirectoryRootsAreGlobalTrustedAndSystemAuthoritativ
   const auto user = ValidateConfigFile(config::ParseIni(user_text), {"report"}, "user.ini", config::Source::kUser);
   EXPECT_THAT(system.diagnostics, IsEmpty());
   EXPECT_THAT(user.disabled_configs, ElementsAre("invalid-root"));
-  EXPECT_THAT(user.selected_configs_status, IsOk());
+  EXPECT_THAT(user.status, IsOk());
   const config::ConfigInputs inputs{.system = system.config, .user = user.config};
   std::vector<std::string> globals;
   for (const auto& flag : config::ResolveConfigInOrder(inputs, {"--config=report", "--no-safe"}, "xff")) {
@@ -100,7 +101,7 @@ TEST_F(ConfigValidationTest, FullFileQuotingUsesTheSameGrammarForEveryTier) {
     const ConfigFileValidation validated =
         ValidateConfigFile(config::ParseIni(fixture), {"hash", "space", "equals", "command"}, "shared.ini", source);
     EXPECT_THAT(validated.diagnostics, IsEmpty());
-    EXPECT_THAT(validated.selected_configs_status, IsOk());
+    EXPECT_THAT(validated.status, IsOk());
     EXPECT_THAT(validated.config.globals, ElementsAre("--color=never", "--template=literal # text"));
     ASSERT_THAT(validated.config.named, SizeIs(4));
     EXPECT_THAT(validated.config.named[0].lines[0].tokens, ElementsAre("-name", "#*"));
@@ -113,7 +114,7 @@ TEST_F(ConfigValidationTest, FullFileQuotingUsesTheSameGrammarForEveryTier) {
 TEST_F(ConfigValidationTest, UnterminatedQuotesDisableSelectedSectionWithItsStartingLine) {
   const ConfigFileValidation result =
       ValidateConfigFile(config::ParseIni("--hidden\n[broken]\n-name 'unfinished\n"), {"broken"}, "bad.ini");
-  EXPECT_THAT(result.selected_configs_status, StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(result.status, StatusIs(absl::StatusCode::kInvalidArgument));
   EXPECT_THAT(result.diagnostics, ElementsAre(AllOf(HasSubstr("bad.ini:3"), HasSubstr("unterminated single quote"))));
   EXPECT_THAT(result.config.globals, ElementsAre("--hidden"));
   EXPECT_THAT(result.config.named, IsEmpty());
@@ -135,7 +136,7 @@ TEST_F(ConfigValidationTest, SpacedAssignmentsAreNotAlternateFlagSyntax) {
       ValidateConfigFile(config::ParseIni("--color = auto\n[empty]\n; comment\n"), {"empty"}, "bad.ini");
   EXPECT_THAT(validated.diagnostics, SizeIs(1));
   EXPECT_THAT(validated.config.globals, IsEmpty());
-  EXPECT_THAT(validated.selected_configs_status, IsOk());
+  EXPECT_THAT(validated.status, StatusIs(absl::StatusCode::kInvalidArgument));
 }
 
 TEST_F(ConfigValidationTest, ExecTerminationAndCommentsUseDistinctTokens) {
@@ -150,7 +151,7 @@ TEST_F(ConfigValidationTest, ExecTerminationAndCommentsUseDistinctTokens) {
 -exec echo x ; comment
 )ini"),
       {"escaped", "quoted"}, "exec.ini");
-  EXPECT_THAT(validated.selected_configs_status, IsOk());
+  EXPECT_THAT(validated.status, IsOk());
   ASSERT_THAT(validated.config.named, SizeIs(2));
   EXPECT_THAT(validated.config.named[0].lines[0].tokens, ElementsAre("-exec", "echo", "x", ";"));
   EXPECT_THAT(validated.config.named[1].lines[0].tokens, ElementsAre("-exec", "echo", "x", ";"));
@@ -228,7 +229,7 @@ TEST_F(ConfigValidationTest, RepeatedNamesDisableEveryDeclarationAndDependentCon
       validation.diagnostics, ElementsAre(
                                   AllOf(HasSubstr("repeated.ini:5"), HasSubstr("declared more than once")),
                                   HasSubstr("references disabled config [dev]")));
-  EXPECT_THAT(validation.selected_configs_status, StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(validation.status, StatusIs(absl::StatusCode::kInvalidArgument));
 }
 
 TEST_F(ConfigValidationTest, RepeatedReferencesComposeWithoutRepeatingDeclarations) {
@@ -265,7 +266,7 @@ TEST_F(ConfigValidationTest, UserSectionsUseTheSameAtomicValidationAndDeclaratio
 )ini"),
       {"dev"}, "user.ini", config::Source::kUser);
   EXPECT_THAT(validation.disabled_configs, ElementsAre("dev", "invalid"));
-  EXPECT_THAT(validation.selected_configs_status, StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(validation.status, StatusIs(absl::StatusCode::kInvalidArgument));
   EXPECT_THAT(validation.config.named, ElementsAre(Field("name", &config::IniSection::name, "healthy")));
 }
 
@@ -280,7 +281,7 @@ TEST_F(ConfigValidationTest, ExplicitSectionsUseTheSameAtomicValidationAndDeclar
 )ini"),
       {"dev"}, "task.xffrc", config::Source::kXffrc);
   EXPECT_THAT(validation.disabled_configs, ElementsAre("dev", "invalid"));
-  EXPECT_THAT(validation.selected_configs_status, StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(validation.status, StatusIs(absl::StatusCode::kInvalidArgument));
   EXPECT_THAT(validation.config.named, ElementsAre(Field("name", &config::IniSection::name, "healthy")));
 }
 
@@ -296,7 +297,7 @@ TEST_F(ConfigValidationTest, EmptyRepeatedDeclarationStillDisablesConfig) {
   const ConfigFileValidation validation = ValidateConfigFile(config::ParseIni("[dev]\n[dev]"), {"dev"});
   EXPECT_THAT(validation.disabled_configs, ElementsAre("dev"));
   EXPECT_THAT(validation.config.named, IsEmpty());
-  EXPECT_THAT(validation.selected_configs_status, StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(validation.status, StatusIs(absl::StatusCode::kInvalidArgument));
 }
 
 TEST_F(ConfigValidationTest, NamedSectionsReportOverridesWithinTheirOwnScope) {
@@ -317,7 +318,7 @@ TEST_F(ConfigValidationTest, GroupedExpressionAndSequenceRemainValid) {
   const ConfigFileValidation validation =
       ValidateConfigFile(config::ParseIni("[grouped]\n( -name foo -o -name bar ) , -type f"), {"grouped"});
   EXPECT_THAT(validation.diagnostics, IsEmpty());
-  EXPECT_THAT(validation.selected_configs_status, IsOk());
+  EXPECT_THAT(validation.status, IsOk());
   config::ConfigInputs inputs;
   inputs.system = validation.config;
   ASSERT_OK_AND_ASSIGN(
@@ -332,7 +333,7 @@ TEST_F(ConfigValidationTest, UnterminatedExecDisablesOnlyItsSection) {
       ValidateConfigFile(config::ParseIni("[broken]\n-exec echo {}\n[healthy]\n-type f"), {"broken"});
   EXPECT_THAT(validation.disabled_configs, ElementsAre("broken"));
   EXPECT_THAT(validation.diagnostics, ElementsAre(HasSubstr("requires a terminating ';' or '+'")));
-  EXPECT_THAT(validation.selected_configs_status, StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(validation.status, StatusIs(absl::StatusCode::kInvalidArgument));
   EXPECT_THAT(validation.config.named, ElementsAre(Field("name", &config::IniSection::name, "healthy")));
 }
 
@@ -346,7 +347,7 @@ TEST_F(ConfigValidationTest, SystemControlsDisableNamedSectionsAndFormerReserved
   ASSERT_OK_AND_ASSIGN(const std::string fixture, Fixture("controls"));
   const ConfigFileValidation validation =
       ValidateConfigFile(config::ParseIni(fixture), {"policy", "defaults", "global"});
-  EXPECT_THAT(validation.selected_configs_status, IsOk());
+  EXPECT_THAT(validation.status, IsOk());
   EXPECT_THAT(validation.config.globals, ElementsAre("--block-execution", "--no-allow-xffrc"));
   EXPECT_THAT(validation.diagnostics, ElementsAre(HasSubstr("must precede every system config section")));
   EXPECT_THAT(validation.disabled_configs, ElementsAre("invalid"));
@@ -356,7 +357,7 @@ TEST_F(ConfigValidationTest, SystemControlsDisableNamedSectionsAndFormerReserved
 TEST_F(ConfigValidationTest, SkipControlPairsKeepFirstGlobalDecisionAndDisableMisplacedSections) {
   ASSERT_OK_AND_ASSIGN(const std::string fixture, Fixture("skip_controls"));
   const ConfigFileValidation validation = ValidateConfigFile(config::ParseIni(fixture), {});
-  EXPECT_THAT(validation.selected_configs_status, IsOk());
+  EXPECT_THAT(validation.status, StatusIs(absl::StatusCode::kInvalidArgument));
   EXPECT_THAT(
       validation.config.globals, ElementsAre("--require-system-config", "--require-user-config", "--color=auto"));
   EXPECT_THAT(validation.diagnostics, SizeIs(4));
@@ -367,7 +368,7 @@ TEST_F(ConfigValidationTest, SkipControlPairsKeepFirstGlobalDecisionAndDisableMi
 TEST_F(ConfigValidationTest, PrimaryArgumentsAreNeitherDependenciesNorSystemControls) {
   ASSERT_OK_AND_ASSIGN(const std::string fixture, Fixture("literal_arguments"));
   const ConfigFileValidation validation = ValidateConfigFile(config::ParseIni(fixture), {"literal"});
-  EXPECT_THAT(validation.selected_configs_status, IsOk());
+  EXPECT_THAT(validation.status, IsOk());
   EXPECT_THAT(validation.disabled_configs, ElementsAre("broken"));
   EXPECT_THAT(validation.config.named, ElementsAre(Field("name", &config::IniSection::name, "literal")));
   config::ConfigInputs inputs;
@@ -413,11 +414,11 @@ TEST_F(ConfigValidationTest, MultipleGlobalsAndAPrimaryRemainSeparate) {
   EXPECT_THAT(configured.expression->args, ElementsAre("foo"));
 }
 
-TEST_F(ConfigValidationTest, InvalidGlobalLineIsDiagnosedAndOnlyThatLineIsIgnored) {
+TEST_F(ConfigValidationTest, InvalidGlobalLineFailsValidation) {
   ASSERT_OK_AND_ASSIGN(const std::string fixture, Fixture("globals"));
   const ConfigFileValidation validation = ValidateConfigFile(config::ParseIni(fixture), {"dev"}, "globals/system.ini");
 
-  EXPECT_THAT(validation.selected_configs_status, IsOk());
+  EXPECT_THAT(validation.status, StatusIs(absl::StatusCode::kInvalidArgument));
   EXPECT_THAT(validation.diagnostics, ElementsAre(AllOf(HasSubstr("globals/system.ini:5"), HasSubstr("development"))));
   EXPECT_THAT(
       validation.config.globals,
@@ -430,7 +431,7 @@ TEST_F(ConfigValidationTest, InvalidNamedSectionIsAtomicAndDoesNotAffectSibling)
   const ConfigFileValidation validation =
       ValidateConfigFile(config::ParseIni(fixture), {"healthy"}, "atomic/system.ini");
 
-  EXPECT_THAT(validation.selected_configs_status, IsOk());
+  EXPECT_THAT(validation.status, IsOk());
   EXPECT_THAT(
       validation.diagnostics, ElementsAre(AllOf(
                                   HasSubstr("atomic/system.ini:5"), HasSubstr("disabling config [broken]"),
@@ -446,7 +447,7 @@ TEST_F(ConfigValidationTest, DisablementPropagatesAndSelectingItIsAHardError) {
       ValidateConfigFile(config::ParseIni(fixture), {"outer"}, "transitive/system.ini");
 
   EXPECT_THAT(
-      validation.selected_configs_status,
+      validation.status,
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("selected config [outer] is disabled")));
   EXPECT_THAT(validation.diagnostics, SizeIs(3));
   EXPECT_THAT(validation.diagnostics[0], HasSubstr("disabling config [broken]"));
@@ -460,6 +461,56 @@ TEST_F(ConfigValidationTest, DetailedPolicyRequiresAnExplicitListEvenWhenEmpty) 
   const auto result = ValidateConfigFile(config::ParseIni("--detailed-block-policy"), {}, "system.ini");
   EXPECT_THAT(result.config.globals, IsEmpty());
   EXPECT_THAT(result.diagnostics, ElementsAre(HasSubstr("requires =LIST")));
+}
+
+TEST_F(ConfigValidationTest, ApplyingSelectionsMustExistInActiveFiles) {
+  config::ConfigInputs inputs;
+  inputs.system = config::ParseIni("[system]");
+  inputs.user = config::ParseIni("[user]\n[xff:2]");
+  inputs.xffrc = {{.path = "task", .config = config::ParseIni("[explicit]")}};
+  const auto resolve = [&](const std::vector<std::string>& globals) {
+    return ValidateConfigSelections(inputs, config::ResolveConfigInOrder(inputs, globals, "custom-alias"));
+  };
+  EXPECT_THAT(resolve({"--config=system", "--config=user", "--config=explicit", "--config=xff:2"}), IsOk());
+  EXPECT_THAT(resolve({"--config=missing"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("[missing]")));
+  inputs.no_system_config = true;
+  EXPECT_THAT(resolve({"--config=system"}), StatusIs(absl::StatusCode::kInvalidArgument));
+  inputs.no_user_config = true;
+  EXPECT_THAT(resolve({"--config=user"}), StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(resolve({"--config=explicit", "--config=find", "--config=rg"}), IsOk());
+}
+
+TEST_F(ConfigValidationTest, CompositionMayReferenceLaterFilesButNotMissingNames) {
+  config::ConfigInputs inputs;
+  inputs.system = config::ParseIni("[outer]\n--config=later");
+  inputs.user = config::ParseIni("[later]\n--hidden");
+  const auto resolve = [&] {
+    return ValidateConfigSelections(inputs, config::ResolveConfigInOrder(inputs, {"--config=outer"}, "xff"));
+  };
+  EXPECT_THAT(resolve(), IsOk());
+  inputs.user = config::ParseIni("[later]\n--config=typo");
+  EXPECT_THAT(resolve(), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("[typo]")));
+}
+
+TEST_F(ConfigValidationTest, InertSectionsAndPrimaryArgumentsDoNotSelectConfigs) {
+  config::ConfigInputs inputs;
+  inputs.user = config::ParseIni("[inert]\n--config=missing\n[literal]\n-printf '--config=missing'");
+  EXPECT_THAT(
+      ValidateConfigSelections(inputs, config::ResolveConfigInOrder(inputs, {"--config=literal"}, "alias")), IsOk());
+}
+
+TEST_F(ConfigValidationTest, BootstrapFlagsAreRejectedInGlobalsAndDisableNamedSections) {
+  for (const GlobalFlag& flag : Globals()) {
+    if (!flag.cli_only) {
+      continue;
+    }
+    const std::string argument = flag.name == "--xffrc" ? "--xffrc=task" : std::string(flag.name);
+    const auto globals = ValidateConfigFile(config::ParseIni(argument), {});
+    EXPECT_THAT(globals.status, StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("command-line only")));
+    const auto named = ValidateConfigFile(config::ParseIni(absl::StrCat("[profile]\n", argument)), {"profile"});
+    EXPECT_THAT(named.status, StatusIs(absl::StatusCode::kInvalidArgument));
+    EXPECT_THAT(named.disabled_configs, ElementsAre("profile"));
+  }
 }
 
 }  // namespace

@@ -59,6 +59,7 @@
 #include "xff/presentation/color/color.h"
 #include "xff/presentation/format/format.h"
 #include "xff/registry/descriptor.h"
+#include "xff/vfs/entry.h"
 #include "xff/vfs/local_fs.h"
 
 namespace {
@@ -67,6 +68,14 @@ namespace {
 absl::StatusOr<std::string> ReadFile(std::string_view path) {
   const xff::vfs::LocalFs fs;
   MBO_RETURN_IF_ERROR(fs.Stat(path, false).status());
+  auto metadata = fs.Stat(path, true);
+  if (absl::IsNotFound(metadata.status())) {
+    return absl::FailedPreconditionError("configuration entry exists but its target is unavailable");
+  }
+  MBO_ASSIGN_OR_RETURN(const auto target, std::move(metadata));
+  if (target.type != xff::vfs::FileType::kRegular) {
+    return absl::InvalidArgumentError("configuration must be a regular file");
+  }
   auto content = fs.ReadContent(path);
   if (absl::IsNotFound(content.status())) {
     return absl::FailedPreconditionError("configuration entry exists but its contents are unavailable");
@@ -668,13 +677,13 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   }
   xff::config::ConfigInputs inputs = *std::move(automatic);
   xff::cli::ConfigFileValidation system_validation =
-      xff::cli::ValidateConfigFile(std::move(inputs.system), opts.configs);
+      xff::cli::ValidateConfigFile(std::move(inputs.system), opts.configs, opts.paths.system);
   inputs.system = std::move(system_validation.config);
   for (const std::string& diagnostic : system_validation.diagnostics) {
     std::cerr << "xff: " << diagnostic << "\n";
   }
-  if (!system_validation.selected_configs_status.ok()) {
-    std::cerr << "xff: " << system_validation.selected_configs_status.message() << "\n";
+  if (!system_validation.status.ok()) {
+    std::cerr << "xff: " << system_validation.status.message() << "\n";
     return 2;
   }
   // Authorize explicit-file loading before opening any of the requested paths.
@@ -682,16 +691,23 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     std::cerr << "xff: " << status.message() << "\n";
     return 2;
   }
-  const auto validate_file = [&](xff::config::ConfigFile file, std::string_view path, xff::config::Source source) {
+  const auto validate_file = [&](xff::config::ConfigFile file, std::string_view path,
+                                 xff::config::Source source) -> absl::StatusOr<xff::config::ConfigFile> {
     xff::cli::ConfigFileValidation checked = xff::cli::ValidateConfigFile(std::move(file), {}, path, source);
     for (const std::string& diagnostic : checked.diagnostics) {
       std::cerr << "xff: " << diagnostic << "\n";
     }
+    MBO_RETURN_IF_ERROR(checked.status);
     system_validation.disabled_configs.insert(
         system_validation.disabled_configs.end(), checked.disabled_configs.begin(), checked.disabled_configs.end());
     return std::move(checked.config);
   };
-  inputs.user = validate_file(std::move(inputs.user), opts.paths.user, xff::config::Source::kUser);
+  auto validated_user = validate_file(std::move(inputs.user), opts.paths.user, xff::config::Source::kUser);
+  if (!validated_user.ok()) {
+    std::cerr << "xff: " << validated_user.status().message() << "\n";
+    return 2;
+  }
+  inputs.user = *std::move(validated_user);
   if (const absl::Status status = xff::config::ValidateConfigSkips(inputs); !status.ok()) {
     std::cerr << "xff: " << status.message() << "\n";
     return 2;
@@ -716,7 +732,12 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     return 2;
   }
   for (xff::config::ExplicitConfig& file : inputs.xffrc) {
-    file.config = validate_file(std::move(file.config), file.path, xff::config::Source::kXffrc);
+    auto validated_file = validate_file(std::move(file.config), file.path, xff::config::Source::kXffrc);
+    if (!validated_file.ok()) {
+      std::cerr << "xff: " << validated_file.status().message() << "\n";
+      return 2;
+    }
+    file.config = *std::move(validated_file);
   }
   for (const std::string& notice : xff::cli::ConfigOverrideNotices(inputs)) {
     std::cerr << "xff: warning: " << notice << "\n";
@@ -743,6 +764,10 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
       std::cerr << "xff: selected config [" << selected << "] is disabled; see earlier diagnostics\n";
       return 2;
     }
+  }
+  if (const absl::Status status = xff::cli::ValidateConfigSelections(gated.config, resolved); !status.ok()) {
+    std::cerr << "xff: " << status.message() << "\n";
+    return 2;
   }
   const xff::registry::Style style = xff::config::ActiveStyle(effective_configs);
   if (absl::c_contains(command.globals, "--explain")) {
@@ -799,8 +824,13 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   // Auto pages a terminal listing; always and an explicit command also page through a pipe. Every
   // mode streams the whole walk rather than buffering per line, and steps aside for terminal-using
   // expressions (-ok / -exec and friends) or --quiet.
+  const auto listing_config = xff::cli::ResolvePager(command.globals);
+  if (!listing_config.ok()) {
+    std::cerr << "xff: " << listing_config.status().message() << "\n";
+    return 2;
+  }
   const xff::cli::PagerDecision listing_pager = xff::cli::DecidePager(
-      *pager, xff::cli::PagerOutput::kListing, stdout_is_tty, quiet || xff::parser::TakesTerminal(command));
+      *listing_config, xff::cli::PagerOutput::kListing, stdout_is_tty, quiet || xff::parser::TakesTerminal(command));
   const xff::cli::PagerStream pager_stream(listing_pager);
   const xff::vfs::LocalFs fs;
   const xff::engine::RunResult result = xff::engine::RunFind(

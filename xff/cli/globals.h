@@ -108,6 +108,7 @@ struct GlobalFlag {
   // kEnumList accepts an empty list or comma-separated documented values.
   enum class ValueCheck : std::uint8_t { kNone, kEnum, kEnumList, kEnumOrTemplate, kBool, kTristate };
   ValueCheck value_check = ValueCheck::kNone;
+  bool cli_only = false;     // Requires command-line/bootstrap processing; rejected in config files.
   bool config_only = false;  // Accepted only through validated configuration files.
   bool xff = true;           // false for a find-native option (-H/-L/-P); true for an xff extension
 };

@@ -25,10 +25,10 @@ struct ConfigFileValidation final {
   config::ConfigFile config;
   std::vector<std::string> diagnostics;
   std::vector<std::string> disabled_configs;
-  absl::Status selected_configs_status;
+  absl::Status status;
 };
 
-// Validates file globals independently and named sections atomically. Repeated declarations disable
+// Invalid file globals fail validation; named sections are validated atomically. Repeated declarations disable
 // every occurrence in that file. Disablement propagates through --config references, and selecting
 // a disabled name is a hard error. Only the permitted control locations depend on the source.
 ConfigFileValidation ValidateConfigFile(
@@ -36,6 +36,12 @@ ConfigFileValidation ValidateConfigFile(
     const std::vector<std::string>& selected_configs,
     std::string_view path = "/etc/xff.ini",
     config::Source source = config::Source::kSystem);
+
+// Validates applying explicit/composed selectors after all admitted files are available.
+// Built-in styles need no declaration; primary arguments and implicit invocation names are excluded.
+absl::Status ValidateConfigSelections(
+    const config::ConfigInputs& inputs,
+    const std::vector<config::ResolvedFlag>& resolved);
 
 // Applies global options in resolution order and ANDs the config expression with the CLI expression.
 // Literal primary operands retain their role; they cannot become global options.
