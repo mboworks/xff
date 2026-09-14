@@ -13,9 +13,9 @@
         "percent": 99.12
       },
       "branches": {
-        "covered": 9758,
+        "covered": 9765,
         "total": 10926,
-        "percent": 89.31
+        "percent": 89.37
       }
     },
     "program / command line": {
@@ -81,9 +81,9 @@
         "percent": 97.82
       },
       "branches": {
-        "covered": 3479,
+        "covered": 3487,
         "total": 4026,
-        "percent": 86.41
+        "percent": 86.61
       }
     },
     "program / filesystem": {
@@ -98,9 +98,9 @@
         "percent": 98.36
       },
       "branches": {
-        "covered": 298,
+        "covered": 297,
         "total": 318,
-        "percent": 93.71
+        "percent": 93.4
       }
     },
     "program / matching": {

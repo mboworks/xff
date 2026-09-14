@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-14 10:18:13</td>
+            <td class="headerValue">2026-09-14 13:21:00</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -114,11 +114,11 @@
 <span id="L34"><span class="lineNum">      34</span>                 :             :     &quot;output-directory-deletion&quot;};</span>
 <span id="L35"><span class="lineNum">      35</span>                 :             : }  // namespace</span>
 <span id="L36"><span class="lineNum">      36</span>                 :             : </span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">       24629 : bool SafetyPolicy::Blocks(Capability capability) const {</span></span>
-<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">       24629 :   const auto index = static_cast&lt;std::size_t&gt;(capability);</span></span>
-<span id="L39"><span class="lineNum">      39</span> [<span class="tlaGBC" title="branch 0 was taken 4294967689 times"> + </span><span class="tlaGBC" title="branch 1 was taken 24236 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 161 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 24075 times"> + </span>]:<span class="tlaGNC">       24631 :   return unconditional.at(index) || (safe &amp;&amp; profile.at(index));</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">       24628 : bool SafetyPolicy::Blocks(Capability capability) const {</span></span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">       24628 :   const auto index = static_cast&lt;std::size_t&gt;(capability);</span></span>
+<span id="L39"><span class="lineNum">      39</span> [<span class="tlaGBC" title="branch 0 was taken 394 times"> + </span><span class="tlaGBC" title="branch 1 was taken 24234 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 161 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 24073 times"> + </span>]:<span class="tlaGNC">       24628 :   return unconditional.at(index) || (safe &amp;&amp; profile.at(index));</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 104 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 57 times"> + </span>]
-<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">       24629 : }</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">       24628 : }</span></span>
 <span id="L41"><span class="lineNum">      41</span>                 :             : </span>
 <span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">        1767 : vfs::MutationPolicy SafetyPolicy::FileMutations() const {</span></span>
 <span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">        1767 :   return {</span></span>
