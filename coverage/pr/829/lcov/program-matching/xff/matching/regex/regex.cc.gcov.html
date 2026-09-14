@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-14 22:28:44</td>
+            <td class="headerValue">2026-09-14 23:31:15</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -515,48 +515,48 @@
 <span id="L435"><span class="lineNum">     435</span>                 :<span class="tlaGNC">          91 :   return backend_-&gt;Rewrite(text, replacement, global);</span></span>
 <span id="L436"><span class="lineNum">     436</span>                 :<span class="tlaGNC">          91 : }</span></span>
 <span id="L437"><span class="lineNum">     437</span>                 :             : </span>
-<span id="L438"><span class="lineNum">     438</span>                 :<span class="tlaGNC">          88 : absl::Span&lt;const std::pair&lt;std::string_view, std::string_view&gt;&gt; GrammarDocs() {</span></span>
-<span id="L439"><span class="lineNum">     439</span>                 :<span class="tlaGNC">          88 :   static constexpr auto kDocs = std::to_array&lt;std::pair&lt;std::string_view, std::string_view&gt;&gt;({</span></span>
-<span id="L440"><span class="lineNum">     440</span>                 :<span class="tlaGNC">          88 :       {&quot;ERE&quot;,</span></span>
-<span id="L441"><span class="lineNum">     441</span>                 :<span class="tlaGNC">          88 :        &quot;POSIX extended regular expressions through the platform regcomp(3) implementation. This provides &quot;</span></span>
-<span id="L442"><span class="lineNum">     442</span>                 :<span class="tlaGNC">          88 :        &quot;traditional find -E syntax, captures, partial matching, and rewrites, but locale details and some &quot;</span></span>
-<span id="L443"><span class="lineNum">     443</span>                 :<span class="tlaGNC">          88 :        &quot;edge-case behavior follow the host C library rather than RE2's cross-platform semantics or linear-time &quot;</span></span>
-<span id="L444"><span class="lineNum">     444</span>                 :<span class="tlaGNC">          88 :        &quot;guarantee. Patterns containing NUL are errors; subjects containing NUL do not match because the POSIX API &quot;</span></span>
-<span id="L445"><span class="lineNum">     445</span>                 :<span class="tlaGNC">          88 :        &quot;uses C strings.&quot;},</span></span>
-<span id="L446"><span class="lineNum">     446</span>                 :<span class="tlaGNC">          88 :       {&quot;EXACT&quot;,</span></span>
-<span id="L447"><span class="lineNum">     447</span>                 :<span class="tlaGNC">          88 :        &quot;a literal string; every character matches itself, no metacharacters. -regex is whole-string &quot;</span></span>
-<span id="L448"><span class="lineNum">     448</span>                 :<span class="tlaGNC">          88 :        &quot;equality, -rxc / -grep a substring test.&quot;},</span></span>
-<span id="L449"><span class="lineNum">     449</span>                 :<span class="tlaGNC">          88 :       {&quot;FNMATCH&quot;,</span></span>
-<span id="L450"><span class="lineNum">     450</span>                 :<span class="tlaGNC">          88 :        &quot;a flat shell wildcard via the platform's fnmatch(3): * matches any run of characters &quot;</span></span>
-<span id="L451"><span class="lineNum">     451</span>                 :<span class="tlaGNC">          88 :        &quot;(including /), ? one character, [...] a class. Whole-string, like find -name / -path (no &quot;</span></span>
-<span id="L452"><span class="lineNum">     452</span>                 :<span class="tlaGNC">          88 :        &quot;/-awareness); -i uses FNM_CASEFOLD. Provided by libc, so class / collation details vary by &quot;</span></span>
-<span id="L453"><span class="lineNum">     453</span>                 :<span class="tlaGNC">          88 :        &quot;system.&quot;},</span></span>
-<span id="L454"><span class="lineNum">     454</span>                 :<span class="tlaGNC">          88 :       {&quot;GLOB&quot;,</span></span>
-<span id="L455"><span class="lineNum">     455</span>                 :<span class="tlaGNC">          88 :        &quot;xff's path-aware, locale-independent shell glob (compiled to RE2 - NOT POSIX glob(7)): * &quot;</span></span>
-<span id="L456"><span class="lineNum">     456</span>                 :<span class="tlaGNC">          88 :        &quot;and ? stay within one path component; a complete-component ** crosses components (middle &quot;</span></span>
-<span id="L457"><span class="lineNum">     457</span>                 :<span class="tlaGNC">          88 :        &quot;foo/**/bar permits zero or more, while trailing foo/** requires a descendant); embedded star &quot;</span></span>
-<span id="L458"><span class="lineNum">     458</span>                 :<span class="tlaGNC">          88 :        &quot;runs reduce to *. [...] supports literals, ascending ranges, leading ! negation, and RE2 ASCII &quot;</span></span>
-<span id="L459"><span class="lineNum">     459</span>                 :<span class="tlaGNC">          88 :        &quot;named classes, always excluding / except the compatibility spelling [/]. Malformed ranges, &quot;</span></span>
-<span id="L460"><span class="lineNum">     460</span>                 :<span class="tlaGNC">          88 :        &quot;descending ranges, unsupported named classes, collation/equivalence, and negative extglob are &quot;</span></span>
-<span id="L461"><span class="lineNum">     461</span>                 :<span class="tlaGNC">          88 :        &quot;errors. Braces are literal. Because it compiles to RE2, -grep / -rxc partial matching and match &quot;</span></span>
-<span id="L462"><span class="lineNum">     462</span>                 :<span class="tlaGNC">          88 :        &quot;spans work.&quot;},</span></span>
-<span id="L463"><span class="lineNum">     463</span>                 :<span class="tlaGNC">          88 :       {&quot;PCRE2&quot;,</span></span>
-<span id="L464"><span class="lineNum">     464</span>                 :<span class="tlaGNC">          88 :        &quot;Perl-Compatible Regular Expressions (lookaround, backreferences, ...). A build-time extra: &quot;</span></span>
-<span id="L465"><span class="lineNum">     465</span>                 :<span class="tlaGNC">          88 :        &quot;present only in a full build - run `xff --help=extras` to see whether THIS binary has it. Full &quot;</span></span>
-<span id="L466"><span class="lineNum">     466</span>                 :<span class="tlaGNC">          88 :        &quot;syntax: pcre2pattern(3).&quot;},</span></span>
-<span id="L467"><span class="lineNum">     467</span>                 :<span class="tlaGNC">          88 :       {&quot;RE2&quot;,</span></span>
-<span id="L468"><span class="lineNum">     468</span>                 :<span class="tlaGNC">          88 :        &quot;the default. Google RE2 regular expressions - linear-time, no catastrophic backtracking. &quot;</span></span>
-<span id="L469"><span class="lineNum">     469</span>                 :<span class="tlaGNC">          88 :        &quot;Full syntax: https://github.com/google/re2/wiki/Syntax .&quot;},</span></span>
-<span id="L470"><span class="lineNum">     470</span>                 :<span class="tlaGNC">          88 :       {&quot;SHGLOB&quot;,</span></span>
-<span id="L471"><span class="lineNum">     471</span>                 :<span class="tlaGNC">          88 :        &quot;GLOB plus brace alternation: {a,b,c} matches any one alternative, so *.{cc,h} matches either. &quot;</span></span>
-<span id="L472"><span class="lineNum">     472</span>                 :<span class="tlaGNC">          88 :        &quot;Integer and ASCII-letter sequences expand in either direction (`{1..9}`, `{09..01}`, `{a..z}`); a &quot;</span></span>
-<span id="L473"><span class="lineNum">     473</span>                 :<span class="tlaGNC">          88 :        &quot;leading zero preserves integer width, and expansion above 10,000 terms is rejected. Alternatives &quot;</span></span>
-<span id="L474"><span class="lineNum">     474</span>                 :<span class="tlaGNC">          88 :        &quot;and sequences may nest; alternatives may be empty. Escaped braces and commas, braces inside a &quot;</span></span>
-<span id="L475"><span class="lineNum">     475</span>                 :<span class="tlaGNC">          88 :        &quot;[...] class, and comma-less braces that are not a sequence are literal. The optional shell &quot;</span></span>
-<span id="L476"><span class="lineNum">     476</span>                 :<span class="tlaGNC">          88 :        &quot;increment form (`{1..9..2}`) is not supported and remains literal. Everything else is exactly GLOB.&quot;},</span></span>
-<span id="L477"><span class="lineNum">     477</span>                 :<span class="tlaGNC">          88 :   });</span></span>
-<span id="L478"><span class="lineNum">     478</span>                 :<span class="tlaGNC">          88 :   return kDocs;</span></span>
-<span id="L479"><span class="lineNum">     479</span>                 :<span class="tlaGNC">          88 : }</span></span>
+<span id="L438"><span class="lineNum">     438</span>                 :<span class="tlaGNC">          94 : absl::Span&lt;const std::pair&lt;std::string_view, std::string_view&gt;&gt; GrammarDocs() {</span></span>
+<span id="L439"><span class="lineNum">     439</span>                 :<span class="tlaGNC">          94 :   static constexpr auto kDocs = std::to_array&lt;std::pair&lt;std::string_view, std::string_view&gt;&gt;({</span></span>
+<span id="L440"><span class="lineNum">     440</span>                 :<span class="tlaGNC">          94 :       {&quot;ERE&quot;,</span></span>
+<span id="L441"><span class="lineNum">     441</span>                 :<span class="tlaGNC">          94 :        &quot;POSIX extended regular expressions through the platform regcomp(3) implementation. This provides &quot;</span></span>
+<span id="L442"><span class="lineNum">     442</span>                 :<span class="tlaGNC">          94 :        &quot;traditional find -E syntax, captures, partial matching, and rewrites, but locale details and some &quot;</span></span>
+<span id="L443"><span class="lineNum">     443</span>                 :<span class="tlaGNC">          94 :        &quot;edge-case behavior follow the host C library rather than RE2's cross-platform semantics or linear-time &quot;</span></span>
+<span id="L444"><span class="lineNum">     444</span>                 :<span class="tlaGNC">          94 :        &quot;guarantee. Patterns containing NUL are errors; subjects containing NUL do not match because the POSIX API &quot;</span></span>
+<span id="L445"><span class="lineNum">     445</span>                 :<span class="tlaGNC">          94 :        &quot;uses C strings.&quot;},</span></span>
+<span id="L446"><span class="lineNum">     446</span>                 :<span class="tlaGNC">          94 :       {&quot;EXACT&quot;,</span></span>
+<span id="L447"><span class="lineNum">     447</span>                 :<span class="tlaGNC">          94 :        &quot;a literal string; every character matches itself, no metacharacters. -regex is whole-string &quot;</span></span>
+<span id="L448"><span class="lineNum">     448</span>                 :<span class="tlaGNC">          94 :        &quot;equality, -rxc / -grep a substring test.&quot;},</span></span>
+<span id="L449"><span class="lineNum">     449</span>                 :<span class="tlaGNC">          94 :       {&quot;FNMATCH&quot;,</span></span>
+<span id="L450"><span class="lineNum">     450</span>                 :<span class="tlaGNC">          94 :        &quot;a flat shell wildcard via the platform's fnmatch(3): * matches any run of characters &quot;</span></span>
+<span id="L451"><span class="lineNum">     451</span>                 :<span class="tlaGNC">          94 :        &quot;(including /), ? one character, [...] a class. Whole-string, like find -name / -path (no &quot;</span></span>
+<span id="L452"><span class="lineNum">     452</span>                 :<span class="tlaGNC">          94 :        &quot;/-awareness); -i uses FNM_CASEFOLD. Provided by libc, so class / collation details vary by &quot;</span></span>
+<span id="L453"><span class="lineNum">     453</span>                 :<span class="tlaGNC">          94 :        &quot;system.&quot;},</span></span>
+<span id="L454"><span class="lineNum">     454</span>                 :<span class="tlaGNC">          94 :       {&quot;GLOB&quot;,</span></span>
+<span id="L455"><span class="lineNum">     455</span>                 :<span class="tlaGNC">          94 :        &quot;xff's path-aware, locale-independent shell glob (compiled to RE2 - NOT POSIX glob(7)): * &quot;</span></span>
+<span id="L456"><span class="lineNum">     456</span>                 :<span class="tlaGNC">          94 :        &quot;and ? stay within one path component; a complete-component ** crosses components (middle &quot;</span></span>
+<span id="L457"><span class="lineNum">     457</span>                 :<span class="tlaGNC">          94 :        &quot;foo/**/bar permits zero or more, while trailing foo/** requires a descendant); embedded star &quot;</span></span>
+<span id="L458"><span class="lineNum">     458</span>                 :<span class="tlaGNC">          94 :        &quot;runs reduce to *. [...] supports literals, ascending ranges, leading ! negation, and RE2 ASCII &quot;</span></span>
+<span id="L459"><span class="lineNum">     459</span>                 :<span class="tlaGNC">          94 :        &quot;named classes, always excluding / except the compatibility spelling [/]. Malformed ranges, &quot;</span></span>
+<span id="L460"><span class="lineNum">     460</span>                 :<span class="tlaGNC">          94 :        &quot;descending ranges, unsupported named classes, collation/equivalence, and negative extglob are &quot;</span></span>
+<span id="L461"><span class="lineNum">     461</span>                 :<span class="tlaGNC">          94 :        &quot;errors. Braces are literal. Because it compiles to RE2, -grep / -rxc partial matching and match &quot;</span></span>
+<span id="L462"><span class="lineNum">     462</span>                 :<span class="tlaGNC">          94 :        &quot;spans work.&quot;},</span></span>
+<span id="L463"><span class="lineNum">     463</span>                 :<span class="tlaGNC">          94 :       {&quot;PCRE2&quot;,</span></span>
+<span id="L464"><span class="lineNum">     464</span>                 :<span class="tlaGNC">          94 :        &quot;Perl-Compatible Regular Expressions (lookaround, backreferences, ...). A build-time extra: &quot;</span></span>
+<span id="L465"><span class="lineNum">     465</span>                 :<span class="tlaGNC">          94 :        &quot;present only in a full build - run `xff --help=extras` to see whether THIS binary has it. Full &quot;</span></span>
+<span id="L466"><span class="lineNum">     466</span>                 :<span class="tlaGNC">          94 :        &quot;syntax: pcre2pattern(3).&quot;},</span></span>
+<span id="L467"><span class="lineNum">     467</span>                 :<span class="tlaGNC">          94 :       {&quot;RE2&quot;,</span></span>
+<span id="L468"><span class="lineNum">     468</span>                 :<span class="tlaGNC">          94 :        &quot;the default. Google RE2 regular expressions - linear-time, no catastrophic backtracking. &quot;</span></span>
+<span id="L469"><span class="lineNum">     469</span>                 :<span class="tlaGNC">          94 :        &quot;Full syntax: https://github.com/google/re2/wiki/Syntax .&quot;},</span></span>
+<span id="L470"><span class="lineNum">     470</span>                 :<span class="tlaGNC">          94 :       {&quot;SHGLOB&quot;,</span></span>
+<span id="L471"><span class="lineNum">     471</span>                 :<span class="tlaGNC">          94 :        &quot;GLOB plus brace alternation: {a,b,c} matches any one alternative, so *.{cc,h} matches either. &quot;</span></span>
+<span id="L472"><span class="lineNum">     472</span>                 :<span class="tlaGNC">          94 :        &quot;Integer and ASCII-letter sequences expand in either direction (`{1..9}`, `{09..01}`, `{a..z}`); a &quot;</span></span>
+<span id="L473"><span class="lineNum">     473</span>                 :<span class="tlaGNC">          94 :        &quot;leading zero preserves integer width, and expansion above 10,000 terms is rejected. Alternatives &quot;</span></span>
+<span id="L474"><span class="lineNum">     474</span>                 :<span class="tlaGNC">          94 :        &quot;and sequences may nest; alternatives may be empty. Escaped braces and commas, braces inside a &quot;</span></span>
+<span id="L475"><span class="lineNum">     475</span>                 :<span class="tlaGNC">          94 :        &quot;[...] class, and comma-less braces that are not a sequence are literal. The optional shell &quot;</span></span>
+<span id="L476"><span class="lineNum">     476</span>                 :<span class="tlaGNC">          94 :        &quot;increment form (`{1..9..2}`) is not supported and remains literal. Everything else is exactly GLOB.&quot;},</span></span>
+<span id="L477"><span class="lineNum">     477</span>                 :<span class="tlaGNC">          94 :   });</span></span>
+<span id="L478"><span class="lineNum">     478</span>                 :<span class="tlaGNC">          94 :   return kDocs;</span></span>
+<span id="L479"><span class="lineNum">     479</span>                 :<span class="tlaGNC">          94 : }</span></span>
 <span id="L480"><span class="lineNum">     480</span>                 :             : </span>
 <span id="L481"><span class="lineNum">     481</span>                 :             : }  // namespace xff::regex</span>
         </pre>

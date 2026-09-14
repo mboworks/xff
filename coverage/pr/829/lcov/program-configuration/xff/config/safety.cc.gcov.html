@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-14 22:28:44</td>
+            <td class="headerValue">2026-09-14 23:31:15</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -114,11 +114,11 @@
 <span id="L34"><span class="lineNum">      34</span>                 :             :     &quot;output-directory-deletion&quot;};</span>
 <span id="L35"><span class="lineNum">      35</span>                 :             : }  // namespace</span>
 <span id="L36"><span class="lineNum">      36</span>                 :             : </span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">       25475 : bool SafetyPolicy::Blocks(Capability capability) const {</span></span>
-<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">       25475 :   const auto index = static_cast&lt;std::size_t&gt;(capability);</span></span>
-<span id="L39"><span class="lineNum">      39</span> [<span class="tlaGBC" title="branch 0 was taken 376 times"> + </span><span class="tlaGBC" title="branch 1 was taken 25099 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 161 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 24938 times"> + </span>]:<span class="tlaGNC">       25475 :   return unconditional.at(index) || (safe &amp;&amp; profile.at(index));</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">       25493 : bool SafetyPolicy::Blocks(Capability capability) const {</span></span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">       25493 :   const auto index = static_cast&lt;std::size_t&gt;(capability);</span></span>
+<span id="L39"><span class="lineNum">      39</span> [<span class="tlaGBC" title="branch 0 was taken 390 times"> + </span><span class="tlaGBC" title="branch 1 was taken 25103 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 161 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 24942 times"> + </span>]:<span class="tlaGNC">       25493 :   return unconditional.at(index) || (safe &amp;&amp; profile.at(index));</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 104 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 57 times"> + </span>]
-<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">       25475 : }</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">       25493 : }</span></span>
 <span id="L41"><span class="lineNum">      41</span>                 :             : </span>
 <span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">        1839 : vfs::MutationPolicy SafetyPolicy::FileMutations() const {</span></span>
 <span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">        1839 :   return {</span></span>
@@ -132,21 +132,21 @@
 <span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">        1839 :       .temporary_root = temp_root};</span></span>
 <span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">        1839 : }</span></span>
 <span id="L53"><span class="lineNum">      53</span>                 :             : </span>
-<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">        5214 : vfs::MutationPolicy SafetyPolicy::ArchiveMutations() const {</span></span>
-<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">        5214 :   return {</span></span>
-<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">        5214 :       .block_deletion = Blocks(Capability::kArchiveContentDeletion),</span></span>
-<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">        5214 :       .block_writing = Blocks(Capability::kArchiveWriting),</span></span>
-<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">        5214 :       .block_overwrite = Blocks(Capability::kArchiveOverwrite),</span></span>
-<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">        5214 :       .dry_run = dry_run,</span></span>
-<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">        5214 :       .archive = true,</span></span>
-<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">        5214 :       .directories = directories,</span></span>
-<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">        5214 :       .temporary_root = temp_root,</span></span>
-<span id="L63"><span class="lineNum">      63</span>         [<span class="tlaGBC" title="branch 0 was taken 46 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5168 times"> + </span>]:<span class="tlaGNC">        5214 :       .outside_directory_blocks = directories ? std::make_optional(</span></span>
+<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">        5215 : vfs::MutationPolicy SafetyPolicy::ArchiveMutations() const {</span></span>
+<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">        5215 :   return {</span></span>
+<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">        5215 :       .block_deletion = Blocks(Capability::kArchiveContentDeletion),</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">        5215 :       .block_writing = Blocks(Capability::kArchiveWriting),</span></span>
+<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">        5215 :       .block_overwrite = Blocks(Capability::kArchiveOverwrite),</span></span>
+<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">        5215 :       .dry_run = dry_run,</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">        5215 :       .archive = true,</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">        5215 :       .directories = directories,</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">        5215 :       .temporary_root = temp_root,</span></span>
+<span id="L63"><span class="lineNum">      63</span>         [<span class="tlaGBC" title="branch 0 was taken 46 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5169 times"> + </span>]:<span class="tlaGNC">        5215 :       .outside_directory_blocks = directories ? std::make_optional(</span></span>
 <span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">          46 :                                                     std::array{</span></span>
 <span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">          46 :                                                         Blocks(Capability::kFileWriting),</span></span>
 <span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">          46 :                                                         Blocks(Capability::kFileOverwrite), false, false, false})</span></span>
-<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">        5214 :                                               : std::nullopt};</span></span>
-<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">        5214 : }</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">        5215 :                                               : std::nullopt};</span></span>
+<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">        5215 : }</span></span>
 <span id="L69"><span class="lineNum">      69</span>                 :             : </span>
 <span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">         972 : absl::StatusOr&lt;SafetyPolicy&gt; SafetyPolicy::PrepareDirectories() const {</span></span>
 <span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">         972 :   SafetyPolicy result = *this;</span></span>
@@ -227,15 +227,15 @@
 <span id="L144"><span class="lineNum">     144</span>         [<span class="tlaGBC" title="branch 0 was taken 34 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1672 times"> + </span>]:<span class="tlaGNC">        1706 :       } else if (flag == &quot;--dry-run&quot;) {</span></span>
 <span id="L145"><span class="lineNum">     145</span>                 :<span class="tlaGNC">          34 :         result.dry_run = true;</span></span>
 <span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">        1672 :       } else {</span></span>
-<span id="L147"><span class="lineNum">     147</span>         [<span class="tlaGBC" title="branch 0 was taken 35112 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1672 times"> + </span>]:<span class="tlaGNC">       36784 :         for (std::size_t index = 0; index &lt; kNames.size(); ++index) {</span></span>
-<span id="L148"><span class="lineNum">     148</span> [<span class="tlaGBC" title="branch 0 was taken 5901 times"> + </span><span class="tlaGBC" title="branch 1 was taken 29211 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 277 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 5624 times"> + </span>]:<span class="tlaGNC">       35112 :           if (flag.starts_with(&quot;--block-&quot;) &amp;&amp; flag.substr(8) == kNames.at(index)) {</span></span>
+<span id="L147"><span class="lineNum">     147</span>         [<span class="tlaGBC" title="branch 0 was taken 35111 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1672 times"> + </span>]:<span class="tlaGNC">       36783 :         for (std::size_t index = 0; index &lt; kNames.size(); ++index) {</span></span>
+<span id="L148"><span class="lineNum">     148</span> [<span class="tlaGBC" title="branch 0 was taken 5901 times"> + </span><span class="tlaGBC" title="branch 1 was taken 29210 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 277 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 5624 times"> + </span>]:<span class="tlaGNC">       35111 :           if (flag.starts_with(&quot;--block-&quot;) &amp;&amp; flag.substr(8) == kNames.at(index)) {</span></span>
 <span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">         277 :             result.unconditional.at(index) = true;</span></span>
-<span id="L150"><span class="lineNum">     150</span> [<span class="tlaGBC" title="branch 0 was taken 756 times"> + </span><span class="tlaGBC" title="branch 1 was taken 34079 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 36 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 720 times"> + </span>]:<span class="tlaGNC">       34835 :           } else if (flag.starts_with(&quot;--safe-block-&quot;) &amp;&amp; flag.substr(13) == kNames.at(index)) {</span></span>
+<span id="L150"><span class="lineNum">     150</span> [<span class="tlaGBC" title="branch 0 was taken 756 times"> + </span><span class="tlaGBC" title="branch 1 was taken 34078 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 36 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 720 times"> + </span>]:<span class="tlaGNC">       34834 :           } else if (flag.starts_with(&quot;--safe-block-&quot;) &amp;&amp; flag.substr(13) == kNames.at(index)) {</span></span>
 <span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">          36 :             result.profile.at(index) = true;</span></span>
-<span id="L152"><span class="lineNum">     152</span> [<span class="tlaGBC" title="branch 0 was taken 3864 times"> + </span><span class="tlaGBC" title="branch 1 was taken 30935 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 184 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 3680 times"> + </span>]:<span class="tlaGNC">       34799 :           } else if (flag.starts_with(&quot;--no-safe-block-&quot;) &amp;&amp; flag.substr(16) == kNames.at(index)) {</span></span>
+<span id="L152"><span class="lineNum">     152</span> [<span class="tlaGBC" title="branch 0 was taken 3864 times"> + </span><span class="tlaGBC" title="branch 1 was taken 30934 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 184 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 3680 times"> + </span>]:<span class="tlaGNC">       34798 :           } else if (flag.starts_with(&quot;--no-safe-block-&quot;) &amp;&amp; flag.substr(16) == kNames.at(index)) {</span></span>
 <span id="L153"><span class="lineNum">     153</span>                 :<span class="tlaGNC">         184 :             result.profile.at(index) = false;</span></span>
 <span id="L154"><span class="lineNum">     154</span>                 :<span class="tlaGNC">         184 :           }</span></span>
-<span id="L155"><span class="lineNum">     155</span>                 :<span class="tlaGNC">       35112 :         }</span></span>
+<span id="L155"><span class="lineNum">     155</span>                 :<span class="tlaGNC">       35111 :         }</span></span>
 <span id="L156"><span class="lineNum">     156</span>                 :<span class="tlaGNC">        1672 :       }</span></span>
 <span id="L157"><span class="lineNum">     157</span>                 :<span class="tlaGNC">        1939 :     }</span></span>
 <span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">        1814 :   }</span></span>

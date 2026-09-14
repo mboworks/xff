@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-14 22:28:44</td>
+            <td class="headerValue">2026-09-14 23:31:15</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">97.9&nbsp;%</td>
@@ -58,9 +58,9 @@
             <td></td>
             <td></td>
             <td class="headerItem">Branches:</td>
-            <td class="headerCovTableEntryHi">82.9&nbsp;%</td>
+            <td class="headerCovTableEntryHi">82.8&nbsp;%</td>
             <td class="headerCovTableEntry">1288</td>
-            <td class="headerCovTableEntry">1068</td>
+            <td class="headerCovTableEntry">1067</td>
           </tr>
                   <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
                 </table>
@@ -166,9 +166,9 @@
 <span id="L86"><span class="lineNum">      86</span>                 :             : // agree and the platform choice lives in one place.</span>
 <span id="L87"><span class="lineNum">      87</span>                 :             : constexpr std::string_view kOsLineEnding = &quot;\n&quot;;</span>
 <span id="L88"><span class="lineNum">      88</span>                 :             : </span>
-<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">        1419 : bool Fnmatch(std::string_view pattern, std::string_view text, int flags) {</span></span>
-<span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">        1419 :   return ::fnmatch(std::string(pattern).c_str(), std::string(text).c_str(), flags) == 0;</span></span>
-<span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">        1419 : }</span></span>
+<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">        1420 : bool Fnmatch(std::string_view pattern, std::string_view text, int flags) {</span></span>
+<span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">        1420 :   return ::fnmatch(std::string(pattern).c_str(), std::string(text).c_str(), flags) == 0;</span></span>
+<span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">        1420 : }</span></span>
 <span id="L92"><span class="lineNum">      92</span>                 :             : </span>
 <span id="L93"><span class="lineNum">      93</span>                 :             : // The (letter, type) pairs find's -type/-xtype letters denote, alphabetical by</span>
 <span id="L94"><span class="lineNum">      94</span>                 :             : // letter: matching an entry is then one membership test (contains).</span>
@@ -987,8 +987,8 @@
 <span id="L890"><span class="lineNum">     890</span>                 :             : // entry is on a case-folding volume, xff style, no --exact), so -name matches</span>
 <span id="L891"><span class="lineNum">     891</span>                 :             : // the way the filesystem itself resolves names.</span>
 <span id="L892"><span class="lineNum">     892</span>                 :<span class="tlaGNC">        1325 : bool EvalName(const parser::Expr&amp; expr, EvalContext&amp; ctx) {</span></span>
-<span id="L893"><span class="lineNum">     893</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1324 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 7 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1317 times"> + </span>]:<span class="tlaGNC">        1325 :   const int flags = (expr.descriptor-&gt;fold_case || ctx.fold_name_case || expr.case_fold) ? FNM_CASEFOLD : 0;</span></span>
-<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 4294967301 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 1312 times"> + </span>]
+<span id="L893"><span class="lineNum">     893</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1324 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 6 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1318 times"> + </span>]:<span class="tlaGNC">        1325 :   const int flags = (expr.descriptor-&gt;fold_case || ctx.fold_name_case || expr.case_fold) ? FNM_CASEFOLD : 0;</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 6 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 1312 times"> + </span>]
 <span id="L894"><span class="lineNum">     894</span> [<span class="tlaGBC" title="branch 0 was taken 1325 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 331 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 994 times"> + </span>]:<span class="tlaGNC">        1325 :   return !expr.args.empty() &amp;&amp; Fnmatch(expr.args.front(), ctx.visit.name, flags);</span></span>
 <span id="L895"><span class="lineNum">     895</span>                 :<span class="tlaGNC">        1325 : }</span></span>
 <span id="L896"><span class="lineNum">     896</span>                 :             : </span>
@@ -2518,7 +2518,7 @@
 <span id="L2408"><span class="lineNum">    2408</span>                 :             :   // traversal option like -maxdepth, consumed by the walk, not per entry) is a</span>
 <span id="L2409"><span class="lineNum">    2409</span>                 :             :   // no-op that evaluates true, matching the previous fall-through.</span>
 <span id="L2410"><span class="lineNum">    2410</span>                 :<span class="tlaGNC">        4622 :   const auto it = kDispatch.find(expr.descriptor-&gt;name);</span></span>
-<span id="L2411"><span class="lineNum">    2411</span> [<span class="tlaGBC" title="branch 0 was taken 118 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4504 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2320 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2184 times"> + </span>]:<span class="tlaGNC">        4622 :   return it == kDispatch.end() || it-&gt;second.eval(expr, ctx);</span></span>
+<span id="L2411"><span class="lineNum">    2411</span> [<span class="tlaGBC" title="branch 0 was taken 117 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4505 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2321 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2184 times"> + </span>]:<span class="tlaGNC">        4622 :   return it == kDispatch.end() || it-&gt;second.eval(expr, ctx);</span></span>
 <span id="L2412"><span class="lineNum">    2412</span>                 :<span class="tlaGNC">        4622 : }</span></span>
 <span id="L2413"><span class="lineNum">    2413</span>                 :             : </span>
 <span id="L2414"><span class="lineNum">    2414</span>                 :             : }  // namespace</span>
@@ -2762,9 +2762,9 @@
 <span id="L2647"><span class="lineNum">    2647</span>                 :<span class="tlaGNC">          15 :   context.emit(preview);</span></span>
 <span id="L2648"><span class="lineNum">    2648</span>                 :<span class="tlaGNC">          15 : }</span></span>
 <span id="L2649"><span class="lineNum">    2649</span>                 :             : </span>
-<span id="L2650"><span class="lineNum">    2650</span>                 :<span class="tlaGNC">        7174 : EvaluationResult EvaluateResult(const parser::Expr&amp; expr, EvalContext&amp; context) {</span></span>
-<span id="L2651"><span class="lineNum">    2651</span>         [<span class="tlaGBC" title="branch 0 was taken 7175 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4294967295 times"> + </span>]:<span class="tlaGNC">        7174 :   switch (expr.kind) {</span></span>
-<span id="L2652"><span class="lineNum">    2652</span>         [<span class="tlaGBC" title="branch 0 was taken 4829 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2345 times"> + </span>]:<span class="tlaGNC">        4829 :     case parser::Expr::Kind::kPredicate: {</span></span>
+<span id="L2650"><span class="lineNum">    2650</span>                 :<span class="tlaGNC">        7175 : EvaluationResult EvaluateResult(const parser::Expr&amp; expr, EvalContext&amp; context) {</span></span>
+<span id="L2651"><span class="lineNum">    2651</span>         [<span class="tlaGBC" title="branch 0 was taken 7175 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">        7175 :   switch (expr.kind) {</span></span>
+<span id="L2652"><span class="lineNum">    2652</span>         [<span class="tlaGBC" title="branch 0 was taken 4829 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2346 times"> + </span>]:<span class="tlaGNC">        4829 :     case parser::Expr::Kind::kPredicate: {</span></span>
 <span id="L2653"><span class="lineNum">    2653</span> [<span class="tlaGBC" title="branch 0 was taken 72 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4757 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 15 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 57 times"> + </span>]:<span class="tlaGNC">        4829 :       if (context.dry_run &amp;&amp; expr.descriptor-&gt;safety == registry::Safety::kSecurity) {</span></span>
 <span id="L2654"><span class="lineNum">    2654</span>                 :<span class="tlaGNC">          15 :         PreviewExecution(expr, context);</span></span>
 <span id="L2655"><span class="lineNum">    2655</span>                 :<span class="tlaGNC">          15 :         return {.unknown = true};</span></span>
@@ -2778,23 +2778,23 @@
 <span id="L2663"><span class="lineNum">    2663</span>                 :<span class="tlaGNC">        4622 :       const bool matched = EvaluatePredicate(expr, context);</span></span>
 <span id="L2664"><span class="lineNum">    2664</span>         [<span class="tlaGBC" title="branch 0 was taken 4600 times"> + </span><span class="tlaGBC" title="branch 1 was taken 22 times"> + </span>]:<span class="tlaGNC">        4622 :       return {.fuzzy = context.fuzzy_score.has_value() ? *context.fuzzy_score : std::nullopt, .matched = matched};</span></span>
 <span id="L2665"><span class="lineNum">    2665</span>                 :<span class="tlaGNC">        4741 :     }</span></span>
-<span id="L2666"><span class="lineNum">    2666</span>         [<span class="tlaGBC" title="branch 0 was taken 44 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7130 times"> + </span>]:<span class="tlaGNC">          44 :     case parser::Expr::Kind::kNot: {</span></span>
+<span id="L2666"><span class="lineNum">    2666</span>         [<span class="tlaGBC" title="branch 0 was taken 44 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7131 times"> + </span>]:<span class="tlaGNC">          44 :     case parser::Expr::Kind::kNot: {</span></span>
 <span id="L2667"><span class="lineNum">    2667</span>                 :<span class="tlaGNC">          44 :       const EvaluationResult value = EvaluateChild(*expr.lhs, context);</span></span>
 <span id="L2668"><span class="lineNum">    2668</span> [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 44 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 7 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 37 times"> + </span>]:<span class="tlaGNC">          44 :       return (value.deferred || value.unknown) ? value : EvaluationResult{.matched = !value.matched};</span></span>
 <span id="L2669"><span class="lineNum">    2669</span>                 :<span class="tlaGNC">        4741 :     }</span></span>
-<span id="L2670"><span class="lineNum">    2670</span>         [<span class="tlaGBC" title="branch 0 was taken 2137 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5037 times"> + </span>]:<span class="tlaGNC">        2137 :     case parser::Expr::Kind::kAnd: return EvaluateAnd(expr, context);</span></span>
-<span id="L2671"><span class="lineNum">    2671</span>         [<span class="tlaGBC" title="branch 0 was taken 115 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7059 times"> + </span>]:<span class="tlaGNC">         115 :     case parser::Expr::Kind::kOr: return EvaluateOr(expr, context);</span></span>
-<span id="L2672"><span class="lineNum">    2672</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7169 times"> + </span>]:<span class="tlaGNC">           5 :     case parser::Expr::Kind::kNand: return EvaluateNand(expr, context);</span></span>
-<span id="L2673"><span class="lineNum">    2673</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7169 times"> + </span>]:<span class="tlaGNC">           5 :     case parser::Expr::Kind::kNor: return EvaluateNor(expr, context);</span></span>
-<span id="L2674"><span class="lineNum">    2674</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7166 times"> + </span>]:<span class="tlaGNC">           8 :     case parser::Expr::Kind::kXor: return EvaluateXor(expr, context);</span></span>
-<span id="L2675"><span class="lineNum">    2675</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7169 times"> + </span>]:<span class="tlaGNC">           5 :     case parser::Expr::Kind::kXnor: return EvaluateXnor(expr, context);</span></span>
-<span id="L2676"><span class="lineNum">    2676</span>         [<span class="tlaGBC" title="branch 0 was taken 27 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7147 times"> + </span>]:<span class="tlaGNC">          27 :     case parser::Expr::Kind::kComma: {</span></span>
+<span id="L2670"><span class="lineNum">    2670</span>         [<span class="tlaGBC" title="branch 0 was taken 2137 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5038 times"> + </span>]:<span class="tlaGNC">        2137 :     case parser::Expr::Kind::kAnd: return EvaluateAnd(expr, context);</span></span>
+<span id="L2671"><span class="lineNum">    2671</span>         [<span class="tlaGBC" title="branch 0 was taken 115 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7060 times"> + </span>]:<span class="tlaGNC">         115 :     case parser::Expr::Kind::kOr: return EvaluateOr(expr, context);</span></span>
+<span id="L2672"><span class="lineNum">    2672</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7170 times"> + </span>]:<span class="tlaGNC">           5 :     case parser::Expr::Kind::kNand: return EvaluateNand(expr, context);</span></span>
+<span id="L2673"><span class="lineNum">    2673</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7170 times"> + </span>]:<span class="tlaGNC">           5 :     case parser::Expr::Kind::kNor: return EvaluateNor(expr, context);</span></span>
+<span id="L2674"><span class="lineNum">    2674</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7167 times"> + </span>]:<span class="tlaGNC">           8 :     case parser::Expr::Kind::kXor: return EvaluateXor(expr, context);</span></span>
+<span id="L2675"><span class="lineNum">    2675</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7170 times"> + </span>]:<span class="tlaGNC">           5 :     case parser::Expr::Kind::kXnor: return EvaluateXnor(expr, context);</span></span>
+<span id="L2676"><span class="lineNum">    2676</span>         [<span class="tlaGBC" title="branch 0 was taken 27 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7148 times"> + </span>]:<span class="tlaGNC">          27 :     case parser::Expr::Kind::kComma: {</span></span>
 <span id="L2677"><span class="lineNum">    2677</span>                 :<span class="tlaGNC">          27 :       const EvaluationResult lhs = EvaluateChild(*expr.lhs, context);</span></span>
 <span id="L2678"><span class="lineNum">    2678</span> [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 27 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 26 times"> + </span>]:<span class="tlaGNC">          27 :       return (lhs.deferred || lhs.unknown) ? lhs : EvaluateChild(*expr.rhs, context);</span></span>
 <span id="L2679"><span class="lineNum">    2679</span>                 :<span class="tlaGNC">        4741 :     }</span></span>
-<span id="L2680"><span class="lineNum">    2680</span>                 :<span class="tlaGNC">        7174 :   }</span></span>
+<span id="L2680"><span class="lineNum">    2680</span>                 :<span class="tlaGNC">        7175 :   }</span></span>
 <span id="L2681"><span class="lineNum">    2681</span>                 :<span class="tlaUNC">           0 :   return {.matched = true};</span></span>
-<span id="L2682"><span class="lineNum">    2682</span>                 :<span class="tlaGNC">        7174 : }</span></span>
+<span id="L2682"><span class="lineNum">    2682</span>                 :<span class="tlaGNC">        7175 : }</span></span>
 <span id="L2683"><span class="lineNum">    2683</span>                 :             : </span>
 <span id="L2684"><span class="lineNum">    2684</span>                 :             : }  // namespace</span>
 <span id="L2685"><span class="lineNum">    2685</span>                 :             : </span>
@@ -2857,10 +2857,10 @@
 <span id="L2740"><span class="lineNum">    2740</span>                 :             : // Pre-walk validation of the --diff-ignore / --diff-ignore-matching values: runs the same</span>
 <span id="L2741"><span class="lineNum">    2741</span>                 :             : // ApplyDiffIgnore the per-entry -diff uses against a throwaway DiffOptions, so the token set and</span>
 <span id="L2742"><span class="lineNum">    2742</span>                 :             : // the regex share one source of truth with the apply path. See the header for the contract.</span>
-<span id="L2743"><span class="lineNum">    2743</span>                 :<span class="tlaGNC">         921 : absl::Status ValidateDiffIgnore(std::string_view tokens, std::string_view matching) {</span></span>
-<span id="L2744"><span class="lineNum">    2744</span>                 :<span class="tlaGNC">         921 :   mbo::diff::DiffOptions options;</span></span>
-<span id="L2745"><span class="lineNum">    2745</span>                 :<span class="tlaGNC">         921 :   return ApplyDiffIgnore(tokens, matching, options);</span></span>
-<span id="L2746"><span class="lineNum">    2746</span>                 :<span class="tlaGNC">         921 : }</span></span>
+<span id="L2743"><span class="lineNum">    2743</span>                 :<span class="tlaGNC">         920 : absl::Status ValidateDiffIgnore(std::string_view tokens, std::string_view matching) {</span></span>
+<span id="L2744"><span class="lineNum">    2744</span>                 :<span class="tlaGNC">         920 :   mbo::diff::DiffOptions options;</span></span>
+<span id="L2745"><span class="lineNum">    2745</span>                 :<span class="tlaGNC">         920 :   return ApplyDiffIgnore(tokens, matching, options);</span></span>
+<span id="L2746"><span class="lineNum">    2746</span>                 :<span class="tlaGNC">         920 : }</span></span>
 <span id="L2747"><span class="lineNum">    2747</span>                 :             : </span>
 <span id="L2748"><span class="lineNum">    2748</span>                 :<span class="tlaGNC">        1583 : absl::Status ValidateSizeArgs(const parser::Expr&amp; expr) {</span></span>
 <span id="L2749"><span class="lineNum">    2749</span>         [<span class="tlaGBC" title="branch 0 was taken 1154 times"> + </span><span class="tlaGBC" title="branch 1 was taken 429 times"> + </span>]:<span class="tlaGNC">        1583 :   if (expr.kind == parser::Expr::Kind::kPredicate) {</span></span>
@@ -2961,32 +2961,32 @@
 <span id="L2842"><span class="lineNum">    2842</span>                 :<span class="tlaGNC">           1 :   return letters;</span></span>
 <span id="L2843"><span class="lineNum">    2843</span>                 :<span class="tlaGNC">           1 : }</span></span>
 <span id="L2844"><span class="lineNum">    2844</span>                 :             : </span>
-<span id="L2845"><span class="lineNum">    2845</span>                 :<span class="tlaGNC">          64 : absl::Span&lt;const std::pair&lt;std::string_view, std::string_view&gt;&gt; PrintfDocs() {</span></span>
-<span id="L2846"><span class="lineNum">    2846</span>                 :<span class="tlaGNC">          64 :   static constexpr auto kDocs = std::to_array&lt;std::pair&lt;std::string_view, std::string_view&gt;&gt;({</span></span>
-<span id="L2847"><span class="lineNum">    2847</span>                 :<span class="tlaGNC">          64 :       {&quot;%p&quot;, &quot;the entry's path&quot;},</span></span>
-<span id="L2848"><span class="lineNum">    2848</span>                 :<span class="tlaGNC">          64 :       {&quot;%f&quot;, &quot;file name (basename)&quot;},</span></span>
-<span id="L2849"><span class="lineNum">    2849</span>                 :<span class="tlaGNC">          64 :       {&quot;%h&quot;, &quot;leading directories (dirname)&quot;},</span></span>
-<span id="L2850"><span class="lineNum">    2850</span>                 :<span class="tlaGNC">          64 :       {&quot;%d&quot;, &quot;depth below the starting point&quot;},</span></span>
-<span id="L2851"><span class="lineNum">    2851</span>                 :<span class="tlaGNC">          64 :       {&quot;%y&quot;, &quot;type letter (f d l b c p s)&quot;},</span></span>
-<span id="L2852"><span class="lineNum">    2852</span>                 :<span class="tlaGNC">          64 :       {&quot;%s&quot;, &quot;size in bytes&quot;},</span></span>
-<span id="L2853"><span class="lineNum">    2853</span>                 :<span class="tlaGNC">          64 :       {&quot;%i&quot;, &quot;inode number&quot;},</span></span>
-<span id="L2854"><span class="lineNum">    2854</span>                 :<span class="tlaGNC">          64 :       {&quot;%n&quot;, &quot;number of hard links&quot;},</span></span>
-<span id="L2855"><span class="lineNum">    2855</span>                 :<span class="tlaGNC">          64 :       {&quot;%m&quot;, &quot;permission bits, octal&quot;},</span></span>
-<span id="L2856"><span class="lineNum">    2856</span>                 :<span class="tlaGNC">          64 :       {&quot;%u&quot;, &quot;owner user name (numeric uid if unknown)&quot;},</span></span>
-<span id="L2857"><span class="lineNum">    2857</span>                 :<span class="tlaGNC">          64 :       {&quot;%g&quot;, &quot;owner group name (numeric gid if unknown)&quot;},</span></span>
-<span id="L2858"><span class="lineNum">    2858</span>                 :<span class="tlaGNC">          64 :       {&quot;%U&quot;, &quot;numeric user id&quot;},</span></span>
-<span id="L2859"><span class="lineNum">    2859</span>                 :<span class="tlaGNC">          64 :       {&quot;%G&quot;, &quot;numeric group id&quot;},</span></span>
-<span id="L2860"><span class="lineNum">    2860</span>                 :<span class="tlaGNC">          64 :       {&quot;%a %c %t&quot;, &quot;access / change / modification time (asctime form)&quot;},</span></span>
-<span id="L2861"><span class="lineNum">    2861</span>                 :<span class="tlaGNC">          64 :       {&quot;%Ak %Ck %Tk&quot;, &quot;atime / ctime / mtime via strftime conversion k (e.g. %TY, %Tj)&quot;},</span></span>
-<span id="L2862"><span class="lineNum">    2862</span>                 :<span class="tlaGNC">          64 :       {&quot;%%&quot;, &quot;a literal percent&quot;},</span></span>
-<span id="L2863"><span class="lineNum">    2863</span>                 :<span class="tlaGNC">          64 :       {R&quot;(\n \t \r \\ \0)&quot;, &quot;newline, tab, carriage return, backslash, NUL&quot;},</span></span>
-<span id="L2864"><span class="lineNum">    2864</span>                 :<span class="tlaGNC">          64 :       {&quot;%{NAME}&quot;, &quot;xff: the {field} vocabulary (%{relpath}, %{size:h}, %{def.X}); see --help=fields&quot;},</span></span>
-<span id="L2865"><span class="lineNum">    2865</span>                 :<span class="tlaGNC">          64 :       {&quot;%{NAME:qual}&quot;,</span></span>
-<span id="L2866"><span class="lineNum">    2866</span>                 :<span class="tlaGNC">          64 :        &quot;xff: a field with a :qualifier -- time format, {size:h}, s/// rewrite, or path component &quot;</span></span>
-<span id="L2867"><span class="lineNum">    2867</span>                 :<span class="tlaGNC">          64 :        &quot;(see --help=fields for the full qualifier list)&quot;},</span></span>
-<span id="L2868"><span class="lineNum">    2868</span>                 :<span class="tlaGNC">          64 :   });</span></span>
-<span id="L2869"><span class="lineNum">    2869</span>                 :<span class="tlaGNC">          64 :   return kDocs;</span></span>
-<span id="L2870"><span class="lineNum">    2870</span>                 :<span class="tlaGNC">          64 : }</span></span>
+<span id="L2845"><span class="lineNum">    2845</span>                 :<span class="tlaGNC">          83 : absl::Span&lt;const std::pair&lt;std::string_view, std::string_view&gt;&gt; PrintfDocs() {</span></span>
+<span id="L2846"><span class="lineNum">    2846</span>                 :<span class="tlaGNC">          83 :   static constexpr auto kDocs = std::to_array&lt;std::pair&lt;std::string_view, std::string_view&gt;&gt;({</span></span>
+<span id="L2847"><span class="lineNum">    2847</span>                 :<span class="tlaGNC">          83 :       {&quot;%p&quot;, &quot;the entry's path&quot;},</span></span>
+<span id="L2848"><span class="lineNum">    2848</span>                 :<span class="tlaGNC">          83 :       {&quot;%f&quot;, &quot;file name (basename)&quot;},</span></span>
+<span id="L2849"><span class="lineNum">    2849</span>                 :<span class="tlaGNC">          83 :       {&quot;%h&quot;, &quot;leading directories (dirname)&quot;},</span></span>
+<span id="L2850"><span class="lineNum">    2850</span>                 :<span class="tlaGNC">          83 :       {&quot;%d&quot;, &quot;depth below the starting point&quot;},</span></span>
+<span id="L2851"><span class="lineNum">    2851</span>                 :<span class="tlaGNC">          83 :       {&quot;%y&quot;, &quot;type letter (f d l b c p s)&quot;},</span></span>
+<span id="L2852"><span class="lineNum">    2852</span>                 :<span class="tlaGNC">          83 :       {&quot;%s&quot;, &quot;size in bytes&quot;},</span></span>
+<span id="L2853"><span class="lineNum">    2853</span>                 :<span class="tlaGNC">          83 :       {&quot;%i&quot;, &quot;inode number&quot;},</span></span>
+<span id="L2854"><span class="lineNum">    2854</span>                 :<span class="tlaGNC">          83 :       {&quot;%n&quot;, &quot;number of hard links&quot;},</span></span>
+<span id="L2855"><span class="lineNum">    2855</span>                 :<span class="tlaGNC">          83 :       {&quot;%m&quot;, &quot;permission bits, octal&quot;},</span></span>
+<span id="L2856"><span class="lineNum">    2856</span>                 :<span class="tlaGNC">          83 :       {&quot;%u&quot;, &quot;owner user name (numeric uid if unknown)&quot;},</span></span>
+<span id="L2857"><span class="lineNum">    2857</span>                 :<span class="tlaGNC">          83 :       {&quot;%g&quot;, &quot;owner group name (numeric gid if unknown)&quot;},</span></span>
+<span id="L2858"><span class="lineNum">    2858</span>                 :<span class="tlaGNC">          83 :       {&quot;%U&quot;, &quot;numeric user id&quot;},</span></span>
+<span id="L2859"><span class="lineNum">    2859</span>                 :<span class="tlaGNC">          83 :       {&quot;%G&quot;, &quot;numeric group id&quot;},</span></span>
+<span id="L2860"><span class="lineNum">    2860</span>                 :<span class="tlaGNC">          83 :       {&quot;%a %c %t&quot;, &quot;access / change / modification time (asctime form)&quot;},</span></span>
+<span id="L2861"><span class="lineNum">    2861</span>                 :<span class="tlaGNC">          83 :       {&quot;%Ak %Ck %Tk&quot;, &quot;atime / ctime / mtime via strftime conversion k (e.g. %TY, %Tj)&quot;},</span></span>
+<span id="L2862"><span class="lineNum">    2862</span>                 :<span class="tlaGNC">          83 :       {&quot;%%&quot;, &quot;a literal percent&quot;},</span></span>
+<span id="L2863"><span class="lineNum">    2863</span>                 :<span class="tlaGNC">          83 :       {R&quot;(\n \t \r \\ \0)&quot;, &quot;newline, tab, carriage return, backslash, NUL&quot;},</span></span>
+<span id="L2864"><span class="lineNum">    2864</span>                 :<span class="tlaGNC">          83 :       {&quot;%{NAME}&quot;, &quot;xff: the {field} vocabulary (%{relpath}, %{size:h}, %{def.X}); see --help=fields&quot;},</span></span>
+<span id="L2865"><span class="lineNum">    2865</span>                 :<span class="tlaGNC">          83 :       {&quot;%{NAME:qual}&quot;,</span></span>
+<span id="L2866"><span class="lineNum">    2866</span>                 :<span class="tlaGNC">          83 :        &quot;xff: a field with a :qualifier -- time format, {size:h}, s/// rewrite, or path component &quot;</span></span>
+<span id="L2867"><span class="lineNum">    2867</span>                 :<span class="tlaGNC">          83 :        &quot;(see --help=fields for the full qualifier list)&quot;},</span></span>
+<span id="L2868"><span class="lineNum">    2868</span>                 :<span class="tlaGNC">          83 :   });</span></span>
+<span id="L2869"><span class="lineNum">    2869</span>                 :<span class="tlaGNC">          83 :   return kDocs;</span></span>
+<span id="L2870"><span class="lineNum">    2870</span>                 :<span class="tlaGNC">          83 : }</span></span>
 <span id="L2871"><span class="lineNum">    2871</span>                 :             : </span>
 <span id="L2872"><span class="lineNum">    2872</span>                 :<span class="tlaGNC">           1 : std::string SizeUnitSuffixes() {</span></span>
 <span id="L2873"><span class="lineNum">    2873</span>                 :<span class="tlaGNC">           1 :   std::string suffixes;</span></span>
@@ -2996,19 +2996,19 @@
 <span id="L2877"><span class="lineNum">    2877</span>                 :<span class="tlaGNC">           1 :   return suffixes;</span></span>
 <span id="L2878"><span class="lineNum">    2878</span>                 :<span class="tlaGNC">           1 : }</span></span>
 <span id="L2879"><span class="lineNum">    2879</span>                 :             : </span>
-<span id="L2880"><span class="lineNum">    2880</span>                 :<span class="tlaGNC">          64 : absl::Span&lt;const std::pair&lt;std::string_view, std::string_view&gt;&gt; SizeUnitDocs() {</span></span>
-<span id="L2881"><span class="lineNum">    2881</span>                 :<span class="tlaGNC">          64 :   static constexpr auto kDocs = std::to_array&lt;std::pair&lt;std::string_view, std::string_view&gt;&gt;({</span></span>
-<span id="L2882"><span class="lineNum">    2882</span>                 :<span class="tlaGNC">          64 :       {&quot;c&quot;, &quot;legacy byte unit&quot;},</span></span>
-<span id="L2883"><span class="lineNum">    2883</span>                 :<span class="tlaGNC">          64 :       {&quot;w&quot;, &quot;legacy 2-byte word unit&quot;},</span></span>
-<span id="L2884"><span class="lineNum">    2884</span>                 :<span class="tlaGNC">          64 :       {&quot;b / bare&quot;, &quot;blocks (512 bytes by default; --block-size overrides)&quot;},</span></span>
-<span id="L2885"><span class="lineNum">    2885</span>                 :<span class="tlaGNC">          64 :       {&quot;k / M / G / T / P / E&quot;, &quot;legacy binary units (1024 through 1024^6 bytes)&quot;},</span></span>
-<span id="L2886"><span class="lineNum">    2886</span>                 :<span class="tlaGNC">          64 :       {&quot;B&quot;, &quot;bytes (explicit)&quot;},</span></span>
-<span id="L2887"><span class="lineNum">    2887</span>                 :<span class="tlaGNC">          64 :       {&quot;kB / MB / GB / TB / PB / EB&quot;, &quot;SI units (powers of 1000)&quot;},</span></span>
-<span id="L2888"><span class="lineNum">    2888</span>                 :<span class="tlaGNC">          64 :       {&quot;KiB / MiB / GiB / TiB / PiB / EiB&quot;, &quot;IEC units (powers of 1024)&quot;},</span></span>
-<span id="L2889"><span class="lineNum">    2889</span>                 :<span class="tlaGNC">          64 :       {&quot;+N / -N&quot;, &quot;greater than / less than N units; a bare N matches exactly&quot;},</span></span>
-<span id="L2890"><span class="lineNum">    2890</span>                 :<span class="tlaGNC">          64 :   });</span></span>
-<span id="L2891"><span class="lineNum">    2891</span>                 :<span class="tlaGNC">          64 :   return kDocs;</span></span>
-<span id="L2892"><span class="lineNum">    2892</span>                 :<span class="tlaGNC">          64 : }</span></span>
+<span id="L2880"><span class="lineNum">    2880</span>                 :<span class="tlaGNC">          75 : absl::Span&lt;const std::pair&lt;std::string_view, std::string_view&gt;&gt; SizeUnitDocs() {</span></span>
+<span id="L2881"><span class="lineNum">    2881</span>                 :<span class="tlaGNC">          75 :   static constexpr auto kDocs = std::to_array&lt;std::pair&lt;std::string_view, std::string_view&gt;&gt;({</span></span>
+<span id="L2882"><span class="lineNum">    2882</span>                 :<span class="tlaGNC">          75 :       {&quot;c&quot;, &quot;legacy byte unit&quot;},</span></span>
+<span id="L2883"><span class="lineNum">    2883</span>                 :<span class="tlaGNC">          75 :       {&quot;w&quot;, &quot;legacy 2-byte word unit&quot;},</span></span>
+<span id="L2884"><span class="lineNum">    2884</span>                 :<span class="tlaGNC">          75 :       {&quot;b / bare&quot;, &quot;blocks (512 bytes by default; --block-size overrides)&quot;},</span></span>
+<span id="L2885"><span class="lineNum">    2885</span>                 :<span class="tlaGNC">          75 :       {&quot;k / M / G / T / P / E&quot;, &quot;legacy binary units (1024 through 1024^6 bytes)&quot;},</span></span>
+<span id="L2886"><span class="lineNum">    2886</span>                 :<span class="tlaGNC">          75 :       {&quot;B&quot;, &quot;bytes (explicit)&quot;},</span></span>
+<span id="L2887"><span class="lineNum">    2887</span>                 :<span class="tlaGNC">          75 :       {&quot;kB / MB / GB / TB / PB / EB&quot;, &quot;SI units (powers of 1000)&quot;},</span></span>
+<span id="L2888"><span class="lineNum">    2888</span>                 :<span class="tlaGNC">          75 :       {&quot;KiB / MiB / GiB / TiB / PiB / EiB&quot;, &quot;IEC units (powers of 1024)&quot;},</span></span>
+<span id="L2889"><span class="lineNum">    2889</span>                 :<span class="tlaGNC">          75 :       {&quot;+N / -N&quot;, &quot;greater than / less than N units; a bare N matches exactly&quot;},</span></span>
+<span id="L2890"><span class="lineNum">    2890</span>                 :<span class="tlaGNC">          75 :   });</span></span>
+<span id="L2891"><span class="lineNum">    2891</span>                 :<span class="tlaGNC">          75 :   return kDocs;</span></span>
+<span id="L2892"><span class="lineNum">    2892</span>                 :<span class="tlaGNC">          75 : }</span></span>
 <span id="L2893"><span class="lineNum">    2893</span>                 :             : </span>
 <span id="L2894"><span class="lineNum">    2894</span>                 :             : }  // namespace xff::engine</span>
         </pre>
