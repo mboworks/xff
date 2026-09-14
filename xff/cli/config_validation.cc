@@ -34,7 +34,7 @@ bool IsSystemControl(std::string_view token) {
   return IsDirectoryRoot(token) || token == "--no-require-system-globals" || token == "--require-system-globals"
          || token == "--no-require-user-globals" || token == "--require-user-globals" || token == "--allow-xffrc"
          || token == "--no-allow-xffrc" || token == "--allow-rc-globals" || token == "--no-allow-rc-globals"
-         || token == "--detailed-block-policy" || token.starts_with("--detailed-block-policy=");
+         || token == "--block-policy-categories" || token.starts_with("--block-policy-categories=");
 }
 
 absl::StatusOr<std::size_t> PrimaryArgumentCount(
@@ -62,11 +62,11 @@ absl::StatusOr<absl::flat_hash_set<std::string>> ValidateControls(
   for (const std::string_view token : config::DirectiveTokens(line.tokens)) {
     const std::string name = token == "--no-allow-rc-globals" ? "--allow-rc-globals"
                              : IsDirectoryRoot(token)         ? std::string(token.substr(0, token.find('=')))
-                             : token.starts_with("--detailed-block-policy=") ? "--detailed-block-policy"
-                             : token.starts_with("--no-require-")            ? absl::StrCat("--", token.substr(5))
-                                                                             : std::string(token);
+                             : token.starts_with("--block-policy-categories=") ? "--block-policy-categories"
+                             : token.starts_with("--no-require-")              ? absl::StrCat("--", token.substr(5))
+                                                                               : std::string(token);
     if ((IsDirectoryRoot(name) || name == "--require-system-globals" || name == "--require-user-globals"
-         || name == "--detailed-block-policy" || name == "--allow-rc-globals")
+         || name == "--block-policy-categories" || name == "--allow-rc-globals")
         && !controls.insert(name).second) {
       return absl::InvalidArgumentError(absl::StrCat(name, " and its negative form may occur only once"));
     }
@@ -83,11 +83,11 @@ absl::Status ValidateSystemControl(std::string_view token) {
     }
     return absl::OkStatus();
   }
-  if (!token.starts_with("--detailed-block-policy")) {
+  if (!token.starts_with("--block-policy-categories")) {
     return absl::OkStatus();
   }
   if (!token.contains('=')) {
-    return absl::InvalidArgumentError("--detailed-block-policy requires =LIST (empty or comma-separated categories)");
+    return absl::InvalidArgumentError("--block-policy-categories requires =LIST (empty or comma-separated categories)");
   }
   return ValidateGlobalValue(token);
 }

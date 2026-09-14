@@ -1668,12 +1668,13 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "keep output; exit 0 if anything matched, else 1",
     },
     {
-        .name = "--detailed-block-policy",
-        .display = "--detailed-block-policy=LIST",
+        .name = "--block-policy-categories",
+        .display = "--block-policy-categories=LIST",
         .group = "safety",
         .header = "Safety",
         .summary = "select categories with dedicated blocking controls (config only)",
-        .details = "A comma-separated category list; empty means ordinary file controls for all categories (default). "
+        .details = "Selects separate controls; this directive itself neither blocks nor allows operations. "
+                   "A comma-separated category list; empty means ordinary file controls for all categories (default). "
                    "`archive`, `temp`, and `output` are supported. Allowed once before all sections in system or user "
                    "configuration. Each file chooses its own "
                    "policy, including for its named sections. "
@@ -2200,7 +2201,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "safety",
         .header = "Safety",
         .summary = "unconditionally block archive content writing",
-        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
+        .details = "Applies to member edits of existing archives under `--block-policy-categories=archive`. "
                    "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
         .topic = "safety",
     },
@@ -2210,7 +2211,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "safety",
         .header = "Safety",
         .summary = "include in the safe profile: archive content writing",
-        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
+        .details = "Applies to member edits of existing archives under `--block-policy-categories=archive`. "
                    "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
         .topic = "safety",
     },
@@ -2220,7 +2221,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "safety",
         .header = "Safety",
         .summary = "exclude from the safe profile: archive content writing",
-        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
+        .details = "Applies to member edits of existing archives under `--block-policy-categories=archive`. "
                    "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
         .topic = "safety",
     },
@@ -2230,7 +2231,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "safety",
         .header = "Safety",
         .summary = "unconditionally block archive content overwrite",
-        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
+        .details = "Applies to member edits of existing archives under `--block-policy-categories=archive`. "
                    "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
         .topic = "safety",
     },
@@ -2240,7 +2241,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "safety",
         .header = "Safety",
         .summary = "include in the safe profile: archive content overwrite",
-        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
+        .details = "Applies to member edits of existing archives under `--block-policy-categories=archive`. "
                    "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
         .topic = "safety",
     },
@@ -2250,7 +2251,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "safety",
         .header = "Safety",
         .summary = "exclude from the safe profile: archive content overwrite",
-        .details = "Applies to member edits of existing archives under `--detailed-block-policy=archive`. "
+        .details = "Applies to member edits of existing archives under `--block-policy-categories=archive`. "
                    "See `--help=safety` for the operation table and whole-archive replacement tradeoff.",
         .topic = "safety",
     },

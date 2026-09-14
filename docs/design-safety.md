@@ -148,7 +148,7 @@ policy. Globals-requirement directives govern whether unsectioned policy survive
 
 ## Archive blocking policy
 
-`--detailed-block-policy=LIST` is config-only, once before sections in each system or user file. Each file chooses its own policy. Named sections, explicit `.xffrc` files and the CLI cannot set it. The default is an empty category list. The comma-separated list accepts `archive`, `temp`, and `output`; unknown categories are errors.
+`--block-policy-categories=LIST` is config-only, once before sections in each system or user file. Each file chooses its own policy. Named sections, explicit `.xffrc` files and the CLI cannot set it. The default is an empty category list. The comma-separated list accepts `archive`, `temp`, and `output`; unknown categories are errors.
 
 Every control listed must permit the operation. Names omit `--block-` and the active `--safe-block-` prefixes.
 

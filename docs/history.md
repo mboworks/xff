@@ -9,6 +9,13 @@ would otherwise be lost when the actionable backlog is simplified.
 The former combined roadmap and completion ledger through PR #683 is retained separately in
 [`history-roadmap.md`](history-roadmap.md).
 
+## Block policy category naming
+
+Use `--block-policy-categories=LIST` for the per-file selection of separate archive, temp, and
+output controls. Parser, policy validation, registry help, reference documentation, and complete-file
+fixtures share the spelling. The directive selects controls without granting or blocking operations;
+category expansion and enforcement are unchanged. Unsupported spellings remain errors.
+
 ## Required globals and optional named sections
 
 The globals-requirement adjustment replaces the four require-config spellings with

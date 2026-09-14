@@ -3,6 +3,9 @@
 
 # 0.4.0
 
+- Use `--block-policy-categories=LIST` to select separate archive, temp, or output block controls
+  per INI file; unlisted categories use ordinary file controls.
+
 - Fail before actions on invalid configuration globals and undefined selected or composed configs.
 - Reject command-line-only options and non-regular configuration targets; document directive scopes
   in individual help entries and apply INI pager settings to listing output.

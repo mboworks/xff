@@ -290,7 +290,7 @@ test::directory_policy_limits_output_and_protects_roots() {
   mkdir -p "${dir}/source" "${dir}/output/nested" "${dir}/scratch"
   printf 'source\n' >"${dir}/source/file"
   cat >"${cfg}" <<INI
---detailed-block-policy=temp,output
+--block-policy-categories=temp,output
 --temp-root=${dir}/scratch
 --output-root=${dir}/output
 --block-file-writing

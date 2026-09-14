@@ -61,7 +61,7 @@ TEST_F(ConfigTest, DirectoryPolicyTranslationPreservesEarlierMandatoryBlocks) {
   for (const std::string_view categories :
        std::to_array<std::string_view>({"", "temp", "output", "temp,output", "archive,temp,output"})) {
     ConfigInputs inputs;
-    inputs.system = ParseIni(std::string("--detailed-block-policy=") + std::string(categories) + R"ini(
+    inputs.system = ParseIni(std::string("--block-policy-categories=") + std::string(categories) + R"ini(
 --temp-root=/system/temp
 --output-root=/system/output
 --block-file-writing
@@ -69,7 +69,7 @@ TEST_F(ConfigTest, DirectoryPolicyTranslationPreservesEarlierMandatoryBlocks) {
 [restricted]
 --block-output-file-overwrite
 )ini");
-    inputs.user = ParseIni(R"ini(--detailed-block-policy=temp,output
+    inputs.user = ParseIni(R"ini(--block-policy-categories=temp,output
 --temp-root=/user/temp
 --output-root=/user/output
 --no-safe
@@ -100,8 +100,8 @@ TEST_F(ConfigTest, ArchivePoliciesAreTranslatedIndependentlyBeforeComposition) {
   for (const std::string& system_choice : policies) {
     ConfigInputs inputs;
     inputs.system =
-        ParseIni("--detailed-block-policy=" + system_choice + "\n--block-file-writing\n--block-archive-overwrite");
-    inputs.user = ParseIni("--detailed-block-policy=" + std::string(system_choice.empty() ? "archive" : ""));
+        ParseIni("--block-policy-categories=" + system_choice + "\n--block-file-writing\n--block-archive-overwrite");
+    inputs.user = ParseIni("--block-policy-categories=" + std::string(system_choice.empty() ? "archive" : ""));
     std::vector<std::string> globals;
     for (const auto& flag : ResolveConfigInOrder(inputs, {}, "xff")) {
       globals.push_back(flag.flag);
@@ -115,7 +115,7 @@ TEST_F(ConfigTest, ArchivePoliciesAreTranslatedIndependentlyBeforeComposition) {
 
 TEST_F(ConfigTest, NamedSectionsKeepTheirOwnFileScopeAcrossLateComposition) {
   ConfigInputs inputs;
-  inputs.system = ParseIni(R"ini(--detailed-block-policy=archive
+  inputs.system = ParseIni(R"ini(--block-policy-categories=archive
 --block-archive-overwrite
 [clean]
 --block-file-writing
@@ -139,14 +139,14 @@ TEST_F(ConfigTest, NamedSectionsKeepTheirOwnFileScopeAcrossLateComposition) {
 
 TEST_F(ConfigTest, PolicyTranslationNeverRewritesPrimaryArguments) {
   ConfigInputs inputs;
-  inputs.user = ParseIni(R"ini(--detailed-block-policy=archive
--exec echo --block-file-writing --detailed-block-policy= \;
+  inputs.user = ParseIni(R"ini(--block-policy-categories=archive
+-exec echo --block-file-writing --block-policy-categories= \;
 )ini");
   const auto resolved = ResolveConfigInOrder(inputs, {}, "xff");
   ASSERT_THAT(resolved, SizeIs(5));
   EXPECT_THAT(resolved[2].flag, Eq("--block-file-writing"));
   EXPECT_THAT(resolved[2].is_argument, IsTrue());
-  EXPECT_THAT(resolved[3].flag, Eq("--detailed-block-policy="));
+  EXPECT_THAT(resolved[3].flag, Eq("--block-policy-categories="));
   EXPECT_THAT(resolved[3].is_argument, IsTrue());
 }
 

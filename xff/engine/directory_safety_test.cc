@@ -44,7 +44,7 @@ struct DirectorySafetyTest : ::testing::Test {
   std::string Path(std::string_view name) const { return root_path_ + "/" + std::string(name); }
 
   std::string Policy() const {
-    return "--detailed-block-policy=archive,temp,output\n--temp-root=" + Path("temp")
+    return "--block-policy-categories=archive,temp,output\n--temp-root=" + Path("temp")
            + "\n--output-root=" + Path("output") + "\n--block-file-writing\n--block-file-deletion\n";
   }
 

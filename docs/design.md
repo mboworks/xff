@@ -64,7 +64,7 @@ profile; `--no-safe` disables only that profile. The `--safe-block-*` pairs defi
 `--dry-run` previews permitted actions without commands or mutations; it does not override blocks.
 
 Writing, overwrite, deletion, execution, and directory operations have distinct controls.
-Per-file `--detailed-block-policy` determines whether archive/temp/output controls are separate.
+Per-file `--block-policy-categories` determines whether archive/temp/output controls are separate.
 Declarations are translated before policies combine, so later detail cannot erase an earlier block.
 
 The model protects ordinary use, generated commands, tests, and declared filesystem roots.
