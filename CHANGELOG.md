@@ -3,6 +3,9 @@
 
 # 0.5.0
 
+- Add `--summary=compare` with selected status counts, percentages, and a total; bare `--summary`
+  selects it during tree comparison, including empty comparisons.
+
 # 0.4.0
 
 - Use `--block-policy-categories=LIST` to select separate archive, temp, or output block controls

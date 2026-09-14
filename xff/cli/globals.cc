@@ -94,6 +94,7 @@ constexpr std::array kFormatValues = std::to_array<ValueDoc>({
     {.value = "md", .meaning = "", .hidden = true},  // the alias `markdown`'s meaning already names
 });
 constexpr std::array kSummaryValues = std::to_array<ValueDoc>({
+    {.value = "compare", .meaning = "selected comparison counts and percentages by status; requires `--compare`"},
     {.value = "overall", .meaning = "one row aggregated over all matches"},
     {.value = "type", .meaning = "by file type"},
     {.value = "ext", .meaning = "by extension"},
@@ -1143,7 +1144,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "none of them. Regular files are compared byte for byte (text and binary). Unfollowed symlinks "
                    "are compared by target. Both walks complete before comparison records are emitted in bytewise "
                    "relative-path order; `--sort` affects each walk, not that final order. In status mode, "
-                   "`--path-encoding=escape` makes control bytes in the relative path unambiguous.",
+                   "`--path-encoding=escape` makes control bytes in the relative path unambiguous. "
+                   "`--summary` / `--summary=compare` append selected comparison counts and percentages by status and "
+                   "a total. "
+                   "Other summary groupings still describe each input tree separately.",
         .values = kCompareValues,
         .topic = "compare",
         .value_check = GlobalFlag::ValueCheck::kEnum,
@@ -1336,7 +1340,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "stats",
         .header = "Statistics",
         .summary = "aligned count + size table (or --format=jsonl rows) instead of each match; repeatable",
-        .details = "Replaces the per-match listing with an aggregate table: match count and total size per group "
+        .details = "With `--compare`, bare `--summary` or `--summary=compare` appends selected result counts and "
+                   "percentages by "
+                   "status and a total after the comparison output. Other groupings summarize each input tree. "
+                   "Outside comparison, replaces the per-match listing with an aggregate table: match count and total "
+                   "size per group "
                    "(overall, by type, extension, programming language, media (MIME) type, user (owner), owning "
                    "group, file digest, or hash-verification result). The categorical keys reuse the "
                    "{mime}/{user}/{group}/{hash} field "

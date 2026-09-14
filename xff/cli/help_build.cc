@@ -837,6 +837,13 @@ Section CompareSection(bool in_full) {
       "Bare `--compare` (or `--compare=status`) writes tab-separated `STATUS` and relative-path records. "
       "The default selection reports discrepancies only; `--compare-select=all` also includes equal entries. "
       "`--path-encoding=escape` makes control bytes in the path unambiguous."));
+  statuses.children.push_back(ProseOf(
+      "`--summary` (or `--summary=compare`) appends counts and percentages of selected comparison results by status "
+      "and a total, "
+      "including zero counts for empty selections. Each paired path counts once; directory-only entries are omitted "
+      "as in the status listing. Percentages use the selected total; `--summary-precision` controls decimals. "
+      "`--format=jsonl` renders these summary rows as `group`, `count`, and numeric `percent` objects. "
+      "Other summary groupings describe each input tree separately."));
   statuses.children.push_back(RowsOf(kStatuses));
   section.children.push_back(Content{.node = std::move(statuses)});
 
