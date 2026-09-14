@@ -78,6 +78,21 @@ Content RowsOf(absl::Span<const DocPair> pairs) {
   return Content{.node = std::move(rows)};
 }
 
+// Related topics are registry metadata. Suppress repeats and keep the authored order.
+SeeAlso TopicLinks(std::string_view topic, std::string_view related) {
+  SeeAlso links;
+  const auto add = [&](std::string_view name) {
+    if (!name.empty() && !absl::c_any_of(links.refs, [&](const RefTarget& ref) { return ref.id == name; })) {
+      links.refs.push_back({.kind = RefTarget::Kind::kTopic, .id = std::string(name)});
+    }
+  };
+  add(topic);
+  for (const std::string_view name : absl::StrSplit(related, ',', absl::SkipEmpty())) {
+    add(name);
+  }
+  return links;
+}
+
 // The classification tags after a flag's term, e.g. (global, xff).
 std::vector<std::string> FlagTags(const GlobalFlag& flag) {
   std::vector<std::string> tags = {"global", flag.xff ? "xff" : "find"};
@@ -229,7 +244,7 @@ Content PrimaryEntry(const registry::Descriptor& descriptor, bool with_details =
 // FIELDS: translate the fields module's canonical vocabulary and syntax documentation
 // into backend-neutral help-model nodes.
 Section BuildFields() {
-  Section section{.title = "Fields"};
+  Section section{.title = "Fields", .anchor = "topic-fields"};
   section.children.push_back(ProseOf(
       "The `{field}` placeholder vocabulary, substituted per entry in `--template` / `--format`, in "
       "`-printf` via the `%{field}` escape, and (with `--exec-fields`) in `-exec`."));
@@ -294,8 +309,12 @@ Section BuildFields() {
 }
 
 // Builds one section whose children are a lead prose paragraph followed by a vocabulary table.
-Section VocabSection(std::string_view title, std::string_view prose, absl::Span<const DocPair> pairs) {
-  Section section{.title = std::string(title)};
+Section VocabSection(
+    std::string_view topic,
+    std::string_view title,
+    std::string_view prose,
+    absl::Span<const DocPair> pairs) {
+  Section section{.title = std::string(title), .anchor = absl::StrCat("topic-", topic)};
   section.children.push_back(ProseOf(prose));
   section.children.push_back(RowsOf(pairs));
   return section;
@@ -305,13 +324,15 @@ Section VocabSection(std::string_view title, std::string_view prose, absl::Span<
 // TopicReference). Named so BuildReference and the topic render share one definition.
 Section PrintfSection() {
   return VocabSection(
-      "Printf directives", "Directives for `-printf` / `-fprintf` / `-println` FORMAT, and the `%{field}` escape.",
+      "printf", "Printf directives",
+      "Directives for `-printf` / `-fprintf` / `-printfln` / `-fprintfln` FORMAT, and the `%{field}` escape.",
       engine::PrintfDocs());
 }
 
 Section TimeSection() {
   Section section = VocabSection(
-      "Time formats", "Presets and strftime patterns for --time-format, --timezone, and time-field {:qualifiers}.",
+      "time", "Time formats",
+      "Presets and strftime patterns for --time-format, --timezone, and time-field {:qualifiers}.",
       datetime::FormatDocs());
   section.children.push_back(ProseOf(
       "Time zone. `--timezone=ZONE` (alias `--tz`) sets the zone every time is interpreted and rendered in: "
@@ -331,7 +352,8 @@ Section TimeSection() {
 
 Section SizeSection() {
   Section section = VocabSection(
-      "Size units", "Units for -size / -blocks [+|-]N[unit]; spell SI and IEC explicitly.", engine::SizeUnitDocs());
+      "size", "Size units", "Units for -size / -blocks [+|-]N[unit]; spell SI and IEC explicitly.",
+      engine::SizeUnitDocs());
   section.children.push_back(ProseOf(
       "All byte counts use an unsigned 64-bit value, so the largest representable size is "
       "`18446744073709551615 B` (about `18.45 EB`, just under `16 EiB`). A number multiplied by its "
@@ -344,7 +366,7 @@ Section SizeSection() {
 
 Section GrammarsSection() {
   return VocabSection(
-      "Regex grammars",
+      "grammars", "Regex grammars",
       "The grammar for `-regex` / `-iregex` and the content matchers `-rxc` / `-grep`, chosen by `--regextype` "
       "(default `RE2`). `ERE`, `EXACT`, `FNMATCH`, `GLOB` and `SHGLOB` are core engines, always built in; `PCRE2` is a "
       "build-time extra (see `--help=extras`). RE2 and PCRE2 have canonical external references, so the "
@@ -360,7 +382,7 @@ bool IsRegexPrimary(std::string_view name) {
 }
 
 Section RegexSection(bool in_full) {
-  Section section{.title = "Regex matching"};
+  Section section{.title = "Regex matching", .anchor = "topic-regex"};
   section.children.push_back(ProseOf(
       "Use `-regex` / `-iregex` to match the whole path, `-rxc` / `-irxc` to find a match in file content, "
       "and `-grep` for line-oriented content output. `--regextype` selects the grammar; `--case` controls "
@@ -389,17 +411,10 @@ Section RegexSection(bool in_full) {
     const Section grammars = GrammarsSection();
     section.children.push_back(Content{.node = Subsection{.title = grammars.title, .children = grammars.children}});
   }
-  Subsection examples{.title = "Examples"};
+  Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
   examples.children.push_back(ExampleOf("xff src --regextype=RE2 -regex '.*[.](cc|h)'", "sh"));
   examples.children.push_back(ExampleOf("xff src --regextype=RE2 --case=insensitive -grep 'todo|fixme'", "sh"));
   section.children.push_back(Content{.node = std::move(examples)});
-  section.children.push_back(
-      Content{
-          .node = SeeAlso{
-              .refs = {
-                  {.kind = RefTarget::Kind::kTopic, .id = "grammars"},
-                  {.kind = RefTarget::Kind::kTopic, .id = "content"},
-              }}});
   return section;
 }
 
@@ -407,7 +422,7 @@ Section RegexSection(bool in_full) {
 // color / pager / help-width / config with no single registry - and kept honest by help_render_test.
 // Standalone as `--help=environment` (env) and folded into the full reference / man page.
 Section EnvironmentSection() {
-  Section env{.title = "Environment"};
+  Section env{.title = "Environment", .anchor = "topic-environment"};
   env.children.push_back(ProseOf(
       "Environment variables xff reads. An explicit command-line flag generally overrides the matching "
       "variable."));
@@ -451,7 +466,7 @@ Section EnvironmentSection() {
 // full reference already documents every flag in its grouped Options section, so
 // repeating them here is pure duplication - the narrative + examples are what add value.
 Section StatsSection(bool in_full) {
-  Section section{.title = "Statistics"};
+  Section section{.title = "Statistics", .anchor = "topic-stats"};
   section.children.push_back(ProseOf(
       "xff statistics reductions. `--summary` and `--histogram` replace the per-match listing with an "
       "aggregate over all matches; they are independent and combinable (one walk feeds both), and an "
@@ -468,7 +483,7 @@ Section StatsSection(bool in_full) {
       {"xff --histogram=size", "the file-size distribution"},
       {"xff --summary=type --histogram=ext --format=jsonl", "both, as machine rows"},
   }};
-  Subsection examples{.title = "Examples"};
+  Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
   // Each example is a verbatim (copy-pastable) command with its explanation as prose,
   // which wraps to the width - the cookbook pattern, not a term/desc table whose wide
   // command column squeezes the explanation to one word per line at narrow widths.
@@ -485,7 +500,7 @@ Section StatsSection(bool in_full) {
 // `--help=ignore` (aliases `ignores` / `vcs`) and folded into the full reference; the folded form
 // omits entries already present in the Options section.
 Section IgnoreSection(bool in_full) {
-  Section section{.title = "Ignore and VCS traversal"};
+  Section section{.title = "Ignore and VCS traversal", .anchor = "topic-ignore"};
   section.children.push_back(ProseOf(
       "Ignoring a path and pruning version-control metadata are separate decisions. Ignore rules "
       "filter ordinary paths by pattern; `--skip-vcs` prevents xff from entering administrative "
@@ -550,7 +565,7 @@ Section IgnoreSection(bool in_full) {
       {"xff -g --no-skip-vcs .", "honour Git rules while allowing nested `.git` metadata into the walk"},
       {"xff -u --skip-vcs .", "ignore no rule files, but still prune every known VCS metadata tree"},
   }};
-  Subsection examples{.title = "Examples"};
+  Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
   for (const auto& [command, explanation] : kExamples) {
     examples.children.push_back(ExampleOf(std::string(command), "sh"));
     examples.children.push_back(ProseOf(explanation));
@@ -566,7 +581,7 @@ Section IgnoreSection(bool in_full) {
 // `in_full` (the folded-in case) omits the per-flag entries, which the grouped Options section
 // already carries.
 Section ArchiveSection(bool in_full) {
-  Section section{.title = "Archives"};
+  Section section{.title = "Archives", .anchor = "topic-archive"};
   section.children.push_back(ProseOf(
       "With `--archive`, an archive is a directory: xff opens it and walks its members as ordinary "
       "entries, so every predicate and action applies to them unchanged - `-name`, `-type`, "
@@ -746,7 +761,7 @@ Section ArchiveSection(bool in_full) {
       {"xff . -name '*.cc' -newer VERSION --pack=changed.tar.gz",
        "pack what the expression matched into a new archive"},
   }};
-  Subsection examples{.title = "Examples"};
+  Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
   for (const auto& [command, explanation] : kExamples) {
     examples.children.push_back(ExampleOf(std::string(command), "sh"));
     examples.children.push_back(ProseOf(explanation));
@@ -760,7 +775,7 @@ Section ArchiveSection(bool in_full) {
 // lists cannot drift; the cross-cutting rules are prose, because they are what a reader needs before
 // the family means anything. Standalone as `--help=content` and folded into the full reference.
 Section ContentSection(bool in_full) {
-  Section section{.title = "Content"};
+  Section section{.title = "Content", .anchor = "topic-content"};
   section.children.push_back(ProseOf(
       "These primaries read the entry's BYTES, not its metadata: `-grep` prints matching lines the "
       "way ripgrep does, `-content` / `-icontent` test for a literal, `-rxc` / `-irxc` for a regex "
@@ -787,7 +802,7 @@ Section ContentSection(bool in_full) {
       {"xff . -type f ! -text", "the files that are NOT line-oriented text"},
       {"xff -z logs.tar -grep ERROR --count", "per-member match counts inside an archive"},
   }};
-  Subsection examples{.title = "Examples"};
+  Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
   for (const auto& [command, explanation] : kExamples) {
     examples.children.push_back(ExampleOf(std::string(command), "sh"));
     examples.children.push_back(ProseOf(explanation));
@@ -798,7 +813,7 @@ Section ContentSection(bool in_full) {
 
 // OUTPUT: how the implicit listing relates to expression actions and what each renderer guarantees.
 Section OutputSection(bool in_full) {
-  Section section{.title = "Output"};
+  Section section{.title = "Output", .anchor = "topic-output"};
   section.children.push_back(ProseOf(
       "When the expression contains no action, xff implicitly lists every match. An explicit action such as "
       "`-print`, `-grep`, or `-exec` suppresses that default listing unless `--implicit-print=yes` restores it. "
@@ -841,7 +856,7 @@ Section OutputSection(bool in_full) {
     section.children.push_back(Content{.node = std::move(flags)});
   }
 
-  Subsection examples{.title = "Examples"};
+  Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
   examples.children.push_back(ExampleOf("xff . -type f --format=nul | xargs -0 sha256sum --", "sh"));
   examples.children.push_back(ProseOf("pass arbitrary filenames safely to another command"));
   examples.children.push_back(ExampleOf("xff . -type f --format=csv --columns=path,size,mtime", "sh"));
@@ -855,7 +870,7 @@ Section OutputSection(bool in_full) {
 // COMPARE: the two-root mode needs a mental model beyond the individual flag entries, especially
 // because it deliberately inherits traversal/filtering without enabling any of it implicitly.
 Section CompareSection(bool in_full) {
-  Section section{.title = "Comparing trees"};
+  Section section{.title = "Comparing trees", .anchor = "topic-compare"};
   section.children.push_back(ProseOf(
       "`--compare` requires exactly two roots. xff walks both roots with the same expression and the "
       "same explicitly selected traversal, ignore, archive, hidden-file, and symlink options. Comparison "
@@ -927,7 +942,7 @@ Section CompareSection(bool in_full) {
   related.children.push_back(Content{.node = std::move(links)});
   section.children.push_back(Content{.node = std::move(related)});
 
-  Subsection examples{.title = "Examples"};
+  Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
   examples.children.push_back(ExampleOf("xff --compare=summary left-tree right-tree", "sh"));
   examples.children.push_back(ProseOf("show only counts and percentages, with no per-path records"));
   examples.children.push_back(ExampleOf("xff --compare left-tree right-tree", "sh"));
@@ -950,7 +965,7 @@ Section CompareSection(bool in_full) {
 // the per-flag "Config flags" subsection: the full reference's grouped Options section
 // already documents each flag, so the layering / style / arming prose is all that adds value.
 Section SafetySection(bool in_full) {
-  Section section{.title = "Safety"};
+  Section section{.title = "Safety", .anchor = "topic-safety"};
   section.children.push_back(ProseOf(
       "Without configured restrictions, operations are allowed. `--block-*` restrictions accumulate and "
       "cannot be cleared by later settings. `--safe` activates the configurable profile; `--no-safe` "
@@ -1080,7 +1095,7 @@ Section SafetySection(bool in_full) {
 }
 
 Section ConfigSection(bool in_full) {
-  Section section{.title = "Configuration"};
+  Section section{.title = "Configuration", .anchor = "topic-config"};
   section.children.push_back(ProseOf(
       "xff configuration. Options resolve from layered config tiers, then the command line; later "
       "layers win. A style (`find` / `xff` / `rg`) sets the baseline defaults, which the tiers and the "
@@ -1462,7 +1477,7 @@ std::optional<Section> LicenseComponentSection(std::string_view component) {
 // verbatim command (an Example, kept copy-pastable) and its explanation (Prose, which
 // wraps). The recipe list is the SOT in help.cc, run end to end by cookbook_test.
 Section BuildExamples() {
-  Section section{.title = "Examples"};
+  Section section{.title = "Examples", .anchor = "topic-cookbook"};
   section.children.push_back(ProseOf(
       "Worked examples that compose xff's building blocks. Each shows a task, its command, and how it "
       "works. See `--help=fields` for the {field}s and `--help=stats` for the reductions."));
@@ -1555,7 +1570,7 @@ Section OptionsSection(bool with_details, Audience audience = Audience::kThisBin
 // EXPRESSION: the primaries split into Tests / Actions / Operators. `with_details`
 // false yields the terse usage-page form.
 Section ExpressionSection(bool with_details) {
-  Section expression{.title = "Expression"};
+  Section expression{.title = "Expression", .anchor = "topic-expressions"};
   for (const KindSection& kind_section : kKindSections) {
     Subsection sub{.title = std::string(kind_section.title)};
     for (const registry::Descriptor& descriptor : registry::All()) {
@@ -1678,6 +1693,22 @@ std::vector<std::string_view> LicenseComponentNames() {
   return names;
 }
 
+Document TopicNavigation(std::string_view name) {
+  if (name.starts_with("license=")) {
+    name = "license";
+  }
+  for (const HelpTopic& topic : HelpTopics()) {
+    if (topic.name == name || absl::c_linear_search(topic.aliases, name)) {
+      Document doc;
+      Section section;
+      section.children.push_back(Content{.node = TopicLinks({}, topic.see_also)});
+      doc.sections.push_back(std::move(section));
+      return doc;
+    }
+  }
+  return {};
+}
+
 Document FieldsReference() {
   Document doc;
   doc.sections.push_back(BuildFields());
@@ -1703,6 +1734,7 @@ std::optional<Document> IndexReference(std::string_view name) {
     // The list OF TOPICS, not the usage page it used to alias: `list`'s table row promised an index
     // and delivered plain --help, which reads as "does not work".
     doc.sections.push_back(TopicsSection());
+    doc.sections.push_back(TopicNavigation(name).sections.front());
     return doc;
   }
   if (name == "all") {
@@ -1715,6 +1747,7 @@ std::optional<Document> IndexReference(std::string_view name) {
   } else {
     return std::nullopt;
   }
+  doc.sections.push_back(TopicNavigation(name).sections.front());
   return doc;
 }
 
@@ -1777,6 +1810,12 @@ std::optional<Document> TopicReference(std::string_view name) {
     return std::nullopt;
   }
   doc.sections.push_back(*std::move(section));
+  const Document navigation = TopicNavigation(name);
+  for (const Section& links : navigation.sections) {
+    for (const Content& block : links.children) {
+      doc.sections.back().children.push_back(block);
+    }
+  }
   return doc;
 }
 
@@ -1807,19 +1846,26 @@ std::optional<Document> EntryReference(std::string_view name) {
   Section section;
   section.children.push_back(descriptor.has_value() ? PrimaryEntry(*descriptor) : FlagEntry(*flag));
   const std::string_view related = descriptor.has_value() ? descriptor->see_also : flag->see_also;
-  if (!related.empty()) {
-    Inlines links{{.text = "See also: "}};
-    for (const std::string_view topic : absl::StrSplit(related, ',')) {
-      if (links.size() > 1) {
-        links.push_back({.text = ", "});
-      }
-      links.push_back({
-          .style = Inline::Style::kRef,
-          .text = absl::StrCat("--help=", topic),
-          .target = RefTarget{.kind = RefTarget::Kind::kTopic, .id = std::string(topic)},
-      });
+  const std::string_view topic = descriptor.has_value() ? descriptor->topic : flag->topic;
+  SeeAlso links = TopicLinks(topic, related);
+  const auto add_flag = [&](std::string_view name) {
+    if (!absl::c_any_of(links.refs, [&](const RefTarget& ref) { return ref.id == name; })) {
+      links.refs.push_back(
+          {.kind = LookupGlobal(name).has_value() ? RefTarget::Kind::kFlag : RefTarget::Kind::kPrimary,
+           .id = std::string(name)});
     }
-    section.children.push_back(Content{.node = Prose{.runs = std::move(links)}});
+  };
+  const std::string_view entry_name = descriptor.has_value() ? descriptor->name : flag->name;
+  for (const std::string_view name : AffectedByFlags(entry_name)) {
+    add_flag(name);
+  }
+  if (flag.has_value()) {
+    for (const std::string_view name : absl::StrSplit(flag->affects, ',', absl::SkipEmpty())) {
+      add_flag(name);
+    }
+  }
+  if (!links.refs.empty()) {
+    section.children.push_back(Content{.node = std::move(links)});
   }
   Document doc;
   doc.sections.push_back(std::move(section));

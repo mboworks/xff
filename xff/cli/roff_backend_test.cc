@@ -143,5 +143,21 @@ TEST_F(RoffBackendTest, RendersEveryBlockAndInlineBoundary) {
                HasSubstr(".BR find (1),\n.BR grep (1)\n"), HasSubstr("related tools\n")));
 }
 
+TEST_F(RoffBackendTest, SeeAlsoUsesCopyableHelpCommands) {
+  RoffBackend backend;
+  backend.EmitSeeAlso(
+      {.refs = {
+           {.kind = RefTarget::Kind::kTopic, .id = "regex"},
+           {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
+           {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
+           {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"},
+           {.kind = RefTarget::Kind::kUrl, .id = "https://example.org/reference"},
+           {.kind = RefTarget::Kind::kAnchor, .id = "section"},
+       }});
+  EXPECT_THAT(
+      backend.Take(),
+      AllOf(HasSubstr("See also:"), HasSubstr("help=regex"), HasSubstr("help="), HasSubstr(".BR find (1)")));
+}
+
 }  // namespace
 }  // namespace xff::cli

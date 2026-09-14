@@ -50,7 +50,7 @@ enum class Audience : std::uint8_t {
 // flags + `--help=TOPIC` index. The concise counterpart of BuildReference().
 [[nodiscard]] Document BuildUsage();
 
-// The index topics: `list` (the whole usage page), `all` (every option + primary,
+// The index topics: `list` (the topic index), `all` (every option + primary,
 // summaries only), and `expressions` (the annotated primaries, no global flags).
 // nullopt when NAME is not an index topic.
 [[nodiscard]] std::optional<Document> IndexReference(std::string_view name);
@@ -63,6 +63,9 @@ enum class Audience : std::uint8_t {
 [[nodiscard]] std::vector<std::string_view> LicenseComponentNames();
 
 [[nodiscard]] Document FieldsReference();
+
+// Navigation for a standalone topic (including aliases), omitted from full reference sections.
+[[nodiscard]] Document TopicNavigation(std::string_view name);
 
 // The standalone document for a sub-vocabulary `--help=TOPIC` (fields / printf / time
 // / size / grammars) - the same section BuildReference() folds into the full reference,

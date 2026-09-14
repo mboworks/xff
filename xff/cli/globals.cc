@@ -498,6 +498,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "selected by `--regextype`; it defaults to `RE2`, and command-line `--re2` or `--pcre` "
                    "override a configured choice. This compatibility flag does not itself replace that choice.",
         .affects = "-regex,-iregex,-rxc,-irxc,-grep,-capture,-capturedir",
+        .see_also = "regex,grammars",
         .xff = false,
     },
     {
@@ -509,6 +510,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "Dereferences each symlink root operand before matching or descending, but keeps symlinks found "
                    "below that root as symlinks. A dangling root symlink falls back to the link itself. `-H`, `-L`, "
                    "and `-P` are mutually overriding leading options; the last occurrence wins.",
+        .see_also = "config,ignore,archive",
         .xff = false,
     },
     {
@@ -521,6 +523,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "and metadata, and directory targets are descended. Dangling links fall back to the link itself. "
                    "Filesystem loops are detected and reported instead of recursed indefinitely. `-H`, `-L`, and "
                    "`-P` are mutually overriding leading options; the last occurrence wins.",
+        .see_also = "config,ignore,archive",
         .xff = false,
     },
     {
@@ -533,6 +536,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "root operand. Predicates that explicitly inspect a target, such as `-xtype` and `-lname`, retain "
                    "their documented behavior. `-H`, `-L`, and `-P` are mutually overriding leading options; the "
                    "last occurrence wins.",
+        .see_also = "config,ignore,archive",
         .xff = false,
     },
     {
@@ -797,6 +801,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "`... +` batch forms still run once after the walk and propagate a failing exit status. With "
                    "no flag, xff uses one fewer than the detected cores, capped at 15 and floored at 1; find and "
                    "rg modes use every detected core. `all` always means every detected core.",
+        .see_also = "output,stats",
     },
     {
         .name = "--sort",
@@ -827,6 +832,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "empty ordering - and side-effecting actions such as `-exec` still run during the walk, so "
                    "only the printed listing is reordered.",
         .values = kSortValues,
+        .see_also = "output,stats",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
@@ -841,6 +847,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "because defining a block in blocks is circular. This changes the comparison unit for both "
                    "`-size` (apparent bytes) and `-blocks` (allocated bytes); it does not change filesystem "
                    "metadata or the fixed units printed by `-ls`.",
+        .see_also = "size,output",
     },
     {
         .name = "--exact",
@@ -854,6 +861,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "byte-case-exact unless `--case=insensitive` or an explicitly insensitive primary (`-iname`, "
                    "`-ipath`, `-ifuzzy`, `-ifuzzypath`) requests folding. Find mode is already exact by default. "
                    "The volume probe is cached per device and safely defaults to exact matching if unavailable.",
+        .see_also = "regex,grammars",
     },
     {
         .name = "--case",
@@ -869,6 +877,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "path, and fuzzy matching, xff's filesystem-native folding can additionally apply unless "
                    "`--exact` is present. rg defaults to `smart`; xff and find default to `sensitive`.",
         .values = kCaseValues,
+        .see_also = "regex,grammars",
         .sign_forms = kCaseShorts,
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
@@ -882,6 +891,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "run; the last occurrence wins. `RE2` is the default. Selecting `PCRE2` in a build without "
                    "that extra is a hard error; see `--help=extras` for availability.",
         .values = kRegextypeValues,
+        .affects = "-regex,-iregex,-rxc,-irxc,-grep,-capture,-capturedir",
         .help_context = "grammars",
         .see_also = "regex,grammars",
         .value_check = GlobalFlag::ValueCheck::kEnum,
@@ -1184,6 +1194,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "disables configured normalization. Tokens are `ws`, `change`, `trail`, `blank`, `case`, and "
                    "`eofnl`, comma-separated.",
         .affects = "-diff",
+        .see_also = "compare,content",
     },
     {
         .name = "--diff-ignore-matching",
@@ -1195,6 +1206,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "explicit `--xffrc=FILE`; the last value wins, so a command-line value overrides configuration. An "
                    "empty value disables a configured expression. The expression uses RE2.",
         .affects = "-diff",
+        .see_also = "compare,content",
     },
     {
         .name = "--diff-format",
@@ -1204,6 +1216,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "default -diff format: u/unified (default), c/context, n/normal, y/side-by-side",
         .values = kDiffFormatValues,
         .affects = "-diff",
+        .see_also = "compare,content",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
@@ -1224,6 +1237,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "Sets the default digest algorithm for the `-hash` action and the `{hash}` field. `sha256` is "
                    "the default; a `-hash:ALGO` spec or a `{hash:ALGO}` qualifier overrides it per use.",
         .values = kHashAlgorithmValues,
+        .see_also = "fields,output",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
@@ -1233,6 +1247,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Output values and actions",
         .summary = "default -hash / {hash} rendering: hex (default) or base64",
         .values = kHashEncodingValues,
+        .see_also = "fields,output",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
@@ -1252,6 +1267,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Output values and actions",
         .summary = "render each match through a field template ({path}, {name}, ...)",
         .topic = "output",
+        .help_context = "fields",
     },
     {
         .name = "--implicit-print",
@@ -1471,6 +1487,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Content-match output",
         .summary = "with -grep, print N lines of context after each match (= --context=A:N)",
         .affects = "-grep",
+        .see_also = "content,regex",
     },
     {
         .name = "--before-context",
@@ -1479,6 +1496,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Content-match output",
         .summary = "with -grep, print N lines of context before each match (= --context=B:N)",
         .affects = "-grep",
+        .see_also = "content,regex",
     },
     {
         .name = "--max-results",
@@ -1495,6 +1513,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
             "that reach it. With one capped filter this flag is usually redundant; its distinct use is an aggregate "
             "ceiling such as `\\( -type f -first 10 \\) -o \\( -type d -first 5 \\) --max-results=12`. Last "
             "occurrence wins. A malformed or negative count is a usage error; `0` lists none.",
+        .see_also = "output,safety",
     },
     {
         .name = "--top",
@@ -1502,6 +1521,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "limits",
         .header = "Result limits",
         .summary = "with --summary or --histogram, keep only the N largest/tallest groups",
+        .affects = "--summary,--histogram",
         .topic = "stats",
     },
     {
@@ -1518,7 +1538,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--summary-precision=N",
         .group = "stats-display",
         .header = "Statistics display",
-        .summary = "with --summary --human: fraction digits for scaled sizes (default 2; bytes stay integer)",
+        .summary = "fraction digits for comparison percentages and human-readable summary sizes (default 2)",
+        .affects = "--summary,--compare",
         .topic = "stats",
     },
     {
@@ -1532,6 +1553,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "unset; always forces color even through a pipe or pager and deliberately overrides NO_COLOR; "
                    "never disables it.",
         .values = kColorValues,
+        .see_also = "output,environment",
         .value_check = GlobalFlag::ValueCheck::kTristate,
     },
     {
@@ -1575,6 +1597,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "is --color's business, not this flag's.",
         .values = kColorSchemeValues,
         .affects = "--color",
+        .see_also = "output,environment",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
@@ -1587,6 +1610,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "locale (LC_ALL / LC_CTYPE / LANG) is UTF-8, else ASCII; always forces the Unicode connectors; "
                    "never forces the ASCII ones.",
         .values = kUnicodeValues,
+        .see_also = "output,environment",
         .value_check = GlobalFlag::ValueCheck::kTristate,
     },
     {
@@ -1596,6 +1620,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Terminal display",
         .summary = "size units for -ls / --summary: si (kB/MB, default), iec (KiB/MiB), off (bytes); xff -> si",
         .values = kHumanValues,
+        .see_also = "output,environment",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
@@ -1604,6 +1629,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "display",
         .header = "Terminal display",
         .summary = "human sizes in SI (kB/MB, 1000^N); an alias for --human=si (the --human default)",
+        .see_also = "output,environment",
     },
     {
         .name = "--buffer",
@@ -1614,6 +1640,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "Row windows use a bare count or decimal `k`/`M`/`G`/`T` multiplier. Byte budgets require an "
                    "explicit trailing `B`: `B`/`kB`/`MB`/.../`EB` are SI, while "
                    "`KiB`/`MiB`/.../`EiB` are IEC. The distinct suffixes keep rows and bytes unambiguous.",
+        .see_also = "output,environment",
     },
     {
         .name = "--width",
@@ -1626,6 +1653,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "and leaves output unwrapped when it is not (a pipe or file); none (or 0) disables wrapping; "
                    "a positive integer sets a fixed width. Aligned vocabulary tables and example blocks keep "
                    "their own layout. Does not affect the file listing, `--man`, or formatted full help.",
+        .see_also = "output,environment",
         .cli_only = true,
     },
     {
@@ -1648,6 +1676,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "terminal to an editor) and for `--quiet`, which prints nothing to page; those runs are "
                    "simply unpaged.",
         .values = kPagerValues,
+        .see_also = "output,environment",
         .value_check = GlobalFlag::ValueCheck::kNone,
     },
     {
@@ -1656,6 +1685,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "display",
         .header = "Terminal display",
         .summary = "never page any output (an alias for --pager=never)",
+        .see_also = "output,environment",
     },
     {
         .name = "--quiet",
@@ -1664,6 +1694,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "exit",
         .header = "Exit code control",
         .summary = "suppress output; exit 0 if anything matched, else 1 (-q: grep-compatible)",
+        .see_also = "output",
     },
     {
         .name = "--exit-match",
@@ -1671,6 +1702,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "exit",
         .header = "Exit code control",
         .summary = "keep output; exit 0 if anything matched, else 1",
+        .see_also = "output",
     },
     {
         .name = "--block-policy-categories",
@@ -2330,6 +2362,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "member that cannot provide an operation available on the host filesystem. Without this flag "
                    "the unsupported operation is a hard error; with it the entry is skipped and the reason is "
                    "reported. Ordinary I/O and traversal errors remain errors.",
+        .see_also = "safety",
     },
     {
         .name = "--exec-fields",
@@ -2337,6 +2370,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "fields",
         .header = "Fields & Exec",
         .summary = "render -exec tokens through the field vocabulary ({name}, {path}, ...)",
+        .see_also = "fields,output",
     },
     {
         .name = "--define",
@@ -2344,6 +2378,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "fields",
         .header = "Fields & Exec",
         .summary = "define a value referenced as {def.NAME}",
+        .see_also = "fields,output",
         .repetition = GlobalFlag::Repetition::kKeyed,
     },
     {
@@ -2355,6 +2390,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "Sets the default rendering for time fields ({mtime}, {atime}, -printf %t, ...) when no per-field "
                    "qualifier is given. Accepts a preset (iso, epoch, space, find) or any strftime pattern such as "
                    "%Y-%m-%d. A per-field qualifier like {mtime:%H:%M} still overrides it.",
+        .help_context = "time",
+        .see_also = "time,fields",
     },
     {
         .name = "--timezone",
@@ -2365,6 +2402,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "zone for interpreting/formatting times (local, utc, an IANA name, or +HH:MM)",
         .details = "The zone used to interpret and format every time. Accepts local, utc, an IANA name like "
                    "Europe/London, or a fixed offset like +02:00. Affects time fields and -newerXt comparisons.",
+        .see_also = "time,fields",
     },
     {
         .name = "--time-zone-suffix",
@@ -2381,6 +2419,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "`asn1`'s zone is optional: `always` adds its ASN.1-style offset (+0100, no separator), "
                    "`never` / `auto` leave it bare.",
         .values = kZoneSuffixValues,
+        .see_also = "time,fields",
         .value_check = GlobalFlag::ValueCheck::kTristate,
     },
 });
