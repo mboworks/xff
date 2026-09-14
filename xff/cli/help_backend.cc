@@ -58,6 +58,9 @@ void RenderBlocks(const Blocks& blocks, HelpBackend& backend) {
 }  // namespace
 
 std::string HelpReferenceLabel(const RefTarget& target) {
+  if (!target.label.empty()) {
+    return target.label;
+  }
   switch (target.kind) {
     case RefTarget::Kind::kTopic:
     case RefTarget::Kind::kFlag:

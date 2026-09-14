@@ -94,8 +94,9 @@ struct Descriptor {
   // The help topic (--help=TOPIC) this primary belongs to, or empty for none. The counterpart of
   // cli::GlobalFlag::topic: a topic page pulls its family from this tag, so the list cannot drift.
   std::string_view topic;
-  // Broader topic appended after this primary in standalone help, when needed for context.
-  std::string_view help_context;
+  // Optional topic to expand in focused help; must be an element of see_also.
+  // Without it, expand only when topic membership + see_also names one distinct topic.
+  std::string_view primary_expansion_topic;
   // Comma-separated related help topics linked from standalone entry help.
   std::string_view see_also;
   // The primary may take the TERMINAL for itself: it prompts and reads a reply (-ok / -okdir), or it

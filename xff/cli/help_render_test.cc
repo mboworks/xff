@@ -87,6 +87,7 @@ using ::testing::_;
 using ::testing::AllOf;
 using ::testing::Contains;
 using ::testing::Eq;
+using ::testing::Field;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsTrue;
@@ -372,6 +373,7 @@ TEST_F(HelpTest, FocusedLinksResolveToFullReferenceAnchors) {
 TEST_F(HelpTest, LongReferenceDoesNotRepeatEntriesOrExpandNavigation) {
   const Document full = BuildReference();
   std::map<std::string, int> entries;
+  std::vector<RefTarget> pointers;
   const auto visit = [&](auto&& self, const Blocks& blocks) -> void {
     for (const Content& block : blocks) {
       if (std::holds_alternative<Entry>(block.node)) {
@@ -381,8 +383,14 @@ TEST_F(HelpTest, LongReferenceDoesNotRepeatEntriesOrExpandNavigation) {
       } else if (std::holds_alternative<Subsection>(block.node)) {
         self(self, std::get<Subsection>(block.node).children);
       } else if (std::holds_alternative<SeeAlso>(block.node)) {
-        for (const RefTarget& ref : std::get<SeeAlso>(block.node).refs) {
-          EXPECT_THAT(ref.kind, Eq(RefTarget::Kind::kManPage));
+        const auto& links = std::get<SeeAlso>(block.node);
+        for (const RefTarget& ref : links.refs) {
+          if (links.in_document) {
+            EXPECT_THAT(ref.label, Not(IsEmpty()));
+            pointers.push_back(ref);
+          } else {
+            EXPECT_THAT(ref.kind, Eq(RefTarget::Kind::kManPage));
+          }
         }
       }
     }
@@ -393,40 +401,74 @@ TEST_F(HelpTest, LongReferenceDoesNotRepeatEntriesOrExpandNavigation) {
   for (const auto& [anchor, count] : entries) {
     EXPECT_THAT(count, Eq(1)) << anchor;
   }
-}
-
-TEST_F(HelpTest, PrimaryContextsFollowTheFocusedEntry) {
-  for (const registry::Descriptor& descriptor : registry::All()) {
-    if (descriptor.help_context.empty()) {
-      continue;
+  EXPECT_THAT(pointers, Not(IsEmpty()));
+  for (const RefTarget& ref : pointers) {
+    if (ref.kind == RefTarget::Kind::kTopic) {
+      EXPECT_THAT(full.sections, Contains(Field(&Section::anchor, Eq("topic-" + ref.id))));
+    } else {
+      const std::string prefix = ref.kind == RefTarget::Kind::kFlag ? "flag-" : "primary-";
+      EXPECT_THAT(entries.contains(prefix + ref.id), IsTrue());
     }
-    const auto entry = EntryReference(descriptor.name);
-    const auto topic = TopicReference(descriptor.help_context);
-    ASSERT_THAT(entry, Optional(_));
-    ASSERT_THAT(topic, Optional(_));
-    if (!entry.has_value() || !topic.has_value()) {
-      continue;
-    }
-    ASSERT_THAT(entry->sections.size(), Eq(2));
-    EXPECT_THAT(entry->sections.back().title, Eq(topic->sections.front().title));
   }
 }
 
-TEST_F(HelpTest, FlagContextsResolveAndFollowTheFlagEntry) {
+TEST_F(HelpTest, SingleTopicExpandsOnceEvenWithRelatedFlags) {
+  const auto doc = EntryReference("--compare-select");
+  ASSERT_THAT(doc, Optional(_));
+  if (!doc.has_value()) {
+    return;
+  }
+  ASSERT_THAT(doc->sections, SizeIs(2));
+  EXPECT_THAT(doc->sections.back().anchor, Eq("topic-compare"));
+  EXPECT_THAT(RenderEntry("--compare-select"), HasSubstr("--help=--compare"));
+}
+
+TEST_F(HelpTest, MultipleTopicsRemainPointersWithoutContextExpansion) {
+  constexpr auto names = std::to_array<std::string_view>({"--re2", "--pcre", "-regex", "-println"});
+  for (const std::string_view name : names) {
+    const auto doc = EntryReference(name);
+    ASSERT_THAT(doc, Optional(_));
+    if (doc.has_value()) {
+      EXPECT_THAT(doc->sections, SizeIs(1)) << name;
+    }
+    EXPECT_THAT(RenderEntry(name), HasSubstr("See also: --help=")) << name;
+  }
+  EXPECT_THAT(RenderEntry("--re2"), Not(HasSubstr("canonical external references")));
+}
+
+TEST_F(HelpTest, DesignatedTopicBelongsToSeeAlsoAndIsTheOnlyExpansion) {
+  const auto check = [](const auto& entry) {
+    if (entry.primary_expansion_topic.empty()) {
+      return;
+    }
+    const std::vector<std::string_view> related = absl::StrSplit(entry.see_also, ',', absl::SkipEmpty());
+    EXPECT_THAT(related, Contains(entry.primary_expansion_topic)) << entry.name;
+    const auto doc = EntryReference(entry.name);
+    const auto topic = TopicReference(entry.primary_expansion_topic);
+    ASSERT_THAT(doc, Optional(_));
+    ASSERT_THAT(topic, Optional(_));
+    if (doc.has_value() && topic.has_value()) {
+      EXPECT_THAT(doc->sections, SizeIs(2)) << entry.name;
+      EXPECT_THAT(doc->sections.back().anchor, Eq(topic->sections.front().anchor)) << entry.name;
+    }
+  };
   for (const GlobalFlag& flag : Globals()) {
-    if (flag.help_context.empty()) {
-      continue;
+    check(flag);
+  }
+  for (const registry::Descriptor& primary : registry::All()) {
+    check(primary);
+  }
+  EXPECT_THAT(RenderEntry("--regextype"), HasSubstr("canonical external references"));
+}
+
+TEST_F(HelpTest, TopicNavigationNeverExpandsRelatedTopics) {
+  constexpr auto topics = std::to_array<std::string_view>({"compare", "config", "safety", "regex", "output"});
+  for (const std::string_view topic : topics) {
+    const auto doc = TopicReference(topic);
+    ASSERT_THAT(doc, Optional(_));
+    if (doc.has_value()) {
+      EXPECT_THAT(doc->sections, SizeIs(1)) << topic;
     }
-    const auto topic = TopicReference(flag.help_context);
-    EXPECT_THAT(topic, Optional(_)) << flag.name;
-    const auto entry = EntryReference(flag.name);
-    EXPECT_THAT(entry, Optional(_)) << flag.name;
-    if (!topic.has_value() || !entry.has_value()) {
-      continue;
-    }
-    ASSERT_THAT(entry->sections.size(), Eq(2)) << flag.name;
-    EXPECT_THAT(entry->sections.front().title, IsEmpty()) << flag.name;
-    EXPECT_THAT(entry->sections.back().title, Eq(topic->sections.front().title)) << flag.name;
   }
 }
 
@@ -664,8 +706,9 @@ TEST_F(HelpTest, DetailedHelpShowsInfluenceCrossReferences) {
   // A flag <-> flag edge points from the feeder to the fed: --context supplies the -diff context
   // when --diff-context is absent, so --context lists --diff-context under "Affects:" and
   // --diff-context shows the reverse "Affected by:" (never the other way around).
+  const std::string context = RenderEntry("--context");
   EXPECT_THAT(
-      RenderEntry("--context"),
+      context.substr(0, context.find("See also:")),
       AllOf(HasSubstr("Affects:"), HasSubstr("-grep"), HasSubstr("--diff-context"), Not(HasSubstr("Affected by:"))));
   EXPECT_THAT(
       RenderEntry("--diff-context"),

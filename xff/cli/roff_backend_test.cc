@@ -159,5 +159,14 @@ TEST_F(RoffBackendTest, SeeAlsoUsesCopyableHelpCommands) {
       AllOf(HasSubstr("See also:"), HasSubstr("help=regex"), HasSubstr("help="), HasSubstr(".BR find (1)")));
 }
 
+TEST_F(RoffBackendTest, CompleteReferencePointersUseTheFormatPresentation) {
+  RoffBackend backend;
+  backend.EmitSeeAlso({
+      .refs = {{.kind = RefTarget::Kind::kTopic, .id = "regex", .label = "Regex matching"}},
+      .in_document = true,
+  });
+  EXPECT_THAT(backend.Take(), HasSubstr(".B Regex matching"));
+}
+
 }  // namespace
 }  // namespace xff::cli

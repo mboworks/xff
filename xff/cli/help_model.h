@@ -45,6 +45,7 @@ struct RefTarget {
   Kind kind = Kind::kTopic;
   std::string id;
   std::string section;  // man section for kManPage; empty otherwise
+  std::string label;    // optional display name for a reference within the same document
 };
 
 // One inline run within a text field. `style` drives per-backend highlighting;
@@ -129,6 +130,9 @@ struct Entry {
 struct SeeAlso {
   std::vector<RefTarget> refs;
   Inlines note;
+  // Related entries/sections already present in this complete reference. Renderers may
+  // suppress these pointers, but must never expand their targets.
+  bool in_document = false;
 };
 
 // A subsection: a titled, anchored group of nested block content.

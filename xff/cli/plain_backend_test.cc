@@ -32,6 +32,7 @@ using ::mbo::testing::EqualsText;
 using ::mbo::testing::WithDropIndent;
 using ::testing::Eq;
 using ::testing::HasSubstr;
+using ::testing::IsEmpty;
 using ::testing::Le;
 
 Inline Text(std::string text) {
@@ -187,6 +188,15 @@ TEST_F(PlainBackendTest, RelatedCommandsRespectTheHelpWidth) {
   for (const std::string_view line : absl::StrSplit(out, '\n')) {
     EXPECT_THAT(line.size(), Le(32));
   }
+}
+
+TEST_F(PlainBackendTest, CompleteReferencePointersUseTheFormatPresentation) {
+  PlainTextBackend backend;
+  backend.EmitSeeAlso({
+      .refs = {{.kind = RefTarget::Kind::kTopic, .id = "regex", .label = "Regex matching"}},
+      .in_document = true,
+  });
+  EXPECT_THAT(backend.Take(), IsEmpty());
 }
 
 }  // namespace

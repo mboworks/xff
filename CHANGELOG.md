@@ -3,6 +3,10 @@
 
 # 0.5.0
 
+- Expand at most one related topic in focused flag help, with explicit selections checked at
+  compile time. Full HTML/Markdown references retain clickable related pointers, man pages name
+  their targets, and console long help stays compact; none expands navigation.
+
 - Add copyable “See also” help commands across focused option, expression, and topic pages.
   Related controls follow the registry relationships, and HTML/Markdown links use stable targets.
   Full/long help keeps one copy of each detailed entry and topic without expanding navigation.

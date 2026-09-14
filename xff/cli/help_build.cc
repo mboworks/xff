@@ -16,10 +16,13 @@
 #include "xff/cli/help_build.h"
 
 #include <array>
+#include <map>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "absl/algorithm/container.h"
@@ -138,6 +141,28 @@ std::vector<std::string_view> AffectedByFlags(std::string_view name) {
   return out;
 }
 
+// Related topics and controls, shared by focused help and full-reference pointers.
+template<typename Descriptor>
+SeeAlso EntryLinks(const Descriptor& entry) {
+  SeeAlso links = TopicLinks(entry.topic, entry.see_also);
+  const auto add_flag = [&](std::string_view name) {
+    if (!absl::c_any_of(links.refs, [&](const RefTarget& ref) { return ref.id == name; })) {
+      links.refs.push_back(
+          {.kind = LookupGlobal(name).has_value() ? RefTarget::Kind::kFlag : RefTarget::Kind::kPrimary,
+           .id = std::string(name)});
+    }
+  };
+  for (const std::string_view name : AffectedByFlags(entry.name)) {
+    add_flag(name);
+  }
+  if constexpr (std::is_same_v<Descriptor, GlobalFlag>) {
+    for (const std::string_view name : absl::StrSplit(entry.affects, ',', absl::SkipEmpty())) {
+      add_flag(name);
+    }
+  }
+  return links;
+}
+
 // Appends an influence detail line ("Header: a, b, c") to `blocks` when non-empty.
 void AppendInfluence(Blocks& blocks, std::string_view header, const std::vector<std::string_view>& names) {
   if (names.empty()) {
@@ -239,6 +264,106 @@ Content PrimaryEntry(const registry::Descriptor& descriptor, bool with_details =
           .tags = PrimaryTags(descriptor),
           .anchor = absl::StrCat("primary-", descriptor.name),
       }};
+}
+
+// Complete references retain relationships as pointers to existing targets only.
+// This index never builds a referenced page, so it cannot expand a target.
+struct ReferenceNavigation {
+  std::map<std::string, std::string> labels;
+
+  void Index(const Blocks& blocks) {
+    for (const Content& block : blocks) {
+      if (std::holds_alternative<Entry>(block.node)) {
+        const auto& entry = std::get<Entry>(block.node);
+        const std::string_view anchor = entry.anchor;
+        if (anchor.starts_with("flag-")) {
+          labels.emplace(entry.anchor, anchor.substr(5));
+        } else if (anchor.starts_with("primary-")) {
+          labels.emplace(entry.anchor, anchor.substr(8));
+        }
+        Index(entry.details);
+      } else if (std::holds_alternative<Subsection>(block.node)) {
+        Index(std::get<Subsection>(block.node).children);
+      }
+    }
+  }
+
+  SeeAlso Resolve(SeeAlso links, std::string_view source) const {
+    SeeAlso result{.in_document = true};
+    result.refs.reserve(links.refs.size());
+    for (RefTarget& ref : links.refs) {
+      const std::string_view prefix = ref.kind == RefTarget::Kind::kTopic  ? "topic-"
+                                      : ref.kind == RefTarget::Kind::kFlag ? "flag-"
+                                                                           : "primary-";
+      const std::string anchor = absl::StrCat(prefix, ref.id);
+      const auto found = labels.find(anchor);
+      if (found != labels.end() && anchor != source) {
+        ref.label = found->second;
+        result.refs.push_back(std::move(ref));
+      }
+    }
+    return result;
+  }
+
+  SeeAlso LinksForEntry(std::string_view anchor) const {
+    if (anchor.starts_with("flag-")) {
+      if (const auto flag = LookupGlobal(anchor.substr(5)); flag.has_value()) {
+        return Resolve(EntryLinks(*flag), anchor);
+      }
+    } else if (anchor.starts_with("primary-")) {
+      if (const auto primary = registry::Lookup(anchor.substr(8)); primary.has_value()) {
+        return Resolve(EntryLinks(*primary), anchor);
+      }
+    }
+    return {};
+  }
+
+  Blocks WithEntryLinks(Blocks blocks) const {
+    for (Content& block : blocks) {
+      if (std::holds_alternative<Entry>(block.node)) {
+        auto& entry = std::get<Entry>(block.node);
+        SeeAlso links = LinksForEntry(entry.anchor);
+        if (!links.refs.empty()) {
+          entry.details.push_back(Content{.node = std::move(links)});
+        }
+      } else if (std::holds_alternative<Subsection>(block.node)) {
+        auto& subsection = std::get<Subsection>(block.node);
+        subsection.children = WithEntryLinks(std::move(subsection.children));
+      }
+    }
+    return blocks;
+  }
+
+  Section WithLinks(Section section) const {
+    section.children = WithEntryLinks(std::move(section.children));
+    if (!std::string_view(section.anchor).starts_with("topic-")) {
+      return section;
+    }
+    const Document navigation = TopicNavigation(std::string_view(section.anchor).substr(6));
+    for (const Section& related : navigation.sections) {
+      for (const Content& block : related.children) {
+        if (std::holds_alternative<SeeAlso>(block.node)) {
+          SeeAlso links = Resolve(std::get<SeeAlso>(block.node), section.anchor);
+          if (!links.refs.empty()) {
+            section.children.push_back(Content{.node = std::move(links)});
+          }
+        }
+      }
+    }
+    return section;
+  }
+};
+
+Document WithReferenceNavigation(Document doc) {
+  ReferenceNavigation navigation;
+  for (const Section& section : doc.sections) {
+    navigation.labels.emplace(section.anchor, section.title);
+    navigation.Index(section.children);
+  }
+  for (Section& section : doc.sections) {
+    section = navigation.WithLinks(std::move(section));
+  }
+  return doc;
 }
 
 // FIELDS: translate the fields module's canonical vocabulary and syntax documentation
@@ -1651,7 +1776,7 @@ Section GuideSection() {
       ProseOf(
           "xff has no subcommands; every kind of help is a flag. `--help` is this usage overview; "
           "`--help=NAME` documents one option or primary (e.g. `--help=-regex`, `--help=--sort`); "
-          "Selected option and primary pages append their broader topic after the entry for context. "
+          "Option and primary pages append at most one related topic for context. "
           "`--help=TOPIC` opens one of the topics below; `--help=full` is the complete detailed reference. "
           "Append `:markdown` (or `:md`), `:html`, or `:roff` to select a non-console renderer, for example "
           "`--help=full:html`; `--man` is the conventional alias for `--help=full:roff`. On a terminal this help "
@@ -1661,6 +1786,15 @@ Section GuideSection() {
           "see the display options below."));
   // The output globals that shape how this help itself renders, pulled from the globals SOT so the
   // guide cannot drift from the actual flags.
+  help.children.insert(
+      help.children.begin() + 1,
+      ProseOf(
+          "Focused flag help expands its designated context topic, or its only related topic; "
+          "other topics and flags stay in the See also list. Topic help never expands that list. "
+          "`--help=long` (also `--help=full`) includes each section once and never expands references. "
+          "HTML and Markdown show clickable related topic titles and flag names; man pages show "
+          "text references. Console long help omits those pointers, while focused console help "
+          "shows copyable `--help=NAME` commands."));
   Subsection display{.title = "Display options (how help is shown)"};
   Rows display_rows;
   // The display-affecting globals, in the order the section presents them.
@@ -1845,35 +1979,31 @@ std::optional<Document> EntryReference(std::string_view name) {
   // A title-less section: the single entry renders without a section heading.
   Section section;
   section.children.push_back(descriptor.has_value() ? PrimaryEntry(*descriptor) : FlagEntry(*flag));
-  const std::string_view related = descriptor.has_value() ? descriptor->see_also : flag->see_also;
-  const std::string_view topic = descriptor.has_value() ? descriptor->topic : flag->topic;
-  SeeAlso links = TopicLinks(topic, related);
-  const auto add_flag = [&](std::string_view name) {
-    if (!absl::c_any_of(links.refs, [&](const RefTarget& ref) { return ref.id == name; })) {
-      links.refs.push_back(
-          {.kind = LookupGlobal(name).has_value() ? RefTarget::Kind::kFlag : RefTarget::Kind::kPrimary,
-           .id = std::string(name)});
+  SeeAlso links = descriptor.has_value() ? EntryLinks(*descriptor) : EntryLinks(*flag);
+  // Expand one explicitly selected topic, or the sole related topic. Related
+  // flags stay pointers; composing the topic directly cannot follow its navigation.
+  std::vector<std::string_view> topics;
+  topics.reserve(links.refs.size());
+  for (const RefTarget& ref : links.refs) {
+    if (ref.kind == RefTarget::Kind::kTopic) {
+      topics.push_back(ref.id);
     }
-  };
-  const std::string_view entry_name = descriptor.has_value() ? descriptor->name : flag->name;
-  for (const std::string_view name : AffectedByFlags(entry_name)) {
-    add_flag(name);
   }
-  if (flag.has_value()) {
-    for (const std::string_view name : absl::StrSplit(flag->affects, ',', absl::SkipEmpty())) {
-      add_flag(name);
-    }
+  std::optional<Section> context;
+  const std::string_view primary_topic =
+      descriptor.has_value() ? descriptor->primary_expansion_topic : flag->primary_expansion_topic;
+  if (!primary_topic.empty() && absl::c_linear_search(topics, primary_topic)) {
+    context = NamedTopicSection(primary_topic);
+  } else if (primary_topic.empty() && topics.size() == 1) {
+    context = NamedTopicSection(topics.front());
   }
   if (!links.refs.empty()) {
     section.children.push_back(Content{.node = std::move(links)});
   }
   Document doc;
   doc.sections.push_back(std::move(section));
-  const std::string_view context_name = descriptor.has_value() ? descriptor->help_context : flag->help_context;
-  if (!context_name.empty()) {
-    if (std::optional<Section> context = NamedTopicSection(context_name); context.has_value()) {
-      doc.sections.push_back(*std::move(context));
-    }
+  if (context.has_value()) {
+    doc.sections.push_back(*std::move(context));
   }
   return doc;
 }
@@ -1931,7 +2061,7 @@ Document BuildReference(Audience audience) {
   see_also.children.push_back(Content{.node = std::move(block)});
   doc.sections.push_back(std::move(see_also));
 
-  return doc;
+  return WithReferenceNavigation(std::move(doc));
 }
 
 }  // namespace xff::cli
