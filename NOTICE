@@ -125,3 +125,5 @@ Build extension: SquashFS archive format (@xff_squashfs):
 
   zlib  [Zlib]
     Copyright (c) 1995-2022 Jean-loup Gailly and Mark Adler.
+
+See also: --help=extras, --help=license
