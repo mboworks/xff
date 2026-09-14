@@ -25,7 +25,7 @@ module(
 bazel_dep(name = "rules_cc", version = "0.2.22")
 bazel_dep(name = "rules_fuzzing", version = "0.8.0")
 bazel_dep(name = "abseil-cpp", version = "20260817.0")
-bazel_dep(name = "libarchive", version = "3.8.1.bcr.2")
+bazel_dep(name = "libarchive", version = "3.8.1.bcr.3")
 
 # The two codecs a phar can compress its MEMBERS with. libarchive already links both (they are in its
 # codec closure), but a phar's per-entry compression is not a libarchive format: the manifest says
