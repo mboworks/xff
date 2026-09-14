@@ -85,6 +85,7 @@ std::string RenderDoc(const Document& doc) {
 
 using ::testing::_;
 using ::testing::AllOf;
+using ::testing::Contains;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
@@ -353,7 +354,7 @@ TEST_F(HelpTest, FocusedLinksResolveToFullReferenceAnchors) {
       }
       for (const RefTarget& ref : std::get<SeeAlso>(block.node).refs) {
         if (ref.kind == RefTarget::Kind::kTopic) {
-          EXPECT_THAT(anchors, ::testing::Contains("topic-" + ref.id)) << name;
+          EXPECT_THAT(anchors, Contains("topic-" + ref.id)) << name;
         } else {
           EXPECT_THAT(EntryReference(ref.id), Optional(_)) << name << " -> " << ref.id;
         }
