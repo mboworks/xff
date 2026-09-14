@@ -300,18 +300,42 @@ test::compare_summary_follows_selected_results() {
   out="$(_run --compare "${root}/left" "${root}/right" --summary --compare-select=all)"
   expect_matches "^different[[:space:]]+different${NL}left-only[[:space:]]+left${NL}right-only[[:space:]]+right${NL}identical[[:space:]]+same${NL}left-only +1 +25.00%${NL}right-only +1 +25.00%${NL}different +1 +25.00%${NL}identical +1 +25.00%${NL}total +4 +100.00%" "${out}"
   out="$(_run --compare "${root}/left" "${root}/right" --summary=compare --compare-select=different --format=jsonl)"
-  expect_output_contains '{"group":"different","count":1,"percent":100.00}' "${out}"
-  expect_output_contains '{"group":"identical","count":0,"percent":0.00}' "${out}"
-  expect_output_contains '{"group":"total","count":1,"percent":100.00}' "${out}"
+  expect_output_contains '{"group":"different","count":1,"percent":25.00}' "${out}"
+  expect_output_contains '{"group":"identical","count":1,"percent":25.00}' "${out}"
+  expect_output_contains '{"group":"total","count":4,"percent":100.00}' "${out}"
   out="$(_run --compare "${root}/left" "${root}/right" --summary=type --summary --compare-select=all --format=jsonl)"
   expect_output_contains '{"group":"identical","count":1,"percent":25.00}' "${out}"
   expect_output_contains '{"group":"total","count":4,"percent":100.00}' "${out}"
   out="$(_run --compare "${root}/left" "${root}/right" --summary=compare --compare-select=left-only,right-only,different --summary-precision=1 --format=jsonl)"
-  expect_output_contains '{"group":"left-only","count":1,"percent":33.3}' "${out}"
-  expect_output_contains '{"group":"total","count":3,"percent":100.0}' "${out}"
+  expect_output_contains '{"group":"left-only","count":1,"percent":25.0}' "${out}"
+  expect_output_contains '{"group":"total","count":4,"percent":100.0}' "${out}"
   out="$(_run --compare=diff "${root}/left" "${root}/right" --summary --compare-select=different --format=jsonl)"
-  expect_output_contains '{"group":"different","count":1,"percent":100.00}' "${out}"
-  expect_output_contains '{"group":"total","count":1,"percent":100.00}' "${out}"
+  expect_output_contains '{"group":"different","count":1,"percent":25.00}' "${out}"
+  expect_output_contains '{"group":"total","count":4,"percent":100.00}' "${out}"
+  local explicit
+  explicit="$(_run --compare=status "${root}/left" "${root}/right" --compare-select=none --summary=compare)"
+  out="$(_run --compare=summary "${root}/left" "${root}/right")"
+  expect_eq "${explicit}" "${out}"
+  out="$(_run --compare-select=all --compare=summary "${root}/left" "${root}/right")"
+  expect_eq "${explicit}" "${out}"
+  out="$(_run --compare=summary "${root}/left" "${root}/right" --compare-select=all)"
+  expect_matches "^different[[:space:]]+different" "${out}"
+  expect_matches 'total +4 +100.00%' "${out}"
+  out="$(_run --compare=summary "${root}/left" "${root}/right" --summary=none)"
+  expect_eq '' "${out}"
+  out="$(_run --summary=none --compare=summary "${root}/left" "${root}/right")"
+  expect_eq "${explicit}" "${out}"
+  local selection
+  for selection in none ''; do
+    out="$(_run --compare "${root}/left" "${root}/right" --summary "--compare-select=${selection}" --format=jsonl)"
+    expect_eq '{"group":"left-only","count":1,"percent":25.00}
+{"group":"right-only","count":1,"percent":25.00}
+{"group":"different","count":1,"percent":25.00}
+{"group":"identical","count":1,"percent":25.00}
+{"group":"total","count":4,"percent":100.00}' "${out}"
+    out="$(_run --compare "${root}/left" "${root}/right" "--compare-select=${selection}")"
+    expect_eq '' "${out}"
+  done
   out="$(_run --compare "${root}/left" "${root}/right" --summary --summary=none --compare-select=all)"
   expect_not_matches 'total' "${out}"
 }

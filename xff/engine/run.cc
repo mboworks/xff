@@ -327,10 +327,10 @@ std::vector<SummarySpec> ResolveSummaries(const std::vector<std::string>& global
   constexpr std::string_view kPrefix = "--summary=";
   std::vector<SummarySpec> specs;
   for (const std::string& global : globals) {
-    if (global == "--summary=none") {
-      specs.clear();
-    } else if (global == "--summary" && compare) {
+    if (global == "--compare=summary" || (global == "--summary" && compare)) {
       specs.push_back({.mode = SummaryMode::kCompare});
+    } else if (global == "--summary=none") {
+      specs.clear();
     } else if (global.starts_with("--summary={")) {
       specs.push_back({.mode = SummaryMode::kTemplate, .key_template = global.substr(kPrefix.size())});
     } else if (const auto it = kModes.find(global); it != kModes.end()) {
@@ -3180,10 +3180,18 @@ absl::StatusOr<TreeCompareSelection> ResolveTreeCompareSelection(const std::vect
   constexpr std::string_view kPrefix = "--compare-select=";
   TreeCompareSelection selection;
   for (const std::string& global : globals) {
+    if (global == "--compare=summary") {
+      selection = {.left_only = false, .right_only = false, .identical = false, .different = false};
+      continue;
+    }
     if (!global.starts_with(kPrefix)) {
       continue;
     }
     selection = {.left_only = false, .right_only = false, .identical = false, .different = false};
+    const std::string_view value = std::string_view(global).substr(kPrefix.size());
+    if (value.empty() || value == "none") {
+      continue;
+    }
     for (const std::string_view kind : absl::StrSplit(global.substr(kPrefix.size()), ',')) {
       if (kind == "all") {
         selection = {.left_only = true, .right_only = true, .identical = true, .different = true};
@@ -3198,7 +3206,8 @@ absl::StatusOr<TreeCompareSelection> ResolveTreeCompareSelection(const std::vect
       } else {
         return absl::InvalidArgumentError(
             absl::StrCat(
-                "unknown comparison result '", kind, "' (use left-only, right-only, identical, different, or all)"));
+                "unknown comparison result '", kind,
+                "' (use left-only, right-only, identical, different, all, or none)"));
       }
     }
   }
@@ -3408,8 +3417,10 @@ RunResult RunTreeCompare(
   auto right = entries[1].begin();
   while (left != entries[0].end() || right != entries[1].end()) {
     if (right == entries[1].end() || (left != entries[0].end() && left->first < right->first)) {
-      if (left->second.metadata.type != vfs::FileType::kDirectory && selection.left_only) {
+      if (left->second.metadata.type != vfs::FileType::kDirectory) {
         ++counts.left_only;
+      }
+      if (left->second.metadata.type != vfs::FileType::kDirectory && selection.left_only) {
         if (output == TreeCompareOutput::kStatus) {
           emit_status("left-only", left->first);
         } else {
@@ -3425,8 +3436,10 @@ RunResult RunTreeCompare(
       different = different || left->second.metadata.type != vfs::FileType::kDirectory;
       ++left;
     } else if (left == entries[0].end() || right->first < left->first) {
-      if (right->second.metadata.type != vfs::FileType::kDirectory && selection.right_only) {
+      if (right->second.metadata.type != vfs::FileType::kDirectory) {
         ++counts.right_only;
+      }
+      if (right->second.metadata.type != vfs::FileType::kDirectory && selection.right_only) {
         if (output == TreeCompareOutput::kStatus) {
           emit_status("right-only", right->first);
         } else {
@@ -3447,11 +3460,14 @@ RunResult RunTreeCompare(
         on_error(left->first, same.status());
         return RunResult{.errors = 1};
       }
-      if (*same && left->second.metadata.type != vfs::FileType::kDirectory && selection.identical) {
+      if (*same && left->second.metadata.type != vfs::FileType::kDirectory) {
         ++counts.identical;
+      } else if (!*same) {
+        ++counts.different;
+      }
+      if (*same && left->second.metadata.type != vfs::FileType::kDirectory && selection.identical) {
         emit_status("identical", left->first);
       } else if (!*same && selection.different) {
-        ++counts.different;
         if (output == TreeCompareOutput::kStatus) {
           emit_status("different", left->first);
         } else {

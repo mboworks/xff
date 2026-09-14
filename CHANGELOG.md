@@ -3,7 +3,11 @@
 
 # 0.5.0
 
-- Add `--summary=compare` with selected status counts, percentages, and a total; bare `--summary`
+- Add `--compare=summary` as shorthand for status comparison with per-path output disabled and
+  a comparison summary enabled. `--compare-select=none` or an empty value suppresses records;
+  summaries always count all comparison outcomes.
+
+- Add `--summary=compare` with status counts, percentages, and a total; bare `--summary`
   selects it during tree comparison, including empty comparisons.
 
 # 0.4.0
