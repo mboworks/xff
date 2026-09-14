@@ -33,7 +33,11 @@ namespace {
 std::string SlugFor(const RefTarget& target) {
   std::string slug;
   bool pending_dash = false;
-  for (const char chr : target.id) {
+  const std::string id = target.kind == RefTarget::Kind::kTopic     ? "topic-" + target.id
+                         : target.kind == RefTarget::Kind::kFlag    ? "flag-" + target.id
+                         : target.kind == RefTarget::Kind::kPrimary ? "primary-" + target.id
+                                                                    : target.id;
+  for (const char chr : id) {
     if (absl::ascii_isalnum(chr)) {
       if (pending_dash && !slug.empty()) {
         slug.push_back('-');
@@ -86,7 +90,15 @@ void MarkdownBackend::Preamble(const Document& doc) {
 }
 
 void MarkdownBackend::BeginSection(const Section& section) {
-  section_links_.emplace_back(section.title, SlugFor({.kind = RefTarget::Kind::kAnchor, .id = section.title}));
+  if (section.title.empty()) {
+    return;
+  }
+  const std::string anchor =
+      section.anchor.empty() ? SlugFor({.kind = RefTarget::Kind::kAnchor, .id = section.title}) : section.anchor;
+  section_links_.emplace_back(section.title, anchor);
+  if (!section.anchor.empty()) {
+    absl::StrAppend(&out_, "\n<a id=\"", anchor, "\"></a>\n");
+  }
   absl::StrAppendFormat(&out_, "\n## %s\n", section.title);
 }
 
@@ -98,6 +110,10 @@ void MarkdownBackend::BeginSubsection(const Subsection& subsection) {
 }
 
 void MarkdownBackend::BeginEntry(const Entry& entry) {
+  if (!entry.anchor.empty()) {
+    absl::StrAppend(
+        &out_, "\n<a id=\"", SlugFor({.kind = RefTarget::Kind::kAnchor, .id = entry.anchor}), "\"></a>\n\n");
+  }
   // A term is backtick-wrapped so its `=NAME` / `[..]` / `|` stay literal.
   std::string tag;
   if (!entry.tags.empty()) {
@@ -198,14 +214,20 @@ void MarkdownBackend::EmitTable(const Table& table) {
 }
 
 void MarkdownBackend::EmitSeeAlso(const SeeAlso& see_also) {
-  absl::StrAppend(&out_, "\n");
+  Inlines runs;
+  if (!see_also.refs.empty() && see_also.refs.front().kind != RefTarget::Kind::kManPage) {
+    runs.push_back({.text = "See also: "});
+  }
   for (std::size_t i = 0; i < see_also.refs.size(); ++i) {
     const RefTarget& ref = see_also.refs[i];
-    absl::StrAppendFormat(&out_, "%s`%s`(%s)", i == 0 ? "" : ", ", ref.id, ref.section);
+    if (i != 0) {
+      runs.push_back({.text = ", "});
+    }
+    runs.push_back({.style = Inline::Style::kRef, .text = HelpReferenceLabel(ref), .target = ref});
   }
-  absl::StrAppend(&out_, "\n");
+  EmitProse({.runs = std::move(runs)});
   if (!see_also.note.empty()) {
-    absl::StrAppend(&out_, "\n", RenderInlinesMarkdown(see_also.note), "\n");
+    EmitProse({.runs = see_also.note});
   }
 }
 

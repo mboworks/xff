@@ -16,7 +16,9 @@
 #include "xff/cli/plain_backend.h"
 
 #include <string>
+#include <string_view>
 
+#include "absl/strings/str_split.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
@@ -29,6 +31,8 @@ namespace {
 using ::mbo::testing::EqualsText;
 using ::mbo::testing::WithDropIndent;
 using ::testing::Eq;
+using ::testing::HasSubstr;
+using ::testing::Le;
 
 Inline Text(std::string text) {
   return {.style = Inline::Style::kText, .text = std::move(text)};
@@ -153,6 +157,36 @@ TEST_F(PlainBackendTest, RendersAWholeDocumentInOrder) {
 
         the classic.
       )out")));
+}
+
+TEST_F(PlainBackendTest, SeeAlsoUsesCopyableHelpCommands) {
+  PlainTextBackend backend;
+  backend.EmitSeeAlso(
+      {.refs = {
+           {.kind = RefTarget::Kind::kTopic, .id = "regex"},
+           {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
+           {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
+           {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"},
+           {.kind = RefTarget::Kind::kUrl, .id = "https://example.org/reference"},
+           {.kind = RefTarget::Kind::kAnchor, .id = "section"},
+       }});
+  EXPECT_THAT(backend.Take(), HasSubstr("See also: --help=regex, --help=--summary, --help=-printf, find(1)"));
+}
+
+TEST_F(PlainBackendTest, RelatedCommandsRespectTheHelpWidth) {
+  PlainTextBackend backend(HelpRenderContext{.width = 32});
+  backend.EmitSeeAlso(
+      {.refs = {
+           {.kind = RefTarget::Kind::kTopic, .id = "regex"},
+           {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
+           {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
+       }});
+  const std::string out = backend.Take();
+  EXPECT_THAT(out, HasSubstr("See also:"));
+  EXPECT_THAT(out, HasSubstr("--help=--summary"));
+  for (const std::string_view line : absl::StrSplit(out, '\n')) {
+    EXPECT_THAT(line.size(), Le(32));
+  }
 }
 
 }  // namespace

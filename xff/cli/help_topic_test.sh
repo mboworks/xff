@@ -500,3 +500,45 @@ test::regex_help_covers_matching_and_controls() {
 }
 
 test_runner
+
+test::related_help_is_available_across_topics() {
+  local topic out
+  for topic in fields printf time size content output compare ignore config safety archive stats \
+    environment styles extras notice license help list all expressions cookbook; do
+    out="$("$(_xff_bin)" "--help=${topic}" --width=0)"
+    expect_output_contains 'See also: --help=' "${out}"
+  done
+}
+
+test::focused_help_links_to_topics_and_related_controls() {
+  local out
+  out="$("$(_xff_bin)" --help=--diff-context --width=0)"
+  expect_output_contains '--help=compare' "${out}"
+  out="$("$(_xff_bin)" --help=-grep --width=0)"
+  expect_output_contains '--help=content' "${out}"
+  expect_output_contains '--help=--context' "${out}"
+  out="$("$(_xff_bin)" --help=-size --width=0)"
+  expect_output_contains '--help=size' "${out}"
+}
+
+test::long_help_is_the_full_reference_without_navigation_expansion() {
+  local full long
+  full="$("$(_xff_bin)" --help=full --width=0)"
+  long="$("$(_xff_bin)" --help=long --width=0)"
+  expect_eq "${full}" "${long}"
+  expect_output_not_contains 'See also: --help=' "${long}"
+}
+
+test::focused_vocabulary_help_appends_the_shared_reference() {
+  local out
+  out="$("$(_xff_bin)" --help=--template --width=0)"
+  expect_output_contains 'FIELDS' "${out}"
+  out="$("$(_xff_bin)" --help=-printfln --width=0)"
+  expect_output_contains 'PRINTF DIRECTIVES' "${out}"
+  out="$("$(_xff_bin)" --help=-println --width=0)"
+  expect_output_not_contains 'PRINTF DIRECTIVES' "${out}"
+  out="$("$(_xff_bin)" --help=--after-context --width=0)"
+  expect_output_not_contains 'FIELDS' "${out}"
+  out="$("$(_xff_bin)" --help=--time-format --width=0)"
+  expect_output_contains 'TIME FORMATS' "${out}"
+}

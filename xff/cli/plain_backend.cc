@@ -278,13 +278,16 @@ void PlainTextBackend::EmitTable(const Table& table) {
 void PlainTextBackend::EmitSeeAlso(const SeeAlso& see_also) {
   StartBlock();
   const std::string indent = BodyIndent();
-  absl::StrAppend(&out_, indent);
+  std::string text;
+  if (!see_also.refs.empty() && see_also.refs.front().kind != RefTarget::Kind::kManPage) {
+    absl::StrAppend(&text, "See also: ");
+  }
   std::string_view sep;
   for (const RefTarget& ref : see_also.refs) {
-    absl::StrAppend(&out_, sep, ref.id, "(", ref.section, ")");
+    absl::StrAppend(&text, sep, HelpReferenceLabel(ref));
     sep = ", ";
   }
-  absl::StrAppend(&out_, "\n");
+  absl::StrAppend(&out_, WrapText(text, Context().width, indent, indent));
   if (!see_also.note.empty()) {
     StartBlock();
     absl::StrAppend(&out_, WrapText(RenderInlinesPlain(see_also.note), Context().width, indent, indent));

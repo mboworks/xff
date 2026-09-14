@@ -57,6 +57,18 @@ void RenderBlocks(const Blocks& blocks, HelpBackend& backend) {
 
 }  // namespace
 
+std::string HelpReferenceLabel(const RefTarget& target) {
+  switch (target.kind) {
+    case RefTarget::Kind::kTopic:
+    case RefTarget::Kind::kFlag:
+    case RefTarget::Kind::kPrimary: return "--help=" + target.id;
+    case RefTarget::Kind::kManPage: return target.id + "(" + target.section + ")";
+    case RefTarget::Kind::kUrl:
+    case RefTarget::Kind::kAnchor: return target.id;
+  }
+  return target.id;
+}
+
 void RenderDocument(const Document& doc, HelpBackend& backend) {
   backend.Preamble(doc);
   for (const Section& section : doc.sections) {

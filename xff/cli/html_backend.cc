@@ -167,11 +167,11 @@ std::string HtmlRefLink(const RefTarget& target, std::string_view label) {
       return absl::StrCat("<cite>", HtmlEscape(locator), "</cite>");
     }
     case RefTarget::Kind::kTopic:
-      return absl::StrCat("<a href=\"#", HtmlAttributeEscape(HtmlSlug(target.id)), "\">", text, "</a>");
+      return absl::StrCat("<a href=\"#", HtmlAttributeEscape(HtmlSlug("topic-" + target.id)), "\">", text, "</a>");
     case RefTarget::Kind::kFlag:
-      return absl::StrCat("<a href=\"#flag-", HtmlAttributeEscape(HtmlSlug(target.id)), "\">", text, "</a>");
+      return absl::StrCat("<a href=\"#", HtmlAttributeEscape(HtmlSlug("flag-" + target.id)), "\">", text, "</a>");
     case RefTarget::Kind::kPrimary:
-      return absl::StrCat("<a href=\"#primary-", HtmlAttributeEscape(HtmlSlug(target.id)), "\">", text, "</a>");
+      return absl::StrCat("<a href=\"#", HtmlAttributeEscape(HtmlSlug("primary-" + target.id)), "\">", text, "</a>");
     case RefTarget::Kind::kAnchor:
       return absl::StrCat("<a href=\"#", HtmlAttributeEscape(HtmlSlug(target.id)), "\">", text, "</a>");
   }
@@ -196,6 +196,12 @@ std::string RenderInlinesHtml(const Inlines& runs) {
 }
 
 void HtmlBackend::Preamble(const Document& doc) {
+  // Reserve canonical topic anchors before an earlier subsection can claim the same spelling.
+  for (const Section& section : doc.sections) {
+    if (!section.anchor.empty()) {
+      anchor_counts_.try_emplace(HtmlSlug(section.anchor), 1);
+    }
+  }
   absl::StrAppend(
       &out_, "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n",
       "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>", HtmlEscape(doc.name),
@@ -239,7 +245,14 @@ void HtmlBackend::Preamble(const Document& doc) {
 }
 
 void HtmlBackend::BeginSection(const Section& section) {
-  const std::string anchor = UniqueAnchor(section.anchor, section.title);
+  const std::string canonical = HtmlAttributeEscape(HtmlSlug(section.anchor));
+  const bool first_explicit = !section.anchor.empty() && std::ranges::none_of(section_links_, [&](const auto& link) {
+    return link.second == canonical;
+  });
+  const std::string anchor = first_explicit ? canonical : UniqueAnchor(section.anchor, section.title);
+  if (first_explicit) {
+    anchor_counts_.try_emplace(HtmlSlug(section.anchor), 1);
+  }
   section_links_.emplace_back(section.title, anchor);
   absl::StrAppend(&out_, "<section id=\"", anchor, "\">\n<h2>", HtmlEscape(section.title), "</h2>\n");
 }
@@ -321,11 +334,14 @@ void HtmlBackend::EmitTable(const Table& table) {
 
 void HtmlBackend::EmitSeeAlso(const SeeAlso& see_also) {
   absl::StrAppend(&out_, "<p class=\"see-also\">");
+  if (!see_also.refs.empty() && see_also.refs.front().kind != RefTarget::Kind::kManPage) {
+    absl::StrAppend(&out_, "See also: ");
+  }
   for (std::size_t i = 0; i < see_also.refs.size(); ++i) {
     if (i != 0) {
       absl::StrAppend(&out_, ", ");
     }
-    absl::StrAppend(&out_, HtmlRefLink(see_also.refs[i], {}));
+    absl::StrAppend(&out_, HtmlRefLink(see_also.refs[i], HelpReferenceLabel(see_also.refs[i])));
   }
   absl::StrAppend(&out_, "</p>\n");
   if (!see_also.note.empty()) {

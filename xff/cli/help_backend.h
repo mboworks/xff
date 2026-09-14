@@ -34,6 +34,9 @@
 // re-parse. See docs/design-help-model.md.
 namespace xff::cli {
 
+// A copyable help command for internal references, or the conventional external locator.
+[[nodiscard]] std::string HelpReferenceLabel(const RefTarget& target);
+
 // The render context: presentation meta resolved once at the CLI boundary (from the
 // flags + terminal) and held by the backend base as a constant, so every backend and
 // the RenderDocument walk see the same settings and refer to them as needed. The
