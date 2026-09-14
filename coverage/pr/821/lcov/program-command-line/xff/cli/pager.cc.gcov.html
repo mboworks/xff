@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-13 23:33:05</td>
+            <td class="headerValue">2026-09-13 23:57:08</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -187,7 +187,7 @@
 <span id="L107"><span class="lineNum">     107</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1706 times"> + </span>]:<span class="tlaGNC">        1709 :     } else if (arg == &quot;--pager=auto&quot;) {</span></span>
 <span id="L108"><span class="lineNum">     108</span>                 :<span class="tlaGNC">           3 :       pager = {.when = PagerWhen::kAuto};</span></span>
 <span id="L109"><span class="lineNum">     109</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1704 times"> + </span>]:<span class="tlaGNC">        1706 :     } else if (arg == &quot;--pager=all&quot;) {</span></span>
-<span id="L110"><span class="lineNum">     110</span>                 :<span class="tlaGNC">           2 :       return absl::InvalidArgumentError(&quot;--pager=all was removed; use --pager=auto or --pager=always&quot;);</span></span>
+<span id="L110"><span class="lineNum">     110</span>                 :<span class="tlaGNC">           2 :       return absl::InvalidArgumentError(&quot;invalid --pager value: all; use --pager=auto or --pager=always&quot;);</span></span>
 <span id="L111"><span class="lineNum">     111</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1696 times"> + </span>]:<span class="tlaGNC">        1704 :     } else if (arg.starts_with(&quot;--pager=&quot;)) {</span></span>
 <span id="L112"><span class="lineNum">     112</span>                 :<span class="tlaGNC">           8 :       const std::string_view command = arg.substr(std::string_view(&quot;--pager=&quot;).size());</span></span>
 <span id="L113"><span class="lineNum">     113</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>]:<span class="tlaGNC">           8 :       if (command.empty()) {</span></span>
