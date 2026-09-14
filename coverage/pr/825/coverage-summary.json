@@ -3,9 +3,9 @@
   "measurements": {
     "overall": {
       "lines": {
-        "covered": 20164,
-        "total": 21047,
-        "percent": 95.8
+        "covered": 20186,
+        "total": 21068,
+        "percent": 95.81
       },
       "functions": {
         "covered": 1702,
@@ -13,15 +13,15 @@
         "percent": 99.13
       },
       "branches": {
-        "covered": 9783,
-        "total": 10946,
-        "percent": 89.38
+        "covered": 9797,
+        "total": 10964,
+        "percent": 89.36
       }
     },
     "program / command line": {
       "lines": {
-        "covered": 3899,
-        "total": 3986,
+        "covered": 3904,
+        "total": 3991,
         "percent": 97.82
       },
       "functions": {
@@ -71,9 +71,9 @@
     },
     "program / execution": {
       "lines": {
-        "covered": 6029,
-        "total": 6415,
-        "percent": 93.98
+        "covered": 6047,
+        "total": 6431,
+        "percent": 94.03
       },
       "functions": {
         "covered": 452,
@@ -81,16 +81,16 @@
         "percent": 97.84
       },
       "branches": {
-        "covered": 3504,
-        "total": 4046,
-        "percent": 86.6
+        "covered": 3518,
+        "total": 4064,
+        "percent": 86.56
       }
     },
     "program / filesystem": {
       "lines": {
-        "covered": 642,
+        "covered": 641,
         "total": 659,
-        "percent": 97.42
+        "percent": 97.27
       },
       "functions": {
         "covered": 60,
@@ -523,8 +523,8 @@
   "reasons": {},
   "patch": {
     "lines": {
-      "covered": 61,
-      "total": 61,
+      "covered": 84,
+      "total": 84,
       "percent": 100.0
     },
     "functions": {
@@ -533,9 +533,9 @@
       "percent": null
     },
     "branches": {
-      "covered": 20,
-      "total": 20,
-      "percent": 100.0
+      "covered": 38,
+      "total": 40,
+      "percent": 95.0
     }
   },
   "patch_policy": {
