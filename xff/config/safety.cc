@@ -97,7 +97,7 @@ std::string_view CapabilityName(Capability capability) {
 }
 
 std::vector<std::string> ExpandSafetyFlag(std::string_view flag, DetailedPolicy detailed) {
-  if (flag.starts_with("--detailed-block-policy=")) {
+  if (flag.starts_with("--block-policy-categories=")) {
     return {};
   }
   std::vector<std::string> result{std::string(flag)};

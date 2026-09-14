@@ -75,7 +75,7 @@ ConfigFile ExpandFileSafety(ConfigFile file) {
   const auto directives = DirectiveTokens(file.globals);
   DetailedPolicy detailed;
   for (const std::string_view token : directives) {
-    constexpr std::string_view kPrefix = "--detailed-block-policy=";
+    constexpr std::string_view kPrefix = "--block-policy-categories=";
     if (!token.starts_with(kPrefix)) {
       continue;
     }

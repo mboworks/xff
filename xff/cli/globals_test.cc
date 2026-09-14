@@ -215,14 +215,14 @@ TEST_F(GlobalsTest, EveryTableCheckedFlagHasAValueTableToCheckAgainst) {
 }
 
 TEST_F(GlobalsTest, DetailedPolicyAcceptsOnlyImplementedCategories) {
-  EXPECT_THAT(ValidateGlobalValue("--detailed-block-policy="), IsOk());
-  EXPECT_THAT(ValidateGlobalValue("--detailed-block-policy=archive"), IsOk());
-  EXPECT_THAT(ValidateGlobalValue("--detailed-block-policy=archive,archive"), IsOk());
-  EXPECT_THAT(ValidateGlobalValue("--detailed-block-policy=archive,temp,output"), IsOk());
+  EXPECT_THAT(ValidateGlobalValue("--block-policy-categories="), IsOk());
+  EXPECT_THAT(ValidateGlobalValue("--block-policy-categories=archive"), IsOk());
+  EXPECT_THAT(ValidateGlobalValue("--block-policy-categories=archive,archive"), IsOk());
+  EXPECT_THAT(ValidateGlobalValue("--block-policy-categories=archive,temp,output"), IsOk());
   const auto invalid = std::to_array<std::string_view>({"archive,", ",archive", "garbage"});
   for (const auto value : invalid) {
     EXPECT_THAT(
-        ValidateGlobalValue(absl::StrCat("--detailed-block-policy=", value)),
+        ValidateGlobalValue(absl::StrCat("--block-policy-categories=", value)),
         StatusIs(absl::StatusCode::kInvalidArgument));
   }
   EXPECT_THAT(IsKnownGlobal("--archive-block-policy=separate"), IsFalse());

@@ -9,7 +9,7 @@ recursively, including subdirectories. It does not authorize removal or replacem
 itself. Merely placing an existing file in a temporary directory does not make that file owned
 scratch storage.
 
-`--detailed-block-policy=archive,temp,output` extends the existing per-file interpretation rule.
+`--block-policy-categories=archive,temp,output` extends the existing per-file interpretation rule.
 Each INI independently selects which categories have dedicated controls. An ordinary file block in
 a file that does not select a category expands into that category's block before configurations
 are combined. Later category selection cannot undo the resulting unconditional blocks.
@@ -111,7 +111,7 @@ while blocking ordinary writes, execution, and replacement or deletion of existi
 
 ```ini
 --require-system-globals
---detailed-block-policy=archive,temp,output
+--block-policy-categories=archive,temp,output
 --output-root=/srv/xff/results
 --temp-root=/srv/xff/scratch
 --block-execution

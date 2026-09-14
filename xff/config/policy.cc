@@ -47,7 +47,7 @@ bool IsDirectoryRoot(std::string_view flag) {
 }
 
 bool IsDetailedPolicy(std::string_view flag) {
-  return flag == "--detailed-block-policy" || flag.starts_with("--detailed-block-policy=");
+  return flag == "--block-policy-categories" || flag.starts_with("--block-policy-categories=");
 }
 
 bool IsSystemControl(std::string_view flag) {
@@ -99,7 +99,7 @@ absl::Status ValidateSystemControlLocations(const ConfigFile& system) {
     return status;
   }
   if (const auto status = ValidateSingleControl(
-          system.globals, IsDetailedPolicy, "--detailed-block-policy may occur only once in the system config");
+          system.globals, IsDetailedPolicy, "--block-policy-categories may occur only once in the system config");
       !status.ok()) {
     return status;
   }
@@ -163,7 +163,7 @@ absl::Status ValidateUserControlLocations(const ConfigFile& user) {
     return status;
   }
   if (const auto status = ValidateSingleControl(
-          user.globals, IsDetailedPolicy, "--detailed-block-policy may occur only once in the user config");
+          user.globals, IsDetailedPolicy, "--block-policy-categories may occur only once in the user config");
       !status.ok()) {
     return status;
   }

@@ -93,7 +93,7 @@ cannot select a section to authorize its own loading.
 
 Explicit `.xffrc` files cannot contain the require/no-require pairs or
 `--allow-xffrc` / `--no-allow-xffrc`; these controls govern automatic files or permission
-to load an explicit file, so that file cannot grant itself permission. `--detailed-block-policy`
+to load an explicit file, so that file cannot grant itself permission. `--block-policy-categories`
 is also restricted to automatic config files. In contrast, `--allow-exec` is a
 separate runtime flag accepted on the CLI and in config files, but an explicit file's
 own `--allow-exec` never arms its dangerous directives.
@@ -147,7 +147,7 @@ example, `-E development` is invalid because `-E` takes no value; `development` 
 token, and the containing section is disabled.
 
 There is no special policy rule language. System-only controls belong before the first section;
-placing one in a named section disables that section atomically. `--detailed-block-policy` selects how this file interprets its safety blocks, including in named sections.
+placing one in a named section disables that section atomically. `--block-policy-categories` selects how this file interprets its safety blocks, including in named sections.
 Its value never changes the interpretation of another file. See [Safety](design-safety.md).
 
 Bootstrap flags `--no-config`, `--no-system-config`, `--no-user-config`, `--xffrc`,
@@ -344,7 +344,7 @@ executable or its mandatory configuration can replace the policy too.
 
 ### Choose archive controls independently in each file
 
-`--detailed-block-policy=LIST` may occur once before sections in a system or user INI.
+`--block-policy-categories=LIST` may occur once before sections in a system or user INI.
 It applies to that file's globals and named sections. Each file is translated independently;
 a user selecting `archive` cannot remove restrictions contributed by a system file using the default empty list.
 Select `archive`, `temp`, and/or `output` for dedicated controls. The default empty category list

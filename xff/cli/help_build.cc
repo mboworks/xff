@@ -886,7 +886,7 @@ Section SafetySection(bool in_full) {
       "`--no-safe-block-*` counterpart; these profile settings use the last applied value. Initially the "
       "profile blocks every relevant capability. Activating it does not reset its definition."));
   section.children.push_back(ProseOf(
-      "`--detailed-block-policy=LIST` selects categories that use dedicated controls. The list is "
+      "`--block-policy-categories=LIST` selects categories that use dedicated controls. The list is "
       "comma-separated; an empty list (the default) uses ordinary file controls throughout. "
       "`archive`, `temp`, and `output` are supported categories. Unknown categories are errors. This config-only "
       "directive may "
@@ -958,7 +958,7 @@ Section SafetySection(bool in_full) {
       "archive publication, and is cleaned through retained handles. It does not grant access to other "
       "pre-existing temporary files. User-directed directory creation and deletion have separate controls."));
   section.children.push_back(ExampleOf(
-      "--require-system-globals\n--detailed-block-policy=archive,temp,output\n"
+      "--require-system-globals\n--block-policy-categories=archive,temp,output\n"
       "--output-root=/srv/xff/results\n--temp-root=/srv/xff/scratch\n"
       "--block-execution\n--block-file-writing\n--block-file-deletion\n"
       "--block-directory-creation\n--block-directory-deletion\n"
@@ -978,7 +978,7 @@ Section SafetySection(bool in_full) {
       "selected archive output and its necessary owned temporary files, never extraction or unrelated writes. "
       "When overwrite is blocked, creation must atomically refuse an existing destination, including symlinks."));
   section.children.push_back(ExampleOf(
-      "--require-system-globals\n--detailed-block-policy=archive\n--block-execution\n"
+      "--require-system-globals\n--block-policy-categories=archive\n--block-execution\n"
       "--block-file-writing\n--block-file-deletion\n--block-directory-creation\n"
       "--block-directory-deletion\n--block-archive-overwrite",
       "ini"));
@@ -1123,7 +1123,7 @@ Section ConfigSection(bool in_full) {
       {"--no-allow-rc-globals",
        "rejects autoloaded files containing unsectioned content before actions run (default); same scope and "
        "precedence as the positive form; explicit `--xffrc=FILE` is unaffected"},
-      {"--detailed-block-policy=LIST",
+      {"--block-policy-categories=LIST",
        "selects the interpretation of blocks in this file, including its named sections; once before sections "
        "in system or user config; see `--help=safety` for the operation table"},
   }};
@@ -1149,7 +1149,7 @@ Section ConfigSection(bool in_full) {
 
   section.children.push_back(ProseOf(
       "Neither explicit nor autoloaded `.xffrc` files may contain the require/no-require pairs, `--allow-xffrc`, "
-      "`--no-allow-xffrc`, the rc-globals permission pair, or `--detailed-block-policy`. The separate runtime flag "
+      "`--no-allow-xffrc`, the rc-globals permission pair, or `--block-policy-categories`. The separate runtime flag "
       "`--allow-exec` "
       "is accepted on the CLI and in config files, but an explicit file's own setting never arms its "
       "dangerous directives."));

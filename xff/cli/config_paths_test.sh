@@ -210,10 +210,10 @@ test::optional_globals_need_a_skip_and_system_controls_user_globals() {
   expect_not_matches 'user[[:space:]]+--jobs=3' "${out}"
 }
 
-test::unsupported_requirement_and_skip_globals_spellings_fail() {
+test::unsupported_config_control_spellings_fail() {
   local dir flag out rc
   dir="$(test_tmpdir unsupported_globals)"
-  for flag in --require-system-config --no-require-system-config --require-user-config --no-require-user-config --no-system-globals --no-user-globals; do
+  for flag in --require-system-config --no-require-system-config --require-user-config --no-require-user-config --no-system-globals --no-user-globals --detailed-block-policy=archive --block-policy=archive; do
     out="$("${isolated}" "${flag}" --explain 2>&1)" && rc=0 || rc=$?
     expect_eq 2 "${rc}"
     printf '%s

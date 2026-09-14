@@ -118,9 +118,9 @@ The system pair is `--require-system-globals` / `--no-require-system-globals`; t
 - `--no-allow-xffrc` - denies automatic discovery and command-line `--xffrc=FILE`; usable in system defaults or any user config block, with normal config selection and last-value precedence; an unsectioned system denial is authoritative
 - `--allow-rc-globals` - permits unsectioned content in autoloaded `.xffrc` files; once per pair before sections in system/user INI; a system denial wins, otherwise the applying user choice wins
 - `--no-allow-rc-globals` - rejects autoloaded files containing unsectioned content before actions run (default); same scope and precedence as the positive form; explicit `--xffrc=FILE` is unaffected
-- `--detailed-block-policy=LIST` - selects the interpretation of blocks in this file, including its named sections; once before sections in system or user config; see `--help=safety` for the operation table
+- `--block-policy-categories=LIST` - selects the interpretation of blocks in this file, including its named sections; once before sections in system or user config; see `--help=safety` for the operation table
 
-Neither explicit nor autoloaded `.xffrc` files may contain the require/no-require pairs, `--allow-xffrc`, `--no-allow-xffrc`, the rc-globals permission pair, or `--detailed-block-policy`. The separate runtime flag `--allow-exec` is accepted on the CLI and in config files, but an explicit file's own setting never arms its dangerous directives.
+Neither explicit nor autoloaded `.xffrc` files may contain the require/no-require pairs, `--allow-xffrc`, `--no-allow-xffrc`, the rc-globals permission pair, or `--block-policy-categories`. The separate runtime flag `--allow-exec` is accepted on the CLI and in config files, but an explicit file's own setting never arms its dangerous directives.
 
 ### Tiny config examples
 
@@ -237,7 +237,7 @@ A dangerous directive (the exec family `-exec` / `-execdir` / `-ok` / `-capture`
 
 Without configured restrictions, operations are allowed. `--block-*` restrictions accumulate and cannot be cleared by later settings. `--safe` activates the configurable profile; `--no-safe` deactivates that profile without clearing unconditional blocks. Every `--safe-block-*` has a `--no-safe-block-*` counterpart; these profile settings use the last applied value. Initially the profile blocks every relevant capability. Activating it does not reset its definition.
 
-`--detailed-block-policy=LIST` selects categories that use dedicated controls. The list is comma-separated; an empty list (the default) uses ordinary file controls throughout. `archive`, `temp`, and `output` are supported categories. Unknown categories are errors. This config-only directive may occur once in the unsectioned system config and once in the unsectioned user config; each file chooses its own policy. Named sections, explicit `.xffrc` files, and the CLI cannot set it. Keep policy globals active with `--require-system-globals` or `--require-user-globals` when users must not skip them.
+`--block-policy-categories=LIST` selects categories that use dedicated controls. The list is comma-separated; an empty list (the default) uses ordinary file controls throughout. `archive`, `temp`, and `output` are supported categories. Unknown categories are errors. This config-only directive may occur once in the unsectioned system config and once in the unsectioned user config; each file chooses its own policy. Named sections, explicit `.xffrc` files, and the CLI cannot set it. Keep policy globals active with `--require-system-globals` or `--require-user-globals` when users must not skip them.
 
 Each file's directives are translated before composition. Selecting `archive` in another file cannot remove mandatory restrictions already imposed. Select `archive` for precise archive control; an empty list is the simple default. CLI file controls cover archives as well. Every control listed in a table cell must permit the operation. Names omit their prefixes: `file-writing` means both `--block-file-writing` and, when safe mode is active, `--safe-block-file-writing`. `execution` independently controls arbitrary command execution. The table defines permissions; it does not enable archive operations or add unsupported member-editing actions.
 
@@ -273,7 +273,7 @@ Unselected directory categories inherit ordinary controls through per-INI expans
 
 ```ini
 --require-system-globals
---detailed-block-policy=archive,temp,output
+--block-policy-categories=archive,temp,output
 --output-root=/srv/xff/results
 --temp-root=/srv/xff/scratch
 --block-execution
@@ -292,7 +292,7 @@ Packing a new archive includes building its contents; member-editing controls do
 
 ```ini
 --require-system-globals
---detailed-block-policy=archive
+--block-policy-categories=archive
 --block-execution
 --block-file-writing
 --block-file-deletion
@@ -773,14 +773,14 @@ Explicit-file arming with `--allow-exec` covers execution and deletion. It does 
 - `--exit-match` - keep output; exit 0 if anything matched, else 1 _(global, xff)_
 
 ### Safety
-- `--detailed-block-policy=LIST` - select categories with dedicated blocking controls (config only) _(global, xff, config-only)_
+- `--block-policy-categories=LIST` - select categories with dedicated blocking controls (config only) _(global, xff, config-only)_
   One of:
 
   - `archive` - use dedicated controls for archive output and member edits
   - `temp` - use dedicated controls within the declared temporary root
   - `output` - use dedicated controls within the declared output root
 
-  A comma-separated category list; empty means ordinary file controls for all categories (default). `archive`, `temp`, and `output` are supported. Allowed once before all sections in system or user configuration. Each file chooses its own policy, including for its named sections. Neither named sections, explicit `.xffrc` files, nor the CLI may set it. See `--help=safety` for the operation table and archive replacement tradeoff.
+  Selects separate controls; this directive itself neither blocks nor allows operations. A comma-separated category list; empty means ordinary file controls for all categories (default). `archive`, `temp`, and `output` are supported. Allowed once before all sections in system or user configuration. Each file chooses its own policy, including for its named sections. Neither named sections, explicit `.xffrc` files, nor the CLI may set it. See `--help=safety` for the operation table and archive replacement tradeoff.
 - `--temp-root=PATH` - declare an existing absolute temp root (config only) _(global, xff, config-only)_
   Allowed once in unsectioned system or user INI; a system declaration wins. Permissions cover descendants recursively; the root itself remains protected. Roots and descendant traversal must not contain symlinks. See `--help=safety`.
 - `--output-root=PATH` - declare an existing absolute output root (config only) _(global, xff, config-only)_
@@ -894,17 +894,17 @@ Explicit-file arming with `--allow-exec` covers execution and deletion. It does 
 - `--no-safe-block-archive-overwrite` - exclude archive overwrite from the safe profile; unconditional blocks still apply _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
 - `--block-archive-content-writing` - unconditionally block archive content writing _(global, xff)_
-  Applies to member edits of existing archives under `--detailed-block-policy=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
+  Applies to member edits of existing archives under `--block-policy-categories=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
 - `--safe-block-archive-content-writing` - include in the safe profile: archive content writing _(global, xff)_
-  Applies to member edits of existing archives under `--detailed-block-policy=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
+  Applies to member edits of existing archives under `--block-policy-categories=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
 - `--no-safe-block-archive-content-writing` - exclude from the safe profile: archive content writing _(global, xff)_
-  Applies to member edits of existing archives under `--detailed-block-policy=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
+  Applies to member edits of existing archives under `--block-policy-categories=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
 - `--block-archive-content-overwrite` - unconditionally block archive content overwrite _(global, xff)_
-  Applies to member edits of existing archives under `--detailed-block-policy=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
+  Applies to member edits of existing archives under `--block-policy-categories=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
 - `--safe-block-archive-content-overwrite` - include in the safe profile: archive content overwrite _(global, xff)_
-  Applies to member edits of existing archives under `--detailed-block-policy=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
+  Applies to member edits of existing archives under `--block-policy-categories=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
 - `--no-safe-block-archive-content-overwrite` - exclude from the safe profile: archive content overwrite _(global, xff)_
-  Applies to member edits of existing archives under `--detailed-block-policy=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
+  Applies to member edits of existing archives under `--block-policy-categories=archive`. See `--help=safety` for the operation table and whole-archive replacement tradeoff.
 - `--block-archive-content-deletion` - unconditionally prohibit archive deletion; later flags cannot remove this block _(global, xff)_
   See `--help=safety` for capability coverage, profile composition, and dry-run limits.
 - `--safe-block-archive-content-deletion` - include archive deletion in the active safe-mode restrictions _(global, xff)_
