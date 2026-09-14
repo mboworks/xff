@@ -437,9 +437,12 @@ std::string Matcher::Rewrite(std::string_view text, std::string_view replacement
 
 absl::Span<const std::pair<std::string_view, std::string_view>> GrammarDocs() {
   static constexpr auto kDocs = std::to_array<std::pair<std::string_view, std::string_view>>({
-      {"RE2",
-       "the default. Google RE2 regular expressions - linear-time, no catastrophic backtracking. "
-       "Full syntax: https://github.com/google/re2/wiki/Syntax ."},
+      {"ERE",
+       "POSIX extended regular expressions through the platform regcomp(3) implementation. This provides "
+       "traditional find -E syntax, captures, partial matching, and rewrites, but locale details and some "
+       "edge-case behavior follow the host C library rather than RE2's cross-platform semantics or linear-time "
+       "guarantee. Patterns containing NUL are errors; subjects containing NUL do not match because the POSIX API "
+       "uses C strings."},
       {"EXACT",
        "a literal string; every character matches itself, no metacharacters. -regex is whole-string "
        "equality, -rxc / -grep a substring test."},
@@ -457,6 +460,13 @@ absl::Span<const std::pair<std::string_view, std::string_view>> GrammarDocs() {
        "descending ranges, unsupported named classes, collation/equivalence, and negative extglob are "
        "errors. Braces are literal. Because it compiles to RE2, -grep / -rxc partial matching and match "
        "spans work."},
+      {"PCRE2",
+       "Perl-Compatible Regular Expressions (lookaround, backreferences, ...). A build-time extra: "
+       "present only in a full build - run `xff --help=extras` to see whether THIS binary has it. Full "
+       "syntax: pcre2pattern(3)."},
+      {"RE2",
+       "the default. Google RE2 regular expressions - linear-time, no catastrophic backtracking. "
+       "Full syntax: https://github.com/google/re2/wiki/Syntax ."},
       {"SHGLOB",
        "GLOB plus brace alternation: {a,b,c} matches any one alternative, so *.{cc,h} matches either. "
        "Integer and ASCII-letter sequences expand in either direction (`{1..9}`, `{09..01}`, `{a..z}`); a "
@@ -464,16 +474,6 @@ absl::Span<const std::pair<std::string_view, std::string_view>> GrammarDocs() {
        "and sequences may nest; alternatives may be empty. Escaped braces and commas, braces inside a "
        "[...] class, and comma-less braces that are not a sequence are literal. The optional shell "
        "increment form (`{1..9..2}`) is not supported and remains literal. Everything else is exactly GLOB."},
-      {"ERE",
-       "POSIX extended regular expressions through the platform regcomp(3) implementation. This provides "
-       "traditional find -E syntax, captures, partial matching, and rewrites, but locale details and some "
-       "edge-case behavior follow the host C library rather than RE2's cross-platform semantics or linear-time "
-       "guarantee. Patterns containing NUL are errors; subjects containing NUL do not match because the POSIX API "
-       "uses C strings."},
-      {"PCRE2",
-       "Perl-Compatible Regular Expressions (lookaround, backreferences, ...). A build-time extra: "
-       "present only in a full build - run `xff --help=extras` to see whether THIS binary has it. Full "
-       "syntax: pcre2pattern(3)."},
   });
   return kDocs;
 }

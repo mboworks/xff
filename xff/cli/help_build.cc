@@ -354,6 +354,55 @@ Section GrammarsSection() {
       regex::GrammarDocs());
 }
 
+bool IsRegexPrimary(std::string_view name) {
+  return name == "-regex" || name == "-iregex" || name == "-regextype" || name == "-rxc" || name == "-irxc"
+         || name == "-grep";
+}
+
+Section RegexSection(bool in_full) {
+  Section section{.title = "Regex matching"};
+  section.children.push_back(ProseOf(
+      "Use `-regex` / `-iregex` to match the whole path, `-rxc` / `-irxc` to find a match in file content, "
+      "and `-grep` for line-oriented content output. `--regextype` selects the grammar; `--case` controls "
+      "case handling. The `i` variants force case-insensitive matching. Quote patterns so the shell "
+      "passes their metacharacters to xff unchanged."));
+  if (!in_full) {
+    Subsection primaries{.title = "Matching expressions"};
+    for (const registry::Descriptor& descriptor : registry::All()) {
+      if (IsRegexPrimary(descriptor.name)) {
+        primaries.children.push_back(PrimaryEntry(descriptor));
+      }
+    }
+    section.children.push_back(Content{.node = std::move(primaries)});
+    Subsection flags{.title = "Related controls"};
+    for (const GlobalFlag& flag : Globals()) {
+      bool relevant = flag.name == "--regextype" || flag.name == "--case" || flag.name == "--re2"
+                      || flag.name == "--pcre" || flag.name == "-E";
+      for (const std::string_view affected : absl::StrSplit(flag.affects, ',')) {
+        relevant = relevant || IsRegexPrimary(affected);
+      }
+      if (relevant) {
+        flags.children.push_back(FlagEntry(flag));
+      }
+    }
+    section.children.push_back(Content{.node = std::move(flags)});
+    const Section grammars = GrammarsSection();
+    section.children.push_back(Content{.node = Subsection{.title = grammars.title, .children = grammars.children}});
+  }
+  Subsection examples{.title = "Examples"};
+  examples.children.push_back(ExampleOf("xff src --regextype=RE2 -regex '.*[.](cc|h)'", "sh"));
+  examples.children.push_back(ExampleOf("xff src --regextype=RE2 --case=insensitive -grep 'todo|fixme'", "sh"));
+  section.children.push_back(Content{.node = std::move(examples)});
+  section.children.push_back(
+      Content{
+          .node = SeeAlso{
+              .refs = {
+                  {.kind = RefTarget::Kind::kTopic, .id = "grammars"},
+                  {.kind = RefTarget::Kind::kTopic, .id = "content"},
+              }}});
+  return section;
+}
+
 // ENVIRONMENT: the variables xff honors. Hand-authored - the getenv sites are scattered across
 // color / pager / help-width / config with no single registry - and kept honest by help_render_test.
 // Standalone as `--help=environment` (env) and folded into the full reference / man page.
@@ -1682,8 +1731,10 @@ std::optional<Section> NamedTopicSection(std::string_view name) {
     return TimeSection();
   } else if (name == "size") {
     return SizeSection();
-  } else if (name == "grammars" || name == "regex" || name == "regexp") {
+  } else if (name == "grammars") {
     return GrammarsSection();
+  } else if (name == "reg" || name == "regex" || name == "regexp") {
+    return RegexSection(/*in_full=*/false);
   } else if (name == "content") {
     return ContentSection(/*in_full=*/false);
   } else if (name == "compare") {
@@ -1730,6 +1781,10 @@ std::optional<Document> TopicReference(std::string_view name) {
 }
 
 std::optional<Document> EntryReference(std::string_view name) {
+  // The undashed grammar selector names the global value list; -regextype remains explicit.
+  if (name == "regextype") {
+    name = "--regextype";
+  }
   // An expression primary / operator / action (leading-dash convenience: regex -> -regex).
   const mbo::types::OptionalRef<const registry::Descriptor> descriptor = [&] {
     const auto exact = registry::Lookup(name);
@@ -1751,6 +1806,21 @@ std::optional<Document> EntryReference(std::string_view name) {
   // A title-less section: the single entry renders without a section heading.
   Section section;
   section.children.push_back(descriptor.has_value() ? PrimaryEntry(*descriptor) : FlagEntry(*flag));
+  const std::string_view related = descriptor.has_value() ? descriptor->see_also : flag->see_also;
+  if (!related.empty()) {
+    Inlines links{{.text = "See also: "}};
+    for (const std::string_view topic : absl::StrSplit(related, ',')) {
+      if (links.size() > 1) {
+        links.push_back({.text = ", "});
+      }
+      links.push_back({
+          .style = Inline::Style::kRef,
+          .text = absl::StrCat("--help=", topic),
+          .target = RefTarget{.kind = RefTarget::Kind::kTopic, .id = std::string(topic)},
+      });
+    }
+    section.children.push_back(Content{.node = Prose{.runs = std::move(links)}});
+  }
   Document doc;
   doc.sections.push_back(std::move(section));
   const std::string_view context_name = descriptor.has_value() ? descriptor->help_context : flag->help_context;
@@ -1782,6 +1852,7 @@ Document BuildReference(Audience audience) {
   doc.sections.push_back(TimeSection());
   doc.sections.push_back(SizeSection());
   doc.sections.push_back(GrammarsSection());
+  doc.sections.push_back(RegexSection(/*in_full=*/true));
   doc.sections.push_back(ContentSection(/*in_full=*/true));
   doc.sections.push_back(CompareSection(/*in_full=*/true));
   doc.sections.push_back(IgnoreSection(/*in_full=*/true));

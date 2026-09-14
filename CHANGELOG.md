@@ -3,7 +3,9 @@
 
 # 0.5.0
 
-- Include broader comparison and regex grammar context after individual flag help.
+- Add contextual comparison help and related-control lists. Provide comprehensive `--help=regex`
+  separately from `--help=regextype`, whose alphabetical value list is followed by the structured
+  grammar reference and a link to `--help=regex`.
 
 - Add `--compare=summary` as shorthand for status comparison with per-path output disabled and
   a comparison summary enabled. `--compare-select=none` or an empty value suppresses records;

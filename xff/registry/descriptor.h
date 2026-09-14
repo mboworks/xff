@@ -96,6 +96,8 @@ struct Descriptor {
   std::string_view topic;
   // Broader topic appended after this primary in standalone help, when needed for context.
   std::string_view help_context;
+  // Comma-separated related help topics linked from standalone entry help.
+  std::string_view see_also;
   // The primary may take the TERMINAL for itself: it prompts and reads a reply (-ok / -okdir), or it
   // hands our stdin / stdout to a child that might (an editor under -exec / -execdir). Read by the
   // CLI to suppress the listing pager, which would otherwise sit between that primary and the user.

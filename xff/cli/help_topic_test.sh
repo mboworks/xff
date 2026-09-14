@@ -461,13 +461,42 @@ test::comparison_help_includes_summary_context() {
   done
 }
 
-test::grammar_selector_help_includes_regex_topic() {
+test::grammar_selector_help_links_to_regex_topic() {
   local topic out
   for topic in regextype -regextype --regextype re2 pcre; do
     out="$("$(_xff_bin)" "--help=${topic}" --width=0)"
-    expect_output_contains 'REGEX GRAMMARS' "${out}"
-    expect_output_contains 'canonical external references' "${out}"
+    expect_output_contains 'See also: --help=regex, --help=grammars' "${out}"
+    expect_output_contains 'grammars' "${out}"
+    case "${topic}" in
+      regextype | --regextype)
+        expect_output_contains 'REGEX GRAMMARS' "${out}"
+        expect_output_contains 'canonical external references' "${out}"
+        ;;
+      *) expect_output_not_contains 'canonical external references' "${out}" ;;
+    esac
   done
+}
+
+test::regex_help_covers_matching_and_controls() {
+  local out root
+  out="$("$(_xff_bin)" --help=regex --width=0)"
+  expect_output_contains 'REGEX MATCHING' "${out}"
+  expect_output_contains 'REGEX MATCHING' "$("$(_xff_bin)" --help=reg --width=0)"
+  expect_output_contains '-regex' "${out}"
+  expect_output_contains '-grep' "${out}"
+  expect_output_contains '--case' "${out}"
+  expect_output_contains '--regextype' "${out}"
+  expect_output_contains '--context' "${out}"
+  expect_output_contains 'canonical external references' "${out}"
+  out="$("$(_xff_bin)" --help=regextype --width=0)"
+  expect_output_contains 'GRAMMAR is one of:' "${out}"
+  expect_output_contains '--regextype=<GRAMMAR>' "${out}"
+  root="$(test_tmpdir regex_examples)"
+  printf 'TODO fixme\n' >"${root}/example.cc"
+  out="$("$(_xff_bin)" "${root}" --regextype=RE2 -regex '.*[.](cc|h)')"
+  expect_output_contains 'example.cc' "${out}"
+  out="$("$(_xff_bin)" "${root}" --regextype=RE2 --case=insensitive -grep 'todo|fixme')"
+  expect_output_contains 'TODO fixme' "${out}"
 }
 
 test_runner
