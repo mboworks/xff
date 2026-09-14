@@ -14,6 +14,7 @@
 namespace xff::cli {
 namespace {
 
+using ::testing::AllOf;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 
@@ -59,7 +60,8 @@ TEST_F(HtmlRefLinkTest, RendersUrlInternalAndManPageTargets) {
   EXPECT_THAT(
       HtmlRefLink({.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"}, "manual"),
       Eq("<cite>manual</cite>"));
-  EXPECT_THAT(HtmlRefLink({.kind = RefTarget::Kind::kTopic, .id = "fields"}, ""), Eq("<a href=\"#fields\">fields</a>"));
+  EXPECT_THAT(
+      HtmlRefLink({.kind = RefTarget::Kind::kTopic, .id = "fields"}, ""), Eq("<a href=\"#topic-fields\">fields</a>"));
   EXPECT_THAT(
       HtmlRefLink({.kind = RefTarget::Kind::kPrimary, .id = "-printf"}, "action"),
       Eq("<a href=\"#primary-printf\">action</a>"));
@@ -84,7 +86,7 @@ TEST_F(HtmlRefLinkTest, RendersEveryInlineStyleAndAnUnresolvedReferenceAsText) {
           {.style = Inline::Style::kRef, .text = " unresolved"},
       }),
       Eq("plain <code>code</code><em> emphasis</em><strong> strong</strong>"
-         "<a href=\"#fields\"> fields</a> unresolved"));
+         "<a href=\"#topic-fields\"> fields</a> unresolved"));
 }
 
 struct HtmlBackendTest : ::testing::Test {};
@@ -195,6 +197,43 @@ TEST_F(HtmlBackendTest, RendersFallbackTagsAndSeeAlsoNotes) {
                 "<p class=\"see-also\"><cite>find(1)</cite>, "
                 "<a href=\"https://example.com\">https://example.com</a></p>\n"
                 "<p>Further reading.</p>"));
+}
+
+TEST_F(HtmlBackendTest, SeeAlsoUsesCopyableHelpCommands) {
+  HtmlBackend backend;
+  backend.EmitSeeAlso(
+      {.refs = {
+           {.kind = RefTarget::Kind::kTopic, .id = "regex"},
+           {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
+           {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
+           {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"},
+           {.kind = RefTarget::Kind::kUrl, .id = "https://example.org/reference"},
+           {.kind = RefTarget::Kind::kAnchor, .id = "section"},
+       }});
+  EXPECT_THAT(
+      backend.Take(),
+      AllOf(
+          HasSubstr("href=\"#topic-regex\">--help=regex"), HasSubstr("href=\"#flag-summary\">--help=--summary"),
+          HasSubstr("href=\"#primary-printf\">--help=-printf"), HasSubstr("find(1)")));
+}
+
+TEST_F(HtmlBackendTest, ExplicitTopicsKeepTheirAnchorsAfterSubsectionCollisions) {
+  const Document doc{
+      .name = "xff",
+      .sections =
+          {
+              Section{.title = "First", .children = {Content{.node = Subsection{.title = "Time"}}}},
+              Section{.title = "Time formats", .anchor = "time"},
+              Section{.title = "Duplicate", .anchor = "time"},
+          },
+  };
+  HtmlBackend backend;
+  RenderDocument(doc, backend);
+  const std::string html = backend.Take();
+  EXPECT_THAT(html, HasSubstr("<section id=\"time\">\n<h2>Time formats</h2>"));
+  EXPECT_THAT(html, HasSubstr("<section id=\"time-1\">\n<h3>Time</h3>"));
+  EXPECT_THAT(html, HasSubstr("<section id=\"time-2\">\n<h2>Duplicate</h2>"));
+  EXPECT_THAT(html, HasSubstr("<li><a href=\"#time\">Time formats</a></li>"));
 }
 
 }  // namespace

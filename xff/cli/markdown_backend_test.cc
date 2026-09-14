@@ -28,6 +28,7 @@ namespace {
 
 using ::mbo::testing::EqualsText;
 using ::mbo::testing::WithDropIndent;
+using ::testing::AllOf;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 
@@ -58,11 +59,12 @@ TEST_F(MarkdownRefLinkTest, UrlBecomesALink) {
 }
 
 TEST_F(MarkdownRefLinkTest, InDocumentTargetsLinkToAnAnchorSlug) {
-  EXPECT_THAT(MarkdownRefLink({.kind = RefTarget::Kind::kTopic, .id = "fields"}, ""), Eq("[fields](#fields)"));
-  EXPECT_THAT(MarkdownRefLink({.kind = RefTarget::Kind::kFlag, .id = "--summary"}, ""), Eq("[--summary](#summary)"));
+  EXPECT_THAT(MarkdownRefLink({.kind = RefTarget::Kind::kTopic, .id = "fields"}, ""), Eq("[fields](#topic-fields)"));
+  EXPECT_THAT(
+      MarkdownRefLink({.kind = RefTarget::Kind::kFlag, .id = "--summary"}, ""), Eq("[--summary](#flag-summary)"));
   EXPECT_THAT(
       MarkdownRefLink({.kind = RefTarget::Kind::kPrimary, .id = "-printf"}, "the printf action"),
-      Eq("[the printf action](#printf)"));
+      Eq("[the printf action](#primary-printf)"));
 }
 
 TEST_F(MarkdownRefLinkTest, ManPageIsPlainNameSection) {
@@ -87,7 +89,7 @@ TEST_F(RenderInlinesMarkdownTest, MapsEmphasisToMarkdown) {
 TEST_F(RenderInlinesMarkdownTest, RefRendersAsALink) {
   EXPECT_THAT(
       RenderInlinesMarkdown({Text("see "), Ref("", {.kind = RefTarget::Kind::kTopic, .id = "fields"})}),
-      Eq("see [fields](#fields)"));
+      Eq("see [fields](#topic-fields)"));
 }
 
 // ---- RenderDocument over MarkdownBackend ----
@@ -137,7 +139,7 @@ TEST_F(MarkdownBackendTest, RendersAWholeDocumentAsMarkdown) {
       xff . -type f
       ```
 
-      `find`(1)
+      find(1)
 
       the classic.
       )out")));
@@ -165,6 +167,36 @@ TEST_F(MarkdownBackendTest, LongDocumentGetsLinkedSectionContents) {
                "- [Command structure](#command-structure)\n"
                "- [Options](#options)\n"
                "- [Exit status](#exit-status)\n"));
+}
+
+TEST_F(MarkdownBackendTest, SeeAlsoUsesCopyableHelpCommands) {
+  MarkdownBackend backend;
+  backend.EmitSeeAlso(
+      {.refs = {
+           {.kind = RefTarget::Kind::kTopic, .id = "regex"},
+           {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
+           {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
+           {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"},
+           {.kind = RefTarget::Kind::kUrl, .id = "https://example.org/reference"},
+           {.kind = RefTarget::Kind::kAnchor, .id = "section"},
+       }});
+  EXPECT_THAT(
+      backend.Take(), AllOf(
+                          HasSubstr("[--help=regex](#topic-regex)"), HasSubstr("[--help=--summary](#flag-summary)"),
+                          HasSubstr("[--help=-printf](#primary-printf)"), HasSubstr("find(1)")));
+}
+
+TEST_F(MarkdownBackendTest, ReferenceAnchorsMatchTheirLinks) {
+  MarkdownBackend backend;
+  backend.BeginSection({.title = "Comparing trees", .anchor = "compare"});
+  backend.BeginEntry({.term = "--summary[=GROUP]", .anchor = "flag---summary"});
+  backend.EndEntry({});
+  backend.BeginEntry({.term = "!", .anchor = "primary-!"});
+  backend.EndEntry({});
+  EXPECT_THAT(
+      backend.Take(),
+      AllOf(HasSubstr("id=\"compare\""), HasSubstr("id=\"flag-summary\""), HasSubstr("id=\"primary\"")));
+  EXPECT_THAT(MarkdownRefLink({.kind = RefTarget::Kind::kPrimary, .id = "!"}, ""), Eq("[!](#primary)"));
 }
 
 }  // namespace
