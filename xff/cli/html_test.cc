@@ -31,7 +31,7 @@ TEST_F(HtmlTest, HasStandaloneDocumentAndReferenceSections) {
       HtmlReference(),
       AllOf(
           HasSubstr("<!doctype html>"), HasSubstr("<meta charset=\"utf-8\">"), HasSubstr("<section id=\"options\">"),
-          HasSubstr("<section id=\"expression\">"), HasSubstr("</html>")));
+          HasSubstr("<section id=\"topic-expressions\">"), HasSubstr("</html>")));
 }
 
 TEST_F(HtmlTest, DocumentsEveryGlobalAndPrimary) {
@@ -64,6 +64,14 @@ TEST_F(HtmlTest, UsesNonemptyUniqueAnchors) {
     EXPECT_THAT(anchors.insert(anchor).second, IsTrue()) << anchor;
     pos = end + 1;
   }
+}
+
+TEST_F(HtmlTest, CanonicalTopicAnchorsBelongToTheTopicSections) {
+  const std::string doc = HtmlReference();
+  EXPECT_THAT(doc, HasSubstr("<section id=\"topic-time\">\n<h2>Time formats</h2>"));
+  EXPECT_THAT(doc, HasSubstr("<section id=\"topic-compare\">\n<h2>Comparing trees</h2>"));
+  EXPECT_THAT(doc, HasSubstr("<section id=\"topic-grammars\">\n<h2>Regex grammars</h2>"));
+  EXPECT_THAT(doc, HasSubstr("<section id=\"topic-stats\">\n<h2>Statistics</h2>"));
 }
 
 }  // namespace

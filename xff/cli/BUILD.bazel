@@ -295,6 +295,7 @@ cc_test(
         ":help_backend_cc",
         ":help_model_cc",
         ":plain_backend_cc",
+        "@abseil-cpp//absl/strings",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:matchers_cc",

@@ -163,10 +163,19 @@ void RoffBackend::EmitTable(const Table& table) {
 }
 
 void RoffBackend::EmitSeeAlso(const SeeAlso& see_also) {
+  if (!see_also.refs.empty() && see_also.refs.front().kind != RefTarget::Kind::kManPage) {
+    absl::StrAppend(&out_, ".PP\nSee also:\n");
+  }
   for (std::size_t i = 0; i < see_also.refs.size(); ++i) {
     const RefTarget& ref = see_also.refs[i];
-    absl::StrAppendFormat(
-        &out_, ".BR %s (%s)%s\n", RoffEscape(ref.id), RoffEscape(ref.section), i + 1 < see_also.refs.size() ? "," : "");
+    if (ref.kind == RefTarget::Kind::kManPage) {
+      absl::StrAppendFormat(
+          &out_, ".BR %s (%s)%s\n", RoffEscape(ref.id), RoffEscape(ref.section),
+          i + 1 < see_also.refs.size() ? "," : "");
+    } else {
+      absl::StrAppendFormat(
+          &out_, ".B %s%s\n", RoffEscape(HelpReferenceLabel(ref)), i + 1 < see_also.refs.size() ? "," : "");
+    }
   }
   if (!see_also.note.empty()) {
     absl::StrAppend(&out_, ".PP\n");

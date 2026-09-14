@@ -3,6 +3,10 @@
 
 # 0.5.0
 
+- Add copyable “See also” help commands across focused option, expression, and topic pages.
+  Related controls follow the registry relationships, and HTML/Markdown links use stable targets.
+  Full/long help keeps one copy of each detailed entry and topic without expanding navigation.
+
 - Add contextual comparison help and related-control lists. Provide comprehensive `--help=regex`
   separately from `--help=regextype`, whose alphabetical value list is followed by the structured
   grammar reference and a link to `--help=regex`.

@@ -381,9 +381,15 @@ std::string FullReference(xff::cli::HelpRenderContext context) {
 // --help= handler, the --help-* shortcuts, and FullReference (which never asks for the
 // self-referential full/long, so there is no recursion).
 absl::StatusOr<std::string> RenderTopic(std::string_view topic, xff::cli::HelpRenderContext context) {
+  const auto navigation = [&] {
+    xff::cli::PlainTextBackend backend(context);
+    xff::cli::RenderDocument(xff::cli::TopicNavigation(topic), backend);
+    return backend.Take();
+  };
   if (topic == "styles" || topic == "flavors") {
     return absl::StrCat(
-        RenderFlavorTable({}, std::nullopt), "\n", RenderSyntaxConventions(context), "\n", RenderComingFrom());
+        RenderFlavorTable({}, std::nullopt), "\n", RenderSyntaxConventions(context), "\n", RenderComingFrom(), "\n",
+        navigation());
   }
   // The sub-vocabulary topics (fields / printf / time / size / grammars) and the index
   // topics (list / all / expressions) render from the model so they wrap + indent.
@@ -399,7 +405,7 @@ absl::StatusOr<std::string> RenderTopic(std::string_view topic, xff::cli::HelpRe
     }
   }
   if (topic == "extras") {
-    return RenderExtras();
+    return absl::StrCat(RenderExtras(), "\n", navigation());
   }
   if (topic == "full" || topic == "long") {
     return FullReference(context);

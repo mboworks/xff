@@ -14,9 +14,11 @@
 // limitations under the License.
 
 #include <array>
+#include <map>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include "absl/strings/str_split.h"
@@ -83,6 +85,7 @@ std::string RenderDoc(const Document& doc) {
 
 using ::testing::_;
 using ::testing::AllOf;
+using ::testing::Contains;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
@@ -301,7 +304,7 @@ TEST_F(HelpTest, GrammarReferenceIsAlphabetical) {
 TEST_F(HelpTest, EntrySeeAlsoTopicsResolve) {
   const auto check = [](std::string_view topics) {
     for (const std::string_view topic : absl::StrSplit(topics, ',', absl::SkipEmpty())) {
-      EXPECT_THAT(TopicReference(topic), Optional(_)) << topic;
+      EXPECT_THAT(TopicNavigation(topic).sections, Not(IsEmpty())) << topic;
     }
   };
   for (const GlobalFlag& flag : Globals()) {
@@ -309,6 +312,103 @@ TEST_F(HelpTest, EntrySeeAlsoTopicsResolve) {
   }
   for (const registry::Descriptor& descriptor : registry::All()) {
     check(descriptor.see_also);
+  }
+}
+
+TEST_F(HelpTest, EveryEntryHasFocusedNavigation) {
+  for (const GlobalFlag& flag : Globals()) {
+    EXPECT_THAT(RenderEntry(flag.name), HasSubstr("See also: --help=")) << flag.name;
+  }
+  for (const registry::Descriptor& descriptor : registry::All()) {
+    EXPECT_THAT(RenderEntry(descriptor.name), HasSubstr("See also: --help=")) << descriptor.name;
+  }
+}
+
+TEST_F(HelpTest, EveryTopicHasResolvableRelatedTopics) {
+  for (const HelpTopic& topic : HelpTopics()) {
+    EXPECT_THAT(topic.see_also, Not(IsEmpty())) << topic.name;
+    for (const std::string_view related : absl::StrSplit(topic.see_also, ',', absl::SkipEmpty())) {
+      EXPECT_THAT(TopicNavigation(related).sections, Not(IsEmpty())) << topic.name << " -> " << related;
+      EXPECT_THAT(related, Not(Eq(topic.name)));
+    }
+  }
+  EXPECT_THAT(TopicNavigation("unknown-topic").sections, IsEmpty());
+}
+
+TEST_F(HelpTest, FocusedLinksResolveToFullReferenceAnchors) {
+  const Document full = BuildReference();
+  std::vector<std::string> anchors;
+  anchors.reserve(full.sections.size());
+  for (const Section& section : full.sections) {
+    anchors.push_back(section.anchor);
+  }
+  const auto check = [&](std::string_view name) {
+    const auto doc = EntryReference(name);
+    ASSERT_THAT(doc, Optional(_));
+    if (!doc.has_value()) {
+      return;
+    }
+    for (const Content& block : doc->sections.front().children) {
+      if (!std::holds_alternative<SeeAlso>(block.node)) {
+        continue;
+      }
+      for (const RefTarget& ref : std::get<SeeAlso>(block.node).refs) {
+        if (ref.kind == RefTarget::Kind::kTopic) {
+          EXPECT_THAT(anchors, Contains("topic-" + ref.id)) << name;
+        } else {
+          EXPECT_THAT(EntryReference(ref.id), Optional(_)) << name << " -> " << ref.id;
+        }
+      }
+    }
+  };
+  for (const GlobalFlag& flag : Globals()) {
+    check(flag.name);
+  }
+  for (const registry::Descriptor& descriptor : registry::All()) {
+    check(descriptor.name);
+  }
+}
+
+TEST_F(HelpTest, LongReferenceDoesNotRepeatEntriesOrExpandNavigation) {
+  const Document full = BuildReference();
+  std::map<std::string, int> entries;
+  const auto visit = [&](auto&& self, const Blocks& blocks) -> void {
+    for (const Content& block : blocks) {
+      if (std::holds_alternative<Entry>(block.node)) {
+        const auto& entry = std::get<Entry>(block.node);
+        ++entries[entry.anchor];
+        self(self, entry.details);
+      } else if (std::holds_alternative<Subsection>(block.node)) {
+        self(self, std::get<Subsection>(block.node).children);
+      } else if (std::holds_alternative<SeeAlso>(block.node)) {
+        for (const RefTarget& ref : std::get<SeeAlso>(block.node).refs) {
+          EXPECT_THAT(ref.kind, Eq(RefTarget::Kind::kManPage));
+        }
+      }
+    }
+  };
+  for (const Section& section : full.sections) {
+    visit(visit, section.children);
+  }
+  for (const auto& [anchor, count] : entries) {
+    EXPECT_THAT(count, Eq(1)) << anchor;
+  }
+}
+
+TEST_F(HelpTest, PrimaryContextsFollowTheFocusedEntry) {
+  for (const registry::Descriptor& descriptor : registry::All()) {
+    if (descriptor.help_context.empty()) {
+      continue;
+    }
+    const auto entry = EntryReference(descriptor.name);
+    const auto topic = TopicReference(descriptor.help_context);
+    ASSERT_THAT(entry, Optional(_));
+    ASSERT_THAT(topic, Optional(_));
+    if (!entry.has_value() || !topic.has_value()) {
+      continue;
+    }
+    ASSERT_THAT(entry->sections.size(), Eq(2));
+    EXPECT_THAT(entry->sections.back().title, Eq(topic->sections.front().title));
   }
 }
 

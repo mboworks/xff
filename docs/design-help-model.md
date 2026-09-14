@@ -94,3 +94,22 @@ XHTML / Markdown as an authored input was rejected: the content is programmer
 authored, terse, and lives with the code, so an XML layer adds a parser, verbose
 authoring, and a round-trip for no gain. They remain output backends only. Revisit
 only if help ever becomes externally authored by non-coders.
+
+## Focused navigation and full references
+
+Focused `--help=NAME` pages end with **See also** commands. Entry navigation combines the
+registry's topic membership, explicit `see_also` topics, and forward/reverse `affects`
+relationships. Duplicate targets are removed while preserving the authored order. A topic's
+related pages are declared in `HelpTopics()`; aliases share the canonical topic's navigation.
+The commands distinguish a topic (`--help=regex`), a global flag (`--help=--regextype`), and an
+expression primary (`--help=-regex`). External manuals retain their `name(section)` notation.
+
+Use `help_context` only when a focused flag needs a vocabulary or worked explanation immediately
+below it. Short value lists precede the explanation; long grammar descriptions belong in the shared
+vocabulary section. Topic membership alone provides a link and does not append an entire topic.
+
+`--help=full` and `--help=long` render the same document. They include each detailed registry entry
+and each topic once, without recursively expanding context or repeating focused navigation under
+every entry. The generated man page, Markdown, and HTML share this composition. Stable topic and
+entry anchors (`topic-`, `flag-`, and `primary-` namespaces) keep internal Markdown/HTML references
+independent of display headings, including automatically generated Markdown heading anchors.
