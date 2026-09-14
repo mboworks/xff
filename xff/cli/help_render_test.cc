@@ -81,6 +81,7 @@ std::string RenderDoc(const Document& doc) {
   return backend.Take();
 }
 
+using ::testing::_;
 using ::testing::AllOf;
 using ::testing::Eq;
 using ::testing::HasSubstr;
@@ -88,6 +89,7 @@ using ::testing::IsEmpty;
 using ::testing::IsTrue;
 using ::testing::Lt;
 using ::testing::Not;
+using ::testing::Optional;
 using ::testing::SizeIs;
 
 struct HelpTest : ::testing::Test {};
@@ -211,12 +213,13 @@ TEST_F(HelpTest, ATableRendersAlignedInEveryBackend) {
       markdown.Take(), HasSubstr("| name    | ok  |\n| ------- | --- |\n| tar     | yes |\n| iso9660 | no  |\n"));
 }
 
-TEST_F(HelpTest, RegexAliasesRenderTheGrammarsTopic) {
+TEST_F(HelpTest, RegexAliasesRenderTheRegexTopic) {
   // `--help=regex` is what someone wondering about regex actually types; it and `regexp` open the
-  // grammars reference rather than erroring.
-  const std::string want = RenderTopicDoc("grammars");
+  // complete regex reference rather than only the grammar vocabulary.
+  const std::string want = RenderTopicDoc("regex");
   ASSERT_THAT(want, Not(IsEmpty()));
   static constexpr std::array kAliases = std::to_array<std::string_view>({
+      "reg",
       "regex",
       "regexp",
   });
@@ -282,6 +285,49 @@ TEST_F(HelpTest, ValuedFlagDocumentsItsPlaceholderValues) {
       regextype, AllOf(
                      HasSubstr("--regextype=<GRAMMAR>"), HasSubstr("GRAMMAR is one of:"), HasSubstr("RE2"),
                      HasSubstr("linear-time"), HasSubstr("PCRE2")));
+}
+
+TEST_F(HelpTest, GrammarReferenceIsAlphabetical) {
+  const std::string out = RenderTopicDoc("grammars");
+  const auto table = out.substr(out.find("  ERE "));
+  EXPECT_THAT(table.find("  ERE "), Lt(table.find("  EXACT ")));
+  EXPECT_THAT(table.find("  EXACT "), Lt(table.find("  FNMATCH ")));
+  EXPECT_THAT(table.find("  FNMATCH "), Lt(table.find("  GLOB ")));
+  EXPECT_THAT(table.find("  GLOB "), Lt(table.find("  PCRE2 ")));
+  EXPECT_THAT(table.find("  PCRE2 "), Lt(table.find("  RE2 ")));
+  EXPECT_THAT(table.find("  RE2 "), Lt(table.find("  SHGLOB ")));
+}
+
+TEST_F(HelpTest, EntrySeeAlsoTopicsResolve) {
+  const auto check = [](std::string_view topics) {
+    for (const std::string_view topic : absl::StrSplit(topics, ',', absl::SkipEmpty())) {
+      EXPECT_THAT(TopicReference(topic), Optional(_)) << topic;
+    }
+  };
+  for (const GlobalFlag& flag : Globals()) {
+    check(flag.see_also);
+  }
+  for (const registry::Descriptor& descriptor : registry::All()) {
+    check(descriptor.see_also);
+  }
+}
+
+TEST_F(HelpTest, FlagContextsResolveAndFollowTheFlagEntry) {
+  for (const GlobalFlag& flag : Globals()) {
+    if (flag.help_context.empty()) {
+      continue;
+    }
+    const auto topic = TopicReference(flag.help_context);
+    EXPECT_THAT(topic, Optional(_)) << flag.name;
+    const auto entry = EntryReference(flag.name);
+    EXPECT_THAT(entry, Optional(_)) << flag.name;
+    if (!topic.has_value() || !entry.has_value()) {
+      continue;
+    }
+    ASSERT_THAT(entry->sections.size(), Eq(2)) << flag.name;
+    EXPECT_THAT(entry->sections.front().title, IsEmpty()) << flag.name;
+    EXPECT_THAT(entry->sections.back().title, Eq(topic->sections.front().title)) << flag.name;
+  }
 }
 
 TEST_F(HelpTest, ColorContextEmitsThePalette) {

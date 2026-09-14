@@ -68,6 +68,18 @@ TEST_F(GlobalsTest, EveryGlobalIsWellFormed) {
   }
 }
 
+TEST_F(GlobalsTest, GrammarValuesAreAlphabetical) {
+  const auto flag = LookupGlobal("--regextype");
+  ASSERT_THAT(flag, Optional(_));
+  std::vector<std::string_view> visible;
+  for (const ValueDoc& value : flag->values) {
+    if (!value.hidden) {
+      visible.push_back(value.value);
+    }
+  }
+  EXPECT_THAT(visible, ElementsAre("ERE", "EXACT", "FNMATCH", "GLOB", "PCRE2", "RE2", "SHGLOB"));
+}
+
 TEST_F(GlobalsTest, HashAlgorithmValuesMatchTheHashLib) {
   // The documented --hash-algorithm value table must stay identical to xff/hash's
   // AlgorithmNames() SOT (same members, same order), so the help cannot drift from the

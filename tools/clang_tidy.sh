@@ -83,7 +83,8 @@ for LOC in "${CLANG_TIDY_LOCS[@]}"; do
     # than MIN_MAJOR (an unparseable version is treated as too old / unusable).
     major="$("${LOC}" --version 2>/dev/null | grep -oE 'version [0-9]+' | grep -oE '[0-9]+' | head -1 || true)"
     if [ -n "${major}" ] && [ "${major}" -ge "${MIN_MAJOR}" ]; then
-      CLANG_TIDY="${LOC}"
+      # Bazel may refresh its execroot symlinks while the selected files are checked.
+      CLANG_TIDY="$(python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "${LOC}")"
       break
     fi
   fi

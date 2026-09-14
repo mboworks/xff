@@ -141,27 +141,12 @@ TEST_F(BuildReferenceTest, PreambleComesFromTheSot) {
 TEST_F(BuildReferenceTest, SectionsAppearInReferenceOrder) {
   EXPECT_THAT(
       SectionTitles(doc), ElementsAreArray({
-                              "Description",
-                              "Command structure",
-                              "Configuration",
-                              "Safety",
-                              "Options",
-                              "Expression",
-                              "Output",
-                              "Fields",
-                              "Printf directives",
-                              "Time formats",
-                              "Size units",
-                              "Regex grammars",
-                              "Content",
-                              "Comparing trees",
-                              "Ignore and VCS traversal",
-                              "Archives",
-                              "Statistics",
-                              "Environment",
-                              "Examples",
-                              "Exit status",
-                              "See also",
+                              "Description",       "Command structure", "Configuration",   "Safety",
+                              "Options",           "Expression",        "Output",          "Fields",
+                              "Printf directives", "Time formats",      "Size units",      "Regex grammars",
+                              "Regex matching",    "Content",           "Comparing trees", "Ignore and VCS traversal",
+                              "Archives",          "Statistics",        "Environment",     "Examples",
+                              "Exit status",       "See also",
                           }));
 }
 

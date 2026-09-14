@@ -18,6 +18,7 @@ eXtended File Find, a find(1)-compatible file finder with modern extensions.
 - [Time formats](#time-formats)
 - [Size units](#size-units)
 - [Regex grammars](#regex-grammars)
+- [Regex matching](#regex-matching)
 - [Content](#content)
 - [Comparing trees](#comparing-trees)
 - [Ignore and VCS traversal](#ignore-and-vcs-traversal)
@@ -454,15 +455,15 @@ Explicit-file arming with `--allow-exec` covers execution and deletion. It does 
 - `--regextype=<GRAMMAR>` - match engine: RE2, ERE, EXACT, FNMATCH, GLOB, SHGLOB, or PCRE2 (a build extra) _(global, xff)_
   GRAMMAR is one of:
 
-  - `RE2` - linear-time regular expressions (the default)
+  - `ERE` - platform POSIX extended regular expressions via regcomp(3)
   - `EXACT` - a literal string; metacharacters are plain text
   - `FNMATCH` - flat shell wildcard; `*` matches any character including `/`
   - `GLOB` - path-aware shell glob; wildcards and classes are component-local
-  - `SHGLOB` - GLOB plus `{a,b}` brace alternation, so `*.{cc,h}` matches either
-  - `ERE` - platform POSIX extended regular expressions via regcomp(3)
   - `PCRE2` - Perl syntax (lookaround, backreferences); a build extra
+  - `RE2` - linear-time regular expressions (the default)
+  - `SHGLOB` - GLOB plus `{a,b}` brace alternation, so `*.{cc,h}` matches either
 
-  Selects one grammar for every `-regex`/`-iregex`, `-rxc`/`-irxc`, and `-grep` pattern in the run; the last occurrence wins. `RE2` (the default) is linear-time regular expressions; `EXACT` is a literal string (metacharacters are plain text); `FNMATCH` is a flat shell wildcard where `*` matches any character including `/`; `GLOB` is a locale-independent path glob where `*`, `?`, and `[...]` stay inside one component, while a complete-component `**` crosses components; middle `foo/**/bar` permits zero or more components and trailing `foo/**` requires a descendant. Bracket expressions support ascending ranges, leading `!` negation, and RE2 ASCII named classes; malformed or unsupported expressions are errors. `SHGLOB` is `GLOB` plus nested, possibly empty `{a,b}` alternatives. `ERE` uses the platform POSIX extended-regex implementation and does not promise RE2's linear-time bound. `PCRE2` (Perl syntax: lookaround, backreferences) is the one build-time extra: it is present only in a full build, and selecting it in a lean build is a hard error, never a silent fall back to `RE2`. `RE2`/`ERE`/`EXACT`/`FNMATCH`/`GLOB`/`SHGLOB` are always built in; run `xff --help=extras` to see whether THIS binary includes `PCRE2`. See `--help=grammars` for a full description of each grammar (`GLOB`/`SHGLOB` are not POSIX glob(7)).
+  Selects one grammar for every `-regex`/`-iregex`, `-rxc`/`-irxc`, and `-grep` pattern in the run; the last occurrence wins. `RE2` is the default. Selecting `PCRE2` in a build without that extra is a hard error; see `--help=extras` for availability.
   Affected by: --re2, --pcre
 - `--re2` - select the fast, linear-time RE2 grammar _(global, xff)_
   A convenient command-line spelling of `--regextype=RE2`. It overrides a grammar selected by configuration; among grammar selectors, the last occurrence wins.
@@ -1389,13 +1390,29 @@ All byte counts use an unsigned 64-bit value, so the largest representable size 
 
 The grammar for `-regex` / `-iregex` and the content matchers `-rxc` / `-grep`, chosen by `--regextype` (default `RE2`). `ERE`, `EXACT`, `FNMATCH`, `GLOB` and `SHGLOB` are core engines, always built in; `PCRE2` is a build-time extra (see `--help=extras`). RE2 and PCRE2 have canonical external references, so the smaller engines are spelled out in full here: they have no single authoritative man page, and ERE and FNMATCH delegate to the platform's regcomp(3) and fnmatch(3), whose locale, class, and collation details vary by system.
 
-- `RE2` - the default. Google RE2 regular expressions - linear-time, no catastrophic backtracking. Full syntax: https://github.com/google/re2/wiki/Syntax .
+- `ERE` - POSIX extended regular expressions through the platform regcomp(3) implementation. This provides traditional find -E syntax, captures, partial matching, and rewrites, but locale details and some edge-case behavior follow the host C library rather than RE2's cross-platform semantics or linear-time guarantee. Patterns containing NUL are errors; subjects containing NUL do not match because the POSIX API uses C strings.
 - `EXACT` - a literal string; every character matches itself, no metacharacters. -regex is whole-string equality, -rxc / -grep a substring test.
 - `FNMATCH` - a flat shell wildcard via the platform's fnmatch(3): * matches any run of characters (including /), ? one character, [...] a class. Whole-string, like find -name / -path (no /-awareness); -i uses FNM_CASEFOLD. Provided by libc, so class / collation details vary by system.
 - `GLOB` - xff's path-aware, locale-independent shell glob (compiled to RE2 - NOT POSIX glob(7)): * and ? stay within one path component; a complete-component ** crosses components (middle foo/**/bar permits zero or more, while trailing foo/** requires a descendant); embedded star runs reduce to *. [...] supports literals, ascending ranges, leading ! negation, and RE2 ASCII named classes, always excluding / except the compatibility spelling [/]. Malformed ranges, descending ranges, unsupported named classes, collation/equivalence, and negative extglob are errors. Braces are literal. Because it compiles to RE2, -grep / -rxc partial matching and match spans work.
-- `SHGLOB` - GLOB plus brace alternation: {a,b,c} matches any one alternative, so *.{cc,h} matches either. Integer and ASCII-letter sequences expand in either direction (`{1..9}`, `{09..01}`, `{a..z}`); a leading zero preserves integer width, and expansion above 10,000 terms is rejected. Alternatives and sequences may nest; alternatives may be empty. Escaped braces and commas, braces inside a [...] class, and comma-less braces that are not a sequence are literal. The optional shell increment form (`{1..9..2}`) is not supported and remains literal. Everything else is exactly GLOB.
-- `ERE` - POSIX extended regular expressions through the platform regcomp(3) implementation. This provides traditional find -E syntax, captures, partial matching, and rewrites, but locale details and some edge-case behavior follow the host C library rather than RE2's cross-platform semantics or linear-time guarantee. Patterns containing NUL are errors; subjects containing NUL do not match because the POSIX API uses C strings.
 - `PCRE2` - Perl-Compatible Regular Expressions (lookaround, backreferences, ...). A build-time extra: present only in a full build - run `xff --help=extras` to see whether THIS binary has it. Full syntax: pcre2pattern(3).
+- `RE2` - the default. Google RE2 regular expressions - linear-time, no catastrophic backtracking. Full syntax: https://github.com/google/re2/wiki/Syntax .
+- `SHGLOB` - GLOB plus brace alternation: {a,b,c} matches any one alternative, so *.{cc,h} matches either. Integer and ASCII-letter sequences expand in either direction (`{1..9}`, `{09..01}`, `{a..z}`); a leading zero preserves integer width, and expansion above 10,000 terms is rejected. Alternatives and sequences may nest; alternatives may be empty. Escaped braces and commas, braces inside a [...] class, and comma-less braces that are not a sequence are literal. The optional shell increment form (`{1..9..2}`) is not supported and remains literal. Everything else is exactly GLOB.
+
+## Regex matching
+
+Use `-regex` / `-iregex` to match the whole path, `-rxc` / `-irxc` to find a match in file content, and `-grep` for line-oriented content output. `--regextype` selects the grammar; `--case` controls case handling. The `i` variants force case-insensitive matching. Quote patterns so the shell passes their metacharacters to xff unchanged.
+
+### Examples
+
+```sh
+xff src --regextype=RE2 -regex '.*[.](cc|h)'
+```
+
+```sh
+xff src --regextype=RE2 --case=insensitive -grep 'todo|fixme'
+```
+
+`grammars`(), `content`()
 
 ## Content
 
@@ -1448,7 +1465,20 @@ Bare `--compare` (or `--compare=status`) writes tab-separated `STATUS` and relat
 
 `--compare=diff` writes one unified patch for added, removed, and changed regular files. Text files get hunks; binary and non-regular differences get a diagnostic line. `--diff-algorithm` and `--diff-context` tune this mode. `identical` is rejected because an unchanged entry has no patch representation.
 
+### See also
+
+- `--summary=compare`: counts and percentages for all comparison results.
+- `--compare-select`: choose per-path records; `none` suppresses the listing.
+- `--summary-precision`: decimal places in summary percentages.
+- `--format=jsonl`: machine-readable comparison summary rows.
+
 ### Examples
+
+```sh
+xff --compare=summary left-tree right-tree
+```
+
+show only counts and percentages, with no per-path records
 
 ```sh
 xff --compare left-tree right-tree

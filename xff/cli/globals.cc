@@ -60,16 +60,15 @@ constexpr std::array kLanguageConflictValues = std::to_array<ValueDoc>({
     {.value = "last", .meaning = "keep the last claim in that file"},
 });
 constexpr std::array kRegextypeValues = std::to_array<ValueDoc>({
-    {.value = "RE2", .meaning = "linear-time regular expressions (the default)"},
+    {.value = "ERE", .meaning = "platform POSIX extended regular expressions via regcomp(3)"},
     {.value = "EXACT", .meaning = "a literal string; metacharacters are plain text"},
     {.value = "FNMATCH", .meaning = "flat shell wildcard; `*` matches any character including `/`"},
     {.value = "GLOB", .meaning = "path-aware shell glob; wildcards and classes are component-local"},
-    {.value = "SHGLOB", .meaning = "GLOB plus `{a,b}` brace alternation, so `*.{cc,h}` matches either"},
-    {.value = "ERE", .meaning = "platform POSIX extended regular expressions via regcomp(3)"},
-    {.value = "PCRE2", .meaning = "Perl syntax (lookaround, backreferences); a build extra"},
-    // Reserved: accepted here so the resolver's "reserved and not supported yet" error is what the
-    // user sees, rather than a generic unknown-value one.
+    // Reserved: keep the resolver's unsupported-grammar diagnostic.
     {.value = "MATCH", .meaning = "", .hidden = true},
+    {.value = "PCRE2", .meaning = "Perl syntax (lookaround, backreferences); a build extra"},
+    {.value = "RE2", .meaning = "linear-time regular expressions (the default)"},
+    {.value = "SHGLOB", .meaning = "GLOB plus `{a,b}` brace alternation, so `*.{cc,h}` matches either"},
 });
 constexpr std::array kSkipVcsValues = std::to_array<ValueDoc>({
     {.value = "git", .meaning = ".git"},
@@ -880,22 +879,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Matching",
         .summary = "match engine: RE2, ERE, EXACT, FNMATCH, GLOB, SHGLOB, or PCRE2 (a build extra)",
         .details = "Selects one grammar for every `-regex`/`-iregex`, `-rxc`/`-irxc`, and `-grep` pattern in the "
-                   "run; the last occurrence wins. `RE2` "
-                   "(the default) is linear-time regular expressions; `EXACT` is a literal string "
-                   "(metacharacters are plain text); `FNMATCH` is a flat shell wildcard where `*` matches any "
-                   "character including `/`; `GLOB` is a locale-independent path glob where `*`, `?`, and "
-                   "`[...]` stay inside one component, while a complete-component `**` crosses components; "
-                   "middle `foo/**/bar` permits zero or more components and trailing `foo/**` requires a "
-                   "descendant. Bracket expressions support ascending ranges, leading `!` negation, and RE2 "
-                   "ASCII named classes; malformed or unsupported expressions are errors. `SHGLOB` is `GLOB` "
-                   "plus nested, possibly empty `{a,b}` alternatives. `ERE` uses the platform POSIX "
-                   "extended-regex implementation and does not promise RE2's linear-time bound. `PCRE2` (Perl syntax: "
-                   "lookaround, backreferences) is the one build-time extra: it is present only in a full "
-                   "build, and selecting it in a lean build is a hard error, never a silent fall back to `RE2`. "
-                   "`RE2`/`ERE`/`EXACT`/`FNMATCH`/`GLOB`/`SHGLOB` are always built in; run `xff --help=extras` to "
-                   "see whether THIS binary includes `PCRE2`. See `--help=grammars` for a full description of "
-                   "each grammar (`GLOB`/`SHGLOB` are not POSIX glob(7)).",
+                   "run; the last occurrence wins. `RE2` is the default. Selecting `PCRE2` in a build without "
+                   "that extra is a hard error; see `--help=extras` for availability.",
         .values = kRegextypeValues,
+        .help_context = "grammars",
+        .see_also = "regex,grammars",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
@@ -907,6 +895,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "A convenient command-line spelling of `--regextype=RE2`. It overrides a grammar selected "
                    "by configuration; among grammar selectors, the last occurrence wins.",
         .affects = "--regextype,-regex,-iregex,-rxc,-irxc,-grep,-capture,-capturedir",
+        .see_also = "regex,grammars",
     },
     {
         .name = "--pcre",
@@ -918,6 +907,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "by configuration; among grammar selectors, the last occurrence wins. PCRE2 is available "
                    "only in a full build, and selecting it in a lean build is a usage error.",
         .affects = "--regextype,-regex,-iregex,-rxc,-irxc,-grep,-capture,-capturedir",
+        .see_also = "regex,grammars",
         .extra = "pcre2",
     },
     {
@@ -1154,6 +1144,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "Other summary groupings still describe each input tree separately.",
         .values = kCompareValues,
         .topic = "compare",
+        .help_context = "compare",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
@@ -1169,6 +1160,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "unchanged file has no patch representation.",
         .affects = "--compare",
         .topic = "compare",
+        .help_context = "compare",
     },
     {
         .name = "--diff-algorithm",

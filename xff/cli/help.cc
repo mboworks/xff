@@ -121,7 +121,7 @@ std::string ArgHint(const registry::Descriptor& descriptor) {
 
 absl::Span<const HelpTopic> HelpTopics() {
   static constexpr auto kListAliases = std::to_array<std::string_view>({"topic", "topics"});
-  static constexpr auto kGrammarAliases = std::to_array<std::string_view>({"regex", "regexp"});
+  static constexpr auto kRegexAliases = std::to_array<std::string_view>({"reg", "regexp"});
   static constexpr auto kEnvironmentAliases = std::to_array<std::string_view>({"env"});
   static constexpr auto kIgnoreAliases = std::to_array<std::string_view>({"ignores", "vcs"});
   static constexpr auto kStyleAliases = std::to_array<std::string_view>({"flavors"});
@@ -144,8 +144,12 @@ absl::Span<const HelpTopic> HelpTopics() {
       {.name = "printf", .aliases = {}, .summary = "the -printf % directives and the %{field} escape", .in_full = true},
       {.name = "time", .aliases = {}, .summary = "time-format presets and strftime patterns", .in_full = true},
       {.name = "size", .aliases = {}, .summary = "-size/-blocks legacy, SI, and IEC units plus +/-", .in_full = true},
+      {.name = "regex",
+       .aliases = kRegexAliases,
+       .summary = "regex matching, grammars, case, and related controls",
+       .in_full = true},
       {.name = "grammars",
-       .aliases = kGrammarAliases,
+       .aliases = {},
        .summary = "the --regextype grammars (RE2, ERE, EXACT, FNMATCH, GLOB, SHGLOB, PCRE2)",
        .in_full = true},
       {.name = "content",
