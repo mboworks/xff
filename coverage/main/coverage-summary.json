@@ -3,9 +3,9 @@
   "measurements": {
     "overall": {
       "lines": {
-        "covered": 20146,
-        "total": 21027,
-        "percent": 95.81
+        "covered": 20090,
+        "total": 20993,
+        "percent": 95.7
       },
       "functions": {
         "covered": 1699,
@@ -13,16 +13,16 @@
         "percent": 99.12
       },
       "branches": {
-        "covered": 9801,
-        "total": 10980,
-        "percent": 89.26
+        "covered": 9760,
+        "total": 10926,
+        "percent": 89.33
       }
     },
     "program / command line": {
       "lines": {
-        "covered": 3898,
-        "total": 3985,
-        "percent": 97.82
+        "covered": 3892,
+        "total": 3979,
+        "percent": 97.81
       },
       "functions": {
         "covered": 243,
@@ -30,16 +30,16 @@
         "percent": 99.18
       },
       "branches": {
-        "covered": 1384,
-        "total": 1496,
-        "percent": 92.51
+        "covered": 1380,
+        "total": 1492,
+        "percent": 92.49
       }
     },
     "program / configuration": {
       "lines": {
-        "covered": 1144,
-        "total": 1160,
-        "percent": 98.62
+        "covered": 1116,
+        "total": 1132,
+        "percent": 98.59
       },
       "functions": {
         "covered": 107,
@@ -47,9 +47,9 @@
         "percent": 100.0
       },
       "branches": {
-        "covered": 732,
-        "total": 762,
-        "percent": 96.06
+        "covered": 684,
+        "total": 712,
+        "percent": 96.07
       }
     },
     "program / command grammar": {
@@ -71,9 +71,9 @@
     },
     "program / execution": {
       "lines": {
-        "covered": 5985,
+        "covered": 5963,
         "total": 6368,
-        "percent": 93.99
+        "percent": 93.64
       },
       "functions": {
         "covered": 449,
@@ -81,9 +81,9 @@
         "percent": 97.82
       },
       "branches": {
-        "covered": 3472,
+        "covered": 3481,
         "total": 4026,
-        "percent": 86.24
+        "percent": 86.46
       }
     },
     "program / filesystem": {
@@ -98,9 +98,9 @@
         "percent": 98.36
       },
       "branches": {
-        "covered": 296,
+        "covered": 298,
         "total": 318,
-        "percent": 93.08
+        "percent": 93.71
       }
     },
     "program / matching": {
