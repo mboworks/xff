@@ -1,0 +1,150 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/design.md - xff v0.4.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.4.0/">Home</a><a href="/xff/site/tag/v0.4.0/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.4.0">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/d0956d7cb659942ef9d2e24725bfb480459803a2">Source</a><a href="/xff/coverage/tag/0.4.0/">Coverage</a><a href="/xff/releases/0.4.0/">CLI reference</a></nav><p>xff v0.4.0</p><main><h1 dir="auto" id="xff-design">xff design</h1>
+<h2 dir="auto" id="purpose-and-authoritative-references">Purpose and authoritative references</h2>
+<p dir="auto">xff combines filesystem search, content matching, structured reporting, and explicit actions in<br>
+one find-style command. The generated <a href="../XFF.html">reference</a> describes implemented vocabulary.<br>
+Focused design documents specify the contracts below. Proposed work belongs in <a href="../TODO.html">TODO</a>;<br>
+a proposed spelling is not an available option.</p>
+<h2 dir="auto" id="principles">Principles</h2>
+<ul dir="auto">
+<li>Preserve supported find behavior under the find flavor; document differences in<br>
+<a href="design-find-flavors.html">find flavors</a>.</li>
+<li>Keep option spelling, parsing, configuration, and help consistent.</li>
+<li>Validate input before actions. Invalid configuration must not silently remove a restriction.</li>
+<li>Define capabilities and their self-documentation together in the registries.</li>
+<li>Route filesystem access through the VFS and enforce mutation policy at the host adapter.</li>
+</ul>
+<h2 dir="auto" id="cli-grammar-and-flag-types">CLI grammar and flag types</h2>
+<p dir="auto">The shape is <code class="notranslate">xff [whole-run options] [roots...] [expression]</code>. There are no subcommands.<br>
+The default root is <code class="notranslate">.</code>. Expression evaluation preserves order and short-circuiting; adjacent<br>
+predicates mean AND. Config expressions are grouped and ANDed with the CLI expression.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Type</th>
+<th>Example</th>
+<th>Contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Whole-run option</td>
+<td><code class="notranslate">--sort=tree</code></td>
+<td>Recognized at option boundaries throughout the command</td>
+</tr>
+<tr>
+<td>Expression test</td>
+<td><code class="notranslate">-name '*.cc'</code></td>
+<td>Evaluated for each visited entry</td>
+</tr>
+<tr>
+<td>Expression action</td>
+<td><code class="notranslate">-printf '%p\n'</code></td>
+<td>Produces output or requests an operation</td>
+</tr>
+<tr>
+<td>Expression operator</td>
+<td><code class="notranslate">-o</code>, <code class="notranslate">!</code>, parentheses</td>
+<td>Combines expressions using the documented precedence</td>
+</tr>
+<tr>
+<td>Compatibility alias</td>
+<td><code class="notranslate">-h</code>, <code class="notranslate">-q</code></td>
+<td>A specifically supported alias with documented placement</td>
+</tr>
+<tr>
+<td>Config-only directive</td>
+<td><code class="notranslate">--require-user-globals</code></td>
+<td>Valid only in permitted config locations</td>
+</tr>
+<tr>
+<td>Command-line-only option</td>
+<td><code class="notranslate">--xffrc=task.rc</code></td>
+<td>Controls bootstrap/discovery; rejected inside INI files</td>
+</tr>
+<tr>
+<td>Sign-suffixed control</td>
+<td><code class="notranslate">--rc</code>, <code class="notranslate">--rc-</code>, <code class="notranslate">--rc+</code></td>
+<td>Uses that family's documented modes</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Double-dash options are not hoisted out of a primary's argument run: inside an <code class="notranslate">-exec</code><br>
+command they belong to the child. Bare <code class="notranslate">--</code> ends option recognition. Single-dash globals<br>
+retain their documented leading placement.</p>
+<p dir="auto">Boolean pairs, enum values, repeatable lists, keyed options, and sign suffixes are distinct<br>
+mechanisms. Accepted forms and repetition behavior come from the flag's metadata or compatibility<br>
+parser; <code class="notranslate">--help=NAME</code> provides the specific contract.</p>
+<h2 dir="auto" id="configuration-and-safety">Configuration and safety</h2>
+<p dir="auto"><a href="design-config.html">Configuration</a> specifies the shared INI grammar, file order, selectors,<br>
+refinements, composition, controls, and complete examples. System config is <code class="notranslate">/etc/xff.ini</code>;<br>
+user config is the effective OS account home followed by <code class="notranslate">.config/xff/config</code>. Environment<br>
+variables cannot redirect these policy sources.</p>
+<p dir="auto">Missing automatic files are normal. Explicit files must exist. Existing unreadable files and<br>
+invalid globals are errors. Invalid named sections are disabled atomically, and selecting one is<br>
+an error. Explicit and composed names must exist in active files, except for plain built-in styles.</p>
+<p dir="auto">Xffrc autoloading defaults off. <code class="notranslate">--rc</code> loads root-directory files; <code class="notranslate">--rc+</code> includes descendants.<br>
+Discovery finishes before execution, does not follow directory symlinks or enter archives,<br>
+and applies to the whole invocation. Autoloaded globals require a trusted grant. Explicit<br>
+<code class="notranslate">--xffrc=FILE</code> is independent and non-arming; a file cannot authorize its own admission or actions.</p>
+<p dir="auto"><a href="design-safety.html">Safety</a> defines the capability table and<br>
+<a href="design-directory-safety.html">directory-scoped safety</a> defines path rules. Xff starts unrestricted.<br>
+Unconditional <code class="notranslate">--block-*</code> flags accumulate and cannot be cleared. <code class="notranslate">--safe</code> activates the configured<br>
+profile; <code class="notranslate">--no-safe</code> disables only that profile. The <code class="notranslate">--safe-block-*</code> pairs define membership.<br>
+<code class="notranslate">--dry-run</code> previews permitted actions without commands or mutations; it does not override blocks.</p>
+<p dir="auto">Writing, overwrite, deletion, execution, and directory operations have distinct controls.<br>
+Per-file <code class="notranslate">--block-policy-categories</code> determines whether archive/temp/output controls are separate.<br>
+Declarations are translated before policies combine, so later detail cannot erase an earlier block.</p>
+<p dir="auto">The model protects ordinary use, generated commands, tests, and declared filesystem roots.<br>
+It is not a sandbox around a deliberately hostile user or arbitrary child process. Pager commands<br>
+are separate from execution blocks. Resource exhaustion requires independent limits. Permission to<br>
+overwrite an archive can replace its whole contents; member-level controls do not prevent that.</p>
+<h2 dir="auto" id="vfs-and-mutation-enforcement">VFS and mutation enforcement</h2>
+<p dir="auto">Consumers use capability-oriented <code class="notranslate">vfs::FileSystem</code> operations with value-returning status results.<br>
+Unsupported operations fail explicitly. POSIX handles and required raw pointers stay inside narrow,<br>
+annotated adapters. All file mutation routes through the common mutation surface.</p>
+<p dir="auto">Checks precede creation, truncation, publication, deletion, and directory changes. Exclusive creation<br>
+protects existing entries when overwrite is blocked. Directory policies pin roots, prevent traversal<br>
+through untrusted links, intersect overlapping restrictions, protect roots themselves, and preserve<br>
+hard-linked content through scoped replacement. Owned scratch cleanup is distinguished from deleting<br>
+caller-owned files. Archive staging/publication uses the same control surface.</p>
+<p dir="auto">The host-I/O checker guards this routing. Mutation and directory-policy tests exercise refusal,<br>
+collisions, links, overlapping roots, publication, and failure cleanup. These checks support the<br>
+stated threat model; they are not a proof against every adversarial filesystem race.</p>
+<h2 dir="auto" id="matching-traversal-and-output">Matching, traversal, and output</h2>
+<p dir="auto">RE2 is the default regex engine. Optional PCRE2 is selected explicitly and has built-in match/depth<br>
+limits; there is no silent fallback. Native ERE, literal, and glob modes have their documented<br>
+registry contracts. Patterns need not be portable between engines.</p>
+<p dir="auto"><code class="notranslate">-content</code> / <code class="notranslate">-icontent</code> perform literal content matching; <code class="notranslate">-rxc</code> / <code class="notranslate">-irxc</code> perform regex matching.<br>
+<code class="notranslate">-grep</code> outputs matching lines. Content matching skips binary files using the documented NUL<br>
+heuristic. There is no general input-transcoding option. Content reads, hashes, and negative content<br>
+tests can require full file reads.</p>
+<p dir="auto"><code class="notranslate">--hidden</code> / <code class="notranslate">--no-hidden</code> control dotfiles with flavor-specific defaults. <code class="notranslate">--case</code> and the<br>
+insensitive primaries control matching. Ignore files and include/exclude patterns are traversal<br>
+filters, distinct from config discovery. <a href="design-parallel.html">Parallel traversal</a> defines ordering,<br>
+worker responsibilities, and bounded read-ahead; directory concurrency does not reorder actions.</p>
+<p dir="auto">Streaming, aligned, structured, and aggregate output modes have explicit buffering controls.<br>
+Plain output preserves path bytes by default; <code class="notranslate">--path-encoding=escape</code> escapes controls.<br>
+<code class="notranslate">-print0</code> preserves exact path bytes with NUL separators. Structured formats escape their delimiters,<br>
+but arbitrary non-UTF-8 paths can still produce invalid Unicode text: no general transcoding guarantee<br>
+is made. <a href="design-help-model.html">The help model</a> describes generated plain, Markdown, HTML, and roff help.</p>
+<p dir="auto">Exit status is <code class="notranslate">0</code> for successful execution and <code class="notranslate">2</code> for errors. With <code class="notranslate">--quiet</code> or <code class="notranslate">--exit-match</code>,<br>
+<code class="notranslate">1</code> means no matches. Errors take precedence over match status.</p>
+<h2 dir="auto" id="specialized-features-and-development">Specialized features and development</h2>
+<p dir="auto">Archives and compressed streams are composable extras; virtual entries retain their source identity<br>
+and host extraction/writing requires the corresponding capabilities. <code class="notranslate">--shards</code> supports the documented<br>
+<code class="notranslate">of</code>, <code class="notranslate">dotnum</code>, and <code class="notranslate">underscore</code> schemes, with custom <code class="notranslate">--shard-pattern</code> definitions and explicit display<br>
+and duplicate controls. The reference supplies the complete current vocabulary.</p>
+<p dir="auto"><a href="design-near-duplicates.html">Near-duplicate design</a>, <a href="implementation-plan.html">implementation planning</a>,<br>
+<a href="test-plan.html">test planning</a>, and <a href="coverage.html">coverage policy</a> describe their boundaries and gates.<br>
+macOS and Linux are tested in CI. Other platforms, additional backends, and proposed options remain<br>
+roadmap work until implemented and self-documented.</p></main><footer>Release snapshot · d0956d7cb659942ef9d2e24725bfb480459803a2</footer></body></html>

@@ -1,0 +1,247 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/design-safety.md - xff v0.4.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.4.0/">Home</a><a href="/xff/site/tag/v0.4.0/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.4.0">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/d0956d7cb659942ef9d2e24725bfb480459803a2">Source</a><a href="/xff/coverage/tag/0.4.0/">Coverage</a><a href="/xff/releases/0.4.0/">CLI reference</a></nav><p>xff v0.4.0</p><main><h1 dir="auto" id="safety-policy-and-previews">Safety policy and previews</h1>
+<p dir="auto">xff starts unrestricted when no configuration requests restrictions. Safety has three independent<br>
+parts: unconditional capability blocks, a configurable safe-mode profile, and dry-run previews.<br>
+Explicit-file arming (<code class="notranslate">--allow-exec</code>) covers execution and deletion only. An unarmed explicit file<br>
+can request file/archive output, including overwrite, when the safety policy permits it.<br>
+These controls govern xff's actions. They are not a sandbox around child programs or a guarantee against resource exhaustion.<br>
+Pager commands are separate from execution blocks and dry-run. Restricting which pagers may be<br>
+selected requires a separate policy discussion. Directory-scoped exceptions are described in<br>
+<a href="design-directory-safety.html">Directory-scoped safety controls</a>.</p>
+<h2 dir="auto" id="capabilities">Capabilities</h2>
+<p dir="auto">File controls also cover archive operations under the default empty category list. With <code class="notranslate">archive</code> selected,<br>
+archive operations use <code class="notranslate">archive-writing</code>, <code class="notranslate">archive-overwrite</code>, and the three<br>
+<code class="notranslate">archive-content-writing</code>, <code class="notranslate">archive-content-overwrite</code>, <code class="notranslate">archive-content-deletion</code> controls instead.<br>
+Each has an unconditional <code class="notranslate">--block-</code> flag and a positive/negative <code class="notranslate">--safe-block-</code> profile pair.<br>
+The operation table below specifies every required control.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Capability</th>
+<th>Unconditional flag</th>
+<th>Profile pair</th>
+<th>Operations covered</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Deletion</td>
+<td><code class="notranslate">--block-file-deletion</code></td>
+<td><code class="notranslate">--safe-block-file-deletion</code> / <code class="notranslate">--no-safe-block-file-deletion</code></td>
+<td>File/symlink removal and archive-member deletion</td>
+</tr>
+<tr>
+<td>Execution</td>
+<td><code class="notranslate">--block-execution</code></td>
+<td><code class="notranslate">--safe-block-execution</code> / <code class="notranslate">--no-safe-block-execution</code></td>
+<td><code class="notranslate">-exec</code>, <code class="notranslate">-execdir</code>, <code class="notranslate">-ok</code>, <code class="notranslate">-okdir</code>, <code class="notranslate">-capture</code>, and <code class="notranslate">-capturedir</code></td>
+</tr>
+<tr>
+<td>Writing</td>
+<td><code class="notranslate">--block-file-writing</code></td>
+<td><code class="notranslate">--safe-block-file-writing</code> / <code class="notranslate">--no-safe-block-file-writing</code></td>
+<td>Named file output, archive creation/modification, and temporary extraction for commands</td>
+</tr>
+<tr>
+<td>Overwrite</td>
+<td><code class="notranslate">--block-file-overwrite</code></td>
+<td><code class="notranslate">--safe-block-file-overwrite</code> / <code class="notranslate">--no-safe-block-file-overwrite</code></td>
+<td>Truncating, modifying, or replacing existing content, including archive rewrites</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Directory creation and directory deletion are independent capabilities, controlled by<br>
+<code class="notranslate">--block-directory-creation</code> and <code class="notranslate">--block-directory-deletion</code> and their safe-profile pairs.<br>
+A file-deletion block does not prohibit removing an empty directory; a directory-deletion block<br>
+does not prohibit removing a file. Recursive removal checks every affected entry.</p>
+<p dir="auto">Writing includes overwriting. Allowing writing while blocking overwrite permits only new output.<br>
+Deletion is separate: unlinking an entry is not classified as a content write. Removing an archive<br>
+member also rewrites existing content, so it requires deletion, writing, and overwrite permission.<br>
+Normal results and diagnostics on stdout/stderr remain available. Shell redirection happens outside<br>
+xff and is outside these controls.</p>
+<h2 dir="auto" id="composition-and-activation">Composition and activation</h2>
+<p dir="auto">All profile blocks initially apply, but safe mode initially is off. <code class="notranslate">--safe</code> enables the<br>
+current profile; <code class="notranslate">--no-safe</code> disables it. Profile settings and activation follow normal configuration<br>
+application order, with the last applicable setting winning. Activating the profile does not reset<br>
+its settings. Unselected named sections have no effect.</p>
+<p dir="auto">Unconditional blocks only accumulate. There are no <code class="notranslate">--no-block-*</code> options. Neither another group,<br>
+a later file, the CLI, nor <code class="notranslate">--no-safe</code> can remove an unconditional block that has been applied.<br>
+For each capability:</p>
+<pre lang="text" class="notranslate"><code class="notranslate">blocked = unconditional block OR (safe mode active AND profile block)
+</code></pre>
+<p dir="auto">These flags may be supplied globally or in named configuration sections and on the CLI. A mandatory<br>
+administrator policy belongs in unconditional system globals. <code class="notranslate">--require-system-globals</code> prevents<br>
+skipping those globals; <code class="notranslate">--require-user-globals</code> can similarly ensure user policy is applied. Permission<br>
+to skip globals intentionally permits omitting their policy. Named sections are always optional<br>
+when the corresponding skip is requested. Mutable profiles are not mandatory<br>
+prohibitions.</p>
+<p dir="auto">A system policy that always forbids execution, but offers other operations in an unsafe profile:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--require-system-globals
+--block-execution
+--safe
+
+<span class="pl-en">[unsafe]</span>
+--no-safe</pre></div>
+<p dir="auto"><code class="notranslate">xff . --config=unsafe</code> still cannot execute a child program. The same holds for CLI <code class="notranslate">--no-safe</code>.</p>
+<p dir="auto">An administrator can instead provide an optional profile that only blocks execution and deletion:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--no-safe
+--safe-block-execution
+--safe-block-file-deletion
+--no-safe-block-file-writing
+--no-safe-block-file-overwrite
+--no-safe-block-directory-creation
+
+<span class="pl-en">[safe]</span>
+--safe</pre></div>
+<p dir="auto">Both CLI <code class="notranslate">--safe</code> and <code class="notranslate">--config=safe</code> activate this configured profile. Without this configuration,<br>
+<code class="notranslate">--safe --no-safe-block-file-writing</code> allows new files/archives but still blocks overwrite, deletion,<br>
+and execution. Add <code class="notranslate">--no-safe-block-file-overwrite</code> to permit replacing content as well, provided no<br>
+unconditional block prohibits it.</p>
+<p dir="auto">Allowing arbitrary execution allows the child to delete, write, or overwrite data regardless of<br>
+xff's other capability settings. Use <code class="notranslate">--block-execution</code> for a mandatory boundary. Prompting with<br>
+<code class="notranslate">-ok</code> does not exempt execution from policy.</p>
+<h2 dir="auto" id="enforcement-and-collisions">Enforcement and collisions</h2>
+<p dir="auto">Actions prohibited for every possible destination are rejected before traversal, including actions<br>
+in branches that might never match. With directory exceptions, destination-specific checks occur<br>
+when a target becomes known and again inside the mutation adapter. Diagnostics name the prohibited capability and action. Config authorization<br>
+cannot bypass a capability block.</p>
+<p dir="auto">When overwrite is blocked, output-file creation must be atomic and exclusive. Existing regular<br>
+files, directories, and symlinks (including dangling symlinks) are collisions. A preliminary<br>
+existence check cannot authorize a later overwriting open. A file created by this run may receive<br>
+subsequent records through the same retained output handle.</p>
+<p dir="auto">Archive generation uses a unique, exclusively created temporary output and publishes without<br>
+replacing an existing destination when overwrite is blocked. Failed publication preserves the<br>
+existing destination. Without directory policies, parent-directory symlinks remain supported. With declared roots,<br>
+scoped mutation uses retained directory handles and refuses symlink traversal.</p>
+<p dir="auto">Safe mode does not promise rollback: new files or earlier permitted actions can remain after a<br>
+later error. Ordinary creation can consume disk space. Internal temporary-file cleanup remains<br>
+necessary even when user-directed deletion is blocked.</p>
+<h2 dir="auto" id="dry-run">Dry run</h2>
+<p dir="auto"><code class="notranslate">--dry-run</code> previews permitted actions instead of performing them. Resolve policy first: dry run<br>
+never grants permission to a blocked operation. Traversal, reads, normal result output, and<br>
+diagnostics still occur; output destinations are not created, truncated, or replaced.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Operation</th>
+<th>Preview</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>File or directory deletion</td>
+<td>Report the selected path without removing it</td>
+</tr>
+<tr>
+<td>Archive-member deletion</td>
+<td>Report members without rewriting the archive</td>
+</tr>
+<tr>
+<td>Named file output</td>
+<td>Report the destination and whether output would create or replace content</td>
+</tr>
+<tr>
+<td>Archive generation</td>
+<td>Report the destination and selected entry count without writing an archive</td>
+</tr>
+<tr>
+<td>Commands, including prompted commands</td>
+<td>Report arguments and working-directory context; launch nothing and do not prompt</td>
+</tr>
+<tr>
+<td>Capture commands</td>
+<td>Report the command; do not manufacture captured values</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">A skipped command has no exit status, and a skipped capture has no value. If a preview reaches such<br>
+an action, report that the remaining expression for that entry cannot be evaluated. Stop evaluating<br>
+that entry rather than inventing a result, including through negation, OR, and comma operators.<br>
+Such an incomplete preview returns an error status. Batch previews describe selected invocations;<br>
+they do not claim to predict operating-system argument-limit chunking.</p>
+<p dir="auto">Dry-run checks can report an existing collision, but cannot guarantee the filesystem will remain<br>
+unchanged between preview and a subsequent real run. The real operation enforces permissions and<br>
+exclusive creation again.</p>
+<h2 dir="auto" id="flag-boundaries">Flag boundaries</h2>
+<p dir="auto">The safety vocabulary is <code class="notranslate">--block-*</code>, <code class="notranslate">--safe</code>, <code class="notranslate">--no-safe</code>, the <code class="notranslate">--safe-block-*</code> pairs, and<br>
+<code class="notranslate">--dry-run</code>. No separate activation requirement, default-safe setting, force switch, or unsafe<br>
+alias is necessary. Archive capability flags still select archive features; they do not override<br>
+policy. Globals-requirement directives govern whether unsectioned policy survives a skip.</p>
+<h2 dir="auto" id="archive-blocking-policy">Archive blocking policy</h2>
+<p dir="auto"><code class="notranslate">--block-policy-categories=LIST</code> is config-only, once before sections in each system or user file. Each file chooses its own policy. Named sections, explicit <code class="notranslate">.xffrc</code> files and the CLI cannot set it. The default is an empty category list. The comma-separated list accepts <code class="notranslate">archive</code>, <code class="notranslate">temp</code>, and <code class="notranslate">output</code>; unknown categories are errors.</p>
+<p dir="auto">Every control listed must permit the operation. Names omit <code class="notranslate">--block-</code> and the active <code class="notranslate">--safe-block-</code> prefixes.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Operation</th>
+<th>archive not selected (default)</th>
+<th>archive selected</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What switches</td>
+<td>Archives and members use file controls</td>
+<td>Archive output and member edits use archive controls</td>
+</tr>
+<tr>
+<td>Create ordinary file</td>
+<td>file-writing</td>
+<td>file-writing</td>
+</tr>
+<tr>
+<td>Overwrite ordinary file</td>
+<td>file-writing, file-overwrite</td>
+<td>file-writing, file-overwrite</td>
+</tr>
+<tr>
+<td>Delete file or entire archive</td>
+<td>file-deletion</td>
+<td>file-deletion</td>
+</tr>
+<tr>
+<td>Pack new archive and members</td>
+<td>file-writing</td>
+<td>archive-writing</td>
+</tr>
+<tr>
+<td>Pack replacement archive</td>
+<td>file-writing, file-overwrite</td>
+<td>archive-writing, archive-overwrite</td>
+</tr>
+<tr>
+<td>Add member to existing archive</td>
+<td>file-writing, file-overwrite</td>
+<td>archive-writing, archive-overwrite, archive-content-writing</td>
+</tr>
+<tr>
+<td>Replace existing member</td>
+<td>file-writing, file-overwrite</td>
+<td>archive-writing, archive-overwrite, archive-content-writing, archive-content-overwrite</td>
+</tr>
+<tr>
+<td>Delete existing member</td>
+<td>file-writing, file-overwrite, file-deletion</td>
+<td>archive-writing, archive-overwrite, archive-content-deletion</td>
+</tr>
+<tr>
+<td>Extract to new ordinary file</td>
+<td>file-writing</td>
+<td>file-writing</td>
+</tr>
+<tr>
+<td>Extract over existing file</td>
+<td>file-writing, file-overwrite</td>
+<td>file-writing, file-overwrite</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table></main><footer>Release snapshot · d0956d7cb659942ef9d2e24725bfb480459803a2</footer></body></html>
