@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-14 08:42:53</td>
+            <td class="headerValue">2026-09-14 10:18:13</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">98.2&nbsp;%</td>
@@ -967,7 +967,7 @@
 <span id="L886"><span class="lineNum">     886</span>                 :<span class="tlaGNC">          61 :       &quot;`--no-safe-block-*` counterpart; these profile settings use the last applied value. Initially the &quot;</span></span>
 <span id="L887"><span class="lineNum">     887</span>                 :<span class="tlaGNC">          61 :       &quot;profile blocks every relevant capability. Activating it does not reset its definition.&quot;));</span></span>
 <span id="L888"><span class="lineNum">     888</span>                 :<span class="tlaGNC">          61 :   section.children.push_back(ProseOf(</span></span>
-<span id="L889"><span class="lineNum">     889</span>                 :<span class="tlaGNC">          61 :       &quot;`--detailed-block-policy=LIST` selects categories that use dedicated controls. The list is &quot;</span></span>
+<span id="L889"><span class="lineNum">     889</span>                 :<span class="tlaGNC">          61 :       &quot;`--block-policy-categories=LIST` selects categories that use dedicated controls. The list is &quot;</span></span>
 <span id="L890"><span class="lineNum">     890</span>                 :<span class="tlaGNC">          61 :       &quot;comma-separated; an empty list (the default) uses ordinary file controls throughout. &quot;</span></span>
 <span id="L891"><span class="lineNum">     891</span>                 :<span class="tlaGNC">          61 :       &quot;`archive`, `temp`, and `output` are supported categories. Unknown categories are errors. This config-only &quot;</span></span>
 <span id="L892"><span class="lineNum">     892</span>                 :<span class="tlaGNC">          61 :       &quot;directive may &quot;</span></span>
@@ -1039,7 +1039,7 @@
 <span id="L958"><span class="lineNum">     958</span>                 :<span class="tlaGNC">          61 :       &quot;archive publication, and is cleaned through retained handles. It does not grant access to other &quot;</span></span>
 <span id="L959"><span class="lineNum">     959</span>                 :<span class="tlaGNC">          61 :       &quot;pre-existing temporary files. User-directed directory creation and deletion have separate controls.&quot;));</span></span>
 <span id="L960"><span class="lineNum">     960</span>                 :<span class="tlaGNC">          61 :   section.children.push_back(ExampleOf(</span></span>
-<span id="L961"><span class="lineNum">     961</span>                 :<span class="tlaGNC">          61 :       &quot;--require-system-globals\n--detailed-block-policy=archive,temp,output\n&quot;</span></span>
+<span id="L961"><span class="lineNum">     961</span>                 :<span class="tlaGNC">          61 :       &quot;--require-system-globals\n--block-policy-categories=archive,temp,output\n&quot;</span></span>
 <span id="L962"><span class="lineNum">     962</span>                 :<span class="tlaGNC">          61 :       &quot;--output-root=/srv/xff/results\n--temp-root=/srv/xff/scratch\n&quot;</span></span>
 <span id="L963"><span class="lineNum">     963</span>                 :<span class="tlaGNC">          61 :       &quot;--block-execution\n--block-file-writing\n--block-file-deletion\n&quot;</span></span>
 <span id="L964"><span class="lineNum">     964</span>                 :<span class="tlaGNC">          61 :       &quot;--block-directory-creation\n--block-directory-deletion\n&quot;</span></span>
@@ -1059,7 +1059,7 @@
 <span id="L978"><span class="lineNum">     978</span>                 :<span class="tlaGNC">          61 :       &quot;selected archive output and its necessary owned temporary files, never extraction or unrelated writes. &quot;</span></span>
 <span id="L979"><span class="lineNum">     979</span>                 :<span class="tlaGNC">          61 :       &quot;When overwrite is blocked, creation must atomically refuse an existing destination, including symlinks.&quot;));</span></span>
 <span id="L980"><span class="lineNum">     980</span>                 :<span class="tlaGNC">          61 :   section.children.push_back(ExampleOf(</span></span>
-<span id="L981"><span class="lineNum">     981</span>                 :<span class="tlaGNC">          61 :       &quot;--require-system-globals\n--detailed-block-policy=archive\n--block-execution\n&quot;</span></span>
+<span id="L981"><span class="lineNum">     981</span>                 :<span class="tlaGNC">          61 :       &quot;--require-system-globals\n--block-policy-categories=archive\n--block-execution\n&quot;</span></span>
 <span id="L982"><span class="lineNum">     982</span>                 :<span class="tlaGNC">          61 :       &quot;--block-file-writing\n--block-file-deletion\n--block-directory-creation\n&quot;</span></span>
 <span id="L983"><span class="lineNum">     983</span>                 :<span class="tlaGNC">          61 :       &quot;--block-directory-deletion\n--block-archive-overwrite&quot;,</span></span>
 <span id="L984"><span class="lineNum">     984</span>                 :<span class="tlaGNC">          61 :       &quot;ini&quot;));</span></span>
@@ -1204,7 +1204,7 @@
 <span id="L1123"><span class="lineNum">    1123</span>                 :<span class="tlaGNC">          63 :       {&quot;--no-allow-rc-globals&quot;,</span></span>
 <span id="L1124"><span class="lineNum">    1124</span>                 :<span class="tlaGNC">          63 :        &quot;rejects autoloaded files containing unsectioned content before actions run (default); same scope and &quot;</span></span>
 <span id="L1125"><span class="lineNum">    1125</span>                 :<span class="tlaGNC">          63 :        &quot;precedence as the positive form; explicit `--xffrc=FILE` is unaffected&quot;},</span></span>
-<span id="L1126"><span class="lineNum">    1126</span>                 :<span class="tlaGNC">          63 :       {&quot;--detailed-block-policy=LIST&quot;,</span></span>
+<span id="L1126"><span class="lineNum">    1126</span>                 :<span class="tlaGNC">          63 :       {&quot;--block-policy-categories=LIST&quot;,</span></span>
 <span id="L1127"><span class="lineNum">    1127</span>                 :<span class="tlaGNC">          63 :        &quot;selects the interpretation of blocks in this file, including its named sections; once before sections &quot;</span></span>
 <span id="L1128"><span class="lineNum">    1128</span>                 :<span class="tlaGNC">          63 :        &quot;in system or user config; see `--help=safety` for the operation table&quot;},</span></span>
 <span id="L1129"><span class="lineNum">    1129</span>                 :<span class="tlaGNC">          63 :   }};</span></span>
@@ -1230,7 +1230,7 @@
 <span id="L1149"><span class="lineNum">    1149</span>                 :             : </span>
 <span id="L1150"><span class="lineNum">    1150</span>                 :<span class="tlaGNC">          63 :   section.children.push_back(ProseOf(</span></span>
 <span id="L1151"><span class="lineNum">    1151</span>                 :<span class="tlaGNC">          63 :       &quot;Neither explicit nor autoloaded `.xffrc` files may contain the require/no-require pairs, `--allow-xffrc`, &quot;</span></span>
-<span id="L1152"><span class="lineNum">    1152</span>                 :<span class="tlaGNC">          63 :       &quot;`--no-allow-xffrc`, the rc-globals permission pair, or `--detailed-block-policy`. The separate runtime flag &quot;</span></span>
+<span id="L1152"><span class="lineNum">    1152</span>                 :<span class="tlaGNC">          63 :       &quot;`--no-allow-xffrc`, the rc-globals permission pair, or `--block-policy-categories`. The separate runtime flag &quot;</span></span>
 <span id="L1153"><span class="lineNum">    1153</span>                 :<span class="tlaGNC">          63 :       &quot;`--allow-exec` &quot;</span></span>
 <span id="L1154"><span class="lineNum">    1154</span>                 :<span class="tlaGNC">          63 :       &quot;is accepted on the CLI and in config files, but an explicit file's own setting never arms its &quot;</span></span>
 <span id="L1155"><span class="lineNum">    1155</span>                 :<span class="tlaGNC">          63 :       &quot;dangerous directives.&quot;));</span></span>

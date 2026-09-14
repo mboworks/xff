@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-14 08:42:53</td>
+            <td class="headerValue">2026-09-14 10:18:13</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -127,7 +127,7 @@
 <span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">         934 : }</span></span>
 <span id="L48"><span class="lineNum">      48</span>                 :             : </span>
 <span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">        1593 : bool IsDetailedPolicy(std::string_view flag) {</span></span>
-<span id="L50"><span class="lineNum">      50</span> [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 1593 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 116 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1477 times"> + </span>]:<span class="tlaGNC">        1593 :   return flag == &quot;--detailed-block-policy&quot; || flag.starts_with(&quot;--detailed-block-policy=&quot;);</span></span>
+<span id="L50"><span class="lineNum">      50</span> [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 1593 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 116 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1477 times"> + </span>]:<span class="tlaGNC">        1593 :   return flag == &quot;--block-policy-categories&quot; || flag.starts_with(&quot;--block-policy-categories=&quot;);</span></span>
 <span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">        1593 : }</span></span>
 <span id="L52"><span class="lineNum">      52</span>                 :             : </span>
 <span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">        1087 : bool IsSystemControl(std::string_view flag) {</span></span>
@@ -179,7 +179,7 @@
 <span id="L99"><span class="lineNum">      99</span>                 :<span class="tlaGNC">           2 :     return status;</span></span>
 <span id="L100"><span class="lineNum">     100</span>                 :<span class="tlaGNC">           2 :   }</span></span>
 <span id="L101"><span class="lineNum">     101</span>                 :<span class="tlaGNC">        2506 :   if (const auto status = ValidateSingleControl(</span></span>
-<span id="L102"><span class="lineNum">     102</span>                 :<span class="tlaGNC">        2506 :           system.globals, IsDetailedPolicy, &quot;--detailed-block-policy may occur only once in the system config&quot;);</span></span>
+<span id="L102"><span class="lineNum">     102</span>                 :<span class="tlaGNC">        2506 :           system.globals, IsDetailedPolicy, &quot;--block-policy-categories may occur only once in the system config&quot;);</span></span>
 <span id="L103"><span class="lineNum">     103</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2504 times"> + </span>]:<span class="tlaGNC">        2506 :       !status.ok()) {</span></span>
 <span id="L104"><span class="lineNum">     104</span>                 :<span class="tlaGNC">           2 :     return status;</span></span>
 <span id="L105"><span class="lineNum">     105</span>                 :<span class="tlaGNC">           2 :   }</span></span>
@@ -244,7 +244,7 @@
 <span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">           2 :     return status;</span></span>
 <span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">           2 :   }</span></span>
 <span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">        2494 :   if (const auto status = ValidateSingleControl(</span></span>
-<span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">        2494 :           user.globals, IsDetailedPolicy, &quot;--detailed-block-policy may occur only once in the user config&quot;);</span></span>
+<span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">        2494 :           user.globals, IsDetailedPolicy, &quot;--block-policy-categories may occur only once in the user config&quot;);</span></span>
 <span id="L167"><span class="lineNum">     167</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2492 times"> + </span>]:<span class="tlaGNC">        2494 :       !status.ok()) {</span></span>
 <span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">           2 :     return status;</span></span>
 <span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">           2 :   }</span></span>

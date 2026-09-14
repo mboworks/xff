@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-14 08:42:53</td>
+            <td class="headerValue">2026-09-14 10:18:13</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -114,17 +114,17 @@
 <span id="L34"><span class="lineNum">      34</span>                 :             :   ConfigFile config;</span>
 <span id="L35"><span class="lineNum">      35</span>                 :             : };</span>
 <span id="L36"><span class="lineNum">      36</span>                 :             : </span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">        1285 : absl::StatusOr&lt;ReadSource&gt; ReadConfigSource(std::string_view path, Source layer, FileReader read, bool required) {</span></span>
-<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">        1285 :   auto text = read(path);</span></span>
-<span id="L39"><span class="lineNum">      39</span>         [<span class="tlaGBC" title="branch 0 was taken 1158 times"> + </span><span class="tlaGBC" title="branch 1 was taken 127 times"> + </span>]:<span class="tlaGNC">        1285 :   if (!text.ok()) {</span></span>
-<span id="L40"><span class="lineNum">      40</span> [<span class="tlaGBC" title="branch 0 was taken 1153 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1146 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 7 times"> + </span>]:<span class="tlaGNC">        1158 :     if (!required &amp;&amp; absl::IsNotFound(text.status())) {</span></span>
-<span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">        1146 :       return ReadSource{.source = {.path = std::string(path), .layer = layer}};</span></span>
-<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">        1146 :     }</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">        1289 : absl::StatusOr&lt;ReadSource&gt; ReadConfigSource(std::string_view path, Source layer, FileReader read, bool required) {</span></span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">        1289 :   auto text = read(path);</span></span>
+<span id="L39"><span class="lineNum">      39</span>         [<span class="tlaGBC" title="branch 0 was taken 1160 times"> + </span><span class="tlaGBC" title="branch 1 was taken 129 times"> + </span>]:<span class="tlaGNC">        1289 :   if (!text.ok()) {</span></span>
+<span id="L40"><span class="lineNum">      40</span> [<span class="tlaGBC" title="branch 0 was taken 1155 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1148 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 7 times"> + </span>]:<span class="tlaGNC">        1160 :     if (!required &amp;&amp; absl::IsNotFound(text.status())) {</span></span>
+<span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">        1148 :       return ReadSource{.source = {.path = std::string(path), .layer = layer}};</span></span>
+<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">        1148 :     }</span></span>
 <span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">          12 :     return absl::Status(</span></span>
 <span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">          12 :         text.status().code(), absl::StrCat(&quot;cannot read configuration '&quot;, path, &quot;': &quot;, text.status().message()));</span></span>
-<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">        1158 :   }</span></span>
-<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">         127 :   return ReadSource{.source = {.path = std::string(path), .layer = layer, .found = true}, .config = ParseIni(*text)};</span></span>
-<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">        1285 : }</span></span>
+<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">        1160 :   }</span></span>
+<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">         129 :   return ReadSource{.source = {.path = std::string(path), .layer = layer, .found = true}, .config = ParseIni(*text)};</span></span>
+<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">        1289 : }</span></span>
 <span id="L48"><span class="lineNum">      48</span>                 :             : }  // namespace</span>
 <span id="L49"><span class="lineNum">      49</span>                 :             : </span>
 <span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">           9 : absl::StatusOr&lt;ConfigPaths&gt; ConfigPathsFromAccountLookup(AccountHomeLookup lookup) {</span></span>
@@ -147,26 +147,26 @@
 <span id="L67"><span class="lineNum">      67</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">           7 :   return absl::StrCat(account_home, account_home.ends_with('/') ? &quot;&quot; : &quot;/&quot;, &quot;.config/xff/config&quot;);</span></span>
 <span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">          10 : }</span></span>
 <span id="L69"><span class="lineNum">      69</span>                 :             : </span>
-<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">         629 : absl::StatusOr&lt;ConfigInputs&gt; DiscoverAutomatic(const DiscoveryOptions&amp; opts, FileReader read) {</span></span>
-<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">         629 :   ConfigInputs inputs;</span></span>
-<span id="L72"><span class="lineNum">      72</span>                 :<span class="tlaGNC">         629 :   inputs.no_config = opts.no_config;</span></span>
-<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">         629 :   inputs.no_system_config = opts.no_system_config;</span></span>
-<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">         629 :   inputs.no_user_config = opts.no_user_config;</span></span>
-<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">         629 :   inputs.configs = opts.configs;</span></span>
+<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">         631 : absl::StatusOr&lt;ConfigInputs&gt; DiscoverAutomatic(const DiscoveryOptions&amp; opts, FileReader read) {</span></span>
+<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">         631 :   ConfigInputs inputs;</span></span>
+<span id="L72"><span class="lineNum">      72</span>                 :<span class="tlaGNC">         631 :   inputs.no_config = opts.no_config;</span></span>
+<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">         631 :   inputs.no_system_config = opts.no_system_config;</span></span>
+<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">         631 :   inputs.no_user_config = opts.no_user_config;</span></span>
+<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">         631 :   inputs.configs = opts.configs;</span></span>
 <span id="L76"><span class="lineNum">      76</span>                 :             : </span>
-<span id="L77"><span class="lineNum">      77</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 626 times"> + </span>]:<span class="tlaGNC">         629 :   MBO_ASSIGN_OR_RETURN(auto system, ReadConfigSource(opts.paths.system, Source::kSystem, read, false));</span></span>
-<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">         626 :   inputs.sources.push_back(std::move(system.source));</span></span>
-<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">         626 :   inputs.system = std::move(system.config);</span></span>
-<span id="L80"><span class="lineNum">      80</span>         [<span class="tlaGBC" title="branch 0 was taken 623 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">         626 :   if (!opts.paths.user.empty()) {</span></span>
-<span id="L81"><span class="lineNum">      81</span>         [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 619 times"> + </span>]:<span class="tlaGNC">         623 :     MBO_ASSIGN_OR_RETURN(auto user, ReadConfigSource(opts.paths.user, Source::kUser, read, false));</span></span>
-<span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">         619 :     inputs.sources.push_back(std::move(user.source));</span></span>
-<span id="L83"><span class="lineNum">      83</span>                 :<span class="tlaGNC">         619 :     inputs.user = std::move(user.config);</span></span>
-<span id="L84"><span class="lineNum">      84</span>                 :<span class="tlaGNC">         619 :   }</span></span>
-<span id="L85"><span class="lineNum">      85</span>         [<span class="tlaGBC" title="branch 0 was taken 34 times"> + </span><span class="tlaGBC" title="branch 1 was taken 622 times"> + </span>]:<span class="tlaGNC">         622 :   for (const std::string&amp; path : opts.xffrc_files) {</span></span>
+<span id="L77"><span class="lineNum">      77</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 628 times"> + </span>]:<span class="tlaGNC">         631 :   MBO_ASSIGN_OR_RETURN(auto system, ReadConfigSource(opts.paths.system, Source::kSystem, read, false));</span></span>
+<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">         628 :   inputs.sources.push_back(std::move(system.source));</span></span>
+<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">         628 :   inputs.system = std::move(system.config);</span></span>
+<span id="L80"><span class="lineNum">      80</span>         [<span class="tlaGBC" title="branch 0 was taken 625 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">         628 :   if (!opts.paths.user.empty()) {</span></span>
+<span id="L81"><span class="lineNum">      81</span>         [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 621 times"> + </span>]:<span class="tlaGNC">         625 :     MBO_ASSIGN_OR_RETURN(auto user, ReadConfigSource(opts.paths.user, Source::kUser, read, false));</span></span>
+<span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">         621 :     inputs.sources.push_back(std::move(user.source));</span></span>
+<span id="L83"><span class="lineNum">      83</span>                 :<span class="tlaGNC">         621 :     inputs.user = std::move(user.config);</span></span>
+<span id="L84"><span class="lineNum">      84</span>                 :<span class="tlaGNC">         621 :   }</span></span>
+<span id="L85"><span class="lineNum">      85</span>         [<span class="tlaGBC" title="branch 0 was taken 34 times"> + </span><span class="tlaGBC" title="branch 1 was taken 624 times"> + </span>]:<span class="tlaGNC">         624 :   for (const std::string&amp; path : opts.xffrc_files) {</span></span>
 <span id="L86"><span class="lineNum">      86</span>                 :<span class="tlaGNC">          34 :     inputs.xffrc.push_back(ExplicitConfig{.path = path});</span></span>
 <span id="L87"><span class="lineNum">      87</span>                 :<span class="tlaGNC">          34 :   }</span></span>
-<span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaGNC">         622 :   return inputs;</span></span>
-<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">         626 : }</span></span>
+<span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaGNC">         624 :   return inputs;</span></span>
+<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">         628 : }</span></span>
 <span id="L90"><span class="lineNum">      90</span>                 :             : </span>
 <span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">         607 : absl::StatusOr&lt;ConfigInputs&gt; DiscoverExplicit(ConfigInputs inputs, FileReader read) {</span></span>
 <span id="L92"><span class="lineNum">      92</span>         [<span class="tlaGBC" title="branch 0 was taken 41 times"> + </span><span class="tlaGBC" title="branch 1 was taken 602 times"> + </span>]:<span class="tlaGNC">         608 :   for (ExplicitConfig&amp; file : inputs.xffrc) {</span></span>
@@ -185,27 +185,27 @@
 <span id="L105"><span class="lineNum">     105</span>                 :<span class="tlaGNC">           6 :   return DiscoverExplicit(std::move(automatic), read);</span></span>
 <span id="L106"><span class="lineNum">     106</span>                 :<span class="tlaGNC">          10 : }</span></span>
 <span id="L107"><span class="lineNum">     107</span>                 :             : </span>
-<span id="L108"><span class="lineNum">     108</span>                 :<span class="tlaGNC">         620 : DiscoveryOptions SelectorsFromGlobals(const std::vector&lt;std::string&gt;&amp; globals) {</span></span>
-<span id="L109"><span class="lineNum">     109</span>                 :<span class="tlaGNC">         620 :   constexpr std::string_view kConfig = &quot;--config=&quot;;</span></span>
-<span id="L110"><span class="lineNum">     110</span>                 :<span class="tlaGNC">         620 :   constexpr std::string_view kXffrc = &quot;--xffrc=&quot;;</span></span>
-<span id="L111"><span class="lineNum">     111</span>                 :<span class="tlaGNC">         620 :   DiscoveryOptions opts;</span></span>
-<span id="L112"><span class="lineNum">     112</span>         [<span class="tlaGBC" title="branch 0 was taken 891 times"> + </span><span class="tlaGBC" title="branch 1 was taken 620 times"> + </span>]:<span class="tlaGNC">         953 :   for (const std::string&amp; global : globals) {</span></span>
-<span id="L113"><span class="lineNum">     113</span>         [<span class="tlaGBC" title="branch 0 was taken 19 times"> + </span><span class="tlaGBC" title="branch 1 was taken 872 times"> + </span>]:<span class="tlaGNC">         891 :     if (global == &quot;--no-config&quot;) {</span></span>
-<span id="L114"><span class="lineNum">     114</span>                 :<span class="tlaGNC">          19 :       opts.no_config = true;</span></span>
-<span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">          19 :       opts.no_system_config = true;</span></span>
-<span id="L116"><span class="lineNum">     116</span>                 :<span class="tlaGNC">          19 :       opts.no_user_config = true;</span></span>
-<span id="L117"><span class="lineNum">     117</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 869 times"> + </span>]:<span class="tlaGNC">         872 :     } else if (global == &quot;--no-system-config&quot;) {</span></span>
+<span id="L108"><span class="lineNum">     108</span>                 :<span class="tlaGNC">         622 : DiscoveryOptions SelectorsFromGlobals(const std::vector&lt;std::string&gt;&amp; globals) {</span></span>
+<span id="L109"><span class="lineNum">     109</span>                 :<span class="tlaGNC">         622 :   constexpr std::string_view kConfig = &quot;--config=&quot;;</span></span>
+<span id="L110"><span class="lineNum">     110</span>                 :<span class="tlaGNC">         622 :   constexpr std::string_view kXffrc = &quot;--xffrc=&quot;;</span></span>
+<span id="L111"><span class="lineNum">     111</span>                 :<span class="tlaGNC">         622 :   DiscoveryOptions opts;</span></span>
+<span id="L112"><span class="lineNum">     112</span>         [<span class="tlaGBC" title="branch 0 was taken 895 times"> + </span><span class="tlaGBC" title="branch 1 was taken 622 times"> + </span>]:<span class="tlaGNC">         957 :   for (const std::string&amp; global : globals) {</span></span>
+<span id="L113"><span class="lineNum">     113</span>         [<span class="tlaGBC" title="branch 0 was taken 21 times"> + </span><span class="tlaGBC" title="branch 1 was taken 874 times"> + </span>]:<span class="tlaGNC">         895 :     if (global == &quot;--no-config&quot;) {</span></span>
+<span id="L114"><span class="lineNum">     114</span>                 :<span class="tlaGNC">          21 :       opts.no_config = true;</span></span>
+<span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">          21 :       opts.no_system_config = true;</span></span>
+<span id="L116"><span class="lineNum">     116</span>                 :<span class="tlaGNC">          21 :       opts.no_user_config = true;</span></span>
+<span id="L117"><span class="lineNum">     117</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 871 times"> + </span>]:<span class="tlaGNC">         874 :     } else if (global == &quot;--no-system-config&quot;) {</span></span>
 <span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">           3 :       opts.no_system_config = true;</span></span>
-<span id="L119"><span class="lineNum">     119</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 861 times"> + </span>]:<span class="tlaGNC">         869 :     } else if (global == &quot;--no-user-config&quot;) {</span></span>
+<span id="L119"><span class="lineNum">     119</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 863 times"> + </span>]:<span class="tlaGNC">         871 :     } else if (global == &quot;--no-user-config&quot;) {</span></span>
 <span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaGNC">           8 :       opts.no_user_config = true;</span></span>
-<span id="L121"><span class="lineNum">     121</span>         [<span class="tlaGBC" title="branch 0 was taken 97 times"> + </span><span class="tlaGBC" title="branch 1 was taken 764 times"> + </span>]:<span class="tlaGNC">         861 :     } else if (global.starts_with(kConfig)) {</span></span>
+<span id="L121"><span class="lineNum">     121</span>         [<span class="tlaGBC" title="branch 0 was taken 97 times"> + </span><span class="tlaGBC" title="branch 1 was taken 766 times"> + </span>]:<span class="tlaGNC">         863 :     } else if (global.starts_with(kConfig)) {</span></span>
 <span id="L122"><span class="lineNum">     122</span>                 :<span class="tlaGNC">          97 :       opts.configs.push_back(global.substr(kConfig.size()));</span></span>
-<span id="L123"><span class="lineNum">     123</span>         [<span class="tlaGBC" title="branch 0 was taken 30 times"> + </span><span class="tlaGBC" title="branch 1 was taken 734 times"> + </span>]:<span class="tlaGNC">         787 :     } else if (global.starts_with(kXffrc)) {</span></span>
+<span id="L123"><span class="lineNum">     123</span>         [<span class="tlaGBC" title="branch 0 was taken 30 times"> + </span><span class="tlaGBC" title="branch 1 was taken 736 times"> + </span>]:<span class="tlaGNC">         789 :     } else if (global.starts_with(kXffrc)) {</span></span>
 <span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">          30 :       opts.xffrc_files.push_back(global.substr(kXffrc.size()));</span></span>
 <span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">          30 :     }</span></span>
-<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">         891 :   }</span></span>
-<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">         620 :   return opts;</span></span>
-<span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">         620 : }</span></span>
+<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">         895 :   }</span></span>
+<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">         622 :   return opts;</span></span>
+<span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">         622 : }</span></span>
 <span id="L129"><span class="lineNum">     129</span>                 :             : </span>
 <span id="L130"><span class="lineNum">     130</span>                 :             : }  // namespace xff::config</span>
         </pre>

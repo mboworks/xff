@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-14 08:42:53</td>
+            <td class="headerValue">2026-09-14 10:18:13</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -157,7 +157,7 @@
 <span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">        6730 :   const auto directives = DirectiveTokens(file.globals);</span></span>
 <span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">        6730 :   DetailedPolicy detailed;</span></span>
 <span id="L77"><span class="lineNum">      77</span>         [<span class="tlaGBC" title="branch 0 was taken 1083 times"> + </span><span class="tlaGBC" title="branch 1 was taken 6730 times"> + </span>]:<span class="tlaGNC">        6832 :   for (const std::string_view token : directives) {</span></span>
-<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">        1083 :     constexpr std::string_view kPrefix = &quot;--detailed-block-policy=&quot;;</span></span>
+<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">        1083 :     constexpr std::string_view kPrefix = &quot;--block-policy-categories=&quot;;</span></span>
 <span id="L79"><span class="lineNum">      79</span>         [<span class="tlaGBC" title="branch 0 was taken 989 times"> + </span><span class="tlaGBC" title="branch 1 was taken 94 times"> + </span>]:<span class="tlaGNC">        1083 :     if (!token.starts_with(kPrefix)) {</span></span>
 <span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">         989 :       continue;</span></span>
 <span id="L81"><span class="lineNum">      81</span>                 :<span class="tlaGNC">         989 :     }</span></span>
@@ -369,15 +369,15 @@
 <span id="L287"><span class="lineNum">     287</span>                 :             : }  // namespace</span>
 <span id="L288"><span class="lineNum">     288</span>                 :             : </span>
 <span id="L289"><span class="lineNum">     289</span>                 :             : // Primary arguments are literal data, even when they resemble selectors or config-only controls.</span>
-<span id="L290"><span class="lineNum">     290</span>                 :<span class="tlaGNC">       45506 : std::vector&lt;std::string_view&gt; DirectiveTokens(const std::vector&lt;std::string&gt;&amp; tokens) {</span></span>
-<span id="L291"><span class="lineNum">     291</span>                 :<span class="tlaGNC">       45506 :   std::vector&lt;std::string_view&gt; result;</span></span>
-<span id="L292"><span class="lineNum">     292</span>         [<span class="tlaGBC" title="branch 0 was taken 7336 times"> + </span><span class="tlaGBC" title="branch 1 was taken 45506 times"> + </span>]:<span class="tlaGNC">       52842 :   for (std::size_t pos = 0; pos &lt; tokens.size(); ++pos) {</span></span>
-<span id="L293"><span class="lineNum">     293</span>                 :<span class="tlaGNC">        7336 :     const std::string&amp; token = tokens[pos];</span></span>
-<span id="L294"><span class="lineNum">     294</span>                 :<span class="tlaGNC">        7336 :     result.push_back(token);</span></span>
-<span id="L295"><span class="lineNum">     295</span>                 :<span class="tlaGNC">        7336 :     const auto primary = registry::Lookup(token.substr(0, token.find(':')));</span></span>
-<span id="L296"><span class="lineNum">     296</span>         [<span class="tlaGBC" title="branch 0 was taken 6933 times"> + </span><span class="tlaGBC" title="branch 1 was taken 403 times"> + </span>]:<span class="tlaGNC">        7336 :     if (!primary.has_value()) {</span></span>
-<span id="L297"><span class="lineNum">     297</span>                 :<span class="tlaGNC">        6933 :       continue;</span></span>
-<span id="L298"><span class="lineNum">     298</span>                 :<span class="tlaGNC">        6933 :     }</span></span>
+<span id="L290"><span class="lineNum">     290</span>                 :<span class="tlaGNC">       45508 : std::vector&lt;std::string_view&gt; DirectiveTokens(const std::vector&lt;std::string&gt;&amp; tokens) {</span></span>
+<span id="L291"><span class="lineNum">     291</span>                 :<span class="tlaGNC">       45508 :   std::vector&lt;std::string_view&gt; result;</span></span>
+<span id="L292"><span class="lineNum">     292</span>         [<span class="tlaGBC" title="branch 0 was taken 7338 times"> + </span><span class="tlaGBC" title="branch 1 was taken 45508 times"> + </span>]:<span class="tlaGNC">       52846 :   for (std::size_t pos = 0; pos &lt; tokens.size(); ++pos) {</span></span>
+<span id="L293"><span class="lineNum">     293</span>                 :<span class="tlaGNC">        7338 :     const std::string&amp; token = tokens[pos];</span></span>
+<span id="L294"><span class="lineNum">     294</span>                 :<span class="tlaGNC">        7338 :     result.push_back(token);</span></span>
+<span id="L295"><span class="lineNum">     295</span>                 :<span class="tlaGNC">        7338 :     const auto primary = registry::Lookup(token.substr(0, token.find(':')));</span></span>
+<span id="L296"><span class="lineNum">     296</span>         [<span class="tlaGBC" title="branch 0 was taken 6935 times"> + </span><span class="tlaGBC" title="branch 1 was taken 403 times"> + </span>]:<span class="tlaGNC">        7338 :     if (!primary.has_value()) {</span></span>
+<span id="L297"><span class="lineNum">     297</span>                 :<span class="tlaGNC">        6935 :       continue;</span></span>
+<span id="L298"><span class="lineNum">     298</span>                 :<span class="tlaGNC">        6935 :     }</span></span>
 <span id="L299"><span class="lineNum">     299</span>         [<span class="tlaGBC" title="branch 0 was taken 88 times"> + </span><span class="tlaGBC" title="branch 1 was taken 315 times"> + </span>]:<span class="tlaGNC">         403 :     if (primary-&gt;arity &lt; 0) {</span></span>
 <span id="L300"><span class="lineNum">     300</span> [<span class="tlaGBC" title="branch 0 was taken 282 times"> + </span><span class="tlaGBC" title="branch 1 was taken 14 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 208 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 74 times"> + </span>]:<span class="tlaGNC">         296 :       while (++pos &lt; tokens.size() &amp;&amp; tokens[pos] != &quot;;&quot; &amp;&amp; tokens[pos] != &quot;+&quot;) {}</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 208 times"> + </span><span class="tlaUNC" title="branch &quot;5&quot; was not taken"> - </span>]
@@ -385,8 +385,8 @@
 <span id="L302"><span class="lineNum">     302</span>                 :<span class="tlaGNC">         315 :       pos += static_cast&lt;std::size_t&gt;(primary-&gt;arity);</span></span>
 <span id="L303"><span class="lineNum">     303</span>                 :<span class="tlaGNC">         315 :     }</span></span>
 <span id="L304"><span class="lineNum">     304</span>                 :<span class="tlaGNC">         403 :   }</span></span>
-<span id="L305"><span class="lineNum">     305</span>                 :<span class="tlaGNC">       45506 :   return result;</span></span>
-<span id="L306"><span class="lineNum">     306</span>                 :<span class="tlaGNC">       45506 : }</span></span>
+<span id="L305"><span class="lineNum">     305</span>                 :<span class="tlaGNC">       45508 :   return result;</span></span>
+<span id="L306"><span class="lineNum">     306</span>                 :<span class="tlaGNC">       45508 : }</span></span>
 <span id="L307"><span class="lineNum">     307</span>                 :             : </span>
 <span id="L308"><span class="lineNum">     308</span>                 :<span class="tlaGNC">        3896 : ConfigInputs ApplyConfigSkips(ConfigInputs inputs) {</span></span>
 <span id="L309"><span class="lineNum">     309</span>                 :<span class="tlaGNC">       11688 :   const auto requirement = [](const ConfigFile&amp; file, std::string_view positive, std::string_view negative) {</span></span>
@@ -506,11 +506,11 @@
 <span id="L421"><span class="lineNum">     421</span>                 :             : </span>
 <span id="L422"><span class="lineNum">     422</span>                 :             : }  // namespace</span>
 <span id="L423"><span class="lineNum">     423</span>                 :             : </span>
-<span id="L424"><span class="lineNum">     424</span>                 :<span class="tlaGNC">        3084 : std::string_view DefaultStyleForProgram(std::string_view argv0) {</span></span>
-<span id="L425"><span class="lineNum">     425</span>         [<span class="tlaGBC" title="branch 0 was taken 3068 times"> + </span><span class="tlaGBC" title="branch 1 was taken 16 times"> + </span>]:<span class="tlaGNC">        3084 :   if (const std::string_view::size_type slash = argv0.rfind('/'); slash != std::string_view::npos) {</span></span>
-<span id="L426"><span class="lineNum">     426</span>                 :<span class="tlaGNC">        3068 :     argv0 = argv0.substr(slash + 1);  // basename: the last path component</span></span>
-<span id="L427"><span class="lineNum">     427</span>                 :<span class="tlaGNC">        3068 :   }</span></span>
-<span id="L428"><span class="lineNum">     428</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 3083 times"> + </span>]:<span class="tlaGNC">        3084 :   if (argv0.empty()) {</span></span>
+<span id="L424"><span class="lineNum">     424</span>                 :<span class="tlaGNC">        3090 : std::string_view DefaultStyleForProgram(std::string_view argv0) {</span></span>
+<span id="L425"><span class="lineNum">     425</span>         [<span class="tlaGBC" title="branch 0 was taken 3074 times"> + </span><span class="tlaGBC" title="branch 1 was taken 16 times"> + </span>]:<span class="tlaGNC">        3090 :   if (const std::string_view::size_type slash = argv0.rfind('/'); slash != std::string_view::npos) {</span></span>
+<span id="L426"><span class="lineNum">     426</span>                 :<span class="tlaGNC">        3074 :     argv0 = argv0.substr(slash + 1);  // basename: the last path component</span></span>
+<span id="L427"><span class="lineNum">     427</span>                 :<span class="tlaGNC">        3074 :   }</span></span>
+<span id="L428"><span class="lineNum">     428</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 3089 times"> + </span>]:<span class="tlaGNC">        3090 :   if (argv0.empty()) {</span></span>
 <span id="L429"><span class="lineNum">     429</span>                 :<span class="tlaGNC">           1 :     return &quot;xff&quot;;  // no invocation name -&gt; the modern default</span></span>
 <span id="L430"><span class="lineNum">     430</span>                 :<span class="tlaGNC">           1 :   }</span></span>
 <span id="L431"><span class="lineNum">     431</span>                 :             :   // A `_full` suffix marks the extras-included twin of a program (the `xff_full` full build, and</span>
@@ -518,7 +518,7 @@
 <span id="L433"><span class="lineNum">     433</span>                 :             :   // `find_full` -&gt; find, `rg_full` -&gt; rg. Without this strip, `find_full` would not match the</span>
 <span id="L434"><span class="lineNum">     434</span>                 :             :   // `find` built-in selector and would silently fall through to the xff default, losing find</span>
 <span id="L435"><span class="lineNum">     435</span>                 :             :   // semantics. The `_full` suffix is thus reserved for the full build and never a config name.</span>
-<span id="L436"><span class="lineNum">     436</span>         [<span class="tlaGBC" title="branch 0 was taken 702 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2381 times"> + </span>]:<span class="tlaGNC">        3083 :   if (argv0.ends_with(&quot;_full&quot;)) {</span></span>
+<span id="L436"><span class="lineNum">     436</span>         [<span class="tlaGBC" title="branch 0 was taken 702 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2387 times"> + </span>]:<span class="tlaGNC">        3089 :   if (argv0.ends_with(&quot;_full&quot;)) {</span></span>
 <span id="L437"><span class="lineNum">     437</span>                 :<span class="tlaGNC">         702 :     argv0.remove_suffix(std::string_view(&quot;_full&quot;).size());</span></span>
 <span id="L438"><span class="lineNum">     438</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 701 times"> + </span>]:<span class="tlaGNC">         702 :     if (argv0.empty()) {</span></span>
 <span id="L439"><span class="lineNum">     439</span>                 :<span class="tlaGNC">           1 :       return &quot;xff&quot;;  // a bare `_full` invocation name -&gt; the modern default</span></span>
@@ -530,8 +530,8 @@
 <span id="L445"><span class="lineNum">     445</span>                 :             :   // the base style at the modern xff default (ActiveStyle ignores a non-style selector). So</span>
 <span id="L446"><span class="lineNum">     446</span>                 :             :   // aliasing xff auto-activates the matching `mytool:` config block without a preset ever being</span>
 <span id="L447"><span class="lineNum">     447</span>                 :             :   // overloadable. An explicit --config still stacks (last wins).</span>
-<span id="L448"><span class="lineNum">     448</span>                 :<span class="tlaGNC">        3082 :   return argv0;</span></span>
-<span id="L449"><span class="lineNum">     449</span>                 :<span class="tlaGNC">        3083 : }</span></span>
+<span id="L448"><span class="lineNum">     448</span>                 :<span class="tlaGNC">        3088 :   return argv0;</span></span>
+<span id="L449"><span class="lineNum">     449</span>                 :<span class="tlaGNC">        3089 : }</span></span>
 <span id="L450"><span class="lineNum">     450</span>                 :             : </span>
 <span id="L451"><span class="lineNum">     451</span>                 :<span class="tlaGNC">          44 : std::string ExplainConfig(const std::vector&lt;ResolvedFlag&gt;&amp; application) {</span></span>
 <span id="L452"><span class="lineNum">     452</span>                 :<span class="tlaGNC">          44 :   std::string out = &quot;# xff effective configuration (application order; later overrides earlier)\n&quot;;</span></span>
