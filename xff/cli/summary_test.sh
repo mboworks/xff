@@ -409,8 +409,6 @@ test::summary_scope_empty_root_and_replacement() {
   printf abc >"${root}/file.txt"
   out="$(_run "${root}" -type f --summary --summary-scope=root --summary-scope=all --format=jsonl)"
   expect_eq '{"scope":"all","root":"","group":"total","count":1,"bytes":3}' "${out}"
-  out="$(_run "${root}" -type f --summary-scope=root --format=jsonl)"
-  expect_not_matches '"scope"' "${out}"
 }
 
 test::summary_scope_template_and_collection() {
@@ -422,6 +420,31 @@ test::summary_scope_template_and_collection() {
   out="$(_run "${root}/one" "${root}/two" -type f -collect:files --summary='{ext}' --summary-scope=root --format=jsonl)"
   expect_output_contains "\"root\":\"${root}/one\",\"group\":\"txt\",\"count\":1,\"bytes\":3" "${out}"
   expect_output_contains "\"root\":\"${root}/two\",\"group\":\"txt\",\"count\":1,\"bytes\":2" "${out}"
+}
+
+test::summary_scope_requires_active_file_summary() {
+  local root out rc scope
+  root="$(_new_tree)"
+  mkdir "${root}/left" "${root}/right"
+  printf abc >"${root}/left/file.txt"
+  for scope in all left,right; do
+    out="$("$(_xff_bin)" --compare=summary "${root}/left" "${root}/right" "--summary-scope=${scope}" 2>&1)" && rc=0 || rc=$?
+    expect_eq 2 "${rc}"
+    expect_output_contains 'requires an active file summary' "${out}"
+    expect_output_contains '--compare=summary expands to --summary=compare' "${out}"
+    out="$(_run --compare=summary "${root}/left" "${root}/right" "--summary-scope=${scope}" --summary --format=jsonl)"
+    expect_output_contains '"scope":' "${out}"
+  done
+  out="$("$(_xff_bin)" "${root}" --summary-scope=root -exec echo SHOULD_NOT_RUN \; 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  expect_output_contains 'requires an active file summary' "${out}"
+  expect_not_matches 'SHOULD_NOT_RUN' "${out}"
+  out="$("$(_xff_bin)" --compare "${root}/left" "${root}/right" --summary=compare --summary-scope=all 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  out="$("$(_xff_bin)" "${root}" --summary --summary=none --summary-scope=root 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  out="$(_run "${root}" -type f --summary=none --summary-scope=root --summary=ext --format=jsonl)"
+  expect_output_contains '"scope":"root"' "${out}"
 }
 
 test_runner

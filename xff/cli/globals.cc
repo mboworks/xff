@@ -1375,7 +1375,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "`left-only,right-only,different,identical`. Aliases expand in order and duplicate scopes "
                    "are removed. Repeating the flag replaces the preceding list. Selection is independent "
                    "of `--compare-select`. Paired categories preserve separate left and right statistics; "
-                   "`all` counts both copies. This flag does not enable summaries or change `--summary=compare`.",
+                   "`all` counts both copies. Requires an active file summary such as `--summary` or `--summary=ext`; "
+                   "otherwise it is an error. `--compare=summary` expands to `--summary=compare`, which only counts "
+                   "comparison results and does not satisfy this requirement.",
         .values = kSummaryScopeValues,
         .affects = "--summary",
         .topic = "stats",

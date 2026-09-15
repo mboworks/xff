@@ -17,7 +17,11 @@ metadata remain attributable. Comparison counts count pairs once, while ordinary
 statistics count both entries. Category tables use the same classification as comparison output,
 including its directory exclusions. Output selection (`--compare-select`) does not filter statistics.
 
-`--summary-scope` never enables a summary. In comparison mode, bare `--summary` still requests
+`--summary-scope` requires an active file summary; absence is a usage error, including when
+`--summary=none` clears earlier summaries. `--compare=summary` expands to
+`--compare=status --compare-select=none --summary=compare`. Its comparison-only summary
+does not satisfy the requirement: add `--summary` or a grouping such as `--summary=ext`.
+In comparison mode, bare `--summary` still requests
 comparison counts; with an explicit scope it also requests ordinary count and size statistics.
 `--summary=compare` itself remains a whole-comparison count and percentage table.
 

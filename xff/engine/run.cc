@@ -344,6 +344,21 @@ std::vector<SummarySpec> ResolveSummaries(const std::vector<std::string>& global
   return specs;
 }
 
+absl::Status ValidateSummaryScopeDriver(const std::vector<std::string>& globals, bool compare) {
+  const bool explicit_scope =
+      absl::c_any_of(globals, [](std::string_view flag) { return flag.starts_with("--summary-scope="); });
+  if (!explicit_scope) {
+    return absl::OkStatus();
+  }
+  const auto summaries = ResolveSummaries(globals, compare);
+  if (absl::c_any_of(summaries, [](const SummarySpec& summary) { return summary.mode != SummaryMode::kCompare; })) {
+    return absl::OkStatus();
+  }
+  return absl::InvalidArgumentError(
+      "requires an active file summary such as --summary or --summary=ext; "
+      "--compare=summary expands to --summary=compare, which only summarizes comparison results");
+}
+
 // Scope selection is independent of per-path comparison output. Each occurrence replaces
 // the preceding list; aliases expand in place and duplicate scopes keep their first position.
 absl::StatusOr<std::vector<std::string>> ResolveSummaryScopes(const std::vector<std::string>& globals, bool compare) {
@@ -5328,9 +5343,14 @@ RunResult RunFind(
     EmitFn emit,
     WalkErrorFn on_error,
     std::optional<registry::Style> style) {
-  if (absl::c_any_of(command.globals, [](std::string_view global) {
-        return global == "--compare" || global.starts_with("--compare=");
-      })) {
+  const bool compare = absl::c_any_of(command.globals, [](std::string_view global) {
+    return global == "--compare" || global.starts_with("--compare=");
+  });
+  if (const absl::Status status = ValidateSummaryScopeDriver(command.globals, compare); !status.ok()) {
+    on_error("--summary-scope", status);
+    return RunResult{.errors = 2};
+  }
+  if (compare) {
     return RunTreeCompare(command, fs, emit, on_error, style);
   }
   return RunFindCore(
