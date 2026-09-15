@@ -447,4 +447,32 @@ test::summary_scope_requires_active_file_summary() {
   expect_output_contains '"scope":"root"' "${out}"
 }
 
+test::summary_scope_plain_labels_and_top_ties() {
+  local root out
+  root="$(_new_tree)"
+  mkdir "${root}/one" "${root}/two"
+  touch "${root}/one/a.txt" "${root}/one/b.txt" "${root}/one/c.cc" "${root}/one/d.h"
+  printf abc >"${root}/two/data.bin"
+  out="$(_run "${root}/one" -type f --summary=ext --summary-scope=root --top=2 --human=off)"
+  expect_output_contains "Summary scope: root (${root}/one)" "${out}"
+  expect_matches "txt +2${NL}cc +1${NL}total +4" "${out}"
+  expect_not_matches "(^|${NL})h +1" "${out}"
+  out="$(_run "${root}/one" "${root}/two" -type f --summary --summary-scope=all --human=off)"
+  expect_output_contains 'Summary scope: all' "${out}"
+  expect_matches "total +5 +3" "${out}"
+  out="$(_run --compare=summary "${root}/one" "${root}/two" -type f --summary=overall --summary-scope=left,right --human=off)"
+  expect_output_contains "Summary scope: left-only (${root}/one)" "${out}"
+  expect_output_contains "Summary scope: right-only (${root}/two)" "${out}"
+  expect_matches "total +1 +3" "${out}"
+}
+
+test::summary_scope_empty_list_is_an_error() {
+  local root out rc
+  root="$(_new_tree)"
+  mkdir "${root}/left" "${root}/right"
+  out="$("$(_xff_bin)" --compare=summary "${root}/left" "${root}/right" --summary=overall --summary-scope= 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  expect_output_contains "unknown summary scope ''" "${out}"
+}
+
 test_runner
