@@ -104,12 +104,22 @@ related pages are declared in `HelpTopics()`; aliases share the canonical topic'
 The commands distinguish a topic (`--help=regex`), a global flag (`--help=--regextype`), and an
 expression primary (`--help=-regex`). External manuals retain their `name(section)` notation.
 
-Use `help_context` only when a focused flag needs a vocabulary or worked explanation immediately
-below it. Short value lists precede the explanation; long grammar descriptions belong in the shared
-vocabulary section. Topic membership alone provides a link and does not append an entire topic.
+Focused option and primary help expands at most one related topic: an explicit
+`primary_expansion_topic`, or the sole distinct topic when none is designated. An explicit
+selection must be an element of `see_also`; both constexpr registries enforce this with a
+static assertion. A single-topic relationship needs no repeated selection. Topic membership
+and `see_also` are deduplicated before choosing the automatic expansion. Related flags and
+primaries are pointers, never expansion requests. For example, `--regextype` designates
+`grammars` while retaining `regex,grammars` as its related topics. Its short value list precedes
+the full grammar vocabulary. Topic help lists its related pages without expanding them.
 
-`--help=full` and `--help=long` render the same document. They include each detailed registry entry
-and each topic once, without recursively expanding context or repeating focused navigation under
-every entry. The generated man page, Markdown, and HTML share this composition. Stable topic and
-entry anchors (`topic-`, `flag-`, and `primary-` namespaces) keep internal Markdown/HTML references
-independent of display headings, including automatically generated Markdown heading anchors.
+`--help=full` and `--help=long` render the same complete document. Each detailed entry and each
+topic appears once. The model retains related pointers only to targets present in the document;
+no reference renderer can expand a target. Console long help omits these per-entry and per-topic
+pointers. HTML and Markdown show clickable topic titles and flag names. Man pages show those
+names as text references. Focused console help keeps copyable `--help=NAME` commands.
+
+Stable topic and entry anchors (`topic-`, `flag-`, and `primary-` namespaces) keep internal
+Markdown/HTML references independent of display headings, including automatically generated
+Markdown heading anchors. The reference index resolves display labels from actual sections and
+entries and omits relationships whose targets are absent from that complete document.

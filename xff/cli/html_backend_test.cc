@@ -236,5 +236,14 @@ TEST_F(HtmlBackendTest, ExplicitTopicsKeepTheirAnchorsAfterSubsectionCollisions)
   EXPECT_THAT(html, HasSubstr("<li><a href=\"#time\">Time formats</a></li>"));
 }
 
+TEST_F(HtmlBackendTest, CompleteReferencePointersUseTheFormatPresentation) {
+  HtmlBackend backend;
+  backend.EmitSeeAlso({
+      .refs = {{.kind = RefTarget::Kind::kTopic, .id = "regex", .label = "Regex matching"}},
+      .in_document = true,
+  });
+  EXPECT_THAT(backend.Take(), HasSubstr("href=\"#topic-regex\">Regex matching</a>"));
+}
+
 }  // namespace
 }  // namespace xff::cli

@@ -276,6 +276,9 @@ void PlainTextBackend::EmitTable(const Table& table) {
 }
 
 void PlainTextBackend::EmitSeeAlso(const SeeAlso& see_also) {
+  if (see_also.in_document) {
+    return;
+  }
   StartBlock();
   const std::string indent = BodyIndent();
   std::string text;

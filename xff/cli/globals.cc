@@ -15,8 +15,10 @@
 
 #include "xff/cli/globals.h"
 
+#include <algorithm>
 #include <array>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <string_view>
 
@@ -892,7 +894,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "that extra is a hard error; see `--help=extras` for availability.",
         .values = kRegextypeValues,
         .affects = "-regex,-iregex,-rxc,-irxc,-grep,-capture,-capturedir",
-        .help_context = "grammars",
+        .primary_expansion_topic = "grammars",
         .see_also = "regex,grammars",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
@@ -1154,7 +1156,6 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "Other summary groupings still describe each input tree separately.",
         .values = kCompareValues,
         .topic = "compare",
-        .help_context = "compare",
         .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
@@ -1170,7 +1171,6 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "unchanged file has no patch representation.",
         .affects = "--compare",
         .topic = "compare",
-        .help_context = "compare",
     },
     {
         .name = "--diff-algorithm",
@@ -1267,7 +1267,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Output values and actions",
         .summary = "render each match through a field template ({path}, {name}, ...)",
         .topic = "output",
-        .help_context = "fields",
+        .primary_expansion_topic = "fields",
+        .see_also = "fields",
     },
     {
         .name = "--implicit-print",
@@ -2390,7 +2391,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details = "Sets the default rendering for time fields ({mtime}, {atime}, -printf %t, ...) when no per-field "
                    "qualifier is given. Accepts a preset (iso, epoch, space, find) or any strftime pattern such as "
                    "%Y-%m-%d. A per-field qualifier like {mtime:%H:%M} still overrides it.",
-        .help_context = "time",
+        .primary_expansion_topic = "time",
         .see_also = "time,fields",
     },
     {
@@ -2423,6 +2424,17 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .value_check = GlobalFlag::ValueCheck::kTristate,
     },
 });
+
+static_assert(
+    std::ranges::all_of(
+        kGlobals,
+        [](const GlobalFlag& entry) {
+          return entry.primary_expansion_topic.empty()
+                 || std::ranges::any_of(entry.see_also | std::views::split(','), [&](auto topic) {
+                      return std::string_view(topic.begin(), topic.end()) == entry.primary_expansion_topic;
+                    });
+        }),
+    "primary_expansion_topic must be an element of see_also");
 
 }  // namespace
 

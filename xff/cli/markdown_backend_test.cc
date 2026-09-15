@@ -199,5 +199,14 @@ TEST_F(MarkdownBackendTest, ReferenceAnchorsMatchTheirLinks) {
   EXPECT_THAT(MarkdownRefLink({.kind = RefTarget::Kind::kPrimary, .id = "!"}, ""), Eq("[!](#primary)"));
 }
 
+TEST_F(MarkdownBackendTest, CompleteReferencePointersUseTheFormatPresentation) {
+  MarkdownBackend backend;
+  backend.EmitSeeAlso({
+      .refs = {{.kind = RefTarget::Kind::kTopic, .id = "regex", .label = "Regex matching"}},
+      .in_document = true,
+  });
+  EXPECT_THAT(backend.Take(), HasSubstr("[Regex matching](#topic-regex)"));
+}
+
 }  // namespace
 }  // namespace xff::cli

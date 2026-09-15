@@ -130,16 +130,16 @@ test::help_topic_flag_resolves_without_dash() {
 
 test::help_config_explains_tiers_and_style_selection() {
   # `--help=config` explains the layering, style selection (--config / argv[0]), and arming, and
-  # pulls the config flags from the SOT. Distinct from `--help=--config` (just that flag).
+  # pulls the config flags from the SOT. Focused --config help expands this sole related topic.
   local config flag
   config="$("$(_xff_bin)" --help=config 2>&1)"
   expect_output_contains 'lowest to highest precedence' "${config}" # the tier ordering
   expect_output_contains 'argv[0]' "${config}"                      # style selection by invocation name
   expect_output_contains 'NON-ARMING' "${config}"                   # the --xffrc arming rule
   expect_matches '\-\-allow-exec' "${config}"                       # a config flag pulled from the SOT
-  # --help=--config is the single flag, not the topic (no tier explanation).
+  # --help=--config leads with the flag and then expands its sole related topic.
   flag="$("$(_xff_bin)" --help=--config 2>&1)"
-  expect_output_not_contains 'lowest to highest precedence' "${flag}"
+  expect_output_contains 'lowest to highest precedence' "${flag}"
 }
 
 test::help_cookbook_lists_worked_examples() {
@@ -499,8 +499,6 @@ test::regex_help_covers_matching_and_controls() {
   expect_output_contains 'TODO fixme' "${out}"
 }
 
-test_runner
-
 test::related_help_is_available_across_topics() {
   local topic out
   for topic in fields printf time size content output compare ignore config safety archive stats \
@@ -542,3 +540,15 @@ test::focused_vocabulary_help_appends_the_shared_reference() {
   out="$("$(_xff_bin)" --help=--time-format --width=0)"
   expect_output_contains 'TIME FORMATS' "${out}"
 }
+
+test::long_reference_pointers_follow_the_output_format() {
+  local out
+  out="$("$(_xff_bin)" --help=long:markdown)"
+  expect_output_contains '[Regex matching](#topic-regex)' "${out}"
+  out="$("$(_xff_bin)" --help=long:html)"
+  expect_output_contains 'href="#topic-regex">Regex matching</a>' "${out}"
+  out="$("$(_xff_bin)" --help=long:roff)"
+  expect_output_contains '.B Regex matching' "${out}"
+}
+
+test_runner

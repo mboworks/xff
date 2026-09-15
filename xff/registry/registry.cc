@@ -15,7 +15,9 @@
 
 #include "xff/registry/registry.h"
 
+#include <algorithm>
 #include <array>
+#include <ranges>
 #include <string_view>
 
 #include "absl/types/span.h"
@@ -602,7 +604,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "`-blocks` for allocated space.",
         .kind = Kind::kTest,
         .arity = 1,
-        .help_context = "size",
+        .primary_expansion_topic = "size",
         .see_also = "size,fields",
     },
     {
@@ -614,7 +616,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .style = Style::kXff,
-        .help_context = "size",
+        .primary_expansion_topic = "size",
         .see_also = "size,fields",
     },
     {
@@ -1171,7 +1173,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "`-printfln` adds the OS line ending. Example: `xff . -printf '%s\\t%p\\n'`.",
         .kind = Kind::kAction,
         .arity = 1,
-        .help_context = "printf",
+        .primary_expansion_topic = "printf",
         .see_also = "printf,fields,output",
     },
     {
@@ -1194,7 +1196,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kAction,
         .arity = 1,
         .style = Style::kXff,
-        .help_context = "printf",
+        .primary_expansion_topic = "printf",
         .see_also = "printf,fields,output",
     },
     {
@@ -1257,7 +1259,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kAction,
         .arity = 2,
         .writes_file = true,
-        .help_context = "printf",
+        .primary_expansion_topic = "printf",
         .see_also = "printf,fields,output,safety",
     },
     {
@@ -1270,7 +1272,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 2,
         .writes_file = true,
         .style = Style::kXff,
-        .help_context = "printf",
+        .primary_expansion_topic = "printf",
         .see_also = "printf,fields,output,safety",
     },
     {
@@ -1488,6 +1490,17 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .see_also = "expressions,cookbook",
     },
 });
+
+static_assert(
+    std::ranges::all_of(
+        kDescriptors,
+        [](const Descriptor& entry) {
+          return entry.primary_expansion_topic.empty()
+                 || std::ranges::any_of(entry.see_also | std::views::split(','), [&](auto topic) {
+                      return std::string_view(topic.begin(), topic.end()) == entry.primary_expansion_topic;
+                    });
+        }),
+    "primary_expansion_topic must be an element of see_also");
 
 }  // namespace
 
