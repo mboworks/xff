@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-14 23:55:02</td>
+            <td class="headerValue">2026-09-15 00:33:34</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryLo">50.0&nbsp;%</td>
@@ -144,9 +144,9 @@
 <span id="L73"><span class="lineNum">      73</span>              :   // topic straight from this table, so the topic's flag list is the SOT and cannot drift. Empty</span>
 <span id="L74"><span class="lineNum">      74</span>              :   // means the flag belongs to no topic body (it still appears in the grouped `--help` options).</span>
 <span id="L75"><span class="lineNum">      75</span>              :   std::string_view topic;</span>
-<span id="L76"><span class="lineNum">      76</span>              :   // Optional broader topic appended after this flag in standalone help. Separate from</span>
-<span id="L77"><span class="lineNum">      77</span>              :   // topic membership: opt in only when understanding the flag needs the full context.</span>
-<span id="L78"><span class="lineNum">      78</span>              :   std::string_view help_context;</span>
+<span id="L76"><span class="lineNum">      76</span>              :   // Optional topic to expand in focused help; must be an element of see_also.</span>
+<span id="L77"><span class="lineNum">      77</span>              :   // Without it, expand only when topic membership + see_also names one distinct topic.</span>
+<span id="L78"><span class="lineNum">      78</span>              :   std::string_view primary_expansion_topic;</span>
 <span id="L79"><span class="lineNum">      79</span>              :   // Comma-separated related help topics linked from standalone entry help.</span>
 <span id="L80"><span class="lineNum">      80</span>              :   std::string_view see_also;</span>
 <span id="L81"><span class="lineNum">      81</span>              :   // The build-time &quot;composable extra&quot; this flag needs, e.g. &quot;archive&quot; (the `//xff:xff_archive` Bazel</span>

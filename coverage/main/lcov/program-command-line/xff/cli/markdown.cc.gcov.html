@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-14 23:55:02</td>
+            <td class="headerValue">2026-09-15 00:33:34</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -94,16 +94,16 @@
 <span id="L23"><span class="lineNum">      23</span>              : </span>
 <span id="L24"><span class="lineNum">      24</span>              : namespace xff::cli {</span>
 <span id="L25"><span class="lineNum">      25</span>              : </span>
-<span id="L26"><span class="lineNum">      26</span> <span class="tlaGNC">           8 : std::string MarkdownReference() {</span></span>
-<span id="L27"><span class="lineNum">      27</span> <span class="tlaGNC">           8 :   MarkdownBackend backend;</span></span>
+<span id="L26"><span class="lineNum">      26</span> <span class="tlaGNC">           9 : std::string MarkdownReference() {</span></span>
+<span id="L27"><span class="lineNum">      27</span> <span class="tlaGNC">           9 :   MarkdownBackend backend;</span></span>
 <span id="L28"><span class="lineNum">      28</span>              :   // Audience::kPublished: XFF.md documents the whole tool, so a flag whose build extra is absent from</span>
 <span id="L29"><span class="lineNum">      29</span>              :   // the binary that generated this file is still documented in full. Its details still say it is a</span>
 <span id="L30"><span class="lineNum">      30</span>              :   // build extra and name the flag to rebuild with, and `--help=extras` reports what a given binary</span>
 <span id="L31"><span class="lineNum">      31</span>              :   // actually links - so a reader is told what they may not have, without the reference pretending the</span>
 <span id="L32"><span class="lineNum">      32</span>              :   // feature does not exist.</span>
-<span id="L33"><span class="lineNum">      33</span> <span class="tlaGNC">           8 :   RenderDocument(BuildReference(Audience::kPublished), backend);</span></span>
-<span id="L34"><span class="lineNum">      34</span> <span class="tlaGNC">           8 :   return backend.Take();</span></span>
-<span id="L35"><span class="lineNum">      35</span> <span class="tlaGNC">           8 : }</span></span>
+<span id="L33"><span class="lineNum">      33</span> <span class="tlaGNC">           9 :   RenderDocument(BuildReference(Audience::kPublished), backend);</span></span>
+<span id="L34"><span class="lineNum">      34</span> <span class="tlaGNC">           9 :   return backend.Take();</span></span>
+<span id="L35"><span class="lineNum">      35</span> <span class="tlaGNC">           9 : }</span></span>
 <span id="L36"><span class="lineNum">      36</span>              : </span>
 <span id="L37"><span class="lineNum">      37</span>              : }  // namespace xff::cli</span>
         </pre>
