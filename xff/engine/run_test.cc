@@ -1900,6 +1900,33 @@ TEST_F(RunTest, SummaryTopKeepsTheLargestGroupsBySize) {
       ElementsAre(R"({"group":"txt","count":2,"bytes":2})", R"({"group":"total","count":3,"bytes":3})"));
 }
 
+TEST_F(RunTest, SummaryScopesRenderPlainLabels) {
+  EXPECT_THAT(
+      RunArgvRecords({"--summary=ext", "--summary-scope=root", root_.string(), "-type", "f"}),
+      Contains(HasSubstr("Summary scope: root (" + root_.string() + ")")));
+  EXPECT_THAT(
+      RunArgvRecords({"--summary", "--summary-scope=all", root_.string(), "-type", "f"}),
+      Contains("Summary scope: all"));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, SummaryTopBreaksEqualSizeTiesByCountThenName) {
+  EXPECT_THAT(fs_.WriteContent(Path("a.txt"), ""), IsOk());
+  EXPECT_THAT(fs_.WriteContent(Path("b.md"), ""), IsOk());
+  EXPECT_THAT(fs_.WriteContent(Path("sub/c.txt"), ""), IsOk());
+  EXPECT_THAT(fs_.WriteContent(Path("d.h"), ""), IsOk());
+  EXPECT_THAT(
+      RunArgvRecords({"--summary=ext", "--top=2", "--format=jsonl", root_.string(), "-type", "f"}),
+      ElementsAre(R"({"group":"txt","count":2})", R"({"group":"h","count":1})", R"({"group":"total","count":4})"));
+}
+
+TEST_F(RunTest, ComparisonSummaryRejectsEmptyScopeList) {
+  EXPECT_THAT(
+      RunArgvRecords({"--compare=summary", root_.string(), Path("sub"), "--summary=overall", "--summary-scope="}),
+      IsEmpty());
+  EXPECT_THAT(last_errors_, 2);
+}
+
 TEST_F(RunTest, SummaryOmitsSizeWhenNothingSizeWorthyIsAggregated) {
   // Empty files -> the summary has no size dimension, so it reports counts only: no spurious
   // `0 B` column in the human table and no `bytes:0` field in the jsonl rows (#156).
