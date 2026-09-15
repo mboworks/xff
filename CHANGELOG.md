@@ -3,6 +3,10 @@
 
 # 0.6.0
 
+- Add `--summary-scope` for combined, per-root, and comparison-category statistics, with
+  ordered aliases and separate left/right statistics for paired categories. Scope selection
+  requires an active file summary; comparison-only summaries do not satisfy that requirement.
+
 # 0.5.0
 
 - Expand at most one related topic in focused flag help, with explicit selections checked at

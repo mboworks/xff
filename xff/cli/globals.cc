@@ -94,6 +94,19 @@ constexpr std::array kFormatValues = std::to_array<ValueDoc>({
     {.value = "tree", .meaning = "an indented directory tree"},
     {.value = "md", .meaning = "", .hidden = true},  // the alias `markdown`'s meaning already names
 });
+constexpr std::array kSummaryScopeValues = std::to_array<ValueDoc>({
+    {.value = "all", .meaning = "combine all input roots"},
+    {.value = "root", .meaning = "separate input roots"},
+    {.value = "left-only", .meaning = "comparison entries present only on the left"},
+    {.value = "right-only", .meaning = "comparison entries present only on the right"},
+    {.value = "different", .meaning = "different comparison pairs, with each side separate"},
+    {.value = "identical", .meaning = "identical comparison pairs, with each side separate"},
+    {.value = "left", .meaning = "alias for `left-only`"},
+    {.value = "right", .meaning = "alias for `right-only`"},
+    {.value = "diff", .meaning = "`left-only,right-only,different`"},
+    {.value = "compare", .meaning = "`left-only,right-only,different,identical`"},
+});
+
 constexpr std::array kSummaryValues = std::to_array<ValueDoc>({
     {.value = "none", .meaning = "clear all previously requested summaries"},
     {.value = "compare", .meaning = "comparison counts and percentages by status; requires `--compare`"},
@@ -1153,7 +1166,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "`--path-encoding=escape` makes control bytes in the relative path unambiguous. "
                    "`--summary` / `--summary=compare` append comparison counts and percentages by status and "
                    "a total. "
-                   "Other summary groupings still describe each input tree separately.",
+                   "Other summary groupings combine the input trees; `--summary-scope` separates roots or comparison "
+                   "categories.",
         .values = kCompareValues,
         .topic = "compare",
         .value_check = GlobalFlag::ValueCheck::kEnum,
@@ -1349,6 +1363,28 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .extra = "archive",
     },
     {
+        .name = "--summary-scope",
+        .display = "--summary-scope=SCOPE,...",
+        .group = "stats",
+        .header = "Statistics",
+        .summary = "summarize all roots together, each root, or selected comparison categories",
+        .details = "Selects independent labelled tables for each ordinary `--summary` grouping. "
+                   "`all` combines every root (the default); `root` separates input roots. "
+                   "Comparison categories require `--compare`: `left` aliases `left-only`, `right` aliases "
+                   "`right-only`, `diff` expands to `left-only,right-only,different`, and `compare` expands to "
+                   "`left-only,right-only,different,identical`. Aliases expand in order and duplicate scopes "
+                   "are removed. Repeating the flag replaces the preceding list. Selection is independent "
+                   "of `--compare-select`. Paired categories preserve separate left and right statistics; "
+                   "`all` counts both copies. Requires an active file summary such as `--summary` or `--summary=ext`; "
+                   "otherwise it is an error. `--compare=summary` expands to `--summary=compare`, which only counts "
+                   "comparison results and does not satisfy this requirement.",
+        .values = kSummaryScopeValues,
+        .affects = "--summary",
+        .topic = "stats",
+        .see_also = "compare",
+        .value_check = GlobalFlag::ValueCheck::kEnumList,
+    },
+    {
         .name = "--summary",
         .display = "--summary[=<GROUP>]",
         .group = "stats",
@@ -1356,7 +1392,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "aligned count + size table (or --format=jsonl rows) instead of each match; repeatable",
         .details = "With `--compare`, bare `--summary` or `--summary=compare` appends result counts and "
                    "percentages by "
-                   "status and a total after the comparison output. Other groupings summarize each input tree. "
+                   "status and a total after the comparison output. With explicit `--summary-scope`, bare `--summary` "
+                   "also adds ordinary count and size statistics. Other groupings combine all input roots by default. "
+                   "`--summary-scope` selects combined, per-root, or comparison-category tables. "
                    "Outside comparison, replaces the per-match listing with an aggregate table: match count and total "
                    "size per group "
                    "(overall, by type, extension, programming language, media (MIME) type, user (owner), owning "

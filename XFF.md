@@ -802,7 +802,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `status` - one tab-separated selected result kind and relative path per record
   - `diff` - a unified tree diff suitable for saving as a patch
 
-  Requires exactly two roots. `--compare=summary` expands at its position to `--compare=status --compare-select=none --summary=compare`; later flags may override its settings. Bare `--compare` and `--compare=status` emit only discrepancies as tab-separated `left-only`, `right-only`, or `different` records. `--compare=diff` emits one unified tree diff, suitable for redirecting to a patch file; `--diff-context` and `--diff-algorithm` tune it. Unlike `-diff TARGET`, which is an expression action comparing each match from one walk with a templated target and therefore cannot discover target-only paths, `--compare` walks both roots independently and pairs the matches by relative path. The ordinary expression, ignore, hidden-file, archive, traversal, and `-P` / `-H` / `-L` symlink rules apply unchanged to each side; comparison itself enables none of them. Regular files are compared byte for byte (text and binary). Unfollowed symlinks are compared by target. Both walks complete before comparison records are emitted in bytewise relative-path order; `--sort` affects each walk, not that final order. In status mode, `--path-encoding=escape` makes control bytes in the relative path unambiguous. `--summary` / `--summary=compare` append comparison counts and percentages by status and a total. Other summary groupings still describe each input tree separately.
+  Requires exactly two roots. `--compare=summary` expands at its position to `--compare=status --compare-select=none --summary=compare`; later flags may override its settings. Bare `--compare` and `--compare=status` emit only discrepancies as tab-separated `left-only`, `right-only`, or `different` records. `--compare=diff` emits one unified tree diff, suitable for redirecting to a patch file; `--diff-context` and `--diff-algorithm` tune it. Unlike `-diff TARGET`, which is an expression action comparing each match from one walk with a templated target and therefore cannot discover target-only paths, `--compare` walks both roots independently and pairs the matches by relative path. The ordinary expression, ignore, hidden-file, archive, traversal, and `-P` / `-H` / `-L` symlink rules apply unchanged to each side; comparison itself enables none of them. Regular files are compared byte for byte (text and binary). Unfollowed symlinks are compared by target. Both walks complete before comparison records are emitted in bytewise relative-path order; `--sort` affects each walk, not that final order. In status mode, `--path-encoding=escape` makes control bytes in the relative path unambiguous. `--summary` / `--summary=compare` append comparison counts and percentages by status and a total. Other summary groupings combine the input trees; `--summary-scope` separates roots or comparison categories.
   Affected by: --compare-select, --diff-algorithm, --diff-context, --summary-precision
   See also: [Comparing trees](#topic-compare), [--compare-select](#flag-compare-select), [--diff-algorithm](#flag-diff-algorithm), [--diff-context](#flag-diff-context), [--summary-precision](#flag-summary-precision)
 
@@ -946,6 +946,26 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 ### Statistics
 
+<a id="flag-summary-scope"></a>
+
+- `--summary-scope=SCOPE,...` - summarize all roots together, each root, or selected comparison categories _(global, xff)_
+  One of:
+
+  - `all` - combine all input roots
+  - `root` - separate input roots
+  - `left-only` - comparison entries present only on the left
+  - `right-only` - comparison entries present only on the right
+  - `different` - different comparison pairs, with each side separate
+  - `identical` - identical comparison pairs, with each side separate
+  - `left` - alias for `left-only`
+  - `right` - alias for `right-only`
+  - `diff` - `left-only,right-only,different`
+  - `compare` - `left-only,right-only,different,identical`
+
+  Selects independent labelled tables for each ordinary `--summary` grouping. `all` combines every root (the default); `root` separates input roots. Comparison categories require `--compare`: `left` aliases `left-only`, `right` aliases `right-only`, `diff` expands to `left-only,right-only,different`, and `compare` expands to `left-only,right-only,different,identical`. Aliases expand in order and duplicate scopes are removed. Repeating the flag replaces the preceding list. Selection is independent of `--compare-select`. Paired categories preserve separate left and right statistics; `all` counts both copies. Requires an active file summary such as `--summary` or `--summary=ext`; otherwise it is an error. `--compare=summary` expands to `--summary=compare`, which only counts comparison results and does not satisfy this requirement.
+  Affects: --summary
+  See also: [Statistics](#topic-stats), [Comparing trees](#topic-compare), [--summary](#flag-summary)
+
 <a id="flag-summary"></a>
 
 - `--summary[=<GROUP>]` - aligned count + size table (or --format=jsonl rows) instead of each match; repeatable _(global, xff)_
@@ -964,9 +984,9 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `hash-verification` - verified / failed tally from exactly one reached `-hasheq`
   - `{template}` - by any field value, e.g. `--summary='{ext}-{type}'`
 
-  With `--compare`, bare `--summary` or `--summary=compare` appends result counts and percentages by status and a total after the comparison output. Other groupings summarize each input tree. Outside comparison, replaces the per-match listing with an aggregate table: match count and total size per group (overall, by type, extension, programming language, media (MIME) type, user (owner), owning group, file digest, or hash-verification result). The categorical keys reuse the {mime}/{user}/{group}/{hash} field vocabulary; --summary=hash groups identical files into one bucket (a dedup count, reading every file). `--summary=hash-verification` requires exactly one `-hasheq` and counts its `verified` or `failed` verdict even when that verdict makes the complete expression false; an entry that short-circuits before reaching `-hasheq` is not counted. Empty expected values and unreadable entries are failed, matching `-hasheq` itself. A {template} key groups by any field value (e.g. --summary='{ext}-{type}'); a single m// extraction key (--summary='{capture.NAME:m/re/\1/}') groups per extracted line, so a per-file command's multi-line output tallies per key (e.g. git-blame lines per author) - the size column is not meaningful there. Repeatable: each --summary is its own table (e.g. --summary=ext --summary=type), printed in order. --top=N limits the rows of each, --summary-precision sets the scaled-size digits, and --format=jsonl emits one object per group for scripts.
-  Affected by: --top, --summary-precision
-  See also: [Statistics](#topic-stats), [--top](#flag-top), [--summary-precision](#flag-summary-precision)
+  With `--compare`, bare `--summary` or `--summary=compare` appends result counts and percentages by status and a total after the comparison output. With explicit `--summary-scope`, bare `--summary` also adds ordinary count and size statistics. Other groupings combine all input roots by default. `--summary-scope` selects combined, per-root, or comparison-category tables. Outside comparison, replaces the per-match listing with an aggregate table: match count and total size per group (overall, by type, extension, programming language, media (MIME) type, user (owner), owning group, file digest, or hash-verification result). The categorical keys reuse the {mime}/{user}/{group}/{hash} field vocabulary; --summary=hash groups identical files into one bucket (a dedup count, reading every file). `--summary=hash-verification` requires exactly one `-hasheq` and counts its `verified` or `failed` verdict even when that verdict makes the complete expression false; an entry that short-circuits before reaching `-hasheq` is not counted. Empty expected values and unreadable entries are failed, matching `-hasheq` itself. A {template} key groups by any field value (e.g. --summary='{ext}-{type}'); a single m// extraction key (--summary='{capture.NAME:m/re/\1/}') groups per extracted line, so a per-file command's multi-line output tallies per key (e.g. git-blame lines per author) - the size column is not meaningful there. Repeatable: each --summary is its own table (e.g. --summary=ext --summary=type), printed in order. --top=N limits the rows of each, --summary-precision sets the scaled-size digits, and --format=jsonl emits one object per group for scripts.
+  Affected by: --summary-scope, --top, --summary-precision
+  See also: [Statistics](#topic-stats), [--summary-scope](#flag-summary-scope), [--top](#flag-top), [--summary-precision](#flag-summary-precision)
 
 <a id="flag-histogram"></a>
 
@@ -2712,7 +2732,7 @@ The two walks run concurrently and each retains its complete matched-entry inven
 
 Bare `--compare` (or `--compare=status`) writes tab-separated `STATUS` and relative-path records. The default selection reports discrepancies only; `--compare-select=all` also includes equal entries. `--compare-select=none` (or an empty value) suppresses per-path output without changing summary counts. `--path-encoding=escape` makes control bytes in the path unambiguous.
 
-`--summary` (or `--summary=compare`) appends counts and percentages of all comparison results by status and a total, including zero counts for empty comparisons. Each paired path counts once; directory-only entries are omitted as in the status listing. Percentages use all compared results; `--summary-precision` controls decimals. `--format=jsonl` renders these summary rows as `group`, `count`, and numeric `percent` objects. Other summary groupings describe each input tree separately.
+`--summary` (or `--summary=compare`) appends counts and percentages of all comparison results by status and a total, including zero counts for empty comparisons. Each paired path counts once; directory-only entries are omitted as in the status listing. Percentages use all compared results; `--summary-precision` controls decimals. `--format=jsonl` renders these summary rows as `group`, `count`, and numeric `percent` objects. Other summary groupings combine the input trees. `--summary-scope=root` separates roots; `--summary-scope=compare` separates all comparison categories, preserving both sides of paired results.
 
 `--compare=summary` is shorthand for `--compare=status --compare-select=none --summary=compare` at that position in the option sequence. Later selections can enable per-path output, and `--summary=none` can disable the summary.
 
@@ -2729,6 +2749,7 @@ Bare `--compare` (or `--compare=status`) writes tab-separated `STATUS` and relat
 
 - `--summary=compare`: counts and percentages for all comparison results.
 - `--compare-select`: choose per-path records; `none` suppresses the listing.
+- `--summary-scope`: combined, per-root, or category statistics.
 - `--summary-precision`: decimal places in summary percentages.
 - `--format=jsonl`: machine-readable comparison summary rows.
 
@@ -2737,6 +2758,12 @@ Bare `--compare` (or `--compare=status`) writes tab-separated `STATUS` and relat
 ```sh
 xff --compare=summary left-tree right-tree
 ```
+
+```sh
+xff --compare=summary left-tree right-tree --summary=ext --summary-scope=compare
+```
+
+summarize extensions within each comparison category
 
 show only counts and percentages, with no per-path records
 
