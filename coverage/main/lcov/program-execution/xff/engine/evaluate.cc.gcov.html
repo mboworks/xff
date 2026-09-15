@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-14 23:25:17</td>
+            <td class="headerValue">2026-09-14 23:55:02</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">97.9&nbsp;%</td>
@@ -166,9 +166,9 @@
 <span id="L86"><span class="lineNum">      86</span>                 :             : // agree and the platform choice lives in one place.</span>
 <span id="L87"><span class="lineNum">      87</span>                 :             : constexpr std::string_view kOsLineEnding = &quot;\n&quot;;</span>
 <span id="L88"><span class="lineNum">      88</span>                 :             : </span>
-<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">        1417 : bool Fnmatch(std::string_view pattern, std::string_view text, int flags) {</span></span>
-<span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">        1417 :   return ::fnmatch(std::string(pattern).c_str(), std::string(text).c_str(), flags) == 0;</span></span>
-<span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">        1417 : }</span></span>
+<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">        1420 : bool Fnmatch(std::string_view pattern, std::string_view text, int flags) {</span></span>
+<span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">        1420 :   return ::fnmatch(std::string(pattern).c_str(), std::string(text).c_str(), flags) == 0;</span></span>
+<span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">        1420 : }</span></span>
 <span id="L92"><span class="lineNum">      92</span>                 :             : </span>
 <span id="L93"><span class="lineNum">      93</span>                 :             : // The (letter, type) pairs find's -type/-xtype letters denote, alphabetical by</span>
 <span id="L94"><span class="lineNum">      94</span>                 :             : // letter: matching an entry is then one membership test (contains).</span>
@@ -2543,20 +2543,20 @@
 <span id="L2433"><span class="lineNum">    2433</span>                 :<span class="tlaGNC">          36 :   };</span></span>
 <span id="L2434"><span class="lineNum">    2434</span>                 :<span class="tlaGNC">          36 : }</span></span>
 <span id="L2435"><span class="lineNum">    2435</span>                 :             : </span>
-<span id="L2436"><span class="lineNum">    2436</span>                 :<span class="tlaGNC">         872 : absl::Span&lt;const LsColumn&gt; LsColumns() {</span></span>
-<span id="L2437"><span class="lineNum">    2437</span>                 :<span class="tlaGNC">         872 :   static constexpr auto kColumns = std::to_array&lt;LsColumn&gt;({</span></span>
-<span id="L2438"><span class="lineNum">    2438</span>                 :<span class="tlaGNC">         872 :       {.align = format::Align::kRight, .min_width = 8},  // inode</span></span>
-<span id="L2439"><span class="lineNum">    2439</span>                 :<span class="tlaGNC">         872 :       {.align = format::Align::kRight, .min_width = 5},  // 1 KiB blocks</span></span>
-<span id="L2440"><span class="lineNum">    2440</span>                 :<span class="tlaGNC">         872 :       {.align = format::Align::kLeft, .min_width = 10},  // symbolic permissions (fixed width)</span></span>
-<span id="L2441"><span class="lineNum">    2441</span>                 :<span class="tlaGNC">         872 :       {.align = format::Align::kRight, .min_width = 2},  // link count</span></span>
-<span id="L2442"><span class="lineNum">    2442</span>                 :<span class="tlaGNC">         872 :       {.align = format::Align::kLeft, .min_width = 8},   // owner</span></span>
-<span id="L2443"><span class="lineNum">    2443</span>                 :<span class="tlaGNC">         872 :       {.align = format::Align::kLeft, .min_width = 8},   // group</span></span>
-<span id="L2444"><span class="lineNum">    2444</span>                 :<span class="tlaGNC">         872 :       {.align = format::Align::kRight, .min_width = 8},  // size (bytes)</span></span>
-<span id="L2445"><span class="lineNum">    2445</span>                 :<span class="tlaGNC">         872 :       {.align = format::Align::kLeft, .min_width = 12},  // time</span></span>
-<span id="L2446"><span class="lineNum">    2446</span>                 :<span class="tlaGNC">         872 :       {.align = format::Align::kLeft, .min_width = 0},   // path (trailing, unpadded)</span></span>
-<span id="L2447"><span class="lineNum">    2447</span>                 :<span class="tlaGNC">         872 :   });</span></span>
-<span id="L2448"><span class="lineNum">    2448</span>                 :<span class="tlaGNC">         872 :   return kColumns;</span></span>
-<span id="L2449"><span class="lineNum">    2449</span>                 :<span class="tlaGNC">         872 : }</span></span>
+<span id="L2436"><span class="lineNum">    2436</span>                 :<span class="tlaGNC">         873 : absl::Span&lt;const LsColumn&gt; LsColumns() {</span></span>
+<span id="L2437"><span class="lineNum">    2437</span>                 :<span class="tlaGNC">         873 :   static constexpr auto kColumns = std::to_array&lt;LsColumn&gt;({</span></span>
+<span id="L2438"><span class="lineNum">    2438</span>                 :<span class="tlaGNC">         873 :       {.align = format::Align::kRight, .min_width = 8},  // inode</span></span>
+<span id="L2439"><span class="lineNum">    2439</span>                 :<span class="tlaGNC">         873 :       {.align = format::Align::kRight, .min_width = 5},  // 1 KiB blocks</span></span>
+<span id="L2440"><span class="lineNum">    2440</span>                 :<span class="tlaGNC">         873 :       {.align = format::Align::kLeft, .min_width = 10},  // symbolic permissions (fixed width)</span></span>
+<span id="L2441"><span class="lineNum">    2441</span>                 :<span class="tlaGNC">         873 :       {.align = format::Align::kRight, .min_width = 2},  // link count</span></span>
+<span id="L2442"><span class="lineNum">    2442</span>                 :<span class="tlaGNC">         873 :       {.align = format::Align::kLeft, .min_width = 8},   // owner</span></span>
+<span id="L2443"><span class="lineNum">    2443</span>                 :<span class="tlaGNC">         873 :       {.align = format::Align::kLeft, .min_width = 8},   // group</span></span>
+<span id="L2444"><span class="lineNum">    2444</span>                 :<span class="tlaGNC">         873 :       {.align = format::Align::kRight, .min_width = 8},  // size (bytes)</span></span>
+<span id="L2445"><span class="lineNum">    2445</span>                 :<span class="tlaGNC">         873 :       {.align = format::Align::kLeft, .min_width = 12},  // time</span></span>
+<span id="L2446"><span class="lineNum">    2446</span>                 :<span class="tlaGNC">         873 :       {.align = format::Align::kLeft, .min_width = 0},   // path (trailing, unpadded)</span></span>
+<span id="L2447"><span class="lineNum">    2447</span>                 :<span class="tlaGNC">         873 :   });</span></span>
+<span id="L2448"><span class="lineNum">    2448</span>                 :<span class="tlaGNC">         873 :   return kColumns;</span></span>
+<span id="L2449"><span class="lineNum">    2449</span>                 :<span class="tlaGNC">         873 : }</span></span>
 <span id="L2450"><span class="lineNum">    2450</span>                 :             : </span>
 <span id="L2451"><span class="lineNum">    2451</span>                 :             : namespace {</span>
 <span id="L2452"><span class="lineNum">    2452</span>                 :             : </span>
@@ -2857,10 +2857,10 @@
 <span id="L2740"><span class="lineNum">    2740</span>                 :             : // Pre-walk validation of the --diff-ignore / --diff-ignore-matching values: runs the same</span>
 <span id="L2741"><span class="lineNum">    2741</span>                 :             : // ApplyDiffIgnore the per-entry -diff uses against a throwaway DiffOptions, so the token set and</span>
 <span id="L2742"><span class="lineNum">    2742</span>                 :             : // the regex share one source of truth with the apply path. See the header for the contract.</span>
-<span id="L2743"><span class="lineNum">    2743</span>                 :<span class="tlaGNC">         922 : absl::Status ValidateDiffIgnore(std::string_view tokens, std::string_view matching) {</span></span>
-<span id="L2744"><span class="lineNum">    2744</span>                 :<span class="tlaGNC">         922 :   mbo::diff::DiffOptions options;</span></span>
-<span id="L2745"><span class="lineNum">    2745</span>                 :<span class="tlaGNC">         922 :   return ApplyDiffIgnore(tokens, matching, options);</span></span>
-<span id="L2746"><span class="lineNum">    2746</span>                 :<span class="tlaGNC">         922 : }</span></span>
+<span id="L2743"><span class="lineNum">    2743</span>                 :<span class="tlaGNC">         919 : absl::Status ValidateDiffIgnore(std::string_view tokens, std::string_view matching) {</span></span>
+<span id="L2744"><span class="lineNum">    2744</span>                 :<span class="tlaGNC">         919 :   mbo::diff::DiffOptions options;</span></span>
+<span id="L2745"><span class="lineNum">    2745</span>                 :<span class="tlaGNC">         919 :   return ApplyDiffIgnore(tokens, matching, options);</span></span>
+<span id="L2746"><span class="lineNum">    2746</span>                 :<span class="tlaGNC">         919 : }</span></span>
 <span id="L2747"><span class="lineNum">    2747</span>                 :             : </span>
 <span id="L2748"><span class="lineNum">    2748</span>                 :<span class="tlaGNC">        1583 : absl::Status ValidateSizeArgs(const parser::Expr&amp; expr) {</span></span>
 <span id="L2749"><span class="lineNum">    2749</span>         [<span class="tlaGBC" title="branch 0 was taken 1154 times"> + </span><span class="tlaGBC" title="branch 1 was taken 429 times"> + </span>]:<span class="tlaGNC">        1583 :   if (expr.kind == parser::Expr::Kind::kPredicate) {</span></span>
