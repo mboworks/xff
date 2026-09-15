@@ -1,6 +1,8 @@
 <!-- SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
+# 0.6.0
+
 # 0.5.0
 
 - Expand at most one related topic in focused flag help, with explicit selections checked at
