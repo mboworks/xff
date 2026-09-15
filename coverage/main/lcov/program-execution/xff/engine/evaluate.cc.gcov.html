@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-15 00:33:34</td>
+            <td class="headerValue">2026-09-15 06:41:05</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">97.9&nbsp;%</td>
@@ -2857,10 +2857,10 @@
 <span id="L2740"><span class="lineNum">    2740</span>                 :             : // Pre-walk validation of the --diff-ignore / --diff-ignore-matching values: runs the same</span>
 <span id="L2741"><span class="lineNum">    2741</span>                 :             : // ApplyDiffIgnore the per-entry -diff uses against a throwaway DiffOptions, so the token set and</span>
 <span id="L2742"><span class="lineNum">    2742</span>                 :             : // the regex share one source of truth with the apply path. See the header for the contract.</span>
-<span id="L2743"><span class="lineNum">    2743</span>                 :<span class="tlaGNC">         923 : absl::Status ValidateDiffIgnore(std::string_view tokens, std::string_view matching) {</span></span>
-<span id="L2744"><span class="lineNum">    2744</span>                 :<span class="tlaGNC">         923 :   mbo::diff::DiffOptions options;</span></span>
-<span id="L2745"><span class="lineNum">    2745</span>                 :<span class="tlaGNC">         923 :   return ApplyDiffIgnore(tokens, matching, options);</span></span>
-<span id="L2746"><span class="lineNum">    2746</span>                 :<span class="tlaGNC">         923 : }</span></span>
+<span id="L2743"><span class="lineNum">    2743</span>                 :<span class="tlaGNC">         922 : absl::Status ValidateDiffIgnore(std::string_view tokens, std::string_view matching) {</span></span>
+<span id="L2744"><span class="lineNum">    2744</span>                 :<span class="tlaGNC">         922 :   mbo::diff::DiffOptions options;</span></span>
+<span id="L2745"><span class="lineNum">    2745</span>                 :<span class="tlaGNC">         922 :   return ApplyDiffIgnore(tokens, matching, options);</span></span>
+<span id="L2746"><span class="lineNum">    2746</span>                 :<span class="tlaGNC">         922 : }</span></span>
 <span id="L2747"><span class="lineNum">    2747</span>                 :             : </span>
 <span id="L2748"><span class="lineNum">    2748</span>                 :<span class="tlaGNC">        1583 : absl::Status ValidateSizeArgs(const parser::Expr&amp; expr) {</span></span>
 <span id="L2749"><span class="lineNum">    2749</span>         [<span class="tlaGBC" title="branch 0 was taken 1154 times"> + </span><span class="tlaGBC" title="branch 1 was taken 429 times"> + </span>]:<span class="tlaGNC">        1583 :   if (expr.kind == parser::Expr::Kind::kPredicate) {</span></span>
