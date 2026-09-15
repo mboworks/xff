@@ -1033,7 +1033,8 @@ Section CompareSection(bool in_full) {
       "including zero counts for empty comparisons. Each paired path counts once; directory-only entries are omitted "
       "as in the status listing. Percentages use all compared results; `--summary-precision` controls decimals. "
       "`--format=jsonl` renders these summary rows as `group`, `count`, and numeric `percent` objects. "
-      "Other summary groupings describe each input tree separately."));
+      "Other summary groupings combine the input trees. `--summary-scope=root` separates roots; "
+      "`--summary-scope=compare` separates all comparison categories, preserving both sides of paired results."));
   statuses.children.push_back(ProseOf(
       "`--compare=summary` is shorthand for `--compare=status --compare-select=none --summary=compare` "
       "at that position in the option sequence. Later selections can enable per-path output, and "
@@ -1062,6 +1063,7 @@ Section CompareSection(bool in_full) {
   Bullets links;
   links.items.push_back(ParseInline("`--summary=compare`: counts and percentages for all comparison results."));
   links.items.push_back(ParseInline("`--compare-select`: choose per-path records; `none` suppresses the listing."));
+  links.items.push_back(ParseInline("`--summary-scope`: combined, per-root, or category statistics."));
   links.items.push_back(ParseInline("`--summary-precision`: decimal places in summary percentages."));
   links.items.push_back(ParseInline("`--format=jsonl`: machine-readable comparison summary rows."));
   related.children.push_back(Content{.node = std::move(links)});
@@ -1069,6 +1071,9 @@ Section CompareSection(bool in_full) {
 
   Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
   examples.children.push_back(ExampleOf("xff --compare=summary left-tree right-tree", "sh"));
+  examples.children.push_back(
+      ExampleOf("xff --compare=summary left-tree right-tree --summary=ext --summary-scope=compare", "sh"));
+  examples.children.push_back(ProseOf("summarize extensions within each comparison category"));
   examples.children.push_back(ProseOf("show only counts and percentages, with no per-path records"));
   examples.children.push_back(ExampleOf("xff --compare left-tree right-tree", "sh"));
   examples.children.push_back(ProseOf("print only paths present on one side or different on both sides"));

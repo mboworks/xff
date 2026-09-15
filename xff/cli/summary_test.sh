@@ -356,4 +356,72 @@ test::compare_summary_requires_compare_mode() {
   expect_output_contains 'requires --compare' "${out}"
 }
 
+test::summary_scopes_multiple_roots() {
+  local root out
+  root="$(_new_tree)"
+  mkdir "${root}/one" "${root}/two" "${root}/three"
+  printf abc >"${root}/one/a.txt"
+  printf de >"${root}/two/b.txt"
+  printf f >"${root}/three/c.cc"
+  out="$(_run "${root}/one" "${root}/two" "${root}/three" -type f --summary --format=jsonl)"
+  expect_eq '{"group":"total","count":3,"bytes":6}' "${out}"
+  out="$(_run "${root}/one" "${root}/two" "${root}/three" -type f --summary --summary-scope=root --format=jsonl)"
+  expect_output_contains "\"root\":\"${root}/one\",\"group\":\"total\",\"count\":1,\"bytes\":3" "${out}"
+  expect_output_contains "\"root\":\"${root}/two\",\"group\":\"total\",\"count\":1,\"bytes\":2" "${out}"
+  expect_output_contains "\"root\":\"${root}/three\",\"group\":\"total\",\"count\":1,\"bytes\":1" "${out}"
+}
+
+test::summary_scopes_comparison_aliases() {
+  local root out explicit
+  root="$(_new_tree)"
+  mkdir "${root}/left" "${root}/right"
+  printf abc >"${root}/left/only.txt"
+  printf defg >"${root}/right/extra.cc"
+  printf same >"${root}/left/equal.txt"
+  printf same >"${root}/right/equal.txt"
+  printf x >"${root}/left/change.txt"
+  printf yz >"${root}/right/change.txt"
+  out="$(_run --compare=summary "${root}/left" "${root}/right" -type f --summary=overall --summary-scope=compare --format=jsonl)"
+  expect_output_contains "\"scope\":\"left-only\",\"root\":\"${root}/left\",\"group\":\"total\",\"count\":1,\"bytes\":3" "${out}"
+  expect_output_contains "\"scope\":\"different\",\"root\":\"${root}/left\",\"group\":\"total\",\"count\":1,\"bytes\":1" "${out}"
+  expect_output_contains "\"scope\":\"different\",\"root\":\"${root}/right\",\"group\":\"total\",\"count\":1,\"bytes\":2" "${out}"
+  explicit="$(_run --compare=summary "${root}/left" "${root}/right" -type f --summary=overall --summary-scope=left,right,diff,identical,compare --format=jsonl)"
+  expect_eq "${out}" "${explicit}"
+  out="$(_run --compare=summary "${root}/left" "${root}/right" -type f --summary=overall --summary-scope=all --format=jsonl)"
+  expect_output_contains '"scope":"all","root":"","group":"total","count":6,"bytes":18' "${out}"
+}
+
+test::summary_scope_rejects_invalid_context() {
+  local root out rc
+  root="$(_new_tree)"
+  out="$("$(_xff_bin)" "${root}" --summary --summary-scope=diff 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  expect_output_contains 'require --compare' "${out}"
+  out="$("$(_xff_bin)" "${root}" --summary --summary-scope=garbage 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+}
+
+test::summary_scope_empty_root_and_replacement() {
+  local root out
+  root="$(_new_tree)"
+  out="$(_run "${root}" -type f --summary --summary-scope=root --format=jsonl)"
+  expect_eq "{\"scope\":\"root\",\"root\":\"${root}\",\"group\":\"total\",\"count\":0}" "${out}"
+  printf abc >"${root}/file.txt"
+  out="$(_run "${root}" -type f --summary --summary-scope=root --summary-scope=all --format=jsonl)"
+  expect_eq '{"scope":"all","root":"","group":"total","count":1,"bytes":3}' "${out}"
+  out="$(_run "${root}" -type f --summary-scope=root --format=jsonl)"
+  expect_not_matches '"scope"' "${out}"
+}
+
+test::summary_scope_template_and_collection() {
+  local root out
+  root="$(_new_tree)"
+  mkdir "${root}/one" "${root}/two"
+  printf abc >"${root}/one/a.txt"
+  printf de >"${root}/two/b.txt"
+  out="$(_run "${root}/one" "${root}/two" -type f -collect:files --summary='{ext}' --summary-scope=root --format=jsonl)"
+  expect_output_contains "\"root\":\"${root}/one\",\"group\":\"txt\",\"count\":1,\"bytes\":3" "${out}"
+  expect_output_contains "\"root\":\"${root}/two\",\"group\":\"txt\",\"count\":1,\"bytes\":2" "${out}"
+}
+
 test_runner

@@ -1,6 +1,11 @@
 <!-- SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
+# 0.6.0
+
+- Add `--summary-scope` for combined, per-root, and comparison-category statistics, with
+  ordered aliases and separate left/right statistics for paired categories.
+
 # 0.5.0
 
 - Expand at most one related topic in focused flag help, with explicit selections checked at
