@@ -1,0 +1,169 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/design-directory-safety.md - xff v0.5.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.5.0/">Home</a><a href="/xff/site/tag/v0.5.0/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.5.0">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/98e10abb246f76c457eba9087fa7c8cc8570580e">Source</a><a href="/xff/coverage/tag/0.5.0/">Coverage</a><a href="/xff/releases/0.5.0/">CLI reference</a></nav><p>xff v0.5.0</p><main><h1 dir="auto" id="directory-scoped-safety-controls">Directory-scoped safety controls</h1>
+<p dir="auto">Directory controls extend <a href="design-safety.html">the safety model</a> with explicit temporary and output roots.</p>
+<h2 dir="auto" id="scope-and-composition">Scope and composition</h2>
+<p dir="auto">Temporary and output directories share one permission model. A declared root covers its descendants<br>
+recursively, including subdirectories. It does not authorize removal or replacement of the root<br>
+itself. Merely placing an existing file in a temporary directory does not make that file owned<br>
+scratch storage.</p>
+<p dir="auto"><code class="notranslate">--block-policy-categories=archive,temp,output</code> extends the existing per-file interpretation rule.<br>
+Each INI independently selects which categories have dedicated controls. An ordinary file block in<br>
+a file that does not select a category expands into that category's block before configurations<br>
+are combined. Later category selection cannot undo the resulting unconditional blocks.</p>
+<p dir="auto">Execution remains a separate capability. No directory permission confines an executed child.<br>
+Mandatory filesystem restrictions therefore require blocking execution as well.</p>
+<p dir="auto">Root declarations must retain their trust provenance. A user setting must not move or enlarge a<br>
+system-defined scope; named groups and explicit files must not silently redirect it. The<br>
+boundary is unsectioned system/user configuration, with system declarations authoritative. A root<br>
+is explicit: reading <code class="notranslate">TMPDIR</code> for scratch placement does not itself grant permissions to everything<br>
+beneath that environment value.</p>
+<h2 dir="auto" id="control-vocabulary">Control vocabulary</h2>
+<p dir="auto">The category prefixes are <code class="notranslate">file</code>, <code class="notranslate">temp-file</code>, and <code class="notranslate">output-file</code>. Their operation suffixes are<br>
+<code class="notranslate">writing</code>, <code class="notranslate">overwrite</code>, and <code class="notranslate">deletion</code>. Directory operations use <code class="notranslate">directory-creation</code> and<br>
+<code class="notranslate">directory-deletion</code>, with corresponding <code class="notranslate">temp-</code> and <code class="notranslate">output-</code> prefixes. Every capability has an<br>
+accumulating <code class="notranslate">--block-</code> flag and the existing positive/negative <code class="notranslate">--safe-block-</code> profile pair.<br>
+Root declarations are <code class="notranslate">--temp-root=PATH</code> and <code class="notranslate">--output-root=PATH</code>. Each may occur once per<br>
+permitted file. The system declaration wins; otherwise the user declaration applies.<br>
+Roots must already exist and use absolute physical paths without symlink components.<br>
+For example, use <code class="notranslate">/private/tmp</code> rather than <code class="notranslate">/tmp</code> on macOS. A filesystem root (<code class="notranslate">/</code>) is invalid.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Operation</th>
+<th>Ordinary destination</th>
+<th>Temporary-root descendant</th>
+<th>Output-root descendant</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Create file</td>
+<td>file-writing</td>
+<td>temp-file-writing</td>
+<td>output-file-writing</td>
+</tr>
+<tr>
+<td>Overwrite file</td>
+<td>file-writing, file-overwrite</td>
+<td>temp-file-writing, temp-file-overwrite</td>
+<td>output-file-writing, output-file-overwrite</td>
+</tr>
+<tr>
+<td>Delete file or symlink</td>
+<td>file-deletion</td>
+<td>temp-file-deletion</td>
+<td>output-file-deletion</td>
+</tr>
+<tr>
+<td>Create directory</td>
+<td>directory-creation</td>
+<td>temp-directory-creation</td>
+<td>output-directory-creation</td>
+</tr>
+<tr>
+<td>Delete empty directory</td>
+<td>directory-deletion</td>
+<td>temp-directory-deletion</td>
+<td>output-directory-deletion</td>
+</tr>
+<tr>
+<td>Delete nonempty directory</td>
+<td>Each descendant's deletion control, then directory-deletion</td>
+<td>Each descendant's deletion control, then temp-directory-deletion</td>
+<td>Each descendant's deletion control, then output-directory-deletion</td>
+</tr>
+<tr>
+<td>Delete or replace declared root</td>
+<td>Root is protected</td>
+<td>Root is protected</td>
+<td>Root is protected</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">The table assumes the destination category is selected in the originating INI. Otherwise its<br>
+ordinary controls expand to the dedicated controls. If a path belongs to both temp and output<br>
+scopes, both sets must permit the operation. When archive detail is selected, physical archive<br>
+writes must additionally satisfy archive controls; path permissions cannot unblock archive blocks.<br>
+With any declared roots, archive output outside all roots also requires ordinary file writing/overwrite<br>
+permission. Select <code class="notranslate">archive</code> alongside the directory categories to permit archives within those roots<br>
+while blocking ordinary writes elsewhere; leaving <code class="notranslate">archive</code> unselected expands an ordinary file block<br>
+into an unconditional archive block that directory grants cannot remove.</p>
+<p dir="auto">A temporary root also supplies placement for extraction and mount scratch. An output root defines<br>
+where its permissions apply; it does not silently rewrite explicit output filenames. Archive<br>
+publication staging must remain on the destination filesystem so atomic publication still works.</p>
+<h2 dir="auto" id="operations">Operations</h2>
+<p dir="auto">File creation, file overwrite, file deletion, directory creation, and directory deletion are<br>
+separate decisions. Overwriting requires writing permission as well as overwrite permission.<br>
+Deleting a directory requires directory-deletion permission; recursively removing a tree also<br>
+requires permission for each affected descendant. A directory permission cannot stand in for<br>
+permission to delete its files.</p>
+<p dir="auto">Owned scratch cleanup remains attached to the handle that created that scratch storage. It does<br>
+not permit deleting arbitrary pre-existing entries under the same root. Archive staging is an<br>
+implementation detail of an authorized archive write; final publication must independently check<br>
+the destination's policy. A temporary pathname must never authorize publication elsewhere.</p>
+<p dir="auto">Archive content controls continue to govern member edits. Directory controls concern the physical<br>
+archive destination, not synthetic member pathnames. Overlapping directory scopes must combine<br>
+restrictions rather than choosing whichever scope permits more.</p>
+<h2 dir="auto" id="enforcement">Enforcement</h2>
+<p dir="auto">Path classification and mutation must share the same filesystem authority. String-prefix checks<br>
+and canonicalize-then-open checks are insufficient: a symlink or rename can change what the later<br>
+operation touches. Scoped operations use retained directory handles and descriptor-relative<br>
+mutation adapters. Roots are pinned for the run; replacing a root pathname does not redirect<br>
+its retained handle. Parent traversal (<code class="notranslate">..</code>) is rejected while directory policies are present. Scoped exceptions must not follow symlinks outside their authorized root.<br>
+Deleting a symlink affects its own directory entry, not its target.</p>
+<p dir="auto">Hard links need explicit treatment too: in-place overwrite of a multiply-linked file can modify<br>
+content accessible outside the root. Scoped overwrite creates a fresh inode and replaces the directory entry, preserving the<br>
+content of other hard links. It does not preserve the previous inode or its metadata. Exclusive creation must keep its atomic collision guarantee.</p>
+<p dir="auto">Policy checks belong in the common mutation layer for ordinary output, archive publication,<br>
+extraction, mount-directory lifecycle, and recursive cleanup. Early expression validation must<br>
+allow operations that are permitted for some paths, with the per-path decision enforced when the<br>
+target becomes known. Dry-run validates those same decisions and opens no mutating handles.</p>
+<h2 dir="auto" id="verification">Verification</h2>
+<ul dir="auto">
+<li>Complete system/user INIs with different category selections, named profiles, and attempted<br>
+later weakening of mandatory blocks.</li>
+<li>Root itself, children, grandchildren, similarly prefixed siblings, <code class="notranslate">..</code>, missing parents, and<br>
+overlapping roots.</li>
+<li>Parent/leaf symlinks, dangling symlinks, hard links, and replacement at the mutation boundary.</li>
+<li>File creation/overwrite/deletion, directory creation/deletion, and recursive mixed-tree removal.</li>
+<li>Archive creation/replacement and member edits inside and outside directory scopes.</li>
+<li>Extraction and mount scratch placement, owned cleanup, and pre-existing temporary files.</li>
+<li>Dry-run and collision failures that preserve existing content.</li>
+</ul>
+<h2 dir="auto" id="example">Example</h2>
+<p dir="auto">Both directories must already exist. This system INI permits new result files and scratch writes,<br>
+while blocking ordinary writes, execution, and replacement or deletion of existing results.</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--require-system-globals
+--<span class="pl-k">block-policy-categories</span>=archive,temp,output
+--<span class="pl-k">output-root</span>=/srv/xff/results
+--<span class="pl-k">temp-root</span>=/srv/xff/scratch
+--block-execution
+--block-file-writing
+--block-file-deletion
+--block-directory-creation
+--block-directory-deletion
+--block-output-file-overwrite
+--block-output-file-deletion
+--block-output-directory-deletion</pre></div>
+<p dir="auto"><code class="notranslate">xff . -fprint /srv/xff/results/list</code> can create a new result; running it again fails on the<br>
+existing destination. <code class="notranslate">--no-safe</code> cannot remove any of these unconditional blocks.<br>
+Selecting separate categories without declaring their roots in the system INI delegates those root<br>
+declarations to the user INI; declare the roots globally when their scope must be authoritative.</p>
+<p dir="auto">Ordinary temporary extraction and mount preparation require both writing and directory-creation<br>
+permission. Archive-owned staging is part of an authorized archive write and does not require<br>
+separate directory-creation permission. Owned cleanup remains allowed; it cannot select existing<br>
+directories.<br>
+Archive staging stays beside its destination for atomic publication. File output permissions do not<br>
+redirect output names, and temporary permissions do not authorize publishing a file elsewhere.</p>
+<p dir="auto">These controls do not promise rollback, preserve inode metadata on scoped overwrite, or sandbox<br>
+child processes. Concurrent filesystem changes can cause errors or partial completion; retained<br>
+directory handles prevent a symlink substitution from redirecting an authorized operation.</p></main><footer>Release snapshot · 98e10abb246f76c457eba9087fa7c8cc8570580e</footer></body></html>

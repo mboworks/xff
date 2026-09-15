@@ -1,0 +1,200 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/test-plan.md - xff v0.5.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.5.0/">Home</a><a href="/xff/site/tag/v0.5.0/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.5.0">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/98e10abb246f76c457eba9087fa7c8cc8570580e">Source</a><a href="/xff/coverage/tag/0.5.0/">Coverage</a><a href="/xff/releases/0.5.0/">CLI reference</a></nav><p>xff v0.5.0</p><main><h1 dir="auto" id="xff---test-and-verification-plan">xff - Test and Verification Plan</h1>
+<blockquote>
+<p dir="auto">Companion to <a href="implementation-plan.html">implementation-plan.md</a>. Project rule:<br>
+tests at every changed boundary; a one-off manual check is evidence for an<br>
+investigation, not a durable regression guard.</p>
+<p dir="auto">Status: implemented verification map · 2026-09-10</p>
+</blockquote>
+<h2 dir="auto" id="test-layers">Test layers</h2>
+<h3 dir="auto" id="registries-and-generated-documentation">Registries and generated documentation</h3>
+<ul dir="auto">
+<li>Registry tests enforce lookup/alias identity, summary shape, and the declared<br>
+operator, binding, safety, and style classifications that drive behavior.</li>
+<li>Global-option tests validate spellings, aliases, values, relationships, and<br>
+generated help coverage.</li>
+<li>Help backend tests cover console, Markdown, standalone HTML, and roff output,<br>
+including stable anchors, escaping, tables, links, terminal width, dark mode,<br>
+and accessibility structure where applicable.</li>
+<li><code class="notranslate">XFF.md</code>, release HTML, and NOTICE content are generated from the all-extras<br>
+binary. Drift tests rebuild them rather than trusting hand-edited output;<br>
+separately, every rendered cookbook recipe has an executable integration case.</li>
+</ul>
+<h3 dir="auto" id="parser-and-values">Parser and values</h3>
+<ul dir="auto">
+<li>Parser tests cover roots, position-independent <code class="notranslate">--</code> globals, leading<br>
+compatibility globals, the <code class="notranslate">--</code> boundary, expression precedence, primary<br>
+arity, attached bindings, <code class="notranslate">-exec</code> terminators, and diagnostics.</li>
+<li>Style enforcement tests prove that <code class="notranslate">find</code> accepts the intended GNU/BSD/POSIX<br>
+expression union while rejecting xff extensions; explicit whole-run globals<br>
+remain available.</li>
+<li>Shared value parsers receive table-driven valid, boundary, overflow, and<br>
+malformed-input coverage independently of traversal.</li>
+</ul>
+<h3 dir="auto" id="configuration-and-policy">Configuration and policy</h3>
+<ul dir="auto">
+<li>Config tokenization tests cover shell-style quotes, escapes, empty arguments, multiline values,<br>
+continuations, word-boundary hash comments, semicolon comments, literal hashes, and escaped/quoted exec terminators. Full config fixtures<br>
+run through all three tiers; CLI execution tests compare quoted predicates with command-line arguments.<br>
+Malformed quoting and invalid global lines cannot survive validation or reappear during policy filtering.</li>
+<li>All config tiers share the INI parser. Tests reject repeated declarations per file, preserve<br>
+cross-file refinements and repeated composition references, and exercise literal colon names.</li>
+<li>Real INI fixtures cover invalid globals failing before deletion, atomic named-section disablement,<br>
+transitive and undefined references, cross-file forward composition, plain section names, and<br>
+the scope and uniqueness of skip-control pairs. Registry-driven cases reject command-line-only<br>
+bootstrap options in INI globals and named sections.</li>
+<li>Global execution and explicit-file prohibitions remain authoritative over lower-trust arming and<br>
+permission grants, including when automatic defaults are suppressed.</li>
+<li>Discovery tests cover fixed system and effective-account user locations, environment non-redirection,<br>
+explicitly named <code class="notranslate">--xffrc</code> files, missing/unreadable files, granular config-source suppression,<br>
+permission enforcement, and <code class="notranslate">--no-config</code>. Regular-file checks cover directories, FIFOs,<br>
+dangling links, and intentional symlinks to regular files.</li>
+<li>Listing pager tests cover resolved global/named INI values, CLI overrides, and independence<br>
+from execution blocks.</li>
+<li>Resolution tests cover selector order, invocation-name defaults, <code class="notranslate">_full</code><br>
+normalization, repeated values, provenance, and CLI precedence.</li>
+<li>Policy tests cover authoritative global prohibitions, preset-overload<br>
+rejection, explicit-file arming, mixed safety classes, drop reasons, and<br>
+diagnostics.</li>
+<li>Configuration fuzzing composes arbitrary INI and xffrc input with the policy<br>
+gate and asserts its safety invariants.</li>
+</ul>
+<h3 dir="auto" id="filesystems-matching-and-content">Filesystems, matching, and content</h3>
+<ul dir="auto">
+<li>VFS contract tests cover local metadata, symlinks, content ranges, errors, and<br>
+thread-safe use by traversal workers.</li>
+<li>Ignore tests cover Git semantics, nested rule stacks, explicit ignore files,<br>
+include/exclude precedence, hidden entries, VCS directories, and repository<br>
+discovery.</li>
+<li>Matching packages test regex grammars and limits, fuzzy/similarity behavior,<br>
+MIME/language databases and overlays, hashes, dates, sizes, and text/binary<br>
+content rules.</li>
+<li>Optional implementations test their own format readers, malformed-input<br>
+limits, registration, and unavailable-backend errors.</li>
+</ul>
+<h3 dir="auto" id="engine-and-command-behavior">Engine and command behavior</h3>
+<ul dir="auto">
+<li>Engine fixtures cover traversal, symlink modes, depth and filesystem<br>
+boundaries, expression short-circuiting, actions, execution batching,<br>
+reductions, archive operations, comparison, and exit status.</li>
+<li>Ordering tests cover every <code class="notranslate">--sort</code> mode, root ordering, <code class="notranslate">-depth</code>, read-ahead,<br>
+<code class="notranslate">--sort=score</code>, and format buffering independently.</li>
+<li>Parallel tests cover worker-count boundaries, cancellation, deterministic<br>
+ordered output, concurrent child limits, and race-sensitive paths.</li>
+<li>Comparison tests cover left-only, right-only, identical, type/content/link<br>
+differences, binary data, selection, patch output, expression filtering,<br>
+ignore/symlink policy, errors, and path encoding.</li>
+<li>CLI/bashtests cover actual process I/O, terminal behavior, child commands,<br>
+file-producing actions, generated man/help output, configuration files, and<br>
+final exit codes.</li>
+</ul>
+<h3 dir="auto" id="compatibility-and-examples">Compatibility and examples</h3>
+<ul dir="auto">
+<li>Conformance tests run xff against the platform's real find: GNU find on Linux<br>
+and BSD find on macOS. Dialect-specific vocabulary is platform-gated;<br>
+intentional contradiction resolutions use xff-specific expectations.</li>
+<li>Every rendered cookbook recipe has a matching executable case. A help example<br>
+cannot ship merely because its text renders correctly.</li>
+<li>Golden tests are reserved for stable externally visible records and use<br>
+semantic matchers where byte-for-byte output is not the contract.</li>
+</ul>
+<h2 dir="auto" id="local-validation-sequence">Local validation sequence</h2>
+<p dir="auto">Start narrow and widen after the focused test passes:</p>
+<ol dir="auto">
+<li>run the owning package's unit/integration target;</li>
+<li>regenerate derived documentation or data when its source changes;</li>
+<li>run pre-commit for every changed file;</li>
+<li>run <code class="notranslate">bazel test //...</code> for the core;</li>
+<li>add the targets from <code class="notranslate">tools/extras.py --wildcards</code> for the complete modular<br>
+graph.</li>
+</ol>
+<p dir="auto">Use hermetic Clang for release-representative results. Run the applicable<br>
+sanitizer configuration for memory, undefined-behavior, or concurrency changes.</p>
+<h2 dir="auto" id="pull-request-ci">Pull-request CI</h2>
+<p dir="auto">The required workflow provides distinct evidence rather than treating one green<br>
+build as sufficient:</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Job</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">pre-commit</code> / <code class="notranslate">trunk</code></td>
+<td>Repository policy, formatting, static checks, generated metadata, and workflow lint.</td>
+</tr>
+<tr>
+<td><code class="notranslate">test (ubuntu-latest)</code></td>
+<td>Complete core and extras graph under hermetic Clang/libc++, production ThinLTO, required Linux FUSE tests, and staged release binaries.</td>
+</tr>
+<tr>
+<td><code class="notranslate">test (macos-latest)</code></td>
+<td>The same production configuration and staged binaries on macOS.</td>
+</tr>
+<tr>
+<td><code class="notranslate">gcc</code></td>
+<td>Compilation compatibility with the supported GCC build.</td>
+</tr>
+<tr>
+<td><code class="notranslate">minimal</code></td>
+<td>Lean core still builds after the removable extras modules are physically absent.</td>
+</tr>
+<tr>
+<td><code class="notranslate">asan</code></td>
+<td>AddressSanitizer plus UndefinedBehaviorSanitizer.</td>
+</tr>
+<tr>
+<td><code class="notranslate">tsan</code></td>
+<td>ThreadSanitizer over the parallel implementation.</td>
+</tr>
+<tr>
+<td><code class="notranslate">msan</code></td>
+<td>Linux MemorySanitizer with the instrumented libc++ toolchain.</td>
+</tr>
+<tr>
+<td><code class="notranslate">coverage</code></td>
+<td>LLVM source coverage, category thresholds, and changed-line/branch enforcement.</td>
+</tr>
+<tr>
+<td><code class="notranslate">fuzz</code></td>
+<td>Bounded campaigns for every discovered fuzz target plus committed-corpus replay in ordinary tests.</td>
+</tr>
+<tr>
+<td><code class="notranslate">xff-md</code></td>
+<td>The checked-in reference and NOTICE match the all-extras generator.</td>
+</tr>
+<tr>
+<td><code class="notranslate">clang-tidy</code></td>
+<td>Changed C/C++ translation units checked against the generated hermetic compile database.</td>
+</tr>
+<tr>
+<td><code class="notranslate">Release site tests</code></td>
+<td>Release notes, install snippets, links, and configured documentation generation.</td>
+</tr>
+<tr>
+<td><code class="notranslate">done</code></td>
+<td>Aggregate gate proving every required dependency completed successfully.</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Linux FUSE coverage is an explicit runner promise: those tests fail instead of<br>
+silently skipping when the mount path is unavailable. The default platform jobs<br>
+stage and execute the binaries produced by their single ThinLTO Bazel test run;<br>
+they do not perform a second Bazel build or test invocation.</p>
+<h2 dir="auto" id="release-verification">Release verification</h2>
+<p dir="auto">The release workflow independently builds both explicit executable targets for<br>
+each platform, stages stripped executables and split debug information, exercises<br>
+the staged binaries, constructs <code class="notranslate">.tar.zst</code> archives, and produces <code class="notranslate">SHA256SUMS</code>.<br>
+Publication and attestations happen only after the platform artifact jobs and<br>
+release metadata checks succeed.</p></main><footer>Release snapshot · 98e10abb246f76c457eba9087fa7c8cc8570580e</footer></body></html>
