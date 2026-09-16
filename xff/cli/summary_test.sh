@@ -616,4 +616,59 @@ for values in columns.values():
   done
 }
 
+test::summary_comparison_totals_reconcile_across_scopes() {
+  local root paired combined one_sided
+  root="$(_new_tree)"
+  mkdir -p "${root}/left" "${root}/right"
+  printf 'abc' >"${root}/left/left.txt"
+  printf 'abcde' >"${root}/right/right.md"
+  printf 'xx' >"${root}/left/same.txt"
+  printf 'xx' >"${root}/right/same.txt"
+  printf '1234567' >"${root}/left/different.txt"
+  printf '12345678901' >"${root}/right/different.txt"
+  paired="$(_run --compare=summary "${root}/left" "${root}/right" -type f --summary=ext --format=jsonl)"
+  combined="$(_run --compare=summary "${root}/left" "${root}/right" -type f --summary=ext --summary-scope=all --format=jsonl)"
+  one_sided="$(_run --compare=summary "${root}/left" "${root}/right" -type f --summary=ext --summary-scope=left,right --format=jsonl)"
+  python3 -c '
+import json, sys
+paired, combined, one_sided = [[json.loads(line) for line in text.splitlines()] for text in sys.argv[1:]]
+def total(rows, comparison=False):
+    return next(row for row in rows if row["group"] == "total" and ("type" in row) == comparison)
+comparison = total(paired, True)
+assert (comparison["count"], comparison["bytes"]) == (4, 30), comparison
+assert total(combined, True) == comparison == total(one_sided, True)
+sides = total(paired)
+assert (sides["left"]["count"], sides["left"]["bytes"]) == (3, 12), sides
+assert (sides["right"]["count"], sides["right"]["bytes"]) == (3, 18), sides
+all_entries = total(combined)
+assert (all_entries["count"], all_entries["bytes"]) == (6, 30), all_entries
+selected = total(one_sided)
+assert (selected["left"]["count"], selected["left"]["bytes"]) == (1, 3), selected
+assert (selected["right"]["count"], selected["right"]["bytes"]) == (1, 5), selected
+' "${paired}" "${combined}" "${one_sided}"
+}
+
+test::summary_invalid_controls_are_errors_before_actions() {
+  local root flag out rc
+  root="$(_make_tree)"
+  for flag in --summary-precision=garbage --summary-precision=10 --top=-1 --compare-select=none; do
+    out="$("$(_xff_bin)" "${root}" --summary=ext "${flag}" -printf SHOULD_NOT_RUN 2>&1)" && rc=0 || rc=$?
+    expect_eq "2" "${rc}"
+    expect_output_not_contains SHOULD_NOT_RUN "${out}"
+  done
+  for flag in csv tsv nul tree; do
+    out="$("$(_xff_bin)" "${root}" --summary=ext "--format=${flag}" 2>&1)" && rc=0 || rc=$?
+    expect_eq "2" "${rc}"
+    expect_output_contains 'summary tables require --format=' "${out}"
+  done
+}
+
+test::summary_owner_alias_is_accepted_by_cli_validation() {
+  local root user owner
+  root="$(_make_tree)"
+  user="$(_run "${root}" -type f --summary=user --format=jsonl)"
+  owner="$(_run "${root}" -type f --summary=owner --format=jsonl)"
+  expect_eq "${user}" "${owner}"
+}
+
 test_runner

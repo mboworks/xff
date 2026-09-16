@@ -4,6 +4,15 @@ Actionable roadmap and deliberately deferred ideas. Completed implementation rec
 [`docs/history-roadmap.md`](docs/history-roadmap.md); other resolved design records and investigations
 live in [`docs/history.md`](docs/history.md).
 
+## Completed: summary and comparison audit
+
+- Reject invalid reduction controls before traversal/actions; make top-limit reset deterministic.
+- Refuse silently ignored summary formats and support aligned comparison summaries consistently.
+- Document default scopes, category aliases, independent output selection, ordering, formats, and
+  count/byte reconciliation; add the summary design guide to the published documentation.
+- Add end-to-end reconciliation and invalid-control coverage alongside focused engine regressions.
+- Measure the follow-up PR's action-cache reuse against the main caches seeded after #840.
+
 ## Completed: CI compiled-output cache lifecycle
 
 - Replace frozen cache keys with fresh main-run generations and configuration-specific restoration.

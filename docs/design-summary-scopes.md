@@ -114,3 +114,59 @@ Summary columns are determined by the grouping;
 `--columns` remains a listing control and cannot be combined with Markdown summaries.
 `--no-header` omits headers and Markdown separator rows when producing table fragments.
 Expression actions retain their own output formats.
+
+## Choosing a command
+
+| Command suffix after `--compare LEFT RIGHT`                  | Per-path output | Summary tables                                                                  |
+| :----------------------------------------------------------- | :-------------- | :------------------------------------------------------------------------------ |
+| (none)                                                       | Discrepancies   | None                                                                            |
+| `--summary`                                                  | Discrepancies   | Comparison results                                                              |
+| `--summary=ext`                                              | Discrepancies   | Paired extension statistics for all categories                                  |
+| `--summary --summary-scope=compare`                          | Discrepancies   | Comparison results, then paired overall statistics                              |
+| `--compare=summary`                                          | None            | Comparison results                                                              |
+| `--compare=summary --summary=ext`                            | None            | Comparison results, then paired extension statistics                            |
+| `--compare=summary --summary=ext --summary-scope=left,right` | None            | Comparison results, then paired extension statistics for one-sided entries only |
+
+`left` and `right` select **left-only and right-only results**, not every entry on those sides.
+Use `compare` for all four categories, with complete left/right columns, or `root` for two separate
+whole-root tables. The comparison-result table always describes the full comparison. Neither
+`--summary-scope` nor `--compare-select` filters it; only the ordinary summary population changes
+with scope. Conversely, `--compare-select` changes only per-path records and requires `--compare`.
+
+For a small example, suppose there is one left-only file of 3 bytes, one right-only file of 5 bytes,
+one identical pair of 2-byte files, and one different pair of 7 and 11 bytes. With `-type f`:
+
+- Comparison total: 4 results, 30 combined bytes.
+- Paired `compare` total: left 3 entries / 12 bytes, right 3 entries / 18 bytes.
+- Combined `all` total: 6 entries / 30 bytes.
+- Paired `left,right` total: left 1 entry / 3 bytes, right 1 entry / 5 bytes.
+
+Expression filters run independently on each side **before pairing**. A path can be classified
+as one-sided when its counterpart exists but fails the expression or is excluded by traversal
+settings. For example, `-type f` excludes a directory opposite a regular file, so that path becomes
+one-sided rather than a file-to-directory transition. Omit the type filter to compare empty
+directories and other entry kinds as well.
+
+Comparison-result tables appear first, regardless of where their summary flags occur. Ordinary
+summary requests then appear in request order within each scope. Selected comparison categories
+share one paired table, emitted at the first category's position in the scope list. Repeating
+`--summary=compare` requests repeated comparison tables; `--summary=none` clears earlier requests.
+
+## Formats and controls
+
+Summary tables support `plain`, `aligned`, `jsonl`, and `markdown` (alias `md`). `aligned` has the
+same summary layout as `plain`. CSV, TSV, NUL, and tree formats are listing formats and are rejected
+while a summary remains active, rather than silently producing plain text. Fixed summary columns
+cannot be replaced by `--columns` in aligned or Markdown mode.
+
+`--format` does not reformat explicit expression actions or per-path comparison records. Status
+records remain tab-separated, and diff mode still emits a patch. Use `--compare=summary` (or
+`--compare-select=none`) without printing actions when exporting summary-only JSONL or Markdown.
+Repeated JSONL tables follow the same order as text tables; they are not wrapped in a JSON array.
+
+`--summary-precision=N` accepts `0` through `9` and controls all summary percentages and scaled
+sizes, including JSON percentage fields. Invalid values are errors. `--top=N` accepts a
+non-negative integer; `0` removes the limit, and the last occurrence wins. Ordinary groups rank
+by size, then count, then name; paired groups use combined left/right size. Extraction groups
+have no byte dimension and rank by count. Totals and percentage denominators include every
+group, even those hidden by `--top`. Comparison-result rows are never truncated by `--top`.
