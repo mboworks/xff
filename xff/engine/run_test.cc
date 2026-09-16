@@ -1916,6 +1916,82 @@ TEST_F(RunTest, SummaryTopKeepsTheLargestGroupsBySize) {
           R"({"group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})"));
 }
 
+TEST_F(RunTest, SummaryControlsRejectInvalidNumbersBeforeActions) {
+  static constexpr auto kInvalidFlags = std::to_array<std::string_view>(
+      {"--summary-precision=", "--summary-precision=garbage", "--summary-precision=-1", "--summary-precision=10",
+       "--top=", "--top=garbage", "--top=-1", "--top=18446744073709551616"});
+  for (const std::string_view flag : kInvalidFlags) {
+    SCOPED_TRACE(flag);
+    EXPECT_THAT(RunArgvRecords({root_.string(), "--summary=ext", std::string(flag), "-print"}), IsEmpty());
+    EXPECT_THAT(last_errors_, 2);
+    EXPECT_THAT(
+        RunArgvRecords({"--compare=summary", root_.string(), Path("sub"), std::string(flag), "-print"}), IsEmpty());
+    EXPECT_THAT(last_errors_, 2);
+  }
+}
+
+TEST_F(RunTest, SummaryTopZeroRestoresAllGroupsAndLaterValuesWin) {
+  const auto unlimited = RunArgvRecords({root_.string(), "-type", "f", "--summary=ext", "--format=jsonl"});
+  EXPECT_THAT(
+      RunArgvRecords({root_.string(), "-type", "f", "--summary=ext", "--top=1", "--top=0", "--format=jsonl"}),
+      Eq(unlimited));
+  EXPECT_THAT(
+      RunArgvRecords({root_.string(), "-type", "f", "--summary=ext", "--top=0", "--top=1", "--format=jsonl"}),
+      ElementsAre(HasSubstr(R"("group":"txt")"), HasSubstr(R"("group":"total","count":3)")));
+}
+
+TEST_F(RunTest, SummaryPrecisionAcceptsBothEndpointsAndLastValueWins) {
+  EXPECT_THAT(
+      RunArgvRecords({root_.string(), "-type", "f", "--summary", "--summary-precision=0", "--format=jsonl"}),
+      Contains(HasSubstr(R"("count_percent":100,)")));
+  EXPECT_THAT(
+      RunArgvRecords(
+          {root_.string(), "-type", "f", "--summary", "--summary-precision=0", "--summary-precision=9",
+           "--format=jsonl"}),
+      Contains(HasSubstr(R"("count_percent":100.000000000,)")));
+}
+
+TEST_F(RunTest, CompareSelectionRequiresComparisonBeforeActions) {
+  EXPECT_THAT(RunArgvRecords({root_.string(), "--compare-select=none", "-print"}), IsEmpty());
+  EXPECT_THAT(last_errors_, 2);
+  EXPECT_THAT(
+      RunArgvRecords({"--compare-select=none", "--compare", root_.string(), Path("sub"), "-type", "f"}), IsEmpty());
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, SummaryRejectsUnsupportedFormatsInsteadOfWritingPlainText) {
+  static constexpr auto kListingFormats =
+      std::to_array<std::string_view>({"--format=csv", "--format=tsv", "--format=nul", "--format=tree"});
+  for (const std::string_view flag : kListingFormats) {
+    SCOPED_TRACE(flag);
+    EXPECT_THAT(RunArgvRecords({root_.string(), "--summary=ext", std::string(flag), "-print"}), IsEmpty());
+    EXPECT_THAT(last_errors_, 2);
+    EXPECT_THAT(
+        RunArgvRecords({"--compare=summary", root_.string(), Path("sub"), std::string(flag), "-print"}), IsEmpty());
+    EXPECT_THAT(last_errors_, 2);
+    EXPECT_THAT(
+        RunArgvRecords({root_.string(), "-type", "f", "--summary=ext", "--summary=none", std::string(flag)}),
+        Not(IsEmpty()));
+    EXPECT_THAT(last_errors_, 0);
+  }
+}
+
+TEST_F(RunTest, AlignedSummaryMatchesPlainInBothModes) {
+  const std::vector<std::string> ordinary = {root_.string(), "-type", "f", "--summary=ext"};
+  const std::vector<std::string> comparison = {"--compare=summary", root_.string(), Path("sub"), "-type", "f",
+                                               "--summary=ext"};
+  const auto commands = std::to_array<std::vector<std::string>>({ordinary, comparison});
+  for (auto args : commands) {
+    const auto plain = RunArgvRecords(args);
+    args.emplace_back("--format=aligned");
+    EXPECT_THAT(RunArgvRecords(args), Eq(plain));
+    EXPECT_THAT(last_errors_, 0);
+    args.emplace_back("--columns=path");
+    EXPECT_THAT(RunArgvRecords(args), IsEmpty());
+    EXPECT_THAT(last_errors_, 2);
+  }
+}
+
 TEST_F(RunTest, SummaryScopesRenderPlainLabels) {
   EXPECT_THAT(
       RunArgvRecords({"--summary=ext", "--summary-scope=root", root_.string(), "-type", "f"}),

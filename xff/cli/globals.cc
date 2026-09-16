@@ -117,6 +117,7 @@ constexpr std::array kSummaryValues = std::to_array<ValueDoc>({
     {.value = "lang", .meaning = "by programming language"},
     {.value = "mime", .meaning = "by media (MIME) type"},
     {.value = "user", .meaning = "by owner"},
+    {.value = "owner", .meaning = "alias for `user`"},
     {.value = "group", .meaning = "by owning group"},
     {.value = "hash", .meaning = "by file digest (dedup: identical files share a bucket; reads every file)"},
     {.value = "hash-verification", .meaning = "verified / failed tally from exactly one reached `-hasheq`"},
@@ -1125,13 +1126,16 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "format",
         .header = "Result formatting",
         .summary = "output format: plain, nul, jsonl, csv, tsv, aligned, markdown (md), tree; default plain",
-        .details = "`markdown` (alias `md`) also renders ordinary, comparison-result, and paired summary tables "
-                   "as Markdown, with vertically aligned separators and right-aligned numeric headers and values "
-                   "in both source and rendered tables. Summary schemas come from `--summary`; `--columns` selects "
-                   "listing fields and "
-                   "cannot change summary columns. Markdown summaries have descriptive headings above their scope "
-                   "and table. `--no-header` omits those headings, table headers, and Markdown separator rows "
-                   "when producing fragments. Expression actions retain their own output formats.",
+        .details =
+            "`markdown` (alias `md`) also renders ordinary, comparison-result, and paired summary tables "
+            "as Markdown, with vertically aligned separators and right-aligned numeric headers and values "
+            "in both source and rendered tables. Summary schemas come from `--summary`; `--columns` selects "
+            "listing fields and "
+            "cannot change summary columns. Markdown summaries have descriptive headings above their scope "
+            "and table. `--no-header` omits those headings, table headers, and Markdown separator rows "
+            "when producing fragments. Summaries support `plain`, `aligned`, `jsonl`, and `markdown` (alias `md`); "
+            "`csv`, `tsv`, `nul`, and `tree` are listing-only formats and cannot render active summaries. "
+            "Expression actions and per-path comparison records retain their own output formats.",
         .values = kFormatValues,
         .topic = "output",
         .value_check = GlobalFlag::ValueCheck::kEnum,
@@ -1192,7 +1196,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "tree-comparison results to emit: left-only, right-only, identical, different, all, or none",
         .details = "Selects comma-separated result kinds for `--compare`. The default is "
                    "`left-only,right-only,different`, so equal files stay silent. `all` selects every kind. "
-                   "`none` or an empty value suppresses per-path output; comparison summaries still count all results. "
+                   "`none` or an empty value suppresses per-path output. Requires `--compare`; "
+                   "neither comparison-result nor ordinary summaries are filtered by this selection. "
                    "`identical` is available with status output and is rejected with `--compare=diff`, where an "
                    "unchanged file has no patch representation.",
         .affects = "--compare",
@@ -1408,40 +1413,47 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "stats",
         .header = "Statistics",
         .summary = "count, count percentage, size, and size percentage table; repeatable",
-        .details = "With `--compare`, bare `--summary` or `--summary=compare` appends result counts, combined "
-                   "left-plus-right sizes, and percentages by type and status, plus a total after the comparison "
-                   "output. With explicit `--summary-scope`, bare `--summary` "
-                   "also adds ordinary count and size statistics. Other groupings default to one left/right table with "
-                   "`--compare` (`--summary-scope=compare`), "
-                   "and combine all roots otherwise (`--summary-scope=all`). Explicit scope selection overrides "
-                   "this conditional default regardless of option order. "
-                   "`--summary-scope` selects combined, per-root, or comparison-category tables. "
-                   "Outside comparison, replaces the per-match listing with an aggregate table: match count and total "
-                   "size per group "
-                   "(overall, by type, extension, programming language, media (MIME) type, user (owner), owning "
-                   "group, file digest, or hash-verification result). The categorical keys reuse the "
-                   "{mime}/{user}/{group}/{hash} field "
-                   "vocabulary; --summary=hash groups identical files into one bucket (a dedup count, reading every "
-                   "file). `--summary=hash-verification` requires exactly one `-hasheq` and counts its `verified` or "
-                   "`failed` verdict even when that verdict makes the complete expression false; an entry that "
-                   "short-circuits before reaching `-hasheq` is not counted. Empty expected values and unreadable "
-                   "entries are failed, matching `-hasheq` itself. A "
-                   "{template} key groups by any field value (e.g. --summary='{ext}-{type}'); a single m// "
-                   "extraction key (--summary='{capture.NAME:m/re/\\1/}') groups per extracted line, so a "
-                   "per-file command's multi-line output tallies per key (e.g. git-blame lines per author) - the "
-                   "size column is not meaningful there. Repeatable: each --summary is its own table (e.g. "
-                   "--summary=ext --summary=type), printed in order. Percentages use the complete table totals before "
-                   "`--top`; a zero denominator yields zero percent. "
-                   "Sizes sum entry metadata sizes, including directory metadata, never recursive subtree sizes. "
-                   "`--format=markdown` (or `md`) renders these tables with grouping-specific headings above their "
-                   "scopes and fixed summary columns. Scope/root labels and explanatory notes are Markdown bullet "
-                   "items so each stays on its own rendered line. Each accounting note stays with its table, "
-                   "separated from the next summary by a blank line. Exact bytes align with scaled sizes at the "
-                   "decimal boundary. "
-                   "`--format=jsonl` includes `count_percent` and `size_percent` alongside `count` and `bytes`. "
-                   "--top=N limits the rows of each, "
-                   "--summary-precision sets the scaled-size digits, and --format=jsonl emits one object per group "
-                   "for scripts.",
+        .details =
+            "With `--compare`, bare `--summary` or `--summary=compare` appends result counts, combined "
+            "left-plus-right sizes, and percentages by type and status, plus a total after the comparison "
+            "output. With explicit `--summary-scope`, bare `--summary` "
+            "also adds ordinary count and size statistics. Other groupings default to one left/right table with "
+            "`--compare` (`--summary-scope=compare`), "
+            "and combine all roots otherwise (`--summary-scope=all`). Explicit scope selection overrides "
+            "this conditional default regardless of option order. "
+            "`--summary-scope` selects combined, per-root, or comparison-category tables. "
+            "Outside comparison, replaces the per-match listing with an aggregate table: match count and total "
+            "size per group "
+            "(overall, by type, extension, programming language, media (MIME) type, user (owner), owning "
+            "group, file digest, or hash-verification result). The categorical keys reuse the "
+            "{mime}/{user}/{group}/{hash} field "
+            "vocabulary; --summary=hash groups identical files into one bucket (a dedup count, reading every "
+            "file). `--summary=hash-verification` requires exactly one `-hasheq` and counts its `verified` or "
+            "`failed` verdict even when that verdict makes the complete expression false; an entry that "
+            "short-circuits before reaching `-hasheq` is not counted. Empty expected values and unreadable "
+            "entries are failed, matching `-hasheq` itself. A "
+            "{template} key groups by any field value (e.g. --summary='{ext}-{type}'); a single m// "
+            "extraction key (--summary='{capture.NAME:m/re/\\1/}') groups per extracted line, so a "
+            "per-file command's multi-line output tallies per key (e.g. git-blame lines per author) - the "
+            "size column is not meaningful there. Repeatable: each --summary is its own table (e.g. "
+            "--summary=ext --summary=type), printed in request order within each scope. Comparison-result "
+            "tables precede ordinary tables regardless of request order. Percentages use the complete table totals "
+            "before "
+            "`--top`; a zero denominator yields zero percent. "
+            "Sizes sum entry metadata sizes, including directory metadata, never recursive subtree sizes. "
+            "`--format=markdown` (or `md`) renders these tables with grouping-specific headings above their "
+            "scopes and fixed summary columns. Scope/root labels and explanatory notes are Markdown bullet "
+            "items so each stays on its own rendered line. Each accounting note stays with its table, "
+            "separated from the next summary by a blank line. Exact bytes align with scaled sizes at the "
+            "decimal boundary. "
+            "`--format=jsonl` includes `count_percent` and `size_percent` alongside `count` and `bytes`. "
+            "--top=N limits the rows of each, "
+            "`--summary-precision` sets all summary percentage and scaled-size digits, and --format=jsonl emits one "
+            "object per group "
+            "for scripts. Supported summary formats are `plain`, `aligned`, `jsonl`, and `markdown` (alias `md`); "
+            "listing-only formats `csv`, `tsv`, `nul`, and `tree` are rejected while a summary is active. "
+            "Per-path comparison records and expression actions retain their own output; use "
+            "`--compare-select=none` or `--compare=summary` for summary-only exports.",
         .values = kSummaryValues,
         .topic = "stats",
         .repetition = GlobalFlag::Repetition::kAccumulate,
@@ -1590,6 +1602,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "limits",
         .header = "Result limits",
         .summary = "with --summary or --histogram, keep only the N largest/tallest groups",
+        .details = "Requires a non-negative integer; `0` removes the limit. Last occurrence wins. "
+                   "Ordinary summary groups rank by bytes, then count, then name; paired tables rank by "
+                   "combined left-plus-right bytes. Extraction summaries rank by count because they have no byte "
+                   "dimension. Totals and percentage denominators include groups omitted by the limit. "
+                   "Comparison-result summaries always show every type and status; `--top` does not truncate them.",
         .affects = "--summary,--histogram",
         .topic = "stats",
     },
@@ -1607,7 +1624,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--summary-precision=N",
         .group = "stats-display",
         .header = "Statistics display",
-        .summary = "fraction digits for comparison percentages and human-readable summary sizes (default 2)",
+        .summary = "fraction digits for summary percentages and human-readable sizes (default 2)",
+        .details = "Accepts integers from `0` through `9`; other values are errors. Last occurrence wins. "
+                   "Applies to ordinary and comparison summaries, including JSON percentage fields. "
+                   "Exact byte counts stay integers.",
         .affects = "--summary,--compare",
         .topic = "stats",
     },

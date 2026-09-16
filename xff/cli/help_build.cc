@@ -1039,7 +1039,9 @@ Section CompareSection(bool in_full) {
       "left-to-right type transition. Sizes use entry metadata, never recursive directory sizes. "
       "Ordinary summary groupings default to `--summary-scope=compare` when `--compare` is active: "
       "one left/right table across all categories. Without `--compare`, the default is `all`. An explicit "
-      "scope overrides this conditional default regardless of option order. Explicit `--summary-scope=all` "
+      "scope overrides this conditional default regardless of option order. `left` and `right` scopes mean "
+      "`left-only` and `right-only`, not complete input trees; use `compare` for all categories. "
+      "Explicit `--summary-scope=all` "
       "combines both input trees: its entry count is left-only plus right-only plus twice the paired result "
       "count; its byte total equals the comparison's combined bytes for the same population. Ordinary percentages use "
       "full table totals before `--top`. "
@@ -1048,7 +1050,11 @@ Section CompareSection(bool in_full) {
       "category population, before `--top`. "
       "Missing groups display a dash (JSON `null`); existing zero-byte files retain numeric zeros. "
       "`--format=markdown` (alias `md`) exports comparison-result and ordinary summary tables as Markdown; "
-      "`--columns` remains a listing-only option."));
+      "`--columns` remains a listing-only option. Summaries support `plain`, `aligned`, `jsonl`, and `markdown`; "
+      "listing formats `csv`, `tsv`, `nul`, and `tree` are rejected with active summaries. Per-path status "
+      "records remain tab-separated even with `--format=jsonl`; suppress them for a summary-only export. "
+      "Comparison-result tables precede ordinary tables regardless of the order of summary requests. "
+      "`--top` limits ordinary groups, not comparison-result rows."));
   statuses.children.push_back(ProseOf(
       "`--compare=summary` is shorthand for `--compare=status --compare-select=none --summary=compare` "
       "at that position in the option sequence. Later selections can enable per-path output, and "
