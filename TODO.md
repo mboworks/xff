@@ -13,6 +13,11 @@ live in [`docs/history.md`](docs/history.md).
 - Add end-to-end reconciliation and invalid-control coverage alongside focused engine regressions.
 - Measure the follow-up PR's action-cache reuse against the main caches seeded after #840.
 
+## Completed: Coverage cache capacity
+
+- Raise coverage's uncompressed cache allowance to 1.5 GB; retain the existing compressed ceiling.
+- Check the next main report for retained outputs and upload size.
+
 ## Completed: Cache storage reporting and MSan allowance
 
 - Retain up to 4 GB uncompressed / 1.2 GB compressed for MSan.

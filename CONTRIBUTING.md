@@ -84,7 +84,8 @@ that cache. Dependency and compiler-option changes can still require rebuilding.
 
 Before upload, CI stops Bazel and evicts the largest disk-cache files until the action-cache and
 content-store payload is at most 600,000,000 bytes by default. ASan and TSan use
-2,600,000,000 bytes; MSan uses 4,000,000,000 bytes to retain more instrumented outputs. These are uncompressed limits; GitHub
+2,600,000,000 bytes; MSan uses 4,000,000,000 bytes and coverage uses 1,500,000,000 bytes
+to retain more instrumented outputs. These are uncompressed limits; GitHub
 storage usage reflects compressed uploads. Measure those uploads and total repository usage
 after main refreshes the caches before increasing other configurations. This is a synchronous upload bound, not an
 idle-time garbage-collection setting. Evicted outputs become normal cache misses; this bounded
