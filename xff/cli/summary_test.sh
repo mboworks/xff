@@ -569,10 +569,50 @@ test::markdown_summary_tables_escape_cells_and_support_comparison() {
   expect_output_contains '| Left count' "${out}"
   expect_output_contains '| Right count' "${out}"
   expect_output_contains 'a\|b' "${out}"
-  python3 -c 'import sys; text = sys.stdin.read(); assert text.count("| Group") == 1; assert "\n\n| Group" in text; assert "\n\nResults count" in text' <<<"${out}"
+  python3 -c 'import sys; text = sys.stdin.read(); assert text.count("| Group") == 1; assert "\n\n| Group" in text; assert "\n\nResults count" in text; assert "entry-only.\n\n## Summary by extension\n\nSummary scope:" in text; assert text.index("## Comparison summary") < text.index("| Type")' <<<"${out}"
   out="$(_run "${root}/left" --summary=ext --format=md --no-header -type f)"
   expect_not_matches '[|] Group' "${out}"
   expect_output_contains 'a\|b' "${out}"
+}
+
+test::summary_size_decimal_alignment_across_units_and_formats() {
+  local root out units precision format mode
+  root="$(_new_tree)"
+  mkdir "${root}/left" "${root}/right"
+  : >"${root}/left/zero.a"
+  : >"${root}/right/zero.a"
+  head -c 44450 /dev/zero >"${root}/left/scaled.b"
+  head -c 1024 /dev/zero >"${root}/right/scaled.b"
+  for units in si iec; do
+    for precision in 0 2; do
+      for format in plain md; do
+        for mode in ordinary compare; do
+          if [[ "${mode}" == ordinary ]]; then
+            out="$(_run "${root}/left" -type f --summary=ext --human="${units}" --summary-precision="${precision}" --format="${format}")"
+          else
+            out="$(_run --compare=summary "${root}/left" "${root}/right" -type f --summary=ext --human="${units}" --summary-precision="${precision}" --format="${format}")"
+          fi
+          python3 -c '
+import re, sys
+text = sys.stdin.read()
+columns = {}
+table = 0
+for line in text.splitlines():
+    if re.match(r"(?:\| )?(?:Group|Type) +", line):
+        table += 1
+    for index, match in enumerate(re.finditer(r"(\d+(?:\.\d+)?) +(B|kB|KiB)(?= |$)", line)):
+        decimal = match.start(1) + len(match.group(1).split(".")[0])
+        columns.setdefault((table, index), []).append((decimal, match.group(2)))
+assert columns, text
+for values in columns.values():
+    assert len({position for position, _ in values}) == 1, text
+    assert "B" in {unit for _, unit in values}, text
+    assert {"kB", "KiB"} & {unit for _, unit in values}, text
+' <<<"${out}"
+        done
+      done
+    done
+  done
 }
 
 test_runner

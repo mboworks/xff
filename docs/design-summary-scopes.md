@@ -101,7 +101,15 @@ xff --compare=summary LEFT RIGHT --summary=ext --format=md
 This emits a comparison-result table followed by one paired extension table. Cell escaping uses
 the same renderer as Markdown listings. All rows are buffered so column separators align
 vertically in the source. Labels align left; numeric headers and values align right, with matching
-Markdown alignment markers. Summary columns are determined by the grouping;
+Markdown alignment markers. Exact byte values reserve the missing fraction digits and use the same
+unit width as scaled SI (`kB`) or IEC (`KiB`) sizes, so integer digits align at the decimal boundary.
+
+Each table has a descriptive heading, such as `## Comparison summary` or `## Summary by extension`.
+The scope appears below its heading and before the table. Repeated summary groupings get their own
+headings and scope labels. Accounting notes follow their table; a blank line separates them from
+the next summary, including in console output. `--no-header` also suppresses Markdown headings.
+
+Summary columns are determined by the grouping;
 `--columns` remains a listing control and cannot be combined with Markdown summaries.
 `--no-header` omits headers and Markdown separator rows when producing table fragments.
 Expression actions retain their own output formats.
