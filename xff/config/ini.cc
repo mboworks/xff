@@ -15,6 +15,7 @@
 
 #include "xff/config/ini.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -22,6 +23,7 @@
 #include <vector>
 
 #include "absl/strings/ascii.h"
+#include "xff/env/env.h"
 
 namespace xff::config {
 namespace {
@@ -34,6 +36,8 @@ class IniLexer {
 
   IniLine Next() {
     const std::size_t start = pos_;
+    const std::string_view remaining = text_.substr(pos_);
+    expand_ = !absl::StripLeadingAsciiWhitespace(remaining.substr(0, remaining.find('\n'))).starts_with("[");
     IniLine line{.number = number_};
     std::size_t end = text_.size();
     while (!Done()) {
@@ -87,6 +91,8 @@ class IniLexer {
       started_ = true;
     } else if (ch == '\\') {
       Escape(false);
+    } else if (ch == '$') {
+      Environment();
     } else {
       Append(ch);
     }
@@ -129,9 +135,68 @@ class IniLexer {
       quote_ = '\0';
     } else if (ch == '\\' && quote_ == '"') {
       Escape(true);
+    } else if (ch == '$' && quote_ == '"') {
+      Environment();
     } else {
       Append(ch);
     }
+  }
+
+  void Environment() {
+    if (!expand_ || Done() || text_[pos_] != '{') {
+      Append('$');
+      return;
+    }
+    const std::size_t start = ++pos_;
+    const std::size_t end = text_.find_first_of("}\n", start);
+    if (end == std::string_view::npos || text_[end] != '}') {
+      error_ = "unterminated environment substitution";
+      return;
+    }
+    pos_ = end + 1;
+    const std::string_view expression = text_.substr(start, end - start);
+    const std::size_t split = expression.find(':');
+    const std::string_view name = expression.substr(0, split);
+    if (!ValidEnvironmentName(name)) {
+      error_ = "invalid environment variable name";
+      return;
+    }
+    const std::string_view operation = split == std::string_view::npos ? "" : expression.substr(split);
+    if (!operation.empty() && !operation.starts_with(":-") && !operation.starts_with(":?")) {
+      error_ = "unsupported environment substitution operator (use :- or :?)";
+      return;
+    }
+    if (operation.contains("${")) {
+      error_ = "nested environment substitutions are not supported";
+      return;
+    }
+    const auto value = env::Get(name);
+    if (operation.empty()) {
+      if (!value) {
+        error_ = "environment variable is unset: " + std::string(name);
+        return;
+      }
+    } else if (!value || value->empty()) {
+      if (operation.starts_with(":?")) {
+        error_ = "environment variable is unset or empty: " + std::string(name);
+        if (operation.size() > 2) {
+          error_ += ": " + std::string(operation.substr(2));
+        }
+        return;
+      }
+      word_.append(operation.substr(2));
+      started_ = true;
+      return;
+    }
+    word_.append(value.value_or(""));
+    started_ = true;
+  }
+
+  static bool ValidEnvironmentName(std::string_view name) {
+    if (name.empty() || (!absl::ascii_isalpha(name.front()) && name.front() != '_')) {
+      return false;
+    }
+    return std::ranges::all_of(name, [](char ch) { return absl::ascii_isalnum(ch) || ch == '_'; });
   }
 
   std::string_view text_;
@@ -139,6 +204,7 @@ class IniLexer {
   std::size_t number_ = 1;
   char quote_ = '\0';
   bool started_ = false;
+  bool expand_ = true;
   std::string word_;
   std::string error_;
   std::vector<std::string> words_;

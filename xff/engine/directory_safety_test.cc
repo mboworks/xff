@@ -12,6 +12,7 @@
 #include "mbo/testing/status.h"
 #include "xff/config/config.h"
 #include "xff/engine/run.h"
+#include "xff/env/env.h"
 #include "xff/parser/parser.h"
 #include "xff/vfs/local_fs.h"
 #include "xff/vfs/mutations.h"
@@ -40,6 +41,8 @@ struct DirectorySafetyTest : ::testing::Test {
     std::filesystem::create_directory(Path("output"));
     std::ofstream(Path("input")) << "source";
   }
+
+  void TearDown() override { env::ClearForTesting(); }
 
   std::string Path(std::string_view name) const { return root_path_ + "/" + std::string(name); }
 
@@ -76,6 +79,22 @@ struct DirectorySafetyTest : ::testing::Test {
   std::unique_ptr<vfs::TemporaryDirectory> root_;
   std::string root_path_;
 };
+
+TEST_F(DirectorySafetyTest, EnvironmentRootRetainsScopedMutationEnforcement) {
+  env::SetForTesting("XFF_INI_OUTPUT", Path("output"));
+  constexpr std::string_view kPolicy = R"ini(
+--block-policy-categories=archive,output
+--output-root=${XFF_INI_OUTPUT:?output directory required}
+--block-file-writing
+--block-output-file-overwrite
+)ini";
+  EXPECT_THAT(Run(kPolicy, {Path("input"), "-fprint", Path("output/result")}).errors, IsEmpty());
+  EXPECT_THAT(
+      Run(kPolicy, {Path("input"), "-fprint", Path("output/result")}).errors, Contains(HasSubstr("File exists")));
+  EXPECT_THAT(Run(kPolicy, {Path("input"), "-fprint", Path("outside")}).errors, Contains(HasSubstr("blocked writing")));
+  env::SetForTesting("XFF_INI_OUTPUT", Path("missing"));
+  EXPECT_THAT(Run(kPolicy, {Path("input"), "-print"}).errors, Contains(HasSubstr("cannot traverse policy directory")));
+}
 
 TEST_F(DirectorySafetyTest, IniRootsPermitOutputAndScratchButKeepOrdinaryWritesBlocked) {
   for (const std::string_view name : std::to_array<std::string_view>({"temp/result", "output/result"})) {

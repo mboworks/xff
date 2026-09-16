@@ -95,7 +95,11 @@ System, user, and all `.xffrc` files share one INI grammar. Write unconditional 
 
 A line may contain multiple directives: `--hidden --color=never` or `-name foo -name bar`. Adjacent predicates mean AND; use `-name foo -o -name bar` for either name. Config predicates and actions form an expression that is ANDed as a group with the CLI expression. Each primary consumes only its own arguments. Closed choices are validated by the shared CLI parser: `-type garbage` is invalid, while `-type f,d` is a valid any-of list.
 
-Config files emulate the shell's quoting and escaping to produce arguments for the same CLI parser. The config reader removes comments before passing those arguments to the parser; config files are not shell scripts. System, user, and all `.xffrc` files all use this rule. Single or double quotes group arguments, including spaces and empty values; outside quotes, a backslash escapes the next character. Inside double quotes, backslash escapes only double quote, backslash, dollar, backtick, or newline. There is no variable, command, pathname, or tilde expansion. Use the same flag spelling as on the CLI: `--color=auto`, not `--color = auto`. Whitespace separates arguments; it is not assignment syntax.
+Config files emulate the shell's quoting and escaping to produce arguments for the same CLI parser. The config reader removes comments before passing those arguments to the parser; config files are not shell scripts. System, user, and all `.xffrc` files all use this rule. Single or double quotes group arguments, including spaces and empty values; outside quotes, a backslash escapes the next character. Inside double quotes, backslash escapes only double quote, backslash, dollar, backtick, or newline. Braced environment substitutions are supported as described below; command, pathname, and tilde expansion are not. Use the same flag spelling as on the CLI: `--color=auto`, not `--color = auto`. Whitespace separates arguments; it is not assignment syntax.
+
+INI arguments support `${NAME}` (unset is an error; empty is allowed), `${NAME:-DEFAULT}` (literal fallback when unset or empty), and `${NAME:?MESSAGE}` (error when unset or empty). Names start with an ASCII letter or underscore and contain only ASCII letters, digits, and underscores. Substitution uses the cached process environment when the file is read, before validation and section selection. Errors invalidate the line under the usual global/section rules. Single quotes and escaped dollars prevent substitution; double quotes permit it. Bare `$NAME` and section names remain literal. Values stay within one argument, including spaces and comment characters, and are never parsed or expanded again. DEFAULT and MESSAGE are literal text through the next `}`; quotes and backslashes there remain content. Newlines, nested substitutions, and other operators are unsupported. The CLI performs no such substitution itself.
+
+For example, `--temp-root="${TMPDIR:-/private/tmp}"` and `--output-root="${HOME:?HOME must be set}/xff-results"` may appear in unsectioned system/user INI. Expanded roots must still exist and pass physical-path validation. Environment values are caller-controlled: using them in root declarations delegates the path choice to the caller. Use literal paths and mandatory flags for administrator-enforced fixed boundaries; a fallback or required-value check does not establish trust. `%{...}` is not processed by the INI reader: `-printf '%{env.HOME}'` still delegates to the field renderer, while roots have no field renderer.
 
 An unquoted `#` at the beginning of a word starts a comment through the end of the physical line. `foo#bar`, `\#`, and `"#"` are literal arguments. An unquoted, unescaped `;` starts a comment anywhere outside quotes. Both comment markers may follow any amount of whitespace. Quote or escape literal semicolons: `\;` or `";"` supplies the `-exec` terminator, just as on the CLI. For example, `-exec echo x \; ; comment` contains an exec action followed by a comment. Likewise, `-name '#*' # Match names beginning with a hash` contains one predicate and a comment.
 
@@ -263,7 +267,7 @@ Each file's directives are translated before composition. Selecting `archive` in
 | Extract over existing file     | file-writing, file-overwrite                | file-writing, file-overwrite                                                           |
 
 
-`--temp-root=PATH` and `--output-root=PATH` are config-only, once per unsectioned system or user INI. The system declaration wins. Roots must be existing absolute directories without symlink components; use physical paths (for example `/private/tmp` on macOS). Permissions cover all descendants, including subdirectories, but never deletion or replacement of the root itself. Root declarations do not redirect output filenames. The temp root also selects extraction and mount scratch placement; environment variables cannot grant a directory exception.
+`--temp-root=PATH` and `--output-root=PATH` are config-only, once per unsectioned system or user INI. The system declaration wins. Roots must be existing absolute directories without symlink components; use physical paths (for example `/private/tmp` on macOS). Permissions cover all descendants, including subdirectories, but never deletion or replacement of the root itself. Root declarations do not redirect output filenames. The temp root also selects extraction and mount scratch placement. Environment variables alone grant no directory exception. INI `${NAME}` substitution in a root declaration explicitly trusts the caller to choose that path; use literal roots for fixed administrator boundaries. See `--help=config` for defaults, quoting, and validation.
 
 | Operation                         | Ordinary path                | temp selected                          | output selected                            |
 | --------------------------------- | ---------------------------- | -------------------------------------- | ------------------------------------------ |
@@ -1217,13 +1221,13 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 <a id="flag-temp-root"></a>
 
 - `--temp-root=PATH` - declare an existing absolute temp root (config only) _(global, xff, config-only)_
-  Allowed once in unsectioned system or user INI; a system declaration wins. Permissions cover descendants recursively; the root itself remains protected. Roots and descendant traversal must not contain symlinks. See `--help=safety`.
+  Allowed once in unsectioned system or user INI; a system declaration wins. Permissions cover descendants recursively; the root itself remains protected. Roots and descendant traversal must not contain symlinks. INI `${NAME}` substitutions are allowed, but trust the caller-controlled environment to choose the root; use literal paths for fixed administrator boundaries. See `--help=config` and `--help=safety`.
   See also: [Safety](#topic-safety)
 
 <a id="flag-output-root"></a>
 
 - `--output-root=PATH` - declare an existing absolute output root (config only) _(global, xff, config-only)_
-  Allowed once in unsectioned system or user INI; a system declaration wins. Permissions cover descendants recursively; the root itself remains protected. Roots and descendant traversal must not contain symlinks. See `--help=safety`.
+  Allowed once in unsectioned system or user INI; a system declaration wins. Permissions cover descendants recursively; the root itself remains protected. Roots and descendant traversal must not contain symlinks. INI `${NAME}` substitutions are allowed, but trust the caller-controlled environment to choose the root; use literal paths for fixed administrator boundaries. See `--help=config` and `--help=safety`.
   See also: [Safety](#topic-safety)
 
 <a id="flag-block-directory-creation"></a>
@@ -3036,7 +3040,7 @@ Environment variables xff reads. An explicit command-line flag generally overrid
 - `XDG_RUNTIME_DIR` - preferred directory for a member extracted by `--archive-extract`: it is a memory-backed tmpfs, so the copy avoids disk when this location is usable (`/dev/shm` is tried next)
 - `TMPDIR` - where a temporary file goes when no memory-backed directory fits it: an extracted member (`--archive-extract`) and the in-progress rewrite of a container (`--archive-delete`)
 
-Any process environment variable is also readable in the field vocabulary as `{env.NAME}` (see `--help=fields`).
+Any process environment variable is also readable in the field vocabulary as `{env.NAME}` (see `--help=fields`). INI arguments also support `${NAME}`, `${NAME:-DEFAULT}`, and `${NAME:?MESSAGE}` at load time; see `--help=config`. `%{...}` remains reserved for field-aware consumers.
 
 See also: [Configuration](#topic-config), [Output](#topic-output)
 

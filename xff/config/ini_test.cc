@@ -15,21 +15,127 @@
 
 #include "xff/config/ini.h"
 
+#include <array>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "xff/env/env.h"
 
 namespace xff::config {
 namespace {
 
 using ::testing::ElementsAre;
 using ::testing::Eq;
+using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
 
-struct IniTest : ::testing::Test {};
+struct IniTest : ::testing::Test {
+  void SetUp() override {
+    env::ClearForTesting();
+    env::SetForTesting("XFF_INI_VALUE", "set");
+    env::SetForTesting("XFF_INI_EMPTY", "");
+    env::SetForTesting("XFF_INI_MISSING", std::nullopt);
+  }
+
+  void TearDown() override { env::ClearForTesting(); }
+};
+
+TEST_F(IniTest, EnvironmentValuesAndDefaultsPreserveArgumentBoundaries) {
+  const auto cfg = ParseIni(R"ini(--temp-root=${XFF_INI_VALUE}/scratch
+-name "${XFF_INI_VALUE}" -name ${XFF_INI_EMPTY}
+-name ${XFF_INI_MISSING:-fallback with spaces}
+-name ${XFF_INI_EMPTY:-fallback} -name ${XFF_INI_VALUE:-unused}
+-name ${XFF_INI_VALUE:?required} -name ${XFF_INI_MISSING:-}
+)ini");
+  EXPECT_THAT(
+      cfg.globals, ElementsAre(
+                       "--temp-root=set/scratch", "-name", "set", "-name", "", "-name", "fallback with spaces", "-name",
+                       "fallback", "-name", "set", "-name", "set", "-name", ""));
+  for (const auto& line : cfg.global_lines) {
+    EXPECT_THAT(line.syntax_error, IsEmpty());
+  }
+}
+
+TEST_F(IniTest, EnvironmentTextIsNeverParsedAsSyntaxOrExpandedAgain) {
+  env::SetForTesting("XFF_INI_VALUE", "a b ; # '\" \\ ${XFF_INI_MISSING} --no-safe");
+  const auto cfg = ParseIni(R"ini(-name ${XFF_INI_VALUE} --hidden # comment
+-name ${XFF_INI_MISSING:-$HOME;#"literal"} ; comment
+-name ${XFF_INI_EMPTY}#suffix
+)ini");
+  EXPECT_THAT(
+      cfg.globals, ElementsAre(
+                       "-name", "a b ; # '\" \\ ${XFF_INI_MISSING} --no-safe", "--hidden", "-name",
+                       "$HOME;#\"literal\"", "-name", "#suffix"));
+}
+
+TEST_F(IniTest, QuotingAndEscapingKeepLiteralDollarsAndFieldFormats) {
+  const auto cfg = ParseIni(R"ini(-name '${XFF_INI_MISSING}' -name \${XFF_INI_MISSING}
+-name "\${XFF_INI_MISSING}" -name $XFF_INI_MISSING -name $
+-printf '%{env.XFF_INI_VALUE}' -printf "%{env.XFF_INI_VALUE}"
+[${XFF_INI_MISSING}]
+-name ${XFF_INI_VALUE}
+)ini");
+  EXPECT_THAT(
+      cfg.globals,
+      ElementsAre(
+          "-name", "${XFF_INI_MISSING}", "-name", "${XFF_INI_MISSING}", "-name", "${XFF_INI_MISSING}", "-name",
+          "$XFF_INI_MISSING", "-name", "$", "-printf", "%{env.XFF_INI_VALUE}", "-printf", "%{env.XFF_INI_VALUE}"));
+  ASSERT_THAT(cfg.named, SizeIs(1));
+  EXPECT_THAT(cfg.named[0].name, "${XFF_INI_MISSING}");
+  ASSERT_THAT(cfg.named[0].lines, SizeIs(1));
+  EXPECT_THAT(cfg.named[0].lines[0].tokens, ElementsAre("-name", "set"));
+  EXPECT_THAT(ParseIni("-name $").globals, ElementsAre("-name", "$"));
+}
+
+TEST_F(IniTest, MissingOrEmptyRequiredVariablesInvalidateWholeLine) {
+  const auto cases = std::to_array<std::string_view>(
+      {"${XFF_INI_MISSING}", "${XFF_INI_MISSING:?}", "${XFF_INI_EMPTY:?}", "${XFF_INI_EMPTY:?set a nonempty value}"});
+  for (const auto value : cases) {
+    SCOPED_TRACE(value);
+    const auto cfg = ParseIni("# comment\n--hidden -name " + std::string(value) + "\n--color=never");
+    EXPECT_THAT(cfg.globals, ElementsAre("--color=never"));
+    ASSERT_THAT(cfg.global_lines, SizeIs(2));
+    EXPECT_THAT(cfg.global_lines[0].tokens, IsEmpty());
+    EXPECT_THAT(cfg.global_lines[0].number, 2);
+    EXPECT_THAT(cfg.global_lines[0].syntax_error, HasSubstr("environment variable is unset"));
+  }
+  EXPECT_THAT(
+      ParseIni("-name ${XFF_INI_EMPTY:?set a nonempty value}").global_lines[0].syntax_error,
+      HasSubstr("XFF_INI_EMPTY: set a nonempty value"));
+}
+
+TEST_F(IniTest, InvalidSubstitutionsAreDiagnosedWithoutPartialTokens) {
+  struct Case {
+    std::string_view input;
+    std::string_view diagnostic;
+  };
+
+  const auto cases = std::to_array<Case>({
+      {.input = "${", .diagnostic = "unterminated environment"},
+      {.input = "${XFF_INI_VALUE\n", .diagnostic = "unterminated environment"},
+      {.input = "${}", .diagnostic = "invalid environment variable name"},
+      {.input = "${1BAD}", .diagnostic = "invalid environment variable name"},
+      {.input = "${BAD-NAME}", .diagnostic = "invalid environment variable name"},
+      {.input = "${XFF_INI_VALUE:+yes}", .diagnostic = "unsupported environment substitution"},
+      {.input = "${XFF_INI_VALUE:=yes}", .diagnostic = "unsupported environment substitution"},
+      {.input = "${XFF_INI_VALUE:}", .diagnostic = "unsupported environment substitution"},
+      {.input = "${XFF_INI_VALUE:-${OTHER}}", .diagnostic = "nested environment substitutions"},
+  });
+  for (const auto& test : cases) {
+    SCOPED_TRACE(test.input);
+    const auto cfg = ParseIni("--hidden -name " + std::string(test.input));
+    EXPECT_THAT(cfg.globals, IsEmpty());
+    ASSERT_THAT(cfg.global_lines, SizeIs(1));
+    EXPECT_THAT(cfg.global_lines[0].syntax_error, HasSubstr(test.diagnostic));
+  }
+  env::SetForTesting("_XFF123", "valid");
+  EXPECT_THAT(ParseIni("-name ${_XFF123}").globals, ElementsAre("-name", "valid"));
+}
 
 TEST_F(IniTest, HashCommentsRespectWordBoundariesQuotingAndEscaping) {
   const ConfigFile cfg = ParseIni(R"ini(

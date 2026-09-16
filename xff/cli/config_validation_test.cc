@@ -6,6 +6,7 @@
 #include <array>
 #include <fstream>
 #include <iterator>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -37,7 +38,9 @@ using ::testing::IsEmpty;
 using ::testing::NotNull;
 using ::testing::SizeIs;
 
-struct ConfigValidationTest : ::testing::Test {};
+struct ConfigValidationTest : ::testing::Test {
+  void TearDown() override { env::ClearForTesting(); }
+};
 
 // XFF_HOST_IO: reads explicitly declared Bazel runfile fixtures and reports failures as status.
 absl::StatusOr<std::string> Fixture(std::string_view directory, std::string_view file = "system.ini") {
@@ -54,6 +57,39 @@ absl::StatusOr<std::string> Fixture(std::string_view directory, std::string_view
     return absl::InternalError(absl::StrCat("cannot read fixture ", path));
   }
   return text;
+}
+
+TEST_F(ConfigValidationTest, EnvironmentExpansionUsesSharedGrammarAndExistingValidation) {
+  env::SetForTesting("XFF_INI_PATTERN", "space name;#literal");
+  env::SetForTesting("XFF_INI_COLOR", std::nullopt);
+  env::SetForTesting("XFF_INI_MISSING", std::nullopt);
+  ASSERT_OK_AND_ASSIGN(const auto text, Fixture("environment", "shared.ini"));
+  const auto sources =
+      std::to_array<config::Source>({config::Source::kSystem, config::Source::kUser, config::Source::kXffrc});
+  for (const auto source : sources) {
+    const auto parsed = config::ParseXffrc(text);
+    const auto valid = ValidateConfigFile(parsed, {"report"}, "shared.ini", source);
+    EXPECT_THAT(valid.status, IsOk());
+    EXPECT_THAT(valid.config.globals, ElementsAre("--color=never"));
+    EXPECT_THAT(valid.disabled_configs, ElementsAre("missing"));
+    EXPECT_THAT(valid.diagnostics, ElementsAre(AllOf(HasSubstr("shared.ini:8"), HasSubstr("set the pattern"))));
+    ASSERT_THAT(valid.config.named, SizeIs(1));
+    EXPECT_THAT(valid.config.named[0].lines[0].tokens, ElementsAre("-name", "space name;#literal"));
+    EXPECT_THAT(valid.config.named[0].lines[1].tokens, ElementsAre("-printf", "%{env.XFF_INI_PATTERN}"));
+    const auto invalid = ValidateConfigFile(parsed, {"missing"}, "shared.ini", source);
+    EXPECT_THAT(invalid.status, StatusIs(absl::StatusCode::kInvalidArgument));
+  }
+  env::SetForTesting("XFF_INI_COLOR", "garbage");
+  EXPECT_THAT(
+      ValidateConfigFile(config::ParseIni(text), {}, "shared.ini").status,
+      StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(
+      ValidateConfigFile(
+          config::ParseIni("--output-root=${XFF_INI_MISSING}"), {}, "system.ini", config::Source::kSystem)
+          .status,
+      StatusIs(absl::StatusCode::kInvalidArgument));
+  ASSERT_OK_AND_ASSIGN(const auto cli, parser::Parse({".", "-name", "${XFF_INI_MISSING}"}));
+  EXPECT_THAT(cli.globals, IsEmpty());
 }
 
 TEST_F(ConfigValidationTest, DirectoryRootsAreGlobalTrustedAndSystemAuthoritative) {

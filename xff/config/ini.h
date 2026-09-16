@@ -45,7 +45,11 @@ struct ConfigFile {
 
 // Parses shared INI text with shell-style single/double quoting and backslash escaping.
 // Unquoted '#' begins a comment at a word boundary; unquoted ';' begins a comment anywhere.
-// Quote or escape literal semicolons, including exec terminators. No expansion or execution occurs.
+// Quote or escape literal semicolons, including exec terminators. No command execution occurs.
+// Outside single quotes, ${NAME}, ${NAME:-DEFAULT}, and ${NAME:?MESSAGE} read the cached
+// environment. Escaped dollars, section names, and bare $NAME remain literal. Replacement text
+// stays within one argument and is never reinterpreted. Defaults/messages are literal, single-line
+// text; nested substitutions are rejected. Missing required variables invalidate the line.
 // Quoted newlines and escaped line
 // continuations are supported. Whitespace separates words; flags retain their exact CLI spelling.
 // Lexical errors retain their starting line and source text.

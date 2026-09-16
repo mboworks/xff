@@ -4,6 +4,13 @@ Actionable roadmap and deliberately deferred ideas. Completed implementation rec
 [`docs/history-roadmap.md`](docs/history-roadmap.md); other resolved design records and investigations
 live in [`docs/history.md`](docs/history.md).
 
+## Completed: INI environment substitutions
+
+- Add braced environment values, literal defaults, and required-value diagnostics to the shared INI lexer.
+- Preserve quoting, argument boundaries, section names, and field-renderer `%{...}` syntax.
+- Test complete configuration files, invalid values, and scoped mutation enforcement after root expansion.
+- Document caller-controlled environment trust and literal roots for fixed administrator boundaries.
+
 ## Completed: summary and comparison audit
 
 - Reject invalid reduction controls before traversal/actions; make top-limit reset deterministic.
