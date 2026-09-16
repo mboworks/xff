@@ -109,7 +109,8 @@ constexpr std::array kSummaryScopeValues = std::to_array<ValueDoc>({
 
 constexpr std::array kSummaryValues = std::to_array<ValueDoc>({
     {.value = "none", .meaning = "clear all previously requested summaries"},
-    {.value = "compare", .meaning = "comparison counts and percentages by status; requires `--compare`"},
+    {.value = "compare",
+     .meaning = "comparison counts, combined sizes, and percentages by type and status; requires `--compare`"},
     {.value = "overall", .meaning = "one row aggregated over all matches"},
     {.value = "type", .meaning = "by file type"},
     {.value = "ext", .meaning = "by extension"},
@@ -1150,24 +1151,28 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "diff",
         .header = "Tree comparison and diffs",
         .summary = "compare two roots as selected statuses, a unified diff, or a summary",
-        .details = "Requires exactly two roots. `--compare=summary` expands at its position to "
-                   "`--compare=status --compare-select=none --summary=compare`; later flags may override its settings. "
-                   "Bare `--compare` and "
-                   "`--compare=status` emit only discrepancies as tab-separated `left-only`, `right-only`, or "
-                   "`different` records. `--compare=diff` emits one unified tree diff, suitable for redirecting to "
-                   "a patch file; `--diff-context` and `--diff-algorithm` tune it. Unlike `-diff TARGET`, which is "
-                   "an expression action comparing each match from one walk with a templated target and therefore "
-                   "cannot discover target-only paths, `--compare` walks both roots independently and pairs the "
-                   "matches by relative path. The ordinary expression, ignore, hidden-file, archive, traversal, "
-                   "and `-P` / `-H` / `-L` symlink rules apply unchanged to each side; comparison itself enables "
-                   "none of them. Regular files are compared byte for byte (text and binary). Unfollowed symlinks "
-                   "are compared by target. Both walks complete before comparison records are emitted in bytewise "
-                   "relative-path order; `--sort` affects each walk, not that final order. In status mode, "
-                   "`--path-encoding=escape` makes control bytes in the relative path unambiguous. "
-                   "`--summary` / `--summary=compare` append comparison counts and percentages by status and "
-                   "a total. "
-                   "Other summary groupings combine the input trees; `--summary-scope` separates roots or comparison "
-                   "categories.",
+        .details =
+            "Requires exactly two roots. `--compare=summary` expands at its position to "
+            "`--compare=status --compare-select=none --summary=compare`; later flags may override its settings. "
+            "Bare `--compare` and "
+            "`--compare=status` emit only discrepancies as tab-separated `left-only`, `right-only`, or "
+            "`different` records. `--compare=diff` emits one unified tree diff, suitable for redirecting to "
+            "a patch file; `--diff-context` and `--diff-algorithm` tune it. Unlike `-diff TARGET`, which is "
+            "an expression action comparing each match from one walk with a templated target and therefore "
+            "cannot discover target-only paths, `--compare` walks both roots independently and pairs the "
+            "matches by relative path. The ordinary expression, ignore, hidden-file, archive, traversal, "
+            "and `-P` / `-H` / `-L` symlink rules apply unchanged to each side; comparison itself enables "
+            "none of them. Regular files are compared byte for byte (text and binary). Unfollowed symlinks "
+            "are compared by target. Both walks complete before comparison records are emitted in bytewise "
+            "relative-path order; `--sort` affects each walk, not that final order. In status mode, "
+            "`--path-encoding=escape` makes control bytes in the relative path unambiguous. "
+            "`--summary` / `--summary=compare` append results and combined bytes by entry type and status. "
+            "Results count each pair once; bytes include both sides, including two copies of identical files. "
+            "Directories and special entries are included; directory equality compares the entry kind, not its "
+            "subtree. "
+            "Ordinary summary groupings default to `--summary-scope=compare`: one table with left and right "
+            "columns across all comparison categories. Explicit `--summary-scope=all` combines both sides; "
+            "`--summary-scope=root` separates roots. `--compare` changes this default regardless of option order.",
         .values = kCompareValues,
         .topic = "compare",
         .value_check = GlobalFlag::ValueCheck::kEnum,
@@ -1368,13 +1373,19 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "stats",
         .header = "Statistics",
         .summary = "summarize all roots together, each root, or selected comparison categories",
-        .details = "Selects independent labelled tables for each ordinary `--summary` grouping. "
-                   "`all` combines every root (the default); `root` separates input roots. "
+        .details = "Selects populations for each ordinary `--summary` grouping. "
+                   "`all` combines every root; `root` separates input roots. Without an explicit scope, the default is "
+                   "`all` outside comparison and `compare` when `--compare` is active, regardless of option order. "
+                   "An explicit scope overrides that conditional default; repeated scopes use the last occurrence. "
                    "Comparison categories require `--compare`: `left` aliases `left-only`, `right` aliases "
                    "`right-only`, `diff` expands to `left-only,right-only,different`, and `compare` expands to "
                    "`left-only,right-only,different,identical`. Aliases expand in order and duplicate scopes "
                    "are removed. Repeating the flag replaces the preceding list. Selection is independent "
-                   "of `--compare-select`. Paired categories preserve separate left and right statistics; "
+                   "of `--compare-select`. Selected categories share one table per grouping, with left and right "
+                   "count, count percentage, size, and "
+                   "size percentage columns. Each group appears once, combining entries from the selected categories. "
+                   "Percentages use each side's full selected category population before `--top`; missing entries "
+                   "display a dash. "
                    "`all` counts both copies. Requires an active file summary such as `--summary` or `--summary=ext`; "
                    "otherwise it is an error. `--compare=summary` expands to `--summary=compare`, which only counts "
                    "comparison results and does not satisfy this requirement.",
@@ -1389,11 +1400,14 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--summary[=<GROUP>]",
         .group = "stats",
         .header = "Statistics",
-        .summary = "aligned count + size table (or --format=jsonl rows) instead of each match; repeatable",
-        .details = "With `--compare`, bare `--summary` or `--summary=compare` appends result counts and "
-                   "percentages by "
-                   "status and a total after the comparison output. With explicit `--summary-scope`, bare `--summary` "
-                   "also adds ordinary count and size statistics. Other groupings combine all input roots by default. "
+        .summary = "count, count percentage, size, and size percentage table; repeatable",
+        .details = "With `--compare`, bare `--summary` or `--summary=compare` appends result counts, combined "
+                   "left-plus-right sizes, and percentages by type and status, plus a total after the comparison "
+                   "output. With explicit `--summary-scope`, bare `--summary` "
+                   "also adds ordinary count and size statistics. Other groupings default to one left/right table with "
+                   "`--compare` (`--summary-scope=compare`), "
+                   "and combine all roots otherwise (`--summary-scope=all`). Explicit scope selection overrides "
+                   "this conditional default regardless of option order. "
                    "`--summary-scope` selects combined, per-root, or comparison-category tables. "
                    "Outside comparison, replaces the per-match listing with an aggregate table: match count and total "
                    "size per group "
@@ -1409,7 +1423,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "extraction key (--summary='{capture.NAME:m/re/\\1/}') groups per extracted line, so a "
                    "per-file command's multi-line output tallies per key (e.g. git-blame lines per author) - the "
                    "size column is not meaningful there. Repeatable: each --summary is its own table (e.g. "
-                   "--summary=ext --summary=type), printed in order. --top=N limits the rows of each, "
+                   "--summary=ext --summary=type), printed in order. Percentages use the complete table totals before "
+                   "`--top`; a zero denominator yields zero percent. "
+                   "Sizes sum entry metadata sizes, including directory metadata, never recursive subtree sizes. "
+                   "`--format=jsonl` includes `count_percent` and `size_percent` alongside `count` and `bytes`. "
+                   "--top=N limits the rows of each, "
                    "--summary-precision sets the scaled-size digits, and --format=jsonl emits one object per group "
                    "for scripts.",
         .values = kSummaryValues,

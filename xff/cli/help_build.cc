@@ -1028,13 +1028,25 @@ Section CompareSection(bool in_full) {
       "`--compare-select=none` (or an empty value) suppresses per-path output without changing summary counts. "
       "`--path-encoding=escape` makes control bytes in the path unambiguous."));
   statuses.children.push_back(ProseOf(
-      "`--summary` (or `--summary=compare`) appends counts and percentages of all comparison results by status "
-      "and a total, "
-      "including zero counts for empty comparisons. Each paired path counts once; directory-only entries are omitted "
-      "as in the status listing. Percentages use all compared results; `--summary-precision` controls decimals. "
-      "`--format=jsonl` renders these summary rows as `group`, `count`, and numeric `percent` objects. "
-      "Other summary groupings combine the input trees. `--summary-scope=root` separates roots; "
-      "`--summary-scope=compare` separates all comparison categories, preserving both sides of paired results."));
+      "`--summary` (or `--summary=compare`) appends counts, count percentages, combined sizes, and size "
+      "percentages by entry type and status, followed by a total. Each paired path counts once; its combined "
+      "size includes both sides. An identical 100-byte pair contributes one result and 200 bytes; a different "
+      "100/150-byte pair contributes one result and 250 bytes. Percentages use all results or all combined "
+      "bytes respectively; zero denominators produce zero percent. `--summary-precision` controls decimals. "
+      "`--format=jsonl` emits `type`, `group`, `count`, `count_percent`, `bytes`, and `size_percent`. "
+      "Directories, symlinks, and special entries participate, including matched roots. Directory equality "
+      "means entry-kind equality, not subtree equality. A type-changing pair appears once under its "
+      "left-to-right type transition. Sizes use entry metadata, never recursive directory sizes. "
+      "Ordinary summary groupings default to `--summary-scope=compare` when `--compare` is active: "
+      "one left/right table across all categories. Without `--compare`, the default is `all`. An explicit "
+      "scope overrides this conditional default regardless of option order. Explicit `--summary-scope=all` "
+      "combines both input trees: its entry count is left-only plus right-only plus twice the paired result "
+      "count; its byte total equals the comparison's combined bytes for the same population. Ordinary percentages use "
+      "full table totals before `--top`. "
+      "`--summary-scope=root` separates roots; `--summary-scope=compare` aligns left and right columns "
+      "in one table per grouping across the selected categories. Each side's percentages use its full selected "
+      "category population, before `--top`. "
+      "Missing groups display a dash (JSON `null`); existing zero-byte files retain numeric zeros."));
   statuses.children.push_back(ProseOf(
       "`--compare=summary` is shorthand for `--compare=status --compare-select=none --summary=compare` "
       "at that position in the option sequence. Later selections can enable per-path output, and "
@@ -1061,7 +1073,8 @@ Section CompareSection(bool in_full) {
 
   Subsection related{.title = "See also"};
   Bullets links;
-  links.items.push_back(ParseInline("`--summary=compare`: counts and percentages for all comparison results."));
+  links.items.push_back(
+      ParseInline("`--summary=compare`: counts, percentages, and combined sizes for all comparison results."));
   links.items.push_back(ParseInline("`--compare-select`: choose per-path records; `none` suppresses the listing."));
   links.items.push_back(ParseInline("`--summary-scope`: combined, per-root, or category statistics."));
   links.items.push_back(ParseInline("`--summary-precision`: decimal places in summary percentages."));
@@ -1074,7 +1087,7 @@ Section CompareSection(bool in_full) {
   examples.children.push_back(
       ExampleOf("xff --compare=summary left-tree right-tree --summary=ext --summary-scope=compare", "sh"));
   examples.children.push_back(ProseOf("summarize extensions within each comparison category"));
-  examples.children.push_back(ProseOf("show only counts and percentages, with no per-path records"));
+  examples.children.push_back(ProseOf("show only comparison statistics, with no per-path records"));
   examples.children.push_back(ExampleOf("xff --compare left-tree right-tree", "sh"));
   examples.children.push_back(ProseOf("print only paths present on one side or different on both sides"));
   examples.children.push_back(ExampleOf("xff --compare --compare-select=all left-tree right-tree", "sh"));

@@ -64,6 +64,20 @@ The safety model and directory-scoped permissions are tracked in
    host adapter. Consumers must not open or mutate host paths directly; retain annotations only at
    the immediate adapter boundary.
 
+## Summary accounting follow-up
+
+- [x] Add count and byte percentages to summary tables, using full pre-`--top` totals.
+- [x] Include directories, symlinks, special files, and type changes in comparison accounting;
+      distinguish entry equality from subtree equality and test empty-directory differences.
+- [x] Add comparison combined sizes and size percentages: each result counts once, while bytes
+      include both sides. Use entry metadata sizes, never recursive directory sizes.
+- [x] Combine selected categories into one table with left/right column groups, including missing sides
+      and zero sizes;
+      use each side's selected population as the denominator and preserve JSONL attribution.
+- [x] Default ordinary summaries to paired comparison scope under `--compare`; retain `all` otherwise
+      and document explicit overrides, option-order independence, and summary-driver requirements.
+- [x] Add count/size reconciliation tests, update registry/topic/generated help, and prepare a PR.
+
 ## Design required before implementation
 
 1. **Reassembled shard contents (shards v2).** Decide whether the logical whole replaces or accompanies

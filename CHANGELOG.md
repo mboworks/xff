@@ -3,6 +3,11 @@
 
 # 0.6.0
 
+- Show count and size percentages in summary tables, include every matched entry type and both
+  sides' bytes in comparison totals, and combine selected categories in one left/right table.
+  Ordinary summaries default to that paired layout with `--compare`, or combined roots otherwise;
+  explicit `--summary-scope` overrides the conditional default.
+
 - Add `--summary-scope` for combined, per-root, and comparison-category statistics, with
   ordered aliases and separate left/right statistics for paired categories. Scope selection
   requires an active file summary; comparison-only summaries do not satisfy that requirement.

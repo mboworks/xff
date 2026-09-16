@@ -362,7 +362,9 @@ absl::Status ValidateSummaryScopeDriver(const std::vector<std::string>& globals,
 // Scope selection is independent of per-path comparison output. Each occurrence replaces
 // the preceding list; aliases expand in place and duplicate scopes keep their first position.
 absl::StatusOr<std::vector<std::string>> ResolveSummaryScopes(const std::vector<std::string>& globals, bool compare) {
-  std::vector<std::string> scopes{"all"};
+  std::vector<std::string> scopes = compare
+                                        ? std::vector<std::string>{"left-only", "right-only", "different", "identical"}
+                                        : std::vector<std::string>{"all"};
   for (const std::string& global : globals) {
     constexpr std::string_view kPrefix = "--summary-scope=";
     if (!global.starts_with(kPrefix)) {
@@ -3069,22 +3071,43 @@ std::vector<SummaryRow> SummaryRows(SummaryMode mode, const SummaryCells& cells,
   return rows;
 }
 
-void EmitSizedSummary(const std::vector<SummaryRow>& rows, format::SizeUnits human, unsigned precision, EmitFn emit) {
-  std::vector<format::SizeParts> sizes;
-  sizes.reserve(rows.size());
-  std::size_t width = 0;
-  for (const auto& row : rows) {
-    auto parts = format::SizeColumns(row.size, human, precision);
-    width = std::max(width, parts.number.size());
-    sizes.push_back(std::move(parts));
+bool SummaryHasSize(const SummarySpec& spec) {
+  return spec.mode != SummaryMode::kTemplate || !fields::Template::Compile(spec.key_template).HasUnreducedExtraction();
+}
+
+std::string SummaryPercent(std::uint64_t value, std::uint64_t total, unsigned precision) {
+  const double percent = total == 0 ? 0.0 : 100.0 * static_cast<double>(value) / static_cast<double>(total);
+  return absl::StrFormat("%.*f", precision, percent);
+}
+
+std::string SummarySize(std::uint64_t size, std::optional<format::SizeUnits> human, unsigned precision) {
+  if (!human.has_value()) {
+    return format::Int(size, ',');
   }
-  format::Table table({format::Align::kLeft, format::Align::kRight, format::Align::kLeft});
-  for (std::size_t i = 0; i < rows.size(); ++i) {
-    table.AddRow(
-        {rows.at(i).key, format::Int(rows.at(i).count, ','),
-         absl::StrCat(format::PadLeft(sizes.at(i).number, width), " ", sizes.at(i).suffix)});
+  const auto parts = format::SizeColumns(size, *human, precision);
+  return absl::StrCat(parts.number, " ", parts.suffix);
+}
+
+std::vector<std::string> SummaryColumns(
+    const SummaryRow& row,
+    const SummaryRow& total,
+    std::optional<format::SizeUnits> human,
+    unsigned precision,
+    bool has_size = true) {
+  return {
+      format::Int(row.count, ','), absl::StrCat(SummaryPercent(row.count, total.count, precision), "%"),
+      has_size ? SummarySize(row.size, human, precision) : "-",
+      has_size ? absl::StrCat(SummaryPercent(row.size, total.size, precision), "%") : "-"};
+}
+
+std::string SummaryJson(const SummaryRow& row, const SummaryRow& total, unsigned precision, bool has_size = true) {
+  std::string result =
+      absl::StrCat("\"count\":", row.count, ",\"count_percent\":", SummaryPercent(row.count, total.count, precision));
+  if (has_size) {
+    absl::StrAppend(
+        &result, ",\"bytes\":", row.size, ",\"size_percent\":", SummaryPercent(row.size, total.size, precision));
   }
-  emit(table.Render());
+  return result;
 }
 
 void EmitSummaryRows(
@@ -3092,31 +3115,25 @@ void EmitSummaryRows(
     render::Format output_format,
     std::optional<format::SizeUnits> human,
     unsigned precision,
+    bool has_size,
     EmitFn emit) {
-  const bool has_size = absl::c_any_of(rows, [](const SummaryRow& row) { return row.size > 0; });
-  if (output_format == render::Format::kJsonl) {
-    for (const auto& row : rows) {
-      std::string object = absl::StrCat("{\"group\":", JsonQuote(row.key), ",\"count\":", row.count);
-      if (has_size) {
-        absl::StrAppend(&object, ",\"bytes\":", row.size);
-      }
-      absl::StrAppend(&object, "}\n");
-      emit(object);
-    }
+  if (rows.empty()) {
     return;
   }
-  if (has_size && human.has_value()) {
-    EmitSizedSummary(rows, *human, precision, emit);
+  const auto& total = rows.back();
+  if (output_format == render::Format::kJsonl) {
+    for (const auto& row : rows) {
+      emit(absl::StrCat("{\"group\":", JsonQuote(row.key), ",", SummaryJson(row, total, precision, has_size), "}\n"));
+    }
     return;
   }
   format::Table table(
-      has_size ? std::vector<format::Align>{format::Align::kLeft, format::Align::kRight, format::Align::kRight}
-               : std::vector<format::Align>{format::Align::kLeft, format::Align::kRight});
+      {format::Align::kLeft, format::Align::kRight, format::Align::kRight, format::Align::kRight,
+       format::Align::kRight});
+  table.AddRow({"Group", "Count", "% count", "Size", "% size"});
   for (const auto& row : rows) {
-    std::vector<std::string> cells{row.key, format::Int(row.count, ',')};
-    if (has_size) {
-      cells.push_back(format::Int(row.size, ','));
-    }
+    auto cells = SummaryColumns(row, total, human, precision, has_size);
+    cells.insert(cells.begin(), row.key);
     table.AddRow(std::move(cells));
   }
   emit(table.Render());
@@ -3135,7 +3152,9 @@ void EmitSummaries(
     if (i > 0 && output_format != render::Format::kJsonl) {
       emit("\n");
     }
-    EmitSummaryRows(SummaryRows(summaries.at(i).mode, tables.at(i), top), output_format, human, precision, emit);
+    EmitSummaryRows(
+        SummaryRows(summaries.at(i).mode, tables.at(i), top), output_format, human, precision,
+        SummaryHasSize(summaries.at(i)), emit);
   }
 }
 
@@ -3162,6 +3181,81 @@ void EmitScopedSummaries(
     }
   };
   EmitSummaries(globals, summaries, tables, format, human, labelled_emit);
+}
+
+SummaryRow SummaryTotal(const SummaryCells& cells) {
+  SummaryRow total{.key = "total"};
+  for (const auto& [key, value] : cells) {
+    total.count += value.first;
+    total.size += value.second;
+  }
+  return total;
+}
+
+SummaryRow SummaryCell(const SummaryCells& cells, const std::string& key) {
+  const auto found = cells.find(key);
+  return found == cells.end() ? SummaryRow{.key = key}
+                              : SummaryRow{.key = key, .count = found->second.first, .size = found->second.second};
+}
+
+void EmitPairedSummary(
+    const parser::Command& command,
+    const std::string& scope,
+    const std::vector<SummarySpec>& summaries,
+    const std::array<SummaryTables, 2>& sides,
+    std::optional<registry::Style> style,
+    EmitFn emit) {
+  const auto precision = ResolveSummaryPrecision(command.globals);
+  const auto human = ResolveHuman(command.globals, style);
+  const bool json = ResolveFormat(command.globals) == render::Format::kJsonl;
+  auto combined = sides.at(0);
+  MergeSummaryTables(combined, sides.at(1));
+  for (std::size_t sink = 0; sink < summaries.size(); ++sink) {
+    const auto rows = SummaryRows(summaries.at(sink).mode, combined.at(sink), ResolveTop(command.globals));
+    const std::array totals{SummaryTotal(sides.at(0).at(sink)), SummaryTotal(sides.at(1).at(sink))};
+    const bool has_size = SummaryHasSize(summaries.at(sink));
+    format::Table table(
+        {format::Align::kLeft, format::Align::kRight, format::Align::kRight, format::Align::kRight,
+         format::Align::kRight, format::Align::kRight, format::Align::kRight, format::Align::kRight,
+         format::Align::kRight});
+    table.AddRow(
+        {"Group", "Left count", "Left % count", "Left size", "Left % size", "Right count", "Right % count",
+         "Right size", "Right % size"});
+    for (std::size_t index = 0; index < rows.size(); ++index) {
+      const auto& key = rows.at(index).key;
+      const bool total_row = index + 1 == rows.size();
+      std::vector<std::string> cells{key};
+      std::string object = absl::StrCat("{\"scope\":", JsonQuote(scope), ",\"group\":", JsonQuote(key));
+      for (std::size_t side = 0; side < sides.size(); ++side) {
+        const auto& source = sides.at(side).at(sink);
+        const auto row = total_row ? totals.at(side) : SummaryCell(source, key);
+        const auto& denominator = totals.at(side);
+        const bool present = row.count != 0;
+        const auto values = present ? SummaryColumns(row, denominator, human, precision, has_size)
+                                    : std::vector<std::string>{"-", "-", "-", "-"};
+        cells.insert(cells.end(), values.begin(), values.end());
+        absl::StrAppend(&object, side == 0 ? ",\"left\":" : ",\"right\":");
+        absl::StrAppend(
+            &object, present ? absl::StrCat(
+                                   "{\"root\":", JsonQuote(command.roots.at(side)), ",",
+                                   SummaryJson(row, denominator, precision, has_size), "}")
+                             : "null");
+      }
+      absl::StrAppend(&object, "}\n");
+      if (json) {
+        emit(object);
+      } else {
+        table.AddRow(std::move(cells));
+      }
+    }
+    if (!json) {
+      emit(
+          absl::StrCat(
+              "Summary scope: ", scope, "\nLeft: ", command.roots.at(0), "\nRight: ", command.roots.at(1), "\n"));
+      emit(table.Render());
+      emit("Percentages use each side's full selected category population; - means no entries.\n");
+    }
+  }
 }
 
 // Accumulates one matched unit into every --summary sink. A {template} key that is an m// EXTRACTION
@@ -3517,40 +3611,73 @@ RunResult RunFindCore(
     bool compare_listing,
     mbo::types::OptionalRef<SummaryAccumulator> comparison_summaries = std::nullopt);
 
+constexpr std::array<std::string_view, 4> kComparisonCategories = {"left-only", "right-only", "different", "identical"};
+
 struct TreeCompareCounts {
-  std::uint64_t left_only = 0;
-  std::uint64_t right_only = 0;
-  std::uint64_t different = 0;
-  std::uint64_t identical = 0;
+  std::map<std::string, std::array<SummaryRow, 4>> types;
+  SummaryRow total{.key = "total"};
+
+  void Add(
+      std::size_t category,
+      mbo::types::OptionalRef<const TreeCompareEntry> left,
+      mbo::types::OptionalRef<const TreeCompareEntry> right) {
+    const std::string_view left_type = left.has_value() ? TypeName(left->metadata.type) : "";
+    const std::string_view right_type = right.has_value() ? TypeName(right->metadata.type) : "";
+    const std::string type = left_type.empty() ? std::string(right_type)
+                             : right_type.empty() || left_type == right_type
+                                 ? std::string(left_type)
+                                 : absl::StrCat(left_type, " -> ", right_type);
+    const std::uint64_t size =
+        (left.has_value() ? left->metadata.size : 0) + (right.has_value() ? right->metadata.size : 0);
+    auto& row = types[type].at(category);
+    row.key = kComparisonCategories.at(category);
+    ++row.count;
+    row.size += size;
+    ++total.count;
+    total.size += size;
+  }
 };
 
-void EmitTreeCompareSummary(const std::vector<std::string>& globals, const TreeCompareCounts& counts, EmitFn emit) {
-  const auto rows = std::to_array<std::pair<std::string_view, std::uint64_t>>({
-      {"left-only", counts.left_only},
-      {"right-only", counts.right_only},
-      {"different", counts.different},
-      {"identical", counts.identical},
-      {"total", counts.left_only + counts.right_only + counts.different + counts.identical},
-  });
-  const std::uint64_t total = counts.left_only + counts.right_only + counts.different + counts.identical;
-  const unsigned precision = ResolveSummaryPrecision(globals);
-  const render::Format output_format = ResolveFormat(globals);
-  for (const SummarySpec& summary : ResolveSummaries(globals, true)) {
+void EmitTreeCompareSummary(
+    const std::vector<std::string>& globals,
+    const TreeCompareCounts& counts,
+    std::optional<registry::Style> style,
+    EmitFn emit) {
+  const auto precision = ResolveSummaryPrecision(globals);
+  const auto output_format = ResolveFormat(globals);
+  const auto human = ResolveHuman(globals, style);
+  for (const auto& summary : ResolveSummaries(globals, true)) {
     if (summary.mode != SummaryMode::kCompare) {
       continue;
     }
-    format::Table table({format::Align::kLeft, format::Align::kRight, format::Align::kRight});
-    for (const auto& [group, count] : rows) {
-      const double percent = total == 0 ? 0.0 : 100.0 * static_cast<double>(count) / static_cast<double>(total);
-      const std::string percentage = absl::StrFormat("%.*f", precision, percent);
+    format::Table table(
+        {format::Align::kLeft, format::Align::kLeft, format::Align::kRight, format::Align::kRight,
+         format::Align::kRight, format::Align::kRight});
+    table.AddRow({"Type", "Status", "Results", "% results", "Combined size", "% size"});
+    const auto add_row = [&](std::string_view type, const SummaryRow& row) {
       if (output_format == render::Format::kJsonl) {
-        emit(absl::StrCat("{\"group\":", JsonQuote(group), ",\"count\":", count, ",\"percent\":", percentage, "}\n"));
+        emit(
+            absl::StrCat(
+                "{\"type\":", JsonQuote(type), ",\"group\":", JsonQuote(row.key), ",",
+                SummaryJson(row, counts.total, precision), "}\n"));
       } else {
-        table.AddRow({std::string(group), format::Int(count, ','), absl::StrCat(percentage, "%")});
+        auto cells = SummaryColumns(row, counts.total, human, precision);
+        cells.insert(cells.begin(), row.key);
+        cells.insert(cells.begin(), std::string(type));
+        table.AddRow(std::move(cells));
+      }
+    };
+    for (const auto& [type, rows] : counts.types) {
+      for (std::size_t i = 0; i < rows.size(); ++i) {
+        SummaryRow row = rows.at(i);
+        row.key = kComparisonCategories.at(i);
+        add_row(type, row);
       }
     }
+    add_row("all", counts.total);
     if (output_format != render::Format::kJsonl) {
       emit(table.Render());
+      emit("Results count pairs once; combined size includes both sides. Directory equality is entry-only.\n");
     }
   }
 }
@@ -3661,11 +3788,9 @@ RunResult RunTreeCompare(
   auto right = entries[1].begin();
   while (left != entries[0].end() || right != entries[1].end()) {
     if (right == entries[1].end() || (left != entries[0].end() && left->first < right->first)) {
-      if (left->second.metadata.type != vfs::FileType::kDirectory) {
-        ++counts.left_only;
-        record_category(left->first, "left-only");
-      }
-      if (left->second.metadata.type != vfs::FileType::kDirectory && selection.left_only) {
+      counts.Add(0, left->second, std::nullopt);
+      record_category(left->first, "left-only");
+      if (selection.left_only) {
         if (output == TreeCompareOutput::kStatus) {
           emit_status("left-only", left->first);
         } else {
@@ -3678,14 +3803,12 @@ RunResult RunTreeCompare(
           emit(*patch);
         }
       }
-      different = different || left->second.metadata.type != vfs::FileType::kDirectory;
+      different = true;
       ++left;
     } else if (left == entries[0].end() || right->first < left->first) {
-      if (right->second.metadata.type != vfs::FileType::kDirectory) {
-        ++counts.right_only;
-        record_category(right->first, "right-only");
-      }
-      if (right->second.metadata.type != vfs::FileType::kDirectory && selection.right_only) {
+      counts.Add(1, std::nullopt, right->second);
+      record_category(right->first, "right-only");
+      if (selection.right_only) {
         if (output == TreeCompareOutput::kStatus) {
           emit_status("right-only", right->first);
         } else {
@@ -3698,7 +3821,7 @@ RunResult RunTreeCompare(
           emit(*patch);
         }
       }
-      different = different || right->second.metadata.type != vfs::FileType::kDirectory;
+      different = true;
       ++right;
     } else {
       const absl::StatusOr<bool> same = SameTreeEntry(left->second, right->second);
@@ -3706,14 +3829,14 @@ RunResult RunTreeCompare(
         on_error(left->first, same.status());
         return RunResult{.errors = 1};
       }
-      if (*same && left->second.metadata.type != vfs::FileType::kDirectory) {
-        ++counts.identical;
+      if (*same) {
+        counts.Add(3, left->second, right->second);
         record_category(left->first, "identical");
-      } else if (!*same) {
-        ++counts.different;
+      } else {
+        counts.Add(2, left->second, right->second);
         record_category(left->first, "different");
       }
-      if (*same && left->second.metadata.type != vfs::FileType::kDirectory && selection.identical) {
+      if (*same && selection.identical) {
         emit_status("identical", left->first);
       } else if (!*same && selection.different) {
         if (output == TreeCompareOutput::kStatus) {
@@ -3733,32 +3856,49 @@ RunResult RunTreeCompare(
       ++right;
     }
   }
-  EmitTreeCompareSummary(command.globals, counts, emit);
+  EmitTreeCompareSummary(command.globals, counts, style, emit);
   auto summaries = ResolveSummaries(command.globals, true);
   std::erase_if(summaries, [](const SummarySpec& spec) { return spec.mode == SummaryMode::kCompare; });
   const auto format = ResolveFormat(command.globals);
   const auto human = ResolveHuman(command.globals, style);
-  for (const std::string& scope : *scopes_result) {
-    if (scope == "all") {
-      auto tables = CombinedSummaryTables(side_summaries.at(0));
-      MergeSummaryTables(tables, CombinedSummaryTables(side_summaries.at(1)));
-      EmitScopedSummaries(command.globals, summaries, tables, format, human, scope, "", emit);
-      continue;
+  std::map<std::string, std::array<SummaryTables, 2>> scoped_tables;
+  std::array<SummaryTables, 2> selected_sides{SummaryTables(summaries.size()), SummaryTables(summaries.size())};
+  std::vector<std::string_view> category_scopes;
+  for (const auto& scope : *scopes_result) {
+    if (scope != "all" && scope != "root") {
+      category_scopes.push_back(scope);
     }
-    for (std::size_t side = 0; side < side_summaries.size(); ++side) {
-      if ((scope == "left-only" && side == 1) || (scope == "right-only" && side == 0)) {
-        continue;
-      }
-      SummaryTables tables(summaries.size());
+    auto& sides = scoped_tables[scope];
+    for (std::size_t side = 0; side < sides.size(); ++side) {
+      sides.at(side).resize(summaries.size());
       for (const auto& [root, contributions] : side_summaries.at(side).partitions) {
         for (const auto& [path, cells] : contributions) {
           const auto category = categories.find(path.empty() ? "." : path);
-          if (scope == "root" || (category != categories.end() && category->second == scope)) {
-            MergeSummaryTables(tables, cells);
+          if (scope == "all" || scope == "root" || (category != categories.end() && category->second == scope)) {
+            MergeSummaryTables(sides.at(side), cells);
           }
         }
       }
-      EmitScopedSummaries(command.globals, summaries, tables, format, human, scope, command.roots.at(side), emit);
+      if (scope != "all" && scope != "root") {
+        MergeSummaryTables(selected_sides.at(side), sides.at(side));
+      }
+    }
+  }
+  bool emitted_categories = false;
+  for (const auto& scope : *scopes_result) {
+    const auto& sides = scoped_tables.at(scope);
+    if (scope == "all") {
+      auto combined = sides.at(0);
+      MergeSummaryTables(combined, sides.at(1));
+      EmitScopedSummaries(command.globals, summaries, combined, format, human, scope, "", emit);
+    } else if (scope == "root") {
+      for (std::size_t side = 0; side < sides.size(); ++side) {
+        EmitScopedSummaries(
+            command.globals, summaries, sides.at(side), format, human, scope, command.roots.at(side), emit);
+      }
+    } else if (!emitted_categories) {
+      emitted_categories = true;
+      EmitPairedSummary(command, absl::StrJoin(category_scopes, ","), summaries, selected_sides, style, emit);
     }
   }
   return RunResult{.errors = 0, .any_match = different};
@@ -4214,7 +4354,7 @@ RunResult RunFindCore(
   SummaryAccumulator summary_cells{
       .sinks = summaries.size(),
       .per_root = compare_listing || absl::c_linear_search(scopes, "root"),
-      .per_entry = compare_listing
+      .per_entry = !summaries.empty() && compare_listing
                    && absl::c_any_of(scopes, [](std::string_view scope) { return scope != "all" && scope != "root"; }),
   };
   // --histogram (repeatable): a bar chart of the count per bucket, alongside or instead of

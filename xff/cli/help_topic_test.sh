@@ -457,7 +457,7 @@ test::comparison_help_includes_summary_context() {
     expect_output_contains 'See also' "${out}"
     expect_output_contains '--summary-precision' "${out}"
     expect_output_contains 'xff --compare=summary left-tree right-tree' "${out}"
-    expect_output_contains 'Percentages use all compared results' "${out}"
+    expect_output_contains 'Percentages use all results or all combined' "${out}"
   done
 }
 
@@ -549,6 +549,16 @@ test::long_reference_pointers_follow_the_output_format() {
   expect_output_contains 'href="#topic-regex">Regex matching</a>' "${out}"
   out="$("$(_xff_bin)" --help=long:roff)"
   expect_output_contains '.B Regex matching' "${out}"
+}
+
+test::summary_scope_help_explains_conditional_defaults() {
+  local out
+  out="$("$(_xff_bin)" --help=summary-scope --width=0)"
+  expect_output_contains 'the default is' "${out}"
+  # shellcheck disable=SC2016 # Backticks are literal help markup.
+  expect_output_contains '`all` outside comparison and `compare` when `--compare` is active' "${out}"
+  expect_output_contains 'An explicit scope overrides that conditional default' "${out}"
+  expect_output_contains 'regardless of option order' "${out}"
 }
 
 test_runner
