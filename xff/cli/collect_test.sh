@@ -59,7 +59,7 @@ test::collect_before_first_summarises_everything_but_lists_the_cap() {
   expect_output_contains "f3.txt" "${out}"
   expect_output_not_contains "f4.txt" "${out}"
   # ... while the summary still sees all six (10+20+...+60 == 210 bytes).
-  expect_matches "total[[:space:]]+6[[:space:]]+210" "${out}"
+  expect_matches "total[[:space:]]+6[[:space:]]+100.00%[[:space:]]+210" "${out}"
 }
 
 test::first_before_collect_summarises_only_the_cap() {
@@ -67,7 +67,7 @@ test::first_before_collect_summarises_only_the_cap() {
   local root out
   root="$(_make_tree)"
   out="$(cd "${root}" && "$(_xff_bin)" --exact . -type f -first 3 -collect --summary --sort=dir)"
-  expect_matches "total[[:space:]]+3[[:space:]]+60" "${out}"
+  expect_matches "total[[:space:]]+3[[:space:]]+100.00%[[:space:]]+60" "${out}"
 }
 
 test::collect_is_an_action_so_it_suppresses_the_implicit_print() {
@@ -83,7 +83,7 @@ test::a_named_collection_reads_like_the_default_one() {
   local root out
   root="$(_make_tree)"
   out="$(cd "${root}" && "$(_xff_bin)" --exact . -type f -collect:big --summary --sort=dir)"
-  expect_matches "total[[:space:]]+6[[:space:]]+210" "${out}"
+  expect_matches "total[[:space:]]+6[[:space:]]+100.00%[[:space:]]+210" "${out}"
 }
 
 test::sharing_a_name_needs_the_bang_modifier() {
@@ -115,7 +115,7 @@ test::a_marked_repeat_collects_each_entry_twice() {
   local root out
   root="$(_make_tree)"
   out="$(cd "${root}" && "$(_xff_bin)" --exact . -type f -collect:a -collect:!a --summary --sort=dir)"
-  expect_matches "total[[:space:]]+12[[:space:]]+420" "${out}"
+  expect_matches "total[[:space:]]+12[[:space:]]+100.00%[[:space:]]+420" "${out}"
 }
 
 test::a_name_must_be_an_identifier() {
@@ -182,7 +182,7 @@ test::a_sufficient_buffer_collects_everything() {
   local root out
   root="$(_make_tree)"
   out="$(cd "${root}" && "$(_xff_bin)" --exact . -type f -collect --buffer=100 --summary --sort=dir)"
-  expect_matches "total[[:space:]]+6[[:space:]]+210" "${out}"
+  expect_matches "total[[:space:]]+6[[:space:]]+100.00%[[:space:]]+210" "${out}"
 }
 
 test::without_a_buffer_flag_the_collection_is_unbounded() {
@@ -191,7 +191,7 @@ test::without_a_buffer_flag_the_collection_is_unbounded() {
   local root out
   root="$(_make_tree)"
   out="$(cd "${root}" && "$(_xff_bin)" --exact . -type f -collect --summary --sort=dir)"
-  expect_matches "total[[:space:]]+6[[:space:]]+210" "${out}"
+  expect_matches "total[[:space:]]+6[[:space:]]+100.00%[[:space:]]+210" "${out}"
 }
 
 test_runner

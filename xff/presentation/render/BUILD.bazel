@@ -24,6 +24,7 @@ cc_library(
     hdrs = ["render.h"],
     visibility = ["//xff:__subpackages__"],
     deps = [
+        "//xff/presentation/format:format_cc",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/strings",
     ],
@@ -35,6 +36,7 @@ cc_test(
     srcs = ["render_test.cc"],
     deps = [
         ":render_cc",
+        "//xff/presentation/format:format_cc",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:matchers_cc",

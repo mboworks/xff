@@ -52,6 +52,19 @@ _new_tree() {
   test_tmpdir tree
 }
 
+# Assert a semantic JSON row, allowing additional documented fields.
+_expect_json_row() {
+  python3 -c '
+import json, sys
+expected = json.loads(sys.argv[1])
+rows = [json.loads(line) for line in sys.stdin if line.startswith("{")]
+def matches(actual, wanted):
+    return all(key in actual and (matches(actual[key], value) if isinstance(value, dict) else actual[key] == value)
+               for key, value in wanted.items())
+assert any(matches(row, expected) for row in rows), (expected, rows)
+' "$1" <<<"$2"
+}
+
 # Tree: a.txt (1234 bytes), b.txt (10 bytes), c.md (5 bytes).
 _make_tree() {
   local tree
@@ -68,11 +81,11 @@ test::summary_default_is_human_and_right_aligned_in_xff() {
   out="$(_run --summary=ext "${root}" -type f)"
   # xff style defaults to human sizes in SI: txt (2 files, 1244 bytes) -> kB, md (5) -> B,
   # with the count right of the label.
-  expect_matches 'txt +2 +[0-9.]+ kB' "${out}"
-  expect_matches 'total +3 +[0-9.]+ kB' "${out}"
+  expect_matches 'txt +2 +66.67% +[0-9.]+ kB' "${out}"
+  expect_matches 'total +3 +100.00% +[0-9.]+ kB' "${out}"
   # A byte size renders as the integer with the fraction columns blanked (so points line
   # up under the scaled rows), hence several spaces before the left-aligned suffix.
-  expect_matches 'md +1 +5 +B' "${out}"
+  expect_matches 'md +1 +33.33% +5 +B' "${out}"
 }
 
 test::summary_human_off_shows_grouped_bytes() {
@@ -80,23 +93,23 @@ test::summary_human_off_shows_grouped_bytes() {
   root="$(_make_tree)"
   out="$(_run --summary=ext --human=off "${root}" -type f)"
   # --human=off forces raw grouped bytes (the machine-ish view), right-aligned.
-  expect_matches 'txt +2 +1,244' "${out}"
-  expect_matches 'total +3 +1,249' "${out}"
+  expect_matches 'txt +2 +66.67% +1,244' "${out}"
+  expect_matches 'total +3 +100.00% +1,249' "${out}"
 }
 
 test::summary_jsonl_emits_one_object_per_row() {
   local root out
   root="$(_make_tree)"
   out="$(_run --summary=ext --format=jsonl "${root}" -type f)"
-  expect_matches '\{"group":"txt","count":2,"bytes":1244\}' "${out}"
-  expect_matches '\{"group":"total","count":3,"bytes":1249\}' "${out}"
+  _expect_json_row '{"group":"txt","count":2,"bytes":1244}' "${out}"
+  _expect_json_row '{"group":"total","count":3,"bytes":1249}' "${out}"
 }
 
 test::summary_overall_is_a_single_total_row() {
   local root out
   root="$(_make_tree)"
   out="$(_run --summary --format=jsonl "${root}" -type f)"
-  expect_matches '\{"group":"total","count":3,"bytes":1249\}' "${out}"
+  _expect_json_row '{"group":"total","count":3,"bytes":1249}' "${out}"
 }
 
 test::summary_hash_groups_identical_files_into_one_bucket() {
@@ -108,8 +121,8 @@ test::summary_hash_groups_identical_files_into_one_bucket() {
   out="$(_run --summary=hash --format=jsonl "${root}" -type f)"
   # The two identical files collapse into one bucket with count 2 (the dedup view); the
   # group key is the file's sha256 digest, reusing the {hash} field.
-  expect_matches '\{"group":"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad","count":2,"bytes":6\}' "${out}"
-  expect_matches '\{"group":"total","count":3,"bytes":9\}' "${out}"
+  _expect_json_row '{"group":"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad","count":2,"bytes":6}' "${out}"
+  _expect_json_row '{"group":"total","count":3,"bytes":9}' "${out}"
 }
 
 test::summary_hash_verification_tallies_passes_and_failures() {
@@ -119,9 +132,9 @@ test::summary_hash_verification_tallies_passes_and_failures() {
   printf 'xyz' >"${root}/bad"
   out="$(_run --summary=hash-verification --format=jsonl "${root}" -type f -hasheq \
     ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad)"
-  expect_matches '\{"group":"failed","count":1,"bytes":3\}' "${out}"
-  expect_matches '\{"group":"verified","count":1,"bytes":3\}' "${out}"
-  expect_matches '\{"group":"total","count":2,"bytes":6\}' "${out}"
+  _expect_json_row '{"group":"failed","count":1,"bytes":3}' "${out}"
+  _expect_json_row '{"group":"verified","count":1,"bytes":3}' "${out}"
+  _expect_json_row '{"group":"total","count":2,"bytes":6}' "${out}"
 }
 
 # A 5,872,025-byte file to exercise human size units (5.6 MiB / 5.9 MB).
@@ -183,8 +196,8 @@ test::summary_top_keeps_the_largest_groups_by_size() {
   local root out
   root="$(_make_tree)"
   out="$(_run --summary=ext --top=1 --human=off "${root}" -type f)"
-  expect_matches 'txt +2 +1,244' "${out}"
-  expect_matches 'total +3 +1,249' "${out}"
+  expect_matches 'txt +2 +66.67% +1,244' "${out}"
+  expect_matches 'total +3 +100.00% +1,249' "${out}"
   expect_not_matches "(^|${NL})md " "${out}" # the smallest group is dropped
 }
 
@@ -193,8 +206,8 @@ test::summary_template_key_groups_by_a_field_value() {
   local root out
   root="$(_make_tree)"
   out="$(_run --summary='{ext}' --human=off "${root}" -type f)"
-  expect_matches 'txt +2 +1,244' "${out}"
-  expect_matches "(^|${NL})md +1 +5" "${out}"
+  expect_matches 'txt +2 +66.67% +1,244' "${out}"
+  expect_matches "(^|${NL})md +1 +33.33% +5" "${out}"
 }
 
 test::summary_m_extraction_key_counts_per_extracted_line() {
@@ -297,46 +310,43 @@ test::compare_summary_follows_selected_results() {
   printf same >"${root}/right/same"
   printf old >"${root}/left/different"
   printf new >"${root}/right/different"
-  out="$(_run --compare "${root}/left" "${root}/right" --summary --compare-select=all)"
-  expect_matches "^different[[:space:]]+different${NL}left-only[[:space:]]+left${NL}right-only[[:space:]]+right${NL}identical[[:space:]]+same${NL}left-only +1 +25.00%${NL}right-only +1 +25.00%${NL}different +1 +25.00%${NL}identical +1 +25.00%${NL}total +4 +100.00%" "${out}"
-  out="$(_run --compare "${root}/left" "${root}/right" --summary=compare --compare-select=different --format=jsonl)"
-  expect_output_contains '{"group":"different","count":1,"percent":25.00}' "${out}"
-  expect_output_contains '{"group":"identical","count":1,"percent":25.00}' "${out}"
-  expect_output_contains '{"group":"total","count":4,"percent":100.00}' "${out}"
-  out="$(_run --compare "${root}/left" "${root}/right" --summary=type --summary --compare-select=all --format=jsonl)"
-  expect_output_contains '{"group":"identical","count":1,"percent":25.00}' "${out}"
-  expect_output_contains '{"group":"total","count":4,"percent":100.00}' "${out}"
-  out="$(_run --compare "${root}/left" "${root}/right" --summary=compare --compare-select=left-only,right-only,different --summary-precision=1 --format=jsonl)"
-  expect_output_contains '{"group":"left-only","count":1,"percent":25.0}' "${out}"
-  expect_output_contains '{"group":"total","count":4,"percent":100.0}' "${out}"
-  out="$(_run --compare=diff "${root}/left" "${root}/right" --summary --compare-select=different --format=jsonl)"
-  expect_output_contains '{"group":"different","count":1,"percent":25.00}' "${out}"
-  expect_output_contains '{"group":"total","count":4,"percent":100.00}' "${out}"
+  out="$(_run --compare "${root}/left" "${root}/right" -type f --summary --compare-select=all)"
+  expect_matches "^different[[:space:]]+different${NL}left-only[[:space:]]+left${NL}right-only[[:space:]]+right${NL}identical[[:space:]]+same" "${out}"
+  expect_matches 'file +different +1 +25.00%' "${out}"
+  out="$(_run --compare "${root}/left" "${root}/right" -type f --summary=compare --compare-select=different --format=jsonl)"
+  _expect_json_row '{"group":"different","count":1,"type":"file","count_percent":25.0,"bytes":6,"size_percent":26.09}' "${out}"
+  _expect_json_row '{"group":"identical","count":1,"type":"file","count_percent":25.0,"bytes":8,"size_percent":34.78}' "${out}"
+  _expect_json_row '{"group":"total","count":4,"type":"all","count_percent":100.0,"bytes":23,"size_percent":100.0}' "${out}"
+  out="$(_run --compare "${root}/left" "${root}/right" -type f --summary=type --summary --compare-select=all --format=jsonl)"
+  _expect_json_row '{"group":"identical","count":1,"type":"file","count_percent":25.0,"bytes":8,"size_percent":34.78}' "${out}"
+  _expect_json_row '{"group":"total","count":4,"type":"all","count_percent":100.0,"bytes":23,"size_percent":100.0}' "${out}"
+  out="$(_run --compare "${root}/left" "${root}/right" -type f --summary=compare --compare-select=left-only,right-only,different --summary-precision=1 --format=jsonl)"
+  _expect_json_row '{"group":"left-only","count":1,"type":"file","count_percent":25.0,"bytes":4,"size_percent":17.4}' "${out}"
+  _expect_json_row '{"group":"total","count":4,"type":"all","count_percent":100.0,"bytes":23,"size_percent":100.0}' "${out}"
+  out="$(_run --compare=diff "${root}/left" "${root}/right" -type f --summary --compare-select=different --format=jsonl)"
+  _expect_json_row '{"group":"different","count":1,"type":"file","count_percent":25.0,"bytes":6,"size_percent":26.09}' "${out}"
+  _expect_json_row '{"group":"total","count":4,"type":"all","count_percent":100.0,"bytes":23,"size_percent":100.0}' "${out}"
   local explicit
-  explicit="$(_run --compare=status "${root}/left" "${root}/right" --compare-select=none --summary=compare)"
-  out="$(_run --compare=summary "${root}/left" "${root}/right")"
+  explicit="$(_run --compare=status "${root}/left" "${root}/right" -type f --compare-select=none --summary=compare)"
+  out="$(_run --compare=summary "${root}/left" "${root}/right" -type f)"
   expect_eq "${explicit}" "${out}"
-  out="$(_run --compare-select=all --compare=summary "${root}/left" "${root}/right")"
+  out="$(_run --compare-select=all --compare=summary "${root}/left" "${root}/right" -type f)"
   expect_eq "${explicit}" "${out}"
-  out="$(_run --compare=summary "${root}/left" "${root}/right" --compare-select=all)"
+  out="$(_run --compare=summary "${root}/left" "${root}/right" -type f --compare-select=all)"
   expect_matches "^different[[:space:]]+different" "${out}"
   expect_matches 'total +4 +100.00%' "${out}"
-  out="$(_run --compare=summary "${root}/left" "${root}/right" --summary=none)"
+  out="$(_run --compare=summary "${root}/left" "${root}/right" -type f --summary=none)"
   expect_eq '' "${out}"
-  out="$(_run --summary=none --compare=summary "${root}/left" "${root}/right")"
+  out="$(_run --summary=none --compare=summary "${root}/left" "${root}/right" -type f)"
   expect_eq "${explicit}" "${out}"
   local selection
   for selection in none ''; do
-    out="$(_run --compare "${root}/left" "${root}/right" --summary "--compare-select=${selection}" --format=jsonl)"
-    expect_eq '{"group":"left-only","count":1,"percent":25.00}
-{"group":"right-only","count":1,"percent":25.00}
-{"group":"different","count":1,"percent":25.00}
-{"group":"identical","count":1,"percent":25.00}
-{"group":"total","count":4,"percent":100.00}' "${out}"
-    out="$(_run --compare "${root}/left" "${root}/right" "--compare-select=${selection}")"
+    out="$(_run --compare "${root}/left" "${root}/right" -type f --summary "--compare-select=${selection}" --format=jsonl)"
+    _expect_json_row '{"type":"all","group":"total","count":4,"count_percent":100,"bytes":23,"size_percent":100}' "${out}"
+    out="$(_run --compare "${root}/left" "${root}/right" -type f "--compare-select=${selection}")"
     expect_eq '' "${out}"
   done
-  out="$(_run --compare "${root}/left" "${root}/right" --summary --summary=none --compare-select=all)"
+  out="$(_run --compare "${root}/left" "${root}/right" -type f --summary --summary=none --compare-select=all)"
   expect_not_matches 'total' "${out}"
 }
 
@@ -344,8 +354,8 @@ test::compare_summary_empty_trees_has_zero_total() {
   local root out
   root="$(_new_tree)"
   mkdir "${root}/left" "${root}/right"
-  out="$(_run --compare "${root}/left" "${root}/right" --summary --format=jsonl)"
-  expect_output_contains '{"group":"total","count":0,"percent":0.00}' "${out}"
+  out="$(_run --compare "${root}/left" "${root}/right" --summary --format=jsonl -type f)"
+  _expect_json_row '{"type":"all","group":"total","count":0,"count_percent":0,"bytes":0,"size_percent":0}' "${out}"
 }
 
 test::compare_summary_requires_compare_mode() {
@@ -364,11 +374,11 @@ test::summary_scopes_multiple_roots() {
   printf de >"${root}/two/b.txt"
   printf f >"${root}/three/c.cc"
   out="$(_run "${root}/one" "${root}/two" "${root}/three" -type f --summary --format=jsonl)"
-  expect_eq '{"group":"total","count":3,"bytes":6}' "${out}"
+  _expect_json_row '{"group":"total","count":3,"bytes":6}' "${out}"
   out="$(_run "${root}/one" "${root}/two" "${root}/three" -type f --summary --summary-scope=root --format=jsonl)"
-  expect_output_contains "\"root\":\"${root}/one\",\"group\":\"total\",\"count\":1,\"bytes\":3" "${out}"
-  expect_output_contains "\"root\":\"${root}/two\",\"group\":\"total\",\"count\":1,\"bytes\":2" "${out}"
-  expect_output_contains "\"root\":\"${root}/three\",\"group\":\"total\",\"count\":1,\"bytes\":1" "${out}"
+  expect_matches "\"root\":\"${root}/one\",\"group\":\"total\",\"count\":1,\"count_percent\":[0-9.]+,\"bytes\":3" "${out}"
+  expect_matches "\"root\":\"${root}/two\",\"group\":\"total\",\"count\":1,\"count_percent\":[0-9.]+,\"bytes\":2" "${out}"
+  expect_matches "\"root\":\"${root}/three\",\"group\":\"total\",\"count\":1,\"count_percent\":[0-9.]+,\"bytes\":1" "${out}"
 }
 
 test::summary_scopes_comparison_aliases() {
@@ -382,13 +392,11 @@ test::summary_scopes_comparison_aliases() {
   printf x >"${root}/left/change.txt"
   printf yz >"${root}/right/change.txt"
   out="$(_run --compare=summary "${root}/left" "${root}/right" -type f --summary=overall --summary-scope=compare --format=jsonl)"
-  expect_output_contains "\"scope\":\"left-only\",\"root\":\"${root}/left\",\"group\":\"total\",\"count\":1,\"bytes\":3" "${out}"
-  expect_output_contains "\"scope\":\"different\",\"root\":\"${root}/left\",\"group\":\"total\",\"count\":1,\"bytes\":1" "${out}"
-  expect_output_contains "\"scope\":\"different\",\"root\":\"${root}/right\",\"group\":\"total\",\"count\":1,\"bytes\":2" "${out}"
+  _expect_json_row '{"scope":"left-only,right-only,different,identical","group":"total","left":{"count":3,"bytes":8},"right":{"count":3,"bytes":10}}' "${out}"
   explicit="$(_run --compare=summary "${root}/left" "${root}/right" -type f --summary=overall --summary-scope=left,right,diff,identical,compare --format=jsonl)"
   expect_eq "${out}" "${explicit}"
   out="$(_run --compare=summary "${root}/left" "${root}/right" -type f --summary=overall --summary-scope=all --format=jsonl)"
-  expect_output_contains '"scope":"all","root":"","group":"total","count":6,"bytes":18' "${out}"
+  _expect_json_row '{"scope":"all","root":"","group":"total","count":6,"bytes":18}' "${out}"
 }
 
 test::summary_scope_rejects_invalid_context() {
@@ -405,10 +413,10 @@ test::summary_scope_empty_root_and_replacement() {
   local root out
   root="$(_new_tree)"
   out="$(_run "${root}" -type f --summary --summary-scope=root --format=jsonl)"
-  expect_eq "{\"scope\":\"root\",\"root\":\"${root}\",\"group\":\"total\",\"count\":0}" "${out}"
+  _expect_json_row "{\"scope\":\"root\",\"root\":\"${root}\",\"group\":\"total\",\"count\":0}" "${out}"
   printf abc >"${root}/file.txt"
   out="$(_run "${root}" -type f --summary --summary-scope=root --summary-scope=all --format=jsonl)"
-  expect_eq '{"scope":"all","root":"","group":"total","count":1,"bytes":3}' "${out}"
+  _expect_json_row '{"scope":"all","root":"","group":"total","count":1,"bytes":3}' "${out}"
 }
 
 test::summary_scope_template_and_collection() {
@@ -418,8 +426,8 @@ test::summary_scope_template_and_collection() {
   printf abc >"${root}/one/a.txt"
   printf de >"${root}/two/b.txt"
   out="$(_run "${root}/one" "${root}/two" -type f -collect:files --summary='{ext}' --summary-scope=root --format=jsonl)"
-  expect_output_contains "\"root\":\"${root}/one\",\"group\":\"txt\",\"count\":1,\"bytes\":3" "${out}"
-  expect_output_contains "\"root\":\"${root}/two\",\"group\":\"txt\",\"count\":1,\"bytes\":2" "${out}"
+  expect_matches "\"root\":\"${root}/one\",\"group\":\"txt\",\"count\":1,\"count_percent\":[0-9.]+,\"bytes\":3" "${out}"
+  expect_matches "\"root\":\"${root}/two\",\"group\":\"txt\",\"count\":1,\"count_percent\":[0-9.]+,\"bytes\":2" "${out}"
 }
 
 test::summary_scope_requires_active_file_summary() {
@@ -455,15 +463,14 @@ test::summary_scope_plain_labels_and_top_ties() {
   printf abc >"${root}/two/data.bin"
   out="$(_run "${root}/one" -type f --summary=ext --summary-scope=root --top=2 --human=off)"
   expect_output_contains "Summary scope: root (${root}/one)" "${out}"
-  expect_matches "txt +2${NL}cc +1${NL}total +4" "${out}"
+  expect_matches "txt +2 +50.00%.*${NL}cc +1 +25.00%.*${NL}total +4 +100.00%" "${out}"
   expect_not_matches "(^|${NL})h +1" "${out}"
   out="$(_run "${root}/one" "${root}/two" -type f --summary --summary-scope=all --human=off)"
   expect_output_contains 'Summary scope: all' "${out}"
-  expect_matches "total +5 +3" "${out}"
+  expect_matches "total +5 +100.00% +3" "${out}"
   out="$(_run --compare=summary "${root}/one" "${root}/two" -type f --summary=overall --summary-scope=left,right --human=off)"
-  expect_output_contains "Summary scope: left-only (${root}/one)" "${out}"
-  expect_output_contains "Summary scope: right-only (${root}/two)" "${out}"
-  expect_matches "total +1 +3" "${out}"
+  expect_output_contains "Summary scope: left-only,right-only" "${out}"
+  expect_matches "total +4 +100.00% +0 +0.00% +1 +100.00% +3 +100.00%" "${out}"
 }
 
 test::summary_scope_empty_list_is_an_error() {
@@ -473,6 +480,99 @@ test::summary_scope_empty_list_is_an_error() {
   out="$("$(_xff_bin)" --compare=summary "${root}/left" "${root}/right" --summary=overall --summary-scope= 2>&1)" && rc=0 || rc=$?
   expect_eq 2 "${rc}"
   expect_output_contains "unknown summary scope ''" "${out}"
+}
+
+test::comparison_types_and_totals_reconcile() {
+  local root out
+  root="$(_new_tree)"
+  mkdir -p "${root}/left/empty" "${root}/right"
+  printf abc >"${root}/left/same"
+  printf abc >"${root}/right/same"
+  printf x >"${root}/left/change"
+  printf yz >"${root}/right/change"
+  ln -s same "${root}/left/link"
+  ln -s same "${root}/right/link"
+  mkfifo "${root}/left/pipe" "${root}/right/pipe"
+  out="$(_run --compare=summary "${root}/left" "${root}/right" --summary=overall --summary-scope=all,compare --format=jsonl)"
+  _expect_json_row '{"type":"directory","group":"left-only","count":1}' "${out}"
+  _expect_json_row '{"type":"directory","group":"identical","count":1}' "${out}"
+  _expect_json_row '{"type":"symlink","group":"identical","count":1}' "${out}"
+  _expect_json_row '{"type":"fifo","group":"identical","count":1}' "${out}"
+  python3 -c '
+import json, sys
+rows = [json.loads(line) for line in sys.stdin]
+comparison = next(row for row in rows if row.get("type") == "all")
+combined = next(row for row in rows if row.get("scope") == "all")
+results = [row for row in rows if row.get("type") not in (None, "all")]
+assert sum(row["bytes"] for row in results) == comparison["bytes"] == combined["bytes"]
+assert sum(row["count"] for row in results) == comparison["count"]
+assert sum(row["count"] * (2 if row["group"] in ("identical", "different") else 1)
+           for row in results) == combined["count"]
+paired = [row for row in rows if row.get("scope") not in (None, "all")]
+assert sum((row[side] or {}).get("bytes", 0) for row in paired for side in ("left", "right")) == combined["bytes"]
+assert sum((row[side] or {}).get("count", 0) for row in paired for side in ("left", "right")) == combined["count"]
+' <<<"${out}"
+  out="$(_run --compare "${root}/left" "${root}/right" -type d)"
+  expect_eq $'left-only\tempty' "${out}"
+}
+
+test::comparison_scopes_share_one_table_per_grouping() {
+  local root out scope
+  root="$(_new_tree)"
+  mkdir "${root}/left" "${root}/right"
+  printf a >"${root}/left/only.txt"
+  printf bb >"${root}/right/extra.txt"
+  printf same >"${root}/left/equal.txt"
+  printf same >"${root}/right/equal.txt"
+  for scope in compare left,right; do
+    out="$(_run --compare=summary "${root}/left" "${root}/right" -type f --summary=ext "--summary-scope=${scope}")"
+    python3 -c 'import sys; text = sys.stdin.read(); assert text.count("Left count") == 1, text; assert text.count("Summary scope:") == 1, text' <<<"${out}"
+  done
+  out="$(_run --compare=summary "${root}/left" "${root}/right" -type f --summary=ext --summary-scope=compare --format=jsonl)"
+  _expect_json_row '{"scope":"left-only,right-only,different,identical","group":"txt","left":{"count":2,"bytes":5},"right":{"count":2,"bytes":6}}' "${out}"
+  out="$(_run --compare=summary "${root}/left" "${root}/right" -type f --summary=ext --summary-scope=left,right --format=jsonl)"
+  _expect_json_row '{"scope":"left-only,right-only","group":"txt","left":{"count":1,"bytes":1},"right":{"count":1,"bytes":2}}' "${out}"
+}
+
+test::summary_scope_default_depends_on_compare_and_explicit_selection_wins() {
+  local root out explicit
+  root="$(_new_tree)"
+  mkdir "${root}/left" "${root}/right"
+  printf a >"${root}/left/file.txt"
+  printf bb >"${root}/right/file.txt"
+  out="$(_run --compare=summary "${root}/left" "${root}/right" --summary=ext -type f --format=jsonl)"
+  explicit="$(_run --summary-scope=compare --compare=summary "${root}/left" "${root}/right" --summary=ext -type f --format=jsonl)"
+  expect_eq "${explicit}" "${out}"
+  _expect_json_row '{"scope":"left-only,right-only,different,identical","group":"txt","left":{"count":1,"bytes":1},"right":{"count":1,"bytes":2}}' "${out}"
+  out="$(_run --summary-scope=all --compare=summary "${root}/left" "${root}/right" --summary=ext -type f --format=jsonl)"
+  explicit="$(_run --compare=summary "${root}/left" "${root}/right" --summary=ext --summary-scope=all -type f --format=jsonl)"
+  expect_eq "${explicit}" "${out}"
+  _expect_json_row '{"scope":"all","group":"txt","count":2,"bytes":3}' "${out}"
+  out="$(_run "${root}/left" "${root}/right" --summary=ext -type f --format=jsonl)"
+  _expect_json_row '{"group":"txt","count":2,"bytes":3}' "${out}"
+  expect_not_matches '"left":|"right":' "${out}"
+}
+
+test::markdown_summary_tables_escape_cells_and_support_comparison() {
+  local root out explicit
+  root="$(_new_tree)"
+  mkdir "${root}/left" "${root}/right"
+  printf a >"${root}/left/file.a|b"
+  printf bb >"${root}/right/file.md"
+  out="$(_run "${root}/left" --summary=ext --format=md -type f)"
+  expect_output_contains '| Group' "${out}"
+  expect_output_contains 'a\|b' "${out}"
+  explicit="$(_run "${root}/left" --summary=ext --format=markdown -type f)"
+  expect_eq "${out}" "${explicit}"
+  out="$(_run --compare=summary "${root}/left" "${root}/right" --summary=ext --format=md -type f)"
+  expect_output_contains '| Type' "${out}"
+  expect_output_contains '| Left count' "${out}"
+  expect_output_contains '| Right count' "${out}"
+  expect_output_contains 'a\|b' "${out}"
+  python3 -c 'import sys; text = sys.stdin.read(); assert text.count("| Group") == 1; assert "\n\n| Group" in text; assert "\n\nResults count" in text' <<<"${out}"
+  out="$(_run "${root}/left" --summary=ext --format=md --no-header -type f)"
+  expect_not_matches '[|] Group' "${out}"
+  expect_output_contains 'a\|b' "${out}"
 }
 
 test_runner

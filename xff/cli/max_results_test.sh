@@ -36,8 +36,8 @@ test::max_results_caps_the_aggregate_implicit_listing() {
 test::max_results_does_not_truncate_reductions() {
   local root out
   root="$(_make_tree)"
-  out="$(cd "${root}" && "$(_xff_bin)" --exact . -type f --max-results=2 --summary --sort=tree)"
-  expect_eq "total  10" "${out}"
+  out="$(cd "${root}" && "$(_xff_bin)" --exact . -type f --max-results=2 --summary --human=off --sort=tree)"
+  expect_matches "total +10 +100.00% +0 +0.00%$" "${out}"
 }
 
 test::explicit_actions_keep_their_positional_expression_semantics() {

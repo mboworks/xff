@@ -1,4 +1,5 @@
 <ROOT>/docs/c.txt
 <ROOT>/src/a.txt
 <ROOT>/src/b.log
-total  3  13
+Group  Count  % count  Size   % size
+total      3  100.00%    13  100.00%

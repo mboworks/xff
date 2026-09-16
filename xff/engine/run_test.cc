@@ -196,7 +196,7 @@ TEST_F(RunTest, CompareUsesTheRequestedIgnorePolicyIndependentlyOnEachSide) {
 
   EXPECT_THAT(
       RunArgvRecords({"--compare=status", "--compare-select=identical", left.string(), right.string()}),
-      ElementsAre("identical\tsame"));
+      ElementsAre("identical\t.", "identical\tnested", "identical\tsame"));
   EXPECT_THAT(last_errors_, 0);
 
   const std::vector<std::string> patch =
@@ -246,7 +246,7 @@ TEST_F(RunTest, CompareSelectsEveryResultKind) {
 
   EXPECT_THAT(
       RunArgvRecords({"--compare", "--compare-select=all", left.string(), right.string()}),
-      ElementsAre("different\tdifferent", "left-only\tleft", "right-only\tright", "identical\tsame"));
+      ElementsAre("identical\t.", "different\tdifferent", "left-only\tleft", "right-only\tright", "identical\tsame"));
   EXPECT_THAT(
       RunArgvRecords({"--compare", "--compare-select=left-only,right-only", left.string(), right.string()}),
       ElementsAre("left-only\tleft", "right-only\tright"));
@@ -268,7 +268,7 @@ TEST_F(RunTest, CompareStatusHonorsPathEncoding) {
   EXPECT_THAT(
       RunArgvRecords(
           {"--compare", "--compare-select=identical", "--path-encoding=escape", left.string(), right.string()}),
-      ElementsAre("identical\tsame\\npath"));
+      ElementsAre("identical\t.", "identical\tsame\\npath"));
   EXPECT_THAT(last_errors_, 0);
 }
 
@@ -1789,14 +1789,16 @@ TEST_F(RunTest, SummaryOverallReducesMatchesToACountAndSize) {
   // sub/c.txt match (1 byte each), so 2 matches / 2 bytes.
   EXPECT_THAT(
       RunArgvRecords({"--summary", "--format=jsonl", root_.string(), "-name", "*.txt"}),
-      ElementsAre(R"({"group":"total","count":2,"bytes":2})"));
+      ElementsAre(R"({"group":"total","count":2,"count_percent":100.00,"bytes":2,"size_percent":100.00})"));
 }
 
 TEST_F(RunTest, SummaryByTypeGroupsThenTotals) {
   // --summary=type over the three files (1 byte each): one "file" group, then total.
   EXPECT_THAT(
       RunArgvRecords({"--summary=type", "--format=jsonl", root_.string(), "-type", "f"}),
-      ElementsAre(R"({"group":"file","count":3,"bytes":3})", R"({"group":"total","count":3,"bytes":3})"));
+      ElementsAre(
+          R"({"group":"file","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})",
+          R"({"group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})"));
 }
 
 TEST_F(RunTest, SummaryByExtensionGroupsSortedThenTotals) {
@@ -1804,8 +1806,9 @@ TEST_F(RunTest, SummaryByExtensionGroupsSortedThenTotals) {
   EXPECT_THAT(
       RunArgvRecords({"--summary=ext", "--format=jsonl", root_.string(), "-type", "f"}),
       ElementsAre(
-          R"({"group":"md","count":1,"bytes":1})", R"({"group":"txt","count":2,"bytes":2})",
-          R"({"group":"total","count":3,"bytes":3})"));
+          R"({"group":"md","count":1,"count_percent":33.33,"bytes":1,"size_percent":33.33})",
+          R"({"group":"txt","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67})",
+          R"({"group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})"));
 }
 
 TEST_F(RunTest, SummaryByLanguageGroupsThenTotals) {
@@ -1814,8 +1817,9 @@ TEST_F(RunTest, SummaryByLanguageGroupsThenTotals) {
   EXPECT_THAT(
       RunArgvRecords({"--summary=lang", "--format=jsonl", root_.string(), "-type", "f"}),
       ElementsAre(
-          R"j({"group":"(none)","count":2,"bytes":2})j", R"j({"group":"Markdown","count":1,"bytes":1})j",
-          R"j({"group":"total","count":3,"bytes":3})j"));
+          R"j({"group":"(none)","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67})j",
+          R"j({"group":"Markdown","count":1,"count_percent":33.33,"bytes":1,"size_percent":33.33})j",
+          R"j({"group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})j"));
 }
 
 TEST_F(RunTest, SummaryHashVerificationCountsPassedAndFailedChecksInOneWalk) {
@@ -1827,9 +1831,11 @@ TEST_F(RunTest, SummaryHashVerificationCountsPassedAndFailedChecksInOneWalk) {
           {"--summary=type", "--summary=hash-verification", "--format=jsonl", root_.string(), "-type", "f", "-hasheq",
            std::string(kSha256A)}),
       ElementsAre(
-          R"({"group":"file","count":1,"bytes":1})", R"({"group":"total","count":1,"bytes":1})",
-          R"({"group":"failed","count":2,"bytes":2})", R"({"group":"verified","count":1,"bytes":1})",
-          R"({"group":"total","count":3,"bytes":3})"));
+          R"({"group":"file","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00})",
+          R"({"group":"total","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00})",
+          R"({"group":"failed","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67})",
+          R"({"group":"verified","count":1,"count_percent":33.33,"bytes":1,"size_percent":33.33})",
+          R"({"group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})"));
   EXPECT_THAT(last_errors_, 0);
 }
 
@@ -1839,7 +1845,7 @@ TEST_F(RunTest, SummaryHashVerificationDoesNotCountChecksSkippedByShortCircuitin
       RunArgvRecords(
           {"--summary=hash-verification", "--format=jsonl", root_.string(), "-false", "-a", "-hasheq",
            std::string(kSha256A)}),
-      ElementsAre(R"({"group":"total","count":0})"));
+      ElementsAre(R"({"group":"total","count":0,"count_percent":0.00,"bytes":0,"size_percent":0.00})"));
   EXPECT_THAT(last_errors_, 0);
 }
 
@@ -1858,7 +1864,9 @@ TEST_F(RunTest, SummaryHashVerificationRequiresExactlyOneHashCheck) {
       RunArgvRecords(
           {"--summary=hash-verification", "--format=jsonl", root_.string(), "-name", "a.txt", "!", "-hasheq",
            "deadbeef"}),
-      ElementsAre(R"({"group":"failed","count":1,"bytes":1})", R"({"group":"total","count":1,"bytes":1})"));
+      ElementsAre(
+          R"({"group":"failed","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00})",
+          R"({"group":"total","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00})"));
   EXPECT_THAT(last_errors_, 0);
 }
 
@@ -1867,7 +1875,9 @@ TEST_F(RunTest, SummaryHashVerificationClassifiesMissingExpectationsAndNonRegula
       RunArgvRecords(
           {"--summary=hash-verification", "--format=jsonl", root_.string(), "-name", "a.txt", "-hasheq",
            "{def.MISSING}"}),
-      ElementsAre(R"({"group":"failed","count":1,"bytes":1})", R"({"group":"total","count":1,"bytes":1})"));
+      ElementsAre(
+          R"({"group":"failed","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00})",
+          R"({"group":"total","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00})"));
   EXPECT_THAT(last_errors_, 0);
   EXPECT_THAT(
       RunArgvRecords(
@@ -1887,8 +1897,9 @@ TEST_F(RunTest, SummaryHashVerificationVerdictSurvivesDeferredReplayWithoutASeco
           {"--summary=hash-verification", "--format=jsonl", root_.string(), "-name", "verify-*", "-a", "(", "-hasheq",
            std::string(kSha256A), ",", "-shard-status", "complete", ")"}),
       ElementsAre(
-          R"({"group":"failed","count":1,"bytes":1})", R"({"group":"verified","count":1,"bytes":1})",
-          R"({"group":"total","count":2,"bytes":2})"));
+          R"({"group":"failed","count":1,"count_percent":50.00,"bytes":1,"size_percent":50.00})",
+          R"({"group":"verified","count":1,"count_percent":50.00,"bytes":1,"size_percent":50.00})",
+          R"({"group":"total","count":2,"count_percent":100.00,"bytes":2,"size_percent":100.00})"));
   EXPECT_THAT(last_errors_, 0);
 }
 
@@ -1897,7 +1908,9 @@ TEST_F(RunTest, SummaryTopKeepsTheLargestGroupsBySize) {
   // ordered by size; the total row still counts every matched group.
   EXPECT_THAT(
       RunArgvRecords({"--summary=ext", "--top=1", "--format=jsonl", root_.string(), "-type", "f"}),
-      ElementsAre(R"({"group":"txt","count":2,"bytes":2})", R"({"group":"total","count":3,"bytes":3})"));
+      ElementsAre(
+          R"({"group":"txt","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67})",
+          R"({"group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})"));
 }
 
 TEST_F(RunTest, SummaryScopesRenderPlainLabels) {
@@ -1917,7 +1930,10 @@ TEST_F(RunTest, SummaryTopBreaksEqualSizeTiesByCountThenName) {
   EXPECT_THAT(fs_.WriteContent(Path("d.h"), ""), IsOk());
   EXPECT_THAT(
       RunArgvRecords({"--summary=ext", "--top=2", "--format=jsonl", root_.string(), "-type", "f"}),
-      ElementsAre(R"({"group":"txt","count":2})", R"({"group":"h","count":1})", R"({"group":"total","count":4})"));
+      ElementsAre(
+          R"({"group":"txt","count":2,"count_percent":50.00,"bytes":0,"size_percent":0.00})",
+          R"({"group":"h","count":1,"count_percent":25.00,"bytes":0,"size_percent":0.00})",
+          R"({"group":"total","count":4,"count_percent":100.00,"bytes":0,"size_percent":0.00})"));
 }
 
 TEST_F(RunTest, ComparisonSummaryRejectsEmptyScopeList) {
@@ -1927,15 +1943,139 @@ TEST_F(RunTest, ComparisonSummaryRejectsEmptyScopeList) {
   EXPECT_THAT(last_errors_, 2);
 }
 
-TEST_F(RunTest, SummaryOmitsSizeWhenNothingSizeWorthyIsAggregated) {
-  // Empty files -> the summary has no size dimension, so it reports counts only: no spurious
-  // `0 B` column in the human table and no `bytes:0` field in the jsonl rows (#156).
+TEST_F(RunTest, ComparisonSummaryAccountsForBothSidesAndMissingEntries) {
+  ASSERT_THAT(fs_.WriteContent(Path("sub/a.txt"), "aa"), IsOk());
+  ASSERT_THAT(fs_.WriteContent(Path("sub/b.md"), "b"), IsOk());
+  const auto records = RunArgvRecords(
+      {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=overall",
+       "--summary-scope=all,compare", "--format=jsonl"});
+  EXPECT_THAT(
+      records,
+      Contains(
+          R"({"type":"file","group":"different","count":1,"count_percent":16.67,"bytes":3,"size_percent":30.00})"));
+  EXPECT_THAT(
+      records,
+      Contains(
+          R"({"type":"file","group":"identical","count":1,"count_percent":16.67,"bytes":2,"size_percent":20.00})"));
+  EXPECT_THAT(
+      records,
+      Contains(R"({"type":"all","group":"total","count":6,"count_percent":100.00,"bytes":10,"size_percent":100.00})"));
+  EXPECT_THAT(
+      records,
+      Contains(
+          R"({"scope":"all","root":"","group":"total","count":8,"count_percent":100.00,"bytes":10,"size_percent":100.00})"));
+  EXPECT_THAT(
+      records, Contains(AllOf(
+                   HasSubstr(R"("scope":"left-only,right-only,different,identical")"),
+                   HasSubstr(R"("count":5,"count_percent":100.00,"bytes":6,"size_percent":100.00)"),
+                   HasSubstr(R"("count":3,"count_percent":100.00,"bytes":4,"size_percent":100.00)"))));
+  const auto one_sided = RunArgvRecords(
+      {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--summary-scope=left,right",
+       "--format=jsonl"});
+  EXPECT_THAT(one_sided, Contains(AllOf(HasSubstr(R"("group":"md")"), HasSubstr(R"("right":null)"))));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, ComparisonSummaryIncludesEmptyDirectoriesAndTypeTransitions) {
+  // The existing subdirectory has no directory children, while the left root contains sub.
+  auto records = RunArgvRecords({"--compare=summary", root_.string(), Path("sub"), "-type", "d", "--format=jsonl"});
+  EXPECT_THAT(records, Contains(HasSubstr(R"("type":"directory","group":"left-only","count":1)")));
+  EXPECT_THAT(records, Contains(HasSubstr(R"("type":"directory","group":"identical","count":1)")));
+  EXPECT_THAT(records, Contains(HasSubstr(R"("type":"all","group":"total","count":2)")));
+  ASSERT_THAT(fs_.WriteContent(Path("sub/sub"), "file"), IsOk());
+  records = RunArgvRecords({"--compare=summary", root_.string(), Path("sub"), "--format=jsonl"});
+  EXPECT_THAT(records, Contains(HasSubstr(R"("type":"directory -> file","group":"different","count":1)")));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, PairedSummaryDistinguishesZeroBytesAndUsesSelectedCategoryDenominators) {
+  ASSERT_THAT(fs_.WriteContent(Path("a.txt"), ""), IsOk());
+  ASSERT_THAT(fs_.WriteContent(Path("sub/a.txt"), ""), IsOk());
+  const auto records = RunArgvRecords(
+      {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--summary-scope=identical",
+       "--top=1", "--format=jsonl"});
+  EXPECT_THAT(
+      records,
+      Contains(AllOf(
+          HasSubstr(R"("scope":"identical","group":"txt")"),
+          HasSubstr(R"("count":1,"count_percent":100.00,"bytes":0,"size_percent":0.00)"), Not(HasSubstr("null")))));
+  const auto plain = RunArgvRecords(
+      {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--summary-scope=compare",
+       "--human=off"});
+  EXPECT_THAT(plain, Contains(HasSubstr("Left % count")).Times(1));
+  EXPECT_THAT(plain, Contains(HasSubstr("-")));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, ComparisonSummaryDefaultsToPairedScopeAndExplicitScopeOverridesIt) {
+  const auto implicit = RunArgvRecords(
+      {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--format=jsonl"});
+  EXPECT_THAT(implicit, Contains(HasSubstr(R"("scope":"left-only,right-only,different,identical")")));
+  EXPECT_THAT(
+      RunArgvRecords(
+          {"--summary-scope=compare", "--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext",
+           "--format=jsonl"}),
+      Eq(implicit));
+  const auto combined = RunArgvRecords(
+      {"--summary-scope=all", "--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext",
+       "--format=jsonl"});
+  EXPECT_THAT(combined, Contains(HasSubstr(R"("scope":"all","root":"","group":"total","count":4)")));
+  EXPECT_THAT(
+      RunArgvRecords(
+          {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--summary-scope=all",
+           "--format=jsonl"}),
+      Eq(combined));
+  EXPECT_THAT(
+      RunArgvRecords({"--compare=summary", root_.string(), Path("sub"), "--format=jsonl"}),
+      Not(Contains(HasSubstr(R"("scope":)"))));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, MarkdownSummariesRenderOrdinaryAndPairedTables) {
+  const auto ordinary = RunArgvRecords({root_.string(), "-type", "f", "--summary=ext", "--format=md"});
+  EXPECT_THAT(ordinary, Contains(HasSubstr("| Group")).Times(1));
+  EXPECT_THAT(ordinary, Contains(HasSubstr("| Count")));
+  EXPECT_THAT(ordinary, Contains(HasSubstr("| ----: | ------: |")));
+  EXPECT_THAT(ordinary, Contains(HasSubstr("| txt")));
+  EXPECT_THAT(RunArgvRecords({root_.string(), "-type", "f", "--summary=ext", "--format=markdown"}), Eq(ordinary));
+  const auto comparison =
+      RunArgvRecords({"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--format=md"});
+  EXPECT_THAT(comparison, Contains(HasSubstr("| Type")).Times(1));
+  EXPECT_THAT(comparison, Contains(HasSubstr("| Left count")).Times(1));
+  EXPECT_THAT(comparison, Contains(HasSubstr("| Right count")));
+  EXPECT_THAT(comparison, Contains(HasSubstr("| ---------: |")));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, MarkdownSummaryWorksWithCollectionsAndHonorsHeaderControl) {
+  const auto records =
+      RunArgvRecords({root_.string(), "-type", "f", "-collect", "--summary=ext", "--format=md", "--no-header"});
+  EXPECT_THAT(records, Contains(HasSubstr("| txt")));
+  EXPECT_THAT(records, Not(Contains(HasSubstr("| Group"))));
+  EXPECT_THAT(records, Not(Contains(HasSubstr("| ---"))));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, MarkdownSummaryRejectsListingColumnsAndPreservesActionValidation) {
+  EXPECT_THAT(RunArgvRecords({root_.string(), "--summary=ext", "--format=md", "--columns=path"}), IsEmpty());
+  EXPECT_THAT(last_errors_, 2);
+  EXPECT_THAT(RunArgvRecords({root_.string(), "--format=md", "-printf", "SHOULD_NOT_RUN"}), IsEmpty());
+  EXPECT_THAT(last_errors_, 2);
+  EXPECT_THAT(
+      RunArgvRecords({"--compare=summary", root_.string(), Path("sub"), "--summary=none", "--format=md"}), IsEmpty());
+  EXPECT_THAT(last_errors_, 2);
+}
+
+TEST_F(RunTest, SummaryRetainsZeroByteDimensionForEmptyFiles) {
+  // Zero-byte files have a size dimension; distinguish them from absent entries.
   { std::ofstream(root_ / "e1.log"); }  // 0 bytes
   { std::ofstream(root_ / "e2.log"); }
   EXPECT_THAT(
       RunArgvRecords({"--summary=ext", "--format=jsonl", root_.string(), "-name", "*.log"}),
-      ElementsAre(R"({"group":"log","count":2})", R"({"group":"total","count":2})"));
-  // The human (default) table is count-only: no size unit column anywhere.
+      ElementsAre(
+          R"({"group":"log","count":2,"count_percent":100.00,"bytes":0,"size_percent":0.00})",
+          R"({"group":"total","count":2,"count_percent":100.00,"bytes":0,"size_percent":0.00})"));
+  // Unstyled output retains a numeric size column without a human-readable unit.
   EXPECT_THAT(RunArgvRecords({"--summary=ext", root_.string(), "-name", "*.log"}), Not(Contains(HasSubstr(" B"))));
 }
 
@@ -1960,7 +2100,8 @@ TEST_F(RunTest, HistogramCombinesWithSummaryEmittingBothBlocks) {
   EXPECT_THAT(
       RunArgvRecords({"--summary=type", "--histogram=ext", "--format=jsonl", root_.string(), "-type", "f"}),
       ElementsAre(
-          R"({"group":"file","count":3,"bytes":3})", R"({"group":"total","count":3,"bytes":3})",
+          R"({"group":"file","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})",
+          R"({"group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})",
           R"({"histogram":"ext","bucket":"txt","value":2})", R"({"histogram":"ext","bucket":"md","value":1})"));
 }
 
@@ -2061,8 +2202,9 @@ TEST_F(RunTest, SummaryByMimeGroupsByMediaType) {
   EXPECT_THAT(
       RunArgvRecords({"--summary=mime", "--format=jsonl", root_.string(), "-type", "f"}),
       ElementsAre(
-          R"({"group":"text/markdown","count":1,"bytes":1})", R"({"group":"text/plain","count":2,"bytes":2})",
-          R"({"group":"total","count":3,"bytes":3})"));
+          R"({"group":"text/markdown","count":1,"count_percent":33.33,"bytes":1,"size_percent":33.33})",
+          R"({"group":"text/plain","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67})",
+          R"({"group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})"));
 }
 
 TEST_F(RunTest, HistogramByMimeCountsPerMediaType) {
@@ -2088,7 +2230,9 @@ TEST_F(RunTest, SummaryOwnerIsAnAliasOfUser) {
   // separate total row is emitted for a single group beyond it -- match the owner row's shape.
   EXPECT_THAT(
       RunArgvRecords({"--summary=owner", "--format=jsonl", root_.string(), "-type", "f"}),
-      ElementsAre(MatchesRegex(R"(\{"group":".+","count":3,"bytes":3\})"), R"({"group":"total","count":3,"bytes":3})"));
+      ElementsAre(
+          MatchesRegex(R"(\{"group":".+","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00\})"),
+          R"({"group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})"));
 }
 
 TEST_F(RunTest, HistogramByGroupGroupsUnderTheOwningGroup) {

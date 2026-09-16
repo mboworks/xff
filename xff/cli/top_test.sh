@@ -53,12 +53,12 @@ test::position_relative_to_collect_selects_what_the_summary_reads() {
   local root out
   root="$(_make_tree)"
   out="$(cd "${root}" && "$(_xff_bin)" --exact . -type f -fuzzy foo -collect -top 2 \
-    -printf 'listed:%f\n' --summary --sort=tree)"
-  expect_eq $'listed:foo\nlisted:foobar\ntotal  5' "${out}" # collect ran before the ranked filter
+    -printf 'listed:%f\n' --summary --human=off --sort=tree)"
+  expect_matches $'^listed:foo\nlisted:foobar\nGroup[^\n]*\ntotal +5 +100.00% +0 +0.00%$' "${out}" # collect ran before the ranked filter
 
   out="$(cd "${root}" && "$(_xff_bin)" --exact . -type f -fuzzy foo -top 2 -collect \
-    --summary --sort=tree)"
-  expect_eq "total  2" "${out}" # -collect suppresses implicit listing
+    --summary --human=off --sort=tree)"
+  expect_matches "total +2 +100.00% +0 +0.00%$" "${out}" # -collect suppresses implicit listing
 }
 
 test::top_rejects_incomparable_score_domains() {

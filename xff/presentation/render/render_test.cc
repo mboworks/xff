@@ -21,6 +21,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
+#include "xff/presentation/format/format.h"
 
 namespace xff::render {
 namespace {
@@ -125,6 +126,39 @@ TEST_F(RenderTest, RenderTableMarkdownEmitsAGithubTableWithARule) {
       | ------ | ---- |
       | README | 12   |
       | a.txt  | 3    |
+      )out")));
+}
+
+TEST_F(RenderTest, MarkdownAlignmentPadsValuesHeadersAndRulesToTheSameWidths) {
+  TableStream stream(
+      Format::kMarkdown, {"name", "count", "%"}, true, TableStream::kAll, 0,
+      {format::Align::kLeft, format::Align::kRight, format::Align::kRight});
+  EXPECT_THAT(stream.Add({"a", "3", "2%"}), "");
+  EXPECT_THAT(stream.Add({"long|name", "123456", "100%"}), "");
+  EXPECT_THAT(stream.Flush(), WithDropIndent(EqualsText(R"out(
+      | name       |  count |    % |
+      | ---------- | -----: | ---: |
+      | a          |      3 |   2% |
+      | long\|name | 123456 | 100% |
+      )out")));
+}
+
+TEST_F(RenderTest, RightAlignmentSupportsHeaderlessAndAlignedTables) {
+  TableStream markdown(
+      Format::kMarkdown, {"name", "count"}, false, TableStream::kAll, 0, {format::Align::kLeft, format::Align::kRight});
+  EXPECT_THAT(markdown.Add({"a", "3"}), "");
+  EXPECT_THAT(markdown.Add({"long", "12"}), "");
+  EXPECT_THAT(markdown.Flush(), WithDropIndent(EqualsText(R"out(
+      | a    |   3 |
+      | long |  12 |
+      )out")));
+  TableStream aligned(
+      Format::kAligned, {"name", "count"}, true, TableStream::kAll, 0, {format::Align::kLeft, format::Align::kRight});
+  EXPECT_THAT(aligned.Add({"a", "3"}), "");
+  EXPECT_THAT(aligned.Flush(), WithDropIndent(EqualsText(R"out(
+      name  count
+      ----  -----
+      a         3
       )out")));
 }
 
