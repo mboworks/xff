@@ -13,6 +13,12 @@ live in [`docs/history.md`](docs/history.md).
 - Add end-to-end reconciliation and invalid-control coverage alongside focused engine regressions.
 - Measure the follow-up PR's action-cache reuse against the main caches seeded after #840.
 
+## CI preparation profiling
+
+- Verified #847 main: zero cache evictions, 184.7-second fuzz campaign phase, 2.69 GB cache inventory.
+- Capture coverage and initial fuzz build traces to attribute the remaining four-minute preparation
+  delay before changing toolchain fetching or packaging. See `docs/ci-performance.md`.
+
 ## Completed: Start long CI jobs immediately
 
 - Remove pre-commit/Trunk scheduling dependencies from coverage and fuzz; keep every check in `done`.

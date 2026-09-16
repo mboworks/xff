@@ -94,10 +94,13 @@ print('stat::average_exec_per_sec: 21')
             with mock.patch("fuzz_targets.subprocess.run", side_effect=prepare) as run, \
                  mock.patch("fuzz_targets.worker_count", return_value=2):
                 self.assertEqual(fuzz_targets.run_campaigns(targets, 1, ["--disk_cache=/cache"],
-                                                           output_dir=root), 0)
+                                                           output_dir=root, build_profile=root / "trace.json.gz"), 0)
             commands = [call.args[0] for call in run.call_args_list]
             self.assertEqual([command[1] for command in commands], ["build", "run", "run"])
             self.assertEqual(commands[0][-2:], targets)
+            self.assertTrue(any(arg.startswith("--profile=") for arg in commands[0]))
+            self.assertTrue(all(not any(arg.startswith("--profile=") for arg in command)
+                                for command in commands[1:]))
             for command in commands:
                 self.assertIn("--disk_cache=/cache", command)
             summary = json.loads((root / "summary.json").read_text())

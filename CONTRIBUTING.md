@@ -71,6 +71,9 @@ so the generated source is requested even when the compiled library is cached.
 
 ## CI build caches
 
+Measured cache reuse, scheduling, fuzz throughput, and preparation profiling are documented in
+[`docs/ci-performance.md`](docs/ci-performance.md).
+
 Coverage and fuzz jobs start alongside pre-commit and Trunk to reduce total CI wall time.
 The final `done` gate still requires every job to pass. This intentionally spends runner time
 on those jobs even when an early lint check fails.

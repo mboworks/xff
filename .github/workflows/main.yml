@@ -259,7 +259,16 @@ jobs:
             --max-total-seconds=900 \
             --disk-cache="${HOME}/.cache/bazel-disk" \
             --jobs="$(getconf _NPROCESSORS_ONLN)" \
-            --output-dir="${RUNNER_TEMP}/fuzz-campaigns"
+            --output-dir="${RUNNER_TEMP}/fuzz-campaigns" \
+            --build-profile="${RUNNER_TEMP}/fuzz-preparation.json.gz"
+      - name: Preserve fuzz preparation profile
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fuzz-preparation-profile
+          path: ${{ runner.temp }}/fuzz-preparation.json.gz
+          retention-days: 7
+          if-no-files-found: warn
       - name: Preserve fuzz campaign logs and findings
         if: always()
         uses: actions/upload-artifact@v7
@@ -319,6 +328,11 @@ jobs:
           # shellcheck disable=SC2046  # deliberate splitting into Bazel target patterns
           bazel coverage //... $(tools/extras.py --wildcards) \
             --config=clang-coverage \
+            --profile="${RUNNER_TEMP}/coverage-preparation.json.gz" \
+            --experimental_profile_additional_tasks=repository_fetch \
+            --experimental_profile_additional_tasks=starlark_repository_fn \
+            --experimental_profile_additional_tasks=starlark_builtin_fn \
+            --experimental_profile_additional_tasks=fetch \
             --config=xff_docs \
             --config=xff_fuse_tests_required \
             --combined_report=lcov \
@@ -371,6 +385,14 @@ jobs:
             echo
             cat coverage-summary.md
           } >>"${GITHUB_STEP_SUMMARY}"
+      - name: Preserve coverage preparation profile
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-preparation-profile
+          path: ${{ runner.temp }}/coverage-preparation.json.gz
+          retention-days: 7
+          if-no-files-found: warn
       - uses: actions/upload-artifact@v7
         if: always()
         with:

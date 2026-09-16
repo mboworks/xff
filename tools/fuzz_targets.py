@@ -184,7 +184,8 @@ def execute_campaign(target: str, script: pathlib.Path, directory: pathlib.Path,
 
 def run_campaigns(targets: list[str], seconds: int, bazel_args: list[str], *,
                   jobs: int | None = None, rss_limit_mb: int = 2048,
-                  output_dir: pathlib.Path | None = None) -> int:
+                  output_dir: pathlib.Path | None = None,
+                  build_profile: pathlib.Path | None = None) -> int:
     """Build together, prepare launchers serially, then fuzz with bounded concurrency."""
     if not targets:
         raise ValueError("no fuzz campaigns discovered")
@@ -192,7 +193,14 @@ def run_campaigns(targets: list[str], seconds: int, bazel_args: list[str], *,
     root.mkdir(parents=True, exist_ok=True)
     environment = campaign_environment()
     flags = ["-c", "opt", "--config=xff_docs", "--config=fuzz", *bazel_args]
-    result = subprocess.run(["bazel", "build", *flags, *targets], check=False, env=environment)
+    profile_flags = []
+    if build_profile:
+        profile_flags = [f"--profile={build_profile.resolve()}",
+                         "--experimental_profile_additional_tasks=repository_fetch",
+                         "--experimental_profile_additional_tasks=starlark_repository_fn",
+                         "--experimental_profile_additional_tasks=starlark_builtin_fn",
+                         "--experimental_profile_additional_tasks=fetch"]
+    result = subprocess.run(["bazel", "build", *flags, *profile_flags, *targets], check=False, env=environment)
     if result.returncode:
         return result.returncode
     prepared = []
@@ -257,6 +265,7 @@ def main() -> int:
     parser.add_argument("--jobs", type=int, help="maximum concurrent campaigns (default: CPUs minus one)")
     parser.add_argument("--rss-limit-mb", type=int, default=2048, help="libFuzzer RSS limit per worker")
     parser.add_argument("--output-dir", type=pathlib.Path, help="retain per-target logs, corpora, and crash artifacts here")
+    parser.add_argument("--build-profile", type=pathlib.Path, help="retain a Bazel trace of initial build preparation")
     args = parser.parse_args()
     if (args.jobs is not None and args.jobs <= 0) or args.rss_limit_mb <= 0:
         parser.error("--jobs and --rss-limit-mb must be positive")
@@ -281,7 +290,7 @@ def main() -> int:
             ]
         )
     return run_campaigns(targets, args.campaign_seconds, bazel_args, jobs=args.jobs,
-                         rss_limit_mb=args.rss_limit_mb, output_dir=args.output_dir)
+                         rss_limit_mb=args.rss_limit_mb, output_dir=args.output_dir, build_profile=args.build_profile)
 
 
 if __name__ == "__main__":
