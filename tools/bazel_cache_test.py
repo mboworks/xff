@@ -55,14 +55,16 @@ class BazelCacheTest(unittest.TestCase):
             subprocess.run(command + ["--max-bytes=0"], capture_output=True, check=True)
             self.assertFalse((root / "cas/output").exists())
 
-    def test_only_sanitizers_have_larger_budgets(self):
+    def test_instrumented_jobs_have_explicit_larger_budgets(self):
         root = Path(__file__).resolve().parent.parent
         workflow = (root / ".github/workflows/main.yml").read_text()
-        self.assertEqual(workflow.count("max-bytes:"), 3)
+        self.assertEqual(workflow.count("max-bytes:"), 4)
         self.assertIn("matrix.config.name == 'asan' && '2600000000' || '600000000'", workflow)
-        for job, following in (("tsan", "msan"), ("msan", "minimal")):
+        for job, following, limit in (("coverage", "tsan", 1500000000),
+                                      ("tsan", "msan", 2600000000),
+                                      ("msan", "minimal", 4000000000)):
             section = workflow.split(f"  {job}:", 1)[1].split(f"  {following}:", 1)[0]
-            self.assertIn(f'max-bytes: "{4000000000 if job == "msan" else 2600000000}"', section)
+            self.assertIn(f'max-bytes: "{limit}"', section)
         save = (root / ".github/actions/bazel-cache-save/action.yml").read_text()
         self.assertIn('default: "600000000"', save)
         self.assertIn('--max-bytes="${CACHE_MAX_BYTES}"', save)

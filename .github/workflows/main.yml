@@ -377,6 +377,7 @@ jobs:
         uses: ./.github/actions/bazel-cache-save
         with:
           key: ${{ steps.bazel-cache.outputs.key }}
+          max-bytes: "1500000000"
 
   # ThreadSanitizer for the parallel walk (issue #43; mutually exclusive with the
   # asan cell). ubuntu-only. Like the asan cell this uses --config=clang, which

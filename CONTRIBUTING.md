@@ -84,7 +84,8 @@ that cache. Dependency and compiler-option changes can still require rebuilding.
 
 Before upload, CI stops Bazel and evicts the largest disk-cache files until the action-cache and
 content-store payload is at most 600,000,000 bytes by default. ASan and TSan use
-2,600,000,000 bytes; MSan uses 4,000,000,000 bytes to retain more instrumented outputs. These are uncompressed limits; GitHub
+2,600,000,000 bytes; MSan uses 4,000,000,000 bytes and coverage uses 1,500,000,000 bytes
+to retain more instrumented outputs. These are uncompressed limits; GitHub
 storage usage reflects compressed uploads. Measure those uploads and total repository usage
 after main refreshes the caches before increasing other configurations. This is a synchronous upload bound, not an
 idle-time garbage-collection setting. Evicted outputs become normal cache misses; this bounded
@@ -93,7 +94,7 @@ many smaller compilation outputs over large linked executables; ties evict older
 This is a size heuristic, not action-type classification: large object files can also be evicted.
 The weekly deep-fuzz workflow shares the ordinary fuzz cache and main-only refresh policy.
 LLVM downloads remain uncached.
-Cleanup retains ASan/TSan uploads up to 1,000,000,000 compressed bytes and MSan uploads up to
+Cleanup retains ASan/TSan/coverage uploads up to 1,000,000,000 compressed bytes and MSan uploads up to
 1,200,000,000 bytes; other entries keep
 the existing 700,000,000-byte ceiling. The repository storage limit remains 10 GB.
 
