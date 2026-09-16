@@ -112,6 +112,12 @@ class BazelCacheTest(unittest.TestCase):
         save = (root / ".github/actions/bazel-cache-save/action.yml").read_text()
         self.assertLess(save.index("bazel shutdown"), save.index("tools/bazel_cache.py"))
         self.assertLess(save.index("tools/bazel_cache.py"), save.index("actions/cache/save@"))
+        self.assertLess(save.index("actions/cache/save@"), save.index("--replacement-key"))
+        self.assertIn("if: github.ref == 'refs/heads/main'", save)
+        self.assertIn("--ref refs/heads/main", save)
+        self.assertIn('GH_TOKEN: ${{ github.token }}', save)
+        self.assertEqual(workflow.count("actions: write"), 9)
+        self.assertIn("actions: write", deep_fuzz)
 
 
 if __name__ == "__main__":

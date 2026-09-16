@@ -58,16 +58,44 @@ def obsolete_cache_ids(caches: list[dict[str, Any]], closed_prs: set[int]) -> li
   return closed + superseded + oversized
 
 
+def replaced_cache_ids(caches: list[dict[str, Any]], replacement_key: str) -> list[int]:
+  """Retire older main generations only after finding a usable replacement."""
+  pattern = r"(bazel-actions-v2-.+)-[0-9a-f]{64}-\d+-\d+"
+  match = re.fullmatch(pattern, replacement_key)
+  if not match:
+    return []
+  replacements = [cache for cache in caches
+                  if cache["key"] == replacement_key and cache["ref"] == "refs/heads/main"]
+  if len(replacements) != 1 or oversized_cache_ids(replacements):
+    return []
+  replacement = replacements[0]
+  if replacement["sizeInBytes"] <= 0:
+    return []
+  result = []
+  for cache in caches:
+    candidate = re.fullmatch(pattern, cache["key"])
+    if (cache["ref"] == "refs/heads/main" and candidate and candidate[1] == match[1]
+        and cache["createdAt"] < replacement["createdAt"]):
+      result.append(cache["id"])
+  return result
+
+
 def main() -> int:
   parser = argparse.ArgumentParser(description=__doc__)
-  parser.add_argument("--closed-prs", type=Path, required=True,
+  mode = parser.add_mutually_exclusive_group(required=True)
+  mode.add_argument("--replacement-key", help="Retire older main generations after this upload")
+  mode.add_argument("--closed-prs", type=Path,
                       help="Paginated GitHub closed-PR JSON from gh api --paginate --slurp")
   args = parser.parse_args()
   caches = json.load(sys.stdin)
   if not isinstance(caches, list):
     raise ValueError("GitHub cache JSON must be an array")
-  closed_prs = {pr["number"] for page in json.loads(args.closed_prs.read_text()) for pr in page}
-  for cache_id in obsolete_cache_ids(caches, closed_prs):
+  if args.replacement_key:
+    obsolete = replaced_cache_ids(caches, args.replacement_key)
+  else:
+    closed_prs = {pr["number"] for page in json.loads(args.closed_prs.read_text()) for pr in page}
+    obsolete = obsolete_cache_ids(caches, closed_prs)
+  for cache_id in obsolete:
     print(cache_id)
   return 0
 

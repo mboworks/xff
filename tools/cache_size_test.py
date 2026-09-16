@@ -58,6 +58,32 @@ class CacheSizeTest(unittest.TestCase):
     # A newer rejected upload must not cause the last usable main generation to be deleted.
     self.assertEqual(cache_size.obsolete_cache_ids(caches, set()), [1, 3])
 
+  def test_immediate_retirement_is_scoped_and_preserves_newer_uploads(self):
+    def entry(number, namespace="Linux-X64-asan", ref="refs/heads/main", size=10):
+      return {"id": number, "ref": ref, "sizeInBytes": size,
+              "createdAt": f"2026-09-{number:02d}T00:00:00Z",
+              "key": f"bazel-actions-v2-{namespace}-{'a' * 64}-{number}-1"}
+    caches = [entry(1), entry(2), entry(3), entry(4, "Linux-X64-tsan"),
+              entry(5, "macOS-ARM64-asan"), entry(6, ref="refs/pull/843/merge")]
+    self.assertEqual(cache_size.replaced_cache_ids(caches, caches[1]["key"]), [1])
+    self.assertEqual(cache_size.replaced_cache_ids(caches, "missing"), [])
+    self.assertEqual(cache_size.replaced_cache_ids(caches, caches[5]["key"]), [])
+    for size in (0, 1_000_000_001):
+      with self.subTest(size=size):
+        caches[1]["sizeInBytes"] = size
+        self.assertEqual(cache_size.replaced_cache_ids(caches, caches[1]["key"]), [])
+
+  def test_retirement_waits_for_inventory_and_accepts_sanitizer_allowance(self):
+    old = {"id": 1, "ref": "refs/heads/main", "sizeInBytes": 100,
+           "createdAt": "2026-09-01T00:00:00Z",
+           "key": f"bazel-actions-v2-Linux-X64-msan-{'a' * 64}-1-1"}
+    new = dict(old, id=2, sizeInBytes=1_000_000_000, createdAt="2026-09-02T00:00:00Z",
+               key=f"bazel-actions-v2-Linux-X64-msan-{'b' * 64}-2-1")
+    self.assertEqual(cache_size.replaced_cache_ids([old], new["key"]), [])
+    self.assertEqual(cache_size.replaced_cache_ids([old, new], new["key"]), [1])
+    old["createdAt"] = new["createdAt"]
+    self.assertEqual(cache_size.replaced_cache_ids([old, new], new["key"]), [])
+
   def test_cache_budget_is_unchanged_and_upload_bound_is_lower(self):
     import bazel_cache
     self.assertEqual(cache_size.MAX_CACHE_BYTES, 700_000_000)

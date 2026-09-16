@@ -13,6 +13,13 @@ live in [`docs/history.md`](docs/history.md).
 - Add end-to-end reconciliation and invalid-control coverage alongside focused engine regressions.
 - Measure the follow-up PR's action-cache reuse against the main caches seeded after #840.
 
+## Completed: Immediate main cache retirement
+
+- After upload, verify the exact replacement and compressed size before deleting older main
+  generations in the same OS/architecture/configuration. Keep concurrent newer generations.
+- Retain workflow-completion and scheduled cleanup as fallbacks; monitor #842 main uploads for
+  actual compressed sanitizer sizes and total repository storage.
+
 ## Completed: CI compiled-output cache lifecycle
 
 - Replace frozen cache keys with fresh main-run generations and configuration-specific restoration.
