@@ -85,10 +85,10 @@ class CacheSizeTest(unittest.TestCase):
     old["createdAt"] = new["createdAt"]
     self.assertEqual(cache_size.replaced_cache_ids([old, new], new["key"]), [])
 
-  def test_cache_budget_is_unchanged_and_upload_bound_is_lower(self):
+  def test_compressed_and_uncompressed_budgets_are_independent(self):
     import bazel_cache
     self.assertEqual(cache_size.MAX_CACHE_BYTES, 700_000_000)
-    self.assertLess(bazel_cache.MAX_BYTES, cache_size.MAX_CACHE_BYTES)
+    self.assertEqual(bazel_cache.MAX_BYTES, 1_000_000_000)
 
 
 if __name__ == "__main__":

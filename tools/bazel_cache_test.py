@@ -59,14 +59,15 @@ class BazelCacheTest(unittest.TestCase):
         root = Path(__file__).resolve().parent.parent
         workflow = (root / ".github/workflows/main.yml").read_text()
         self.assertEqual(workflow.count("max-bytes:"), 4)
-        self.assertIn("matrix.config.name == 'asan' && '2600000000' || '600000000'", workflow)
+        self.assertIn("matrix.config.name == 'asan' && '3000000000' || '1000000000'", workflow)
         for job, following, limit in (("coverage", "tsan", 1500000000),
                                       ("tsan", "msan", 2600000000),
                                       ("msan", "minimal", 4000000000)):
             section = workflow.split(f"  {job}:", 1)[1].split(f"  {following}:", 1)[0]
             self.assertIn(f'max-bytes: "{limit}"', section)
         save = (root / ".github/actions/bazel-cache-save/action.yml").read_text()
-        self.assertIn('default: "600000000"', save)
+        self.assertEqual(bazel_cache.MAX_BYTES, 1_000_000_000)
+        self.assertIn(f'default: "{bazel_cache.MAX_BYTES}"', save)
         self.assertIn('--max-bytes="${CACHE_MAX_BYTES}"', save)
 
     def test_missing_cache_is_harmless(self):

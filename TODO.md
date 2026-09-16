@@ -4,6 +4,17 @@ Actionable roadmap and deliberately deferred ideas. Completed implementation rec
 [`docs/history-roadmap.md`](docs/history-roadmap.md); other resolved design records and investigations
 live in [`docs/history.md`](docs/history.md).
 
+## Completed: CI cache capacity after INI changes
+
+- Raise the shared uncompressed cache limit to 1 GB and ASan to 3 GB using main-run measurements.
+- Retain the compressed cleanup ceilings and test the independent budget settings.
+
+## Completed: Comparison summary scope columns
+
+- Make scopes collect ordered column groups; add side totals with `left`/`right` aliases and canonical output labels.
+- Count category pairs once with combined sizes; preserve side totals, ordering, overlap, and percentages.
+- Update plain/Markdown/JSONL output, help, design examples, and regression coverage.
+
 ## Completed: INI environment substitutions
 
 - Add braced environment values, literal defaults, and required-value diagnostics to the shared INI lexer.

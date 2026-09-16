@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 
-MAX_BYTES = 600_000_000
+MAX_BYTES = 1_000_000_000
 
 
 def trim(root: Path, max_bytes: int = MAX_BYTES) -> tuple[int, int, int]:

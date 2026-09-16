@@ -6,7 +6,7 @@ inputs:
     required: true
   max-bytes:
     description: Maximum uncompressed disk-cache payload before upload.
-    default: "600000000"
+    default: "1000000000"
 runs:
   using: composite
   steps:

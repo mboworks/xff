@@ -3,6 +3,12 @@
 
 # 0.6.0
 
+- Raise compiled-output CI cache budgets to 1 GB uncompressed by default and 3 GB for ASan.
+
+- Make comparison summary scopes select column groups: `compare` expands to `left-total,right-total`,
+  while comparison categories each get their own count and size statistics. `left` and `right`
+  alias the side totals; output labels use canonical names.
+
 - Support INI-only `${NAME}`, `${NAME:-DEFAULT}`, and `${NAME:?MESSAGE}` environment substitution,
   with literal quoting, single-argument values, and unchanged validation of expanded safety roots.
 

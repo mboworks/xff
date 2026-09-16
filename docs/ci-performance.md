@@ -59,3 +59,14 @@ whatever trace is available. These are diagnostic artifacts, not persistent modu
 Use the traces to identify long repository operations and nested download/extraction work before
 changing toolchain packaging, fetching, or caching. Keep compiler/module downloads out of the
 compiled-output cache.
+
+## Default cache budget
+
+The shared uncompressed compiled-output budget is 1 GB. The cleanup ceiling for ordinary
+compressed uploads remains 700 MB; instrumented jobs retain their explicit larger allowances.
+ASan has a 3 GB uncompressed allowance and a 1 GB compressed ceiling.
+Main run `35159334794` measured 729 MB before trimming for clang-tidy, and 674-692 MB for
+Linux, macOS, and GCC builds. These fit the default without evicting outputs. The previous
+clang-tidy PR run had no restorable cache at all; trimming and complete cache misses are distinct
+problems. This main run created a 96 MB compressed clang-tidy cache. ASan reached 2.80 GB before
+trimming, so its explicit 3 GB allowance also avoids eviction for this workload.

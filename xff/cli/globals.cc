@@ -99,12 +99,14 @@ constexpr std::array kSummaryScopeValues = std::to_array<ValueDoc>({
     {.value = "root", .meaning = "separate input roots"},
     {.value = "left-only", .meaning = "comparison entries present only on the left"},
     {.value = "right-only", .meaning = "comparison entries present only on the right"},
-    {.value = "different", .meaning = "different comparison pairs, with each side separate"},
-    {.value = "identical", .meaning = "identical comparison pairs, with each side separate"},
-    {.value = "left", .meaning = "alias for `left-only`"},
-    {.value = "right", .meaning = "alias for `right-only`"},
+    {.value = "different", .meaning = "different pairs counted once, with combined sizes"},
+    {.value = "identical", .meaning = "identical pairs counted once, with combined sizes"},
+    {.value = "left-total", .meaning = "all participating left entries"},
+    {.value = "right-total", .meaning = "all participating right entries"},
+    {.value = "left", .meaning = "alias for `left-total`"},
+    {.value = "right", .meaning = "alias for `right-total`"},
     {.value = "diff", .meaning = "`left-only,right-only,different`"},
-    {.value = "compare", .meaning = "`left-only,right-only,different,identical`"},
+    {.value = "compare", .meaning = "`left-total,right-total`"},
 });
 
 constexpr std::array kSummaryValues = std::to_array<ValueDoc>({
@@ -1384,23 +1386,26 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--summary-scope=SCOPE,...",
         .group = "stats",
         .header = "Statistics",
-        .summary = "summarize all roots together, each root, or selected comparison categories",
-        .details = "Selects populations for each ordinary `--summary` grouping. "
-                   "`all` combines every root; `root` separates input roots. Without an explicit scope, the default is "
-                   "`all` outside comparison and `compare` when `--compare` is active, regardless of option order. "
-                   "An explicit scope overrides that conditional default; repeated scopes use the last occurrence. "
-                   "Comparison categories require `--compare`: `left` aliases `left-only`, `right` aliases "
-                   "`right-only`, `diff` expands to `left-only,right-only,different`, and `compare` expands to "
-                   "`left-only,right-only,different,identical`. Aliases expand in order and duplicate scopes "
-                   "are removed. Repeating the flag replaces the preceding list. Selection is independent "
-                   "of `--compare-select`. Selected categories share one table per grouping, with left and right "
-                   "count, count percentage, size, and "
-                   "size percentage columns. Each group appears once, combining entries from the selected categories. "
-                   "Percentages use each side's full selected category population before `--top`; missing entries "
-                   "display a dash. "
-                   "`all` counts both copies. Requires an active file summary such as `--summary` or `--summary=ext`; "
-                   "otherwise it is an error. `--compare=summary` expands to `--summary=compare`, which only counts "
-                   "comparison results and does not satisfy this requirement.",
+        .summary = "summarize roots or collect comparison column groups",
+        .details =
+            "Selects root populations or collects ordered comparison column groups for each ordinary "
+            "`--summary` grouping. "
+            "`all` combines every root; `root` separates input roots. Without an explicit scope, the default is "
+            "`all` outside comparison and `compare` when `--compare` is active, regardless of option order. "
+            "An explicit scope overrides that conditional default; repeated scopes use the last occurrence. "
+            "Comparison scopes require `--compare`. `compare` expands to `left-total,right-total`; "
+            "`diff` expands to `left-only,right-only,different`. `left` and `right` alias `left-total` and "
+            "`right-total`; use `left-only` and `right-only` for unmatched entries. Output uses canonical names. "
+            "Aliases expand in order and duplicate scopes are removed. Repeating the flag replaces "
+            "the preceding list. Selection is independent of `--compare-select`. "
+            "Selected comparison scopes share one table, with a column group per scope: count, "
+            "count percentage, size, and size percentage. Side totals count their own entries and bytes. "
+            "Categories count pairs once and sum both sides' bytes. Different grouping keys form a "
+            "left-to-right transition row. Percentages use each column group's full population before "
+            "`--top`; missing entries display a dash. Overlapping scopes are not added into a grand total. "
+            "`all` counts both copies. Requires an active file summary such as `--summary` or `--summary=ext`; "
+            "otherwise it is an error. `--compare=summary` expands to `--summary=compare`, which only counts "
+            "comparison results and does not satisfy this requirement.",
         .values = kSummaryScopeValues,
         .affects = "--summary",
         .topic = "stats",
@@ -1603,8 +1608,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Result limits",
         .summary = "with --summary or --histogram, keep only the N largest/tallest groups",
         .details = "Requires a non-negative integer; `0` removes the limit. Last occurrence wins. "
-                   "Ordinary summary groups rank by bytes, then count, then name; paired tables rank by "
-                   "combined left-plus-right bytes. Extraction summaries rank by count because they have no byte "
+                   "Ordinary summary groups rank by bytes, then count, then name; comparison-scope tables rank by "
+                   "the sum of displayed column-group bytes, including overlap. Extraction summaries rank by count "
+                   "because they have no byte "
                    "dimension. Totals and percentage denominators include groups omitted by the limit. "
                    "Comparison-result summaries always show every type and status; `--top` does not truncate them.",
         .affects = "--summary,--histogram",

@@ -362,9 +362,8 @@ absl::Status ValidateSummaryScopeDriver(const std::vector<std::string>& globals,
 // Scope selection is independent of per-path comparison output. Each occurrence replaces
 // the preceding list; aliases expand in place and duplicate scopes keep their first position.
 absl::StatusOr<std::vector<std::string>> ResolveSummaryScopes(const std::vector<std::string>& globals, bool compare) {
-  std::vector<std::string> scopes = compare
-                                        ? std::vector<std::string>{"left-only", "right-only", "different", "identical"}
-                                        : std::vector<std::string>{"all"};
+  std::vector<std::string> scopes =
+      compare ? std::vector<std::string>{"left-total", "right-total"} : std::vector<std::string>{"all"};
   for (const std::string& global : globals) {
     constexpr std::string_view kPrefix = "--summary-scope=";
     if (!global.starts_with(kPrefix)) {
@@ -376,22 +375,19 @@ absl::StatusOr<std::vector<std::string>> ResolveSummaryScopes(const std::vector<
         scopes.emplace_back(scope);
       }
     };
-    for (std::string_view scope : absl::StrSplit(std::string_view(global).substr(kPrefix.size()), ',')) {
-      if (scope == "left") {
-        scope = "left-only";
-      } else if (scope == "right") {
-        scope = "right-only";
-      }
-      if (scope == "diff" || scope == "compare") {
+    for (const std::string_view scope : absl::StrSplit(std::string_view(global).substr(kPrefix.size()), ',')) {
+      if (scope == "left" || scope == "right") {
+        append(absl::StrCat(scope, "-total"));
+      } else if (scope == "compare") {
+        append("left-total");
+        append("right-total");
+      } else if (scope == "diff") {
         append("left-only");
         append("right-only");
         append("different");
-        if (scope == "compare") {
-          append("identical");
-        }
       } else if (
           scope == "all" || scope == "root" || scope == "left-only" || scope == "right-only" || scope == "different"
-          || scope == "identical") {
+          || scope == "identical" || scope == "left-total" || scope == "right-total") {
         append(scope);
       } else {
         return absl::InvalidArgumentError(absl::StrCat("unknown summary scope '", scope, "'"));
@@ -3001,6 +2997,11 @@ using SummaryCells = std::map<std::string, std::pair<std::uint64_t, std::uint64_
 
 using SummaryTables = std::vector<SummaryCells>;
 
+struct SummaryScopeColumn {
+  std::string scope;
+  SummaryTables tables;
+};
+
 struct SummaryAccumulator {
   std::size_t sinks = 0;
   bool per_root = false;
@@ -3263,7 +3264,7 @@ SummaryRow SummaryCell(const SummaryCells& cells, const std::string& key) {
                               : SummaryRow{.key = key, .count = found->second.first, .size = found->second.second};
 }
 
-void EmitPairedSummaryHeading(const parser::Command& command, std::string_view scope, SummaryMode mode, EmitFn emit) {
+void EmitComparisonScopeHeading(const parser::Command& command, std::string_view scope, SummaryMode mode, EmitFn emit) {
   EmitSummaryHeading(mode, command.globals, emit);
   const bool markdown = ResolveFormat(command.globals) == render::Format::kMarkdown;
   const std::string_view scope_label = markdown ? "\n- Scope: " : "Summary scope: ";
@@ -3274,11 +3275,11 @@ void EmitPairedSummaryHeading(const parser::Command& command, std::string_view s
           "Right: ", command.roots.at(1), "\n"));
 }
 
-void EmitPairedSummary(
+void EmitComparisonScopeSummary(
     const parser::Command& command,
     const std::string& scope,
     const std::vector<SummarySpec>& summaries,
-    const std::array<SummaryTables, 2>& sides,
+    const std::vector<SummaryScopeColumn>& columns,
     std::optional<registry::Style> style,
     EmitFn emit) {
   const auto precision = ResolveSummaryPrecision(command.globals);
@@ -3287,40 +3288,47 @@ void EmitPairedSummary(
   const bool json = output_format == render::Format::kJsonl;
   const std::string_view note =
       output_format == render::Format::kMarkdown
-          ? "- Percentages use each side's full selected category population.\n- `-` means no entries.\n"
-          : "Percentages use each side's full selected category population; - means no entries.\n\n";
-  auto combined = sides.at(0);
-  MergeSummaryTables(combined, sides.at(1));
+          ? "- Percentages use each column group's full population.\n- Category counts pair entries once; "
+            "category sizes include both sides. Side totals include only their own side.\n- `-` means no entries.\n"
+          : "Percentages use each column group's full population; - means no entries.\n"
+            "Category counts pair entries once; category sizes include both sides. Side totals include only their own "
+            "side.\n\n";
+  SummaryTables combined(summaries.size());
+  std::vector<std::string> header{"Group"};
+  std::vector<format::Align> alignments{format::Align::kLeft};
+  for (const auto& column : columns) {
+    MergeSummaryTables(combined, column.tables);
+    for (const auto suffix : std::to_array<std::string_view>({" count", " % count", " size", " % size"})) {
+      header.push_back(absl::StrCat(column.scope, suffix));
+      alignments.push_back(format::Align::kRight);
+    }
+  }
   for (std::size_t sink = 0; sink < summaries.size(); ++sink) {
     const auto rows = SummaryRows(summaries.at(sink).mode, combined.at(sink), ResolveTop(command.globals));
-    const std::array totals{SummaryTotal(sides.at(0).at(sink)), SummaryTotal(sides.at(1).at(sink))};
     const bool has_size = SummaryHasSize(summaries.at(sink));
-    SummaryTable table(
-        {format::Align::kLeft, format::Align::kRight, format::Align::kRight, format::Align::kRight,
-         format::Align::kRight, format::Align::kRight, format::Align::kRight, format::Align::kRight,
-         format::Align::kRight},
-        {"Group", "Left count", "Left % count", "Left size", "Left % size", "Right count", "Right % count",
-         "Right size", "Right % size"},
-        output_format, !HasGlobal(command.globals, "--no-header"));
+    std::vector<SummaryRow> totals;
+    totals.reserve(columns.size());
+    for (const auto& column : columns) {
+      totals.push_back(SummaryTotal(column.tables.at(sink)));
+    }
+    SummaryTable table(alignments, header, output_format, !HasGlobal(command.globals, "--no-header"));
     for (std::size_t index = 0; index < rows.size(); ++index) {
       const auto& key = rows.at(index).key;
       const bool total_row = index + 1 == rows.size();
       std::vector<std::string> cells{key};
       std::string object = absl::StrCat("{\"scope\":", JsonQuote(scope), ",\"group\":", JsonQuote(key));
-      for (std::size_t side = 0; side < sides.size(); ++side) {
-        const auto& source = sides.at(side).at(sink);
-        const auto row = total_row ? totals.at(side) : SummaryCell(source, key);
-        const auto& denominator = totals.at(side);
+      for (std::size_t column_index = 0; column_index < columns.size(); ++column_index) {
+        const auto& column = columns.at(column_index);
+        const auto& source = column.tables.at(sink);
+        const auto& denominator = totals.at(column_index);
+        const auto row = total_row ? denominator : SummaryCell(source, key);
         const bool present = row.count != 0;
         const auto values = present ? SummaryColumns(row, denominator, human, precision, has_size)
                                     : std::vector<std::string>{"-", "-", "-", "-"};
         cells.insert(cells.end(), values.begin(), values.end());
-        absl::StrAppend(&object, side == 0 ? ",\"left\":" : ",\"right\":");
+        absl::StrAppend(&object, ",", JsonQuote(column.scope), ":");
         absl::StrAppend(
-            &object, present ? absl::StrCat(
-                                   "{\"root\":", JsonQuote(command.roots.at(side)), ",",
-                                   SummaryJson(row, denominator, precision, has_size), "}")
-                             : "null");
+            &object, present ? absl::StrCat("{", SummaryJson(row, denominator, precision, has_size), "}") : "null");
       }
       absl::StrAppend(&object, "}\n");
       if (json) {
@@ -3330,7 +3338,7 @@ void EmitPairedSummary(
       }
     }
     if (!json) {
-      EmitPairedSummaryHeading(command, scope, summaries.at(sink).mode, emit);
+      EmitComparisonScopeHeading(command, scope, summaries.at(sink).mode, emit);
       emit(table.Render());
       emit(note);
     }
@@ -3717,6 +3725,71 @@ struct TreeCompareCounts {
   }
 };
 
+SummaryTables ComparisonContribution(const SummaryAccumulator& source, const std::string& path) {
+  SummaryTables result(source.sinks);
+  for (const auto& [root, entries] : source.partitions) {
+    const auto found = entries.find(path == "." ? "" : path);
+    if (found != entries.end()) {
+      MergeSummaryTables(result, found->second);
+    }
+  }
+  return result;
+}
+
+// A paired ordinary entry contributes one count and both sizes. When its grouping key changes
+// (for example file type or hash), retain a single transition row rather than counting it twice.
+// Extraction streams retain their own units, pairing matching keys by multiplicity.
+SummaryTables PairSummaryContributions(const SummaryTables& left, const SummaryTables& right) {
+  SummaryTables result = left;
+  result.resize(std::max(left.size(), right.size()));
+  for (std::size_t sink = 0; sink < right.size(); ++sink) {
+    auto& cells = result.at(sink);
+    const auto& other = right.at(sink);
+    if (cells.size() == 1 && other.size() == 1 && cells.begin()->first != other.begin()->first) {
+      const auto& [left_key, left_value] = *cells.begin();
+      const auto& [right_key, right_value] = *other.begin();
+      SummaryCells transition{
+          {absl::StrCat(left_key, " -> ", right_key),
+           {std::max(left_value.first, right_value.first), left_value.second + right_value.second}}};
+      cells = std::move(transition);
+      continue;
+    }
+    for (const auto& [key, value] : other) {
+      auto& cell = cells[key];
+      cell.first = std::max(cell.first, value.first);
+      cell.second += value.second;
+    }
+  }
+  return result;
+}
+
+std::vector<SummaryScopeColumn> ComparisonScopeColumns(
+    const std::vector<std::string>& scopes,
+    const std::array<SummaryAccumulator, 2>& sides,
+    const std::map<std::string, std::string>& categories,
+    std::size_t sinks) {
+  std::vector<SummaryScopeColumn> columns;
+  for (const auto& scope : scopes) {
+    if (scope != "all" && scope != "root") {
+      columns.push_back({.scope = scope, .tables = SummaryTables(sinks)});
+    }
+  }
+  for (const auto& [path, category] : categories) {
+    const auto left = ComparisonContribution(sides.at(0), path);
+    const auto right = ComparisonContribution(sides.at(1), path);
+    for (auto& column : columns) {
+      if (column.scope == "left-total") {
+        MergeSummaryTables(column.tables, left);
+      } else if (column.scope == "right-total") {
+        MergeSummaryTables(column.tables, right);
+      } else if (column.scope == category) {
+        MergeSummaryTables(column.tables, PairSummaryContributions(left, right));
+      }
+    }
+  }
+  return columns;
+}
+
 void EmitTreeCompareSummary(
     const std::vector<std::string>& globals,
     const TreeCompareCounts& counts,
@@ -3946,44 +4019,27 @@ RunResult RunTreeCompare(
   std::erase_if(summaries, [](const SummarySpec& spec) { return spec.mode == SummaryMode::kCompare; });
   const auto format = ResolveFormat(command.globals);
   const auto human = ResolveHuman(command.globals, style);
-  std::map<std::string, std::array<SummaryTables, 2>> scoped_tables;
-  std::array<SummaryTables, 2> selected_sides{SummaryTables(summaries.size()), SummaryTables(summaries.size())};
-  std::vector<std::string_view> category_scopes;
-  for (const auto& scope : *scopes_result) {
-    if (scope != "all" && scope != "root") {
-      category_scopes.push_back(scope);
-    }
-    auto& sides = scoped_tables[scope];
-    for (std::size_t side = 0; side < sides.size(); ++side) {
-      sides.at(side).resize(summaries.size());
-      for (const auto& [root, contributions] : side_summaries.at(side).partitions) {
-        for (const auto& [path, cells] : contributions) {
-          const auto category = categories.find(path.empty() ? "." : path);
-          if (scope == "all" || scope == "root" || (category != categories.end() && category->second == scope)) {
-            MergeSummaryTables(sides.at(side), cells);
-          }
-        }
-      }
-      if (scope != "all" && scope != "root") {
-        MergeSummaryTables(selected_sides.at(side), sides.at(side));
-      }
-    }
+  const auto columns = ComparisonScopeColumns(*scopes_result, side_summaries, categories, summaries.size());
+  std::vector<std::string> column_scopes;
+  column_scopes.reserve(columns.size());
+  for (const auto& column : columns) {
+    column_scopes.push_back(column.scope);
   }
-  bool emitted_categories = false;
+  bool emitted_columns = false;
   for (const auto& scope : *scopes_result) {
-    const auto& sides = scoped_tables.at(scope);
     if (scope == "all") {
-      auto combined = sides.at(0);
-      MergeSummaryTables(combined, sides.at(1));
+      auto combined = CombinedSummaryTables(side_summaries.at(0));
+      MergeSummaryTables(combined, CombinedSummaryTables(side_summaries.at(1)));
       EmitScopedSummaries(command.globals, summaries, combined, format, human, scope, "", emit);
     } else if (scope == "root") {
-      for (std::size_t side = 0; side < sides.size(); ++side) {
+      for (std::size_t side = 0; side < side_summaries.size(); ++side) {
         EmitScopedSummaries(
-            command.globals, summaries, sides.at(side), format, human, scope, command.roots.at(side), emit);
+            command.globals, summaries, CombinedSummaryTables(side_summaries.at(side)), format, human, scope,
+            command.roots.at(side), emit);
       }
-    } else if (!emitted_categories) {
-      emitted_categories = true;
-      EmitPairedSummary(command, absl::StrJoin(category_scopes, ","), summaries, selected_sides, style, emit);
+    } else if (!emitted_columns) {
+      emitted_columns = true;
+      EmitComparisonScopeSummary(command, absl::StrJoin(column_scopes, ","), summaries, columns, style, emit);
     }
   }
   return RunResult{.errors = 0, .any_match = different};
