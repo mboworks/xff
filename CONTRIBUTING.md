@@ -94,7 +94,7 @@ many smaller compilation outputs over large linked executables; ties evict older
 This is a size heuristic, not action-type classification: large object files can also be evicted.
 The weekly deep-fuzz workflow shares the ordinary fuzz cache and main-only refresh policy.
 LLVM downloads remain uncached.
-Cleanup retains ASan/TSan uploads up to 1,000,000,000 compressed bytes and MSan uploads up to
+Cleanup retains ASan/TSan/coverage uploads up to 1,000,000,000 compressed bytes and MSan uploads up to
 1,200,000,000 bytes; other entries keep
 the existing 700,000,000-byte ceiling. The repository storage limit remains 10 GB.
 

@@ -15,7 +15,7 @@ live in [`docs/history.md`](docs/history.md).
 
 ## Completed: Coverage cache capacity
 
-- Raise coverage's uncompressed cache allowance to 1.5 GB; retain the existing compressed ceiling.
+- Raise coverage's cache allowance to 1.5 GB uncompressed and 1 GB compressed.
 - Check the next main report for retained outputs and upload size.
 
 ## Completed: Cache storage reporting and MSan allowance
