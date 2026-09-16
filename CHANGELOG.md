@@ -3,6 +3,9 @@
 
 # 0.6.0
 
+- Preserve more reusable CI compilation outputs by evicting large cache blobs before small ones
+  with a 2.6 GB uncompressed allowance for sanitizer jobs; apply shared caching to deep fuzz and release reference generation.
+
 - Reject invalid summary precision, negative or malformed top limits, comparison selections without
   comparison, and unsupported summary formats. `--top=0` consistently removes a prior limit;
   aligned summary output now works in comparison mode. Accept the implemented `--summary=owner` alias

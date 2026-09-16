@@ -76,7 +76,8 @@ jobs:
         run: |
           set -euo pipefail
           tools/release_prep.sh "${RELEASE_TAG}" >/dev/null
-          bazel build --config=clang --config=xff_docs //xff/cli:xff_reference_gen
+          bazel build --config=clang --config=xff_docs //xff/cli:xff_reference_gen \
+            --disk_cache="$HOME/.cache/bazel-disk"
           cp bazel-bin/xff/cli/XFF.md.actual XFF.md
           cp bazel-bin/xff/cli/XFF.html.actual XFF.html
           coverage_page="tag/${RELEASE_TAG#v}"

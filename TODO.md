@@ -19,9 +19,11 @@ live in [`docs/history.md`](docs/history.md).
 - Preserve the cache budget: bound uploads, retain the newest usable generation, and remove
   closed-PR and tag-scoped entries. PR and tag runs are restore-only.
 - Add GCC output caching, share release/main build caches, and test retention and upload behavior.
-- Follow-up measurement: after main seeds the new caches, compare Bazel action-hit statistics
-  against the previous documentation job's six hits and 720 sandboxed executions. GitHub archive
-  restoration alone is not proof of useful reuse.
+- Measured PR #841: normal Linux Clang had 3,768 disk hits, GCC 2,724, and documentation 718.
+  Sanitizers restored the correct namespaces but age-based eviction discarded most early outputs.
+- Follow-up: evict largest blobs first, allow 2.6 GB uncompressed for sanitizer jobs, and cover deep-fuzz and release
+  reference-generation cache routing. Verify sanitizer reuse after main seeds the revised caches;
+  consider per-configuration budgets using compressed upload sizes if retention remains inadequate.
 
 ## Project constraints
 

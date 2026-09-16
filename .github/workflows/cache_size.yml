@@ -2,7 +2,7 @@ name: Maintain Actions caches
 
 on:
   workflow_run:
-    workflows: [Test, Release]
+    workflows: [Test, Release, Deep fuzz]
     types: [completed]
   schedule:
     - cron: "17 3 * * *"

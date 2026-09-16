@@ -11,18 +11,18 @@ MAX_BYTES = 600_000_000
 
 
 def trim(root: Path, max_bytes: int = MAX_BYTES) -> tuple[int, int, int]:
-    """Evict oldest cache files; missing blobs are ordinary Bazel cache misses."""
-    files = sorted((path.stat().st_mtime_ns, path.as_posix(), path.stat().st_size, path)
+    """Evict largest blobs first, preserving more reusable outputs within the budget."""
+    files = sorted((-path.stat().st_size, path.stat().st_mtime_ns, path.as_posix(), path)
                    for part in ("ac", "cas") for path in (root / part).rglob("*")
                    if path.is_file() and not path.is_symlink())
-    before = sum(size for _, _, size, _ in files)
+    before = sum(-negative_size for negative_size, _, _, _ in files)
     remaining = before
     removed = 0
-    for _, _, size, path in files:
+    for negative_size, _, _, path in files:
         if remaining <= max_bytes:
             break
         path.unlink()
-        remaining -= size
+        remaining += negative_size
         removed += 1
     return before, remaining, removed
 
@@ -30,8 +30,11 @@ def trim(root: Path, max_bytes: int = MAX_BYTES) -> tuple[int, int, int]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("cache", type=Path)
+    parser.add_argument("--max-bytes", type=int, default=MAX_BYTES)
     args = parser.parse_args()
-    before, after, removed = trim(args.cache)
+    if args.max_bytes < 0:
+        parser.error("--max-bytes must be nonnegative")
+    before, after, removed = trim(args.cache, args.max_bytes)
     print(f"Bazel disk cache: {before:,} -> {after:,} bytes; evicted {removed} files")
 
 
