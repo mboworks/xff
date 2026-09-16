@@ -13,6 +13,12 @@ live in [`docs/history.md`](docs/history.md).
 - Add end-to-end reconciliation and invalid-control coverage alongside focused engine regressions.
 - Measure the follow-up PR's action-cache reuse against the main caches seeded after #840.
 
+## Completed: Parallel fuzz campaigns
+
+- Build all campaigns together, prepare launch scripts sequentially, and run with CPU/RAM bounds.
+- Preserve time per target, isolated corpora/crashes/logs, throughput statistics, and failure cleanup.
+- Compare CI wall time and mutation throughput after main runs the parallel scheduler.
+
 ## Completed: Cache storage reporting and MSan allowance
 
 - Retain up to 4 GB uncompressed / 1.2 GB compressed for MSan.

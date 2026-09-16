@@ -3,6 +3,9 @@
 
 # 0.6.0
 
+- Run fuzz campaigns concurrently after preparing all targets, with CPU/memory bounds, isolated
+  artifacts, per-target throughput statistics, and unchanged campaign time budgets.
+
 - Allow MSan caches up to 4 GB uncompressed and 1.2 GB compressed; report per-job cache sizes
   and repository-wide usage against the 10 GB budget in main's final CI job.
 

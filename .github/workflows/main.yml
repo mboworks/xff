@@ -231,9 +231,9 @@ jobs:
     needs: [pre-commit, trunk]
     runs-on: ubuntu-latest
     timeout-minutes: 75
-    # Required CI stays bounded: ten targets at 60 seconds each is ten minutes of deliberate
-    # mutation plus compilation. The weekly/manual Deep fuzz workflow owns longer campaigns, so a
-    # merge does not hold the main validation and release path for at least fifty minutes.
+    # Required CI keeps 60 seconds per target while running campaigns concurrently after one build.
+    # Worker count is bounded by runner CPUs and RAM. Weekly/manual Deep fuzz uses the same
+    # scheduler with longer per-target campaigns.
     env:
       FUZZ_SECONDS_PER_TARGET: 60
     steps:
@@ -257,7 +257,17 @@ jobs:
           tools/fuzz_targets.py \
             --campaign-seconds="${FUZZ_SECONDS_PER_TARGET}" \
             --max-total-seconds=900 \
-            --disk-cache="${HOME}/.cache/bazel-disk"
+            --disk-cache="${HOME}/.cache/bazel-disk" \
+            --jobs="$(getconf _NPROCESSORS_ONLN)" \
+            --output-dir="${RUNNER_TEMP}/fuzz-campaigns"
+      - name: Preserve fuzz campaign logs and findings
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fuzz-campaigns
+          path: ${{ runner.temp }}/fuzz-campaigns/
+          retention-days: 7
+          if-no-files-found: warn
       - name: Save refreshed Bazel compiled outputs
         if: ${{ !cancelled() && github.ref == 'refs/heads/main' && steps.bazel-cache.outcome == 'success' }}
         uses: ./.github/actions/bazel-cache-save
