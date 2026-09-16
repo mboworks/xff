@@ -3,6 +3,9 @@
 
 # 0.6.0
 
+- Allow MSan caches up to 4 GB uncompressed and 1.2 GB compressed; report per-job cache sizes
+  and repository-wide usage against the 10 GB budget in main's final CI job.
+
 - Retire older main build caches immediately after a verified replacement upload, reducing
   generation overlap while preserving previous caches when the replacement is missing or oversized.
 

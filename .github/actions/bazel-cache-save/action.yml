@@ -11,12 +11,15 @@ runs:
   using: composite
   steps:
     - name: Bound the cache before upload
+      id: bound
       shell: bash
       env:
         CACHE_MAX_BYTES: ${{ inputs.max-bytes }}
+        CACHE_KEY: ${{ inputs.key }}
       run: |
         bazel shutdown
-        python3 tools/bazel_cache.py "${HOME}/.cache/bazel-disk" --max-bytes="${CACHE_MAX_BYTES}"
+        python3 tools/bazel_cache.py "${HOME}/.cache/bazel-disk" --max-bytes="${CACHE_MAX_BYTES}" \
+          --key="${CACHE_KEY}" --report="${RUNNER_TEMP}/${CACHE_KEY}.json"
     - uses: actions/cache/save@v6
       with:
         path: ~/.cache/bazel-disk
@@ -33,9 +36,18 @@ runs:
           echo "::warning::Cache inventory unavailable; retaining previous generations"
           exit 0
         fi
+        printf '%s' "${cache_json}" | python3 tools/cache_report.py --record "${RUNNER_TEMP}/${REPLACEMENT_KEY}.json"
         obsolete=$(printf '%s' "${cache_json}" | python3 tools/cache_size.py --replacement-key "${REPLACEMENT_KEY}")
         for cache_id in ${obsolete}; do
           if ! gh cache delete "${cache_id}"; then
             echo "::warning::Could not retire cache ${cache_id}; scheduled cleanup will retry"
           fi
         done
+    - name: Preserve cache measurements for the final report
+      if: always() && steps.bound.outcome == 'success' && github.ref == 'refs/heads/main'
+      uses: actions/upload-artifact@v7
+      with:
+        name: cache-metrics-${{ inputs.key }}
+        path: ${{ runner.temp }}/${{ inputs.key }}.json
+        retention-days: 1
+        if-no-files-found: error

@@ -465,7 +465,7 @@ jobs:
         uses: ./.github/actions/bazel-cache-save
         with:
           key: ${{ steps.bazel-cache.outputs.key }}
-          max-bytes: "2600000000"
+          max-bytes: "4000000000"
 
   # Minimal core archive: prove that dropping the WHOLE extra_modules/ directory plus its one module
   # include still builds the lean core. This is the regression guard
@@ -687,6 +687,26 @@ jobs:
             exit 1
           fi
           echo "done covers all $(grep -c . <<<"${declared}") workflow jobs."
+      - name: Download cache measurements
+        if: always() && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          pattern: cache-metrics-*
+          path: cache-metrics
+          merge-multiple: true
+      - name: Report cache storage
+        if: always() && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh cache list --limit 10000 --json key,ref,sizeInBytes >cache-inventory.json; then
+            python3 tools/cache_report.py --metrics cache-metrics --inventory cache-inventory.json >>"${GITHUB_STEP_SUMMARY}"
+          else
+            echo "## Cache storage" >>"${GITHUB_STEP_SUMMARY}"
+            echo "Cache inventory unavailable; repository storage usage could not be measured." >>"${GITHUB_STEP_SUMMARY}"
+          fi
       - name: Fail if any dependency did not succeed
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
         run: exit 1

@@ -4,6 +4,7 @@
 """Bound a stopped Bazel disk cache before uploading it to GitHub Actions."""
 
 import argparse
+import json
 from pathlib import Path
 
 
@@ -31,10 +32,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("cache", type=Path)
     parser.add_argument("--max-bytes", type=int, default=MAX_BYTES)
+    parser.add_argument("--report", type=Path)
+    parser.add_argument("--key", default="")
     args = parser.parse_args()
     if args.max_bytes < 0:
         parser.error("--max-bytes must be nonnegative")
     before, after, removed = trim(args.cache, args.max_bytes)
+    if args.report:
+        args.report.write_text(json.dumps({"key": args.key, "before": before, "uncompressed": after,
+                                           "evicted": removed, "limit": args.max_bytes}) + "\n")
     print(f"Bazel disk cache: {before:,} -> {after:,} bytes; evicted {removed} files")
 
 
