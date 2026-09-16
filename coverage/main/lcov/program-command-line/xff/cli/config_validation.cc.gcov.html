@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-16 16:44:30</td>
+            <td class="headerValue">2026-09-16 19:09:17</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -273,8 +273,8 @@
 <span id="L188"><span class="lineNum">     188</span>                 :             :     const std::vector&lt;std::string&gt;&amp; tokens,</span>
 <span id="L189"><span class="lineNum">     189</span>                 :             :     std::string_view location,</span>
 <span id="L190"><span class="lineNum">     190</span>                 :             :     absl::flat_hash_set&lt;std::string&gt;&amp; seen,</span>
-<span id="L191"><span class="lineNum">     191</span>                 :<span class="tlaGNC">        1466 :     std::vector&lt;std::string&gt;&amp; notices) {</span></span>
-<span id="L192"><span class="lineNum">     192</span>         [<span class="tlaGBC" title="branch 0 was taken 273 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1465 times"> + </span>]:<span class="tlaGNC">        1738 :   for (std::size_t pos = 0; pos &lt; tokens.size(); ++pos) {</span></span>
+<span id="L191"><span class="lineNum">     191</span>                 :<span class="tlaGNC">        1492 :     std::vector&lt;std::string&gt;&amp; notices) {</span></span>
+<span id="L192"><span class="lineNum">     192</span>         [<span class="tlaGBC" title="branch 0 was taken 273 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1491 times"> + </span>]:<span class="tlaGNC">        1764 :   for (std::size_t pos = 0; pos &lt; tokens.size(); ++pos) {</span></span>
 <span id="L193"><span class="lineNum">     193</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 272 times"> + </span>]:<span class="tlaGNC">         273 :     if (tokens[pos] == &quot;--&quot;) {</span></span>
 <span id="L194"><span class="lineNum">     194</span>                 :<span class="tlaGNC">           1 :       break;</span></span>
 <span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">           1 :     }</span></span>
@@ -293,53 +293,53 @@
 <span id="L207"><span class="lineNum">     207</span>                 :<span class="tlaGNC">          29 :       pos += static_cast&lt;std::size_t&gt;(primary-&gt;arity);</span></span>
 <span id="L208"><span class="lineNum">     208</span>                 :<span class="tlaGNC">          29 :     }</span></span>
 <span id="L209"><span class="lineNum">     209</span>                 :<span class="tlaGNC">          33 :   }</span></span>
-<span id="L210"><span class="lineNum">     210</span>                 :<span class="tlaGNC">        1466 : }</span></span>
+<span id="L210"><span class="lineNum">     210</span>                 :<span class="tlaGNC">        1492 : }</span></span>
 <span id="L211"><span class="lineNum">     211</span>                 :             : </span>
-<span id="L212"><span class="lineNum">     212</span>                 :<span class="tlaGNC">        1376 : void FindFileOverrides(const config::ConfigFile&amp; file, std::string_view path, std::vector&lt;std::string&gt;&amp; notices) {</span></span>
-<span id="L213"><span class="lineNum">     213</span>                 :<span class="tlaGNC">        1376 :   absl::flat_hash_set&lt;std::string&gt; globals;</span></span>
-<span id="L214"><span class="lineNum">     214</span>                 :<span class="tlaGNC">        1376 :   FindOverrides(file.globals, absl::StrCat(path, &quot; globals&quot;), globals, notices);</span></span>
-<span id="L215"><span class="lineNum">     215</span>         [<span class="tlaGBC" title="branch 0 was taken 83 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1376 times"> + </span>]:<span class="tlaGNC">        1376 :   for (const config::IniSection&amp; section : file.named) {</span></span>
+<span id="L212"><span class="lineNum">     212</span>                 :<span class="tlaGNC">        1402 : void FindFileOverrides(const config::ConfigFile&amp; file, std::string_view path, std::vector&lt;std::string&gt;&amp; notices) {</span></span>
+<span id="L213"><span class="lineNum">     213</span>                 :<span class="tlaGNC">        1402 :   absl::flat_hash_set&lt;std::string&gt; globals;</span></span>
+<span id="L214"><span class="lineNum">     214</span>                 :<span class="tlaGNC">        1402 :   FindOverrides(file.globals, absl::StrCat(path, &quot; globals&quot;), globals, notices);</span></span>
+<span id="L215"><span class="lineNum">     215</span>         [<span class="tlaGBC" title="branch 0 was taken 83 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1402 times"> + </span>]:<span class="tlaGNC">        1402 :   for (const config::IniSection&amp; section : file.named) {</span></span>
 <span id="L216"><span class="lineNum">     216</span>                 :<span class="tlaGNC">          83 :     absl::flat_hash_set&lt;std::string&gt; settings;</span></span>
 <span id="L217"><span class="lineNum">     217</span>         [<span class="tlaGBC" title="branch 0 was taken 90 times"> + </span><span class="tlaGBC" title="branch 1 was taken 83 times"> + </span>]:<span class="tlaGNC">          90 :     for (const config::IniLine&amp; line : section.lines) {</span></span>
 <span id="L218"><span class="lineNum">     218</span>                 :<span class="tlaGNC">          90 :       FindOverrides(line.tokens, absl::StrCat(path, &quot; section '[&quot;, section.name, &quot;]'&quot;), settings, notices);</span></span>
 <span id="L219"><span class="lineNum">     219</span>                 :<span class="tlaGNC">          90 :     }</span></span>
 <span id="L220"><span class="lineNum">     220</span>                 :<span class="tlaGNC">          83 :   }</span></span>
-<span id="L221"><span class="lineNum">     221</span>                 :<span class="tlaGNC">        1376 : }</span></span>
+<span id="L221"><span class="lineNum">     221</span>                 :<span class="tlaGNC">        1402 : }</span></span>
 <span id="L222"><span class="lineNum">     222</span>                 :             : </span>
 <span id="L223"><span class="lineNum">     223</span>                 :             : class ConfigFileValidator {</span>
 <span id="L224"><span class="lineNum">     224</span>                 :             :  public:</span>
 <span id="L225"><span class="lineNum">     225</span>                 :             :   ConfigFileValidator(config::ConfigFile config, std::string_view path, config::Source source)</span>
-<span id="L226"><span class="lineNum">     226</span>                 :<span class="tlaGNC">        1437 :       : result_{.config = std::move(config), .status = absl::OkStatus()}, path_(path), source_(source) {}</span></span>
+<span id="L226"><span class="lineNum">     226</span>                 :<span class="tlaGNC">        1463 :       : result_{.config = std::move(config), .status = absl::OkStatus()}, path_(path), source_(source) {}</span></span>
 <span id="L227"><span class="lineNum">     227</span>                 :             : </span>
-<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">        1437 :   ConfigFileValidation Validate(const std::vector&lt;std::string&gt;&amp; selected_configs) {</span></span>
-<span id="L229"><span class="lineNum">     229</span>                 :<span class="tlaGNC">        1437 :     ValidateGlobals();</span></span>
-<span id="L230"><span class="lineNum">     230</span>                 :<span class="tlaGNC">        1437 :     ValidateNames();</span></span>
-<span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaGNC">        1437 :     ValidateSections();</span></span>
-<span id="L232"><span class="lineNum">     232</span>                 :<span class="tlaGNC">        1437 :     PropagateDisablement();</span></span>
-<span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">        1437 :     result_.disabled_configs.assign(disabled_.begin(), disabled_.end());</span></span>
-<span id="L234"><span class="lineNum">     234</span>                 :<span class="tlaGNC">        1437 :     std::ranges::sort(result_.disabled_configs);</span></span>
-<span id="L235"><span class="lineNum">     235</span>                 :<span class="tlaGNC">        1437 :     result_.config.named.erase(</span></span>
-<span id="L236"><span class="lineNum">     236</span>                 :<span class="tlaGNC">        1437 :         std::remove_if(</span></span>
-<span id="L237"><span class="lineNum">     237</span>                 :<span class="tlaGNC">        1437 :             result_.config.named.begin(), result_.config.named.end(),</span></span>
-<span id="L238"><span class="lineNum">     238</span>                 :<span class="tlaGNC">        1465 :             [this](const config::IniSection&amp; section) { return disabled_.contains(section.name); }),</span></span>
-<span id="L239"><span class="lineNum">     239</span>                 :<span class="tlaGNC">        1437 :         result_.config.named.end());</span></span>
-<span id="L240"><span class="lineNum">     240</span>         [<span class="tlaGBC" title="branch 0 was taken 824 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1424 times"> + </span>]:<span class="tlaGNC">        1437 :     for (const std::string&amp; selected : selected_configs) {</span></span>
-<span id="L241"><span class="lineNum">     241</span>         [<span class="tlaGBC" title="branch 0 was taken 13 times"> + </span><span class="tlaGBC" title="branch 1 was taken 811 times"> + </span>]:<span class="tlaGNC">         824 :       if (disabled_.contains(selected)) {</span></span>
+<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">        1463 :   ConfigFileValidation Validate(const std::vector&lt;std::string&gt;&amp; selected_configs) {</span></span>
+<span id="L229"><span class="lineNum">     229</span>                 :<span class="tlaGNC">        1463 :     ValidateGlobals();</span></span>
+<span id="L230"><span class="lineNum">     230</span>                 :<span class="tlaGNC">        1463 :     ValidateNames();</span></span>
+<span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaGNC">        1463 :     ValidateSections();</span></span>
+<span id="L232"><span class="lineNum">     232</span>                 :<span class="tlaGNC">        1463 :     PropagateDisablement();</span></span>
+<span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">        1463 :     result_.disabled_configs.assign(disabled_.begin(), disabled_.end());</span></span>
+<span id="L234"><span class="lineNum">     234</span>                 :<span class="tlaGNC">        1463 :     std::ranges::sort(result_.disabled_configs);</span></span>
+<span id="L235"><span class="lineNum">     235</span>                 :<span class="tlaGNC">        1463 :     result_.config.named.erase(</span></span>
+<span id="L236"><span class="lineNum">     236</span>                 :<span class="tlaGNC">        1463 :         std::remove_if(</span></span>
+<span id="L237"><span class="lineNum">     237</span>                 :<span class="tlaGNC">        1463 :             result_.config.named.begin(), result_.config.named.end(),</span></span>
+<span id="L238"><span class="lineNum">     238</span>                 :<span class="tlaGNC">        1491 :             [this](const config::IniSection&amp; section) { return disabled_.contains(section.name); }),</span></span>
+<span id="L239"><span class="lineNum">     239</span>                 :<span class="tlaGNC">        1463 :         result_.config.named.end());</span></span>
+<span id="L240"><span class="lineNum">     240</span>         [<span class="tlaGBC" title="branch 0 was taken 837 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1450 times"> + </span>]:<span class="tlaGNC">        1463 :     for (const std::string&amp; selected : selected_configs) {</span></span>
+<span id="L241"><span class="lineNum">     241</span>         [<span class="tlaGBC" title="branch 0 was taken 13 times"> + </span><span class="tlaGBC" title="branch 1 was taken 824 times"> + </span>]:<span class="tlaGNC">         837 :       if (disabled_.contains(selected)) {</span></span>
 <span id="L242"><span class="lineNum">     242</span>                 :<span class="tlaGNC">          13 :         result_.status = absl::InvalidArgumentError(</span></span>
 <span id="L243"><span class="lineNum">     243</span>                 :<span class="tlaGNC">          13 :             absl::StrCat(&quot;selected config [&quot;, selected, &quot;] is disabled; see earlier diagnostics&quot;));</span></span>
 <span id="L244"><span class="lineNum">     244</span>                 :<span class="tlaGNC">          13 :         break;</span></span>
 <span id="L245"><span class="lineNum">     245</span>                 :<span class="tlaGNC">          13 :       }</span></span>
-<span id="L246"><span class="lineNum">     246</span>                 :<span class="tlaGNC">         824 :     }</span></span>
-<span id="L247"><span class="lineNum">     247</span>                 :<span class="tlaGNC">        1437 :     return std::move(result_);</span></span>
-<span id="L248"><span class="lineNum">     248</span>                 :<span class="tlaGNC">        1437 :   }</span></span>
+<span id="L246"><span class="lineNum">     246</span>                 :<span class="tlaGNC">         837 :     }</span></span>
+<span id="L247"><span class="lineNum">     247</span>                 :<span class="tlaGNC">        1463 :     return std::move(result_);</span></span>
+<span id="L248"><span class="lineNum">     248</span>                 :<span class="tlaGNC">        1463 :   }</span></span>
 <span id="L249"><span class="lineNum">     249</span>                 :             : </span>
 <span id="L250"><span class="lineNum">     250</span>                 :             :  private:</span>
-<span id="L251"><span class="lineNum">     251</span>                 :<span class="tlaGNC">        1437 :   void ValidateGlobals() {</span></span>
-<span id="L252"><span class="lineNum">     252</span>         [<span class="tlaGBC" title="branch 0 was taken 104 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1333 times"> + </span>]:<span class="tlaGNC">        1437 :     if (!result_.config.global_lines.empty()) {</span></span>
+<span id="L251"><span class="lineNum">     251</span>                 :<span class="tlaGNC">        1463 :   void ValidateGlobals() {</span></span>
+<span id="L252"><span class="lineNum">     252</span>         [<span class="tlaGBC" title="branch 0 was taken 104 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1359 times"> + </span>]:<span class="tlaGNC">        1463 :     if (!result_.config.global_lines.empty()) {</span></span>
 <span id="L253"><span class="lineNum">     253</span>                 :<span class="tlaGNC">         104 :       result_.config.globals.clear();</span></span>
 <span id="L254"><span class="lineNum">     254</span>                 :<span class="tlaGNC">         104 :     }</span></span>
-<span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">        1437 :     std::vector&lt;config::IniLine&gt; valid_lines;</span></span>
-<span id="L256"><span class="lineNum">     256</span>         [<span class="tlaGBC" title="branch 0 was taken 208 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1437 times"> + </span>]:<span class="tlaGNC">        1442 :     for (const config::IniLine&amp; line : result_.config.global_lines) {</span></span>
+<span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">        1463 :     std::vector&lt;config::IniLine&gt; valid_lines;</span></span>
+<span id="L256"><span class="lineNum">     256</span>         [<span class="tlaGBC" title="branch 0 was taken 208 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1463 times"> + </span>]:<span class="tlaGNC">        1468 :     for (const config::IniLine&amp; line : result_.config.global_lines) {</span></span>
 <span id="L257"><span class="lineNum">     257</span>                 :<span class="tlaGNC">         208 :       absl::Status status =</span></span>
 <span id="L258"><span class="lineNum">     258</span>         [<span class="tlaGBC" title="branch 0 was taken 207 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">         208 :           line.syntax_error.empty() ? ValidateTokens(line.tokens) : absl::InvalidArgumentError(line.syntax_error);</span></span>
 <span id="L259"><span class="lineNum">     259</span>                 :<span class="tlaGNC">         208 :       auto next_controls = ValidateControls(line, controls_);</span></span>
@@ -357,12 +357,12 @@
 <span id="L271"><span class="lineNum">     271</span>                 :<span class="tlaGNC">          31 :         result_.status.Update(absl::InvalidArgumentError(result_.diagnostics.back()));</span></span>
 <span id="L272"><span class="lineNum">     272</span>                 :<span class="tlaGNC">          31 :       }</span></span>
 <span id="L273"><span class="lineNum">     273</span>                 :<span class="tlaGNC">         208 :     }</span></span>
-<span id="L274"><span class="lineNum">     274</span>                 :<span class="tlaGNC">        1437 :     result_.config.global_lines = std::move(valid_lines);</span></span>
-<span id="L275"><span class="lineNum">     275</span>                 :<span class="tlaGNC">        1437 :   }</span></span>
+<span id="L274"><span class="lineNum">     274</span>                 :<span class="tlaGNC">        1463 :     result_.config.global_lines = std::move(valid_lines);</span></span>
+<span id="L275"><span class="lineNum">     275</span>                 :<span class="tlaGNC">        1463 :   }</span></span>
 <span id="L276"><span class="lineNum">     276</span>                 :             : </span>
-<span id="L277"><span class="lineNum">     277</span>                 :<span class="tlaGNC">        1437 :   void ValidateNames() {</span></span>
-<span id="L278"><span class="lineNum">     278</span>                 :<span class="tlaGNC">        1437 :     absl::flat_hash_set&lt;std::string&gt; names;</span></span>
-<span id="L279"><span class="lineNum">     279</span>         [<span class="tlaGBC" title="branch 0 was taken 164 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1437 times"> + </span>]:<span class="tlaGNC">        1465 :     for (const config::IniSection&amp; section : result_.config.named) {</span></span>
+<span id="L277"><span class="lineNum">     277</span>                 :<span class="tlaGNC">        1463 :   void ValidateNames() {</span></span>
+<span id="L278"><span class="lineNum">     278</span>                 :<span class="tlaGNC">        1463 :     absl::flat_hash_set&lt;std::string&gt; names;</span></span>
+<span id="L279"><span class="lineNum">     279</span>         [<span class="tlaGBC" title="branch 0 was taken 164 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1463 times"> + </span>]:<span class="tlaGNC">        1491 :     for (const config::IniSection&amp; section : result_.config.named) {</span></span>
 <span id="L280"><span class="lineNum">     280</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 163 times"> + </span>]:<span class="tlaGNC">         164 :       if (section.name.empty()) {</span></span>
 <span id="L281"><span class="lineNum">     281</span>                 :<span class="tlaGNC">           1 :         disabled_.insert(section.name);</span></span>
 <span id="L282"><span class="lineNum">     282</span>                 :<span class="tlaGNC">           1 :         result_.diagnostics.push_back(absl::StrCat(path_, &quot;:&quot;, section.number, &quot;: disabling empty config name&quot;));</span></span>
@@ -376,10 +376,10 @@
 <span id="L290"><span class="lineNum">     290</span>                 :<span class="tlaGNC">           6 :                 &quot;] because its name is declared more than once in this file&quot;));</span></span>
 <span id="L291"><span class="lineNum">     291</span>                 :<span class="tlaGNC">           6 :       }</span></span>
 <span id="L292"><span class="lineNum">     292</span>                 :<span class="tlaGNC">         163 :     }</span></span>
-<span id="L293"><span class="lineNum">     293</span>                 :<span class="tlaGNC">        1437 :   }</span></span>
+<span id="L293"><span class="lineNum">     293</span>                 :<span class="tlaGNC">        1463 :   }</span></span>
 <span id="L294"><span class="lineNum">     294</span>                 :             : </span>
-<span id="L295"><span class="lineNum">     295</span>                 :<span class="tlaGNC">        1437 :   void ValidateSections() {</span></span>
-<span id="L296"><span class="lineNum">     296</span>         [<span class="tlaGBC" title="branch 0 was taken 164 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1437 times"> + </span>]:<span class="tlaGNC">        1465 :     for (const config::IniSection&amp; section : result_.config.named) {</span></span>
+<span id="L295"><span class="lineNum">     295</span>                 :<span class="tlaGNC">        1463 :   void ValidateSections() {</span></span>
+<span id="L296"><span class="lineNum">     296</span>         [<span class="tlaGBC" title="branch 0 was taken 164 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1463 times"> + </span>]:<span class="tlaGNC">        1491 :     for (const config::IniSection&amp; section : result_.config.named) {</span></span>
 <span id="L297"><span class="lineNum">     297</span>         [<span class="tlaGBC" title="branch 0 was taken 171 times"> + </span><span class="tlaGBC" title="branch 1 was taken 164 times"> + </span>]:<span class="tlaGNC">         171 :       for (const config::IniLine&amp; line : section.lines) {</span></span>
 <span id="L298"><span class="lineNum">     298</span>                 :<span class="tlaGNC">         171 :         const bool has_control =</span></span>
 <span id="L299"><span class="lineNum">     299</span>                 :<span class="tlaGNC">         206 :             std::ranges::any_of(config::DirectiveTokens(line.tokens), [this](std::string_view token) {</span></span>
@@ -402,13 +402,13 @@
 <span id="L315"><span class="lineNum">     315</span>                 :<span class="tlaGNC">          21 :         }</span></span>
 <span id="L316"><span class="lineNum">     316</span>                 :<span class="tlaGNC">         171 :       }</span></span>
 <span id="L317"><span class="lineNum">     317</span>                 :<span class="tlaGNC">         164 :     }</span></span>
-<span id="L318"><span class="lineNum">     318</span>                 :<span class="tlaGNC">        1437 :   }</span></span>
+<span id="L318"><span class="lineNum">     318</span>                 :<span class="tlaGNC">        1463 :   }</span></span>
 <span id="L319"><span class="lineNum">     319</span>                 :             : </span>
-<span id="L320"><span class="lineNum">     320</span>                 :<span class="tlaGNC">        1437 :   void PropagateDisablement() {</span></span>
-<span id="L321"><span class="lineNum">     321</span>                 :<span class="tlaGNC">        1437 :     bool changed = true;</span></span>
-<span id="L322"><span class="lineNum">     322</span>         [<span class="tlaGBC" title="branch 0 was taken 1439 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1437 times"> + </span>]:<span class="tlaGNC">        2876 :     while (changed) {</span></span>
-<span id="L323"><span class="lineNum">     323</span>                 :<span class="tlaGNC">        1439 :       changed = false;</span></span>
-<span id="L324"><span class="lineNum">     324</span>         [<span class="tlaGBC" title="branch 0 was taken 172 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1439 times"> + </span>]:<span class="tlaGNC">        1473 :       for (const config::IniSection&amp; section : result_.config.named) {</span></span>
+<span id="L320"><span class="lineNum">     320</span>                 :<span class="tlaGNC">        1463 :   void PropagateDisablement() {</span></span>
+<span id="L321"><span class="lineNum">     321</span>                 :<span class="tlaGNC">        1463 :     bool changed = true;</span></span>
+<span id="L322"><span class="lineNum">     322</span>         [<span class="tlaGBC" title="branch 0 was taken 1465 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1463 times"> + </span>]:<span class="tlaGNC">        2928 :     while (changed) {</span></span>
+<span id="L323"><span class="lineNum">     323</span>                 :<span class="tlaGNC">        1465 :       changed = false;</span></span>
+<span id="L324"><span class="lineNum">     324</span>         [<span class="tlaGBC" title="branch 0 was taken 172 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1465 times"> + </span>]:<span class="tlaGNC">        1499 :       for (const config::IniSection&amp; section : result_.config.named) {</span></span>
 <span id="L325"><span class="lineNum">     325</span>         [<span class="tlaGBC" title="branch 0 was taken 40 times"> + </span><span class="tlaGBC" title="branch 1 was taken 132 times"> + </span>]:<span class="tlaGNC">         172 :         if (disabled_.contains(section.name)) {</span></span>
 <span id="L326"><span class="lineNum">     326</span>                 :<span class="tlaGNC">          40 :           continue;</span></span>
 <span id="L327"><span class="lineNum">     327</span>                 :<span class="tlaGNC">          40 :         }</span></span>
@@ -424,8 +424,8 @@
 <span id="L337"><span class="lineNum">     337</span>                 :<span class="tlaGNC">           3 :           }</span></span>
 <span id="L338"><span class="lineNum">     338</span>                 :<span class="tlaGNC">          17 :         }</span></span>
 <span id="L339"><span class="lineNum">     339</span>                 :<span class="tlaGNC">         132 :       }</span></span>
-<span id="L340"><span class="lineNum">     340</span>                 :<span class="tlaGNC">        1439 :     }</span></span>
-<span id="L341"><span class="lineNum">     341</span>                 :<span class="tlaGNC">        1437 :   }</span></span>
+<span id="L340"><span class="lineNum">     340</span>                 :<span class="tlaGNC">        1465 :     }</span></span>
+<span id="L341"><span class="lineNum">     341</span>                 :<span class="tlaGNC">        1463 :   }</span></span>
 <span id="L342"><span class="lineNum">     342</span>                 :             : </span>
 <span id="L343"><span class="lineNum">     343</span>                 :             :   ConfigFileValidation result_;</span>
 <span id="L344"><span class="lineNum">     344</span>                 :             :   std::string_view path_;</span>
@@ -440,56 +440,56 @@
 <span id="L353"><span class="lineNum">     353</span>                 :             :     config::ConfigFile file,</span>
 <span id="L354"><span class="lineNum">     354</span>                 :             :     const std::vector&lt;std::string&gt;&amp; selected_configs,</span>
 <span id="L355"><span class="lineNum">     355</span>                 :             :     std::string_view path,</span>
-<span id="L356"><span class="lineNum">     356</span>                 :<span class="tlaGNC">        1437 :     config::Source source) {</span></span>
-<span id="L357"><span class="lineNum">     357</span>                 :<span class="tlaGNC">        1437 :   return ConfigFileValidator(std::move(file), path, source).Validate(selected_configs);</span></span>
-<span id="L358"><span class="lineNum">     358</span>                 :<span class="tlaGNC">        1437 : }</span></span>
+<span id="L356"><span class="lineNum">     356</span>                 :<span class="tlaGNC">        1463 :     config::Source source) {</span></span>
+<span id="L357"><span class="lineNum">     357</span>                 :<span class="tlaGNC">        1463 :   return ConfigFileValidator(std::move(file), path, source).Validate(selected_configs);</span></span>
+<span id="L358"><span class="lineNum">     358</span>                 :<span class="tlaGNC">        1463 : }</span></span>
 <span id="L359"><span class="lineNum">     359</span>                 :             : </span>
 <span id="L360"><span class="lineNum">     360</span>                 :             : absl::Status ValidateConfigSelections(</span>
 <span id="L361"><span class="lineNum">     361</span>                 :             :     const config::ConfigInputs&amp; inputs,</span>
-<span id="L362"><span class="lineNum">     362</span>                 :<span class="tlaGNC">         673 :     const std::vector&lt;config::ResolvedFlag&gt;&amp; resolved) {</span></span>
-<span id="L363"><span class="lineNum">     363</span>                 :<span class="tlaGNC">         673 :   absl::flat_hash_set&lt;std::string&gt; names;</span></span>
-<span id="L364"><span class="lineNum">     364</span>                 :<span class="tlaGNC">        1379 :   const auto collect = [&amp;](const config::ConfigFile&amp; file) {</span></span>
-<span id="L365"><span class="lineNum">     365</span>         [<span class="tlaGBC" title="branch 0 was taken 89 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1379 times"> + </span>]:<span class="tlaGNC">        1379 :     for (const config::IniSection&amp; section : file.named) {</span></span>
+<span id="L362"><span class="lineNum">     362</span>                 :<span class="tlaGNC">         686 :     const std::vector&lt;config::ResolvedFlag&gt;&amp; resolved) {</span></span>
+<span id="L363"><span class="lineNum">     363</span>                 :<span class="tlaGNC">         686 :   absl::flat_hash_set&lt;std::string&gt; names;</span></span>
+<span id="L364"><span class="lineNum">     364</span>                 :<span class="tlaGNC">        1405 :   const auto collect = [&amp;](const config::ConfigFile&amp; file) {</span></span>
+<span id="L365"><span class="lineNum">     365</span>         [<span class="tlaGBC" title="branch 0 was taken 89 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1405 times"> + </span>]:<span class="tlaGNC">        1405 :     for (const config::IniSection&amp; section : file.named) {</span></span>
 <span id="L366"><span class="lineNum">     366</span>                 :<span class="tlaGNC">          89 :       names.insert(section.name);</span></span>
 <span id="L367"><span class="lineNum">     367</span>                 :<span class="tlaGNC">          89 :     }</span></span>
-<span id="L368"><span class="lineNum">     368</span>                 :<span class="tlaGNC">        1379 :   };</span></span>
-<span id="L369"><span class="lineNum">     369</span>                 :<span class="tlaGNC">         673 :   const config::ConfigInputs applying = config::ApplyConfigSkips(inputs);</span></span>
-<span id="L370"><span class="lineNum">     370</span>                 :<span class="tlaGNC">         673 :   collect(applying.system);</span></span>
-<span id="L371"><span class="lineNum">     371</span>                 :<span class="tlaGNC">         673 :   collect(applying.user);</span></span>
-<span id="L372"><span class="lineNum">     372</span>         [<span class="tlaGBC" title="branch 0 was taken 33 times"> + </span><span class="tlaGBC" title="branch 1 was taken 673 times"> + </span>]:<span class="tlaGNC">         673 :   for (const config::ExplicitConfig&amp; file : applying.xffrc) {</span></span>
+<span id="L368"><span class="lineNum">     368</span>                 :<span class="tlaGNC">        1405 :   };</span></span>
+<span id="L369"><span class="lineNum">     369</span>                 :<span class="tlaGNC">         686 :   const config::ConfigInputs applying = config::ApplyConfigSkips(inputs);</span></span>
+<span id="L370"><span class="lineNum">     370</span>                 :<span class="tlaGNC">         686 :   collect(applying.system);</span></span>
+<span id="L371"><span class="lineNum">     371</span>                 :<span class="tlaGNC">         686 :   collect(applying.user);</span></span>
+<span id="L372"><span class="lineNum">     372</span>         [<span class="tlaGBC" title="branch 0 was taken 33 times"> + </span><span class="tlaGBC" title="branch 1 was taken 686 times"> + </span>]:<span class="tlaGNC">         686 :   for (const config::ExplicitConfig&amp; file : applying.xffrc) {</span></span>
 <span id="L373"><span class="lineNum">     373</span>                 :<span class="tlaGNC">          33 :     collect(file.config);</span></span>
 <span id="L374"><span class="lineNum">     374</span>                 :<span class="tlaGNC">          33 :   }</span></span>
-<span id="L375"><span class="lineNum">     375</span>                 :<span class="tlaGNC">         673 :   constexpr std::string_view kPrefix = &quot;--config=&quot;;</span></span>
-<span id="L376"><span class="lineNum">     376</span>         [<span class="tlaGBC" title="branch 0 was taken 1310 times"> + </span><span class="tlaGBC" title="branch 1 was taken 665 times"> + </span>]:<span class="tlaGNC">        1361 :   for (const config::ResolvedFlag&amp; flag : resolved) {</span></span>
-<span id="L377"><span class="lineNum">     377</span> [<span class="tlaGBC" title="branch 0 was taken 20 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1290 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1192 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 98 times"> + </span>]:<span class="tlaGNC">        1310 :     if (flag.is_argument || !flag.flag.starts_with(kPrefix)) {</span></span>
-<span id="L378"><span class="lineNum">     378</span>                 :<span class="tlaGNC">        1212 :       continue;</span></span>
-<span id="L379"><span class="lineNum">     379</span>                 :<span class="tlaGNC">        1212 :     }</span></span>
+<span id="L375"><span class="lineNum">     375</span>                 :<span class="tlaGNC">         686 :   constexpr std::string_view kPrefix = &quot;--config=&quot;;</span></span>
+<span id="L376"><span class="lineNum">     376</span>         [<span class="tlaGBC" title="branch 0 was taken 1341 times"> + </span><span class="tlaGBC" title="branch 1 was taken 678 times"> + </span>]:<span class="tlaGNC">        1392 :   for (const config::ResolvedFlag&amp; flag : resolved) {</span></span>
+<span id="L377"><span class="lineNum">     377</span> [<span class="tlaGBC" title="branch 0 was taken 20 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1321 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1223 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 98 times"> + </span>]:<span class="tlaGNC">        1341 :     if (flag.is_argument || !flag.flag.starts_with(kPrefix)) {</span></span>
+<span id="L378"><span class="lineNum">     378</span>                 :<span class="tlaGNC">        1243 :       continue;</span></span>
+<span id="L379"><span class="lineNum">     379</span>                 :<span class="tlaGNC">        1243 :     }</span></span>
 <span id="L380"><span class="lineNum">     380</span>                 :<span class="tlaGNC">          98 :     const std::string_view name = std::string_view(flag.flag).substr(kPrefix.size());</span></span>
 <span id="L381"><span class="lineNum">     381</span> [<span class="tlaGBC" title="branch 0 was taken 51 times"> + </span><span class="tlaGBC" title="branch 1 was taken 47 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 8 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 43 times"> + </span>]:<span class="tlaGNC">          98 :     if (!config::IsBuiltinStyle(name) &amp;&amp; !names.contains(name)) {</span></span>
 <span id="L382"><span class="lineNum">     382</span>                 :<span class="tlaGNC">           8 :       return absl::InvalidArgumentError(absl::StrCat(&quot;selected config [&quot;, name, &quot;] is not defined in an active file&quot;));</span></span>
 <span id="L383"><span class="lineNum">     383</span>                 :<span class="tlaGNC">           8 :     }</span></span>
 <span id="L384"><span class="lineNum">     384</span>                 :<span class="tlaGNC">          98 :   }</span></span>
-<span id="L385"><span class="lineNum">     385</span>                 :<span class="tlaGNC">         665 :   return absl::OkStatus();</span></span>
-<span id="L386"><span class="lineNum">     386</span>                 :<span class="tlaGNC">         673 : }</span></span>
+<span id="L385"><span class="lineNum">     385</span>                 :<span class="tlaGNC">         678 :   return absl::OkStatus();</span></span>
+<span id="L386"><span class="lineNum">     386</span>                 :<span class="tlaGNC">         686 : }</span></span>
 <span id="L387"><span class="lineNum">     387</span>                 :             : </span>
 <span id="L388"><span class="lineNum">     388</span>                 :             : absl::StatusOr&lt;parser::Command&gt; ApplyResolvedConfig(</span>
 <span id="L389"><span class="lineNum">     389</span>                 :             :     parser::Command command,</span>
-<span id="L390"><span class="lineNum">     390</span>                 :<span class="tlaGNC">         626 :     const std::vector&lt;config::ResolvedFlag&gt;&amp; resolved) {</span></span>
-<span id="L391"><span class="lineNum">     391</span>                 :<span class="tlaGNC">         626 :   command.globals.clear();</span></span>
-<span id="L392"><span class="lineNum">     392</span>                 :<span class="tlaGNC">         626 :   command.safety_flags_expanded = true;</span></span>
-<span id="L393"><span class="lineNum">     393</span>                 :<span class="tlaGNC">         626 :   std::vector&lt;std::string&gt; expression = {&quot;.&quot;};</span></span>
-<span id="L394"><span class="lineNum">     394</span>         [<span class="tlaGBC" title="branch 0 was taken 1146 times"> + </span><span class="tlaGBC" title="branch 1 was taken 626 times"> + </span>]:<span class="tlaGNC">        1197 :   for (const config::ResolvedFlag&amp; flag : resolved) {</span></span>
-<span id="L395"><span class="lineNum">     395</span> [<span class="tlaGBC" title="branch 0 was taken 2229 times"> + </span><span class="tlaGBC" title="branch 1 was taken 63 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 958 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 168 times"> + </span>]:<span class="tlaGNC">        1146 :     if (!flag.is_argument &amp;&amp; (flag.source == config::Source::kCli || LookupGlobalArgument(flag.flag).has_value())) {</span></span>
+<span id="L390"><span class="lineNum">     390</span>                 :<span class="tlaGNC">         639 :     const std::vector&lt;config::ResolvedFlag&gt;&amp; resolved) {</span></span>
+<span id="L391"><span class="lineNum">     391</span>                 :<span class="tlaGNC">         639 :   command.globals.clear();</span></span>
+<span id="L392"><span class="lineNum">     392</span>                 :<span class="tlaGNC">         639 :   command.safety_flags_expanded = true;</span></span>
+<span id="L393"><span class="lineNum">     393</span>                 :<span class="tlaGNC">         639 :   std::vector&lt;std::string&gt; expression = {&quot;.&quot;};</span></span>
+<span id="L394"><span class="lineNum">     394</span>         [<span class="tlaGBC" title="branch 0 was taken 1177 times"> + </span><span class="tlaGBC" title="branch 1 was taken 639 times"> + </span>]:<span class="tlaGNC">        1228 :   for (const config::ResolvedFlag&amp; flag : resolved) {</span></span>
+<span id="L395"><span class="lineNum">     395</span> [<span class="tlaGBC" title="branch 0 was taken 2291 times"> + </span><span class="tlaGBC" title="branch 1 was taken 63 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 989 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 168 times"> + </span>]:<span class="tlaGNC">        1177 :     if (!flag.is_argument &amp;&amp; (flag.source == config::Source::kCli || LookupGlobalArgument(flag.flag).has_value())) {</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 145 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 23 times"> + </span>]
-<span id="L396"><span class="lineNum">     396</span>                 :<span class="tlaGNC">        1103 :       command.globals.push_back(flag.flag);</span></span>
-<span id="L397"><span class="lineNum">     397</span>                 :<span class="tlaGNC">        1115 :     } else {</span></span>
+<span id="L396"><span class="lineNum">     396</span>                 :<span class="tlaGNC">        1134 :       command.globals.push_back(flag.flag);</span></span>
+<span id="L397"><span class="lineNum">     397</span>                 :<span class="tlaGNC">        1146 :     } else {</span></span>
 <span id="L398"><span class="lineNum">     398</span>                 :<span class="tlaGNC">          43 :       expression.push_back(flag.flag);</span></span>
 <span id="L399"><span class="lineNum">     399</span>                 :<span class="tlaGNC">          43 :     }</span></span>
-<span id="L400"><span class="lineNum">     400</span>                 :<span class="tlaGNC">        1146 :   }</span></span>
-<span id="L401"><span class="lineNum">     401</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 626 times"> + </span>]:<span class="tlaGNC">         626 :   MBO_ASSIGN_OR_RETURN(parser::Command configured, parser::Parse(expression));</span></span>
-<span id="L402"><span class="lineNum">     402</span>         [<span class="tlaGBC" title="branch 0 was taken 614 times"> + </span><span class="tlaGBC" title="branch 1 was taken 12 times"> + </span>]:<span class="tlaGNC">         626 :   if (!configured.expression) {</span></span>
-<span id="L403"><span class="lineNum">     403</span>                 :<span class="tlaGNC">         614 :     return command;</span></span>
-<span id="L404"><span class="lineNum">     404</span>                 :<span class="tlaGNC">         614 :   }</span></span>
+<span id="L400"><span class="lineNum">     400</span>                 :<span class="tlaGNC">        1177 :   }</span></span>
+<span id="L401"><span class="lineNum">     401</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 639 times"> + </span>]:<span class="tlaGNC">         639 :   MBO_ASSIGN_OR_RETURN(parser::Command configured, parser::Parse(expression));</span></span>
+<span id="L402"><span class="lineNum">     402</span>         [<span class="tlaGBC" title="branch 0 was taken 627 times"> + </span><span class="tlaGBC" title="branch 1 was taken 12 times"> + </span>]:<span class="tlaGNC">         639 :   if (!configured.expression) {</span></span>
+<span id="L403"><span class="lineNum">     403</span>                 :<span class="tlaGNC">         627 :     return command;</span></span>
+<span id="L404"><span class="lineNum">     404</span>                 :<span class="tlaGNC">         627 :   }</span></span>
 <span id="L405"><span class="lineNum">     405</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>]:<span class="tlaGNC">          12 :   if (command.expression) {</span></span>
 <span id="L406"><span class="lineNum">     406</span>                 :<span class="tlaGNC">           5 :     command.expression = std::make_unique&lt;parser::Expr&gt;(parser::Expr{</span></span>
 <span id="L407"><span class="lineNum">     407</span>                 :<span class="tlaGNC">           5 :         .kind = parser::Expr::Kind::kAnd,</span></span>
@@ -500,17 +500,17 @@
 <span id="L412"><span class="lineNum">     412</span>                 :<span class="tlaGNC">           7 :     command.expression = std::move(configured.expression);</span></span>
 <span id="L413"><span class="lineNum">     413</span>                 :<span class="tlaGNC">           7 :   }</span></span>
 <span id="L414"><span class="lineNum">     414</span>                 :<span class="tlaGNC">          12 :   return command;</span></span>
-<span id="L415"><span class="lineNum">     415</span>                 :<span class="tlaGNC">         626 : }</span></span>
+<span id="L415"><span class="lineNum">     415</span>                 :<span class="tlaGNC">         639 : }</span></span>
 <span id="L416"><span class="lineNum">     416</span>                 :             : </span>
-<span id="L417"><span class="lineNum">     417</span>                 :<span class="tlaGNC">         674 : std::vector&lt;std::string&gt; ConfigOverrideNotices(const config::ConfigInputs&amp; inputs) {</span></span>
-<span id="L418"><span class="lineNum">     418</span>                 :<span class="tlaGNC">         674 :   std::vector&lt;std::string&gt; notices;</span></span>
-<span id="L419"><span class="lineNum">     419</span>                 :<span class="tlaGNC">         674 :   FindFileOverrides(inputs.system, &quot;system config&quot;, notices);</span></span>
-<span id="L420"><span class="lineNum">     420</span>                 :<span class="tlaGNC">         674 :   FindFileOverrides(inputs.user, &quot;user config&quot;, notices);</span></span>
-<span id="L421"><span class="lineNum">     421</span>         [<span class="tlaGBC" title="branch 0 was taken 28 times"> + </span><span class="tlaGBC" title="branch 1 was taken 674 times"> + </span>]:<span class="tlaGNC">         674 :   for (const config::ExplicitConfig&amp; file : inputs.xffrc) {</span></span>
+<span id="L417"><span class="lineNum">     417</span>                 :<span class="tlaGNC">         687 : std::vector&lt;std::string&gt; ConfigOverrideNotices(const config::ConfigInputs&amp; inputs) {</span></span>
+<span id="L418"><span class="lineNum">     418</span>                 :<span class="tlaGNC">         687 :   std::vector&lt;std::string&gt; notices;</span></span>
+<span id="L419"><span class="lineNum">     419</span>                 :<span class="tlaGNC">         687 :   FindFileOverrides(inputs.system, &quot;system config&quot;, notices);</span></span>
+<span id="L420"><span class="lineNum">     420</span>                 :<span class="tlaGNC">         687 :   FindFileOverrides(inputs.user, &quot;user config&quot;, notices);</span></span>
+<span id="L421"><span class="lineNum">     421</span>         [<span class="tlaGBC" title="branch 0 was taken 28 times"> + </span><span class="tlaGBC" title="branch 1 was taken 687 times"> + </span>]:<span class="tlaGNC">         687 :   for (const config::ExplicitConfig&amp; file : inputs.xffrc) {</span></span>
 <span id="L422"><span class="lineNum">     422</span>                 :<span class="tlaGNC">          28 :     FindFileOverrides(file.config, absl::StrCat(&quot;--xffrc file &quot;, file.path), notices);</span></span>
 <span id="L423"><span class="lineNum">     423</span>                 :<span class="tlaGNC">          28 :   }</span></span>
-<span id="L424"><span class="lineNum">     424</span>                 :<span class="tlaGNC">         674 :   return notices;</span></span>
-<span id="L425"><span class="lineNum">     425</span>                 :<span class="tlaGNC">         674 : }</span></span>
+<span id="L424"><span class="lineNum">     424</span>                 :<span class="tlaGNC">         687 :   return notices;</span></span>
+<span id="L425"><span class="lineNum">     425</span>                 :<span class="tlaGNC">         687 : }</span></span>
 <span id="L426"><span class="lineNum">     426</span>                 :             : </span>
 <span id="L427"><span class="lineNum">     427</span>                 :             : }  // namespace xff::cli</span>
         </pre>
