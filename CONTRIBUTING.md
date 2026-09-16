@@ -71,6 +71,10 @@ so the generated source is requested even when the compiled library is cached.
 
 ## CI build caches
 
+Coverage and fuzz jobs start alongside pre-commit and Trunk to reduce total CI wall time.
+The final `done` gate still requires every job to pass. This intentionally spends runner time
+on those jobs even when an early lint check fails.
+
 Bazel's compiled-output disk cache is separate from its repository download cache.
 CI restores the latest main cache for each runner OS, architecture, and build configuration.
 Only main writes refreshed generations; PRs and release tags restore without saving. GCC also

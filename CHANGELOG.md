@@ -3,6 +3,8 @@
 
 # 0.6.0
 
+- Start coverage and fuzz CI jobs immediately while preserving all final merge checks.
+
 - Run fuzz campaigns concurrently after preparing all targets, with CPU/memory bounds, isolated
   artifacts, per-target throughput statistics, and unchanged campaign time budgets.
 
