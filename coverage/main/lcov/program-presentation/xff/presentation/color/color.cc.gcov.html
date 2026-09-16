@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-16 12:14:30</td>
+            <td class="headerValue">2026-09-16 12:51:22</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -169,16 +169,16 @@
 <span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaGNC">        1087 :       std::pair{std::string_view(&quot;ls-or-xff&quot;), Scheme::kAuto}, std::pair{std::string_view(&quot;merged&quot;), Scheme::kLsAndXff},</span></span>
 <span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">        1087 :       std::pair{std::string_view(&quot;xff&quot;), Scheme::kXff});</span></span>
 <span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">        1087 :   Scheme scheme = Scheme::kAuto;</span></span>
-<span id="L91"><span class="lineNum">      91</span>         [<span class="tlaGBC" title="branch 0 was taken 1795 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1087 times"> + </span>]:<span class="tlaGNC">        1896 :   for (const std::string&amp; global : globals) {</span></span>
-<span id="L92"><span class="lineNum">      92</span>                 :<span class="tlaGNC">        1795 :     std::string_view value = global;</span></span>
-<span id="L93"><span class="lineNum">      93</span>         [<span class="tlaGBC" title="branch 0 was taken 1769 times"> + </span><span class="tlaGBC" title="branch 1 was taken 26 times"> + </span>]:<span class="tlaGNC">        1795 :     if (!absl::ConsumePrefix(&amp;value, &quot;--color-scheme=&quot;)) {</span></span>
-<span id="L94"><span class="lineNum">      94</span>                 :<span class="tlaGNC">        1769 :       continue;</span></span>
-<span id="L95"><span class="lineNum">      95</span>                 :<span class="tlaGNC">        1769 :     }</span></span>
+<span id="L91"><span class="lineNum">      91</span>         [<span class="tlaGBC" title="branch 0 was taken 1796 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1087 times"> + </span>]:<span class="tlaGNC">        1897 :   for (const std::string&amp; global : globals) {</span></span>
+<span id="L92"><span class="lineNum">      92</span>                 :<span class="tlaGNC">        1796 :     std::string_view value = global;</span></span>
+<span id="L93"><span class="lineNum">      93</span>         [<span class="tlaGBC" title="branch 0 was taken 1772 times"> + </span><span class="tlaGBC" title="branch 1 was taken 24 times"> + </span>]:<span class="tlaGNC">        1796 :     if (!absl::ConsumePrefix(&amp;value, &quot;--color-scheme=&quot;)) {</span></span>
+<span id="L94"><span class="lineNum">      94</span>                 :<span class="tlaGNC">        1772 :       continue;</span></span>
+<span id="L95"><span class="lineNum">      95</span>                 :<span class="tlaGNC">        1772 :     }</span></span>
 <span id="L96"><span class="lineNum">      96</span>                 :             :     // Anything unrecognised leaves the prior resolution, matching how --color treats a bad value.</span>
-<span id="L97"><span class="lineNum">      97</span>         [<span class="tlaGBC" title="branch 0 was taken 22 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4 times"> + </span>]:<span class="tlaGNC">          26 :     if (const auto it = kSchemes.find(value); it != kSchemes.end()) {</span></span>
+<span id="L97"><span class="lineNum">      97</span>         [<span class="tlaGBC" title="branch 0 was taken 22 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">          24 :     if (const auto it = kSchemes.find(value); it != kSchemes.end()) {</span></span>
 <span id="L98"><span class="lineNum">      98</span>                 :<span class="tlaGNC">          22 :       scheme = it-&gt;second;</span></span>
 <span id="L99"><span class="lineNum">      99</span>                 :<span class="tlaGNC">          22 :     }</span></span>
-<span id="L100"><span class="lineNum">     100</span>                 :<span class="tlaGNC">          26 :   }</span></span>
+<span id="L100"><span class="lineNum">     100</span>                 :<span class="tlaGNC">          24 :   }</span></span>
 <span id="L101"><span class="lineNum">     101</span>                 :<span class="tlaGNC">        1087 :   return scheme;</span></span>
 <span id="L102"><span class="lineNum">     102</span>                 :<span class="tlaGNC">        1087 : }</span></span>
 <span id="L103"><span class="lineNum">     103</span>                 :             : </span>
