@@ -1,9 +1,7 @@
 <!-- SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-<img src="docs/assets/mboworks-logo.png" alt="MBO Works" width="64" height="64" align="right">
-
-# xff - eXtended File Find
+# xff - eXtended File Find <img src="docs/assets/mboworks-logo.png" alt="MBO Works" width="64" height="64" align="right">
 
 [Release website](https://mboworks.github.io/xff/)
 
