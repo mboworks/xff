@@ -1819,7 +1819,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "declare an existing absolute temp root (config only)",
         .details = "Allowed once in unsectioned system or user INI; a system declaration wins. "
                    "Permissions cover descendants recursively; the root itself remains protected. "
-                   "Roots and descendant traversal must not contain symlinks. See `--help=safety`.",
+                   "Roots and descendant traversal must not contain symlinks. INI `${NAME}` substitutions are "
+                   "allowed, but trust the caller-controlled environment to choose the root; use literal paths "
+                   "for fixed administrator boundaries. See `--help=config` and `--help=safety`.",
         .topic = "safety",
         .config_only = true,
     },
@@ -1831,7 +1833,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "declare an existing absolute output root (config only)",
         .details = "Allowed once in unsectioned system or user INI; a system declaration wins. "
                    "Permissions cover descendants recursively; the root itself remains protected. "
-                   "Roots and descendant traversal must not contain symlinks. See `--help=safety`.",
+                   "Roots and descendant traversal must not contain symlinks. INI `${NAME}` substitutions are "
+                   "allowed, but trust the caller-controlled environment to choose the root; use literal paths "
+                   "for fixed administrator boundaries. See `--help=config` and `--help=safety`.",
         .topic = "safety",
         .config_only = true,
     },

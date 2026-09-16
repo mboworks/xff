@@ -295,6 +295,7 @@ cc_test(
     deps = [
         ":run_cc",
         "//xff/config:config_cc",
+        "//xff/env:env_cc",
         "//xff/parser:parser_cc",
         "//xff/vfs:local_fs_cc",
         "@googletest//:gtest_main",

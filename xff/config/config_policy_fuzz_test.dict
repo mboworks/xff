@@ -14,3 +14,6 @@
 "[xff]"
 "--block-execution"
 "--no-allow-xffrc"
+"${NAME}"
+"${NAME:-fallback}"
+"${NAME:?required}"

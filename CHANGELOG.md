@@ -3,6 +3,9 @@
 
 # 0.6.0
 
+- Support INI-only `${NAME}`, `${NAME:-DEFAULT}`, and `${NAME:?MESSAGE}` environment substitution,
+  with literal quoting, single-argument values, and unchanged validation of expanded safety roots.
+
 - Preserve targeted Bazel preparation traces for coverage and fuzz to diagnose remaining CI delays.
 
 - Start coverage and fuzz CI jobs immediately while preserving all final merge checks.

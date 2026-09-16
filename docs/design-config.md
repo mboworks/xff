@@ -208,8 +208,8 @@ CLI parser. It removes comments before passing those arguments to the parser. Sy
 explicit `.xffrc` files all use this rule. Single quotes preserve
 literal content; double quotes group content and allow backslash escapes for `"`, `\`, `$`, and
 backtick. Outside quotes, a backslash escapes the next character. Adjacent quoted and unquoted
-pieces form one argument; empty quotes produce an empty argument. There is no variable, command,
-pathname, or tilde expansion, and config text is never executed as a shell script.
+pieces form one argument; empty quotes produce an empty argument. Braced environment substitutions described below are supported outside single quotes. There is no
+command, pathname, or tilde expansion, and config text is never executed as a shell script.
 
 An unquoted `#` at the beginning of a word starts a comment through the end of that physical
 line. Thus `foo#bar`, `\#`, and `"#"` are literal arguments. An unquoted, unescaped `;` starts
@@ -236,6 +236,58 @@ diagnostic, while an invalid named-section line disables its entire section.
 User and explicit config files may not redefine the exact built-in preset names `[find]`, `[xff]`,
 or `[rg]`. Those lines are dropped with a warning. Use a custom named configuration and compose
 the desired preset explicitly with `--config=find`, `--config=xff`, or `--config=rg`.
+
+## Environment substitutions
+
+System INI, user INI, and explicit or autoloaded `.xffrc` files share these forms:
+
+| Form               | Meaning                                                    |
+| ------------------ | ---------------------------------------------------------- |
+| `${NAME}`          | Substitute the value; unset is an error, empty is allowed. |
+| `${NAME:-DEFAULT}` | Use literal DEFAULT when NAME is unset or empty.           |
+| `${NAME:?MESSAGE}` | Fail when NAME is unset or empty, with NAME and MESSAGE.   |
+
+Names use ASCII letters, digits, and underscores, starting with a letter or underscore.
+Substitution happens while reading the file, before flag validation and named-section selection.
+An error in globals fails the invocation; an error in a named section disables that whole section,
+including when it is not selected. Selecting that section then fails, as for other invalid lines.
+Diagnostics retain the source file and starting line number. Values use xff's shared, read-once
+process-environment cache.
+
+```ini
+--temp-root="${TMPDIR:-/private/tmp}"
+--output-root="${HOME:?HOME must be set}/xff-results"
+
+[report]
+-name "${REPORT_PATTERN:-*.cc}"
+-printf '%{env.HOME} %p\n'
+```
+
+The root directories must already exist and pass the normal root validation, including no symlink
+components. These declarations remain restricted to unsectioned system/user INI. This example uses
+`/private/tmp` for macOS; choose an appropriate physical directory on other systems.
+
+Single quotes or an escaped dollar preserve literal text: `'${HOME}'`, `\${HOME}`, and
+`"\${HOME}"` do not expand. Bare `$HOME` remains literal too. Double quotes permit substitution.
+Adjacent literal and substituted pieces form one argument; even an empty substitution preserves
+its argument. Values are never split into words or parsed again: whitespace, quotes, `#`, `;`,
+backslashes, and further `${...}` inside a value remain content. There is no command substitution.
+
+DEFAULT and MESSAGE are literal text ending at the next `}`; they may contain spaces but not
+newlines or nested `${...}`. Quotes and backslashes inside them are literal, not a second quoting
+language. Other operators, assignment, and recursive substitution are unsupported. A missing
+closing brace is an error.
+
+`%{...}` is not an INI substitution. It passes unchanged to the consuming flag. For example,
+`-printf '%{env.HOME}'` uses the existing field renderer; `--output-root=%{env.HOME}` does not.
+The CLI itself does not interpret `${...}`: any command-line substitution is performed by the
+calling shell before xff receives its arguments.
+
+Environment variables are caller-controlled. Using `${HOME}` or `${TMPDIR}` in a safety root
+explicitly delegates that path choice to the caller; requiring a nonempty value or providing a
+fallback does not make it trusted. Use literal roots and literal mandatory safety flags when the
+administrator needs fixed boundaries. Substitution cannot change config discovery locations or
+bypass the normal source restrictions and validation on directives.
 
 ## Selectors and invocation names
 
@@ -510,7 +562,7 @@ set of option semantics.
 
 ## Known limits
 
-- Config argument quoting does not perform shell expansions or execute shell syntax.
+- Config argument quoting supports only the documented braced environment substitutions; it never executes shell syntax.
 
 Directory-scoped temp/output permissions and root-declaration precedence are specified in
 [Directory-scoped safety controls](design-directory-safety.md).

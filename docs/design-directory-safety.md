@@ -34,6 +34,13 @@ permitted file. The system declaration wins; otherwise the user declaration appl
 Roots must already exist and use absolute physical paths without symlink components.
 For example, use `/private/tmp` rather than `/tmp` on macOS. A filesystem root (`/`) is invalid.
 
+INI values may use `${TMPDIR:-/private/tmp}` or `${HOME:?HOME must be set}/xff-results`.
+See [environment substitutions](design-config.md#environment-substitutions) for quoting and errors.
+The expanded path passes the same validation and scope enforcement. Such a declaration explicitly
+trusts the caller-controlled environment to choose that root. Defaults and required-value checks
+are not trust checks; use literal paths for administrator-enforced fixed boundaries. Merely setting
+an environment variable grants no directory exception without a matching root declaration.
+
 | Operation                       | Ordinary destination                                        | Temporary-root descendant                                        | Output-root descendant                                             |
 | ------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------ |
 | Create file                     | file-writing                                                | temp-file-writing                                                | output-file-writing                                                |

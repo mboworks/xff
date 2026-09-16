@@ -48,6 +48,7 @@ cc_library(
     hdrs = ["ini.h"],
     visibility = ["//xff:__subpackages__"],
     deps = [
+        "//xff/env:env_cc",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -58,6 +59,7 @@ cc_test(
     srcs = ["ini_test.cc"],
     deps = [
         ":ini_cc",
+        "//xff/env:env_cc",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],

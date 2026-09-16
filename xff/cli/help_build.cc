@@ -580,7 +580,8 @@ Section EnvironmentSection() {
   env.children.push_back(RowsOf(kVars));
   env.children.push_back(ProseOf(
       "Any process environment variable is also readable in the field vocabulary as `{env.NAME}` (see "
-      "`--help=fields`)."));
+      "`--help=fields`). INI arguments also support `${NAME}`, `${NAME:-DEFAULT}`, and `${NAME:?MESSAGE}` "
+      "at load time; see `--help=config`. `%{...}` remains reserved for field-aware consumers."));
   return env;
 }
 
@@ -1169,7 +1170,9 @@ Section SafetySection(bool in_full) {
       "use physical paths (for example `/private/tmp` on macOS). Permissions cover all descendants, "
       "including subdirectories, but never deletion or replacement of the root itself. "
       "Root declarations do not redirect output filenames. The temp root also selects extraction and mount "
-      "scratch placement; environment variables cannot grant a directory exception."));
+      "scratch placement. Environment variables alone grant no directory exception. INI `${NAME}` substitution "
+      "in a root declaration explicitly trusts the caller to choose that path; use literal roots for fixed "
+      "administrator boundaries. See `--help=config` for defaults, quoting, and validation."));
   Table directory_operations{
       .header = {"Operation", "Ordinary path", "temp selected", "output selected"},
       .cells = {
@@ -1315,8 +1318,28 @@ Section ConfigSection(bool in_full) {
       "shell scripts. System, user, and all `.xffrc` files all use this rule. Single or double quotes group "
       "arguments, including spaces and empty values; outside quotes, a backslash escapes the next character. "
       "Inside double quotes, backslash escapes only double quote, backslash, dollar, backtick, or newline. "
-      "There is no variable, command, pathname, or tilde expansion. Use the same flag spelling as on the CLI: "
+      "Braced environment substitutions are supported as described below; command, pathname, and tilde "
+      "expansion are not. Use the same flag spelling as on the CLI: "
       "`--color=auto`, not `--color = auto`. Whitespace separates arguments; it is not assignment syntax."));
+  layers.children.push_back(ProseOf(
+      "INI arguments support `${NAME}` (unset is an error; empty is allowed), `${NAME:-DEFAULT}` "
+      "(literal fallback when unset or empty), and `${NAME:?MESSAGE}` (error when unset or empty). "
+      "Names start with an ASCII letter or underscore and contain only ASCII letters, digits, and "
+      "underscores. Substitution uses the cached process environment when the file is read, before "
+      "validation and section selection. Errors invalidate the line under the usual global/section rules. "
+      "Single quotes and escaped dollars prevent substitution; double quotes permit it. Bare `$NAME` "
+      "and section names remain literal. Values stay within one argument, including spaces and comment "
+      "characters, and are never parsed or expanded again. DEFAULT and MESSAGE are literal text through "
+      "the next `}`; quotes and backslashes there remain content. Newlines, nested substitutions, and other "
+      "operators are unsupported. The CLI performs no such substitution itself."));
+  layers.children.push_back(ProseOf(
+      "For example, `--temp-root=\"${TMPDIR:-/private/tmp}\"` and "
+      "`--output-root=\"${HOME:?HOME must be set}/xff-results\"` may appear in unsectioned system/user INI. "
+      "Expanded roots must still exist and pass physical-path validation. Environment values are "
+      "caller-controlled: using them in root declarations delegates the path choice to the caller. "
+      "Use literal paths and mandatory flags for administrator-enforced fixed boundaries; a fallback "
+      "or required-value check does not establish trust. `%{...}` is not processed by the INI reader: "
+      "`-printf '%{env.HOME}'` still delegates to the field renderer, while roots have no field renderer."));
   layers.children.push_back(ProseOf(
       "An unquoted `#` at the beginning of a word starts a comment through the end of the physical line. "
       "`foo#bar`, `\\#`, and `\"#\"` are literal arguments. An unquoted, unescaped `;` starts a comment "
