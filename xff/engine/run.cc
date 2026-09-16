@@ -3085,7 +3085,7 @@ std::string SummarySize(std::uint64_t size, std::optional<format::SizeUnits> hum
     return format::Int(size, ',');
   }
   const auto parts = format::SizeColumns(size, *human, precision);
-  return absl::StrCat(parts.number, " ", parts.suffix);
+  return absl::StrCat(parts.number, " ", format::PadLeft(parts.suffix, *human == format::SizeUnits::kSi ? 2 : 3));
 }
 
 std::vector<std::string> SummaryColumns(
@@ -3175,18 +3175,50 @@ void EmitSummaryRows(
   emit(table.Render());
 }
 
+std::string_view SummaryTitle(SummaryMode mode) {
+  switch (mode) {
+    case SummaryMode::kOff:
+    case SummaryMode::kOverall: return "Summary";
+    case SummaryMode::kCompare: return "Comparison summary";
+    case SummaryMode::kType: return "Summary by file type";
+    case SummaryMode::kExt: return "Summary by extension";
+    case SummaryMode::kLanguage: return "Summary by language";
+    case SummaryMode::kMime: return "Summary by MIME type";
+    case SummaryMode::kUser: return "Summary by owner";
+    case SummaryMode::kGroup: return "Summary by group";
+    case SummaryMode::kHash: return "Summary by hash";
+    case SummaryMode::kHashVerification: return "Hash verification summary";
+    case SummaryMode::kTemplate: return "Summary by template";
+  }
+  return "Summary";
+}
+
+void EmitSummaryHeading(SummaryMode mode, const std::vector<std::string>& globals, EmitFn emit) {
+  if (ResolveFormat(globals) == render::Format::kMarkdown && !HasGlobal(globals, "--no-header")) {
+    emit(absl::StrCat("\n## ", SummaryTitle(mode), "\n"));
+  }
+}
+
 void EmitSummaries(
     const std::vector<std::string>& globals,
     const std::vector<SummarySpec>& summaries,
     const SummaryTables& tables,
     render::Format output_format,
     std::optional<format::SizeUnits> human,
-    EmitFn emit) {
+    EmitFn emit,
+    std::string_view scope = {},
+    std::string_view root = {}) {
   const auto top = ResolveTop(globals);
   const auto precision = ResolveSummaryPrecision(globals);
+  const std::string_view scope_label = output_format == render::Format::kMarkdown ? "\n- Scope: " : "Summary scope: ";
   for (std::size_t i = 0; i < summaries.size(); ++i) {
     if (i > 0 && output_format != render::Format::kJsonl) {
       emit("\n");
+    }
+    EmitSummaryHeading(summaries.at(i).mode, globals, emit);
+    if (!scope.empty() && output_format != render::Format::kJsonl
+        && (i == 0 || output_format == render::Format::kMarkdown)) {
+      emit(absl::StrCat(scope_label, scope, root.empty() ? "" : " (", root, root.empty() ? "" : ")", "\n"));
     }
     EmitSummaryRows(
         SummaryRows(summaries.at(i).mode, tables.at(i), top), output_format, human, precision,
@@ -3206,9 +3238,6 @@ void EmitScopedSummaries(
   if (summaries.empty()) {
     return;
   }
-  if (format != render::Format::kJsonl) {
-    emit(absl::StrCat("Summary scope: ", scope, root.empty() ? "" : " (", root, root.empty() ? "" : ")", "\n"));
-  }
   const auto labelled_emit = [&](std::string_view text) {
     if (format == render::Format::kJsonl && text.starts_with("{")) {
       emit(absl::StrCat("{\"scope\":", JsonQuote(scope), ",\"root\":", JsonQuote(root), ",", text.substr(1)));
@@ -3216,7 +3245,7 @@ void EmitScopedSummaries(
       emit(text);
     }
   };
-  EmitSummaries(globals, summaries, tables, format, human, labelled_emit);
+  EmitSummaries(globals, summaries, tables, format, human, labelled_emit, scope, root);
 }
 
 SummaryRow SummaryTotal(const SummaryCells& cells) {
@@ -3234,6 +3263,17 @@ SummaryRow SummaryCell(const SummaryCells& cells, const std::string& key) {
                               : SummaryRow{.key = key, .count = found->second.first, .size = found->second.second};
 }
 
+void EmitPairedSummaryHeading(const parser::Command& command, std::string_view scope, SummaryMode mode, EmitFn emit) {
+  EmitSummaryHeading(mode, command.globals, emit);
+  const bool markdown = ResolveFormat(command.globals) == render::Format::kMarkdown;
+  const std::string_view scope_label = markdown ? "\n- Scope: " : "Summary scope: ";
+  const std::string_view item_prefix = markdown ? "- " : "";
+  emit(
+      absl::StrCat(
+          scope_label, scope, "\n", item_prefix, "Left: ", command.roots.at(0), "\n", item_prefix,
+          "Right: ", command.roots.at(1), "\n"));
+}
+
 void EmitPairedSummary(
     const parser::Command& command,
     const std::string& scope,
@@ -3243,7 +3283,12 @@ void EmitPairedSummary(
     EmitFn emit) {
   const auto precision = ResolveSummaryPrecision(command.globals);
   const auto human = ResolveHuman(command.globals, style);
-  const bool json = ResolveFormat(command.globals) == render::Format::kJsonl;
+  const auto output_format = ResolveFormat(command.globals);
+  const bool json = output_format == render::Format::kJsonl;
+  const std::string_view note =
+      output_format == render::Format::kMarkdown
+          ? "- Percentages use each side's full selected category population.\n- `-` means no entries.\n"
+          : "Percentages use each side's full selected category population; - means no entries.\n\n";
   auto combined = sides.at(0);
   MergeSummaryTables(combined, sides.at(1));
   for (std::size_t sink = 0; sink < summaries.size(); ++sink) {
@@ -3256,7 +3301,7 @@ void EmitPairedSummary(
          format::Align::kRight},
         {"Group", "Left count", "Left % count", "Left size", "Left % size", "Right count", "Right % count",
          "Right size", "Right % size"},
-        ResolveFormat(command.globals), !HasGlobal(command.globals, "--no-header"));
+        output_format, !HasGlobal(command.globals, "--no-header"));
     for (std::size_t index = 0; index < rows.size(); ++index) {
       const auto& key = rows.at(index).key;
       const bool total_row = index + 1 == rows.size();
@@ -3285,11 +3330,9 @@ void EmitPairedSummary(
       }
     }
     if (!json) {
-      emit(
-          absl::StrCat(
-              "Summary scope: ", scope, "\nLeft: ", command.roots.at(0), "\nRight: ", command.roots.at(1), "\n"));
+      EmitPairedSummaryHeading(command, scope, summaries.at(sink).mode, emit);
       emit(table.Render());
-      emit("Percentages use each side's full selected category population; - means no entries.\n");
+      emit(note);
     }
   }
 }
@@ -3713,8 +3756,13 @@ void EmitTreeCompareSummary(
     }
     add_row("all", counts.total);
     if (output_format != render::Format::kJsonl) {
+      EmitSummaryHeading(summary.mode, globals, emit);
       emit(table.Render());
-      emit("Results count pairs once; combined size includes both sides. Directory equality is entry-only.\n");
+      emit(
+          output_format == render::Format::kMarkdown
+              ? "- Results count pairs once.\n- Combined size includes both sides.\n- Directory equality is "
+                "entry-only.\n"
+              : "Results count pairs once; combined size includes both sides. Directory equality is entry-only.\n\n");
     }
   }
 }

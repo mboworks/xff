@@ -1129,7 +1129,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "as Markdown, with vertically aligned separators and right-aligned numeric headers and values "
                    "in both source and rendered tables. Summary schemas come from `--summary`; `--columns` selects "
                    "listing fields and "
-                   "cannot change summary columns. `--no-header` omits table headers and Markdown separator rows "
+                   "cannot change summary columns. Markdown summaries have descriptive headings above their scope "
+                   "and table. `--no-header` omits those headings, table headers, and Markdown separator rows "
                    "when producing fragments. Expression actions retain their own output formats.",
         .values = kFormatValues,
         .topic = "output",
@@ -1432,7 +1433,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "--summary=ext --summary=type), printed in order. Percentages use the complete table totals before "
                    "`--top`; a zero denominator yields zero percent. "
                    "Sizes sum entry metadata sizes, including directory metadata, never recursive subtree sizes. "
-                   "`--format=markdown` (or `md`) renders these tables as Markdown with fixed summary columns. "
+                   "`--format=markdown` (or `md`) renders these tables with grouping-specific headings above their "
+                   "scopes and fixed summary columns. Scope/root labels and explanatory notes are Markdown bullet "
+                   "items so each stays on its own rendered line. Each accounting note stays with its table, "
+                   "separated from the next summary by a blank line. Exact bytes align with scaled sizes at the "
+                   "decimal boundary. "
                    "`--format=jsonl` includes `count_percent` and `size_percent` alongside `count` and `bytes`. "
                    "--top=N limits the rows of each, "
                    "--summary-precision sets the scaled-size digits, and --format=jsonl emits one object per group "

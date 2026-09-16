@@ -30,6 +30,7 @@
 #include "absl/strings/str_cat.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "xff/env/env.h"
 #include "xff/parser/parser.h"
@@ -41,8 +42,10 @@ namespace xff::engine {
 namespace {
 
 namespace fs = ::std::filesystem;
+using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
 using ::mbo::testing::StatusIs;
+using ::mbo::testing::WithDropIndent;
 using ::testing::AllOf;
 using ::testing::Contains;
 using ::testing::ElementsAre;
@@ -2040,10 +2043,64 @@ TEST_F(RunTest, MarkdownSummariesRenderOrdinaryAndPairedTables) {
   EXPECT_THAT(RunArgvRecords({root_.string(), "-type", "f", "--summary=ext", "--format=markdown"}), Eq(ordinary));
   const auto comparison =
       RunArgvRecords({"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--format=md"});
+  EXPECT_THAT(comparison, Contains("\n## Comparison summary"));
+  EXPECT_THAT(comparison, Contains("\n## Summary by extension"));
   EXPECT_THAT(comparison, Contains(HasSubstr("| Type")).Times(1));
   EXPECT_THAT(comparison, Contains(HasSubstr("| Left count")).Times(1));
   EXPECT_THAT(comparison, Contains(HasSubstr("| Right count")));
   EXPECT_THAT(comparison, Contains(HasSubstr("| ---------: |")));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, MarkdownSummaryHeadingsDescribeEachGrouping) {
+  constexpr std::string_view kSha256A = "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb";
+  const std::vector<std::pair<std::string, std::string>> cases = {
+      {"overall", "Summary"},
+      {"type", "Summary by file type"},
+      {"ext", "Summary by extension"},
+      {"lang", "Summary by language"},
+      {"mime", "Summary by MIME type"},
+      {"user", "Summary by owner"},
+      {"group", "Summary by group"},
+      {"hash", "Summary by hash"},
+      {"hash-verification", "Hash verification summary"},
+      {"{ext}", "Summary by template"},
+  };
+  for (const auto& [mode, title] : cases) {
+    SCOPED_TRACE(mode);
+    EXPECT_THAT(
+        RunArgvRecords(
+            {root_.string(), "-name", "a.txt", "-hasheq", std::string(kSha256A), "--summary=" + mode, "--format=md"}),
+        Contains("\n## " + title));
+    EXPECT_THAT(last_errors_, 0);
+  }
+}
+
+TEST_F(RunTest, MarkdownScopedSummariesRepeatHeadingsAndKeepScopeWithEachTable) {
+  const auto records = RunArgvRecords(
+      {root_.string(), "-type", "f", "--summary=ext", "--summary=type", "--summary-scope=root", "--format=md"});
+  EXPECT_THAT(records, Contains("\n## Summary by extension").Times(1));
+  EXPECT_THAT(records, Contains("\n## Summary by file type").Times(1));
+  EXPECT_THAT(records, Contains(HasSubstr("- Scope: root (")).Times(2));
+  const auto fragment = RunArgvRecords(
+      {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--no-header", "--format=md"});
+  EXPECT_THAT(fragment, Not(Contains(HasSubstr("## "))));
+  EXPECT_THAT(fragment, Contains(HasSubstr("- Scope:")));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, SummarySizesAlignExactBytesWithScaledIntegerDigits) {
+  ASSERT_THAT(fs_.WriteContent(Path("size-zero.a"), ""), IsOk());
+  ASSERT_THAT(fs_.WriteContent(Path("size-scaled.b"), std::string(44'450, 'x')), IsOk());
+  const auto records =
+      RunArgvRecords({root_.string(), "-name", "size-*", "--summary=ext", "--human=si", "--summary-precision=2"});
+  ASSERT_THAT(records, SizeIs(1));
+  EXPECT_THAT(records.at(0) + "\n", WithDropIndent(EqualsText(R"out(
+      Group  Count  % count      Size   % size
+      a          1   50.00%   0     B    0.00%
+      b          1   50.00%  44.45 kB  100.00%
+      total      2  100.00%  44.45 kB  100.00%
+      )out")));
   EXPECT_THAT(last_errors_, 0);
 }
 

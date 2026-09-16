@@ -283,6 +283,7 @@ cc_test(
         "@abseil-cpp//absl/status",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )
