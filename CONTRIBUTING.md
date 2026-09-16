@@ -83,14 +83,18 @@ archive was restored; Bazel's final process statistics show whether build action
 that cache. Dependency and compiler-option changes can still require rebuilding.
 
 Before upload, CI stops Bazel and evicts the largest disk-cache files until the action-cache and
-content-store payload is at most 600,000,000 bytes. This is a synchronous upload bound, not an
+content-store payload is at most 600,000,000 bytes by default. ASan, TSan, and MSan use
+2,600,000,000 bytes to retain more instrumented outputs. These are uncompressed limits; GitHub
+storage usage reflects compressed uploads. Measure those uploads and total repository usage
+after main refreshes the caches before increasing other configurations. This is a synchronous upload bound, not an
 idle-time garbage-collection setting. Evicted outputs become normal cache misses; this bounded
 cache does not promise to retain every object or executable. Size-first eviction favors retaining
 many smaller compilation outputs over large linked executables; ties evict older files first.
 This is a size heuristic, not action-type classification: large object files can also be evicted.
 The weekly deep-fuzz workflow shares the ordinary fuzz cache and main-only refresh policy.
 LLVM downloads remain uncached.
-The existing 700,000,000-byte per-entry ceiling and repository storage limit are unchanged.
+Cleanup retains sanitizer uploads up to 1,000,000,000 compressed bytes; other entries keep
+the existing 700,000,000-byte ceiling. The repository storage limit remains 10 GB.
 
 The trusted cache-maintenance workflow removes closed-PR and tag-scoped caches first, then
 superseded generations per configuration and ref, and oversized entries. It retains the newest

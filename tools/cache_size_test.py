@@ -24,6 +24,15 @@ class CacheSizeTest(unittest.TestCase):
         [2, 3],
     )
 
+  def test_sanitizer_compressed_allowance_is_scoped_and_inclusive(self):
+    for namespace in ("asan", "tsan", "msan", "coverage", "default", "clang-tidy"):
+      with self.subTest(namespace=namespace):
+        key = f"bazel-actions-v2-Linux-X64-{namespace}-{'a' * 64}-123-1"
+        caches = [{"id": 1, "key": key, "sizeInBytes": 1_000_000_000},
+                  {"id": 2, "key": key, "sizeInBytes": 1_000_000_001}]
+        expected = [2] if namespace in ("asan", "tsan", "msan") else [1, 2]
+        self.assertEqual(cache_size.oversized_cache_ids(caches), expected)
+
   def test_empty_inventory_needs_no_cleanup(self):
     self.assertEqual(cache_size.oversized_cache_ids([]), [])
 

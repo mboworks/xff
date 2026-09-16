@@ -30,8 +30,11 @@ def trim(root: Path, max_bytes: int = MAX_BYTES) -> tuple[int, int, int]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("cache", type=Path)
+    parser.add_argument("--max-bytes", type=int, default=MAX_BYTES)
     args = parser.parse_args()
-    before, after, removed = trim(args.cache)
+    if args.max_bytes < 0:
+        parser.error("--max-bytes must be nonnegative")
+    before, after, removed = trim(args.cache, args.max_bytes)
     print(f"Bazel disk cache: {before:,} -> {after:,} bytes; evicted {removed} files")
 
 

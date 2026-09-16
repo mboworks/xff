@@ -4,14 +4,19 @@ inputs:
   key:
     description: Fresh key from the restore action.
     required: true
+  max-bytes:
+    description: Maximum uncompressed disk-cache payload before upload.
+    default: "600000000"
 runs:
   using: composite
   steps:
     - name: Bound the cache before upload
       shell: bash
+      env:
+        CACHE_MAX_BYTES: ${{ inputs.max-bytes }}
       run: |
         bazel shutdown
-        python3 tools/bazel_cache.py "${HOME}/.cache/bazel-disk"
+        python3 tools/bazel_cache.py "${HOME}/.cache/bazel-disk" --max-bytes="${CACHE_MAX_BYTES}"
     - uses: actions/cache/save@v6
       with:
         path: ~/.cache/bazel-disk

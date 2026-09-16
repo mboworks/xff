@@ -15,11 +15,21 @@ from typing import Any
 
 
 MAX_CACHE_BYTES = 700_000_000
+SANITIZER_MAX_CACHE_BYTES = 1_000_000_000
 
 
 def oversized_cache_ids(caches: Iterable[dict[str, Any]]) -> list[int]:
-  """Returns IDs of caches at or above the repository's size limit."""
-  return [cache["id"] for cache in caches if cache["sizeInBytes"] >= MAX_CACHE_BYTES]
+  """Returns IDs at the ordinary ceiling or above the sanitizer allowance."""
+  result = []
+  for cache in caches:
+    sanitizer = re.fullmatch(
+        r"bazel-actions-v2-[^-]+-[^-]+-(?:asan|tsan|msan)-[0-9a-f]{64}-\d+-\d+",
+        cache.get("key", ""))
+    oversized = (cache["sizeInBytes"] > SANITIZER_MAX_CACHE_BYTES if sanitizer
+                 else cache["sizeInBytes"] >= MAX_CACHE_BYTES)
+    if oversized:
+      result.append(cache["id"])
+  return result
 
 
 def obsolete_cache_ids(caches: list[dict[str, Any]], closed_prs: set[int]) -> list[int]:

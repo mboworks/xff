@@ -4,6 +4,8 @@
 """Regression checks for disk eviction and immutable GitHub cache lifecycle."""
 
 import os
+import subprocess
+import sys
 from pathlib import Path
 import tempfile
 import unittest
@@ -38,6 +40,32 @@ class BazelCacheTest(unittest.TestCase):
                 os.utime(path, (age, age))
             self.assertEqual(bazel_cache.trim(root, 4), (8, 4, 1))
             self.assertEqual((root / "cas/new").read_bytes(), b"1234")
+
+    def test_cli_budget_and_invalid_limit(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "cas").mkdir()
+            (root / "cas/output").write_bytes(b"1234")
+            command = [sys.executable, str(Path(bazel_cache.__file__)), str(root)]
+            invalid = subprocess.run(command + ["--max-bytes=-1"], capture_output=True, check=False)
+            self.assertNotEqual(invalid.returncode, 0)
+            self.assertTrue((root / "cas/output").exists())
+            subprocess.run(command + ["--max-bytes=2600000000"], capture_output=True, check=True)
+            self.assertTrue((root / "cas/output").exists())
+            subprocess.run(command + ["--max-bytes=0"], capture_output=True, check=True)
+            self.assertFalse((root / "cas/output").exists())
+
+    def test_only_sanitizers_have_larger_budgets(self):
+        root = Path(__file__).resolve().parent.parent
+        workflow = (root / ".github/workflows/main.yml").read_text()
+        self.assertEqual(workflow.count("max-bytes:"), 3)
+        self.assertIn("matrix.config.name == 'asan' && '2600000000' || '600000000'", workflow)
+        for job, following in (("tsan", "msan"), ("msan", "minimal")):
+            section = workflow.split(f"  {job}:", 1)[1].split(f"  {following}:", 1)[0]
+            self.assertIn('max-bytes: "2600000000"', section)
+        save = (root / ".github/actions/bazel-cache-save/action.yml").read_text()
+        self.assertIn('default: "600000000"', save)
+        self.assertIn('--max-bytes="${CACHE_MAX_BYTES}"', save)
 
     def test_missing_cache_is_harmless(self):
         with tempfile.TemporaryDirectory() as temporary:

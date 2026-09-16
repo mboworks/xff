@@ -164,6 +164,7 @@ jobs:
         uses: ./.github/actions/bazel-cache-save
         with:
           key: ${{ steps.bazel-cache.outputs.key }}
+          max-bytes: ${{ matrix.config.name == 'asan' && '2600000000' || '600000000' }}
 
   # GCC is a portability check for this leaf executable, not a second authoritative test matrix.
   # Build every core and extension target once on Linux; Clang + libc++ owns tests, sanitizers,
@@ -401,6 +402,7 @@ jobs:
         uses: ./.github/actions/bazel-cache-save
         with:
           key: ${{ steps.bazel-cache.outputs.key }}
+          max-bytes: "2600000000"
 
   # MemorySanitizer: reads of UNINITIALIZED memory, which asan does not catch. Linux only
   # (MSan is effectively Linux/x86-64 Clang; there is no macOS support), so this is a single
@@ -445,6 +447,7 @@ jobs:
         uses: ./.github/actions/bazel-cache-save
         with:
           key: ${{ steps.bazel-cache.outputs.key }}
+          max-bytes: "2600000000"
 
   # Minimal core archive: prove that dropping the WHOLE extra_modules/ directory plus its one module
   # include still builds the lean core. This is the regression guard
