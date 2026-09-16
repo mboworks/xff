@@ -3,6 +3,9 @@
 
 # 0.6.0
 
+- Refresh bounded CI compiled-output caches on main, reuse them in PR and release builds,
+  and remove closed-PR, tag-scoped, and superseded caches. GCC now caches compiled outputs.
+
 - Add MBO Works artwork to the README and favicons to documentation and coverage Pages.
 
 - Keep `main` first in the coverage index, then interleave PRs and releases newest-first by

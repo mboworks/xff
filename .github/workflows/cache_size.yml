@@ -1,4 +1,4 @@
-name: Enforce cache size limit
+name: Maintain Actions caches
 
 on:
   workflow_run:
@@ -13,22 +13,24 @@ on:
 permissions:
   actions: write
   contents: read
+  pull-requests: read
 
 jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Delete oversized cache entries
+      - name: Delete closed-PR, tag, superseded, and oversized cache entries
         run: |
           set -euo pipefail
-          if ! cache_json=$(gh cache list --limit 250 --json id,key,ref,sizeInBytes 2>&1); then
+          if ! cache_json=$(gh cache list --limit 10000 --json id,key,ref,sizeInBytes,createdAt 2>&1); then
             echo "::warning title=Cache size enforcement skipped::${cache_json}"
             exit 0
           fi
-          oversized=$(printf '%s' "${cache_json}" | python3 tools/cache_size.py)
-          for cache_id in ${oversized}; do
-            echo "Deleting cache ${cache_id}: entry is at least 700,000,000 bytes"
+          gh api --paginate --slurp "repos/${GH_REPO}/pulls?state=closed&per_page=100" >closed-prs.json
+          obsolete=$(printf '%s' "${cache_json}" | python3 tools/cache_size.py --closed-prs closed-prs.json)
+          for cache_id in ${obsolete}; do
+            echo "Deleting cache ${cache_id}: closed PR, tag, superseded generation, or size limit"
             gh cache delete "${cache_id}"
           done
         env:

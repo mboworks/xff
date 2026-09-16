@@ -1,0 +1,18 @@
+name: Save Bazel compiled outputs
+description: Bound and refresh main's compiled-output cache after build actions finish.
+inputs:
+  key:
+    description: Fresh key from the restore action.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Bound the cache before upload
+      shell: bash
+      run: |
+        bazel shutdown
+        python3 tools/bazel_cache.py "${HOME}/.cache/bazel-disk"
+    - uses: actions/cache/save@v6
+      with:
+        path: ~/.cache/bazel-disk
+        key: ${{ inputs.key }}

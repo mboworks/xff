@@ -123,9 +123,9 @@ repos:
       - id: cache-size-test
         name: Test GitHub Actions cache-size enforcement
         language: python
-        entry: tools/cache_size_test.py
+        entry: python3 -m unittest discover -s tools -p "*cache*test.py"
         pass_filenames: false
-        files: ^(tools/cache_size(_test)?\.py|[.]github/workflows/cache_size[.]yml)$
+        files: ^(tools/(cache_size|bazel_cache)(_test)?\.py|[.]github/(workflows/(cache_size|main|release)[.]yml|actions/bazel-cache-[^/]+/action[.]yml))$
       - id: no-todos-without-context
         name: No TODOs without context
         description: |

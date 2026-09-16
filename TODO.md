@@ -4,6 +4,16 @@ Actionable roadmap and deliberately deferred ideas. Completed implementation rec
 [`docs/history-roadmap.md`](docs/history-roadmap.md); other resolved design records and investigations
 live in [`docs/history.md`](docs/history.md).
 
+## Completed: CI compiled-output cache lifecycle
+
+- Replace frozen cache keys with fresh main-run generations and configuration-specific restoration.
+- Preserve the cache budget: bound uploads, retain the newest usable generation, and remove
+  closed-PR and tag-scoped entries. PR and tag runs are restore-only.
+- Add GCC output caching, share release/main build caches, and test retention and upload behavior.
+- Follow-up measurement: after main seeds the new caches, compare Bazel action-hit statistics
+  against the previous documentation job's six hits and 720 sandboxed executions. GitHub archive
+  restoration alone is not proof of useful reuse.
+
 ## Project constraints
 
 ### Minimum Bazel version
