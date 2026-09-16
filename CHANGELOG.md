@@ -3,6 +3,9 @@
 
 # 0.6.0
 
+- Run fuzz campaigns concurrently after preparing all targets, with CPU/memory bounds, isolated
+  artifacts, per-target throughput statistics, and unchanged campaign time budgets.
+
 - Raise coverage's CI cache allowance to 1.5 GB uncompressed and 1 GB compressed to retain more build outputs.
 
 - Allow MSan caches up to 4 GB uncompressed and 1.2 GB compressed; report per-job cache sizes

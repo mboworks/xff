@@ -42,7 +42,17 @@ jobs:
           tools/fuzz_targets.py \
             --campaign-seconds="${SECONDS_PER_TARGET}" \
             --max-total-seconds=3600 \
-            --disk-cache="${HOME}/.cache/bazel-disk"
+            --disk-cache="${HOME}/.cache/bazel-disk" \
+            --jobs="$(getconf _NPROCESSORS_ONLN)" \
+            --output-dir="${RUNNER_TEMP}/fuzz-campaigns"
+      - name: Preserve fuzz campaign logs and findings
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fuzz-campaigns
+          path: ${{ runner.temp }}/fuzz-campaigns/
+          retention-days: 7
+          if-no-files-found: warn
       - name: Save refreshed Bazel compiled outputs
         if: ${{ !cancelled() && github.ref == 'refs/heads/main' && steps.bazel-cache.outcome == 'success' }}
         uses: ./.github/actions/bazel-cache-save

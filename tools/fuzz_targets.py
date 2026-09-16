@@ -19,11 +19,17 @@ flag is not a substitute for an in-memory filesystem and safety-class filtering 
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
+import json
 import os
 import pathlib
 import re
 import subprocess
 import sys
+import signal
+import tempfile
+import threading
+import time
 
 import extras
 
@@ -107,30 +113,118 @@ def campaign_environment() -> dict[str, str]:
     return environment
 
 
-def run_campaigns(targets: list[str], seconds: int, bazel_args: list[str]) -> int:
-    """Runs each campaign for a bounded duration, stopping at the first failed correctness test."""
+def worker_count(requested: int | None, targets: int, rss_limit_mb: int) -> int:
+    """Bound workers by CPUs and physical RAM, reserving capacity for the host."""
+    cpus = len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else (os.cpu_count() or 1)
+    workers = min(requested if requested is not None else max(1, cpus - 1), cpus)
+    try:
+        memory_mb = os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE") // (1024 * 1024)
+        workers = min(workers, max(1, (memory_mb - 2048) // (rss_limit_mb + 512)))
+    except (ValueError, OSError):
+        workers = 1  # Unknown RAM: run conservatively unless detection can be improved.
+    return max(1, min(workers, targets))
+
+
+def stop_process(process: subprocess.Popen) -> None:
+    """Stop the launcher and its descendants after a timeout or interruption."""
+    if process.poll() is not None:
+        return
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        process.wait()
+
+
+def execute_campaign(target: str, script: pathlib.Path, directory: pathlib.Path,
+                     seconds: int, environment: dict[str, str], stop: threading.Event) -> dict:
+    """Run one prepared launcher with isolated artifacts and a persistent log."""
+    if stop.is_set():
+        return {"target": target, "status": "skipped"}
+    print(f"Starting {target}; log: {directory / 'campaign.log'}", flush=True)
+    started = time.monotonic()
+    with (directory / "campaign.log").open("w", encoding="utf-8") as log:
+        with subprocess.Popen(["/bin/bash", str(script)], cwd=directory, env=environment,
+                              stdout=log, stderr=subprocess.STDOUT, start_new_session=True) as process:
+            try:
+                while True:
+                    if stop.is_set():
+                        stop_process(process)
+                        code = 130
+                        break
+                    try:
+                        code = process.wait(timeout=0.2)
+                        break
+                    except subprocess.TimeoutExpired:
+                        if time.monotonic() - started > seconds + 60:
+                            raise
+            except subprocess.TimeoutExpired:
+                stop_process(process)
+                code = 124
+            except BaseException:
+                stop_process(process)
+                raise
+    if code:
+        stop.set()
+    text = (directory / "campaign.log").read_text(encoding="utf-8", errors="replace")
+    stats = dict(re.findall(r"stat::(number_of_executed_units|average_exec_per_sec):\s*(\d+)", text))
+    result = {"target": target, "status": "passed" if code == 0 else "failed", "returncode": code,
+              "elapsed_seconds": round(time.monotonic() - started, 3), **stats}
+    (directory / "result.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    print(f"Finished {target}: {result['status']} ({result['elapsed_seconds']}s)", flush=True)
+    return result
+
+
+def run_campaigns(targets: list[str], seconds: int, bazel_args: list[str], *,
+                  jobs: int | None = None, rss_limit_mb: int = 2048,
+                  output_dir: pathlib.Path | None = None) -> int:
+    """Build together, prepare launchers serially, then fuzz with bounded concurrency."""
+    if not targets:
+        raise ValueError("no fuzz campaigns discovered")
+    root = (output_dir or pathlib.Path(tempfile.mkdtemp(prefix="xff-fuzz-"))).resolve()
+    root.mkdir(parents=True, exist_ok=True)
     environment = campaign_environment()
-    for target in targets:
+    flags = ["-c", "opt", "--config=xff_docs", "--config=fuzz", *bazel_args]
+    result = subprocess.run(["bazel", "build", *flags, *targets], check=False, env=environment)
+    if result.returncode:
+        return result.returncode
+    prepared = []
+    for index, target in enumerate(targets):
+        directory = root / f"{index:03d}-{target.rsplit(':', 1)[-1]}"
+        directory.mkdir(parents=True, exist_ok=True)
+        script = directory / "launch.sh"
         result = subprocess.run(
-            [
-                "bazel",
-                "run",
-                "-c",
-                "opt",
-                "--config=xff_docs",
-                "--config=fuzz",
-                *bazel_args,
-                target,
-                "--",
-                "--clean",
-                f"--timeout_secs={seconds}",
-            ],
-            check=False,
-            env=environment,
-        )
+            ["bazel", "run", *flags, f"--script_path={script}", target, "--", "--clean",
+             f"--timeout_secs={seconds}", f"--fuzzing_output_root={directory / 'findings'}",
+             "--", f"-rss_limit_mb={rss_limit_mb}", "-print_final_stats=1"],
+            check=False, env=environment)
         if result.returncode:
             return result.returncode
-    return 0
+        prepared.append((target, script, directory))
+    workers = worker_count(jobs, len(targets), rss_limit_mb)
+    print(f"Running {len(targets)} campaigns with {workers} workers, {seconds}s per target; outputs: {root}",
+          flush=True)
+    stop = threading.Event()
+    started = time.monotonic()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = [pool.submit(execute_campaign, target, script, directory, seconds, environment, stop)
+                   for target, script, directory in prepared]
+        try:
+            results = [future.result() for future in futures]
+        except BaseException:
+            stop.set()
+            raise
+    summary = {"workers": workers, "seconds_per_target": seconds,
+               "elapsed_seconds": round(time.monotonic() - started, 3), "campaigns": results}
+    (root / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    return next((item["returncode"] for item in results if item.get("returncode")), 0)
 
 
 def campaign_duration_seconds(targets: list[str], seconds: int, maximum: int | None = None) -> int:
@@ -160,7 +254,12 @@ def main() -> int:
         metavar="SIZE",
         help="bound the dedicated Bazel disk cache (for example `600M`)",
     )
+    parser.add_argument("--jobs", type=int, help="maximum concurrent campaigns (default: CPUs minus one)")
+    parser.add_argument("--rss-limit-mb", type=int, default=2048, help="libFuzzer RSS limit per worker")
+    parser.add_argument("--output-dir", type=pathlib.Path, help="retain per-target logs, corpora, and crash artifacts here")
     args = parser.parse_args()
+    if (args.jobs is not None and args.jobs <= 0) or args.rss_limit_mb <= 0:
+        parser.error("--jobs and --rss-limit-mb must be positive")
     targets = discover_targets(_REPO_ROOT)
     if args.list:
         print("\n".join(targets))
@@ -181,7 +280,8 @@ def main() -> int:
                 "--experimental_disk_cache_gc_idle_delay=5s",
             ]
         )
-    return run_campaigns(targets, args.campaign_seconds, bazel_args)
+    return run_campaigns(targets, args.campaign_seconds, bazel_args, jobs=args.jobs,
+                         rss_limit_mb=args.rss_limit_mb, output_dir=args.output_dir)
 
 
 if __name__ == "__main__":

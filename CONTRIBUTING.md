@@ -120,3 +120,28 @@ Locally, use consistent compiler, extras, and linker options when comparing incr
 An analysis-cache reset alone does not mean compilation was repeated. A personal `--disk_cache`
 setting can preserve action outputs across configuration switches and checkouts; the CI cache
 change does not alter local Bazel settings.
+
+## Parallel fuzz campaigns
+
+`tools/fuzz_targets.py --campaign-seconds=60` discovers every first-party campaign, builds all
+launchers together, and prepares Bazel run scripts sequentially. It then executes those scripts
+concurrently, avoiding competing Bazel invocations. CI retains 60 seconds per target; weekly/manual
+Deep fuzz retains 300 seconds. `--max-total-seconds` still limits the sum of all target budgets,
+not parallel wall time.
+
+Local concurrency defaults to CPU count minus one. `--jobs=N` selects a maximum; both CPU capacity
+and physical RAM further bound it. The driver reserves 2 GiB for the host and 512 MiB of overhead
+per worker beyond `--rss-limit-mb` (default 2048 MiB). CI requests the runner CPU count through the
+same bounded scheduler. Unknown physical RAM falls back to one worker. The estimate does not
+measure other processes' live memory use; lower `--jobs` on a busy machine.
+
+Each campaign has its own output directory, log, corpus, crash artifacts, and result JSON.
+`--output-dir=PATH` chooses the parent; otherwise the driver creates and retains a temporary
+directory and prints its path. Generated launch scripts establish the runfiles context. On failure,
+the scheduler stops queued campaigns and terminates active campaign process groups. A campaign
+that exceeds its budget by 60 seconds is terminated as a failure, covering hung launchers or inputs.
+
+The `fuzz-campaigns` CI artifact retains logs and findings for seven days, even after failure.
+`summary.json` records workers, campaign wall time, and per-target execution counts and average
+executions per second when libFuzzer supplies them. Compare those statistics alongside elapsed time:
+CPU or memory contention can reduce mutation throughput even when parallel wall time improves.
