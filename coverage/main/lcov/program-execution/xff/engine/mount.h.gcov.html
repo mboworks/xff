@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-15 21:56:30</td>
+            <td class="headerValue">2026-09-16 10:51:59</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -122,9 +122,9 @@
 <span id="L51"><span class="lineNum">      51</span>              :   // `armed` is `--archive-mount`; a disarmed instance mounts nothing and answers nothing, so the</span>
 <span id="L52"><span class="lineNum">      52</span>              :   // caller needs no second flag check.</span>
 <span id="L53"><span class="lineNum">      53</span>              :   explicit MountedContainers(bool armed = false, vfs::MutationPolicy policy = {})</span>
-<span id="L54"><span class="lineNum">      54</span> <span class="tlaGNC">         923 :       : armed_(armed), policy_(std::move(policy)) {}</span></span>
+<span id="L54"><span class="lineNum">      54</span> <span class="tlaGNC">         976 :       : armed_(armed), policy_(std::move(policy)) {}</span></span>
 <span id="L55"><span class="lineNum">      55</span>              : </span>
-<span id="L56"><span class="lineNum">      56</span> <span class="tlaGNC">         923 :   ~MountedContainers() = default;</span></span>
+<span id="L56"><span class="lineNum">      56</span> <span class="tlaGNC">         975 :   ~MountedContainers() = default;</span></span>
 <span id="L57"><span class="lineNum">      57</span>              : </span>
 <span id="L58"><span class="lineNum">      58</span>              :   MountedContainers(const MountedContainers&amp;) = delete;</span>
 <span id="L59"><span class="lineNum">      59</span>              :   MountedContainers&amp; operator=(const MountedContainers&amp;) = delete;</span>
@@ -141,7 +141,7 @@
 <span id="L70"><span class="lineNum">      70</span>              : </span>
 <span id="L71"><span class="lineNum">      71</span>              :   // Why mounting did not happen, empty until a mount is actually attempted and fails. Recorded</span>
 <span id="L72"><span class="lineNum">      72</span>              :   // once (the first failure), because every later member of every container would repeat it.</span>
-<span id="L73"><span class="lineNum">      73</span> <span class="tlaGNC">         898 :   [[nodiscard]] std::string_view DegradeReason() const { return degrade_reason_; }</span></span>
+<span id="L73"><span class="lineNum">      73</span> <span class="tlaGNC">         952 :   [[nodiscard]] std::string_view DegradeReason() const { return degrade_reason_; }</span></span>
 <span id="L74"><span class="lineNum">      74</span>              : </span>
 <span id="L75"><span class="lineNum">      75</span> <span class="tlaGNC">           2 :   [[nodiscard]] bool Armed() const { return armed_; }</span></span>
 <span id="L76"><span class="lineNum">      76</span>              : </span>
