@@ -49,3 +49,17 @@ Each retained report links its detailed LCOV source view, full `coverage-summary
 `coverage-meta.json`. The coverage index also links the summary JSON directly. The summary records
 measurements and the fully resolved minimum, target, and enforcement values for every overview row,
 so consumers do not need to reimplement inheritance.
+
+## Retained report ordering
+
+The coverage index pins `main` first. PRs and releases then share one newest-first list based on
+main's first-parent commit history: a PR uses its merge commit, and a release uses its tagged
+commit (including annotated tags). PRs merged after a release therefore appear above that release,
+regardless of PR number, version number, tag publication time, or CI completion time. A release
+precedes a PR anchored to the same commit.
+
+Reports without a matching commit on main, including unmerged PRs, follow the ordered history,
+newest CI run creation first. Each coverage publication refreshes all retained reports from GitHub's
+closed-PR metadata and main's full history, so a PR report produced before its merge is repositioned
+afterward. The stored `history` commit and position control presentation only; workflow creation,
+run ID, and attempt still determine which report may replace an older report for the same target.

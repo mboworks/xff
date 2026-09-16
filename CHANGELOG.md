@@ -3,6 +3,9 @@
 
 # 0.6.0
 
+- Keep `main` first in the coverage index, then interleave PRs and releases newest-first by
+  their merge or tagged commit in main’s history.
+
 - Give Markdown summaries descriptive headings and bullet lists for labels and notes, separate
   each table’s note from the next summary,
   and align exact byte values with scaled sizes in console and Markdown tables.

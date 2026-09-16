@@ -64,6 +64,12 @@ The safety model and directory-scoped permissions are tracked in
    host adapter. Consumers must not open or mutate host paths directly; retain annotations only at
    the immediate adapter boundary.
 
+## Coverage report ordering
+
+- [x] Pin `main`, then interleave PRs and releases newest-first by merge/tag position on main.
+- [x] Refresh retained PR metadata after merges, preserve report replacement identity, and test
+      non-numeric ordering, annotated/lightweight tags, unmerged reports, and delayed CI runs.
+
 ## Summary accounting follow-up
 
 - [x] Add count and byte percentages to summary tables, using full pre-`--top` totals.
