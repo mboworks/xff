@@ -68,3 +68,32 @@ outputs in the owning extra. The PCRE2 extra exposes `chartables_source` for thi
 `@xff_pcre2//:chartables_test` compares it byte-for-byte with PCRE2's versioned
 `pcre2_chartables.c.dist`. The compile-database preparation builds the extra's wildcard targets,
 so the generated source is requested even when the compiled library is cached.
+
+## CI build caches
+
+Bazel's compiled-output disk cache is separate from its repository download cache.
+CI restores the latest main cache for each runner OS, architecture, and build configuration.
+Only main writes refreshed generations; PRs and release tags restore without saving. GCC also
+uses a compiled-output cache. Release builds share the production configuration's main cache.
+
+GitHub cache entries are immutable. Every main run therefore saves under a new run/attempt key,
+with prefix restoration to reuse the previous generation. During migration, existing legacy
+compiled-output caches remain a fallback until the first new generation is saved. A GitHub "cache hit" only means the
+archive was restored; Bazel's final process statistics show whether build actions actually hit
+that cache. Dependency and compiler-option changes can still require rebuilding.
+
+Before upload, CI stops Bazel and evicts the oldest disk-cache files until the action-cache and
+content-store payload is at most 600,000,000 bytes. This is a synchronous upload bound, not an
+idle-time garbage-collection setting. Evicted outputs become normal cache misses; this bounded
+cache does not promise to retain every object or executable. LLVM downloads remain uncached.
+The existing 700,000,000-byte per-entry ceiling and repository storage limit are unchanged.
+
+The trusted cache-maintenance workflow removes closed-PR and tag-scoped caches first, then
+superseded generations per configuration and ref, and oversized entries. It retains the newest
+usable generation if a newer upload exceeds the ceiling. Open-PR caches from older workflows are
+not removed merely because they belong to a PR; new PR runs do not write such caches.
+
+Locally, use consistent compiler, extras, and linker options when comparing incremental builds.
+An analysis-cache reset alone does not mean compilation was repeated. A personal `--disk_cache`
+setting can preserve action outputs across configuration switches and checkouts; the CI cache
+change does not alter local Bazel settings.

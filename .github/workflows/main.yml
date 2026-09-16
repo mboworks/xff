@@ -32,6 +32,7 @@ jobs:
           python-version: "3.13"
       - run: python3 -m unittest discover -s tools -p release_site_test.py
       - run: python3 -m unittest discover -s tools -p site_artwork_test.py
+      - run: python3 -m unittest discover -s tools -p "*cache*test.py"
       - run: python3 -m unittest discover -s tools -p release_notes_test.py
       - name: Verify configured documentation and generated links
         env:
@@ -71,19 +72,14 @@ jobs:
       - uses: actions/checkout@v7
       # bazelisk launches the Bazel release pinned in .bazelversion.
       - uses: bazel-contrib/setup-bazel@0.19.0
-      # Persist Bazel's disk cache (compiled action outputs) so each run reuses prior
-      # work instead of rebuilding from scratch. Keyed by os/config + the lockfile hash
-      # only: a per-run github.sha suffix used to mint a fresh cache on every commit, so
-      # caches were evicted before they could be reused. A stable key keeps one entry per
-      # os/config/lockfile (the hash busts it when deps change); the restore-key seeds a
-      # warm base from a previous lockfile after a bump.
-      - name: Mount Bazel disk cache
-        uses: actions/cache@v6
+      # PRs restore main's latest compiled outputs. Every main run saves a new bounded
+      # generation; GitHub cache entries cannot be updated in place.
+      - name: Restore Bazel compiled outputs
+        id: bazel-cache
+        uses: ./.github/actions/bazel-cache-restore
         with:
-          path: ~/.cache/bazel-disk
-          key: bazel-disk-${{ matrix.os }}-${{ matrix.config.name }}-${{ hashFiles('MODULE.bazel.lock', '.bazelversion') }}
-          restore-keys: |
-            bazel-disk-${{ matrix.os }}-${{ matrix.config.name }}-
+          namespace: ${{ matrix.config.name }}
+          legacy-prefix: bazel-disk-${{ matrix.os }}-${{ matrix.config.name }}-
       # Every matrix cell uses hermetic LLVM. Do not persist the repository cache: one LLVM archive
       # is ~4.4 GB and would consume almost half of GitHub's per-repository cache budget. Compiled
       # actions remain in the bounded disk cache above; LLVM itself re-fetches each run.
@@ -163,6 +159,11 @@ jobs:
           path: dist/*
           retention-days: 7
           if-no-files-found: error
+      - name: Save refreshed Bazel compiled outputs
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' && steps.bazel-cache.outcome == 'success' }}
+        uses: ./.github/actions/bazel-cache-save
+        with:
+          key: ${{ steps.bazel-cache.outputs.key }}
 
   # GCC is a portability check for this leaf executable, not a second authoritative test matrix.
   # Build every core and extension target once on Linux; Clang + libc++ owns tests, sanitizers,
@@ -173,18 +174,21 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: bazel-contrib/setup-bazel@0.19.0
-      - name: Mount Bazel repo cache
-        uses: actions/cache@v6
+      - name: Restore Bazel compiled outputs
+        id: bazel-cache
+        uses: ./.github/actions/bazel-cache-restore
         with:
-          path: ~/.cache/bazel-repo
-          key: bazel-repo-gcc-${{ hashFiles('MODULE.bazel.lock', '.bazelversion') }}
-          restore-keys: |
-            bazel-repo-gcc-
+          namespace: gcc
       - name: bazel build
         run: |
           # shellcheck disable=SC2046  # deliberate splitting: the tool prints Bazel target patterns
           bazel build //... $(tools/extras.py --wildcards) --config=xff_docs \
-            --repository_cache=$HOME/.cache/bazel-repo
+            --repository_cache=$HOME/.cache/bazel-repo --disk_cache=$HOME/.cache/bazel-disk
+      - name: Save refreshed Bazel compiled outputs
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' && steps.bazel-cache.outcome == 'success' }}
+        uses: ./.github/actions/bazel-cache-save
+        with:
+          key: ${{ steps.bazel-cache.outputs.key }}
 
   # trunk (https://trunk.io) runs the heavier linters: buildifier, markdownlint,
   # prettier, yamllint, and the security scanners. (clang-tidy is a local-only
@@ -225,13 +229,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: bazel-contrib/setup-bazel@0.19.0
-      - name: Mount the dedicated fuzz disk cache
-        uses: actions/cache@v6
+      - name: Restore Bazel compiled outputs
+        id: bazel-cache
+        uses: ./.github/actions/bazel-cache-restore
         with:
-          path: ~/.cache/bazel-disk
-          key: bazel-disk-fuzz-${{ hashFiles('MODULE.bazel.lock', '.bazelversion') }}
-          restore-keys: |
-            bazel-disk-fuzz-
+          namespace: fuzz
+          legacy-prefix: bazel-disk-fuzz-
       - name: Run bounded fuzz campaigns
         run: |
           set -euo pipefail
@@ -244,8 +247,12 @@ jobs:
           tools/fuzz_targets.py \
             --campaign-seconds="${FUZZ_SECONDS_PER_TARGET}" \
             --max-total-seconds=900 \
-            --disk-cache="${HOME}/.cache/bazel-disk" \
-            --disk-cache-max-size=600M
+            --disk-cache="${HOME}/.cache/bazel-disk"
+      - name: Save refreshed Bazel compiled outputs
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' && steps.bazel-cache.outcome == 'success' }}
+        uses: ./.github/actions/bazel-cache-save
+        with:
+          key: ${{ steps.bazel-cache.outputs.key }}
 
   # Coverage follows the authoritative hermetic Clang/libc++ build. This is a production-code
   # gate, not merely another test cell: it publishes both the raw LCOV data and the policy-rendered
@@ -259,15 +266,14 @@ jobs:
           fetch-depth: 0
       - uses: bazel-contrib/setup-bazel@0.19.0
       # Coverage instrumentation has distinct action keys, so keep its compiled outputs in a
-      # dedicated cache rather than crowding out the ordinary Clang build. The stable key lets a
-      # later run incrementally rebuild only changed coverage objects.
-      - name: Mount Bazel coverage disk cache
-        uses: actions/cache@v6
+      # dedicated cache rather than crowding out the ordinary Clang build. Prefix restoration lets a
+      # later run reuse objects from the newest saved generation.
+      - name: Restore Bazel compiled outputs
+        id: bazel-cache
+        uses: ./.github/actions/bazel-cache-restore
         with:
-          path: ~/.cache/bazel-disk
-          key: bazel-disk-coverage-${{ hashFiles('MODULE.bazel.lock', '.bazelversion') }}
-          restore-keys: |
-            bazel-disk-coverage-
+          namespace: coverage
+          legacy-prefix: bazel-disk-coverage-
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
@@ -353,6 +359,11 @@ jobs:
             coverage-target.txt
           retention-days: 14
           if-no-files-found: error
+      - name: Save refreshed Bazel compiled outputs
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' && steps.bazel-cache.outcome == 'success' }}
+        uses: ./.github/actions/bazel-cache-save
+        with:
+          key: ${{ steps.bazel-cache.outputs.key }}
 
   # ThreadSanitizer for the parallel walk (issue #43; mutually exclusive with the
   # asan cell). ubuntu-only. Like the asan cell this uses --config=clang, which
@@ -367,13 +378,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: bazel-contrib/setup-bazel@0.19.0
-      - name: Mount Bazel disk cache
-        uses: actions/cache@v6
+      - name: Restore Bazel compiled outputs
+        id: bazel-cache
+        uses: ./.github/actions/bazel-cache-restore
         with:
-          path: ~/.cache/bazel-disk
-          key: bazel-disk-tsan-${{ hashFiles('MODULE.bazel.lock', '.bazelversion') }}
-          restore-keys: |
-            bazel-disk-tsan-
+          namespace: tsan
+          legacy-prefix: bazel-disk-tsan-
       - name: Install roff formatter (mandoc)
         run: sudo apt-get install -y mandoc
       # This runner promises a working mount path through the named Bazel config below.
@@ -386,6 +396,11 @@ jobs:
           bazel test //... $(tools/extras.py --wildcards) --config=xff_docs \
             --disk_cache=$HOME/.cache/bazel-disk --config=clang --config=tsan \
             --config=xff_fuse_tests_required
+      - name: Save refreshed Bazel compiled outputs
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' && steps.bazel-cache.outcome == 'success' }}
+        uses: ./.github/actions/bazel-cache-save
+        with:
+          key: ${{ steps.bazel-cache.outputs.key }}
 
   # MemorySanitizer: reads of UNINITIALIZED memory, which asan does not catch. Linux only
   # (MSan is effectively Linux/x86-64 Clang; there is no macOS support), so this is a single
@@ -404,13 +419,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: bazel-contrib/setup-bazel@0.19.0
-      - name: Mount Bazel disk cache
-        uses: actions/cache@v6
+      - name: Restore Bazel compiled outputs
+        id: bazel-cache
+        uses: ./.github/actions/bazel-cache-restore
         with:
-          path: ~/.cache/bazel-disk
-          key: bazel-disk-msan-${{ hashFiles('MODULE.bazel.lock', '.bazelversion') }}
-          restore-keys: |
-            bazel-disk-msan-
+          namespace: msan
+          legacy-prefix: bazel-disk-msan-
       - name: Install roff formatter (mandoc)
         run: sudo apt-get install -y mandoc
       # Installed for the same reason as the tsan cell, though every mounting test skips here: a
@@ -426,6 +440,11 @@ jobs:
           bazel test //... $(tools/extras.py --wildcards) --config=xff_docs \
             --disk_cache=$HOME/.cache/bazel-disk --config=clang --config=msan \
             --config=xff_fuse_tests_required
+      - name: Save refreshed Bazel compiled outputs
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' && steps.bazel-cache.outcome == 'success' }}
+        uses: ./.github/actions/bazel-cache-save
+        with:
+          key: ${{ steps.bazel-cache.outputs.key }}
 
   # Minimal core archive: prove that dropping the WHOLE extra_modules/ directory plus its one module
   # include still builds the lean core. This is the regression guard
@@ -439,13 +458,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: bazel-contrib/setup-bazel@0.19.0
-      - name: Mount Bazel disk cache
-        uses: actions/cache@v6
+      - name: Restore Bazel compiled outputs
+        id: bazel-cache
+        uses: ./.github/actions/bazel-cache-restore
         with:
-          path: ~/.cache/bazel-disk
-          key: bazel-disk-minimal-${{ hashFiles('MODULE.bazel.lock', '.bazelversion') }}
-          restore-keys: |
-            bazel-disk-minimal-
+          namespace: minimal
+          legacy-prefix: bazel-disk-minimal-
       - name: Strip all extras (simulate a minimal core archive)
         run: |
           python3 - <<'PY'
@@ -463,6 +481,11 @@ jobs:
           ! grep -q 'extras.MODULE.bazel' MODULE.bazel
       - name: bazel build (lean core, extras removed)
         run: bazel build //xff/cli:xff --config=clang --disk_cache=$HOME/.cache/bazel-disk
+      - name: Save refreshed Bazel compiled outputs
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' && steps.bazel-cache.outcome == 'success' }}
+        uses: ./.github/actions/bazel-cache-save
+        with:
+          key: ${{ steps.bazel-cache.outputs.key }}
 
   # Fast pre-flight gate: XFF.md and NOTICE are committed references generated by xff_full, so
   # regenerate them and fail on any drift BEFORE the heavy build/test matrix runs. It
@@ -474,19 +497,23 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: bazel-contrib/setup-bazel@0.19.0
-      - name: Mount Bazel disk cache
-        uses: actions/cache@v6
+      - name: Restore Bazel compiled outputs
+        id: bazel-cache
+        uses: ./.github/actions/bazel-cache-restore
         with:
-          path: ~/.cache/bazel-disk
-          key: bazel-disk-xff-md-${{ hashFiles('MODULE.bazel.lock', '.bazelversion') }}
-          restore-keys: |
-            bazel-disk-xff-md-
+          namespace: xff-md
+          legacy-prefix: bazel-disk-xff-md-
       - name: Verify XFF.md and NOTICE match the all-extras binary
         # --config=xff_docs (every extra on), matching both update scripts: the committed artifacts
         # document the whole tool, not just what one build links.
         run: >
           bazel test //xff/cli:xff_markdown_test //xff/cli:xff_notice_test --config=clang
           --config=xff_docs --disk_cache=$HOME/.cache/bazel-disk
+      - name: Save refreshed Bazel compiled outputs
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' && steps.bazel-cache.outcome == 'success' }}
+        uses: ./.github/actions/bazel-cache-save
+        with:
+          key: ${{ steps.bazel-cache.outputs.key }}
 
   # clang-tidy (hermetic clang-22) over the compile DB. Mirrors mboworks/mbo's job and OWNS clang-tidy
   # in CI: it needs a compile_commands.json this job builds (the pre-commit / trunk jobs skip the
@@ -502,9 +529,6 @@ jobs:
     needs: [pre-commit, trunk]
     runs-on: ubuntu-latest
     permissions:
-      # actions:write for the cache-cleanup step (`gh cache delete`); the workflow default
-      # (read-all) stays in force for every other job.
-      actions: write
       contents: read
     steps:
       - uses: actions/checkout@v7
@@ -542,33 +566,16 @@ jobs:
         if: env.CLANG_TIDY_ENABLED == 'true'
         with:
           python-version: "3.13"
-      - name: Restore the Bazel disk cache
+      - name: Restore Bazel compiled outputs
+        id: bazel-cache
         if: env.CLANG_TIDY_ENABLED == 'true'
-        # SPLIT restore/save on purpose. With a single actions/cache@v4 and a key that only changes
-        # when MODULE.bazel.lock / .bazelversion do, the first run saves and every later run is a
-        # cache HIT - and a hit never saves, so the cache freezes at that first content and every run
-        # recompiles all of xff from scratch. That is why this cell took ~34 min while mboworks/mbo's
-        # equivalent ran ~6 min warm. The post-job cleanup retains only the newest entry: if this
-        # run saves successfully it supersedes the restored predecessor; if saving fails, that
-        # predecessor remains newest and is retained.
-        uses: actions/cache/restore@v6
+        uses: ./.github/actions/bazel-cache-restore
         with:
-          path: ~/.cache/bazel-disk
-          key: bazel-disk-clang-tidy-${{ hashFiles('MODULE.bazel.lock', '.bazelversion') }}-${{ github.sha }}
-          restore-keys: |
-            bazel-disk-clang-tidy-${{ hashFiles('MODULE.bazel.lock', '.bazelversion') }}-
-            bazel-disk-clang-tidy-
+          namespace: clang-tidy
+          legacy-prefix: bazel-disk-clang-tidy-
       - name: Route bazel at the disk cache
         if: env.CLANG_TIDY_ENABLED == 'true'
-        # compile_commands-update.sh runs bazel internally (--config=clang-tidy); feed it the disk
-        # cache via the try-import'd .bazelrc.user. LLVM re-fetches each run (deliberately not cached).
-        # The GC cap keeps a rolling cache from growing without bound: GitHub allows 10 GB per repo
-        # across ALL caches, and evicting other jobs' entries would trade this speedup for theirs.
-        run: |
-          {
-            echo "common --disk_cache=$HOME/.cache/bazel-disk"
-            echo "common --experimental_disk_cache_gc_max_size=4G"
-          } >.bazelrc.user
+        run: echo "common --disk_cache=$HOME/.cache/bazel-disk" >.bazelrc.user
       - name: Generate compile_commands.json
         if: env.CLANG_TIDY_ENABLED == 'true'
         # A gitignored local artifact, so build it here. The script extracts the DB in
@@ -578,33 +585,6 @@ jobs:
         # headers the recorded commands reference - without which clang-tidy would abort on
         # `'xff/license/notice.h' file not found` on a fresh runner.
         run: ./compile_commands-update.sh
-      - name: Save the Bazel disk cache
-        # Only on main: one rolling entry per main commit (GitHub evicts LRU), while branch runs stay
-        # restore-only. Branches therefore get main's warm cache without each PR writing its own copy
-        # and churning the 10 GB budget. `if: always()` so a red lint still preserves the compile work.
-        if: always() && env.CLANG_TIDY_ENABLED == 'true' && github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v6
-        with:
-          path: ~/.cache/bazel-disk
-          key: bazel-disk-clang-tidy-${{ hashFiles('MODULE.bazel.lock', '.bazelversion') }}-${{ github.sha }}
-      - name: Delete the superseded disk caches
-        # The per-commit key above ACCUMULATES ~0.35 GB per main commit and nothing deleted them:
-        # measured 2026-08-15 they held 9.8 of the 10 GB repo budget, one LRU eviction away from
-        # eating the matrix cells' caches. Keep only the newest entry. A second generation is not a
-        # useful fallback: prefix restore chooses the newest match and does not retry an older cache
-        # after a restore failure. Adopted from mboworks/mbo's cleanup step (theirs is ref-scoped;
-        # this key is main-only so the bare prefix is the scope).
-        if: always() && env.CLANG_TIDY_ENABLED == 'true' && github.ref == 'refs/heads/main'
-        run: |
-          set -euo pipefail
-          stale=$(gh cache list --limit 250 --json id,key,createdAt             --jq 'map(select(.key|startswith("bazel-disk-clang-tidy-")))|sort_by(.createdAt)|.[:-1]|.[].id')
-          for cache_id in ${stale}; do
-            echo "Deleting cache ${cache_id}"
-            gh cache delete "${cache_id}" || echo "Could not delete ${cache_id}"
-          done
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
       - name: Summarize the compile DB
         if: env.CLANG_TIDY_ENABLED == 'true'
         run: |
@@ -633,6 +613,11 @@ jobs:
           set -euo pipefail
           mapfile -t FILES <.clang-tidy-inputs
           CLANG_TIDY_JOBS="$(getconf _NPROCESSORS_ONLN)" tools/clang_tidy.sh "${FILES[@]}"
+      - name: Save refreshed Bazel compiled outputs
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' && steps.bazel-cache.outcome == 'success' }}
+        uses: ./.github/actions/bazel-cache-save
+        with:
+          key: ${{ steps.bazel-cache.outputs.key }}
 
   # Single required status check: one job that gates merge on the whole matrix,
   # so branch protection needs only `done`. A yq/jq step self-checks that every

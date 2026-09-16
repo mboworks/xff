@@ -27,6 +27,33 @@ class CacheSizeTest(unittest.TestCase):
   def test_empty_inventory_needs_no_cleanup(self):
     self.assertEqual(cache_size.oversized_cache_ids([]), [])
 
+  def test_closed_prs_and_tags_are_removed_before_other_cleanup(self):
+    caches = [
+        {"id": 1, "ref": "refs/heads/main", "sizeInBytes": 1, "key": "trunk"},
+        {"id": 2, "ref": "refs/pull/839/merge", "sizeInBytes": 1, "key": "trunk"},
+        {"id": 3, "ref": "refs/pull/840/merge", "sizeInBytes": 1, "key": "trunk"},
+        {"id": 4, "ref": "refs/tags/v0.5.0", "sizeInBytes": 1, "key": "release"},
+        {"id": 5, "ref": "refs/heads/refs/tags/v0.4.0", "sizeInBytes": 1, "key": "release"},
+        {"id": 6, "ref": "refs/heads/main", "sizeInBytes": cache_size.MAX_CACHE_BYTES, "key": "old"},
+    ]
+    self.assertEqual(cache_size.obsolete_cache_ids(caches, {839}), [2, 4, 5, 6])
+
+  def test_retains_newest_usable_generation_per_configuration_and_ref(self):
+    def entry(number, namespace="Linux-X64-default", ref="refs/heads/main", size=10):
+      return {"id": number, "ref": ref, "sizeInBytes": size,
+              "createdAt": f"2026-09-{number:02d}T00:00:00Z",
+              "key": f"bazel-actions-v2-{namespace}-{'a' * 64}-{number}-1"}
+    caches = [entry(1), entry(2), entry(3, size=cache_size.MAX_CACHE_BYTES),
+              entry(4, "macOS-ARM64-default"), entry(5, "Linux-X64-asan"),
+              entry(6, ref="refs/pull/840/merge")]
+    # A newer rejected upload must not cause the last usable main generation to be deleted.
+    self.assertEqual(cache_size.obsolete_cache_ids(caches, set()), [1, 3])
+
+  def test_cache_budget_is_unchanged_and_upload_bound_is_lower(self):
+    import bazel_cache
+    self.assertEqual(cache_size.MAX_CACHE_BYTES, 700_000_000)
+    self.assertLess(bazel_cache.MAX_BYTES, cache_size.MAX_CACHE_BYTES)
+
 
 if __name__ == "__main__":
   unittest.main()
