@@ -228,7 +228,7 @@ jobs:
     permissions:
       contents: read
       actions: write # Retire replaced main cache generations after successful uploads.
-    needs: [pre-commit, trunk]
+    # Start long-running work immediately; done still requires lint and every test job.
     runs-on: ubuntu-latest
     timeout-minutes: 75
     # Required CI keeps 60 seconds per target while running campaigns concurrently after one build.
@@ -281,7 +281,7 @@ jobs:
     permissions:
       contents: read
       actions: write # Retire replaced main cache generations after successful uploads.
-    needs: [pre-commit, trunk]
+    # Start long-running work immediately; done still requires lint and every test job.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
