@@ -15,19 +15,19 @@ from typing import Any
 
 
 MAX_CACHE_BYTES = 700_000_000
-SANITIZER_MAX_CACHE_BYTES = 1_000_000_000
+INSTRUMENTED_MAX_CACHE_BYTES = 1_000_000_000
 MSAN_MAX_CACHE_BYTES = 1_200_000_000
 
 
 def oversized_cache_ids(caches: Iterable[dict[str, Any]]) -> list[int]:
-  """Returns IDs at the ordinary ceiling or above the sanitizer allowance."""
+  """Returns IDs at the ordinary ceiling or above the instrumented-build allowance."""
   result = []
   for cache in caches:
-    sanitizer = re.fullmatch(
-        r"bazel-actions-v2-[^-]+-[^-]+-(asan|tsan|msan)-[0-9a-f]{64}-\d+-\d+",
+    instrumented = re.fullmatch(
+        r"bazel-actions-v2-[^-]+-[^-]+-(asan|tsan|msan|coverage)-[0-9a-f]{64}-\d+-\d+",
         cache.get("key", ""))
-    limit = MSAN_MAX_CACHE_BYTES if sanitizer and sanitizer[1] == "msan" else SANITIZER_MAX_CACHE_BYTES
-    oversized = (cache["sizeInBytes"] > limit if sanitizer
+    limit = MSAN_MAX_CACHE_BYTES if instrumented and instrumented[1] == "msan" else INSTRUMENTED_MAX_CACHE_BYTES
+    oversized = (cache["sizeInBytes"] > limit if instrumented
                  else cache["sizeInBytes"] >= MAX_CACHE_BYTES)
     if oversized:
       result.append(cache["id"])

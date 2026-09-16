@@ -19,6 +19,11 @@ live in [`docs/history.md`](docs/history.md).
 - Preserve time per target, isolated corpora/crashes/logs, throughput statistics, and failure cleanup.
 - Compare CI wall time and mutation throughput after main runs the parallel scheduler.
 
+## Completed: Coverage cache capacity
+
+- Raise coverage's cache allowance to 1.5 GB uncompressed and 1 GB compressed.
+- Check the next main report for retained outputs and upload size.
+
 ## Completed: Cache storage reporting and MSan allowance
 
 - Retain up to 4 GB uncompressed / 1.2 GB compressed for MSan.
