@@ -2756,8 +2756,8 @@ BufferBound ResolveBufferBound(const std::vector<std::string>& globals, std::siz
 }
 
 // --top=N: with --summary, keep only the N largest groups by size. Last occurrence
-// wins; nullopt (absent, or a non-positive / malformed N) means no limit -- all
-// groups in the default alphabetical order.
+// wins; zero removes the limit and restores alphabetical ordering. Malformed values
+// are rejected before traversal by ValidateSummaryOptions.
 std::optional<std::size_t> ResolveTop(const std::vector<std::string>& globals) {
   constexpr std::string_view kPrefix = "--top=";
   std::optional<std::size_t> top;
@@ -2765,8 +2765,8 @@ std::optional<std::size_t> ResolveTop(const std::vector<std::string>& globals) {
     if (!global.starts_with(kPrefix)) {
       continue;
     }
-    if (std::size_t value = 0; absl::SimpleAtoi(std::string_view(global).substr(kPrefix.size()), &value) && value > 0) {
-      top = value;
+    if (std::size_t value = 0; absl::SimpleAtoi(std::string_view(global).substr(kPrefix.size()), &value)) {
+      top = value == 0 ? std::nullopt : std::optional<std::size_t>(value);
     }
   }
   return top;
@@ -2789,7 +2789,7 @@ std::size_t ResolveHistogramWidth(const std::vector<std::string>& globals) {
 }
 
 // --summary-precision=N: fraction digits for the --summary human size column (default 2,
-// e.g. "12.34 MiB"). A malformed value keeps the default; the count is capped at 9 so the
+// e.g. "12.34 MiB"). Values outside 0..9 are rejected before traversal so the
 // column stays readable. Bytes stay integer regardless (12 B), with the fraction columns
 // blanked so points line up (see format::SizeColumns).
 unsigned ResolveSummaryPrecision(const std::vector<std::string>& globals) {
@@ -2808,7 +2808,7 @@ unsigned ResolveSummaryPrecision(const std::vector<std::string>& globals) {
 }
 
 // A JSON string literal for `text` (quotes included): escapes the JSON-significant
-// characters and any control byte as \uXXXX. Used for the --summary=jsonl group key
+// characters and any control byte as \uXXXX. Used for the --format=jsonl summary group key
 // (type/extension names, which are normally plain but may carry odd bytes).
 // --shards[=auto|SCHEME,...]: enable sharded-file collapsing and (optionally) restrict the schemes.
 // Off unless a --shards appears; bare --shards / =auto recognizes every scheme (empty `schemes`);
@@ -4165,15 +4165,14 @@ RunResult RunFindCore(
   const bool buffered = format == render::Format::kAligned || format == render::Format::kMarkdown;
   const bool is_tree = format == render::Format::kTree;
   const bool tabular = format == render::Format::kCsv || format == render::Format::kTsv || buffered;
-  const bool markdown_summary =
-      format == render::Format::kMarkdown && !ResolveSummaries(command.globals, compare_listing).empty();
-  if (markdown_summary && !columns.empty()) {
+  const bool tabular_summary = buffered && !ResolveSummaries(command.globals, compare_listing).empty();
+  if (tabular_summary && !columns.empty()) {
     on_error(
         "--columns", absl::FailedPreconditionError(
                          "summary tables have fixed columns; --columns selects fields for the default listing"));
     return RunResult{.errors = 2};
   }
-  if ((tabular || is_tree || !columns.empty()) && !implicit_print && !markdown_summary) {
+  if ((tabular || is_tree || !columns.empty()) && !implicit_print && !tabular_summary) {
     on_error(
         "--format", absl::FailedPreconditionError(
                         "tabular/tree output (--format=csv/tsv/aligned/markdown/tree) and --columns format the "
@@ -5568,6 +5567,37 @@ RunResult RunFindCore(
   return RunResult{.errors = errors, .any_match = any_match};
 }
 
+// Refuse ignored or misleading reduction controls before either comparison side can run actions.
+absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, bool compare) {
+  for (const std::string& global : globals) {
+    constexpr std::string_view kPrecision = "--summary-precision=";
+    constexpr std::string_view kTop = "--top=";
+    if (global.starts_with(kPrecision)) {
+      unsigned value = 0;
+      if (!absl::SimpleAtoi(std::string_view(global).substr(kPrecision.size()), &value) || value > 9) {
+        return absl::InvalidArgumentError("--summary-precision requires an integer from 0 through 9");
+      }
+    } else if (global.starts_with(kTop)) {
+      std::size_t value = 0;
+      if (!absl::SimpleAtoi(std::string_view(global).substr(kTop.size()), &value)) {
+        return absl::InvalidArgumentError("--top requires a non-negative integer; 0 removes the limit");
+      }
+    } else if (!compare && global.starts_with("--compare-select=")) {
+      return absl::InvalidArgumentError("--compare-select requires --compare");
+    }
+  }
+  if (!ResolveSummaries(globals, compare).empty()) {
+    const auto format = ResolveFormat(globals);
+    if (format != render::Format::kPlain && format != render::Format::kAligned && format != render::Format::kJsonl
+        && format != render::Format::kMarkdown) {
+      return absl::InvalidArgumentError(
+          "summary tables require --format=plain, aligned, jsonl, or markdown; "
+          "csv, tsv, nul, and tree are listing formats");
+    }
+  }
+  return absl::OkStatus();
+}
+
 }  // namespace
 
 RunResult RunFind(
@@ -5579,6 +5609,10 @@ RunResult RunFind(
   const bool compare = absl::c_any_of(command.globals, [](std::string_view global) {
     return global == "--compare" || global.starts_with("--compare=");
   });
+  if (const absl::Status status = ValidateSummaryOptions(command.globals, compare); !status.ok()) {
+    on_error("options", status);
+    return RunResult{.errors = 2};
+  }
   if (const absl::Status status = ValidateSummaryScopeDriver(command.globals, compare); !status.ok()) {
     on_error("--summary-scope", status);
     return RunResult{.errors = 2};
