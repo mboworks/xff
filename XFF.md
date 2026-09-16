@@ -779,7 +779,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `markdown` - a Markdown table (also `md`)
   - `tree` - an indented directory tree
 
-  `markdown` (alias `md`) also renders ordinary, comparison-result, and paired summary tables as Markdown. Summary schemas come from `--summary`; `--columns` selects listing fields and cannot change summary columns. `--no-header` omits table headers and Markdown separator rows when producing fragments. Expression actions retain their own output formats.
+  `markdown` (alias `md`) also renders ordinary, comparison-result, and paired summary tables as Markdown, with vertically aligned separators and right-aligned numeric headers and values in both source and rendered tables. Summary schemas come from `--summary`; `--columns` selects listing fields and cannot change summary columns. `--no-header` omits table headers and Markdown separator rows when producing fragments. Expression actions retain their own output formats.
   See also: [Output](#topic-output)
 
 <a id="flag-no-header"></a>

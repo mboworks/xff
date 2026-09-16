@@ -236,14 +236,17 @@ TableStream::TableStream(
     std::vector<std::string> header,
     bool with_header,
     std::size_t window,
-    std::size_t byte_budget)
+    std::size_t byte_budget,
+    std::vector<format::Align> alignments)
     : md_(format == Format::kMarkdown),
       columns_(format == Format::kAligned || format == Format::kMarkdown ? header.size() : 0),
       with_header_(with_header),
       window_(window),
       byte_budget_(byte_budget),
       widths_(columns_, md_ ? 3 : 0),
+      alignments_(std::move(alignments)),
       buffering_(window != 0) {
+  alignments_.resize(columns_, format::Align::kLeft);
   header_.reserve(columns_);
   for (std::size_t col = 0; col < columns_; ++col) {
     header_.push_back(md_ ? MarkdownCell(header[col]) : std::move(header[col]));
@@ -260,10 +263,14 @@ std::string TableStream::Row(const std::vector<std::string>& cells) const {
       out.append(col == 0 ? "| " : " | ");
     }
     const std::string& cell = cells[col];
+    const bool right = alignments_[col] == format::Align::kRight;
+    if (right) {
+      out.append(widths_[col] - cell.size(), ' ');
+    }
     out.append(cell);
     // Pad to the column width, except the last cell of an aligned row (no trailing space).
     // widths_ always covers every cell already emitted, so the subtraction never underflows.
-    if (md_ || col + 1 < columns_) {
+    if (!right && (md_ || col + 1 < columns_)) {
       out.append(widths_[col] - cell.size(), ' ');
     }
     if (md_ && col + 1 == columns_) {
@@ -287,7 +294,11 @@ std::string TableStream::HeaderAndRule() {
     if (md_) {
       out.append(col == 0 ? "| " : " | ");
     }
-    out.append(widths_[col], '-');
+    const bool right = md_ && alignments_[col] == format::Align::kRight;
+    out.append(widths_[col] - (right ? 1 : 0), '-');
+    if (right) {
+      out.push_back(':');
+    }
     if (md_ && col + 1 == columns_) {
       out.append(" |");
     } else if (!md_ && col + 1 < columns_) {

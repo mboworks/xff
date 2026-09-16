@@ -99,7 +99,9 @@ xff --compare=summary LEFT RIGHT --summary=ext --format=md
 ```
 
 This emits a comparison-result table followed by one paired extension table. Cell escaping uses
-the same renderer as Markdown listings. Summary columns are determined by the grouping;
+the same renderer as Markdown listings. All rows are buffered so column separators align
+vertically in the source. Labels align left; numeric headers and values align right, with matching
+Markdown alignment markers. Summary columns are determined by the grouping;
 `--columns` remains a listing control and cannot be combined with Markdown summaries.
 `--no-header` omits headers and Markdown separator rows when producing table fragments.
 Expression actions retain their own output formats.

@@ -2035,6 +2035,7 @@ TEST_F(RunTest, MarkdownSummariesRenderOrdinaryAndPairedTables) {
   const auto ordinary = RunArgvRecords({root_.string(), "-type", "f", "--summary=ext", "--format=md"});
   EXPECT_THAT(ordinary, Contains(HasSubstr("| Group")).Times(1));
   EXPECT_THAT(ordinary, Contains(HasSubstr("| Count")));
+  EXPECT_THAT(ordinary, Contains(HasSubstr("| ----: | ------: |")));
   EXPECT_THAT(ordinary, Contains(HasSubstr("| txt")));
   EXPECT_THAT(RunArgvRecords({root_.string(), "-type", "f", "--summary=ext", "--format=markdown"}), Eq(ordinary));
   const auto comparison =
@@ -2042,6 +2043,7 @@ TEST_F(RunTest, MarkdownSummariesRenderOrdinaryAndPairedTables) {
   EXPECT_THAT(comparison, Contains(HasSubstr("| Type")).Times(1));
   EXPECT_THAT(comparison, Contains(HasSubstr("| Left count")).Times(1));
   EXPECT_THAT(comparison, Contains(HasSubstr("| Right count")));
+  EXPECT_THAT(comparison, Contains(HasSubstr("| ---------: |")));
   EXPECT_THAT(last_errors_, 0);
 }
 

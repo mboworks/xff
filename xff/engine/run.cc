@@ -3118,9 +3118,10 @@ class SummaryTable final {
       std::vector<std::string> header,
       render::Format output_format,
       bool with_header)
-      : plain_(std::move(alignments)) {
+      : plain_(alignments) {
     if (output_format == render::Format::kMarkdown) {
-      markdown_.emplace(output_format, std::move(header), with_header, render::TableStream::kAll);
+      markdown_.emplace(
+          output_format, std::move(header), with_header, render::TableStream::kAll, 0, std::move(alignments));
     } else if (with_header) {
       plain_.AddRow(std::move(header));
     }

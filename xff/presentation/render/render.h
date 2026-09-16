@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/container/btree_map.h"
+#include "xff/presentation/format/format.h"
 
 namespace xff::render {
 
@@ -86,12 +87,14 @@ class TableStream {
 
   // `byte_budget` (0 = none) flushes the window early once the buffered cell bytes reach it,
   // so a --buffer memory cap bounds the table regardless of row count.
+  // Alignment defaults to left for unspecified columns; Markdown rules carry right markers.
   TableStream(
       Format format,
       std::vector<std::string> header,
       bool with_header,
       std::size_t window,
-      std::size_t byte_budget = 0);
+      std::size_t byte_budget = 0,
+      std::vector<format::Align> alignments = {});
 
   // Feeds one row of already-rendered cells; returns whatever is ready to emit now (empty
   // while still buffering the initial window). Missing cells render empty; extras are ignored.
@@ -115,6 +118,7 @@ class TableStream {
   std::size_t buffered_bytes_ = 0;   // running total of buffered cell bytes (while buffering_)
   std::vector<std::string> header_;  // already encoded (md-escaped) column names
   std::vector<std::size_t> widths_;
+  std::vector<format::Align> alignments_;
   std::vector<std::vector<std::string>> buffer_;  // encoded rows held while still buffering
   bool buffering_;
   bool header_done_ = false;

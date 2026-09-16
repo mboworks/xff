@@ -1126,7 +1126,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Result formatting",
         .summary = "output format: plain, nul, jsonl, csv, tsv, aligned, markdown (md), tree; default plain",
         .details = "`markdown` (alias `md`) also renders ordinary, comparison-result, and paired summary tables "
-                   "as Markdown. Summary schemas come from `--summary`; `--columns` selects listing fields and "
+                   "as Markdown, with vertically aligned separators and right-aligned numeric headers and values "
+                   "in both source and rendered tables. Summary schemas come from `--summary`; `--columns` selects "
+                   "listing fields and "
                    "cannot change summary columns. `--no-header` omits table headers and Markdown separator rows "
                    "when producing fragments. Expression actions retain their own output formats.",
         .values = kFormatValues,
