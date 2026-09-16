@@ -82,10 +82,14 @@ compiled-output caches remain a fallback until the first new generation is saved
 archive was restored; Bazel's final process statistics show whether build actions actually hit
 that cache. Dependency and compiler-option changes can still require rebuilding.
 
-Before upload, CI stops Bazel and evicts the oldest disk-cache files until the action-cache and
+Before upload, CI stops Bazel and evicts the largest disk-cache files until the action-cache and
 content-store payload is at most 600,000,000 bytes. This is a synchronous upload bound, not an
 idle-time garbage-collection setting. Evicted outputs become normal cache misses; this bounded
-cache does not promise to retain every object or executable. LLVM downloads remain uncached.
+cache does not promise to retain every object or executable. Size-first eviction favors retaining
+many smaller compilation outputs over large linked executables; ties evict older files first.
+This is a size heuristic, not action-type classification: large object files can also be evicted.
+The weekly deep-fuzz workflow shares the ordinary fuzz cache and main-only refresh policy.
+LLVM downloads remain uncached.
 The existing 700,000,000-byte per-entry ceiling and repository storage limit are unchanged.
 
 The trusted cache-maintenance workflow removes closed-PR and tag-scoped caches first, then
