@@ -83,8 +83,8 @@ archive was restored; Bazel's final process statistics show whether build action
 that cache. Dependency and compiler-option changes can still require rebuilding.
 
 Before upload, CI stops Bazel and evicts the largest disk-cache files until the action-cache and
-content-store payload is at most 600,000,000 bytes by default. ASan, TSan, and MSan use
-2,600,000,000 bytes to retain more instrumented outputs. These are uncompressed limits; GitHub
+content-store payload is at most 600,000,000 bytes by default. ASan and TSan use
+2,600,000,000 bytes; MSan uses 4,000,000,000 bytes to retain more instrumented outputs. These are uncompressed limits; GitHub
 storage usage reflects compressed uploads. Measure those uploads and total repository usage
 after main refreshes the caches before increasing other configurations. This is a synchronous upload bound, not an
 idle-time garbage-collection setting. Evicted outputs become normal cache misses; this bounded
@@ -93,7 +93,8 @@ many smaller compilation outputs over large linked executables; ties evict older
 This is a size heuristic, not action-type classification: large object files can also be evicted.
 The weekly deep-fuzz workflow shares the ordinary fuzz cache and main-only refresh policy.
 LLVM downloads remain uncached.
-Cleanup retains sanitizer uploads up to 1,000,000,000 compressed bytes; other entries keep
+Cleanup retains ASan/TSan uploads up to 1,000,000,000 compressed bytes and MSan uploads up to
+1,200,000,000 bytes; other entries keep
 the existing 700,000,000-byte ceiling. The repository storage limit remains 10 GB.
 
 After each successful main upload, the save action checks the GitHub inventory for that exact
@@ -107,6 +108,12 @@ The trusted cache-maintenance workflow removes closed-PR and tag-scoped caches f
 superseded generations per configuration and ref, and oversized entries. It retains the newest
 usable generation if a newer upload exceeds the ceiling. Open-PR caches from older workflows are
 not removed merely because they belong to a PR; new PR runs do not write such caches.
+
+Main's `done` job reports each measured cache's pre-trim and retained uncompressed sizes,
+compressed upload size, and eviction count. It also totals all repository cache entries against
+the 10 GB budget, including any overlapping generations still present. Missing uploads or job
+measurements are identified rather than reported as zero. Small measurement artifacts expire
+after one day and are not part of the cache-storage total.
 
 Locally, use consistent compiler, extras, and linker options when comparing incremental builds.
 An analysis-cache reset alone does not mean compilation was repeated. A personal `--disk_cache`

@@ -28,8 +28,9 @@ class CacheSizeTest(unittest.TestCase):
     for namespace in ("asan", "tsan", "msan", "coverage", "default", "clang-tidy"):
       with self.subTest(namespace=namespace):
         key = f"bazel-actions-v2-Linux-X64-{namespace}-{'a' * 64}-123-1"
-        caches = [{"id": 1, "key": key, "sizeInBytes": 1_000_000_000},
-                  {"id": 2, "key": key, "sizeInBytes": 1_000_000_001}]
+        limit = 1_200_000_000 if namespace == "msan" else 1_000_000_000
+        caches = [{"id": 1, "key": key, "sizeInBytes": limit},
+                  {"id": 2, "key": key, "sizeInBytes": limit + 1}]
         expected = [2] if namespace in ("asan", "tsan", "msan") else [1, 2]
         self.assertEqual(cache_size.oversized_cache_ids(caches), expected)
 

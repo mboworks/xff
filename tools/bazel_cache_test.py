@@ -62,7 +62,7 @@ class BazelCacheTest(unittest.TestCase):
         self.assertIn("matrix.config.name == 'asan' && '2600000000' || '600000000'", workflow)
         for job, following in (("tsan", "msan"), ("msan", "minimal")):
             section = workflow.split(f"  {job}:", 1)[1].split(f"  {following}:", 1)[0]
-            self.assertIn('max-bytes: "2600000000"', section)
+            self.assertIn(f'max-bytes: "{4000000000 if job == "msan" else 2600000000}"', section)
         save = (root / ".github/actions/bazel-cache-save/action.yml").read_text()
         self.assertIn('default: "600000000"', save)
         self.assertIn('--max-bytes="${CACHE_MAX_BYTES}"', save)

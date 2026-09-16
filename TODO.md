@@ -13,6 +13,12 @@ live in [`docs/history.md`](docs/history.md).
 - Add end-to-end reconciliation and invalid-control coverage alongside focused engine regressions.
 - Measure the follow-up PR's action-cache reuse against the main caches seeded after #840.
 
+## Completed: Cache storage reporting and MSan allowance
+
+- Retain up to 4 GB uncompressed / 1.2 GB compressed for MSan.
+- Record per-upload measurements and report compressed/uncompressed sizes, eviction counts,
+  and repository-wide usage against 10 GB in main's final job.
+
 ## Completed: Immediate main cache retirement
 
 - After upload, verify the exact replacement and compressed size before deleting older main
