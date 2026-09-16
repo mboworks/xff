@@ -105,7 +105,8 @@ Markdown alignment markers. Exact byte values reserve the missing fraction digit
 unit width as scaled SI (`kB`) or IEC (`KiB`) sizes, so integer digits align at the decimal boundary.
 
 Each table has a descriptive heading, such as `## Comparison summary` or `## Summary by extension`.
-The scope appears below its heading and before the table. Repeated summary groupings get their own
+Scope and left/right root labels are Markdown bullet items below the heading and before the table,
+so renderers keep each label on its own line. Explanatory notes below a table are bullet items too. Repeated summary groupings get their own
 headings and scope labels. Accounting notes follow their table; a blank line separates them from
 the next summary, including in console output. `--no-header` also suppresses Markdown headings.
 

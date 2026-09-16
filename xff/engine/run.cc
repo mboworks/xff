@@ -3210,6 +3210,7 @@ void EmitSummaries(
     std::string_view root = {}) {
   const auto top = ResolveTop(globals);
   const auto precision = ResolveSummaryPrecision(globals);
+  const std::string_view scope_label = output_format == render::Format::kMarkdown ? "\n- Scope: " : "Summary scope: ";
   for (std::size_t i = 0; i < summaries.size(); ++i) {
     if (i > 0 && output_format != render::Format::kJsonl) {
       emit("\n");
@@ -3217,10 +3218,7 @@ void EmitSummaries(
     EmitSummaryHeading(summaries.at(i).mode, globals, emit);
     if (!scope.empty() && output_format != render::Format::kJsonl
         && (i == 0 || output_format == render::Format::kMarkdown)) {
-      emit(
-          absl::StrCat(
-              output_format == render::Format::kMarkdown ? "\n" : "", "Summary scope: ", scope,
-              root.empty() ? "" : " (", root, root.empty() ? "" : ")", "\n"));
+      emit(absl::StrCat(scope_label, scope, root.empty() ? "" : " (", root, root.empty() ? "" : ")", "\n"));
     }
     EmitSummaryRows(
         SummaryRows(summaries.at(i).mode, tables.at(i), top), output_format, human, precision,
@@ -3265,6 +3263,17 @@ SummaryRow SummaryCell(const SummaryCells& cells, const std::string& key) {
                               : SummaryRow{.key = key, .count = found->second.first, .size = found->second.second};
 }
 
+void EmitPairedSummaryHeading(const parser::Command& command, std::string_view scope, SummaryMode mode, EmitFn emit) {
+  EmitSummaryHeading(mode, command.globals, emit);
+  const bool markdown = ResolveFormat(command.globals) == render::Format::kMarkdown;
+  const std::string_view scope_label = markdown ? "\n- Scope: " : "Summary scope: ";
+  const std::string_view item_prefix = markdown ? "- " : "";
+  emit(
+      absl::StrCat(
+          scope_label, scope, "\n", item_prefix, "Left: ", command.roots.at(0), "\n", item_prefix,
+          "Right: ", command.roots.at(1), "\n"));
+}
+
 void EmitPairedSummary(
     const parser::Command& command,
     const std::string& scope,
@@ -3276,8 +3285,10 @@ void EmitPairedSummary(
   const auto human = ResolveHuman(command.globals, style);
   const auto output_format = ResolveFormat(command.globals);
   const bool json = output_format == render::Format::kJsonl;
-  const std::string_view scope_prefix = output_format == render::Format::kMarkdown ? "\n" : "";
-  const std::string_view note_ending = output_format == render::Format::kMarkdown ? "\n" : "\n\n";
+  const std::string_view note =
+      output_format == render::Format::kMarkdown
+          ? "- Percentages use each side's full selected category population.\n- `-` means no entries.\n"
+          : "Percentages use each side's full selected category population; - means no entries.\n\n";
   auto combined = sides.at(0);
   MergeSummaryTables(combined, sides.at(1));
   for (std::size_t sink = 0; sink < summaries.size(); ++sink) {
@@ -3319,15 +3330,9 @@ void EmitPairedSummary(
       }
     }
     if (!json) {
-      EmitSummaryHeading(summaries.at(sink).mode, command.globals, emit);
-      emit(
-          absl::StrCat(
-              scope_prefix, "Summary scope: ", scope, "\nLeft: ", command.roots.at(0), "\nRight: ", command.roots.at(1),
-              "\n"));
+      EmitPairedSummaryHeading(command, scope, summaries.at(sink).mode, emit);
       emit(table.Render());
-      emit(
-          absl::StrCat(
-              "Percentages use each side's full selected category population; - means no entries.", note_ending));
+      emit(note);
     }
   }
 }
@@ -3754,9 +3759,10 @@ void EmitTreeCompareSummary(
       EmitSummaryHeading(summary.mode, globals, emit);
       emit(table.Render());
       emit(
-          absl::StrCat(
-              "Results count pairs once; combined size includes both sides. Directory equality is entry-only.",
-              output_format == render::Format::kMarkdown ? "\n" : "\n\n"));
+          output_format == render::Format::kMarkdown
+              ? "- Results count pairs once.\n- Combined size includes both sides.\n- Directory equality is "
+                "entry-only.\n"
+              : "Results count pairs once; combined size includes both sides. Directory equality is entry-only.\n\n");
     }
   }
 }

@@ -2081,11 +2081,11 @@ TEST_F(RunTest, MarkdownScopedSummariesRepeatHeadingsAndKeepScopeWithEachTable) 
       {root_.string(), "-type", "f", "--summary=ext", "--summary=type", "--summary-scope=root", "--format=md"});
   EXPECT_THAT(records, Contains("\n## Summary by extension").Times(1));
   EXPECT_THAT(records, Contains("\n## Summary by file type").Times(1));
-  EXPECT_THAT(records, Contains(HasSubstr("Summary scope: root (")).Times(2));
+  EXPECT_THAT(records, Contains(HasSubstr("- Scope: root (")).Times(2));
   const auto fragment = RunArgvRecords(
       {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--no-header", "--format=md"});
   EXPECT_THAT(fragment, Not(Contains(HasSubstr("## "))));
-  EXPECT_THAT(fragment, Contains(HasSubstr("Summary scope:")));
+  EXPECT_THAT(fragment, Contains(HasSubstr("- Scope:")));
   EXPECT_THAT(last_errors_, 0);
 }
 

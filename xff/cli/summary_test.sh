@@ -569,7 +569,7 @@ test::markdown_summary_tables_escape_cells_and_support_comparison() {
   expect_output_contains '| Left count' "${out}"
   expect_output_contains '| Right count' "${out}"
   expect_output_contains 'a\|b' "${out}"
-  python3 -c 'import sys; text = sys.stdin.read(); assert text.count("| Group") == 1; assert "\n\n| Group" in text; assert "\n\nResults count" in text; assert "entry-only.\n\n## Summary by extension\n\nSummary scope:" in text; assert text.index("## Comparison summary") < text.index("| Type")' <<<"${out}"
+  python3 -c 'import sys; text = sys.stdin.read(); assert text.count("| Group") == 1; assert "\n\n| Group" in text; assert "\n\n- Results count" in text; assert "entry-only.\n\n## Summary by extension\n\n- Scope:" in text; assert text.index("## Comparison summary") < text.index("| Type"); assert "\n- Left:" in text and "\n- Right:" in text; assert "\n- `-` means no entries." in text' <<<"${out}"
   out="$(_run "${root}/left" --summary=ext --format=md --no-header -type f)"
   expect_not_matches '[|] Group' "${out}"
   expect_output_contains 'a\|b' "${out}"

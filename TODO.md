@@ -83,7 +83,8 @@ The safety model and directory-scoped permissions are tracked in
 ## Summary presentation follow-up
 
 - [x] Separate each summary note from the following scope in console and Markdown output.
-- [x] Add grouping-specific Markdown headings above scopes and tables; preserve headerless fragments.
+- [x] Add grouping-specific Markdown headings and bullet lists for scope/root labels and notes;
+      preserve headerless fragments.
 - [x] Align exact byte values with scaled integer digits using fixed SI/IEC unit widths.
 - [x] Test mixed/repeated/scoped summaries and size alignment at zero and nonzero precision;
       update help, generated reference, and changelog, then prepare a PR.

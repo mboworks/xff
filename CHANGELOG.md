@@ -3,7 +3,8 @@
 
 # 0.6.0
 
-- Give Markdown summaries descriptive headings, separate each table’s note from the next summary,
+- Give Markdown summaries descriptive headings and bullet lists for labels and notes, separate
+  each table’s note from the next summary,
   and align exact byte values with scaled sizes in console and Markdown tables.
 
 - Render ordinary and comparison summary tables as Markdown with `--format=md` or `markdown`.
