@@ -3,6 +3,8 @@
 
 # xff - eXtended File Find
 
+<img src="docs/assets/mboworks-logo.png" alt="MBO Works" width="160">
+
 [Release website](https://mboworks.github.io/xff/)
 
 `xff` is a `find(1)`-compatible file finder with modern extensions. It walks each starting path and acts on entries through find's expression grammar, then adds content and language search, structured output, per-run summaries and histograms, safe deletes, native hashing, and a shared `{field}` vocabulary that threads through `-printf`, `-exec`, and every renderer.

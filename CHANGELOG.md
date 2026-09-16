@@ -3,6 +3,8 @@
 
 # 0.6.0
 
+- Add MBO Works artwork to the README and favicons to documentation and coverage Pages.
+
 - Keep `main` first in the coverage index, then interleave PRs and releases newest-first by
   their merge or tagged commit in main’s history.
 

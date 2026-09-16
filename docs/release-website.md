@@ -96,3 +96,20 @@ records its SHA-256 alongside the release commit and configuration hash.
 
 Release coverage links select `https://mboworks.github.io/xff/coverage/tag/<version>/`, matching the
 coverage publisher rather than the moving main-branch report.
+
+## Site artwork
+
+The README uses the original transparent MBO Works logo in
+`docs/assets/mboworks-logo.png`. Release-site rendering copies this image with the README.
+The favicon assets are derived from that same artwork: a 32-pixel PNG, a 180-pixel Apple
+Touch icon, and an ICO containing 16-, 32-, 48-, and 256-pixel PNG images.
+
+Both Pages publishers run `tools/site_artwork.py` on the final deployment directory.
+This supplies favicons to documentation, native HTML references, redirects, and coverage
+reports, including existing releases. Relative links work at every nesting depth and under
+xff's project URL. Only the deployment copy receives these links; retained release files and
+their recorded hashes stay unchanged. The standalone CLI HTML output remains self-contained.
+
+To regenerate the images on macOS, resize the original square PNG with `sips -z SIZE SIZE`
+for each size, preserving transparency. The ICO stores those four PNG images in a standard
+ICO directory. Keep the existing artwork unchanged when generating icon sizes.
