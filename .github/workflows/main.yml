@@ -167,7 +167,7 @@ jobs:
         uses: ./.github/actions/bazel-cache-save
         with:
           key: ${{ steps.bazel-cache.outputs.key }}
-          max-bytes: ${{ matrix.config.name == 'asan' && '2600000000' || '600000000' }}
+          max-bytes: ${{ matrix.config.name == 'asan' && '3000000000' || '1000000000' }}
 
   # GCC is a portability check for this leaf executable, not a second authoritative test matrix.
   # Build every core and extension target once on Linux; Clang + libc++ owns tests, sanitizers,

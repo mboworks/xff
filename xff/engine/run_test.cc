@@ -2015,6 +2015,33 @@ TEST_F(RunTest, SummaryTopBreaksEqualSizeTiesByCountThenName) {
           R"({"group":"total","count":4,"count_percent":100.00,"bytes":0,"size_percent":0.00})"));
 }
 
+TEST_F(RunTest, ComparisonScopesSelectOrderedColumnGroups) {
+  ASSERT_THAT(fs_.WriteContent(Path("sub/a.txt"), "aa"), IsOk());
+  ASSERT_THAT(fs_.WriteContent(Path("sub/b.md"), "b"), IsOk());
+  const auto records = RunArgvRecords(
+      {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=overall",
+       "--summary-scope=diff,identical,left-total,right-total,different", "--format=jsonl"});
+  EXPECT_THAT(
+      records, Contains(AllOf(
+                   HasSubstr(R"("scope":"left-only,right-only,different,identical,left-total,right-total")"),
+                   HasSubstr(R"("left-only":{"count":3,"count_percent":100.00,"bytes":4)"),
+                   HasSubstr(R"("right-only":{"count":1,"count_percent":100.00,"bytes":1)"),
+                   HasSubstr(R"("different":{"count":1,"count_percent":100.00,"bytes":3)"),
+                   HasSubstr(R"("identical":{"count":1,"count_percent":100.00,"bytes":2)"),
+                   HasSubstr(R"("left-total":{"count":5,"count_percent":100.00,"bytes":6)"),
+                   HasSubstr(R"("right-total":{"count":3,"count_percent":100.00,"bytes":4)"))));
+}
+
+TEST_F(RunTest, ComparisonCategoryTypeTransitionsCountPairsOnce) {
+  ASSERT_THAT(fs_.WriteContent(Path("sub/sub"), "file"), IsOk());
+  const auto records = RunArgvRecords(
+      {"--compare=summary", root_.string(), Path("sub"), "--summary=type", "--summary-scope=different",
+       "--format=jsonl"});
+  EXPECT_THAT(
+      records, Contains(AllOf(HasSubstr(R"("group":"directory -> file")"), HasSubstr(R"("different":{"count":1,)"))));
+  EXPECT_THAT(last_errors_, 0);
+}
+
 TEST_F(RunTest, ComparisonSummaryRejectsEmptyScopeList) {
   EXPECT_THAT(
       RunArgvRecords({"--compare=summary", root_.string(), Path("sub"), "--summary=overall", "--summary-scope="}),
@@ -2045,13 +2072,13 @@ TEST_F(RunTest, ComparisonSummaryAccountsForBothSidesAndMissingEntries) {
           R"({"scope":"all","root":"","group":"total","count":8,"count_percent":100.00,"bytes":10,"size_percent":100.00})"));
   EXPECT_THAT(
       records, Contains(AllOf(
-                   HasSubstr(R"("scope":"left-only,right-only,different,identical")"),
+                   HasSubstr(R"("scope":"left-total,right-total")"),
                    HasSubstr(R"("count":5,"count_percent":100.00,"bytes":6,"size_percent":100.00)"),
                    HasSubstr(R"("count":3,"count_percent":100.00,"bytes":4,"size_percent":100.00)"))));
   const auto one_sided = RunArgvRecords(
-      {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--summary-scope=left,right",
-       "--format=jsonl"});
-  EXPECT_THAT(one_sided, Contains(AllOf(HasSubstr(R"("group":"md")"), HasSubstr(R"("right":null)"))));
+      {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext",
+       "--summary-scope=left-only,right-only", "--format=jsonl"});
+  EXPECT_THAT(one_sided, Contains(AllOf(HasSubstr(R"("group":"md")"), HasSubstr(R"("right-only":null)"))));
   EXPECT_THAT(last_errors_, 0);
 }
 
@@ -2081,7 +2108,7 @@ TEST_F(RunTest, PairedSummaryDistinguishesZeroBytesAndUsesSelectedCategoryDenomi
   const auto plain = RunArgvRecords(
       {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--summary-scope=compare",
        "--human=off"});
-  EXPECT_THAT(plain, Contains(HasSubstr("Left % count")).Times(1));
+  EXPECT_THAT(plain, Contains(HasSubstr("left-total % count")).Times(1));
   EXPECT_THAT(plain, Contains(HasSubstr("-")));
   EXPECT_THAT(last_errors_, 0);
 }
@@ -2089,7 +2116,7 @@ TEST_F(RunTest, PairedSummaryDistinguishesZeroBytesAndUsesSelectedCategoryDenomi
 TEST_F(RunTest, ComparisonSummaryDefaultsToPairedScopeAndExplicitScopeOverridesIt) {
   const auto implicit = RunArgvRecords(
       {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--format=jsonl"});
-  EXPECT_THAT(implicit, Contains(HasSubstr(R"("scope":"left-only,right-only,different,identical")")));
+  EXPECT_THAT(implicit, Contains(HasSubstr(R"("scope":"left-total,right-total")")));
   EXPECT_THAT(
       RunArgvRecords(
           {"--summary-scope=compare", "--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext",
@@ -2122,9 +2149,9 @@ TEST_F(RunTest, MarkdownSummariesRenderOrdinaryAndPairedTables) {
   EXPECT_THAT(comparison, Contains("\n## Comparison summary"));
   EXPECT_THAT(comparison, Contains("\n## Summary by extension"));
   EXPECT_THAT(comparison, Contains(HasSubstr("| Type")).Times(1));
-  EXPECT_THAT(comparison, Contains(HasSubstr("| Left count")).Times(1));
-  EXPECT_THAT(comparison, Contains(HasSubstr("| Right count")));
-  EXPECT_THAT(comparison, Contains(HasSubstr("| ---------: |")));
+  EXPECT_THAT(comparison, Contains(HasSubstr("| left-total count")).Times(1));
+  EXPECT_THAT(comparison, Contains(HasSubstr("| right-total count")));
+  EXPECT_THAT(comparison, Contains(HasSubstr("| ---------------: |")));
   EXPECT_THAT(last_errors_, 0);
 }
 

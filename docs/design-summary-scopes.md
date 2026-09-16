@@ -3,12 +3,12 @@
 
 # Summary scopes
 
-`--summary` selects statistics; `--summary-scope` selects their populations. Its default depends
-on `--compare`:
+`--summary` selects statistics; in comparison mode, `--summary-scope` collects their ordered
+column groups. Outside comparison it selects root populations. Its default depends on `--compare`:
 
 - Without `--compare`, the default is `all`: combine entries across roots.
-- With any `--compare` mode, the default is `compare`: one table with left and right columns,
-  including all four comparison categories.
+- With any `--compare` mode, the default is `compare`: one table with `left-total` and
+  `right-total` column groups, including all four comparison categories.
 - An explicit `--summary-scope` overrides that default regardless of its position relative to
   `--compare`. Repeating `--summary-scope` uses the last occurrence.
 
@@ -22,21 +22,37 @@ This default selects the population only; it does not enable an ordinary summary
 `--compare=summary` still requests only the comparison-result summary. Add `--summary=ext` or
 `--summary=overall` to request the corresponding paired table.
 
-Comparison scopes require `--compare`. `left` and `right` alias `left-only` and `right-only`.
-`diff` expands to `left-only,right-only,different`; `compare` additionally includes `identical`.
-Lists expand in order and discard duplicate scopes. A repeated flag replaces the preceding list.
-`all` and `root` may be mixed with comparison categories; those populations intentionally overlap.
+Comparison scopes require `--compare` and select an ordered set of column groups:
 
-Selected categories share one table per summary grouping. The table aligns left and right
-statistics side by side. Each group (for example an extension) appears once, combining entries
-from every selected category. Each side shows count, percentage of count, size, and percentage of size.
-Percentages use that side's complete population across the selected categories, before `--top`.
-Missing groups display `-` (JSON `null`); present empty files display zero bytes. Comparison counts
-count pairs once, while ordinary combined statistics count both entries. The category filter uses the same classification as comparison output,
-including directories and special file kinds. A type-changing pair remains one result and is
-labelled with its left-to-right type transition. Directory equality is entry-kind equality, not a
-claim about descendants. Roots themselves participate when they match the expression.
-Output selection (`--compare-select`) does not filter statistics.
+| Scope         | Column groups                                     |
+| ------------- | ------------------------------------------------- |
+| `left-total`  | Every participating left entry                    |
+| `right-total` | Every participating right entry                   |
+| `left`        | Alias for `left-total`                            |
+| `right`       | Alias for `right-total`                           |
+| `compare`     | `left-total,right-total`                          |
+| `left-only`   | Entries present only on the left                  |
+| `right-only`  | Entries present only on the right                 |
+| `different`   | Different pairs, counted once with combined bytes |
+| `identical`   | Identical pairs, counted once with combined bytes |
+| `diff`        | `left-only,right-only,different`                  |
+
+`left` aliases `left-total`; `right` aliases `right-total`. Use `left-only` and `right-only`
+for unmatched entries. Scope labels and column headings always use canonical names. Lists expand
+in order and discard duplicate scopes. A repeated flag replaces the preceding list.
+`all` and `root` may be mixed with comparison scopes and retain their separate tables.
+
+Selected comparison scopes share one table per summary grouping. Each scope contributes four
+columns: count, percentage of count, size, and percentage of size. Percentages use that column
+group's complete population before `--top`. Scopes can overlap: `left-total,left-only` shows a
+side total alongside its subset. Columns are never summed into a grand total.
+Missing groups display `-` (JSON `null`); present empty files display zero bytes. Side totals
+count only their own entries and bytes. Categories count each pair once and sum both sides' bytes.
+If a pair's grouping keys differ (such as type or hash), it occupies a single `LEFT -> RIGHT` row.
+Extraction streams retain their own counting units; matching keys pair by multiplicity.
+The same classification drives comparison output, including directories and special file kinds.
+Directory equality is entry-kind equality, not a claim about descendants. Roots themselves
+participate when they match the expression. Output selection (`--compare-select`) does not filter statistics.
 
 `--summary-scope` requires an active file summary; absence is a usage error, including when
 `--summary=none` clears earlier summaries. `--compare=summary` expands to
@@ -52,9 +68,9 @@ xff --compare=summary LEFT RIGHT --summary=ext --summary-scope=compare
 xff --compare LEFT RIGHT --summary --summary-scope=diff
 ```
 
-`--summary=ext --summary-scope=compare` produces one paired extension table covering all
-comparison categories. `--summary=ext --summary-scope=left,right` produces one paired extension
-table restricted to one-sided entries. Categories select the population; they do not split tables.
+`--summary=ext --summary-scope=compare` produces one extension table with `left-total` and
+`right-total` column groups. `--summary-scope=diff` produces three column groups;
+`--summary-scope=identical` produces one. The scope label lists the expanded column selection.
 Repeating `--summary` with another grouping produces another table.
 
 Accumulation retains the existing archive, collection, shard, and verification feeds. Combined
@@ -64,7 +80,7 @@ without a comparison category do not enter category tables, even if a special re
 (such as failed hash verification) counted them in a whole-root table.
 
 Plain output labels scopes and roots. Flat JSONL rows carry `scope` and `root` fields when scopes are
-explicit, and in comparison mode. Empty flat tables produce a zero total; empty paired sides are
+explicit, and in comparison mode. Empty flat tables produce a zero total; empty comparison column groups are
 absent. Sorting, top limits, precision, templates, and size formatting apply separately to each table.
 
 ## Counts, sizes, and reconciliation
@@ -85,9 +101,9 @@ paired result count. Combined bytes equal left bytes plus right bytes. Special r
 (collections, archive aggregation, extraction, verification, and shards) can intentionally select
 or represent a different population; reconciliation only applies when the populations agree.
 
-Paired JSONL rows carry `scope` (the canonical comma-separated selection), `group`, and
-`left`/`right` objects, each containing `root` and
-the four statistics, or `null` for a missing group. Root and combined scopes retain flat rows.
+Comparison-scope JSONL rows carry `scope` (the canonical comma-separated selection), `group`,
+and one object per selected scope, named `left-total`, `different`, etc. Each contains the four
+statistics, or is `null` for a missing group. Root and combined scopes retain flat rows.
 
 ## Markdown tables
 
@@ -117,19 +133,17 @@ Expression actions retain their own output formats.
 
 ## Choosing a command
 
-| Command suffix after `--compare LEFT RIGHT`                  | Per-path output | Summary tables                                                                  |
-| :----------------------------------------------------------- | :-------------- | :------------------------------------------------------------------------------ |
-| (none)                                                       | Discrepancies   | None                                                                            |
-| `--summary`                                                  | Discrepancies   | Comparison results                                                              |
-| `--summary=ext`                                              | Discrepancies   | Paired extension statistics for all categories                                  |
-| `--summary --summary-scope=compare`                          | Discrepancies   | Comparison results, then paired overall statistics                              |
-| `--compare=summary`                                          | None            | Comparison results                                                              |
-| `--compare=summary --summary=ext`                            | None            | Comparison results, then paired extension statistics                            |
-| `--compare=summary --summary=ext --summary-scope=left,right` | None            | Comparison results, then paired extension statistics for one-sided entries only |
+| Command suffix after `--compare LEFT RIGHT`                            | Per-path output | Summary tables                                                                  |
+| :--------------------------------------------------------------------- | :-------------- | :------------------------------------------------------------------------------ |
+| (none)                                                                 | Discrepancies   | None                                                                            |
+| `--summary`                                                            | Discrepancies   | Comparison results                                                              |
+| `--summary=ext`                                                        | Discrepancies   | Paired extension statistics for all categories                                  |
+| `--summary --summary-scope=compare`                                    | Discrepancies   | Comparison results, then paired overall statistics                              |
+| `--compare=summary`                                                    | None            | Comparison results                                                              |
+| `--compare=summary --summary=ext`                                      | None            | Comparison results, then paired extension statistics                            |
+| `--compare=summary --summary=ext --summary-scope=left-only,right-only` | None            | Comparison results, then paired extension statistics for one-sided entries only |
 
-`left` and `right` select **left-only and right-only results**, not every entry on those sides.
-Use `compare` for all four categories, with complete left/right columns, or `root` for two separate
-whole-root tables. The comparison-result table always describes the full comparison. Neither
+Use `compare` for complete side-total columns or `root` for separate whole-root tables. The comparison-result table always describes the full comparison. Neither
 `--summary-scope` nor `--compare-select` filters it; only the ordinary summary population changes
 with scope. Conversely, `--compare-select` changes only per-path records and requires `--compare`.
 
@@ -139,7 +153,9 @@ one identical pair of 2-byte files, and one different pair of 7 and 11 bytes. Wi
 - Comparison total: 4 results, 30 combined bytes.
 - Paired `compare` total: left 3 entries / 12 bytes, right 3 entries / 18 bytes.
 - Combined `all` total: 6 entries / 30 bytes.
-- Paired `left,right` total: left 1 entry / 3 bytes, right 1 entry / 5 bytes.
+- `left-only,right-only` totals: left-only 1 entry / 3 bytes, right-only 1 entry / 5 bytes.
+- `diff` totals: left-only 1 / 3 bytes, right-only 1 / 5 bytes, different 1 pair / 18 bytes.
+- `identical` total: 1 pair / 4 combined bytes.
 
 Expression filters run independently on each side **before pairing**. A path can be classified
 as one-sided when its counterpart exists but fails the expression or is excluded by traversal
@@ -148,8 +164,8 @@ one-sided rather than a file-to-directory transition. Omit the type filter to co
 directories and other entry kinds as well.
 
 Comparison-result tables appear first, regardless of where their summary flags occur. Ordinary
-summary requests then appear in request order within each scope. Selected comparison categories
-share one paired table, emitted at the first category's position in the scope list. Repeating
+summary requests then appear in request order within each scope. Selected comparison scopes
+share one table, emitted at the first comparison scope's position in the scope list. Repeating
 `--summary=compare` requests repeated comparison tables; `--summary=none` clears earlier requests.
 
 ## Formats and controls
@@ -167,6 +183,6 @@ Repeated JSONL tables follow the same order as text tables; they are not wrapped
 `--summary-precision=N` accepts `0` through `9` and controls all summary percentages and scaled
 sizes, including JSON percentage fields. Invalid values are errors. `--top=N` accepts a
 non-negative integer; `0` removes the limit, and the last occurrence wins. Ordinary groups rank
-by size, then count, then name; paired groups use combined left/right size. Extraction groups
+by size, then count, then name; comparison-scope groups rank by the sum of their displayed column-group sizes (including overlap). Extraction groups
 have no byte dimension and rank by count. Totals and percentage denominators include every
 group, even those hidden by `--top`. Comparison-result rows are never truncated by `--top`.
