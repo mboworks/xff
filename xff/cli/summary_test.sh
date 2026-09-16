@@ -303,7 +303,7 @@ test::multiple_summary_flags_emit_independent_tables() {
 test::compare_summary_follows_selected_results() {
   local root out
   root="$(_new_tree)"
-  mkdir "${root}/left" "${root}/right" -type f
+  mkdir "${root}/left" "${root}/right"
   printf left >"${root}/left/left"
   printf right >"${root}/right/right"
   printf same >"${root}/left/same"
@@ -551,6 +551,28 @@ test::summary_scope_default_depends_on_compare_and_explicit_selection_wins() {
   out="$(_run "${root}/left" "${root}/right" --summary=ext -type f --format=jsonl)"
   _expect_json_row '{"group":"txt","count":2,"bytes":3}' "${out}"
   expect_not_matches '"left":|"right":' "${out}"
+}
+
+test::markdown_summary_tables_escape_cells_and_support_comparison() {
+  local root out explicit
+  root="$(_new_tree)"
+  mkdir "${root}/left" "${root}/right"
+  printf a >"${root}/left/file.a|b"
+  printf bb >"${root}/right/file.md"
+  out="$(_run "${root}/left" --summary=ext --format=md -type f)"
+  expect_output_contains '| Group' "${out}"
+  expect_output_contains 'a\|b' "${out}"
+  explicit="$(_run "${root}/left" --summary=ext --format=markdown -type f)"
+  expect_eq "${out}" "${explicit}"
+  out="$(_run --compare=summary "${root}/left" "${root}/right" --summary=ext --format=md -type f)"
+  expect_output_contains '| Type' "${out}"
+  expect_output_contains '| Left count' "${out}"
+  expect_output_contains '| Right count' "${out}"
+  expect_output_contains 'a\|b' "${out}"
+  python3 -c 'import sys; text = sys.stdin.read(); assert text.count("| Group") == 1; assert "\n\n| Group" in text; assert "\n\nResults count" in text' <<<"${out}"
+  out="$(_run "${root}/left" --summary=ext --format=md --no-header -type f)"
+  expect_not_matches '[|] Group' "${out}"
+  expect_output_contains 'a\|b' "${out}"
 }
 
 test_runner

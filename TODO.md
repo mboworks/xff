@@ -76,6 +76,8 @@ The safety model and directory-scoped permissions are tracked in
       use each side's selected population as the denominator and preserve JSONL attribution.
 - [x] Default ordinary summaries to paired comparison scope under `--compare`; retain `all` otherwise
       and document explicit overrides, option-order independence, and summary-driver requirements.
+- [x] Render ordinary and comparison summaries as Markdown for `--format=md|markdown`, reusing
+      listing cell escaping and testing validation, fixed schemas, and table boundaries.
 - [x] Add count/size reconciliation tests, update registry/topic/generated help, and prepare a PR.
 
 ## Design required before implementation

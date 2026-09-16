@@ -1125,6 +1125,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "format",
         .header = "Result formatting",
         .summary = "output format: plain, nul, jsonl, csv, tsv, aligned, markdown (md), tree; default plain",
+        .details = "`markdown` (alias `md`) also renders ordinary, comparison-result, and paired summary tables "
+                   "as Markdown. Summary schemas come from `--summary`; `--columns` selects listing fields and "
+                   "cannot change summary columns. `--no-header` omits table headers and Markdown separator rows "
+                   "when producing fragments. Expression actions retain their own output formats.",
         .values = kFormatValues,
         .topic = "output",
         .value_check = GlobalFlag::ValueCheck::kEnum,
@@ -1426,6 +1430,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "--summary=ext --summary=type), printed in order. Percentages use the complete table totals before "
                    "`--top`; a zero denominator yields zero percent. "
                    "Sizes sum entry metadata sizes, including directory metadata, never recursive subtree sizes. "
+                   "`--format=markdown` (or `md`) renders these tables as Markdown with fixed summary columns. "
                    "`--format=jsonl` includes `count_percent` and `size_percent` alongside `count` and `bytes`. "
                    "--top=N limits the rows of each, "
                    "--summary-precision sets the scaled-size digits, and --format=jsonl emits one object per group "

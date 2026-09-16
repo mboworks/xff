@@ -2031,6 +2031,39 @@ TEST_F(RunTest, ComparisonSummaryDefaultsToPairedScopeAndExplicitScopeOverridesI
   EXPECT_THAT(last_errors_, 0);
 }
 
+TEST_F(RunTest, MarkdownSummariesRenderOrdinaryAndPairedTables) {
+  const auto ordinary = RunArgvRecords({root_.string(), "-type", "f", "--summary=ext", "--format=md"});
+  EXPECT_THAT(ordinary, Contains(HasSubstr("| Group")).Times(1));
+  EXPECT_THAT(ordinary, Contains(HasSubstr("| Count")));
+  EXPECT_THAT(ordinary, Contains(HasSubstr("| txt")));
+  EXPECT_THAT(RunArgvRecords({root_.string(), "-type", "f", "--summary=ext", "--format=markdown"}), Eq(ordinary));
+  const auto comparison =
+      RunArgvRecords({"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--format=md"});
+  EXPECT_THAT(comparison, Contains(HasSubstr("| Type")).Times(1));
+  EXPECT_THAT(comparison, Contains(HasSubstr("| Left count")).Times(1));
+  EXPECT_THAT(comparison, Contains(HasSubstr("| Right count")));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, MarkdownSummaryWorksWithCollectionsAndHonorsHeaderControl) {
+  const auto records =
+      RunArgvRecords({root_.string(), "-type", "f", "-collect", "--summary=ext", "--format=md", "--no-header"});
+  EXPECT_THAT(records, Contains(HasSubstr("| txt")));
+  EXPECT_THAT(records, Not(Contains(HasSubstr("| Group"))));
+  EXPECT_THAT(records, Not(Contains(HasSubstr("| ---"))));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, MarkdownSummaryRejectsListingColumnsAndPreservesActionValidation) {
+  EXPECT_THAT(RunArgvRecords({root_.string(), "--summary=ext", "--format=md", "--columns=path"}), IsEmpty());
+  EXPECT_THAT(last_errors_, 2);
+  EXPECT_THAT(RunArgvRecords({root_.string(), "--format=md", "-printf", "SHOULD_NOT_RUN"}), IsEmpty());
+  EXPECT_THAT(last_errors_, 2);
+  EXPECT_THAT(
+      RunArgvRecords({"--compare=summary", root_.string(), Path("sub"), "--summary=none", "--format=md"}), IsEmpty());
+  EXPECT_THAT(last_errors_, 2);
+}
+
 TEST_F(RunTest, SummaryRetainsZeroByteDimensionForEmptyFiles) {
   // Zero-byte files have a size dimension; distinguish them from absent entries.
   { std::ofstream(root_ / "e1.log"); }  // 0 bytes

@@ -3110,12 +3110,47 @@ std::string SummaryJson(const SummaryRow& row, const SummaryRow& total, unsigned
   return result;
 }
 
+// Summary schemas are fixed by their grouping; reuse the listing Markdown encoder for cells.
+class SummaryTable final {
+ public:
+  SummaryTable(
+      std::vector<format::Align> alignments,
+      std::vector<std::string> header,
+      render::Format output_format,
+      bool with_header)
+      : plain_(std::move(alignments)) {
+    if (output_format == render::Format::kMarkdown) {
+      markdown_.emplace(output_format, std::move(header), with_header, render::TableStream::kAll);
+    } else if (with_header) {
+      plain_.AddRow(std::move(header));
+    }
+  }
+
+  void AddRow(std::vector<std::string> cells) {
+    if (markdown_.has_value()) {
+      // The full-table window retains every row until Render().
+      static_cast<void>(markdown_->Add(cells));
+    } else {
+      plain_.AddRow(std::move(cells));
+    }
+  }
+
+  std::string Render() {
+    return markdown_.has_value() ? absl::StrCat("\n", markdown_->Flush(), "\n") : plain_.Render();
+  }
+
+ private:
+  format::Table plain_;
+  std::optional<render::TableStream> markdown_;
+};
+
 void EmitSummaryRows(
     const std::vector<SummaryRow>& rows,
     render::Format output_format,
     std::optional<format::SizeUnits> human,
     unsigned precision,
     bool has_size,
+    bool with_header,
     EmitFn emit) {
   if (rows.empty()) {
     return;
@@ -3127,10 +3162,10 @@ void EmitSummaryRows(
     }
     return;
   }
-  format::Table table(
+  SummaryTable table(
       {format::Align::kLeft, format::Align::kRight, format::Align::kRight, format::Align::kRight,
-       format::Align::kRight});
-  table.AddRow({"Group", "Count", "% count", "Size", "% size"});
+       format::Align::kRight},
+      {"Group", "Count", "% count", "Size", "% size"}, output_format, with_header);
   for (const auto& row : rows) {
     auto cells = SummaryColumns(row, total, human, precision, has_size);
     cells.insert(cells.begin(), row.key);
@@ -3154,7 +3189,7 @@ void EmitSummaries(
     }
     EmitSummaryRows(
         SummaryRows(summaries.at(i).mode, tables.at(i), top), output_format, human, precision,
-        SummaryHasSize(summaries.at(i)), emit);
+        SummaryHasSize(summaries.at(i)), !HasGlobal(globals, "--no-header"), emit);
   }
 }
 
@@ -3214,13 +3249,13 @@ void EmitPairedSummary(
     const auto rows = SummaryRows(summaries.at(sink).mode, combined.at(sink), ResolveTop(command.globals));
     const std::array totals{SummaryTotal(sides.at(0).at(sink)), SummaryTotal(sides.at(1).at(sink))};
     const bool has_size = SummaryHasSize(summaries.at(sink));
-    format::Table table(
+    SummaryTable table(
         {format::Align::kLeft, format::Align::kRight, format::Align::kRight, format::Align::kRight,
          format::Align::kRight, format::Align::kRight, format::Align::kRight, format::Align::kRight,
-         format::Align::kRight});
-    table.AddRow(
+         format::Align::kRight},
         {"Group", "Left count", "Left % count", "Left size", "Left % size", "Right count", "Right % count",
-         "Right size", "Right % size"});
+         "Right size", "Right % size"},
+        ResolveFormat(command.globals), !HasGlobal(command.globals, "--no-header"));
     for (std::size_t index = 0; index < rows.size(); ++index) {
       const auto& key = rows.at(index).key;
       const bool total_row = index + 1 == rows.size();
@@ -3650,10 +3685,11 @@ void EmitTreeCompareSummary(
     if (summary.mode != SummaryMode::kCompare) {
       continue;
     }
-    format::Table table(
+    SummaryTable table(
         {format::Align::kLeft, format::Align::kLeft, format::Align::kRight, format::Align::kRight,
-         format::Align::kRight, format::Align::kRight});
-    table.AddRow({"Type", "Status", "Results", "% results", "Combined size", "% size"});
+         format::Align::kRight, format::Align::kRight},
+        {"Type", "Status", "Results", "% results", "Combined size", "% size"}, output_format,
+        !HasGlobal(globals, "--no-header"));
     const auto add_row = [&](std::string_view type, const SummaryRow& row) {
       if (output_format == render::Format::kJsonl) {
         emit(
@@ -4080,7 +4116,15 @@ RunResult RunFindCore(
   const bool buffered = format == render::Format::kAligned || format == render::Format::kMarkdown;
   const bool is_tree = format == render::Format::kTree;
   const bool tabular = format == render::Format::kCsv || format == render::Format::kTsv || buffered;
-  if ((tabular || is_tree || !columns.empty()) && !implicit_print) {
+  const bool markdown_summary =
+      format == render::Format::kMarkdown && !ResolveSummaries(command.globals, compare_listing).empty();
+  if (markdown_summary && !columns.empty()) {
+    on_error(
+        "--columns", absl::FailedPreconditionError(
+                         "summary tables have fixed columns; --columns selects fields for the default listing"));
+    return RunResult{.errors = 2};
+  }
+  if ((tabular || is_tree || !columns.empty()) && !implicit_print && !markdown_summary) {
     on_error(
         "--format", absl::FailedPreconditionError(
                         "tabular/tree output (--format=csv/tsv/aligned/markdown/tree) and --columns format the "

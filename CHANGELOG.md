@@ -3,6 +3,8 @@
 
 # 0.6.0
 
+- Render ordinary and comparison summary tables as Markdown with `--format=md` or `markdown`.
+
 - Show count and size percentages in summary tables, include every matched entry type and both
   sides' bytes in comparison totals, and combine selected categories in one left/right table.
   Ordinary summaries default to that paired layout with `--compare`, or combined roots otherwise;

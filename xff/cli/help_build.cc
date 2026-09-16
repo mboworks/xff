@@ -1046,7 +1046,9 @@ Section CompareSection(bool in_full) {
       "`--summary-scope=root` separates roots; `--summary-scope=compare` aligns left and right columns "
       "in one table per grouping across the selected categories. Each side's percentages use its full selected "
       "category population, before `--top`. "
-      "Missing groups display a dash (JSON `null`); existing zero-byte files retain numeric zeros."));
+      "Missing groups display a dash (JSON `null`); existing zero-byte files retain numeric zeros. "
+      "`--format=markdown` (alias `md`) exports comparison-result and ordinary summary tables as Markdown; "
+      "`--columns` remains a listing-only option."));
   statuses.children.push_back(ProseOf(
       "`--compare=summary` is shorthand for `--compare=status --compare-select=none --summary=compare` "
       "at that position in the option sequence. Later selections can enable per-path output, and "

@@ -88,3 +88,18 @@ or represent a different population; reconciliation only applies when the popula
 Paired JSONL rows carry `scope` (the canonical comma-separated selection), `group`, and
 `left`/`right` objects, each containing `root` and
 the four statistics, or `null` for a missing group. Root and combined scopes retain flat rows.
+
+## Markdown tables
+
+`--format=markdown` (alias `md`) renders ordinary, comparison-result, and paired summaries as
+Markdown tables, including their headers. For example:
+
+```sh
+xff --compare=summary LEFT RIGHT --summary=ext --format=md
+```
+
+This emits a comparison-result table followed by one paired extension table. Cell escaping uses
+the same renderer as Markdown listings. Summary columns are determined by the grouping;
+`--columns` remains a listing control and cannot be combined with Markdown summaries.
+`--no-header` omits headers and Markdown separator rows when producing table fragments.
+Expression actions retain their own output formats.
