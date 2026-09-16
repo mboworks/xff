@@ -47,6 +47,9 @@ jobs:
             --generated "${RUNNER_TEMP}/release-site-generated"
 
   test:
+    permissions:
+      contents: read
+      actions: write # Retire replaced main cache generations after successful uploads.
     name: ${{ matrix.config.name == 'asan' && 'asan' || format('test ({0})', matrix.os) }}
     # Gate the heavy matrix behind the fast pre-flight checks (lint + the XFF.md drift guard), so a
     # stale reference or a lint failure fails in minutes instead of after the full asan build.
@@ -170,6 +173,9 @@ jobs:
   # Build every core and extension target once on Linux; Clang + libc++ owns tests, sanitizers,
   # generated references, release binaries, and (after its separate migration) coverage.
   gcc:
+    permissions:
+      contents: read
+      actions: write # Retire replaced main cache generations after successful uploads.
     needs: [pre-commit, trunk]
     runs-on: ubuntu-latest
     steps:
@@ -219,6 +225,9 @@ jobs:
   # match the clang-ASan matrix, so it owns a size-bounded disk cache namespace instead of pretending
   # those jobs share compiled outputs. The multi-gigabyte hermetic LLVM repository is not cached.
   fuzz:
+    permissions:
+      contents: read
+      actions: write # Retire replaced main cache generations after successful uploads.
     needs: [pre-commit, trunk]
     runs-on: ubuntu-latest
     timeout-minutes: 75
@@ -259,6 +268,9 @@ jobs:
   # gate, not merely another test cell: it publishes both the raw LCOV data and the policy-rendered
   # capability/extension report, and enforces changed-line coverage.
   coverage:
+    permissions:
+      contents: read
+      actions: write # Retire replaced main cache generations after successful uploads.
     needs: [pre-commit, trunk]
     runs-on: ubuntu-latest
     steps:
@@ -374,6 +386,9 @@ jobs:
   # expensive recurring work that previously rebuilt from scratch every run; LLVM
   # re-fetches each run.
   tsan:
+    permissions:
+      contents: read
+      actions: write # Retire replaced main cache generations after successful uploads.
     needs: [pre-commit, trunk]
     runs-on: ubuntu-latest
     steps:
@@ -416,6 +431,9 @@ jobs:
   # bazelmod/llvm.MODULE.bazel fetches. So this cell needs no extra build step and no
   # cmake/ninja - it is a plain `bazel test`, exactly like the tsan cell above.
   msan:
+    permissions:
+      contents: read
+      actions: write # Retire replaced main cache generations after successful uploads.
     needs: [pre-commit, trunk]
     runs-on: ubuntu-latest
     steps:
@@ -456,6 +474,9 @@ jobs:
   # core->extra dependency would fail here. The sole job that opts OUT of the extras (every other job
   # runs --config=xff_full); one cell on the single most-default target (lean //xff/cli:xff, ubuntu).
   minimal:
+    permissions:
+      contents: read
+      actions: write # Retire replaced main cache generations after successful uploads.
     needs: [pre-commit, trunk]
     runs-on: ubuntu-latest
     steps:
@@ -495,6 +516,9 @@ jobs:
   # builds only xff_full + the diff_test (no asan/tsan, no full suite) and is disk-cache-only (like
   # tsan/minimal), so it is one of the cheap checks the matrix waits on, alongside pre-commit/trunk.
   xff-md:
+    permissions:
+      contents: read
+      actions: write # Retire replaced main cache generations after successful uploads.
     needs: [pre-commit, trunk]
     runs-on: ubuntu-latest
     steps:
@@ -533,6 +557,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: write
     steps:
       - uses: actions/checkout@v7
         with:

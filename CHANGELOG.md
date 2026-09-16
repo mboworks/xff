@@ -3,6 +3,9 @@
 
 # 0.6.0
 
+- Retire older main build caches immediately after a verified replacement upload, reducing
+  generation overlap while preserving previous caches when the replacement is missing or oversized.
+
 - Preserve more reusable CI compilation outputs by evicting large cache blobs before small ones
   with a 2.6 GB uncompressed allowance for sanitizer jobs; apply shared caching to deep fuzz and release reference generation.
 

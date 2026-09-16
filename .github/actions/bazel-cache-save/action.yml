@@ -21,3 +21,21 @@ runs:
       with:
         path: ~/.cache/bazel-disk
         key: ${{ inputs.key }}
+    - name: Retire replaced main cache generations
+      if: github.ref == 'refs/heads/main'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+        REPLACEMENT_KEY: ${{ inputs.key }}
+      run: |
+        if ! cache_json=$(gh cache list --ref refs/heads/main --limit 10000 --json id,key,ref,sizeInBytes,createdAt); then
+          echo "::warning::Cache inventory unavailable; retaining previous generations"
+          exit 0
+        fi
+        obsolete=$(printf '%s' "${cache_json}" | python3 tools/cache_size.py --replacement-key "${REPLACEMENT_KEY}")
+        for cache_id in ${obsolete}; do
+          if ! gh cache delete "${cache_id}"; then
+            echo "::warning::Could not retire cache ${cache_id}; scheduled cleanup will retry"
+          fi
+        done

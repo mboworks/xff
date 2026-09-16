@@ -96,6 +96,13 @@ LLVM downloads remain uncached.
 Cleanup retains sanitizer uploads up to 1,000,000,000 compressed bytes; other entries keep
 the existing 700,000,000-byte ceiling. The repository storage limit remains 10 GB.
 
+After each successful main upload, the save action checks the GitHub inventory for that exact
+replacement key and its compressed size. Only then does it delete strictly older main generations
+for the same OS, architecture, and configuration. Missing, empty, or oversized replacements leave
+the previous generations intact; concurrent newer uploads are also preserved. Inventory and
+deletion failures leave cleanup to the fallback workflow. Compiler jobs need Actions write
+permission for deletion; PRs and tags never invoke the save/retirement action.
+
 The trusted cache-maintenance workflow removes closed-PR and tag-scoped caches first, then
 superseded generations per configuration and ref, and oversized entries. It retains the newest
 usable generation if a newer upload exceeds the ceiling. Open-PR caches from older workflows are
