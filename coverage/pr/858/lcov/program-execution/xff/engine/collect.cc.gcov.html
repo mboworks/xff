@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-17 20:54:33</td>
+            <td class="headerValue">2026-09-17 22:35:05</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -107,24 +107,24 @@
 <span id="L27"><span class="lineNum">      27</span>                 :             : namespace {</span>
 <span id="L28"><span class="lineNum">      28</span>                 :             : </span>
 <span id="L29"><span class="lineNum">      29</span>                 :             : // Walks the expression tree appending one site per `-collect` node, in AST order.</span>
-<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC">        3488 : void AppendCollectSites(const parser::Expr&amp; expr, std::vector&lt;CollectSite&gt;&amp; sites) {</span></span>
-<span id="L31"><span class="lineNum">      31</span>         [<span class="tlaGBC" title="branch 0 was taken 2623 times"> + </span><span class="tlaGBC" title="branch 1 was taken 865 times"> + </span>]:<span class="tlaGNC">        3488 :   if (expr.kind == parser::Expr::Kind::kPredicate) {</span></span>
-<span id="L32"><span class="lineNum">      32</span> [<span class="tlaGBC" title="branch 0 was taken 2623 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 41 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2582 times"> + </span>]:<span class="tlaGNC">        2623 :     if (expr.descriptor.has_value() &amp;&amp; expr.descriptor-&gt;name == &quot;-collect&quot;) {</span></span>
+<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC">        3644 : void AppendCollectSites(const parser::Expr&amp; expr, std::vector&lt;CollectSite&gt;&amp; sites) {</span></span>
+<span id="L31"><span class="lineNum">      31</span>         [<span class="tlaGBC" title="branch 0 was taken 2717 times"> + </span><span class="tlaGBC" title="branch 1 was taken 927 times"> + </span>]:<span class="tlaGNC">        3644 :   if (expr.kind == parser::Expr::Kind::kPredicate) {</span></span>
+<span id="L32"><span class="lineNum">      32</span> [<span class="tlaGBC" title="branch 0 was taken 2717 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 41 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2676 times"> + </span>]:<span class="tlaGNC">        2717 :     if (expr.descriptor.has_value() &amp;&amp; expr.descriptor-&gt;name == &quot;-collect&quot;) {</span></span>
 <span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">          41 :       sites.push_back(</span></span>
 <span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">          41 :           CollectSite{</span></span>
 <span id="L35"><span class="lineNum">      35</span> [<span class="tlaGBC" title="branch 0 was taken 23 times"> + </span><span class="tlaGBC" title="branch 1 was taken 18 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 18 times"> + </span>]:<span class="tlaGNC">          41 :               .name = expr.args.empty() || expr.args.front().empty() ? kDefaultCollection : expr.args.front(),</span></span>
 <span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">          41 :               .override_name = expr.label_override,</span></span>
 <span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">          41 :           });</span></span>
 <span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">          41 :     }</span></span>
-<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">        2623 :     return;</span></span>
-<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">        2623 :   }</span></span>
-<span id="L41"><span class="lineNum">      41</span>         [<span class="tlaGBC" title="branch 0 was taken 865 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">         865 :   if (expr.lhs != nullptr) {</span></span>
-<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">         865 :     AppendCollectSites(*expr.lhs, sites);</span></span>
-<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">         865 :   }</span></span>
-<span id="L44"><span class="lineNum">      44</span>         [<span class="tlaGBC" title="branch 0 was taken 831 times"> + </span><span class="tlaGBC" title="branch 1 was taken 34 times"> + </span>]:<span class="tlaGNC">         865 :   if (expr.rhs != nullptr) {</span></span>
-<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">         831 :     AppendCollectSites(*expr.rhs, sites);</span></span>
-<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">         831 :   }</span></span>
-<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">         865 : }</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">        2717 :     return;</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">        2717 :   }</span></span>
+<span id="L41"><span class="lineNum">      41</span>         [<span class="tlaGBC" title="branch 0 was taken 927 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">         927 :   if (expr.lhs != nullptr) {</span></span>
+<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">         927 :     AppendCollectSites(*expr.lhs, sites);</span></span>
+<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">         927 :   }</span></span>
+<span id="L44"><span class="lineNum">      44</span>         [<span class="tlaGBC" title="branch 0 was taken 893 times"> + </span><span class="tlaGBC" title="branch 1 was taken 34 times"> + </span>]:<span class="tlaGNC">         927 :   if (expr.rhs != nullptr) {</span></span>
+<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">         893 :     AppendCollectSites(*expr.rhs, sites);</span></span>
+<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">         893 :   }</span></span>
+<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">         927 : }</span></span>
 <span id="L48"><span class="lineNum">      48</span>                 :             : </span>
 <span id="L49"><span class="lineNum">      49</span>                 :             : }  // namespace</span>
 <span id="L50"><span class="lineNum">      50</span>                 :             : </span>
@@ -185,11 +185,11 @@
 <span id="L104"><span class="lineNum">     104</span>                 :<span class="tlaGNC">           3 :   return total;</span></span>
 <span id="L105"><span class="lineNum">     105</span>                 :<span class="tlaGNC">           3 : }</span></span>
 <span id="L106"><span class="lineNum">     106</span>                 :             : </span>
-<span id="L107"><span class="lineNum">     107</span>                 :<span class="tlaGNC">        1791 : std::vector&lt;CollectSite&gt; CollectSites(const parser::Expr&amp; expr) {</span></span>
-<span id="L108"><span class="lineNum">     108</span>                 :<span class="tlaGNC">        1791 :   std::vector&lt;CollectSite&gt; sites;</span></span>
-<span id="L109"><span class="lineNum">     109</span>                 :<span class="tlaGNC">        1791 :   AppendCollectSites(expr, sites);</span></span>
-<span id="L110"><span class="lineNum">     110</span>                 :<span class="tlaGNC">        1791 :   return sites;</span></span>
-<span id="L111"><span class="lineNum">     111</span>                 :<span class="tlaGNC">        1791 : }</span></span>
+<span id="L107"><span class="lineNum">     107</span>                 :<span class="tlaGNC">        1824 : std::vector&lt;CollectSite&gt; CollectSites(const parser::Expr&amp; expr) {</span></span>
+<span id="L108"><span class="lineNum">     108</span>                 :<span class="tlaGNC">        1824 :   std::vector&lt;CollectSite&gt; sites;</span></span>
+<span id="L109"><span class="lineNum">     109</span>                 :<span class="tlaGNC">        1824 :   AppendCollectSites(expr, sites);</span></span>
+<span id="L110"><span class="lineNum">     110</span>                 :<span class="tlaGNC">        1824 :   return sites;</span></span>
+<span id="L111"><span class="lineNum">     111</span>                 :<span class="tlaGNC">        1824 : }</span></span>
 <span id="L112"><span class="lineNum">     112</span>                 :             : </span>
 <span id="L113"><span class="lineNum">     113</span>                 :             : }  // namespace xff::engine</span>
         </pre>

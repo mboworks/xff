@@ -40,13 +40,13 @@
             <td class="headerValue">xff production coverage</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntryHi">97.8&nbsp;%</td>
-            <td class="headerCovTableEntry">180</td>
-            <td class="headerCovTableEntry">176</td>
+            <td class="headerCovTableEntryHi">98.3&nbsp;%</td>
+            <td class="headerCovTableEntry">181</td>
+            <td class="headerCovTableEntry">178</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-17 20:54:33</td>
+            <td class="headerValue">2026-09-17 22:35:05</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -58,9 +58,9 @@
             <td></td>
             <td></td>
             <td class="headerItem">Branches:</td>
-            <td class="headerCovTableEntryHi">91.5&nbsp;%</td>
-            <td class="headerCovTableEntry">106</td>
-            <td class="headerCovTableEntry">97</td>
+            <td class="headerCovTableEntryHi">92.6&nbsp;%</td>
+            <td class="headerCovTableEntry">108</td>
+            <td class="headerCovTableEntry">100</td>
           </tr>
                   <tr><td><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
                 </table>
@@ -258,13 +258,13 @@
 <span id="L178"><span class="lineNum">     178</span>                 :             :     std::vector&lt;std::size_t&gt; mins,</span>
 <span id="L179"><span class="lineNum">     179</span>                 :             :     std::size_t window,</span>
 <span id="L180"><span class="lineNum">     180</span>                 :             :     std::size_t byte_budget)</span>
-<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">        1031 :     : aligns_(std::move(aligns)),</span></span>
-<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">        1031 :       widths_(std::move(mins)),</span></span>
-<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">        1031 :       window_(window),</span></span>
-<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">        1031 :       byte_budget_(byte_budget),</span></span>
-<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">        1031 :       buffering_(window != 0) {</span></span>
-<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">        1031 :   widths_.resize(aligns_.size(), 0);  // one width per column, seeded from the mins</span></span>
-<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">        1031 : }</span></span>
+<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">        1045 :     : aligns_(std::move(aligns)),</span></span>
+<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">        1045 :       widths_(std::move(mins)),</span></span>
+<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">        1045 :       window_(window),</span></span>
+<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">        1045 :       byte_budget_(byte_budget),</span></span>
+<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">        1045 :       buffering_(window != 0) {</span></span>
+<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">        1045 :   widths_.resize(aligns_.size(), 0);  // one width per column, seeded from the mins</span></span>
+<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">        1045 : }</span></span>
 <span id="L188"><span class="lineNum">     188</span>                 :             : </span>
 <span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">          35 : std::string ColumnBuffer::Add(std::vector&lt;std::string&gt; cells) {</span></span>
 <span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">          35 :   const auto widen = [this](const std::vector&lt;std::string&gt;&amp; row) {</span></span>
@@ -293,65 +293,66 @@
 <span id="L212"><span class="lineNum">     212</span>                 :<span class="tlaGNC">           6 :   return RenderPaddedRow(cells, aligns_, widths_, &quot;  &quot;);</span></span>
 <span id="L213"><span class="lineNum">     213</span>                 :<span class="tlaGNC">          35 : }</span></span>
 <span id="L214"><span class="lineNum">     214</span>                 :             : </span>
-<span id="L215"><span class="lineNum">     215</span>                 :<span class="tlaGNC">        1038 : std::string ColumnBuffer::Flush() {</span></span>
-<span id="L216"><span class="lineNum">     216</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1032 times"> + </span>]:<span class="tlaGNC">        1038 :   if (!buffering_) {</span></span>
+<span id="L215"><span class="lineNum">     215</span>                 :<span class="tlaGNC">        1049 : std::string ColumnBuffer::Flush() {</span></span>
+<span id="L216"><span class="lineNum">     216</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1043 times"> + </span>]:<span class="tlaGNC">        1049 :   if (!buffering_) {</span></span>
 <span id="L217"><span class="lineNum">     217</span>                 :<span class="tlaGNC">           6 :     return &quot;&quot;;</span></span>
 <span id="L218"><span class="lineNum">     218</span>                 :<span class="tlaGNC">           6 :   }</span></span>
-<span id="L219"><span class="lineNum">     219</span>                 :<span class="tlaGNC">        1032 :   buffering_ = false;</span></span>
-<span id="L220"><span class="lineNum">     220</span>                 :<span class="tlaGNC">        1032 :   std::string out;</span></span>
-<span id="L221"><span class="lineNum">     221</span>         [<span class="tlaGBC" title="branch 0 was taken 29 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1032 times"> + </span>]:<span class="tlaGNC">        1043 :   for (const std::vector&lt;std::string&gt;&amp; row : buffer_) {</span></span>
+<span id="L219"><span class="lineNum">     219</span>                 :<span class="tlaGNC">        1043 :   buffering_ = false;</span></span>
+<span id="L220"><span class="lineNum">     220</span>                 :<span class="tlaGNC">        1043 :   std::string out;</span></span>
+<span id="L221"><span class="lineNum">     221</span>         [<span class="tlaGBC" title="branch 0 was taken 29 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1043 times"> + </span>]:<span class="tlaGNC">        1054 :   for (const std::vector&lt;std::string&gt;&amp; row : buffer_) {</span></span>
 <span id="L222"><span class="lineNum">     222</span>                 :<span class="tlaGNC">          29 :     out.append(RenderPaddedRow(row, aligns_, widths_, &quot;  &quot;));</span></span>
 <span id="L223"><span class="lineNum">     223</span>                 :<span class="tlaGNC">          29 :   }</span></span>
-<span id="L224"><span class="lineNum">     224</span>                 :<span class="tlaGNC">        1032 :   buffer_.clear();</span></span>
-<span id="L225"><span class="lineNum">     225</span>                 :<span class="tlaGNC">        1032 :   return out;</span></span>
-<span id="L226"><span class="lineNum">     226</span>                 :<span class="tlaGNC">        1038 : }</span></span>
+<span id="L224"><span class="lineNum">     224</span>                 :<span class="tlaGNC">        1043 :   buffer_.clear();</span></span>
+<span id="L225"><span class="lineNum">     225</span>                 :<span class="tlaGNC">        1043 :   return out;</span></span>
+<span id="L226"><span class="lineNum">     226</span>                 :<span class="tlaGNC">        1049 : }</span></span>
 <span id="L227"><span class="lineNum">     227</span>                 :             : </span>
-<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">          26 : std::optional&lt;std::size_t&gt; ParseBufferWindow(std::string_view value) {</span></span>
-<span id="L229"><span class="lineNum">     229</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 25 times"> + </span>]:<span class="tlaGNC">          26 :   if (value == &quot;auto&quot;) {</span></span>
-<span id="L230"><span class="lineNum">     230</span>                 :<span class="tlaGNC">           1 :     return std::size_t{100};</span></span>
-<span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L232"><span class="lineNum">     232</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 23 times"> + </span>]:<span class="tlaGNC">          25 :   if (value == &quot;off&quot;) {</span></span>
-<span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">           2 :     return std::size_t{0};</span></span>
-<span id="L234"><span class="lineNum">     234</span>                 :<span class="tlaGNC">           2 :   }</span></span>
-<span id="L235"><span class="lineNum">     235</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 21 times"> + </span>]:<span class="tlaGNC">          23 :   if (value == &quot;all&quot;) {</span></span>
-<span id="L236"><span class="lineNum">     236</span>                 :<span class="tlaGNC">           2 :     return ColumnBuffer::kAll;</span></span>
-<span id="L237"><span class="lineNum">     237</span>                 :<span class="tlaGNC">           2 :   }</span></span>
-<span id="L238"><span class="lineNum">     238</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 20 times"> + </span>]:<span class="tlaGNC">          21 :   if (value.empty()) {</span></span>
-<span id="L239"><span class="lineNum">     239</span>                 :<span class="tlaGNC">           1 :     return std::nullopt;</span></span>
-<span id="L240"><span class="lineNum">     240</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">         105 : std::optional&lt;std::size_t&gt; ParseBufferWindow(std::string_view value) {</span></span>
+<span id="L229"><span class="lineNum">     229</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 103 times"> + </span>]:<span class="tlaGNC">         105 :   if (value == &quot;auto&quot;) {</span></span>
+<span id="L230"><span class="lineNum">     230</span>                 :<span class="tlaGNC">           2 :     return std::size_t{100};</span></span>
+<span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaGNC">           2 :   }</span></span>
+<span id="L232"><span class="lineNum">     232</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 98 times"> + </span>]:<span class="tlaGNC">         103 :   if (value == &quot;off&quot;) {</span></span>
+<span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">           5 :     return std::size_t{0};</span></span>
+<span id="L234"><span class="lineNum">     234</span>                 :<span class="tlaGNC">           5 :   }</span></span>
+<span id="L235"><span class="lineNum">     235</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 93 times"> + </span>]:<span class="tlaGNC">          98 :   if (value == &quot;all&quot;) {</span></span>
+<span id="L236"><span class="lineNum">     236</span>                 :<span class="tlaGNC">           5 :     return ColumnBuffer::kAll;</span></span>
+<span id="L237"><span class="lineNum">     237</span>                 :<span class="tlaGNC">           5 :   }</span></span>
+<span id="L238"><span class="lineNum">     238</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 91 times"> + </span>]:<span class="tlaGNC">          93 :   if (value.empty()) {</span></span>
+<span id="L239"><span class="lineNum">     239</span>                 :<span class="tlaGNC">           2 :     return std::nullopt;</span></span>
+<span id="L240"><span class="lineNum">     240</span>                 :<span class="tlaGNC">           2 :   }</span></span>
 <span id="L241"><span class="lineNum">     241</span>                 :             :   // A trailing decimal SI multiplier scales a row count (case-insensitive). A byte-unit form</span>
 <span id="L242"><span class="lineNum">     242</span>                 :             :   // (a trailing 'B', as in 10MB / 10MiB) is a memory budget, not a row window, and leaves the</span>
 <span id="L243"><span class="lineNum">     243</span>                 :             :   // number un-parseable here so it falls through to nullopt.</span>
-<span id="L244"><span class="lineNum">     244</span>                 :<span class="tlaGNC">          20 :   std::size_t multiplier = 1;</span></span>
-<span id="L245"><span class="lineNum">     245</span>                 :<span class="tlaGNC">          20 :   switch (value.back()) {</span></span>
-<span id="L246"><span class="lineNum">     246</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 19 times"> + </span>]:<span class="tlaGNC">           1 :     case 'k':</span></span>
-<span id="L247"><span class="lineNum">     247</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 19 times"> + </span>]:<span class="tlaGNC">           2 :     case 'K': multiplier = 1'000; break;</span></span>
-<span id="L248"><span class="lineNum">     248</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 20 times"> + </span>]:<span class="tlaUNC">           0 :     case 'm':</span></span>
-<span id="L249"><span class="lineNum">     249</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 18 times"> + </span>]:<span class="tlaGNC">           2 :     case 'M': multiplier = 1'000'000; break;</span></span>
-<span id="L250"><span class="lineNum">     250</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 20 times"> + </span>]:<span class="tlaUNC">           0 :     case 'g':</span></span>
-<span id="L251"><span class="lineNum">     251</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 19 times"> + </span>]:<span class="tlaGNC">           1 :     case 'G': multiplier = 1'000'000'000; break;</span></span>
-<span id="L252"><span class="lineNum">     252</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 20 times"> + </span>]:<span class="tlaUNC">           0 :     case 't':</span></span>
-<span id="L253"><span class="lineNum">     253</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 20 times"> + </span>]:<span class="tlaUNC">           0 :     case 'T': multiplier = 1'000'000'000'000; break;</span></span>
-<span id="L254"><span class="lineNum">     254</span>         [<span class="tlaGBC" title="branch 0 was taken 15 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">          15 :     default: break;</span></span>
-<span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">          20 :   }</span></span>
-<span id="L256"><span class="lineNum">     256</span>         [<span class="tlaGBC" title="branch 0 was taken 15 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">          20 :   const std::string_view digits = multiplier == 1 ? value : value.substr(0, value.size() - 1);</span></span>
-<span id="L257"><span class="lineNum">     257</span>                 :<span class="tlaGNC">          20 :   std::size_t number = 0;</span></span>
-<span id="L258"><span class="lineNum">     258</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 19 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 6 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 13 times"> + </span>]:<span class="tlaGNC">          20 :   if (digits.empty() || !absl::SimpleAtoi(digits, &amp;number)) {</span></span>
-<span id="L259"><span class="lineNum">     259</span>                 :<span class="tlaGNC">           7 :     return std::nullopt;</span></span>
-<span id="L260"><span class="lineNum">     260</span>                 :<span class="tlaGNC">           7 :   }</span></span>
-<span id="L261"><span class="lineNum">     261</span>                 :<span class="tlaGNC">          13 :   return number * multiplier;</span></span>
-<span id="L262"><span class="lineNum">     262</span>                 :<span class="tlaGNC">          20 : }</span></span>
-<span id="L263"><span class="lineNum">     263</span>                 :             : </span>
-<span id="L264"><span class="lineNum">     264</span>                 :<span class="tlaGNC">          21 : std::optional&lt;std::size_t&gt; ParseByteBudget(std::string_view value) {</span></span>
-<span id="L265"><span class="lineNum">     265</span>                 :<span class="tlaGNC">          21 :   const std::optional&lt;std::uint64_t&gt; bytes = values::ParseByteSize(value);</span></span>
-<span id="L266"><span class="lineNum">     266</span>                 :<span class="tlaGNC">          21 :   const std::uint64_t byte_count = bytes.value_or(std::numeric_limits&lt;std::uint64_t&gt;::max());</span></span>
-<span id="L267"><span class="lineNum">     267</span> [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 13 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 13 times"> + </span>]:<span class="tlaGNC">          21 :   if (!bytes.has_value() || byte_count &gt; std::numeric_limits&lt;std::size_t&gt;::max()) {</span></span>
-<span id="L268"><span class="lineNum">     268</span>                 :<span class="tlaGNC">           8 :     return std::nullopt;</span></span>
-<span id="L269"><span class="lineNum">     269</span>                 :<span class="tlaGNC">           8 :   }</span></span>
-<span id="L270"><span class="lineNum">     270</span>                 :<span class="tlaGNC">          13 :   return static_cast&lt;std::size_t&gt;(byte_count);</span></span>
-<span id="L271"><span class="lineNum">     271</span>                 :<span class="tlaGNC">          21 : }</span></span>
-<span id="L272"><span class="lineNum">     272</span>                 :             : </span>
-<span id="L273"><span class="lineNum">     273</span>                 :             : }  // namespace xff::format</span>
+<span id="L244"><span class="lineNum">     244</span>                 :<span class="tlaGNC">          91 :   std::size_t multiplier = 1;</span></span>
+<span id="L245"><span class="lineNum">     245</span>                 :<span class="tlaGNC">          91 :   switch (value.back()) {</span></span>
+<span id="L246"><span class="lineNum">     246</span>         [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 79 times"> + </span>]:<span class="tlaGNC">          12 :     case 'k':</span></span>
+<span id="L247"><span class="lineNum">     247</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 90 times"> + </span>]:<span class="tlaGNC">          13 :     case 'K': multiplier = 1'000; break;</span></span>
+<span id="L248"><span class="lineNum">     248</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 91 times"> + </span>]:<span class="tlaUNC">           0 :     case 'm':</span></span>
+<span id="L249"><span class="lineNum">     249</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 88 times"> + </span>]:<span class="tlaGNC">           3 :     case 'M': multiplier = 1'000'000; break;</span></span>
+<span id="L250"><span class="lineNum">     250</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 91 times"> + </span>]:<span class="tlaUNC">           0 :     case 'g':</span></span>
+<span id="L251"><span class="lineNum">     251</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 90 times"> + </span>]:<span class="tlaGNC">           1 :     case 'G': multiplier = 1'000'000'000; break;</span></span>
+<span id="L252"><span class="lineNum">     252</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 91 times"> + </span>]:<span class="tlaUNC">           0 :     case 't':</span></span>
+<span id="L253"><span class="lineNum">     253</span>         [<span class="tlaGBC" title="branch 0 was taken 13 times"> + </span><span class="tlaGBC" title="branch 1 was taken 78 times"> + </span>]:<span class="tlaGNC">          13 :     case 'T': multiplier = 1'000'000'000'000; break;</span></span>
+<span id="L254"><span class="lineNum">     254</span>         [<span class="tlaGBC" title="branch 0 was taken 61 times"> + </span><span class="tlaGBC" title="branch 1 was taken 30 times"> + </span>]:<span class="tlaGNC">          61 :     default: break;</span></span>
+<span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">          91 :   }</span></span>
+<span id="L256"><span class="lineNum">     256</span>         [<span class="tlaGBC" title="branch 0 was taken 61 times"> + </span><span class="tlaGBC" title="branch 1 was taken 30 times"> + </span>]:<span class="tlaGNC">          91 :   const std::string_view digits = multiplier == 1 ? value : value.substr(0, value.size() - 1);</span></span>
+<span id="L257"><span class="lineNum">     257</span>                 :<span class="tlaGNC">          91 :   std::size_t number = 0;</span></span>
+<span id="L258"><span class="lineNum">     258</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 90 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 42 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 48 times"> + </span>]:<span class="tlaGNC">          91 :   if (digits.empty() || !absl::SimpleAtoi(digits, &amp;number)</span></span>
+<span id="L259"><span class="lineNum">     259</span>         [<span class="tlaGBC" title="branch 0 was taken 14 times"> + </span><span class="tlaGBC" title="branch 1 was taken 34 times"> + </span>]:<span class="tlaGNC">          68 :       || number &gt; std::numeric_limits&lt;std::size_t&gt;::max() / multiplier) {</span></span>
+<span id="L260"><span class="lineNum">     260</span>                 :<span class="tlaGNC">          57 :     return std::nullopt;</span></span>
+<span id="L261"><span class="lineNum">     261</span>                 :<span class="tlaGNC">          57 :   }</span></span>
+<span id="L262"><span class="lineNum">     262</span>                 :<span class="tlaGNC">          34 :   return number * multiplier;</span></span>
+<span id="L263"><span class="lineNum">     263</span>                 :<span class="tlaGNC">          91 : }</span></span>
+<span id="L264"><span class="lineNum">     264</span>                 :             : </span>
+<span id="L265"><span class="lineNum">     265</span>                 :<span class="tlaGNC">          69 : std::optional&lt;std::size_t&gt; ParseByteBudget(std::string_view value) {</span></span>
+<span id="L266"><span class="lineNum">     266</span>                 :<span class="tlaGNC">          69 :   const std::optional&lt;std::uint64_t&gt; bytes = values::ParseByteSize(value);</span></span>
+<span id="L267"><span class="lineNum">     267</span>                 :<span class="tlaGNC">          69 :   const std::uint64_t byte_count = bytes.value_or(std::numeric_limits&lt;std::uint64_t&gt;::max());</span></span>
+<span id="L268"><span class="lineNum">     268</span> [<span class="tlaGBC" title="branch 0 was taken 43 times"> + </span><span class="tlaGBC" title="branch 1 was taken 26 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 26 times"> + </span>]:<span class="tlaGNC">          69 :   if (!bytes.has_value() || byte_count &gt; std::numeric_limits&lt;std::size_t&gt;::max()) {</span></span>
+<span id="L269"><span class="lineNum">     269</span>                 :<span class="tlaGNC">          43 :     return std::nullopt;</span></span>
+<span id="L270"><span class="lineNum">     270</span>                 :<span class="tlaGNC">          43 :   }</span></span>
+<span id="L271"><span class="lineNum">     271</span>                 :<span class="tlaGNC">          26 :   return static_cast&lt;std::size_t&gt;(byte_count);</span></span>
+<span id="L272"><span class="lineNum">     272</span>                 :<span class="tlaGNC">          69 : }</span></span>
+<span id="L273"><span class="lineNum">     273</span>                 :             : </span>
+<span id="L274"><span class="lineNum">     274</span>                 :             : }  // namespace xff::format</span>
         </pre>
               </td>
             </tr>

@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-17 20:54:33</td>
+            <td class="headerValue">2026-09-17 22:35:05</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">98.6&nbsp;%</td>
@@ -305,9 +305,9 @@
 <span id="L224"><span class="lineNum">     224</span>         [<span class="tlaGBC" title="branch 0 was taken 697 times"> + </span><span class="tlaGBC" title="branch 1 was taken 24493 times"> + </span>]:<span class="tlaGNC">       25190 :     if (flag.cli_only) {</span></span>
 <span id="L225"><span class="lineNum">     225</span>                 :<span class="tlaGNC">         697 :       details.push_back(ProseOf(&quot;Command-line only; rejected in configuration files.&quot;));</span></span>
 <span id="L226"><span class="lineNum">     226</span>                 :<span class="tlaGNC">         697 :     }</span></span>
-<span id="L227"><span class="lineNum">     227</span>         [<span class="tlaGBC" title="branch 0 was taken 22474 times"> + </span><span class="tlaGBC" title="branch 1 was taken 25190 times"> + </span>]:<span class="tlaGNC">       25190 :     for (Content&amp; block : ParseBlocks(flag.details)) {</span></span>
-<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">       22474 :       details.push_back(std::move(block));</span></span>
-<span id="L229"><span class="lineNum">     229</span>                 :<span class="tlaGNC">       22474 :     }</span></span>
+<span id="L227"><span class="lineNum">     227</span>         [<span class="tlaGBC" title="branch 0 was taken 22580 times"> + </span><span class="tlaGBC" title="branch 1 was taken 25190 times"> + </span>]:<span class="tlaGNC">       25190 :     for (Content&amp; block : ParseBlocks(flag.details)) {</span></span>
+<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">       22580 :       details.push_back(std::move(block));</span></span>
+<span id="L229"><span class="lineNum">     229</span>                 :<span class="tlaGNC">       22580 :     }</span></span>
 <span id="L230"><span class="lineNum">     230</span>                 :<span class="tlaGNC">       25190 :     AppendInfluence(details, &quot;Affects:&quot;, absl::StrSplit(flag.affects, ',', absl::SkipEmpty()));</span></span>
 <span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaGNC">       25190 :     AppendInfluence(details, &quot;Affected by:&quot;, AffectedByFlags(flag.name));</span></span>
 <span id="L232"><span class="lineNum">     232</span>                 :<span class="tlaGNC">       25190 :   }</span></span>
@@ -353,8 +353,8 @@
 <span id="L272"><span class="lineNum">     272</span>                 :             :   std::map&lt;std::string, std::string&gt; labels;</span>
 <span id="L273"><span class="lineNum">     273</span>                 :             : </span>
 <span id="L274"><span class="lineNum">     274</span>                 :<span class="tlaGNC">       28542 :   void Index(const Blocks&amp; blocks) {</span></span>
-<span id="L275"><span class="lineNum">     275</span>         [<span class="tlaGBC" title="branch 0 was taken 66564 times"> + </span><span class="tlaGBC" title="branch 1 was taken 28542 times"> + </span>]:<span class="tlaGNC">       66564 :     for (const Content&amp; block : blocks) {</span></span>
-<span id="L276"><span class="lineNum">     276</span>         [<span class="tlaGBC" title="branch 0 was taken 20368 times"> + </span><span class="tlaGBC" title="branch 1 was taken 46196 times"> + </span>]:<span class="tlaGNC">       66564 :       if (std::holds_alternative&lt;Entry&gt;(block.node)) {</span></span>
+<span id="L275"><span class="lineNum">     275</span>         [<span class="tlaGBC" title="branch 0 was taken 66631 times"> + </span><span class="tlaGBC" title="branch 1 was taken 28542 times"> + </span>]:<span class="tlaGNC">       66631 :     for (const Content&amp; block : blocks) {</span></span>
+<span id="L276"><span class="lineNum">     276</span>         [<span class="tlaGBC" title="branch 0 was taken 20368 times"> + </span><span class="tlaGBC" title="branch 1 was taken 46263 times"> + </span>]:<span class="tlaGNC">       66631 :       if (std::holds_alternative&lt;Entry&gt;(block.node)) {</span></span>
 <span id="L277"><span class="lineNum">     277</span>                 :<span class="tlaGNC">       20368 :         const auto&amp; entry = std::get&lt;Entry&gt;(block.node);</span></span>
 <span id="L278"><span class="lineNum">     278</span>                 :<span class="tlaGNC">       20368 :         const std::string_view anchor = entry.anchor;</span></span>
 <span id="L279"><span class="lineNum">     279</span>         [<span class="tlaGBC" title="branch 0 was taken 11591 times"> + </span><span class="tlaGBC" title="branch 1 was taken 8777 times"> + </span>]:<span class="tlaGNC">       20368 :         if (anchor.starts_with(&quot;flag-&quot;)) {</span></span>
@@ -363,10 +363,10 @@
 <span id="L282"><span class="lineNum">     282</span>                 :<span class="tlaGNC">        8777 :           labels.emplace(entry.anchor, anchor.substr(8));</span></span>
 <span id="L283"><span class="lineNum">     283</span>                 :<span class="tlaGNC">        8777 :         }</span></span>
 <span id="L284"><span class="lineNum">     284</span>                 :<span class="tlaGNC">       20368 :         Index(entry.details);</span></span>
-<span id="L285"><span class="lineNum">     285</span>         [<span class="tlaGBC" title="branch 0 was taken 6700 times"> + </span><span class="tlaGBC" title="branch 1 was taken 39496 times"> + </span>]:<span class="tlaGNC">       46196 :       } else if (std::holds_alternative&lt;Subsection&gt;(block.node)) {</span></span>
+<span id="L285"><span class="lineNum">     285</span>         [<span class="tlaGBC" title="branch 0 was taken 6700 times"> + </span><span class="tlaGBC" title="branch 1 was taken 39563 times"> + </span>]:<span class="tlaGNC">       46263 :       } else if (std::holds_alternative&lt;Subsection&gt;(block.node)) {</span></span>
 <span id="L286"><span class="lineNum">     286</span>                 :<span class="tlaGNC">        6700 :         Index(std::get&lt;Subsection&gt;(block.node).children);</span></span>
 <span id="L287"><span class="lineNum">     287</span>                 :<span class="tlaGNC">        6700 :       }</span></span>
-<span id="L288"><span class="lineNum">     288</span>                 :<span class="tlaGNC">       66564 :     }</span></span>
+<span id="L288"><span class="lineNum">     288</span>                 :<span class="tlaGNC">       66631 :     }</span></span>
 <span id="L289"><span class="lineNum">     289</span>                 :<span class="tlaGNC">       28542 :   }</span></span>
 <span id="L290"><span class="lineNum">     290</span>                 :             : </span>
 <span id="L291"><span class="lineNum">     291</span>                 :<span class="tlaGNC">       21507 :   SeeAlso Resolve(SeeAlso links, std::string_view source) const {</span></span>
