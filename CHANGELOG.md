@@ -3,6 +3,9 @@
 
 # 0.7.0
 
+- Correct the release archive description: lean and full executables have separate archives,
+  each with its own matching debug symbols.
+
 # 0.6.0
 
 - Raise compiled-output CI cache budgets to 1 GB uncompressed by default and 3 GB for ASan.
