@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-17 22:46:11</td>
+            <td class="headerValue">2026-09-17 23:42:54</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -137,13 +137,13 @@
 <span id="L66"><span class="lineNum">      66</span>              :     std::size_t bytes = 0;</span>
 <span id="L67"><span class="lineNum">      67</span>              :   };</span>
 <span id="L68"><span class="lineNum">      68</span>              : </span>
-<span id="L69"><span class="lineNum">      69</span> <span class="tlaGNC">          19 :   void SetBudget(Budget budget) { budget_ = budget; }</span></span>
+<span id="L69"><span class="lineNum">      69</span> <span class="tlaGNC">          20 :   void SetBudget(Budget budget) { budget_ = budget; }</span></span>
 <span id="L70"><span class="lineNum">      70</span>              : </span>
 <span id="L71"><span class="lineNum">      71</span>              :   // Whether the expression has any `-collect` at all, which is what switches the reduction sinks to</span>
 <span id="L72"><span class="lineNum">      72</span>              :   // read this collection. Carried here so the driver needs no separate flag beside the store.</span>
-<span id="L73"><span class="lineNum">      73</span> <span class="tlaGNC">          15 :   void SetActive(bool active) { active_ = active; }</span></span>
+<span id="L73"><span class="lineNum">      73</span> <span class="tlaGNC">          16 :   void SetActive(bool active) { active_ = active; }</span></span>
 <span id="L74"><span class="lineNum">      74</span>              : </span>
-<span id="L75"><span class="lineNum">      75</span> <span class="tlaGNC">        1710 :   [[nodiscard]] bool Active() const { return active_; }</span></span>
+<span id="L75"><span class="lineNum">      75</span> <span class="tlaGNC">        1728 :   [[nodiscard]] bool Active() const { return active_; }</span></span>
 <span id="L76"><span class="lineNum">      76</span>              : </span>
 <span id="L77"><span class="lineNum">      77</span>              :   // Appends `visit` to `name`, copying what the entry needs to outlive the walk. Returns false once</span>
 <span id="L78"><span class="lineNum">      78</span>              :   // the budget is exceeded, and then keeps returning false without storing anything more.</span>
@@ -154,7 +154,7 @@
 <span id="L83"><span class="lineNum">      83</span>              :   bool Add(std::string_view name, const Visit&amp; visit);</span>
 <span id="L84"><span class="lineNum">      84</span>              : </span>
 <span id="L85"><span class="lineNum">      85</span>              :   // True once an Add was refused because the budget was reached.</span>
-<span id="L86"><span class="lineNum">      86</span> <span class="tlaGNC">        1045 :   [[nodiscard]] bool Overflowed() const { return overflowed_; }</span></span>
+<span id="L86"><span class="lineNum">      86</span> <span class="tlaGNC">        1050 :   [[nodiscard]] bool Overflowed() const { return overflowed_; }</span></span>
 <span id="L87"><span class="lineNum">      87</span>              : </span>
 <span id="L88"><span class="lineNum">      88</span>              :   // The budget in force, for the caller's diagnostic.</span>
 <span id="L89"><span class="lineNum">      89</span> <span class="tlaGNC">           2 :   [[nodiscard]] Budget CurrentBudget() const { return budget_; }</span></span>
