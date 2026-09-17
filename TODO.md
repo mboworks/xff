@@ -4,6 +4,12 @@ Actionable roadmap and deliberately deferred ideas. Completed implementation rec
 [`docs/history-roadmap.md`](docs/history-roadmap.md); other resolved design records and investigations
 live in [`docs/history.md`](docs/history.md).
 
+## Completed: Histogram output formats (audit B04)
+
+- Render Markdown histograms as named bucket/value tables, with numeric alignment and shared escaping.
+- Reject unsupported histogram formats before traversal or actions, including comparison mode.
+- Cover repeated histograms, empty results, header suppression, and composition with summaries.
+
 ## Completed: Release archive documentation (audit B08)
 
 - Describe the separate lean/full archives and their matching debug symbols.

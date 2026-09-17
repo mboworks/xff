@@ -999,7 +999,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 <a id="flag-histogram"></a>
 
 - `--histogram=BUCKET[:MEASURE]` - bar chart per bucket: a count or sum/mean/min/max of size|lines (repeatable) _(global, xff)_
-  A terminal reduction like --summary, drawn as bars. BUCKET groups the matches - a category (overall, type, ext, lang, mime, user (owner), or group) or a numeric-range field (size / lines by order of magnitude, depth per level, drawn as an ascending distribution). The optional :MEASURE is the bar's value - `count` (the default) or an aggregate `sum(FIELD)` / `mean(FIELD)` / `min(FIELD)` / `max(FIELD)` over a numeric FIELD (size or lines). A numeric metric needs an aggregator (`ext:lines` is an error; `ext:sum(lines)` is not). Repeatable and combinable with --summary - both are fed by one walk and replace the per-match listing. Bars scale to the tallest, use Unicode block characters on a UTF-8 locale (see --unicode) or ASCII '#' otherwise; --top=N keeps the N tallest and --format=jsonl emits one object per bar for scripts.
+  A terminal reduction like --summary, drawn as bars. BUCKET groups the matches - a category (overall, type, ext, lang, mime, user (owner), or group) or a numeric-range field (size / lines by order of magnitude, depth per level, drawn as an ascending distribution). The optional :MEASURE is the bar's value - `count` (the default) or an aggregate `sum(FIELD)` / `mean(FIELD)` / `min(FIELD)` / `max(FIELD)` over a numeric FIELD (size or lines). A numeric metric needs an aggregator (`ext:lines` is an error; `ext:sum(lines)` is not). Repeatable and combinable with --summary - both are fed by one walk and replace the per-match listing. Bars scale to the tallest, use Unicode block characters on a UTF-8 locale (see --unicode) or ASCII '#' otherwise; --top=N keeps the N tallest and --format=jsonl emits one object per bar for scripts. `--format=markdown` renders bucket/value tables with numeric values right-aligned, including when combined with summaries. `--no-header` omits histogram headings and column headers. `plain` and `aligned` retain text bars; `csv`, `tsv`, `nul`, and `tree` are unsupported for histograms and fail before traversal or actions.
   Affected by: --top, --histogram-width
   See also: [Statistics](#topic-stats), [--top](#flag-top), [--histogram-width](#flag-histogram-width)
 
@@ -2988,7 +2988,7 @@ See also: [Safety](#topic-safety), [Configuration](#topic-config), [Output](#top
 
 ## Statistics
 
-xff statistics reductions. `--summary` and `--histogram` replace the per-match listing with an aggregate over all matches; they are independent and combinable (one walk feeds both), and an explicit action (`-print` / `-exec`) still runs. `--format=jsonl` emits machine rows instead.
+xff statistics reductions. `--summary` and `--histogram` replace the per-match listing with an aggregate over all matches; they are independent and combinable (one walk feeds both), and an explicit action (`-print` / `-exec`) still runs. `--format=jsonl` emits machine rows instead. `--format=markdown` renders summary and histogram tables together; histogram tables show buckets and values with numeric alignment. `csv`, `tsv`, `nul`, and `tree` are unsupported for these reductions.
 
 ### Examples
 
@@ -3021,6 +3021,12 @@ xff --summary=type --histogram=ext --format=jsonl
 ```
 
 both, as machine rows
+
+```sh
+xff --summary=type --histogram=ext --format=md
+```
+
+both, as Markdown tables
 
 See also: [Comparing trees](#topic-compare), [Fields](#topic-fields), [Output](#topic-output)
 

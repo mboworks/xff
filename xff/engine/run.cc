@@ -3705,6 +3705,7 @@ using MatchedEntryFn = absl::FunctionRef<void(const Visit&)>;
 
 RunResult RunFindCore(
     const parser::Command& command,
+    const std::vector<HistogramSpec>& histograms,
     absl::Span<const std::string> roots,
     const vfs::FileSystem& fs,
     EmitFn emit,
@@ -3859,6 +3860,7 @@ void EmitTreeCompareSummary(
 // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive two-tree merge dispatch
 RunResult RunTreeCompare(
     const parser::Command& command,
+    const std::vector<HistogramSpec>& histograms,
     const vfs::FileSystem& fs,
     EmitFn emit,
     WalkErrorFn on_error,
@@ -3938,8 +3940,8 @@ RunResult RunTreeCompare(
     const EmitFn synchronized_emit = emit_callback;
     const WalkErrorFn synchronized_error = error_callback;
     return RunFindCore(
-        command, absl::MakeConstSpan(command.roots).subspan(side, 1), fs, synchronized_emit, synchronized_error, style,
-        collect, /*compare_listing=*/true, side_summaries.at(side));
+        command, histograms, absl::MakeConstSpan(command.roots).subspan(side, 1), fs, synchronized_emit,
+        synchronized_error, style, collect, /*compare_listing=*/true, side_summaries.at(side));
   };
   std::future<RunResult> left_result = std::async(std::launch::async, run_side, 0);
   const RunResult right_result = run_side(1);
@@ -4069,6 +4071,7 @@ namespace {
 // NOLINTNEXTLINE(readability-function-cognitive-complexity,readability-function-size,hicpp-function-size,google-readability-function-size)
 RunResult RunFindCore(
     const parser::Command& command,
+    const std::vector<HistogramSpec>& histograms,
     absl::Span<const std::string> roots,
     const vfs::FileSystem& fs,
     EmitFn emit,
@@ -4239,13 +4242,15 @@ RunResult RunFindCore(
   const bool is_tree = format == render::Format::kTree;
   const bool tabular = format == render::Format::kCsv || format == render::Format::kTsv || buffered;
   const bool tabular_summary = buffered && !ResolveSummaries(command.globals, compare_listing).empty();
-  if (tabular_summary && !columns.empty()) {
+  const bool tabular_reduction = tabular_summary || (buffered && !histograms.empty());
+  if (tabular_reduction && !columns.empty()) {
     on_error(
-        "--columns", absl::FailedPreconditionError(
-                         "summary tables have fixed columns; --columns selects fields for the default listing"));
+        "--columns",
+        absl::FailedPreconditionError(
+            "summary and histogram tables have fixed columns; --columns selects fields for the default listing"));
     return RunResult{.errors = 2};
   }
-  if ((tabular || is_tree || !columns.empty()) && !implicit_print && !tabular_summary) {
+  if ((tabular || is_tree || !columns.empty()) && !implicit_print && !tabular_reduction) {
     on_error(
         "--format", absl::FailedPreconditionError(
                         "tabular/tree output (--format=csv/tsv/aligned/markdown/tree) and --columns format the "
@@ -4524,12 +4529,6 @@ RunResult RunFindCore(
   };
   // --histogram (repeatable): a bar chart of the count per bucket, alongside or instead of
   // --summary. Both are reductions fed by one walk; a run with either suppresses the listing.
-  absl::StatusOr<std::vector<HistogramSpec>> histograms_or = ResolveHistograms(command.globals);
-  if (!histograms_or.ok()) {
-    on_error("--histogram", histograms_or.status());
-    return RunResult{.errors = 2};
-  }
-  const std::vector<HistogramSpec> histograms = *std::move(histograms_or);
   std::vector<std::map<std::string, HistCell>> histogram_cells(histograms.size());  // one per spec
   // --shards: collapse each sharded-file set to one line. Like --summary it defers the listing
   // (buffered per directory, grouped after the walk), so it joins `any_reduction`.
@@ -5597,6 +5596,20 @@ RunResult RunFindCore(
         }
         continue;
       }
+      if (format == render::Format::kMarkdown) {
+        const bool with_header = !HasGlobal(command.globals, "--no-header");
+        if (with_header) {
+          emit(absl::StrCat("\n## Histogram ", histograms[i].label, "\n"));
+        }
+        render::TableStream table(
+            format, {"bucket", "value"}, with_header, render::TableStream::kAll, 0,
+            {format::Align::kLeft, format::Align::kRight});
+        for (const Bar& bar : bars) {
+          static_cast<void>(table.Add({bar.label, bar.value.text}));
+        }
+        emit(absl::StrCat("\n", table.Flush(), "\n"));
+        continue;
+      }
       // Text bars: the label left-padded to the widest, the value right-aligned, then the bar. The
       // bar is last so its Unicode width never disturbs the aligned columns.
       std::size_t label_width = 0;
@@ -5640,8 +5653,25 @@ RunResult RunFindCore(
   return RunResult{.errors = errors, .any_match = any_match};
 }
 
+// Validate formats shared by summary and histogram output before any actions run.
+absl::Status ValidateReductionFormat(const std::vector<std::string>& globals, bool compare, bool has_histograms) {
+  const bool has_summary = !ResolveSummaries(globals, compare).empty();
+  if (has_summary || has_histograms) {
+    const auto format = ResolveFormat(globals);
+    if (format != render::Format::kPlain && format != render::Format::kAligned && format != render::Format::kJsonl
+        && format != render::Format::kMarkdown) {
+      return absl::InvalidArgumentError(
+          absl::StrCat(
+              has_summary ? "summary tables" : "histograms",
+              " require --format=plain, aligned, jsonl, or markdown; "
+              "csv, tsv, nul, and tree are listing formats"));
+    }
+  }
+  return absl::OkStatus();
+}
+
 // Refuse ignored or misleading reduction controls before either comparison side can run actions.
-absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, bool compare) {
+absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, bool compare, bool has_histograms) {
   for (const std::string& global : globals) {
     constexpr std::string_view kPrecision = "--summary-precision=";
     constexpr std::string_view kTop = "--top=";
@@ -5669,16 +5699,7 @@ absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, boo
       return absl::InvalidArgumentError("--compare-select requires --compare");
     }
   }
-  if (!ResolveSummaries(globals, compare).empty()) {
-    const auto format = ResolveFormat(globals);
-    if (format != render::Format::kPlain && format != render::Format::kAligned && format != render::Format::kJsonl
-        && format != render::Format::kMarkdown) {
-      return absl::InvalidArgumentError(
-          "summary tables require --format=plain, aligned, jsonl, or markdown; "
-          "csv, tsv, nul, and tree are listing formats");
-    }
-  }
-  return absl::OkStatus();
+  return ValidateReductionFormat(globals, compare, has_histograms);
 }
 
 }  // namespace
@@ -5692,7 +5713,13 @@ RunResult RunFind(
   const bool compare = absl::c_any_of(command.globals, [](std::string_view global) {
     return global == "--compare" || global.starts_with("--compare=");
   });
-  if (const absl::Status status = ValidateSummaryOptions(command.globals, compare); !status.ok()) {
+  absl::StatusOr<std::vector<HistogramSpec>> histograms_or = ResolveHistograms(command.globals);
+  if (!histograms_or.ok()) {
+    on_error("--histogram", histograms_or.status());
+    return RunResult{.errors = 2};
+  }
+  const std::vector<HistogramSpec> histograms = *std::move(histograms_or);
+  if (const absl::Status status = ValidateSummaryOptions(command.globals, compare, !histograms.empty()); !status.ok()) {
     on_error("options", status);
     return RunResult{.errors = 2};
   }
@@ -5701,10 +5728,10 @@ RunResult RunFind(
     return RunResult{.errors = 2};
   }
   if (compare) {
-    return RunTreeCompare(command, fs, emit, on_error, style);
+    return RunTreeCompare(command, histograms, fs, emit, on_error, style);
   }
   return RunFindCore(
-      command, command.roots, fs, emit, on_error, style, mbo::types::OptionalRef<const MatchedEntryFn>{},
+      command, histograms, command.roots, fs, emit, on_error, style, mbo::types::OptionalRef<const MatchedEntryFn>{},
       /*compare_listing=*/false);
 }
 

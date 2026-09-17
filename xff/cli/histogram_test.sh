@@ -82,6 +82,22 @@ test::histogram_unknown_bucket_is_a_usage_error() {
   expect_output_contains "unknown --histogram bucket" "${out}"
 }
 
+test::invalid_histogram_rejects_actions_on_both_comparison_sides() {
+  local dir out rc option
+  dir="$(test_tmpdir histinvalidcompare)"
+  mkdir -p "${dir}/left" "${dir}/right"
+  echo keep >"${dir}/left/keep.txt"
+  echo keep >"${dir}/right/keep.txt"
+  for option in --histogram=bogus '--histogram=ext:bogus(size)'; do
+    rc=0
+    out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --compare "${dir}/left" "${dir}/right" "${option}" -type f -delete 2>&1)" || rc=$?
+    expect_eq 2 "${rc}"
+    expect_output_contains histogram "${out}"
+    expect_eq keep "$(cat "${dir}/left/keep.txt")"
+    expect_eq keep "$(cat "${dir}/right/keep.txt")"
+  done
+}
+
 test::histogram_numeric_measure_aggregates_a_field() {
   local dir out
   dir="$(test_tmpdir histnum)"
@@ -151,6 +167,31 @@ test::histogram_width_sets_the_bar_length() {
   # --histogram-width=10: the tallest bar (cc) fills exactly 10 cells (default is 40).
   out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=ext --histogram-width=10 --unicode=never "${dir}" -type f 2>&1)"
   expect_matches "cc[[:space:]]+3[[:space:]]+##########(${NL}|\$)" "${out}"
+}
+
+test::histogram_markdown_composes_with_summary() {
+  local dir out
+  dir="$(test_tmpdir histmarkdown)"
+  _make_tree "${dir}"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --summary=type --histogram=ext --format=md "${dir}" -type f 2>&1)"
+  expect_output_contains "## Summary by file type" "${out}"
+  expect_output_contains "## Histogram ext" "${out}"
+  expect_output_contains "| bucket | value |" "${out}"
+  expect_output_contains "| ------ | ----: |" "${out}"
+  expect_output_contains "| cc     |     3 |" "${out}"
+  expect_output_contains "| h      |     1 |" "${out}"
+}
+
+test::histogram_rejects_unsupported_formats_before_print() {
+  local dir out rc format
+  dir="$(test_tmpdir histunsupported)"
+  _make_tree "${dir}"
+  for format in csv tsv nul tree; do
+    out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=ext "--format=${format}" "${dir}" -print 2>&1)" && rc=0 || rc=$?
+    expect_eq "2" "${rc}"
+    expect_output_contains "histograms require --format=plain, aligned, jsonl, or markdown" "${out}"
+    expect_output_not_contains "a.cc" "${out}"
+  done
 }
 
 test_runner

@@ -596,18 +596,21 @@ Section StatsSection(bool in_full) {
   section.children.push_back(ProseOf(
       "xff statistics reductions. `--summary` and `--histogram` replace the per-match listing with an "
       "aggregate over all matches; they are independent and combinable (one walk feeds both), and an "
-      "explicit action (`-print` / `-exec`) still runs. `--format=jsonl` emits machine rows instead."));
+      "explicit action (`-print` / `-exec`) still runs. `--format=jsonl` emits machine rows instead. "
+      "`--format=markdown` renders summary and histogram tables together; histogram tables show buckets "
+      "and values with numeric alignment. `csv`, `tsv`, `nul`, and `tree` are unsupported for these reductions."));
   for (const GlobalFlag& flag : Globals()) {
     if (!in_full && flag.topic == "stats") {
       section.children.push_back(FlagEntry(flag));
     }
   }
-  static constexpr std::array<DocPair, 5> kExamples = {{
+  static constexpr std::array<DocPair, 6> kExamples = {{
       {"xff --summary=ext", "files + total size per extension"},
       {"xff --histogram=ext", "a bar chart of files per extension"},
       {"xff --histogram='ext:sum(lines)'", "total lines per extension"},
       {"xff --histogram=size", "the file-size distribution"},
       {"xff --summary=type --histogram=ext --format=jsonl", "both, as machine rows"},
+      {"xff --summary=type --histogram=ext --format=md", "both, as Markdown tables"},
   }};
   Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
   // Each example is a verbatim (copy-pastable) command with its explanation as prose,
