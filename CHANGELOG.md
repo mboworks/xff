@@ -1,6 +1,8 @@
 <!-- SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
+# 0.7.0
+
 # 0.6.0
 
 - Raise compiled-output CI cache budgets to 1 GB uncompressed by default and 3 GB for ASan.
