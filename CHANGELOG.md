@@ -3,6 +3,9 @@
 
 # 0.7.0
 
+- Reject zero, negative, malformed, and overflowing histogram widths before traversal or actions,
+  including settings selected from configuration files.
+
 - Correct the release archive description: lean and full executables have separate archives,
   each with its own matching debug symbols.
 

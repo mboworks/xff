@@ -2785,7 +2785,7 @@ std::optional<std::size_t> ResolveTop(const std::vector<std::string>& globals) {
 }
 
 // --histogram-width=N: the cell width the tallest histogram bar fills (default 40). A non-positive
-// or malformed value is ignored (keeps the default); the last valid one wins.
+// or malformed value is rejected by the global-option registry; the last occurrence wins.
 std::size_t ResolveHistogramWidth(const std::vector<std::string>& globals) {
   constexpr std::string_view kPrefix = "--histogram-width=";
   std::size_t width = 40;
@@ -5659,6 +5659,11 @@ absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, boo
       const std::string_view value = std::string_view(global).substr(9);
       if (!format::ParseBufferWindow(value).has_value() && !format::ParseByteBudget(value).has_value()) {
         return absl::InvalidArgumentError("--buffer requires auto, off, all, a row count, or a byte budget");
+      }
+    } else if (global.starts_with("--histogram-width=")) {
+      std::size_t value = 0;
+      if (!absl::SimpleAtoi(std::string_view(global).substr(18), &value) || value == 0) {
+        return absl::InvalidArgumentError("--histogram-width requires a positive integer");
       }
     } else if (!compare && global.starts_with("--compare-select=")) {
       return absl::InvalidArgumentError("--compare-select requires --compare");

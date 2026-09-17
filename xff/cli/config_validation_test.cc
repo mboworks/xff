@@ -112,6 +112,26 @@ TEST_F(ConfigValidationTest, BufferLimitsValidateCompleteConfigFiles) {
   }
 }
 
+TEST_F(ConfigValidationTest, HistogramWidthsValidateCompleteConfigFiles) {
+  ASSERT_OK_AND_ASSIGN(const auto text, Fixture("histogram_width"));
+  const auto sources =
+      std::to_array<config::Source>({config::Source::kSystem, config::Source::kUser, config::Source::kXffrc});
+  for (const auto source : sources) {
+    const auto valid = ValidateConfigFile(config::ParseIni(text), {"good"}, "limits.ini", source);
+    EXPECT_THAT(valid.status, IsOk());
+    EXPECT_THAT(valid.disabled_configs, ElementsAre("bad-width", "overflow"));
+    const auto sections = std::to_array<std::string_view>({"bad-width", "overflow"});
+    for (const std::string_view name : sections) {
+      EXPECT_THAT(
+          ValidateConfigFile(config::ParseIni(text), {std::string(name)}, "limits.ini", source).status,
+          StatusIs(absl::StatusCode::kInvalidArgument));
+    }
+    EXPECT_THAT(
+        ValidateConfigFile(config::ParseIni("--histogram-width=0"), {}, "limits.ini", source).status,
+        StatusIs(absl::StatusCode::kInvalidArgument));
+  }
+}
+
 TEST_F(ConfigValidationTest, DirectoryRootsAreGlobalTrustedAndSystemAuthoritative) {
   ASSERT_OK_AND_ASSIGN(const auto system_text, Fixture("directories"));
   ASSERT_OK_AND_ASSIGN(const auto user_text, Fixture("directories", "user.ini"));

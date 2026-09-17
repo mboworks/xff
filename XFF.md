@@ -1095,6 +1095,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 <a id="flag-histogram-width"></a>
 
 - `--histogram-width=N` - cell width the tallest --histogram bar fills (default 40) _(global, xff)_
+  Requires a positive integer; zero, negative, malformed, and overflowing values are errors. Last occurrence wins.
   Affects: --histogram
   See also: [Statistics](#topic-stats), [--histogram](#flag-histogram)
 

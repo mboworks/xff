@@ -1815,6 +1815,16 @@ TEST_F(RunTest, InvalidBufferBoundsFailBeforeActionsInEitherCompareSide) {
   }
 }
 
+TEST_F(RunTest, InvalidHistogramWidthsFailBeforeActionsInEitherCompareSide) {
+  const auto options = std::to_array<std::string>({"--histogram-width=garbage", "--histogram-width=0"});
+  for (const std::string& option : options) {
+    EXPECT_THAT(RunExpr({option, "-print"}), IsEmpty());
+    EXPECT_THAT(last_errors_, 2);
+    EXPECT_THAT(RunArgvRecords({"--compare", root_.string(), root_.string(), option, "-print"}), IsEmpty());
+    EXPECT_THAT(last_errors_, 2);
+  }
+}
+
 TEST_F(RunTest, UnusedCaptureIsError) {
   // -capture:x but {capture.x} is referenced nowhere -> exit 2 before traversal.
   MBO_ASSERT_OK_AND_ASSIGN(

@@ -25,6 +25,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/types/span.h"
@@ -1623,8 +1624,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "stats-display",
         .header = "Statistics display",
         .summary = "cell width the tallest --histogram bar fills (default 40)",
+        .details = "Requires a positive integer; zero, negative, malformed, and overflowing values are errors. "
+                   "Last occurrence wins.",
         .affects = "--histogram",
         .topic = "stats",
+        .value_check = GlobalFlag::ValueCheck::kPositiveInteger,
     },
     {
         .name = "--summary-precision",
@@ -2595,6 +2599,9 @@ std::string AcceptedValues(const GlobalFlag& flag) {
   if (flag.value_check == GlobalFlag::ValueCheck::kBuffer) {
     return "auto, off, all, a non-negative row count with optional k/M/G/T multiplier, or a byte budget";
   }
+  if (flag.value_check == GlobalFlag::ValueCheck::kPositiveInteger) {
+    return "a positive integer";
+  }
   std::string accepted;
   if (flag.value_check == GlobalFlag::ValueCheck::kEnumList || flag.value_check == GlobalFlag::ValueCheck::kEnum
       || flag.value_check == GlobalFlag::ValueCheck::kEnumOrTemplate) {
@@ -2631,6 +2638,13 @@ absl::Status ValidateGlobalValue(std::string_view arg) {
         return absl::OkStatus();
       }
       break;
+    case GlobalFlag::ValueCheck::kPositiveInteger: {
+      std::size_t parsed = 0;
+      if (absl::SimpleAtoi(value, &parsed) && parsed > 0) {
+        return absl::OkStatus();
+      }
+      break;
+    }
     case GlobalFlag::ValueCheck::kBool:
       if (values::ParseBool(value).has_value()) {
         return absl::OkStatus();

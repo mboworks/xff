@@ -19,6 +19,11 @@ The review separates reproduced defects from design proposals and records their 
 - Disprove the reported newline-padding defect by measuring rendered pipe positions.
 - Guard normalization-before-measurement with LF, CRLF, and escaped-pipe regression cases.
 
+## Completed: Histogram width (audit B03)
+
+- Require positive integer widths consistently on the CLI and in complete INI files.
+- Reject invalid widths before expression actions, including comparison walks.
+
 ## Completed: Buffer limits (audit B02)
 
 - Validate row windows and byte budgets on the CLI and in complete INI files.
