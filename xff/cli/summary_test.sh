@@ -508,10 +508,10 @@ assert sum(row["bytes"] for row in results) == comparison["bytes"] == combined["
 assert sum(row["count"] for row in results) == comparison["count"]
 assert sum(row["count"] * (2 if row["group"] in ("identical", "different") else 1)
            for row in results) == combined["count"]
-paired = [row for row in rows if row.get("scope") not in (None, "all")]
+paired = [row for row in rows if row.get("scope") == "left-total,right-total"]
 assert sum((row[side] or {}).get("bytes", 0) for row in paired for side in ("left-total", "right-total")) == combined["bytes"]
 assert sum((row[side] or {}).get("count", 0) for row in paired for side in ("left-total", "right-total")) == combined["count"]
-' <<<"${out}"
+' <<<"${out}" || return
   out="$(_run --compare "${root}/left" "${root}/right" -type d)"
   expect_eq $'left-only\tempty' "${out}"
 }
@@ -537,7 +537,7 @@ test::comparison_scopes_share_one_table_per_grouping() {
   _expect_json_row '{"scope":"left-only,right-only,different","group":"md","left-only":null,"right-only":null,"different":{"count":1,"bytes":4}}' "${out}"
   out="$(_run --compare=summary "${root}/left" "${root}/right" -type f --summary=ext --summary-scope=identical --format=jsonl)"
   _expect_json_row '{"scope":"identical","group":"txt","identical":{"count":1,"bytes":8}}' "${out}"
-  python3 -c 'import json,sys; rows=[json.loads(line) for line in sys.stdin]; assert all(set(row)=={"scope","group","identical"} for row in rows if "scope" in row)' <<<"${out}"
+  python3 -c 'import json,sys; rows=[json.loads(line) for line in sys.stdin]; assert all(set(row)=={"record","request","summary","scope","left_root","right_root","group","identical"} for row in rows if row["summary"] == "ext")' <<<"${out}"
 }
 
 test::summary_side_aliases_select_totals_and_keep_canonical_order() {

@@ -4,6 +4,13 @@ Actionable roadmap and deliberately deferred ideas. Completed implementation rec
 [`docs/history-roadmap.md`](docs/history-roadmap.md); other resolved design records and investigations
 live in [`docs/history.md`](docs/history.md).
 
+## Completed: JSONL summary identity (audit B05)
+
+- Identify all ordinary, scoped, and comparison summary rows by request, grouping, and scope.
+- Preserve exact template strings and request indices across filtering and output reordering.
+- Include root identity and verify demultiplexing with a JSON parser.
+- Update output expectations, generated help, and schema documentation; verify against merged main.
+
 ## Completed: Histogram output formats (audit B04)
 
 - Render Markdown histograms as named bucket/value tables, with numeric alignment and shared escaping.
