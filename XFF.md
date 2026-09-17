@@ -2371,14 +2371,14 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 <a id="primary-capture"></a>
 
 - `-capture:[!]NAME[=REGEX] CMD... ;` - run a command and bind its output to {capture.NAME} (xff) _(action, xff, runs commands)_
-  xff extension: runs the `;`-terminated command and binds its stdout to `{capture.NAME}` for a later `-printf` / `--format` field; `-capture:NAME=REGEX` keeps only REGEX's first capture group. A NAME must be an identifier (`[A-Za-z_][A-Za-z0-9_]*`), because it is referenced as `{capture.NAME}`; binding one NAME twice is an error, and `-capture:!NAME` on the LATER node says the re-bind is meant (per node, so it cannot loosen the other captures in the command). Sensitive: from an `--xffrc` file it needs `--allow-exec`. Example: `-capture:branch git rev-parse --abbrev-ref HEAD ; -printf '{relpath}\t{capture.branch}\n'`.
+  xff extension: runs the `;`-terminated command and binds its stdout to `{capture.NAME}` for a later field consumer, such as `-printf '%{capture.NAME}'`, `--template={capture.NAME}`, a grep template, summary key, column, or command using `--exec-fields`. Unused captures are errors; escaped literal braces do not count as references. `-capture:NAME=REGEX` keeps only REGEX's first capture group. A NAME must be an identifier (`[A-Za-z_][A-Za-z0-9_]*`), because it is referenced as `{capture.NAME}`; binding one NAME twice is an error, and `-capture:!NAME` on the LATER node says the re-bind is meant (per node, so it cannot loosen the other captures in the command). Sensitive: from an `--xffrc` file it needs `--allow-exec`. Example: `-capture:branch git rev-parse --abbrev-ref HEAD ; -printf '%{relpath}\t%{capture.branch}\n'`.
   Affected by: -E, --regextype, --re2, --pcre
   See also: [Safety](#topic-safety), [Fields](#topic-fields), [Configuration](#topic-config), [-E](#flag-e), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre)
 
 <a id="primary-capturedir"></a>
 
 - `-capturedir:[!]NAME[=REGEX] CMD... ;` - run -capture in the matched entry's directory (xff) _(action, xff, runs commands)_
-  The `-execdir` counterpart of `-capture`: runs the command in the matched entry's directory and binds its stdout to `{capture.NAME}`. Same `NAME[=REGEX]` binding and `--allow-exec` gating.
+  The `-execdir` counterpart of `-capture`: runs the command in the matched entry's directory and binds its stdout to `{capture.NAME}`. Like `-capture`, it preserves implicit output and requires a reference to the captured value. Same `NAME[=REGEX]` binding and `--allow-exec` gating.
   Affected by: -E, --regextype, --re2, --pcre
   See also: [Safety](#topic-safety), [Fields](#topic-fields), [Configuration](#topic-config), [-E](#flag-e), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre)
 

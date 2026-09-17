@@ -2620,7 +2620,7 @@ EvaluationResult EvaluateXnor(const parser::Expr& expr, EvalContext& context) {
 
 void PreviewExecution(const parser::Expr& expr, EvalContext& context) {
   std::string preview = absl::StrCat("would execute ", expr.descriptor->name, " for ", context.visit.path, ":");
-  const bool capture = expr.descriptor->name == "-capture" || expr.descriptor->name == "-capturedir";
+  const bool capture = expr.descriptor->binds_capture;
   const std::size_t first = capture ? 2 : 0;
   const bool in_dir = expr.descriptor->name.ends_with("dir");
   const auto target = SplitExecDir(context.visit.path);
@@ -2698,12 +2698,11 @@ EvaluationResult EvaluateDeferred(const parser::Expr& expr, EvalContext& context
 
 bool ContainsAction(const parser::Expr& expr) {
   switch (expr.kind) {
-    // -prune and -capture are actions that do NOT suppress the implicit print:
-    // -prune per find's "no actions other than -prune" rule, and -capture is a
+    // -prune and capture actions do NOT suppress the implicit print:
+    // -prune per find's "no actions other than -prune" rule; either capture is a
     // binding side effect (not output). -quit and the print actions do suppress.
     case parser::Expr::Kind::kPredicate:
-      return expr.descriptor->kind == registry::Kind::kAction && expr.descriptor->name != "-prune"
-             && expr.descriptor->name != "-capture";
+      return expr.descriptor->kind == registry::Kind::kAction && !expr.descriptor->preserves_implicit_output;
     case parser::Expr::Kind::kNot: return ContainsAction(*expr.lhs);
     case parser::Expr::Kind::kAnd:
     case parser::Expr::Kind::kOr:

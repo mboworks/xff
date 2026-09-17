@@ -8,6 +8,10 @@
 
 - Add regression coverage for Markdown table alignment after newline and pipe normalization.
 
+- Validate capture references in field consumers, including printf, grep templates, directory
+  execution, and columns; escaped literal references no longer hide unused captures.
+  Directory captures preserve implicit output consistently with ordinary captures.
+
 # 0.6.0
 
 - Raise compiled-output CI cache budgets to 1 GB uncompressed by default and 3 GB for ASan.

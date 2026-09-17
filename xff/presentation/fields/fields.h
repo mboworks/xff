@@ -116,6 +116,9 @@ class Template {
   // valued and does NOT trip this, so it is allowed in a scalar context.
   bool HasUnreducedExtraction() const;
 
+  // Whether a parsed field reads this command capture; escaped literal braces do not count.
+  bool ReferencesCapture(std::string_view name) const;
+
  private:
   // A literal run (fn == nullptr -> emit `literal`) or a field reference: fn is
   // the renderer and `key` its bound argument (capture index, {env.NAME} var, ...).

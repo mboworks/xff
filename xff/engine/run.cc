@@ -2520,7 +2520,7 @@ void AppendCaptureNames(const parser::Expr& expr, std::vector<std::string>& name
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate:
       // A node with `!` (label_override) is ALLOWED to re-bind, so it is not reported as a duplicate.
-      if (expr.descriptor->name == "-capture" && !expr.args.empty() && !expr.label_override) {
+      if (expr.descriptor->binds_capture && !expr.args.empty() && !expr.label_override) {
         names.push_back(expr.args.front());
       }
       break;
@@ -2595,19 +2595,52 @@ bool ReportDuplicateBindingName(const parser::Expr& expr, WalkErrorFn on_error) 
   return false;
 }
 
-// Appends strings that may reference {capture.NAME}: the command tokens of every
-// -exec and -capture action (a later command can use an earlier capture). The
-// --template global is added by the caller.
-void AppendCaptureRefs(const parser::Expr& expr, std::vector<std::string>& refs) {
-  switch (expr.kind) {
-    case parser::Expr::Kind::kPredicate:
-      if (expr.descriptor->name == "-exec") {
-        refs.insert(refs.end(), expr.args.begin(), expr.args.end());
-      } else if (expr.descriptor->name == "-capture" && expr.args.size() > 2) {
-        refs.insert(refs.end(), expr.args.begin() + 2, expr.args.end());  // skip [NAME, REGEX]
+// Match the printf scanner's escapes and percent directives: bare braces and %% are literal.
+bool PrintfReferencesCapture(std::string_view format, std::string_view name) {
+  for (std::size_t pos = 0; pos + 1 < format.size(); ++pos) {
+    const char ch = format[pos];
+    if (ch == '\\') {
+      ++pos;
+    } else if (ch == '%') {
+      const char directive = format[++pos];
+      if (directive == '{') {
+        const auto end = format.find('}', pos + 1);
+        if (end != std::string_view::npos) {
+          if (fields::Template::Compile(format.substr(pos, end - pos + 1)).ReferencesCapture(name)) {
+            return true;
+          }
+          pos = end;
+        }
+      } else if (directive == 'A' || directive == 'C' || directive == 'T') {
+        ++pos;
       }
-      break;
-    case parser::Expr::Kind::kNot: AppendCaptureRefs(*expr.lhs, refs); break;
+    }
+  }
+  return false;
+}
+
+bool PredicateReferencesCapture(const parser::Expr& expr, std::string_view name, bool exec_fields) {
+  if (expr.grep_template != nullptr && expr.grep_template->ReferencesCapture(name)) {
+    return true;
+  }
+  const registry::ArgumentFields& expansion = expr.descriptor->argument_fields;
+  if (expansion.syntax == registry::ArgumentFields::Syntax::kNone || (expansion.requires_exec_fields && !exec_fields)
+      || expansion.first >= expr.args.size()) {
+    return false;
+  }
+  const absl::Span<const std::string> args = expr.args;
+  const auto selected = args.subspan(expansion.first, expansion.remaining ? args.size() - expansion.first : 1);
+  return absl::c_any_of(selected, [&](const std::string& text) {
+    return expansion.syntax == registry::ArgumentFields::Syntax::kPrintf
+               ? PrintfReferencesCapture(text, name)
+               : fields::Template::Compile(text).ReferencesCapture(name);
+  });
+}
+
+bool ExpressionReferencesCapture(const parser::Expr& expr, std::string_view name, bool exec_fields) {
+  switch (expr.kind) {
+    case parser::Expr::Kind::kPredicate: return PredicateReferencesCapture(expr, name, exec_fields);
+    case parser::Expr::Kind::kNot: return ExpressionReferencesCapture(*expr.lhs, name, exec_fields);
     case parser::Expr::Kind::kAnd:
     case parser::Expr::Kind::kOr:
     case parser::Expr::Kind::kNand:
@@ -2615,16 +2648,10 @@ void AppendCaptureRefs(const parser::Expr& expr, std::vector<std::string>& refs)
     case parser::Expr::Kind::kXor:
     case parser::Expr::Kind::kXnor:
     case parser::Expr::Kind::kComma:
-      AppendCaptureRefs(*expr.lhs, refs);
-      AppendCaptureRefs(*expr.rhs, refs);
-      break;
+      return ExpressionReferencesCapture(*expr.lhs, name, exec_fields)
+             || ExpressionReferencesCapture(*expr.rhs, name, exec_fields);
   }
-}
-
-std::vector<std::string> CollectCaptureRefs(const parser::Expr& expr) {
-  std::vector<std::string> refs;
-  AppendCaptureRefs(expr, refs);
-  return refs;
+  return false;
 }
 
 // The first argument anywhere in `expr` that compiles to a field template carrying an UNREDUCED m//
@@ -2659,31 +2686,20 @@ std::optional<std::string> FindScalarExtraction(const parser::Expr& expr) {
   return std::nullopt;
 }
 
-// Returns a -capture NAME whose {capture.NAME} placeholder appears nowhere (no
-// -exec/-capture command, not the --template, and not a --summary={...} key), or nullopt when all
-// are used.
+// Check actual field consumers, not text that only resembles a capture reference.
 std::optional<std::string> UnusedCaptureName(
     const parser::Expr& expr,
     const std::optional<std::string>& tmpl,
-    std::string_view summary_key) {
-  const std::vector<std::string> names = CollectCaptureNames(expr);
-  if (names.empty()) {
-    return std::nullopt;
-  }
-  std::vector<std::string> refs = CollectCaptureRefs(expr);
-  if (tmpl.has_value()) {
-    refs.push_back(*tmpl);
-  }
-  if (!summary_key.empty()) {
-    refs.emplace_back(summary_key);  // --summary={...} references captures too
-  }
-  for (const std::string& name : names) {
-    const std::string closed = absl::StrCat("{capture.", name, "}");
-    const std::string qualified = absl::StrCat("{capture.", name, ":");
-    const bool used = std::any_of(refs.begin(), refs.end(), [&](const std::string& ref) {
-      return ref.contains(closed) || ref.contains(qualified);
-    });
-    if (!used) {
+    std::string_view summary_key,
+    const std::vector<std::string>& columns,
+    bool exec_fields) {
+  for (const std::string& name : CollectCaptureNames(expr)) {
+    if (!ExpressionReferencesCapture(expr, name, exec_fields)
+        && !(tmpl.has_value() && fields::Template::Compile(*tmpl).ReferencesCapture(name))
+        && !fields::Template::Compile(summary_key).ReferencesCapture(name)
+        && absl::c_none_of(columns, [&](std::string_view column) {
+             return fields::Template::Compile(absl::StrCat("{", column, "}")).ReferencesCapture(name);
+           })) {
       return name;
     }
   }
@@ -4171,8 +4187,9 @@ RunResult RunFindCore(
   // A -capture whose {capture.NAME} is never referenced ran a subprocess for
   // nothing (use -exec for pure side effects); flag it before traversing.
   if (expression.has_value()) {
-    if (const std::optional<std::string> unused =
-            UnusedCaptureName(*expression, tmpl, AllSummaryTemplates(command.globals));
+    if (const std::optional<std::string> unused = UnusedCaptureName(
+            *expression, tmpl, AllSummaryTemplates(command.globals), ResolveColumns(command.globals),
+            HasGlobal(command.globals, "--exec-fields"));
         unused.has_value()) {
       on_error(
           "-capture", absl::FailedPreconditionError(

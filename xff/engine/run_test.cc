@@ -44,6 +44,7 @@ namespace {
 namespace fs = ::std::filesystem;
 using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
+using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
 using ::mbo::testing::WithDropIndent;
 using ::testing::AllOf;
@@ -1713,6 +1714,95 @@ TEST_F(RunTest, BangModifierAllowsDuplicateCaptureNameLastWins) {
       },
       [](std::string_view, absl::Status) {});
   EXPECT_THAT(records, UnorderedElementsAre("b"));  // the `!` node re-binds, so the last -capture wins
+}
+
+TEST_F(RunTest, CaptureUsedByPrintfAndGrepTemplates) {
+  const auto captures = std::to_array<std::string>({"-capture:x", "-capturedir:x"});
+  for (const std::string& capture : captures) {
+    const auto outputs = std::to_array<std::string>({"-printf", "-printfln"});
+    for (const std::string& output : outputs) {
+      EXPECT_THAT(
+          RunExpr({"-name", "a.txt", capture, "/usr/bin/printf", "answer", ";", output, "%{capture.x}"}),
+          ElementsAre("answer"));
+      EXPECT_THAT(last_errors_, 0);
+    }
+    EXPECT_THAT(
+        RunExpr({"-name", "a.txt", capture, "/usr/bin/printf", "answer", ";", "-grep:{capture.x}", "."}),
+        ElementsAre("answer"));
+    EXPECT_THAT(last_errors_, 0);
+  }
+}
+
+TEST_F(RunTest, CaptureUsedByFilePrintf) {
+  const auto actions = std::to_array<std::string>({"-fprintf", "-fprintfln"});
+  for (const std::string& action : actions) {
+    const std::string target = Path(action);
+    EXPECT_THAT(
+        RunExpr({"-name", "a.txt", "-capture:x", "/usr/bin/printf", "answer", ";", action, target, "%{capture.x}"}),
+        IsEmpty());
+    EXPECT_THAT(last_errors_, 0);
+    EXPECT_THAT(fs_.ReadContent(target), IsOkAndHolds(Eq(action == "-fprintf" ? "answer" : "answer\n")));
+  }
+}
+
+TEST_F(RunTest, CaptureUsedByLaterDirectoryCaptureAndComparison) {
+  EXPECT_THAT(
+      RunExpr(
+          {"-name", "a.txt", "-capture:x", "/usr/bin/printf", Path("a.txt"), ";", "-capturedir:y", "/usr/bin/printf",
+           "{capture.x}", ";", "-cmp", "{capture.y}", "--template={name}"}),
+      ElementsAre("a.txt"));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, CaptureUsedByDirectoryExec) {
+  EXPECT_THAT(
+      RunExpr(
+          {"--exec-fields", "-name", "a.txt", "-capture:x", "/usr/bin/printf", "answer", ";", "-execdir", "/bin/sh",
+           "-c", "test '{capture.x}' = answer", ";"}),
+      IsEmpty());
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, CaptureUsedByColumn) {
+  EXPECT_THAT(
+      RunExpr(
+          {"--format=csv", "--columns=capture.x", "-name", "a.txt", "-capture:x", "/usr/bin/printf", "answer", ";"}),
+      ElementsAre("capture.x", "answer"));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, DirectoryCapturesRejectUnusedAndDuplicateNames) {
+  EXPECT_THAT(RunExpr({"-name", "a.txt", "-capturedir:x", "/usr/bin/printf", "answer", ";"}), IsEmpty());
+  EXPECT_THAT(last_errors_, 2);
+  EXPECT_THAT(
+      RunExpr(
+          {"-name", "a.txt", "-capturedir:x", "/usr/bin/printf", "one", ";", "-capture:x", "/usr/bin/printf", "two",
+           ";", "--template={capture.x}"}),
+      IsEmpty());
+  EXPECT_THAT(last_errors_, 2);
+}
+
+TEST_F(RunTest, LiteralCaptureSpellingsDoNotCountAsReferences) {
+  const auto formats = std::to_array<std::string>({
+      "{capture.x}",
+      "%%{capture.x}",
+      "%{{capture.x}}",
+      "%{capture.x",
+      R"(\%{capture.x})",
+      "%A%{capture.x}",
+      "%C%{capture.x}",
+      "%T%{capture.x}",
+  });
+  for (const std::string& format : formats) {
+    EXPECT_THAT(
+        RunExpr({"-name", "a.txt", "-capture:x", "/usr/bin/printf", "answer", ";", "-printf", format}), IsEmpty())
+        << format;
+    EXPECT_THAT(last_errors_, 2) << format;
+  }
+  EXPECT_THAT(
+      RunExpr({"-name", "a.txt", "-capture:x", "/usr/bin/printf", "answer", ";", "--template={{capture.x}}"}),
+      IsEmpty());
+  EXPECT_THAT(last_errors_, 2);
 }
 
 TEST_F(RunTest, UnusedCaptureIsError) {

@@ -187,6 +187,16 @@ struct EvaluateTest : ::testing::Test {
   std::vector<std::string> content_files_;  // temp files written by WriteContentFile, removed in TearDown
 };
 
+TEST_F(EvaluateTest, ImplicitOutputUsesDescriptorCapabilitiesRatherThanNames) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({".", "-prune"}));
+  auto descriptor = *command.expression->descriptor;
+  descriptor.name = "-renamed-action";
+  const parser::Expr expression{.kind = parser::Expr::Kind::kPredicate, .descriptor = {descriptor}};
+  EXPECT_THAT(ContainsAction(expression), IsFalse());
+  descriptor.preserves_implicit_output = false;
+  EXPECT_THAT(ContainsAction(expression), IsTrue());
+}
+
 TEST_F(EvaluateTest, ExpressionIdentityTracksNodesRatherThanTheirContents) {
   const parser::Expr first{.kind = parser::Expr::Kind::kPredicate};
   const parser::Expr second{.kind = parser::Expr::Kind::kPredicate};
