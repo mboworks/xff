@@ -19,6 +19,12 @@ The review separates reproduced defects from design proposals and records their 
 - Disprove the reported newline-padding defect by measuring rendered pipe positions.
 - Guard normalization-before-measurement with LF, CRLF, and escaped-pipe regression cases.
 
+## Completed: Capture consumers (audit B01)
+
+- Discover capture references through parsed templates in the actual consuming fields and actions.
+- Apply duplicate/unused binding checks and implicit-output behavior consistently to directory captures.
+- Cover printf/file-printf, grep templates, execution, chaining, comparison targets, and columns.
+
 ## Completed: CI cache capacity after INI changes
 
 - Raise the shared uncompressed cache limit to 1 GB and ASan to 3 GB using main-run measurements.

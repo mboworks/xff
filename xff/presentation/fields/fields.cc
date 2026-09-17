@@ -1032,6 +1032,12 @@ Template Template::Compile(std::string_view tmpl) {
   return compiled;
 }
 
+bool Template::ReferencesCapture(std::string_view name) const {
+  return std::any_of(segments_.begin(), segments_.end(), [&](const Segment& segment) {
+    return segment.fn == &OutputField && segment.key == name;
+  });
+}
+
 std::string Template::Render(const RenderContext& context) const {
   std::string out;
   for (const Segment& segment : segments_) {

@@ -57,6 +57,15 @@ struct FieldsTest : ::testing::Test {
   }
 };
 
+TEST_F(FieldsTest, CaptureReferencesUseParsedFieldsRatherThanLiteralText) {
+  EXPECT_THAT(Template::Compile("{capture.answer}").ReferencesCapture("answer"), IsTrue());
+  EXPECT_THAT(Template::Compile("{capture.answer:s/a/b/}").ReferencesCapture("answer"), IsTrue());
+  EXPECT_THAT(Template::Compile("{{capture.answer}}").ReferencesCapture("answer"), IsFalse());
+  EXPECT_THAT(Template::Compile("{capture.answer-extra}").ReferencesCapture("answer"), IsFalse());
+  EXPECT_THAT(Template::Compile("{capture.answer").ReferencesCapture("answer"), IsFalse());
+  EXPECT_THAT(Template::Compile("{name:s/a/{capture.answer}/}").ReferencesCapture("answer"), IsFalse());
+}
+
 TEST_F(FieldsTest, StringOrViewOwnsComputedStringsAndPreservesStableViews) {
   const StringOrView owned(std::string("computed"));
   EXPECT_THAT(owned.view(), Eq("computed"));

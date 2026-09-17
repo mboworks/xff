@@ -2698,12 +2698,12 @@ EvaluationResult EvaluateDeferred(const parser::Expr& expr, EvalContext& context
 
 bool ContainsAction(const parser::Expr& expr) {
   switch (expr.kind) {
-    // -prune and -capture are actions that do NOT suppress the implicit print:
-    // -prune per find's "no actions other than -prune" rule, and -capture is a
+    // -prune and capture actions do NOT suppress the implicit print:
+    // -prune per find's "no actions other than -prune" rule; either capture is a
     // binding side effect (not output). -quit and the print actions do suppress.
     case parser::Expr::Kind::kPredicate:
       return expr.descriptor->kind == registry::Kind::kAction && expr.descriptor->name != "-prune"
-             && expr.descriptor->name != "-capture";
+             && expr.descriptor->name != "-capture" && expr.descriptor->name != "-capturedir";
     case parser::Expr::Kind::kNot: return ContainsAction(*expr.lhs);
     case parser::Expr::Kind::kAnd:
     case parser::Expr::Kind::kOr:
