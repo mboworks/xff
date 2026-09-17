@@ -77,7 +77,7 @@ std::vector<ContextLine> CollectLineMatchesWithContext(
 // unterminated final line.
 std::size_t CountLines(std::string_view content);
 
-// CountLines for `content`, or nullopt when it is binary (a NUL byte in the first 8 KiB,
+// CountLines for `content`, or nullopt when it is binary (a NUL byte in the first 8,000 bytes,
 // grep/ripgrep's heuristic - the same rule content search uses to skip binaries). Split out of
 // FileLineCount so a caller that ALREADY has the bytes - an archive member, read through its own
 // filesystem - counts them by the identical rule instead of re-reading by path.
