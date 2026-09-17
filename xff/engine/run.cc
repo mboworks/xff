@@ -2697,7 +2697,7 @@ std::optional<std::string> UnusedCaptureName(
     if (!ExpressionReferencesCapture(expr, name, exec_fields)
         && !(tmpl.has_value() && fields::Template::Compile(*tmpl).ReferencesCapture(name))
         && !fields::Template::Compile(summary_key).ReferencesCapture(name)
-        && absl::c_none_of(columns, [&](const std::string& column) {
+        && absl::c_none_of(columns, [&](std::string_view column) {
              return fields::Template::Compile(absl::StrCat("{", column, "}")).ReferencesCapture(name);
            })) {
       return name;
