@@ -5,9 +5,12 @@
 
 - Raise compiled-output CI cache budgets to 1 GB uncompressed by default and 3 GB for ASan.
 
-- Make comparison summary scopes select column groups: `compare` expands to `left-total,right-total`,
-  while comparison categories each get their own count and size statistics. `left` and `right`
-  alias the side totals; output labels use canonical names.
+- Add `--summary-scope` for combined-root, per-root, and comparison statistics. In comparison mode,
+  scopes select ordered column groups in one table: `compare` expands to `left-total,right-total`,
+  `diff` to `left-only,right-only,different`, and each explicit category gets its own statistics.
+  `left` and `right` alias the side totals; output labels use canonical names. Ordinary summaries
+  default to `compare` during comparison and `all` otherwise; explicit scopes override that default.
+  Scope selection requires an active ordinary summary; a comparison-results summary alone does not suffice.
 
 - Support INI-only `${NAME}`, `${NAME:-DEFAULT}`, and `${NAME:?MESSAGE}` environment substitution,
   with literal quoting, single-argument values, and unchanged validation of expanded safety roots.
@@ -49,14 +52,10 @@
 
 - Render ordinary and comparison summary tables as Markdown with `--format=md` or `markdown`.
 
-- Show count and size percentages in summary tables, include every matched entry type and both
-  sides' bytes in comparison totals, and combine selected categories in one left/right table.
-  Ordinary summaries default to that paired layout with `--compare`, or combined roots otherwise;
-  explicit `--summary-scope` overrides the conditional default.
-
-- Add `--summary-scope` for combined, per-root, and comparison-category statistics, with
-  ordered aliases and separate left/right statistics for paired categories. Scope selection
-  requires an active file summary; comparison-only summaries do not satisfy that requirement.
+- Show count, count percentage, size, and size percentage in summary tables. Comparison results
+  include directories and other matched entry types. Paired categories count each pair once and
+  include both sides' bytes; side-total groups count their own entries and bytes. Each summary
+  column group uses its own full pre-`--top` totals for percentages.
 
 # 0.5.0
 
