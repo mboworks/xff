@@ -207,6 +207,23 @@ TEST_F(GlobalsTest, IsKnownGlobalAcceptsValuedFormsAndCompatAliases) {
   EXPECT_THAT(IsKnownGlobal("-Z-"), IsTrue());
 }
 
+TEST_F(GlobalsTest, BufferBoundsRejectInvalidValues) {
+  const auto invalid_buffers = std::to_array<std::string_view>(
+      {"", "garbage", "-1", "-1MB", "1.5", "1Q", "1ZB", "18446744073709551616", "18446744073709551615T",
+       "18446744073709551615MB"});
+  for (const std::string_view value : invalid_buffers) {
+    EXPECT_THAT(
+        ValidateGlobalValue(absl::StrCat("--buffer=", value)),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("--buffer")))
+        << value;
+  }
+  const auto valid_buffers =
+      std::to_array<std::string_view>({"auto", "off", "all", "0", "1", "10k", "2M", "10MB", "1MiB"});
+  for (const std::string_view value : valid_buffers) {
+    EXPECT_THAT(ValidateGlobalValue(absl::StrCat("--buffer=", value)), IsOk()) << value;
+  }
+}
+
 TEST_F(GlobalsTest, IsKnownGlobalRejectsUnknownFlagsAndBadValuedKeys) {
   EXPECT_THAT(IsKnownGlobal("--bogus"), IsFalse());
   EXPECT_THAT(IsKnownGlobal("--srot"), IsFalse());     // a typo of --sort

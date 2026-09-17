@@ -8,6 +8,9 @@
 
 - Add regression coverage for Markdown table alignment after newline and pipe normalization.
 
+- Reject malformed, negative, or overflowing buffer limits before traversal and actions,
+  including limits selected from configuration files.
+
 - Validate capture references in field consumers, including printf, grep templates, directory
   execution, and columns; escaped literal references no longer hide unused captures.
   Directory captures preserve implicit output consistently with ordinary captures.

@@ -111,7 +111,8 @@ struct GlobalFlag {
   // more spellings than the table documents (`yes` / `1` beside `on`), so those must NOT be checked
   // as an enum.
   // kEnumList accepts an empty list or comma-separated documented values.
-  enum class ValueCheck : std::uint8_t { kNone, kEnum, kEnumList, kEnumOrTemplate, kBool, kTristate };
+  // kBuffer accepts a row window or byte budget.
+  enum class ValueCheck : std::uint8_t { kNone, kEnum, kEnumList, kEnumOrTemplate, kBool, kTristate, kBuffer };
   ValueCheck value_check = ValueCheck::kNone;
   bool cli_only = false;     // Requires command-line/bootstrap processing; rejected in config files.
   bool config_only = false;  // Accepted only through validated configuration files.

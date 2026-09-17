@@ -255,7 +255,8 @@ std::optional<std::size_t> ParseBufferWindow(std::string_view value) {
   }
   const std::string_view digits = multiplier == 1 ? value : value.substr(0, value.size() - 1);
   std::size_t number = 0;
-  if (digits.empty() || !absl::SimpleAtoi(digits, &number)) {
+  if (digits.empty() || !absl::SimpleAtoi(digits, &number)
+      || number > std::numeric_limits<std::size_t>::max() / multiplier) {
     return std::nullopt;
   }
   return number * multiplier;
