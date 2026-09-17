@@ -224,6 +224,19 @@ TEST_F(GlobalsTest, BufferBoundsRejectInvalidValues) {
   }
 }
 
+TEST_F(GlobalsTest, HistogramWidthsRequirePositiveIntegers) {
+  const auto invalid_widths =
+      std::to_array<std::string_view>({"", "garbage", "0", "-1", "1.5", "18446744073709551616"});
+  for (const std::string_view value : invalid_widths) {
+    EXPECT_THAT(
+        ValidateGlobalValue(absl::StrCat("--histogram-width=", value)),
+        StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("positive integer")))
+        << value;
+  }
+  EXPECT_THAT(ValidateGlobalValue("--histogram-width=1"), IsOk());
+  EXPECT_THAT(ValidateGlobalValue("--histogram-width=120"), IsOk());
+}
+
 TEST_F(GlobalsTest, IsKnownGlobalRejectsUnknownFlagsAndBadValuedKeys) {
   EXPECT_THAT(IsKnownGlobal("--bogus"), IsFalse());
   EXPECT_THAT(IsKnownGlobal("--srot"), IsFalse());     // a typo of --sort
