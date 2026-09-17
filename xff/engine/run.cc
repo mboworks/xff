@@ -5656,6 +5656,24 @@ RunResult RunFindCore(
   return RunResult{.errors = errors, .any_match = any_match};
 }
 
+// Validate formats shared by summary and histogram output before any actions run.
+absl::Status ValidateReductionFormat(const std::vector<std::string>& globals, bool compare) {
+  const bool has_summary = !ResolveSummaries(globals, compare).empty();
+  MBO_ASSIGN_OR_RETURN(const auto histograms, ResolveHistograms(globals));
+  if (has_summary || !histograms.empty()) {
+    const auto format = ResolveFormat(globals);
+    if (format != render::Format::kPlain && format != render::Format::kAligned && format != render::Format::kJsonl
+        && format != render::Format::kMarkdown) {
+      return absl::InvalidArgumentError(
+          absl::StrCat(
+              has_summary ? "summary tables" : "histograms",
+              " require --format=plain, aligned, jsonl, or markdown; "
+              "csv, tsv, nul, and tree are listing formats"));
+    }
+  }
+  return absl::OkStatus();
+}
+
 // Refuse ignored or misleading reduction controls before either comparison side can run actions.
 absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, bool compare) {
   for (const std::string& global : globals) {
@@ -5685,20 +5703,7 @@ absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, boo
       return absl::InvalidArgumentError("--compare-select requires --compare");
     }
   }
-  const bool has_summary = !ResolveSummaries(globals, compare).empty();
-  MBO_ASSIGN_OR_RETURN(const auto histograms, ResolveHistograms(globals));
-  if (has_summary || !histograms.empty()) {
-    const auto format = ResolveFormat(globals);
-    if (format != render::Format::kPlain && format != render::Format::kAligned && format != render::Format::kJsonl
-        && format != render::Format::kMarkdown) {
-      return absl::InvalidArgumentError(
-          absl::StrCat(
-              has_summary ? "summary tables" : "histograms",
-              " require --format=plain, aligned, jsonl, or markdown; "
-              "csv, tsv, nul, and tree are listing formats"));
-    }
-  }
-  return absl::OkStatus();
+  return ValidateReductionFormat(globals, compare);
 }
 
 }  // namespace
