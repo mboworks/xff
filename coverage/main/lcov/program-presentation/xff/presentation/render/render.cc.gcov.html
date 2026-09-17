@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-17 20:38:41</td>
+            <td class="headerValue">2026-09-17 21:11:36</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -163,11 +163,11 @@
 <span id="L83"><span class="lineNum">      83</span>                 :             : // Appends `field` to `out` as one RFC-4180 CSV field: quoted only when it contains a</span>
 <span id="L84"><span class="lineNum">      84</span>                 :             : // comma, double-quote, CR, or LF, with each interior `&quot;` doubled. A path never holds a</span>
 <span id="L85"><span class="lineNum">      85</span>                 :             : // NUL or '/'-embedded control that would break this, so no other escaping is needed.</span>
-<span id="L86"><span class="lineNum">      86</span>                 :<span class="tlaGNC">          22 : void AppendCsvField(std::string_view field, std::string&amp; out) {</span></span>
-<span id="L87"><span class="lineNum">      87</span>         [<span class="tlaGBC" title="branch 0 was taken 17 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">          22 :   if (field.find_first_of(&quot;,\&quot;\r\n&quot;) == std::string_view::npos) {</span></span>
-<span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaGNC">          17 :     out.append(field);</span></span>
-<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">          17 :     return;</span></span>
-<span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">          17 :   }</span></span>
+<span id="L86"><span class="lineNum">      86</span>                 :<span class="tlaGNC">          24 : void AppendCsvField(std::string_view field, std::string&amp; out) {</span></span>
+<span id="L87"><span class="lineNum">      87</span>         [<span class="tlaGBC" title="branch 0 was taken 19 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">          24 :   if (field.find_first_of(&quot;,\&quot;\r\n&quot;) == std::string_view::npos) {</span></span>
+<span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaGNC">          19 :     out.append(field);</span></span>
+<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">          19 :     return;</span></span>
+<span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">          19 :   }</span></span>
 <span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">           5 :   out.push_back('&quot;');</span></span>
 <span id="L92"><span class="lineNum">      92</span>         [<span class="tlaGBC" title="branch 0 was taken 161 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">         161 :   for (const char ch : field) {</span></span>
 <span id="L93"><span class="lineNum">      93</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 160 times"> + </span>]:<span class="tlaGNC">         161 :     if (ch == '&quot;') {</span></span>
@@ -194,18 +194,18 @@
 <span id="L114"><span class="lineNum">     114</span>                 :             : </span>
 <span id="L115"><span class="lineNum">     115</span>                 :             : // One Markdown table cell: a cell is single-line and `|`-delimited, so escape `|` as `\|`,</span>
 <span id="L116"><span class="lineNum">     116</span>                 :             : // turn a newline into a space, and drop CR. Everything else passes through verbatim.</span>
-<span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">         940 : std::string MarkdownCell(std::string_view field) {</span></span>
-<span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">         940 :   std::string out;</span></span>
-<span id="L119"><span class="lineNum">     119</span>         [<span class="tlaGBC" title="branch 0 was taken 4984 times"> + </span><span class="tlaGBC" title="branch 1 was taken 940 times"> + </span>]:<span class="tlaGNC">        4984 :   for (const char ch : field) {</span></span>
-<span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaGNC">        4984 :     switch (ch) {</span></span>
-<span id="L121"><span class="lineNum">     121</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4977 times"> + </span>]:<span class="tlaGNC">           7 :       case '|': out.append(&quot;\\|&quot;); break;</span></span>
-<span id="L122"><span class="lineNum">     122</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4982 times"> + </span>]:<span class="tlaGNC">           2 :       case '\n': out.push_back(' '); break;</span></span>
-<span id="L123"><span class="lineNum">     123</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 4983 times"> + </span>]:<span class="tlaGNC">           1 :       case '\r': break;</span></span>
-<span id="L124"><span class="lineNum">     124</span>         [<span class="tlaGBC" title="branch 0 was taken 4975 times"> + </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">        4975 :       default: out.push_back(ch);</span></span>
-<span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">        4984 :     }</span></span>
-<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">        4984 :   }</span></span>
-<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">         940 :   return out;</span></span>
-<span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">         940 : }</span></span>
+<span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">         941 : std::string MarkdownCell(std::string_view field) {</span></span>
+<span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">         941 :   std::string out;</span></span>
+<span id="L119"><span class="lineNum">     119</span>         [<span class="tlaGBC" title="branch 0 was taken 4986 times"> + </span><span class="tlaGBC" title="branch 1 was taken 941 times"> + </span>]:<span class="tlaGNC">        4986 :   for (const char ch : field) {</span></span>
+<span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaGNC">        4986 :     switch (ch) {</span></span>
+<span id="L121"><span class="lineNum">     121</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4979 times"> + </span>]:<span class="tlaGNC">           7 :       case '|': out.append(&quot;\\|&quot;); break;</span></span>
+<span id="L122"><span class="lineNum">     122</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4984 times"> + </span>]:<span class="tlaGNC">           2 :       case '\n': out.push_back(' '); break;</span></span>
+<span id="L123"><span class="lineNum">     123</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 4985 times"> + </span>]:<span class="tlaGNC">           1 :       case '\r': break;</span></span>
+<span id="L124"><span class="lineNum">     124</span>         [<span class="tlaGBC" title="branch 0 was taken 4976 times"> + </span><span class="tlaGBC" title="branch 1 was taken 10 times"> + </span>]:<span class="tlaGNC">        4976 :       default: out.push_back(ch);</span></span>
+<span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">        4986 :     }</span></span>
+<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">        4986 :   }</span></span>
+<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">         941 :   return out;</span></span>
+<span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">         941 : }</span></span>
 <span id="L129"><span class="lineNum">     129</span>                 :             : </span>
 <span id="L130"><span class="lineNum">     130</span>                 :             : }  // namespace</span>
 <span id="L131"><span class="lineNum">     131</span>                 :             : </span>
@@ -257,59 +257,59 @@
 <span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaUNC">           0 :   return absl::StrCat(path, &quot;\n&quot;);  // unreachable: every Format returns above</span></span>
 <span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC">        1138 : }</span></span>
 <span id="L179"><span class="lineNum">     179</span>                 :             : </span>
-<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">           9 : std::string EncodeTabularRow(Format format, const std::vector&lt;std::string&gt;&amp; cells) {</span></span>
-<span id="L181"><span class="lineNum">     181</span>         [<span class="tlaGBC" title="branch 0 was taken 9 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">           9 :   switch (format) {</span></span>
-<span id="L182"><span class="lineNum">     182</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">           3 :     case Format::kCsv:</span></span>
-<span id="L183"><span class="lineNum">     183</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">           4 :     case Format::kTsv: {</span></span>
-<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">           4 :       std::string out;</span></span>
-<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">           4 :       bool first = true;</span></span>
-<span id="L186"><span class="lineNum">     186</span>         [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4 times"> + </span>]:<span class="tlaGNC">          12 :       for (const std::string&amp; cell : cells) {</span></span>
-<span id="L187"><span class="lineNum">     187</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4 times"> + </span>]:<span class="tlaGNC">          12 :         if (!first) {</span></span>
+<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">          11 : std::string EncodeTabularRow(Format format, const std::vector&lt;std::string&gt;&amp; cells) {</span></span>
+<span id="L181"><span class="lineNum">     181</span>         [<span class="tlaGBC" title="branch 0 was taken 11 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          11 :   switch (format) {</span></span>
+<span id="L182"><span class="lineNum">     182</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">           5 :     case Format::kCsv:</span></span>
+<span id="L183"><span class="lineNum">     183</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 10 times"> + </span>]:<span class="tlaGNC">           6 :     case Format::kTsv: {</span></span>
+<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">           6 :       std::string out;</span></span>
+<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">           6 :       bool first = true;</span></span>
+<span id="L186"><span class="lineNum">     186</span>         [<span class="tlaGBC" title="branch 0 was taken 14 times"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">          14 :       for (const std::string&amp; cell : cells) {</span></span>
+<span id="L187"><span class="lineNum">     187</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">          14 :         if (!first) {</span></span>
 <span id="L188"><span class="lineNum">     188</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">           8 :           out.push_back(format == Format::kTsv ? '\t' : ',');</span></span>
 <span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">           8 :         }</span></span>
-<span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">          12 :         first = false;</span></span>
-<span id="L191"><span class="lineNum">     191</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">          12 :         if (format == Format::kTsv) {</span></span>
+<span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">          14 :         first = false;</span></span>
+<span id="L191"><span class="lineNum">     191</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">          14 :         if (format == Format::kTsv) {</span></span>
 <span id="L192"><span class="lineNum">     192</span>                 :<span class="tlaGNC">           3 :           AppendTsvField(cell, out);</span></span>
-<span id="L193"><span class="lineNum">     193</span>                 :<span class="tlaGNC">           9 :         } else {</span></span>
-<span id="L194"><span class="lineNum">     194</span>                 :<span class="tlaGNC">           9 :           AppendCsvField(cell, out);</span></span>
-<span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">           9 :         }</span></span>
-<span id="L196"><span class="lineNum">     196</span>                 :<span class="tlaGNC">          12 :       }</span></span>
-<span id="L197"><span class="lineNum">     197</span>                 :<span class="tlaGNC">           4 :       out.push_back('\n');</span></span>
-<span id="L198"><span class="lineNum">     198</span>                 :<span class="tlaGNC">           4 :       return out;</span></span>
-<span id="L199"><span class="lineNum">     199</span>                 :<span class="tlaGNC">           3 :     }</span></span>
-<span id="L200"><span class="lineNum">     200</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>]:<span class="tlaGNC">           2 :     case Format::kAligned:</span></span>
-<span id="L201"><span class="lineNum">     201</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">           3 :     case Format::kMarkdown:</span></span>
-<span id="L202"><span class="lineNum">     202</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">           3 :     case Format::kTree:</span></span>
-<span id="L203"><span class="lineNum">     203</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">           4 :     case Format::kJsonl:</span></span>
-<span id="L204"><span class="lineNum">     204</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">           4 :     case Format::kNul:</span></span>
-<span id="L205"><span class="lineNum">     205</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">           5 :     case Format::kPlain: return &quot;&quot;;  // streaming per-row is csv/tsv only (buffered ones use their builder)</span></span>
-<span id="L206"><span class="lineNum">     206</span>                 :<span class="tlaGNC">           9 :   }</span></span>
+<span id="L193"><span class="lineNum">     193</span>                 :<span class="tlaGNC">          11 :         } else {</span></span>
+<span id="L194"><span class="lineNum">     194</span>                 :<span class="tlaGNC">          11 :           AppendCsvField(cell, out);</span></span>
+<span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">          11 :         }</span></span>
+<span id="L196"><span class="lineNum">     196</span>                 :<span class="tlaGNC">          14 :       }</span></span>
+<span id="L197"><span class="lineNum">     197</span>                 :<span class="tlaGNC">           6 :       out.push_back('\n');</span></span>
+<span id="L198"><span class="lineNum">     198</span>                 :<span class="tlaGNC">           6 :       return out;</span></span>
+<span id="L199"><span class="lineNum">     199</span>                 :<span class="tlaGNC">           5 :     }</span></span>
+<span id="L200"><span class="lineNum">     200</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">           2 :     case Format::kAligned:</span></span>
+<span id="L201"><span class="lineNum">     201</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 10 times"> + </span>]:<span class="tlaGNC">           3 :     case Format::kMarkdown:</span></span>
+<span id="L202"><span class="lineNum">     202</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">           3 :     case Format::kTree:</span></span>
+<span id="L203"><span class="lineNum">     203</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 10 times"> + </span>]:<span class="tlaGNC">           4 :     case Format::kJsonl:</span></span>
+<span id="L204"><span class="lineNum">     204</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">           4 :     case Format::kNul:</span></span>
+<span id="L205"><span class="lineNum">     205</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 10 times"> + </span>]:<span class="tlaGNC">           5 :     case Format::kPlain: return &quot;&quot;;  // streaming per-row is csv/tsv only (buffered ones use their builder)</span></span>
+<span id="L206"><span class="lineNum">     206</span>                 :<span class="tlaGNC">          11 :   }</span></span>
 <span id="L207"><span class="lineNum">     207</span>                 :<span class="tlaUNC">           0 :   return &quot;&quot;;  // unreachable: every Format handled above</span></span>
-<span id="L208"><span class="lineNum">     208</span>                 :<span class="tlaGNC">           9 : }</span></span>
+<span id="L208"><span class="lineNum">     208</span>                 :<span class="tlaGNC">          11 : }</span></span>
 <span id="L209"><span class="lineNum">     209</span>                 :             : </span>
-<span id="L210"><span class="lineNum">     210</span>                 :<span class="tlaGNC">         426 : std::string Renderer::Header() const {</span></span>
-<span id="L211"><span class="lineNum">     211</span>         [<span class="tlaGBC" title="branch 0 was taken 426 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">         426 :   switch (format_) {</span></span>
-<span id="L212"><span class="lineNum">     212</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 423 times"> + </span>]:<span class="tlaGNC">           3 :     case Format::kCsv: {</span></span>
+<span id="L210"><span class="lineNum">     210</span>                 :<span class="tlaGNC">         428 : std::string Renderer::Header() const {</span></span>
+<span id="L211"><span class="lineNum">     211</span>         [<span class="tlaGBC" title="branch 0 was taken 428 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">         428 :   switch (format_) {</span></span>
+<span id="L212"><span class="lineNum">     212</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 425 times"> + </span>]:<span class="tlaGNC">           3 :     case Format::kCsv: {</span></span>
 <span id="L213"><span class="lineNum">     213</span>                 :<span class="tlaGNC">           3 :       std::string header;</span></span>
 <span id="L214"><span class="lineNum">     214</span>                 :<span class="tlaGNC">           3 :       AppendCsvField(&quot;path&quot;, header);  // slice 1: the single default column</span></span>
 <span id="L215"><span class="lineNum">     215</span>                 :<span class="tlaGNC">           3 :       header.push_back('\n');</span></span>
 <span id="L216"><span class="lineNum">     216</span>                 :<span class="tlaGNC">           3 :       return header;</span></span>
 <span id="L217"><span class="lineNum">     217</span>                 :<span class="tlaUNC">           0 :     }</span></span>
-<span id="L218"><span class="lineNum">     218</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 423 times"> + </span>]:<span class="tlaGNC">           3 :     case Format::kTsv: {</span></span>
+<span id="L218"><span class="lineNum">     218</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 425 times"> + </span>]:<span class="tlaGNC">           3 :     case Format::kTsv: {</span></span>
 <span id="L219"><span class="lineNum">     219</span>                 :<span class="tlaGNC">           3 :       std::string header;</span></span>
 <span id="L220"><span class="lineNum">     220</span>                 :<span class="tlaGNC">           3 :       AppendTsvField(&quot;path&quot;, header);</span></span>
 <span id="L221"><span class="lineNum">     221</span>                 :<span class="tlaGNC">           3 :       header.push_back('\n');</span></span>
 <span id="L222"><span class="lineNum">     222</span>                 :<span class="tlaGNC">           3 :       return header;</span></span>
 <span id="L223"><span class="lineNum">     223</span>                 :<span class="tlaUNC">           0 :     }</span></span>
-<span id="L224"><span class="lineNum">     224</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 426 times"> + </span>]:<span class="tlaUNC">           0 :     case Format::kAligned:</span></span>
-<span id="L225"><span class="lineNum">     225</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 426 times"> + </span>]:<span class="tlaUNC">           0 :     case Format::kMarkdown:</span></span>
-<span id="L226"><span class="lineNum">     226</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 424 times"> + </span>]:<span class="tlaGNC">           2 :     case Format::kTree:</span></span>
-<span id="L227"><span class="lineNum">     227</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 421 times"> + </span>]:<span class="tlaGNC">           7 :     case Format::kJsonl:</span></span>
-<span id="L228"><span class="lineNum">     228</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 423 times"> + </span>]:<span class="tlaGNC">          10 :     case Format::kNul:</span></span>
-<span id="L229"><span class="lineNum">     229</span>         [<span class="tlaGBC" title="branch 0 was taken 410 times"> + </span><span class="tlaGBC" title="branch 1 was taken 16 times"> + </span>]:<span class="tlaGNC">         420 :     case Format::kPlain: return &quot;&quot;;  // buffered formats emit their header inside their builder</span></span>
-<span id="L230"><span class="lineNum">     230</span>                 :<span class="tlaGNC">         426 :   }</span></span>
+<span id="L224"><span class="lineNum">     224</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 428 times"> + </span>]:<span class="tlaUNC">           0 :     case Format::kAligned:</span></span>
+<span id="L225"><span class="lineNum">     225</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 428 times"> + </span>]:<span class="tlaUNC">           0 :     case Format::kMarkdown:</span></span>
+<span id="L226"><span class="lineNum">     226</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 426 times"> + </span>]:<span class="tlaGNC">           2 :     case Format::kTree:</span></span>
+<span id="L227"><span class="lineNum">     227</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 423 times"> + </span>]:<span class="tlaGNC">           7 :     case Format::kJsonl:</span></span>
+<span id="L228"><span class="lineNum">     228</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 425 times"> + </span>]:<span class="tlaGNC">          10 :     case Format::kNul:</span></span>
+<span id="L229"><span class="lineNum">     229</span>         [<span class="tlaGBC" title="branch 0 was taken 412 times"> + </span><span class="tlaGBC" title="branch 1 was taken 16 times"> + </span>]:<span class="tlaGNC">         422 :     case Format::kPlain: return &quot;&quot;;  // buffered formats emit their header inside their builder</span></span>
+<span id="L230"><span class="lineNum">     230</span>                 :<span class="tlaGNC">         428 :   }</span></span>
 <span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaUNC">           0 :   return &quot;&quot;;  // unreachable: every Format handled above</span></span>
-<span id="L232"><span class="lineNum">     232</span>                 :<span class="tlaGNC">         426 : }</span></span>
+<span id="L232"><span class="lineNum">     232</span>                 :<span class="tlaGNC">         428 : }</span></span>
 <span id="L233"><span class="lineNum">     233</span>                 :             : </span>
 <span id="L234"><span class="lineNum">     234</span>                 :             : TableStream::TableStream(</span>
 <span id="L235"><span class="lineNum">     235</span>                 :             :     Format format,</span>
@@ -318,23 +318,23 @@
 <span id="L238"><span class="lineNum">     238</span>                 :             :     std::size_t window,</span>
 <span id="L239"><span class="lineNum">     239</span>                 :             :     std::size_t byte_budget,</span>
 <span id="L240"><span class="lineNum">     240</span>                 :             :     std::vector&lt;format::Align&gt; alignments)</span>
-<span id="L241"><span class="lineNum">     241</span>                 :<span class="tlaGNC">          94 :     : md_(format == Format::kMarkdown),</span></span>
-<span id="L242"><span class="lineNum">     242</span> [<span class="tlaGBC" title="branch 0 was taken 4294967307 times"> + </span><span class="tlaGBC" title="branch 1 was taken 83 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 79 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 4 times"> + </span>]:<span class="tlaGNC">          61 :       columns_(format == Format::kAligned || format == Format::kMarkdown ? header.size() : 0),</span></span>
-<span id="L243"><span class="lineNum">     243</span>                 :<span class="tlaGNC">          94 :       with_header_(with_header),</span></span>
-<span id="L244"><span class="lineNum">     244</span>                 :<span class="tlaGNC">          94 :       window_(window),</span></span>
-<span id="L245"><span class="lineNum">     245</span>                 :<span class="tlaGNC">          94 :       byte_budget_(byte_budget),</span></span>
-<span id="L246"><span class="lineNum">     246</span>         [<span class="tlaGBC" title="branch 0 was taken 79 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4294967311 times"> + </span>]:<span class="tlaGNC">          61 :       widths_(columns_, md_ ? 3 : 0),</span></span>
-<span id="L247"><span class="lineNum">     247</span>                 :<span class="tlaGNC">          94 :       alignments_(std::move(alignments)),</span></span>
-<span id="L248"><span class="lineNum">     248</span>                 :<span class="tlaGNC">          94 :       buffering_(window != 0) {</span></span>
-<span id="L249"><span class="lineNum">     249</span>                 :<span class="tlaGNC">          94 :   alignments_.resize(columns_, format::Align::kLeft);</span></span>
-<span id="L250"><span class="lineNum">     250</span>                 :<span class="tlaGNC">          94 :   header_.reserve(columns_);</span></span>
-<span id="L251"><span class="lineNum">     251</span>         [<span class="tlaGBC" title="branch 0 was taken 282 times"> + </span><span class="tlaGBC" title="branch 1 was taken 94 times"> + </span>]:<span class="tlaGNC">         376 :   for (std::size_t col = 0; col &lt; columns_; ++col) {</span></span>
+<span id="L241"><span class="lineNum">     241</span>                 :<span class="tlaGNC">          95 :     : md_(format == Format::kMarkdown),</span></span>
+<span id="L242"><span class="lineNum">     242</span> [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 83 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 79 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 4 times"> + </span>]:<span class="tlaGNC">          95 :       columns_(format == Format::kAligned || format == Format::kMarkdown ? header.size() : 0),</span></span>
+<span id="L243"><span class="lineNum">     243</span>                 :<span class="tlaGNC">          95 :       with_header_(with_header),</span></span>
+<span id="L244"><span class="lineNum">     244</span>                 :<span class="tlaGNC">          95 :       window_(window),</span></span>
+<span id="L245"><span class="lineNum">     245</span>                 :<span class="tlaGNC">          95 :       byte_budget_(byte_budget),</span></span>
+<span id="L246"><span class="lineNum">     246</span>         [<span class="tlaGBC" title="branch 0 was taken 79 times"> + </span><span class="tlaGBC" title="branch 1 was taken 16 times"> + </span>]:<span class="tlaGNC">          95 :       widths_(columns_, md_ ? 3 : 0),</span></span>
+<span id="L247"><span class="lineNum">     247</span>                 :<span class="tlaGNC">          95 :       alignments_(std::move(alignments)),</span></span>
+<span id="L248"><span class="lineNum">     248</span>                 :<span class="tlaGNC">          95 :       buffering_(window != 0) {</span></span>
+<span id="L249"><span class="lineNum">     249</span>                 :<span class="tlaGNC">          95 :   alignments_.resize(columns_, format::Align::kLeft);</span></span>
+<span id="L250"><span class="lineNum">     250</span>                 :<span class="tlaGNC">          95 :   header_.reserve(columns_);</span></span>
+<span id="L251"><span class="lineNum">     251</span>         [<span class="tlaGBC" title="branch 0 was taken 282 times"> + </span><span class="tlaGBC" title="branch 1 was taken 95 times"> + </span>]:<span class="tlaGNC">         377 :   for (std::size_t col = 0; col &lt; columns_; ++col) {</span></span>
 <span id="L252"><span class="lineNum">     252</span>         [<span class="tlaGBC" title="branch 0 was taken 263 times"> + </span><span class="tlaGBC" title="branch 1 was taken 19 times"> + </span>]:<span class="tlaGNC">         282 :     header_.push_back(md_ ? MarkdownCell(header[col]) : std::move(header[col]));</span></span>
 <span id="L253"><span class="lineNum">     253</span>         [<span class="tlaGBC" title="branch 0 was taken 212 times"> + </span><span class="tlaGBC" title="branch 1 was taken 70 times"> + </span>]:<span class="tlaGNC">         282 :     if (with_header_) {</span></span>
 <span id="L254"><span class="lineNum">     254</span>                 :<span class="tlaGNC">         212 :       widths_[col] = std::max(widths_[col], header_[col].size());</span></span>
 <span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">         212 :     }</span></span>
 <span id="L256"><span class="lineNum">     256</span>                 :<span class="tlaGNC">         282 :   }</span></span>
-<span id="L257"><span class="lineNum">     257</span>                 :<span class="tlaGNC">          94 : }</span></span>
+<span id="L257"><span class="lineNum">     257</span>                 :<span class="tlaGNC">          95 : }</span></span>
 <span id="L258"><span class="lineNum">     258</span>                 :             : </span>
 <span id="L259"><span class="lineNum">     259</span>                 :<span class="tlaGNC">         184 : std::string TableStream::Row(const std::vector&lt;std::string&gt;&amp; cells) const {</span></span>
 <span id="L260"><span class="lineNum">     260</span>                 :<span class="tlaGNC">         184 :   std::string out;</span></span>
