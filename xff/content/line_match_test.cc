@@ -15,6 +15,7 @@
 
 #include "xff/content/line_match.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdio>
 #include <fstream>
@@ -154,6 +155,19 @@ TEST_F(LineCountTest, CountLinesMatchesGrepSemantics) {
   EXPECT_THAT(CountLines("\n"), 1U);    // a lone newline is one (empty) line
   EXPECT_THAT(CountLines("\n\n"), 2U);
   EXPECT_THAT(CountLines("a\r\nb\r\n"), 2U);  // CRLF counts like LF
+}
+
+TEST_F(LineCountTest, BinarySniffStopsAtEightThousandBytes) {
+  std::string content(8'192, 'x');
+  content.at(7'999) = '\0';
+  EXPECT_THAT(ContentLineCount(content), Eq(std::nullopt));
+  content.at(7'999) = 'x';
+  const auto offsets = std::to_array<std::size_t>({8'000U, 8'050U, 8'191U});
+  for (const std::size_t offset : offsets) {
+    content.at(offset) = '\0';
+    EXPECT_THAT(ContentLineCount(content), Optional(Eq(std::size_t{1}))) << offset;
+    content.at(offset) = 'x';
+  }
 }
 
 TEST_F(LineCountTest, FileLineCountReadsAndCounts) {

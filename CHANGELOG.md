@@ -18,6 +18,8 @@
   execution, and columns; escaped literal references no longer hide unused captures.
   Directory captures preserve implicit output consistently with ordinary captures.
 
+- Correct binary-content help to state the exact 8,000-byte NUL sniff window.
+
 # 0.6.0
 
 - Raise compiled-output CI cache budgets to 1 GB uncompressed by default and 3 GB for ASan.

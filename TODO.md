@@ -36,6 +36,11 @@ The review separates reproduced defects from design proposals and records their 
 - Apply duplicate/unused binding checks and implicit-output behavior consistently to directory captures.
 - Cover printf/file-printf, grep templates, execution, chaining, comparison targets, and columns.
 
+## Completed: Binary sniff documentation (audit B09)
+
+- Document the binary sniff window as exactly 8,000 bytes in content and type help.
+- Test NUL bytes immediately before and at the boundary, and beyond it up to 8 KiB.
+
 ## Completed: CI cache capacity after INI changes
 
 - Raise the shared uncompressed cache limit to 1 GB and ASan to 3 GB using main-run measurements.

@@ -144,7 +144,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "match a literal substring in the file's content (xff)",
         .details = "Matches when the file contains SUBSTRING literally (no regex metacharacters - the literal pair "
                    "sidesteps grep's flavor ambiguity). Reads the file, so it is expensive; a non-regular, "
-                   "unreadable, or binary file (a NUL byte in the first 8 KiB) never matches. `-icontent` folds "
+                   "unreadable, or binary file (a NUL byte in the first 8,000 bytes) never matches. `-icontent` folds "
                    "ASCII case. Use `-rxc` for a pattern. This is an xff extension `--config=find` rejects.",
         .kind = Kind::kTest,
         .arity = 1,
@@ -189,7 +189,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .topic = "content",
     },
     // xff content-type predicates: is the file's CONTENT text or binary? Both read the file and use
-    // the same NUL-in-first-8-KiB heuristic as the content search above, so they classify a file the
+    // the same NUL-in-first-8,000-bytes heuristic as the content search above, so they classify a file the
     // same way -content / -grep skip it. Both are file-only: a non-regular or unreadable entry is
     // neither text nor binary (so -text and -binary are NOT complements - `! -text` also matches
     // directories, symlinks and unreadable files).
@@ -198,7 +198,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "match a regular text file; -text[=git|posix|windows|apple] picks the definition (xff)",
         .details =
             "TRUE for a regular, readable file whose content is text. Bare `-text` (or `=git`) is the default "
-            "heuristic: no NUL byte in the first 8000 bytes (git's buffer_is_binary, also grep/ripgrep), "
+            "heuristic: no NUL byte in the first 8,000 bytes (git's buffer_is_binary, also grep/ripgrep), "
             "line-ending-agnostic. One leading UTF-8 BOM is transparent. The strict flavors forbid a NUL ANYWHERE "
             "after that BOM and pin the line ending, "
             "requiring a final terminator (an empty file is vacuously complete): `=posix` = LF only, ends "
@@ -214,11 +214,12 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
     },
     {
         .name = "-binary",
-        .summary = "match a regular file whose content is binary (a NUL in the first 8 KiB) (xff)",
-        .details = "TRUE for a regular, readable file whose content is binary - a NUL byte in the first 8 KiB. The "
-                   "precise complement of `-text` WITHIN regular files: a directory, symlink, device or unreadable "
-                   "file is neither, so `-binary` is not `! -text`. Reads the file (expensive). An xff extension "
-                   "`--config=find` rejects.",
+        .summary = "match a regular file whose content is binary (a NUL in the first 8,000 bytes) (xff)",
+        .details =
+            "TRUE for a regular, readable file whose content is binary - a NUL byte in the first 8,000 bytes. The "
+            "precise complement of `-text` WITHIN regular files: a directory, symlink, device or unreadable "
+            "file is neither, so `-binary` is not `! -text`. Reads the file (expensive). An xff extension "
+            "`--config=find` rejects.",
         .kind = Kind::kTest,
         .arity = 0,
         .style = Style::kXff,
