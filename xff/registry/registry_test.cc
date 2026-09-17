@@ -41,6 +41,26 @@ using ::testing::SizeIs;
 
 struct RegistryTest : ::testing::Test {};
 
+TEST_F(RegistryTest, CaptureCapabilitiesHaveConsistentArgumentLayouts) {
+  for (const Descriptor& descriptor : All()) {
+    if (descriptor.binds_capture) {
+      EXPECT_THAT(descriptor.kind, Eq(Kind::kAction)) << descriptor.name;
+      EXPECT_THAT(descriptor.binding, Eq(Binding::kLabelRegex)) << descriptor.name;
+      EXPECT_THAT(descriptor.preserves_implicit_output, Eq(true)) << descriptor.name;
+      EXPECT_THAT(descriptor.argument_fields.syntax, Eq(ArgumentFields::Syntax::kTemplate)) << descriptor.name;
+      EXPECT_THAT(descriptor.argument_fields.first, Eq(2)) << descriptor.name;
+      EXPECT_THAT(descriptor.argument_fields.remaining, Eq(true)) << descriptor.name;
+      EXPECT_THAT(descriptor.argument_fields.requires_exec_fields, Eq(false)) << descriptor.name;
+    }
+    if (descriptor.argument_fields.remaining) {
+      EXPECT_THAT(descriptor.arity, Eq(-1)) << descriptor.name;
+    }
+    if (descriptor.argument_fields.requires_exec_fields) {
+      EXPECT_THAT(descriptor.argument_fields.syntax, Eq(ArgumentFields::Syntax::kTemplate)) << descriptor.name;
+    }
+  }
+}
+
 TEST_F(RegistryTest, DescriptorSupportsStringification) {
   ASSERT_THAT(Lookup("-name"), Optional(_));
   EXPECT_THAT(absl::StrCat(*Lookup("-name")), Eq("-name"));

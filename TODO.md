@@ -21,6 +21,7 @@ The review separates reproduced defects from design proposals and records their 
 
 ## Completed: Capture consumers (audit B01)
 
+- Declare capture binding, argument field expansion, and implicit-output behavior in registry metadata.
 - Discover capture references through parsed templates in the actual consuming fields and actions.
 - Apply duplicate/unused binding checks and implicit-output behavior consistently to directory captures.
 - Cover printf/file-printf, grep templates, execution, chaining, comparison targets, and columns.

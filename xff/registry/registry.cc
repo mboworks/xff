@@ -458,6 +458,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .cost = Cost::kExpensive,
         .see_also = "compare,content",
+        .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate},
     },
     {
         .name = "-similar",
@@ -475,6 +476,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .cost = Cost::kExpensive,
         .topic = "content",
+        .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate},
     },
     // xff -diff[:STYLE]: emit a diff of each match against TARGET (a field template). An
     // ACTION whose truth is TRUE = same (like cmp/diff): silent when equal, prints the diff
@@ -495,6 +497,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .cost = Cost::kExpensive,
         .see_also = "compare,content",
+        .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate},
     },
     {
         .name = "-hash",
@@ -527,6 +530,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .cost = Cost::kExpensive,
         .see_also = "content,fields",
+        .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate},
     },
     {
         .name = "-type",
@@ -1175,6 +1179,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .primary_expansion_topic = "printf",
         .see_also = "printf,fields,output",
+        .argument_fields = {.syntax = ArgumentFields::Syntax::kPrintf},
     },
     {
         // xff: -print with the OS line ending
@@ -1198,6 +1203,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .primary_expansion_topic = "printf",
         .see_also = "printf,fields,output",
+        .argument_fields = {.syntax = ArgumentFields::Syntax::kPrintf},
     },
     {
         // xff: the line-output companion of the -rxc content predicate. Bare -grep
@@ -1261,6 +1267,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .writes_file = true,
         .primary_expansion_topic = "printf",
         .see_also = "printf,fields,output,safety",
+        .argument_fields = {.syntax = ArgumentFields::Syntax::kPrintf, .first = 1},
     },
     {
         // xff: -fprintf with the OS line ending (the file form of -printfln)
@@ -1274,6 +1281,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .primary_expansion_topic = "printf",
         .see_also = "printf,fields,output,safety",
+        .argument_fields = {.syntax = ArgumentFields::Syntax::kPrintf, .first = 1},
     },
     {
         .name = "-fls",
@@ -1305,6 +1313,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kAction,
         .arity = 0,
         .see_also = "ignore,archive",
+        .preserves_implicit_output = true,
     },
     {
         .name = "-quit",
@@ -1330,6 +1339,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
 
         .see_also = "safety,fields,config",
         .terminal = true,
+        .argument_fields =
+            {.syntax = ArgumentFields::Syntax::kTemplate, .remaining = true, .requires_exec_fields = true},
     },
     {
         .name = "-execdir",
@@ -1343,6 +1354,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
 
         .see_also = "safety,fields,config",
         .terminal = true,
+        .argument_fields =
+            {.syntax = ArgumentFields::Syntax::kTemplate, .remaining = true, .requires_exec_fields = true},
     },
     {
         .name = "-ok",
@@ -1389,6 +1402,9 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .safety = Safety::kSecurity,
         .style = Style::kXff,
         .see_also = "safety,fields,config",
+        .binds_capture = true,
+        .preserves_implicit_output = true,
+        .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate, .first = 2, .remaining = true},
     },
     {
         // -capture run in the matched entry's directory
@@ -1403,6 +1419,9 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .safety = Safety::kSecurity,
         .style = Style::kXff,
         .see_also = "safety,fields,config",
+        .binds_capture = true,
+        .preserves_implicit_output = true,
+        .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate, .first = 2, .remaining = true},
     },
     {
         .name = "-a",

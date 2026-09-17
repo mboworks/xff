@@ -16,6 +16,7 @@
 #ifndef XFF_REGISTRY_DESCRIPTOR_H_
 #define XFF_REGISTRY_DESCRIPTOR_H_
 
+#include <cstddef>
 #include <string_view>
 
 namespace xff::registry {
@@ -53,6 +54,16 @@ enum class Binding { kNone, kLabel, kLabelRegex, kFormat, kStyle, kHash, kText, 
 // skip hidden, smart case). It is the single opinionated style. Vocabulary is accepted exactly
 // like kXff (everything but kFind accepts all).
 enum class Style { kFind, kXff, kRg };
+
+// Field expansion performed on trailing expression arguments. Attached templates (for example
+// grep's format) are already parsed on the expression itself.
+struct ArgumentFields {
+  enum class Syntax { kNone, kTemplate, kPrintf };
+  Syntax syntax = Syntax::kNone;
+  std::size_t first = 0;
+  bool remaining = false;  // expand every argument from first, rather than just first
+  bool requires_exec_fields = false;
+};
 
 // One option / predicate / action description. The registry is the single
 // source of truth from which the parser, --help, completions, --explain, and
@@ -103,6 +114,9 @@ struct Descriptor {
   // hands our stdin / stdout to a child that might (an editor under -exec / -execdir). Read by the
   // CLI to suppress the listing pager, which would otherwise sit between that primary and the user.
   bool terminal = false;
+  bool binds_capture = false;              // args[0] names a captured command result
+  bool preserves_implicit_output = false;  // action does not replace the default listing
+  ArgumentFields argument_fields;
 };
 
 template<typename Sink>

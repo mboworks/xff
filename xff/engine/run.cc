@@ -2520,8 +2520,7 @@ void AppendCaptureNames(const parser::Expr& expr, std::vector<std::string>& name
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate:
       // A node with `!` (label_override) is ALLOWED to re-bind, so it is not reported as a duplicate.
-      if ((expr.descriptor->name == "-capture" || expr.descriptor->name == "-capturedir") && !expr.args.empty()
-          && !expr.label_override) {
+      if (expr.descriptor->binds_capture && !expr.args.empty() && !expr.label_override) {
         names.push_back(expr.args.front());
       }
       break;
@@ -2621,28 +2620,21 @@ bool PrintfReferencesCapture(std::string_view format, std::string_view name) {
 }
 
 bool PredicateReferencesCapture(const parser::Expr& expr, std::string_view name, bool exec_fields) {
-  const std::string_view primary = expr.descriptor->name;
   if (expr.grep_template != nullptr && expr.grep_template->ReferencesCapture(name)) {
     return true;
   }
+  const registry::ArgumentFields& expansion = expr.descriptor->argument_fields;
+  if (expansion.syntax == registry::ArgumentFields::Syntax::kNone || (expansion.requires_exec_fields && !exec_fields)
+      || expansion.first >= expr.args.size()) {
+    return false;
+  }
   const absl::Span<const std::string> args = expr.args;
-  if ((primary == "-printf" || primary == "-printfln") && !args.empty()) {
-    return PrintfReferencesCapture(args.front(), name);
-  }
-  if ((primary == "-fprintf" || primary == "-fprintfln") && args.size() > 1) {
-    return PrintfReferencesCapture(args[1], name);
-  }
-  const auto uses = [&](const std::string& text) { return fields::Template::Compile(text).ReferencesCapture(name); };
-  if (primary == "-capture" || primary == "-capturedir") {
-    return args.size() > 2 && absl::c_any_of(args.subspan(2), uses);
-  }
-  if (primary == "-exec" || primary == "-execdir") {
-    return exec_fields && absl::c_any_of(args, uses);
-  }
-  if (primary == "-cmp" || primary == "-similar" || primary == "-diff" || primary == "-hasheq") {
-    return !args.empty() && uses(args.front());
-  }
-  return false;
+  const auto selected = args.subspan(expansion.first, expansion.remaining ? args.size() - expansion.first : 1);
+  return absl::c_any_of(selected, [&](const std::string& text) {
+    return expansion.syntax == registry::ArgumentFields::Syntax::kPrintf
+               ? PrintfReferencesCapture(text, name)
+               : fields::Template::Compile(text).ReferencesCapture(name);
+  });
 }
 
 bool ExpressionReferencesCapture(const parser::Expr& expr, std::string_view name, bool exec_fields) {

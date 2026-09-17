@@ -1783,7 +1783,16 @@ TEST_F(RunTest, DirectoryCapturesRejectUnusedAndDuplicateNames) {
 }
 
 TEST_F(RunTest, LiteralCaptureSpellingsDoNotCountAsReferences) {
-  const auto formats = std::to_array<std::string>({"{capture.x}", "%%{capture.x}", "%{{capture.x}}", "%{capture.x"});
+  const auto formats = std::to_array<std::string>({
+      "{capture.x}",
+      "%%{capture.x}",
+      "%{{capture.x}}",
+      "%{capture.x",
+      R"(\%{capture.x})",
+      "%A%{capture.x}",
+      "%C%{capture.x}",
+      "%T%{capture.x}",
+  });
   for (const std::string& format : formats) {
     EXPECT_THAT(
         RunExpr({"-name", "a.txt", "-capture:x", "/usr/bin/printf", "answer", ";", "-printf", format}), IsEmpty())
