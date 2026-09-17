@@ -9,6 +9,16 @@ live in [`docs/history.md`](docs/history.md).
 - Describe the separate lean/full archives and their matching debug symbols.
 - Link release installation instructions and clarify size optimization plus ThinLTO.
 
+## Utility and usability audit
+
+Work through the claims in [the 0.6.0 review](docs/review-0.6.0.md), one claim per PR.
+The review separates reproduced defects from design proposals and records their acceptance criteria.
+
+## Completed: Markdown cell normalization verification (audit B07)
+
+- Disprove the reported newline-padding defect by measuring rendered pipe positions.
+- Guard normalization-before-measurement with LF, CRLF, and escaped-pipe regression cases.
+
 ## Completed: CI cache capacity after INI changes
 
 - Raise the shared uncompressed cache limit to 1 GB and ASan to 3 GB using main-run measurements.
