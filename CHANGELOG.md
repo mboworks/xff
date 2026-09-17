@@ -6,6 +6,8 @@
 - Correct the release archive description: lean and full executables have separate archives,
   each with its own matching debug symbols.
 
+- Add regression coverage for Markdown table alignment after newline and pipe normalization.
+
 # 0.6.0
 
 - Raise compiled-output CI cache budgets to 1 GB uncompressed by default and 3 GB for ASan.

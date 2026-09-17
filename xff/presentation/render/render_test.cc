@@ -179,6 +179,19 @@ TEST_F(RenderTest, RenderTableMarkdownEscapesInteriorPipes) {
       )out")));
 }
 
+TEST_F(RenderTest, MarkdownMeasuresCellsAfterNormalizingLineBreaks) {
+  EXPECT_THAT(
+      RenderTable(Format::kMarkdown, {"name"}, {{"a\nb"}, {"a\r\nb"}, {"abcdef"}, {"a|b"}}),
+      WithDropIndent(EqualsText(R"out(
+      | name   |
+      | ------ |
+      | a b    |
+      | a b    |
+      | abcdef |
+      | a\|b   |
+      )out")));
+}
+
 TEST_F(RenderTest, RenderTableNoHeaderDropsTheHeaderAndRule) {
   // --no-header: only the data rows, and the widths no longer count the hidden header.
   const std::vector<std::string> header = {"name", "size"};
