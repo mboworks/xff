@@ -17,6 +17,7 @@
     "docs/history.md": "docs/history.html",
     "docs/implementation-plan.md": "docs/implementation-plan.html",
     "docs/release-website.md": "docs/release-website.html",
+    "docs/review-0.6.0.md": "docs/review-0.6.0.html",
     "docs/test-plan.md": "docs/test-plan.html",
     "extra_modules/archive/test_data/README.md": "extra_modules/archive/test_data/README.html",
     "extra_modules/language_db/README.md": "extra_modules/language_db/README.html",
