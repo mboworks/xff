@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-17 21:11:36</td>
+            <td class="headerValue">2026-09-17 22:20:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -220,22 +220,23 @@
 <span id="L149"><span class="lineNum">     149</span>              : // &quot;off&quot; -&gt; 0, &quot;all&quot; -&gt; ColumnBuffer::kAll, a bare integer -&gt; that many rows, or an integer</span>
 <span id="L150"><span class="lineNum">     150</span>              : // with a decimal SI multiplier suffix k/M/G/T (case-insensitive: `10k` = 10'000, `10M` = ten</span>
 <span id="L151"><span class="lineNum">     151</span>              : // million). Returns nullopt for anything else -- a byte-budget form such as `10MB` / `10MiB`</span>
-<span id="L152"><span class="lineNum">     152</span>              : // (a memory bound, handled elsewhere) or garbage -- so the caller keeps its current window.</span>
-<span id="L153"><span class="lineNum">     153</span>              : // `auto` maps to 100 here; the per-format default for an absent flag is the caller's concern.</span>
-<span id="L154"><span class="lineNum">     154</span>              : std::optional&lt;std::size_t&gt; ParseBufferWindow(std::string_view value);</span>
-<span id="L155"><span class="lineNum">     155</span>              : </span>
-<span id="L156"><span class="lineNum">     156</span>              : // Parses a --buffer=VALUE memory budget into a byte count: an integer with a byte unit whose</span>
-<span id="L157"><span class="lineNum">     157</span>              : // final letter is `B` (case-insensitive) -- bare `B` (bytes), or a scale letter k/M/G/T/P/E with a</span>
-<span id="L158"><span class="lineNum">     158</span>              : // decimal (SI) base (`10MB` = 10 * 10^6) or an `i` before the `B` for the binary (IEC) base</span>
-<span id="L159"><span class="lineNum">     159</span>              : // (`10MiB` = 10 * 2^20). The trailing `B` is what marks a byte budget rather than a row count</span>
-<span id="L160"><span class="lineNum">     160</span>              : // (`10M` = ten million rows, `10MB` = ten megabytes). Returns nullopt for a non-byte value (a</span>
-<span id="L161"><span class="lineNum">     161</span>              : // row count or keyword, or garbage such as `10iB` with no scale), so the caller treats it as a</span>
-<span id="L162"><span class="lineNum">     162</span>              : // row window instead. Pair with ParseBufferWindow: try the window first, then the byte budget.</span>
-<span id="L163"><span class="lineNum">     163</span>              : std::optional&lt;std::size_t&gt; ParseByteBudget(std::string_view value);</span>
-<span id="L164"><span class="lineNum">     164</span>              : </span>
-<span id="L165"><span class="lineNum">     165</span>              : }  // namespace xff::format</span>
-<span id="L166"><span class="lineNum">     166</span>              : </span>
-<span id="L167"><span class="lineNum">     167</span>              : #endif  // XFF_PRESENTATION_FORMAT_FORMAT_H_</span>
+<span id="L152"><span class="lineNum">     152</span>              : // (a memory bound, handled elsewhere), overflow, or garbage. Option validation must reject</span>
+<span id="L153"><span class="lineNum">     153</span>              : // a value when neither this parser nor ParseByteBudget accepts it.</span>
+<span id="L154"><span class="lineNum">     154</span>              : // `auto` maps to 100 here; the per-format default for an absent flag is the caller's concern.</span>
+<span id="L155"><span class="lineNum">     155</span>              : std::optional&lt;std::size_t&gt; ParseBufferWindow(std::string_view value);</span>
+<span id="L156"><span class="lineNum">     156</span>              : </span>
+<span id="L157"><span class="lineNum">     157</span>              : // Parses a --buffer=VALUE memory budget into a byte count: an integer with a byte unit whose</span>
+<span id="L158"><span class="lineNum">     158</span>              : // final letter is `B` (case-insensitive) -- bare `B` (bytes), or a scale letter k/M/G/T/P/E with a</span>
+<span id="L159"><span class="lineNum">     159</span>              : // decimal (SI) base (`10MB` = 10 * 10^6) or an `i` before the `B` for the binary (IEC) base</span>
+<span id="L160"><span class="lineNum">     160</span>              : // (`10MiB` = 10 * 2^20). The trailing `B` is what marks a byte budget rather than a row count</span>
+<span id="L161"><span class="lineNum">     161</span>              : // (`10M` = ten million rows, `10MB` = ten megabytes). Returns nullopt for a non-byte value (a</span>
+<span id="L162"><span class="lineNum">     162</span>              : // row count or keyword, or garbage such as `10iB` with no scale), so the caller treats it as a</span>
+<span id="L163"><span class="lineNum">     163</span>              : // row window instead. Pair with ParseBufferWindow: try the window first, then the byte budget.</span>
+<span id="L164"><span class="lineNum">     164</span>              : std::optional&lt;std::size_t&gt; ParseByteBudget(std::string_view value);</span>
+<span id="L165"><span class="lineNum">     165</span>              : </span>
+<span id="L166"><span class="lineNum">     166</span>              : }  // namespace xff::format</span>
+<span id="L167"><span class="lineNum">     167</span>              : </span>
+<span id="L168"><span class="lineNum">     168</span>              : #endif  // XFF_PRESENTATION_FORMAT_FORMAT_H_</span>
         </pre>
               </td>
             </tr>

@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-17 21:11:36</td>
+            <td class="headerValue">2026-09-17 22:20:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -369,15 +369,15 @@
 <span id="L287"><span class="lineNum">     287</span>                 :             : }  // namespace</span>
 <span id="L288"><span class="lineNum">     288</span>                 :             : </span>
 <span id="L289"><span class="lineNum">     289</span>                 :             : // Primary arguments are literal data, even when they resemble selectors or config-only controls.</span>
-<span id="L290"><span class="lineNum">     290</span>                 :<span class="tlaGNC">       51882 : std::vector&lt;std::string_view&gt; DirectiveTokens(const std::vector&lt;std::string&gt;&amp; tokens) {</span></span>
-<span id="L291"><span class="lineNum">     291</span>                 :<span class="tlaGNC">       51882 :   std::vector&lt;std::string_view&gt; result;</span></span>
-<span id="L292"><span class="lineNum">     292</span>         [<span class="tlaGBC" title="branch 0 was taken 7521 times"> + </span><span class="tlaGBC" title="branch 1 was taken 51882 times"> + </span>]:<span class="tlaGNC">       59403 :   for (std::size_t pos = 0; pos &lt; tokens.size(); ++pos) {</span></span>
-<span id="L293"><span class="lineNum">     293</span>                 :<span class="tlaGNC">        7521 :     const std::string&amp; token = tokens[pos];</span></span>
-<span id="L294"><span class="lineNum">     294</span>                 :<span class="tlaGNC">        7521 :     result.push_back(token);</span></span>
-<span id="L295"><span class="lineNum">     295</span>                 :<span class="tlaGNC">        7521 :     const auto primary = registry::Lookup(token.substr(0, token.find(':')));</span></span>
-<span id="L296"><span class="lineNum">     296</span>         [<span class="tlaGBC" title="branch 0 was taken 7064 times"> + </span><span class="tlaGBC" title="branch 1 was taken 457 times"> + </span>]:<span class="tlaGNC">        7521 :     if (!primary.has_value()) {</span></span>
-<span id="L297"><span class="lineNum">     297</span>                 :<span class="tlaGNC">        7064 :       continue;</span></span>
-<span id="L298"><span class="lineNum">     298</span>                 :<span class="tlaGNC">        7064 :     }</span></span>
+<span id="L290"><span class="lineNum">     290</span>                 :<span class="tlaGNC">       51978 : std::vector&lt;std::string_view&gt; DirectiveTokens(const std::vector&lt;std::string&gt;&amp; tokens) {</span></span>
+<span id="L291"><span class="lineNum">     291</span>                 :<span class="tlaGNC">       51978 :   std::vector&lt;std::string_view&gt; result;</span></span>
+<span id="L292"><span class="lineNum">     292</span>         [<span class="tlaGBC" title="branch 0 was taken 7617 times"> + </span><span class="tlaGBC" title="branch 1 was taken 51978 times"> + </span>]:<span class="tlaGNC">       59595 :   for (std::size_t pos = 0; pos &lt; tokens.size(); ++pos) {</span></span>
+<span id="L293"><span class="lineNum">     293</span>                 :<span class="tlaGNC">        7617 :     const std::string&amp; token = tokens[pos];</span></span>
+<span id="L294"><span class="lineNum">     294</span>                 :<span class="tlaGNC">        7617 :     result.push_back(token);</span></span>
+<span id="L295"><span class="lineNum">     295</span>                 :<span class="tlaGNC">        7617 :     const auto primary = registry::Lookup(token.substr(0, token.find(':')));</span></span>
+<span id="L296"><span class="lineNum">     296</span>         [<span class="tlaGBC" title="branch 0 was taken 7160 times"> + </span><span class="tlaGBC" title="branch 1 was taken 457 times"> + </span>]:<span class="tlaGNC">        7617 :     if (!primary.has_value()) {</span></span>
+<span id="L297"><span class="lineNum">     297</span>                 :<span class="tlaGNC">        7160 :       continue;</span></span>
+<span id="L298"><span class="lineNum">     298</span>                 :<span class="tlaGNC">        7160 :     }</span></span>
 <span id="L299"><span class="lineNum">     299</span>         [<span class="tlaGBC" title="branch 0 was taken 88 times"> + </span><span class="tlaGBC" title="branch 1 was taken 369 times"> + </span>]:<span class="tlaGNC">         457 :     if (primary-&gt;arity &lt; 0) {</span></span>
 <span id="L300"><span class="lineNum">     300</span> [<span class="tlaGBC" title="branch 0 was taken 282 times"> + </span><span class="tlaGBC" title="branch 1 was taken 14 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 208 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 74 times"> + </span>]:<span class="tlaGNC">         296 :       while (++pos &lt; tokens.size() &amp;&amp; tokens[pos] != &quot;;&quot; &amp;&amp; tokens[pos] != &quot;+&quot;) {}</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 208 times"> + </span><span class="tlaUNC" title="branch &quot;5&quot; was not taken"> - </span>]
@@ -385,8 +385,8 @@
 <span id="L302"><span class="lineNum">     302</span>                 :<span class="tlaGNC">         369 :       pos += static_cast&lt;std::size_t&gt;(primary-&gt;arity);</span></span>
 <span id="L303"><span class="lineNum">     303</span>                 :<span class="tlaGNC">         369 :     }</span></span>
 <span id="L304"><span class="lineNum">     304</span>                 :<span class="tlaGNC">         457 :   }</span></span>
-<span id="L305"><span class="lineNum">     305</span>                 :<span class="tlaGNC">       51882 :   return result;</span></span>
-<span id="L306"><span class="lineNum">     306</span>                 :<span class="tlaGNC">       51882 : }</span></span>
+<span id="L305"><span class="lineNum">     305</span>                 :<span class="tlaGNC">       51978 :   return result;</span></span>
+<span id="L306"><span class="lineNum">     306</span>                 :<span class="tlaGNC">       51978 : }</span></span>
 <span id="L307"><span class="lineNum">     307</span>                 :             : </span>
 <span id="L308"><span class="lineNum">     308</span>                 :<span class="tlaGNC">        4458 : ConfigInputs ApplyConfigSkips(ConfigInputs inputs) {</span></span>
 <span id="L309"><span class="lineNum">     309</span>                 :<span class="tlaGNC">       13374 :   const auto requirement = [](const ConfigFile&amp; file, std::string_view positive, std::string_view negative) {</span></span>

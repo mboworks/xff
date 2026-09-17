@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-17 21:11:36</td>
+            <td class="headerValue">2026-09-17 22:20:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -130,17 +130,17 @@
 <span id="L50"><span class="lineNum">      50</span>                 :             : // Reconstructs the authored inline string, keeping `code` backticks - a term, a row</span>
 <span id="L51"><span class="lineNum">      51</span>                 :             : // description, and an entry's summary / detail pass through with their markup (as the</span>
 <span id="L52"><span class="lineNum">      52</span>                 :             : // hand-written plain help did), unlike free prose which drops it.</span>
-<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">       44881 : std::string RenderInlinesRaw(const Inlines&amp; runs) {</span></span>
-<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">       44881 :   std::string out;</span></span>
-<span id="L55"><span class="lineNum">      55</span>         [<span class="tlaGBC" title="branch 0 was taken 124646 times"> + </span><span class="tlaGBC" title="branch 1 was taken 44881 times"> + </span>]:<span class="tlaGNC">      124646 :   for (const Inline&amp; run : runs) {</span></span>
-<span id="L56"><span class="lineNum">      56</span>         [<span class="tlaGBC" title="branch 0 was taken 40305 times"> + </span><span class="tlaGBC" title="branch 1 was taken 84341 times"> + </span>]:<span class="tlaGNC">      124646 :     if (run.style == Inline::Style::kCode) {</span></span>
-<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">       40305 :       absl::StrAppend(&amp;out, &quot;`&quot;, run.text, &quot;`&quot;);</span></span>
-<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">       84341 :     } else {</span></span>
-<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">       84341 :       absl::StrAppend(&amp;out, run.text);</span></span>
-<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">       84341 :     }</span></span>
-<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">      124646 :   }</span></span>
-<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">       44881 :   return out;</span></span>
-<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">       44881 : }</span></span>
+<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">       44913 : std::string RenderInlinesRaw(const Inlines&amp; runs) {</span></span>
+<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">       44913 :   std::string out;</span></span>
+<span id="L55"><span class="lineNum">      55</span>         [<span class="tlaGBC" title="branch 0 was taken 124780 times"> + </span><span class="tlaGBC" title="branch 1 was taken 44913 times"> + </span>]:<span class="tlaGNC">      124780 :   for (const Inline&amp; run : runs) {</span></span>
+<span id="L56"><span class="lineNum">      56</span>         [<span class="tlaGBC" title="branch 0 was taken 40356 times"> + </span><span class="tlaGBC" title="branch 1 was taken 84424 times"> + </span>]:<span class="tlaGNC">      124780 :     if (run.style == Inline::Style::kCode) {</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">       40356 :       absl::StrAppend(&amp;out, &quot;`&quot;, run.text, &quot;`&quot;);</span></span>
+<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">       84424 :     } else {</span></span>
+<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">       84424 :       absl::StrAppend(&amp;out, run.text);</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">       84424 :     }</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">      124780 :   }</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">       44913 :   return out;</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">       44913 : }</span></span>
 <span id="L64"><span class="lineNum">      64</span>                 :             : </span>
 <span id="L65"><span class="lineNum">      65</span>                 :             : }  // namespace</span>
 <span id="L66"><span class="lineNum">      66</span>                 :             : </span>
@@ -205,12 +205,12 @@
 <span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">         724 :   }</span></span>
 <span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">        1179 : }</span></span>
 <span id="L126"><span class="lineNum">     126</span>                 :             : </span>
-<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">       69033 : std::string PlainTextBackend::BodyIndent() const {</span></span>
+<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">       69065 : std::string PlainTextBackend::BodyIndent() const {</span></span>
 <span id="L128"><span class="lineNum">     128</span>                 :             :   // The (count, char) constructor is intended; a braced `{count, ' '}` would list-initialize as</span>
 <span id="L129"><span class="lineNum">     129</span>                 :             :   // initializer_list&lt;char&gt; (the classic std::string gotcha), not repeat the space.</span>
 <span id="L130"><span class="lineNum">     130</span>                 :             :   // NOLINTNEXTLINE(modernize-return-braced-init-list)</span>
-<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">       69033 :   return std::string(static_cast&lt;std::size_t&gt;(2 * depth_), ' ');</span></span>
-<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">       69033 : }</span></span>
+<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">       69065 :   return std::string(static_cast&lt;std::size_t&gt;(2 * depth_), ' ');</span></span>
+<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">       69065 : }</span></span>
 <span id="L133"><span class="lineNum">     133</span>                 :             : </span>
 <span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">        3521 : void PlainTextBackend::BeginSubsection(const Subsection&amp; subsection) {</span></span>
 <span id="L135"><span class="lineNum">     135</span>                 :             :   // A title-less subsection carries no heading; it just indents its children one level</span>
@@ -250,13 +250,13 @@
 <span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">       20881 :   --depth_;</span></span>
 <span id="L170"><span class="lineNum">     170</span>                 :<span class="tlaGNC">       20881 : }</span></span>
 <span id="L171"><span class="lineNum">     171</span>                 :             : </span>
-<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">       19625 : void PlainTextBackend::EmitProse(const Prose&amp; prose) {</span></span>
-<span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">       19625 :   const std::string indent = BodyIndent();</span></span>
-<span id="L174"><span class="lineNum">     174</span>         [<span class="tlaGBC" title="branch 0 was taken 14636 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4989 times"> + </span>]:<span class="tlaGNC">       19625 :   if (in_entry_) {</span></span>
+<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">       19657 : void PlainTextBackend::EmitProse(const Prose&amp; prose) {</span></span>
+<span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">       19657 :   const std::string indent = BodyIndent();</span></span>
+<span id="L174"><span class="lineNum">     174</span>         [<span class="tlaGBC" title="branch 0 was taken 14668 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4989 times"> + </span>]:<span class="tlaGNC">       19657 :   if (in_entry_) {</span></span>
 <span id="L175"><span class="lineNum">     175</span>                 :             :     // An entry's detail line, under its term indent (keeps `code` markup, no blank line).</span>
-<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">       14636 :     absl::StrAppend(&amp;out_, WrapText(RenderInlinesRaw(prose.runs), Context().width, indent, indent));</span></span>
-<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">       14636 :     return;</span></span>
-<span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC">       14636 :   }</span></span>
+<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">       14668 :     absl::StrAppend(&amp;out_, WrapText(RenderInlinesRaw(prose.runs), Context().width, indent, indent));</span></span>
+<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">       14668 :     return;</span></span>
+<span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC">       14668 :   }</span></span>
 <span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">        4989 :   StartBlock();</span></span>
 <span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">        4989 :   absl::StrAppend(&amp;out_, WrapText(RenderInlinesPlain(prose.runs), Context().width, indent, indent));</span></span>
 <span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">        4989 : }</span></span>
