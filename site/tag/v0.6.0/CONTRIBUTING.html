@@ -1,0 +1,120 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>CONTRIBUTING.md - xff v0.6.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.6.0/">Home</a><a href="/xff/site/tag/v0.6.0/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.6.0">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/84bc6968c09154c219764f4ab736ae9c871395da">Source</a><a href="/xff/coverage/tag/0.6.0/">Coverage</a><a href="/xff/releases/0.6.0/">CLI reference</a></nav><p>xff v0.6.0</p><main><h1 dir="auto" id="intro">Intro</h1>
+<p dir="auto">All contributions are generally welcome as long as they fit in with the concepts and goals of this repository and as long as the <a href="CODE_OF_CONDUCT.html">CODE_OF_CONDUCT.md</a> is being respected.</p>
+<h1 dir="auto" id="code-rules">Code Rules</h1>
+<p dir="auto">All code must adhere to the <a href="RULES.html">RULES.md</a> and mostly follows the <a href="https://google.github.io/styleguide/" rel="nofollow">Google style</a>. Where it diverges, clang-tidy rules are in effect as much as possible.</p>
+<h2 dir="auto" id="coverage">Coverage</h2>
+<p dir="auto">The production coverage job derives its ratings, HTML colours, and CI gates from<br>
+<a href="https://github.com/mboworks/xff/blob/84bc6968c09154c219764f4ab736ae9c871395da/coverage_policy.json"><code class="notranslate">coverage_policy.json</code></a>. See <a href="docs/coverage.html"><code class="notranslate">docs/coverage.md</code></a> before<br>
+changing thresholds or adding a category override; weakened overrides require a documented reason.</p>
+<h1 dir="auto" id="run-pre-commit">Run pre-commit</h1>
+<p dir="auto">All changes will be verified by the pre-commit rules. In order to check these before committing changes install the tool:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">pre-commit install --hook-type pre-commit --hook-type pre-push</pre></div>
+<p dir="auto">Once installed the verification can be triggered for all files as follows:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">pre-commit run -a</pre></div>
+<p dir="auto">Without the <code class="notranslate">-a</code> only the modified and staged files will be checked.</p>
+<h2 dir="auto" id="local-clang-tidy-scope">Local clang-tidy scope</h2>
+<p dir="auto">The normal commit and push hooks run clang-tidy on their changed C++ files. Changed headers<br>
+select the affected translation units. A single coordinator defaults to the detected CPU count minus one<br>
+(minimum one), capped by the number of selected files. This leaves one CPU available for other work. Set <code class="notranslate">CLANG_TIDY_JOBS</code> to a positive integer to override<br>
+that count, or leave it unset (<code class="notranslate">auto</code>) to use CPU detection. GitHub CI explicitly supplies its<br>
+runner CPU count; there is no fixed two-worker local limit.</p>
+<p dir="auto">When Trunk manages Git hooks, the repository's Trunk actions invoke this same pre-commit hook.<br>
+Both Trunk actions explicitly forward <code class="notranslate">CLANG_TIDY_JOBS</code>, so a per-command worker override reaches<br>
+the coordinator (for example <code class="notranslate">CLANG_TIDY_JOBS=8 git push</code>).<br>
+The push action combines changed paths from the pushed refs into one invocation. Existing Trunk<br>
+formatting and checks remain enabled; do not replace <code class="notranslate">core.hooksPath</code> to install competing hooks.</p>
+<p dir="auto">Generate or refresh the compile database with <code class="notranslate">./compile_commands-update.sh</code>, including after<br>
+adding sources or changing build configuration. Without the database or clang-tidy 22 or newer,<br>
+the local hook reports a skip; the dedicated CI job supplies both and enforces the check. A requested<br>
+source missing from an existing database fails with a refresh instruction instead of silently<br>
+omitting that file.</p>
+<p dir="auto">Check selected files, including previously committed files that failed CI:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">pre-commit run clang-tidy --files xff_extras_api/mutations_test.cc xff_extras_api/fuse_backend_test.cc</pre></div>
+<p dir="auto">A full scan is a separate, explicit invocation (not part of a normal commit or push):</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">pre-commit run clang-tidy --all-files --hook-stage manual</pre></div>
+<p dir="auto">As with other hooks, <code class="notranslate">pre-commit run -a</code> explicitly selects all files. Use <code class="notranslate">--files</code> for a focused<br>
+verification; omit it to check staged changes.</p>
+<p dir="auto">Generated dependency sources needed during compile-command extraction must be explicit build<br>
+outputs in the owning extra. The PCRE2 extra exposes <code class="notranslate">chartables_source</code> for this purpose;<br>
+<code class="notranslate">@xff_pcre2//:chartables_test</code> compares it byte-for-byte with PCRE2's versioned<br>
+<code class="notranslate">pcre2_chartables.c.dist</code>. The compile-database preparation builds the extra's wildcard targets,<br>
+so the generated source is requested even when the compiled library is cached.</p>
+<h2 dir="auto" id="ci-build-caches">CI build caches</h2>
+<p dir="auto">Measured cache reuse, scheduling, fuzz throughput, and preparation profiling are documented in<br>
+<a href="docs/ci-performance.html"><code class="notranslate">docs/ci-performance.md</code></a>.</p>
+<p dir="auto">Coverage and fuzz jobs start alongside pre-commit and Trunk to reduce total CI wall time.<br>
+The final <code class="notranslate">done</code> gate still requires every job to pass. This intentionally spends runner time<br>
+on those jobs even when an early lint check fails.</p>
+<p dir="auto">Bazel's compiled-output disk cache is separate from its repository download cache.<br>
+CI restores the latest main cache for each runner OS, architecture, and build configuration.<br>
+Only main writes refreshed generations; PRs and release tags restore without saving. GCC also<br>
+uses a compiled-output cache. Release builds share the production configuration's main cache.</p>
+<p dir="auto">GitHub cache entries are immutable. Every main run therefore saves under a new run/attempt key,<br>
+with prefix restoration to reuse the previous generation. During migration, existing legacy<br>
+compiled-output caches remain a fallback until the first new generation is saved. A GitHub "cache hit" only means the<br>
+archive was restored; Bazel's final process statistics show whether build actions actually hit<br>
+that cache. Dependency and compiler-option changes can still require rebuilding.</p>
+<p dir="auto">Before upload, CI stops Bazel and evicts the largest disk-cache files until the action-cache and<br>
+content-store payload is at most 1,000,000,000 bytes by default. ASan uses 3,000,000,000 bytes and TSan uses<br>
+2,600,000,000 bytes; MSan uses 4,000,000,000 bytes and coverage uses 1,500,000,000 bytes<br>
+to retain more instrumented outputs. These are uncompressed limits; GitHub<br>
+storage usage reflects compressed uploads. Measure those uploads and total repository usage<br>
+after main refreshes the caches before increasing other configurations. This is a synchronous upload bound, not an<br>
+idle-time garbage-collection setting. Evicted outputs become normal cache misses; this bounded<br>
+cache does not promise to retain every object or executable. Size-first eviction favors retaining<br>
+many smaller compilation outputs over large linked executables; ties evict older files first.<br>
+This is a size heuristic, not action-type classification: large object files can also be evicted.<br>
+The weekly deep-fuzz workflow shares the ordinary fuzz cache and main-only refresh policy.<br>
+LLVM downloads remain uncached.<br>
+Cleanup retains ASan/TSan/coverage uploads up to 1,000,000,000 compressed bytes and MSan uploads up to<br>
+1,200,000,000 bytes; other entries keep<br>
+the existing 700,000,000-byte ceiling. The repository storage limit remains 10 GB.</p>
+<p dir="auto">After each successful main upload, the save action checks the GitHub inventory for that exact<br>
+replacement key and its compressed size. Only then does it delete strictly older main generations<br>
+for the same OS, architecture, and configuration. Missing, empty, or oversized replacements leave<br>
+the previous generations intact; concurrent newer uploads are also preserved. Inventory and<br>
+deletion failures leave cleanup to the fallback workflow. Compiler jobs need Actions write<br>
+permission for deletion; PRs and tags never invoke the save/retirement action.</p>
+<p dir="auto">The trusted cache-maintenance workflow removes closed-PR and tag-scoped caches first, then<br>
+superseded generations per configuration and ref, and oversized entries. It retains the newest<br>
+usable generation if a newer upload exceeds the ceiling. Open-PR caches from older workflows are<br>
+not removed merely because they belong to a PR; new PR runs do not write such caches.</p>
+<p dir="auto">Main's <code class="notranslate">done</code> job reports each measured cache's pre-trim and retained uncompressed sizes,<br>
+compressed upload size, and eviction count. It also totals all repository cache entries against<br>
+the 10 GB budget, including any overlapping generations still present. Missing uploads or job<br>
+measurements are identified rather than reported as zero. Small measurement artifacts expire<br>
+after one day and are not part of the cache-storage total.</p>
+<p dir="auto">Locally, use consistent compiler, extras, and linker options when comparing incremental builds.<br>
+An analysis-cache reset alone does not mean compilation was repeated. A personal <code class="notranslate">--disk_cache</code><br>
+setting can preserve action outputs across configuration switches and checkouts; the CI cache<br>
+change does not alter local Bazel settings.</p>
+<h2 dir="auto" id="parallel-fuzz-campaigns">Parallel fuzz campaigns</h2>
+<p dir="auto"><code class="notranslate">tools/fuzz_targets.py --campaign-seconds=60</code> discovers every first-party campaign, builds all<br>
+launchers together, and prepares Bazel run scripts sequentially. It then executes those scripts<br>
+concurrently, avoiding competing Bazel invocations. CI retains 60 seconds per target; weekly/manual<br>
+Deep fuzz retains 300 seconds. <code class="notranslate">--max-total-seconds</code> still limits the sum of all target budgets,<br>
+not parallel wall time.</p>
+<p dir="auto">Local concurrency defaults to CPU count minus one. <code class="notranslate">--jobs=N</code> selects a maximum; both CPU capacity<br>
+and physical RAM further bound it. The driver reserves 2 GiB for the host and 512 MiB of overhead<br>
+per worker beyond <code class="notranslate">--rss-limit-mb</code> (default 2048 MiB). CI requests the runner CPU count through the<br>
+same bounded scheduler. Unknown physical RAM falls back to one worker. The estimate does not<br>
+measure other processes' live memory use; lower <code class="notranslate">--jobs</code> on a busy machine.</p>
+<p dir="auto">Each campaign has its own output directory, log, corpus, crash artifacts, and result JSON.<br>
+<code class="notranslate">--output-dir=PATH</code> chooses the parent; otherwise the driver creates and retains a temporary<br>
+directory and prints its path. Generated launch scripts establish the runfiles context. On failure,<br>
+the scheduler stops queued campaigns and terminates active campaign process groups. A campaign<br>
+that exceeds its budget by 60 seconds is terminated as a failure, covering hung launchers or inputs.</p>
+<p dir="auto">The <code class="notranslate">fuzz-campaigns</code> CI artifact retains logs and findings for seven days, even after failure.<br>
+<code class="notranslate">summary.json</code> records workers, campaign wall time, and per-target execution counts and average<br>
+executions per second when libFuzzer supplies them. Compare those statistics alongside elapsed time:<br>
+CPU or memory contention can reduce mutation throughput even when parallel wall time improves.</p></main><footer>Release snapshot · 84bc6968c09154c219764f4ab736ae9c871395da</footer></body></html>

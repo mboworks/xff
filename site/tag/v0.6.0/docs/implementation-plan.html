@@ -1,0 +1,175 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/implementation-plan.md - xff v0.6.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.6.0/">Home</a><a href="/xff/site/tag/v0.6.0/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.6.0">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/84bc6968c09154c219764f4ab736ae9c871395da">Source</a><a href="/xff/coverage/tag/0.6.0/">Coverage</a><a href="/xff/releases/0.6.0/">CLI reference</a></nav><p>xff v0.6.0</p><main><h1 dir="auto" id="xff---implementation-map-and-change-sequence">xff - Implementation Map and Change Sequence</h1>
+<blockquote>
+<p dir="auto">Companion to <a href="design.html">design.md</a>, which owns product decisions, and<br>
+<a href="test-plan.html">test-plan.md</a>, which owns verification coverage. Current backlog<br>
+and unresolved choices live in <a href="../TODO.html">TODO.md</a>; completed investigations<br>
+move to <a href="history.html">history.md</a>.</p>
+<p dir="auto">Status: implemented system map · 2026-09-10</p>
+</blockquote>
+<p dir="auto">This document describes the repository that exists now and the order in which a<br>
+change should cross its boundaries. It is not a feature roadmap.</p>
+<h2 dir="auto" id="build-model">Build model</h2>
+<ul dir="auto">
+<li>Bazel 9 with bzlmod is the only supported build graph. Every package is private<br>
+by default and exposes explicit cross-package targets.</li>
+<li>C++23 is required. <code class="notranslate">--config=clang</code> selects the hermetic Clang 22/libc++<br>
+toolchain; GCC is a compatibility build, not the primary development toolchain.</li>
+<li><code class="notranslate">//xff/cli:xff</code> is always the lean executable. <code class="notranslate">//xff/cli:xff_full</code> is always<br>
+the full executable and is built with <code class="notranslate">--config=xff_full</code>.</li>
+<li><code class="notranslate">//xff</code> is the configuration-sensitive convenience alias: lean normally and<br>
+full under <code class="notranslate">--config=xff_full</code>.</li>
+<li><code class="notranslate">--config=xff_docs</code> enables every composable extra. Generated <code class="notranslate">XFF.md</code>, HTML,<br>
+NOTICE content, and their drift tests use that complete surface.</li>
+<li><code class="notranslate">--config=clang_release</code> composes hermetic Clang with the production <code class="notranslate">-Oz</code>,<br>
+ThinLTO, debug-information, and platform-appropriate linker settings. Artifact<br>
+staging strips the executables and splits their symbols; it does not rebuild<br>
+them under another compilation configuration.</li>
+</ul>
+<h2 dir="auto" id="repository-boundaries">Repository boundaries</h2>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Area</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">xff/registry</code></td>
+<td>Expression descriptor source of truth: spelling, arity, binding, safety, style, cost, topic, and help prose.</td>
+</tr>
+<tr>
+<td><code class="notranslate">xff/parser</code></td>
+<td>Pure command grammar: globals, roots, expression AST, validation, and style enforcement.</td>
+</tr>
+<tr>
+<td><code class="notranslate">xff/config</code></td>
+<td>System/user/explicit-file discovery, selector resolution, provenance, arming, and system policy.</td>
+</tr>
+<tr>
+<td><code class="notranslate">xff/vfs</code></td>
+<td>Thread-safe filesystem abstraction and local-filesystem implementation.</td>
+</tr>
+<tr>
+<td><code class="notranslate">xff/filesystem/{ignore,repo}</code></td>
+<td>Ignore evaluation, repository probing, and Git configuration discovery over the VFS.</td>
+</tr>
+<tr>
+<td><code class="notranslate">xff/matching/*</code>, <code class="notranslate">xff/content</code></td>
+<td>Regex, MIME, language, similarity, fuzzy, and file-content matching.</td>
+</tr>
+<tr>
+<td><code class="notranslate">xff/datetime</code>, <code class="notranslate">xff/values</code></td>
+<td>Shared parsing and value semantics.</td>
+</tr>
+<tr>
+<td><code class="notranslate">xff/engine</code></td>
+<td>Traversal, expression evaluation, actions, reductions, comparison, archive operations, and execution scheduling.</td>
+</tr>
+<tr>
+<td><code class="notranslate">xff/presentation/{fields,format}</code></td>
+<td>Field vocabulary, templates, tabular values, and formatting primitives.</td>
+</tr>
+<tr>
+<td><code class="notranslate">xff/presentation/{render,color}</code></td>
+<td>Result renderers, path encoding, tree output, and terminal colour policy.</td>
+</tr>
+<tr>
+<td><code class="notranslate">xff/cli</code></td>
+<td>Global-option registry, generated help/man/reference output, configuration wiring, diagnostics, and exit codes.</td>
+</tr>
+<tr>
+<td><code class="notranslate">xff/examples</code>, <code class="notranslate">xff/conformance</code></td>
+<td>Executable cookbook coverage and GNU/BSD find comparison.</td>
+</tr>
+<tr>
+<td><code class="notranslate">xff_extras_api</code>, <code class="notranslate">extra_modules/*</code></td>
+<td>Stable registration boundary and independently removable optional implementations.</td>
+</tr>
+<tr>
+<td><code class="notranslate">tools</code>, <code class="notranslate">.github/workflows</code></td>
+<td>Generated-artifact checks, repository policy, CI, release staging, attestation, and publication.</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">The important dependency direction is inward from CLI orchestration toward pure<br>
+registries, parsers, values, matching, and VFS interfaces. Optional modules cross<br>
+into the core only through <code class="notranslate">xff_extras_api</code>; the core does not depend on their<br>
+implementation packages.</p>
+<h2 dir="auto" id="composable-extras">Composable extras</h2>
+<p dir="auto">The lean executable keeps optional dependencies unlinked. Each extra is its own<br>
+Bazel module below <code class="notranslate">extra_modules/</code> and registers through <code class="notranslate">xff_extras_api</code>:</p>
+<ul dir="auto">
+<li>archive formats through libarchive;</li>
+<li>standalone ASAR and SquashFS readers;</li>
+<li>Brotli archive compression;</li>
+<li>FUSE mounting;</li>
+<li>PCRE2 regular expressions;</li>
+<li>comprehensive MIME and language databases.</li>
+</ul>
+<p dir="auto">The command-line vocabulary remains visible in both executables. Requesting an<br>
+unlinked implementation produces an explicit error, never a silent fallback.<br>
+<code class="notranslate">--//xff:xff_all=True</code> is the single source of truth used by <code class="notranslate">xff_full</code> and the<br>
+documentation build. Adding an extra must declare its module in<br>
+<code class="notranslate">bazelmod/extras.MODULE.bazel</code> and extend the <code class="notranslate">xff_all</code> composition;<br>
+<code class="notranslate">tools/extras.py</code> then discovers its test wildcard from that module declaration.</p>
+<h2 dir="auto" id="change-sequence">Change sequence</h2>
+<p dir="auto">Move a feature through the narrowest applicable sequence; do not start at the CLI<br>
+and tunnel around lower layers.</p>
+<ol dir="auto">
+<li>Record a behavior decision in the relevant <code class="notranslate">docs/design-*.md</code> document or<br>
+<code class="notranslate">TODO.md</code> when the spelling or semantics are not already settled.</li>
+<li>Add or change the source-of-truth descriptor:<br>
+<code class="notranslate">xff/registry/registry.cc</code> for expression vocabulary or<br>
+<code class="notranslate">xff/cli/globals.cc</code> for whole-run options.</li>
+<li>Extend parsing/value validation only when the existing declarative grammar is<br>
+insufficient. Keep parsing independent of host I/O.</li>
+<li>Add filesystem or optional-backend capability behind the VFS or extras API<br>
+before wiring engine behavior to it.</li>
+<li>Implement evaluation, traversal, action, reduction, or comparison behavior in<br>
+<code class="notranslate">xff/engine</code>, preserving left-to-right expression semantics and explicit<br>
+unsupported-operation errors.</li>
+<li>Extend fields/format/render only when the feature creates a new result value or<br>
+output contract.</li>
+<li>Wire CLI configuration, diagnostics, and exit behavior. Update the generated<br>
+help source in the same change; never patch <code class="notranslate">XFF.md</code> manually.</li>
+<li>Add focused unit tests at each changed boundary and an integration or cookbook<br>
+test for the user-visible path.</li>
+<li>Regenerate checked-in outputs with their repository scripts and run the<br>
+relevant pre-commit hooks before the full Bazel test graph.</li>
+</ol>
+<p dir="auto">For a bug fix, begin at the step that owns the defect and still cover the<br>
+user-visible regression. For documentation-only corrections, update the owning<br>
+source of truth and regenerate derived files when applicable.</p>
+<h2 dir="auto" id="validation-ladder">Validation ladder</h2>
+<p dir="auto">Use the smallest test first for fast feedback, then widen in proportion to the<br>
+change:</p>
+<ol dir="auto">
+<li>package-level Bazel tests for the edited boundary;</li>
+<li>generated-reference scripts when registry/help/license inputs change;</li>
+<li>pre-commit over every changed file;</li>
+<li><code class="notranslate">bazel test //...</code> plus the wildcard targets printed by<br>
+<code class="notranslate">tools/extras.py --wildcards</code> when validating the complete modular graph;</li>
+<li>sanitizer, coverage, fuzz, minimal-core, and release-artifact jobs in CI.</li>
+</ol>
+<p dir="auto">Linux CI explicitly requires working FUSE integration where applicable. The<br>
+minimal job removes the extras tree and proves the lean core still builds. The<br>
+default Linux and macOS jobs test the production ThinLTO configuration and stage<br>
+and execute the same stripped artifacts that the release workflow publishes.</p>
+<h2 dir="auto" id="release-boundary">Release boundary</h2>
+<p dir="auto">The release workflow rebuilds both explicit executable targets with<br>
+<code class="notranslate">--config=clang_release</code>, stages stripped platform executables plus split debug<br>
+information, constructs the <code class="notranslate">.tar.zst</code> archives, generates <code class="notranslate">SHA256SUMS</code>, and<br>
+publishes attestations. Release preparation derives notes and documentation from<br>
+the repository sources; generated artifacts must pass their drift tests before a<br>
+tag is published.</p></main><footer>Release snapshot · 84bc6968c09154c219764f4ab736ae9c871395da</footer></body></html>

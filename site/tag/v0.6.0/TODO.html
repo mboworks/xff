@@ -1,0 +1,196 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>TODO.md - xff v0.6.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.6.0/">Home</a><a href="/xff/site/tag/v0.6.0/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.6.0">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/84bc6968c09154c219764f4ab736ae9c871395da">Source</a><a href="/xff/coverage/tag/0.6.0/">Coverage</a><a href="/xff/releases/0.6.0/">CLI reference</a></nav><p>xff v0.6.0</p><main><h1 dir="auto" id="todo">TODO</h1>
+<p dir="auto">Actionable roadmap and deliberately deferred ideas. Completed implementation records live in<br>
+<a href="docs/history-roadmap.html"><code class="notranslate">docs/history-roadmap.md</code></a>; other resolved design records and investigations<br>
+live in <a href="docs/history.html"><code class="notranslate">docs/history.md</code></a>.</p>
+<h2 dir="auto" id="completed-ci-cache-capacity-after-ini-changes">Completed: CI cache capacity after INI changes</h2>
+<ul dir="auto">
+<li>Raise the shared uncompressed cache limit to 1 GB and ASan to 3 GB using main-run measurements.</li>
+<li>Retain the compressed cleanup ceilings and test the independent budget settings.</li>
+</ul>
+<h2 dir="auto" id="completed-comparison-summary-scope-columns">Completed: Comparison summary scope columns</h2>
+<ul dir="auto">
+<li>Make scopes collect ordered column groups; add side totals with <code class="notranslate">left</code>/<code class="notranslate">right</code> aliases and canonical output labels.</li>
+<li>Count category pairs once with combined sizes; preserve side totals, ordering, overlap, and percentages.</li>
+<li>Update plain/Markdown/JSONL output, help, design examples, and regression coverage.</li>
+</ul>
+<h2 dir="auto" id="completed-ini-environment-substitutions">Completed: INI environment substitutions</h2>
+<ul dir="auto">
+<li>Add braced environment values, literal defaults, and required-value diagnostics to the shared INI lexer.</li>
+<li>Preserve quoting, argument boundaries, section names, and field-renderer <code class="notranslate">%{...}</code> syntax.</li>
+<li>Test complete configuration files, invalid values, and scoped mutation enforcement after root expansion.</li>
+<li>Document caller-controlled environment trust and literal roots for fixed administrator boundaries.</li>
+</ul>
+<h2 dir="auto" id="completed-summary-and-comparison-audit">Completed: summary and comparison audit</h2>
+<ul dir="auto">
+<li>Reject invalid reduction controls before traversal/actions; make top-limit reset deterministic.</li>
+<li>Refuse silently ignored summary formats and support aligned comparison summaries consistently.</li>
+<li>Document default scopes, category aliases, independent output selection, ordering, formats, and<br>
+count/byte reconciliation; add the summary design guide to the published documentation.</li>
+<li>Add end-to-end reconciliation and invalid-control coverage alongside focused engine regressions.</li>
+<li>Measure the follow-up PR's action-cache reuse against the main caches seeded after <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5476971557" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/840" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/840/hovercard" href="https://github.com/mboworks/xff/pull/840">#840</a>.</li>
+</ul>
+<h2 dir="auto" id="ci-preparation-profiling">CI preparation profiling</h2>
+<ul dir="auto">
+<li>Verified <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5479995300" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/847" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/847/hovercard" href="https://github.com/mboworks/xff/pull/847">#847</a> main: zero cache evictions, 184.7-second fuzz campaign phase, 2.69 GB cache inventory.</li>
+<li>Capture coverage and initial fuzz build traces to attribute the remaining four-minute preparation<br>
+delay before changing toolchain fetching or packaging. See <code class="notranslate">docs/ci-performance.md</code>.</li>
+</ul>
+<h2 dir="auto" id="completed-start-long-ci-jobs-immediately">Completed: Start long CI jobs immediately</h2>
+<ul dir="auto">
+<li>Remove pre-commit/Trunk scheduling dependencies from coverage and fuzz; keep every check in <code class="notranslate">done</code>.</li>
+</ul>
+<h2 dir="auto" id="completed-parallel-fuzz-campaigns">Completed: Parallel fuzz campaigns</h2>
+<ul dir="auto">
+<li>Build all campaigns together, prepare launch scripts sequentially, and run with CPU/RAM bounds.</li>
+<li>Preserve time per target, isolated corpora/crashes/logs, throughput statistics, and failure cleanup.</li>
+<li>Compare CI wall time and mutation throughput after main runs the parallel scheduler.</li>
+</ul>
+<h2 dir="auto" id="completed-coverage-cache-capacity">Completed: Coverage cache capacity</h2>
+<ul dir="auto">
+<li>Raise coverage's cache allowance to 1.5 GB uncompressed and 1 GB compressed.</li>
+<li>Check the next main report for retained outputs and upload size.</li>
+</ul>
+<h2 dir="auto" id="completed-cache-storage-reporting-and-msan-allowance">Completed: Cache storage reporting and MSan allowance</h2>
+<ul dir="auto">
+<li>Retain up to 4 GB uncompressed / 1.2 GB compressed for MSan.</li>
+<li>Record per-upload measurements and report compressed/uncompressed sizes, eviction counts,<br>
+and repository-wide usage against 10 GB in main's final job.</li>
+</ul>
+<h2 dir="auto" id="completed-immediate-main-cache-retirement">Completed: Immediate main cache retirement</h2>
+<ul dir="auto">
+<li>After upload, verify the exact replacement and compressed size before deleting older main<br>
+generations in the same OS/architecture/configuration. Keep concurrent newer generations.</li>
+<li>Retain workflow-completion and scheduled cleanup as fallbacks; monitor <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5478366429" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/842" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/842/hovercard" href="https://github.com/mboworks/xff/pull/842">#842</a> main uploads for<br>
+actual compressed sanitizer sizes and total repository storage.</li>
+</ul>
+<h2 dir="auto" id="completed-ci-compiled-output-cache-lifecycle">Completed: CI compiled-output cache lifecycle</h2>
+<ul dir="auto">
+<li>Replace frozen cache keys with fresh main-run generations and configuration-specific restoration.</li>
+<li>Preserve the cache budget: bound uploads, retain the newest usable generation, and remove<br>
+closed-PR and tag-scoped entries. PR and tag runs are restore-only.</li>
+<li>Add GCC output caching, share release/main build caches, and test retention and upload behavior.</li>
+<li>Measured PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5477831708" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/841" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/841/hovercard" href="https://github.com/mboworks/xff/pull/841">#841</a>: normal Linux Clang had 3,768 disk hits, GCC 2,724, and documentation 718.<br>
+Sanitizers restored the correct namespaces but age-based eviction discarded most early outputs.</li>
+<li>Follow-up: evict largest blobs first, allow 2.6 GB uncompressed for sanitizer jobs, and cover deep-fuzz and release<br>
+reference-generation cache routing. Verify sanitizer reuse after main seeds the revised caches;<br>
+consider per-configuration budgets using compressed upload sizes if retention remains inadequate.</li>
+</ul>
+<h2 dir="auto" id="project-constraints">Project constraints</h2>
+<h3 dir="auto" id="minimum-bazel-version">Minimum Bazel version</h3>
+<p dir="auto">The supported minimum is <strong>Bazel 9.1.1</strong>. Development and CI use the newer release pinned in<br>
+<code class="notranslate">.bazelversion</code>; the minimum is a support floor, not a second CI configuration. Bazel 7 is no longer<br>
+supported, and no Bazel 8 patch release is part of the support contract. Lowering the minimum requires<br>
+an explicit decision.</p>
+<h3 dir="auto" id="coverage-policy">Coverage policy</h3>
+<p dir="auto">Every current coverage group meets the shared high boundaries. Category overrides may make enforcement<br>
+stricter; there are no lowered onboarding overrides. The JSON policy remains the single source of truth<br>
+for enforcement and presentation.</p>
+<h2 dir="auto" id="safety-follow-up-sequence">Safety follow-up sequence</h2>
+<ol dir="auto">
+<li>Discuss whether pager-command allowlisting is useful and define its trust and configuration<br>
+model before implementing it. Pager commands remain separate from execution blocks and dry-run.</li>
+</ol>
+<p dir="auto">The configuration audit findings and verification map are recorded in<br>
+<a href="docs/history.html#configuration-validation-and-documentation-audit">the audit implementation record</a>.<br>
+PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5443421444" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/821" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/821/hovercard" href="https://github.com/mboworks/xff/pull/821">#821</a> carries the fixes; final CI and release-artifact verification gate release readiness.</p>
+<p dir="auto">The safety model and directory-scoped permissions are tracked in<br>
+<a href="docs/history.html#directory-scoped-safety-controls">the implementation record</a>.</p>
+<h2 dir="auto" id="active-engineering-priorities">Active engineering priorities</h2>
+<ol dir="auto">
+<li><strong>Fuzzing.</strong> The parser-through-evaluator, matcher, template, PHAR, and ASAR targets now have<br>
+committed seed corpora, semantic invariants, ordinary-CI replay, and automatically discovered<br>
+bounded CI campaigns. Continue with shard, stronger matcher/template, and regex targets; every<br>
+new target is picked up by the campaign driver. Configuration coverage<br>
+includes the shared INI/xffrc argument grammar, quoting and comments, policy gating, precedence<br>
+resolution, and arming invariants.<br>
+Expression-evaluation harnesses must exclude safety-classified descriptors and use a mutation-<br>
+refusing in-memory filesystem; <code class="notranslate">--safe</code> text alone is not an isolation boundary.</li>
+<li><strong>Performance evidence.</strong> The parser now has a reproducible manual benchmark alongside the existing<br>
+similarity and near-duplicate measurements. Extend the evidence with traversal and memory<br>
+measurements before optimizing. Keep fuzz time/resource guards separate from stable performance<br>
+measurements.</li>
+<li><strong>Near-duplicate grouping design.</strong> The benchmark/design spike now measures exact Jaccard<br>
+verification behind scalable candidate generation; settle the grouping architecture, configuration,<br>
+and core-versus-extra boundary before shipping a user-facing operation. False positives may reach<br>
+exact verification but must never reach emitted clusters.</li>
+<li><strong>Coverage overview ordering.</strong> Keep <code class="notranslate">overall</code> first, then render the program categories<br>
+alphabetically, followed by the extension categories alphabetically. Preserve this ordering in<br>
+generated and published reports.</li>
+<li><strong>Detailed coverage gaps.</strong> Raise line and function coverage for<br>
+<code class="notranslate">program-command-grammar/xff/registry/</code> and branch coverage for <code class="notranslate">program-execution/xff/exec/</code><br>
+until every range is green in the detailed LCOV report.</li>
+<li><strong>Libarchive malformed-input boundary.</strong> The archive fuzz campaign must keep malformed records<br>
+from reaching known unsafe third-party parser paths. Revisit the pinned libarchive version and<br>
+format-specific validation before broadening beyond structurally valid tar inputs; report any<br>
+confirmed dependency defect through its private security channel when appropriate.</li>
+<li><strong>VFS host-adapter split.</strong> Extend the capability-oriented <code class="notranslate">vfs::FileSystem</code> seam for every file<br>
+operation xff needs, then move POSIX and standard-library file primitives behind a minimal local<br>
+host adapter. Consumers must not open or mutate host paths directly; retain annotations only at<br>
+the immediate adapter boundary.</li>
+</ol>
+<h2 dir="auto" id="coverage-report-ordering">Coverage report ordering</h2>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Pin <code class="notranslate">main</code>, then interleave PRs and releases newest-first by merge/tag position on main.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Refresh retained PR metadata after merges, preserve report replacement identity, and test<br>
+non-numeric ordering, annotated/lightweight tags, unmerged reports, and delayed CI runs.</li>
+</ul>
+<h2 dir="auto" id="summary-accounting-follow-up">Summary accounting follow-up</h2>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add count and byte percentages to summary tables, using full pre-<code class="notranslate">--top</code> totals.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Include directories, symlinks, special files, and type changes in comparison accounting;<br>
+distinguish entry equality from subtree equality and test empty-directory differences.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add comparison combined sizes and size percentages: each result counts once, while bytes<br>
+include both sides. Use entry metadata sizes, never recursive directory sizes.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Combine selected categories into one table with left/right column groups, including missing sides<br>
+and zero sizes;<br>
+use each side's selected population as the denominator and preserve JSONL attribution.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Default ordinary summaries to paired comparison scope under <code class="notranslate">--compare</code>; retain <code class="notranslate">all</code> otherwise<br>
+and document explicit overrides, option-order independence, and summary-driver requirements.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Render ordinary and comparison summaries as Markdown for <code class="notranslate">--format=md|markdown</code>, reusing<br>
+listing cell escaping and testing validation, fixed schemas, and table boundaries.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add count/size reconciliation tests, update registry/topic/generated help, and prepare a PR.</li>
+</ul>
+<h2 dir="auto" id="summary-presentation-follow-up">Summary presentation follow-up</h2>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Separate each summary note from the following scope in console and Markdown output.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add grouping-specific Markdown headings and bullet lists for scope/root labels and notes;<br>
+preserve headerless fragments.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Align exact byte values with scaled integer digits using fixed SI/IEC unit widths.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Test mixed/repeated/scoped summaries and size alignment at zero and nonzero precision;<br>
+update help, generated reference, and changelog, then prepare a PR.</li>
+</ul>
+<h2 dir="auto" id="design-required-before-implementation">Design required before implementation</h2>
+<ol dir="auto">
+<li><strong>Reassembled shard contents (shards v2).</strong> Decide whether the logical whole replaces or accompanies<br>
+physical shards for matching and actions, how incomplete and duplicate sets read, and which path and<br>
+metadata the synthetic entry owns. The shipped v1 already covers display, statistics, completeness,<br>
+duplicates, and <code class="notranslate">-shard-status</code> matching; do not infer v2 semantics from it.</li>
+<li><strong>Near-duplicate grouping.</strong> The candidate-generation spike in<br>
+<a href="docs/design-near-duplicates.html"><code class="notranslate">docs/design-near-duplicates.md</code></a> selects hashed-shingle postings<br>
+followed by exact Jaccard verification as the first implementation. Decide the user-visible<br>
+clustering rule for non-transitive matches and measure a memory-bounded production representation.</li>
+<li><strong>PHAR structural exposure.</strong> A format-defined file such as <code class="notranslate">.phar/stub.php</code> remains file-like, with a<br>
+stored member winning name conflicts. Decide whether a presentation option may hide such parts.<br>
+Aliases, serialized metadata, and signatures are not files and remain unexported unless a coherent<br>
+separate metadata model is designed.</li>
+</ol>
+<h2 dir="auto" id="deferred-refinements">Deferred refinements</h2>
+<ul dir="auto">
+<li>Filesystem-name behavior: Unicode normalization and Linux per-directory case-fold detection.</li>
+<li>Per-summary-sink modifiers.</li>
+<li>Histogram time buckets, explicit bucket edges/counts, and per-line template measures.</li>
+<li>Text-flavor mixed-line-ending policies.</li>
+<li>Post-1.0 behavior migration through <code class="notranslate">--unstable=NAME</code> if a concrete unstable spelling needs it;<br>
+do not build the rejected general <code class="notranslate">--feature</code> registry speculatively.</li>
+<li>C++ header modules after the hermetic toolchain supplies real compile/use actions.</li>
+</ul></main><footer>Release snapshot · 84bc6968c09154c219764f4ab736ae9c871395da</footer></body></html>

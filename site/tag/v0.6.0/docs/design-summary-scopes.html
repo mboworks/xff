@@ -1,0 +1,237 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/design-summary-scopes.md - xff v0.6.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.6.0/">Home</a><a href="/xff/site/tag/v0.6.0/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.6.0">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/84bc6968c09154c219764f4ab736ae9c871395da">Source</a><a href="/xff/coverage/tag/0.6.0/">Coverage</a><a href="/xff/releases/0.6.0/">CLI reference</a></nav><p>xff v0.6.0</p><main>
+
+<h1 dir="auto" id="summary-scopes">Summary scopes</h1>
+<p dir="auto"><code class="notranslate">--summary</code> selects statistics; in comparison mode, <code class="notranslate">--summary-scope</code> collects their ordered<br>
+column groups. Outside comparison it selects root populations. Its default depends on <code class="notranslate">--compare</code>:</p>
+<ul dir="auto">
+<li>Without <code class="notranslate">--compare</code>, the default is <code class="notranslate">all</code>: combine entries across roots.</li>
+<li>With any <code class="notranslate">--compare</code> mode, the default is <code class="notranslate">compare</code>: one table with <code class="notranslate">left-total</code> and<br>
+<code class="notranslate">right-total</code> column groups, including all four comparison categories.</li>
+<li>An explicit <code class="notranslate">--summary-scope</code> overrides that default regardless of its position relative to<br>
+<code class="notranslate">--compare</code>. Repeating <code class="notranslate">--summary-scope</code> uses the last occurrence.</li>
+</ul>
+<p dir="auto">For example, <code class="notranslate">xff ONE TWO --summary=ext</code> combines roots, while<br>
+<code class="notranslate">xff --compare=summary LEFT RIGHT --summary=ext</code> produces one paired extension table, plus the<br>
+comparison-result summary. Add <code class="notranslate">--summary-scope=all</code> to the latter to request combined statistics<br>
+instead. <code class="notranslate">--summary-scope=root</code> explicitly requests separate root tables.<br>
+Neither combined nor per-root statistics deduplicate files across roots.</p>
+<p dir="auto">This default selects the population only; it does not enable an ordinary summary. Bare<br>
+<code class="notranslate">--compare=summary</code> still requests only the comparison-result summary. Add <code class="notranslate">--summary=ext</code> or<br>
+<code class="notranslate">--summary=overall</code> to request the corresponding paired table.</p>
+<p dir="auto">Comparison scopes require <code class="notranslate">--compare</code> and select an ordered set of column groups:</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Scope</th>
+<th>Column groups</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">left-total</code></td>
+<td>Every participating left entry</td>
+</tr>
+<tr>
+<td><code class="notranslate">right-total</code></td>
+<td>Every participating right entry</td>
+</tr>
+<tr>
+<td><code class="notranslate">left</code></td>
+<td>Alias for <code class="notranslate">left-total</code></td>
+</tr>
+<tr>
+<td><code class="notranslate">right</code></td>
+<td>Alias for <code class="notranslate">right-total</code></td>
+</tr>
+<tr>
+<td><code class="notranslate">compare</code></td>
+<td><code class="notranslate">left-total,right-total</code></td>
+</tr>
+<tr>
+<td><code class="notranslate">left-only</code></td>
+<td>Entries present only on the left</td>
+</tr>
+<tr>
+<td><code class="notranslate">right-only</code></td>
+<td>Entries present only on the right</td>
+</tr>
+<tr>
+<td><code class="notranslate">different</code></td>
+<td>Different pairs, counted once with combined bytes</td>
+</tr>
+<tr>
+<td><code class="notranslate">identical</code></td>
+<td>Identical pairs, counted once with combined bytes</td>
+</tr>
+<tr>
+<td><code class="notranslate">diff</code></td>
+<td><code class="notranslate">left-only,right-only,different</code></td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto"><code class="notranslate">left</code> aliases <code class="notranslate">left-total</code>; <code class="notranslate">right</code> aliases <code class="notranslate">right-total</code>. Use <code class="notranslate">left-only</code> and <code class="notranslate">right-only</code><br>
+for unmatched entries. Scope labels and column headings always use canonical names. Lists expand<br>
+in order and discard duplicate scopes. A repeated flag replaces the preceding list.<br>
+<code class="notranslate">all</code> and <code class="notranslate">root</code> may be mixed with comparison scopes and retain their separate tables.</p>
+<p dir="auto">Selected comparison scopes share one table per summary grouping. Each scope contributes four<br>
+columns: count, percentage of count, size, and percentage of size. Percentages use that column<br>
+group's complete population before <code class="notranslate">--top</code>. Scopes can overlap: <code class="notranslate">left-total,left-only</code> shows a<br>
+side total alongside its subset. Columns are never summed into a grand total.<br>
+Missing groups display <code class="notranslate">-</code> (JSON <code class="notranslate">null</code>); present empty files display zero bytes. Side totals<br>
+count only their own entries and bytes. Categories count each pair once and sum both sides' bytes.<br>
+If a pair's grouping keys differ (such as type or hash), it occupies a single <code class="notranslate">LEFT -&gt; RIGHT</code> row.<br>
+Extraction streams retain their own counting units; matching keys pair by multiplicity.<br>
+The same classification drives comparison output, including directories and special file kinds.<br>
+Directory equality is entry-kind equality, not a claim about descendants. Roots themselves<br>
+participate when they match the expression. Output selection (<code class="notranslate">--compare-select</code>) does not filter statistics.</p>
+<p dir="auto"><code class="notranslate">--summary-scope</code> requires an active file summary; absence is a usage error, including when<br>
+<code class="notranslate">--summary=none</code> clears earlier summaries. <code class="notranslate">--compare=summary</code> expands to<br>
+<code class="notranslate">--compare=status --compare-select=none --summary=compare</code>. Its comparison-only summary<br>
+does not satisfy the requirement: add <code class="notranslate">--summary</code> or a grouping such as <code class="notranslate">--summary=ext</code>.<br>
+In comparison mode, bare <code class="notranslate">--summary</code> still requests<br>
+comparison counts; with an explicit scope it also requests ordinary count and size statistics.<br>
+<code class="notranslate">--summary=compare</code> reports whole-comparison counts, combined sizes, and their percentages.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff ONE TWO THREE --summary=ext --summary-scope=root
+xff --compare=summary LEFT RIGHT --summary=ext --summary-scope=compare
+xff --compare LEFT RIGHT --summary --summary-scope=diff</pre></div>
+<p dir="auto"><code class="notranslate">--summary=ext --summary-scope=compare</code> produces one extension table with <code class="notranslate">left-total</code> and<br>
+<code class="notranslate">right-total</code> column groups. <code class="notranslate">--summary-scope=diff</code> produces three column groups;<br>
+<code class="notranslate">--summary-scope=identical</code> produces one. The scope label lists the expanded column selection.<br>
+Repeating <code class="notranslate">--summary</code> with another grouping produces another table.</p>
+<p dir="auto">Accumulation retains the existing archive, collection, shard, and verification feeds. Combined<br>
+and root scopes aggregate during traversal. Category scopes retain per-entry contributions until<br>
+pairing assigns categories, without replaying expressions or executing actions again. Entries<br>
+without a comparison category do not enter category tables, even if a special reduction feed<br>
+(such as failed hash verification) counted them in a whole-root table.</p>
+<p dir="auto">Plain output labels scopes and roots. Flat JSONL rows carry <code class="notranslate">scope</code> and <code class="notranslate">root</code> fields when scopes are<br>
+explicit, and in comparison mode. Empty flat tables produce a zero total; empty comparison column groups are<br>
+absent. Sorting, top limits, precision, templates, and size formatting apply separately to each table.</p>
+<h2 dir="auto" id="counts-sizes-and-reconciliation">Counts, sizes, and reconciliation</h2>
+<p dir="auto">Ordinary tables show count, percentage of count, size, and percentage of size. Table totals are<br>
+computed before top filtering; zero denominators produce zero percent. JSONL uses <code class="notranslate">count</code>,<br>
+<code class="notranslate">count_percent</code>, <code class="notranslate">bytes</code>, and <code class="notranslate">size_percent</code>; extraction-only summaries omit byte fields because<br>
+line extraction has no byte dimension. Sizes sum entry metadata, including directory and symlink<br>
+metadata sizes, never recursive directory sizes or allocated disk space.</p>
+<p dir="auto">Comparison tables group by entry type and status. Counts represent comparison results; sizes are<br>
+combined left-plus-right bytes. Thus a 100-byte identical pair contributes one result and 200 bytes;<br>
+a 100/150-byte different pair contributes one result and 250 bytes. Min/max/average are not used.<br>
+Type-changing pairs have one transition bucket rather than being counted twice.</p>
+<p dir="auto">For the same matched population, combined entry count is left-only plus right-only plus twice the<br>
+paired result count. Combined bytes equal left bytes plus right bytes. Special reduction feeds<br>
+(collections, archive aggregation, extraction, verification, and shards) can intentionally select<br>
+or represent a different population; reconciliation only applies when the populations agree.</p>
+<p dir="auto">Comparison-scope JSONL rows carry <code class="notranslate">scope</code> (the canonical comma-separated selection), <code class="notranslate">group</code>,<br>
+and one object per selected scope, named <code class="notranslate">left-total</code>, <code class="notranslate">different</code>, etc. Each contains the four<br>
+statistics, or is <code class="notranslate">null</code> for a missing group. Root and combined scopes retain flat rows.</p>
+<h2 dir="auto" id="markdown-tables">Markdown tables</h2>
+<p dir="auto"><code class="notranslate">--format=markdown</code> (alias <code class="notranslate">md</code>) renders ordinary, comparison-result, and paired summaries as<br>
+Markdown tables, including their headers. For example:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff --compare=summary LEFT RIGHT --summary=ext --format=md</pre></div>
+<p dir="auto">This emits a comparison-result table followed by one paired extension table. Cell escaping uses<br>
+the same renderer as Markdown listings. All rows are buffered so column separators align<br>
+vertically in the source. Labels align left; numeric headers and values align right, with matching<br>
+Markdown alignment markers. Exact byte values reserve the missing fraction digits and use the same<br>
+unit width as scaled SI (<code class="notranslate">kB</code>) or IEC (<code class="notranslate">KiB</code>) sizes, so integer digits align at the decimal boundary.</p>
+<p dir="auto">Each table has a descriptive heading, such as <code class="notranslate">## Comparison summary</code> or <code class="notranslate">## Summary by extension</code>.<br>
+Scope and left/right root labels are Markdown bullet items below the heading and before the table,<br>
+so renderers keep each label on its own line. Explanatory notes below a table are bullet items too. Repeated summary groupings get their own<br>
+headings and scope labels. Accounting notes follow their table; a blank line separates them from<br>
+the next summary, including in console output. <code class="notranslate">--no-header</code> also suppresses Markdown headings.</p>
+<p dir="auto">Summary columns are determined by the grouping;<br>
+<code class="notranslate">--columns</code> remains a listing control and cannot be combined with Markdown summaries.<br>
+<code class="notranslate">--no-header</code> omits headers and Markdown separator rows when producing table fragments.<br>
+Expression actions retain their own output formats.</p>
+<h2 dir="auto" id="choosing-a-command">Choosing a command</h2>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Command suffix after <code class="notranslate">--compare LEFT RIGHT</code></th>
+<th align="left">Per-path output</th>
+<th align="left">Summary tables</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">(none)</td>
+<td align="left">Discrepancies</td>
+<td align="left">None</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">--summary</code></td>
+<td align="left">Discrepancies</td>
+<td align="left">Comparison results</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">--summary=ext</code></td>
+<td align="left">Discrepancies</td>
+<td align="left">Paired extension statistics for all categories</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">--summary --summary-scope=compare</code></td>
+<td align="left">Discrepancies</td>
+<td align="left">Comparison results, then paired overall statistics</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">--compare=summary</code></td>
+<td align="left">None</td>
+<td align="left">Comparison results</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">--compare=summary --summary=ext</code></td>
+<td align="left">None</td>
+<td align="left">Comparison results, then paired extension statistics</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">--compare=summary --summary=ext --summary-scope=left-only,right-only</code></td>
+<td align="left">None</td>
+<td align="left">Comparison results, then paired extension statistics for one-sided entries only</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Use <code class="notranslate">compare</code> for complete side-total columns or <code class="notranslate">root</code> for separate whole-root tables. The comparison-result table always describes the full comparison. Neither<br>
+<code class="notranslate">--summary-scope</code> nor <code class="notranslate">--compare-select</code> filters it; only the ordinary summary population changes<br>
+with scope. Conversely, <code class="notranslate">--compare-select</code> changes only per-path records and requires <code class="notranslate">--compare</code>.</p>
+<p dir="auto">For a small example, suppose there is one left-only file of 3 bytes, one right-only file of 5 bytes,<br>
+one identical pair of 2-byte files, and one different pair of 7 and 11 bytes. With <code class="notranslate">-type f</code>:</p>
+<ul dir="auto">
+<li>Comparison total: 4 results, 30 combined bytes.</li>
+<li>Paired <code class="notranslate">compare</code> total: left 3 entries / 12 bytes, right 3 entries / 18 bytes.</li>
+<li>Combined <code class="notranslate">all</code> total: 6 entries / 30 bytes.</li>
+<li><code class="notranslate">left-only,right-only</code> totals: left-only 1 entry / 3 bytes, right-only 1 entry / 5 bytes.</li>
+<li><code class="notranslate">diff</code> totals: left-only 1 / 3 bytes, right-only 1 / 5 bytes, different 1 pair / 18 bytes.</li>
+<li><code class="notranslate">identical</code> total: 1 pair / 4 combined bytes.</li>
+</ul>
+<p dir="auto">Expression filters run independently on each side <strong>before pairing</strong>. A path can be classified<br>
+as one-sided when its counterpart exists but fails the expression or is excluded by traversal<br>
+settings. For example, <code class="notranslate">-type f</code> excludes a directory opposite a regular file, so that path becomes<br>
+one-sided rather than a file-to-directory transition. Omit the type filter to compare empty<br>
+directories and other entry kinds as well.</p>
+<p dir="auto">Comparison-result tables appear first, regardless of where their summary flags occur. Ordinary<br>
+summary requests then appear in request order within each scope. Selected comparison scopes<br>
+share one table, emitted at the first comparison scope's position in the scope list. Repeating<br>
+<code class="notranslate">--summary=compare</code> requests repeated comparison tables; <code class="notranslate">--summary=none</code> clears earlier requests.</p>
+<h2 dir="auto" id="formats-and-controls">Formats and controls</h2>
+<p dir="auto">Summary tables support <code class="notranslate">plain</code>, <code class="notranslate">aligned</code>, <code class="notranslate">jsonl</code>, and <code class="notranslate">markdown</code> (alias <code class="notranslate">md</code>). <code class="notranslate">aligned</code> has the<br>
+same summary layout as <code class="notranslate">plain</code>. CSV, TSV, NUL, and tree formats are listing formats and are rejected<br>
+while a summary remains active, rather than silently producing plain text. Fixed summary columns<br>
+cannot be replaced by <code class="notranslate">--columns</code> in aligned or Markdown mode.</p>
+<p dir="auto"><code class="notranslate">--format</code> does not reformat explicit expression actions or per-path comparison records. Status<br>
+records remain tab-separated, and diff mode still emits a patch. Use <code class="notranslate">--compare=summary</code> (or<br>
+<code class="notranslate">--compare-select=none</code>) without printing actions when exporting summary-only JSONL or Markdown.<br>
+Repeated JSONL tables follow the same order as text tables; they are not wrapped in a JSON array.</p>
+<p dir="auto"><code class="notranslate">--summary-precision=N</code> accepts <code class="notranslate">0</code> through <code class="notranslate">9</code> and controls all summary percentages and scaled<br>
+sizes, including JSON percentage fields. Invalid values are errors. <code class="notranslate">--top=N</code> accepts a<br>
+non-negative integer; <code class="notranslate">0</code> removes the limit, and the last occurrence wins. Ordinary groups rank<br>
+by size, then count, then name; comparison-scope groups rank by the sum of their displayed column-group sizes (including overlap). Extraction groups<br>
+have no byte dimension and rank by count. Totals and percentage denominators include every<br>
+group, even those hidden by <code class="notranslate">--top</code>. Comparison-result rows are never truncated by <code class="notranslate">--top</code>.</p></main><footer>Release snapshot · 84bc6968c09154c219764f4ab736ae9c871395da</footer></body></html>
