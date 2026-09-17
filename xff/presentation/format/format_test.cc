@@ -207,6 +207,12 @@ TEST_F(FormatTest, ParseBufferWindowRejectsByteBudgetsAndGarbage) {
   EXPECT_THAT(ParseBufferWindow("M"), Eq(std::nullopt));  // multiplier with no number
 }
 
+TEST_F(FormatTest, ScaledBufferCountsRejectOverflow) {
+  EXPECT_THAT(ParseBufferWindow("18446744073709551615T"), Eq(std::nullopt));
+  EXPECT_THAT(ParseBufferWindow("18446744073709552k"), Eq(std::nullopt));
+  EXPECT_THAT(ParseBufferWindow("-1"), Eq(std::nullopt));
+}
+
 TEST_F(FormatTest, ParseByteBudgetDecimalAndBinaryUnits) {
   EXPECT_THAT(ParseByteBudget("10B"), Optional(Eq(std::size_t{10})));
   EXPECT_THAT(ParseByteBudget("10KB"), Optional(Eq(std::size_t{10'000})));        // SI 10^3

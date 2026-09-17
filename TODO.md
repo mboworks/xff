@@ -19,6 +19,11 @@ The review separates reproduced defects from design proposals and records their 
 - Disprove the reported newline-padding defect by measuring rendered pipe positions.
 - Guard normalization-before-measurement with LF, CRLF, and escaped-pipe regression cases.
 
+## Completed: Buffer limits (audit B02)
+
+- Validate row windows and byte budgets on the CLI and in complete INI files.
+- Reject scaled-count overflow and invalid limits before actions execute.
+
 ## Completed: Capture consumers (audit B01)
 
 - Declare capture binding, argument field expansion, and implicit-output behavior in registry metadata.

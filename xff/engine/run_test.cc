@@ -1805,6 +1805,16 @@ TEST_F(RunTest, LiteralCaptureSpellingsDoNotCountAsReferences) {
   EXPECT_THAT(last_errors_, 2);
 }
 
+TEST_F(RunTest, InvalidBufferBoundsFailBeforeActionsInEitherCompareSide) {
+  const auto options = std::to_array<std::string>({"--buffer=garbage", "--buffer=18446744073709551615T"});
+  for (const std::string& option : options) {
+    EXPECT_THAT(RunExpr({option, "-print"}), IsEmpty());
+    EXPECT_THAT(last_errors_, 2);
+    EXPECT_THAT(RunArgvRecords({"--compare", root_.string(), root_.string(), option, "-print"}), IsEmpty());
+    EXPECT_THAT(last_errors_, 2);
+  }
+}
+
 TEST_F(RunTest, UnusedCaptureIsError) {
   // -capture:x but {capture.x} is referenced nowhere -> exit 2 before traversal.
   MBO_ASSERT_OK_AND_ASSIGN(

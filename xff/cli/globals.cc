@@ -33,6 +33,7 @@
 #include "xff/matching/language/language_database_api.h"
 #include "xff/matching/mime/database.h"
 #include "xff/matching/regex/backend.h"
+#include "xff/presentation/format/format.h"
 #include "xff/values/values.h"
 
 namespace xff::cli {
@@ -1734,8 +1735,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "buffer to size columns (-ls / tables): auto, off, all, N[kMGT] rows, or NMB/NMiB bytes",
         .details = "Row windows use a bare count or decimal `k`/`M`/`G`/`T` multiplier. Byte budgets require an "
                    "explicit trailing `B`: `B`/`kB`/`MB`/.../`EB` are SI, while "
-                   "`KiB`/`MiB`/.../`EiB` are IEC. The distinct suffixes keep rows and bytes unambiguous.",
+                   "`KiB`/`MiB`/.../`EiB` are IEC. The distinct suffixes keep rows and bytes unambiguous. "
+                   "Malformed, negative, and overflowing limits are errors before traversal. "
+                   "`off` or `0` disables column buffering; `all` requests the complete row set.",
         .see_also = "output,environment",
+        .value_check = GlobalFlag::ValueCheck::kBuffer,
     },
     {
         .name = "--width",
@@ -2588,6 +2592,9 @@ bool AcceptsEnumList(const GlobalFlag& flag, std::string_view value) {
 }
 
 std::string AcceptedValues(const GlobalFlag& flag) {
+  if (flag.value_check == GlobalFlag::ValueCheck::kBuffer) {
+    return "auto, off, all, a non-negative row count with optional k/M/G/T multiplier, or a byte budget";
+  }
   std::string accepted;
   if (flag.value_check == GlobalFlag::ValueCheck::kEnumList || flag.value_check == GlobalFlag::ValueCheck::kEnum
       || flag.value_check == GlobalFlag::ValueCheck::kEnumOrTemplate) {
@@ -2619,6 +2626,11 @@ absl::Status ValidateGlobalValue(std::string_view arg) {
   }
   switch (flag->value_check) {
     case GlobalFlag::ValueCheck::kNone: return absl::OkStatus();
+    case GlobalFlag::ValueCheck::kBuffer:
+      if (format::ParseBufferWindow(value).has_value() || format::ParseByteBudget(value).has_value()) {
+        return absl::OkStatus();
+      }
+      break;
     case GlobalFlag::ValueCheck::kBool:
       if (values::ParseBool(value).has_value()) {
         return absl::OkStatus();

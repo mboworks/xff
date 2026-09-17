@@ -565,6 +565,7 @@ cc_library(
     srcs = ["globals.cc"],
     hdrs = ["globals.h"],
     deps = [
+        "//xff/presentation/format:format_cc",
         "//xff/values:values_cc",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/status",

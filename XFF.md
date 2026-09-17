@@ -1165,7 +1165,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 <a id="flag-buffer"></a>
 
 - `--buffer[=auto|off|all|N[kMGT]|NMB|NMiB]` - buffer to size columns (-ls / tables): auto, off, all, N[kMGT] rows, or NMB/NMiB bytes _(global, xff)_
-  Row windows use a bare count or decimal `k`/`M`/`G`/`T` multiplier. Byte budgets require an explicit trailing `B`: `B`/`kB`/`MB`/.../`EB` are SI, while `KiB`/`MiB`/.../`EiB` are IEC. The distinct suffixes keep rows and bytes unambiguous.
+  Row windows use a bare count or decimal `k`/`M`/`G`/`T` multiplier. Byte budgets require an explicit trailing `B`: `B`/`kB`/`MB`/.../`EB` are SI, while `KiB`/`MiB`/.../`EiB` are IEC. The distinct suffixes keep rows and bytes unambiguous. Malformed, negative, and overflowing limits are errors before traversal. `off` or `0` disables column buffering; `all` requests the complete row set.
   See also: [Output](#topic-output), [Environment](#topic-environment)
 
 <a id="flag-width"></a>

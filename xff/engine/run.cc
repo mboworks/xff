@@ -2747,7 +2747,7 @@ struct BufferBound {
 // compute widths then streams the rest at them; off / 0 disables buffering; all buffers the
 // whole run; a row count N (optional decimal SI multiplier k/M/G/T) buffers N rows; a byte
 // budget (N with a byte unit, e.g. 10MB / 10MiB) buffers until that many cell bytes, then
-// streams. Last occurrence wins; an unrecognized value is ignored. `default_window` applies
+// streams. Last occurrence wins; values are validated by the global-option registry. `default_window` applies
 // when no --buffer flag is present (-ls passes 100 = auto; the tables pass kAll = full align).
 BufferBound ResolveBufferBound(const std::vector<std::string>& globals, std::size_t default_window) {
   BufferBound bound{.window = default_window, .byte_budget = 0};
@@ -2761,7 +2761,7 @@ BufferBound ResolveBufferBound(const std::vector<std::string>& globals, std::siz
       } else if (const std::optional<std::size_t> bytes = format::ParseByteBudget(value)) {
         bound = {.window = format::ColumnBuffer::kAll, .byte_budget = *bytes};  // bytes-only cap
       }
-      // else: unrecognized value -> keep the previous bound
+      // Invalid limits are rejected by cli::ValidateGlobalValue before execution.
     }
   }
   return bound;
@@ -5654,6 +5654,11 @@ absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, boo
       std::size_t value = 0;
       if (!absl::SimpleAtoi(std::string_view(global).substr(kTop.size()), &value)) {
         return absl::InvalidArgumentError("--top requires a non-negative integer; 0 removes the limit");
+      }
+    } else if (global.starts_with("--buffer=")) {
+      const std::string_view value = std::string_view(global).substr(9);
+      if (!format::ParseBufferWindow(value).has_value() && !format::ParseByteBudget(value).has_value()) {
+        return absl::InvalidArgumentError("--buffer requires auto, off, all, a row count, or a byte budget");
       }
     } else if (!compare && global.starts_with("--compare-select=")) {
       return absl::InvalidArgumentError("--compare-select requires --compare");
