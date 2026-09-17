@@ -3705,6 +3705,7 @@ using MatchedEntryFn = absl::FunctionRef<void(const Visit&)>;
 
 RunResult RunFindCore(
     const parser::Command& command,
+    const std::vector<HistogramSpec>& histograms,
     absl::Span<const std::string> roots,
     const vfs::FileSystem& fs,
     EmitFn emit,
@@ -3859,6 +3860,7 @@ void EmitTreeCompareSummary(
 // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive two-tree merge dispatch
 RunResult RunTreeCompare(
     const parser::Command& command,
+    const std::vector<HistogramSpec>& histograms,
     const vfs::FileSystem& fs,
     EmitFn emit,
     WalkErrorFn on_error,
@@ -3938,8 +3940,8 @@ RunResult RunTreeCompare(
     const EmitFn synchronized_emit = emit_callback;
     const WalkErrorFn synchronized_error = error_callback;
     return RunFindCore(
-        command, absl::MakeConstSpan(command.roots).subspan(side, 1), fs, synchronized_emit, synchronized_error, style,
-        collect, /*compare_listing=*/true, side_summaries.at(side));
+        command, histograms, absl::MakeConstSpan(command.roots).subspan(side, 1), fs, synchronized_emit,
+        synchronized_error, style, collect, /*compare_listing=*/true, side_summaries.at(side));
   };
   std::future<RunResult> left_result = std::async(std::launch::async, run_side, 0);
   const RunResult right_result = run_side(1);
@@ -4069,6 +4071,7 @@ namespace {
 // NOLINTNEXTLINE(readability-function-cognitive-complexity,readability-function-size,hicpp-function-size,google-readability-function-size)
 RunResult RunFindCore(
     const parser::Command& command,
+    const std::vector<HistogramSpec>& histograms,
     absl::Span<const std::string> roots,
     const vfs::FileSystem& fs,
     EmitFn emit,
@@ -4238,12 +4241,6 @@ RunResult RunFindCore(
   const bool buffered = format == render::Format::kAligned || format == render::Format::kMarkdown;
   const bool is_tree = format == render::Format::kTree;
   const bool tabular = format == render::Format::kCsv || format == render::Format::kTsv || buffered;
-  absl::StatusOr<std::vector<HistogramSpec>> histograms_or = ResolveHistograms(command.globals);
-  if (!histograms_or.ok()) {
-    on_error("--histogram", histograms_or.status());
-    return RunResult{.errors = 2};
-  }
-  const std::vector<HistogramSpec> histograms = *std::move(histograms_or);
   const bool tabular_summary = buffered && !ResolveSummaries(command.globals, compare_listing).empty();
   const bool tabular_reduction = tabular_summary || (buffered && !histograms.empty());
   if (tabular_reduction && !columns.empty()) {
@@ -5657,10 +5654,9 @@ RunResult RunFindCore(
 }
 
 // Validate formats shared by summary and histogram output before any actions run.
-absl::Status ValidateReductionFormat(const std::vector<std::string>& globals, bool compare) {
+absl::Status ValidateReductionFormat(const std::vector<std::string>& globals, bool compare, bool has_histograms) {
   const bool has_summary = !ResolveSummaries(globals, compare).empty();
-  MBO_ASSIGN_OR_RETURN(const auto histograms, ResolveHistograms(globals));
-  if (has_summary || !histograms.empty()) {
+  if (has_summary || has_histograms) {
     const auto format = ResolveFormat(globals);
     if (format != render::Format::kPlain && format != render::Format::kAligned && format != render::Format::kJsonl
         && format != render::Format::kMarkdown) {
@@ -5675,7 +5671,7 @@ absl::Status ValidateReductionFormat(const std::vector<std::string>& globals, bo
 }
 
 // Refuse ignored or misleading reduction controls before either comparison side can run actions.
-absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, bool compare) {
+absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, bool compare, bool has_histograms) {
   for (const std::string& global : globals) {
     constexpr std::string_view kPrecision = "--summary-precision=";
     constexpr std::string_view kTop = "--top=";
@@ -5703,7 +5699,7 @@ absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, boo
       return absl::InvalidArgumentError("--compare-select requires --compare");
     }
   }
-  return ValidateReductionFormat(globals, compare);
+  return ValidateReductionFormat(globals, compare, has_histograms);
 }
 
 }  // namespace
@@ -5717,7 +5713,13 @@ RunResult RunFind(
   const bool compare = absl::c_any_of(command.globals, [](std::string_view global) {
     return global == "--compare" || global.starts_with("--compare=");
   });
-  if (const absl::Status status = ValidateSummaryOptions(command.globals, compare); !status.ok()) {
+  absl::StatusOr<std::vector<HistogramSpec>> histograms_or = ResolveHistograms(command.globals);
+  if (!histograms_or.ok()) {
+    on_error("--histogram", histograms_or.status());
+    return RunResult{.errors = 2};
+  }
+  const std::vector<HistogramSpec> histograms = *std::move(histograms_or);
+  if (const absl::Status status = ValidateSummaryOptions(command.globals, compare, !histograms.empty()); !status.ok()) {
     on_error("options", status);
     return RunResult{.errors = 2};
   }
@@ -5726,10 +5728,10 @@ RunResult RunFind(
     return RunResult{.errors = 2};
   }
   if (compare) {
-    return RunTreeCompare(command, fs, emit, on_error, style);
+    return RunTreeCompare(command, histograms, fs, emit, on_error, style);
   }
   return RunFindCore(
-      command, command.roots, fs, emit, on_error, style, mbo::types::OptionalRef<const MatchedEntryFn>{},
+      command, histograms, command.roots, fs, emit, on_error, style, mbo::types::OptionalRef<const MatchedEntryFn>{},
       /*compare_listing=*/false);
 }
 

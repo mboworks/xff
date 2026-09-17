@@ -82,6 +82,22 @@ test::histogram_unknown_bucket_is_a_usage_error() {
   expect_output_contains "unknown --histogram bucket" "${out}"
 }
 
+test::invalid_histogram_rejects_actions_on_both_comparison_sides() {
+  local dir out rc option
+  dir="$(test_tmpdir histinvalidcompare)"
+  mkdir -p "${dir}/left" "${dir}/right"
+  echo keep >"${dir}/left/keep.txt"
+  echo keep >"${dir}/right/keep.txt"
+  for option in --histogram=bogus '--histogram=ext:bogus(size)'; do
+    rc=0
+    out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --compare "${dir}/left" "${dir}/right" "${option}" -type f -delete 2>&1)" || rc=$?
+    expect_eq 2 "${rc}"
+    expect_output_contains histogram "${out}"
+    expect_eq keep "$(cat "${dir}/left/keep.txt")"
+    expect_eq keep "$(cat "${dir}/right/keep.txt")"
+  done
+}
+
 test::histogram_numeric_measure_aggregates_a_field() {
   local dir out
   dir="$(test_tmpdir histnum)"
