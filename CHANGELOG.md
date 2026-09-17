@@ -6,6 +6,9 @@
 - Reject zero, negative, malformed, and overflowing histogram widths before traversal or actions,
   including settings selected from configuration files.
 
+- Render Markdown histograms as bucket/value tables and reject unsupported histogram formats
+  before traversal or actions, instead of silently emitting text bars.
+
 - Correct the release archive description: lean and full executables have separate archives,
   each with its own matching debug symbols.
 

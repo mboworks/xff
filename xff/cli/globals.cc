@@ -1482,7 +1482,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "Repeatable and combinable with --summary - both are fed by one walk and replace the per-match "
                    "listing. Bars scale to the tallest, use Unicode block characters on a UTF-8 locale (see "
                    "--unicode) or ASCII '#' otherwise; --top=N keeps the N tallest and --format=jsonl emits one "
-                   "object per bar for scripts.",
+                   "object per bar for scripts. `--format=markdown` renders bucket/value tables with numeric "
+                   "values right-aligned, including when combined with summaries. `--no-header` omits histogram "
+                   "headings and column headers. `plain` and `aligned` retain text bars; `csv`, `tsv`, `nul`, and "
+                   "`tree` are unsupported for histograms and fail before traversal or actions.",
         .topic = "stats",
         .repetition = GlobalFlag::Repetition::kAccumulate,
     },

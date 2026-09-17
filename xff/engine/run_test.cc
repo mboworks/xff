@@ -60,6 +60,7 @@ using ::testing::Ne;
 using ::testing::Not;
 using ::testing::PrintToString;
 using ::testing::SizeIs;
+using ::testing::StartsWith;
 using ::testing::UnorderedElementsAre;
 
 // Fixture tree:
@@ -2347,6 +2348,66 @@ TEST_F(RunTest, SummaryRetainsZeroByteDimensionForEmptyFiles) {
           R"({"group":"total","count":2,"count_percent":100.00,"bytes":0,"size_percent":0.00})"));
   // Unstyled output retains a numeric size column without a human-readable unit.
   EXPECT_THAT(RunArgvRecords({"--summary=ext", root_.string(), "-name", "*.log"}), Not(Contains(HasSubstr(" B"))));
+}
+
+TEST_F(RunTest, HistogramRejectsUnsupportedFormatsBeforeActions) {
+  const auto formats = std::to_array<std::string_view>({"csv", "tsv", "nul", "tree"});
+  for (const std::string_view format : formats) {
+    const std::string flag = absl::StrCat("--format=", format);
+    SCOPED_TRACE(format);
+    EXPECT_THAT(RunArgvRecords({root_.string(), "--histogram=ext", flag, "-print"}), IsEmpty());
+    EXPECT_THAT(last_errors_, 2);
+    EXPECT_THAT(
+        RunArgvRecords({"--compare", root_.string(), Path("sub"), "--histogram=ext", flag, "-print"}), IsEmpty());
+    EXPECT_THAT(last_errors_, 2);
+  }
+}
+
+TEST_F(RunTest, MarkdownHistogramRendersAlignedBucketValueTable) {
+  const auto records = RunArgvRecords({root_.string(), "-type", "f", "--histogram=ext", "--format=md"});
+  ASSERT_THAT(records, SizeIs(2));
+  EXPECT_THAT(records.at(0), Eq("\n## Histogram ext"));
+  EXPECT_THAT(records.at(1), StartsWith("\n|"));
+  EXPECT_THAT(records.at(1).substr(1), WithDropIndent(EqualsText(R"out(
+      | bucket | value |
+      | ------ | ----: |
+      | txt    |     2 |
+      | md     |     1 |
+      )out")));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, MarkdownHistogramComposesWithSummariesAndRepeatedHistograms) {
+  const auto records = RunArgvRecords(
+      {root_.string(), "-type", "f", "--summary=type", "--histogram=ext", "--histogram=type", "--format=md"});
+  EXPECT_THAT(records, Contains("\n## Summary by file type"));
+  EXPECT_THAT(records, Contains("\n## Histogram ext"));
+  EXPECT_THAT(records, Contains("\n## Histogram type"));
+  EXPECT_THAT(records, Contains(HasSubstr("| txt    |     2 |")));
+  EXPECT_THAT(records, Contains(HasSubstr("| file   |     3 |")));
+  EXPECT_THAT(last_errors_, 0);
+}
+
+TEST_F(RunTest, MarkdownHistogramHonorsTopAndHeaderControlWithCollections) {
+  const auto records = RunArgvRecords(
+      {root_.string(), "-type", "f", "-collect", "--histogram=ext", "--top=1", "--no-header", "--format=md"});
+  EXPECT_THAT(records, Contains(HasSubstr("| txt")));
+  EXPECT_THAT(records, Not(Contains(HasSubstr("| md"))));
+  EXPECT_THAT(records, Not(Contains(HasSubstr("## Histogram"))));
+  EXPECT_THAT(records, Not(Contains(HasSubstr("| bucket"))));
+  EXPECT_THAT(last_errors_, 0);
+  EXPECT_THAT(RunArgvRecords({root_.string(), "--histogram=ext", "--format=md", "--columns=path"}), IsEmpty());
+  EXPECT_THAT(last_errors_, 2);
+}
+
+TEST_F(RunTest, MarkdownHistogramEmptyPopulationStillHasSchema) {
+  const auto records = RunArgvRecords({root_.string(), "-name", "not-present", "--histogram=ext", "--format=md"});
+  ASSERT_THAT(records, SizeIs(2));
+  EXPECT_THAT(records.at(1).substr(1), WithDropIndent(EqualsText(R"out(
+      | bucket | value |
+      | ------ | ----: |
+      )out")));
+  EXPECT_THAT(last_errors_, 0);
 }
 
 TEST_F(RunTest, HistogramByExtensionCountsPerBucketSortedByCount) {

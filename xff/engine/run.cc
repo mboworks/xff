@@ -4238,14 +4238,22 @@ RunResult RunFindCore(
   const bool buffered = format == render::Format::kAligned || format == render::Format::kMarkdown;
   const bool is_tree = format == render::Format::kTree;
   const bool tabular = format == render::Format::kCsv || format == render::Format::kTsv || buffered;
-  const bool tabular_summary = buffered && !ResolveSummaries(command.globals, compare_listing).empty();
-  if (tabular_summary && !columns.empty()) {
-    on_error(
-        "--columns", absl::FailedPreconditionError(
-                         "summary tables have fixed columns; --columns selects fields for the default listing"));
+  absl::StatusOr<std::vector<HistogramSpec>> histograms_or = ResolveHistograms(command.globals);
+  if (!histograms_or.ok()) {
+    on_error("--histogram", histograms_or.status());
     return RunResult{.errors = 2};
   }
-  if ((tabular || is_tree || !columns.empty()) && !implicit_print && !tabular_summary) {
+  const std::vector<HistogramSpec> histograms = *std::move(histograms_or);
+  const bool tabular_summary = buffered && !ResolveSummaries(command.globals, compare_listing).empty();
+  const bool tabular_reduction = tabular_summary || (buffered && !histograms.empty());
+  if (tabular_reduction && !columns.empty()) {
+    on_error(
+        "--columns",
+        absl::FailedPreconditionError(
+            "summary and histogram tables have fixed columns; --columns selects fields for the default listing"));
+    return RunResult{.errors = 2};
+  }
+  if ((tabular || is_tree || !columns.empty()) && !implicit_print && !tabular_reduction) {
     on_error(
         "--format", absl::FailedPreconditionError(
                         "tabular/tree output (--format=csv/tsv/aligned/markdown/tree) and --columns format the "
@@ -4524,12 +4532,6 @@ RunResult RunFindCore(
   };
   // --histogram (repeatable): a bar chart of the count per bucket, alongside or instead of
   // --summary. Both are reductions fed by one walk; a run with either suppresses the listing.
-  absl::StatusOr<std::vector<HistogramSpec>> histograms_or = ResolveHistograms(command.globals);
-  if (!histograms_or.ok()) {
-    on_error("--histogram", histograms_or.status());
-    return RunResult{.errors = 2};
-  }
-  const std::vector<HistogramSpec> histograms = *std::move(histograms_or);
   std::vector<std::map<std::string, HistCell>> histogram_cells(histograms.size());  // one per spec
   // --shards: collapse each sharded-file set to one line. Like --summary it defers the listing
   // (buffered per directory, grouped after the walk), so it joins `any_reduction`.
@@ -5597,6 +5599,20 @@ RunResult RunFindCore(
         }
         continue;
       }
+      if (format == render::Format::kMarkdown) {
+        const bool with_header = !HasGlobal(command.globals, "--no-header");
+        if (with_header) {
+          emit(absl::StrCat("\n## Histogram ", histograms[i].label, "\n"));
+        }
+        render::TableStream table(
+            format, {"bucket", "value"}, with_header, render::TableStream::kAll, 0,
+            {format::Align::kLeft, format::Align::kRight});
+        for (const Bar& bar : bars) {
+          static_cast<void>(table.Add({bar.label, bar.value.text}));
+        }
+        emit(absl::StrCat("\n", table.Flush(), "\n"));
+        continue;
+      }
       // Text bars: the label left-padded to the widest, the value right-aligned, then the bar. The
       // bar is last so its Unicode width never disturbs the aligned columns.
       std::size_t label_width = 0;
@@ -5669,13 +5685,17 @@ absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, boo
       return absl::InvalidArgumentError("--compare-select requires --compare");
     }
   }
-  if (!ResolveSummaries(globals, compare).empty()) {
+  const bool has_summary = !ResolveSummaries(globals, compare).empty();
+  MBO_ASSIGN_OR_RETURN(const auto histograms, ResolveHistograms(globals));
+  if (has_summary || !histograms.empty()) {
     const auto format = ResolveFormat(globals);
     if (format != render::Format::kPlain && format != render::Format::kAligned && format != render::Format::kJsonl
         && format != render::Format::kMarkdown) {
       return absl::InvalidArgumentError(
-          "summary tables require --format=plain, aligned, jsonl, or markdown; "
-          "csv, tsv, nul, and tree are listing formats");
+          absl::StrCat(
+              has_summary ? "summary tables" : "histograms",
+              " require --format=plain, aligned, jsonl, or markdown; "
+              "csv, tsv, nul, and tree are listing formats"));
     }
   }
   return absl::OkStatus();

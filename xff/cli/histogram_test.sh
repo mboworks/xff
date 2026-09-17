@@ -153,4 +153,29 @@ test::histogram_width_sets_the_bar_length() {
   expect_matches "cc[[:space:]]+3[[:space:]]+##########(${NL}|\$)" "${out}"
 }
 
+test::histogram_markdown_composes_with_summary() {
+  local dir out
+  dir="$(test_tmpdir histmarkdown)"
+  _make_tree "${dir}"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --summary=type --histogram=ext --format=md "${dir}" -type f 2>&1)"
+  expect_output_contains "## Summary by file type" "${out}"
+  expect_output_contains "## Histogram ext" "${out}"
+  expect_output_contains "| bucket | value |" "${out}"
+  expect_output_contains "| ------ | ----: |" "${out}"
+  expect_output_contains "| cc     |     3 |" "${out}"
+  expect_output_contains "| h      |     1 |" "${out}"
+}
+
+test::histogram_rejects_unsupported_formats_before_print() {
+  local dir out rc format
+  dir="$(test_tmpdir histunsupported)"
+  _make_tree "${dir}"
+  for format in csv tsv nul tree; do
+    out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=ext "--format=${format}" "${dir}" -print 2>&1)" && rc=0 || rc=$?
+    expect_eq "2" "${rc}"
+    expect_output_contains "histograms require --format=plain, aligned, jsonl, or markdown" "${out}"
+    expect_output_not_contains "a.cc" "${out}"
+  done
+}
+
 test_runner
