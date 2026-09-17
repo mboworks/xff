@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-16 22:53:25</td>
+            <td class="headerValue">2026-09-17 00:04:09</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -156,17 +156,17 @@
 <span id="L85"><span class="lineNum">      85</span>              : // The wrapper makes address identity explicit without exposing a nullable pointer.</span>
 <span id="L86"><span class="lineNum">      86</span>              : class ExprIdentity final {</span>
 <span id="L87"><span class="lineNum">      87</span>              :  public:</span>
-<span id="L88"><span class="lineNum">      88</span> <span class="tlaGNC">        6965 :   explicit ExprIdentity(const parser::Expr&amp; expr) : expr_(expr) {}</span></span>
+<span id="L88"><span class="lineNum">      88</span> <span class="tlaGNC">        6963 :   explicit ExprIdentity(const parser::Expr&amp; expr) : expr_(expr) {}</span></span>
 <span id="L89"><span class="lineNum">      89</span>              : </span>
-<span id="L90"><span class="lineNum">      90</span> <span class="tlaGNC">       15739 :   [[nodiscard]] const parser::Expr&amp; Get() const { return expr_.get(); }</span></span>
+<span id="L90"><span class="lineNum">      90</span> <span class="tlaGNC">       15693 :   [[nodiscard]] const parser::Expr&amp; Get() const { return expr_.get(); }</span></span>
 <span id="L91"><span class="lineNum">      91</span>              : </span>
 <span id="L92"><span class="lineNum">      92</span> <span class="tlaGNC">          98 :   friend bool operator==(ExprIdentity lhs, ExprIdentity rhs) {</span></span>
 <span id="L93"><span class="lineNum">      93</span> <span class="tlaGNC">          98 :     return std::addressof(lhs.Get()) == std::addressof(rhs.Get());</span></span>
 <span id="L94"><span class="lineNum">      94</span> <span class="tlaGNC">          98 :   }</span></span>
 <span id="L95"><span class="lineNum">      95</span>              : </span>
-<span id="L96"><span class="lineNum">      96</span> <span class="tlaGNC">        7747 :   friend bool operator&lt;(ExprIdentity lhs, ExprIdentity rhs) {</span></span>
-<span id="L97"><span class="lineNum">      97</span> <span class="tlaGNC">        7747 :     return std::less{}(std::addressof(lhs.Get()), std::addressof(rhs.Get()));</span></span>
-<span id="L98"><span class="lineNum">      98</span> <span class="tlaGNC">        7747 :   }</span></span>
+<span id="L96"><span class="lineNum">      96</span> <span class="tlaGNC">        7724 :   friend bool operator&lt;(ExprIdentity lhs, ExprIdentity rhs) {</span></span>
+<span id="L97"><span class="lineNum">      97</span> <span class="tlaGNC">        7724 :     return std::less{}(std::addressof(lhs.Get()), std::addressof(rhs.Get()));</span></span>
+<span id="L98"><span class="lineNum">      98</span> <span class="tlaGNC">        7724 :   }</span></span>
 <span id="L99"><span class="lineNum">      99</span>              : </span>
 <span id="L100"><span class="lineNum">     100</span>              :  private:</span>
 <span id="L101"><span class="lineNum">     101</span>              :   std::reference_wrapper&lt;const parser::Expr&gt; expr_;</span>
