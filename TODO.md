@@ -4,6 +4,11 @@ Actionable roadmap and deliberately deferred ideas. Completed implementation rec
 [`docs/history-roadmap.md`](docs/history-roadmap.md); other resolved design records and investigations
 live in [`docs/history.md`](docs/history.md).
 
+## Completed: Release archive documentation (audit B08)
+
+- Describe the separate lean/full archives and their matching debug symbols.
+- Link release installation instructions and clarify size optimization plus ThinLTO.
+
 ## Completed: CI cache capacity after INI changes
 
 - Raise the shared uncompressed cache limit to 1 GB and ASan to 3 GB using main-run measurements.

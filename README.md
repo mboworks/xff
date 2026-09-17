@@ -192,10 +192,12 @@ bazel build --config=xff_full //xff/cli:xff_full
 The `//xff` target alias follows your active workspace configuration automatically: it resolves to the lean binary by default, and switches to the full binary under `--config=xff_full`. The underlying targets remain explicit and configuration-stable: `//xff/cli:xff` is always lean, and `//xff/cli:xff_full` is always full.
 
 Published binaries use `--config=clang_release`, which combines the hermetic Clang toolchain with
-size, and enables ThinLTO. Releases provide the stripped `xff-PLATFORM-ARCH` and
-`xff_full-PLATFORM-ARCH` executables directly. Each platform also provides one level-19
-Zstandard-compressed `xff-PLATFORM-ARCH.tar.zst` archive containing both executables plus their
-matching symbol files under `debug/`; no `.tar.gz` duplicate is published. The ordinary Linux and
+size optimization and ThinLTO. Releases provide the stripped `xff-PLATFORM-ARCH` and
+`xff_full-PLATFORM-ARCH` executables directly. Each platform also provides separate level-19
+Zstandard-compressed `xff-PLATFORM-ARCH.tar.zst` and `xff_full-PLATFORM-ARCH.tar.zst` archives.
+Each archive contains its own executable and matching symbol file under `debug/`; no `.tar.gz`
+duplicate is published. See the [latest release](https://github.com/mboworks/xff/releases/latest)
+for downloads and installation instructions. The ordinary Linux and
 macOS CI jobs run tagged binary-level tests with this same configuration and execute the staged,
 stripped binaries before a release can use it; the full unit-test graph stays on the same hermetic
 Clang toolchain without paying ThinLTO cost for every test executable. Each release also publishes
