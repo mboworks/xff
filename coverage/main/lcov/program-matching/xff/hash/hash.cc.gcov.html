@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-17 23:42:54</td>
+            <td class="headerValue">2026-09-18 05:39:04</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -118,15 +118,15 @@
 <span id="L38"><span class="lineNum">      38</span>                 :             : // Renders a fixed-size digest per `encoding`: lowercase hex (mbo's ToHexString) or standard</span>
 <span id="L39"><span class="lineNum">      39</span>                 :             : // padded base64 over the raw digest bytes.</span>
 <span id="L40"><span class="lineNum">      40</span>                 :             : template&lt;std::size_t N&gt;</span>
-<span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">          80 : std::string Encode(const std::array&lt;uint8_t, N&gt;&amp; digest, Encoding encoding) {</span></span>
-<span id="L42"><span class="lineNum">      42</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 73 times"> + </span>]:<span class="tlaGNC">          80 :   if (encoding == Encoding::kBase64) {</span></span>
+<span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">          83 : std::string Encode(const std::array&lt;uint8_t, N&gt;&amp; digest, Encoding encoding) {</span></span>
+<span id="L42"><span class="lineNum">      42</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 76 times"> + </span>]:<span class="tlaGNC">          83 :   if (encoding == Encoding::kBase64) {</span></span>
 <span id="L43"><span class="lineNum">      43</span>                 :             :     // Converted element-wise rather than viewed through a cast: a digest is at most 64 bytes, so the</span>
 <span id="L44"><span class="lineNum">      44</span>                 :             :     // copy is nothing, and it keeps this file free of reinterpret_cast entirely (string_view has no</span>
 <span id="L45"><span class="lineNum">      45</span>                 :             :     // uint8_t form, so the only alternatives are this or the cast).</span>
 <span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">           7 :     return absl::Base64Escape(std::string(digest.begin(), digest.end()));</span></span>
 <span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">           7 :   }</span></span>
-<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">          73 :   return mbo::digest::ToHexString(digest);</span></span>
-<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">          80 : }</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">          76 :   return mbo::digest::ToHexString(digest);</span></span>
+<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">          83 : }</span></span>
 <span id="L50"><span class="lineNum">      50</span>                 :             : </span>
 <span id="L51"><span class="lineNum">      51</span>                 :             : // One algorithm: hash `data` and render it per `encoding`. Captureless so the table below is a</span>
 <span id="L52"><span class="lineNum">      52</span>                 :             : // constexpr LimitedMap (like the engine's kDispatch); each wraps one mbo::digest namespace.</span>
@@ -156,7 +156,7 @@
 <span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">           1 :         [](std::string_view data, Encoding encoding) { return Encode(mbo::digest::sha224::Digest(data), encoding); }},</span></span>
 <span id="L77"><span class="lineNum">      77</span>                 :             :     std::pair&lt;std::string_view, DigestFn&gt;{</span>
 <span id="L78"><span class="lineNum">      78</span>                 :             :         &quot;sha256&quot;,</span>
-<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">          54 :         [](std::string_view data, Encoding encoding) { return Encode(mbo::digest::sha256::Digest(data), encoding); }},</span></span>
+<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">          57 :         [](std::string_view data, Encoding encoding) { return Encode(mbo::digest::sha256::Digest(data), encoding); }},</span></span>
 <span id="L80"><span class="lineNum">      80</span>                 :             :     std::pair&lt;std::string_view, DigestFn&gt;{</span>
 <span id="L81"><span class="lineNum">      81</span>                 :             :         &quot;sha3_224&quot;,</span>
 <span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">           1 :         [](std::string_view data, Encoding encoding) { return Encode(mbo::digest::sha3_224::Digest(data), encoding); }},</span></span>
@@ -184,43 +184,43 @@
 <span id="L104"><span class="lineNum">     104</span>                 :             : </span>
 <span id="L105"><span class="lineNum">     105</span>                 :             : }  // namespace</span>
 <span id="L106"><span class="lineNum">     106</span>                 :             : </span>
-<span id="L107"><span class="lineNum">     107</span>                 :<span class="tlaGNC">          77 : std::optional&lt;Encoding&gt; ParseEncoding(std::string_view name) {</span></span>
-<span id="L108"><span class="lineNum">     108</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 76 times"> + </span>]:<span class="tlaGNC">          77 :   if (name == &quot;hex&quot;) {</span></span>
+<span id="L107"><span class="lineNum">     107</span>                 :<span class="tlaGNC">          80 : std::optional&lt;Encoding&gt; ParseEncoding(std::string_view name) {</span></span>
+<span id="L108"><span class="lineNum">     108</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 79 times"> + </span>]:<span class="tlaGNC">          80 :   if (name == &quot;hex&quot;) {</span></span>
 <span id="L109"><span class="lineNum">     109</span>                 :<span class="tlaGNC">           1 :     return Encoding::kHex;</span></span>
 <span id="L110"><span class="lineNum">     110</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L111"><span class="lineNum">     111</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 66 times"> + </span>]:<span class="tlaGNC">          76 :   if (name == &quot;base64&quot;) {</span></span>
+<span id="L111"><span class="lineNum">     111</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 69 times"> + </span>]:<span class="tlaGNC">          79 :   if (name == &quot;base64&quot;) {</span></span>
 <span id="L112"><span class="lineNum">     112</span>                 :<span class="tlaGNC">          10 :     return Encoding::kBase64;</span></span>
 <span id="L113"><span class="lineNum">     113</span>                 :<span class="tlaGNC">          10 :   }</span></span>
-<span id="L114"><span class="lineNum">     114</span>                 :<span class="tlaGNC">          66 :   return std::nullopt;</span></span>
-<span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">          76 : }</span></span>
+<span id="L114"><span class="lineNum">     114</span>                 :<span class="tlaGNC">          69 :   return std::nullopt;</span></span>
+<span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">          79 : }</span></span>
 <span id="L116"><span class="lineNum">     116</span>                 :             : </span>
-<span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">          73 : std::optional&lt;AlgoEncoding&gt; ParseSpec(std::string_view spec, std::string_view default_algo, Encoding default_encoding) {</span></span>
-<span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">          73 :   std::string_view algo = spec;</span></span>
-<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">          73 :   std::string_view encoding_name;</span></span>
-<span id="L120"><span class="lineNum">     120</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 65 times"> + </span>]:<span class="tlaGNC">          73 :   if (const std::size_t slash = spec.find('/'); slash != std::string_view::npos) {</span></span>
+<span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">          76 : std::optional&lt;AlgoEncoding&gt; ParseSpec(std::string_view spec, std::string_view default_algo, Encoding default_encoding) {</span></span>
+<span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">          76 :   std::string_view algo = spec;</span></span>
+<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">          76 :   std::string_view encoding_name;</span></span>
+<span id="L120"><span class="lineNum">     120</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 68 times"> + </span>]:<span class="tlaGNC">          76 :   if (const std::size_t slash = spec.find('/'); slash != std::string_view::npos) {</span></span>
 <span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">           8 :     algo = spec.substr(0, slash);</span></span>
 <span id="L122"><span class="lineNum">     122</span>                 :<span class="tlaGNC">           8 :     encoding_name = spec.substr(slash + 1);</span></span>
 <span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">           8 :   }</span></span>
-<span id="L124"><span class="lineNum">     124</span>         [<span class="tlaGBC" title="branch 0 was taken 42 times"> + </span><span class="tlaGBC" title="branch 1 was taken 31 times"> + </span>]:<span class="tlaGNC">          73 :   if (algo.empty()) {</span></span>
-<span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">          42 :     algo = default_algo;</span></span>
-<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">          42 :   }</span></span>
-<span id="L127"><span class="lineNum">     127</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 68 times"> + </span>]:<span class="tlaGNC">          73 :   if (!IsAlgorithm(algo)) {</span></span>
+<span id="L124"><span class="lineNum">     124</span>         [<span class="tlaGBC" title="branch 0 was taken 45 times"> + </span><span class="tlaGBC" title="branch 1 was taken 31 times"> + </span>]:<span class="tlaGNC">          76 :   if (algo.empty()) {</span></span>
+<span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">          45 :     algo = default_algo;</span></span>
+<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">          45 :   }</span></span>
+<span id="L127"><span class="lineNum">     127</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 71 times"> + </span>]:<span class="tlaGNC">          76 :   if (!IsAlgorithm(algo)) {</span></span>
 <span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">           5 :     return std::nullopt;</span></span>
 <span id="L129"><span class="lineNum">     129</span>                 :<span class="tlaGNC">           5 :   }</span></span>
-<span id="L130"><span class="lineNum">     130</span>                 :<span class="tlaGNC">          68 :   Encoding encoding = default_encoding;</span></span>
-<span id="L131"><span class="lineNum">     131</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 60 times"> + </span>]:<span class="tlaGNC">          68 :   if (!encoding_name.empty()) {</span></span>
+<span id="L130"><span class="lineNum">     130</span>                 :<span class="tlaGNC">          71 :   Encoding encoding = default_encoding;</span></span>
+<span id="L131"><span class="lineNum">     131</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 63 times"> + </span>]:<span class="tlaGNC">          71 :   if (!encoding_name.empty()) {</span></span>
 <span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">           8 :     const std::optional&lt;Encoding&gt; parsed = ParseEncoding(encoding_name);</span></span>
 <span id="L133"><span class="lineNum">     133</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>]:<span class="tlaGNC">           8 :     if (!parsed.has_value()) {</span></span>
 <span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">           1 :       return std::nullopt;</span></span>
 <span id="L135"><span class="lineNum">     135</span>                 :<span class="tlaGNC">           1 :     }</span></span>
 <span id="L136"><span class="lineNum">     136</span>                 :<span class="tlaGNC">           7 :     encoding = *parsed;</span></span>
 <span id="L137"><span class="lineNum">     137</span>                 :<span class="tlaGNC">           7 :   }</span></span>
-<span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">          67 :   return AlgoEncoding{.algo = algo, .encoding = encoding};</span></span>
-<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">          68 : }</span></span>
+<span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">          70 :   return AlgoEncoding{.algo = algo, .encoding = encoding};</span></span>
+<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">          71 : }</span></span>
 <span id="L140"><span class="lineNum">     140</span>                 :             : </span>
-<span id="L141"><span class="lineNum">     141</span>                 :<span class="tlaGNC">          93 : bool IsAlgorithm(std::string_view algo) {</span></span>
-<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">          93 :   return kAlgorithms.contains(algo);</span></span>
-<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">          93 : }</span></span>
+<span id="L141"><span class="lineNum">     141</span>                 :<span class="tlaGNC">          99 : bool IsAlgorithm(std::string_view algo) {</span></span>
+<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">          99 :   return kAlgorithms.contains(algo);</span></span>
+<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">          99 : }</span></span>
 <span id="L144"><span class="lineNum">     144</span>                 :             : </span>
 <span id="L145"><span class="lineNum">     145</span>                 :<span class="tlaGNC">           7 : absl::Span&lt;const std::string_view&gt; AlgorithmNames() {</span></span>
 <span id="L146"><span class="lineNum">     146</span>                 :             :   // Built once from the (sorted) table, so the name list never drifts from kAlgorithms. The views</span>
@@ -233,25 +233,25 @@
 <span id="L153"><span class="lineNum">     153</span>                 :<span class="tlaGNC">           7 :   return kNames;</span></span>
 <span id="L154"><span class="lineNum">     154</span>                 :<span class="tlaGNC">           7 : }</span></span>
 <span id="L155"><span class="lineNum">     155</span>                 :             : </span>
-<span id="L156"><span class="lineNum">     156</span>                 :<span class="tlaGNC">          81 : std::optional&lt;std::string&gt; HashData(std::string_view algo, std::string_view data, Encoding encoding) {</span></span>
-<span id="L157"><span class="lineNum">     157</span>                 :<span class="tlaGNC">          81 :   const auto it = kAlgorithms.find(algo);</span></span>
-<span id="L158"><span class="lineNum">     158</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 80 times"> + </span>]:<span class="tlaGNC">          81 :   if (it == kAlgorithms.end()) {</span></span>
+<span id="L156"><span class="lineNum">     156</span>                 :<span class="tlaGNC">          84 : std::optional&lt;std::string&gt; HashData(std::string_view algo, std::string_view data, Encoding encoding) {</span></span>
+<span id="L157"><span class="lineNum">     157</span>                 :<span class="tlaGNC">          84 :   const auto it = kAlgorithms.find(algo);</span></span>
+<span id="L158"><span class="lineNum">     158</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 83 times"> + </span>]:<span class="tlaGNC">          84 :   if (it == kAlgorithms.end()) {</span></span>
 <span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaGNC">           1 :     return std::nullopt;</span></span>
 <span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">          80 :   return it-&gt;second(data, encoding);</span></span>
-<span id="L162"><span class="lineNum">     162</span>                 :<span class="tlaGNC">          81 : }</span></span>
+<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">          83 :   return it-&gt;second(data, encoding);</span></span>
+<span id="L162"><span class="lineNum">     162</span>                 :<span class="tlaGNC">          84 : }</span></span>
 <span id="L163"><span class="lineNum">     163</span>                 :             : </span>
-<span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">          12 : std::optional&lt;std::string&gt; HashFile(std::string_view algo, std::string_view path, Encoding encoding) {</span></span>
-<span id="L165"><span class="lineNum">     165</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">          12 :   if (!IsAlgorithm(algo)) {</span></span>
+<span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">          15 : std::optional&lt;std::string&gt; HashFile(std::string_view algo, std::string_view path, Encoding encoding) {</span></span>
+<span id="L165"><span class="lineNum">     165</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 14 times"> + </span>]:<span class="tlaGNC">          15 :   if (!IsAlgorithm(algo)) {</span></span>
 <span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">           1 :     return std::nullopt;  // reject before touching the filesystem</span></span>
 <span id="L167"><span class="lineNum">     167</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">          11 :   const vfs::LocalFs fs;</span></span>
-<span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">          11 :   const absl::StatusOr&lt;std::string&gt; content = fs.ReadContent(path);</span></span>
-<span id="L170"><span class="lineNum">     170</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">          11 :   if (!content.ok()) {</span></span>
+<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">          14 :   const vfs::LocalFs fs;</span></span>
+<span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">          14 :   const absl::StatusOr&lt;std::string&gt; content = fs.ReadContent(path);</span></span>
+<span id="L170"><span class="lineNum">     170</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 12 times"> + </span>]:<span class="tlaGNC">          14 :   if (!content.ok()) {</span></span>
 <span id="L171"><span class="lineNum">     171</span>                 :<span class="tlaGNC">           2 :     return std::nullopt;</span></span>
 <span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">           2 :   }</span></span>
-<span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">           9 :   return HashData(algo, *content, encoding);</span></span>
-<span id="L174"><span class="lineNum">     174</span>                 :<span class="tlaGNC">          11 : }</span></span>
+<span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">          12 :   return HashData(algo, *content, encoding);</span></span>
+<span id="L174"><span class="lineNum">     174</span>                 :<span class="tlaGNC">          14 : }</span></span>
 <span id="L175"><span class="lineNum">     175</span>                 :             : </span>
 <span id="L176"><span class="lineNum">     176</span>                 :             : }  // namespace xff::hash</span>
         </pre>
