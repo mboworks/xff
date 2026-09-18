@@ -251,6 +251,7 @@ cc_library(
         "@libarchive//libarchive",
         "@mboworks_mbo//mbo/status:status_macros_cc",
         "@mboworks_mbo//mbo/types:optional_ref_cc",
+        "@xff_extras_api//:archive_backend_cc",
         "@xff_extras_api//:vfs_cc",
     ],
 )

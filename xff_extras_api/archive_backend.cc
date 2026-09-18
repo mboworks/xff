@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <array>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -31,6 +32,7 @@
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_split.h"
 #include "absl/types/span.h"
 #include "mbo/status/status_macros.h"
 #include "xff/archive/member_path.h"
@@ -185,12 +187,96 @@ std::string ContainerPackFormatFor(std::string_view path) {
   return best;
 }
 
+namespace {
+
+absl::StatusOr<std::string> PackDestination(const PackFile& file) {
+  if (file.name.empty() || file.name.starts_with('/') || file.name.contains('\0')) {
+    return absl::InvalidArgumentError(absl::StrCat("invalid archive member name from '", file.source, "'"));
+  }
+  std::string name;
+  for (const std::string_view component : absl::StrSplit(file.name, '/')) {
+    if (component == "..") {
+      return absl::InvalidArgumentError(
+          absl::StrCat("archive member '", file.name, "' from '", file.source, "' contains parent traversal"));
+    }
+    if (component.empty() || component == ".") {
+      continue;
+    }
+    if (!name.empty()) {
+      name.push_back('/');
+    }
+    name.append(component);
+  }
+  if (name.empty()) {
+    name = ".";
+  }
+  return name;
+}
+
+std::optional<std::size_t> ConflictingPackDestination(
+    const PackFile& file,
+    const std::map<std::string, std::size_t>& destinations,
+    const std::vector<PackFile>& planned) {
+  if (const auto exact = destinations.find(file.name); exact != destinations.end()) {
+    return exact->second;
+  }
+  if (const auto root = destinations.find("."); root != destinations.end() && !planned.at(root->second).is_directory) {
+    return root->second;
+  }
+  for (auto slash = file.name.find('/'); slash != std::string::npos; slash = file.name.find('/', slash + 1)) {
+    const auto parent = destinations.find(file.name.substr(0, slash));
+    if (parent != destinations.end() && !planned.at(parent->second).is_directory) {
+      return parent->second;
+    }
+  }
+  if (file.is_directory || destinations.empty()) {
+    return std::nullopt;
+  }
+  if (file.name == ".") {
+    return destinations.begin()->second;
+  }
+  const std::string prefix = absl::StrCat(file.name, "/");
+  const auto child = destinations.lower_bound(prefix);
+  if (child != destinations.end() && child->first.starts_with(prefix)) {
+    return child->second;
+  }
+  return std::nullopt;
+}
+
+}  // namespace
+
+absl::StatusOr<std::vector<PackFile>> PlanPackFiles(
+    const std::vector<PackFile>& files,
+    PackDuplicatePolicy duplicates) {
+  std::vector<PackFile> planned;
+  planned.reserve(files.size());
+  std::map<std::string, std::size_t> destinations;
+  for (const auto& file : files) {
+    MBO_ASSIGN_OR_RETURN(std::string name, PackDestination(file));
+    PackFile normalized{.source = file.source, .name = std::move(name), .is_directory = file.is_directory};
+    const auto conflict = ConflictingPackDestination(normalized, destinations, planned);
+    if (conflict.has_value()) {
+      if (duplicates == PackDuplicatePolicy::kFirst) {
+        continue;
+      }
+      return absl::AlreadyExistsError(
+          absl::StrCat(
+              "duplicate archive member '", normalized.name, "' conflicts with '", planned.at(*conflict).name,
+              "' from '", planned.at(*conflict).source, "' and '", file.source, "'"));
+    }
+    destinations.emplace(normalized.name, planned.size());
+    planned.push_back(std::move(normalized));
+  }
+  return planned;
+}
+
 absl::Status PackContainer(std::string_view path, const std::vector<PackFile>& files, const PackOptions& options) {
   MBO_RETURN_IF_ERROR(options.mutations.Write());
   if (!ContainerPackingAvailable()) {
     return absl::UnimplementedError("this binary was built without archive support");
   }
-  return ContainerPackerSlot()(path, files, options);
+  MBO_ASSIGN_OR_RETURN(const auto planned, PlanPackFiles(files, options.duplicates));
+  return ContainerPackerSlot()(path, planned, options);
 }
 
 void RegisterContainerReadFormats(std::vector<ReadFormatInfo> formats) {

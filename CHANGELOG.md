@@ -19,6 +19,10 @@
   counts. Non-UTF-8 values use lossless tagged base64 objects. Unsupported comparison formats
   fail before traversal or expression actions.
 
+- Reject duplicate normalized archive destinations before creating output. `--pack-duplicates=first`
+  keeps the first collected input; dry-run validates the same member plan.
+  Named roots (`--root=NAME=PATH`) give inputs distinct archive directories.
+
 - Correct the release archive description: lean and full executables have separate archives,
   each with its own matching debug symbols.
 

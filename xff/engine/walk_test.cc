@@ -284,6 +284,21 @@ TEST_F(WalkTest, RootsAndGlobalSortRootOperands) {
       ElementsAre(root_a, root_a + "/child.txt", root_z, root_z + "/child.txt"));
 }
 
+TEST_F(WalkTest, RootIdentitySurvivesSortingAndRepeatedPaths) {
+  const std::vector<std::string> roots{Path("sub/b.txt"), Path("a.txt"), Path("a.txt")};
+  std::vector<std::pair<std::string, std::size_t>> seen;
+  EXPECT_THAT(
+      Walk(
+          fs_, roots, WalkOptions{.sort = SortOrder::kRoots},
+          [&](const Visit& visit) {
+            seen.emplace_back(visit.path, visit.root_index);
+            return WalkAction::kContinue;
+          },
+          [](std::string_view, absl::Status) {}),
+      IsOk());
+  EXPECT_THAT(seen, ElementsAre(Pair(Path("a.txt"), 1), Pair(Path("a.txt"), 2), Pair(Path("sub/b.txt"), 0)));
+}
+
 TEST_F(WalkTest, MaxDepthLimitsDescent) {
   const Result result = Run(WalkOptions{.min_depth = 0, .max_depth = 1}, Continue);
   EXPECT_THAT(

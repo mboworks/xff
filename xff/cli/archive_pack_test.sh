@@ -421,7 +421,120 @@ INI
   expect_output_contains "c.txt" "$(tar -tf "${root}/out.tar")"
 }
 
-test_runner
+_duplicate_tree() {
+  local root
+  root="$(test_tmpdir duplicates)"
+  mkdir -p "${root}/left" "${root}/right"
+  echo first >"${root}/left/same.txt"
+  echo second >"${root}/right/same.txt"
+  echo "${root}"
+}
+
+test::duplicates_preserve_output_and_fail_dry_run() {
+  local root output status
+  root="$(_duplicate_tree)"
+  echo preserve >"${root}/out.tar"
+  status=0
+  output="$("$(_xff_bin)" "${root}/left" "${root}/right" -type f --pack="${root}/out.tar" 2>&1)" || status=$?
+  expect_eq 2 "${status}"
+  expect_output_contains "duplicate archive member 'same.txt'" "${output}"
+  expect_output_contains "${root}/left/same.txt" "${output}"
+  expect_output_contains "${root}/right/same.txt" "${output}"
+  expect_eq preserve "$(cat "${root}/out.tar")"
+  status=0
+  output="$("$(_xff_bin)" "${root}/left" "${root}/right" -type f --pack="${root}/preview.tar" --dry-run 2>&1)" || status=$?
+  expect_eq 2 "${status}"
+  expect_output_not_contains "would pack" "${output}"
+  [[ ! -e "${root}/preview.tar" ]] || fail "dry run created output"
+}
+
+test::first_duplicate_policy_works_on_cli_and_in_config() {
+  local root output
+  root="$(_duplicate_tree)"
+  "$(_xff_bin)" "${root}/left" "${root}/right" -type f --pack="${root}/out.tar" --pack-duplicates=first
+  expect_eq same.txt "$(tar -tf "${root}/out.tar")"
+  expect_eq first "$(tar -xOf "${root}/out.tar" same.txt)"
+  "$(_xff_bin)" "${root}/right" "${root}/left" -type f --sort=tree --jobs=2 --pack="${root}/reverse.tar" --pack-duplicates=first
+  expect_eq second "$(tar -xOf "${root}/reverse.tar" same.txt)"
+  output="$("$(_xff_bin)" "${root}/left" "${root}/right" -type f --pack="${root}/preview.tar" --pack-duplicates=first --dry-run)"
+  expect_output_contains "would pack 1 entries" "${output}"
+  [[ ! -e "${root}/preview.tar" ]] || fail "dry run created output"
+  echo '--pack-duplicates=first' >"${root}/policy.ini"
+  XFF_TEST_USER_CONFIG="${root}/policy.ini" "$(_xff_bin)" "${root}/left" "${root}/right" -type f --pack="${root}/configured.tar"
+  expect_eq first "$(tar -xOf "${root}/configured.tar" same.txt)"
+}
+
+test::named_roots_preserve_both_sources() {
+  local root
+  root="$(_duplicate_tree)"
+  "$(_xff_bin)" --root="left=${root}/left" --root="right=${root}/right" -type f --pack="${root}/named.tar"
+  expect_eq first "$(tar -xOf "${root}/named.tar" left/same.txt)"
+  expect_eq second "$(tar -xOf "${root}/named.tar" right/same.txt)"
+  expect_eq 2 "$(tar -tf "${root}/named.tar" | wc -l | tr -d ' ')"
+}
+
+test::same_path_with_distinct_names_survives_root_sorting() {
+  local root
+  root="$(_duplicate_tree)"
+  "$(_xff_bin)" --root="one=${root}/left" --root="two=${root}/left" --sort=roots -type f --pack="${root}/same.tar"
+  expect_eq first "$(tar -xOf "${root}/same.tar" one/same.txt)"
+  expect_eq first "$(tar -xOf "${root}/same.tar" two/same.txt)"
+  expect_eq 2 "$(tar -tf "${root}/same.tar" | wc -l | tr -d ' ')"
+}
+
+test::named_file_uses_basename_and_duplicate_labels_fail() {
+  local root output status
+  root="$(_duplicate_tree)"
+  "$(_xff_bin)" --root="one=${root}/left/same.txt" --pack="${root}/file.tar"
+  expect_eq one/same.txt "$(tar -tf "${root}/file.tar")"
+  expect_eq first "$(tar -xOf "${root}/file.tar" one/same.txt)"
+  echo preserve >"${root}/unchanged.tar"
+  status=0
+  output="$("$(_xff_bin)" --root="one=${root}/left" --root="one=${root}/right" --pack-duplicates=first --pack="${root}/unchanged.tar" 2>&1)" || status=$?
+  expect_eq 2 "${status}"
+  expect_output_contains "duplicate root name" "${output}"
+  expect_eq preserve "$(cat "${root}/unchanged.tar")"
+}
+
+test::named_directory_keeps_nested_paths_and_empty_anchor() {
+  local root
+  root="$(_tree)"
+  mkdir -p "${root}/empty"
+  "$(_xff_bin)" --root="source=${root}/src/" -type f --pack="${root}/nested.tar"
+  expect_eq second "$(tar -xOf "${root}/nested.tar" source/sub/b.cc)"
+  "$(_xff_bin)" --root="empty=${root}/empty" --pack="${root}/empty.tar"
+  expect_eq empty/ "$(tar -tf "${root}/empty.tar")"
+}
+
+test::mixed_and_deferred_roots_keep_their_archive_names() {
+  local root
+  root="$(_duplicate_tree)"
+  "$(_xff_bin)" "${root}/left" --root="right=${root}/right" -type f --pack="${root}/mixed.tar"
+  expect_eq first "$(tar -xOf "${root}/mixed.tar" same.txt)"
+  expect_eq second "$(tar -xOf "${root}/mixed.tar" right/same.txt)"
+  "$(_xff_bin)" --root="left=${root}/left" --root="right=${root}/right" -type f -fuzzy same -top 2 --pack="${root}/deferred.tar"
+  expect_eq first "$(tar -xOf "${root}/deferred.tar" left/same.txt)"
+  expect_eq second "$(tar -xOf "${root}/deferred.tar" right/same.txt)"
+}
+
+test::file_directory_destination_conflicts_fail_before_publication() {
+  local root status output
+  root="$(test_tmpdir prefix_collision)"
+  mkdir -p "${root}/one" "${root}/two/a"
+  echo first >"${root}/one/a"
+  echo child >"${root}/two/a/b"
+  echo preserve >"${root}/out.tar"
+  status=0
+  output="$("$(_xff_bin)" "${root}/one" "${root}/two" -type f --pack="${root}/out.tar" 2>&1)" || status=$?
+  expect_eq 2 "${status}"
+  expect_output_contains "duplicate archive member" "${output}"
+  expect_eq preserve "$(cat "${root}/out.tar")"
+  "$(_xff_bin)" "${root}/one" "${root}/two" -type f --pack="${root}/first.tar" --pack-duplicates=first
+  expect_eq a "$(tar -tf "${root}/first.tar")"
+  expect_eq first "$(tar -xOf "${root}/first.tar" a)"
+  "$(_xff_bin)" "${root}/two" "${root}/one" -type f --pack="${root}/reverse.tar" --pack-duplicates=first
+  expect_eq a/b "$(tar -tf "${root}/reverse.tar")"
+}
 
 test::output_scope_guards_archive_publication() {
   local root cfg status
@@ -447,3 +560,22 @@ INI
   XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" "${root}/src" --pack="${root}/output/preview.tar" --dry-run >/dev/null
   [[ ! -e "${root}/output/preview.tar" ]] || fail "dry run published archive"
 }
+
+test::symlink_to_directory_cannot_parent_archive_members() {
+  local root output status
+  root="$(test_tmpdir symlink_collision)"
+  mkdir -p "${root}/one" "${root}/two/a" "${root}/target"
+  ln -s "${root}/target" "${root}/one/a"
+  echo child >"${root}/two/a/b"
+  echo preserve >"${root}/out.tar"
+  status=0
+  output="$("$(_xff_bin)" "${root}/one" "${root}/two" \( -type l -o -type f \) --pack="${root}/out.tar" 2>&1)" || status=$?
+  expect_eq 2 "${status}"
+  expect_output_contains "duplicate archive member" "${output}"
+  expect_eq preserve "$(cat "${root}/out.tar")"
+  "$(_xff_bin)" "${root}/two" "${root}/one" \( -type l -o -type f \) --pack="${root}/first.tar" --pack-duplicates=first
+  expect_eq a/b "$(tar -tf "${root}/first.tar")"
+  expect_eq child "$(tar -xOf "${root}/first.tar" a/b)"
+}
+
+test_runner

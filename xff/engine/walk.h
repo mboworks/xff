@@ -123,6 +123,8 @@ struct Visit {
   // hypothetical: --archive-mount kept a mount for the whole run while the reader died with the
   // dive, which ThreadSanitizer caught as a race on ~ArchiveFileSystem.
   std::shared_ptr<const vfs::FileSystem> fs_owner;
+  // Original operand position, preserved when traversal sorts roots or enters an archive.
+  std::size_t root_index = 0;
 };
 
 // Visitor control flow, mirroring find: keep traversing, do not descend into

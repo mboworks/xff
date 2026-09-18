@@ -9,6 +9,17 @@
 - Preserve B05/B06 summary identities and the documented histogram schema.
 - Preserve non-UTF-8 values losslessly with tagged base64 objects; verify portable virtual-path fixtures.
 
+## In progress: Archive destination collisions (audit S02)
+
+- [x] Share a pure destination planner between the public API and direct writer.
+- [x] Reject normalized duplicates before output creation; retain input order for first-wins.
+- [x] Test existing-output preservation and first-wins payloads in tar and zip.
+- [x] Connect duplicate policy to CLI, full config files, and dry-run validation.
+- [x] Carry named root identity through parsing/traversal and enforce distinct root names.
+- [x] Keep named roots command-line-only like positional operands; reject them in every INI source.
+- [x] Validate file/directory prefix conflicts and deterministic root/traversal ordering.
+- [x] Complete registry help, generated reference, integration tests, and affected-file lint.
+
 Actionable roadmap and deliberately deferred ideas. Completed implementation records live in
 [`docs/history-roadmap.md`](docs/history-roadmap.md); other resolved design records and investigations
 live in [`docs/history.md`](docs/history.md).

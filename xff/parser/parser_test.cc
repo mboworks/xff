@@ -38,6 +38,7 @@ using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::HasSubstr;
+using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsNull;
 using ::testing::IsTrue;
@@ -77,6 +78,35 @@ TEST_F(OptionalExprTest, EmptyOwnersProduceEmptyReferences) {
   EXPECT_THAT(AsOptionalExpr(mutable_expr) == std::nullopt, IsTrue());
   EXPECT_THAT(AsConstOptionalExpr(mutable_expr) == std::nullopt, IsTrue());
   EXPECT_THAT(AsConstOptionalExpr(const_expr) == std::nullopt, IsTrue());
+}
+
+TEST_F(ParserTest, NamedRootsPreserveOperandOrderAndDistinctIdentities) {
+  ASSERT_OK_AND_ASSIGN(
+      const Command command,
+      Parse({"--root=left=same", "plain", "--root=right=same", "-type", "f", "--root=last=path=with=equals"}));
+  EXPECT_THAT(command.roots, ElementsAre("same", "plain", "same", "path=with=equals"));
+  EXPECT_THAT(command.root_names, ElementsAre("left", "", "right", "last"));
+  ASSERT_THAT(command.expression, NotNull());
+  EXPECT_THAT(command.expression->descriptor->name, Eq("-type"));
+}
+
+TEST_F(ParserTest, NamedRootsRejectDuplicateNamesAndInvalidComponents) {
+  EXPECT_THAT(
+      Parse({"--root=same=a", "--root=same=b", "--pack-duplicates=first"}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("duplicate root name")));
+  for (const auto& arg :
+       {"--root", "--root==a", "--root=name=", "--root=missing", "--root=.=a", "--root=../bad=a", "--root=a/b=c",
+        "--root=a\\b=c", "--root=a\nb=c"}) {
+    EXPECT_THAT(Parse({arg}), StatusIs(absl::StatusCode::kInvalidArgument)) << arg;
+  }
+}
+
+TEST_F(ParserTest, NamedRootTokenInsideExecRemainsACommandArgument) {
+  ASSERT_OK_AND_ASSIGN(const Command command, Parse({".", "-exec", "echo", "--root=name=path", ";"}));
+  EXPECT_THAT(command.roots, ElementsAre("."));
+  EXPECT_THAT(command.root_names, ElementsAre(""));
+  EXPECT_THAT(command.globals, IsEmpty());
+  EXPECT_THAT(command.expression->args, ElementsAre("echo", "--root=name=path"));
 }
 
 TEST_F(ParserTest, GlobalsRootsExpression) {

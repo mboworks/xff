@@ -115,6 +115,8 @@ struct Command {
   // (notably `-exec ... ;`) remains an argument and never appears here.
   std::vector<std::string> meta_flags;
   std::vector<std::string> roots;
+  // Parallel to roots for parsed commands; empty names identify positional roots.
+  std::vector<std::string> root_names;
   ExprPtr expression;
   // The final regex grammar for every matcher in this command. Parsing records patterns only;
   // BindMatchers sets this after configuration resolution and compiles each matcher once.

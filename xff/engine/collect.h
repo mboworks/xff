@@ -49,6 +49,7 @@ struct CollectedEntry {
   vfs::Metadata metadata;
   mbo::types::OptionalRef<const vfs::FileSystem> fs;
   std::shared_ptr<const vfs::FileSystem> fs_owner;
+  std::size_t root_index = 0;
 
   // A Visit borrowing THIS entry's storage, for handing to the same sink functions the walk feeds.
   // Valid only while this entry lives and stays put (the vector must not have reallocated since).

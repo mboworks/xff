@@ -50,6 +50,15 @@ struct CollectTest : ::testing::Test {
   }
 };
 
+TEST_F(CollectTest, CollectedVisitRetainsRootIdentity) {
+  const vfs::Metadata metadata{.type = vfs::FileType::kRegular};
+  const Visit visit{.path = "path", .name = "path", .root = ".", .depth = 1, .metadata = metadata, .root_index = 3};
+  Collections collections;
+  collections.Add("keep", visit);
+  ASSERT_THAT(collections.Entries("keep"), SizeIs(1));
+  EXPECT_THAT(collections.Entries("keep").front().AsVisit().root_index, Eq(3));
+}
+
 TEST_F(CollectTest, AddStoresUnderTheNamedCollection) {
   const vfs::Metadata md{.type = vfs::FileType::kRegular, .size = 42};
   Collections collections;

@@ -859,6 +859,26 @@ regex::Grammar GrammarFromGlobalsInternal(const std::vector<std::string>& global
   return grammar;
 }
 
+absl::Status AppendNamedRoot(Command& command, std::string_view token) {
+  constexpr std::string_view kPrefix = "--root=";
+  const auto value = token.starts_with(kPrefix) ? token.substr(kPrefix.size()) : std::string_view();
+  const auto equals = value.find('=');
+  if (equals == std::string_view::npos || equals == 0 || equals + 1 == value.size()) {
+    return absl::InvalidArgumentError("--root requires NAME=PATH with a non-empty name and path");
+  }
+  const auto name = value.substr(0, equals);
+  if (name == "." || name == ".." || name.find_first_of("/\\") != std::string_view::npos
+      || absl::c_any_of(name, [](unsigned char ch) { return ch < 0x20 || ch == 0x7f; })) {
+    return absl::InvalidArgumentError("--root name must be a single directory component without control characters");
+  }
+  if (absl::c_linear_search(command.root_names, name)) {
+    return absl::InvalidArgumentError(absl::StrCat("duplicate root name '", name, "'"));
+  }
+  command.roots.emplace_back(value.substr(equals + 1));
+  command.root_names.emplace_back(name);
+  return absl::OkStatus();
+}
+
 bool ConsumeLeadingJobsGlobal(
     const std::vector<std::string>& args,
     std::size_t& idx,
@@ -884,6 +904,95 @@ bool ConsumeLeadingJobsGlobal(
   return false;
 }
 
+// Owns the command under construction while parsing its three distinct phases.
+class CommandParser {
+ public:
+  explicit CommandParser(const std::vector<std::string>& args) : args_(args) {}
+
+  absl::StatusOr<Command> Parse() {
+    MBO_RETURN_IF_ERROR(LeadingGlobals());
+    MBO_RETURN_IF_ERROR(Roots());
+    command_.grammar = GrammarFromGlobalsInternal(command_.globals);
+    MBO_RETURN_IF_ERROR(Expression());
+    return std::move(command_);
+  }
+
+ private:
+  absl::Status Global(const std::string& argument) {
+    if (IsMetaFlag(argument)) {
+      command_.meta_flags.push_back(argument);
+      return absl::OkStatus();
+    }
+    if (argument == "--root" || argument.starts_with("--root=")) {
+      MBO_RETURN_IF_ERROR(AppendNamedRoot(command_, argument));
+    }
+    command_.globals.push_back(argument);
+    return absl::OkStatus();
+  }
+
+  absl::Status LeadingGlobals() {
+    for (; index_ < args_.size(); ++index_) {
+      const std::string& argument = args_[index_];
+      if (argument == "--") {
+        ++index_;
+        options_ended_ = true;
+        break;
+      }
+      if (ConsumeLeadingJobsGlobal(args_, index_, command_.globals)) {
+        continue;
+      }
+      if (argument.empty() || (argument.front() != '-' && argument.front() != '+')) {
+        break;
+      }
+      MBO_RETURN_IF_ERROR(Global(argument));
+      if (argument.starts_with("--root=")) {
+        ++index_;
+        break;
+      }
+    }
+    return absl::OkStatus();
+  }
+
+  // Double-dash globals among roots remain position-independent. Bare -- prevents hoisting.
+  absl::Status Roots() {
+    for (; index_ < args_.size(); ++index_) {
+      const std::string& argument = args_[index_];
+      if (!options_ended_ && (IsHoistableGlobal(argument) || IsMetaFlag(argument))) {
+        MBO_RETURN_IF_ERROR(Global(argument));
+        continue;
+      }
+      if (StartsExpression(argument)) {
+        break;
+      }
+      command_.roots.push_back(argument);
+      command_.root_names.emplace_back();
+    }
+    return absl::OkStatus();
+  }
+
+  absl::Status Expression() {
+    const std::vector<std::string> tokens(args_.begin() + static_cast<std::ptrdiff_t>(index_), args_.end());
+    if (tokens.empty()) {
+      return absl::OkStatus();
+    }
+    ExprParser parser(tokens, /*hoist_globals=*/!options_ended_);
+    MBO_ASSIGN_OR_RETURN(command_.expression, parser.Parse());
+    for (const auto& global : parser.HoistedGlobals()) {
+      MBO_RETURN_IF_ERROR(Global(global));
+    }
+    command_.meta_flags.insert(
+        command_.meta_flags.end(), parser.HoistedMetaFlags().begin(), parser.HoistedMetaFlags().end());
+    // Hoisted grammar flags do not retroactively recompile matchers parsed above.
+    command_.grammar = GrammarFromGlobalsInternal(command_.globals);
+    return absl::OkStatus();
+  }
+
+  const std::vector<std::string>& args_;
+  Command command_;
+  std::size_t index_ = 0;
+  bool options_ended_ = false;
+};
+
 }  // namespace
 
 regex::Grammar GrammarFromGlobals(const std::vector<std::string>& globals) {
@@ -891,65 +1000,7 @@ regex::Grammar GrammarFromGlobals(const std::vector<std::string>& globals) {
 }
 
 absl::StatusOr<Command> Parse(const std::vector<std::string>& args) {
-  Command cmd;
-  std::size_t idx = 0;
-  bool options_ended = false;
-
-  // Leading globals: '-'/'+' tokens before the first root; a bare '--' ends option parsing.
-  for (; idx < args.size(); ++idx) {
-    const std::string& arg = args[idx];
-    if (arg == "--") {
-      ++idx;
-      options_ended = true;
-      break;
-    }
-    if (ConsumeLeadingJobsGlobal(args, idx, cmd.globals)) {
-      continue;
-    } else if (IsMetaFlag(arg)) {
-      cmd.meta_flags.push_back(arg);
-    } else if (!arg.empty() && (arg[0] == '-' || arg[0] == '+')) {
-      cmd.globals.push_back(arg);
-    } else {
-      break;
-    }
-  }
-
-  // Roots: operands until the expression begins. A double-dash global among the roots is hoisted
-  // (globals are position-independent), so `a --sort=tree b` keeps both roots; an explicit `--`
-  // disables that, taking every following token literally.
-  for (; idx < args.size(); ++idx) {
-    if (!options_ended && (IsHoistableGlobal(args[idx]) || IsMetaFlag(args[idx]))) {
-      if (IsMetaFlag(args[idx])) {
-        cmd.meta_flags.push_back(args[idx]);
-      } else {
-        cmd.globals.push_back(args[idx]);
-      }
-      continue;
-    }
-    if (StartsExpression(args[idx])) {
-      break;
-    }
-    cmd.roots.push_back(args[idx]);
-  }
-
-  // The regex grammar (from --regextype) compiles every matcher, so resolve it from the globals seen
-  // so far -- a leading / among-roots --regextype applies. A --regextype inside the expression is
-  // hoisted below but, sitting after the patterns it would govern, does not retro-recompile them; it
-  // belongs before the expression.
-  cmd.grammar = GrammarFromGlobals(cmd.globals);
-
-  // Expression: the remaining tokens, parsed to a tree. The parser hoists any double-dash globals it
-  // meets at a primary/operator boundary (unless `--` ended options) -- so `. -type f --summary=ext`
-  // works -- and we fold them back into the command's globals, then refresh the grammar.
-  const std::vector<std::string> expr_tokens(args.begin() + static_cast<std::ptrdiff_t>(idx), args.end());
-  if (!expr_tokens.empty()) {
-    ExprParser parser(expr_tokens, /*hoist_globals=*/!options_ended);
-    MBO_ASSIGN_OR_RETURN(cmd.expression, parser.Parse());
-    cmd.globals.insert(cmd.globals.end(), parser.HoistedGlobals().begin(), parser.HoistedGlobals().end());
-    cmd.meta_flags.insert(cmd.meta_flags.end(), parser.HoistedMetaFlags().begin(), parser.HoistedMetaFlags().end());
-    cmd.grammar = GrammarFromGlobals(cmd.globals);
-  }
-  return cmd;
+  return CommandParser(args).Parse();
 }
 
 absl::Status EnforceStyle(const Command& command, registry::Style style) {

@@ -175,7 +175,7 @@ TEST_F(GlobalsTest, NonOverridingGlobalsDeclareTheirRepetitionSemantics) {
   EXPECT_THAT(
       names, ElementsAre(
                  "--config", "--xffrc", "--exclude", "--include", "--lang-db", "--mime-vocabulary", "--ignore-file",
-                 "--pack-option", "--summary", "--histogram", "--shard-pattern", "--define"));
+                 "--root", "--pack-option", "--summary", "--histogram", "--shard-pattern", "--define"));
 }
 
 TEST_F(GlobalsTest, IsKnownGlobalAcceptsEveryTableNameAndAlias) {

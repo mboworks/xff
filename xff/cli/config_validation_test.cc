@@ -588,6 +588,19 @@ TEST_F(ConfigValidationTest, InertSectionsAndPrimaryArgumentsDoNotSelectConfigs)
       ValidateConfigSelections(inputs, config::ResolveConfigInOrder(inputs, {"--config=literal"}, "alias")), IsOk());
 }
 
+TEST_F(ConfigValidationTest, NamedRootsAreRejectedInEveryConfigSource) {
+  const auto sources =
+      std::to_array<config::Source>({config::Source::kSystem, config::Source::kUser, config::Source::kXffrc});
+  for (const auto source : sources) {
+    const auto globals = ValidateConfigFile(config::ParseIni("--root=source=/tree"), {}, "input.ini", source);
+    EXPECT_THAT(globals.status, StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("command-line only")));
+    const auto named =
+        ValidateConfigFile(config::ParseIni("[pack]\n--root=source=/tree"), {"pack"}, "input.ini", source);
+    EXPECT_THAT(named.status, StatusIs(absl::StatusCode::kInvalidArgument));
+    EXPECT_THAT(named.disabled_configs, ElementsAre("pack"));
+  }
+}
+
 TEST_F(ConfigValidationTest, BootstrapFlagsAreRejectedInGlobalsAndDisableNamedSections) {
   for (const GlobalFlag& flag : Globals()) {
     if (!flag.cli_only) {

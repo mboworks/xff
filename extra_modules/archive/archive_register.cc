@@ -219,6 +219,7 @@ absl::Status PackNativeArchiveContainer(
     entries.push_back(PackEntry{.source = file.source, .name = file.name});
   }
   PackSettings settings;
+  settings.duplicates = options.duplicates;
   settings.mutations = options.mutations;
   settings.options.reserve(options.options.size());
   for (const PackOption& option : options.options) {
@@ -270,10 +271,14 @@ void RegisterArchiveBackend() {
 
 namespace {
 
-// NOLINTNEXTLINE(fuchsia-statically-constructed-objects,cert-err58-cpp)
-const struct ArchiveRegistrar {
+struct ArchiveRegistrar {
   ArchiveRegistrar() { RegisterArchiveBackend(); }
-} kRegisterArchive;
+};
+
+// Registration runs before main; allocation failure is fatal during startup.
+// Both spellings name the same intentional static-initialization exception.
+// NOLINTNEXTLINE(fuchsia-statically-constructed-objects,cert-err58-cpp,bugprone-throwing-static-initialization)
+const ArchiveRegistrar kRegisterArchive;
 
 }  // namespace
 
