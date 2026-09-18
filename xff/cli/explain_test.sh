@@ -100,7 +100,8 @@ test::explain_rejects_preset_overloading_config() {
   out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" --config=xff "${dir}" -name a.txt 2>&1)"
   expect_matches 'cannot change a preset' "${out}"
   # --explain records the drop in its trace, does not resolve the bare-preset flag, keeps defaults.
-  out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" --config=xff --explain 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" --config=xff --explain 2>"${dir}/explain.err")"
+  [[ ! -s "${dir}/explain.err" ]] || fail 'explain repeated its dropped-line trace as execution warnings'
   expect_output_contains "'[xff]' in the user" "${out}"
   expect_not_matches 'user[[:space:]]--hidden' "${out}"
   expect_matches 'user[[:space:]]--sort' "${out}"
@@ -401,6 +402,84 @@ test::xffrc_admission_uses_selector_order_for_explicit_and_discovered_files() {
   expect_eq 2 "${status}"
   expect_output_contains '.xffrc loading is disabled' "${out}"
   expect_output_not_contains 'unterminated' "${out}"
+}
+
+_expect_flavor_current() {
+  python3 -c '
+import sys
+behavior, expected = sys.argv[1:]
+rows = [line.split() for line in sys.stdin if line.startswith(behavior + " ")]
+assert len(rows) == 1 and rows[0][-1] == expected, (behavior, expected, rows)
+' "$1" "$2" <<<"$3"
+}
+
+test::explain_current_flavors_include_automatic_config_defaults() {
+  local dir system user out
+  dir="$(test_tmpdir effective_defaults)"
+  system="${dir}/system.ini"
+  user="${dir}/user.ini"
+  printf '%s\n' '--no-hidden' >"${system}"
+  printf '%s\n' '--case=insensitive' >"${user}"
+  out="$(XFF_TEST_SYSTEM_CONFIG="${system}" XFF_TEST_USER_CONFIG="${user}" "$(_xff_bin)" --explain)"
+  _expect_flavor_current 'hidden dotfiles' skip "${out}" || return
+  _expect_flavor_current 'letter case' insensitive "${out}"
+}
+
+test::explain_current_flavors_follow_selector_and_cli_order() {
+  local dir user out
+  dir="$(test_tmpdir effective_selectors)"
+  user="${dir}/user.ini"
+  printf '%s\n' '[outer]' '--config=inner' '[inner]' '--case=insensitive' >"${user}"
+  out="$(XFF_TEST_USER_CONFIG="${user}" "$(_xff_bin)" --case=sensitive --config=outer --explain)"
+  _expect_flavor_current 'letter case' insensitive "${out}" || return
+  out="$(XFF_TEST_USER_CONFIG="${user}" "$(_xff_bin)" --config=outer --case=sensitive --explain)"
+  _expect_flavor_current 'letter case' sensitive "${out}"
+}
+
+test::explain_current_flavors_include_explicit_files_and_obey_skips() {
+  local dir user explicit out
+  dir="$(test_tmpdir effective_explicit)"
+  user="${dir}/user.ini"
+  explicit="${dir}/project.rc"
+  printf '%s\n' '--no-require-user-globals' '--no-hidden' >"${user}"
+  printf '%s\n' '--case=insensitive' >"${explicit}"
+  out="$(XFF_TEST_USER_CONFIG="${user}" "$(_xff_bin)" --no-user-config --xffrc="${explicit}" --explain)"
+  _expect_flavor_current 'hidden dotfiles' show "${out}" || return
+  _expect_flavor_current 'letter case' insensitive "${out}" || return
+  printf '%s\n' '--require-user-globals' '--no-hidden' >"${user}"
+  out="$(XFF_TEST_USER_CONFIG="${user}" "$(_xff_bin)" --no-user-config --explain)"
+  _expect_flavor_current 'hidden dotfiles' skip "${out}"
+}
+
+test::explain_composes_actions_without_running_them_or_hoisting_arguments() {
+  local dir user out
+  dir="$(test_tmpdir effective_actions)"
+  user="${dir}/user.ini"
+  printf '%s\n' '[actions]' '-exec echo --case=insensitive \;' '-delete' >"${user}"
+  : >"${dir}/keep.txt"
+  out="$(XFF_TEST_USER_CONFIG="${user}" "$(_xff_bin)" "${dir}/keep.txt" --config=actions --explain)"
+  _expect_flavor_current 'letter case' sensitive "${out}" || return
+  [[ -f "${dir}/keep.txt" ]] || fail 'explain executed a configured action'
+}
+
+test::execution_warns_for_unarmed_files_and_untrusted_profile_selection() {
+  local dir user explicit target out
+  dir="$(test_tmpdir dropped_actions)"
+  user="${dir}/user.ini"
+  explicit="${dir}/project.rc"
+  target="${dir}/keep.txt"
+  printf '%s\n' '[remove]' '-delete' >"${user}"
+  : >"${target}"
+
+  printf '%s\n' '-delete' >"${explicit}"
+  out="$(XFF_TEST_USER_CONFIG="${user}" "$(_xff_bin)" "${target}" --xffrc="${explicit}" 2>&1)"
+  expect_output_contains 'inert unless armed with --allow-exec' "${out}"
+  [[ -f "${target}" ]] || fail 'an unarmed explicit file deleted its target'
+
+  printf '%s\n' '--config=remove' >"${explicit}"
+  out="$(XFF_TEST_USER_CONFIG="${user}" "$(_xff_bin)" "${target}" --xffrc="${explicit}" 2>&1)"
+  expect_output_contains 'denied by config policy' "${out}"
+  [[ -f "${target}" ]] || fail 'an untrusted profile selection deleted its target'
 }
 
 test_runner

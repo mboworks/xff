@@ -285,3 +285,9 @@ The safety model and directory-scoped permissions are tracked in
 - Post-1.0 behavior migration through `--unstable=NAME` if a concrete unstable spelling needs it;
   do not build the rejected general `--feature` registry speculatively.
 - C++ header modules after the hermetic toolchain supplies real compile/use actions.
+
+### Audit B12: effective explain flavor values
+
+- [x] Reproduce config flags absent from the current flavor table.
+- [x] Share the fully composed command between explain and execution; verify defaults, selectors,
+      explicit files, skip policy, literal operands, and no action execution.

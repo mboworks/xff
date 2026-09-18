@@ -203,6 +203,16 @@ consistent with the implementation but inconsistent with an 8,192-byte reading o
 at 7,999/8,000/8,050/8,191 explicit in tests; do not change the classification policy accidentally.
 **Start:** `xff/content/line_match.h`, `xff/registry/registry.cc`.
 
+### B12 - P1: Explain current style values from the resolved configuration
+
+- [x] Reproduce a disagreement between the applied-flag trace and the current flavor column.
+- [x] Use the same effective command for inspection and execution; test all configuration tiers and selector order.
+
+A user INI containing `--no-hidden` and `--case=insensitive` appears correctly in the applied flags,
+but `xff --explain` reports current hidden files as `show` and case as `sensitive`. The table receives
+only CLI globals because configuration is composed after the explain early return. Inspection must
+compose configuration before rendering, without evaluating expressions or running actions.
+
 ## Design and usability improvements
 
 These are observed limitations or deliberate current behaviors, not claims of implementation bugs.
@@ -247,7 +257,7 @@ CLI tests cover complete configuration files, dry-run, overlapping roots, and tr
 
 ### S03 - P2: Remove duplicate comparison tables from the obvious summary workflow
 
-- [ ] Reconcile the shorthand, bare summary, and scope-driver rules.
+- [x] Reconcile the shorthand, bare summary, and scope-driver rules (PR #866).
 
 `--compare=summary --summary-scope=compare` errors and recommends adding `--summary`.
 Doing so works but prints the comparison-result table twice before the ordinary table.

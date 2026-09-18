@@ -9,6 +9,9 @@
 - Identify every JSONL summary row by request, grouping, and scope, retaining template text
   and comparison roots so repeated and mixed summaries can be separated reliably.
 
+- Resolve the current behavior values shown by `--explain` from the complete configuration,
+  including named selections and explicit files, instead of only command-line flags.
+
 - Reject zero, negative, malformed, and overflowing histogram widths before traversal or actions,
   including settings selected from configuration files.
 
