@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-18 20:29:08</td>
+            <td class="headerValue">2026-09-18 21:04:57</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -2686,52 +2686,52 @@
 <span id="L2606"><span class="lineNum">    2606</span>                 :             : </span>
 <span id="L2607"><span class="lineNum">    2607</span>                 :             : }  // namespace</span>
 <span id="L2608"><span class="lineNum">    2608</span>                 :             : </span>
-<span id="L2609"><span class="lineNum">    2609</span>                 :<span class="tlaGNC">       60243 : absl::Span&lt;const GlobalFlag&gt; Globals() {</span></span>
-<span id="L2610"><span class="lineNum">    2610</span>                 :<span class="tlaGNC">       60243 :   return kGlobals;</span></span>
-<span id="L2611"><span class="lineNum">    2611</span>                 :<span class="tlaGNC">       60243 : }</span></span>
+<span id="L2609"><span class="lineNum">    2609</span>                 :<span class="tlaGNC">       60327 : absl::Span&lt;const GlobalFlag&gt; Globals() {</span></span>
+<span id="L2610"><span class="lineNum">    2610</span>                 :<span class="tlaGNC">       60327 :   return kGlobals;</span></span>
+<span id="L2611"><span class="lineNum">    2611</span>                 :<span class="tlaGNC">       60327 : }</span></span>
 <span id="L2612"><span class="lineNum">    2612</span>                 :             : </span>
-<span id="L2613"><span class="lineNum">    2613</span>                 :<span class="tlaGNC">       33030 : mbo::types::OptionalRef&lt;const GlobalFlag&gt; LookupGlobal(std::string_view name) {</span></span>
-<span id="L2614"><span class="lineNum">    2614</span>         [<span class="tlaGBC" title="branch 0 was taken 2886499 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5829 times"> + </span>]:<span class="tlaGNC">     2886499 :   for (const GlobalFlag&amp; flag : kGlobals) {</span></span>
-<span id="L2615"><span class="lineNum">    2615</span> [<span class="tlaGBC" title="branch 0 was taken 27096 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2859403 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 132641 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2726762 times"> + </span>]:<span class="tlaGNC">     2886499 :     if (flag.name == name || (!flag.alias.empty() &amp;&amp; flag.alias == name)) {</span></span>
-<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 105 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 132536 times"> + </span>]
-<span id="L2616"><span class="lineNum">    2616</span>                 :<span class="tlaGNC">       27201 :       return flag;</span></span>
-<span id="L2617"><span class="lineNum">    2617</span>                 :<span class="tlaGNC">       27201 :     }</span></span>
-<span id="L2618"><span class="lineNum">    2618</span>                 :<span class="tlaGNC">     2886499 :   }</span></span>
-<span id="L2619"><span class="lineNum">    2619</span>                 :<span class="tlaGNC">        5829 :   return std::nullopt;</span></span>
-<span id="L2620"><span class="lineNum">    2620</span>                 :<span class="tlaGNC">       33030 : }</span></span>
+<span id="L2613"><span class="lineNum">    2613</span>                 :<span class="tlaGNC">       33279 : mbo::types::OptionalRef&lt;const GlobalFlag&gt; LookupGlobal(std::string_view name) {</span></span>
+<span id="L2614"><span class="lineNum">    2614</span>         [<span class="tlaGBC" title="branch 0 was taken 2907999 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5913 times"> + </span>]:<span class="tlaGNC">     2907999 :   for (const GlobalFlag&amp; flag : kGlobals) {</span></span>
+<span id="L2615"><span class="lineNum">    2615</span> [<span class="tlaGBC" title="branch 0 was taken 27261 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2880738 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 133580 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2747158 times"> + </span>]:<span class="tlaGNC">     2907999 :     if (flag.name == name || (!flag.alias.empty() &amp;&amp; flag.alias == name)) {</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 105 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 133475 times"> + </span>]
+<span id="L2616"><span class="lineNum">    2616</span>                 :<span class="tlaGNC">       27366 :       return flag;</span></span>
+<span id="L2617"><span class="lineNum">    2617</span>                 :<span class="tlaGNC">       27366 :     }</span></span>
+<span id="L2618"><span class="lineNum">    2618</span>                 :<span class="tlaGNC">     2907999 :   }</span></span>
+<span id="L2619"><span class="lineNum">    2619</span>                 :<span class="tlaGNC">        5913 :   return std::nullopt;</span></span>
+<span id="L2620"><span class="lineNum">    2620</span>                 :<span class="tlaGNC">       33279 : }</span></span>
 <span id="L2621"><span class="lineNum">    2621</span>                 :             : </span>
-<span id="L2622"><span class="lineNum">    2622</span>                 :<span class="tlaGNC">        4095 : mbo::types::OptionalRef&lt;const GlobalFlag&gt; LookupGlobalArgument(std::string_view arg) {</span></span>
-<span id="L2623"><span class="lineNum">    2623</span>         [<span class="tlaGBC" title="branch 0 was taken 1403 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2692 times"> + </span>]:<span class="tlaGNC">        4095 :   if (const mbo::types::OptionalRef&lt;const GlobalFlag&gt; exact = LookupGlobal(arg); exact.has_value()) {</span></span>
-<span id="L2624"><span class="lineNum">    2624</span>                 :<span class="tlaGNC">        1403 :     return exact;</span></span>
-<span id="L2625"><span class="lineNum">    2625</span>                 :<span class="tlaGNC">        1403 :   }</span></span>
-<span id="L2626"><span class="lineNum">    2626</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2690 times"> + </span>]:<span class="tlaGNC">        2692 :   if (arg == &quot;-0&quot;) {</span></span>
+<span id="L2622"><span class="lineNum">    2622</span>                 :<span class="tlaGNC">        4240 : mbo::types::OptionalRef&lt;const GlobalFlag&gt; LookupGlobalArgument(std::string_view arg) {</span></span>
+<span id="L2623"><span class="lineNum">    2623</span>         [<span class="tlaGBC" title="branch 0 was taken 1464 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2776 times"> + </span>]:<span class="tlaGNC">        4240 :   if (const mbo::types::OptionalRef&lt;const GlobalFlag&gt; exact = LookupGlobal(arg); exact.has_value()) {</span></span>
+<span id="L2624"><span class="lineNum">    2624</span>                 :<span class="tlaGNC">        1464 :     return exact;</span></span>
+<span id="L2625"><span class="lineNum">    2625</span>                 :<span class="tlaGNC">        1464 :   }</span></span>
+<span id="L2626"><span class="lineNum">    2626</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2774 times"> + </span>]:<span class="tlaGNC">        2776 :   if (arg == &quot;-0&quot;) {</span></span>
 <span id="L2627"><span class="lineNum">    2627</span>                 :<span class="tlaGNC">           2 :     return LookupGlobal(&quot;--format&quot;);</span></span>
 <span id="L2628"><span class="lineNum">    2628</span>                 :<span class="tlaGNC">           2 :   }</span></span>
-<span id="L2629"><span class="lineNum">    2629</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2688 times"> + </span>]:<span class="tlaGNC">        2690 :   if (arg == &quot;-i&quot;) {</span></span>
+<span id="L2629"><span class="lineNum">    2629</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2772 times"> + </span>]:<span class="tlaGNC">        2774 :   if (arg == &quot;-i&quot;) {</span></span>
 <span id="L2630"><span class="lineNum">    2630</span>                 :<span class="tlaGNC">           2 :     return LookupGlobal(&quot;--case&quot;);</span></span>
 <span id="L2631"><span class="lineNum">    2631</span>                 :<span class="tlaGNC">           2 :   }</span></span>
-<span id="L2632"><span class="lineNum">    2632</span> [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2684 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 4 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">        2688 :   if (arg.starts_with(&quot;-j&quot;) &amp;&amp; arg.size() &gt; 2 &amp;&amp; !arg.starts_with(&quot;-j=&quot;)) {</span></span>
+<span id="L2632"><span class="lineNum">    2632</span> [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2768 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 4 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">        2772 :   if (arg.starts_with(&quot;-j&quot;) &amp;&amp; arg.size() &gt; 2 &amp;&amp; !arg.starts_with(&quot;-j=&quot;)) {</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 1 time"> + </span>]
 <span id="L2633"><span class="lineNum">    2633</span>                 :<span class="tlaGNC">           3 :     return LookupGlobal(&quot;--jobs&quot;);</span></span>
 <span id="L2634"><span class="lineNum">    2634</span>                 :<span class="tlaGNC">           3 :   }</span></span>
-<span id="L2635"><span class="lineNum">    2635</span>         [<span class="tlaGBC" title="branch 0 was taken 455153 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2585 times"> + </span>]:<span class="tlaGNC">      455153 :   for (const GlobalFlag&amp; flag : Globals()) {</span></span>
-<span id="L2636"><span class="lineNum">    2636</span>         [<span class="tlaGBC" title="branch 0 was taken 100 times"> + </span><span class="tlaGBC" title="branch 1 was taken 455053 times"> + </span>]:<span class="tlaGNC">      455153 :     if (absl::c_contains(flag.sign_forms, arg)) {</span></span>
+<span id="L2635"><span class="lineNum">    2635</span>         [<span class="tlaGBC" title="branch 0 was taken 469853 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2669 times"> + </span>]:<span class="tlaGNC">      469853 :   for (const GlobalFlag&amp; flag : Globals()) {</span></span>
+<span id="L2636"><span class="lineNum">    2636</span>         [<span class="tlaGBC" title="branch 0 was taken 100 times"> + </span><span class="tlaGBC" title="branch 1 was taken 469753 times"> + </span>]:<span class="tlaGNC">      469853 :     if (absl::c_contains(flag.sign_forms, arg)) {</span></span>
 <span id="L2637"><span class="lineNum">    2637</span>                 :<span class="tlaGNC">         100 :       return flag;</span></span>
 <span id="L2638"><span class="lineNum">    2638</span>                 :<span class="tlaGNC">         100 :     }</span></span>
-<span id="L2639"><span class="lineNum">    2639</span>                 :<span class="tlaGNC">      455153 :   }</span></span>
-<span id="L2640"><span class="lineNum">    2640</span>         [<span class="tlaGBC" title="branch 0 was taken 2391 times"> + </span><span class="tlaGBC" title="branch 1 was taken 194 times"> + </span>]:<span class="tlaGNC">        2585 :   if (const std::string_view::size_type equals = arg.find('='); equals != std::string_view::npos) {</span></span>
-<span id="L2641"><span class="lineNum">    2641</span>                 :<span class="tlaGNC">        2391 :     const mbo::types::OptionalRef&lt;const GlobalFlag&gt; valued = LookupGlobal(arg.substr(0, equals));</span></span>
-<span id="L2642"><span class="lineNum">    2642</span> [<span class="tlaGBC" title="branch 0 was taken 2381 times"> + </span><span class="tlaGBC" title="branch 1 was taken 10 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2380 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">        2391 :     if (valued.has_value() &amp;&amp; absl::StrContains(valued-&gt;display, '=')) {</span></span>
-<span id="L2643"><span class="lineNum">    2643</span>                 :<span class="tlaGNC">        2380 :       return valued;</span></span>
-<span id="L2644"><span class="lineNum">    2644</span>                 :<span class="tlaGNC">        2380 :     }</span></span>
-<span id="L2645"><span class="lineNum">    2645</span>                 :<span class="tlaGNC">        2391 :   }</span></span>
-<span id="L2646"><span class="lineNum">    2646</span>                 :<span class="tlaGNC">         205 :   return std::nullopt;</span></span>
-<span id="L2647"><span class="lineNum">    2647</span>                 :<span class="tlaGNC">        2585 : }</span></span>
+<span id="L2639"><span class="lineNum">    2639</span>                 :<span class="tlaGNC">      469853 :   }</span></span>
+<span id="L2640"><span class="lineNum">    2640</span>         [<span class="tlaGBC" title="branch 0 was taken 2460 times"> + </span><span class="tlaGBC" title="branch 1 was taken 209 times"> + </span>]:<span class="tlaGNC">        2669 :   if (const std::string_view::size_type equals = arg.find('='); equals != std::string_view::npos) {</span></span>
+<span id="L2641"><span class="lineNum">    2641</span>                 :<span class="tlaGNC">        2460 :     const mbo::types::OptionalRef&lt;const GlobalFlag&gt; valued = LookupGlobal(arg.substr(0, equals));</span></span>
+<span id="L2642"><span class="lineNum">    2642</span> [<span class="tlaGBC" title="branch 0 was taken 2450 times"> + </span><span class="tlaGBC" title="branch 1 was taken 10 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2449 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">        2460 :     if (valued.has_value() &amp;&amp; absl::StrContains(valued-&gt;display, '=')) {</span></span>
+<span id="L2643"><span class="lineNum">    2643</span>                 :<span class="tlaGNC">        2449 :       return valued;</span></span>
+<span id="L2644"><span class="lineNum">    2644</span>                 :<span class="tlaGNC">        2449 :     }</span></span>
+<span id="L2645"><span class="lineNum">    2645</span>                 :<span class="tlaGNC">        2460 :   }</span></span>
+<span id="L2646"><span class="lineNum">    2646</span>                 :<span class="tlaGNC">         220 :   return std::nullopt;</span></span>
+<span id="L2647"><span class="lineNum">    2647</span>                 :<span class="tlaGNC">        2669 : }</span></span>
 <span id="L2648"><span class="lineNum">    2648</span>                 :             : </span>
 <span id="L2649"><span class="lineNum">    2649</span>                 :             : namespace {</span>
-<span id="L2650"><span class="lineNum">    2650</span>                 :<span class="tlaGNC">         671 : bool AcceptsEnumValue(const GlobalFlag&amp; flag, std::string_view value) {</span></span>
-<span id="L2651"><span class="lineNum">    2651</span>                 :<span class="tlaGNC">        2570 :   return absl::c_any_of(flag.values, [value](const ValueDoc&amp; doc) { return doc.value == value; });</span></span>
-<span id="L2652"><span class="lineNum">    2652</span>                 :<span class="tlaGNC">         671 : }</span></span>
+<span id="L2650"><span class="lineNum">    2650</span>                 :<span class="tlaGNC">         677 : bool AcceptsEnumValue(const GlobalFlag&amp; flag, std::string_view value) {</span></span>
+<span id="L2651"><span class="lineNum">    2651</span>                 :<span class="tlaGNC">        2580 :   return absl::c_any_of(flag.values, [value](const ValueDoc&amp; doc) { return doc.value == value; });</span></span>
+<span id="L2652"><span class="lineNum">    2652</span>                 :<span class="tlaGNC">         677 : }</span></span>
 <span id="L2653"><span class="lineNum">    2653</span>                 :             : </span>
 <span id="L2654"><span class="lineNum">    2654</span>                 :<span class="tlaGNC">          80 : bool AcceptsEnumList(const GlobalFlag&amp; flag, std::string_view value) {</span></span>
 <span id="L2655"><span class="lineNum">    2655</span> [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 78 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 72 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 6 times"> + </span>]:<span class="tlaGNC">         108 :   return value.empty() || absl::c_all_of(absl::StrSplit(value, ','), [&amp;](std::string_view item) {</span></span>
@@ -2764,66 +2764,66 @@
 <span id="L2682"><span class="lineNum">    2682</span>                 :<span class="tlaGNC">          68 : }</span></span>
 <span id="L2683"><span class="lineNum">    2683</span>                 :             : }  // namespace</span>
 <span id="L2684"><span class="lineNum">    2684</span>                 :             : </span>
-<span id="L2685"><span class="lineNum">    2685</span>                 :<span class="tlaGNC">        1898 : absl::Status ValidateGlobalValue(std::string_view arg) {</span></span>
-<span id="L2686"><span class="lineNum">    2686</span>                 :<span class="tlaGNC">        1898 :   const std::string_view::size_type equals = arg.find('=');</span></span>
-<span id="L2687"><span class="lineNum">    2687</span>         [<span class="tlaGBC" title="branch 0 was taken 514 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1384 times"> + </span>]:<span class="tlaGNC">        1898 :   if (equals == std::string_view::npos) {</span></span>
-<span id="L2688"><span class="lineNum">    2688</span>                 :<span class="tlaGNC">         514 :     return absl::OkStatus();  // a bare or sign-suffixed form carries no value to check</span></span>
-<span id="L2689"><span class="lineNum">    2689</span>                 :<span class="tlaGNC">         514 :   }</span></span>
-<span id="L2690"><span class="lineNum">    2690</span>                 :<span class="tlaGNC">        1384 :   const std::string_view name = arg.substr(0, equals);</span></span>
-<span id="L2691"><span class="lineNum">    2691</span>                 :<span class="tlaGNC">        1384 :   const std::string_view value = arg.substr(equals + 1);</span></span>
-<span id="L2692"><span class="lineNum">    2692</span>                 :<span class="tlaGNC">        1384 :   const mbo::types::OptionalRef&lt;const GlobalFlag&gt; flag = LookupGlobal(name);</span></span>
-<span id="L2693"><span class="lineNum">    2693</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1383 times"> + </span>]:<span class="tlaGNC">        1384 :   if (!flag.has_value()) {</span></span>
+<span id="L2685"><span class="lineNum">    2685</span>                 :<span class="tlaGNC">        1924 : absl::Status ValidateGlobalValue(std::string_view arg) {</span></span>
+<span id="L2686"><span class="lineNum">    2686</span>                 :<span class="tlaGNC">        1924 :   const std::string_view::size_type equals = arg.find('=');</span></span>
+<span id="L2687"><span class="lineNum">    2687</span>         [<span class="tlaGBC" title="branch 0 was taken 525 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1399 times"> + </span>]:<span class="tlaGNC">        1924 :   if (equals == std::string_view::npos) {</span></span>
+<span id="L2688"><span class="lineNum">    2688</span>                 :<span class="tlaGNC">         525 :     return absl::OkStatus();  // a bare or sign-suffixed form carries no value to check</span></span>
+<span id="L2689"><span class="lineNum">    2689</span>                 :<span class="tlaGNC">         525 :   }</span></span>
+<span id="L2690"><span class="lineNum">    2690</span>                 :<span class="tlaGNC">        1399 :   const std::string_view name = arg.substr(0, equals);</span></span>
+<span id="L2691"><span class="lineNum">    2691</span>                 :<span class="tlaGNC">        1399 :   const std::string_view value = arg.substr(equals + 1);</span></span>
+<span id="L2692"><span class="lineNum">    2692</span>                 :<span class="tlaGNC">        1399 :   const mbo::types::OptionalRef&lt;const GlobalFlag&gt; flag = LookupGlobal(name);</span></span>
+<span id="L2693"><span class="lineNum">    2693</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1398 times"> + </span>]:<span class="tlaGNC">        1399 :   if (!flag.has_value()) {</span></span>
 <span id="L2694"><span class="lineNum">    2694</span>                 :<span class="tlaGNC">           1 :     return absl::OkStatus();  // unknown flag: IsKnownGlobal reports it, with a better message</span></span>
 <span id="L2695"><span class="lineNum">    2695</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L2696"><span class="lineNum">    2696</span>         [<span class="tlaGBC" title="branch 0 was taken 1383 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">        1383 :   switch (flag-&gt;value_check) {</span></span>
-<span id="L2697"><span class="lineNum">    2697</span>         [<span class="tlaGBC" title="branch 0 was taken 464 times"> + </span><span class="tlaGBC" title="branch 1 was taken 919 times"> + </span>]:<span class="tlaGNC">         464 :     case GlobalFlag::ValueCheck::kNone: return absl::OkStatus();</span></span>
-<span id="L2698"><span class="lineNum">    2698</span>         [<span class="tlaGBC" title="branch 0 was taken 65 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1318 times"> + </span>]:<span class="tlaGNC">          65 :     case GlobalFlag::ValueCheck::kBuffer:</span></span>
+<span id="L2696"><span class="lineNum">    2696</span>         [<span class="tlaGBC" title="branch 0 was taken 1398 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">        1398 :   switch (flag-&gt;value_check) {</span></span>
+<span id="L2697"><span class="lineNum">    2697</span>         [<span class="tlaGBC" title="branch 0 was taken 473 times"> + </span><span class="tlaGBC" title="branch 1 was taken 925 times"> + </span>]:<span class="tlaGNC">         473 :     case GlobalFlag::ValueCheck::kNone: return absl::OkStatus();</span></span>
+<span id="L2698"><span class="lineNum">    2698</span>         [<span class="tlaGBC" title="branch 0 was taken 65 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1333 times"> + </span>]:<span class="tlaGNC">          65 :     case GlobalFlag::ValueCheck::kBuffer:</span></span>
 <span id="L2699"><span class="lineNum">    2699</span> [<span class="tlaGBC" title="branch 0 was taken 56 times"> + </span><span class="tlaGBC" title="branch 1 was taken 74 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 12 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 31 times"> + </span>]:<span class="tlaGNC">          65 :       if (format::ParseBufferWindow(value).has_value() || format::ParseByteBudget(value).has_value()) {</span></span>
 <span id="L2700"><span class="lineNum">    2700</span>                 :<span class="tlaGNC">          34 :         return absl::OkStatus();</span></span>
 <span id="L2701"><span class="lineNum">    2701</span>                 :<span class="tlaGNC">          34 :       }</span></span>
 <span id="L2702"><span class="lineNum">    2702</span>                 :<span class="tlaGNC">          31 :       break;</span></span>
-<span id="L2703"><span class="lineNum">    2703</span>         [<span class="tlaGBC" title="branch 0 was taken 48 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1335 times"> + </span>]:<span class="tlaGNC">          50 :     case GlobalFlag::ValueCheck::kPositiveInteger: {</span></span>
+<span id="L2703"><span class="lineNum">    2703</span>         [<span class="tlaGBC" title="branch 0 was taken 48 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1350 times"> + </span>]:<span class="tlaGNC">          50 :     case GlobalFlag::ValueCheck::kPositiveInteger: {</span></span>
 <span id="L2704"><span class="lineNum">    2704</span>                 :<span class="tlaGNC">          48 :       std::size_t parsed = 0;</span></span>
 <span id="L2705"><span class="lineNum">    2705</span> [<span class="tlaGBC" title="branch 0 was taken 34 times"> + </span><span class="tlaGBC" title="branch 1 was taken 14 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 21 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 13 times"> + </span>]:<span class="tlaGNC">          48 :       if (absl::SimpleAtoi(value, &amp;parsed) &amp;&amp; parsed &gt; 0) {</span></span>
 <span id="L2706"><span class="lineNum">    2706</span>                 :<span class="tlaGNC">          21 :         return absl::OkStatus();</span></span>
 <span id="L2707"><span class="lineNum">    2707</span>                 :<span class="tlaGNC">          21 :       }</span></span>
 <span id="L2708"><span class="lineNum">    2708</span>                 :<span class="tlaGNC">          27 :       break;</span></span>
 <span id="L2709"><span class="lineNum">    2709</span>                 :<span class="tlaGNC">          48 :     }</span></span>
-<span id="L2710"><span class="lineNum">    2710</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 1383 times"> + </span>]:<span class="tlaGNC">          27 :     case GlobalFlag::ValueCheck::kBool:</span></span>
+<span id="L2710"><span class="lineNum">    2710</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 1398 times"> + </span>]:<span class="tlaGNC">          27 :     case GlobalFlag::ValueCheck::kBool:</span></span>
 <span id="L2711"><span class="lineNum">    2711</span>         [<span class="tlaUNC" title="branch 0 was not executed"> # </span><span class="tlaUNC" title="branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :       if (values::ParseBool(value).has_value()) {</span></span>
 <span id="L2712"><span class="lineNum">    2712</span>                 :<span class="tlaUNC">           0 :         return absl::OkStatus();</span></span>
 <span id="L2713"><span class="lineNum">    2713</span>                 :<span class="tlaUNC">           0 :       }</span></span>
 <span id="L2714"><span class="lineNum">    2714</span>                 :<span class="tlaUNC">           0 :       break;</span></span>
-<span id="L2715"><span class="lineNum">    2715</span>         [<span class="tlaGBC" title="branch 0 was taken 155 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1228 times"> + </span>]:<span class="tlaGNC">         155 :     case GlobalFlag::ValueCheck::kTristate:</span></span>
+<span id="L2715"><span class="lineNum">    2715</span>         [<span class="tlaGBC" title="branch 0 was taken 155 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1243 times"> + </span>]:<span class="tlaGNC">         155 :     case GlobalFlag::ValueCheck::kTristate:</span></span>
 <span id="L2716"><span class="lineNum">    2716</span>         [<span class="tlaGBC" title="branch 0 was taken 146 times"> + </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">         155 :       if (values::ParseTristate(value).has_value()) {</span></span>
 <span id="L2717"><span class="lineNum">    2717</span>                 :<span class="tlaGNC">         146 :         return absl::OkStatus();</span></span>
 <span id="L2718"><span class="lineNum">    2718</span>                 :<span class="tlaGNC">         146 :       }</span></span>
 <span id="L2719"><span class="lineNum">    2719</span>                 :<span class="tlaGNC">           9 :       break;</span></span>
-<span id="L2720"><span class="lineNum">    2720</span>         [<span class="tlaGBC" title="branch 0 was taken 80 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1303 times"> + </span>]:<span class="tlaGNC">          87 :     case GlobalFlag::ValueCheck::kEnumList:</span></span>
+<span id="L2720"><span class="lineNum">    2720</span>         [<span class="tlaGBC" title="branch 0 was taken 80 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1318 times"> + </span>]:<span class="tlaGNC">          87 :     case GlobalFlag::ValueCheck::kEnumList:</span></span>
 <span id="L2721"><span class="lineNum">    2721</span>         [<span class="tlaGBC" title="branch 0 was taken 74 times"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">          80 :       if (AcceptsEnumList(*flag, value)) {</span></span>
 <span id="L2722"><span class="lineNum">    2722</span>                 :<span class="tlaGNC">          74 :         return absl::OkStatus();</span></span>
 <span id="L2723"><span class="lineNum">    2723</span>                 :<span class="tlaGNC">          74 :       }</span></span>
 <span id="L2724"><span class="lineNum">    2724</span>                 :<span class="tlaGNC">           6 :       break;</span></span>
-<span id="L2725"><span class="lineNum">    2725</span>         [<span class="tlaGBC" title="branch 0 was taken 465 times"> + </span><span class="tlaGBC" title="branch 1 was taken 918 times"> + </span>]:<span class="tlaGNC">         465 :     case GlobalFlag::ValueCheck::kEnum:</span></span>
-<span id="L2726"><span class="lineNum">    2726</span>         [<span class="tlaGBC" title="branch 0 was taken 441 times"> + </span><span class="tlaGBC" title="branch 1 was taken 24 times"> + </span>]:<span class="tlaGNC">         465 :       if (AcceptsEnumValue(*flag, value)) {</span></span>
-<span id="L2727"><span class="lineNum">    2727</span>                 :<span class="tlaGNC">         441 :         return absl::OkStatus();</span></span>
-<span id="L2728"><span class="lineNum">    2728</span>                 :<span class="tlaGNC">         441 :       }</span></span>
+<span id="L2725"><span class="lineNum">    2725</span>         [<span class="tlaGBC" title="branch 0 was taken 471 times"> + </span><span class="tlaGBC" title="branch 1 was taken 927 times"> + </span>]:<span class="tlaGNC">         471 :     case GlobalFlag::ValueCheck::kEnum:</span></span>
+<span id="L2726"><span class="lineNum">    2726</span>         [<span class="tlaGBC" title="branch 0 was taken 447 times"> + </span><span class="tlaGBC" title="branch 1 was taken 24 times"> + </span>]:<span class="tlaGNC">         471 :       if (AcceptsEnumValue(*flag, value)) {</span></span>
+<span id="L2727"><span class="lineNum">    2727</span>                 :<span class="tlaGNC">         447 :         return absl::OkStatus();</span></span>
+<span id="L2728"><span class="lineNum">    2728</span>                 :<span class="tlaGNC">         447 :       }</span></span>
 <span id="L2729"><span class="lineNum">    2729</span>                 :<span class="tlaGNC">          24 :       break;</span></span>
-<span id="L2730"><span class="lineNum">    2730</span>         [<span class="tlaGBC" title="branch 0 was taken 106 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1277 times"> + </span>]:<span class="tlaGNC">         112 :     case GlobalFlag::ValueCheck::kEnumOrTemplate:</span></span>
+<span id="L2730"><span class="lineNum">    2730</span>         [<span class="tlaGBC" title="branch 0 was taken 106 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1292 times"> + </span>]:<span class="tlaGNC">         112 :     case GlobalFlag::ValueCheck::kEnumOrTemplate:</span></span>
 <span id="L2731"><span class="lineNum">    2731</span> [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 98 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 96 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2 times"> + </span>]:<span class="tlaGNC">         106 :       if (value.starts_with('{') || AcceptsEnumValue(*flag, value)) {</span></span>
 <span id="L2732"><span class="lineNum">    2732</span>                 :<span class="tlaGNC">         104 :         return absl::OkStatus();</span></span>
 <span id="L2733"><span class="lineNum">    2733</span>                 :<span class="tlaGNC">         104 :       }</span></span>
 <span id="L2734"><span class="lineNum">    2734</span>                 :<span class="tlaGNC">           2 :       break;</span></span>
-<span id="L2735"><span class="lineNum">    2735</span>                 :<span class="tlaGNC">        1383 :   }</span></span>
+<span id="L2735"><span class="lineNum">    2735</span>                 :<span class="tlaGNC">        1398 :   }</span></span>
 <span id="L2736"><span class="lineNum">    2736</span>                 :             :   // The accepted list comes from the same table the help prints (or from the shared vocabulary),</span>
 <span id="L2737"><span class="lineNum">    2737</span>                 :             :   // so the error and the documentation cannot disagree.</span>
 <span id="L2738"><span class="lineNum">    2738</span>                 :<span class="tlaGNC">          99 :   return absl::InvalidArgumentError(</span></span>
 <span id="L2739"><span class="lineNum">    2739</span>                 :<span class="tlaGNC">          99 :       absl::StrCat(&quot;unknown value '&quot;, value, &quot;' for &quot;, flag-&gt;name, &quot; (accepted: &quot;, AcceptedValues(*flag), &quot;)&quot;));</span></span>
-<span id="L2740"><span class="lineNum">    2740</span>                 :<span class="tlaGNC">        1383 : }</span></span>
+<span id="L2740"><span class="lineNum">    2740</span>                 :<span class="tlaGNC">        1398 : }</span></span>
 <span id="L2741"><span class="lineNum">    2741</span>                 :             : </span>
-<span id="L2742"><span class="lineNum">    2742</span>                 :<span class="tlaGNC">        1556 : bool IsKnownGlobal(std::string_view arg) {</span></span>
-<span id="L2743"><span class="lineNum">    2743</span>                 :<span class="tlaGNC">        1556 :   return LookupGlobalArgument(arg).has_value();</span></span>
-<span id="L2744"><span class="lineNum">    2744</span>                 :<span class="tlaGNC">        1556 : }</span></span>
+<span id="L2742"><span class="lineNum">    2742</span>                 :<span class="tlaGNC">        1572 : bool IsKnownGlobal(std::string_view arg) {</span></span>
+<span id="L2743"><span class="lineNum">    2743</span>                 :<span class="tlaGNC">        1572 :   return LookupGlobalArgument(arg).has_value();</span></span>
+<span id="L2744"><span class="lineNum">    2744</span>                 :<span class="tlaGNC">        1572 : }</span></span>
 <span id="L2745"><span class="lineNum">    2745</span>                 :             : </span>
 <span id="L2746"><span class="lineNum">    2746</span>                 :<span class="tlaGNC">        2631 : bool ExtraEnabled(std::string_view key) {</span></span>
 <span id="L2747"><span class="lineNum">    2747</span>                 :             :   // Answered by the LINKER, not by a parallel define: an extra registers itself into its backend slot</span>

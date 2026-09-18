@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-18 20:29:08</td>
+            <td class="headerValue">2026-09-18 21:04:57</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -109,7 +109,7 @@
 <span id="L29"><span class="lineNum">      29</span>                 :             : // Walks the expression tree appending one site per `-collect` node, in AST order.</span>
 <span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC">        3743 : void AppendCollectSites(const parser::Expr&amp; expr, std::vector&lt;CollectSite&gt;&amp; sites) {</span></span>
 <span id="L31"><span class="lineNum">      31</span>         [<span class="tlaGBC" title="branch 0 was taken 2806 times"> + </span><span class="tlaGBC" title="branch 1 was taken 937 times"> + </span>]:<span class="tlaGNC">        3743 :   if (expr.kind == parser::Expr::Kind::kPredicate) {</span></span>
-<span id="L32"><span class="lineNum">      32</span> [<span class="tlaGBC" title="branch 0 was taken 2803 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 43 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2760 times"> + </span>]:<span class="tlaGNC">        2806 :     if (expr.descriptor.has_value() &amp;&amp; expr.descriptor-&gt;name == &quot;-collect&quot;) {</span></span>
+<span id="L32"><span class="lineNum">      32</span> [<span class="tlaGBC" title="branch 0 was taken 2804 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 43 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2761 times"> + </span>]:<span class="tlaGNC">        2806 :     if (expr.descriptor.has_value() &amp;&amp; expr.descriptor-&gt;name == &quot;-collect&quot;) {</span></span>
 <span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">          43 :       sites.push_back(</span></span>
 <span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">          43 :           CollectSite{</span></span>
 <span id="L35"><span class="lineNum">      35</span> [<span class="tlaGBC" title="branch 0 was taken 25 times"> + </span><span class="tlaGBC" title="branch 1 was taken 18 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 18 times"> + </span>]:<span class="tlaGNC">          43 :               .name = expr.args.empty() || expr.args.front().empty() ? kDefaultCollection : expr.args.front(),</span></span>
