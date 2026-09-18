@@ -42,10 +42,10 @@ test::disabled_extra_flag_is_a_hard_error_when_used() {
 }
 
 test::disabled_extra_flag_is_listed_with_a_not_built_note() {
-  # The flag is NOT hidden or reported as unknown: --help lists it in its group with a
+  # The flag is NOT hidden or reported as unknown: --help=all lists it with a
   # note that its build extra is absent and what to rebuild with.
   local out
-  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --help 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --help=all 2>&1)"
   expect_matches "\-\-archive" "${out}" # listed, not hidden
   expect_output_contains "NOT built into this binary" "${out}"
   expect_output_contains "--//xff:xff_archive" "${out}" # names what to rebuild with
