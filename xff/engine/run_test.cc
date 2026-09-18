@@ -2632,6 +2632,54 @@ TEST_F(RunTest, MarkdownSummariesRenderOrdinaryAndPairedTables) {
   EXPECT_THAT(last_errors_, 0);
 }
 
+TEST_F(RunTest, BareSummaryDoesNotDuplicateComparisonShorthand) {
+  const auto records = RunArgvRecords(
+      {"--compare=summary", root_.string(), Path("sub"), "--summary-scope=compare", "--summary", "--format=md"});
+  EXPECT_THAT(last_errors_, 0);
+  EXPECT_THAT(records, Contains("\n## Comparison summary").Times(1));
+  EXPECT_THAT(records, Contains("\n## Summary").Times(1));
+  EXPECT_THAT(
+      RunArgvRecords(
+          {"--summary", "--compare=summary", root_.string(), Path("sub"), "--summary-scope=compare", "--format=md"}),
+      Eq(records));
+  const auto extension = RunArgvRecords(
+      {"--compare=summary", root_.string(), Path("sub"), "--summary-scope=compare", "--summary=ext", "--format=md"});
+  EXPECT_THAT(last_errors_, 0);
+  EXPECT_THAT(extension, Contains("\n## Comparison summary").Times(1));
+  EXPECT_THAT(extension, Contains("\n## Summary by extension").Times(1));
+  EXPECT_THAT(extension, Not(Contains("\n## Summary")));
+}
+
+TEST_F(RunTest, ExplicitComparisonAndOrdinarySummaryRequestsRemainRepeatable) {
+  const auto comparison = RunArgvRecords(
+      {"--compare=status", "--compare-select=none", root_.string(), Path("sub"), "--summary=compare",
+       "--summary=compare", "--format=md"});
+  EXPECT_THAT(last_errors_, 0);
+  EXPECT_THAT(comparison, Contains("\n## Comparison summary").Times(2));
+  const auto ordinary = RunArgvRecords({root_.string(), "--summary", "--summary", "--format=md"});
+  EXPECT_THAT(last_errors_, 0);
+  EXPECT_THAT(ordinary, Contains("\n## Summary").Times(2));
+  const auto grouped = RunArgvRecords(
+      {"--compare=summary", root_.string(), Path("sub"), "--summary=ext", "--summary=ext", "--format=md"});
+  EXPECT_THAT(last_errors_, 0);
+  EXPECT_THAT(grouped, Contains("\n## Comparison summary").Times(1));
+  EXPECT_THAT(grouped, Contains("\n## Summary by extension").Times(2));
+}
+
+TEST_F(RunTest, ComparisonSummaryResetClearsEarlierImplicitRequests) {
+  const auto once = RunArgvRecords({"--compare=summary", root_.string(), Path("sub"), "--format=md"});
+  EXPECT_THAT(once, Contains("\n## Comparison summary").Times(1));
+  EXPECT_THAT(
+      RunArgvRecords({"--compare=summary", "--summary=none", "--summary", root_.string(), Path("sub"), "--format=md"}),
+      Eq(once));
+  EXPECT_THAT(
+      RunArgvRecords(
+          {"--compare=summary", "--summary", "--summary=none", "--summary=compare", root_.string(), Path("sub"),
+           "--format=md"}),
+      Eq(once));
+  EXPECT_THAT(last_errors_, 0);
+}
+
 TEST_F(RunTest, MarkdownSummaryHeadingsDescribeEachGrouping) {
   constexpr std::string_view kSha256A = "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb";
   const std::vector<std::pair<std::string, std::string>> cases = {

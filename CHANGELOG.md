@@ -23,6 +23,9 @@
   keeps the first collected input; dry-run validates the same member plan.
   Named roots (`--root=NAME=PATH`) give inputs distinct archive directories.
 
+- Avoid duplicate comparison tables when combining `--compare=summary` with bare `--summary`,
+  while retaining scoped totals and explicitly requested grouping tables.
+
 - Correct the release archive description: lean and full executables have separate archives,
   each with its own matching debug symbols.
 

@@ -9,7 +9,7 @@
 - Preserve B05/B06 summary identities and the documented histogram schema.
 - Preserve non-UTF-8 values losslessly with tagged base64 objects; verify portable virtual-path fixtures.
 
-## In progress: Archive destination collisions (audit S02)
+## Completed: Archive destination collisions (audit S02, PR #865)
 
 - [x] Share a pure destination planner between the public API and direct writer.
 - [x] Reject normalized duplicates before output creation; retain input order for first-wins.
@@ -44,10 +44,26 @@ live in [`docs/history.md`](docs/history.md).
 - Reject unsupported histogram formats before traversal or actions, including comparison mode.
 - Cover repeated histograms, empty results, header suppression, and composition with summaries.
 
+## Completed: Comparison summary request deduplication (audit S03)
+
+- Preserve scoped totals while coalescing the comparison table requested by the shorthand and bare summary.
+- Test both argument orders and retain the extension-summary composition regression.
+
 ## Completed: Release archive documentation (audit B08)
 
 - Describe the separate lean/full archives and their matching debug symbols.
 - Link release installation instructions and clarify size optimization plus ThinLTO.
+
+## Planned: Revisit duplicate destination detection with MBO's string interner
+
+- Once MBO's string interner is available, evaluate sharing normalized pack/output destination
+  paths between planned entries and the collision index instead of storing separate string copies.
+- Preserve exact-duplicate and file/directory ancestor/descendant conflict detection, normalization,
+  first-wins ordering, source-path diagnostics, and validation before opening output. Interned IDs
+  alone do not replace the ordered or prefix-aware index needed for hierarchical conflicts.
+- Verify string-view lifetime guarantees and benchmark memory and runtime on large, mostly unique
+  path sets, deeply nested paths, and duplicate-heavy inputs before choosing an implementation.
+- Reuse the archive collision regression tests from PR #865 to verify unchanged behavior.
 
 ## Utility and usability audit
 
