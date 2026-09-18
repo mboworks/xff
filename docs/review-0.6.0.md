@@ -127,7 +127,7 @@ for standalone comparison JSONL. Add tests that demultiplex records without inte
 
 ### B06 - P1: A real group named `total` collides with the total row
 
-- [ ] Distinguish aggregate-total rows structurally from ordinary group keys.
+- [x] Distinguish aggregate-total rows structurally from ordinary group keys.
 
 Create a file named `total`, then run:
 

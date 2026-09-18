@@ -3184,6 +3184,19 @@ std::string SummaryIdentityJson(const SummarySpec& summary) {
       summary.mode == SummaryMode::kTemplate ? absl::StrCat(",\"template\":", JsonQuote(summary.key_template)) : "");
 }
 
+std::string_view SummaryTotalJson(bool is_total) {
+  return is_total ? R"(,"is_total":true)" : R"(,"is_total":false)";
+}
+
+// Keep the aggregate label distinct without reserving a data key. Quote leading quotes as well
+// so a literal quoted label cannot collide with the display spelling of an ambiguous key.
+std::string SummaryDisplayKey(std::string_view key, bool is_total) {
+  if (!is_total && (key.empty() || key == "total" || key.starts_with('"'))) {
+    return JsonQuote(key);
+  }
+  return std::string(key);
+}
+
 void EmitSummaryRows(
     const SummarySpec& summary,
     std::string_view scope,
@@ -3200,12 +3213,13 @@ void EmitSummaryRows(
   }
   const auto& total = rows.back();
   if (output_format == render::Format::kJsonl) {
-    for (const auto& row : rows) {
+    for (std::size_t index = 0; index < rows.size(); ++index) {
+      const auto& row = rows.at(index);
       emit(
           absl::StrCat(
               "{", SummaryIdentityJson(summary), ",\"scope\":", JsonQuote(scope.empty() ? "all" : scope),
               ",\"root\":", JsonQuote(root), ",\"group\":", JsonQuote(row.key), ",",
-              SummaryJson(row, total, precision, has_size), "}\n"));
+              SummaryJson(row, total, precision, has_size), SummaryTotalJson(index + 1 == rows.size()), "}\n"));
     }
     return;
   }
@@ -3213,9 +3227,10 @@ void EmitSummaryRows(
       {format::Align::kLeft, format::Align::kRight, format::Align::kRight, format::Align::kRight,
        format::Align::kRight},
       {"Group", "Count", "% count", "Size", "% size"}, output_format, with_header);
-  for (const auto& row : rows) {
+  for (std::size_t index = 0; index < rows.size(); ++index) {
+    const auto& row = rows.at(index);
     auto cells = SummaryColumns(row, total, human, precision, has_size);
-    cells.insert(cells.begin(), row.key);
+    cells.insert(cells.begin(), SummaryDisplayKey(row.key, index + 1 == rows.size()));
     table.AddRow(std::move(cells));
   }
   emit(table.Render());
@@ -3353,7 +3368,7 @@ void EmitComparisonScopeSummary(
     for (std::size_t index = 0; index < rows.size(); ++index) {
       const auto& key = rows.at(index).key;
       const bool total_row = index + 1 == rows.size();
-      std::vector<std::string> cells{key};
+      std::vector<std::string> cells{SummaryDisplayKey(key, total_row)};
       std::string object = absl::StrCat(
           "{", SummaryIdentityJson(summaries.at(sink)), ",\"scope\":", JsonQuote(scope),
           ",\"left_root\":", JsonQuote(command.roots.at(0)), ",\"right_root\":", JsonQuote(command.roots.at(1)),
@@ -3371,7 +3386,7 @@ void EmitComparisonScopeSummary(
         absl::StrAppend(
             &object, present ? absl::StrCat("{", SummaryJson(row, denominator, precision, has_size), "}") : "null");
       }
-      absl::StrAppend(&object, "}\n");
+      absl::StrAppend(&object, SummaryTotalJson(total_row), "}\n");
       if (json) {
         emit(object);
       } else {
@@ -3850,13 +3865,13 @@ void EmitTreeCompareSummary(
          format::Align::kRight, format::Align::kRight},
         {"Type", "Status", "Results", "% results", "Combined size", "% size"}, output_format,
         !HasGlobal(globals, "--no-header"));
-    const auto add_row = [&](std::string_view type, const SummaryRow& row) {
+    const auto add_row = [&](std::string_view type, const SummaryRow& row, bool is_total) {
       if (output_format == render::Format::kJsonl) {
         emit(
             absl::StrCat(
                 "{", SummaryIdentityJson(summary), R"(,"scope":"compare","left_root":)", JsonQuote(command.roots.at(0)),
-                ",\"right_root\":", JsonQuote(command.roots.at(1)), ",\"type\":", JsonQuote(type),
-                ",\"group\":", JsonQuote(row.key), ",", SummaryJson(row, counts.total, precision), "}\n"));
+                ",\"right_root\":", JsonQuote(command.roots.at(1)), ",\"type\":", JsonQuote(type), ",\"group\":",
+                JsonQuote(row.key), ",", SummaryJson(row, counts.total, precision), SummaryTotalJson(is_total), "}\n"));
       } else {
         auto cells = SummaryColumns(row, counts.total, human, precision);
         cells.insert(cells.begin(), row.key);
@@ -3868,10 +3883,10 @@ void EmitTreeCompareSummary(
       for (std::size_t i = 0; i < rows.size(); ++i) {
         SummaryRow row = rows.at(i);
         row.key = kComparisonCategories.at(i);
-        add_row(type, row);
+        add_row(type, row, false);
       }
     }
-    add_row("all", counts.total);
+    add_row("all", counts.total, true);
     if (output_format != render::Format::kJsonl) {
       EmitSummaryHeading(summary.mode, globals, emit);
       emit(table.Render());

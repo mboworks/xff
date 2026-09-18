@@ -3,6 +3,9 @@
 
 # 0.7.0
 
+- Distinguish aggregate summary rows with `is_total` in JSONL and quote ambiguous data labels
+  in text tables, preserving real groups named `total`.
+
 - Identify every JSONL summary row by request, grouping, and scope, retaining template text
   and comparison roots so repeated and mixed summaries can be separated reliably.
 

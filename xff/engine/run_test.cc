@@ -246,6 +246,86 @@ TEST_F(RunTest, SummaryJsonIndicesFollowRequestsRatherThanEmissionOrder) {
   EXPECT_THAT(last.at("request").get<std::size_t>(), Eq(0));
 }
 
+TEST_F(RunTest, SummaryTotalMarkerDoesNotReserveGroupNames) {
+  ASSERT_THAT(fs_.WriteContent(Path("total"), "abc"), IsOk());
+  ASSERT_THAT(fs_.WriteContent(Path("(none)"), "x"), IsOk());
+  const auto records =
+      RunArgvRecords({root_.string(), "-type", "f", "--summary={name}", "--summary={def.MISSING}", "--format=jsonl"});
+  EXPECT_THAT(last_errors_, Eq(0));
+  std::size_t totals = 0;
+  bool literal_total = false;
+  bool literal_none = false;
+  bool empty_key = false;
+  for (const auto& record : records) {
+    const auto row = nlohmann::json::parse(record);
+    if (row.at("is_total").get<bool>()) {
+      ++totals;
+      EXPECT_THAT(row.at("group").get<std::string>(), Eq("total"));
+      EXPECT_THAT(row.at("count").get<std::size_t>(), Eq(5));
+    } else {
+      const auto key = row.at("group").get<std::string>();
+      literal_total |= key == "total";
+      literal_none |= key == "(none)";
+      empty_key |= key.empty();
+    }
+  }
+  EXPECT_THAT(totals, Eq(2));
+  EXPECT_THAT(literal_total, IsTrue());
+  EXPECT_THAT(literal_none, IsTrue());
+  EXPECT_THAT(empty_key, IsTrue());
+}
+
+TEST_F(RunTest, ComparisonScopeTotalMarkerDistinguishesLiteralTotal) {
+  ASSERT_THAT(fs_.WriteContent(Path("total"), "abc"), IsOk());
+  const auto records = RunArgvRecords(
+      {"--compare=status", "--compare-select=none", root_.string(), Path("sub"), "-type", "f", "--summary={name}",
+       "--format=jsonl"});
+  EXPECT_THAT(last_errors_, Eq(0));
+  std::size_t literal_rows = 0;
+  std::size_t total_rows = 0;
+  for (const auto& record : records) {
+    const auto row = nlohmann::json::parse(record);
+    if (row.at("group").get<std::string>() == "total") {
+      if (row.at("is_total").get<bool>()) {
+        ++total_rows;
+      } else {
+        ++literal_rows;
+      }
+    }
+  }
+  EXPECT_THAT(literal_rows, Eq(1));
+  EXPECT_THAT(total_rows, Eq(1));
+}
+
+TEST_F(RunTest, SummaryDisplayQuotesAmbiguousDataLabels) {
+  ASSERT_THAT(fs_.WriteContent(Path("total"), "abc"), IsOk());
+  ASSERT_THAT(fs_.WriteContent(Path("\"total\""), "x"), IsOk());
+  const auto formats = std::to_array<std::string>({"--format=plain", "--format=md"});
+  for (const auto& format : formats) {
+    const auto records =
+        RunArgvRecords({root_.string(), "-name", "*total*", "--summary={name}", "--summary={def.MISSING}", format});
+    EXPECT_THAT(last_errors_, Eq(0));
+    EXPECT_THAT(records, Contains(HasSubstr("\"total\"")));
+    EXPECT_THAT(records, Contains(HasSubstr("\"\"")));
+    EXPECT_THAT(records, Contains(HasSubstr(R"json("\"total\"")json")));
+  }
+}
+
+TEST_F(RunTest, ComparisonScopeDisplayQuotesAmbiguousDataLabels) {
+  ASSERT_THAT(fs_.WriteContent(Path("total"), "abc"), IsOk());
+  ASSERT_THAT(fs_.WriteContent(Path("\"total\""), "x"), IsOk());
+  const auto formats = std::to_array<std::string>({"--format=plain", "--format=md"});
+  for (const auto& format : formats) {
+    const auto records = RunArgvRecords(
+        {"--compare=status", "--compare-select=none", root_.string(), Path("sub"), "-name", "*total*",
+         "--summary={name}", "--summary={def.MISSING}", format});
+    EXPECT_THAT(last_errors_, Eq(0));
+    EXPECT_THAT(records, Contains(HasSubstr("\"total\"")));
+    EXPECT_THAT(records, Contains(HasSubstr("\"\"")));
+    EXPECT_THAT(records, Contains(HasSubstr(R"json("\"total\"")json")));
+  }
+}
+
 TEST_F(RunTest, NoExpressionPrintsEverything) {
   EXPECT_THAT(
       RunExpr({}), UnorderedElementsAre(root_.string(), Path("a.txt"), Path("b.md"), Path("sub"), Path("sub/c.txt")));
@@ -1985,7 +2065,7 @@ TEST_F(RunTest, SummaryOverallReducesMatchesToACountAndSize) {
   EXPECT_THAT(
       RunArgvRecords({"--summary", "--format=jsonl", root_.string(), "-name", "*.txt"}),
       ElementsAre(
-          R"({"record":"summary","request":0,"summary":"overall","scope":"all","root":"","group":"total","count":2,"count_percent":100.00,"bytes":2,"size_percent":100.00})"));
+          R"({"record":"summary","request":0,"summary":"overall","scope":"all","root":"","group":"total","count":2,"count_percent":100.00,"bytes":2,"size_percent":100.00,"is_total":true})"));
 }
 
 TEST_F(RunTest, SummaryByTypeGroupsThenTotals) {
@@ -1993,8 +2073,8 @@ TEST_F(RunTest, SummaryByTypeGroupsThenTotals) {
   EXPECT_THAT(
       RunArgvRecords({"--summary=type", "--format=jsonl", root_.string(), "-type", "f"}),
       ElementsAre(
-          R"({"record":"summary","request":0,"summary":"type","scope":"all","root":"","group":"file","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})",
-          R"({"record":"summary","request":0,"summary":"type","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})"));
+          R"({"record":"summary","request":0,"summary":"type","scope":"all","root":"","group":"file","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"type","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00,"is_total":true})"));
 }
 
 TEST_F(RunTest, SummaryByExtensionGroupsSortedThenTotals) {
@@ -2002,9 +2082,9 @@ TEST_F(RunTest, SummaryByExtensionGroupsSortedThenTotals) {
   EXPECT_THAT(
       RunArgvRecords({"--summary=ext", "--format=jsonl", root_.string(), "-type", "f"}),
       ElementsAre(
-          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"md","count":1,"count_percent":33.33,"bytes":1,"size_percent":33.33})",
-          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"txt","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67})",
-          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})"));
+          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"md","count":1,"count_percent":33.33,"bytes":1,"size_percent":33.33,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"txt","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00,"is_total":true})"));
 }
 
 TEST_F(RunTest, SummaryByLanguageGroupsThenTotals) {
@@ -2013,9 +2093,9 @@ TEST_F(RunTest, SummaryByLanguageGroupsThenTotals) {
   EXPECT_THAT(
       RunArgvRecords({"--summary=lang", "--format=jsonl", root_.string(), "-type", "f"}),
       ElementsAre(
-          R"j({"record":"summary","request":0,"summary":"lang","scope":"all","root":"","group":"(none)","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67})j",
-          R"j({"record":"summary","request":0,"summary":"lang","scope":"all","root":"","group":"Markdown","count":1,"count_percent":33.33,"bytes":1,"size_percent":33.33})j",
-          R"j({"record":"summary","request":0,"summary":"lang","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})j"));
+          R"j({"record":"summary","request":0,"summary":"lang","scope":"all","root":"","group":"(none)","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67,"is_total":false})j",
+          R"j({"record":"summary","request":0,"summary":"lang","scope":"all","root":"","group":"Markdown","count":1,"count_percent":33.33,"bytes":1,"size_percent":33.33,"is_total":false})j",
+          R"j({"record":"summary","request":0,"summary":"lang","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00,"is_total":true})j"));
 }
 
 TEST_F(RunTest, SummaryHashVerificationCountsPassedAndFailedChecksInOneWalk) {
@@ -2027,11 +2107,11 @@ TEST_F(RunTest, SummaryHashVerificationCountsPassedAndFailedChecksInOneWalk) {
           {"--summary=type", "--summary=hash-verification", "--format=jsonl", root_.string(), "-type", "f", "-hasheq",
            std::string(kSha256A)}),
       ElementsAre(
-          R"({"record":"summary","request":0,"summary":"type","scope":"all","root":"","group":"file","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00})",
-          R"({"record":"summary","request":0,"summary":"type","scope":"all","root":"","group":"total","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00})",
-          R"({"record":"summary","request":1,"summary":"hash-verification","scope":"all","root":"","group":"failed","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67})",
-          R"({"record":"summary","request":1,"summary":"hash-verification","scope":"all","root":"","group":"verified","count":1,"count_percent":33.33,"bytes":1,"size_percent":33.33})",
-          R"({"record":"summary","request":1,"summary":"hash-verification","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})"));
+          R"({"record":"summary","request":0,"summary":"type","scope":"all","root":"","group":"file","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"type","scope":"all","root":"","group":"total","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00,"is_total":true})",
+          R"({"record":"summary","request":1,"summary":"hash-verification","scope":"all","root":"","group":"failed","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67,"is_total":false})",
+          R"({"record":"summary","request":1,"summary":"hash-verification","scope":"all","root":"","group":"verified","count":1,"count_percent":33.33,"bytes":1,"size_percent":33.33,"is_total":false})",
+          R"({"record":"summary","request":1,"summary":"hash-verification","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00,"is_total":true})"));
   EXPECT_THAT(last_errors_, 0);
 }
 
@@ -2042,7 +2122,7 @@ TEST_F(RunTest, SummaryHashVerificationDoesNotCountChecksSkippedByShortCircuitin
           {"--summary=hash-verification", "--format=jsonl", root_.string(), "-false", "-a", "-hasheq",
            std::string(kSha256A)}),
       ElementsAre(
-          R"({"record":"summary","request":0,"summary":"hash-verification","scope":"all","root":"","group":"total","count":0,"count_percent":0.00,"bytes":0,"size_percent":0.00})"));
+          R"({"record":"summary","request":0,"summary":"hash-verification","scope":"all","root":"","group":"total","count":0,"count_percent":0.00,"bytes":0,"size_percent":0.00,"is_total":true})"));
   EXPECT_THAT(last_errors_, 0);
 }
 
@@ -2062,8 +2142,8 @@ TEST_F(RunTest, SummaryHashVerificationRequiresExactlyOneHashCheck) {
           {"--summary=hash-verification", "--format=jsonl", root_.string(), "-name", "a.txt", "!", "-hasheq",
            "deadbeef"}),
       ElementsAre(
-          R"({"record":"summary","request":0,"summary":"hash-verification","scope":"all","root":"","group":"failed","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00})",
-          R"({"record":"summary","request":0,"summary":"hash-verification","scope":"all","root":"","group":"total","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00})"));
+          R"({"record":"summary","request":0,"summary":"hash-verification","scope":"all","root":"","group":"failed","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"hash-verification","scope":"all","root":"","group":"total","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00,"is_total":true})"));
   EXPECT_THAT(last_errors_, 0);
 }
 
@@ -2073,8 +2153,8 @@ TEST_F(RunTest, SummaryHashVerificationClassifiesMissingExpectationsAndNonRegula
           {"--summary=hash-verification", "--format=jsonl", root_.string(), "-name", "a.txt", "-hasheq",
            "{def.MISSING}"}),
       ElementsAre(
-          R"({"record":"summary","request":0,"summary":"hash-verification","scope":"all","root":"","group":"failed","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00})",
-          R"({"record":"summary","request":0,"summary":"hash-verification","scope":"all","root":"","group":"total","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00})"));
+          R"({"record":"summary","request":0,"summary":"hash-verification","scope":"all","root":"","group":"failed","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"hash-verification","scope":"all","root":"","group":"total","count":1,"count_percent":100.00,"bytes":1,"size_percent":100.00,"is_total":true})"));
   EXPECT_THAT(last_errors_, 0);
   EXPECT_THAT(
       RunArgvRecords(
@@ -2094,9 +2174,9 @@ TEST_F(RunTest, SummaryHashVerificationVerdictSurvivesDeferredReplayWithoutASeco
           {"--summary=hash-verification", "--format=jsonl", root_.string(), "-name", "verify-*", "-a", "(", "-hasheq",
            std::string(kSha256A), ",", "-shard-status", "complete", ")"}),
       ElementsAre(
-          R"({"record":"summary","request":0,"summary":"hash-verification","scope":"all","root":"","group":"failed","count":1,"count_percent":50.00,"bytes":1,"size_percent":50.00})",
-          R"({"record":"summary","request":0,"summary":"hash-verification","scope":"all","root":"","group":"verified","count":1,"count_percent":50.00,"bytes":1,"size_percent":50.00})",
-          R"({"record":"summary","request":0,"summary":"hash-verification","scope":"all","root":"","group":"total","count":2,"count_percent":100.00,"bytes":2,"size_percent":100.00})"));
+          R"({"record":"summary","request":0,"summary":"hash-verification","scope":"all","root":"","group":"failed","count":1,"count_percent":50.00,"bytes":1,"size_percent":50.00,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"hash-verification","scope":"all","root":"","group":"verified","count":1,"count_percent":50.00,"bytes":1,"size_percent":50.00,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"hash-verification","scope":"all","root":"","group":"total","count":2,"count_percent":100.00,"bytes":2,"size_percent":100.00,"is_total":true})"));
   EXPECT_THAT(last_errors_, 0);
 }
 
@@ -2106,8 +2186,8 @@ TEST_F(RunTest, SummaryTopKeepsTheLargestGroupsBySize) {
   EXPECT_THAT(
       RunArgvRecords({"--summary=ext", "--top=1", "--format=jsonl", root_.string(), "-type", "f"}),
       ElementsAre(
-          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"txt","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67})",
-          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})"));
+          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"txt","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00,"is_total":true})"));
 }
 
 TEST_F(RunTest, SummaryControlsRejectInvalidNumbersBeforeActions) {
@@ -2204,9 +2284,9 @@ TEST_F(RunTest, SummaryTopBreaksEqualSizeTiesByCountThenName) {
   EXPECT_THAT(
       RunArgvRecords({"--summary=ext", "--top=2", "--format=jsonl", root_.string(), "-type", "f"}),
       ElementsAre(
-          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"txt","count":2,"count_percent":50.00,"bytes":0,"size_percent":0.00})",
-          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"h","count":1,"count_percent":25.00,"bytes":0,"size_percent":0.00})",
-          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"total","count":4,"count_percent":100.00,"bytes":0,"size_percent":0.00})"));
+          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"txt","count":2,"count_percent":50.00,"bytes":0,"size_percent":0.00,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"h","count":1,"count_percent":25.00,"bytes":0,"size_percent":0.00,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"total","count":4,"count_percent":100.00,"bytes":0,"size_percent":0.00,"is_total":true})"));
 }
 
 TEST_F(RunTest, ComparisonScopesSelectOrderedColumnGroups) {
@@ -2257,23 +2337,23 @@ TEST_F(RunTest, ComparisonSummaryAccountsForBothSidesAndMissingEntries) {
       Contains(
           absl::StrCat(
               comparison_prefix,
-              R"("type":"file","group":"different","count":1,"count_percent":16.67,"bytes":3,"size_percent":30.00})")));
+              R"("type":"file","group":"different","count":1,"count_percent":16.67,"bytes":3,"size_percent":30.00,"is_total":false})")));
   EXPECT_THAT(
       records,
       Contains(
           absl::StrCat(
               comparison_prefix,
-              R"("type":"file","group":"identical","count":1,"count_percent":16.67,"bytes":2,"size_percent":20.00})")));
+              R"("type":"file","group":"identical","count":1,"count_percent":16.67,"bytes":2,"size_percent":20.00,"is_total":false})")));
   EXPECT_THAT(
       records,
       Contains(
           absl::StrCat(
               comparison_prefix,
-              R"("type":"all","group":"total","count":6,"count_percent":100.00,"bytes":10,"size_percent":100.00})")));
+              R"("type":"all","group":"total","count":6,"count_percent":100.00,"bytes":10,"size_percent":100.00,"is_total":true})")));
   EXPECT_THAT(
       records,
       Contains(
-          R"({"record":"summary","request":1,"summary":"overall","scope":"all","root":"","group":"total","count":8,"count_percent":100.00,"bytes":10,"size_percent":100.00})"));
+          R"({"record":"summary","request":1,"summary":"overall","scope":"all","root":"","group":"total","count":8,"count_percent":100.00,"bytes":10,"size_percent":100.00,"is_total":true})"));
   EXPECT_THAT(
       records, Contains(AllOf(
                    HasSubstr(R"("scope":"left-total,right-total")"),
@@ -2437,8 +2517,8 @@ TEST_F(RunTest, SummaryRetainsZeroByteDimensionForEmptyFiles) {
   EXPECT_THAT(
       RunArgvRecords({"--summary=ext", "--format=jsonl", root_.string(), "-name", "*.log"}),
       ElementsAre(
-          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"log","count":2,"count_percent":100.00,"bytes":0,"size_percent":0.00})",
-          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"total","count":2,"count_percent":100.00,"bytes":0,"size_percent":0.00})"));
+          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"log","count":2,"count_percent":100.00,"bytes":0,"size_percent":0.00,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"total","count":2,"count_percent":100.00,"bytes":0,"size_percent":0.00,"is_total":true})"));
   // Unstyled output retains a numeric size column without a human-readable unit.
   EXPECT_THAT(RunArgvRecords({"--summary=ext", root_.string(), "-name", "*.log"}), Not(Contains(HasSubstr(" B"))));
 }
@@ -2524,8 +2604,8 @@ TEST_F(RunTest, HistogramCombinesWithSummaryEmittingBothBlocks) {
   EXPECT_THAT(
       RunArgvRecords({"--summary=type", "--histogram=ext", "--format=jsonl", root_.string(), "-type", "f"}),
       ElementsAre(
-          R"({"record":"summary","request":0,"summary":"type","scope":"all","root":"","group":"file","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})",
-          R"({"record":"summary","request":0,"summary":"type","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})",
+          R"({"record":"summary","request":0,"summary":"type","scope":"all","root":"","group":"file","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"type","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00,"is_total":true})",
           R"({"histogram":"ext","bucket":"txt","value":2})", R"({"histogram":"ext","bucket":"md","value":1})"));
 }
 
@@ -2626,9 +2706,9 @@ TEST_F(RunTest, SummaryByMimeGroupsByMediaType) {
   EXPECT_THAT(
       RunArgvRecords({"--summary=mime", "--format=jsonl", root_.string(), "-type", "f"}),
       ElementsAre(
-          R"({"record":"summary","request":0,"summary":"mime","scope":"all","root":"","group":"text/markdown","count":1,"count_percent":33.33,"bytes":1,"size_percent":33.33})",
-          R"({"record":"summary","request":0,"summary":"mime","scope":"all","root":"","group":"text/plain","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67})",
-          R"({"record":"summary","request":0,"summary":"mime","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})"));
+          R"({"record":"summary","request":0,"summary":"mime","scope":"all","root":"","group":"text/markdown","count":1,"count_percent":33.33,"bytes":1,"size_percent":33.33,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"mime","scope":"all","root":"","group":"text/plain","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"mime","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00,"is_total":true})"));
 }
 
 TEST_F(RunTest, HistogramByMimeCountsPerMediaType) {
@@ -2656,8 +2736,8 @@ TEST_F(RunTest, SummaryOwnerIsAnAliasOfUser) {
       RunArgvRecords({"--summary=owner", "--format=jsonl", root_.string(), "-type", "f"}),
       ElementsAre(
           MatchesRegex(
-              R"(\{"record":"summary","request":0,"summary":"user","scope":"all","root":"","group":".+","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00\})"),
-          R"({"record":"summary","request":0,"summary":"user","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00})"));
+              R"(\{"record":"summary","request":0,"summary":"user","scope":"all","root":"","group":".+","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00,"is_total":false\})"),
+          R"({"record":"summary","request":0,"summary":"user","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00,"is_total":true})"));
 }
 
 TEST_F(RunTest, HistogramByGroupGroupsUnderTheOwningGroup) {

@@ -209,3 +209,16 @@ objects and `null` for an absent category/group combination.
 
 These identity fields describe summary records only. Explicit printing actions and per-path
 comparison output retain the format restrictions described above.
+
+## Aggregate identity
+
+Every summary JSONL row has an `is_total` boolean. It is `true` only for the aggregate row,
+including comparison-result and comparison-scope totals. All data rows have `is_total: false`.
+A data key named `total` remains `group: "total"`; consumers must use the marker rather than
+interpreting the key or assuming a particular row position. Empty and `(none)` data keys are
+likewise preserved.
+
+Plain and Markdown tables retain the aggregate label `total`. A data label equal to `total`,
+an empty label, or a label beginning with a double quote is shown as a JSON-quoted string.
+Quoting leading quotes prevents a real filename containing quotes from imitating an escaped label.
+This affects presentation only: JSONL group values keep their original contents.
