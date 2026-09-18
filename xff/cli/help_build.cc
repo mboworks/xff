@@ -833,6 +833,21 @@ Section ArchiveSection(bool in_full) {
       "when the walk finished, and a member of another container is refused - harvesting files out of "
       "one archive to re-pack them into another is a separate feature, which is also what `-Z++ -z-` "
       "is reserved for."));
+  creating.children.push_back(ProseOf(
+      "Different roots can produce the same archive member name. By default this is an error before "
+      "output creation, with both source paths reported. A file or symlink destination also conflicts "
+      "with entries below that destination; a directory and its children are compatible. "
+      "`--pack-duplicates=first` explicitly keeps "
+      "the first collected entry and skips later copies; `--dry-run` checks the same destinations. "
+      "Names are compared after removing redundant separators and `.` components; absolute names "
+      "and `..` components are rejected."));
+  creating.children.push_back(ProseOf(
+      "Use `--root=NAME=PATH` on the command line to give each input its own archive directory. "
+      "Like positional roots, named roots cannot be supplied by an INI file. For example, "
+      "`xff --root=left=one --root=right=two -type f --pack=both.tar` keeps "
+      "`one/same.txt` as `left/same.txt` and `two/same.txt` as `right/same.txt`. "
+      "A named file root becomes `NAME/basename`; a named empty directory retains its anchor. "
+      "Names must be distinct even when `--pack-duplicates=first` is selected."));
   // Same rule as the option table below: the formats come from the LINKED writer, so a format added
   // to the extra cannot leave this list behind.
   const std::vector<std::string> pack_formats = archive::ContainerPackFormats();

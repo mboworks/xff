@@ -175,6 +175,10 @@ constexpr std::array kShardsShowValues = std::to_array<ValueDoc>({
     {.value = "wildcard", .meaning = "the masked-index name, e.g. `arc.???` (or `f-` idx `-of-003`)"},
     {.value = "count", .meaning = "the wildcard name plus the shard count, e.g. `arc.??? (3 shards)`"},
 });
+constexpr std::array kPackDuplicateValues = std::to_array<ValueDoc>({
+    {.value = "error", .meaning = "reject duplicate normalized member destinations (the default)"},
+    {.value = "first", .meaning = "keep the first input for each destination and skip later duplicates"},
+});
 constexpr std::array kShardsDedupValues = std::to_array<ValueDoc>({
     {.value = "first", .meaning = "keep the lexicographically-first name among same-index copies (the default)"},
     {.value = "mtime", .meaning = "keep the newest by modification time (ties break on name)"},
@@ -1323,6 +1327,25 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .value_check = GlobalFlag::ValueCheck::kBool,
     },
     {
+        .name = "--root",
+        .display = "--root=NAME=PATH",
+        .group = "pack",
+        .header = "Archive creation",
+        .summary = "add a named search root; use NAME as its archive destination directory",
+        .details = "Command-line only, like positional root operands. Repeatable. Each name must be a distinct single "
+                   "directory component; `.` and `..`, "
+                   "path separators, and control characters are rejected. A directory root contributes "
+                   "`NAME/relative/path`; a file root contributes `NAME/basename`. The same physical path may "
+                   "have different names. Named and positional roots retain their argument order, except "
+                   "when `--sort` explicitly sorts roots. Names affect archive destinations; ordinary path "
+                   "output still uses the input paths. Duplicate root names are errors even with "
+                   "`--pack-duplicates=first`.",
+        .affects = "--pack,--pack-duplicates,--sort",
+        .topic = "archive",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
+        .cli_only = true,
+    },
+    {
         .name = "--pack",
         .display = "--pack=FILE",
         .group = "pack",
@@ -1338,7 +1361,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "walk, since finding out afterwards would waste the traversal. "
                    "Each member is stored under the entry's path relative to the search root it was found "
                    "under, in the order the walk produced it - so `--sort` decides the order inside the "
-                   "archive, and nothing is renamed or re-rooted behind your back. "
+                   "archive. Member destinations are normalized; `--pack-duplicates` controls collisions. "
                    "Like `--summary` it is a sink: it replaces the per-match listing, while explicit actions "
                    "still run, so add `-print` to watch what goes in. The archive is written after the walk "
                    "and renamed into place only when complete, so an interrupted run leaves no half archive "
@@ -1349,6 +1372,23 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "--sort",
         .topic = "archive",
         .extra = "archive",
+    },
+    {
+        .name = "--pack-duplicates",
+        .display = "--pack-duplicates=error|first",
+        .group = "pack",
+        .header = "Archive creation",
+        .summary = "reject duplicate archive destinations or keep the first input",
+        .details = "Defaults to `error`. Member destinations are normalized before comparison: leading and "
+                   "interior `./`, repeated separators, and trailing separators do not distinguish names. "
+                   "`first` keeps the earliest collected input and skips later copies; it does not rename them. "
+                   "Duplicate validation runs before archive output creation and also applies to `--dry-run`. "
+                   "An error reports both source paths and preserves any existing destination archive.",
+        .values = kPackDuplicateValues,
+        .affects = "--pack",
+        .topic = "archive",
+        .extra = "archive",
+        .value_check = GlobalFlag::ValueCheck::kEnum,
     },
     {
         .name = "--pack-option",

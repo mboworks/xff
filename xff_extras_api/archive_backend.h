@@ -158,7 +158,20 @@ struct ContainerRemoverRegistrar {
 struct PackFile {
   std::string source;
   std::string name;
+  // Directories may contain other destinations; files and symlinks may not.
+  bool is_directory = false;
 };
+
+// Duplicate archive destinations are rejected unless the caller explicitly selects first-wins.
+enum class PackDuplicatePolicy { kError, kFirst };
+
+// Canonicalizes relative member destinations and selects entries in input order. Duplicate errors
+// identify both source paths, including when a file or symlink blocks a child destination.
+// Set is_directory for directory entries. Absolute paths, parent traversal, and embedded NULs are rejected.
+// This pure planning step runs before creating any output; it also serves dry-run callers.
+[[nodiscard]] absl::StatusOr<std::vector<PackFile>> PlanPackFiles(
+    const std::vector<PackFile>& files,
+    PackDuplicatePolicy duplicates = PackDuplicatePolicy::kError);
 
 // One writer setting in XFF's vocabulary, which the backend TRANSLATES to whatever its library calls
 // the same thing. The indirection is the point: libarchive's own option names differ between writers
@@ -173,6 +186,7 @@ struct PackOption {
 // defaults; the last value given for a name wins.
 struct PackOptions {
   std::vector<PackOption> options;
+  PackDuplicatePolicy duplicates = PackDuplicatePolicy::kError;
   vfs::MutationPolicy mutations;
 };
 

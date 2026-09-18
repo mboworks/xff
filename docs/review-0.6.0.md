@@ -16,7 +16,13 @@ Existing tests are useful evidence of intended coverage, not a substitute for th
 
 Priority: **P1** = incorrect results, misleading automation, or an ineffective requested constraint;
 **P2** = important workflow or clarity improvement; **P3** = polish. An unchecked item is proposed
-work, not an authorization to settle a design decision without discussion. Merged resolutions are tracked by the checkboxes below. B01 is proposed in PR #854; B08 was merged in PR #855. The other claims remain separate changes.
+work, not an authorization to settle a design decision without discussion. The top-level claim
+checkboxes track merged resolutions; local implementation and validation do not by themselves
+close a claim. Keep detailed preparation checklists distinct from integration status.
+
+B01–B09 have merged resolutions (B07 was a corrected diagnosis with regression coverage).
+S01 merged in PR #864. The remaining suggestions and subsequently discovered defects
+remain separate claims; none is complete merely because another claim's tests cover part of it.
 
 ## Overall assessment
 
@@ -35,7 +41,7 @@ improve their implementation and discoverability rather than replacing them with
 
 ### B01 - P1: Capture use is rejected in valid field consumers
 
-- [ ] Fix capture-reference discovery across all actual field-consuming expression nodes.
+- [x] Fix capture-reference discovery across all actual field-consuming expression nodes.
 
 Reproduction with any ordinary `FILE`:
 
@@ -54,9 +60,11 @@ and other supported consumers. Derive references from parsed templates where pos
 literal braces must not falsely count as use. Retain a real unused-capture diagnostic.
 **Start:** `xff/engine/run.cc`, `xff/engine/run_test.cc`, CLI capture/format integration tests.
 
+Merged resolution: [PR #854](https://github.com/mboworks/xff/pull/854).
+
 ### B02 - P1: Invalid buffer limits silently leave collections unbounded
 
-- [ ] Reject malformed `--buffer` values before traversal or actions.
+- [x] Reject malformed `--buffer` values before traversal or actions.
 
 ```sh
 xff DIR -type f -collect --summary --buffer=garbage
@@ -72,9 +80,11 @@ negative, overflowing, and unsupported-unit values fail on CLI and through confi
 No expression action runs before that failure. Test both collections and tabular buffering.
 **Start:** `xff/engine/run.cc`, shared option-value validation, collection/CLI tests.
 
+Merged resolution: [PR #857](https://github.com/mboworks/xff/pull/857).
+
 ### B03 - P2: Histogram width silently accepts invalid values
 
-- [ ] Validate `--histogram-width` with the same discipline as summary precision.
+- [x] Validate `--histogram-width` with the same discipline as summary precision.
 
 ```sh
 xff DIR --histogram=ext --histogram-width=garbage
@@ -88,9 +98,11 @@ inconsistent with other numeric output controls.
 it. Test invalid and overflowing values and repeated occurrences in CLI and INI files.
 **Start:** `ResolveHistogramWidth` and histogram CLI tests.
 
+Merged resolution: [PR #859](https://github.com/mboworks/xff/pull/859).
+
 ### B04 - P2: Histogram exports ignore unsupported format requests
 
-- [ ] Define and enforce a histogram format-support matrix.
+- [x] Define and enforce a histogram format-support matrix.
 
 ```sh
 xff DIR --histogram=ext --format=csv
@@ -106,9 +118,11 @@ whether Markdown histograms should be tables or explicitly fenced text; test com
 summaries, not just histogram-only output.
 **Start:** `ValidateSummaryOptions`, histogram rendering, `xff/cli/histogram_test.sh`.
 
+Merged resolution: [PR #860](https://github.com/mboworks/xff/pull/860).
+
 ### B05 - P1: Summary JSONL does not identify its originating summary
 
-- [ ] Add an explicit summary identity to every summary record.
+- [x] Add an explicit summary identity to every summary record.
 
 ```sh
 xff DIR -type f --summary=ext --summary=type --format=jsonl
@@ -124,6 +138,8 @@ inconsistency. Multiple template summaries make inference even less reliable.
 request identity when distinct templates or repeated groupings coexist. Document root attribution
 for standalone comparison JSONL. Add tests that demultiplex records without interpreting group names.
 **Start:** summary JSON emitters in `xff/engine/run.cc`; summary schema documentation.
+
+Merged resolution: [PR #862](https://github.com/mboworks/xff/pull/862).
 
 ### B06 - P1: A real group named `total` collides with the total row
 
@@ -144,6 +160,8 @@ mistake it for the aggregate.
 than making two incompatible schema revisions. Text tables should also distinguish data from totals.
 **Start:** summary emitters and CLI JSONL regressions.
 
+Merged resolution: [PR #863](https://github.com/mboworks/xff/pull/863).
+
 ### B07 - Closed: Markdown newline-padding diagnosis was incorrect
 
 - [x] Recheck the published output and add a regression for cell normalization.
@@ -157,6 +175,8 @@ No production padding change is needed for this report.
 The existing renderer measures byte lengths, not Unicode display cells, and passes tabs through.
 Those separate source-readability limitations need their own evidence and design; this result does
 not claim universal visual alignment for Unicode or control characters.
+
+Merged resolution: [PR #856](https://github.com/mboworks/xff/pull/856).
 
 ### B08 - P2: README describes the wrong release archive layout
 
@@ -173,7 +193,7 @@ and check the description against `stage_release_artifacts.sh` and the published
 
 ### B09 - P3: Binary-content documentation gives conflicting sniff lengths
 
-- [ ] Use the exact shared 8,000-byte threshold throughout help and comments.
+- [x] Use the exact shared 8,000-byte threshold throughout help and comments.
 
 `-text` documents 8,000 bytes; `-binary` and content help say 8 KiB. The implementation uses
 `kBinaryNulSniffBytes = 8'000`. A file with its first NUL at offset 8,050 is classified as text,
@@ -217,6 +237,13 @@ This is an observed ambiguity, not evidence that packing itself discarded a payl
 an explicit alternative only after deciding its meaning. Do not silently invent root prefixes.
 **Acceptance:** test overlapping roots, duplicate roots, distinct roots with equal relative names,
 and relevant writer formats. Failure must preserve an existing destination.
+
+Prepared implementation: `--pack-duplicates=error|first` defaults to rejecting normalized
+collisions and file/directory prefix conflicts before output creation. `first` retains the first
+collected source in traversal order. Distinct `--root=NAME=PATH` names anchor packed members
+under separate archive directories; duplicate names are rejected. Named roots are CLI operands,
+not INI directives. Tar/zip writer tests cover destination preservation and retained payloads;
+CLI tests cover complete configuration files, dry-run, overlapping roots, and traversal order.
 
 ### S03 - P2: Remove duplicate comparison tables from the obvious summary workflow
 

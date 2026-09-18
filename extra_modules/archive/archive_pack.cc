@@ -435,7 +435,41 @@ OptionalFormatSuffix FormatEntryFor(std::string_view path) {
 
 // Writes one entry's header and, for a regular file, its bytes. The size has to be known up front
 // (tar puts it in the header), so it is taken from the stat rather than from the read.
-absl::Status WriteOne(struct ::archive& writer_ref, const PackEntry& entry) {
+// XFF_HOST_IO: classify direct archive sources without following symlinks before destination planning.
+absl::StatusOr<PackFile> DescribePackSource(const PackEntry& entry) {
+  std::error_code error;
+  const auto status = stdfs::symlink_status(stdfs::path(entry.source), error);
+  if (error || !stdfs::exists(status)) {
+    return absl::NotFoundError(absl::StrCat("cannot stat '", entry.source, "': ", error.message()));
+  }
+  return PackFile{.source = entry.source, .name = entry.name, .is_directory = stdfs::is_directory(status)};
+}
+
+absl::StatusOr<std::vector<PackFile>> PlanPackSources(
+    const std::vector<PackEntry>& entries,
+    PackDuplicatePolicy duplicates) {
+  std::vector<PackFile> files;
+  files.reserve(entries.size());
+  absl::btree_map<std::string, absl::Status> unreadable;
+  for (const auto& entry : entries) {
+    auto file = DescribePackSource(entry);
+    if (file.ok()) {
+      files.push_back(*std::move(file));
+    } else {
+      unreadable.emplace(entry.source, file.status());
+      files.push_back({.source = entry.source, .name = entry.name});
+    }
+  }
+  MBO_ASSIGN_OR_RETURN(auto planned, PlanPackFiles(files, duplicates));
+  for (const auto& file : planned) {
+    if (const auto error = unreadable.find(file.source); error != unreadable.end()) {
+      return error->second;
+    }
+  }
+  return planned;
+}
+
+absl::Status WriteOne(struct ::archive& writer_ref, const PackFile& entry) {
   struct ::archive* const writer = &writer_ref;
   std::error_code error;
   const stdfs::path source(entry.source);
@@ -552,6 +586,7 @@ absl::Status PackFiles(std::string_view path, const std::vector<PackEntry>& entr
             "cannot tell the archive format from '", path, "'; expected one ending in .",
             absl::StrJoin(PackFormats(), ", .")));
   }
+  MBO_ASSIGN_OR_RETURN(const auto planned, PlanPackSources(entries, options.duplicates));
   // Written beside the target and renamed over it, so a failure part way leaves no half archive -
   // and an existing file survives an attempt that fails. Same contract as the member rewrite.
   MBO_ASSIGN_OR_RETURN(
@@ -586,7 +621,7 @@ absl::Status PackFiles(std::string_view path, const std::vector<PackEntry>& entr
     if (::archive_write_open_fd(writer.get(), temporary->Fd()) != ARCHIVE_OK) {
       return absl::UnavailableError(absl::StrCat("cannot open archive output: ", ::archive_error_string(writer.get())));
     }
-    for (const PackEntry& entry : entries) {
+    for (const PackFile& entry : planned) {
       MBO_RETURN_IF_ERROR(WriteOne(*writer, entry));
     }
     if (::archive_write_close(writer.get()) != ARCHIVE_OK) {

@@ -34,15 +34,18 @@ namespace xff::archive {
 namespace {
 
 using ::mbo::testing::IsOk;
+using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
 using ::testing::AllOf;
 using ::testing::ElementsAre;
+using ::testing::Eq;
 using ::testing::Field;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
 using ::testing::NotNull;
+using ::testing::SizeIs;
 
 // A filesystem that answers nothing: this test is about the SLOT, not about any backend. Only
 // FsType is given a value, so a test can tell the stub apart from a real one.
@@ -86,6 +89,68 @@ struct ArchiveBackendTest : ::testing::Test {
     RegisterContainerPacker(ContainerPacker(), {}, {});
   }
 };
+
+TEST_F(ArchiveBackendTest, PackPlanRejectsNormalizedDuplicatesWithBothSources) {
+  EXPECT_THAT(
+      PlanPackFiles({{.source = "left/a", .name = "./dir//a"}, {.source = "right/a", .name = "dir/./a/"}}),
+      StatusIs(absl::StatusCode::kAlreadyExists, AllOf(HasSubstr("dir/a"), HasSubstr("left/a"), HasSubstr("right/a"))));
+}
+
+TEST_F(ArchiveBackendTest, PackPlanFirstWinsPreservesInputOrder) {
+  EXPECT_THAT(
+      PlanPackFiles(
+          {{.source = "z", .name = "./b"}, {.source = "x", .name = "a"}, {.source = "y", .name = "b/"}},
+          PackDuplicatePolicy::kFirst),
+      IsOkAndHolds(ElementsAre(
+          AllOf(Field(&PackFile::source, Eq("z")), Field(&PackFile::name, Eq("b"))),
+          AllOf(Field(&PackFile::source, Eq("x")), Field(&PackFile::name, Eq("a"))))));
+}
+
+TEST_F(ArchiveBackendTest, PackPlanRejectsNonDirectoryAncestorsInEitherOrder) {
+  const PackFile parent{.source = "file", .name = "a"};
+  const PackFile child{.source = "child", .name = "a/b"};
+  for (const auto& files : std::to_array<std::vector<PackFile>>({{parent, child}, {child, parent}})) {
+    EXPECT_THAT(
+        PlanPackFiles(files), StatusIs(absl::StatusCode::kAlreadyExists, AllOf(HasSubstr("file"), HasSubstr("child"))));
+    EXPECT_THAT(
+        PlanPackFiles(files, PackDuplicatePolicy::kFirst),
+        IsOkAndHolds(ElementsAre(Field(&PackFile::source, Eq(files.front().source)))));
+  }
+}
+
+TEST_F(ArchiveBackendTest, PackPlanAllowsDirectoryAncestorsAndSiblingPrefixes) {
+  const PackFile parent{.source = "directory", .name = "a", .is_directory = true};
+  const PackFile child{.source = "child", .name = "a/b"};
+  for (const auto& files : std::to_array<std::vector<PackFile>>({{parent, child}, {child, parent}})) {
+    EXPECT_THAT(PlanPackFiles(files), IsOkAndHolds(SizeIs(2)));
+  }
+  EXPECT_THAT(
+      PlanPackFiles({{.source = "one", .name = "a"}, {.source = "two", .name = "ab/c"}}), IsOkAndHolds(SizeIs(2)));
+}
+
+TEST_F(ArchiveBackendTest, PackPlanRejectsInvalidDestinations) {
+  for (const auto& name :
+       {std::string(), std::string("/absolute"), std::string("dir/../file"), std::string("bad\0name", 8)}) {
+    EXPECT_THAT(PlanPackFiles({{.source = "source", .name = name}}), StatusIs(absl::StatusCode::kInvalidArgument));
+  }
+  EXPECT_THAT(PlanPackFiles({}), IsOkAndHolds(IsEmpty()));
+  EXPECT_THAT(
+      PlanPackFiles({{.source = "root", .name = "./"}}), IsOkAndHolds(ElementsAre(Field(&PackFile::name, Eq(".")))));
+}
+
+TEST_F(ArchiveBackendTest, DuplicatePackPlanNeverCallsTheWriter) {
+  bool called = false;
+  RegisterContainerPacker(
+      [&](std::string_view, const std::vector<PackFile>&, const PackOptions&) {
+        called = true;
+        return absl::OkStatus();
+      },
+      {}, {});
+  EXPECT_THAT(
+      PackContainer("out.tar", {{.source = "left", .name = "a"}, {.source = "right", .name = "./a"}}),
+      StatusIs(absl::StatusCode::kAlreadyExists));
+  EXPECT_THAT(called, IsFalse());
+}
 
 constexpr std::array kTarGzOnly = std::to_array<std::string_view>({"tar.gz"});
 

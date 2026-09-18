@@ -576,8 +576,8 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `score` - best `-fuzzy` match first (buffers everything; needs `-fuzzy`)
 
   Traversal order and result buffering are separate. Every mode materializes one directory listing, and `--jobs` may read additional directory listings ahead; none of the path-order modes buffers every match. `none` preserves each directory's filesystem order. `dir` sorts a directory's complete child listing, emits that listing, then descends into its sorted children. `subtree` emits sorted non-directory children first, then each sorted directory or container subtree contiguously. `tree` visits each sorted child and its descendants before the next child, giving lexicographic depth-first order WITHIN each root while retaining command-line root order. `roots` stable-sorts only the root operands and otherwise behaves like `none`. `global` stable-sorts the roots and applies `tree` below each one, producing a total hierarchical order by root and then path. Duplicate or overlapping roots remain separate walks and can therefore repeat paths. `-depth` makes every mode post-order (children before their parent); `none` retains filesystem sibling order; `roots` does too, while every other ordered mode uses sorted sibling order. The default is per style: xff sorts per directory, while find and rg leave the order unspecified. `score` is the odd one out: the others are TRAVERSAL orders the walk streams, while a `-fuzzy` score only exists once an entry has been evaluated, so results are buffered and ranked after the walk (best first, ties keeping the walk's own order). It needs `-fuzzy` or `-ifuzzy` in the expression - ranking by a value nothing produced is a mistake, not an empty ordering - and side-effecting actions such as `-exec` still run during the walk, so only the printed listing is reordered.
-  Affected by: --pack
-  See also: [Output](#topic-output), [Statistics](#topic-stats), [--pack](#flag-pack)
+  Affected by: --root, --pack
+  See also: [Output](#topic-output), [Statistics](#topic-stats), [--root](#flag-root), [--pack](#flag-pack)
 
 ### Matching
 
@@ -927,13 +927,34 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 ### Archive creation
 
+<a id="flag-root"></a>
+
+- `--root=NAME=PATH` - add a named search root; use NAME as its archive destination directory _(global, xff, command-line-only)_
+  Command-line only; rejected in configuration files.
+  Command-line only, like positional root operands. Repeatable. Each name must be a distinct single directory component; `.` and `..`, path separators, and control characters are rejected. A directory root contributes `NAME/relative/path`; a file root contributes `NAME/basename`. The same physical path may have different names. Named and positional roots retain their argument order, except when `--sort` explicitly sorts roots. Names affect archive destinations; ordinary path output still uses the input paths. Duplicate root names are errors even with `--pack-duplicates=first`.
+  Affects: --pack, --pack-duplicates, --sort
+  See also: [Archives](#topic-archive), [--pack](#flag-pack), [--pack-duplicates](#flag-pack-duplicates), [--sort](#flag-sort)
+
 <a id="flag-pack"></a>
 
 - `--pack=FILE` - write every match into a new archive at FILE instead of listing them _(global, xff)_
-  The counterpart of `--archive`: instead of reading a container the walk BUILDS one, so the member list comes from the whole expression vocabulary rather than from a shell pipeline into `tar`. The output NAME picks the format - `--help=archive` lists exactly what this binary writes, from the writer's own table rather than a copy kept here, and the single-word shortcuts (`.tgz`, `.txz`, `.tbz2`, `.tzst`, `.tlz`, `.taZ`) mean what they do everywhere else; a name carrying no format is a usage error reported BEFORE the walk, since finding out afterwards would waste the traversal. Each member is stored under the entry's path relative to the search root it was found under, in the order the walk produced it - so `--sort` decides the order inside the archive, and nothing is renamed or re-rooted behind your back. Like `--summary` it is a sink: it replaces the per-match listing, while explicit actions still run, so add `-print` to watch what goes in. The archive is written after the walk and renamed into place only when complete, so an interrupted run leaves no half archive and an existing FILE survives a failed one. A file the walk meets that IS the output is skipped rather than packed into itself. An archive MEMBER cannot be packed: reading files out of one container to re-pack them into another is its own feature, and until it exists the run is refused rather than quietly short. A build-time extra, like `--archive`.
+  The counterpart of `--archive`: instead of reading a container the walk BUILDS one, so the member list comes from the whole expression vocabulary rather than from a shell pipeline into `tar`. The output NAME picks the format - `--help=archive` lists exactly what this binary writes, from the writer's own table rather than a copy kept here, and the single-word shortcuts (`.tgz`, `.txz`, `.tbz2`, `.tzst`, `.tlz`, `.taZ`) mean what they do everywhere else; a name carrying no format is a usage error reported BEFORE the walk, since finding out afterwards would waste the traversal. Each member is stored under the entry's path relative to the search root it was found under, in the order the walk produced it - so `--sort` decides the order inside the archive. Member destinations are normalized; `--pack-duplicates` controls collisions. Like `--summary` it is a sink: it replaces the per-match listing, while explicit actions still run, so add `-print` to watch what goes in. The archive is written after the walk and renamed into place only when complete, so an interrupted run leaves no half archive and an existing FILE survives a failed one. A file the walk meets that IS the output is skipped rather than packed into itself. An archive MEMBER cannot be packed: reading files out of one container to re-pack them into another is its own feature, and until it exists the run is refused rather than quietly short. A build-time extra, like `--archive`.
   Affects: --sort
-  Affected by: --pack-option, --pack-level
-  See also: [Archives](#topic-archive), [--pack-option](#flag-pack-option), [--pack-level](#flag-pack-level), [--sort](#flag-sort)
+  Affected by: --root, --pack-duplicates, --pack-option, --pack-level
+  See also: [Archives](#topic-archive), [--root](#flag-root), [--pack-duplicates](#flag-pack-duplicates), [--pack-option](#flag-pack-option), [--pack-level](#flag-pack-level), [--sort](#flag-sort)
+
+<a id="flag-pack-duplicates"></a>
+
+- `--pack-duplicates=error|first` - reject duplicate archive destinations or keep the first input _(global, xff)_
+  One of:
+
+  - `error` - reject duplicate normalized member destinations (the default)
+  - `first` - keep the first input for each destination and skip later duplicates
+
+  Defaults to `error`. Member destinations are normalized before comparison: leading and interior `./`, repeated separators, and trailing separators do not distinguish names. `first` keeps the earliest collected input and skips later copies; it does not rename them. Duplicate validation runs before archive output creation and also applies to `--dry-run`. An error reports both source paths and preserves any existing destination archive.
+  Affects: --pack
+  Affected by: --root
+  See also: [Archives](#topic-archive), [--root](#flag-root), [--pack](#flag-pack)
 
 <a id="flag-pack-option"></a>
 
@@ -2926,6 +2947,10 @@ Reading is decided by CONTENT (the reader sniffs the bytes), so the extensions a
 ### Creating one
 
 `--pack=FILE` turns the walk around: every match is written into a NEW archive instead of being listed, so the member list is an expression rather than a pipeline into `tar`. The output name picks the format, each member keeps the path it had relative to its search root, and `--sort` decides the order inside. It is a sink like `--summary`, the archive appears only when the walk finished, and a member of another container is refused - harvesting files out of one archive to re-pack them into another is a separate feature, which is also what `-Z++ -z-` is reserved for.
+
+Different roots can produce the same archive member name. By default this is an error before output creation, with both source paths reported. A file or symlink destination also conflicts with entries below that destination; a directory and its children are compatible. `--pack-duplicates=first` explicitly keeps the first collected entry and skips later copies; `--dry-run` checks the same destinations. Names are compared after removing redundant separators and `.` components; absolute names and `..` components are rejected.
+
+Use `--root=NAME=PATH` on the command line to give each input its own archive directory. Like positional roots, named roots cannot be supplied by an INI file. For example, `xff --root=left=one --root=right=two -type f --pack=both.tar` keeps `one/same.txt` as `left/same.txt` and `two/same.txt` as `right/same.txt`. A named file root becomes `NAME/basename`; a named empty directory retains its anchor. Names must be distinct even when `--pack-duplicates=first` is selected.
 
 Output filename suffixes this binary writes: `.tar.gz`, `.tar.bz2`, `.tar.xz`, `.tar.zst`, `.tar.lzma`, `.tar.lz4`, `.tar.lz`, `.tar.Z`, `.tbz2`, `.tzst`, `.tbz`, `.tz2`, `.txz`, `.tgz`, `.tlz`, `.taZ`, `.tar`, `.zip`, `.tar.br`, `.tbr`.
 

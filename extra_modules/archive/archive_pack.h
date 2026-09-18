@@ -23,6 +23,7 @@
 
 #include "absl/status/status.h"
 #include "absl/types/span.h"
+#include "xff/archive/archive_backend.h"
 #include "xff/vfs/mutations.h"
 
 namespace xff::archive {
@@ -32,7 +33,7 @@ namespace xff::archive {
 // the member should be called, and neither has to guess the other.
 struct PackEntry {
   std::string source;  // the path on disk to read
-  std::string name;    // the member name to store, exactly as given
+  std::string name;    // relative member destination; normalized and checked before writing
 };
 
 // One writer setting, in XFF's vocabulary rather than libarchive's. The names here are xff's own and
@@ -49,6 +50,7 @@ struct PackSetting {
 // a name wins, so a caller can append without first removing.
 struct PackSettings {
   std::vector<PackSetting> options;
+  PackDuplicatePolicy duplicates = PackDuplicatePolicy::kError;
   vfs::MutationPolicy mutations;
 };
 
@@ -70,9 +72,9 @@ struct PackOptionDoc {
 // FormatFromName). This is the counterpart of the reader: xff walks, matches, and hands the result
 // here, so an archive is built from an expression rather than from a file list piped through tar.
 //
-// Names are stored EXACTLY as given. No prefix is added or stripped, and no ordering is imposed:
-// the caller has already decided both, because only it knows the roots the walk ran over and the
-// order the user asked for (`--sort`).
+// Member destinations are normalized and checked before output creation. Duplicate destinations
+// fail by default; first-wins keeps the earliest entry in input order. No root prefix is invented.
+// Absolute names, parent traversal, and embedded NULs are rejected.
 //
 // All or nothing, as the rewrite path is: the archive is built beside `path` and renamed over it
 // only after every entry is written, so a failure part way leaves no half archive behind - and an

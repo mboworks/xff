@@ -26,7 +26,9 @@ absl::StatusOr<std::unique_ptr<vfs::FileSystem>> OpenSquashfsContainer(
   return std::make_unique<SquashfsFileSystem>(std::move(fs));
 }
 
-// NOLINTNEXTLINE(fuchsia-statically-constructed-objects,cert-err58-cpp)
+// Registration runs before main; allocation failure is fatal during startup.
+// Both spellings name the same intentional static-initialization exception.
+// NOLINTNEXTLINE(fuchsia-statically-constructed-objects,cert-err58-cpp,bugprone-throwing-static-initialization)
 const archive::ContainerRegistrar kRegisterSquashfs{
     "squashfs",
     &OpenSquashfsContainer,

@@ -57,6 +57,7 @@ Visit CollectedEntry::AsVisit() const {
       .metadata = metadata,
       .fs = fs,
       .fs_owner = fs_owner,
+      .root_index = root_index,
   };
 }
 
@@ -77,6 +78,7 @@ bool Collections::Add(std::string_view name, const Visit& visit) {
           .metadata = visit.metadata,
           .fs = visit.fs,
           .fs_owner = visit.fs_owner,
+          .root_index = visit.root_index,
       });
   return true;
 }

@@ -20,6 +20,7 @@
 #include <functional>
 #include <future>
 #include <memory>
+#include <numeric>
 #include <queue>
 #include <set>
 #include <string>
@@ -212,6 +213,7 @@ class Walker {
     inner.fs_owner_ = std::move(mounted);
     inner.container_depth_ = container_depth_ + 1;
     inner.current_root_ = current_root_;
+    inner.current_root_index_ = current_root_index_;
     inner.root_dev_ = container.metadata.dev;
     inner.DescendMembers(container.path, depth);
     if (inner.stopped_) {
@@ -246,11 +248,14 @@ class Walker {
   }
 
   void WalkRoots(absl::Span<const std::string> roots) {
-    std::vector<std::string> ordered_roots(roots.begin(), roots.end());
+    std::vector<std::size_t> ordered_roots(roots.size());
+    std::iota(ordered_roots.begin(), ordered_roots.end(), 0);
     if (options_.sort == SortOrder::kRoots || options_.sort == SortOrder::kGlobal) {
-      absl::c_stable_sort(ordered_roots);
+      absl::c_stable_sort(
+          ordered_roots, [&](std::size_t lhs, std::size_t rhs) { return roots.at(lhs) < roots.at(rhs); });
     }
-    for (const std::string& root : ordered_roots) {
+    for (const std::size_t root_index : ordered_roots) {
+      const std::string& root = roots.at(root_index);
       if (stopped_) {
         return;
       }
@@ -259,6 +264,7 @@ class Walker {
       const Stated stated = StatNode(root, follow);
       root_dev_ = stated.ok ? stated.metadata.dev : 0;
       current_root_ = root;
+      current_root_index_ = root_index;
       VisitSubtree(stated, /*depth=*/0, /*prefetched=*/{});
     }
   }
@@ -325,7 +331,8 @@ class Walker {
         .metadata = stated.metadata,
         .dived = dived,
         .fs = fs_,
-        .fs_owner = fs_owner_};
+        .fs_owner = fs_owner_,
+        .root_index = current_root_index_};
     const WalkAction action = visit_(visit);
     if (action == WalkAction::kStop) {
       stopped_ = true;
@@ -517,6 +524,7 @@ class Walker {
   // Shared ownership of `fs_` when this walker walks a CONTAINER; empty for the real filesystem.
   std::shared_ptr<const vfs::FileSystem> fs_owner_;
   std::string_view current_root_;
+  std::size_t current_root_index_ = 0;
   std::set<std::pair<std::uint64_t, std::uint64_t>> ancestors_;
 };
 

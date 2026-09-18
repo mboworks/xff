@@ -19,6 +19,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "absl/status/status.h"
@@ -98,6 +99,82 @@ TEST_F(ArchivePackTest, PackedFilesReadBackWithTheirNamesAndContent) {
           UnorderedElementsAre(Field("path", &Member::path, "one.txt"), Field("path", &Member::path, "dir/two.txt"))));
   EXPECT_THAT(ReadMemberOfFile(out, "one.txt"), IsOkAndHolds(Eq("first\n")));
   EXPECT_THAT(ReadMemberOfFile(out, "dir/two.txt"), IsOkAndHolds(Eq("second\n")));
+}
+
+TEST_F(ArchivePackTest, DuplicateMembersPreserveExistingOutput) {
+  for (const auto suffix : std::to_array<std::string_view>({"tar", "zip"})) {
+    const std::string out = Output(std::string("existing.").append(suffix));
+    Write(out, "keep existing output");
+    EXPECT_THAT(
+        PackFiles(
+            out, {{.source = (root_ / "one.txt").string(), .name = "./same"},
+                  {.source = (root_ / "dir/two.txt").string(), .name = "same/"}}),
+        StatusIs(absl::StatusCode::kAlreadyExists, HasSubstr("same")));
+    EXPECT_THAT(Read(out), Eq("keep existing output"));
+  }
+}
+
+TEST_F(ArchivePackTest, FirstWinsWritesOnlyTheEarliestPayload) {
+  for (const auto suffix : std::to_array<std::string_view>({"tar", "zip"})) {
+    const std::string out = Output(std::string("first.").append(suffix));
+    ASSERT_THAT(
+        PackFiles(
+            out,
+            {{.source = (root_ / "one.txt").string(), .name = "./same"},
+             {.source = (root_ / "dir/two.txt").string(), .name = "same/"}},
+            PackSettings{.duplicates = PackDuplicatePolicy::kFirst}),
+        IsOk());
+    EXPECT_THAT(ListMembersOfFile(out), IsOkAndHolds(ElementsAre(Field(&Member::path, Eq("same")))));
+    EXPECT_THAT(ReadMemberOfFile(out, "same"), IsOkAndHolds(Eq("first\n")));
+  }
+}
+
+TEST_F(ArchivePackTest, FirstWinsIgnoresUnreadableDiscardedSources) {
+  const std::string out = Output("first-missing.tar");
+  ASSERT_THAT(
+      PackFiles(
+          out,
+          {{.source = (root_ / "one.txt").string(), .name = "a"},
+           {.source = (root_ / "missing").string(), .name = "./a"},
+           {.source = (root_ / "missing-child").string(), .name = "a/b"}},
+          PackSettings{.duplicates = PackDuplicatePolicy::kFirst}),
+      IsOk());
+  EXPECT_THAT(ReadMemberOfFile(out, "a"), IsOkAndHolds(Eq("first\n")));
+  EXPECT_THAT(ListMembersOfFile(out), IsOkAndHolds(SizeIs(1)));
+  EXPECT_THAT(
+      PackFiles(
+          out,
+          {{.source = (root_ / "missing").string(), .name = "a"},
+           {.source = (root_ / "one.txt").string(), .name = "a"}},
+          PackSettings{.duplicates = PackDuplicatePolicy::kFirst}),
+      StatusIs(absl::StatusCode::kNotFound));
+  EXPECT_THAT(ReadMemberOfFile(out, "a"), IsOkAndHolds(Eq("first\n")));
+}
+
+TEST_F(ArchivePackTest, PrefixConflictsPreserveOutputAndFirstWinsInEitherOrder) {
+  const PackEntry parent{.source = (root_ / "one.txt").string(), .name = "a"};
+  const PackEntry child{.source = (root_ / "dir/two.txt").string(), .name = "a/b"};
+  for (const auto suffix : std::to_array<std::string_view>({"tar", "zip"})) {
+    for (const auto& entries : std::to_array<std::vector<PackEntry>>({{parent, child}, {child, parent}})) {
+      const std::string out = Output(std::string("conflict.").append(suffix));
+      Write(out, "preserve");
+      EXPECT_THAT(PackFiles(out, entries), StatusIs(absl::StatusCode::kAlreadyExists));
+      EXPECT_THAT(Read(out), Eq("preserve"));
+      ASSERT_THAT(PackFiles(out, entries, PackSettings{.duplicates = PackDuplicatePolicy::kFirst}), IsOk());
+      EXPECT_THAT(ListMembersOfFile(out), IsOkAndHolds(ElementsAre(Field(&Member::path, Eq(entries.front().name)))));
+    }
+  }
+}
+
+TEST_F(ArchivePackTest, DirectoryAndChildDestinationsRemainCompatibleInEitherOrder) {
+  const PackEntry parent{.source = (root_ / "dir").string(), .name = "a"};
+  const PackEntry child{.source = (root_ / "dir/two.txt").string(), .name = "a/b"};
+  for (const auto& entries : std::to_array<std::vector<PackEntry>>({{parent, child}, {child, parent}})) {
+    const std::string out = Output("directory.tar");
+    ASSERT_THAT(PackFiles(out, entries), IsOk());
+    EXPECT_THAT(ReadMemberOfFile(out, "a/b"), IsOkAndHolds(Eq("second\n")));
+    EXPECT_THAT(ListMembersOfFile(out), IsOkAndHolds(SizeIs(2)));
+  }
 }
 
 TEST_F(ArchivePackTest, TheOutputNameChoosesTheFormat) {

@@ -1468,6 +1468,7 @@ CollectedEntry OwnVisit(const Visit& visit) {
       .metadata = visit.metadata,
       .fs = visit.fs,
       .fs_owner = visit.fs_owner,
+      .root_index = visit.root_index,
   };
 }
 
@@ -2183,7 +2184,43 @@ absl::Status CheckPackOptionNames(const std::vector<archive::PackOption>& option
 // under, so `xff src -name '*.cc' --pack=x.tar` stores `sub/a.cc` and not `src/sub/a.cc`. An entry
 // that IS its root (a file named on the command line) keeps its basename, since a full path stored as
 // a member name would unpack into an absolute or dot-prefixed place nobody asked for.
+absl::StatusOr<archive::PackDuplicatePolicy> ResolvePackDuplicates(const std::vector<std::string>& globals) {
+  auto policy = archive::PackDuplicatePolicy::kError;
+  constexpr std::string_view kPrefix = "--pack-duplicates=";
+  for (const auto& global : globals) {
+    if (!global.starts_with(kPrefix)) {
+      continue;
+    }
+    const auto value = std::string_view(global).substr(kPrefix.size());
+    if (value == "error") {
+      policy = archive::PackDuplicatePolicy::kError;
+    } else if (value == "first") {
+      policy = archive::PackDuplicatePolicy::kFirst;
+    } else {
+      return absl::InvalidArgumentError("--pack-duplicates requires error or first");
+    }
+  }
+  return policy;
+}
+
+absl::Status PackOrPreview(
+    std::string_view target,
+    const std::vector<archive::PackFile>& files,
+    const archive::PackOptions& options,
+    bool dry_run,
+    EmitFn emit) {
+  MBO_ASSIGN_OR_RETURN(const auto planned, archive::PlanPackFiles(files, options.duplicates));
+  if (dry_run) {
+    emit(absl::StrCat("would pack ", planned.size(), " entries into ", target, "\n"));
+    return absl::OkStatus();
+  }
+  return archive::PackContainer(target, planned, options);
+}
+
 std::string PackMemberName(std::string_view path, std::string_view root) {
+  while (!root.empty() && root.back() == '/') {
+    root.remove_suffix(1);
+  }
   if (path.size() > root.size() + 1 && path.starts_with(root) && path[root.size()] == '/') {
     return std::string(path.substr(root.size() + 1));
   }
@@ -3733,7 +3770,8 @@ RunResult RunFindCore(
     std::optional<registry::Style> style,
     mbo::types::OptionalRef<const MatchedEntryFn> matched_entry,
     bool compare_listing,
-    mbo::types::OptionalRef<SummaryAccumulator> comparison_summaries = std::nullopt);
+    mbo::types::OptionalRef<SummaryAccumulator> comparison_summaries = std::nullopt,
+    std::size_t root_offset = 0);
 
 constexpr std::array<std::string_view, 4> kComparisonCategories = {"left-only", "right-only", "different", "identical"};
 
@@ -3974,7 +4012,7 @@ RunResult RunTreeCompare(
     const WalkErrorFn synchronized_error = error_callback;
     return RunFindCore(
         command, histograms, absl::MakeConstSpan(command.roots).subspan(side, 1), fs, synchronized_emit,
-        synchronized_error, style, collect, /*compare_listing=*/true, side_summaries.at(side));
+        synchronized_error, style, collect, /*compare_listing=*/true, side_summaries.at(side), side);
   };
   std::future<RunResult> left_result = std::async(std::launch::async, run_side, 0);
   const RunResult right_result = run_side(1);
@@ -4120,7 +4158,8 @@ RunResult RunFindCore(
     std::optional<registry::Style> style,
     mbo::types::OptionalRef<const MatchedEntryFn> matched_entry,
     bool compare_listing,
-    mbo::types::OptionalRef<SummaryAccumulator> comparison_summaries) {
+    mbo::types::OptionalRef<SummaryAccumulator> comparison_summaries,
+    std::size_t root_offset) {
   bool any_match = false;
   std::vector<std::string> mime_vocabulary_files;
   mime::ConflictPolicy mime_conflicts = mime::ConflictPolicy::kError;
@@ -4680,6 +4719,11 @@ RunResult RunFindCore(
     on_error("--pack-option", pack_options.status());
     return RunResult{.errors = 2};
   }
+  const auto pack_duplicates = ResolvePackDuplicates(command.globals);
+  if (!pack_duplicates.ok()) {
+    on_error("--pack-duplicates", pack_duplicates.status());
+    return RunResult{.errors = 2};
+  }
   std::vector<archive::PackFile> pack_files;
   // The output's own identity, so the walk never packs the archive into itself. The basename is kept
   // beside the resolved path as a cheap gate: canonicalizing every match would put a syscall on the
@@ -4972,12 +5016,24 @@ RunResult RunFindCore(
     }
     if (matched && any_reduction) {
       if (pack_target.has_value()) {
+        const std::string_view root_name =
+            command.root_names.empty() ? std::string_view() : command.root_names.at(root_offset + visit.root_index);
         if (visit.metadata.source == vfs::Source::kArchiveMember) {
           pack_saw_member = true;
-        } else if (visit.path == visit.root && visit.metadata.type == vfs::FileType::kDirectory) {
+        } else if (root_name.empty() && visit.path == visit.root && visit.metadata.type == vfs::FileType::kDirectory) {
           // The root directory itself is not an archive member.
         } else if (visit.name != pack_basename || PackIdentity(visit.path) != pack_identity) {
-          pack_files.push_back({.source = std::string(visit.path), .name = PackMemberName(visit.path, visit.root)});
+          std::string name = PackMemberName(visit.path, visit.root);
+          if (!root_name.empty()) {
+            name = visit.path == visit.root && visit.metadata.type == vfs::FileType::kDirectory
+                       ? std::string(root_name)
+                       : absl::StrCat(root_name, "/", name);
+          }
+          pack_files.push_back({
+              .source = std::string(visit.path),
+              .name = std::move(name),
+              .is_directory = visit.metadata.type == vfs::FileType::kDirectory,
+          });
         }
       }
       if (shards.enabled) {
@@ -5442,15 +5498,12 @@ RunResult RunFindCore(
                             "refusing to write ", *pack_target,
                             ": the expression matched a member of another archive, and re-packing members is not"
                             " supported yet; narrow the expression or turn diving off with -z-")));
-    } else if (dry_run) {
-      emit(absl::StrCat("would pack ", pack_files.size(), " entries into ", *pack_target, "\n"));
     } else {
-      // Kept out of the `else if` condition: an init-statement with an initializer this long is the
-      // one construct the pinned and the hermetic clang-format lay out differently, so each undoes
-      // the other's work.
-      const absl::Status packed = archive::PackContainer(
+      const absl::Status packed = PackOrPreview(
           *pack_target, pack_files,
-          archive::PackOptions{.options = *pack_options, .mutations = safety.ArchiveMutations()});
+          archive::PackOptions{
+              .options = *pack_options, .duplicates = *pack_duplicates, .mutations = safety.ArchiveMutations()},
+          dry_run, emit);
       if (!packed.ok()) {
         ++errors;
         on_error("--pack", packed);
@@ -5761,6 +5814,10 @@ RunResult RunFind(
     EmitFn emit,
     WalkErrorFn on_error,
     std::optional<registry::Style> style) {
+  if (!command.root_names.empty() && command.root_names.size() != command.roots.size()) {
+    on_error("--root", absl::InvalidArgumentError("root names must match the root operands"));
+    return RunResult{.errors = 2};
+  }
   const bool compare = absl::c_any_of(command.globals, [](std::string_view global) {
     return global == "--compare" || global.starts_with("--compare=");
   });
