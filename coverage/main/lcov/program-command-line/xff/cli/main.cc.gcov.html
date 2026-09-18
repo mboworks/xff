@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-18 19:48:24</td>
+            <td class="headerValue">2026-09-18 20:29:08</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -925,11 +925,11 @@
 <span id="L841"><span class="lineNum">     841</span>                 :<span class="tlaGNC">         652 :   const xff::vfs::LocalFs fs;</span></span>
 <span id="L842"><span class="lineNum">     842</span>                 :<span class="tlaGNC">         652 :   const xff::engine::RunResult result = xff::engine::RunFind(</span></span>
 <span id="L843"><span class="lineNum">     843</span>                 :<span class="tlaGNC">         652 :       command, fs,</span></span>
-<span id="L844"><span class="lineNum">     844</span>                 :<span class="tlaGNC">        1418 :       [quiet](std::string_view record) {</span></span>
-<span id="L845"><span class="lineNum">     845</span>         [<span class="tlaGBC" title="branch 0 was taken 1326 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">        1328 :         if (!quiet) {  // --quiet suppresses output; the match is still recorded via `matched`</span></span>
-<span id="L846"><span class="lineNum">     846</span>                 :<span class="tlaGNC">        1326 :           std::cout.write(record.data(), static_cast&lt;std::streamsize&gt;(record.size()));</span></span>
-<span id="L847"><span class="lineNum">     847</span>                 :<span class="tlaGNC">        1326 :         }</span></span>
-<span id="L848"><span class="lineNum">     848</span>                 :<span class="tlaGNC">        1328 :       },</span></span>
+<span id="L844"><span class="lineNum">     844</span>                 :<span class="tlaGNC">        1400 :       [quiet](std::string_view record) {</span></span>
+<span id="L845"><span class="lineNum">     845</span>         [<span class="tlaGBC" title="branch 0 was taken 1308 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">        1310 :         if (!quiet) {  // --quiet suppresses output; the match is still recorded via `matched`</span></span>
+<span id="L846"><span class="lineNum">     846</span>                 :<span class="tlaGNC">        1308 :           std::cout.write(record.data(), static_cast&lt;std::streamsize&gt;(record.size()));</span></span>
+<span id="L847"><span class="lineNum">     847</span>                 :<span class="tlaGNC">        1308 :         }</span></span>
+<span id="L848"><span class="lineNum">     848</span>                 :<span class="tlaGNC">        1310 :       },</span></span>
 <span id="L849"><span class="lineNum">     849</span>                 :<span class="tlaGNC">         652 :       [](std::string_view path, absl::Status status) {</span></span>
 <span id="L850"><span class="lineNum">     850</span>                 :<span class="tlaGNC">         104 :         std::cerr &lt;&lt; &quot;xff: &quot; &lt;&lt; path &lt;&lt; &quot;: &quot; &lt;&lt; status.message() &lt;&lt; &quot;\n&quot;;</span></span>
 <span id="L851"><span class="lineNum">     851</span>                 :<span class="tlaGNC">         104 :       },</span></span>
