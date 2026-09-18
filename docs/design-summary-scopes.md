@@ -186,3 +186,26 @@ non-negative integer; `0` removes the limit, and the last occurrence wins. Ordin
 by size, then count, then name; comparison-scope groups rank by the sum of their displayed column-group sizes (including overlap). Extraction groups
 have no byte dimension and rank by count. Totals and percentage denominators include every
 group, even those hidden by `--top`. Comparison-result rows are never truncated by `--top`.
+
+## JSONL summary identity
+
+Every summary row carries `record: "summary"`, a zero-based `request` index, the canonical
+`summary` grouping, and `scope`. The index refers to the active resolved summary-request list:
+`--summary=none` clears that list, and indices restart at zero. An implicit request, including the
+comparison summary shorthand or the additional totals requested by bare summary with an explicit
+scope, occupies its own index. Filtering requests for a particular output stage preserves indices.
+Comparison tables can therefore appear before an earlier ordinary request without losing identity.
+
+Repeated groupings have distinct indices. Aliases use their canonical grouping (`owner` becomes
+`user`); templates use `summary: "template"` and carry the exact template string in `template`.
+Demultiplex tables by request and scope, adding root identity for per-root tables. Do not infer
+which summary produced a row from its group value or its position in the output stream.
+
+Ordinary tables include `root`: the selected root for `scope: "root"`, or an empty string for
+combined populations. Comparison-result tables use `scope: "compare"`; comparison-category tables
+use their canonical comma-separated scope list. Both comparison table forms include `left_root`
+and `right_root`, in argument order. Category and side-total metrics retain their existing nested
+objects and `null` for an absent category/group combination.
+
+These identity fields describe summary records only. Explicit printing actions and per-path
+comparison output retain the format restrictions described above.

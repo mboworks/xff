@@ -309,6 +309,7 @@ enum class SummaryMode : std::uint8_t {
 struct SummarySpec {
   SummaryMode mode = SummaryMode::kOverall;
   std::string key_template;
+  std::size_t request_index = 0;
 };
 
 // Parses every --summary[=X] into an ordered list of sinks (each occurrence appends one); the value
@@ -340,6 +341,9 @@ std::vector<SummarySpec> ResolveSummaries(const std::vector<std::string>& global
     } else if (const auto it = kModes.find(global); it != kModes.end()) {
       specs.push_back({.mode = it->second, .key_template = ""});
     }
+  }
+  for (std::size_t index = 0; index < specs.size(); ++index) {
+    specs.at(index).request_index = index;
   }
   return specs;
 }
@@ -3162,7 +3166,28 @@ class SummaryTable final {
   std::optional<render::TableStream> markdown_;
 };
 
+std::string_view SummaryGrouping(SummaryMode mode) {
+  using Name = std::pair<SummaryMode, std::string_view>;
+  static constexpr auto kNames = mbo::container::MakeLimitedMap(
+      Name{SummaryMode::kOff, "none"}, Name{SummaryMode::kOverall, "overall"}, Name{SummaryMode::kCompare, "compare"},
+      Name{SummaryMode::kType, "type"}, Name{SummaryMode::kExt, "ext"}, Name{SummaryMode::kLanguage, "lang"},
+      Name{SummaryMode::kMime, "mime"}, Name{SummaryMode::kUser, "user"}, Name{SummaryMode::kGroup, "group"},
+      Name{SummaryMode::kHash, "hash"}, Name{SummaryMode::kHashVerification, "hash-verification"},
+      Name{SummaryMode::kTemplate, "template"});
+  return kNames.at(mode);
+}
+
+std::string SummaryIdentityJson(const SummarySpec& summary) {
+  return absl::StrCat(
+      R"("record":"summary","request":)", summary.request_index,
+      ",\"summary\":", JsonQuote(SummaryGrouping(summary.mode)),
+      summary.mode == SummaryMode::kTemplate ? absl::StrCat(",\"template\":", JsonQuote(summary.key_template)) : "");
+}
+
 void EmitSummaryRows(
+    const SummarySpec& summary,
+    std::string_view scope,
+    std::string_view root,
     const std::vector<SummaryRow>& rows,
     render::Format output_format,
     std::optional<format::SizeUnits> human,
@@ -3176,7 +3201,11 @@ void EmitSummaryRows(
   const auto& total = rows.back();
   if (output_format == render::Format::kJsonl) {
     for (const auto& row : rows) {
-      emit(absl::StrCat("{\"group\":", JsonQuote(row.key), ",", SummaryJson(row, total, precision, has_size), "}\n"));
+      emit(
+          absl::StrCat(
+              "{", SummaryIdentityJson(summary), ",\"scope\":", JsonQuote(scope.empty() ? "all" : scope),
+              ",\"root\":", JsonQuote(root), ",\"group\":", JsonQuote(row.key), ",",
+              SummaryJson(row, total, precision, has_size), "}\n"));
     }
     return;
   }
@@ -3238,8 +3267,8 @@ void EmitSummaries(
       emit(absl::StrCat(scope_label, scope, root.empty() ? "" : " (", root, root.empty() ? "" : ")", "\n"));
     }
     EmitSummaryRows(
-        SummaryRows(summaries.at(i).mode, tables.at(i), top), output_format, human, precision,
-        SummaryHasSize(summaries.at(i)), !HasGlobal(globals, "--no-header"), emit);
+        summaries.at(i), scope, root, SummaryRows(summaries.at(i).mode, tables.at(i), top), output_format, human,
+        precision, SummaryHasSize(summaries.at(i)), !HasGlobal(globals, "--no-header"), emit);
   }
 }
 
@@ -3255,14 +3284,7 @@ void EmitScopedSummaries(
   if (summaries.empty()) {
     return;
   }
-  const auto labelled_emit = [&](std::string_view text) {
-    if (format == render::Format::kJsonl && text.starts_with("{")) {
-      emit(absl::StrCat("{\"scope\":", JsonQuote(scope), ",\"root\":", JsonQuote(root), ",", text.substr(1)));
-    } else {
-      emit(text);
-    }
-  };
-  EmitSummaries(globals, summaries, tables, format, human, labelled_emit, scope, root);
+  EmitSummaries(globals, summaries, tables, format, human, emit, scope, root);
 }
 
 SummaryRow SummaryTotal(const SummaryCells& cells) {
@@ -3332,7 +3354,10 @@ void EmitComparisonScopeSummary(
       const auto& key = rows.at(index).key;
       const bool total_row = index + 1 == rows.size();
       std::vector<std::string> cells{key};
-      std::string object = absl::StrCat("{\"scope\":", JsonQuote(scope), ",\"group\":", JsonQuote(key));
+      std::string object = absl::StrCat(
+          "{", SummaryIdentityJson(summaries.at(sink)), ",\"scope\":", JsonQuote(scope),
+          ",\"left_root\":", JsonQuote(command.roots.at(0)), ",\"right_root\":", JsonQuote(command.roots.at(1)),
+          ",\"group\":", JsonQuote(key));
       for (std::size_t column_index = 0; column_index < columns.size(); ++column_index) {
         const auto& column = columns.at(column_index);
         const auto& source = column.tables.at(sink);
@@ -3808,10 +3833,11 @@ std::vector<SummaryScopeColumn> ComparisonScopeColumns(
 }
 
 void EmitTreeCompareSummary(
-    const std::vector<std::string>& globals,
+    const parser::Command& command,
     const TreeCompareCounts& counts,
     std::optional<registry::Style> style,
     EmitFn emit) {
+  const auto& globals = command.globals;
   const auto precision = ResolveSummaryPrecision(globals);
   const auto output_format = ResolveFormat(globals);
   const auto human = ResolveHuman(globals, style);
@@ -3828,8 +3854,9 @@ void EmitTreeCompareSummary(
       if (output_format == render::Format::kJsonl) {
         emit(
             absl::StrCat(
-                "{\"type\":", JsonQuote(type), ",\"group\":", JsonQuote(row.key), ",",
-                SummaryJson(row, counts.total, precision), "}\n"));
+                "{", SummaryIdentityJson(summary), R"(,"scope":"compare","left_root":)", JsonQuote(command.roots.at(0)),
+                ",\"right_root\":", JsonQuote(command.roots.at(1)), ",\"type\":", JsonQuote(type),
+                ",\"group\":", JsonQuote(row.key), ",", SummaryJson(row, counts.total, precision), "}\n"));
       } else {
         auto cells = SummaryColumns(row, counts.total, human, precision);
         cells.insert(cells.begin(), row.key);
@@ -4032,7 +4059,7 @@ RunResult RunTreeCompare(
       ++right;
     }
   }
-  EmitTreeCompareSummary(command.globals, counts, style, emit);
+  EmitTreeCompareSummary(command, counts, style, emit);
   auto summaries = ResolveSummaries(command.globals, true);
   std::erase_if(summaries, [](const SummarySpec& spec) { return spec.mode == SummaryMode::kCompare; });
   const auto format = ResolveFormat(command.globals);

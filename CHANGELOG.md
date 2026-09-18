@@ -3,6 +3,9 @@
 
 # 0.7.0
 
+- Identify every JSONL summary row by request, grouping, and scope, retaining template text
+  and comparison roots so repeated and mixed summaries can be separated reliably.
+
 - Reject zero, negative, malformed, and overflowing histogram widths before traversal or actions,
   including settings selected from configuration files.
 
