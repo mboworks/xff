@@ -4,6 +4,13 @@ Actionable roadmap and deliberately deferred ideas. Completed implementation rec
 [`docs/history-roadmap.md`](docs/history-roadmap.md); other resolved design records and investigations
 live in [`docs/history.md`](docs/history.md).
 
+## Completed: Unambiguous summary totals (audit B06)
+
+- Add `is_total` to ordinary, scoped, and comparison-result JSONL rows.
+- Preserve literal group keys, including total, empty strings, and (none).
+- Quote ambiguous data labels in human-readable tables without adding a column.
+- Validate multiple requests and comparison scopes before publication.
+
 ## Completed: JSONL summary identity (audit B05)
 
 - Identify all ordinary, scoped, and comparison summary rows by request, grouping, and scope.
