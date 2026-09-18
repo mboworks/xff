@@ -646,7 +646,6 @@ test::recipe_reports_allow_new_nested_outputs_but_not_overwrites_or_other_paths(
   [[ ! -e "${root}/outside.txt" ]] || fail 'report escaped the declared output root'
 }
 
-
 test::output_scope_guards_archive_publication() {
   local root cfg status
   root="$(_tree)"
