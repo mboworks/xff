@@ -3167,21 +3167,14 @@ class SummaryTable final {
 };
 
 std::string_view SummaryGrouping(SummaryMode mode) {
-  switch (mode) {
-    case SummaryMode::kOff: return "none";
-    case SummaryMode::kOverall: return "overall";
-    case SummaryMode::kCompare: return "compare";
-    case SummaryMode::kType: return "type";
-    case SummaryMode::kExt: return "ext";
-    case SummaryMode::kLanguage: return "lang";
-    case SummaryMode::kMime: return "mime";
-    case SummaryMode::kUser: return "user";
-    case SummaryMode::kGroup: return "group";
-    case SummaryMode::kHash: return "hash";
-    case SummaryMode::kHashVerification: return "hash-verification";
-    case SummaryMode::kTemplate: return "template";
-  }
-  std::unreachable();
+  using Name = std::pair<SummaryMode, std::string_view>;
+  static constexpr auto kNames = mbo::container::MakeLimitedMap(
+      Name{SummaryMode::kOff, "none"}, Name{SummaryMode::kOverall, "overall"}, Name{SummaryMode::kCompare, "compare"},
+      Name{SummaryMode::kType, "type"}, Name{SummaryMode::kExt, "ext"}, Name{SummaryMode::kLanguage, "lang"},
+      Name{SummaryMode::kMime, "mime"}, Name{SummaryMode::kUser, "user"}, Name{SummaryMode::kGroup, "group"},
+      Name{SummaryMode::kHash, "hash"}, Name{SummaryMode::kHashVerification, "hash-verification"},
+      Name{SummaryMode::kTemplate, "template"});
+  return kNames.at(mode);
 }
 
 std::string SummaryIdentityJson(const SummarySpec& summary) {
