@@ -1,0 +1,555 @@
+{
+  "schema": 2,
+  "measurements": {
+    "overall": {
+      "lines": {
+        "covered": 21502,
+        "total": 22384,
+        "percent": 96.06
+      },
+      "functions": {
+        "covered": 1793,
+        "total": 1808,
+        "percent": 99.17
+      },
+      "branches": {
+        "covered": 10606,
+        "total": 11770,
+        "percent": 90.11
+      }
+    },
+    "program / command line": {
+      "lines": {
+        "covered": 4356,
+        "total": 4446,
+        "percent": 97.98
+      },
+      "functions": {
+        "covered": 264,
+        "total": 266,
+        "percent": 99.25
+      },
+      "branches": {
+        "covered": 1583,
+        "total": 1710,
+        "percent": 92.57
+      }
+    },
+    "program / configuration": {
+      "lines": {
+        "covered": 1177,
+        "total": 1193,
+        "percent": 98.66
+      },
+      "functions": {
+        "covered": 110,
+        "total": 110,
+        "percent": 100.0
+      },
+      "branches": {
+        "covered": 734,
+        "total": 762,
+        "percent": 96.33
+      }
+    },
+    "program / command grammar": {
+      "lines": {
+        "covered": 847,
+        "total": 888,
+        "percent": 95.38
+      },
+      "functions": {
+        "covered": 64,
+        "total": 64,
+        "percent": 100.0
+      },
+      "branches": {
+        "covered": 574,
+        "total": 652,
+        "percent": 88.04
+      }
+    },
+    "program / execution": {
+      "lines": {
+        "covered": 6676,
+        "total": 7056,
+        "percent": 94.61
+      },
+      "functions": {
+        "covered": 501,
+        "total": 511,
+        "percent": 98.04
+      },
+      "branches": {
+        "covered": 3947,
+        "total": 4472,
+        "percent": 88.26
+      }
+    },
+    "program / filesystem": {
+      "lines": {
+        "covered": 641,
+        "total": 659,
+        "percent": 97.27
+      },
+      "functions": {
+        "covered": 60,
+        "total": 61,
+        "percent": 98.36
+      },
+      "branches": {
+        "covered": 298,
+        "total": 318,
+        "percent": 93.71
+      }
+    },
+    "program / matching": {
+      "lines": {
+        "covered": 1573,
+        "total": 1593,
+        "percent": 98.74
+      },
+      "functions": {
+        "covered": 170,
+        "total": 170,
+        "percent": 100.0
+      },
+      "branches": {
+        "covered": 679,
+        "total": 716,
+        "percent": 94.83
+      }
+    },
+    "program / presentation": {
+      "lines": {
+        "covered": 1948,
+        "total": 1995,
+        "percent": 97.64
+      },
+      "functions": {
+        "covered": 170,
+        "total": 170,
+        "percent": 100.0
+      },
+      "branches": {
+        "covered": 1004,
+        "total": 1098,
+        "percent": 91.44
+      }
+    },
+    "extensions / API": {
+      "lines": {
+        "covered": 982,
+        "total": 1007,
+        "percent": 97.52
+      },
+      "functions": {
+        "covered": 130,
+        "total": 131,
+        "percent": 99.24
+      },
+      "branches": {
+        "covered": 469,
+        "total": 514,
+        "percent": 91.25
+      }
+    },
+    "extensions / archive": {
+      "lines": {
+        "covered": 1578,
+        "total": 1711,
+        "percent": 92.23
+      },
+      "functions": {
+        "covered": 145,
+        "total": 146,
+        "percent": 99.32
+      },
+      "branches": {
+        "covered": 646,
+        "total": 746,
+        "percent": 86.6
+      }
+    },
+    "extensions / ASAR": {
+      "lines": {
+        "covered": 442,
+        "total": 470,
+        "percent": 94.04
+      },
+      "functions": {
+        "covered": 43,
+        "total": 43,
+        "percent": 100.0
+      },
+      "branches": {
+        "covered": 210,
+        "total": 240,
+        "percent": 87.5
+      }
+    },
+    "extensions / SquashFS": {
+      "lines": {
+        "covered": 300,
+        "total": 319,
+        "percent": 94.04
+      },
+      "functions": {
+        "covered": 29,
+        "total": 29,
+        "percent": 100.0
+      },
+      "branches": {
+        "covered": 122,
+        "total": 144,
+        "percent": 84.72
+      }
+    },
+    "extensions / FUSE": {
+      "lines": {
+        "covered": 516,
+        "total": 559,
+        "percent": 92.31
+      },
+      "functions": {
+        "covered": 67,
+        "total": 67,
+        "percent": 100.0
+      },
+      "branches": {
+        "covered": 149,
+        "total": 174,
+        "percent": 85.63
+      }
+    },
+    "extensions / language database": {
+      "lines": {
+        "covered": 23,
+        "total": 23,
+        "percent": 100.0
+      },
+      "functions": {
+        "covered": 3,
+        "total": 3,
+        "percent": 100.0
+      },
+      "branches": {
+        "covered": 4,
+        "total": 4,
+        "percent": 100.0
+      }
+    },
+    "extensions / PCRE2": {
+      "lines": {
+        "covered": 118,
+        "total": 118,
+        "percent": 100.0
+      },
+      "functions": {
+        "covered": 15,
+        "total": 15,
+        "percent": 100.0
+      },
+      "branches": {
+        "covered": 32,
+        "total": 34,
+        "percent": 94.12
+      }
+    },
+    "extensions / Brotli": {
+      "lines": {
+        "covered": 325,
+        "total": 347,
+        "percent": 93.66
+      },
+      "functions": {
+        "covered": 22,
+        "total": 22,
+        "percent": 100.0
+      },
+      "branches": {
+        "covered": 155,
+        "total": 186,
+        "percent": 83.33
+      }
+    }
+  },
+  "minimums": {
+    "overall": {
+      "lines": 90.0,
+      "functions": 90.0,
+      "branches": 80.0
+    },
+    "program / command line": {
+      "lines": 90.0,
+      "functions": 90.0,
+      "branches": 80.0
+    },
+    "program / configuration": {
+      "lines": 90.0,
+      "functions": 90.0,
+      "branches": 80.0
+    },
+    "program / command grammar": {
+      "lines": 90.0,
+      "functions": 90.0,
+      "branches": 80.0
+    },
+    "program / execution": {
+      "lines": 90.0,
+      "functions": 90.0,
+      "branches": 80.0
+    },
+    "program / filesystem": {
+      "lines": 90.0,
+      "functions": 90.0,
+      "branches": 80.0
+    },
+    "program / matching": {
+      "lines": 90.0,
+      "functions": 90.0,
+      "branches": 80.0
+    },
+    "program / presentation": {
+      "lines": 90.0,
+      "functions": 90.0,
+      "branches": 80.0
+    },
+    "extensions / API": {
+      "lines": 97.0,
+      "functions": 90.0,
+      "branches": 87.0
+    },
+    "extensions / archive": {
+      "lines": 90.0,
+      "functions": 90.0,
+      "branches": 80.0
+    },
+    "extensions / ASAR": {
+      "lines": 90.0,
+      "functions": 90.0,
+      "branches": 80.0
+    },
+    "extensions / SquashFS": {
+      "lines": 90.0,
+      "functions": 90.0,
+      "branches": 80.0
+    },
+    "extensions / FUSE": {
+      "lines": 90.0,
+      "functions": 90.0,
+      "branches": 80.0
+    },
+    "extensions / language database": {
+      "lines": 90.0,
+      "functions": 90.0,
+      "branches": 80.0
+    },
+    "extensions / PCRE2": {
+      "lines": 98.0,
+      "functions": 98.0,
+      "branches": 87.0
+    },
+    "extensions / Brotli": {
+      "lines": 90.0,
+      "functions": 90.0,
+      "branches": 80.0
+    }
+  },
+  "targets": {
+    "overall": {
+      "lines": 92.0,
+      "functions": 95.0,
+      "branches": 82.0
+    },
+    "program / command line": {
+      "lines": 92.0,
+      "functions": 95.0,
+      "branches": 82.0
+    },
+    "program / configuration": {
+      "lines": 92.0,
+      "functions": 95.0,
+      "branches": 82.0
+    },
+    "program / command grammar": {
+      "lines": 92.0,
+      "functions": 95.0,
+      "branches": 82.0
+    },
+    "program / execution": {
+      "lines": 92.0,
+      "functions": 95.0,
+      "branches": 82.0
+    },
+    "program / filesystem": {
+      "lines": 92.0,
+      "functions": 95.0,
+      "branches": 82.0
+    },
+    "program / matching": {
+      "lines": 92.0,
+      "functions": 95.0,
+      "branches": 82.0
+    },
+    "program / presentation": {
+      "lines": 92.0,
+      "functions": 95.0,
+      "branches": 82.0
+    },
+    "extensions / API": {
+      "lines": 97.0,
+      "functions": 95.0,
+      "branches": 87.0
+    },
+    "extensions / archive": {
+      "lines": 92.0,
+      "functions": 95.0,
+      "branches": 82.0
+    },
+    "extensions / ASAR": {
+      "lines": 92.0,
+      "functions": 95.0,
+      "branches": 82.0
+    },
+    "extensions / SquashFS": {
+      "lines": 92.0,
+      "functions": 95.0,
+      "branches": 82.0
+    },
+    "extensions / FUSE": {
+      "lines": 92.0,
+      "functions": 95.0,
+      "branches": 82.0
+    },
+    "extensions / language database": {
+      "lines": 92.0,
+      "functions": 95.0,
+      "branches": 82.0
+    },
+    "extensions / PCRE2": {
+      "lines": 98.0,
+      "functions": 98.0,
+      "branches": 87.0
+    },
+    "extensions / Brotli": {
+      "lines": 92.0,
+      "functions": 95.0,
+      "branches": 82.0
+    }
+  },
+  "enforcement": {
+    "overall": {
+      "lines": "high",
+      "functions": "high",
+      "branches": "high"
+    },
+    "program / command line": {
+      "lines": "high",
+      "functions": "high",
+      "branches": "high"
+    },
+    "program / configuration": {
+      "lines": "high",
+      "functions": "high",
+      "branches": "high"
+    },
+    "program / command grammar": {
+      "lines": "high",
+      "functions": "high",
+      "branches": "high"
+    },
+    "program / execution": {
+      "lines": "high",
+      "functions": "high",
+      "branches": "high"
+    },
+    "program / filesystem": {
+      "lines": "high",
+      "functions": "high",
+      "branches": "high"
+    },
+    "program / matching": {
+      "lines": "high",
+      "functions": "high",
+      "branches": "high"
+    },
+    "program / presentation": {
+      "lines": "high",
+      "functions": "high",
+      "branches": "high"
+    },
+    "extensions / API": {
+      "lines": "high",
+      "functions": "high",
+      "branches": "high"
+    },
+    "extensions / archive": {
+      "lines": "high",
+      "functions": "high",
+      "branches": "high"
+    },
+    "extensions / ASAR": {
+      "lines": "high",
+      "functions": "high",
+      "branches": "high"
+    },
+    "extensions / SquashFS": {
+      "lines": "high",
+      "functions": "high",
+      "branches": "high"
+    },
+    "extensions / FUSE": {
+      "lines": "high",
+      "functions": "high",
+      "branches": "high"
+    },
+    "extensions / language database": {
+      "lines": "high",
+      "functions": "high",
+      "branches": "high"
+    },
+    "extensions / PCRE2": {
+      "lines": "high",
+      "functions": "high",
+      "branches": "high"
+    },
+    "extensions / Brotli": {
+      "lines": "high",
+      "functions": "high",
+      "branches": "high"
+    }
+  },
+  "reasons": {},
+  "patch": {
+    "lines": {
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0
+    },
+    "functions": {
+      "covered": 0,
+      "total": 0,
+      "percent": null
+    },
+    "branches": {
+      "covered": 2,
+      "total": 2,
+      "percent": 100.0
+    }
+  },
+  "patch_policy": {
+    "minimum": {
+      "lines": 95.0,
+      "branches": 85.0
+    },
+    "target": {
+      "lines": 98.0,
+      "branches": 90.0
+    },
+    "enforce": {
+      "lines": "medium",
+      "branches": "medium"
+    }
+  }
+}
