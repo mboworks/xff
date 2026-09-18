@@ -461,6 +461,16 @@ TEST_F(ParserTest, EnforceStyleRejectsPrintfFieldEscapeUnderFind) {
   EXPECT_THAT(EnforceStyle(pf, registry::Style::kXff), IsOk());
 }
 
+TEST_F(ParserTest, PrintfStyleValidationUsesOperandMetadata) {
+  ASSERT_OK_AND_ASSIGN(Command command, Parse({".", "-fprintf", "out", "%{name}"}));
+  auto descriptor = *command.expression->descriptor;
+  descriptor.name = "-renamed-formatter";
+  command.expression->descriptor.set_ref(descriptor);
+  EXPECT_THAT(EnforceStyle(command, registry::Style::kFind), StatusIs(absl::StatusCode::kInvalidArgument));
+  descriptor.argument_fields.first = 0;
+  EXPECT_THAT(EnforceStyle(command, registry::Style::kFind), IsOk());
+}
+
 TEST_F(ParserTest, EnforceStyleWalksTheWholeTree) {
   // A -capture buried under operators is still found (the check is a full walk).
   ASSERT_OK_AND_ASSIGN(const Command cmd, Parse({".", "-type", "f", "-o", "-capture:n", "wc", ";"}));

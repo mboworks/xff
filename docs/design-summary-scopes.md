@@ -279,3 +279,11 @@ still matters: collecting before `-first` retains the larger population, while c
 retains only entries that reached the action. An entry collected under two names contributes to
 both populations. In comparison mode, physical-entry accounting applies instead of logical
 collapsing. A collection that exceeds its `--buffer` budget fails without publishing partial tables.
+
+## Hash grouping
+
+`--summary=hash` groups entries by the same digest as the `{hash}` field. Both use the
+entry's active filesystem, so archive members are read from their archive rather than
+looked up as host paths. `--hash-algorithm` and `--hash-encoding` select the default digest
+and its representation for both forms. Use a qualified template such as
+`--summary={hash:sha256}` to override the algorithm for that summary alone.

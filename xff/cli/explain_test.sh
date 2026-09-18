@@ -586,4 +586,56 @@ INI
   expect_output_contains 'dropped' "${out}"
 }
 
+test::explain_reports_inactive_cli_modifiers_without_rejecting_them() {
+  local out
+  out="$("$(_xff_bin)" . --count --explain)"
+  expect_output_contains $'inactive-modifier\t--count\trequires a -grep action' "${out}" || return
+  out="$("$(_xff_bin)" left right --compare=diff --diff-format=y --explain)"
+  expect_output_contains 'tree diffs use unified output' "${out}" || return
+  out="$("$(_xff_bin)" . --shards --shards-show=count --summary=ext --explain)"
+  expect_output_contains $'inactive-modifier\t--shards-show=count' "${out}" || return
+  out="$("$(_xff_bin)" . --shards --shards-show=count --summary=ext --summary=none --explain)"
+  expect_output_not_contains 'inactive-modifier' "${out}"
+}
+
+test::explain_modifier_checks_respect_configured_consumers_and_dormant_defaults() {
+  local dir user out
+  dir="$(test_tmpdir modifiers)"
+  user="${dir}/user.ini"
+  cat >"${user}" <<'INI'
+[search]
+-grep x
+[defaults]
+--count
+INI
+  out="$(XFF_TEST_USER_CONFIG="${user}" "$(_xff_bin)" . --count --config=search --explain)"
+  expect_output_not_contains 'inactive-modifier' "${out}" || return
+  out="$(XFF_TEST_USER_CONFIG="${user}" "$(_xff_bin)" . --config=defaults --explain)"
+  expect_output_not_contains 'inactive-modifier' "${out}" || return
+  out="$(XFF_TEST_USER_CONFIG="${user}" "$(_xff_bin)" . --count --config=defaults --explain)"
+  expect_output_not_contains 'inactive-modifier' "${out}" || return
+  out="$("$(_xff_bin)" . -exec echo --count \; --explain)"
+  expect_output_not_contains 'inactive-modifier' "${out}"
+}
+
+test::explain_resources_use_selected_config_without_traversal() {
+  local dir cfg out
+  dir="$(test_tmpdir resource_config)"
+  cfg="${dir}/user.ini"
+  cat >"${cfg}" <<'INI'
+[resource-view]
+--jobs=3
+--format=aligned
+--columns=hash,lines
+--buffer=2KiB
+INI
+  out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/absent" --config=resource-view --explain)"
+  grep -Fq $'directory-workers-per-walk\t3' <<<"${out}" || fail 'resource view lost configured worker count'
+  grep -Fq $'content-field-occurrences\t2' <<<"${out}" || fail 'resource view lost configured content fields'
+  grep -Fq $'listing-column-buffer\t2048 cell bytes' <<<"${out}" || fail 'resource view lost configured buffer'
+  out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/absent" --config=resource-view --columns=name --jobs=1 --explain)"
+  grep -Fq $'directory-workers-per-walk\t1' <<<"${out}" || fail 'resource view ignored CLI worker override'
+  grep -Fq $'content-field-occurrences\t0' <<<"${out}" || fail 'resource view ignored CLI column override'
+}
+
 test_runner

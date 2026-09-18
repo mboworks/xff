@@ -1164,6 +1164,28 @@ bool Template::ReferencesCapture(std::string_view name) const {
   });
 }
 
+hash::DefaultUsage Template::HashDefaultsUsed() const {
+  hash::DefaultUsage usage;
+  for (const Segment& segment : segments_) {
+    if (segment.fn != &HashField) {
+      continue;
+    }
+    const std::string_view qualifier =
+        segment.post == Segment::PostProcess::kNone ? segment.qualifier : std::string_view{};
+    const auto spec = hash::ParseSpec(qualifier, "sha256");
+    if (spec.has_value()) {
+      usage.algorithm |= spec->defaults.algorithm;
+      usage.encoding |= spec->defaults.encoding;
+    }
+  }
+  return usage;
+}
+
+std::size_t Template::ContentFieldCount() const {
+  return static_cast<std::size_t>(absl::c_count_if(
+      segments_, [](const Segment& segment) { return segment.fn == &HashField || segment.fn == &LinesField; }));
+}
+
 std::string Template::Render(const RenderContext& context) const {
   std::string out;
   for (const Segment& segment : segments_) {

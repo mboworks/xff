@@ -1044,6 +1044,19 @@ TEST_F(RunTest, MaxDepthLimitsDescent) {
       RunExpr({"-maxdepth", "1"}), UnorderedElementsAre(root_.string(), Path("a.txt"), Path("b.md"), Path("sub")));
 }
 
+TEST_F(RunTest, TraversalLimitsUseDescriptorEffectsRatherThanNames) {
+  ASSERT_OK_AND_ASSIGN(auto command, parser::Parse({root_.string(), "-maxdepth", "0"}));
+  auto descriptor = *command.expression->descriptor;
+  descriptor.name = "-true";
+  command.expression->descriptor.set_ref(descriptor);
+  std::vector<std::string> records;
+  const auto result = RunFind(
+      command, fs_, [&](std::string_view record) { records.emplace_back(record); },
+      [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); });
+  EXPECT_THAT(result.errors, Eq(0));
+  EXPECT_THAT(records, ElementsAre(root_.string() + "\n"));
+}
+
 TEST_F(RunTest, LastDepthOptionWinsAcrossTheExpressionTree) {
   EXPECT_THAT(
       RunExpr({"-maxdepth", "0", "-maxdepth", "1"}),
@@ -1480,6 +1493,33 @@ TEST_F(RunTest, InvalidValuedGlobalsAreRejectedBeforeTraversal) {
     EXPECT_THAT(result.errors, 2);
     EXPECT_THAT(result.any_match, IsFalse());
     EXPECT_THAT(reported, StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr(test.message)));
+  }
+}
+
+TEST_F(RunTest, EveryExplicitArchiveModeRequiresAnAvailableBackend) {
+  for (const std::string_view flag :
+       {"--archive", "--archive=roots", "--archive=all", "--archive=any", "--archive-any", "-z", "-z+", "-z++", "-Z",
+        "-Z+", "-Z++"}) {
+    SCOPED_TRACE(flag);
+    MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({std::string(flag), root_.string()}));
+    absl::Status reported;
+    const RunResult result = RunFind(
+        command, fs_, [](std::string_view) {}, [&](std::string_view, absl::Status status) { reported = status; });
+    EXPECT_THAT(result.errors, 2);
+    EXPECT_THAT(result.any_match, IsFalse());
+    EXPECT_THAT(reported, StatusIs(absl::StatusCode::kUnimplemented, HasSubstr("not built into this binary")));
+  }
+}
+
+TEST_F(RunTest, ExplicitArchiveResetDoesNotRequireABackend) {
+  for (const std::string_view flag : {"--archive=none", "-z-", "-Z-"}) {
+    SCOPED_TRACE(flag);
+    MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"--archive-any", std::string(flag), root_.string()}));
+    const RunResult result = RunFind(
+        command, fs_, [](std::string_view) {},
+        [](std::string_view, absl::Status status) { EXPECT_THAT(status, IsOk()); });
+    EXPECT_THAT(result.errors, 0);
+    EXPECT_THAT(result.any_match, IsTrue());
   }
 }
 

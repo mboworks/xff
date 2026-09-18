@@ -40,10 +40,17 @@ enum class Encoding {
 // Parses an encoding name -- "hex" or "base64" -- returning nullopt for anything else.
 std::optional<Encoding> ParseEncoding(std::string_view name);
 
+// Which global defaults a parsed hash request consumes. Explicit per-use settings do not consume them.
+struct DefaultUsage {
+  bool algorithm = false;
+  bool encoding = false;
+};
+
 // A resolved (algorithm, encoding) pair, e.g. from a `{hash:...}` qualifier or a `-hash:...` spec.
 struct AlgoEncoding {
   std::string_view algo;
   Encoding encoding = Encoding::kHex;
+  DefaultUsage defaults;
 };
 
 // Parses an "ALGO[/ENCODING]" spec, filling empty parts from the defaults: an empty ALGO uses

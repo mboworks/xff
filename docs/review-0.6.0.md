@@ -408,7 +408,7 @@ statistics; test multiple tables and control characters before choosing a concat
 
 ### S11 - P2: Clarify comparison exit status for automation
 
-- [ ] Add a comparison-specific exit-status example and focused-help explanation.
+- [x] Add a comparison-specific exit-status example and focused-help explanation.
 
 Observed behavior is useful: with `--exit-match` or `--quiet`, identical trees return 1 and trees
 with discrepancies return 0; operational errors return 2. `--compare-select=all` or `none` does not
@@ -420,7 +420,7 @@ specific workflow cannot be expressed. Include empty trees, filtered populations
 
 ### S12 - P2: Make potentially ineffective modifiers visible
 
-- [ ] Define a consistent policy for modifiers whose consuming feature is absent.
+- [x] Define a consistent policy for modifiers whose consuming feature is absent.
 
 Examples that currently succeed without effect include `--count` without `-grep`,
 `--shards-show=count` without `--shards`, and `--diff-format=y` in tree-diff mode (which remains unified).
@@ -432,7 +432,10 @@ request. At minimum expose the latter in `--explain`; use errors only where the 
 
 ### S13 - P2: Make expensive operations and retained state inspectable
 
-- [ ] Describe buffering, file reads, and concurrency as separate resources.
+- [x] Describe buffering, file reads, and concurrency as separate resources.
+- [x] Inspect effective resource controls and potential consumers through `--explain`.
+- [x] Publish broad/deep timing measurements and isolated logical-read counts.
+- [ ] Complete network-storage and general runtime read-accounting measurements.
 
 Directory reads and eligible child commands are parallel; expression evaluation is coordinated.
 Tree comparison retains matched inventories until both walks finish. `--buffer` is not a global
@@ -462,7 +465,7 @@ Follow-up probes reproduced B11's collection double counting. The guide follows 
 
 ### S15 - P2: Publish a concise order-and-limits guide
 
-- [ ] Put `-first`, `-top`, `--top`, `--max-results`, `-quit`, and `--sort` in one comparison table.
+- [x] Put `-first`, `-top`, `--top`, `--max-results`, `-quit`, and `--sort` in one comparison table.
 
 These controls intentionally act at different stages: expression filtering, deferred fuzzy selection,
 reduction-row selection, implicit listing limits, traversal termination, and ordering. The probe
@@ -473,7 +476,7 @@ which operations stream, which defer, and what `-j` does not reorder. Retain exi
 
 ### S16 - P2: Make archive capability and safety explanations easier to apply
 
-- [ ] Provide task-based recipes alongside the full operation tables.
+- [x] Provide task-based recipes alongside the full operation tables.
 
 The full binary exposes many readers and fewer writers/rewriters. Reading, extraction/mounting,
 member deletion, container creation, category controls, and scoped destinations are different axes.
@@ -565,3 +568,15 @@ Keep race/safety adapter tests and platform integration tests distinct from usab
 
 There is no recommendation to expand the feature vocabulary broadly. Making existing combinations
 predictable and inspectable will produce more immediate value than adding unrelated flags.
+
+### B14 - P1: Hash summary drops the active filesystem and hash defaults
+
+- [x] Reproduce: two distinct archive members collapse into one empty digest bucket with
+      `--summary=hash`, while `--summary={hash}` produces their actual digests.
+- [x] Route hash shorthand through the compiled field-template path, preserving the visit's
+      filesystem and configured hash algorithm/encoding. Keep the summary identity `hash`.
+- [x] Verify archive and ordinary-file regression coverage, reference help, and changed-source lint.
+
+The shorthand previously used a convenience renderer without the visit's filesystem or active
+hash defaults. Tests must independently verify digest values, not merely compare two renderers
+that could share a defect. Existing read-error behavior is outside this change.

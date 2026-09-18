@@ -29,7 +29,7 @@ namespace {
 // Walks the expression tree appending one site per `-collect` node, in AST order.
 void AppendCollectSites(const parser::Expr& expr, std::vector<CollectSite>& sites) {
   if (expr.kind == parser::Expr::Kind::kPredicate) {
-    if (expr.descriptor.has_value() && expr.descriptor->name == "-collect") {
+    if (expr.descriptor.has_value() && expr.descriptor->control == registry::Control::kCollect) {
       sites.push_back(
           CollectSite{
               .name = expr.args.empty() || expr.args.front().empty() ? kDefaultCollection : expr.args.front(),

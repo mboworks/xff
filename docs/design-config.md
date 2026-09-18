@@ -575,3 +575,66 @@ See [Inspecting effective policy](design-safety.md#inspecting-effective-policy) 
 
 Directory-scoped temp/output permissions and root-declaration precedence are specified in
 [Directory-scoped safety controls](design-directory-safety.md).
+
+## Inactive modifiers in explain output
+
+`--explain` reports `inactive-modifier` notes when a modifier's winning setting came from the CLI
+and the effective command has no registered consumer for it. These notes are advisory: reusable
+configuration defaults remain valid and quiet, and normal execution is unchanged. A configured
+predicate or action counts as a consumer after selector expansion and safety gating. Literal primary
+arguments never become modifier requests. A setting superseded later by configuration is no longer
+the effective CLI request.
+
+The initial registered dependencies cover:
+
+| Modifier                                           | Consumer                                                                                                |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `--count` / `-c`                                   | A `-grep` action                                                                                        |
+| `--context`, `--before-context`, `--after-context` | `-grep` line output, or symmetric default context for `-diff`; explicit diff context takes precedence   |
+| `--diff-context`                                   | Contextual `-diff` output without a per-action count, or tree diff output                               |
+| `--diff-format`                                    | `-diff` without an attached style; tree diffs use unified output                                        |
+| `--diff-ignore`, `--diff-ignore-matching`          | A `-diff` action                                                                                        |
+| `--diff-algorithm`                                 | A `-diff` action or tree diff output                                                                    |
+| `--shards-show`                                    | Ordinary shard listing, without active summaries or histograms                                          |
+| `--shards-dedup`, `--shard-pattern`                | Ordinary shard grouping or a `-shard-status` predicate                                                  |
+| `--histogram-width`                                | Plain or aligned histogram bars                                                                         |
+| `--top`                                            | An ordinary summary or categorical histogram; comparison-result tables and numeric ranges stay complete |
+| `--summary-precision`                              | An active summary or histogram mean                                                                     |
+
+Hash dependencies inspect the parsed action specs and field templates. `--hash-algorithm`
+requires a hash consumer without an explicit algorithm, while `--hash-encoding` requires one
+without an explicit encoding. Thus `-hash:sha256` consumes only the encoding default, and
+`-hash:/hex` consumes only the algorithm default. The same rules apply to `{hash}` fields.
+Post-processing runs after the unqualified hash field and therefore consumes both defaults.
+
+`--summary=hash` consumes both defaults. Cleared summaries, suppressed implicit listings,
+grep line templates suppressed by `--count`, literal braces in predicates, escaped printf directives,
+and exec arguments without
+`--exec-fields` do not provide consumers. Definitions contain literal values, not recursively
+parsed templates. Inspection never reads file content.
+
+Archive dependencies also use the effective flavor and linked archive support:
+
+| Modifier                                  | Consumer                                                                                 |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `--archive-depth`                         | Available `all` or `any` traversal; roots do not nest                                    |
+| `--archive-separator`, `--archive-prefix` | Available archive traversal, including roots                                             |
+| `--archive-aggregate`                     | Archive traversal plus an ordinary summary, histogram, shard group, or packing operation |
+
+A comparison-result table alone is not an ordinary reduction. Aggregation can also change when
+containers are opened before visiting them, so packing and shard grouping count as consumers even
+without a summary. The inspection does not open archives. Explicit traversal in a binary without
+archive support retains the runtime unsupported-feature error; the xff flavor's implicit roots
+mode degrades to no archive traversal in that binary.
+
+`--archive-any` is a mode selector equivalent to `--archive=any`, not a dormant modifier.
+Archive write permissions remain policy choices and do not require an immediate action consumer.
+
+The checks use final resolved settings, so `--summary=ext --summary=none` removes that summary's
+consumer. For example, `--shards --shards-show=count --summary=ext` has an inactive listing modifier;
+adding `--summary=none` restores the shard listing. `--compare=diff --diff-format=y` reports that
+`--diff-format` belongs to the per-file action rather than changing the tree-diff renderer.
+
+These are structural dependency checks, not an execution forecast. A consumer behind a predicate
+that never matches is still present. Absence of a note does not prove every setting has an effect:
+only registered dependencies are checked, and per-value interactions can need more specific rules.

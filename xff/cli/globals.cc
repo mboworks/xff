@@ -35,6 +35,7 @@
 #include "xff/matching/mime/database.h"
 #include "xff/matching/regex/backend.h"
 #include "xff/presentation/format/format.h"
+#include "xff/registry/consumers.h"
 #include "xff/values/values.h"
 
 namespace xff::cli {
@@ -504,7 +505,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--explain",
         .group = "config",
         .header = "Config",
-        .summary = "print the resolved configuration and exit",
+        .summary = "inspect resolved configuration and execution resources",
         .details = "Prints the active style, every config source consulted and whether it was found, resolved flags "
                    "in application order with their provenance, rejected config directives, and the style-default "
                    "table with this run's effective values. The effective safety table shows unconditional blocks, "
@@ -513,9 +514,14 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "Profile origins remain visible when an unconditional block wins. Named declarations list their "
                    "source, selection, availability or skip/validation reason, and whether they declare globals, "
                    "predicates, or actions; availability never authorizes a gated action. "
+                   "The resource view reports worker limits, potential retained state, active hash/line-count "
+                   "fields, and advisory expression costs. It does not predict bytes read, peak memory, or latency. "
                    "It performs enabled `.xffrc` discovery but does not "
                    "evaluate the expression. "
-                   "Existing unreadable config files and missing explicit `--xffrc` files are errors.",
+                   "Existing unreadable config files and missing explicit `--xffrc` files are errors. "
+                   "For modifiers with registered dependencies, `inactive-modifier` notes identify effective CLI "
+                   "settings with no consumer. Dormant config defaults and superseded settings stay quiet; "
+                   "the notes do not reject commands or prove that a conditional action will run.",
         .topic = "config",
         .cli_only = true,
     },
@@ -629,6 +635,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "--archive",
         .topic = "archive",
         .extra = "archive",
+        .required_consumer = registry::ModifierConsumer::kArchiveNestedTraversal,
     },
     {
         .name = "--archive-aggregate",
@@ -651,6 +658,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .topic = "archive",
         .extra = "archive",
         .value_check = GlobalFlag::ValueCheck::kEnum,
+        .required_consumer = registry::ModifierConsumer::kArchiveReduction,
     },
     {
         .name = "--archive-delete",
@@ -759,16 +767,12 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--archive-any",
         .group = "archive",
         .header = "Archive traversal",
-        .summary = "under --archive=all, offer EVERY file to the reader, not only likely names",
-        .details = "By default `all` only opens a file the walk met whose NAME looks like a container "
-                   "(`.tar`, `.tgz`, `.zip`, `.jar`, `.phar`, ... - the reader's formats plus the "
-                   "packages that are one of them underneath). Without that gate, walking a source tree "
-                   "would open and format-bid every `.cc` and every binary in it, so the cost of diving "
-                   "would fall on runs that dive nothing. The name is only a heuristic, and this flag is "
-                   "the way out of it: an archive called `blob` or `backup.dat` is found with "
-                   "--archive-any and missed without. It costs a read of every candidate file, which is "
-                   "why it is not the default. A file NAMED on the command line is always opened - "
-                   "pointing xff at it is the request - so this flag changes nothing for `--archive=roots`.",
+        .summary = "alias for --archive=any: traverse all archives without the filename gate",
+        .details = "Selects the same traversal mode as `--archive=any` or `-z++`: open archives discovered "
+                   "during the walk, even when their names lack a known archive suffix. This may read every "
+                   "candidate file to identify its format. A root file is always offered to the reader when "
+                   "archive traversal is enabled. Like the other archive mode selectors, a later selector "
+                   "can replace this mode, including `--archive=roots` or `--archive=none`.",
         .affects = "--archive",
         .topic = "archive",
         .extra = "archive",
@@ -791,6 +795,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "becomes indistinguishable from an archive - so it is never the default.",
         .topic = "archive",
         .extra = "archive",
+        .required_consumer = registry::ModifierConsumer::kArchiveTraversal,
     },
     {
         .name = "--archive-prefix",
@@ -817,6 +822,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .values = kArchivePrefixValues,
         .topic = "archive",
         .extra = "archive",
+        .required_consumer = registry::ModifierConsumer::kArchiveTraversal,
     },
     {
         .name = "--jobs",
@@ -910,6 +916,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "path, and fuzzy matching, xff's filesystem-native folding can additionally apply unless "
                    "`--exact` is present. rg defaults to `smart`; xff and find default to `sensitive`.",
         .values = kCaseValues,
+        .affects = "-name,-path,-lname,-fuzzy,-fuzzypath,-regex,-rxc,-grep,-content",
         .see_also = "regex,grammars",
         .sign_forms = kCaseShorts,
         .value_check = GlobalFlag::ValueCheck::kEnum,
@@ -1243,6 +1250,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-diff,--compare",
         .topic = "compare",
         .value_check = GlobalFlag::ValueCheck::kEnum,
+        .required_consumer = registry::ModifierConsumer::kDiffComputation,
     },
     {
         .name = "--diff-ignore",
@@ -1256,6 +1264,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "`eofnl`, comma-separated.",
         .affects = "-diff",
         .see_also = "compare,content",
+        .required_consumer = registry::ModifierConsumer::kFileDiff,
     },
     {
         .name = "--diff-ignore-matching",
@@ -1268,6 +1277,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "empty value disables a configured expression. The expression uses RE2.",
         .affects = "-diff",
         .see_also = "compare,content",
+        .required_consumer = registry::ModifierConsumer::kFileDiff,
     },
     {
         .name = "--diff-format",
@@ -1279,6 +1289,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-diff",
         .see_also = "compare,content",
         .value_check = GlobalFlag::ValueCheck::kEnum,
+        .required_consumer = registry::ModifierConsumer::kDefaultDiffFormat,
     },
     {
         .name = "--diff-context",
@@ -1288,28 +1299,35 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "default -diff context lines (3); overrides --context for -diff, and -diff:uN overrides it",
         .affects = "-diff,--compare",
         .topic = "compare",
+        .required_consumer = registry::ModifierConsumer::kDiffContext,
     },
     {
         .name = "--hash-algorithm",
         .display = "--hash-algorithm=<ALGO>",
         .group = "output",
         .header = "Output values and actions",
-        .summary = "default digest for -hash / {hash} (sha256 default; md5, sha512, blake3, and more)",
-        .details = "Sets the default digest algorithm for the `-hash` action and the `{hash}` field. `sha256` is "
-                   "the default; a `-hash:ALGO` spec or a `{hash:ALGO}` qualifier overrides it per use.",
+        .summary = "default digest for -hash / {hash} / --summary=hash (sha256 default)",
+        .details = "Sets the default digest algorithm for the `-hash` action, the `{hash}` field, and "
+                   "`--summary=hash`. `sha256` is "
+                   "the default; a `-hash:ALGO` spec or a `{hash:ALGO}` qualifier overrides it per use. "
+                   "`--explain` identifies a CLI default with no active consumer; suppressed output does not count.",
         .values = kHashAlgorithmValues,
         .see_also = "fields,output",
         .value_check = GlobalFlag::ValueCheck::kEnum,
+        .required_consumer = registry::ModifierConsumer::kHashAlgorithm,
     },
     {
         .name = "--hash-encoding",
         .display = "--hash-encoding=hex|base64",
         .group = "output",
         .header = "Output values and actions",
-        .summary = "default -hash / {hash} rendering: hex (default) or base64",
+        .summary = "default -hash / {hash} / --summary=hash rendering: hex (default) or base64",
+        .details = "Used by hash actions, fields, and `--summary=hash` unless that use specifies its own encoding. "
+                   "`--explain` identifies a CLI default with no active consumer; suppressed output does not count.",
         .values = kHashEncodingValues,
         .see_also = "fields,output",
         .value_check = GlobalFlag::ValueCheck::kEnum,
+        .required_consumer = registry::ModifierConsumer::kHashEncoding,
     },
     {
         .name = "--path-encoding",
@@ -1505,7 +1523,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
             "group, file digest, or hash-verification result). The categorical keys reuse the "
             "{mime}/{user}/{group}/{hash} field "
             "vocabulary; --summary=hash groups identical files into one bucket (a dedup count, reading every "
-            "file). `--summary=hash-verification` requires exactly one `-hasheq` and counts its `verified` or "
+            "file through its active filesystem, including archive members). It uses `--hash-algorithm` and "
+            "`--hash-encoding`, just like `{hash}`. `--summary=hash-verification` requires exactly one `-hasheq` and "
+            "counts its `verified` or "
             "`failed` verdict even when that verdict makes the complete expression false; an entry that "
             "short-circuits before reaching `-hasheq` is not counted. Empty expected values and unreadable "
             "entries are failed, matching `-hasheq` itself. A "
@@ -1594,6 +1614,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .values = kShardsShowValues,
         .topic = "stats",
         .value_check = GlobalFlag::ValueCheck::kEnum,
+        .required_consumer = registry::ModifierConsumer::kShardListing,
     },
     {
         .name = "--shards-dedup",
@@ -1609,6 +1630,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .values = kShardsDedupValues,
         .topic = "stats",
         .value_check = GlobalFlag::ValueCheck::kEnum,
+        .required_consumer = registry::ModifierConsumer::kShardGrouping,
     },
     {
         .name = "--shard-pattern",
@@ -1623,6 +1645,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "order, before the built-in schemes.",
         .topic = "stats",
         .repetition = GlobalFlag::Repetition::kAccumulate,
+        .required_consumer = registry::ModifierConsumer::kShardGrouping,
     },
     {
         .name = "--count",
@@ -1633,6 +1656,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "with -grep, print a per-file matching-line count (path:count) instead of the lines",
         .affects = "-grep",
         .topic = "content",
+        .required_consumer = registry::ModifierConsumer::kGrep,
     },
     {
         .name = "--context",
@@ -1644,9 +1668,12 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "value select one side (`--context=A:3,B:1`), which is what `--after-context` and "
                    "`--before-context` spell one at a time. xff has NO single-dash `-A` / `-B` / `-C`: those "
                    "letters are unclaimed for now (see TODO.md), and a single-dash flag would be an "
-                   "expression primary under xff's dash-count rule rather than a whole-run option.",
+                   "expression primary under xff's dash-count rule rather than a whole-run option. "
+                   "A final symmetric before/after context also supplies the default for contextual `-diff` output, "
+                   "unless `--diff-context` or a per-action count overrides it.",
         .affects = "-grep,-diff,--diff-context",
         .topic = "content",
+        .required_consumer = registry::ModifierConsumer::kSharedContext,
     },
     {
         .name = "--after-context",
@@ -1654,8 +1681,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "grep-output",
         .header = "Content-match output",
         .summary = "with -grep, print N lines of context after each match (= --context=A:N)",
-        .affects = "-grep",
+        .details = "Together with the other context settings, a final symmetric context also supplies the "
+                   "default for contextual `-diff` output unless `--diff-context` or a per-action count overrides it.",
+        .affects = "-grep,-diff",
         .see_also = "content,regex",
+        .required_consumer = registry::ModifierConsumer::kSharedContext,
     },
     {
         .name = "--before-context",
@@ -1663,8 +1693,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "grep-output",
         .header = "Content-match output",
         .summary = "with -grep, print N lines of context before each match (= --context=B:N)",
-        .affects = "-grep",
+        .details = "Together with the other context settings, a final symmetric context also supplies the "
+                   "default for contextual `-diff` output unless `--diff-context` or a per-action count overrides it.",
+        .affects = "-grep,-diff",
         .see_also = "content,regex",
+        .required_consumer = registry::ModifierConsumer::kSharedContext,
     },
     {
         .name = "--max-results",
@@ -1697,9 +1730,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "When groups are omitted, summary tables state how many are shown out of the complete set; "
                    "JSONL rows add `groups_shown` and `groups_total`. Comparison scopes count distinct group "
                    "keys across the selected columns, including overlapping scopes only once. "
-                   "Comparison-result summaries always show every type and status; `--top` does not truncate them.",
+                   "Comparison-result summaries always show every type and status; `--top` does not truncate them. "
+                   "Numeric-range histograms retain every range; only categorical histogram buckets are top-limited.",
         .affects = "--summary,--histogram",
         .topic = "stats",
+        .required_consumer = registry::ModifierConsumer::kRankedReduction,
     },
     {
         .name = "--histogram-width",
@@ -1712,6 +1747,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "--histogram",
         .topic = "stats",
         .value_check = GlobalFlag::ValueCheck::kPositiveInteger,
+        .required_consumer = registry::ModifierConsumer::kHistogramBars,
     },
     {
         .name = "--summary-precision",
@@ -1719,11 +1755,13 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "stats-display",
         .header = "Statistics display",
         .summary = "fraction digits for summary percentages and human-readable sizes (default 2)",
-        .details = "Accepts integers from `0` through `9`; other values are errors. Last occurrence wins. "
-                   "Applies to ordinary and comparison summaries, including JSON percentage fields. "
-                   "Exact byte counts stay integers.",
-        .affects = "--summary,--compare",
+        .details =
+            "Accepts integers from `0` through `9`; other values are errors. Last occurrence wins. "
+            "Applies to ordinary and comparison summaries, including JSON percentage fields, and histogram means. "
+            "Exact byte counts stay integers.",
+        .affects = "--summary,--compare,--histogram",
         .topic = "stats",
+        .required_consumer = registry::ModifierConsumer::kPrecisionReduction,
     },
     {
         .name = "--color",

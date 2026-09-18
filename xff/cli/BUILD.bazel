@@ -51,6 +51,7 @@ cc_library(
         ":html_cc",
         ":manpage_cc",
         ":markdown_cc",
+        ":modifier_diagnostics_cc",
         ":pager_cc",
         ":plain_backend_cc",
         ":wrap_cc",
@@ -575,6 +576,22 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "modifier_diagnostics_cc",
+    srcs = ["modifier_diagnostics.cc"],
+    hdrs = ["modifier_diagnostics.h"],
+    deps = [
+        ":globals_cc",
+        "//xff/config:config_cc",
+        "//xff/engine:run_cc",
+        "//xff/parser:parser_cc",
+        "//xff/registry:registry_cc",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+    ],
+)
+
 cc_test(
     name = "diagnostics_test",
     size = "small",
@@ -589,6 +606,28 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "modifier_diagnostics_test",
+    size = "small",
+    srcs = ["modifier_diagnostics_test.cc"],
+    deps = [
+        ":config_validation_cc",
+        ":modifier_diagnostics_cc",
+        "//xff/config:config_cc",
+        "//xff/config:xffrc_cc",
+        "//xff/parser:parser_cc",
+        "//xff/registry:registry_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+        "@xff_extras_api//:archive_backend_cc",
+    ],
+)
+
 # The whole-run option vocabulary (the flag counterpart of the registry), enumerated
 # for the help system and the planned man-page / .md generators.
 cc_library(
@@ -597,6 +636,7 @@ cc_library(
     hdrs = ["globals.h"],
     deps = [
         "//xff/presentation/format:format_cc",
+        "//xff/registry:registry_cc",
         "//xff/values:values_cc",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/status",

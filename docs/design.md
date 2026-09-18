@@ -110,6 +110,8 @@ tests can require full file reads.
 insensitive primaries control matching. Ignore files and include/exclude patterns are traversal
 filters, distinct from config discovery. [Parallel traversal](design-parallel.md) defines ordering,
 worker responsibilities, and bounded read-ahead; directory concurrency does not reorder actions.
+[Execution resources](execution-resources.md) separates retained state, content reads, and concurrency,
+and defines the measurements needed before optimizing them.
 
 Streaming, aligned, structured, and aggregate output modes have explicit buffering controls.
 Plain output preserves path bytes by default; `--path-encoding=escape` escapes controls.

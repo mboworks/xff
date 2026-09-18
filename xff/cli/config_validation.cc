@@ -33,10 +33,8 @@ bool IsDirectoryRoot(std::string_view token) {
 }
 
 bool IsSystemControl(std::string_view token) {
-  return IsDirectoryRoot(token) || token == "--no-require-system-globals" || token == "--require-system-globals"
-         || token == "--no-require-user-globals" || token == "--require-user-globals" || token == "--allow-xffrc"
-         || token == "--no-allow-xffrc" || token == "--allow-rc-globals" || token == "--no-allow-rc-globals"
-         || token == "--block-policy-categories" || token.starts_with("--block-policy-categories=");
+  const auto flag = LookupGlobalArgument(token);
+  return flag.has_value() && flag->config_only;
 }
 
 absl::StatusOr<std::size_t> PrimaryArgumentCount(

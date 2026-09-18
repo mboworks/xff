@@ -291,6 +291,16 @@ absl::Status ValidateSizeArgs(const parser::Expr& expr);
 // silent per-entry no-op; -diff then trusts the validated values.
 absl::Status ValidateDiffIgnore(std::string_view tokens, std::string_view matching);
 
+struct DiffDefaultDependencies {
+  bool format = false;
+  bool context = false;
+};
+
+// Uses the same attached-style parser as execution; silent output consumes no display defaults.
+DiffDefaultDependencies InspectDiffDefaults(
+    std::string_view style,
+    mbo::diff::DiffOptions::OutputFormat default_format);
+
 // Parses a `--diff-format` value into an mbo output format: the letters u/c/n/y (matching the
 // -diff:STYLE token) or the long names unified/context/normal/side-by-side; nullopt for an
 // unknown value. `none` is intentionally not a format (it is the per-action -diff:none silencer,
