@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-18 07:03:30</td>
+            <td class="headerValue">2026-09-18 10:17:18</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -925,19 +925,19 @@
 <span id="L841"><span class="lineNum">     841</span>                 :<span class="tlaGNC">         630 :   const xff::vfs::LocalFs fs;</span></span>
 <span id="L842"><span class="lineNum">     842</span>                 :<span class="tlaGNC">         630 :   const xff::engine::RunResult result = xff::engine::RunFind(</span></span>
 <span id="L843"><span class="lineNum">     843</span>                 :<span class="tlaGNC">         630 :       command, fs,</span></span>
-<span id="L844"><span class="lineNum">     844</span>                 :<span class="tlaGNC">        1402 :       [quiet](std::string_view record) {</span></span>
-<span id="L845"><span class="lineNum">     845</span>         [<span class="tlaGBC" title="branch 0 was taken 1330 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">        1332 :         if (!quiet) {  // --quiet suppresses output; the match is still recorded via `matched`</span></span>
-<span id="L846"><span class="lineNum">     846</span>                 :<span class="tlaGNC">        1330 :           std::cout.write(record.data(), static_cast&lt;std::streamsize&gt;(record.size()));</span></span>
-<span id="L847"><span class="lineNum">     847</span>                 :<span class="tlaGNC">        1330 :         }</span></span>
-<span id="L848"><span class="lineNum">     848</span>                 :<span class="tlaGNC">        1332 :       },</span></span>
+<span id="L844"><span class="lineNum">     844</span>                 :<span class="tlaGNC">        1396 :       [quiet](std::string_view record) {</span></span>
+<span id="L845"><span class="lineNum">     845</span>         [<span class="tlaGBC" title="branch 0 was taken 1324 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">        1326 :         if (!quiet) {  // --quiet suppresses output; the match is still recorded via `matched`</span></span>
+<span id="L846"><span class="lineNum">     846</span>                 :<span class="tlaGNC">        1324 :           std::cout.write(record.data(), static_cast&lt;std::streamsize&gt;(record.size()));</span></span>
+<span id="L847"><span class="lineNum">     847</span>                 :<span class="tlaGNC">        1324 :         }</span></span>
+<span id="L848"><span class="lineNum">     848</span>                 :<span class="tlaGNC">        1326 :       },</span></span>
 <span id="L849"><span class="lineNum">     849</span>                 :<span class="tlaGNC">         630 :       [](std::string_view path, absl::Status status) {</span></span>
-<span id="L850"><span class="lineNum">     850</span>                 :<span class="tlaGNC">          97 :         std::cerr &lt;&lt; &quot;xff: &quot; &lt;&lt; path &lt;&lt; &quot;: &quot; &lt;&lt; status.message() &lt;&lt; &quot;\n&quot;;</span></span>
-<span id="L851"><span class="lineNum">     851</span>                 :<span class="tlaGNC">          97 :       },</span></span>
+<span id="L850"><span class="lineNum">     850</span>                 :<span class="tlaGNC">          98 :         std::cerr &lt;&lt; &quot;xff: &quot; &lt;&lt; path &lt;&lt; &quot;: &quot; &lt;&lt; status.message() &lt;&lt; &quot;\n&quot;;</span></span>
+<span id="L851"><span class="lineNum">     851</span>                 :<span class="tlaGNC">          98 :       },</span></span>
 <span id="L852"><span class="lineNum">     852</span>                 :<span class="tlaGNC">         630 :       style);  // style-scoped traversal defaults (xff -&gt; sorted + bounded; find/rg -&gt; unordered)</span></span>
-<span id="L853"><span class="lineNum">     853</span>         [<span class="tlaGBC" title="branch 0 was taken 94 times"> + </span><span class="tlaGBC" title="branch 1 was taken 536 times"> + </span>]:<span class="tlaGNC">         630 :   if (result.errors != 0) {</span></span>
-<span id="L854"><span class="lineNum">     854</span>                 :<span class="tlaGNC">          94 :     return 2;  // an error outranks match status</span></span>
-<span id="L855"><span class="lineNum">     855</span>                 :<span class="tlaGNC">          94 :   }</span></span>
-<span id="L856"><span class="lineNum">     856</span> [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 530 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 3 times"> + </span>]:<span class="tlaGNC">         536 :   return match_sensitive &amp;&amp; !result.any_match ? 1 : 0;</span></span>
+<span id="L853"><span class="lineNum">     853</span>         [<span class="tlaGBC" title="branch 0 was taken 95 times"> + </span><span class="tlaGBC" title="branch 1 was taken 535 times"> + </span>]:<span class="tlaGNC">         630 :   if (result.errors != 0) {</span></span>
+<span id="L854"><span class="lineNum">     854</span>                 :<span class="tlaGNC">          95 :     return 2;  // an error outranks match status</span></span>
+<span id="L855"><span class="lineNum">     855</span>                 :<span class="tlaGNC">          95 :   }</span></span>
+<span id="L856"><span class="lineNum">     856</span> [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 529 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 3 times"> + </span>]:<span class="tlaGNC">         535 :   return match_sensitive &amp;&amp; !result.any_match ? 1 : 0;</span></span>
 <span id="L857"><span class="lineNum">     857</span>                 :<span class="tlaGNC">         630 : }</span></span>
 <span id="L858"><span class="lineNum">     858</span>                 :             : </span>
 <span id="L859"><span class="lineNum">     859</span>                 :             : // Entry point: run xff, then flush stdout explicitly before the process exits.</span>

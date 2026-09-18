@@ -3,26 +3,26 @@
   "measurements": {
     "overall": {
       "lines": {
-        "covered": 21224,
-        "total": 22106,
+        "covered": 21275,
+        "total": 22158,
         "percent": 96.01
       },
       "functions": {
-        "covered": 1771,
-        "total": 1786,
+        "covered": 1776,
+        "total": 1791,
         "percent": 99.16
       },
       "branches": {
-        "covered": 10442,
-        "total": 11586,
-        "percent": 90.13
+        "covered": 10484,
+        "total": 11630,
+        "percent": 90.15
       }
     },
     "program / command line": {
       "lines": {
-        "covered": 4341,
+        "covered": 4343,
         "total": 4431,
-        "percent": 97.97
+        "percent": 98.01
       },
       "functions": {
         "covered": 264,
@@ -30,9 +30,9 @@
         "percent": 99.25
       },
       "branches": {
-        "covered": 1583,
+        "covered": 1584,
         "total": 1710,
-        "percent": 92.57
+        "percent": 92.63
       }
     },
     "program / configuration": {
@@ -71,19 +71,19 @@
     },
     "program / execution": {
       "lines": {
-        "covered": 6567,
-        "total": 6952,
-        "percent": 94.46
+        "covered": 6606,
+        "total": 6995,
+        "percent": 94.44
       },
       "functions": {
-        "covered": 495,
-        "total": 505,
-        "percent": 98.02
+        "covered": 497,
+        "total": 507,
+        "percent": 98.03
       },
       "branches": {
-        "covered": 3888,
-        "total": 4400,
-        "percent": 88.36
+        "covered": 3925,
+        "total": 4440,
+        "percent": 88.4
       }
     },
     "program / filesystem": {
@@ -122,19 +122,19 @@
     },
     "program / presentation": {
       "lines": {
-        "covered": 1938,
-        "total": 1986,
-        "percent": 97.58
+        "covered": 1948,
+        "total": 1995,
+        "percent": 97.64
       },
       "functions": {
-        "covered": 167,
-        "total": 167,
+        "covered": 170,
+        "total": 170,
         "percent": 100.0
       },
       "branches": {
-        "covered": 1000,
-        "total": 1094,
-        "percent": 91.41
+        "covered": 1004,
+        "total": 1098,
+        "percent": 91.44
       }
     },
     "extensions / API": {

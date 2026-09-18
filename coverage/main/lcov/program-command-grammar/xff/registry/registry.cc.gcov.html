@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-18 07:03:30</td>
+            <td class="headerValue">2026-09-18 10:17:18</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -1295,334 +1295,341 @@
 <span id="L1215"><span class="lineNum">    1215</span>                 :             :                    &quot;PATTERN as `path:lineno:text` (grep's piped form; a literal substring under &quot;</span>
 <span id="L1216"><span class="lineNum">    1216</span>                 :             :                    &quot;`--regextype=EXACT`). `-grep:FORMAT PATTERN` renders a {line}/{text}/{match}/{column} template &quot;</span>
 <span id="L1217"><span class="lineNum">    1217</span>                 :             :                    &quot;instead. Honors `-c` / `--count` (one `path:count` per file) and -A / -B / `--context` &quot;</span>
-<span id="L1218"><span class="lineNum">    1218</span>                 :             :                    &quot;(surrounding lines, grep-style). Reads the file (expensive); non-regular / unreadable / binary &quot;</span>
-<span id="L1219"><span class="lineNum">    1219</span>                 :             :                    &quot;files yield nothing. Its truth is \&quot;matched a line\&quot;, so it composes with `-o` / `-q`. An xff &quot;</span>
-<span id="L1220"><span class="lineNum">    1220</span>                 :             :                    &quot;extension `--config=find` rejects.&quot;,</span>
-<span id="L1221"><span class="lineNum">    1221</span>                 :             :         .kind = Kind::kAction,</span>
-<span id="L1222"><span class="lineNum">    1222</span>                 :             :         .arity = 1,</span>
-<span id="L1223"><span class="lineNum">    1223</span>                 :             :         .binding = Binding::kFormat,</span>
-<span id="L1224"><span class="lineNum">    1224</span>                 :             :         .style = Style::kXff,</span>
-<span id="L1225"><span class="lineNum">    1225</span>                 :             :         .cost = Cost::kExpensive,</span>
-<span id="L1226"><span class="lineNum">    1226</span>                 :             :         .topic = &quot;content&quot;,</span>
-<span id="L1227"><span class="lineNum">    1227</span>                 :             :     },</span>
-<span id="L1228"><span class="lineNum">    1228</span>                 :             :     {</span>
-<span id="L1229"><span class="lineNum">    1229</span>                 :             :         .name = &quot;-fprint&quot;,</span>
-<span id="L1230"><span class="lineNum">    1230</span>                 :             :         .summary = &quot;write -print output to a named file&quot;,</span>
-<span id="L1231"><span class="lineNum">    1231</span>                 :             :         .details = &quot;Writes what `-print` would emit to FILE instead of stdout. FILE is opened once (truncating any &quot;</span>
-<span id="L1232"><span class="lineNum">    1232</span>                 :             :                    &quot;existing content) and held open for the whole walk, so matches append to it in visit order. This &quot;</span>
-<span id="L1233"><span class="lineNum">    1233</span>                 :             :                    &quot;is the anchor of the -f* family - each mirrors a stdout action: `-fprint0`, `-fprintf`, `-fls`, &quot;</span>
-<span id="L1234"><span class="lineNum">    1234</span>                 :             :                    &quot;and the xff `-fprintln` / `-fprintfln`.&quot;,</span>
-<span id="L1235"><span class="lineNum">    1235</span>                 :             :         .kind = Kind::kAction,</span>
-<span id="L1236"><span class="lineNum">    1236</span>                 :             :         .arity = 1,</span>
-<span id="L1237"><span class="lineNum">    1237</span>                 :             :         .writes_file = true,</span>
-<span id="L1238"><span class="lineNum">    1238</span>                 :             :         .see_also = &quot;output,fields,safety&quot;,</span>
-<span id="L1239"><span class="lineNum">    1239</span>                 :             :     },</span>
-<span id="L1240"><span class="lineNum">    1240</span>                 :             :     {</span>
-<span id="L1241"><span class="lineNum">    1241</span>                 :             :         // xff: -fprint with the OS line ending (the file form of -println)</span>
-<span id="L1242"><span class="lineNum">    1242</span>                 :             :         .name = &quot;-fprintln&quot;,</span>
-<span id="L1243"><span class="lineNum">    1243</span>                 :             :         .summary = &quot;write -println output to a named file (xff)&quot;,</span>
-<span id="L1244"><span class="lineNum">    1244</span>                 :             :         .details = &quot;The file form of `-println` (`-fprint` with the OS line ending). See `-fprint` for the file &quot;</span>
-<span id="L1245"><span class="lineNum">    1245</span>                 :             :                    &quot;handling; an xff extension `--config=find` rejects.&quot;,</span>
-<span id="L1246"><span class="lineNum">    1246</span>                 :             :         .kind = Kind::kAction,</span>
-<span id="L1247"><span class="lineNum">    1247</span>                 :             :         .arity = 1,</span>
-<span id="L1248"><span class="lineNum">    1248</span>                 :             :         .writes_file = true,</span>
-<span id="L1249"><span class="lineNum">    1249</span>                 :             :         .style = Style::kXff,</span>
-<span id="L1250"><span class="lineNum">    1250</span>                 :             :         .see_also = &quot;output,fields,safety&quot;,</span>
-<span id="L1251"><span class="lineNum">    1251</span>                 :             :     },</span>
-<span id="L1252"><span class="lineNum">    1252</span>                 :             :     {</span>
-<span id="L1253"><span class="lineNum">    1253</span>                 :             :         .name = &quot;-fprint0&quot;,</span>
-<span id="L1254"><span class="lineNum">    1254</span>                 :             :         .summary = &quot;write -print0 output to a named file&quot;,</span>
-<span id="L1255"><span class="lineNum">    1255</span>                 :             :         .details = &quot;The file form of `-print0` (NUL-terminated paths). See `-fprint` for the file handling.&quot;,</span>
-<span id="L1256"><span class="lineNum">    1256</span>                 :             :         .kind = Kind::kAction,</span>
-<span id="L1257"><span class="lineNum">    1257</span>                 :             :         .arity = 1,</span>
-<span id="L1258"><span class="lineNum">    1258</span>                 :             :         .writes_file = true,</span>
-<span id="L1259"><span class="lineNum">    1259</span>                 :             :         .see_also = &quot;output,fields,safety&quot;,</span>
-<span id="L1260"><span class="lineNum">    1260</span>                 :             :     },</span>
-<span id="L1261"><span class="lineNum">    1261</span>                 :             :     {</span>
-<span id="L1262"><span class="lineNum">    1262</span>                 :             :         .name = &quot;-fprintf&quot;,</span>
-<span id="L1263"><span class="lineNum">    1263</span>                 :             :         .summary = &quot;write -printf output to a named file&quot;,</span>
-<span id="L1264"><span class="lineNum">    1264</span>                 :             :         .details = &quot;The file form of `-printf`: `-fprintf FILE FORMAT` (FILE first, then the format). See `-printf` &quot;</span>
-<span id="L1265"><span class="lineNum">    1265</span>                 :             :                    &quot;for the directive vocabulary and `-fprint` for the file handling.&quot;,</span>
-<span id="L1266"><span class="lineNum">    1266</span>                 :             :         .kind = Kind::kAction,</span>
-<span id="L1267"><span class="lineNum">    1267</span>                 :             :         .arity = 2,</span>
-<span id="L1268"><span class="lineNum">    1268</span>                 :             :         .writes_file = true,</span>
-<span id="L1269"><span class="lineNum">    1269</span>                 :             :         .primary_expansion_topic = &quot;printf&quot;,</span>
-<span id="L1270"><span class="lineNum">    1270</span>                 :             :         .see_also = &quot;printf,fields,output,safety&quot;,</span>
-<span id="L1271"><span class="lineNum">    1271</span>                 :             :         .argument_fields = {.syntax = ArgumentFields::Syntax::kPrintf, .first = 1},</span>
-<span id="L1272"><span class="lineNum">    1272</span>                 :             :     },</span>
-<span id="L1273"><span class="lineNum">    1273</span>                 :             :     {</span>
-<span id="L1274"><span class="lineNum">    1274</span>                 :             :         // xff: -fprintf with the OS line ending (the file form of -printfln)</span>
-<span id="L1275"><span class="lineNum">    1275</span>                 :             :         .name = &quot;-fprintfln&quot;,</span>
-<span id="L1276"><span class="lineNum">    1276</span>                 :             :         .summary = &quot;write -printfln output to a named file (xff)&quot;,</span>
-<span id="L1277"><span class="lineNum">    1277</span>                 :             :         .details = &quot;The file form of `-printfln`: `-fprintfln FILE FORMAT` with the OS line ending appended. An xff &quot;</span>
-<span id="L1278"><span class="lineNum">    1278</span>                 :             :                    &quot;extension `--config=find` rejects; see `-fprint` for the file handling.&quot;,</span>
-<span id="L1279"><span class="lineNum">    1279</span>                 :             :         .kind = Kind::kAction,</span>
-<span id="L1280"><span class="lineNum">    1280</span>                 :             :         .arity = 2,</span>
-<span id="L1281"><span class="lineNum">    1281</span>                 :             :         .writes_file = true,</span>
-<span id="L1282"><span class="lineNum">    1282</span>                 :             :         .style = Style::kXff,</span>
-<span id="L1283"><span class="lineNum">    1283</span>                 :             :         .primary_expansion_topic = &quot;printf&quot;,</span>
-<span id="L1284"><span class="lineNum">    1284</span>                 :             :         .see_also = &quot;printf,fields,output,safety&quot;,</span>
-<span id="L1285"><span class="lineNum">    1285</span>                 :             :         .argument_fields = {.syntax = ArgumentFields::Syntax::kPrintf, .first = 1},</span>
-<span id="L1286"><span class="lineNum">    1286</span>                 :             :     },</span>
-<span id="L1287"><span class="lineNum">    1287</span>                 :             :     {</span>
-<span id="L1288"><span class="lineNum">    1288</span>                 :             :         .name = &quot;-fls&quot;,</span>
-<span id="L1289"><span class="lineNum">    1289</span>                 :             :         .summary = &quot;write -ls output to a named file&quot;,</span>
-<span id="L1290"><span class="lineNum">    1290</span>                 :             :         .details = &quot;The file form of `-ls` (the `ls -dils` line). See `-fprint` for the file handling.&quot;,</span>
-<span id="L1291"><span class="lineNum">    1291</span>                 :             :         .kind = Kind::kAction,</span>
-<span id="L1292"><span class="lineNum">    1292</span>                 :             :         .arity = 1,</span>
-<span id="L1293"><span class="lineNum">    1293</span>                 :             :         .writes_file = true,</span>
-<span id="L1294"><span class="lineNum">    1294</span>                 :             :         .see_also = &quot;output,fields,safety&quot;,</span>
-<span id="L1295"><span class="lineNum">    1295</span>                 :             :     },</span>
-<span id="L1296"><span class="lineNum">    1296</span>                 :             :     {</span>
-<span id="L1297"><span class="lineNum">    1297</span>                 :             :         .name = &quot;-delete&quot;,</span>
-<span id="L1298"><span class="lineNum">    1298</span>                 :             :         .summary = &quot;delete the matched entry&quot;,</span>
-<span id="L1299"><span class="lineNum">    1299</span>                 :             :         .details = &quot;Deletes the matched file or (empty) directory, and implies `-depth` so a directory's contents &quot;</span>
-<span id="L1300"><span class="lineNum">    1300</span>                 :             :                    &quot;are removed before the directory itself. Destructive, so it is guarded: `--dry-run` previews &quot;</span>
-<span id="L1301"><span class="lineNum">    1301</span>                 :             :                    &quot;(prints what would be deleted, removes nothing) and `--safe` refuses risky targets. Example: &quot;</span>
-<span id="L1302"><span class="lineNum">    1302</span>                 :             :                    &quot;`xff . -name '*.tmp' -delete`.&quot;,</span>
-<span id="L1303"><span class="lineNum">    1303</span>                 :             :         .kind = Kind::kAction,</span>
-<span id="L1304"><span class="lineNum">    1304</span>                 :             :         .arity = 0,</span>
-<span id="L1305"><span class="lineNum">    1305</span>                 :             :         .safety = Safety::kSafety,</span>
-<span id="L1306"><span class="lineNum">    1306</span>                 :             :         .see_also = &quot;safety,archive&quot;,</span>
-<span id="L1307"><span class="lineNum">    1307</span>                 :             :     },</span>
-<span id="L1308"><span class="lineNum">    1308</span>                 :             :     {</span>
-<span id="L1309"><span class="lineNum">    1309</span>                 :             :         .name = &quot;-prune&quot;,</span>
-<span id="L1310"><span class="lineNum">    1310</span>                 :             :         .summary = &quot;do not descend into the matched directory&quot;,</span>
-<span id="L1311"><span class="lineNum">    1311</span>                 :             :         .details = &quot;When the matched entry is a directory, do not descend into it (evaluates true). Usually paired &quot;</span>
-<span id="L1312"><span class="lineNum">    1312</span>                 :             :                    &quot;with `-o` to skip a subtree while still processing everything else: `xff . -name .git -prune -o &quot;</span>
-<span id="L1313"><span class="lineNum">    1313</span>                 :             :                    &quot;-print`.&quot;,</span>
-<span id="L1314"><span class="lineNum">    1314</span>                 :             :         .kind = Kind::kAction,</span>
-<span id="L1315"><span class="lineNum">    1315</span>                 :             :         .arity = 0,</span>
-<span id="L1316"><span class="lineNum">    1316</span>                 :             :         .see_also = &quot;ignore,archive&quot;,</span>
-<span id="L1317"><span class="lineNum">    1317</span>                 :             :         .preserves_implicit_output = true,</span>
-<span id="L1318"><span class="lineNum">    1318</span>                 :             :     },</span>
-<span id="L1319"><span class="lineNum">    1319</span>                 :             :     {</span>
-<span id="L1320"><span class="lineNum">    1320</span>                 :             :         .name = &quot;-quit&quot;,</span>
-<span id="L1321"><span class="lineNum">    1321</span>                 :             :         .summary = &quot;stop the search immediately&quot;,</span>
-<span id="L1322"><span class="lineNum">    1322</span>                 :             :         .details = &quot;Stops the whole search as soon as it is reached (after actions on the current entry have run). &quot;</span>
-<span id="L1323"><span class="lineNum">    1323</span>                 :             :                    &quot;Handy to emit just the first match: `xff . -name target -print -quit`.&quot;,</span>
-<span id="L1324"><span class="lineNum">    1324</span>                 :             :         .kind = Kind::kAction,</span>
-<span id="L1325"><span class="lineNum">    1325</span>                 :             :         .arity = 0,</span>
-<span id="L1326"><span class="lineNum">    1326</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
-<span id="L1327"><span class="lineNum">    1327</span>                 :             :     },</span>
-<span id="L1328"><span class="lineNum">    1328</span>                 :             :     {</span>
-<span id="L1329"><span class="lineNum">    1329</span>                 :             :         .name = &quot;-exec&quot;,</span>
-<span id="L1330"><span class="lineNum">    1330</span>                 :             :         .summary = &quot;run a command per match (;) or batched (+)&quot;,</span>
-<span id="L1331"><span class="lineNum">    1331</span>                 :             :         .details = &quot;Runs the command up to a terminator: `;` runs it once per match, `+` batches as many paths as &quot;</span>
-<span id="L1332"><span class="lineNum">    1332</span>                 :             :                    &quot;fit per invocation (like xargs). `{}` expands to the path; xff also binds `{1}`..`{N}` from &quot;</span>
-<span id="L1333"><span class="lineNum">    1333</span>                 :             :                    &quot;`-regex` capture groups and the whole {field} vocabulary. The `;` form is synchronous at &quot;</span>
-<span id="L1334"><span class="lineNum">    1334</span>                 :             :                    &quot;`-j 1`; larger job counts permit up to `N` children concurrently, and their direct stdout / &quot;</span>
-<span id="L1335"><span class="lineNum">    1335</span>                 :             :                    &quot;stderr may interleave. The `+` form remains an end-of-walk batch. Sensitive: loaded from an &quot;</span>
-<span id="L1336"><span class="lineNum">    1336</span>                 :             :                    &quot;`--xffrc` file it needs `--allow-exec`. Example: `xff . -name '*.o' -exec rm {} +`.&quot;,</span>
-<span id="L1337"><span class="lineNum">    1337</span>                 :             :         .kind = Kind::kAction,</span>
-<span id="L1338"><span class="lineNum">    1338</span>                 :             :         .arity = -1,</span>
-<span id="L1339"><span class="lineNum">    1339</span>                 :             :         .safety = Safety::kSecurity,</span>
-<span id="L1340"><span class="lineNum">    1340</span>                 :             : </span>
-<span id="L1341"><span class="lineNum">    1341</span>                 :             :         .see_also = &quot;safety,fields,config&quot;,</span>
-<span id="L1342"><span class="lineNum">    1342</span>                 :             :         .terminal = true,</span>
-<span id="L1343"><span class="lineNum">    1343</span>                 :             :         .argument_fields =</span>
-<span id="L1344"><span class="lineNum">    1344</span>                 :             :             {.syntax = ArgumentFields::Syntax::kTemplate, .remaining = true, .requires_exec_fields = true},</span>
-<span id="L1345"><span class="lineNum">    1345</span>                 :             :     },</span>
-<span id="L1346"><span class="lineNum">    1346</span>                 :             :     {</span>
-<span id="L1347"><span class="lineNum">    1347</span>                 :             :         .name = &quot;-execdir&quot;,</span>
-<span id="L1348"><span class="lineNum">    1348</span>                 :             :         .summary = &quot;run a command in the matched entry's directory&quot;,</span>
-<span id="L1349"><span class="lineNum">    1349</span>                 :             :         .details = &quot;Like `-exec`, but each command runs with its working directory set to the matched entry's parent &quot;</span>
-<span id="L1350"><span class="lineNum">    1350</span>                 :             :                    &quot;and `{}` is the basename - safer against path injection and directory races. `;` per match or &quot;</span>
-<span id="L1351"><span class="lineNum">    1351</span>                 :             :                    &quot;`+` batched (a batch shares one directory). Example: `xff . -name '*.log' -execdir gzip {} ;`.&quot;,</span>
-<span id="L1352"><span class="lineNum">    1352</span>                 :             :         .kind = Kind::kAction,</span>
-<span id="L1353"><span class="lineNum">    1353</span>                 :             :         .arity = -1,</span>
-<span id="L1354"><span class="lineNum">    1354</span>                 :             :         .safety = Safety::kSecurity,</span>
-<span id="L1355"><span class="lineNum">    1355</span>                 :             : </span>
-<span id="L1356"><span class="lineNum">    1356</span>                 :             :         .see_also = &quot;safety,fields,config&quot;,</span>
-<span id="L1357"><span class="lineNum">    1357</span>                 :             :         .terminal = true,</span>
-<span id="L1358"><span class="lineNum">    1358</span>                 :             :         .argument_fields =</span>
-<span id="L1359"><span class="lineNum">    1359</span>                 :             :             {.syntax = ArgumentFields::Syntax::kTemplate, .remaining = true, .requires_exec_fields = true},</span>
-<span id="L1360"><span class="lineNum">    1360</span>                 :             :     },</span>
-<span id="L1361"><span class="lineNum">    1361</span>                 :             :     {</span>
-<span id="L1362"><span class="lineNum">    1362</span>                 :             :         .name = &quot;-ok&quot;,</span>
-<span id="L1363"><span class="lineNum">    1363</span>                 :             :         .summary = &quot;like -exec, but prompt before each command&quot;,</span>
-<span id="L1364"><span class="lineNum">    1364</span>                 :             :         .details = &quot;Like `-exec` but prompts on stderr before each command and runs it only when the reply begins &quot;</span>
-<span id="L1365"><span class="lineNum">    1365</span>                 :             :                    &quot;with 'y'; a declined or EOF answer skips that entry. `;`-terminated only (no `+` batching, since &quot;</span>
-<span id="L1366"><span class="lineNum">    1366</span>                 :             :                    &quot;each run needs its own prompt).&quot;,</span>
-<span id="L1367"><span class="lineNum">    1367</span>                 :             :         .kind = Kind::kAction,</span>
-<span id="L1368"><span class="lineNum">    1368</span>                 :             :         .arity = -1,</span>
-<span id="L1369"><span class="lineNum">    1369</span>                 :             :         .safety = Safety::kSecurity,</span>
-<span id="L1370"><span class="lineNum">    1370</span>                 :             : </span>
-<span id="L1371"><span class="lineNum">    1371</span>                 :             :         .see_also = &quot;safety,fields,config&quot;,</span>
-<span id="L1372"><span class="lineNum">    1372</span>                 :             :         .terminal = true,</span>
-<span id="L1373"><span class="lineNum">    1373</span>                 :             :     },</span>
-<span id="L1374"><span class="lineNum">    1374</span>                 :             :     {</span>
-<span id="L1375"><span class="lineNum">    1375</span>                 :             :         .name = &quot;-okdir&quot;,</span>
-<span id="L1376"><span class="lineNum">    1376</span>                 :             :         .summary = &quot;like -execdir, but prompt before each command&quot;,</span>
-<span id="L1377"><span class="lineNum">    1377</span>                 :             :         .details = &quot;Like `-execdir` (runs in the matched entry's directory, `{}` is the basename) but prompts before &quot;</span>
-<span id="L1378"><span class="lineNum">    1378</span>                 :             :                    &quot;each command, exactly as `-ok` does.&quot;,</span>
-<span id="L1379"><span class="lineNum">    1379</span>                 :             :         .kind = Kind::kAction,</span>
-<span id="L1380"><span class="lineNum">    1380</span>                 :             :         .arity = -1,</span>
-<span id="L1381"><span class="lineNum">    1381</span>                 :             :         .safety = Safety::kSecurity,</span>
-<span id="L1382"><span class="lineNum">    1382</span>                 :             : </span>
-<span id="L1383"><span class="lineNum">    1383</span>                 :             :         .see_also = &quot;safety,fields,config&quot;,</span>
-<span id="L1384"><span class="lineNum">    1384</span>                 :             :         .terminal = true,</span>
-<span id="L1385"><span class="lineNum">    1385</span>                 :             :     },</span>
-<span id="L1386"><span class="lineNum">    1386</span>                 :             :     {</span>
-<span id="L1387"><span class="lineNum">    1387</span>                 :             :         // -capture:NAME[=REGEX] cmd... ;</span>
-<span id="L1388"><span class="lineNum">    1388</span>                 :             :         .name = &quot;-capture&quot;,</span>
-<span id="L1389"><span class="lineNum">    1389</span>                 :             :         .summary = &quot;run a command and bind its output to {capture.NAME} (xff)&quot;,</span>
-<span id="L1390"><span class="lineNum">    1390</span>                 :             :         .details = &quot;xff extension: runs the `;`-terminated command and binds its stdout to `{capture.NAME}` for a &quot;</span>
-<span id="L1391"><span class="lineNum">    1391</span>                 :             :                    &quot;later field consumer, such as `-printf '%{capture.NAME}'`, `--template={capture.NAME}`, &quot;</span>
-<span id="L1392"><span class="lineNum">    1392</span>                 :             :                    &quot;a grep template, summary key, column, or command using `--exec-fields`. Unused captures &quot;</span>
-<span id="L1393"><span class="lineNum">    1393</span>                 :             :                    &quot;are errors; escaped literal braces do not count as references. &quot;</span>
-<span id="L1394"><span class="lineNum">    1394</span>                 :             :                    &quot;`-capture:NAME=REGEX` keeps only REGEX's first capture &quot;</span>
-<span id="L1395"><span class="lineNum">    1395</span>                 :             :                    &quot;group. A NAME must be an identifier (`[A-Za-z_][A-Za-z0-9_]*`), because it is referenced as &quot;</span>
-<span id="L1396"><span class="lineNum">    1396</span>                 :             :                    &quot;`{capture.NAME}`; binding one NAME twice is an error, and `-capture:!NAME` on the LATER node &quot;</span>
-<span id="L1397"><span class="lineNum">    1397</span>                 :             :                    &quot;says the re-bind is meant (per node, so it cannot loosen the other captures in the command). &quot;</span>
-<span id="L1398"><span class="lineNum">    1398</span>                 :             :                    &quot;Sensitive: from an `--xffrc` file it needs `--allow-exec`. Example: `-capture:branch git &quot;</span>
-<span id="L1399"><span class="lineNum">    1399</span>                 :             :                    &quot;rev-parse --abbrev-ref HEAD ; -printf '%{relpath}\\t%{capture.branch}\\n'`.&quot;,</span>
-<span id="L1400"><span class="lineNum">    1400</span>                 :             :         .kind = Kind::kAction,</span>
-<span id="L1401"><span class="lineNum">    1401</span>                 :             :         .arity = -1,</span>
-<span id="L1402"><span class="lineNum">    1402</span>                 :             :         .binding = Binding::kLabelRegex,</span>
-<span id="L1403"><span class="lineNum">    1403</span>                 :             :         .safety = Safety::kSecurity,</span>
-<span id="L1404"><span class="lineNum">    1404</span>                 :             :         .style = Style::kXff,</span>
-<span id="L1405"><span class="lineNum">    1405</span>                 :             :         .see_also = &quot;safety,fields,config&quot;,</span>
-<span id="L1406"><span class="lineNum">    1406</span>                 :             :         .binds_capture = true,</span>
-<span id="L1407"><span class="lineNum">    1407</span>                 :             :         .preserves_implicit_output = true,</span>
-<span id="L1408"><span class="lineNum">    1408</span>                 :             :         .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate, .first = 2, .remaining = true},</span>
-<span id="L1409"><span class="lineNum">    1409</span>                 :             :     },</span>
-<span id="L1410"><span class="lineNum">    1410</span>                 :             :     {</span>
-<span id="L1411"><span class="lineNum">    1411</span>                 :             :         // -capture run in the matched entry's directory</span>
-<span id="L1412"><span class="lineNum">    1412</span>                 :             :         .name = &quot;-capturedir&quot;,</span>
-<span id="L1413"><span class="lineNum">    1413</span>                 :             :         .summary = &quot;run -capture in the matched entry's directory (xff)&quot;,</span>
-<span id="L1414"><span class="lineNum">    1414</span>                 :             :         .details = &quot;The `-execdir` counterpart of `-capture`: runs the command in the matched entry's directory and &quot;</span>
-<span id="L1415"><span class="lineNum">    1415</span>                 :             :                    &quot;binds its stdout to `{capture.NAME}`. Like `-capture`, it preserves implicit output and requires &quot;</span>
-<span id="L1416"><span class="lineNum">    1416</span>                 :             :                    &quot;a reference to the captured value. Same `NAME[=REGEX]` binding and `--allow-exec` gating.&quot;,</span>
-<span id="L1417"><span class="lineNum">    1417</span>                 :             :         .kind = Kind::kAction,</span>
-<span id="L1418"><span class="lineNum">    1418</span>                 :             :         .arity = -1,</span>
-<span id="L1419"><span class="lineNum">    1419</span>                 :             :         .binding = Binding::kLabelRegex,</span>
-<span id="L1420"><span class="lineNum">    1420</span>                 :             :         .safety = Safety::kSecurity,</span>
-<span id="L1421"><span class="lineNum">    1421</span>                 :             :         .style = Style::kXff,</span>
-<span id="L1422"><span class="lineNum">    1422</span>                 :             :         .see_also = &quot;safety,fields,config&quot;,</span>
-<span id="L1423"><span class="lineNum">    1423</span>                 :             :         .binds_capture = true,</span>
-<span id="L1424"><span class="lineNum">    1424</span>                 :             :         .preserves_implicit_output = true,</span>
-<span id="L1425"><span class="lineNum">    1425</span>                 :             :         .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate, .first = 2, .remaining = true},</span>
-<span id="L1426"><span class="lineNum">    1426</span>                 :             :     },</span>
-<span id="L1427"><span class="lineNum">    1427</span>                 :             :     {</span>
-<span id="L1428"><span class="lineNum">    1428</span>                 :             :         .name = &quot;-a&quot;,</span>
-<span id="L1429"><span class="lineNum">    1429</span>                 :             :         .summary = &quot;logical AND (implicit between predicates)&quot;,</span>
-<span id="L1430"><span class="lineNum">    1430</span>                 :             :         .details = &quot;Logical AND of two predicates (`-and` is the long spelling). It is also IMPLICIT between &quot;</span>
-<span id="L1431"><span class="lineNum">    1431</span>                 :             :                    &quot;juxtaposed predicates, so `-type f -name '*.c'` means `-type f -a -name '*.c'`. Precedence, &quot;</span>
-<span id="L1432"><span class="lineNum">    1432</span>                 :             :                    &quot;tightest to loosest: `-not`, then `-a`, then (xff) `-xor`, then `-o`, then the `,` comma &quot;</span>
-<span id="L1433"><span class="lineNum">    1433</span>                 :             :                    &quot;operator; parentheses `( ... )` override it. Evaluation short-circuits.&quot;,</span>
-<span id="L1434"><span class="lineNum">    1434</span>                 :             :         .kind = Kind::kOperator,</span>
-<span id="L1435"><span class="lineNum">    1435</span>                 :             :         .arity = 0,</span>
-<span id="L1436"><span class="lineNum">    1436</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
-<span id="L1437"><span class="lineNum">    1437</span>                 :             :     },</span>
-<span id="L1438"><span class="lineNum">    1438</span>                 :             :     {</span>
-<span id="L1439"><span class="lineNum">    1439</span>                 :             :         .name = &quot;-and&quot;,</span>
-<span id="L1440"><span class="lineNum">    1440</span>                 :             :         .summary = &quot;logical AND (implicit between predicates)&quot;,</span>
+<span id="L1218"><span class="lineNum">    1218</span>                 :             :                    &quot;(surrounding lines, grep-style). With `--format=jsonl`, built-in output emits &quot;</span>
+<span id="L1219"><span class="lineNum">    1219</span>                 :             :                    &quot;`record: grep` objects with `kind` set to `match`, `context`, or `count`; each includes &quot;</span>
+<span id="L1220"><span class="lineNum">    1220</span>                 :             :                    &quot;`path`, `root`, and `pattern`. Line records include one-based `line`, zero-based context &quot;</span>
+<span id="L1221"><span class="lineNum">    1221</span>                 :             :                    &quot;`group`, and `text`; count records include `count`. Context gaps do not emit text separators &quot;</span>
+<span id="L1222"><span class="lineNum">    1222</span>                 :             :                    &quot;in JSONL. Built-in output supports only `plain` and `jsonl`; other formats are rejected before &quot;</span>
+<span id="L1223"><span class="lineNum">    1223</span>                 :             :                    &quot;actions execute. Explicit `-grep:FORMAT` templates retain authored output; `--count` supersedes &quot;</span>
+<span id="L1224"><span class="lineNum">    1224</span>                 :             :                    &quot;the template. Reads the file (expensive); non-regular / unreadable / binary &quot;</span>
+<span id="L1225"><span class="lineNum">    1225</span>                 :             :                    &quot;files yield nothing. Its truth is \&quot;matched a line\&quot;, so it composes with `-o` / `-q`. An xff &quot;</span>
+<span id="L1226"><span class="lineNum">    1226</span>                 :             :                    &quot;extension `--config=find` rejects.&quot;,</span>
+<span id="L1227"><span class="lineNum">    1227</span>                 :             :         .kind = Kind::kAction,</span>
+<span id="L1228"><span class="lineNum">    1228</span>                 :             :         .arity = 1,</span>
+<span id="L1229"><span class="lineNum">    1229</span>                 :             :         .binding = Binding::kFormat,</span>
+<span id="L1230"><span class="lineNum">    1230</span>                 :             :         .style = Style::kXff,</span>
+<span id="L1231"><span class="lineNum">    1231</span>                 :             :         .cost = Cost::kExpensive,</span>
+<span id="L1232"><span class="lineNum">    1232</span>                 :             :         .topic = &quot;content&quot;,</span>
+<span id="L1233"><span class="lineNum">    1233</span>                 :             :         .content_output = true,</span>
+<span id="L1234"><span class="lineNum">    1234</span>                 :             :     },</span>
+<span id="L1235"><span class="lineNum">    1235</span>                 :             :     {</span>
+<span id="L1236"><span class="lineNum">    1236</span>                 :             :         .name = &quot;-fprint&quot;,</span>
+<span id="L1237"><span class="lineNum">    1237</span>                 :             :         .summary = &quot;write -print output to a named file&quot;,</span>
+<span id="L1238"><span class="lineNum">    1238</span>                 :             :         .details = &quot;Writes what `-print` would emit to FILE instead of stdout. FILE is opened once (truncating any &quot;</span>
+<span id="L1239"><span class="lineNum">    1239</span>                 :             :                    &quot;existing content) and held open for the whole walk, so matches append to it in visit order. This &quot;</span>
+<span id="L1240"><span class="lineNum">    1240</span>                 :             :                    &quot;is the anchor of the -f* family - each mirrors a stdout action: `-fprint0`, `-fprintf`, `-fls`, &quot;</span>
+<span id="L1241"><span class="lineNum">    1241</span>                 :             :                    &quot;and the xff `-fprintln` / `-fprintfln`.&quot;,</span>
+<span id="L1242"><span class="lineNum">    1242</span>                 :             :         .kind = Kind::kAction,</span>
+<span id="L1243"><span class="lineNum">    1243</span>                 :             :         .arity = 1,</span>
+<span id="L1244"><span class="lineNum">    1244</span>                 :             :         .writes_file = true,</span>
+<span id="L1245"><span class="lineNum">    1245</span>                 :             :         .see_also = &quot;output,fields,safety&quot;,</span>
+<span id="L1246"><span class="lineNum">    1246</span>                 :             :     },</span>
+<span id="L1247"><span class="lineNum">    1247</span>                 :             :     {</span>
+<span id="L1248"><span class="lineNum">    1248</span>                 :             :         // xff: -fprint with the OS line ending (the file form of -println)</span>
+<span id="L1249"><span class="lineNum">    1249</span>                 :             :         .name = &quot;-fprintln&quot;,</span>
+<span id="L1250"><span class="lineNum">    1250</span>                 :             :         .summary = &quot;write -println output to a named file (xff)&quot;,</span>
+<span id="L1251"><span class="lineNum">    1251</span>                 :             :         .details = &quot;The file form of `-println` (`-fprint` with the OS line ending). See `-fprint` for the file &quot;</span>
+<span id="L1252"><span class="lineNum">    1252</span>                 :             :                    &quot;handling; an xff extension `--config=find` rejects.&quot;,</span>
+<span id="L1253"><span class="lineNum">    1253</span>                 :             :         .kind = Kind::kAction,</span>
+<span id="L1254"><span class="lineNum">    1254</span>                 :             :         .arity = 1,</span>
+<span id="L1255"><span class="lineNum">    1255</span>                 :             :         .writes_file = true,</span>
+<span id="L1256"><span class="lineNum">    1256</span>                 :             :         .style = Style::kXff,</span>
+<span id="L1257"><span class="lineNum">    1257</span>                 :             :         .see_also = &quot;output,fields,safety&quot;,</span>
+<span id="L1258"><span class="lineNum">    1258</span>                 :             :     },</span>
+<span id="L1259"><span class="lineNum">    1259</span>                 :             :     {</span>
+<span id="L1260"><span class="lineNum">    1260</span>                 :             :         .name = &quot;-fprint0&quot;,</span>
+<span id="L1261"><span class="lineNum">    1261</span>                 :             :         .summary = &quot;write -print0 output to a named file&quot;,</span>
+<span id="L1262"><span class="lineNum">    1262</span>                 :             :         .details = &quot;The file form of `-print0` (NUL-terminated paths). See `-fprint` for the file handling.&quot;,</span>
+<span id="L1263"><span class="lineNum">    1263</span>                 :             :         .kind = Kind::kAction,</span>
+<span id="L1264"><span class="lineNum">    1264</span>                 :             :         .arity = 1,</span>
+<span id="L1265"><span class="lineNum">    1265</span>                 :             :         .writes_file = true,</span>
+<span id="L1266"><span class="lineNum">    1266</span>                 :             :         .see_also = &quot;output,fields,safety&quot;,</span>
+<span id="L1267"><span class="lineNum">    1267</span>                 :             :     },</span>
+<span id="L1268"><span class="lineNum">    1268</span>                 :             :     {</span>
+<span id="L1269"><span class="lineNum">    1269</span>                 :             :         .name = &quot;-fprintf&quot;,</span>
+<span id="L1270"><span class="lineNum">    1270</span>                 :             :         .summary = &quot;write -printf output to a named file&quot;,</span>
+<span id="L1271"><span class="lineNum">    1271</span>                 :             :         .details = &quot;The file form of `-printf`: `-fprintf FILE FORMAT` (FILE first, then the format). See `-printf` &quot;</span>
+<span id="L1272"><span class="lineNum">    1272</span>                 :             :                    &quot;for the directive vocabulary and `-fprint` for the file handling.&quot;,</span>
+<span id="L1273"><span class="lineNum">    1273</span>                 :             :         .kind = Kind::kAction,</span>
+<span id="L1274"><span class="lineNum">    1274</span>                 :             :         .arity = 2,</span>
+<span id="L1275"><span class="lineNum">    1275</span>                 :             :         .writes_file = true,</span>
+<span id="L1276"><span class="lineNum">    1276</span>                 :             :         .primary_expansion_topic = &quot;printf&quot;,</span>
+<span id="L1277"><span class="lineNum">    1277</span>                 :             :         .see_also = &quot;printf,fields,output,safety&quot;,</span>
+<span id="L1278"><span class="lineNum">    1278</span>                 :             :         .argument_fields = {.syntax = ArgumentFields::Syntax::kPrintf, .first = 1},</span>
+<span id="L1279"><span class="lineNum">    1279</span>                 :             :     },</span>
+<span id="L1280"><span class="lineNum">    1280</span>                 :             :     {</span>
+<span id="L1281"><span class="lineNum">    1281</span>                 :             :         // xff: -fprintf with the OS line ending (the file form of -printfln)</span>
+<span id="L1282"><span class="lineNum">    1282</span>                 :             :         .name = &quot;-fprintfln&quot;,</span>
+<span id="L1283"><span class="lineNum">    1283</span>                 :             :         .summary = &quot;write -printfln output to a named file (xff)&quot;,</span>
+<span id="L1284"><span class="lineNum">    1284</span>                 :             :         .details = &quot;The file form of `-printfln`: `-fprintfln FILE FORMAT` with the OS line ending appended. An xff &quot;</span>
+<span id="L1285"><span class="lineNum">    1285</span>                 :             :                    &quot;extension `--config=find` rejects; see `-fprint` for the file handling.&quot;,</span>
+<span id="L1286"><span class="lineNum">    1286</span>                 :             :         .kind = Kind::kAction,</span>
+<span id="L1287"><span class="lineNum">    1287</span>                 :             :         .arity = 2,</span>
+<span id="L1288"><span class="lineNum">    1288</span>                 :             :         .writes_file = true,</span>
+<span id="L1289"><span class="lineNum">    1289</span>                 :             :         .style = Style::kXff,</span>
+<span id="L1290"><span class="lineNum">    1290</span>                 :             :         .primary_expansion_topic = &quot;printf&quot;,</span>
+<span id="L1291"><span class="lineNum">    1291</span>                 :             :         .see_also = &quot;printf,fields,output,safety&quot;,</span>
+<span id="L1292"><span class="lineNum">    1292</span>                 :             :         .argument_fields = {.syntax = ArgumentFields::Syntax::kPrintf, .first = 1},</span>
+<span id="L1293"><span class="lineNum">    1293</span>                 :             :     },</span>
+<span id="L1294"><span class="lineNum">    1294</span>                 :             :     {</span>
+<span id="L1295"><span class="lineNum">    1295</span>                 :             :         .name = &quot;-fls&quot;,</span>
+<span id="L1296"><span class="lineNum">    1296</span>                 :             :         .summary = &quot;write -ls output to a named file&quot;,</span>
+<span id="L1297"><span class="lineNum">    1297</span>                 :             :         .details = &quot;The file form of `-ls` (the `ls -dils` line). See `-fprint` for the file handling.&quot;,</span>
+<span id="L1298"><span class="lineNum">    1298</span>                 :             :         .kind = Kind::kAction,</span>
+<span id="L1299"><span class="lineNum">    1299</span>                 :             :         .arity = 1,</span>
+<span id="L1300"><span class="lineNum">    1300</span>                 :             :         .writes_file = true,</span>
+<span id="L1301"><span class="lineNum">    1301</span>                 :             :         .see_also = &quot;output,fields,safety&quot;,</span>
+<span id="L1302"><span class="lineNum">    1302</span>                 :             :     },</span>
+<span id="L1303"><span class="lineNum">    1303</span>                 :             :     {</span>
+<span id="L1304"><span class="lineNum">    1304</span>                 :             :         .name = &quot;-delete&quot;,</span>
+<span id="L1305"><span class="lineNum">    1305</span>                 :             :         .summary = &quot;delete the matched entry&quot;,</span>
+<span id="L1306"><span class="lineNum">    1306</span>                 :             :         .details = &quot;Deletes the matched file or (empty) directory, and implies `-depth` so a directory's contents &quot;</span>
+<span id="L1307"><span class="lineNum">    1307</span>                 :             :                    &quot;are removed before the directory itself. Destructive, so it is guarded: `--dry-run` previews &quot;</span>
+<span id="L1308"><span class="lineNum">    1308</span>                 :             :                    &quot;(prints what would be deleted, removes nothing) and `--safe` refuses risky targets. Example: &quot;</span>
+<span id="L1309"><span class="lineNum">    1309</span>                 :             :                    &quot;`xff . -name '*.tmp' -delete`.&quot;,</span>
+<span id="L1310"><span class="lineNum">    1310</span>                 :             :         .kind = Kind::kAction,</span>
+<span id="L1311"><span class="lineNum">    1311</span>                 :             :         .arity = 0,</span>
+<span id="L1312"><span class="lineNum">    1312</span>                 :             :         .safety = Safety::kSafety,</span>
+<span id="L1313"><span class="lineNum">    1313</span>                 :             :         .see_also = &quot;safety,archive&quot;,</span>
+<span id="L1314"><span class="lineNum">    1314</span>                 :             :     },</span>
+<span id="L1315"><span class="lineNum">    1315</span>                 :             :     {</span>
+<span id="L1316"><span class="lineNum">    1316</span>                 :             :         .name = &quot;-prune&quot;,</span>
+<span id="L1317"><span class="lineNum">    1317</span>                 :             :         .summary = &quot;do not descend into the matched directory&quot;,</span>
+<span id="L1318"><span class="lineNum">    1318</span>                 :             :         .details = &quot;When the matched entry is a directory, do not descend into it (evaluates true). Usually paired &quot;</span>
+<span id="L1319"><span class="lineNum">    1319</span>                 :             :                    &quot;with `-o` to skip a subtree while still processing everything else: `xff . -name .git -prune -o &quot;</span>
+<span id="L1320"><span class="lineNum">    1320</span>                 :             :                    &quot;-print`.&quot;,</span>
+<span id="L1321"><span class="lineNum">    1321</span>                 :             :         .kind = Kind::kAction,</span>
+<span id="L1322"><span class="lineNum">    1322</span>                 :             :         .arity = 0,</span>
+<span id="L1323"><span class="lineNum">    1323</span>                 :             :         .see_also = &quot;ignore,archive&quot;,</span>
+<span id="L1324"><span class="lineNum">    1324</span>                 :             :         .preserves_implicit_output = true,</span>
+<span id="L1325"><span class="lineNum">    1325</span>                 :             :     },</span>
+<span id="L1326"><span class="lineNum">    1326</span>                 :             :     {</span>
+<span id="L1327"><span class="lineNum">    1327</span>                 :             :         .name = &quot;-quit&quot;,</span>
+<span id="L1328"><span class="lineNum">    1328</span>                 :             :         .summary = &quot;stop the search immediately&quot;,</span>
+<span id="L1329"><span class="lineNum">    1329</span>                 :             :         .details = &quot;Stops the whole search as soon as it is reached (after actions on the current entry have run). &quot;</span>
+<span id="L1330"><span class="lineNum">    1330</span>                 :             :                    &quot;Handy to emit just the first match: `xff . -name target -print -quit`.&quot;,</span>
+<span id="L1331"><span class="lineNum">    1331</span>                 :             :         .kind = Kind::kAction,</span>
+<span id="L1332"><span class="lineNum">    1332</span>                 :             :         .arity = 0,</span>
+<span id="L1333"><span class="lineNum">    1333</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
+<span id="L1334"><span class="lineNum">    1334</span>                 :             :     },</span>
+<span id="L1335"><span class="lineNum">    1335</span>                 :             :     {</span>
+<span id="L1336"><span class="lineNum">    1336</span>                 :             :         .name = &quot;-exec&quot;,</span>
+<span id="L1337"><span class="lineNum">    1337</span>                 :             :         .summary = &quot;run a command per match (;) or batched (+)&quot;,</span>
+<span id="L1338"><span class="lineNum">    1338</span>                 :             :         .details = &quot;Runs the command up to a terminator: `;` runs it once per match, `+` batches as many paths as &quot;</span>
+<span id="L1339"><span class="lineNum">    1339</span>                 :             :                    &quot;fit per invocation (like xargs). `{}` expands to the path; xff also binds `{1}`..`{N}` from &quot;</span>
+<span id="L1340"><span class="lineNum">    1340</span>                 :             :                    &quot;`-regex` capture groups and the whole {field} vocabulary. The `;` form is synchronous at &quot;</span>
+<span id="L1341"><span class="lineNum">    1341</span>                 :             :                    &quot;`-j 1`; larger job counts permit up to `N` children concurrently, and their direct stdout / &quot;</span>
+<span id="L1342"><span class="lineNum">    1342</span>                 :             :                    &quot;stderr may interleave. The `+` form remains an end-of-walk batch. Sensitive: loaded from an &quot;</span>
+<span id="L1343"><span class="lineNum">    1343</span>                 :             :                    &quot;`--xffrc` file it needs `--allow-exec`. Example: `xff . -name '*.o' -exec rm {} +`.&quot;,</span>
+<span id="L1344"><span class="lineNum">    1344</span>                 :             :         .kind = Kind::kAction,</span>
+<span id="L1345"><span class="lineNum">    1345</span>                 :             :         .arity = -1,</span>
+<span id="L1346"><span class="lineNum">    1346</span>                 :             :         .safety = Safety::kSecurity,</span>
+<span id="L1347"><span class="lineNum">    1347</span>                 :             : </span>
+<span id="L1348"><span class="lineNum">    1348</span>                 :             :         .see_also = &quot;safety,fields,config&quot;,</span>
+<span id="L1349"><span class="lineNum">    1349</span>                 :             :         .terminal = true,</span>
+<span id="L1350"><span class="lineNum">    1350</span>                 :             :         .argument_fields =</span>
+<span id="L1351"><span class="lineNum">    1351</span>                 :             :             {.syntax = ArgumentFields::Syntax::kTemplate, .remaining = true, .requires_exec_fields = true},</span>
+<span id="L1352"><span class="lineNum">    1352</span>                 :             :     },</span>
+<span id="L1353"><span class="lineNum">    1353</span>                 :             :     {</span>
+<span id="L1354"><span class="lineNum">    1354</span>                 :             :         .name = &quot;-execdir&quot;,</span>
+<span id="L1355"><span class="lineNum">    1355</span>                 :             :         .summary = &quot;run a command in the matched entry's directory&quot;,</span>
+<span id="L1356"><span class="lineNum">    1356</span>                 :             :         .details = &quot;Like `-exec`, but each command runs with its working directory set to the matched entry's parent &quot;</span>
+<span id="L1357"><span class="lineNum">    1357</span>                 :             :                    &quot;and `{}` is the basename - safer against path injection and directory races. `;` per match or &quot;</span>
+<span id="L1358"><span class="lineNum">    1358</span>                 :             :                    &quot;`+` batched (a batch shares one directory). Example: `xff . -name '*.log' -execdir gzip {} ;`.&quot;,</span>
+<span id="L1359"><span class="lineNum">    1359</span>                 :             :         .kind = Kind::kAction,</span>
+<span id="L1360"><span class="lineNum">    1360</span>                 :             :         .arity = -1,</span>
+<span id="L1361"><span class="lineNum">    1361</span>                 :             :         .safety = Safety::kSecurity,</span>
+<span id="L1362"><span class="lineNum">    1362</span>                 :             : </span>
+<span id="L1363"><span class="lineNum">    1363</span>                 :             :         .see_also = &quot;safety,fields,config&quot;,</span>
+<span id="L1364"><span class="lineNum">    1364</span>                 :             :         .terminal = true,</span>
+<span id="L1365"><span class="lineNum">    1365</span>                 :             :         .argument_fields =</span>
+<span id="L1366"><span class="lineNum">    1366</span>                 :             :             {.syntax = ArgumentFields::Syntax::kTemplate, .remaining = true, .requires_exec_fields = true},</span>
+<span id="L1367"><span class="lineNum">    1367</span>                 :             :     },</span>
+<span id="L1368"><span class="lineNum">    1368</span>                 :             :     {</span>
+<span id="L1369"><span class="lineNum">    1369</span>                 :             :         .name = &quot;-ok&quot;,</span>
+<span id="L1370"><span class="lineNum">    1370</span>                 :             :         .summary = &quot;like -exec, but prompt before each command&quot;,</span>
+<span id="L1371"><span class="lineNum">    1371</span>                 :             :         .details = &quot;Like `-exec` but prompts on stderr before each command and runs it only when the reply begins &quot;</span>
+<span id="L1372"><span class="lineNum">    1372</span>                 :             :                    &quot;with 'y'; a declined or EOF answer skips that entry. `;`-terminated only (no `+` batching, since &quot;</span>
+<span id="L1373"><span class="lineNum">    1373</span>                 :             :                    &quot;each run needs its own prompt).&quot;,</span>
+<span id="L1374"><span class="lineNum">    1374</span>                 :             :         .kind = Kind::kAction,</span>
+<span id="L1375"><span class="lineNum">    1375</span>                 :             :         .arity = -1,</span>
+<span id="L1376"><span class="lineNum">    1376</span>                 :             :         .safety = Safety::kSecurity,</span>
+<span id="L1377"><span class="lineNum">    1377</span>                 :             : </span>
+<span id="L1378"><span class="lineNum">    1378</span>                 :             :         .see_also = &quot;safety,fields,config&quot;,</span>
+<span id="L1379"><span class="lineNum">    1379</span>                 :             :         .terminal = true,</span>
+<span id="L1380"><span class="lineNum">    1380</span>                 :             :     },</span>
+<span id="L1381"><span class="lineNum">    1381</span>                 :             :     {</span>
+<span id="L1382"><span class="lineNum">    1382</span>                 :             :         .name = &quot;-okdir&quot;,</span>
+<span id="L1383"><span class="lineNum">    1383</span>                 :             :         .summary = &quot;like -execdir, but prompt before each command&quot;,</span>
+<span id="L1384"><span class="lineNum">    1384</span>                 :             :         .details = &quot;Like `-execdir` (runs in the matched entry's directory, `{}` is the basename) but prompts before &quot;</span>
+<span id="L1385"><span class="lineNum">    1385</span>                 :             :                    &quot;each command, exactly as `-ok` does.&quot;,</span>
+<span id="L1386"><span class="lineNum">    1386</span>                 :             :         .kind = Kind::kAction,</span>
+<span id="L1387"><span class="lineNum">    1387</span>                 :             :         .arity = -1,</span>
+<span id="L1388"><span class="lineNum">    1388</span>                 :             :         .safety = Safety::kSecurity,</span>
+<span id="L1389"><span class="lineNum">    1389</span>                 :             : </span>
+<span id="L1390"><span class="lineNum">    1390</span>                 :             :         .see_also = &quot;safety,fields,config&quot;,</span>
+<span id="L1391"><span class="lineNum">    1391</span>                 :             :         .terminal = true,</span>
+<span id="L1392"><span class="lineNum">    1392</span>                 :             :     },</span>
+<span id="L1393"><span class="lineNum">    1393</span>                 :             :     {</span>
+<span id="L1394"><span class="lineNum">    1394</span>                 :             :         // -capture:NAME[=REGEX] cmd... ;</span>
+<span id="L1395"><span class="lineNum">    1395</span>                 :             :         .name = &quot;-capture&quot;,</span>
+<span id="L1396"><span class="lineNum">    1396</span>                 :             :         .summary = &quot;run a command and bind its output to {capture.NAME} (xff)&quot;,</span>
+<span id="L1397"><span class="lineNum">    1397</span>                 :             :         .details = &quot;xff extension: runs the `;`-terminated command and binds its stdout to `{capture.NAME}` for a &quot;</span>
+<span id="L1398"><span class="lineNum">    1398</span>                 :             :                    &quot;later field consumer, such as `-printf '%{capture.NAME}'`, `--template={capture.NAME}`, &quot;</span>
+<span id="L1399"><span class="lineNum">    1399</span>                 :             :                    &quot;a grep template, summary key, column, or command using `--exec-fields`. Unused captures &quot;</span>
+<span id="L1400"><span class="lineNum">    1400</span>                 :             :                    &quot;are errors; escaped literal braces do not count as references. &quot;</span>
+<span id="L1401"><span class="lineNum">    1401</span>                 :             :                    &quot;`-capture:NAME=REGEX` keeps only REGEX's first capture &quot;</span>
+<span id="L1402"><span class="lineNum">    1402</span>                 :             :                    &quot;group. A NAME must be an identifier (`[A-Za-z_][A-Za-z0-9_]*`), because it is referenced as &quot;</span>
+<span id="L1403"><span class="lineNum">    1403</span>                 :             :                    &quot;`{capture.NAME}`; binding one NAME twice is an error, and `-capture:!NAME` on the LATER node &quot;</span>
+<span id="L1404"><span class="lineNum">    1404</span>                 :             :                    &quot;says the re-bind is meant (per node, so it cannot loosen the other captures in the command). &quot;</span>
+<span id="L1405"><span class="lineNum">    1405</span>                 :             :                    &quot;Sensitive: from an `--xffrc` file it needs `--allow-exec`. Example: `-capture:branch git &quot;</span>
+<span id="L1406"><span class="lineNum">    1406</span>                 :             :                    &quot;rev-parse --abbrev-ref HEAD ; -printf '%{relpath}\\t%{capture.branch}\\n'`.&quot;,</span>
+<span id="L1407"><span class="lineNum">    1407</span>                 :             :         .kind = Kind::kAction,</span>
+<span id="L1408"><span class="lineNum">    1408</span>                 :             :         .arity = -1,</span>
+<span id="L1409"><span class="lineNum">    1409</span>                 :             :         .binding = Binding::kLabelRegex,</span>
+<span id="L1410"><span class="lineNum">    1410</span>                 :             :         .safety = Safety::kSecurity,</span>
+<span id="L1411"><span class="lineNum">    1411</span>                 :             :         .style = Style::kXff,</span>
+<span id="L1412"><span class="lineNum">    1412</span>                 :             :         .see_also = &quot;safety,fields,config&quot;,</span>
+<span id="L1413"><span class="lineNum">    1413</span>                 :             :         .binds_capture = true,</span>
+<span id="L1414"><span class="lineNum">    1414</span>                 :             :         .preserves_implicit_output = true,</span>
+<span id="L1415"><span class="lineNum">    1415</span>                 :             :         .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate, .first = 2, .remaining = true},</span>
+<span id="L1416"><span class="lineNum">    1416</span>                 :             :     },</span>
+<span id="L1417"><span class="lineNum">    1417</span>                 :             :     {</span>
+<span id="L1418"><span class="lineNum">    1418</span>                 :             :         // -capture run in the matched entry's directory</span>
+<span id="L1419"><span class="lineNum">    1419</span>                 :             :         .name = &quot;-capturedir&quot;,</span>
+<span id="L1420"><span class="lineNum">    1420</span>                 :             :         .summary = &quot;run -capture in the matched entry's directory (xff)&quot;,</span>
+<span id="L1421"><span class="lineNum">    1421</span>                 :             :         .details = &quot;The `-execdir` counterpart of `-capture`: runs the command in the matched entry's directory and &quot;</span>
+<span id="L1422"><span class="lineNum">    1422</span>                 :             :                    &quot;binds its stdout to `{capture.NAME}`. Like `-capture`, it preserves implicit output and requires &quot;</span>
+<span id="L1423"><span class="lineNum">    1423</span>                 :             :                    &quot;a reference to the captured value. Same `NAME[=REGEX]` binding and `--allow-exec` gating.&quot;,</span>
+<span id="L1424"><span class="lineNum">    1424</span>                 :             :         .kind = Kind::kAction,</span>
+<span id="L1425"><span class="lineNum">    1425</span>                 :             :         .arity = -1,</span>
+<span id="L1426"><span class="lineNum">    1426</span>                 :             :         .binding = Binding::kLabelRegex,</span>
+<span id="L1427"><span class="lineNum">    1427</span>                 :             :         .safety = Safety::kSecurity,</span>
+<span id="L1428"><span class="lineNum">    1428</span>                 :             :         .style = Style::kXff,</span>
+<span id="L1429"><span class="lineNum">    1429</span>                 :             :         .see_also = &quot;safety,fields,config&quot;,</span>
+<span id="L1430"><span class="lineNum">    1430</span>                 :             :         .binds_capture = true,</span>
+<span id="L1431"><span class="lineNum">    1431</span>                 :             :         .preserves_implicit_output = true,</span>
+<span id="L1432"><span class="lineNum">    1432</span>                 :             :         .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate, .first = 2, .remaining = true},</span>
+<span id="L1433"><span class="lineNum">    1433</span>                 :             :     },</span>
+<span id="L1434"><span class="lineNum">    1434</span>                 :             :     {</span>
+<span id="L1435"><span class="lineNum">    1435</span>                 :             :         .name = &quot;-a&quot;,</span>
+<span id="L1436"><span class="lineNum">    1436</span>                 :             :         .summary = &quot;logical AND (implicit between predicates)&quot;,</span>
+<span id="L1437"><span class="lineNum">    1437</span>                 :             :         .details = &quot;Logical AND of two predicates (`-and` is the long spelling). It is also IMPLICIT between &quot;</span>
+<span id="L1438"><span class="lineNum">    1438</span>                 :             :                    &quot;juxtaposed predicates, so `-type f -name '*.c'` means `-type f -a -name '*.c'`. Precedence, &quot;</span>
+<span id="L1439"><span class="lineNum">    1439</span>                 :             :                    &quot;tightest to loosest: `-not`, then `-a`, then (xff) `-xor`, then `-o`, then the `,` comma &quot;</span>
+<span id="L1440"><span class="lineNum">    1440</span>                 :             :                    &quot;operator; parentheses `( ... )` override it. Evaluation short-circuits.&quot;,</span>
 <span id="L1441"><span class="lineNum">    1441</span>                 :             :         .kind = Kind::kOperator,</span>
 <span id="L1442"><span class="lineNum">    1442</span>                 :             :         .arity = 0,</span>
 <span id="L1443"><span class="lineNum">    1443</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
 <span id="L1444"><span class="lineNum">    1444</span>                 :             :     },</span>
 <span id="L1445"><span class="lineNum">    1445</span>                 :             :     {</span>
-<span id="L1446"><span class="lineNum">    1446</span>                 :             :         .name = &quot;-o&quot;,</span>
-<span id="L1447"><span class="lineNum">    1447</span>                 :             :         .summary = &quot;logical OR&quot;,</span>
-<span id="L1448"><span class="lineNum">    1448</span>                 :             :         .details = &quot;Logical OR of two predicates (`-or` is the long spelling); binds looser than `-a`, so `A -o B -a &quot;</span>
-<span id="L1449"><span class="lineNum">    1449</span>                 :             :                    &quot;C` is `A -o (B -a C)`. Short-circuits: the right side is skipped when the left already matched. &quot;</span>
-<span id="L1450"><span class="lineNum">    1450</span>                 :             :                    &quot;See `-a` for the full precedence order.&quot;,</span>
-<span id="L1451"><span class="lineNum">    1451</span>                 :             :         .kind = Kind::kOperator,</span>
-<span id="L1452"><span class="lineNum">    1452</span>                 :             :         .arity = 0,</span>
-<span id="L1453"><span class="lineNum">    1453</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
-<span id="L1454"><span class="lineNum">    1454</span>                 :             :     },</span>
-<span id="L1455"><span class="lineNum">    1455</span>                 :             :     {</span>
-<span id="L1456"><span class="lineNum">    1456</span>                 :             :         .name = &quot;-or&quot;,</span>
-<span id="L1457"><span class="lineNum">    1457</span>                 :             :         .summary = &quot;logical OR&quot;,</span>
+<span id="L1446"><span class="lineNum">    1446</span>                 :             :         .name = &quot;-and&quot;,</span>
+<span id="L1447"><span class="lineNum">    1447</span>                 :             :         .summary = &quot;logical AND (implicit between predicates)&quot;,</span>
+<span id="L1448"><span class="lineNum">    1448</span>                 :             :         .kind = Kind::kOperator,</span>
+<span id="L1449"><span class="lineNum">    1449</span>                 :             :         .arity = 0,</span>
+<span id="L1450"><span class="lineNum">    1450</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
+<span id="L1451"><span class="lineNum">    1451</span>                 :             :     },</span>
+<span id="L1452"><span class="lineNum">    1452</span>                 :             :     {</span>
+<span id="L1453"><span class="lineNum">    1453</span>                 :             :         .name = &quot;-o&quot;,</span>
+<span id="L1454"><span class="lineNum">    1454</span>                 :             :         .summary = &quot;logical OR&quot;,</span>
+<span id="L1455"><span class="lineNum">    1455</span>                 :             :         .details = &quot;Logical OR of two predicates (`-or` is the long spelling); binds looser than `-a`, so `A -o B -a &quot;</span>
+<span id="L1456"><span class="lineNum">    1456</span>                 :             :                    &quot;C` is `A -o (B -a C)`. Short-circuits: the right side is skipped when the left already matched. &quot;</span>
+<span id="L1457"><span class="lineNum">    1457</span>                 :             :                    &quot;See `-a` for the full precedence order.&quot;,</span>
 <span id="L1458"><span class="lineNum">    1458</span>                 :             :         .kind = Kind::kOperator,</span>
 <span id="L1459"><span class="lineNum">    1459</span>                 :             :         .arity = 0,</span>
 <span id="L1460"><span class="lineNum">    1460</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
 <span id="L1461"><span class="lineNum">    1461</span>                 :             :     },</span>
 <span id="L1462"><span class="lineNum">    1462</span>                 :             :     {</span>
-<span id="L1463"><span class="lineNum">    1463</span>                 :             :         .name = &quot;-not&quot;,</span>
-<span id="L1464"><span class="lineNum">    1464</span>                 :             :         .summary = &quot;logical negation&quot;,</span>
-<span id="L1465"><span class="lineNum">    1465</span>                 :             :         .details = &quot;Negates the predicate that follows (`!` is the synonym). Binds tightest of the operators, so &quot;</span>
-<span id="L1466"><span class="lineNum">    1466</span>                 :             :                    &quot;`-not -type d -o -name x` is `(-not -type d) -o -name x`. See `-a` for the full precedence &quot;</span>
-<span id="L1467"><span class="lineNum">    1467</span>                 :             :                    &quot;order.&quot;,</span>
-<span id="L1468"><span class="lineNum">    1468</span>                 :             :         .kind = Kind::kOperator,</span>
-<span id="L1469"><span class="lineNum">    1469</span>                 :             :         .arity = 0,</span>
-<span id="L1470"><span class="lineNum">    1470</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
-<span id="L1471"><span class="lineNum">    1471</span>                 :             :     },</span>
-<span id="L1472"><span class="lineNum">    1472</span>                 :             :     {</span>
-<span id="L1473"><span class="lineNum">    1473</span>                 :             :         .name = &quot;!&quot;,</span>
-<span id="L1474"><span class="lineNum">    1474</span>                 :             :         .summary = &quot;logical negation&quot;,</span>
+<span id="L1463"><span class="lineNum">    1463</span>                 :             :         .name = &quot;-or&quot;,</span>
+<span id="L1464"><span class="lineNum">    1464</span>                 :             :         .summary = &quot;logical OR&quot;,</span>
+<span id="L1465"><span class="lineNum">    1465</span>                 :             :         .kind = Kind::kOperator,</span>
+<span id="L1466"><span class="lineNum">    1466</span>                 :             :         .arity = 0,</span>
+<span id="L1467"><span class="lineNum">    1467</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
+<span id="L1468"><span class="lineNum">    1468</span>                 :             :     },</span>
+<span id="L1469"><span class="lineNum">    1469</span>                 :             :     {</span>
+<span id="L1470"><span class="lineNum">    1470</span>                 :             :         .name = &quot;-not&quot;,</span>
+<span id="L1471"><span class="lineNum">    1471</span>                 :             :         .summary = &quot;logical negation&quot;,</span>
+<span id="L1472"><span class="lineNum">    1472</span>                 :             :         .details = &quot;Negates the predicate that follows (`!` is the synonym). Binds tightest of the operators, so &quot;</span>
+<span id="L1473"><span class="lineNum">    1473</span>                 :             :                    &quot;`-not -type d -o -name x` is `(-not -type d) -o -name x`. See `-a` for the full precedence &quot;</span>
+<span id="L1474"><span class="lineNum">    1474</span>                 :             :                    &quot;order.&quot;,</span>
 <span id="L1475"><span class="lineNum">    1475</span>                 :             :         .kind = Kind::kOperator,</span>
 <span id="L1476"><span class="lineNum">    1476</span>                 :             :         .arity = 0,</span>
 <span id="L1477"><span class="lineNum">    1477</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
 <span id="L1478"><span class="lineNum">    1478</span>                 :             :     },</span>
-<span id="L1479"><span class="lineNum">    1479</span>                 :             :     // xff logical operators (no find has them): precedence NOT &gt; AND/-nand &gt; XOR/-xnor &gt; OR/-nor.</span>
-<span id="L1480"><span class="lineNum">    1480</span>                 :             :     {</span>
-<span id="L1481"><span class="lineNum">    1481</span>                 :             :         .name = &quot;-xor&quot;,</span>
-<span id="L1482"><span class="lineNum">    1482</span>                 :             :         .summary = &quot;logical XOR; matches exactly one side (xff)&quot;,</span>
-<span id="L1483"><span class="lineNum">    1483</span>                 :             :         .details = &quot;Matches when exactly ONE side is true (never both). One of four xff-only operators find lacks: &quot;</span>
-<span id="L1484"><span class="lineNum">    1484</span>                 :             :                    &quot;`-xor`, and the negations `-nand` (not both), `-nor` (neither), `-xnor` (both agree). They sit &quot;</span>
-<span id="L1485"><span class="lineNum">    1485</span>                 :             :                    &quot;between `-a` and `-o` in precedence (`-not` &gt; `-a` / `-nand` &gt; `-xor` / `-xnor` &gt; `-o` / `-nor`) &quot;</span>
-<span id="L1486"><span class="lineNum">    1486</span>                 :             :                    &quot;and, like all xff-only operators, are rejected by `--config=find`.&quot;,</span>
-<span id="L1487"><span class="lineNum">    1487</span>                 :             :         .kind = Kind::kOperator,</span>
-<span id="L1488"><span class="lineNum">    1488</span>                 :             :         .arity = 0,</span>
-<span id="L1489"><span class="lineNum">    1489</span>                 :             :         .style = Style::kXff,</span>
-<span id="L1490"><span class="lineNum">    1490</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
-<span id="L1491"><span class="lineNum">    1491</span>                 :             :     },</span>
-<span id="L1492"><span class="lineNum">    1492</span>                 :             :     {</span>
-<span id="L1493"><span class="lineNum">    1493</span>                 :             :         .name = &quot;-nand&quot;,</span>
-<span id="L1494"><span class="lineNum">    1494</span>                 :             :         .summary = &quot;logical NAND; ! (lhs -a rhs) (xff)&quot;,</span>
-<span id="L1495"><span class="lineNum">    1495</span>                 :             :         .kind = Kind::kOperator,</span>
-<span id="L1496"><span class="lineNum">    1496</span>                 :             :         .arity = 0,</span>
-<span id="L1497"><span class="lineNum">    1497</span>                 :             :         .style = Style::kXff,</span>
-<span id="L1498"><span class="lineNum">    1498</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
-<span id="L1499"><span class="lineNum">    1499</span>                 :             :     },</span>
-<span id="L1500"><span class="lineNum">    1500</span>                 :             :     {</span>
-<span id="L1501"><span class="lineNum">    1501</span>                 :             :         .name = &quot;-nor&quot;,</span>
-<span id="L1502"><span class="lineNum">    1502</span>                 :             :         .summary = &quot;logical NOR; ! (lhs -o rhs) (xff)&quot;,</span>
-<span id="L1503"><span class="lineNum">    1503</span>                 :             :         .kind = Kind::kOperator,</span>
-<span id="L1504"><span class="lineNum">    1504</span>                 :             :         .arity = 0,</span>
-<span id="L1505"><span class="lineNum">    1505</span>                 :             :         .style = Style::kXff,</span>
-<span id="L1506"><span class="lineNum">    1506</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
-<span id="L1507"><span class="lineNum">    1507</span>                 :             :     },</span>
-<span id="L1508"><span class="lineNum">    1508</span>                 :             :     {</span>
-<span id="L1509"><span class="lineNum">    1509</span>                 :             :         .name = &quot;-xnor&quot;,</span>
-<span id="L1510"><span class="lineNum">    1510</span>                 :             :         .summary = &quot;logical XNOR; matches when both sides agree (xff)&quot;,</span>
-<span id="L1511"><span class="lineNum">    1511</span>                 :             :         .kind = Kind::kOperator,</span>
-<span id="L1512"><span class="lineNum">    1512</span>                 :             :         .arity = 0,</span>
-<span id="L1513"><span class="lineNum">    1513</span>                 :             :         .style = Style::kXff,</span>
-<span id="L1514"><span class="lineNum">    1514</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
-<span id="L1515"><span class="lineNum">    1515</span>                 :             :     },</span>
-<span id="L1516"><span class="lineNum">    1516</span>                 :             : });</span>
-<span id="L1517"><span class="lineNum">    1517</span>                 :             : </span>
-<span id="L1518"><span class="lineNum">    1518</span>                 :             : static_assert(</span>
-<span id="L1519"><span class="lineNum">    1519</span>                 :             :     std::ranges::all_of(</span>
-<span id="L1520"><span class="lineNum">    1520</span>                 :             :         kDescriptors,</span>
-<span id="L1521"><span class="lineNum">    1521</span>                 :             :         [](const Descriptor&amp; entry) {</span>
-<span id="L1522"><span class="lineNum">    1522</span>                 :             :           return entry.primary_expansion_topic.empty()</span>
-<span id="L1523"><span class="lineNum">    1523</span>                 :             :                  || std::ranges::any_of(entry.see_also | std::views::split(','), [&amp;](auto topic) {</span>
-<span id="L1524"><span class="lineNum">    1524</span>                 :             :                       return std::string_view(topic.begin(), topic.end()) == entry.primary_expansion_topic;</span>
-<span id="L1525"><span class="lineNum">    1525</span>                 :             :                     });</span>
-<span id="L1526"><span class="lineNum">    1526</span>                 :             :         }),</span>
-<span id="L1527"><span class="lineNum">    1527</span>                 :             :     &quot;primary_expansion_topic must be an element of see_also&quot;);</span>
-<span id="L1528"><span class="lineNum">    1528</span>                 :             : </span>
-<span id="L1529"><span class="lineNum">    1529</span>                 :             : }  // namespace</span>
-<span id="L1530"><span class="lineNum">    1530</span>                 :             : </span>
-<span id="L1531"><span class="lineNum">    1531</span>                 :<span class="tlaGNC">       26083 : mbo::types::OptionalRef&lt;const Descriptor&gt; Lookup(std::string_view name) {</span></span>
-<span id="L1532"><span class="lineNum">    1532</span>         [<span class="tlaGBC" title="branch 0 was taken 2467898 times"> + </span><span class="tlaGBC" title="branch 1 was taken 12527 times"> + </span>]:<span class="tlaGNC">     2467898 :   for (const Descriptor&amp; descriptor : kDescriptors) {</span></span>
-<span id="L1533"><span class="lineNum">    1533</span> [<span class="tlaGBC" title="branch 0 was taken 13547 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2454351 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 49783 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2404568 times"> + </span>]:<span class="tlaGNC">     2467898 :     if (descriptor.name == name || (!descriptor.alias.empty() &amp;&amp; descriptor.alias == name)) {</span></span>
-<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 9 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 49774 times"> + </span>]
-<span id="L1534"><span class="lineNum">    1534</span>                 :<span class="tlaGNC">       13556 :       return descriptor;</span></span>
-<span id="L1535"><span class="lineNum">    1535</span>                 :<span class="tlaGNC">       13556 :     }</span></span>
-<span id="L1536"><span class="lineNum">    1536</span>                 :<span class="tlaGNC">     2467898 :   }</span></span>
-<span id="L1537"><span class="lineNum">    1537</span>                 :<span class="tlaGNC">       12527 :   return std::nullopt;</span></span>
-<span id="L1538"><span class="lineNum">    1538</span>                 :<span class="tlaGNC">       26083 : }</span></span>
-<span id="L1539"><span class="lineNum">    1539</span>                 :             : </span>
-<span id="L1540"><span class="lineNum">    1540</span>                 :<span class="tlaGNC">         460 : absl::Span&lt;const Descriptor&gt; All() {</span></span>
-<span id="L1541"><span class="lineNum">    1541</span>                 :<span class="tlaGNC">         460 :   return kDescriptors;</span></span>
-<span id="L1542"><span class="lineNum">    1542</span>                 :<span class="tlaGNC">         460 : }</span></span>
-<span id="L1543"><span class="lineNum">    1543</span>                 :             : </span>
-<span id="L1544"><span class="lineNum">    1544</span>                 :             : }  // namespace xff::registry</span>
+<span id="L1479"><span class="lineNum">    1479</span>                 :             :     {</span>
+<span id="L1480"><span class="lineNum">    1480</span>                 :             :         .name = &quot;!&quot;,</span>
+<span id="L1481"><span class="lineNum">    1481</span>                 :             :         .summary = &quot;logical negation&quot;,</span>
+<span id="L1482"><span class="lineNum">    1482</span>                 :             :         .kind = Kind::kOperator,</span>
+<span id="L1483"><span class="lineNum">    1483</span>                 :             :         .arity = 0,</span>
+<span id="L1484"><span class="lineNum">    1484</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
+<span id="L1485"><span class="lineNum">    1485</span>                 :             :     },</span>
+<span id="L1486"><span class="lineNum">    1486</span>                 :             :     // xff logical operators (no find has them): precedence NOT &gt; AND/-nand &gt; XOR/-xnor &gt; OR/-nor.</span>
+<span id="L1487"><span class="lineNum">    1487</span>                 :             :     {</span>
+<span id="L1488"><span class="lineNum">    1488</span>                 :             :         .name = &quot;-xor&quot;,</span>
+<span id="L1489"><span class="lineNum">    1489</span>                 :             :         .summary = &quot;logical XOR; matches exactly one side (xff)&quot;,</span>
+<span id="L1490"><span class="lineNum">    1490</span>                 :             :         .details = &quot;Matches when exactly ONE side is true (never both). One of four xff-only operators find lacks: &quot;</span>
+<span id="L1491"><span class="lineNum">    1491</span>                 :             :                    &quot;`-xor`, and the negations `-nand` (not both), `-nor` (neither), `-xnor` (both agree). They sit &quot;</span>
+<span id="L1492"><span class="lineNum">    1492</span>                 :             :                    &quot;between `-a` and `-o` in precedence (`-not` &gt; `-a` / `-nand` &gt; `-xor` / `-xnor` &gt; `-o` / `-nor`) &quot;</span>
+<span id="L1493"><span class="lineNum">    1493</span>                 :             :                    &quot;and, like all xff-only operators, are rejected by `--config=find`.&quot;,</span>
+<span id="L1494"><span class="lineNum">    1494</span>                 :             :         .kind = Kind::kOperator,</span>
+<span id="L1495"><span class="lineNum">    1495</span>                 :             :         .arity = 0,</span>
+<span id="L1496"><span class="lineNum">    1496</span>                 :             :         .style = Style::kXff,</span>
+<span id="L1497"><span class="lineNum">    1497</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
+<span id="L1498"><span class="lineNum">    1498</span>                 :             :     },</span>
+<span id="L1499"><span class="lineNum">    1499</span>                 :             :     {</span>
+<span id="L1500"><span class="lineNum">    1500</span>                 :             :         .name = &quot;-nand&quot;,</span>
+<span id="L1501"><span class="lineNum">    1501</span>                 :             :         .summary = &quot;logical NAND; ! (lhs -a rhs) (xff)&quot;,</span>
+<span id="L1502"><span class="lineNum">    1502</span>                 :             :         .kind = Kind::kOperator,</span>
+<span id="L1503"><span class="lineNum">    1503</span>                 :             :         .arity = 0,</span>
+<span id="L1504"><span class="lineNum">    1504</span>                 :             :         .style = Style::kXff,</span>
+<span id="L1505"><span class="lineNum">    1505</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
+<span id="L1506"><span class="lineNum">    1506</span>                 :             :     },</span>
+<span id="L1507"><span class="lineNum">    1507</span>                 :             :     {</span>
+<span id="L1508"><span class="lineNum">    1508</span>                 :             :         .name = &quot;-nor&quot;,</span>
+<span id="L1509"><span class="lineNum">    1509</span>                 :             :         .summary = &quot;logical NOR; ! (lhs -o rhs) (xff)&quot;,</span>
+<span id="L1510"><span class="lineNum">    1510</span>                 :             :         .kind = Kind::kOperator,</span>
+<span id="L1511"><span class="lineNum">    1511</span>                 :             :         .arity = 0,</span>
+<span id="L1512"><span class="lineNum">    1512</span>                 :             :         .style = Style::kXff,</span>
+<span id="L1513"><span class="lineNum">    1513</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
+<span id="L1514"><span class="lineNum">    1514</span>                 :             :     },</span>
+<span id="L1515"><span class="lineNum">    1515</span>                 :             :     {</span>
+<span id="L1516"><span class="lineNum">    1516</span>                 :             :         .name = &quot;-xnor&quot;,</span>
+<span id="L1517"><span class="lineNum">    1517</span>                 :             :         .summary = &quot;logical XNOR; matches when both sides agree (xff)&quot;,</span>
+<span id="L1518"><span class="lineNum">    1518</span>                 :             :         .kind = Kind::kOperator,</span>
+<span id="L1519"><span class="lineNum">    1519</span>                 :             :         .arity = 0,</span>
+<span id="L1520"><span class="lineNum">    1520</span>                 :             :         .style = Style::kXff,</span>
+<span id="L1521"><span class="lineNum">    1521</span>                 :             :         .see_also = &quot;expressions,cookbook&quot;,</span>
+<span id="L1522"><span class="lineNum">    1522</span>                 :             :     },</span>
+<span id="L1523"><span class="lineNum">    1523</span>                 :             : });</span>
+<span id="L1524"><span class="lineNum">    1524</span>                 :             : </span>
+<span id="L1525"><span class="lineNum">    1525</span>                 :             : static_assert(</span>
+<span id="L1526"><span class="lineNum">    1526</span>                 :             :     std::ranges::all_of(</span>
+<span id="L1527"><span class="lineNum">    1527</span>                 :             :         kDescriptors,</span>
+<span id="L1528"><span class="lineNum">    1528</span>                 :             :         [](const Descriptor&amp; entry) {</span>
+<span id="L1529"><span class="lineNum">    1529</span>                 :             :           return entry.primary_expansion_topic.empty()</span>
+<span id="L1530"><span class="lineNum">    1530</span>                 :             :                  || std::ranges::any_of(entry.see_also | std::views::split(','), [&amp;](auto topic) {</span>
+<span id="L1531"><span class="lineNum">    1531</span>                 :             :                       return std::string_view(topic.begin(), topic.end()) == entry.primary_expansion_topic;</span>
+<span id="L1532"><span class="lineNum">    1532</span>                 :             :                     });</span>
+<span id="L1533"><span class="lineNum">    1533</span>                 :             :         }),</span>
+<span id="L1534"><span class="lineNum">    1534</span>                 :             :     &quot;primary_expansion_topic must be an element of see_also&quot;);</span>
+<span id="L1535"><span class="lineNum">    1535</span>                 :             : </span>
+<span id="L1536"><span class="lineNum">    1536</span>                 :             : }  // namespace</span>
+<span id="L1537"><span class="lineNum">    1537</span>                 :             : </span>
+<span id="L1538"><span class="lineNum">    1538</span>                 :<span class="tlaGNC">       26119 : mbo::types::OptionalRef&lt;const Descriptor&gt; Lookup(std::string_view name) {</span></span>
+<span id="L1539"><span class="lineNum">    1539</span>         [<span class="tlaGBC" title="branch 0 was taken 2471154 times"> + </span><span class="tlaGBC" title="branch 1 was taken 12527 times"> + </span>]:<span class="tlaGNC">     2471154 :   for (const Descriptor&amp; descriptor : kDescriptors) {</span></span>
+<span id="L1540"><span class="lineNum">    1540</span> [<span class="tlaGBC" title="branch 0 was taken 13583 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2457571 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 49855 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2407716 times"> + </span>]:<span class="tlaGNC">     2471154 :     if (descriptor.name == name || (!descriptor.alias.empty() &amp;&amp; descriptor.alias == name)) {</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 9 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 49846 times"> + </span>]
+<span id="L1541"><span class="lineNum">    1541</span>                 :<span class="tlaGNC">       13592 :       return descriptor;</span></span>
+<span id="L1542"><span class="lineNum">    1542</span>                 :<span class="tlaGNC">       13592 :     }</span></span>
+<span id="L1543"><span class="lineNum">    1543</span>                 :<span class="tlaGNC">     2471154 :   }</span></span>
+<span id="L1544"><span class="lineNum">    1544</span>                 :<span class="tlaGNC">       12527 :   return std::nullopt;</span></span>
+<span id="L1545"><span class="lineNum">    1545</span>                 :<span class="tlaGNC">       26119 : }</span></span>
+<span id="L1546"><span class="lineNum">    1546</span>                 :             : </span>
+<span id="L1547"><span class="lineNum">    1547</span>                 :<span class="tlaGNC">         460 : absl::Span&lt;const Descriptor&gt; All() {</span></span>
+<span id="L1548"><span class="lineNum">    1548</span>                 :<span class="tlaGNC">         460 :   return kDescriptors;</span></span>
+<span id="L1549"><span class="lineNum">    1549</span>                 :<span class="tlaGNC">         460 : }</span></span>
+<span id="L1550"><span class="lineNum">    1550</span>                 :             : </span>
+<span id="L1551"><span class="lineNum">    1551</span>                 :             : }  // namespace xff::registry</span>
         </pre>
               </td>
             </tr>
