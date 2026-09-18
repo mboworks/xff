@@ -505,13 +505,27 @@ TEST_F(HelpTest, PlainContextEmitsNoAnsi) {
   EXPECT_THAT(plain.Take(), Not(HasSubstr("\x1b[")));
 }
 
-TEST_F(HelpTest, UsagePageHelpSectionListsFlagsAndTopics) {
-  // The usage page's Help section is built from HelpFlags() + the topic index (the model's
-  // BuildHelpSection), not a hand-written string: the meta/doc flags plus the nested topics.
-  EXPECT_THAT(HelpFlags(), Not(IsEmpty()));
+TEST_F(HelpTest, UsagePageRoutesTasksToCompleteHelp) {
   const std::string usage = RenderDoc(BuildUsage());
   EXPECT_THAT(usage, AllOf(HasSubstr("--help=TOPIC"), HasSubstr("--man"), HasSubstr("--version")));
-  EXPECT_THAT(usage, HasSubstr("fields"));  // the topic index (HelpTopics) is nested in
+  EXPECT_THAT(usage, AllOf(HasSubstr("--help=all"), HasSubstr("--help=long"), HasSubstr("--help=list")));
+  EXPECT_THAT(usage, AllOf(HasSubstr("--help=fields"), HasSubstr("--help=safety"), HasSubstr("--help=compare")));
+  const std::vector<std::string_view> lines = absl::StrSplit(usage, '\n');
+  EXPECT_THAT(lines, SizeIs(Lt(160)));
+}
+
+TEST_F(HelpTest, UsageOverviewFitsCommonTerminalWidths) {
+  constexpr auto kWidths = std::to_array<std::size_t>({60, 80, 100});
+  for (const auto width : kWidths) {
+    PlainTextBackend backend(HelpRenderContext{.width = width});
+    RenderDocument(BuildUsage(), backend);
+    const std::string text = backend.Take();
+    const std::vector<std::string_view> lines = absl::StrSplit(text, '\n');
+    EXPECT_THAT(lines, SizeIs(Lt(160))) << width;
+    for (const auto line : lines) {
+      EXPECT_THAT(line.size(), Lt(width + 1)) << width << ": " << line;
+    }
+  }
 }
 
 TEST_F(HelpTest, HelpGuideListsEveryTopic) {

@@ -24,6 +24,7 @@ cc_library(
     srcs = ["parser.cc"],
     hdrs = [
         "ast.h",
+        "diagnostics.h",
         "parser.h",
     ],
     visibility = ["//xff:__subpackages__"],
@@ -34,6 +35,7 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:cord",
         "@mboworks_mbo//mbo/container:limited_set_cc",
         "@mboworks_mbo//mbo/status:status_macros_cc",
         "@mboworks_mbo//mbo/types:optional_ref_cc",

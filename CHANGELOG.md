@@ -20,6 +20,13 @@
 - Show effective safety decisions in `--explain`, including mandatory and profile origins,
   active modes, per-file categories, and expanded directory roots.
 
+- Make default help a compact command and task guide, with direct routes to the complete
+  flag inventory and detailed reference; wrap the help title to the requested width.
+  Structure comparison guidance and keep safety tables readable with labeled rows on narrow terminals.
+
+- Suggest close registered option and predicate spellings in usage errors, and explain when a
+  short global must be moved before the roots; command arguments remain literal.
+
 - Reject zero, negative, malformed, and overflowing histogram widths before traversal or actions,
   including settings selected from configuration files.
 
@@ -36,6 +43,8 @@
 
 - Avoid duplicate comparison tables when combining `--compare=summary` with bare `--summary`,
   while retaining scoped totals and explicitly requested grouping tables.
+
+- Lead the README with binary installation and common tasks before the detailed feature matrices.
 
 - Correct the release archive description: lean and full executables have separate archives,
   each with its own matching debug symbols.

@@ -42,6 +42,7 @@ cc_library(
     visibility = ["//xff/cli/testing:__pkg__"],
     deps = [
         ":config_validation_cc",
+        ":diagnostics_cc",
         ":globals_cc",
         ":help_backend_cc",
         ":help_build_cc",
@@ -558,6 +559,34 @@ diff_test(
     file_new = ":NOTICE.actual",
     file_old = "//:NOTICE",
     target_compatible_with = XFF_FULL_ONLY,
+)
+
+cc_library(
+    name = "diagnostics_cc",
+    srcs = ["diagnostics.cc"],
+    hdrs = ["diagnostics.h"],
+    deps = [
+        ":globals_cc",
+        "//xff/parser:parser_cc",
+        "//xff/registry:registry_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:cord",
+    ],
+)
+
+cc_test(
+    name = "diagnostics_test",
+    size = "small",
+    srcs = ["diagnostics_test.cc"],
+    deps = [
+        ":diagnostics_cc",
+        "//xff/parser:parser_cc",
+        "@abseil-cpp//absl/status",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
 )
 
 # The whole-run option vocabulary (the flag counterpart of the registry), enumerated

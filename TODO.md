@@ -20,6 +20,12 @@
 - [x] Validate file/directory prefix conflicts and deterministic root/traversal ordering.
 - [x] Complete registry help, generated reference, integration tests, and affected-file lint.
 
+## Completed: Compact help overview (audit S06)
+
+- Replace the exhaustive default catalogue with command structure and task-oriented help routes.
+- Preserve complete inventory and detailed reference under `--help=all` and `--help=long`.
+- Validate terminal widths and executable examples; structure comparison help and stack narrow policy tables.
+
 Actionable roadmap and deliberately deferred ideas. Completed implementation records live in
 [`docs/history-roadmap.md`](docs/history-roadmap.md); other resolved design records and investigations
 live in [`docs/history.md`](docs/history.md).
@@ -48,6 +54,12 @@ live in [`docs/history.md`](docs/history.md).
 
 - Preserve scoped totals while coalescing the comparison table requested by the shorthand and bare summary.
 - Test both argument orders and retain the extension-summary composition regression.
+
+## Completed: Install-first README (audit S07)
+
+- Put published binaries and a four-command task guide before feature matrices.
+- Keep Bazel instructions under building from source.
+- Describe summary bytes as apparent sizes, not allocated disk usage.
 
 ## Completed: Release archive documentation (audit B08)
 
@@ -322,3 +334,8 @@ The safety model and directory-scoped permissions are tracked in
 - [x] Show skip/selection state, declared behavior, and physical application origins.
 - [x] Add personal, project, mandatory-policy, and environment-root recipes.
 - [x] Verify complete CLI configurations, generated reference, and changed-header consumers.
+
+### Audit S18: spelling and placement diagnostics
+
+- [x] Derive conservative spelling hints and short-global placement hints from registries.
+- [x] Verify parser boundaries, CLI errors before actions, normal hooks, and changed-file clang-tidy.

@@ -1046,7 +1046,11 @@ Section CompareSection(bool in_full) {
       "The default selection reports discrepancies only; `--compare-select=all` also includes equal entries. "
       "`--compare-select=none` (or an empty value) suppresses per-path output without changing summary counts. "
       "`--path-encoding=escape` makes control bytes in the path unambiguous."));
-  statuses.children.push_back(ProseOf(
+  statuses.children.push_back(RowsOf(kStatuses));
+  section.children.push_back(Content{.node = std::move(statuses)});
+
+  Subsection summaries{.title = "Summary tables"};
+  summaries.children.push_back(ProseOf(
       "`--summary` (or `--summary=compare`) appends counts, count percentages, combined sizes, and size "
       "percentages by entry type and status, followed by a total. Each paired path counts once; its combined "
       "size includes both sides. An identical 100-byte pair contributes one result and 200 bytes; a different "
@@ -1055,7 +1059,8 @@ Section CompareSection(bool in_full) {
       "`--format=jsonl` emits `type`, `group`, `count`, `count_percent`, `bytes`, and `size_percent`. "
       "Directories, symlinks, and special entries participate, including matched roots. Directory equality "
       "means entry-kind equality, not subtree equality. A type-changing pair appears once under its "
-      "left-to-right type transition. Sizes use entry metadata, never recursive directory sizes. "
+      "left-to-right type transition. Sizes use entry metadata, never recursive directory sizes."));
+  summaries.children.push_back(ProseOf(
       "Ordinary summary groupings default to `--summary-scope=compare` when `--compare` is active: "
       "one left/right table across all categories. Without `--compare`, the default is `all`. An explicit "
       "scope overrides this conditional default regardless of option order. `compare` expands to "
@@ -1063,26 +1068,27 @@ Section CompareSection(bool in_full) {
       "Explicit `--summary-scope=all` "
       "combines both input trees: its entry count is left-only plus right-only plus twice the paired result "
       "count; its byte total equals the comparison's combined bytes for the same population. Ordinary percentages use "
-      "full table totals before `--top`. "
+      "full table totals before `--top`."));
+  summaries.children.push_back(ProseOf(
       "`--summary-scope=root` separates roots; `--summary-scope=compare` aligns left and right columns "
       "in one table per grouping. Each scope selects a column group containing count, count percentage, "
       "size, and size percentage. `diff` selects `left-only,right-only,different`; `identical` selects one "
       "column group. Category counts pair entries once and sizes sum both sides; side totals count their "
       "own entries and bytes. Different group keys form transition rows. Percentages use each column group's "
       "full population before `--top`. Scopes may overlap; their totals are not added together. "
-      "Missing groups display a dash (JSON `null`); existing zero-byte files retain numeric zeros. "
+      "Missing groups display a dash (JSON `null`); existing zero-byte files retain numeric zeros."));
+  summaries.children.push_back(ProseOf(
       "`--format=markdown` (alias `md`) exports comparison-result and ordinary summary tables as Markdown; "
       "`--columns` remains a listing-only option. Summaries support `plain`, `aligned`, `jsonl`, and `markdown`; "
       "listing formats `csv`, `tsv`, `nul`, and `tree` are rejected with active summaries. Per-path status "
       "records remain tab-separated even with `--format=jsonl`; suppress them for a summary-only export. "
       "Comparison-result tables precede ordinary tables regardless of the order of summary requests. "
       "`--top` limits ordinary groups, not comparison-result rows."));
-  statuses.children.push_back(ProseOf(
+  summaries.children.push_back(ProseOf(
       "`--compare=summary` is shorthand for `--compare=status --compare-select=none --summary=compare` "
       "at that position in the option sequence. Later selections can enable per-path output, and "
       "`--summary=none` can disable the summary."));
-  statuses.children.push_back(RowsOf(kStatuses));
-  section.children.push_back(Content{.node = std::move(statuses)});
+  section.children.push_back(Content{.node = std::move(summaries)});
 
   Subsection patch{.title = "Patch output"};
   patch.children.push_back(ProseOf(
@@ -1114,10 +1120,10 @@ Section CompareSection(bool in_full) {
 
   Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
   examples.children.push_back(ExampleOf("xff --compare=summary left-tree right-tree", "sh"));
+  examples.children.push_back(ProseOf("show only comparison statistics, with no per-path records"));
   examples.children.push_back(
       ExampleOf("xff --compare=summary left-tree right-tree --summary=ext --summary-scope=compare", "sh"));
-  examples.children.push_back(ProseOf("summarize extensions within each comparison category"));
-  examples.children.push_back(ProseOf("show only comparison statistics, with no per-path records"));
+  examples.children.push_back(ProseOf("summarize extensions in side-by-side left and right totals"));
   examples.children.push_back(ExampleOf("xff --compare left-tree right-tree", "sh"));
   examples.children.push_back(ProseOf("print only paths present on one side or different on both sides"));
   examples.children.push_back(ExampleOf("xff --compare --compare-select=all left-tree right-tree", "sh"));
@@ -1697,8 +1703,8 @@ Section DescriptionSection() {
       "xff has two flavors selected by the program name: invoked as `find` it restricts the expression "
       "to find-compatible primaries, operators, and values; invoked as `xff` it enables the modern "
       "extensions. Whole-run xff globals remain available as explicit controls in either flavor. An "
-      "explicit `--config=find|xff` overrides the program name. Items marked as xff extensions below "
-      "are the additions over find."));
+      "explicit `--config=find|xff` overrides the program name. The detailed reference marks the "
+      "xff extensions beyond find."));
   return description;
 }
 
@@ -1722,7 +1728,8 @@ Section CommandStructureSection() {
       "Adjacent tests and actions have an implicit `-a` (AND). Use `!` for NOT, `-o` for OR, and shell-quoted "
       "or escaped `(` and `)` for grouping. Evaluation is left to right and short-circuits."));
   rules.items.push_back(ParseInline(
-      "With no starting path, xff uses `.`. With no explicit action, it prints each matching entry. A bare `--` "
+      "With no starting path, xff searches the current directory (`.`). With no explicit action, it prints "
+      "each matching entry. A bare `--` "
       "ends option parsing so a path beginning with `-` can be named unambiguously."));
   section.children.push_back(Content{.node = std::move(rules)});
 
@@ -1836,6 +1843,32 @@ Section TopicsSection() {
   return section;
 }
 
+// A short route from common tasks to the complete registry-backed help pages.
+Section UsageTasksSection() {
+  Section section{.title = "Common tasks"};
+  static constexpr auto kTasks = std::to_array<DocPair>({
+      {"Find entries", "`--help=expressions` for tests and actions; `--help=regex` for regular expressions"},
+      {"Search contents", "`--help=content` for `-grep`, captures, and content matching"},
+      {"Summarize", "`--help=summary` for counts, sizes, grouping, and comparison scopes"},
+      {"Compare trees", "`--help=compare` for differences and comparison summaries"},
+      {"Choose output", "`--help=output` for formats; `--help=fields` for template fields"},
+      {"Configure safety", "`--help=config` for INI files; `--help=safety` for blocks, safe mode, and dry-run"},
+      {"Use archives", "`--help=archive` for supported readers, writers, and archive traversal"},
+  });
+  section.children.push_back(RowsOf(kTasks));
+  return section;
+}
+
+Section UsageHelpSection() {
+  Section section{.title = "More help"};
+  section.children.push_back(ProseOf(
+      "Use `--help=NAME` for one flag or primary, such as `--help=-name` or `--help=--summary`. "
+      "Use `--help=list` to list topics and `--help=TOPIC` to read one. "
+      "`--help=all` lists every option and primary; `--help=long` is the full detailed reference. "
+      "`--man` renders the manual page; `--version` reports the build version."));
+  return section;
+}
+
 // The `--help=help` topic: a guide to the (subcommand-free) help system. Reuses
 // BuildHelpSection (the SOT flags + topic index) with the framing prose prepended, so
 // the guide can never drift from the actual help flags / topics.
@@ -1926,9 +1959,9 @@ Document BuildUsage() {
       .usage = "[option...] [path...] [expression]",
   };
   doc.sections.push_back(DescriptionSection());
-  doc.sections.push_back(OptionsSection(/*with_details=*/false));
-  doc.sections.push_back(ExpressionSection(/*with_details=*/false));
-  doc.sections.push_back(BuildHelpSection());
+  doc.sections.push_back(CommandStructureSection());
+  doc.sections.push_back(UsageTasksSection());
+  doc.sections.push_back(UsageHelpSection());
   return doc;
 }
 

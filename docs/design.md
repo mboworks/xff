@@ -36,6 +36,10 @@ predicates mean AND. Config expressions are grouped and ANDed with the CLI expre
 Double-dash options are not hoisted out of a primary's argument run: inside an `-exec`
 command they belong to the child. Bare `--` ends option recognition. Single-dash globals
 retain their documented leading placement.
+Unknown options remain usage errors. Close registered spellings may be suggested, but are never
+accepted automatically. A recognized short global in an expression gets a placement hint; a
+position-independent long form is named only if the registry provides one. Tokens inside primary
+argument runs, or after `--`, are never rescanned to generate these hints.
 
 Boolean pairs, enum values, repeatable lists, keyed options, and sign suffixes are distinct
 mechanisms. Accepted forms and repetition behavior come from the flag's metadata or compatibility

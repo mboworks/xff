@@ -190,6 +190,31 @@ TEST_F(PlainBackendTest, RelatedCommandsRespectTheHelpWidth) {
   }
 }
 
+TEST_F(PlainBackendTest, NarrowPolicyTableRetainsEveryLabeledValue) {
+  PlainTextBackend backend(HelpRenderContext{.width = 40});
+  backend.EmitTable({
+      .header = {"Operation", "Ordinary path", "Output path"},
+      .cells =
+          {
+              {"Overwrite", "file-writing, file-overwrite", "output-file-writing, output-file-overwrite"},
+              {"Delete", "file-deletion", "output-file-deletion"},
+          },
+  });
+  const std::string out = backend.Take();
+  EXPECT_THAT(out, HasSubstr("Operation: Overwrite"));
+  EXPECT_THAT(out, HasSubstr("Ordinary path:"));
+  EXPECT_THAT(out, HasSubstr("Output path:"));
+  EXPECT_THAT(out, HasSubstr("file-writing"));
+  EXPECT_THAT(out, HasSubstr("file-overwrite"));
+  EXPECT_THAT(out, HasSubstr("output-file-writing"));
+  EXPECT_THAT(out, HasSubstr("output-file-overwrite"));
+  EXPECT_THAT(out, HasSubstr("Operation: Delete"));
+  EXPECT_THAT(out, HasSubstr("output-file-deletion"));
+  for (const std::string_view line : absl::StrSplit(out, '\n')) {
+    EXPECT_THAT(line.size(), Le(40));
+  }
+}
+
 TEST_F(PlainBackendTest, CompleteReferencePointersUseTheFormatPresentation) {
   PlainTextBackend backend;
   backend.EmitSeeAlso({
