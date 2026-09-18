@@ -776,6 +776,15 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     return 2;
   }
   const xff::registry::Style style = xff::config::ActiveStyle(effective_configs);
+  // Explain and execution must inspect the same resolved globals and composed expression.
+  // This only parses configuration; no predicates or actions are evaluated here.
+  absl::StatusOr<xff::parser::Command> configured = xff::cli::ApplyResolvedConfig(std::move(command), resolved);
+  if (!configured.ok()) {
+    std::cerr << "xff: invalid config expression: " << configured.status().message() << "\n";
+    return 2;
+  }
+  command = *std::move(configured);
+
   if (absl::c_contains(command.globals, "--explain")) {
     std::cout << xff::config::ExplainSources(inputs.sources, style);
     std::cout << "rc-mode\t" << xff::config::RcModeName(inputs.rc_mode) << "\n";
@@ -798,14 +807,6 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     }
     std::cerr << "xff: ignoring " << xff::config::DropMessage(drop) << why << "\n";
   }
-  // Apply globals and compose config predicates/actions with the CLI expression.
-  absl::StatusOr<xff::parser::Command> configured = xff::cli::ApplyResolvedConfig(std::move(command), resolved);
-  if (!configured.ok()) {
-    std::cerr << "xff: invalid config expression: " << configured.status().message() << "\n";
-    return 2;
-  }
-  command = *std::move(configured);
-
   // The find style (--config=find) accepts only find's own expression vocabulary;
   // reject xff extensions (e.g. -println) so a find-style run behaves like GNU
   // find (design-config.md "CLI selectors"). The default xff style accepts all.
