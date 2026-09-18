@@ -27,6 +27,7 @@
 #include "absl/time/time.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/testing/status.h"
 #include "xff/env/env.h"
 #include "xff/vfs/entry.h"
 
@@ -34,6 +35,8 @@ namespace xff::fields {
 namespace {
 
 using ::mbo::StringOrView;
+using ::mbo::testing::IsOk;
+using ::mbo::testing::StatusIs;
 using ::testing::_;
 using ::testing::AllOf;
 using ::testing::Contains;
@@ -46,6 +49,7 @@ using ::testing::IsFalse;
 using ::testing::IsTrue;
 using ::testing::Not;
 using ::testing::Optional;
+using ::testing::SizeIs;
 using ::testing::UnorderedElementsAreArray;
 
 struct FieldsTest : ::testing::Test {
@@ -56,6 +60,83 @@ struct FieldsTest : ::testing::Test {
     return md;
   }
 };
+
+TEST_F(FieldsTest, StaticValidationDistinguishesUnknownFieldsFromAbsentValues) {
+  for (const std::string_view text : std::to_array<std::string_view>(
+           {"", "{}", "{{nmae}}", "{name}", "{env.XFF_UNSET}", "{def.absent}", "{capture.absent}", "{42}"})) {
+    EXPECT_THAT(Template::Compile(text).Validate(), IsOk()) << text;
+  }
+  for (const std::string_view text :
+       std::to_array<std::string_view>({"{nmae}", "{env.}", "{def.}", "{capture.}", "{4294967296}"})) {
+    EXPECT_THAT(
+        Template::Compile(text).Validate(), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("unknown field")))
+        << text;
+  }
+}
+
+TEST_F(FieldsTest, PrintfFieldScanningPreservesLiteralsAndQuotedBraces) {
+  EXPECT_THAT(PrintfTemplates(R"({nmae} %%{nmae} \%{nmae} %T{nmae})"), IsEmpty());
+  const auto templates = PrintfTemplates(R"(%{name:"s/a/}/"} %{capture.answer})");
+  ASSERT_THAT(templates, SizeIs(2));
+  EXPECT_THAT(templates[0].Validate(), IsOk());
+  EXPECT_THAT(templates[1].ReferencesCapture("answer"), IsTrue());
+  const auto malformed = PrintfTemplates("%{name");
+  ASSERT_THAT(malformed, SizeIs(1));
+  EXPECT_THAT(malformed[0].Validate(), StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(PlaceholderSize(R"({name:"s/a/}/"} tail)"), Optional(15));
+  EXPECT_THAT(PlaceholderSize("plain"), Eq(std::nullopt));
+}
+
+TEST_F(FieldsTest, TransformValidationChecksPatternsReplacementsFlagsAndReducers) {
+  for (const std::string_view text : std::to_array<std::string_view>(
+           {R"({name:s/(a)/\1/gi})", "{name:s/a/b/;/b/c/}", "{name:m/a/b/;join}", "{name:m/a/b/;join()}",
+            R"({name:m/a/b/;join(\))})", "{name:m/a/b/;join(, );s/b/c/}"})) {
+    EXPECT_THAT(Template::Compile(text).Validate(), IsOk()) << text;
+  }
+  for (const std::string_view text : std::to_array<std::string_view>(
+           {"{name:s/a/b}", "{name:s/[/b/}", R"({name:s/a/\1/})", R"({name:s/a/\q/})", "{name:s/a/b/x}",
+            "{name:s/a/b/;}", "{name:m/a/b/;join(}", "{name:m/a/b/;join()junk}", "{name:m/a/b/;join();}",
+            "{name:m/a/b/;join();join()}"})) {
+    EXPECT_THAT(Template::Compile(text).Validate(), StatusIs(absl::StatusCode::kInvalidArgument)) << text;
+  }
+}
+
+TEST_F(FieldsTest, NativeQualifierValidationFollowsTheFieldRenderer) {
+  for (const std::string_view text : std::to_array<std::string_view>(
+           {"{size:h}", "{blocks:h}", "{hash:sha256/base64}", "{hash:/hex}", "{mtime:%Y}", "{mtime:literal text}",
+            "{name:stem}", "{capture.answer:ext}"})) {
+    EXPECT_THAT(Template::Compile(text).Validate(), IsOk()) << text;
+  }
+  for (const std::string_view text : std::to_array<std::string_view>(
+           {"{size:garbage}", "{blocks:garbage}", "{hash:garbage}", "{hash:sha256/garbage}", "{name:garbage}",
+            "{capture.answer:garbage}"})) {
+    EXPECT_THAT(Template::Compile(text).Validate(), StatusIs(absl::StatusCode::kInvalidArgument)) << text;
+  }
+}
+
+TEST_F(FieldsTest, StaticValidationUsesTheQuotedPlaceholderParser) {
+  EXPECT_THAT(Template::Compile(R"({name:s/a/b/})").Validate(), IsOk());
+  EXPECT_THAT(Template::Compile(R"({name:"s/a/}/"})").Validate(), IsOk());
+  for (const std::string_view text :
+       std::to_array<std::string_view>({"{", "{name", R"({name:"unterminated})", "name}"})) {
+    EXPECT_THAT(Template::Compile(text).Validate(), StatusIs(absl::StatusCode::kInvalidArgument)) << text;
+  }
+  EXPECT_THAT(
+      Template::Compile("{nmae} {broken").Validate(),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("unknown field 'nmae'")));
+}
+
+TEST_F(FieldsTest, OverflowingCaptureIndicesDoNotAliasAnExistingCapture) {
+  const vfs::Metadata metadata;
+  const std::vector<std::string> captures{"captured"};
+  const RenderContext context{.path = "sample", .metadata = metadata, .captures = captures};
+  EXPECT_THAT(Template::Compile("{0}").Render(context), Eq("captured"));
+  EXPECT_THAT(Template::Compile("{0000}").Render(context), Eq("captured"));
+  for (const std::string_view text : std::to_array<std::string_view>(
+           {"{2147483648}", "{4294967296}", "{18446744073709551616}", "{999999999999999999999999999999999999}"})) {
+    EXPECT_THAT(Template::Compile(text).Render(context), IsEmpty()) << text;
+  }
+}
 
 TEST_F(FieldsTest, CaptureReferencesUseParsedFieldsRatherThanLiteralText) {
   EXPECT_THAT(Template::Compile("{capture.answer}").ReferencesCapture("answer"), IsTrue());

@@ -9,8 +9,16 @@
 - Identify every JSONL summary row by request, grouping, and scope, retaining template text
   and comparison roots so repeated and mixed summaries can be separated reliably.
 
+- Reject invalid field templates before traversal or actions, including configured summaries and
+  comparison runs. Printf field escapes share quoted-placeholder parsing with ordinary templates.
+
 - Resolve the current behavior values shown by `--explain` from the complete configuration,
   including named selections and explicit files, instead of only command-line flags.
+- Show named-profile availability, declared behavior, skip and validation reasons, and physical
+  flag origins in configuration inspection, with small configuration recipes.
+
+- Show effective safety decisions in `--explain`, including mandatory and profile origins,
+  active modes, per-file categories, and expanded directory roots.
 
 - Reject zero, negative, malformed, and overflowing histogram widths before traversal or actions,
   including settings selected from configuration files.

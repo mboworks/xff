@@ -704,6 +704,8 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
       std::cerr << "xff: " << diagnostic << "\n";
     }
     MBO_RETURN_IF_ERROR(checked.status);
+    system_validation.profiles.insert(
+        system_validation.profiles.end(), checked.profiles.begin(), checked.profiles.end());
     system_validation.disabled_configs.insert(
         system_validation.disabled_configs.end(), checked.disabled_configs.begin(), checked.disabled_configs.end());
     return std::move(checked.config);
@@ -799,9 +801,15 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   command = *std::move(configured);
 
   if (explain) {
+    if (const absl::Status status = xff::engine::ValidateCommandFields(command); !status.ok()) {
+      std::cerr << "xff: field template: " << status.message() << "\n";
+      return 2;
+    }
     std::cout << xff::config::ExplainSources(inputs.sources, style);
     std::cout << "rc-mode\t" << xff::config::RcModeName(inputs.rc_mode) << "\n";
+    std::cout << xff::cli::ExplainProfiles(system_validation.profiles, inputs, effective_configs);
     std::cout << xff::config::ExplainConfig(resolved);
+    std::cout << xff::config::ExplainSafety(resolved, gated.config);
     for (const xff::config::Drop& drop : gated.drops) {
       std::cout << "dropped\t" << xff::config::DropMessage(drop) << "\n";
     }

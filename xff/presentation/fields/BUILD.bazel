@@ -33,6 +33,7 @@ cc_library(
         "//xff/matching/mime:mime_cc",
         "//xff/matching/regex:regex_cc",
         "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/time",
         "@mboworks_mbo//mbo/container:limited_map_cc",
@@ -52,6 +53,7 @@ cc_test(
         "@abseil-cpp//absl/time",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )
 
@@ -65,7 +67,10 @@ cc_fuzz_test(
     dicts = ["fields_fuzz_test.dict"],
     deps = [
         ":fields_cc",
+        "//xff/hash:hash_cc",
         "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/time",
     ],
 )

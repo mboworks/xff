@@ -507,7 +507,13 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "print the resolved configuration and exit",
         .details = "Prints the active style, every config source consulted and whether it was found, resolved flags "
                    "in application order with their provenance, rejected config directives, and the style-default "
-                   "table with this run's effective values. It performs enabled `.xffrc` discovery but does not "
+                   "table with this run's effective values. The effective safety table shows unconditional blocks, "
+                   "the stored safe profile, active decisions, and source file/line/section or CLI origins. "
+                   "It also shows per-file category translation, resolved temp/output roots, and dry-run state. "
+                   "Profile origins remain visible when an unconditional block wins. Named declarations list their "
+                   "source, selection, availability or skip/validation reason, and whether they declare globals, "
+                   "predicates, or actions; availability never authorizes a gated action. "
+                   "It performs enabled `.xffrc` discovery but does not "
                    "evaluate the expression. "
                    "Existing unreadable config files and missing explicit `--xffrc` files are errors.",
         .topic = "config",

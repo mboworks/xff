@@ -32,7 +32,9 @@
     "STYLE_SH.md": "STYLE_SH.html",
     "TODO.md": "TODO.html",
     "docs/design-structured-output.md": "docs/design-structured-output.html",
-    "docs/design-summary-scopes.md": "docs/design-summary-scopes.html"
+    "docs/design-summary-scopes.md": "docs/design-summary-scopes.html",
+    "docs/design-field-validation.md": "docs/design-field-validation.html",
+    "docs/config-inspection.md": "docs/config-inspection.html"
   },
   "generated_html": {
     "XFF.md": {

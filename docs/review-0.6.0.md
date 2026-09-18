@@ -273,7 +273,8 @@ summary, explicit groupings, explicit scopes, repeated flags, and `--summary=non
 
 ### S04 - P1: Offer consistent validation of static field names
 
-- [ ] Decide strictness for templates, printf field escapes, and derived grouping keys.
+- [x] Reject static field mistakes before actions; preserve valid absent runtime values.
+      See [field validation](design-field-validation.md).
 
 `--template='{nmae}'` succeeds with empty output, whereas `--format=csv --columns=nmae` rejects the
 unknown field. The empty-template behavior is documented, but a typo can silently erase an important
@@ -287,7 +288,7 @@ namespaces, and malformed syntax. Validate before an action consumes a mistaken 
 
 ### S05 - P1: Add an effective safety-policy view to `--explain`
 
-- [ ] Show final capability decisions, their cause, and their provenance.
+- [x] Show final capability decisions, their cause, and their provenance.
 
 Current explain output lists applied arguments and style defaults. For example, one ordinary
 safe-profile write setting expands into temp/output/archive settings, but the user must mentally
@@ -441,7 +442,8 @@ claim a policy sandboxes arbitrary child programs; pager policy remains a separa
 
 ### S17 - P2: Improve configuration inspection and failure navigation
 
-- [ ] Show named-profile availability and disabled-profile reasons clearly in explain output.
+- [x] Show named-profile availability and disabled-profile reasons clearly in explain output.
+      See [configuration inspection](config-inspection.md) for tested recipes and interpretation.
 
 The shared grammar, fixed user-config location, ordered composition, global policy, and opt-in rc
 discovery form a coherent design. Invalid selected sections and unsanctioned rc globals produced

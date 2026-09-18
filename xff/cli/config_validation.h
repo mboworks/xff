@@ -4,6 +4,7 @@
 #ifndef XFF_CLI_CONFIG_VALIDATION_H_
 #define XFF_CLI_CONFIG_VALIDATION_H_
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -21,10 +22,23 @@ namespace xff::cli {
 // remain independent. Structurally invalid config controls are rejected separately by policy.
 std::vector<std::string> ConfigOverrideNotices(const config::ConfigInputs& inputs);
 
+// Retained even when an invalid section is removed from executable configuration.
+struct ConfigProfile final {
+  std::string name;
+  std::string path;
+  std::size_t line = 0;
+  config::Source source = config::Source::kUnset;
+  bool globals = false;
+  bool predicates = false;
+  bool actions = false;
+  std::vector<std::string> disabled_reasons;
+};
+
 struct ConfigFileValidation final {
   config::ConfigFile config;
   std::vector<std::string> diagnostics;
   std::vector<std::string> disabled_configs;
+  std::vector<ConfigProfile> profiles;
   absl::Status status;
 };
 
@@ -36,6 +50,13 @@ ConfigFileValidation ValidateConfigFile(
     const std::vector<std::string>& selected_configs,
     std::string_view path = "/etc/xff.ini",
     config::Source source = config::Source::kSystem);
+
+// Lists declarations, selection, skip state, declared contribution kinds, and validation reasons.
+// Availability does not arm actions: policy-gated directives are explained separately.
+std::string ExplainProfiles(
+    const std::vector<ConfigProfile>& profiles,
+    const config::ConfigInputs& inputs,
+    const std::vector<std::string>& selected);
 
 // Validates applying explicit/composed selectors after all admitted files are available.
 // Built-in styles need no declaration; primary arguments and implicit invocation names are excluded.

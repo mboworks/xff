@@ -76,6 +76,10 @@ RunResult RunFind(
     WalkErrorFn on_error,
     std::optional<registry::Style> style = std::nullopt);
 
+// Validate all active field consumers without reading paths or evaluating expressions.
+// Shared by execution preflight and --explain after configuration composition.
+absl::Status ValidateCommandFields(const parser::Command& command);
+
 }  // namespace xff::engine
 
 #endif  // XFF_ENGINE_RUN_H_

@@ -170,7 +170,7 @@ test::config_expands_at_the_selector_position() {
   printf -- '--jobs=1\n\n[plain]\n--color=never' >"${cfg}"
   local out expected
   out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" --color=always --config=plain --sort --explain)"
-  expected="$(printf 'user\t--jobs=1\ncli\t--color=always\ncli\t--config=plain\nuser\t--color=never\ncli\t--sort')"
+  expected="$(printf 'user\t--jobs=1\ncli\t--color=always\ncli\t--config=plain\n# at %s:4 [plain]\nuser\t--color=never\ncli\t--sort' "${cfg}")"
   expect_output_contains "${expected}" "${out}"
 }
 
@@ -480,6 +480,110 @@ test::execution_warns_for_unarmed_files_and_untrusted_profile_selection() {
   out="$(XFF_TEST_USER_CONFIG="${user}" "$(_xff_bin)" "${target}" --xffrc="${explicit}" 2>&1)"
   expect_output_contains 'denied by config policy' "${out}"
   [[ -f "${target}" ]] || fail 'an untrusted profile selection deleted its target'
+}
+
+test::effective_safety_explains_admin_blocks_profiles_and_recursive_roots() {
+  local dir system user out
+  dir="$(test_tmpdir effective_safety)"
+  dir="$(cd "${dir}" && pwd -P)"
+  system="${dir}/system.ini"
+  user="${dir}/user.ini"
+  mkdir -p "${dir}/temp/output"
+  cat >"${system}" <<'INI'
+--block-policy-categories=archive,temp,output
+--temp-root=${TMPDIR}/temp
+--output-root=${TMPDIR}/temp/output
+--block-file-writing
+--safe
+[locked]
+--block-execution
+INI
+  cat >"${user}" <<'INI'
+--no-safe-block-file-writing
+--no-safe-block-temp-file-writing
+--no-safe-block-output-file-writing
+[relaxed]
+--no-safe-block-execution
+INI
+  out="$(TMPDIR="${dir}" XFF_TEST_SYSTEM_CONFIG="${system}" XFF_TEST_USER_CONFIG="${user}" \
+    "$(_xff_bin)" --config=locked --config=relaxed --explain)"
+  expect_output_contains $'policy\tsystem\tarchive,temp,output' "${out}" || return
+  expect_output_contains $'safety\tfile-writing\tblock\tblock\tallow\tunconditional block' "${out}" || return
+  expect_output_contains "system ${system}:4 (--block-file-writing)" "${out}" || return
+  expect_output_contains "user ${user}:1 (--no-safe-block-file-writing)" "${out}" || return
+  expect_output_contains $'safety\texecution\tblock\tblock\tallow\tunconditional block' "${out}" || return
+  expect_output_contains "system ${system}:7 [locked] (--block-execution)" "${out}" || return
+  expect_output_contains "user ${user}:5 [relaxed] (--no-safe-block-execution)" "${out}" || return
+  expect_output_contains $'safety\ttemp-file-writing\tallow\tnone\tallow\tprofile permits' "${out}" || return
+  expect_output_contains $'safety\toutput-file-writing\tallow\tnone\tallow\tprofile permits' "${out}" || return
+  expect_output_contains "$(printf 'root\ttemp\t%s/temp\t' "${dir}")" "${out}" || return
+  expect_output_contains "$(printf 'root\toutput\t%s/temp/output\t' "${dir}")" "${out}" || return
+  expect_output_contains 'overlapping scope restrictions combine' "${out}" || return
+  out="$(TMPDIR="${dir}" XFF_TEST_SYSTEM_CONFIG="${system}" XFF_TEST_USER_CONFIG="${user}" \
+    "$(_xff_bin)" --no-system-config --no-safe --explain)"
+  expect_output_contains $'safety\tfile-writing\tblock\tblock\tallow\tunconditional block' "${out}" || return
+  expect_output_contains $'safety\texecution\tallow\tnone\tblock\tinactive profile' "${out}" || return
+  expect_eq 'no' "$([[ ${out} == *'[locked]'* ]] && echo yes || echo no)"
+}
+
+test::explain_profile_inventory_keeps_validation_reasons_and_skip_state() {
+  local dir user system out rc
+  dir="$(test_tmpdir profile_inventory)"
+  user="${dir}/user.ini"
+  system="${dir}/system.ini"
+  cat >"${user}" <<'INI'
+--color=auto
+[reports]
+--summary=ext
+[bad]
+-type garbage
+[dependent]
+--config=bad
+INI
+  printf '%s\n' '[project]' "-name '*.cc'" >"${system}"
+  out="$(XFF_TEST_USER_CONFIG="${user}" XFF_TEST_SYSTEM_CONFIG="${system}" \
+    "$(_xff_bin)" --config=reports --no-system-config --explain 2>&1)"
+  expect_output_contains $'profile\treports\tuser\tavailable\tselected\tdeclares=globals' "${out}" || return
+  expect_output_contains $'profile\tproject\tsystem\tskipped' "${out}" || return
+  expect_output_contains $'profile\tbad\tuser\tdisabled' "${out}" || return
+  expect_output_contains 'references disabled config [bad]' "${out}" || return
+  expect_output_contains "# at ${user}:3 [reports]" "${out}" || return
+  rc=0
+  out="$(XFF_TEST_USER_CONFIG="${user}" XFF_TEST_SYSTEM_CONFIG="${system}" \
+    "$(_xff_bin)" --config=bad --explain 2>&1)" || rc=$?
+  expect_eq 2 "${rc}" || return
+  expect_output_contains 'selected config [bad] is disabled' "${out}"
+}
+
+test::explain_project_policy_and_environment_recipes() {
+  local dir user system project out
+  dir="$(test_tmpdir inspection_recipes)"
+  user="${dir}/user.ini"
+  system="${dir}/system.ini"
+  project="${dir}/project.xffrc"
+  cat >"${system}" <<'INI'
+--require-system-globals
+--block-execution
+--block-file-deletion
+INI
+  cat >"${user}" <<'INI'
+--block-policy-categories=output
+--output-root="${HOME:?HOME must be set}/xff-results"
+INI
+  cat >"${project}" <<'INI'
+[sources]
+-type f -name '*.cc'
+[dangerous]
+-exec printf should-not-run \;
+INI
+  out="$(HOME="${dir}" XFF_TEST_USER_CONFIG="${user}" XFF_TEST_SYSTEM_CONFIG="${system}" \
+    "$(_xff_bin)" . --xffrc="${project}" --config=sources --config=dangerous --no-system-config --no-safe --explain)"
+  expect_output_contains $'profile\tsources\txffrc\tavailable\tselected\tdeclares=predicates' "${out}" || return
+  expect_output_contains $'profile\tdangerous\txffrc\tavailable\tselected\tdeclares=actions' "${out}" || return
+  expect_output_contains $'safety\texecution\tblock\tblock' "${out}" || return
+  expect_output_contains $'safety\tfile-deletion\tblock\tblock' "${out}" || return
+  expect_output_contains "$(printf 'root\toutput\t%s/xff-results\t' "${dir}")" "${out}" || return
+  expect_output_contains 'dropped' "${out}"
 }
 
 test_runner

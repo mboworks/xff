@@ -147,3 +147,11 @@ each platform, stages stripped executables and split debug information, exercise
 the staged binaries, constructs `.tar.zst` archives, and produces `SHA256SUMS`.
 Publication and attestations happen only after the platform artifact jobs and
 release metadata checks succeed.
+
+## Field-template fuzz isolation
+
+The field fuzz harness binds an in-memory filesystem for every generated path. Content fields
+read synthetic input bytes even when a path is absolute or contains parent-directory components.
+Every mutation entry point aborts the harness. Corpus cases using `{hash}` verify the digest against
+the synthetic bytes, so removing the VFS binding fails replay instead of silently falling back to
+host-path reads. This supplements the evaluator harness's descriptor-level action restrictions.

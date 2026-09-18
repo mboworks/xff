@@ -46,6 +46,17 @@
 namespace xff::regex {
 namespace {
 
+absl::StatusOr<std::unique_ptr<RE2>> CompileRe2(std::string_view pattern, bool case_insensitive) {
+  RE2::Options options;
+  options.set_case_sensitive(!case_insensitive);
+  options.set_log_errors(false);
+  auto re = std::make_unique<RE2>(pattern, options);
+  if (!re->ok()) {
+    return absl::InvalidArgumentError(absl::StrCat("invalid regular expression: ", re->error()));
+  }
+  return re;
+}
+
 // The default grammar: RE2 (linear-time, no catastrophic backtracking). Holds the compiled RE2 and
 // forwards each Matcher operation to it.
 class Re2Backend final : public RegexBackend {
@@ -360,17 +371,20 @@ class FnmatchBackend final : public RegexBackend {
 
 }  // namespace
 
+absl::Status ValidateRe2Rewrite(std::string_view pattern, std::string_view replacement, bool case_insensitive) {
+  MBO_ASSIGN_OR_RETURN(const auto re, CompileRe2(pattern, case_insensitive));
+  std::string error;
+  if (!re->CheckRewriteString(replacement, &error)) {
+    return absl::InvalidArgumentError(absl::StrCat("invalid replacement: ", error));
+  }
+  return absl::OkStatus();
+}
+
 absl::StatusOr<Matcher> Matcher::Compile(std::string_view pattern, bool case_insensitive, Grammar grammar) {
   // Shared RE2 compilation: kRe2 uses the pattern verbatim, kGlob its glob-to-RE2 translation. A
   // lambda in this member function reaches Matcher's private constructor.
   const auto compile_re2 = [case_insensitive](std::string_view re_pattern) -> absl::StatusOr<Matcher> {
-    RE2::Options options;
-    options.set_case_sensitive(!case_insensitive);
-    options.set_log_errors(false);  // surface failures via Status, not stderr
-    auto re = std::make_unique<RE2>(re_pattern, options);
-    if (!re->ok()) {
-      return absl::InvalidArgumentError(absl::StrCat("invalid regular expression: ", re->error()));
-    }
+    MBO_ASSIGN_OR_RETURN(auto re, CompileRe2(re_pattern, case_insensitive));
     return Matcher(std::make_unique<Re2Backend>(std::move(re)));
   };
   switch (grammar) {

@@ -30,6 +30,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <limits>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -560,32 +561,30 @@ FieldFn LookupField(std::string_view name) {
   return it == kFieldTable.end() ? &EmptyField : it->second;
 }
 
-// Scans a "{name[:qualifier]}" placeholder beginning at tmpl[start] == '{'. On
-// success returns the index just past the closing '}', with `name` pointing into
-// `tmpl` and `qualifier` holding the (dequoted) qualifier. A qualifier may be a
-// "C-quoted string" so it can carry a literal '}' or ':' (\" and \\ are escapes).
-// Returns npos when there is no well-formed placeholder (the '{' stays literal).
-std::string_view::size_type ParseField(
-    std::string_view tmpl,
-    std::string_view::size_type start,
-    std::string_view& name,
-    std::string& qualifier) {
-  std::string_view::size_type pos = start + 1;
-  const std::string_view::size_type name_begin = pos;
+struct ParsedField {
+  std::string_view name;
+  std::string qualifier;
+  std::size_t next;
+};
+
+// Parse one placeholder, preserving quoted qualifiers that contain literal braces.
+// The returned name borrows tmpl; the dequoted qualifier owns its contents.
+std::optional<ParsedField> ParseField(std::string_view tmpl, std::size_t start) {
+  std::size_t pos = start + 1;
+  const std::size_t name_begin = pos;
   while (pos < tmpl.size() && tmpl[pos] != ':' && tmpl[pos] != '}') {
     ++pos;
   }
   if (pos >= tmpl.size()) {
-    return std::string_view::npos;  // no terminator
+    return std::nullopt;
   }
-  name = tmpl.substr(name_begin, pos - name_begin);
-  if (tmpl[pos] == '}') {  // no qualifier
-    qualifier.clear();
-    return pos + 1;
+  const std::string_view name = tmpl.substr(name_begin, pos - name_begin);
+  if (tmpl[pos] == '}') {
+    return ParsedField{.name = name, .qualifier = {}, .next = pos + 1};
   }
-  ++pos;                                        // consume ':'
-  if (pos < tmpl.size() && tmpl[pos] == '"') {  // quoted qualifier
-    ++pos;                                      // consume opening '"'
+  ++pos;
+  if (pos < tmpl.size() && tmpl[pos] == '"') {
+    ++pos;
     std::string value;
     while (pos < tmpl.size() && tmpl[pos] != '"') {
       if (tmpl[pos] == '\\' && pos + 1 < tmpl.size() && (tmpl[pos + 1] == '"' || tmpl[pos + 1] == '\\')) {
@@ -596,22 +595,20 @@ std::string_view::size_type ParseField(
         ++pos;
       }
     }
-    if (pos >= tmpl.size() || pos + 1 >= tmpl.size() || tmpl[pos + 1] != '}') {
-      return std::string_view::npos;  // unterminated quote, or no '}' right after -> literal
+    if (pos + 1 >= tmpl.size() || tmpl[pos + 1] != '}') {
+      return std::nullopt;
     }
-    qualifier = std::move(value);
-    return pos + 2;  // past closing '"' and '}'
+    return ParsedField{.name = name, .qualifier = std::move(value), .next = pos + 2};
   }
-  const std::string_view::size_type end = tmpl.find('}', pos);  // unquoted qualifier
+  const std::size_t end = tmpl.find('}', pos);
   if (end == std::string_view::npos) {
-    return std::string_view::npos;
+    return std::nullopt;
   }
-  qualifier.assign(tmpl.substr(pos, end - pos));
-  return end + 1;
+  return ParsedField{.name = name, .qualifier = std::string(tmpl.substr(pos, end - pos)), .next = end + 1};
 }
 
 // Parses a field name that is a run of digits ({0},{1},...) into a capture index;
-// returns -1 when `name` is empty or has a non-digit (i.e. not a capture ref).
+// Returns -1 for an empty name, a non-digit, or an index outside the int range.
 int CaptureIndex(std::string_view name) {
   if (name.empty()) {
     return -1;  // {} is the path alias, not a capture
@@ -621,7 +618,11 @@ int CaptureIndex(std::string_view name) {
     if (ch < '0' || ch > '9') {
       return -1;
     }
-    value = (value * 10) + (ch - '0');
+    const int digit = ch - '0';
+    if (value > (std::numeric_limits<int>::max() - digit) / 10) {
+      return -1;
+    }
+    value = (value * 10) + digit;
   }
   return value;
 }
@@ -718,6 +719,9 @@ std::vector<RewriteOp> ParseRewriteChain(std::string_view spec) {
       return {};
     }
     const char delim = spec[pos];
+    if (std::ispunct(static_cast<unsigned char>(delim)) == 0) {
+      return {};
+    }
     ++pos;
     const std::size_t pat = pos;
     while (pos < spec.size() && spec[pos] != delim) {
@@ -744,6 +748,9 @@ std::vector<RewriteOp> ParseRewriteChain(std::string_view spec) {
     ops.push_back({.pattern = pattern, .replacement = replacement, .flags = spec.substr(flags, pos - flags)});
     if (pos < spec.size() && spec[pos] == ';') {
       ++pos;  // consume the command separator
+      if (pos == spec.size()) {
+        return {};
+      }
     }
   }
   return ops;
@@ -985,7 +992,116 @@ std::string PathComponent(std::string_view value, std::string_view component) {
   return std::string(value);  // "path" (whole) or an unrecognised keyword -> identity
 }
 
+absl::Status ValidateRewriteChain(std::string_view spec) {
+  const std::vector<RewriteOp> ops = ParseRewriteChain(spec);
+  if (ops.empty()) {
+    return absl::InvalidArgumentError("malformed field rewrite chain");
+  }
+  for (const RewriteOp& op : ops) {
+    if (op.flags.find_first_not_of("gi") != std::string_view::npos) {
+      return absl::InvalidArgumentError(absl::StrCat("unknown rewrite flags '", op.flags, "' (use g or i)"));
+    }
+    const absl::Status status = regex::ValidateRe2Rewrite(op.pattern, op.replacement, absl::StrContains(op.flags, 'i'));
+    if (!status.ok()) {
+      return status;
+    }
+  }
+  return absl::OkStatus();
+}
+
+bool IsValidJoin(std::string_view spec) {
+  if (spec == "join") {
+    return true;
+  }
+  if (!spec.starts_with("join(")) {
+    return false;
+  }
+  for (std::size_t pos = 5; pos < spec.size(); ++pos) {
+    if (spec[pos] == '\\') {
+      ++pos;
+    } else if (spec[pos] == ')') {
+      return pos + 1 == spec.size();
+    }
+  }
+  return false;
+}
+
+absl::Status ValidateTransform(std::string_view spec) {
+  if (!IsExtractQualifier(spec)) {
+    return ValidateRewriteChain(spec);
+  }
+  const Pipeline pipeline = SplitPipeline(spec);
+  if (const absl::Status status = ValidateRewriteChain(pipeline.stream); !status.ok()) {
+    return status;
+  }
+  if (!pipeline.reducer.has_value()) {
+    return absl::OkStatus();
+  }
+  const std::size_t start = pipeline.stream.size() + 1;
+  const std::size_t end = SegmentEnd(spec, start);
+  if (!IsValidJoin(spec.substr(start, end - start))) {
+    return absl::InvalidArgumentError("malformed join reducer");
+  }
+  if (end < spec.size()) {
+    return ValidateRewriteChain(pipeline.scalar);
+  }
+  return absl::OkStatus();
+}
+
+absl::Status ValidateFieldName(std::string_view name) {
+  return IsKnownField(name) ? absl::OkStatus() : absl::InvalidArgumentError(absl::StrCat("unknown field '", name, "'"));
+}
+
+absl::Status ValidateNativeQualifier(FieldFn renderer, std::string_view qualifier) {
+  if (IsRewriteQualifier(qualifier) || IsExtractQualifier(qualifier)) {
+    return ValidateTransform(qualifier);
+  }
+  if (qualifier.empty() || IsPathComponent(qualifier)) {
+    return absl::OkStatus();
+  }
+  if (renderer == &MtimeField || renderer == &AtimeField || renderer == &CtimeField || renderer == &BtimeField) {
+    return absl::OkStatus();  // Custom time patterns may contain arbitrary literal text.
+  }
+  if (renderer == &HashField) {
+    return hash::ParseSpec(qualifier, "sha256").has_value()
+               ? absl::OkStatus()
+               : absl::InvalidArgumentError(absl::StrCat("invalid hash algorithm or encoding '", qualifier, "'"));
+  }
+  if ((renderer == &SizeField || renderer == &BlocksField) && qualifier == "h") {
+    return absl::OkStatus();
+  }
+  return absl::InvalidArgumentError(absl::StrCat("unsupported field qualifier '", qualifier, "'"));
+}
+
 }  // namespace
+
+std::optional<std::size_t> PlaceholderSize(std::string_view text) {
+  if (text.empty() || text.front() != '{') {
+    return std::nullopt;
+  }
+  const std::optional<ParsedField> parsed = ParseField(text, 0);
+  return parsed.has_value() ? std::optional(parsed->next) : std::nullopt;
+}
+
+std::vector<Template> PrintfTemplates(std::string_view format) {
+  std::vector<Template> templates;
+  for (std::size_t pos = 0; pos + 1 < format.size(); ++pos) {
+    if (format[pos] == '\\') {
+      ++pos;
+    } else if (format[pos] == '%') {
+      const char directive = format[++pos];
+      if (directive == '{') {
+        const std::string_view tail = format.substr(pos);
+        const std::optional<std::size_t> length = PlaceholderSize(tail);
+        templates.push_back(Template::Compile(tail.substr(0, length.value_or(tail.size()))));
+        pos += length.value_or(tail.size()) - 1;
+      } else if (directive == 'A' || directive == 'C' || directive == 'T') {
+        ++pos;
+      }
+    }
+  }
+  return templates;
+}
 
 Template Template::Compile(std::string_view tmpl) {
   Template compiled;
@@ -1005,16 +1121,19 @@ Template Template::Compile(std::string_view tmpl) {
       literal.push_back('}');
       i += 2;
     } else if (ch == '{') {
-      std::string_view name;
-      std::string qualifier;
-      const std::string_view::size_type next = ParseField(tmpl, i, name, qualifier);
-      if (next == std::string_view::npos) {  // not a well-formed placeholder -> literal '{'
+      std::optional<ParsedField> field = ParseField(tmpl, i);
+      if (!field.has_value()) {  // not a well-formed placeholder -> literal '{'
+        compiled.validation_.Update(
+            absl::InvalidArgumentError(absl::StrCat("malformed field placeholder at byte ", i)));
         literal.push_back(ch);
         ++i;
         continue;
       }
       flush_literal();
-      auto [fn, key] = ResolveName(name);  // builtin field, {0}..{N} capture, or {env.NAME}
+      compiled.validation_.Update(ValidateFieldName(field->name));
+      auto [fn, key] = ResolveName(field->name);  // builtin field, {0}..{N} capture, or {env.NAME}
+      std::string& qualifier = field->qualifier;
+      compiled.validation_.Update(ValidateNativeQualifier(fn, qualifier));
       // Classify the qualifier: an s/// rewrite, an m/// per-line extraction, or a path-component
       // extraction is a post-render transform; anything else is the field's own format argument.
       const Segment::PostProcess post = IsRewriteQualifier(qualifier)   ? Segment::PostProcess::kRewrite
@@ -1022,14 +1141,21 @@ Template Template::Compile(std::string_view tmpl) {
                                         : IsPathComponent(qualifier)    ? Segment::PostProcess::kComponent
                                                                         : Segment::PostProcess::kNone;
       compiled.segments_.push_back({.fn = fn, .key = std::move(key), .qualifier = std::move(qualifier), .post = post});
-      i = next;
+      i = field->next;
     } else {
+      if (ch == '}') {
+        compiled.validation_.Update(absl::InvalidArgumentError(absl::StrCat("unescaped closing brace at byte ", i)));
+      }
       literal.push_back(ch);
       ++i;
     }
   }
   flush_literal();
   return compiled;
+}
+
+absl::Status Template::Validate() const {
+  return validation_;
 }
 
 bool Template::ReferencesCapture(std::string_view name) const {
@@ -1340,8 +1466,10 @@ const FieldHelpDocs& FieldSyntaxDocs() {
             {
                 "`{{` and `}}` emit literal braces",
                 "`{}` is an alias for `{path}`",
-                "an unknown field renders empty",
-                "a malformed or unterminated `{` stays literal",
+                "unknown names, malformed placeholders, and unsupported qualifiers fail before actions",
+                "valid fields whose runtime value is absent render empty (for example, an unset `{env.NAME}`)",
+                "a quoted qualifier may contain a literal `}`",
+                "rewrite patterns, replacements, `g`/`i` flags, and `join` syntax are checked before traversal",
             },
         .dynamic_namespaces =
             {
@@ -1359,10 +1487,10 @@ const FieldHelpDocs& FieldSyntaxDocs() {
                 {.term = "{size:h}", .description = "human-readable size"},
                 {.term = "{name:s/RE/R/f}",
                  .description = "RE2 rewrite of the value (flags g=all, i=ignore-case; any delimiter)"},
-                {.term = "{cap:m/RE/R/f}",
+                {.term = "{text:m/RE/R/f}",
                  .description =
                      "per-line extraction: a value stream, e.g. a --summary key (m//, s///'s list-producing sibling)"},
-                {.term = "{cap:m/RE/R/;join(SEP)}",
+                {.term = "{text:m/RE/R/;join(SEP)}",
                  .description =
                      "reduce the stream to one scalar (join, SEP default newline) so m// is usable in a scalar "
                      "context (-printf / --template / -exec); reducers are function-notation, e.g. join(, )"},
@@ -1372,7 +1500,7 @@ const FieldHelpDocs& FieldSyntaxDocs() {
             "An m// extraction is a left-to-right pipeline: s/// maps whatever is flowing (each line, then "
             "the scalar), and a terminal reducer such as join collapses the stream to one scalar.",
         .qualifier_example =
-            "  {cap:m/PAT/REP/;s/PAT/REP/;join(SEP);s/PAT/REP/}\n"
+            "  {text:m/PAT/REP/;s/PAT/REP/;join(SEP);s/PAT/REP/}\n"
             "       |________| |________| |_______| |________|\n"
             "       extract    map each   reduce    rewrite\n"
             "       per line   line       stream    scalar",
@@ -1397,8 +1525,9 @@ bool IsKnownField(std::string_view spec) {
   const std::string_view name = spec.substr(0, spec.find(':'));  // strip an optional :qualifier
   return LookupField(name) != &EmptyField                        // a builtin field (incl. "" -> {} path alias)
          || CaptureIndex(name) >= 0                              // a {0}..{N} regex capture
-         || name.starts_with(kEnvironmentNamespace) || name.starts_with(kDefinitionNamespace)
-         || name.starts_with(kCaptureNamespace);
+         || (name.starts_with(kEnvironmentNamespace) && name.size() > kEnvironmentNamespace.size())
+         || (name.starts_with(kDefinitionNamespace) && name.size() > kDefinitionNamespace.size())
+         || (name.starts_with(kCaptureNamespace) && name.size() > kCaptureNamespace.size());
 }
 
 absl::Span<const std::string_view> PathComponentKeywords() {

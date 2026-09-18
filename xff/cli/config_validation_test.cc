@@ -42,6 +42,60 @@ struct ConfigValidationTest : ::testing::Test {
   void TearDown() override { env::ClearForTesting(); }
 };
 
+TEST_F(ConfigValidationTest, ExplainProfilesRetainsInvalidAndComposedDeclarations) {
+  const auto checked = ValidateConfigFile(
+      config::ParseIni(R"ini(
+[good]
+--color=never -name '*.cc' -print
+[bad]
+-type garbage
+[dependent]
+--config=bad
+)ini"),
+      {}, "/profiles.ini", config::Source::kUser);
+  EXPECT_THAT(checked.status, IsOk());
+  EXPECT_THAT(checked.config.named, SizeIs(1));
+  EXPECT_THAT(checked.profiles, SizeIs(3));
+  const std::string out = ExplainProfiles(checked.profiles, {}, {"good"});
+  EXPECT_THAT(out, HasSubstr("profile\tgood\tuser\tavailable\tselected\tdeclares=globals,predicates,actions"));
+  EXPECT_THAT(out, HasSubstr("profile\tbad\tuser\tdisabled\tnot-selected"));
+  EXPECT_THAT(out, HasSubstr("unknown value 'garbage'"));
+  EXPECT_THAT(out, HasSubstr("references disabled config [bad]"));
+}
+
+TEST_F(ConfigValidationTest, ProfileDeclarationsIgnorePrimaryArgumentsAndRetainEmptySections) {
+  const auto checked = ValidateConfigFile(
+      config::ParseIni(R"ini(
+[action]
+-exec echo --color=never -name \;
+[empty]
+[duplicate]
+-name x
+[duplicate]
+-name y
+)ini"),
+      {}, "/profiles.ini", config::Source::kUser);
+  const std::string out = ExplainProfiles(checked.profiles, {}, {});
+  EXPECT_THAT(out, HasSubstr("profile\taction\tuser\tavailable\tnot-selected\tdeclares=actions"));
+  EXPECT_THAT(out, HasSubstr("profile\tempty\tuser\tavailable\tnot-selected\tdeclares=empty"));
+  EXPECT_THAT(out, HasSubstr("name is declared more than once in this file"));
+}
+
+TEST_F(ConfigValidationTest, ExplainProfilesDistinguishesSkipsReservedNamesAndCrossFileDisablement) {
+  const auto valid = ValidateConfigFile(config::ParseIni("[shared]\n-name x\n[xff]\n-print\n"), {}, "/system.ini");
+  const auto invalid =
+      ValidateConfigFile(config::ParseIni("[shared]\n-type garbage\n"), {}, "/user.ini", config::Source::kUser);
+  std::vector<ConfigProfile> profiles = valid.profiles;
+  profiles.insert(profiles.end(), invalid.profiles.begin(), invalid.profiles.end());
+  EXPECT_THAT(ExplainProfiles(profiles, {}, {}), HasSubstr("disabled declaration of this name in another file"));
+  config::ConfigInputs skipped;
+  skipped.no_system_config = true;
+  const std::string out = ExplainProfiles(valid.profiles, skipped, {});
+  EXPECT_THAT(out, HasSubstr("profile\tshared\tsystem\tskipped"));
+  EXPECT_THAT(out, HasSubstr("named sections excluded by config skip request"));
+  EXPECT_THAT(out, HasSubstr("profile\txff\tsystem\treserved-preset"));
+}
+
 // XFF_HOST_IO: reads explicitly declared Bazel runfile fixtures and reports failures as status.
 absl::StatusOr<std::string> Fixture(std::string_view directory, std::string_view file = "system.ini") {
   const std::string path = absl::StrCat(

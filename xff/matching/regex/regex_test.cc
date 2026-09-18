@@ -43,6 +43,17 @@ using ::testing::SizeIs;
 
 struct RegexTest : ::testing::Test {};
 
+TEST_F(RegexTest, ValidateRe2RewriteChecksBothPatternAndReplacement) {
+  EXPECT_THAT(ValidateRe2Rewrite("(a)", R"(\1)", true), IsOk());
+  EXPECT_THAT(
+      ValidateRe2Rewrite("[", "text", false),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("regular expression")));
+  EXPECT_THAT(
+      ValidateRe2Rewrite("a", R"(\1)", false), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("replacement")));
+  EXPECT_THAT(
+      ValidateRe2Rewrite("a", R"(\q)", false), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("replacement")));
+}
+
 TEST_F(RegexTest, FullMatchAnchorsBothEnds) {
   ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile(".*\\.txt", /*case_insensitive=*/false));
   EXPECT_THAT(matcher.FullMatch("a/b/c.txt"), IsTrue());

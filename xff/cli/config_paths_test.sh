@@ -224,4 +224,53 @@ test::unsupported_config_control_spellings_fail() {
   done
 }
 
+test::static_template_errors_in_profiles_prevent_actions_and_explain() {
+  local dir out rc mode
+  dir="$(test_tmpdir field_profiles)"
+  mkdir -p "${dir}/root"
+  printf '%s' 'preserved' >"${dir}/root/victim"
+  cat >"${dir}/system.ini" <<'INI'
+--require-user-globals
+[broken]
+--summary={nmae}
+INI
+  cat >"${dir}/user.ini" <<'INI'
+[broken]
+-delete
+INI
+  for mode in run explain compare; do
+    local -a args=("${dir}/root" --config=broken)
+    case "${mode}" in
+      explain) args+=(--explain) ;;
+      compare) args+=(--compare=summary "${dir}/root") ;;
+    esac
+    out="$(XFF_TEST_SYSTEM_CONFIG="${dir}/system.ini" XFF_TEST_USER_CONFIG="${dir}/user.ini" "${isolated}" "${args[@]}" 2>&1)" && rc=0 || rc=$?
+    expect_eq 2 "${rc}"
+    expect_output_contains "unknown field 'nmae'" "${out}"
+    expect_eq 'preserved' "$(cat "${dir}/root/victim")"
+  done
+}
+
+test::explicit_rc_templates_validate_quoted_braces_and_absent_values() {
+  local dir out rc
+  dir="$(test_tmpdir field_rc)"
+  mkdir -p "${dir}/root"
+  printf '%s' 'a' >"${dir}/root/a.txt"
+  cat >"${dir}/valid.rc" <<'INI'
+[render]
+-type f -printf '%{name:"s/a/}/"} %{def.absent}'
+INI
+  out="$("${isolated}" "${dir}/root" --xffrc="${dir}/valid.rc" --config=render 2>&1)" && rc=0 || rc=$?
+  expect_eq 0 "${rc}"
+  expect_eq '}.txt ' "${out}"
+  cat >"${dir}/invalid.rc" <<'INI'
+[render]
+-printf '%{name:s/a/\1/}'
+INI
+  out="$("${isolated}" "${dir}/root" --xffrc="${dir}/invalid.rc" --config=render -delete 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  expect_output_contains 'invalid replacement' "${out}"
+  expect_eq 'a' "$(cat "${dir}/root/a.txt")"
+}
+
 test_runner

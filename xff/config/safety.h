@@ -70,6 +70,7 @@ struct SafetyPolicy {
 // accumulate; activation and individual profile settings are last-value-wins.
 // Config resolution expands each file's policy before combining flags. Raw CLI flags use file scope.
 SafetyPolicy ResolveSafety(const std::vector<std::string>& globals, bool expanded = false);
+DetailedPolicy ResolveDetailedPolicy(const std::vector<std::string>& globals);
 std::vector<std::string> ExpandSafetyFlag(std::string_view flag, DetailedPolicy detailed);
 std::string_view CapabilityName(Capability capability);
 

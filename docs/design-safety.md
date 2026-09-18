@@ -9,6 +9,34 @@ Pager commands are separate from execution blocks and dry-run. Restricting which
 selected requires a separate policy discussion. Directory-scoped exceptions are described in
 [Directory-scoped safety controls](design-directory-safety.md).
 
+## Inspecting effective policy
+
+Add `--explain` to the intended command to inspect configuration without evaluating the search
+expression or actions. Enabled rc discovery still reads the applicable configuration files.
+The effective safety section shows:
+
+- whether safe mode and dry-run are active, with the setting responsible;
+- each capability's final decision, unconditional block, stored profile definition, and cause;
+- the decision's origin and the profile setting's origin, including file, line, and named section;
+- each configuration file's detailed categories and the effective temp/output roots.
+
+A profile can say `allow` while the final decision says `block`: an unconditional block wins.
+Conversely, a stored profile block does not block an operation while safe mode is off.
+`default` means no explicit setting supplied that value. An expanded capability retains the
+original file and line, while its displayed flag names the effective capability.
+
+For example, system globals `--block-file-writing` plus user globals `--safe` and
+`--no-safe-block-file-writing` still block file writing. The decision origin points to the
+system block; the profile origin points to the user's allowance. Without separate categories,
+the ordinary write settings also expand to archive, temp, and output capabilities.
+
+Directory scopes apply recursively. Overlapping temp/output restrictions combine; every applicable
+capability must permit an operation. The displayed roots include INI environment substitution,
+but `--explain` does not validate them by opening directories: root validation happens before
+actions. This table reports xff's operation policy, not filesystem authorization. Explicit-config
+arming and operating-system permissions also apply. Dry-run is reported independently because it
+previews supported operations without removing capability blocks.
+
 ## Capabilities
 
 File controls also cover archive operations under the default empty category list. With `archive` selected,

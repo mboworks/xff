@@ -793,14 +793,61 @@ TEST_F(RunTest, FprintlnAndFprintflnWriteWithOsLineEndingToFile) {
 }
 
 TEST_F(RunTest, PrintfPercentBraceEscapeExpandsXffFields) {
-  // xff: `%{field}` in a -printf format reaches the brace field vocabulary (here
-  // {relpath}); `%%` stays a literal percent, a bare `{..}` stays literal (printf formats
-  // legitimately contain braces), and an unterminated `%{` is emitted literally. The whole
-  // format renders as one record (it owns its terminator).
   EXPECT_THAT(
-      RunExpr({"-name", "a.txt", "-printf", "rel=%{relpath} f=%f pct=%% bare={x} bad=%{oops\n"}),
-      ElementsAre("rel=a.txt f=a.txt pct=% bare={x} bad=%{oops"));
-  EXPECT_THAT(last_errors_, 0);
+      RunExpr({"-name", "a.txt", "-printf", "rel=%{relpath} f=%f pct=%% bare={x}\n"}),
+      ElementsAre("rel=a.txt f=a.txt pct=% bare={x}"));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(RunExpr({"-name", "a.txt", "-printf", R"(%{name:"s/a/}/"})"}), ElementsAre("}.txt"));
+  EXPECT_THAT(last_errors_, Eq(0));
+}
+
+TEST_F(RunTest, InvalidFieldConsumersFailBeforeEarlierDeletion) {
+  const auto consumers = std::to_array<std::vector<std::string>>(
+      {{"-printf", "%{nmae}"},
+       {"-printf", "%{name"},
+       {"-cmp", "{nmae}"},
+       {"-grep:{nmae}", "a"},
+       {"--template={nmae}"},
+       {"--summary={nmae}"},
+       {"--summary={name:s/a/b/x}"},
+       {"--format=csv", "--columns=nmae"},
+       {"--exec-fields", "-exec", "echo", "{nmae}", ";"}});
+  for (const auto& consumer : consumers) {
+    std::vector<std::string> args{root_.string(), "-delete", ","};
+    args.insert(args.end(), consumer.begin(), consumer.end());
+    // A trailing global needs a complete right-hand expression after the comma.
+    if (consumer.front().starts_with("--") && consumer.front() != "--exec-fields") {
+      args.emplace_back("-true");
+    }
+    EXPECT_THAT(RunArgvRecords(args), IsEmpty());
+    EXPECT_THAT(last_errors_, Eq(2)) << consumer.front();
+    EXPECT_THAT(fs_.ReadContent(Path("a.txt")), IsOkAndHolds(Eq("a")));
+    EXPECT_THAT(fs_.ReadContent(Path("sub/c.txt")), IsOkAndHolds(Eq("c")));
+  }
+}
+
+TEST_F(RunTest, InvalidComparisonFieldsFailBeforeEitherSideRunsActions) {
+  EXPECT_THAT(
+      RunArgvRecords({"--compare=summary", root_.string(), Path("sub"), "--summary={nmae}", "-delete"}), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(2));
+  EXPECT_THAT(fs_.ReadContent(Path("a.txt")), IsOkAndHolds(Eq("a")));
+  EXPECT_THAT(fs_.ReadContent(Path("sub/c.txt")), IsOkAndHolds(Eq("c")));
+}
+
+TEST_F(RunTest, ExtractionSyntaxInLiteralPredicateAndPrintfTextStaysLiteral) {
+  EXPECT_THAT(RunExpr({"-name", "{name:m/a/b/}"}), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(RunExpr({"-name", "a.txt", "-printf", "{name:m/a/b/}"}), ElementsAre("{name:m/a/b/}"));
+  EXPECT_THAT(last_errors_, Eq(0));
+}
+
+TEST_F(RunTest, StaticValidationOnlyChecksActiveTemplates) {
+  ASSERT_OK_AND_ASSIGN(
+      const auto command,
+      parser::Parse(
+          {root_.string(), "--summary={nmae}", "--summary=none", "--template={nmae}", "--template={name}",
+           "--define=literal={nmae}", "-name", "{nmae}", "-exec", "echo", "{nmae}", ";"}));
+  EXPECT_THAT(ValidateCommandFields(command), IsOk());
 }
 
 TEST_F(RunTest, DaystartFeedsTheTimeTests) {

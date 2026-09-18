@@ -90,6 +90,9 @@ stated threat model; they are not a proof against every adversarial filesystem r
 
 ## Matching, traversal, and output
 
+[Field validation](design-field-validation.md) defines static template errors, runtime-absent
+values, shared printf parsing, and validation before actions.
+
 RE2 is the default regex engine. Optional PCRE2 is selected explicitly and has built-in match/depth
 limits; there is no silent fallback. Native ERE, literal, and glob modes have their documented
 registry contracts. Patterns need not be portable between engines.

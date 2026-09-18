@@ -291,3 +291,34 @@ The safety model and directory-scoped permissions are tracked in
 - [x] Reproduce config flags absent from the current flavor table.
 - [x] Share the fully composed command between explain and execution; verify defaults, selectors,
       explicit files, skip policy, literal operands, and no action execution.
+
+### Audit S04: static template validation
+
+- [x] Reject overflowing numeric capture indices without signed arithmetic overflow.
+- [x] Preserve parsed syntax/name diagnostics on compiled templates, distinguishing absent values.
+- [x] Validate native qualifiers through field renderers and the shared hash vocabulary.
+- [x] Validate rewrite/extraction patterns, replacements, flags, and reducer syntax.
+- [x] Share placeholder parsing with printf consumers, including quoted closing braces.
+- [x] Check active template consumers before traversal or actions, including comparison mode and explain.
+- [x] Update help and pass full-config, before-mutation, summary, and engine regression checks.
+- [x] Verify generated reference and all 24 affected-header consumers; complete local commit hooks.
+
+### Audit S19: field fuzz filesystem isolation
+
+- [x] Supply an in-memory VFS for every fuzz-generated path and abort on attempted mutation.
+- [x] Assert that content fields read synthetic bytes, with absolute and traversal-path corpus cases.
+- [x] Verify corpus replay and local lint; audit every mutation entrypoint for fail-fast rejection.
+
+### Audit S05: effective safety explanation
+
+- [x] Share safety resolution between execution and inspection; retain file/line/section origins.
+- [x] Show final capabilities, mandatory and profile causes, modes, categories, and directory roots.
+- [x] Exercise system blocks, user overrides, skipped sections, expansions, and nested roots with full INI fixtures.
+- [x] Complete changed-file lint, affected-header-consumer checks, and generated-reference verification.
+
+### Audit S17: configuration inspection
+
+- [x] Preserve named declarations and structured validation reasons for explain output.
+- [x] Show skip/selection state, declared behavior, and physical application origins.
+- [x] Add personal, project, mandatory-policy, and environment-root recipes.
+- [x] Verify complete CLI configurations, generated reference, and changed-header consumers.

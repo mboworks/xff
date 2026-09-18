@@ -430,7 +430,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `--explain` - print the resolved configuration and exit _(global, xff, command-line-only)_
   Command-line only; rejected in configuration files.
-  Prints the active style, every config source consulted and whether it was found, resolved flags in application order with their provenance, rejected config directives, and the style-default table with this run's effective values. It performs enabled `.xffrc` discovery but does not evaluate the expression. Existing unreadable config files and missing explicit `--xffrc` files are errors.
+  Prints the active style, every config source consulted and whether it was found, resolved flags in application order with their provenance, rejected config directives, and the style-default table with this run's effective values. The effective safety table shows unconditional blocks, the stored safe profile, active decisions, and source file/line/section or CLI origins. It also shows per-file category translation, resolved temp/output roots, and dry-run state. Profile origins remain visible when an unconditional block wins. Named declarations list their source, selection, availability or skip/validation reason, and whether they declare globals, predicates, or actions; availability never authorizes a gated action. It performs enabled `.xffrc` discovery but does not evaluate the expression. Existing unreadable config files and missing explicit `--xffrc` files are errors.
   Affected by: --rc
   See also: [Configuration](#topic-config), [--rc](#flag-rc)
 
@@ -2582,8 +2582,10 @@ The `{field}` placeholder vocabulary, substituted per entry in `--template` / `-
 
 - `{{` and `}}` emit literal braces
 - `{}` is an alias for `{path}`
-- an unknown field renders empty
-- a malformed or unterminated `{` stays literal
+- unknown names, malformed placeholders, and unsupported qualifiers fail before actions
+- valid fields whose runtime value is absent render empty (for example, an unset `{env.NAME}`)
+- a quoted qualifier may contain a literal `}`
+- rewrite patterns, replacements, `g`/`i` flags, and `join` syntax are checked before traversal
 
 ### Dynamic namespaces
 
@@ -2597,14 +2599,14 @@ The `{field}` placeholder vocabulary, substituted per entry in `--template` / `-
 - `{mtime:FMT}` - time format: strftime (%Y-%m-%d) or preset (iso, epoch); see --time-format / --timezone
 - `{size:h}` - human-readable size
 - `{name:s/RE/R/f}` - RE2 rewrite of the value (flags g=all, i=ignore-case; any delimiter)
-- `{cap:m/RE/R/f}` - per-line extraction: a value stream, e.g. a --summary key (m//, s///'s list-producing sibling)
-- `{cap:m/RE/R/;join(SEP)}` - reduce the stream to one scalar (join, SEP default newline) so m// is usable in a scalar context (-printf / --template / -exec); reducers are function-notation, e.g. join(, )
+- `{text:m/RE/R/f}` - per-line extraction: a value stream, e.g. a --summary key (m//, s///'s list-producing sibling)
+- `{text:m/RE/R/;join(SEP)}` - reduce the stream to one scalar (join, SEP default newline) so m// is usable in a scalar context (-printf / --template / -exec); reducers are function-notation, e.g. join(, )
 - `{path:COMP}` - path component of the value: basename|core|dir|ext|extension|file|name|path|stem|suffix|suffixes; any path-valued field composes, e.g. {relpath:stem}, {def.B:dir}
 
 An m// extraction is a left-to-right pipeline: s/// maps whatever is flowing (each line, then the scalar), and a terminal reducer such as join collapses the stream to one scalar.
 
 ```
-  {cap:m/PAT/REP/;s/PAT/REP/;join(SEP);s/PAT/REP/}
+  {text:m/PAT/REP/;s/PAT/REP/;join(SEP);s/PAT/REP/}
        |________| |________| |_______| |________|
        extract    map each   reduce    rewrite
        per line   line       stream    scalar

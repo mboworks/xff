@@ -297,8 +297,8 @@ std::string LinkTarget(const EvalContext& ctx);
 // fields as --format ({relpath} {core} {suffix} {target} {def.NAME} {env.NAME} {size:h},
 // time qualifiers, the s/// rewrite, ...) -- so a per-entry action reaches fields find's %
 // set does not name. A bare `{...}` stays literal (printf formats legitimately contain
-// braces) and an unterminated `%{` is emitted literally, matching the field template's own
-// lenient handling; the strict find style rejects `%{...}` before the walk (EnforceStyle).
+// braces). Malformed field escapes are rejected by preflight; the strict find style also
+// rejects otherwise valid `%{...}` before the walk (EnforceStyle).
 // Unknown %/\ directives are emitted literally.
 // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive dispatch
 std::string FormatPrintf(std::string_view format, const EvalContext& ctx) {
@@ -333,15 +333,12 @@ std::string FormatPrintf(std::string_view format, const EvalContext& ctx) {
     } else if (ch == '%' && i + 1 < format.size()) {
       const char directive = format[++i];
       if (directive == '{') {
-        // xff: %{NAME[:qualifier]} -> the brace field vocabulary. Read to the first '}'
-        // and render it as a single {field}; an unterminated %{ stays literal.
-        const std::string_view::size_type close = format.find('}', i + 1);
-        if (close == std::string_view::npos) {
+        const std::optional<std::size_t> length = fields::PlaceholderSize(format.substr(i));
+        if (!length.has_value()) {
           out.append("%{");
         } else {
-          const std::string_view inner = format.substr(i + 1, close - (i + 1));
-          absl::StrAppend(&out, fields::Render(absl::StrCat("{", inner, "}"), field_ctx));
-          i = close;  // consume through the closing '}'
+          absl::StrAppend(&out, fields::Render(format.substr(i, *length), field_ctx));
+          i += *length - 1;
         }
       } else if (directive == 'a' || directive == 'c' || directive == 't') {
         absl::StrAppend(&out, datetime::FormatTime(PrintfTime(ctx.visit.metadata, directive), "asctime", ctx.tz));

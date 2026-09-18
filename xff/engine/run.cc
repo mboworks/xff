@@ -2640,26 +2640,8 @@ bool ReportDuplicateBindingName(const parser::Expr& expr, WalkErrorFn on_error) 
 
 // Match the printf scanner's escapes and percent directives: bare braces and %% are literal.
 bool PrintfReferencesCapture(std::string_view format, std::string_view name) {
-  for (std::size_t pos = 0; pos + 1 < format.size(); ++pos) {
-    const char ch = format[pos];
-    if (ch == '\\') {
-      ++pos;
-    } else if (ch == '%') {
-      const char directive = format[++pos];
-      if (directive == '{') {
-        const auto end = format.find('}', pos + 1);
-        if (end != std::string_view::npos) {
-          if (fields::Template::Compile(format.substr(pos, end - pos + 1)).ReferencesCapture(name)) {
-            return true;
-          }
-          pos = end;
-        }
-      } else if (directive == 'A' || directive == 'C' || directive == 'T') {
-        ++pos;
-      }
-    }
-  }
-  return false;
+  return absl::c_any_of(
+      fields::PrintfTemplates(format), [&](const fields::Template& field) { return field.ReferencesCapture(name); });
 }
 
 bool PredicateReferencesCapture(const parser::Expr& expr, std::string_view name, bool exec_fields) {
@@ -2697,36 +2679,78 @@ bool ExpressionReferencesCapture(const parser::Expr& expr, std::string_view name
   return false;
 }
 
-// The first argument anywhere in `expr` that compiles to a field template carrying an UNREDUCED m//
-// extraction (a value stream), or nullopt. An unreduced extraction is only meaningful as a --summary
-// key; in any per-entry scalar render context (-exec/-printf/-grep/... command and format args) a
-// value stream has no single value, so it is a usage error. A reducer-terminated extraction
-// (`;join(...)`) is scalar-valued and allowed, so it does NOT trip this. Checking EVERY arg is safe:
-// HasUnreducedExtraction is true only for a known field with a well-formed unreduced m// qualifier,
-// which a user writes solely to extract -- a -name glob / -regex / -size value never trips it.
-std::optional<std::string> FindScalarExtraction(const parser::Expr& expr) {
-  switch (expr.kind) {
-    case parser::Expr::Kind::kPredicate:
-      for (const std::string& arg : expr.args) {
-        if (fields::Template::Compile(arg).HasUnreducedExtraction()) {
-          return arg;
-        }
+// Inspect only declared field consumers; regexes, globs, and ordinary exec arguments are literal.
+std::optional<std::string> FindScalarExtraction(const parser::Expr& expr, bool exec_fields) {
+  if (expr.kind != parser::Expr::Kind::kPredicate) {
+    if (expr.lhs != nullptr) {
+      if (const auto found = FindScalarExtraction(*expr.lhs, exec_fields); found.has_value()) {
+        return found;
       }
-      return std::nullopt;
-    case parser::Expr::Kind::kNot: return FindScalarExtraction(*expr.lhs);
-    case parser::Expr::Kind::kAnd:
-    case parser::Expr::Kind::kOr:
-    case parser::Expr::Kind::kNand:
-    case parser::Expr::Kind::kNor:
-    case parser::Expr::Kind::kXor:
-    case parser::Expr::Kind::kXnor:
-    case parser::Expr::Kind::kComma:
-      if (const std::optional<std::string> lhs = FindScalarExtraction(*expr.lhs); lhs.has_value()) {
-        return lhs;
+    }
+    return expr.rhs != nullptr ? FindScalarExtraction(*expr.rhs, exec_fields) : std::nullopt;
+  }
+  if (expr.grep_template != nullptr && expr.grep_template->HasUnreducedExtraction()) {
+    return "grep template";
+  }
+  const registry::ArgumentFields& expansion = expr.descriptor->argument_fields;
+  if (expansion.syntax == registry::ArgumentFields::Syntax::kNone || (expansion.requires_exec_fields && !exec_fields)
+      || expansion.first >= expr.args.size()) {
+    return std::nullopt;
+  }
+  const absl::Span<const std::string> args = expr.args;
+  for (const std::string& arg :
+       args.subspan(expansion.first, expansion.remaining ? args.size() - expansion.first : 1)) {
+    if (expansion.syntax == registry::ArgumentFields::Syntax::kPrintf) {
+      if (absl::c_any_of(fields::PrintfTemplates(arg), &fields::Template::HasUnreducedExtraction)) {
+        return arg;
       }
-      return FindScalarExtraction(*expr.rhs);
+    } else if (fields::Template::Compile(arg).HasUnreducedExtraction()) {
+      return arg;
+    }
   }
   return std::nullopt;
+}
+
+absl::Status ValidateFieldArgument(std::string_view text, registry::ArgumentFields::Syntax syntax) {
+  if (syntax != registry::ArgumentFields::Syntax::kPrintf) {
+    return fields::Template::Compile(text).Validate();
+  }
+  for (const fields::Template& field : fields::PrintfTemplates(text)) {
+    MBO_RETURN_IF_ERROR(field.Validate());
+  }
+  return absl::OkStatus();
+}
+
+absl::Status ValidatePredicateFields(const parser::Expr& expr, bool exec_fields) {
+  if (expr.grep_template != nullptr) {
+    MBO_RETURN_IF_ERROR(expr.grep_template->Validate());
+  }
+  const registry::ArgumentFields& expansion = expr.descriptor->argument_fields;
+  if (expansion.syntax == registry::ArgumentFields::Syntax::kNone || (expansion.requires_exec_fields && !exec_fields)
+      || expansion.first >= expr.args.size()) {
+    return absl::OkStatus();
+  }
+  const absl::Span<const std::string> args = expr.args;
+  for (const std::string& arg :
+       args.subspan(expansion.first, expansion.remaining ? args.size() - expansion.first : 1)) {
+    MBO_RETURN_IF_ERROR(ValidateFieldArgument(arg, expansion.syntax));
+  }
+  return absl::OkStatus();
+}
+
+absl::Status ValidateExpressionFields(const parser::Expr& expr, bool exec_fields) {
+  if (expr.kind == parser::Expr::Kind::kPredicate) {
+    const absl::Status status = ValidatePredicateFields(expr, exec_fields);
+    return status.ok() ? status
+                       : absl::InvalidArgumentError(absl::StrCat(expr.descriptor->name, ": ", status.message()));
+  }
+  if (expr.lhs != nullptr) {
+    MBO_RETURN_IF_ERROR(ValidateExpressionFields(*expr.lhs, exec_fields));
+  }
+  if (expr.rhs != nullptr) {
+    MBO_RETURN_IF_ERROR(ValidateExpressionFields(*expr.rhs, exec_fields));
+  }
+  return absl::OkStatus();
 }
 
 // Check actual field consumers, not text that only resembles a capture reference.
@@ -4298,7 +4322,7 @@ RunResult RunFindCore(
   {
     std::optional<std::string> extraction;
     if (expression.has_value()) {
-      extraction = FindScalarExtraction(*expression);
+      extraction = FindScalarExtraction(*expression, HasGlobal(command.globals, "--exec-fields"));
     }
     if (!extraction.has_value() && tmpl.has_value() && fields::Template::Compile(*tmpl).HasUnreducedExtraction()) {
       extraction = *tmpl;
@@ -5810,6 +5834,23 @@ absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, boo
 
 }  // namespace
 
+absl::Status ValidateCommandFields(const parser::Command& command) {
+  if (const auto tmpl = ResolveTemplate(command.globals); tmpl.has_value()) {
+    MBO_RETURN_IF_ERROR(fields::Template::Compile(*tmpl).Validate());
+  }
+  for (const std::string& column : ResolveColumns(command.globals)) {
+    MBO_RETURN_IF_ERROR(fields::Template::Compile(absl::StrCat("{", column, "}")).Validate());
+  }
+  for (const SummarySpec& summary : ResolveSummaries(command.globals)) {
+    if (summary.mode == SummaryMode::kTemplate) {
+      MBO_RETURN_IF_ERROR(fields::Template::Compile(summary.key_template).Validate());
+    }
+  }
+  return command.expression != nullptr
+             ? ValidateExpressionFields(*command.expression, HasGlobal(command.globals, "--exec-fields"))
+             : absl::OkStatus();
+}
+
 RunResult RunFind(
     const parser::Command& command,
     const vfs::FileSystem& fs,
@@ -5818,6 +5859,10 @@ RunResult RunFind(
     std::optional<registry::Style> style) {
   if (!command.root_names.empty() && command.root_names.size() != command.roots.size()) {
     on_error("--root", absl::InvalidArgumentError("root names must match the root operands"));
+    return RunResult{.errors = 2};
+  }
+  if (const absl::Status status = ValidateCommandFields(command); !status.ok()) {
+    on_error("field template", status);
     return RunResult{.errors = 2};
   }
   const bool compare = absl::c_any_of(command.globals, [](std::string_view global) {

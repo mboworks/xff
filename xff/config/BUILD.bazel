@@ -100,6 +100,7 @@ cc_test(
         "//xff/registry:registry_cc",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
     ],
 )
 

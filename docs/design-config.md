@@ -3,6 +3,9 @@
 Status: design of record for the shipped configuration system. This document
 refines the configuration and safety decisions in [`design.md`](design.md).
 
+[Inspecting configuration](config-inspection.md) explains the `--explain` source, profile,
+application, and safety views with small complete examples.
+
 ## Goals
 
 Configuration should make repeatable command lines convenient without allowing a
@@ -558,7 +561,13 @@ set of option semantics.
 - resolved config flags and command-line globals in application order with
   provenance;
 - every dropped config line and its reason;
-- the style-default table and the effective value for the run.
+- the style-default table and the effective value for the run;
+- the effective safety policy: active safe/dry-run modes, capability decisions and their
+  causes, physical source paths/lines and named sections, per-file category interpretation,
+  and expanded temp/output roots.
+
+The safety view preserves profile-setting origins even when an unconditional block wins.
+See [Inspecting effective policy](design-safety.md#inspecting-effective-policy) for interpretation.
 
 ## Known limits
 

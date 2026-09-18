@@ -72,18 +72,7 @@ std::vector<std::string> ExpandSafetyTokens(const std::vector<std::string>& toke
 }
 
 ConfigFile ExpandFileSafety(ConfigFile file) {
-  const auto directives = DirectiveTokens(file.globals);
-  DetailedPolicy detailed;
-  for (const std::string_view token : directives) {
-    constexpr std::string_view kPrefix = "--block-policy-categories=";
-    if (!token.starts_with(kPrefix)) {
-      continue;
-    }
-    const auto categories = absl::StrSplit(token.substr(kPrefix.size()), ',');
-    detailed.archive = absl::c_contains(categories, "archive");
-    detailed.temp = absl::c_contains(categories, "temp");
-    detailed.output = absl::c_contains(categories, "output");
-  }
+  const DetailedPolicy detailed = ResolveDetailedPolicy(file.globals);
   file.globals = ExpandSafetyTokens(file.globals, detailed);
   for (auto& line : file.global_lines) {
     line.tokens = ExpandSafetyTokens(line.tokens, detailed);
@@ -108,15 +97,43 @@ ConfigInputs ExpandInputSafety(ConfigInputs inputs) {
 struct ConfigEntry {
   std::string name;
   std::vector<std::string> tokens;
+  std::vector<std::size_t> line_numbers;
 };
 
+std::vector<std::size_t> GlobalLineNumbers(const ConfigFile& file) {
+  std::vector<std::size_t> numbers;
+  for (const IniLine& line : file.global_lines) {
+    for (const auto& token : line.tokens) {
+      if (numbers.size() >= file.globals.size() || token != file.globals.at(numbers.size())) {
+        numbers.assign(file.globals.size(), 0);
+        return numbers;
+      }
+      numbers.push_back(line.number);
+    }
+  }
+  if (numbers.size() != file.globals.size()) {
+    numbers.assign(file.globals.size(), 0);
+  }
+  return numbers;
+}
+
+std::string_view SourcePath(const ConfigInputs& inputs, Source source) {
+  for (const ConfigSource& file : inputs.sources) {
+    if (file.layer == source) {
+      return file.path;
+    }
+  }
+  return {};
+}
+
 std::vector<ConfigEntry> Entries(const ConfigFile& file) {
-  std::vector<ConfigEntry> entries = {{.tokens = file.globals}};
+  std::vector<ConfigEntry> entries = {{.tokens = file.globals, .line_numbers = GlobalLineNumbers(file)}};
   entries.reserve(1 + file.named.size());
   for (const IniSection& section : file.named) {
     ConfigEntry entry{.name = section.name};
     for (const IniLine& line : section.lines) {
       entry.tokens.insert(entry.tokens.end(), line.tokens.begin(), line.tokens.end());
+      entry.line_numbers.insert(entry.line_numbers.end(), line.tokens.size(), line.number);
     }
     entries.push_back(std::move(entry));
   }
@@ -131,14 +148,19 @@ void AppendMatching(
     std::vector<ResolvedFlag>& out,
     const ConfigFile& file,
     const std::vector<std::string>& configs,
-    Source source) {
+    Source source,
+    std::string_view path) {
   for (const ConfigEntry& entry : Entries(file)) {
     if (!Applies(entry, configs)) {
       continue;
     }
-    for (const std::string& flag : entry.tokens) {
+    for (std::size_t index = 0; index < entry.tokens.size(); ++index) {
+      const auto& flag = entry.tokens.at(index);
       if (!IsSkipPermission(flag)) {
-        out.push_back(ResolvedFlag{.flag = flag, .source = source});
+        out.push_back(
+            {.flag = flag,
+             .source = source,
+             .origin = {.path = std::string(path), .line = entry.line_numbers.at(index), .section = entry.name}});
       }
     }
   }
@@ -178,7 +200,12 @@ class OrderedResolver {
   }
 
  private:
-  void EmitSystem() { EmitTokens(inputs_.system.globals, Source::kSystem, 0); }
+  void EmitSystem() { EmitTokens(inputs_.system.globals, Source::kSystem, 0, GlobalLineNumbers(inputs_.system), ""); }
+
+  std::string_view FilePath(Source source, std::size_t file_index) const {
+    return source == Source::kXffrc ? std::string_view(inputs_.xffrc.at(file_index - 2).path)
+                                    : SourcePath(inputs_, source);
+  }
 
   void EmitMatching() {
     if (!inputs_.system.named.empty()) {
@@ -189,7 +216,8 @@ class OrderedResolver {
         }
         system_named_emitted_[index] = true;
         for (const IniLine& line : section.lines) {
-          EmitTokens(line.tokens, Source::kSystem, 0);
+          EmitTokens(
+              line.tokens, Source::kSystem, 0, std::vector<std::size_t>(line.tokens.size(), line.number), section.name);
         }
       }
     }
@@ -215,17 +243,28 @@ class OrderedResolver {
         continue;
       }
       emitted[index] = true;
-      EmitTokens(lines[index].tokens, source, file_index);
+      EmitTokens(lines[index].tokens, source, file_index, lines[index].line_numbers, lines[index].name);
     }
   }
 
-  void EmitTokens(const std::vector<std::string>& tokens, Source source, std::size_t file_index) {
+  void EmitTokens(
+      const std::vector<std::string>& tokens,
+      Source source,
+      std::size_t file_index,
+      const std::vector<std::size_t>& line_numbers,
+      std::string_view section) {
+    const auto origin = [&](std::size_t index) {
+      return FlagOrigin{
+          .path = std::string(FilePath(source, file_index)),
+          .line = line_numbers.at(index),
+          .section = std::string(section)};
+    };
     // Expand references in place, but defer later-file refinements until this body finishes.
     const auto previous_file = std::exchange(active_file_, file_index);
     for (std::size_t pos = 0; pos < tokens.size(); ++pos) {
       const std::string& token = tokens[pos];
       if (controls_ == ConfigControls::kInclude || !IsSkipPermission(token)) {
-        EmitFlag(token, source);
+        EmitFlag(token, source, origin(pos));
       }
       const auto primary = registry::Lookup(token.substr(0, token.find(':')));
       if (!primary.has_value()) {
@@ -233,22 +272,23 @@ class OrderedResolver {
       }
       if (primary->arity < 0) {
         while (++pos < tokens.size()) {
-          application_.push_back({.flag = tokens[pos], .source = source, .is_argument = true});
+          application_.push_back({.flag = tokens[pos], .source = source, .is_argument = true, .origin = origin(pos)});
           if (tokens[pos] == ";" || tokens[pos] == "+") {
             break;
           }
         }
       } else {
         for (int remaining = primary->arity; remaining > 0 && pos + 1 < tokens.size(); --remaining) {
-          application_.push_back({.flag = tokens[++pos], .source = source, .is_argument = true});
+          ++pos;
+          application_.push_back({.flag = tokens[pos], .source = source, .is_argument = true, .origin = origin(pos)});
         }
       }
     }
     active_file_ = previous_file;
   }
 
-  void EmitFlag(const std::string& flag, Source source) {
-    application_.push_back({.flag = flag, .source = source});
+  void EmitFlag(const std::string& flag, Source source, const FlagOrigin& origin = {}) {
+    application_.push_back({.flag = flag, .source = source, .origin = origin});
     constexpr std::string_view kConfig = "--config=";
     if (flag.starts_with(kConfig)) {
       selectors_.push_back(flag.substr(kConfig.size()));
@@ -340,10 +380,10 @@ ConfigInputs ApplyConfigSkips(ConfigInputs inputs) {
 std::vector<ResolvedFlag> ResolveConfig(const ConfigInputs& raw_inputs) {
   const ConfigInputs inputs = ExpandInputSafety(ApplyConfigSkips(raw_inputs));
   std::vector<ResolvedFlag> resolved;
-  AppendMatching(resolved, inputs.system, inputs.configs, Source::kSystem);
-  AppendMatching(resolved, inputs.user, inputs.configs, Source::kUser);
+  AppendMatching(resolved, inputs.system, inputs.configs, Source::kSystem, SourcePath(inputs, Source::kSystem));
+  AppendMatching(resolved, inputs.user, inputs.configs, Source::kUser, SourcePath(inputs, Source::kUser));
   for (const ExplicitConfig& file : inputs.xffrc) {
-    AppendMatching(resolved, file.config, inputs.configs, Source::kXffrc);
+    AppendMatching(resolved, file.config, inputs.configs, Source::kXffrc, file.path);
   }
   return resolved;
 }
@@ -449,8 +489,20 @@ std::string_view DefaultStyleForProgram(std::string_view argv0) {
 }
 
 std::string ExplainConfig(const std::vector<ResolvedFlag>& application) {
-  std::string out = "# xff effective configuration (application order; later overrides earlier)\n";
+  std::string out = "# xff effective configuration (application order; overrides follow each flag's rules)\n";
+  std::string previous_location;
   for (const ResolvedFlag& flag : application) {
+    std::string location;
+    if (!flag.origin.path.empty()) {
+      location = absl::StrCat(flag.origin.path, ":", flag.origin.line);
+      if (!flag.origin.section.empty()) {
+        absl::StrAppend(&location, " [", flag.origin.section, "]");
+      }
+    }
+    if (!location.empty() && location != previous_location) {
+      absl::StrAppend(&out, "# at ", location, "\n");
+    }
+    previous_location = std::move(location);
     absl::StrAppend(&out, SourceName(flag.source), "\t", flag.flag, "\n");
   }
   return out;
@@ -458,7 +510,7 @@ std::string ExplainConfig(const std::vector<ResolvedFlag>& application) {
 
 std::string ExplainSources(const std::vector<ConfigSource>& sources, registry::Style style) {
   std::string out = absl::StrCat("# xff active style: ", StyleName(style), "\n");
-  absl::StrAppend(&out, "# config sources consulted (precedence order)\n");
+  absl::StrAppend(&out, "# config sources consulted (discovery order)\n");
   for (const ConfigSource& source : sources) {
     absl::StrAppend(
         &out, "source\t", SourceName(source.layer), "\t", source.found ? "found" : "absent", "\t", source.path, "\n");
