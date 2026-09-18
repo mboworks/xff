@@ -85,7 +85,7 @@ test::columns_validation_is_a_usage_error() {
   # An unknown column name.
   out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --format=csv --columns=name,bogus "${dir}" 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
-  expect_output_contains "unknown column 'bogus'" "${out}"
+  expect_output_contains "field template: unknown field 'bogus'" "${out}"
   # --columns without a tabular format.
   out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --columns=name "${dir}" 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
