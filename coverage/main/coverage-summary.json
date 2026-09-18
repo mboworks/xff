@@ -3,18 +3,18 @@
   "measurements": {
     "overall": {
       "lines": {
-        "covered": 21211,
-        "total": 22095,
-        "percent": 96.0
+        "covered": 21224,
+        "total": 22106,
+        "percent": 96.01
       },
       "functions": {
-        "covered": 1769,
-        "total": 1784,
+        "covered": 1771,
+        "total": 1786,
         "percent": 99.16
       },
       "branches": {
-        "covered": 10433,
-        "total": 11576,
+        "covered": 10442,
+        "total": 11586,
         "percent": 90.13
       }
     },
@@ -71,18 +71,18 @@
     },
     "program / execution": {
       "lines": {
-        "covered": 6554,
-        "total": 6941,
-        "percent": 94.42
+        "covered": 6567,
+        "total": 6952,
+        "percent": 94.46
       },
       "functions": {
-        "covered": 493,
-        "total": 503,
-        "percent": 98.01
+        "covered": 495,
+        "total": 505,
+        "percent": 98.02
       },
       "branches": {
-        "covered": 3879,
-        "total": 4390,
+        "covered": 3888,
+        "total": 4400,
         "percent": 88.36
       }
     },
