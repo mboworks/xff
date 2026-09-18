@@ -117,6 +117,7 @@ struct Descriptor {
   bool binds_capture = false;              // args[0] names a captured command result
   bool preserves_implicit_output = false;  // action does not replace the default listing
   ArgumentFields argument_fields;
+  bool content_output = false;  // built-in per-line content output, optionally replaced by an attached template
 };
 
 template<typename Sink>

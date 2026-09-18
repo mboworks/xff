@@ -27,6 +27,7 @@ cc_library(
         "//xff/presentation/format:format_cc",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/strings",
+        "@nlohmann_json//:json",
     ],
 )
 
@@ -40,5 +41,6 @@ cc_test(
         "@googletest//:gtest",
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@nlohmann_json//:json",
     ],
 )

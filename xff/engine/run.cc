@@ -2941,27 +2941,6 @@ std::string RenderShardSet(const shard::ShardSet& set, std::string_view prefix, 
   return line;
 }
 
-std::string JsonQuote(std::string_view text) {
-  std::string out = "\"";
-  for (const char ch : text) {
-    switch (ch) {
-      case '"': out += "\\\""; break;
-      case '\\': out += "\\\\"; break;
-      case '\n': out += "\\n"; break;
-      case '\r': out += "\\r"; break;
-      case '\t': out += "\\t"; break;
-      default:
-        if (static_cast<unsigned char>(ch) < 0x20) {
-          absl::StrAppend(&out, "\\u", absl::Hex(static_cast<unsigned char>(ch), absl::kZeroPad4));
-        } else {
-          out.push_back(ch);
-        }
-    }
-  }
-  out.push_back('"');
-  return out;
-}
-
 // Rewrites each container without the members `-delete` matched (--archive-delete), returning the
 // number of containers that could not be done - the driver's error count, so a failed rewrite is an
 // exit code rather than a silent no-op.
@@ -3180,8 +3159,9 @@ std::string_view SummaryGrouping(SummaryMode mode) {
 std::string SummaryIdentityJson(const SummarySpec& summary) {
   return absl::StrCat(
       R"("record":"summary","request":)", summary.request_index,
-      ",\"summary\":", JsonQuote(SummaryGrouping(summary.mode)),
-      summary.mode == SummaryMode::kTemplate ? absl::StrCat(",\"template\":", JsonQuote(summary.key_template)) : "");
+      ",\"summary\":", render::JsonValue(SummaryGrouping(summary.mode)),
+      summary.mode == SummaryMode::kTemplate ? absl::StrCat(",\"template\":", render::JsonValue(summary.key_template))
+                                             : "");
 }
 
 std::string_view SummaryTotalJson(bool is_total) {
@@ -3192,7 +3172,7 @@ std::string_view SummaryTotalJson(bool is_total) {
 // so a literal quoted label cannot collide with the display spelling of an ambiguous key.
 std::string SummaryDisplayKey(std::string_view key, bool is_total) {
   if (!is_total && (key.empty() || key == "total" || key.starts_with('"'))) {
-    return JsonQuote(key);
+    return render::JsonQuote(key);
   }
   return std::string(key);
 }
@@ -3217,8 +3197,8 @@ void EmitSummaryRows(
       const auto& row = rows.at(index);
       emit(
           absl::StrCat(
-              "{", SummaryIdentityJson(summary), ",\"scope\":", JsonQuote(scope.empty() ? "all" : scope),
-              ",\"root\":", JsonQuote(root), ",\"group\":", JsonQuote(row.key), ",",
+              "{", SummaryIdentityJson(summary), ",\"scope\":", render::JsonValue(scope.empty() ? "all" : scope),
+              ",\"root\":", render::JsonValue(root), ",\"group\":", render::JsonValue(row.key), ",",
               SummaryJson(row, total, precision, has_size), SummaryTotalJson(index + 1 == rows.size()), "}\n"));
     }
     return;
@@ -3370,9 +3350,9 @@ void EmitComparisonScopeSummary(
       const bool total_row = index + 1 == rows.size();
       std::vector<std::string> cells{SummaryDisplayKey(key, total_row)};
       std::string object = absl::StrCat(
-          "{", SummaryIdentityJson(summaries.at(sink)), ",\"scope\":", JsonQuote(scope),
-          ",\"left_root\":", JsonQuote(command.roots.at(0)), ",\"right_root\":", JsonQuote(command.roots.at(1)),
-          ",\"group\":", JsonQuote(key));
+          "{", SummaryIdentityJson(summaries.at(sink)), ",\"scope\":", render::JsonValue(scope),
+          ",\"left_root\":", render::JsonValue(command.roots.at(0)),
+          ",\"right_root\":", render::JsonValue(command.roots.at(1)), ",\"group\":", render::JsonValue(key));
       for (std::size_t column_index = 0; column_index < columns.size(); ++column_index) {
         const auto& column = columns.at(column_index);
         const auto& source = column.tables.at(sink);
@@ -3382,7 +3362,7 @@ void EmitComparisonScopeSummary(
         const auto values = present ? SummaryColumns(row, denominator, human, precision, has_size)
                                     : std::vector<std::string>{"-", "-", "-", "-"};
         cells.insert(cells.end(), values.begin(), values.end());
-        absl::StrAppend(&object, ",", JsonQuote(column.scope), ":");
+        absl::StrAppend(&object, ",", render::JsonQuote(column.scope), ":");
         absl::StrAppend(
             &object, present ? absl::StrCat("{", SummaryJson(row, denominator, precision, has_size), "}") : "null");
       }
@@ -3869,9 +3849,10 @@ void EmitTreeCompareSummary(
       if (output_format == render::Format::kJsonl) {
         emit(
             absl::StrCat(
-                "{", SummaryIdentityJson(summary), R"(,"scope":"compare","left_root":)", JsonQuote(command.roots.at(0)),
-                ",\"right_root\":", JsonQuote(command.roots.at(1)), ",\"type\":", JsonQuote(type), ",\"group\":",
-                JsonQuote(row.key), ",", SummaryJson(row, counts.total, precision), SummaryTotalJson(is_total), "}\n"));
+                "{", SummaryIdentityJson(summary), R"(,"scope":"compare","left_root":)",
+                render::JsonValue(command.roots.at(0)), ",\"right_root\":", render::JsonValue(command.roots.at(1)),
+                ",\"type\":", render::JsonValue(type), ",\"group\":", render::JsonValue(row.key), ",",
+                SummaryJson(row, counts.total, precision), SummaryTotalJson(is_total), "}\n"));
       } else {
         auto cells = SummaryColumns(row, counts.total, human, precision);
         cells.insert(cells.begin(), row.key);
@@ -3919,6 +3900,16 @@ RunResult RunTreeCompare(
     return RunResult{.errors = 2};
   }
   const TreeCompareSelection selection = *selection_result;
+  const auto output_format = ResolveFormat(command.globals);
+  const bool emits_entries = selection.left_only || selection.right_only || selection.different || selection.identical;
+  if (emits_entries && output_format != render::Format::kPlain
+      && (output != TreeCompareOutput::kStatus || output_format != render::Format::kJsonl)) {
+    on_error(
+        "--format", absl::InvalidArgumentError(
+                        "comparison status output requires --format=plain or jsonl; patches require plain; "
+                        "use --compare-select=none to format only summaries"));
+    return RunResult{.errors = 2};
+  }
   if (output == TreeCompareOutput::kDiff && selection.identical) {
     on_error("--compare-select", absl::InvalidArgumentError("identical entries have no patch representation"));
     return RunResult{.errors = 2};
@@ -4000,7 +3991,15 @@ RunResult RunTreeCompare(
   bool different = false;
   TreeCompareCounts counts;
   const auto emit_status = [&](std::string_view status, std::string_view relative_path) {
-    emit(absl::StrCat(status, "\t", status_renderer.Record(relative_path)));
+    if (output_format == render::Format::kJsonl) {
+      emit(
+          absl::StrCat(
+              R"({"record":"comparison","status":)", render::JsonValue(status), R"(,"path":)",
+              render::JsonValue(relative_path), R"(,"left_root":)", render::JsonValue(command.roots.at(0)),
+              R"(,"right_root":)", render::JsonValue(command.roots.at(1)), "}\n"));
+    } else {
+      emit(absl::StrCat(status, "\t", status_renderer.Record(relative_path)));
+    }
   };
   auto left = entries[0].begin();
   auto right = entries[1].begin();
@@ -5171,6 +5170,7 @@ RunResult RunFindCore(
                                                            : mbo::types::OptionalRef<std::optional<bool>>{},
             .deferred = deferred,
             .grep_count = grep_count,
+            .grep_json = format == render::Format::kJsonl,
             .grep_before = grep_before,
             .grep_after = grep_after,
             .diff_algorithm = diff_algorithm,
@@ -5304,6 +5304,7 @@ RunResult RunFindCore(
                                                          : mbo::types::OptionalRef<std::optional<bool>>{},
           .deferred = deferred,
           .grep_count = grep_count,
+          .grep_json = format == render::Format::kJsonl,
           .grep_before = grep_before,
           .grep_after = grep_after,
           .diff_algorithm = diff_algorithm,
@@ -5633,8 +5634,8 @@ RunResult RunFindCore(
         for (const Bar& bar : bars) {
           emit(
               absl::StrCat(
-                  "{\"histogram\":", JsonQuote(histograms[i].label), ",\"bucket\":", JsonQuote(bar.label),
-                  ",\"value\":", bar.value.json, "}\n"));
+                  "{\"histogram\":", render::JsonValue(histograms[i].label),
+                  ",\"bucket\":", render::JsonValue(bar.label), ",\"value\":", bar.value.json, "}\n"));
         }
         continue;
       }
@@ -5712,6 +5713,14 @@ absl::Status ValidateReductionFormat(const std::vector<std::string>& globals, bo
   return absl::OkStatus();
 }
 
+bool HasBuiltinContentOutput(const parser::Expr& expr, bool count) {
+  if (expr.kind == parser::Expr::Kind::kPredicate) {
+    return expr.descriptor->content_output && (count || expr.grep_template == nullptr);
+  }
+  return (expr.lhs && HasBuiltinContentOutput(*expr.lhs, count))
+         || (expr.rhs && HasBuiltinContentOutput(*expr.rhs, count));
+}
+
 // Refuse ignored or misleading reduction controls before either comparison side can run actions.
 absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, bool compare, bool has_histograms) {
   for (const std::string& global : globals) {
@@ -5755,6 +5764,16 @@ RunResult RunFind(
   const bool compare = absl::c_any_of(command.globals, [](std::string_view global) {
     return global == "--compare" || global.starts_with("--compare=");
   });
+  const auto output_format = ResolveFormat(command.globals);
+  const bool grep_count = HasGlobal(command.globals, "--count") || HasGlobal(command.globals, "-c");
+  if (output_format != render::Format::kPlain && output_format != render::Format::kJsonl && command.expression
+      && HasBuiltinContentOutput(*command.expression, grep_count)) {
+    on_error(
+        "--format", absl::InvalidArgumentError(
+                        "built-in content output requires --format=plain or jsonl; "
+                        "an explicit -grep:FORMAT template produces authored output"));
+    return RunResult{.errors = 2};
+  }
   absl::StatusOr<std::vector<HistogramSpec>> histograms_or = ResolveHistograms(command.globals);
   if (!histograms_or.ok()) {
     on_error("--histogram", histograms_or.status());
