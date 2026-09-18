@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-18 10:17:18</td>
+            <td class="headerValue">2026-09-18 19:48:24</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -332,23 +332,23 @@
 <span id="L252"><span class="lineNum">     252</span>                 :             :     std::size_t window,</span>
 <span id="L253"><span class="lineNum">     253</span>                 :             :     std::size_t byte_budget,</span>
 <span id="L254"><span class="lineNum">     254</span>                 :             :     std::vector&lt;format::Align&gt; alignments)</span>
-<span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">         115 :     : md_(format == Format::kMarkdown),</span></span>
-<span id="L256"><span class="lineNum">     256</span> [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 103 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 99 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 4 times"> + </span>]:<span class="tlaGNC">         115 :       columns_(format == Format::kAligned || format == Format::kMarkdown ? header.size() : 0),</span></span>
-<span id="L257"><span class="lineNum">     257</span>                 :<span class="tlaGNC">         115 :       with_header_(with_header),</span></span>
-<span id="L258"><span class="lineNum">     258</span>                 :<span class="tlaGNC">         115 :       window_(window),</span></span>
-<span id="L259"><span class="lineNum">     259</span>                 :<span class="tlaGNC">         115 :       byte_budget_(byte_budget),</span></span>
-<span id="L260"><span class="lineNum">     260</span>         [<span class="tlaGBC" title="branch 0 was taken 99 times"> + </span><span class="tlaGBC" title="branch 1 was taken 16 times"> + </span>]:<span class="tlaGNC">         115 :       widths_(columns_, md_ ? 3 : 0),</span></span>
-<span id="L261"><span class="lineNum">     261</span>                 :<span class="tlaGNC">         115 :       alignments_(std::move(alignments)),</span></span>
-<span id="L262"><span class="lineNum">     262</span>                 :<span class="tlaGNC">         115 :       buffering_(window != 0) {</span></span>
-<span id="L263"><span class="lineNum">     263</span>                 :<span class="tlaGNC">         115 :   alignments_.resize(columns_, format::Align::kLeft);</span></span>
-<span id="L264"><span class="lineNum">     264</span>                 :<span class="tlaGNC">         115 :   header_.reserve(columns_);</span></span>
-<span id="L265"><span class="lineNum">     265</span>         [<span class="tlaGBC" title="branch 0 was taken 340 times"> + </span><span class="tlaGBC" title="branch 1 was taken 115 times"> + </span>]:<span class="tlaGNC">         455 :   for (std::size_t col = 0; col &lt; columns_; ++col) {</span></span>
+<span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">         114 :     : md_(format == Format::kMarkdown),</span></span>
+<span id="L256"><span class="lineNum">     256</span> [<span class="tlaGBC" title="branch 0 was taken 4294967307 times"> + </span><span class="tlaGBC" title="branch 1 was taken 103 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 99 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 4 times"> + </span>]:<span class="tlaGNC">          81 :       columns_(format == Format::kAligned || format == Format::kMarkdown ? header.size() : 0),</span></span>
+<span id="L257"><span class="lineNum">     257</span>                 :<span class="tlaGNC">         114 :       with_header_(with_header),</span></span>
+<span id="L258"><span class="lineNum">     258</span>                 :<span class="tlaGNC">         114 :       window_(window),</span></span>
+<span id="L259"><span class="lineNum">     259</span>                 :<span class="tlaGNC">         114 :       byte_budget_(byte_budget),</span></span>
+<span id="L260"><span class="lineNum">     260</span>         [<span class="tlaGBC" title="branch 0 was taken 99 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4294967311 times"> + </span>]:<span class="tlaGNC">          81 :       widths_(columns_, md_ ? 3 : 0),</span></span>
+<span id="L261"><span class="lineNum">     261</span>                 :<span class="tlaGNC">         114 :       alignments_(std::move(alignments)),</span></span>
+<span id="L262"><span class="lineNum">     262</span>                 :<span class="tlaGNC">         114 :       buffering_(window != 0) {</span></span>
+<span id="L263"><span class="lineNum">     263</span>                 :<span class="tlaGNC">         114 :   alignments_.resize(columns_, format::Align::kLeft);</span></span>
+<span id="L264"><span class="lineNum">     264</span>                 :<span class="tlaGNC">         114 :   header_.reserve(columns_);</span></span>
+<span id="L265"><span class="lineNum">     265</span>         [<span class="tlaGBC" title="branch 0 was taken 340 times"> + </span><span class="tlaGBC" title="branch 1 was taken 114 times"> + </span>]:<span class="tlaGNC">         454 :   for (std::size_t col = 0; col &lt; columns_; ++col) {</span></span>
 <span id="L266"><span class="lineNum">     266</span>         [<span class="tlaGBC" title="branch 0 was taken 321 times"> + </span><span class="tlaGBC" title="branch 1 was taken 19 times"> + </span>]:<span class="tlaGNC">         340 :     header_.push_back(md_ ? MarkdownCell(header[col]) : std::move(header[col]));</span></span>
 <span id="L267"><span class="lineNum">     267</span>         [<span class="tlaGBC" title="branch 0 was taken 260 times"> + </span><span class="tlaGBC" title="branch 1 was taken 80 times"> + </span>]:<span class="tlaGNC">         340 :     if (with_header_) {</span></span>
 <span id="L268"><span class="lineNum">     268</span>                 :<span class="tlaGNC">         260 :       widths_[col] = std::max(widths_[col], header_[col].size());</span></span>
 <span id="L269"><span class="lineNum">     269</span>                 :<span class="tlaGNC">         260 :     }</span></span>
 <span id="L270"><span class="lineNum">     270</span>                 :<span class="tlaGNC">         340 :   }</span></span>
-<span id="L271"><span class="lineNum">     271</span>                 :<span class="tlaGNC">         115 : }</span></span>
+<span id="L271"><span class="lineNum">     271</span>                 :<span class="tlaGNC">         114 : }</span></span>
 <span id="L272"><span class="lineNum">     272</span>                 :             : </span>
 <span id="L273"><span class="lineNum">     273</span>                 :<span class="tlaGNC">         217 : std::string TableStream::Row(const std::vector&lt;std::string&gt;&amp; cells) const {</span></span>
 <span id="L274"><span class="lineNum">     274</span>                 :<span class="tlaGNC">         217 :   std::string out;</span></span>

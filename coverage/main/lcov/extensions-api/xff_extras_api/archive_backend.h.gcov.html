@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-18 10:17:18</td>
+            <td class="headerValue">2026-09-18 19:48:24</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -229,98 +229,112 @@
 <span id="L158"><span class="lineNum">     158</span>              : struct PackFile {</span>
 <span id="L159"><span class="lineNum">     159</span>              :   std::string source;</span>
 <span id="L160"><span class="lineNum">     160</span>              :   std::string name;</span>
-<span id="L161"><span class="lineNum">     161</span>              : };</span>
-<span id="L162"><span class="lineNum">     162</span>              : </span>
-<span id="L163"><span class="lineNum">     163</span>              : // One writer setting in XFF's vocabulary, which the backend TRANSLATES to whatever its library calls</span>
-<span id="L164"><span class="lineNum">     164</span>              : // the same thing. The indirection is the point: libarchive's own option names differ between writers</span>
-<span id="L165"><span class="lineNum">     165</span>              : // and between its versions, so a name passed through unchecked could be neither validated nor</span>
-<span id="L166"><span class="lineNum">     166</span>              : // documented from a table.</span>
-<span id="L167"><span class="lineNum">     167</span>              : struct PackOption {</span>
-<span id="L168"><span class="lineNum">     168</span>              :   std::string name;</span>
-<span id="L169"><span class="lineNum">     169</span>              :   std::string value;</span>
-<span id="L170"><span class="lineNum">     170</span>              : };</span>
-<span id="L171"><span class="lineNum">     171</span>              : </span>
-<span id="L172"><span class="lineNum">     172</span>              : // How the container is written, beyond what the output name decides. An empty list keeps the format's</span>
-<span id="L173"><span class="lineNum">     173</span>              : // defaults; the last value given for a name wins.</span>
-<span id="L174"><span class="lineNum">     174</span>              : struct PackOptions {</span>
-<span id="L175"><span class="lineNum">     175</span>              :   std::vector&lt;PackOption&gt; options;</span>
-<span id="L176"><span class="lineNum">     176</span>              :   vfs::MutationPolicy mutations;</span>
-<span id="L177"><span class="lineNum">     177</span>              : };</span>
-<span id="L178"><span class="lineNum">     178</span>              : </span>
-<span id="L179"><span class="lineNum">     179</span>              : // One entry of the vocabulary the linked backend accepts, for the pre-walk check and for the help</span>
-<span id="L180"><span class="lineNum">     180</span>              : // that is generated from it. Empty when no packer is linked.</span>
-<span id="L181"><span class="lineNum">     181</span>              : struct PackOptionInfo {</span>
-<span id="L182"><span class="lineNum">     182</span>              :   std::string name;</span>
-<span id="L183"><span class="lineNum">     183</span>              :   std::string value_syntax;                    // &quot;N&quot;, &quot;yes|no&quot;, &quot;store|deflate&quot;</span>
-<span id="L184"><span class="lineNum">     184</span>              :   absl::Span&lt;const std::string_view&gt; formats;  // immutable output-name vocabulary it applies to</span>
-<span id="L185"><span class="lineNum">     185</span>              :   std::string detail;</span>
-<span id="L186"><span class="lineNum">     186</span>              : };</span>
-<span id="L187"><span class="lineNum">     187</span>              : </span>
-<span id="L188"><span class="lineNum">     188</span>              : // Writes `files` into a NEW container at `path`, format chosen from the output NAME. The third seam</span>
-<span id="L189"><span class="lineNum">     189</span>              : // rather than a mode on the second: rewriting a container that exists and creating one that does not</span>
-<span id="L190"><span class="lineNum">     190</span>              : // are different capabilities, and a backend may have either.</span>
-<span id="L191"><span class="lineNum">     191</span>              : //</span>
-<span id="L192"><span class="lineNum">     192</span>              : // Contract for a backend: names and order are stored exactly as given; the write is all-or-nothing,</span>
-<span id="L193"><span class="lineNum">     193</span>              : // so a failure leaves any existing file at `path` untouched; an output name carrying no writable</span>
-<span id="L194"><span class="lineNum">     194</span>              : // format is InvalidArgument, and an unreadable source is NotFound with nothing written.</span>
-<span id="L195"><span class="lineNum">     195</span>              : using ContainerPacker =</span>
-<span id="L196"><span class="lineNum">     196</span>              :     absl::AnyInvocable&lt;absl::Status(std::string_view, const std::vector&lt;PackFile&gt;&amp;, const PackOptions&amp;) const&gt;;</span>
-<span id="L197"><span class="lineNum">     197</span>              : </span>
-<span id="L198"><span class="lineNum">     198</span>              : // Registers the process-wide packer, like the other two. Separate again: a backend that can read and</span>
-<span id="L199"><span class="lineNum">     199</span>              : // rewrite need not be able to create. `formats` are the output names it accepts (&quot;tar&quot;, &quot;tar.gz&quot;,</span>
-<span id="L200"><span class="lineNum">     200</span>              : // &quot;zip&quot;, ...) and travel WITH the packer so a backend cannot register one without the other - the CLI</span>
-<span id="L201"><span class="lineNum">     201</span>              : // needs them to reject an impossible output name before the walk rather than after it. `vocabulary`</span>
-<span id="L202"><span class="lineNum">     202</span>              : // travels for the same reason: an unknown option name must be a usage error before the traversal, and</span>
-<span id="L203"><span class="lineNum">     203</span>              : // `--help=archive` lists exactly what this binary accepts rather than a hand-kept copy.</span>
-<span id="L204"><span class="lineNum">     204</span>              : void RegisterContainerPacker(</span>
-<span id="L205"><span class="lineNum">     205</span>              :     ContainerPacker packer,</span>
-<span id="L206"><span class="lineNum">     206</span>              :     std::vector&lt;std::string&gt; formats,</span>
-<span id="L207"><span class="lineNum">     207</span>              :     std::vector&lt;PackOptionInfo&gt; vocabulary);</span>
-<span id="L208"><span class="lineNum">     208</span>              : </span>
-<span id="L209"><span class="lineNum">     209</span>              : // Self-registers `packer` on construction; see ContainerRegistrar.</span>
-<span id="L210"><span class="lineNum">     210</span>              : struct ContainerPackerRegistrar {</span>
-<span id="L211"><span class="lineNum">     211</span>              :   ContainerPackerRegistrar(</span>
-<span id="L212"><span class="lineNum">     212</span>              :       ContainerPacker packer,</span>
-<span id="L213"><span class="lineNum">     213</span>              :       std::vector&lt;std::string&gt; formats,</span>
-<span id="L214"><span class="lineNum">     214</span> <span class="tlaGNC">           1 :       std::vector&lt;PackOptionInfo&gt; vocabulary) {</span></span>
-<span id="L215"><span class="lineNum">     215</span> <span class="tlaGNC">           1 :     RegisterContainerPacker(std::move(packer), std::move(formats), std::move(vocabulary));</span></span>
-<span id="L216"><span class="lineNum">     216</span> <span class="tlaGNC">           1 :   }</span></span>
-<span id="L217"><span class="lineNum">     217</span>              : };</span>
-<span id="L218"><span class="lineNum">     218</span>              : </span>
-<span id="L219"><span class="lineNum">     219</span>              : // Installs the override opener's read-format vocabulary. Production extras register their formats</span>
-<span id="L220"><span class="lineNum">     220</span>              : // atomically with their opener through RegisterContainerReader.</span>
-<span id="L221"><span class="lineNum">     221</span>              : void RegisterContainerReadFormats(std::vector&lt;ReadFormatInfo&gt; formats);</span>
+<span id="L161"><span class="lineNum">     161</span>              :   // Directories may contain other destinations; files and symlinks may not.</span>
+<span id="L162"><span class="lineNum">     162</span>              :   bool is_directory = false;</span>
+<span id="L163"><span class="lineNum">     163</span>              : };</span>
+<span id="L164"><span class="lineNum">     164</span>              : </span>
+<span id="L165"><span class="lineNum">     165</span>              : // Duplicate archive destinations are rejected unless the caller explicitly selects first-wins.</span>
+<span id="L166"><span class="lineNum">     166</span>              : enum class PackDuplicatePolicy { kError, kFirst };</span>
+<span id="L167"><span class="lineNum">     167</span>              : </span>
+<span id="L168"><span class="lineNum">     168</span>              : // Canonicalizes relative member destinations and selects entries in input order. Duplicate errors</span>
+<span id="L169"><span class="lineNum">     169</span>              : // identify both source paths, including when a file or symlink blocks a child destination.</span>
+<span id="L170"><span class="lineNum">     170</span>              : // Set is_directory for directory entries. Absolute paths, parent traversal, and embedded NULs are rejected.</span>
+<span id="L171"><span class="lineNum">     171</span>              : // This pure planning step runs before creating any output; it also serves dry-run callers.</span>
+<span id="L172"><span class="lineNum">     172</span>              : [[nodiscard]] absl::StatusOr&lt;std::vector&lt;PackFile&gt;&gt; PlanPackFiles(</span>
+<span id="L173"><span class="lineNum">     173</span>              :     const std::vector&lt;PackFile&gt;&amp; files,</span>
+<span id="L174"><span class="lineNum">     174</span>              :     PackDuplicatePolicy duplicates = PackDuplicatePolicy::kError);</span>
+<span id="L175"><span class="lineNum">     175</span>              : </span>
+<span id="L176"><span class="lineNum">     176</span>              : // One writer setting in XFF's vocabulary, which the backend TRANSLATES to whatever its library calls</span>
+<span id="L177"><span class="lineNum">     177</span>              : // the same thing. The indirection is the point: libarchive's own option names differ between writers</span>
+<span id="L178"><span class="lineNum">     178</span>              : // and between its versions, so a name passed through unchecked could be neither validated nor</span>
+<span id="L179"><span class="lineNum">     179</span>              : // documented from a table.</span>
+<span id="L180"><span class="lineNum">     180</span>              : struct PackOption {</span>
+<span id="L181"><span class="lineNum">     181</span>              :   std::string name;</span>
+<span id="L182"><span class="lineNum">     182</span>              :   std::string value;</span>
+<span id="L183"><span class="lineNum">     183</span>              : };</span>
+<span id="L184"><span class="lineNum">     184</span>              : </span>
+<span id="L185"><span class="lineNum">     185</span>              : // How the container is written, beyond what the output name decides. An empty list keeps the format's</span>
+<span id="L186"><span class="lineNum">     186</span>              : // defaults; the last value given for a name wins.</span>
+<span id="L187"><span class="lineNum">     187</span>              : struct PackOptions {</span>
+<span id="L188"><span class="lineNum">     188</span>              :   std::vector&lt;PackOption&gt; options;</span>
+<span id="L189"><span class="lineNum">     189</span>              :   PackDuplicatePolicy duplicates = PackDuplicatePolicy::kError;</span>
+<span id="L190"><span class="lineNum">     190</span>              :   vfs::MutationPolicy mutations;</span>
+<span id="L191"><span class="lineNum">     191</span>              : };</span>
+<span id="L192"><span class="lineNum">     192</span>              : </span>
+<span id="L193"><span class="lineNum">     193</span>              : // One entry of the vocabulary the linked backend accepts, for the pre-walk check and for the help</span>
+<span id="L194"><span class="lineNum">     194</span>              : // that is generated from it. Empty when no packer is linked.</span>
+<span id="L195"><span class="lineNum">     195</span>              : struct PackOptionInfo {</span>
+<span id="L196"><span class="lineNum">     196</span>              :   std::string name;</span>
+<span id="L197"><span class="lineNum">     197</span>              :   std::string value_syntax;                    // &quot;N&quot;, &quot;yes|no&quot;, &quot;store|deflate&quot;</span>
+<span id="L198"><span class="lineNum">     198</span>              :   absl::Span&lt;const std::string_view&gt; formats;  // immutable output-name vocabulary it applies to</span>
+<span id="L199"><span class="lineNum">     199</span>              :   std::string detail;</span>
+<span id="L200"><span class="lineNum">     200</span>              : };</span>
+<span id="L201"><span class="lineNum">     201</span>              : </span>
+<span id="L202"><span class="lineNum">     202</span>              : // Writes `files` into a NEW container at `path`, format chosen from the output NAME. The third seam</span>
+<span id="L203"><span class="lineNum">     203</span>              : // rather than a mode on the second: rewriting a container that exists and creating one that does not</span>
+<span id="L204"><span class="lineNum">     204</span>              : // are different capabilities, and a backend may have either.</span>
+<span id="L205"><span class="lineNum">     205</span>              : //</span>
+<span id="L206"><span class="lineNum">     206</span>              : // Contract for a backend: names and order are stored exactly as given; the write is all-or-nothing,</span>
+<span id="L207"><span class="lineNum">     207</span>              : // so a failure leaves any existing file at `path` untouched; an output name carrying no writable</span>
+<span id="L208"><span class="lineNum">     208</span>              : // format is InvalidArgument, and an unreadable source is NotFound with nothing written.</span>
+<span id="L209"><span class="lineNum">     209</span>              : using ContainerPacker =</span>
+<span id="L210"><span class="lineNum">     210</span>              :     absl::AnyInvocable&lt;absl::Status(std::string_view, const std::vector&lt;PackFile&gt;&amp;, const PackOptions&amp;) const&gt;;</span>
+<span id="L211"><span class="lineNum">     211</span>              : </span>
+<span id="L212"><span class="lineNum">     212</span>              : // Registers the process-wide packer, like the other two. Separate again: a backend that can read and</span>
+<span id="L213"><span class="lineNum">     213</span>              : // rewrite need not be able to create. `formats` are the output names it accepts (&quot;tar&quot;, &quot;tar.gz&quot;,</span>
+<span id="L214"><span class="lineNum">     214</span>              : // &quot;zip&quot;, ...) and travel WITH the packer so a backend cannot register one without the other - the CLI</span>
+<span id="L215"><span class="lineNum">     215</span>              : // needs them to reject an impossible output name before the walk rather than after it. `vocabulary`</span>
+<span id="L216"><span class="lineNum">     216</span>              : // travels for the same reason: an unknown option name must be a usage error before the traversal, and</span>
+<span id="L217"><span class="lineNum">     217</span>              : // `--help=archive` lists exactly what this binary accepts rather than a hand-kept copy.</span>
+<span id="L218"><span class="lineNum">     218</span>              : void RegisterContainerPacker(</span>
+<span id="L219"><span class="lineNum">     219</span>              :     ContainerPacker packer,</span>
+<span id="L220"><span class="lineNum">     220</span>              :     std::vector&lt;std::string&gt; formats,</span>
+<span id="L221"><span class="lineNum">     221</span>              :     std::vector&lt;PackOptionInfo&gt; vocabulary);</span>
 <span id="L222"><span class="lineNum">     222</span>              : </span>
-<span id="L223"><span class="lineNum">     223</span>              : // The read formats the linked backend declared, in its own (documentation) order. Empty when no</span>
-<span id="L224"><span class="lineNum">     224</span>              : // backend is linked, which is how a lean build's help simply has no table.</span>
-<span id="L225"><span class="lineNum">     225</span>              : [[nodiscard]] std::vector&lt;ReadFormatInfo&gt; ContainerReadFormats();</span>
-<span id="L226"><span class="lineNum">     226</span>              : </span>
-<span id="L227"><span class="lineNum">     227</span>              : // Whether this binary can create a container at all (a backend registered a packer).</span>
-<span id="L228"><span class="lineNum">     228</span>              : [[nodiscard]] bool ContainerPackingAvailable();</span>
-<span id="L229"><span class="lineNum">     229</span>              : </span>
-<span id="L230"><span class="lineNum">     230</span>              : // The output names the registered packer accepts, for the usage error and the help. Empty when no</span>
-<span id="L231"><span class="lineNum">     231</span>              : // packer is linked.</span>
-<span id="L232"><span class="lineNum">     232</span>              : [[nodiscard]] std::vector&lt;std::string&gt; ContainerPackFormats();</span>
-<span id="L233"><span class="lineNum">     233</span>              : </span>
-<span id="L234"><span class="lineNum">     234</span>              : // The format an output NAME asks for (the longest registered name it ends with, after a dot, folding</span>
-<span id="L235"><span class="lineNum">     235</span>              : // case), or empty when it names none. Lets the CLI reject an impossible output before spending a walk</span>
-<span id="L236"><span class="lineNum">     236</span>              : // on it; the backend applies the same rule to the same list, which its own test pins.</span>
-<span id="L237"><span class="lineNum">     237</span>              : [[nodiscard]] std::string ContainerPackFormatFor(std::string_view path);</span>
-<span id="L238"><span class="lineNum">     238</span>              : </span>
-<span id="L239"><span class="lineNum">     239</span>              : // The writer-option vocabulary the linked backend accepts. Empty when no packer is linked, which is</span>
-<span id="L240"><span class="lineNum">     240</span>              : // what makes a lean build's `--help=archive` simply not carry the table.</span>
-<span id="L241"><span class="lineNum">     241</span>              : [[nodiscard]] std::vector&lt;PackOptionInfo&gt; ContainerPackVocabulary();</span>
-<span id="L242"><span class="lineNum">     242</span>              : </span>
-<span id="L243"><span class="lineNum">     243</span>              : // Writes `files` into `path` through the registered packer, or UnimplementedError when none is</span>
-<span id="L244"><span class="lineNum">     244</span>              : // linked.</span>
-<span id="L245"><span class="lineNum">     245</span>              : [[nodiscard]] absl::Status PackContainer(</span>
-<span id="L246"><span class="lineNum">     246</span>              :     std::string_view path,</span>
-<span id="L247"><span class="lineNum">     247</span>              :     const std::vector&lt;PackFile&gt;&amp; files,</span>
-<span id="L248"><span class="lineNum">     248</span>              :     const PackOptions&amp; options = {});</span>
-<span id="L249"><span class="lineNum">     249</span>              : </span>
-<span id="L250"><span class="lineNum">     250</span>              : }  // namespace xff::archive</span>
-<span id="L251"><span class="lineNum">     251</span>              : </span>
-<span id="L252"><span class="lineNum">     252</span>              : #endif  // XFF_ARCHIVE_ARCHIVE_BACKEND_H_</span>
+<span id="L223"><span class="lineNum">     223</span>              : // Self-registers `packer` on construction; see ContainerRegistrar.</span>
+<span id="L224"><span class="lineNum">     224</span>              : struct ContainerPackerRegistrar {</span>
+<span id="L225"><span class="lineNum">     225</span>              :   ContainerPackerRegistrar(</span>
+<span id="L226"><span class="lineNum">     226</span>              :       ContainerPacker packer,</span>
+<span id="L227"><span class="lineNum">     227</span>              :       std::vector&lt;std::string&gt; formats,</span>
+<span id="L228"><span class="lineNum">     228</span> <span class="tlaGNC">           1 :       std::vector&lt;PackOptionInfo&gt; vocabulary) {</span></span>
+<span id="L229"><span class="lineNum">     229</span> <span class="tlaGNC">           1 :     RegisterContainerPacker(std::move(packer), std::move(formats), std::move(vocabulary));</span></span>
+<span id="L230"><span class="lineNum">     230</span> <span class="tlaGNC">           1 :   }</span></span>
+<span id="L231"><span class="lineNum">     231</span>              : };</span>
+<span id="L232"><span class="lineNum">     232</span>              : </span>
+<span id="L233"><span class="lineNum">     233</span>              : // Installs the override opener's read-format vocabulary. Production extras register their formats</span>
+<span id="L234"><span class="lineNum">     234</span>              : // atomically with their opener through RegisterContainerReader.</span>
+<span id="L235"><span class="lineNum">     235</span>              : void RegisterContainerReadFormats(std::vector&lt;ReadFormatInfo&gt; formats);</span>
+<span id="L236"><span class="lineNum">     236</span>              : </span>
+<span id="L237"><span class="lineNum">     237</span>              : // The read formats the linked backend declared, in its own (documentation) order. Empty when no</span>
+<span id="L238"><span class="lineNum">     238</span>              : // backend is linked, which is how a lean build's help simply has no table.</span>
+<span id="L239"><span class="lineNum">     239</span>              : [[nodiscard]] std::vector&lt;ReadFormatInfo&gt; ContainerReadFormats();</span>
+<span id="L240"><span class="lineNum">     240</span>              : </span>
+<span id="L241"><span class="lineNum">     241</span>              : // Whether this binary can create a container at all (a backend registered a packer).</span>
+<span id="L242"><span class="lineNum">     242</span>              : [[nodiscard]] bool ContainerPackingAvailable();</span>
+<span id="L243"><span class="lineNum">     243</span>              : </span>
+<span id="L244"><span class="lineNum">     244</span>              : // The output names the registered packer accepts, for the usage error and the help. Empty when no</span>
+<span id="L245"><span class="lineNum">     245</span>              : // packer is linked.</span>
+<span id="L246"><span class="lineNum">     246</span>              : [[nodiscard]] std::vector&lt;std::string&gt; ContainerPackFormats();</span>
+<span id="L247"><span class="lineNum">     247</span>              : </span>
+<span id="L248"><span class="lineNum">     248</span>              : // The format an output NAME asks for (the longest registered name it ends with, after a dot, folding</span>
+<span id="L249"><span class="lineNum">     249</span>              : // case), or empty when it names none. Lets the CLI reject an impossible output before spending a walk</span>
+<span id="L250"><span class="lineNum">     250</span>              : // on it; the backend applies the same rule to the same list, which its own test pins.</span>
+<span id="L251"><span class="lineNum">     251</span>              : [[nodiscard]] std::string ContainerPackFormatFor(std::string_view path);</span>
+<span id="L252"><span class="lineNum">     252</span>              : </span>
+<span id="L253"><span class="lineNum">     253</span>              : // The writer-option vocabulary the linked backend accepts. Empty when no packer is linked, which is</span>
+<span id="L254"><span class="lineNum">     254</span>              : // what makes a lean build's `--help=archive` simply not carry the table.</span>
+<span id="L255"><span class="lineNum">     255</span>              : [[nodiscard]] std::vector&lt;PackOptionInfo&gt; ContainerPackVocabulary();</span>
+<span id="L256"><span class="lineNum">     256</span>              : </span>
+<span id="L257"><span class="lineNum">     257</span>              : // Writes `files` into `path` through the registered packer, or UnimplementedError when none is</span>
+<span id="L258"><span class="lineNum">     258</span>              : // linked.</span>
+<span id="L259"><span class="lineNum">     259</span>              : [[nodiscard]] absl::Status PackContainer(</span>
+<span id="L260"><span class="lineNum">     260</span>              :     std::string_view path,</span>
+<span id="L261"><span class="lineNum">     261</span>              :     const std::vector&lt;PackFile&gt;&amp; files,</span>
+<span id="L262"><span class="lineNum">     262</span>              :     const PackOptions&amp; options = {});</span>
+<span id="L263"><span class="lineNum">     263</span>              : </span>
+<span id="L264"><span class="lineNum">     264</span>              : }  // namespace xff::archive</span>
+<span id="L265"><span class="lineNum">     265</span>              : </span>
+<span id="L266"><span class="lineNum">     266</span>              : #endif  // XFF_ARCHIVE_ARCHIVE_BACKEND_H_</span>
         </pre>
               </td>
             </tr>

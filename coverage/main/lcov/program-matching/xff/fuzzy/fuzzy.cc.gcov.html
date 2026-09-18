@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-18 10:17:18</td>
+            <td class="headerValue">2026-09-18 19:48:24</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -139,27 +139,27 @@
 <span id="L58"><span class="lineNum">      58</span>                 :             : constexpr int kGap = 1;             // per character skipped before a match</span>
 <span id="L59"><span class="lineNum">      59</span>                 :             : constexpr int kUnmatched = -1'000;  // &quot;no alignment reaches here&quot;, never a real score</span>
 <span id="L60"><span class="lineNum">      60</span>                 :             : </span>
-<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">        1851 : bool IsSeparator(char chr) {</span></span>
-<span id="L62"><span class="lineNum">      62</span> [<span class="tlaGBC" title="branch 0 was taken 117 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1734 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 61 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1673 times"> + </span>]:<span class="tlaGNC">        1851 :   return chr == '_' || chr == '-' || chr == '.' || chr == '/' || chr == ' ';</span></span>
-<span class="lineNum">        </span> [<span class="tlaGBC" title="branch &quot;4&quot; was taken 76 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 1597 times"> + </span>][<span class="tlaGBC" title="branch &quot;6&quot; was taken 23 times"> + </span><span class="tlaGBC" title="branch &quot;7&quot; was taken 1574 times"> + </span>]
-<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;8&quot; was taken 23 times"> + </span><span class="tlaGBC" title="branch &quot;9&quot; was taken 1551 times"> + </span>]
-<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">        1851 : }</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">        1863 : bool IsSeparator(char chr) {</span></span>
+<span id="L62"><span class="lineNum">      62</span> [<span class="tlaGBC" title="branch 0 was taken 117 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1746 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 61 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1685 times"> + </span>]:<span class="tlaGNC">        1863 :   return chr == '_' || chr == '-' || chr == '.' || chr == '/' || chr == ' ';</span></span>
+<span class="lineNum">        </span> [<span class="tlaGBC" title="branch &quot;4&quot; was taken 76 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 1609 times"> + </span>][<span class="tlaGBC" title="branch &quot;6&quot; was taken 23 times"> + </span><span class="tlaGBC" title="branch &quot;7&quot; was taken 1586 times"> + </span>]
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;8&quot; was taken 23 times"> + </span><span class="tlaGBC" title="branch &quot;9&quot; was taken 1563 times"> + </span>]
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">        1863 : }</span></span>
 <span id="L64"><span class="lineNum">      64</span>                 :             : </span>
 <span id="L65"><span class="lineNum">      65</span>                 :             : // Whether text[at] begins a word: the start, anything after a separator, or a camelCase hump.</span>
-<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">        2208 : bool IsWordStart(std::string_view text, std::string_view::size_type at) {</span></span>
-<span id="L67"><span class="lineNum">      67</span>         [<span class="tlaGBC" title="branch 0 was taken 357 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1851 times"> + </span>]:<span class="tlaGNC">        2208 :   if (at == 0) {</span></span>
-<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">         357 :     return true;</span></span>
-<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">         357 :   }</span></span>
-<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">        1851 :   const char before = text[at - 1];</span></span>
-<span id="L71"><span class="lineNum">      71</span>         [<span class="tlaGBC" title="branch 0 was taken 300 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1551 times"> + </span>]:<span class="tlaGNC">        1851 :   return IsSeparator(before)</span></span>
-<span id="L72"><span class="lineNum">      72</span>         [<span class="tlaGBC" title="branch 0 was taken 1509 times"> + </span><span class="tlaGBC" title="branch 1 was taken 42 times"> + </span>]:<span class="tlaGNC">        1551 :          || (absl::ascii_islower(static_cast&lt;unsigned char&gt;(before))</span></span>
-<span id="L73"><span class="lineNum">      73</span>         [<span class="tlaGBC" title="branch 0 was taken 13 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1496 times"> + </span>]:<span class="tlaGNC">        1509 :              &amp;&amp; absl::ascii_isupper(static_cast&lt;unsigned char&gt;(text[at])));</span></span>
-<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">        2208 : }</span></span>
+<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">        2224 : bool IsWordStart(std::string_view text, std::string_view::size_type at) {</span></span>
+<span id="L67"><span class="lineNum">      67</span>         [<span class="tlaGBC" title="branch 0 was taken 361 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1863 times"> + </span>]:<span class="tlaGNC">        2224 :   if (at == 0) {</span></span>
+<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">         361 :     return true;</span></span>
+<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">         361 :   }</span></span>
+<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">        1863 :   const char before = text[at - 1];</span></span>
+<span id="L71"><span class="lineNum">      71</span>         [<span class="tlaGBC" title="branch 0 was taken 300 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1563 times"> + </span>]:<span class="tlaGNC">        1863 :   return IsSeparator(before)</span></span>
+<span id="L72"><span class="lineNum">      72</span>         [<span class="tlaGBC" title="branch 0 was taken 1521 times"> + </span><span class="tlaGBC" title="branch 1 was taken 42 times"> + </span>]:<span class="tlaGNC">        1563 :          || (absl::ascii_islower(static_cast&lt;unsigned char&gt;(before))</span></span>
+<span id="L73"><span class="lineNum">      73</span>         [<span class="tlaGBC" title="branch 0 was taken 13 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1508 times"> + </span>]:<span class="tlaGNC">        1521 :              &amp;&amp; absl::ascii_isupper(static_cast&lt;unsigned char&gt;(text[at])));</span></span>
+<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">        2224 : }</span></span>
 <span id="L75"><span class="lineNum">      75</span>                 :             : </span>
-<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">       18015 : bool SameChar(char have, char want, bool fold_case) {</span></span>
-<span id="L77"><span class="lineNum">      77</span> [<span class="tlaGBC" title="branch 0 was taken 2872 times"> + </span><span class="tlaGBC" title="branch 1 was taken 15143 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3882 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 11261 times"> + </span>]:<span class="tlaGNC">       18015 :   return have == want || (fold_case &amp;&amp; absl::ascii_tolower(have) == absl::ascii_tolower(want));</span></span>
+<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">       18111 : bool SameChar(char have, char want, bool fold_case) {</span></span>
+<span id="L77"><span class="lineNum">      77</span> [<span class="tlaGBC" title="branch 0 was taken 2888 times"> + </span><span class="tlaGBC" title="branch 1 was taken 15223 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 3882 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 11341 times"> + </span>]:<span class="tlaGNC">       18111 :   return have == want || (fold_case &amp;&amp; absl::ascii_tolower(have) == absl::ascii_tolower(want));</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 51 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 3831 times"> + </span>]
-<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">       18015 : }</span></span>
+<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">       18111 : }</span></span>
 <span id="L79"><span class="lineNum">      79</span>                 :             : </span>
 <span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">        1233 : bool SameText(std::string_view lhs, std::string_view rhs, bool fold_case) {</span></span>
 <span id="L81"><span class="lineNum">      81</span>         [<span class="tlaGBC" title="branch 0 was taken 1228 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">        1233 :   return lhs.size() == rhs.size()</span></span>
@@ -193,32 +193,32 @@
 <span id="L109"><span class="lineNum">     109</span>                 :             : </span>
 <span id="L110"><span class="lineNum">     110</span>                 :             : using OrGroup = std::vector&lt;QueryTerm&gt;;</span>
 <span id="L111"><span class="lineNum">     111</span>                 :             : </span>
-<span id="L112"><span class="lineNum">     112</span>                 :<span class="tlaGNC">         189 : std::vector&lt;std::string&gt; SplitQuery(std::string_view query) {</span></span>
-<span id="L113"><span class="lineNum">     113</span>                 :<span class="tlaGNC">         189 :   std::vector&lt;std::string&gt; words;</span></span>
-<span id="L114"><span class="lineNum">     114</span>                 :<span class="tlaGNC">         189 :   std::string word;</span></span>
-<span id="L115"><span class="lineNum">     115</span>         [<span class="tlaGBC" title="branch 0 was taken 1675 times"> + </span><span class="tlaGBC" title="branch 1 was taken 189 times"> + </span>]:<span class="tlaGNC">        1864 :   for (std::size_t at = 0; at &lt; query.size(); ++at) {</span></span>
-<span id="L116"><span class="lineNum">     116</span> [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1670 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 5 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">        1675 :     if (query[at] == '\\' &amp;&amp; at + 1 &lt; query.size() &amp;&amp; query[at + 1] == ' ') {</span></span>
+<span id="L112"><span class="lineNum">     112</span>                 :<span class="tlaGNC">         191 : std::vector&lt;std::string&gt; SplitQuery(std::string_view query) {</span></span>
+<span id="L113"><span class="lineNum">     113</span>                 :<span class="tlaGNC">         191 :   std::vector&lt;std::string&gt; words;</span></span>
+<span id="L114"><span class="lineNum">     114</span>                 :<span class="tlaGNC">         191 :   std::string word;</span></span>
+<span id="L115"><span class="lineNum">     115</span>         [<span class="tlaGBC" title="branch 0 was taken 1683 times"> + </span><span class="tlaGBC" title="branch 1 was taken 191 times"> + </span>]:<span class="tlaGNC">        1874 :   for (std::size_t at = 0; at &lt; query.size(); ++at) {</span></span>
+<span id="L116"><span class="lineNum">     116</span> [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1678 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 5 times"> + </span><span class="tlaUNC" title="branch &quot;3&quot; was not taken"> - </span>]:<span class="tlaGNC">        1683 :     if (query[at] == '\\' &amp;&amp; at + 1 &lt; query.size() &amp;&amp; query[at + 1] == ' ') {</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 5 times"> + </span><span class="tlaUNC" title="branch &quot;5&quot; was not taken"> - </span>]
 <span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">           5 :       word.push_back(' ');</span></span>
 <span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">           5 :       ++at;</span></span>
-<span id="L119"><span class="lineNum">     119</span>         [<span class="tlaGBC" title="branch 0 was taken 205 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1465 times"> + </span>]:<span class="tlaGNC">        1670 :     } else if (query[at] == ' ') {</span></span>
+<span id="L119"><span class="lineNum">     119</span>         [<span class="tlaGBC" title="branch 0 was taken 205 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1473 times"> + </span>]:<span class="tlaGNC">        1678 :     } else if (query[at] == ' ') {</span></span>
 <span id="L120"><span class="lineNum">     120</span>         [<span class="tlaGBC" title="branch 0 was taken 202 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">         205 :       if (!word.empty()) {</span></span>
 <span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">         202 :         words.push_back(std::move(word));</span></span>
 <span id="L122"><span class="lineNum">     122</span>                 :<span class="tlaGNC">         202 :         word.clear();</span></span>
 <span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">         202 :       }</span></span>
-<span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">        1465 :     } else {</span></span>
-<span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">        1465 :       word.push_back(query[at]);</span></span>
-<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">        1465 :     }</span></span>
-<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">        1675 :   }</span></span>
-<span id="L128"><span class="lineNum">     128</span>         [<span class="tlaGBC" title="branch 0 was taken 187 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">         189 :   if (!word.empty()) {</span></span>
-<span id="L129"><span class="lineNum">     129</span>                 :<span class="tlaGNC">         187 :     words.push_back(std::move(word));</span></span>
-<span id="L130"><span class="lineNum">     130</span>                 :<span class="tlaGNC">         187 :   }</span></span>
-<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">         189 :   return words;</span></span>
-<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">         189 : }</span></span>
+<span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">        1473 :     } else {</span></span>
+<span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">        1473 :       word.push_back(query[at]);</span></span>
+<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">        1473 :     }</span></span>
+<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">        1683 :   }</span></span>
+<span id="L128"><span class="lineNum">     128</span>         [<span class="tlaGBC" title="branch 0 was taken 189 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">         191 :   if (!word.empty()) {</span></span>
+<span id="L129"><span class="lineNum">     129</span>                 :<span class="tlaGNC">         189 :     words.push_back(std::move(word));</span></span>
+<span id="L130"><span class="lineNum">     130</span>                 :<span class="tlaGNC">         189 :   }</span></span>
+<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">         191 :   return words;</span></span>
+<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">         191 : }</span></span>
 <span id="L133"><span class="lineNum">     133</span>                 :             : </span>
-<span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">         333 : QueryTerm ParseTerm(std::string word) {</span></span>
-<span id="L135"><span class="lineNum">     135</span>                 :<span class="tlaGNC">         333 :   QueryTerm term;</span></span>
-<span id="L136"><span class="lineNum">     136</span> [<span class="tlaGBC" title="branch 0 was taken 333 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 47 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 286 times"> + </span>]:<span class="tlaGNC">         333 :   if (!word.empty() &amp;&amp; word.front() == '!') {</span></span>
+<span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">         335 : QueryTerm ParseTerm(std::string word) {</span></span>
+<span id="L135"><span class="lineNum">     135</span>                 :<span class="tlaGNC">         335 :   QueryTerm term;</span></span>
+<span id="L136"><span class="lineNum">     136</span> [<span class="tlaGBC" title="branch 0 was taken 335 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 47 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 288 times"> + </span>]:<span class="tlaGNC">         335 :   if (!word.empty() &amp;&amp; word.front() == '!') {</span></span>
 <span id="L137"><span class="lineNum">     137</span>                 :<span class="tlaGNC">          47 :     term.inverse = true;</span></span>
 <span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">          47 :     term.kind = TermKind::kExact;</span></span>
 <span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">          47 :     word.erase(word.begin());</span></span>
@@ -226,57 +226,57 @@
 <span id="L141"><span class="lineNum">     141</span>                 :             :   // Keep this precedence in lockstep with fzf's parseTerms: suffix is recognized before quote,</span>
 <span id="L142"><span class="lineNum">     142</span>                 :             :   // and a leading quote is considered before prefix. Combinations such as `!'fuzzy`, `'word'`,</span>
 <span id="L143"><span class="lineNum">     143</span>                 :             :   // and `^equal$` otherwise acquire subtly different meanings.</span>
-<span id="L144"><span class="lineNum">     144</span> [<span class="tlaGBC" title="branch 0 was taken 332 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 331 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">         333 :   const bool suffix = word != &quot;$&quot; &amp;&amp; !word.empty() &amp;&amp; word.back() == '$';</span></span>
-<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 75 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 256 times"> + </span>]
-<span id="L145"><span class="lineNum">     145</span>         [<span class="tlaGBC" title="branch 0 was taken 75 times"> + </span><span class="tlaGBC" title="branch 1 was taken 258 times"> + </span>]:<span class="tlaGNC">         333 :   if (suffix) {</span></span>
+<span id="L144"><span class="lineNum">     144</span> [<span class="tlaGBC" title="branch 0 was taken 334 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 333 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">         335 :   const bool suffix = word != &quot;$&quot; &amp;&amp; !word.empty() &amp;&amp; word.back() == '$';</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 75 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 258 times"> + </span>]
+<span id="L145"><span class="lineNum">     145</span>         [<span class="tlaGBC" title="branch 0 was taken 75 times"> + </span><span class="tlaGBC" title="branch 1 was taken 260 times"> + </span>]:<span class="tlaGNC">         335 :   if (suffix) {</span></span>
 <span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">          75 :     word.pop_back();</span></span>
 <span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">          75 :     term.kind = TermKind::kSuffix;</span></span>
 <span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">          75 :   }</span></span>
-<span id="L149"><span class="lineNum">     149</span> [<span class="tlaGBC" title="branch 0 was taken 298 times"> + </span><span class="tlaGBC" title="branch 1 was taken 35 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 30 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 268 times"> + </span>]:<span class="tlaGNC">         333 :   if (word.size() &gt; 2 &amp;&amp; word.front() == '\'' &amp;&amp; word.back() == '\'') {</span></span>
+<span id="L149"><span class="lineNum">     149</span> [<span class="tlaGBC" title="branch 0 was taken 300 times"> + </span><span class="tlaGBC" title="branch 1 was taken 35 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 30 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 270 times"> + </span>]:<span class="tlaGNC">         335 :   if (word.size() &gt; 2 &amp;&amp; word.front() == '\'' &amp;&amp; word.back() == '\'') {</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 8 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 22 times"> + </span>]
 <span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">           8 :     word = word.substr(1, word.size() - 2);</span></span>
 <span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">           8 :     term.kind = TermKind::kBoundary;</span></span>
-<span id="L152"><span class="lineNum">     152</span> [<span class="tlaGBC" title="branch 0 was taken 324 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 23 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 301 times"> + </span>]:<span class="tlaGNC">         325 :   } else if (!word.empty() &amp;&amp; word.front() == '\'') {</span></span>
+<span id="L152"><span class="lineNum">     152</span> [<span class="tlaGBC" title="branch 0 was taken 326 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 23 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 303 times"> + </span>]:<span class="tlaGNC">         327 :   } else if (!word.empty() &amp;&amp; word.front() == '\'') {</span></span>
 <span id="L153"><span class="lineNum">     153</span>                 :<span class="tlaGNC">          23 :     word.erase(word.begin());</span></span>
 <span id="L154"><span class="lineNum">     154</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 16 times"> + </span>]:<span class="tlaGNC">          23 :     term.kind = term.inverse ? TermKind::kFuzzy : TermKind::kExact;</span></span>
-<span id="L155"><span class="lineNum">     155</span> [<span class="tlaGBC" title="branch 0 was taken 301 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 59 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 242 times"> + </span>]:<span class="tlaGNC">         302 :   } else if (!word.empty() &amp;&amp; word.front() == '^') {</span></span>
+<span id="L155"><span class="lineNum">     155</span> [<span class="tlaGBC" title="branch 0 was taken 303 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 59 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 244 times"> + </span>]:<span class="tlaGNC">         304 :   } else if (!word.empty() &amp;&amp; word.front() == '^') {</span></span>
 <span id="L156"><span class="lineNum">     156</span>                 :<span class="tlaGNC">          59 :     word.erase(word.begin());</span></span>
 <span id="L157"><span class="lineNum">     157</span>         [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 47 times"> + </span>]:<span class="tlaGNC">          59 :     term.kind = suffix ? TermKind::kEqual : TermKind::kPrefix;</span></span>
 <span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">          59 :   }</span></span>
-<span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaGNC">         333 :   term.text = std::move(word);</span></span>
-<span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">         333 :   return term;</span></span>
-<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">         333 : }</span></span>
+<span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaGNC">         335 :   term.text = std::move(word);</span></span>
+<span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">         335 :   return term;</span></span>
+<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">         335 : }</span></span>
 <span id="L162"><span class="lineNum">     162</span>                 :             : </span>
-<span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">         189 : std::vector&lt;OrGroup&gt; ParseQuery(std::string_view query) {</span></span>
-<span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">         189 :   const std::vector&lt;std::string&gt; words = SplitQuery(query);</span></span>
-<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">         189 :   std::vector&lt;OrGroup&gt; groups;</span></span>
-<span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">         189 :   OrGroup group;</span></span>
-<span id="L167"><span class="lineNum">     167</span>                 :<span class="tlaGNC">         189 :   bool starts_next_group = false;</span></span>
-<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">         189 :   bool after_bar = false;</span></span>
-<span id="L169"><span class="lineNum">     169</span>         [<span class="tlaGBC" title="branch 0 was taken 389 times"> + </span><span class="tlaGBC" title="branch 1 was taken 189 times"> + </span>]:<span class="tlaGNC">         389 :   for (const std::string&amp; word : words) {</span></span>
-<span id="L170"><span class="lineNum">     170</span> [<span class="tlaGBC" title="branch 0 was taken 201 times"> + </span><span class="tlaGBC" title="branch 1 was taken 188 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 153 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 48 times"> + </span>]:<span class="tlaGNC">         389 :     if (!group.empty() &amp;&amp; !after_bar &amp;&amp; word == &quot;|&quot;) {</span></span>
+<span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">         191 : std::vector&lt;OrGroup&gt; ParseQuery(std::string_view query) {</span></span>
+<span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">         191 :   const std::vector&lt;std::string&gt; words = SplitQuery(query);</span></span>
+<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">         191 :   std::vector&lt;OrGroup&gt; groups;</span></span>
+<span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">         191 :   OrGroup group;</span></span>
+<span id="L167"><span class="lineNum">     167</span>                 :<span class="tlaGNC">         191 :   bool starts_next_group = false;</span></span>
+<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">         191 :   bool after_bar = false;</span></span>
+<span id="L169"><span class="lineNum">     169</span>         [<span class="tlaGBC" title="branch 0 was taken 391 times"> + </span><span class="tlaGBC" title="branch 1 was taken 191 times"> + </span>]:<span class="tlaGNC">         391 :   for (const std::string&amp; word : words) {</span></span>
+<span id="L170"><span class="lineNum">     170</span> [<span class="tlaGBC" title="branch 0 was taken 201 times"> + </span><span class="tlaGBC" title="branch 1 was taken 190 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 153 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 48 times"> + </span>]:<span class="tlaGNC">         391 :     if (!group.empty() &amp;&amp; !after_bar &amp;&amp; word == &quot;|&quot;) {</span></span>
 <span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 56 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 97 times"> + </span>]
 <span id="L171"><span class="lineNum">     171</span>                 :<span class="tlaGNC">          56 :       starts_next_group = false;</span></span>
 <span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">          56 :       after_bar = true;</span></span>
 <span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">          56 :       continue;</span></span>
 <span id="L174"><span class="lineNum">     174</span>                 :<span class="tlaGNC">          56 :     }</span></span>
-<span id="L175"><span class="lineNum">     175</span>                 :<span class="tlaGNC">         333 :     after_bar = false;</span></span>
-<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">         333 :     QueryTerm term = ParseTerm(word);</span></span>
-<span id="L177"><span class="lineNum">     177</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 331 times"> + </span>]:<span class="tlaGNC">         333 :     if (term.text.empty()) {</span></span>
+<span id="L175"><span class="lineNum">     175</span>                 :<span class="tlaGNC">         335 :     after_bar = false;</span></span>
+<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">         335 :     QueryTerm term = ParseTerm(word);</span></span>
+<span id="L177"><span class="lineNum">     177</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 333 times"> + </span>]:<span class="tlaGNC">         335 :     if (term.text.empty()) {</span></span>
 <span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC">           2 :       continue;</span></span>
 <span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">           2 :     }</span></span>
-<span id="L180"><span class="lineNum">     180</span>         [<span class="tlaGBC" title="branch 0 was taken 97 times"> + </span><span class="tlaGBC" title="branch 1 was taken 234 times"> + </span>]:<span class="tlaGNC">         331 :     if (starts_next_group) {</span></span>
+<span id="L180"><span class="lineNum">     180</span>         [<span class="tlaGBC" title="branch 0 was taken 97 times"> + </span><span class="tlaGBC" title="branch 1 was taken 236 times"> + </span>]:<span class="tlaGNC">         333 :     if (starts_next_group) {</span></span>
 <span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">          97 :       groups.push_back(std::move(group));</span></span>
 <span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">          97 :       group.clear();</span></span>
 <span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">          97 :     }</span></span>
-<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">         331 :     group.push_back(std::move(term));</span></span>
-<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">         331 :     starts_next_group = true;</span></span>
-<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">         331 :   }</span></span>
-<span id="L187"><span class="lineNum">     187</span>         [<span class="tlaGBC" title="branch 0 was taken 186 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">         189 :   if (!group.empty()) {</span></span>
-<span id="L188"><span class="lineNum">     188</span>                 :<span class="tlaGNC">         186 :     groups.push_back(std::move(group));</span></span>
-<span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">         186 :   }</span></span>
-<span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">         189 :   return groups;</span></span>
-<span id="L191"><span class="lineNum">     191</span>                 :<span class="tlaGNC">         189 : }</span></span>
+<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">         333 :     group.push_back(std::move(term));</span></span>
+<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">         333 :     starts_next_group = true;</span></span>
+<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">         333 :   }</span></span>
+<span id="L187"><span class="lineNum">     187</span>         [<span class="tlaGBC" title="branch 0 was taken 188 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">         191 :   if (!group.empty()) {</span></span>
+<span id="L188"><span class="lineNum">     188</span>                 :<span class="tlaGNC">         188 :     groups.push_back(std::move(group));</span></span>
+<span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">         188 :   }</span></span>
+<span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">         191 :   return groups;</span></span>
+<span id="L191"><span class="lineNum">     191</span>                 :<span class="tlaGNC">         191 : }</span></span>
 <span id="L192"><span class="lineNum">     192</span>                 :             : </span>
 <span id="L193"><span class="lineNum">     193</span>                 :<span class="tlaGNC">           9 : bool IsBoundary(char chr) {</span></span>
 <span id="L194"><span class="lineNum">     194</span>                 :<span class="tlaGNC">           9 :   return !absl::ascii_isalnum(static_cast&lt;unsigned char&gt;(chr));</span></span>
@@ -294,10 +294,10 @@
 <span id="L204"><span class="lineNum">     204</span>                 :<span class="tlaGNC">          96 :   return text;</span></span>
 <span id="L205"><span class="lineNum">     205</span>                 :<span class="tlaGNC">          96 : }</span></span>
 <span id="L206"><span class="lineNum">     206</span>                 :             : </span>
-<span id="L207"><span class="lineNum">     207</span>                 :<span class="tlaGNC">         287 : std::optional&lt;int&gt; PositiveTermPercent(const QueryTerm&amp; term, std::string_view text, bool fold_case) {</span></span>
-<span id="L208"><span class="lineNum">     208</span>         [<span class="tlaGBC" title="branch 0 was taken 153 times"> + </span><span class="tlaGBC" title="branch 1 was taken 134 times"> + </span>]:<span class="tlaGNC">         287 :   if (term.kind == TermKind::kFuzzy) {</span></span>
-<span id="L209"><span class="lineNum">     209</span>                 :<span class="tlaGNC">         153 :     return Percent(term.text, text, fold_case);</span></span>
-<span id="L210"><span class="lineNum">     210</span>                 :<span class="tlaGNC">         153 :   }</span></span>
+<span id="L207"><span class="lineNum">     207</span>                 :<span class="tlaGNC">         289 : std::optional&lt;int&gt; PositiveTermPercent(const QueryTerm&amp; term, std::string_view text, bool fold_case) {</span></span>
+<span id="L208"><span class="lineNum">     208</span>         [<span class="tlaGBC" title="branch 0 was taken 155 times"> + </span><span class="tlaGBC" title="branch 1 was taken 134 times"> + </span>]:<span class="tlaGNC">         289 :   if (term.kind == TermKind::kFuzzy) {</span></span>
+<span id="L209"><span class="lineNum">     209</span>                 :<span class="tlaGNC">         155 :     return Percent(term.text, text, fold_case);</span></span>
+<span id="L210"><span class="lineNum">     210</span>                 :<span class="tlaGNC">         155 :   }</span></span>
 <span id="L211"><span class="lineNum">     211</span>                 :<span class="tlaGNC">         134 :   const std::optional&lt;std::size_t&gt; found = FindText(term.text, text, fold_case);</span></span>
 <span id="L212"><span class="lineNum">     212</span>                 :<span class="tlaGNC">         134 :   bool matched = found.has_value();</span></span>
 <span id="L213"><span class="lineNum">     213</span>         [<span class="tlaGBC" title="branch 0 was taken 134 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">         134 :   switch (term.kind) {</span></span>
@@ -345,93 +345,93 @@
 <span id="L254"><span class="lineNum">     254</span>                 :             :     bool fold_case,</span>
 <span id="L255"><span class="lineNum">     255</span>                 :             :     bool first,</span>
 <span id="L256"><span class="lineNum">     256</span>                 :             :     const std::vector&lt;int&gt;&amp; previous,</span>
-<span id="L257"><span class="lineNum">     257</span>                 :<span class="tlaGNC">        1529 :     std::vector&lt;int&gt;&amp; best) {</span></span>
+<span id="L257"><span class="lineNum">     257</span>                 :<span class="tlaGNC">        1545 :     std::vector&lt;int&gt;&amp; best) {</span></span>
 <span id="L258"><span class="lineNum">     258</span>                 :             :   // `reachable` carries the best score of any earlier alignment of the previous character, already</span>
 <span id="L259"><span class="lineNum">     259</span>                 :             :   // charged the gap penalty for the distance travelled. Updating it as the position advances is what</span>
 <span id="L260"><span class="lineNum">     260</span>                 :             :   // keeps this linear in the text rather than quadratic.</span>
-<span id="L261"><span class="lineNum">     261</span>                 :<span class="tlaGNC">        1529 :   int reachable = kUnmatched;</span></span>
-<span id="L262"><span class="lineNum">     262</span>         [<span class="tlaGBC" title="branch 0 was taken 14519 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1529 times"> + </span>]:<span class="tlaGNC">       16048 :   for (std::string_view::size_type at = 0; at &lt; text.size(); ++at) {</span></span>
-<span id="L263"><span class="lineNum">     263</span>         [<span class="tlaGBC" title="branch 0 was taken 12990 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1529 times"> + </span>]:<span class="tlaGNC">       14519 :     if (at &gt; 0) {</span></span>
-<span id="L264"><span class="lineNum">     264</span>                 :<span class="tlaGNC">       12990 :       reachable = std::max(reachable - kGap, previous[at - 1]);</span></span>
-<span id="L265"><span class="lineNum">     265</span>                 :<span class="tlaGNC">       12990 :     }</span></span>
-<span id="L266"><span class="lineNum">     266</span>         [<span class="tlaGBC" title="branch 0 was taken 12311 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2208 times"> + </span>]:<span class="tlaGNC">       14519 :     if (!SameChar(text[at], want, fold_case)) {</span></span>
-<span id="L267"><span class="lineNum">     267</span>                 :<span class="tlaGNC">       12311 :       best[at] = kUnmatched;</span></span>
-<span id="L268"><span class="lineNum">     268</span>                 :<span class="tlaGNC">       12311 :       continue;</span></span>
-<span id="L269"><span class="lineNum">     269</span>                 :<span class="tlaGNC">       12311 :     }</span></span>
-<span id="L270"><span class="lineNum">     270</span>         [<span class="tlaGBC" title="branch 0 was taken 670 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1538 times"> + </span>]:<span class="tlaGNC">        2208 :     const int here = kMatch + (IsWordStart(text, at) ? kWordStart : 0);</span></span>
-<span id="L271"><span class="lineNum">     271</span>         [<span class="tlaGBC" title="branch 0 was taken 529 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1679 times"> + </span>]:<span class="tlaGNC">        2208 :     if (first) {</span></span>
+<span id="L261"><span class="lineNum">     261</span>                 :<span class="tlaGNC">        1545 :   int reachable = kUnmatched;</span></span>
+<span id="L262"><span class="lineNum">     262</span>         [<span class="tlaGBC" title="branch 0 was taken 14615 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1545 times"> + </span>]:<span class="tlaGNC">       16160 :   for (std::string_view::size_type at = 0; at &lt; text.size(); ++at) {</span></span>
+<span id="L263"><span class="lineNum">     263</span>         [<span class="tlaGBC" title="branch 0 was taken 13070 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1545 times"> + </span>]:<span class="tlaGNC">       14615 :     if (at &gt; 0) {</span></span>
+<span id="L264"><span class="lineNum">     264</span>                 :<span class="tlaGNC">       13070 :       reachable = std::max(reachable - kGap, previous[at - 1]);</span></span>
+<span id="L265"><span class="lineNum">     265</span>                 :<span class="tlaGNC">       13070 :     }</span></span>
+<span id="L266"><span class="lineNum">     266</span>         [<span class="tlaGBC" title="branch 0 was taken 12391 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2224 times"> + </span>]:<span class="tlaGNC">       14615 :     if (!SameChar(text[at], want, fold_case)) {</span></span>
+<span id="L267"><span class="lineNum">     267</span>                 :<span class="tlaGNC">       12391 :       best[at] = kUnmatched;</span></span>
+<span id="L268"><span class="lineNum">     268</span>                 :<span class="tlaGNC">       12391 :       continue;</span></span>
+<span id="L269"><span class="lineNum">     269</span>                 :<span class="tlaGNC">       12391 :     }</span></span>
+<span id="L270"><span class="lineNum">     270</span>         [<span class="tlaGBC" title="branch 0 was taken 674 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1550 times"> + </span>]:<span class="tlaGNC">        2224 :     const int here = kMatch + (IsWordStart(text, at) ? kWordStart : 0);</span></span>
+<span id="L271"><span class="lineNum">     271</span>         [<span class="tlaGBC" title="branch 0 was taken 533 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1691 times"> + </span>]:<span class="tlaGNC">        2224 :     if (first) {</span></span>
 <span id="L272"><span class="lineNum">     272</span>                 :             :       // The first character may start anywhere, but the later it starts the worse it scores.</span>
-<span id="L273"><span class="lineNum">     273</span>                 :<span class="tlaGNC">         529 :       best[at] = here - (kGap * static_cast&lt;int&gt;(at));</span></span>
-<span id="L274"><span class="lineNum">     274</span>                 :<span class="tlaGNC">         529 :       continue;</span></span>
-<span id="L275"><span class="lineNum">     275</span>                 :<span class="tlaGNC">         529 :     }</span></span>
-<span id="L276"><span class="lineNum">     276</span> [<span class="tlaGBC" title="branch 0 was taken 1583 times"> + </span><span class="tlaGBC" title="branch 1 was taken 96 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 909 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 674 times"> + </span>]:<span class="tlaGNC">        1679 :     const int consecutive = at &gt; 0 &amp;&amp; previous[at - 1] != kUnmatched ? previous[at - 1] + kConsecutive : kUnmatched;</span></span>
-<span id="L277"><span class="lineNum">     277</span>                 :<span class="tlaGNC">        1679 :     const int from = std::max(reachable, consecutive);</span></span>
-<span id="L278"><span class="lineNum">     278</span>         [<span class="tlaGBC" title="branch 0 was taken 475 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1204 times"> + </span>]:<span class="tlaGNC">        1679 :     best[at] = from == kUnmatched ? kUnmatched : from + here;</span></span>
-<span id="L279"><span class="lineNum">     279</span>                 :<span class="tlaGNC">        1679 :   }</span></span>
-<span id="L280"><span class="lineNum">     280</span>                 :<span class="tlaGNC">        1529 : }</span></span>
+<span id="L273"><span class="lineNum">     273</span>                 :<span class="tlaGNC">         533 :       best[at] = here - (kGap * static_cast&lt;int&gt;(at));</span></span>
+<span id="L274"><span class="lineNum">     274</span>                 :<span class="tlaGNC">         533 :       continue;</span></span>
+<span id="L275"><span class="lineNum">     275</span>                 :<span class="tlaGNC">         533 :     }</span></span>
+<span id="L276"><span class="lineNum">     276</span> [<span class="tlaGBC" title="branch 0 was taken 1595 times"> + </span><span class="tlaGBC" title="branch 1 was taken 96 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 921 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 674 times"> + </span>]:<span class="tlaGNC">        1691 :     const int consecutive = at &gt; 0 &amp;&amp; previous[at - 1] != kUnmatched ? previous[at - 1] + kConsecutive : kUnmatched;</span></span>
+<span id="L277"><span class="lineNum">     277</span>                 :<span class="tlaGNC">        1691 :     const int from = std::max(reachable, consecutive);</span></span>
+<span id="L278"><span class="lineNum">     278</span>         [<span class="tlaGBC" title="branch 0 was taken 475 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1216 times"> + </span>]:<span class="tlaGNC">        1691 :     best[at] = from == kUnmatched ? kUnmatched : from + here;</span></span>
+<span id="L279"><span class="lineNum">     279</span>                 :<span class="tlaGNC">        1691 :   }</span></span>
+<span id="L280"><span class="lineNum">     280</span>                 :<span class="tlaGNC">        1545 : }</span></span>
 <span id="L281"><span class="lineNum">     281</span>                 :             : </span>
 <span id="L282"><span class="lineNum">     282</span>                 :             : }  // namespace</span>
 <span id="L283"><span class="lineNum">     283</span>                 :             : </span>
-<span id="L284"><span class="lineNum">     284</span>                 :<span class="tlaGNC">         409 : std::optional&lt;int&gt; Score(std::string_view pattern, std::string_view text, bool fold_case) {</span></span>
-<span id="L285"><span class="lineNum">     285</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 406 times"> + </span>]:<span class="tlaGNC">         409 :   if (pattern.empty()) {</span></span>
+<span id="L284"><span class="lineNum">     284</span>                 :<span class="tlaGNC">         413 : std::optional&lt;int&gt; Score(std::string_view pattern, std::string_view text, bool fold_case) {</span></span>
+<span id="L285"><span class="lineNum">     285</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 410 times"> + </span>]:<span class="tlaGNC">         413 :   if (pattern.empty()) {</span></span>
 <span id="L286"><span class="lineNum">     286</span>                 :<span class="tlaGNC">           3 :     return 0;  // matches, and says nothing about how well - see Matches</span></span>
 <span id="L287"><span class="lineNum">     287</span>                 :<span class="tlaGNC">           3 :   }</span></span>
-<span id="L288"><span class="lineNum">     288</span>         [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 402 times"> + </span>]:<span class="tlaGNC">         406 :   if (pattern.size() &gt; text.size()) {</span></span>
+<span id="L288"><span class="lineNum">     288</span>         [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 406 times"> + </span>]:<span class="tlaGNC">         410 :   if (pattern.size() &gt; text.size()) {</span></span>
 <span id="L289"><span class="lineNum">     289</span>                 :<span class="tlaGNC">           4 :     return std::nullopt;</span></span>
 <span id="L290"><span class="lineNum">     290</span>                 :<span class="tlaGNC">           4 :   }</span></span>
 <span id="L291"><span class="lineNum">     291</span>                 :             :   // Two rows are enough, because a pattern character can only follow the one before it.</span>
-<span id="L292"><span class="lineNum">     292</span>                 :<span class="tlaGNC">         402 :   std::vector&lt;int&gt; previous(text.size(), kUnmatched);</span></span>
-<span id="L293"><span class="lineNum">     293</span>                 :<span class="tlaGNC">         402 :   std::vector&lt;int&gt; best(text.size(), kUnmatched);</span></span>
-<span id="L294"><span class="lineNum">     294</span>         [<span class="tlaGBC" title="branch 0 was taken 1529 times"> + </span><span class="tlaGBC" title="branch 1 was taken 402 times"> + </span>]:<span class="tlaGNC">        1931 :   for (std::string_view::size_type i = 0; i &lt; pattern.size(); ++i) {</span></span>
-<span id="L295"><span class="lineNum">     295</span>                 :<span class="tlaGNC">        1529 :     ScoreRow(text, pattern[i], fold_case, /*first=*/i == 0, previous, best);</span></span>
-<span id="L296"><span class="lineNum">     296</span>                 :<span class="tlaGNC">        1529 :     previous.swap(best);</span></span>
-<span id="L297"><span class="lineNum">     297</span>                 :<span class="tlaGNC">        1529 :   }</span></span>
-<span id="L298"><span class="lineNum">     298</span>                 :<span class="tlaGNC">         402 :   const auto found = absl::c_max_element(previous);</span></span>
-<span id="L299"><span class="lineNum">     299</span> [<span class="tlaGBC" title="branch 0 was taken 67 times"> + </span><span class="tlaGBC" title="branch 1 was taken 737 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 67 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 335 times"> + </span>]:<span class="tlaGNC">         402 :   if (found == previous.end() || *found == kUnmatched) {</span></span>
+<span id="L292"><span class="lineNum">     292</span>                 :<span class="tlaGNC">         406 :   std::vector&lt;int&gt; previous(text.size(), kUnmatched);</span></span>
+<span id="L293"><span class="lineNum">     293</span>                 :<span class="tlaGNC">         406 :   std::vector&lt;int&gt; best(text.size(), kUnmatched);</span></span>
+<span id="L294"><span class="lineNum">     294</span>         [<span class="tlaGBC" title="branch 0 was taken 1545 times"> + </span><span class="tlaGBC" title="branch 1 was taken 406 times"> + </span>]:<span class="tlaGNC">        1951 :   for (std::string_view::size_type i = 0; i &lt; pattern.size(); ++i) {</span></span>
+<span id="L295"><span class="lineNum">     295</span>                 :<span class="tlaGNC">        1545 :     ScoreRow(text, pattern[i], fold_case, /*first=*/i == 0, previous, best);</span></span>
+<span id="L296"><span class="lineNum">     296</span>                 :<span class="tlaGNC">        1545 :     previous.swap(best);</span></span>
+<span id="L297"><span class="lineNum">     297</span>                 :<span class="tlaGNC">        1545 :   }</span></span>
+<span id="L298"><span class="lineNum">     298</span>                 :<span class="tlaGNC">         406 :   const auto found = absl::c_max_element(previous);</span></span>
+<span id="L299"><span class="lineNum">     299</span> [<span class="tlaGBC" title="branch 0 was taken 67 times"> + </span><span class="tlaGBC" title="branch 1 was taken 745 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 67 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 339 times"> + </span>]:<span class="tlaGNC">         406 :   if (found == previous.end() || *found == kUnmatched) {</span></span>
 <span id="L300"><span class="lineNum">     300</span>                 :<span class="tlaGNC">          67 :     return std::nullopt;</span></span>
 <span id="L301"><span class="lineNum">     301</span>                 :<span class="tlaGNC">          67 :   }</span></span>
-<span id="L302"><span class="lineNum">     302</span>                 :<span class="tlaGNC">         335 :   return *found;</span></span>
-<span id="L303"><span class="lineNum">     303</span>                 :<span class="tlaGNC">         402 : }</span></span>
+<span id="L302"><span class="lineNum">     302</span>                 :<span class="tlaGNC">         339 :   return *found;</span></span>
+<span id="L303"><span class="lineNum">     303</span>                 :<span class="tlaGNC">         406 : }</span></span>
 <span id="L304"><span class="lineNum">     304</span>                 :             : </span>
-<span id="L305"><span class="lineNum">     305</span>                 :<span class="tlaGNC">         225 : std::optional&lt;int&gt; Percent(std::string_view pattern, std::string_view text, bool fold_case) {</span></span>
-<span id="L306"><span class="lineNum">     306</span>                 :<span class="tlaGNC">         225 :   const std::optional&lt;int&gt; score = Score(pattern, text, fold_case);</span></span>
-<span id="L307"><span class="lineNum">     307</span>         [<span class="tlaGBC" title="branch 0 was taken 66 times"> + </span><span class="tlaGBC" title="branch 1 was taken 159 times"> + </span>]:<span class="tlaGNC">         225 :   if (!score.has_value()) {</span></span>
+<span id="L305"><span class="lineNum">     305</span>                 :<span class="tlaGNC">         227 : std::optional&lt;int&gt; Percent(std::string_view pattern, std::string_view text, bool fold_case) {</span></span>
+<span id="L306"><span class="lineNum">     306</span>                 :<span class="tlaGNC">         227 :   const std::optional&lt;int&gt; score = Score(pattern, text, fold_case);</span></span>
+<span id="L307"><span class="lineNum">     307</span>         [<span class="tlaGBC" title="branch 0 was taken 66 times"> + </span><span class="tlaGBC" title="branch 1 was taken 161 times"> + </span>]:<span class="tlaGNC">         227 :   if (!score.has_value()) {</span></span>
 <span id="L308"><span class="lineNum">     308</span>                 :<span class="tlaGNC">          66 :     return std::nullopt;</span></span>
 <span id="L309"><span class="lineNum">     309</span>                 :<span class="tlaGNC">          66 :   }</span></span>
-<span id="L310"><span class="lineNum">     310</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 158 times"> + </span>]:<span class="tlaGNC">         159 :   if (pattern.empty()) {</span></span>
+<span id="L310"><span class="lineNum">     310</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 160 times"> + </span>]:<span class="tlaGNC">         161 :   if (pattern.empty()) {</span></span>
 <span id="L311"><span class="lineNum">     311</span>                 :<span class="tlaGNC">           1 :     return 100;</span></span>
 <span id="L312"><span class="lineNum">     312</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L313"><span class="lineNum">     313</span>                 :<span class="tlaGNC">         158 :   const std::optional&lt;int&gt; ceiling = Score(pattern, pattern, fold_case);</span></span>
-<span id="L314"><span class="lineNum">     314</span> [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 158 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 158 times"> + </span>]:<span class="tlaGNC">         158 :   if (!ceiling.has_value() || *ceiling &lt;= 0) {</span></span>
+<span id="L313"><span class="lineNum">     313</span>                 :<span class="tlaGNC">         160 :   const std::optional&lt;int&gt; ceiling = Score(pattern, pattern, fold_case);</span></span>
+<span id="L314"><span class="lineNum">     314</span> [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 160 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 160 times"> + </span>]:<span class="tlaGNC">         160 :   if (!ceiling.has_value() || *ceiling &lt;= 0) {</span></span>
 <span id="L315"><span class="lineNum">     315</span>                 :<span class="tlaUNC">           0 :     return std::nullopt;</span></span>
 <span id="L316"><span class="lineNum">     316</span>                 :<span class="tlaUNC">           0 :   }</span></span>
-<span id="L317"><span class="lineNum">     317</span>                 :<span class="tlaGNC">         158 :   const std::int64_t scaled = (static_cast&lt;std::int64_t&gt;(*score) * 100) / *ceiling;</span></span>
-<span id="L318"><span class="lineNum">     318</span>                 :<span class="tlaGNC">         158 :   return static_cast&lt;int&gt;(std::clamp&lt;std::int64_t&gt;(scaled, 0, 100));</span></span>
-<span id="L319"><span class="lineNum">     319</span>                 :<span class="tlaGNC">         158 : }</span></span>
+<span id="L317"><span class="lineNum">     317</span>                 :<span class="tlaGNC">         160 :   const std::int64_t scaled = (static_cast&lt;std::int64_t&gt;(*score) * 100) / *ceiling;</span></span>
+<span id="L318"><span class="lineNum">     318</span>                 :<span class="tlaGNC">         160 :   return static_cast&lt;int&gt;(std::clamp&lt;std::int64_t&gt;(scaled, 0, 100));</span></span>
+<span id="L319"><span class="lineNum">     319</span>                 :<span class="tlaGNC">         160 : }</span></span>
 <span id="L320"><span class="lineNum">     320</span>                 :             : </span>
-<span id="L321"><span class="lineNum">     321</span>                 :<span class="tlaGNC">         189 : std::optional&lt;int&gt; FzfPercent(std::string_view query, std::string_view text, bool fold_case) {</span></span>
-<span id="L322"><span class="lineNum">     322</span>                 :<span class="tlaGNC">         189 :   const std::vector&lt;OrGroup&gt; groups = ParseQuery(query);</span></span>
-<span id="L323"><span class="lineNum">     323</span>                 :<span class="tlaGNC">         189 :   int query_score = 100;</span></span>
-<span id="L324"><span class="lineNum">     324</span>         [<span class="tlaGBC" title="branch 0 was taken 255 times"> + </span><span class="tlaGBC" title="branch 1 was taken 107 times"> + </span>]:<span class="tlaGNC">         255 :   for (const OrGroup&amp; group : groups) {</span></span>
-<span id="L325"><span class="lineNum">     325</span>                 :<span class="tlaGNC">         255 :     std::optional&lt;int&gt; group_score;</span></span>
-<span id="L326"><span class="lineNum">     326</span>                 :<span class="tlaGNC">         255 :     bool matched = false;</span></span>
-<span id="L327"><span class="lineNum">     327</span>         [<span class="tlaGBC" title="branch 0 was taken 287 times"> + </span><span class="tlaGBC" title="branch 1 was taken 255 times"> + </span>]:<span class="tlaGNC">         287 :     for (const QueryTerm&amp; term : group) {</span></span>
-<span id="L328"><span class="lineNum">     328</span>                 :<span class="tlaGNC">         287 :       const std::optional&lt;int&gt; positive = PositiveTermPercent(term, text, fold_case);</span></span>
-<span id="L329"><span class="lineNum">     329</span>         [<span class="tlaGBC" title="branch 0 was taken 30 times"> + </span><span class="tlaGBC" title="branch 1 was taken 257 times"> + </span>]:<span class="tlaGNC">         287 :       const bool term_matches = term.inverse ? !positive.has_value() : positive.has_value();</span></span>
-<span id="L330"><span class="lineNum">     330</span>         [<span class="tlaGBC" title="branch 0 was taken 114 times"> + </span><span class="tlaGBC" title="branch 1 was taken 173 times"> + </span>]:<span class="tlaGNC">         287 :       if (!term_matches) {</span></span>
+<span id="L321"><span class="lineNum">     321</span>                 :<span class="tlaGNC">         191 : std::optional&lt;int&gt; FzfPercent(std::string_view query, std::string_view text, bool fold_case) {</span></span>
+<span id="L322"><span class="lineNum">     322</span>                 :<span class="tlaGNC">         191 :   const std::vector&lt;OrGroup&gt; groups = ParseQuery(query);</span></span>
+<span id="L323"><span class="lineNum">     323</span>                 :<span class="tlaGNC">         191 :   int query_score = 100;</span></span>
+<span id="L324"><span class="lineNum">     324</span>         [<span class="tlaGBC" title="branch 0 was taken 257 times"> + </span><span class="tlaGBC" title="branch 1 was taken 109 times"> + </span>]:<span class="tlaGNC">         257 :   for (const OrGroup&amp; group : groups) {</span></span>
+<span id="L325"><span class="lineNum">     325</span>                 :<span class="tlaGNC">         257 :     std::optional&lt;int&gt; group_score;</span></span>
+<span id="L326"><span class="lineNum">     326</span>                 :<span class="tlaGNC">         257 :     bool matched = false;</span></span>
+<span id="L327"><span class="lineNum">     327</span>         [<span class="tlaGBC" title="branch 0 was taken 289 times"> + </span><span class="tlaGBC" title="branch 1 was taken 257 times"> + </span>]:<span class="tlaGNC">         289 :     for (const QueryTerm&amp; term : group) {</span></span>
+<span id="L328"><span class="lineNum">     328</span>                 :<span class="tlaGNC">         289 :       const std::optional&lt;int&gt; positive = PositiveTermPercent(term, text, fold_case);</span></span>
+<span id="L329"><span class="lineNum">     329</span>         [<span class="tlaGBC" title="branch 0 was taken 30 times"> + </span><span class="tlaGBC" title="branch 1 was taken 259 times"> + </span>]:<span class="tlaGNC">         289 :       const bool term_matches = term.inverse ? !positive.has_value() : positive.has_value();</span></span>
+<span id="L330"><span class="lineNum">     330</span>         [<span class="tlaGBC" title="branch 0 was taken 114 times"> + </span><span class="tlaGBC" title="branch 1 was taken 175 times"> + </span>]:<span class="tlaGNC">         289 :       if (!term_matches) {</span></span>
 <span id="L331"><span class="lineNum">     331</span>                 :<span class="tlaGNC">         114 :         continue;</span></span>
 <span id="L332"><span class="lineNum">     332</span>                 :<span class="tlaGNC">         114 :       }</span></span>
-<span id="L333"><span class="lineNum">     333</span>                 :<span class="tlaGNC">         173 :       matched = true;</span></span>
-<span id="L334"><span class="lineNum">     334</span>                 :<span class="tlaGNC">         173 :       const int score = positive.value_or(100);</span></span>
-<span id="L335"><span class="lineNum">     335</span>                 :<span class="tlaGNC">         173 :       group_score = std::max(group_score.value_or(0), score);</span></span>
-<span id="L336"><span class="lineNum">     336</span>                 :<span class="tlaGNC">         173 :     }</span></span>
-<span id="L337"><span class="lineNum">     337</span>         [<span class="tlaGBC" title="branch 0 was taken 82 times"> + </span><span class="tlaGBC" title="branch 1 was taken 173 times"> + </span>]:<span class="tlaGNC">         255 :     if (!matched) {</span></span>
+<span id="L333"><span class="lineNum">     333</span>                 :<span class="tlaGNC">         175 :       matched = true;</span></span>
+<span id="L334"><span class="lineNum">     334</span>                 :<span class="tlaGNC">         175 :       const int score = positive.value_or(100);</span></span>
+<span id="L335"><span class="lineNum">     335</span>                 :<span class="tlaGNC">         175 :       group_score = std::max(group_score.value_or(0), score);</span></span>
+<span id="L336"><span class="lineNum">     336</span>                 :<span class="tlaGNC">         175 :     }</span></span>
+<span id="L337"><span class="lineNum">     337</span>         [<span class="tlaGBC" title="branch 0 was taken 82 times"> + </span><span class="tlaGBC" title="branch 1 was taken 175 times"> + </span>]:<span class="tlaGNC">         257 :     if (!matched) {</span></span>
 <span id="L338"><span class="lineNum">     338</span>                 :<span class="tlaGNC">          82 :       return std::nullopt;</span></span>
 <span id="L339"><span class="lineNum">     339</span>                 :<span class="tlaGNC">          82 :     }</span></span>
-<span id="L340"><span class="lineNum">     340</span>                 :<span class="tlaGNC">         173 :     query_score = std::min(query_score, group_score.value_or(100));</span></span>
-<span id="L341"><span class="lineNum">     341</span>                 :<span class="tlaGNC">         173 :   }</span></span>
-<span id="L342"><span class="lineNum">     342</span>                 :<span class="tlaGNC">         107 :   return query_score;</span></span>
-<span id="L343"><span class="lineNum">     343</span>                 :<span class="tlaGNC">         189 : }</span></span>
+<span id="L340"><span class="lineNum">     340</span>                 :<span class="tlaGNC">         175 :     query_score = std::min(query_score, group_score.value_or(100));</span></span>
+<span id="L341"><span class="lineNum">     341</span>                 :<span class="tlaGNC">         175 :   }</span></span>
+<span id="L342"><span class="lineNum">     342</span>                 :<span class="tlaGNC">         109 :   return query_score;</span></span>
+<span id="L343"><span class="lineNum">     343</span>                 :<span class="tlaGNC">         191 : }</span></span>
 <span id="L344"><span class="lineNum">     344</span>                 :             : </span>
 <span id="L345"><span class="lineNum">     345</span>                 :<span class="tlaGNC">          23 : std::optional&lt;int&gt; SequencePercent(std::string_view pattern, std::string_view text, bool fold_case) {</span></span>
 <span id="L346"><span class="lineNum">     346</span>         [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">          23 :   if (!Matches(pattern, text, fold_case)) {</span></span>

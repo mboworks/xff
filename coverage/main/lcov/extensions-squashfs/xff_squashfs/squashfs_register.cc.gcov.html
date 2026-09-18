@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-18 10:17:18</td>
+            <td class="headerValue">2026-09-18 19:48:24</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -99,26 +99,28 @@
 <span id="L19"><span class="lineNum">      19</span>                 :             : absl::StatusOr&lt;std::unique_ptr&lt;vfs::FileSystem&gt;&gt; OpenSquashfsContainer(</span>
 <span id="L20"><span class="lineNum">      20</span>                 :             :     std::string_view container,</span>
 <span id="L21"><span class="lineNum">      21</span>                 :             :     std::optional&lt;std::string_view&gt; bytes,</span>
-<span id="L22"><span class="lineNum">      22</span>                 :<span class="tlaGNC">           6 :     archive::MemberPathOptions options) {</span></span>
-<span id="L23"><span class="lineNum">      23</span>         [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">           6 :   MBO_ASSIGN_OR_RETURN(</span></span>
+<span id="L22"><span class="lineNum">      22</span>                 :<span class="tlaGNC">           7 :     archive::MemberPathOptions options) {</span></span>
+<span id="L23"><span class="lineNum">      23</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">           7 :   MBO_ASSIGN_OR_RETURN(</span></span>
 <span id="L24"><span class="lineNum">      24</span>                 :<span class="tlaGNC">           3 :       SquashfsFileSystem fs, bytes.has_value() ? SquashfsFileSystem::OpenBytes(container, std::string(*bytes), options)</span></span>
 <span id="L25"><span class="lineNum">      25</span>                 :<span class="tlaGNC">           3 :                                                : SquashfsFileSystem::Open(container, options));</span></span>
 <span id="L26"><span class="lineNum">      26</span>                 :<span class="tlaGNC">           3 :   return std::make_unique&lt;SquashfsFileSystem&gt;(std::move(fs));</span></span>
-<span id="L27"><span class="lineNum">      27</span>                 :<span class="tlaGNC">           6 : }</span></span>
+<span id="L27"><span class="lineNum">      27</span>                 :<span class="tlaGNC">           7 : }</span></span>
 <span id="L28"><span class="lineNum">      28</span>                 :             : </span>
-<span id="L29"><span class="lineNum">      29</span>                 :             : // NOLINTNEXTLINE(fuchsia-statically-constructed-objects,cert-err58-cpp)</span>
-<span id="L30"><span class="lineNum">      30</span>                 :             : const archive::ContainerRegistrar kRegisterSquashfs{</span>
-<span id="L31"><span class="lineNum">      31</span>                 :             :     &quot;squashfs&quot;,</span>
-<span id="L32"><span class="lineNum">      32</span>                 :             :     &amp;OpenSquashfsContainer,</span>
-<span id="L33"><span class="lineNum">      33</span>                 :             :     {{</span>
-<span id="L34"><span class="lineNum">      34</span>                 :             :         .name = &quot;squashfs&quot;,</span>
-<span id="L35"><span class="lineNum">      35</span>                 :             :         .suffixes = {&quot;.sfs&quot;, &quot;.sqfs&quot;, &quot;.sqsh&quot;, &quot;.squashfs&quot;, &quot;.snap&quot;, &quot;.appimage&quot;},</span>
-<span id="L36"><span class="lineNum">      36</span>                 :             :         .detail = &quot;SquashFS images, Snap packages, and AppImage payloads (BSD-licensed libsqsh reader)&quot;,</span>
-<span id="L37"><span class="lineNum">      37</span>                 :             :     }},</span>
-<span id="L38"><span class="lineNum">      38</span>                 :             : };</span>
-<span id="L39"><span class="lineNum">      39</span>                 :             : </span>
-<span id="L40"><span class="lineNum">      40</span>                 :             : }  // namespace</span>
-<span id="L41"><span class="lineNum">      41</span>                 :             : }  // namespace xff::squashfs</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             : // Registration runs before main; allocation failure is fatal during startup.</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             : // Both spellings name the same intentional static-initialization exception.</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             : // NOLINTNEXTLINE(fuchsia-statically-constructed-objects,cert-err58-cpp,bugprone-throwing-static-initialization)</span>
+<span id="L32"><span class="lineNum">      32</span>                 :             : const archive::ContainerRegistrar kRegisterSquashfs{</span>
+<span id="L33"><span class="lineNum">      33</span>                 :             :     &quot;squashfs&quot;,</span>
+<span id="L34"><span class="lineNum">      34</span>                 :             :     &amp;OpenSquashfsContainer,</span>
+<span id="L35"><span class="lineNum">      35</span>                 :             :     {{</span>
+<span id="L36"><span class="lineNum">      36</span>                 :             :         .name = &quot;squashfs&quot;,</span>
+<span id="L37"><span class="lineNum">      37</span>                 :             :         .suffixes = {&quot;.sfs&quot;, &quot;.sqfs&quot;, &quot;.sqsh&quot;, &quot;.squashfs&quot;, &quot;.snap&quot;, &quot;.appimage&quot;},</span>
+<span id="L38"><span class="lineNum">      38</span>                 :             :         .detail = &quot;SquashFS images, Snap packages, and AppImage payloads (BSD-licensed libsqsh reader)&quot;,</span>
+<span id="L39"><span class="lineNum">      39</span>                 :             :     }},</span>
+<span id="L40"><span class="lineNum">      40</span>                 :             : };</span>
+<span id="L41"><span class="lineNum">      41</span>                 :             : </span>
+<span id="L42"><span class="lineNum">      42</span>                 :             : }  // namespace</span>
+<span id="L43"><span class="lineNum">      43</span>                 :             : }  // namespace xff::squashfs</span>
         </pre>
               </td>
             </tr>

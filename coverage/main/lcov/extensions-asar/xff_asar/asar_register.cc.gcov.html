@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-18 10:17:18</td>
+            <td class="headerValue">2026-09-18 19:48:24</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -102,12 +102,12 @@
 <span id="L22"><span class="lineNum">      22</span>                 :             : absl::StatusOr&lt;std::unique_ptr&lt;vfs::FileSystem&gt;&gt; OpenAsarContainer(</span>
 <span id="L23"><span class="lineNum">      23</span>                 :             :     std::string_view container,</span>
 <span id="L24"><span class="lineNum">      24</span>                 :             :     std::optional&lt;std::string_view&gt; bytes,</span>
-<span id="L25"><span class="lineNum">      25</span>                 :<span class="tlaGNC">           5 :     archive::MemberPathOptions options) {</span></span>
-<span id="L26"><span class="lineNum">      26</span>         [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">           5 :   MBO_ASSIGN_OR_RETURN(</span></span>
+<span id="L25"><span class="lineNum">      25</span>                 :<span class="tlaGNC">           6 :     archive::MemberPathOptions options) {</span></span>
+<span id="L26"><span class="lineNum">      26</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>]:<span class="tlaGNC">           6 :   MBO_ASSIGN_OR_RETURN(</span></span>
 <span id="L27"><span class="lineNum">      27</span>                 :<span class="tlaGNC">           1 :       AsarFileSystem fs, bytes.has_value() ? AsarFileSystem::OpenBytes(container, std::string(*bytes), options)</span></span>
 <span id="L28"><span class="lineNum">      28</span>                 :<span class="tlaGNC">           1 :                                            : AsarFileSystem::Open(container, options));</span></span>
 <span id="L29"><span class="lineNum">      29</span>                 :<span class="tlaGNC">           1 :   return std::make_unique&lt;AsarFileSystem&gt;(std::move(fs));</span></span>
-<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC">           5 : }</span></span>
+<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC">           6 : }</span></span>
 <span id="L31"><span class="lineNum">      31</span>                 :             : </span>
 <span id="L32"><span class="lineNum">      32</span>                 :             : const license::Registrar kExtensionNotice{{</span>
 <span id="L33"><span class="lineNum">      33</span>                 :             :     .section = &quot;Electron ASAR (@xff_asar)&quot;,</span>
@@ -119,15 +119,15 @@
 <span id="L39"><span class="lineNum">      39</span>                 :             : </span>
 <span id="L40"><span class="lineNum">      40</span>                 :             : // NOLINTNEXTLINE(fuchsia-statically-constructed-objects,cert-err58-cpp)</span>
 <span id="L41"><span class="lineNum">      41</span>                 :             : const struct AsarRegistrar {</span>
-<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">         160 :   AsarRegistrar() { RegisterAsarBackend(); }</span></span>
+<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">         183 :   AsarRegistrar() { RegisterAsarBackend(); }</span></span>
 <span id="L43"><span class="lineNum">      43</span>                 :             : } kRegisterAsar;</span>
 <span id="L44"><span class="lineNum">      44</span>                 :             : </span>
 <span id="L45"><span class="lineNum">      45</span>                 :             : }  // namespace</span>
 <span id="L46"><span class="lineNum">      46</span>                 :             : </span>
-<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">         161 : void RegisterAsarBackend() {</span></span>
-<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">         161 :   archive::RegisterContainerReader(</span></span>
-<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">         161 :       &quot;asar&quot;, &amp;OpenAsarContainer, {{.name = &quot;asar&quot;, .suffixes = {&quot;.asar&quot;}, .detail = &quot;Electron application archives&quot;}});</span></span>
-<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">         161 : }</span></span>
+<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">         184 : void RegisterAsarBackend() {</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">         184 :   archive::RegisterContainerReader(</span></span>
+<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">         184 :       &quot;asar&quot;, &amp;OpenAsarContainer, {{.name = &quot;asar&quot;, .suffixes = {&quot;.asar&quot;}, .detail = &quot;Electron application archives&quot;}});</span></span>
+<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">         184 : }</span></span>
 <span id="L51"><span class="lineNum">      51</span>                 :             : </span>
 <span id="L52"><span class="lineNum">      52</span>                 :             : }  // namespace xff::asar</span>
         </pre>
