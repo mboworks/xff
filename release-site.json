@@ -31,6 +31,7 @@
     "STYLE_CPP.md": "STYLE_CPP.html",
     "STYLE_SH.md": "STYLE_SH.html",
     "TODO.md": "TODO.html",
+    "docs/design-structured-output.md": "docs/design-structured-output.html",
     "docs/design-summary-scopes.md": "docs/design-summary-scopes.html"
   },
   "generated_html": {
