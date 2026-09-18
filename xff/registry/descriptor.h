@@ -86,6 +86,7 @@ struct Descriptor {
   // summary already says everything (e.g. -true, -a) may leave this empty.
   std::string_view details;
   Kind kind = Kind::kTest;
+  bool stdout_output = false;  // may emit ordinary action output or inherit stdout in a child
   Region region = Region::kExpression;
   int arity = 0;  // trailing tokens consumed as arguments (-1 = variadic until ';')
   // Optional closed vocabulary for each operand, comma-delimited. Empty means unrestricted.

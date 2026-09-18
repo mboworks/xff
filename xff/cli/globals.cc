@@ -1147,8 +1147,12 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
             "listing fields and "
             "cannot change summary columns. Markdown summaries have descriptive headings above their scope "
             "and table. `--no-header` omits those headings, table headers, and Markdown separator rows "
-            "when producing fragments. Summaries support `plain`, `aligned`, `jsonl`, and `markdown` (alias `md`); "
-            "`csv`, `tsv`, `nul`, and `tree` are listing-only formats and cannot render active summaries. "
+            "when producing fragments. Summaries support `plain`, `aligned`, `jsonl`, `markdown` (alias `md`), "
+            "`csv`, and `tsv`; `nul` and `tree` are listing-only formats. CSV/TSV summary exports have one "
+            "header for all requests, explicit row identity, raw numeric values, and canonical scope-prefixed "
+            "columns. Missing metrics are empty; `--no-header` removes the single header. TSV uses the same "
+            "backslash escaping as listings. Histograms, action output, and dry-run previews cannot be mixed "
+            "into these exports. In comparison mode use `--compare=summary` or `--compare-select=none`. "
             "Comparison status records support `plain` and `jsonl`; comparison patches require `plain`. "
             "Use `--compare-select=none` to format only comparison summaries. Explicit expression actions "
             "retain their own output formats. Built-in `-grep` uses JSON match/context/count records with "
@@ -1485,6 +1489,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
             "and combine all roots otherwise (`--summary-scope=all`). Explicit scope selection overrides "
             "this conditional default regardless of option order. "
             "`--summary-scope` selects combined, per-root, or comparison-category tables. "
+            "Plain and Markdown tables identify their grouping unless `--no-header` is set. "
             "JSONL summary rows carry `record=summary`, a zero-based `request` index, the canonical "
             "`summary` grouping, and `scope`. Template groupings also retain their exact `template`. "
             "Comparison tables identify `left_root` and `right_root`; ordinary tables identify `root` "
@@ -1522,8 +1527,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
             "--top=N limits the rows of each, "
             "`--summary-precision` sets all summary percentage and scaled-size digits, and --format=jsonl emits one "
             "object per group "
-            "for scripts. Supported summary formats are `plain`, `aligned`, `jsonl`, and `markdown` (alias `md`); "
-            "listing-only formats `csv`, `tsv`, `nul`, and `tree` are rejected while a summary is active. "
+            "for scripts. Supported summary formats are `plain`, `aligned`, `jsonl`, `markdown` (alias `md`), "
+            "`csv`, and `tsv`; listing-only formats `nul` and `tree` are rejected. CSV/TSV exports use one "
+            "header, explicit `is_total` identity, raw numeric metrics, and canonical scope-prefixed columns "
+            "for comparison groups. They reject histograms, action output, and applicable dry-run previews. "
             "Per-path comparison records and expression actions retain their own output; use "
             "`--compare-select=none` or `--compare=summary` for summary-only exports.",
         .values = kSummaryValues,
@@ -1682,6 +1689,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "the sum of displayed column-group bytes, including overlap. Extraction summaries rank by count "
                    "because they have no byte "
                    "dimension. Totals and percentage denominators include groups omitted by the limit. "
+                   "When groups are omitted, summary tables state how many are shown out of the complete set; "
+                   "JSONL rows add `groups_shown` and `groups_total`. Comparison scopes count distinct group "
+                   "keys across the selected columns, including overlapping scopes only once. "
                    "Comparison-result summaries always show every type and status; `--top` does not truncate them.",
         .affects = "--summary,--histogram",
         .topic = "stats",
@@ -1818,12 +1828,16 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "--width[=auto|none|COLS]",
         .group = "display",
         .header = "Terminal display",
-        .summary = "wrap column for plain --help text: auto (terminal width, else unwrapped), none, or a count",
-        .details = "Wraps the flowing text of --help and --help=TOPIC (option and topic descriptions) to a "
-                   "column width. auto uses the terminal width when stdout is a terminal (honoring $COLUMNS), "
-                   "and leaves output unwrapped when it is not (a pipe or file); none (or 0) disables wrapping; "
-                   "a positive integer sets a fixed width. Aligned vocabulary tables and example blocks keep "
-                   "their own layout. Does not affect the file listing, `--man`, or formatted full help.",
+        .summary = "width for plain help and comparison summaries: auto, none, or a column count",
+        .details = "Wraps the flowing text of `--help` and `--help=TOPIC` to a column width. "
+                   "Also bounds plain/aligned comparison-summary tables: scopes use grouped column headers "
+                   "when they fit, or labelled rows in one table when they do not. Numeric cells are never "
+                   "truncated; a width below one metric row may overflow. `auto` uses `$COLUMNS` when set, "
+                   "otherwise the terminal width when stdout is a terminal, otherwise unlimited width. "
+                   "`none` (or `0`) disables wrapping; a positive integer sets a fixed width (at least "
+                   "40 columns). Aligned help vocabulary tables and example blocks keep their own layout. "
+                   "Does not affect the file listing, comparison-results table, summary legends or path "
+                   "headings, `--man`, or formatted full help.",
         .see_also = "output,environment",
         .cli_only = true,
     },

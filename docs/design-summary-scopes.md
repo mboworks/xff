@@ -170,10 +170,11 @@ share one table, emitted at the first comparison scope's position in the scope l
 
 ## Formats and controls
 
-Summary tables support `plain`, `aligned`, `jsonl`, and `markdown` (alias `md`). `aligned` has the
-same summary layout as `plain`. CSV, TSV, NUL, and tree formats are listing formats and are rejected
-while a summary remains active, rather than silently producing plain text. Fixed summary columns
-cannot be replaced by `--columns` in aligned or Markdown mode.
+Summary tables support `plain`, `aligned`, `jsonl`, `markdown` (alias `md`), `csv`, and `tsv`.
+`aligned` has the same summary layout as `plain`. NUL and tree formats remain listing-only.
+[CSV/TSV exports](summary-export.md) use one schema and header for every summary request, with
+explicit row identity and scope-prefixed metrics. They reject mixed action output and histograms.
+Fixed summary columns cannot be replaced by `--columns` in any tabular format.
 
 `--format` does not reformat explicit expression actions or per-path comparison records. Status
 records remain tab-separated, and diff mode still emits a patch. Use `--compare=summary` (or
@@ -186,6 +187,14 @@ non-negative integer; `0` removes the limit, and the last occurrence wins. Ordin
 by size, then count, then name; comparison-scope groups rank by the sum of their displayed column-group sizes (including overlap). Extraction groups
 have no byte dimension and rank by count. Totals and percentage denominators include every
 group, even those hidden by `--top`. Comparison-result rows are never truncated by `--top`.
+
+Plain and Markdown tables label their grouping. `--no-header` suppresses those headings and
+column headers, while accounting notes remain visible. A truncated table states how many groups
+are shown out of the full set; its total row and percentages still include the omitted groups.
+For comparison scopes, this is the number of distinct grouping keys across the selected columns,
+not the sum of their group counts. Overlapping scopes therefore do not inflate this number.
+Truncated JSONL tables carry `groups_shown` and `groups_total` on each row, including the total;
+these fields are absent when no groups were omitted. The aggregate total row is not a group.
 
 ## JSONL summary identity
 
@@ -225,3 +234,27 @@ This affects presentation only: JSONL group values keep their original contents.
 
 See [structured output](design-structured-output.md) for comparison and grep records,
 producer/format compatibility, and authored-output exceptions.
+
+## Console width and scope headers
+
+Plain and aligned comparison-summary tables print each scope name once above its four numeric
+columns. `--width=auto` uses the detected terminal width (including a valid `COLUMNS` override);
+without a known width the table stays wide. `--width=none` keeps the wide layout, and a positive
+width has the same minimum of 40 columns as help text.
+
+When the scope columns do not fit, the renderer uses one table with each grouping label followed
+by its selected scope rows. Every scope row shares the same numeric column widths. Long group
+labels wrap at Unicode grapheme boundaries; controls and backslashes are escaped so labels cannot
+introduce table rows or terminal controls. `--no-header` removes column headings while preserving
+the group and scope identities needed to interpret each row.
+
+The width controls this table, not root-path headings or explanatory legends. Numbers are never
+truncated: if even one scope's numeric row exceeds the budget, that row overflows. Unicode widths
+are terminal estimates; ambiguous characters use one column, while ordinary emoji presentation
+and wide characters use two. Fonts and terminal settings can render some glyphs differently.
+
+This is presentation only. Counts, byte totals, percentage denominators, selected scopes, and
+JSON/Markdown schemas stay the same. The engine accepts an injected width and does no terminal
+probing. Unicode segmentation and character properties come from the pinned
+[utf8proc library](https://github.com/JuliaStrings/utf8proc); its complete upstream license document
+is bundled with the executable.

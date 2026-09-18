@@ -328,7 +328,7 @@ not allocated blocks or recursive directory size. Retain detailed feature compar
 
 ### S08 - P2: Make paired console tables readable at normal widths
 
-- [ ] Reduce repeated scope text in comparison-summary headers.
+- [x] Reduce repeated scope text in comparison-summary headers.
 
 The two-total table already has eight numeric columns; `diff` has twelve, each repeating the scope
 name. The reproduced two-total example is roughly 150 columns and the three-category example exceeds
@@ -341,7 +341,7 @@ Do not change accounting to solve a presentation problem.
 
 ### S09 - P2: Explain denominators, omitted groups, and grouping identity at the table
 
-- [ ] Make ordinary console tables identify their grouping, and make top-limited output self-explanatory.
+- [x] Make ordinary console tables identify their grouping, and make top-limited output self-explanatory.
 
 Repeated plain summaries use a generic `Group` header, without the grouping-specific heading available
 in Markdown. Totals and percentages intentionally include rows hidden by `--top`, which is useful
@@ -354,7 +354,7 @@ remain distinguishable in plain, Markdown, and JSONL.
 
 ### S10 - P2: Extend summaries to CSV/TSV deliberately
 
-- [ ] Decide and document a flat export schema for ordinary and comparison summaries.
+- [x] Decide and document a flat export schema for ordinary and comparison summaries.
 
 These formats are currently rejected for summaries. That is preferable to silent fallback, but it
 leaves a common spreadsheet/reporting workflow unsupported.

@@ -16,6 +16,7 @@
 #ifndef XFF_ENGINE_RUN_H_
 #define XFF_ENGINE_RUN_H_
 
+#include <cstddef>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -69,12 +70,14 @@ struct RunResult {
 // `--exit-match`. It reflects the expression's truth, not emitted output, so an action that
 // suppresses the implicit -print (e.g. `-exec`) still counts as a match. It stays false on usage
 // errors that stop before traversal, where match status is moot.
+// table_width bounds plain comparison-summary layout; zero keeps a wide table.
 RunResult RunFind(
     const parser::Command& command,
     const vfs::FileSystem& fs,
     EmitFn emit,
     WalkErrorFn on_error,
-    std::optional<registry::Style> style = std::nullopt);
+    std::optional<registry::Style> style = std::nullopt,
+    std::size_t table_width = 0);
 
 // Validate all active field consumers without reading paths or evaluating expressions.
 // Shared by execution preflight and --explain after configuration composition.

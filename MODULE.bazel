@@ -40,6 +40,13 @@ bazel_dep(name = "rules_fuzzing", version = "0.8.0")
 bazel_dep(name = "rules_shell", version = "0.8.0")
 bazel_dep(name = "abseil-cpp", version = "20260817.0")
 bazel_dep(name = "re2", version = "2025-11-05.bcr.1")
+bazel_dep(name = "utf8proc", version = "2.11.0")
+# The published BUILD still uses native C++ rules removed in Bazel 9.
+single_version_override(
+    module_name = "utf8proc",
+    patches = ["//bazelmod:utf8proc-bazel9.patch"],
+    patch_strip = 1,
+)
 bazel_dep(name = "googletest", version = "1.18.0.bcr.1")
 bazel_dep(name = "google_benchmark", version = "1.9.5", repo_name = "com_github_google_benchmark")
 

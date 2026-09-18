@@ -493,6 +493,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "Use `--compare[=status|diff] LEFT RIGHT` to walk two roots with the same options and expression, "
                    "then compare their matches symmetrically. Text files only; expensive.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 1,
         .binding = Binding::kStyle,
         .style = Style::kXff,
@@ -507,6 +508,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "(sha256 default; also sha1/sha512/...) and encoding (hex default, or base64). Reads the whole "
                    "file, so it is expensive; the same digest is available as the {hash} field.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 0,
         .binding = Binding::kHash,
         .style = Style::kXff,
@@ -1145,6 +1147,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "time, name (find's `-ls`). Columns align to ls/BSD width defaults. For a custom layout use "
                    "`-printf`; for aligned columns of {field}s use `--format=aligned`.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 0,
         .see_also = "output,fields",
     },
@@ -1156,6 +1159,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "(including `-print` itself) suppresses that implicit default; `--implicit-print=yes`|no forces "
                    "it on or off.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 0,
         .see_also = "output,fields",
     },
@@ -1166,6 +1170,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "survive a pipe into `xargs -0`. The machine-readable counterpart of `-print`; see also "
                    "`--format=jsonl`.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 0,
         .see_also = "output,fields",
     },
@@ -1177,6 +1182,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "and its qualifiers (see --help=fields, --help=printf). No trailing newline unless you write one; "
                    "`-printfln` adds the OS line ending. Example: `xff . -printf '%s\\t%p\\n'`.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 1,
         .primary_expansion_topic = "printf",
         .see_also = "printf,fields,output",
@@ -1189,6 +1195,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .details = "`-print` but terminated with the OS-native line ending (CRLF on Windows, LF elsewhere) rather "
                    "than always LF. An xff extension `--config=find` rejects.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 0,
         .style = Style::kXff,
         .see_also = "output,fields",
@@ -1200,6 +1207,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .details = "`-printf` plus the OS line ending appended, so you write FORMAT without a trailing `\\n`. An xff "
                    "extension `--config=find` rejects; see `-printf` for the directive vocabulary.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 1,
         .style = Style::kXff,
         .primary_expansion_topic = "printf",
@@ -1225,6 +1233,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "files yield nothing. Its truth is \"matched a line\", so it composes with `-o` / `-q`. An xff "
                    "extension `--config=find` rejects.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 1,
         .binding = Binding::kFormat,
         .style = Style::kXff,
@@ -1342,6 +1351,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "stderr may interleave. The `+` form remains an end-of-walk batch. Sensitive: loaded from an "
                    "`--xffrc` file it needs `--allow-exec`. Example: `xff . -name '*.o' -exec rm {} +`.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = -1,
         .safety = Safety::kSecurity,
 
@@ -1357,6 +1367,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "and `{}` is the basename - safer against path injection and directory races. `;` per match or "
                    "`+` batched (a batch shares one directory). Example: `xff . -name '*.log' -execdir gzip {} ;`.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = -1,
         .safety = Safety::kSecurity,
 
@@ -1372,6 +1383,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "with 'y'; a declined or EOF answer skips that entry. `;`-terminated only (no `+` batching, since "
                    "each run needs its own prompt).",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = -1,
         .safety = Safety::kSecurity,
 
@@ -1384,6 +1396,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .details = "Like `-execdir` (runs in the matched entry's directory, `{}` is the basename) but prompts before "
                    "each command, exactly as `-ok` does.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = -1,
         .safety = Safety::kSecurity,
 

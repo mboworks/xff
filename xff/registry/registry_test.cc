@@ -17,6 +17,7 @@
 
 #include <array>
 #include <optional>
+#include <string_view>
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -40,6 +41,18 @@ using ::testing::Ref;
 using ::testing::SizeIs;
 
 struct RegistryTest : ::testing::Test {};
+
+TEST_F(RegistryTest, OutputCapabilitiesDistinguishStdoutFromCapturedAndFileSinks) {
+  for (const std::string_view name : std::to_array<std::string_view>(
+           {"-diff", "-hash", "-ls", "-print", "-print0", "-printf", "-println", "-printfln", "-grep", "-exec",
+            "-execdir", "-ok", "-okdir"})) {
+    EXPECT_THAT(Lookup(name), Optional(Field(&Descriptor::stdout_output, Eq(true)))) << name;
+  }
+  for (const std::string_view name : std::to_array<std::string_view>(
+           {"-capture", "-capturedir", "-collect", "-delete", "-prune", "-quit", "-fprint", "-fprintf"})) {
+    EXPECT_THAT(Lookup(name), Optional(Field(&Descriptor::stdout_output, Eq(false)))) << name;
+  }
+}
 
 TEST_F(RegistryTest, CaptureCapabilitiesHaveConsistentArgumentLayouts) {
   for (const Descriptor& descriptor : All()) {

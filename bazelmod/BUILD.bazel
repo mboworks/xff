@@ -19,4 +19,5 @@ exports_files([
     "dev.MODULE.bazel",
     "extras.MODULE.bazel",
     "llvm.MODULE.bazel",
+    "utf8proc-bazel9.patch",
 ])
