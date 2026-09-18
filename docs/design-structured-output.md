@@ -12,7 +12,7 @@ its own syntax, including when combined with JSONL summaries.
 | Comparison status             | Tab-separated status/path     | Comparison objects                 | Rejected when per-path statuses are selected                |
 | Comparison patch              | Unified patch                 | Rejected when patches are selected | Rejected when patches are selected                          |
 | Built-in grep                 | Match/context lines or counts | Grep objects                       | Rejected before actions run                                 |
-| Summary                       | Tables                        | Grouping and metric objects        | Aligned and Markdown; others rejected                       |
+| Summary                       | Tables                        | Grouping and metric objects        | Aligned, Markdown, and CSV/TSV summary exports              |
 | Histogram                     | Bars                          | Bucket/value objects               | Aligned bars and Markdown tables; CSV/TSV/NUL/tree rejected |
 | Explicit printf/grep template | Authored output               | Authored output                    | Existing action/format validation applies                   |
 | Child process                 | Child stdout                  | Child stdout                       | Existing action/format validation applies                   |
@@ -21,8 +21,10 @@ Comparison restrictions concern selected per-path output. With `--compare-select
 requested reductions' format rules apply. `--compare=summary --summary=ext --format=md` can
 therefore render tables without per-path records.
 
-CSV and TSV describe one listing schema, not concatenated tables with unrelated columns.
-Summary and histogram requests reject those formats rather than emit a mixed-schema stream.
+CSV and TSV use the listing schema for ordinary listings. With summaries, they use a single
+[summary export schema](summary-export.md) across requests, with explicit grouping, scope, and
+aggregate-row identity. Summary exports reject action output and per-path comparison records;
+histograms reject CSV and TSV.
 
 To consume a whole command as JSONL, use producers with JSONL representations and ensure any
 authored output is valid JSONL too. Escaped newlines inside strings do not split records.
