@@ -100,7 +100,8 @@ test::explain_rejects_preset_overloading_config() {
   out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" --config=xff "${dir}" -name a.txt 2>&1)"
   expect_matches 'cannot change a preset' "${out}"
   # --explain records the drop in its trace, does not resolve the bare-preset flag, keeps defaults.
-  out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" --config=xff --explain 2>&1)"
+  out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" --config=xff --explain 2>"${dir}/explain.err")"
+  [[ ! -s "${dir}/explain.err" ]] || fail 'explain repeated its dropped-line trace as execution warnings'
   expect_output_contains "'[xff]' in the user" "${out}"
   expect_not_matches 'user[[:space:]]--hidden' "${out}"
   expect_matches 'user[[:space:]]--sort' "${out}"
@@ -459,6 +460,26 @@ test::explain_composes_actions_without_running_them_or_hoisting_arguments() {
   out="$(XFF_TEST_USER_CONFIG="${user}" "$(_xff_bin)" "${dir}/keep.txt" --config=actions --explain)"
   _expect_flavor_current 'letter case' sensitive "${out}" || return
   [[ -f "${dir}/keep.txt" ]] || fail 'explain executed a configured action'
+}
+
+test::execution_warns_for_unarmed_files_and_untrusted_profile_selection() {
+  local dir user explicit target out
+  dir="$(test_tmpdir dropped_actions)"
+  user="${dir}/user.ini"
+  explicit="${dir}/project.rc"
+  target="${dir}/keep.txt"
+  printf '%s\n' '[remove]' '-delete' >"${user}"
+  : >"${target}"
+
+  printf '%s\n' '-delete' >"${explicit}"
+  out="$(XFF_TEST_USER_CONFIG="${user}" "$(_xff_bin)" "${target}" --xffrc="${explicit}" 2>&1)"
+  expect_output_contains 'inert unless armed with --allow-exec' "${out}"
+  [[ -f "${target}" ]] || fail 'an unarmed explicit file deleted its target'
+
+  printf '%s\n' '--config=remove' >"${explicit}"
+  out="$(XFF_TEST_USER_CONFIG="${user}" "$(_xff_bin)" "${target}" --xffrc="${explicit}" 2>&1)"
+  expect_output_contains 'denied by config policy' "${out}"
+  [[ -f "${target}" ]] || fail 'an untrusted profile selection deleted its target'
 }
 
 test_runner

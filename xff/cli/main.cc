@@ -776,8 +776,21 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     return 2;
   }
   const xff::registry::Style style = xff::config::ActiveStyle(effective_configs);
-  // Explain and execution must inspect the same resolved globals and composed expression.
-  // This only parses configuration; no predicates or actions are evaluated here.
+  const bool explain = absl::c_contains(command.globals, "--explain");
+  if (!explain) {
+    // A disallowed config line is dropped, never fatal: warn (self-documenting) and
+    // carry on with the survivors (design-config.md "Enforcement & self-documentation").
+    for (const xff::config::Drop& drop : gated.drops) {
+      std::string_view why = " - denied by config policy";
+      if (drop.reason == xff::config::DropReason::kPresetOverload) {
+        why = " - a config file cannot change a preset; use a named config (--config=NAME)";
+      } else if (drop.reason == xff::config::DropReason::kUnarmedXffrc) {
+        why = " - inert unless armed with --allow-exec (from the CLI or user/system config)";
+      }
+      std::cerr << "xff: ignoring " << xff::config::DropMessage(drop) << why << "\n";
+    }
+  }
+  // Apply globals and compose config predicates/actions with the CLI expression.
   absl::StatusOr<xff::parser::Command> configured = xff::cli::ApplyResolvedConfig(std::move(command), resolved);
   if (!configured.ok()) {
     std::cerr << "xff: invalid config expression: " << configured.status().message() << "\n";
@@ -785,7 +798,7 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   }
   command = *std::move(configured);
 
-  if (absl::c_contains(command.globals, "--explain")) {
+  if (explain) {
     std::cout << xff::config::ExplainSources(inputs.sources, style);
     std::cout << "rc-mode\t" << xff::config::RcModeName(inputs.rc_mode) << "\n";
     std::cout << xff::config::ExplainConfig(resolved);
@@ -795,17 +808,6 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     std::cout << "\n# flavor defaults per style, and the value resolved for this run:\n";
     std::cout << RenderFlavorTable(command.globals, style);
     return 0;
-  }
-  // A disallowed config line is dropped, never fatal: warn (self-documenting) and
-  // carry on with the survivors (design-config.md "Enforcement & self-documentation").
-  for (const xff::config::Drop& drop : gated.drops) {
-    std::string_view why = " - denied by config policy";
-    if (drop.reason == xff::config::DropReason::kPresetOverload) {
-      why = " - a config file cannot change a preset; use a named config (--config=NAME)";
-    } else if (drop.reason == xff::config::DropReason::kUnarmedXffrc) {
-      why = " - inert unless armed with --allow-exec (from the CLI or user/system config)";
-    }
-    std::cerr << "xff: ignoring " << xff::config::DropMessage(drop) << why << "\n";
   }
   // The find style (--config=find) accepts only find's own expression vocabulary;
   // reject xff extensions (e.g. -println) so a find-style run behaves like GNU
