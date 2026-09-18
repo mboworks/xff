@@ -213,6 +213,35 @@ but `xff --explain` reports current hidden files as `show` and case as `sensitiv
 only CLI globals because configuration is composed after the explain early return. Inspection must
 compose configuration before rendering, without evaluating expressions or running actions.
 
+### B10 - P1: Keep comparison shard populations physical
+
+- [x] Correct scoped summary populations and suppress extra collapsed listings in comparison mode.
+
+A follow-up to S14 reproduced a mixed two-shard set being assigned wholly to its representative's
+comparison category. One identical pair and one different pair produced correct physical result
+counts, but an ordinary scoped summary placed all eight bytes under `identical` and none under
+`different`. Side totals counted one logical set instead of two physical files. Comparison without
+ordinary summaries could also print stray collapsed paths.
+
+**Acceptance:** comparison results and reductions use physical entries consistently; ordinary scans
+still collapse logical sets. Preserve status-predicate scheme selection, validate malformed custom
+patterns, and test identical/different categories, side totals, combined totals, and status output.
+Whole-set comparison requires separate semantics and is not inferred from a representative.
+
+### B11 - P1: Reduce collected shard populations once
+
+- [x] Apply logical grouping to the selected collections without also feeding matched sets.
+
+Two two-byte shard files produce one logical set and four bytes with `--shards --summary`.
+Adding `-collect` produced a count of three and eight bytes: the post-walk shard pass fed one
+logical set, then the collection pass fed its two physical members again. Histograms used the
+same mixed populations. A limiting predicate after collection can make the two source populations
+differ, so removing one feed without preserving collection semantics is insufficient.
+
+**Acceptance:** group each named collection independently, feed both reductions once, preserve
+collection placement and named-population multiplicity, retain deduplication/custom schemes and
+root provenance, keep comparison physical, and reject overflow without partial tables.
+
 ## Design and usability improvements
 
 These are observed limitations or deliberate current behaviors, not claims of implementation bugs.
@@ -405,7 +434,8 @@ large directories, deep trees, network filesystems, and repeated content consume
 
 ### S14 - P2: Make logical shards versus physical entries explicit
 
-- [ ] Document a small matrix for shard collapsing, status predicates, actions, and reductions.
+- [x] Document a small matrix for shard collapsing, status predicates, actions, and reductions.
+      See [the shard population guide](shard-populations.md) and its executable CLI examples.
 
 `--shards` changes logical presentation, while `-shard-status` selects physical files and classifies
 only entries reaching that node. This is powerful but easy to misuse with a filter before the status
@@ -413,7 +443,9 @@ predicate or an action before deferred classification.
 
 **Acceptance:** examples cover complete/incomplete/duplicate sets, `-size`/fields, summaries, actions,
 comparison, and custom schemes. Label whether a count describes physical files or logical sets.
-No observed shard correctness defect is asserted here.
+Follow-up probes reproduced B10: mixed shard sets were assigned wholly to the representative's comparison category. The physical-versus-logical guide follows that correction.
+
+Follow-up probes reproduced B11's collection double counting. The guide follows the accounting corrections.
 
 ### S15 - P2: Publish a concise order-and-limits guide
 

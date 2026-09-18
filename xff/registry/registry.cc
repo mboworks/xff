@@ -295,7 +295,10 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
             "silent truncation, because a summary over part of the walk is indistinguishable from a correct "
             "one. Without `--buffer` there is no cap. Presence is SYNTACTIC, like the implicit print: "
             "a `-collect` in a branch that never runs still switches the summary's source, and the summary is "
-            "then empty. Example: `xff . -type f -collect -first 3 -ls --summary`.",
+            "then empty. With `--shards`, summaries and histograms group each named collection into "
+            "logical sets once; they do not also count the physical members. An entry collected under two "
+            "names contributes to both collections. Comparison reductions remain physical. "
+            "Example: `xff . -type f -collect -first 3 -ls --summary`.",
         .kind = Kind::kAction,
         .arity = 0,
         .binding = Binding::kLabel,
