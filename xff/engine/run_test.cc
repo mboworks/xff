@@ -1497,9 +1497,9 @@ TEST_F(RunTest, InvalidValuedGlobalsAreRejectedBeforeTraversal) {
 }
 
 TEST_F(RunTest, EveryExplicitArchiveModeRequiresAnAvailableBackend) {
-  for (const std::string_view flag :
-       {"--archive", "--archive=roots", "--archive=all", "--archive=any", "--archive-any", "-z", "-z+", "-z++", "-Z",
-        "-Z+", "-Z++"}) {
+  for (const std::string_view flag : std::to_array<std::string_view>(
+           {"--archive", "--archive=roots", "--archive=all", "--archive=any", "--archive-any", "-z", "-z+", "-z++",
+            "-Z", "-Z+", "-Z++"})) {
     SCOPED_TRACE(flag);
     MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({std::string(flag), root_.string()}));
     absl::Status reported;
@@ -1512,7 +1512,7 @@ TEST_F(RunTest, EveryExplicitArchiveModeRequiresAnAvailableBackend) {
 }
 
 TEST_F(RunTest, ExplicitArchiveResetDoesNotRequireABackend) {
-  for (const std::string_view flag : {"--archive=none", "-z-", "-Z-"}) {
+  for (const std::string_view flag : std::to_array<std::string_view>({"--archive=none", "-z-", "-Z-"})) {
     SCOPED_TRACE(flag);
     MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"--archive-any", std::string(flag), root_.string()}));
     const RunResult result = RunFind(

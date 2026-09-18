@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
 // SPDX-License-Identifier: Apache-2.0
 
+#include <array>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -135,7 +136,7 @@ struct ReadAccountingTest : ::testing::Test {
     RecordProperty("bytes_per_file", std::to_string(kBytes));
     RecordProperty("deep_levels", std::to_string(kLevels));
     RecordProperty("root_count", compare ? 2 : 1);
-    for (const bool deep : {false, true}) {
+    for (const bool deep : std::to_array<bool>({false, true})) {
       const ReadAccountingFs fs(deep);
       std::vector<std::string> argv = {"--safe", "--jobs=1", "/left"};
       if (compare) {

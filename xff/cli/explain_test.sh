@@ -630,12 +630,12 @@ test::explain_resources_use_selected_config_without_traversal() {
 --buffer=2KiB
 INI
   out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/absent" --config=resource-view --explain)"
-  grep -Fq $'directory-workers-per-walk\t3' <<<"${out}" || fail 'resource view lost configured worker count'
-  grep -Fq $'content-field-occurrences\t2' <<<"${out}" || fail 'resource view lost configured content fields'
-  grep -Fq $'listing-column-buffer\t2048 cell bytes' <<<"${out}" || fail 'resource view lost configured buffer'
+  expect_output_contains $'directory-workers-per-walk\t3' "${out}" || return
+  expect_output_contains $'content-field-occurrences\t2' "${out}" || return
+  expect_output_contains $'listing-column-buffer\t2048 cell bytes' "${out}" || return
   out="$(XFF_TEST_USER_CONFIG="${cfg}" "$(_xff_bin)" "${dir}/absent" --config=resource-view --columns=name --jobs=1 --explain)"
-  grep -Fq $'directory-workers-per-walk\t1' <<<"${out}" || fail 'resource view ignored CLI worker override'
-  grep -Fq $'content-field-occurrences\t0' <<<"${out}" || fail 'resource view ignored CLI column override'
+  expect_output_contains $'directory-workers-per-walk\t1' "${out}" || return
+  expect_output_contains $'content-field-occurrences\t0' "${out}" || return
 }
 
 test_runner

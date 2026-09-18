@@ -460,4 +460,4 @@ this as intentional accounting.
 - [x] Preserve literal token lookup, evaluator dispatch, and config-layer directive parsing.
 - [x] Add renamed-descriptor regressions so shared behavior follows capabilities rather than spelling.
 - [x] Resolve explicit archive mode and presence together instead of maintaining a second alias list.
-- [ ] Complete integrated tests and changed-header lint before publication with audit group six.
+- [x] Complete integrated tests and changed-header lint before publication with audit group six.
