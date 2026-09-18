@@ -2701,7 +2701,7 @@ std::optional<std::string> FindScalarExtraction(const parser::Expr& expr, bool e
   for (const std::string& arg :
        args.subspan(expansion.first, expansion.remaining ? args.size() - expansion.first : 1)) {
     if (expansion.syntax == registry::ArgumentFields::Syntax::kPrintf) {
-      if (absl::c_any_of(fields::PrintfTemplates(arg), &fields::Template::HasUnreducedExtraction)) {
+      if (std::ranges::any_of(fields::PrintfTemplates(arg), &fields::Template::HasUnreducedExtraction)) {
         return arg;
       }
     } else if (fields::Template::Compile(arg).HasUnreducedExtraction()) {
