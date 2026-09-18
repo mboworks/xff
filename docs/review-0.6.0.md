@@ -189,7 +189,8 @@ These are observed limitations or deliberate current behaviors, not claims of im
 
 ### S01 - P1: Make machine-output composition predictable
 
-- [ ] Decide how comparison records and content-search records participate in structured output.
+- [x] Define comparison/grep JSONL records, authored-output exceptions, producer format rules, and lossless byte values.
+- [x] Verify integrated stream regressions and generated help on current main; enforce affected-header checks before commit.
 
 `xff --compare LEFT RIGHT --format=jsonl` emits TSV status records. Adding `--summary=ext` produces
 TSV followed by JSONL. Likewise `-grep PATTERN --format=jsonl` retains its normal text output.

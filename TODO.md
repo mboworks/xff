@@ -1,5 +1,14 @@
 # TODO
 
+## Completed: Structured-output composition (audit S01)
+
+- Emit typed comparison-status and built-in grep JSONL records.
+- Reject unsupported comparison formats before either side can execute actions.
+- Preserve authored templates and child stdout; document their output contract.
+- Test complete mixed producer streams and publish the producer/format matrix.
+- Preserve B05/B06 summary identities and the documented histogram schema.
+- Preserve non-UTF-8 values losslessly with tagged base64 objects; verify portable virtual-path fixtures.
+
 Actionable roadmap and deliberately deferred ideas. Completed implementation records live in
 [`docs/history-roadmap.md`](docs/history-roadmap.md); other resolved design records and investigations
 live in [`docs/history.md`](docs/history.md).

@@ -185,6 +185,8 @@ struct EvalContext {
   // --count / -c: -grep prints one `path:count` per file (its matching-line count)
   // instead of the lines, rg -c style; supersedes -grep:FORMAT. Only -grep reads it.
   bool grep_count = false;
+  // Built-in grep output uses JSON records; explicit line templates remain authored output.
+  bool grep_json = false;
   // --context / --before-context / --after-context (grep -C/-B/-A): lines of context -grep prints
   // before and after each match (0 = none, the default). Resolved once before the walk; only -grep
   // reads them. Superseded by --count.

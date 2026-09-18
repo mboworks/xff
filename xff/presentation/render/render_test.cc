@@ -15,12 +15,14 @@
 
 #include "xff/presentation/render/render.h"
 
+#include <array>
 #include <string>
 #include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
+#include "nlohmann/json.hpp"
 #include "xff/presentation/format/format.h"
 
 namespace xff::render {
@@ -28,8 +30,14 @@ namespace {
 
 using ::mbo::testing::EqualsText;
 using ::mbo::testing::WithDropIndent;
+using ::testing::Eq;
 
 struct RenderTest : ::testing::Test {};
+
+TEST_F(RenderTest, JsonQuoteEscapesControlCharactersAndDelimiters) {
+  EXPECT_THAT(JsonQuote("a\"\\\n\r\t\x01"), Eq(R"json("a\"\\\n\r\t\u0001")json"));
+  EXPECT_THAT(JsonQuote(""), Eq("\"\""));
+}
 
 TEST_F(RenderTest, PlainAppendsNewline) {
   EXPECT_THAT(Renderer(Format::kPlain).Record("a/b/c"), "a/b/c\n");
@@ -37,6 +45,19 @@ TEST_F(RenderTest, PlainAppendsNewline) {
 
 TEST_F(RenderTest, NulAppendsNulTerminator) {
   EXPECT_THAT(Renderer(Format::kNul).Record("a/b/c"), std::string("a/b/c\0", 6));
+}
+
+TEST_F(RenderTest, JsonValuesPreserveUtf8AndEncodeOtherBytesLosslessly) {
+  EXPECT_THAT(JsonValue("caf\xc3\xa9"), Eq("\"caf\xc3\xa9\""));
+  EXPECT_THAT(JsonValue(std::string("x\xff", 2)), Eq(R"({"encoding":"base64","data":"eP8="})"));
+  const auto malformed =
+      std::to_array<std::string_view>({"\x80", "\xc0\xaf", "\xed\xa0\x80", "\xf4\x90\x80\x80", "\xe2\x82"});
+  for (const auto bytes : malformed) {
+    const auto value = nlohmann::json::parse(JsonValue(bytes));
+    EXPECT_THAT(value.at("encoding").get<std::string>(), Eq("base64"));
+  }
+  const auto path = nlohmann::json::parse(Renderer(Format::kJsonl).Record(std::string("x\xff", 2)));
+  EXPECT_THAT(path.at("path").at("data").get<std::string>(), Eq("eP8="));
 }
 
 TEST_F(RenderTest, JsonlEmitsOneObjectPerLine) {

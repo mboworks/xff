@@ -1215,7 +1215,13 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "PATTERN as `path:lineno:text` (grep's piped form; a literal substring under "
                    "`--regextype=EXACT`). `-grep:FORMAT PATTERN` renders a {line}/{text}/{match}/{column} template "
                    "instead. Honors `-c` / `--count` (one `path:count` per file) and -A / -B / `--context` "
-                   "(surrounding lines, grep-style). Reads the file (expensive); non-regular / unreadable / binary "
+                   "(surrounding lines, grep-style). With `--format=jsonl`, built-in output emits "
+                   "`record: grep` objects with `kind` set to `match`, `context`, or `count`; each includes "
+                   "`path`, `root`, and `pattern`. Line records include one-based `line`, zero-based context "
+                   "`group`, and `text`; count records include `count`. Context gaps do not emit text separators "
+                   "in JSONL. Built-in output supports only `plain` and `jsonl`; other formats are rejected before "
+                   "actions execute. Explicit `-grep:FORMAT` templates retain authored output; `--count` supersedes "
+                   "the template. Reads the file (expensive); non-regular / unreadable / binary "
                    "files yield nothing. Its truth is \"matched a line\", so it composes with `-o` / `-q`. An xff "
                    "extension `--config=find` rejects.",
         .kind = Kind::kAction,
@@ -1224,6 +1230,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .cost = Cost::kExpensive,
         .topic = "content",
+        .content_output = true,
     },
     {
         .name = "-fprint",

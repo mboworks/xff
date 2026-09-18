@@ -15,6 +15,10 @@
 - Render Markdown histograms as bucket/value tables and reject unsupported histogram formats
   before traversal or actions, instead of silently emitting text bars.
 
+- Comparison status and built-in grep output support JSONL records, including grep context and
+  counts. Non-UTF-8 values use lossless tagged base64 objects. Unsupported comparison formats
+  fail before traversal or expression actions.
+
 - Correct the release archive description: lean and full executables have separate archives,
   each with its own matching debug symbols.
 

@@ -70,6 +70,52 @@ using ::testing::UnorderedElementsAre;
 //   <root>/a.txt
 //   <root>/b.md
 //   <root>/sub/c.txt
+// Arbitrary path bytes must be tested without depending on a host filesystem's name rules.
+struct BytePathFs final : vfs::FileSystem {
+  const std::string name = std::string("bad") + static_cast<char>(0xff) + ".txt";
+  const std::string path = "left/" + name;
+  const std::string content = std::string("hit ") + static_cast<char>(0xff) + "\n";
+
+  absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view dir) const override {
+    if (dir == "left") {
+      return std::vector<vfs::Entry>{{.path = path, .name = name, .type = vfs::FileType::kRegular}};
+    }
+    if (dir == "right") {
+      return std::vector<vfs::Entry>{};
+    }
+    return absl::NotFoundError("unknown virtual directory");
+  }
+
+  absl::StatusOr<vfs::Metadata> Stat(std::string_view requested, bool) const override {
+    if (requested == "left" || requested == "right") {
+      return vfs::Metadata{.type = vfs::FileType::kDirectory};
+    }
+    if (requested == path) {
+      return vfs::Metadata{.type = vfs::FileType::kRegular, .size = content.size()};
+    }
+    return absl::NotFoundError("unknown virtual entry");
+  }
+
+  absl::Status Remove(std::string_view) const override {
+    ADD_FAILURE() << "Structured-output tests must not mutate their input";
+    return absl::PermissionDeniedError("read-only fixture");
+  }
+
+  bool Access(std::string_view requested, vfs::AccessMode mode) const override {
+    return requested == path && mode == vfs::AccessMode::kRead;
+  }
+
+  absl::StatusOr<std::string> ReadLink(std::string_view) const override { return absl::NotFoundError("not a link"); }
+
+  absl::StatusOr<std::string> FsType(std::string_view) const override { return "memory"; }
+
+  absl::StatusOr<bool> IsCaseSensitive(std::string_view) const override { return true; }
+
+  absl::StatusOr<std::string> ReadContent(std::string_view requested) const override {
+    return requested == path ? absl::StatusOr<std::string>(content) : absl::NotFoundError("unknown virtual content");
+  }
+};
+
 struct RunTest : ::testing::Test {
   void SetUp() override {
     root_ = fs::path(::testing::TempDir())
@@ -117,7 +163,9 @@ struct RunTest : ::testing::Test {
 
   // Like RunExpr, but takes the whole argv (so leading globals such as --summary
   // can come before the root), returning the emitted records, terminator stripped.
-  std::vector<std::string> RunArgvRecords(const std::vector<std::string>& argv) {
+  std::vector<std::string> RunArgvRecords(const std::vector<std::string>& argv) { return RunArgvRecords(argv, fs_); }
+
+  std::vector<std::string> RunArgvRecords(const std::vector<std::string>& argv, const vfs::FileSystem& filesystem) {
     auto command = parser::Parse(argv);
     EXPECT_THAT(command, IsOk());
     std::vector<std::string> records;
@@ -128,7 +176,7 @@ struct RunTest : ::testing::Test {
         *command, parser::GrammarFromGlobals(command->globals),
         parser::ResolveCaseMode(command->globals, registry::Style::kXff));
     last_errors_ = RunFind(
-                       *command, fs_,
+                       *command, filesystem,
                        [&](std::string_view record) {
                          std::string text(record);
                          if (!text.empty() && (text.back() == '\n' || text.back() == '\0')) {
@@ -323,6 +371,151 @@ TEST_F(RunTest, ComparisonScopeDisplayQuotesAmbiguousDataLabels) {
     EXPECT_THAT(records, Contains(HasSubstr("\"total\"")));
     EXPECT_THAT(records, Contains(HasSubstr("\"\"")));
     EXPECT_THAT(records, Contains(HasSubstr(R"json("\"total\"")json")));
+  }
+}
+
+TEST_F(RunTest, StructuredProducersPreserveNonUtf8PathsAndGrepText) {
+  const BytePathFs filesystem;
+  const auto grep = RunArgvRecords({filesystem.path, "-grep", "hit", "--summary={name}", "--format=jsonl"}, filesystem);
+  EXPECT_THAT(last_errors_, Eq(0));
+  ASSERT_THAT(grep, SizeIs(3));
+  const auto match = nlohmann::json::parse(grep.front());
+  EXPECT_THAT(match.at("text").at("data").get<std::string>(), Eq("aGl0IP8="));
+  EXPECT_THAT(match.at("path").at("encoding").get<std::string>(), Eq("base64"));
+  const auto group = nlohmann::json::parse(grep.at(1));
+  EXPECT_THAT(group.at("group").at("data").get<std::string>(), Eq("YmFk/y50eHQ="));
+  const auto comparison = RunArgvRecords({"--compare", "left", "right", "-type", "f", "--format=jsonl"}, filesystem);
+  EXPECT_THAT(last_errors_, Eq(0));
+  ASSERT_THAT(comparison, SizeIs(1));
+  const auto row = nlohmann::json::parse(comparison.front());
+  EXPECT_THAT(row.at("path").at("data").get<std::string>(), Eq("YmFk/y50eHQ="));
+}
+
+TEST_F(RunTest, CompareJsonlStatusAndSummaryFormOneJsonStream) {
+  ASSERT_THAT(fs_.WriteContent(Path("a\"name.txt"), "quoted"), IsOk());
+  const auto records = RunArgvRecords(
+      {"--compare", root_.string(), Path("sub"), "-type", "f", "--compare-select=all", "--summary=ext",
+       "--format=jsonl"});
+  EXPECT_THAT(last_errors_, Eq(0));
+  std::size_t comparisons = 0;
+  std::size_t summaries = 0;
+  bool quoted_path = false;
+  for (const auto& record : records) {
+    const auto row = nlohmann::json::parse(record);
+    if (row.contains("record") && row.at("record") == "comparison") {
+      ++comparisons;
+      EXPECT_THAT(row.at("left_root").get<std::string>(), Eq(root_.string()));
+      EXPECT_THAT(row.at("right_root").get<std::string>(), Eq(Path("sub")));
+      EXPECT_THAT(row.at("status").get<std::string>(), Ne(""));
+      quoted_path |= row.at("path") == "a\"name.txt";
+    } else {
+      ++summaries;
+      EXPECT_THAT(row.contains("group"), IsTrue());
+    }
+  }
+  EXPECT_THAT(comparisons, Eq(5));
+  EXPECT_THAT(summaries, Eq(3));
+  EXPECT_THAT(quoted_path, IsTrue());
+}
+
+TEST_F(RunTest, UnsupportedComparisonFormatsFailBeforeActions) {
+  constexpr auto kFormats = std::to_array<std::string_view>(
+      {"--format=csv", "--format=tsv", "--format=md", "--format=aligned", "--format=nul", "--format=tree"});
+  for (const auto format : kFormats) {
+    EXPECT_THAT(
+        RunArgvRecords({"--compare", root_.string(), Path("sub"), std::string(format), "-type", "f", "-delete"}),
+        IsEmpty());
+    EXPECT_THAT(last_errors_, Eq(2));
+    EXPECT_THAT(fs_.ReadContent(Path("a.txt")), IsOkAndHolds(Eq("a")));
+    EXPECT_THAT(fs_.ReadContent(Path("sub/c.txt")), IsOkAndHolds(Eq("c")));
+  }
+  EXPECT_THAT(
+      RunArgvRecords({"--compare=diff", root_.string(), Path("sub"), "--format=jsonl", "-type", "f", "-delete"}),
+      IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(2));
+  EXPECT_THAT(fs_.ReadContent(Path("a.txt")), IsOkAndHolds(Eq("a")));
+  EXPECT_THAT(fs_.ReadContent(Path("sub/c.txt")), IsOkAndHolds(Eq("c")));
+}
+
+TEST_F(RunTest, GrepJsonlContextAndSummaryFormOneJsonStream) {
+  ASSERT_THAT(
+      fs_.WriteContent(Path("grep.txt"), "before\nhit \"quoted\"\nafter\ngap\ngap\nbefore\nhit\nafter\n"), IsOk());
+  const auto records =
+      RunArgvRecords({Path("grep.txt"), "-grep", "hit", "--context=1", "--summary=ext", "--format=jsonl"});
+  EXPECT_THAT(last_errors_, Eq(0));
+  std::vector<std::size_t> numbers;
+  std::vector<std::size_t> groups;
+  std::vector<std::string> kinds;
+  std::size_t summaries = 0;
+  bool quoted_text = false;
+  for (const auto& record : records) {
+    const auto row = nlohmann::json::parse(record);
+    if (row.contains("record") && row.at("record") == "grep") {
+      numbers.push_back(row.at("line").get<std::size_t>());
+      groups.push_back(row.at("group").get<std::size_t>());
+      kinds.push_back(row.at("kind").get<std::string>());
+      EXPECT_THAT(row.at("path").get<std::string>(), Eq(Path("grep.txt")));
+      EXPECT_THAT(row.at("pattern").get<std::string>(), Eq("hit"));
+      quoted_text |= row.at("text") == "hit \"quoted\"";
+    } else {
+      ++summaries;
+      EXPECT_THAT(row.contains("group"), IsTrue());
+    }
+  }
+  EXPECT_THAT(numbers, ElementsAre(1, 2, 3, 6, 7, 8));
+  EXPECT_THAT(groups, ElementsAre(0, 0, 0, 1, 1, 1));
+  EXPECT_THAT(kinds, ElementsAre("context", "match", "context", "context", "match", "context"));
+  EXPECT_THAT(summaries, Eq(2));
+  EXPECT_THAT(quoted_text, IsTrue());
+}
+
+TEST_F(RunTest, GrepJsonlCountAndExplicitTemplatesKeepTheirContracts) {
+  ASSERT_THAT(fs_.WriteContent(Path("grep.txt"), "hit\nno\nhit\n"), IsOk());
+  const auto records = RunArgvRecords({Path("grep.txt"), "-grep", "hit", "--count", "--context=1", "--format=jsonl"});
+  ASSERT_THAT(records, SizeIs(1));
+  const auto row = nlohmann::json::parse(records.front());
+  EXPECT_THAT(row.at("record").get<std::string>(), Eq("grep"));
+  EXPECT_THAT(row.at("kind").get<std::string>(), Eq("count"));
+  EXPECT_THAT(row.at("count").get<std::size_t>(), Eq(2));
+  EXPECT_THAT(row.at("path").get<std::string>(), Eq(Path("grep.txt")));
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(RunArgvRecords({Path("grep.txt"), "-grep:{line}", "hit", "--format=jsonl"}), ElementsAre("1", "3"));
+  EXPECT_THAT(last_errors_, Eq(0));
+}
+
+TEST_F(RunTest, GrepSummariesAndHistogramsKeepDistinctJsonSchemas) {
+  const auto records =
+      RunArgvRecords({Path("a.txt"), "-grep", "a", "--summary=ext", "--histogram=ext", "--format=jsonl"});
+  EXPECT_THAT(last_errors_, Eq(0));
+  ASSERT_THAT(records, SizeIs(4));
+  const auto match = nlohmann::json::parse(records.front());
+  EXPECT_THAT(match.at("record").get<std::string>(), Eq("grep"));
+  const auto summary = nlohmann::json::parse(records.at(1));
+  EXPECT_THAT(summary.at("record").get<std::string>(), Eq("summary"));
+  EXPECT_THAT(summary.at("is_total").get<bool>(), IsFalse());
+  const auto total = nlohmann::json::parse(records.at(2));
+  EXPECT_THAT(total.at("is_total").get<bool>(), IsTrue());
+  const auto histogram = nlohmann::json::parse(records.back());
+  EXPECT_THAT(histogram.at("bucket").get<std::string>(), Eq("txt"));
+  EXPECT_THAT(histogram.at("value").get<int>(), Eq(1));
+}
+
+TEST_F(RunTest, ExplicitPrintfRetainsAuthoredOutputBesideJsonSummaries) {
+  const auto records = RunArgvRecords({Path("a.txt"), "-printf", "authored\n", "--summary=ext", "--format=jsonl"});
+  EXPECT_THAT(last_errors_, Eq(0));
+  ASSERT_THAT(records, SizeIs(3));
+  EXPECT_THAT(records.front(), Eq("authored"));
+  EXPECT_THAT(nlohmann::json::parse(records.at(1)).at("record").get<std::string>(), Eq("summary"));
+}
+
+TEST_F(RunTest, UnsupportedGrepFormatsFailBeforeActions) {
+  constexpr auto kFormats = std::to_array<std::string_view>(
+      {"--format=csv", "--format=tsv", "--format=md", "--format=aligned", "--format=nul", "--format=tree"});
+  for (const auto format : kFormats) {
+    EXPECT_THAT(
+        RunArgvRecords({Path("a.txt"), "-delete", ",", "-grep", "a", std::string(format), "--summary=ext"}), IsEmpty());
+    EXPECT_THAT(last_errors_, Eq(2));
+    EXPECT_THAT(fs_.ReadContent(Path("a.txt")), IsOkAndHolds(Eq("a")));
   }
 }
 

@@ -68,6 +68,7 @@
 #include "xff/matching/similarity/similarity.h"
 #include "xff/parser/ast.h"
 #include "xff/presentation/fields/fields.h"
+#include "xff/presentation/render/render.h"
 #include "xff/registry/descriptor.h"
 #include "xff/values/values.h"
 #include "xff/vfs/entry.h"
@@ -1467,6 +1468,32 @@ bool EvalHasheq(const parser::Expr& expr, EvalContext& ctx) {
       spec->encoding == hash::Encoding::kHex ? absl::EqualsIgnoreCase(*digest, expected) : *digest == expected);
 }
 
+void EmitGrepCount(const parser::Expr& expr, const EvalContext& ctx, std::size_t count) {
+  if (ctx.grep_json) {
+    ctx.emit(
+        absl::StrCat(
+            R"({"record":"grep","kind":"count","path":)", render::JsonValue(ctx.visit.path), R"(,"root":)",
+            render::JsonValue(ctx.visit.root), R"(,"pattern":)", render::JsonValue(expr.args.front()), R"(,"count":)",
+            count, "}\n"));
+  } else {
+    ctx.emit(absl::StrCat(ctx.visit.path, ":", count, "\n"));
+  }
+}
+
+void EmitGrepLine(const parser::Expr& expr, const EvalContext& ctx, const content::ContextLine& line) {
+  if (ctx.grep_json) {
+    ctx.emit(
+        absl::StrCat(
+            R"({"record":"grep","kind":)", render::JsonValue(line.is_match ? "match" : "context"), R"(,"path":)",
+            render::JsonValue(ctx.visit.path), R"(,"root":)", render::JsonValue(ctx.visit.root), R"(,"pattern":)",
+            render::JsonValue(expr.args.front()), R"(,"line":)", line.number, R"(,"group":)", line.group, R"(,"text":)",
+            render::JsonValue(line.text), "}\n"));
+  } else {
+    const std::string_view separator = line.is_match ? ":" : "-";
+    ctx.emit(absl::StrCat(ctx.visit.path, separator, line.number, separator, line.text, "\n"));
+  }
+}
+
 // xff -grep PATTERN: the line-output companion of -rxc. Prints each line of the
 // file's content that matches, as `path:lineno:text` (grep's piped form). The
 // pattern is pre-compiled by the parser under the run's --regextype grammar (RE2 by
@@ -1497,7 +1524,7 @@ bool EvalGrep(const parser::Expr& expr, EvalContext& ctx) {
     // lines (and any -grep:FORMAT); files with no match emit nothing. Context is ignored.
     const std::vector<content::LineMatch> lines = content::CollectLineMatches(*content, is_match);
     if (!lines.empty()) {
-      ctx.emit(absl::StrCat(ctx.visit.path, ":", lines.size(), "\n"));
+      EmitGrepCount(expr, ctx, lines.size());
     }
     return !lines.empty();
   }
@@ -1506,7 +1533,8 @@ bool EvalGrep(const parser::Expr& expr, EvalContext& ctx) {
   // context line '-', and a "--" line divides non-adjacent groups -- exactly grep/ripgrep.
   const std::vector<content::ContextLine> lines =
       content::CollectLineMatchesWithContext(*content, is_match, ctx.grep_before, ctx.grep_after);
-  const bool with_context = ctx.grep_before > 0 || ctx.grep_after > 0;
+  const bool with_context =
+      (ctx.grep_before > 0 || ctx.grep_after > 0) && (!ctx.grep_json || expr.grep_template != nullptr);
   const std::string link = expr.grep_template == nullptr ? std::string() : LinkTarget(ctx);
   bool any_match = false;
   bool first = true;
@@ -1519,8 +1547,7 @@ bool EvalGrep(const parser::Expr& expr, EvalContext& ctx) {
     first = false;
     prev_group = line.group;
     if (expr.grep_template == nullptr) {
-      const std::string_view sep = line.is_match ? ":" : "-";  // grep: ':' for a match line, '-' for context
-      ctx.emit(absl::StrCat(ctx.visit.path, sep, line.number, sep, line.text, "\n"));
+      EmitGrepLine(expr, ctx, line);
       continue;
     }
     // -grep:FORMAT: render the field template per line ({line}/{text} plus the entry's

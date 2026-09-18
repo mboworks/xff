@@ -88,7 +88,7 @@ constexpr std::array kSkipVcsValues = std::to_array<ValueDoc>({
 constexpr std::array kFormatValues = std::to_array<ValueDoc>({
     {.value = "plain", .meaning = "one path per line (the default)"},
     {.value = "nul", .meaning = "NUL-separated paths (for xargs -0)"},
-    {.value = "jsonl", .meaning = "one JSON object per match"},
+    {.value = "jsonl", .meaning = "JSON objects for built-in listing, comparison, grep, and reduction records"},
     {.value = "csv", .meaning = "comma-separated columns"},
     {.value = "tsv", .meaning = "tab-separated columns"},
     {.value = "aligned", .meaning = "column-aligned table"},
@@ -1139,7 +1139,12 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
             "and table. `--no-header` omits those headings, table headers, and Markdown separator rows "
             "when producing fragments. Summaries support `plain`, `aligned`, `jsonl`, and `markdown` (alias `md`); "
             "`csv`, `tsv`, `nul`, and `tree` are listing-only formats and cannot render active summaries. "
-            "Expression actions and per-path comparison records retain their own output formats.",
+            "Comparison status records support `plain` and `jsonl`; comparison patches require `plain`. "
+            "Use `--compare-select=none` to format only comparison summaries. Explicit expression actions "
+            "retain their own output formats. Built-in `-grep` uses JSON match/context/count records with "
+            "`jsonl` and rejects formats other than `plain` or `jsonl`; an explicit `-grep:FORMAT` remains authored "
+            "output. JSONL textual values stay strings when valid UTF-8; other byte sequences use "
+            "`{\"encoding\":\"base64\",\"data\":\"...\"}` with standard padded base64, preserving every byte.",
         .values = kFormatValues,
         .topic = "output",
         .value_check = GlobalFlag::ValueCheck::kEnum,
@@ -1171,7 +1176,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
             "`--compare=status --compare-select=none --summary=compare`; later flags may override its settings. "
             "Bare `--compare` and "
             "`--compare=status` emit only discrepancies as tab-separated `left-only`, `right-only`, or "
-            "`different` records. `--compare=diff` emits one unified tree diff, suitable for redirecting to "
+            "`different` records. With `--format=jsonl`, each status is a JSON object containing "
+            "`record: comparison`, `status`, relative `path`, `left_root`, and `right_root`. "
+            "`--compare=diff` emits one unified tree diff, suitable for redirecting to "
             "a patch file; `--diff-context` and `--diff-algorithm` tune it. Unlike `-diff TARGET`, which is "
             "an expression action comparing each match from one walk with a templated target and therefore "
             "cannot discover target-only paths, `--compare` walks both roots independently and pairs the "

@@ -42,6 +42,13 @@ enum class Format { kPlain, kNul, kJsonl, kCsv, kTsv, kAligned, kMarkdown, kTree
 // JSON-escapes regardless.
 enum class PathEncoding { kRaw, kEscape };
 
+// Returns a JSON string literal, including quotes and escaped control characters.
+std::string JsonQuote(std::string_view text);
+
+// Encode a byte sequence losslessly: UTF-8 as a JSON string, otherwise an object with
+// encoding="base64" and data holding its standard padded base64 representation.
+std::string JsonValue(std::string_view bytes);
+
 // Formats matched paths into output records. Stateless aside from the format +
 // encoding selectors; cheap to copy.
 class Renderer {

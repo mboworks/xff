@@ -24,8 +24,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
+#include "nlohmann/json.hpp"
 
 namespace xff::render {
 namespace {
@@ -129,6 +131,23 @@ std::string MarkdownCell(std::string_view field) {
 
 }  // namespace
 
+std::string JsonQuote(std::string_view text) {
+  std::string result = "\"";
+  AppendJsonEscaped(text, result);
+  result.push_back('"');
+  return result;
+}
+
+std::string JsonValue(std::string_view bytes) {
+  std::string quoted = JsonQuote(bytes);
+  // Reuse the JSON parser's UTF-8 validation; quoting already handles the JSON syntax.
+  const bool ascii = std::ranges::all_of(bytes, [](char byte) { return static_cast<unsigned char>(byte) < 0x80; });
+  if (ascii || nlohmann::json::accept(quoted)) {
+    return quoted;
+  }
+  return absl::StrCat(R"({"encoding":"base64","data":")", absl::Base64Escape(bytes), R"("})");
+}
+
 std::string Renderer::Record(std::string_view path, std::string_view color) const {
   switch (format_) {
     case Format::kAligned:
@@ -144,12 +163,7 @@ std::string Renderer::Record(std::string_view path, std::string_view color) cons
       record.push_back('\n');
       return record;
     }
-    case Format::kJsonl: {
-      std::string record = R"({"path":")";
-      AppendJsonEscaped(path, record);
-      record.append("\"}\n");
-      return record;
-    }
+    case Format::kJsonl: return absl::StrCat("{\"path\":", JsonValue(path), "}\n");
     case Format::kNul: {
       std::string record(path);
       record.push_back('\0');

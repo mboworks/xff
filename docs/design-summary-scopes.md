@@ -222,3 +222,6 @@ Plain and Markdown tables retain the aggregate label `total`. A data label equal
 an empty label, or a label beginning with a double quote is shown as a JSON-quoted string.
 Quoting leading quotes prevents a real filename containing quotes from imitating an escaped label.
 This affects presentation only: JSONL group values keep their original contents.
+
+See [structured output](design-structured-output.md) for comparison and grep records,
+producer/format compatibility, and authored-output exceptions.
