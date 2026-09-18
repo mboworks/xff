@@ -199,6 +199,36 @@ test::archive_any_offers_every_file_to_the_reader() {
   expect_output_not_contains "xff:" "${out}"
 }
 
+test::later_all_modes_restore_the_filename_gate() {
+  local root out earlier later
+  root="$(_tree)"
+  cp "${root}/a.tar" "${root}/blob"
+  for earlier in --archive=any --archive-any -z++ -Z++; do
+    for later in --archive=all --archive -z+ -Z+; do
+      out="$("$(_xff_bin)" "${earlier}" "${later}" "${root}")"
+      expect_output_contains "a.tar!one.txt" "${out}"
+      expect_output_not_contains "blob!" "${out}"
+    done
+  done
+}
+
+test::archive_sniffing_follows_selected_config_order() {
+  local root out
+  root="$(_tree)"
+  cp "${root}/a.tar" "${root}/blob"
+  cat >"${root}/modes.rc" <<'INI'
+[sniff]
+--archive=any
+[named]
+--archive=all
+INI
+  out="$("$(_xff_bin)" --xffrc="${root}/modes.rc" --config=sniff --config=named "${root}")"
+  expect_output_contains "a.tar!one.txt" "${out}"
+  expect_output_not_contains "blob!" "${out}"
+  out="$("$(_xff_bin)" --xffrc="${root}/modes.rc" --config=named --config=sniff "${root}")"
+  expect_output_contains "blob!one.txt" "${out}"
+}
+
 test::a_container_named_on_the_command_line_is_never_gated_by_its_name() {
   local root out
   root="$(_tree)"

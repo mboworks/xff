@@ -242,6 +242,19 @@ differ, so removing one feed without preserving collection semantics is insuffic
 collection placement and named-population multiplicity, retain deduplication/custom schemes and
 root provenance, keep comparison physical, and reject overflow without partial tables.
 
+### B13 - P1: Earlier archive sniffing survives a later mode selection
+
+- [x] Resolve filename sniffing from the final archive mode and verify CLI/config ordering.
+
+With a tar file named `blob` inside a directory, `--archive=all` leaves it closed, but
+`--archive=any --archive=all` still enters it. The same failure occurs with `-z++ -z+`.
+Traversal depth uses the final mode, while filename sniffing checks whether an any-mode spelling
+occurred anywhere. A later narrower selection therefore does not restore the expected filename gate.
+
+**Fix:** carry sniffing in the resolved archive options, alongside traversal and depth, rather than
+re-reading historical spellings. **Acceptance:** real-archive regressions for long and short forms,
+upper-case capability forms, and named configurations selected in both orders.
+
 ## Design and usability improvements
 
 These are observed limitations or deliberate current behaviors, not claims of implementation bugs.

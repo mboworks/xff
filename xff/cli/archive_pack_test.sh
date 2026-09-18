@@ -536,6 +536,117 @@ test::file_directory_destination_conflicts_fail_before_publication() {
   expect_eq a/b "$(tar -tf "${root}/reverse.tar")"
 }
 
+# These profiles match docs/archive-safety-recipes.md. Tests redirect user-config discovery
+# only through the test binary's injected provider; production uses the OS account location.
+_recipe_tree() {
+  local root
+  root="$(_tree)"
+  root="$(cd "${root}" && pwd -P)"
+  mkdir -p "${root}/xff-output/nested"
+  echo obsolete >"${root}/src/obsolete.txt"
+  cat >"${root}/recipes.ini" <<'INI'
+--block-policy-categories=archive,output
+--output-root=${HOME}/xff-output
+--safe
+
+[pack-new]
+--no-safe-block-archive-writing
+--no-safe-block-output-file-writing
+
+[delete-member]
+--no-safe-block-archive-writing
+--no-safe-block-archive-overwrite
+--no-safe-block-archive-content-deletion
+--no-safe-block-output-file-writing
+--no-safe-block-output-file-overwrite
+
+[write-output]
+--no-safe-block-output-file-writing
+INI
+  echo "${root}"
+}
+
+_recipe_run() {
+  local root="$1"
+  shift
+  HOME="${root}" XFF_TEST_USER_CONFIG="${root}/recipes.ini" "$(_xff_bin)" "$@"
+}
+
+test::recipe_read_only_inspection_blocks_mutation_and_execution() {
+  local root out status before
+  root="$(_recipe_tree)"
+  "$(_xff_bin)" "${root}/src" -type f --pack="${root}/xff-output/source.tar"
+  before="$(cksum "${root}/xff-output/source.tar")"
+  out="$(_recipe_run "${root}" "${root}/xff-output/source.tar" --archive=roots -type f -print)"
+  expect_output_contains 'obsolete.txt' "${out}" || return
+  status=0
+  _recipe_run "${root}" "${root}/xff-output/source.tar" --archive=roots --archive-delete \
+    -name obsolete.txt -delete >/dev/null 2>&1 || status=$?
+  expect_eq 2 "${status}" || return
+  expect_eq "${before}" "$(cksum "${root}/xff-output/source.tar")" || return
+  status=0
+  out="$(_recipe_run "${root}" "${root}/src" -exec touch "${root}/executed" \; 2>&1)" || status=$?
+  expect_eq 2 "${status}" || return
+  expect_output_contains "execution" "${out}" || return
+  [[ ! -e "${root}/executed" ]] || fail 'read-only profile executed a child'
+}
+
+test::recipe_pack_new_preserves_existing_archives_and_rejects_outside_paths() {
+  local root before status
+  root="$(_recipe_tree)"
+  _recipe_run "${root}" "${root}/src" -type f --config=pack-new --pack="${root}/xff-output/new.tar"
+  expect_output_contains 'obsolete.txt' "$(tar -tf "${root}/xff-output/new.tar")" || return
+  before="$(cksum "${root}/xff-output/new.tar")"
+  status=0
+  _recipe_run "${root}" "${root}/src" -type f --config=pack-new --pack="${root}/xff-output/new.tar" >/dev/null 2>&1 || status=$?
+  expect_eq 2 "${status}" || return
+  expect_eq "${before}" "$(cksum "${root}/xff-output/new.tar")" || return
+  status=0
+  _recipe_run "${root}" "${root}/src" --config=pack-new --pack="${root}/outside.tar" >/dev/null 2>&1 || status=$?
+  expect_eq 2 "${status}" || return
+  [[ ! -e "${root}/outside.tar" ]] || fail 'archive escaped the declared output root'
+}
+
+test::recipe_member_deletion_requires_rewrite_controls_and_preserves_other_content() {
+  local root before status
+  root="$(_recipe_tree)"
+  _recipe_run "${root}" "${root}/src" -type f --config=pack-new --pack="${root}/xff-output/new.tar"
+  before="$(cksum "${root}/xff-output/new.tar")"
+  status=0
+  _recipe_run "${root}" "${root}/xff-output/new.tar" --archive=roots --config=delete-member \
+    -type f -name obsolete.txt -delete >/dev/null 2>&1 || status=$?
+  expect_eq 2 "${status}" || return
+  expect_eq "${before}" "$(cksum "${root}/xff-output/new.tar")" || return
+  _recipe_run "${root}" "${root}/xff-output/new.tar" --archive=roots --config=delete-member \
+    --archive-delete -type f -name obsolete.txt -delete
+  expect_output_not_contains 'obsolete.txt' "$(tar -tf "${root}/xff-output/new.tar")" || return
+  expect_eq first "$(tar -xOf "${root}/xff-output/new.tar" a.cc)" || return
+  before="$(cksum "${root}/xff-output/new.tar")"
+  status=0
+  _recipe_run "${root}" "${root}/xff-output/new.tar" --archive=roots --config=delete-member \
+    --archive-delete --block-archive-content-deletion --skip-unsupported -name a.cc -delete >/dev/null 2>&1 || status=$?
+  expect_eq 2 "${status}" || return
+  expect_eq "${before}" "$(cksum "${root}/xff-output/new.tar")"
+}
+
+test::recipe_reports_allow_new_nested_outputs_but_not_overwrites_or_other_paths() {
+  local root before status
+  root="$(_recipe_tree)"
+  _recipe_run "${root}" "${root}/src" -type f --config=write-output -fprint "${root}/xff-output/files.txt"
+  expect_output_contains 'obsolete.txt' "$(cat "${root}/xff-output/files.txt")" || return
+  _recipe_run "${root}" "${root}/src" -type f --config=write-output -fprint "${root}/xff-output/nested/files.txt"
+  before="$(cksum "${root}/xff-output/files.txt")"
+  status=0
+  _recipe_run "${root}" "${root}/src" -type f --config=write-output -fprint "${root}/xff-output/files.txt" >/dev/null 2>&1 || status=$?
+  expect_eq 2 "${status}" || return
+  expect_eq "${before}" "$(cksum "${root}/xff-output/files.txt")" || return
+  status=0
+  _recipe_run "${root}" "${root}/src" --config=write-output -fprint "${root}/outside.txt" >/dev/null 2>&1 || status=$?
+  expect_eq 2 "${status}" || return
+  [[ ! -e "${root}/outside.txt" ]] || fail 'report escaped the declared output root'
+}
+
+
 test::output_scope_guards_archive_publication() {
   local root cfg status
   root="$(_tree)"
