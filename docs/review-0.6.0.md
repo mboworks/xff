@@ -226,7 +226,7 @@ contract about which records can appear.
 
 ### S02 - P1: Decide archive member-name collision policy
 
-- [ ] Define behavior when multiple inputs map to the same packed member name.
+- [x] Define behavior when multiple inputs map to the same packed member name (PR #865).
 
 With `LEFT/same.txt` containing `left` and `RIGHT/same.txt` containing `right`,
 `xff LEFT RIGHT -type f --pack=out.tar` succeeds and writes two members both named `same.txt`.
@@ -253,9 +253,11 @@ CLI tests cover complete configuration files, dry-run, overlapping roots, and tr
 Doing so works but prints the comparison-result table twice before the ordinary table.
 Repeatable summaries explain the implementation, but not a useful user intention here.
 
-**Recommendation:** make the shorthand's comparison summary idempotent with a following bare summary,
-or recommend `--summary=overall` in the diagnostic and examples. Decide explicitly whether deliberate
-repetition of identical explicit summary requests remains supported.
+**Resolution:** the shorthand and bare summary reuse an existing comparison-results request.
+With an explicit scope, bare summary still adds ordinary scoped totals. Explicit groupings such as
+`--summary=ext` remain additional tables, so the reported Markdown extension command correctly
+produces two tables. Deliberately repeated explicit `--summary=compare` requests remain supported.
+`--summary=none` clears the active list before later requests are resolved.
 **Acceptance:** a small truth table covers ordinary traversal, status/diff/summary comparison, bare
 summary, explicit groupings, explicit scopes, repeated flags, and `--summary=none`.
 

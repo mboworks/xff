@@ -312,9 +312,9 @@ struct SummarySpec {
   std::size_t request_index = 0;
 };
 
-// Parses every --summary[=X] into an ordered list of sinks (each occurrence appends one); the value
-// selects the mode, `--summary=none` clears the list (turns every summary off). No last-wins
-// collapse: two distinct --summary flags produce two tables.
+// Parses --summary[=X] into ordered sinks. Explicit requests append; implicit comparison-summary
+// requests reuse an existing comparison sink. The value selects the mode, and --summary=none clears
+// all sinks. Repeated explicit requests retain their distinct request identities.
 std::vector<SummarySpec> ResolveSummaries(const std::vector<std::string>& globals, bool compare = false) {
   using ModePair = std::pair<std::string_view, SummaryMode>;
   static constexpr auto kModes = mbo::container::MakeLimitedMap(
@@ -329,7 +329,9 @@ std::vector<SummarySpec> ResolveSummaries(const std::vector<std::string>& global
   std::vector<SummarySpec> specs;
   for (const std::string& global : globals) {
     if (global == "--compare=summary" || (global == "--summary" && compare)) {
-      specs.push_back({.mode = SummaryMode::kCompare});
+      if (absl::c_none_of(specs, [](const SummarySpec& spec) { return spec.mode == SummaryMode::kCompare; })) {
+        specs.push_back({.mode = SummaryMode::kCompare});
+      }
       if (global == "--summary"
           && absl::c_any_of(globals, [](std::string_view flag) { return flag.starts_with("--summary-scope="); })) {
         specs.push_back({.mode = SummaryMode::kOverall});
