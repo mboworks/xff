@@ -98,3 +98,12 @@ sh_binary(
     tags = ["manual"],
     deps = ["@bazel_tools//tools/bash/runfiles"],
 )
+
+filegroup(
+    name = "resource_benchmark_scripts",
+    srcs = [
+        "benchmark_resources.py",
+        "measure_resources.py",
+    ],
+    visibility = ["//xff/engine:__pkg__"],
+)

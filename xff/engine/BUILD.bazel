@@ -13,8 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@mboworks_bashtest//bashtest:bashtest.bzl", "bashtest")
 load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
-load("//xff:cc.bzl", "cc_library", "cc_test")
+load("//xff:cc.bzl", "cc_binary", "cc_library", "cc_test")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -346,5 +347,91 @@ cc_test(
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/status:status_macros_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+# Instrumentation for read-only benchmark harnesses; not part of the shipping CLI.
+cc_library(
+    name = "read_observer_cc",
+    testonly = True,
+    srcs = ["read_observer.cc"],
+    hdrs = ["read_observer.h"],
+    deps = [
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+cc_test(
+    name = "read_observer_test",
+    size = "small",
+    srcs = ["read_observer_test.cc"],
+    deps = [
+        ":read_observer_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+cc_library(
+    name = "read_measurement_cc",
+    testonly = True,
+    srcs = ["read_measurement.cc"],
+    hdrs = ["read_measurement.h"],
+    deps = [
+        ":read_observer_cc",
+        ":run_cc",
+        "//xff/parser:parser_cc",
+        "//xff/registry:registry_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+    ],
+)
+
+cc_binary(
+    name = "read_benchmark",
+    testonly = True,
+    srcs = ["read_benchmark.cc"],
+    deps = [
+        ":read_measurement_cc",
+        ":read_observer_cc",
+        "//xff/vfs:local_fs_cc",
+        "@abseil-cpp//absl/strings",
+        "@nlohmann_json//:json",
+    ],
+)
+
+cc_test(
+    name = "read_measurement_test",
+    size = "small",
+    srcs = ["read_measurement_test.cc"],
+    deps = [
+        ":read_measurement_cc",
+        ":read_observer_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+bashtest(
+    name = "read_benchmark_test",
+    size = "small",
+    srcs = ["read_benchmark_test.sh"],
+    data = [
+        ":read_benchmark",
+        "//tools:resource_benchmark_scripts",
+        "//xff/cli/testing:xff",
     ],
 )

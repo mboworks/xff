@@ -44,10 +44,19 @@ def make_root(root: Path, files: int, depth: int) -> None:
             index += 1
 
 
+def fingerprint(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("binary", type=Path, help="xff executable to measure")
     parser.add_argument("--output", required=True, type=Path, help="JSON report destination (overwritten)")
+    parser.add_argument("--read-counter", type=Path, help="Optional read_benchmark executable; runs each workload separately to count logical VFS bytes")
     parser.add_argument("--directory", type=Path, help="Parent for disposable fixtures, e.g. a network mount")
     parser.add_argument("--files", type=positive, default=10000, help="Files per root")
     parser.add_argument("--depth", type=positive, default=100, help="Nested directories in the deep fixture")
@@ -58,13 +67,12 @@ def main() -> int:
     if args.depth > args.files:
         parser.error("--depth must not exceed --files")
     binary = args.binary.resolve(strict=True)
-    digest = hashlib.sha256()
-    with binary.open("rb") as source:
-        for chunk in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(chunk)
+    read_counter = args.read_counter.resolve(strict=True) if args.read_counter else None
     report = {
         "binary": str(binary),
-        "binary_sha256": digest.hexdigest(),
+        "read_counter": str(read_counter) if read_counter else None,
+        "binary_sha256": fingerprint(binary),
+        "read_counter_sha256": fingerprint(read_counter) if read_counter else None,
         "build_label": args.build_label,
         "fixture": {
             "files_per_root": args.files,
@@ -78,7 +86,7 @@ def main() -> int:
     }
     harness = Path(__file__).with_name("measure_resources.py")
     with tempfile.TemporaryDirectory(prefix="xff-resources-", dir=args.directory) as temporary:
-        base = Path(temporary)
+        base = Path(temporary).resolve()
         report["fixture"]["directory"] = str(base)
         for shape, depth in (("broad", 0), ("deep", args.depth)):
             roots = [base / shape / side for side in ("left", "right")]
@@ -100,6 +108,21 @@ def main() -> int:
                         return result.returncode or 1
                     data = json.loads(result.stdout)
                     data.update(shape=shape, scenario=scenario, repetition=repetition)
+                    if read_counter and not result.returncode:
+                        observed = subprocess.run(
+                            [str(read_counter), scenario, str(args.jobs), *map(str, roots if flags is None else roots[:1])],
+                            text=True, capture_output=True, check=False,
+                        )
+                        if not observed.stdout:
+                            print(observed.stderr, file=sys.stderr, end="")
+                            return observed.returncode or 1
+                        data["logical_read_run"] = json.loads(observed.stdout)
+                        data["logical_read_run"]["separate_invocation"] = True
+                        if observed.returncode:
+                            report["measurements"].append(data)
+                            args.output.write_text(json.dumps(report, indent=2) + "\n")
+                            print(observed.stderr, file=sys.stderr, end="")
+                            return observed.returncode
                     report["measurements"].append(data)
                     args.output.write_text(json.dumps(report, indent=2) + "\n")
                     print(shape, scenario, repetition, f"{data['elapsed_seconds']:.3f}s", flush=True)

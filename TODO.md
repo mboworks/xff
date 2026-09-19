@@ -452,6 +452,9 @@ this as intentional accounting.
 - [x] Measure logical whole-file reads for broad/deep synthetic trees, including repeated content consumers and paired comparison.
 - [x] Inspect effective worker limits, active content fields, and retained-state consumers without traversal.
 - [ ] Integrate general runtime read accounting.
+- [x] Add a read-only benchmark observer for whole-file/range calls on real broad/deep fixtures,
+      with failed/empty/concurrent-read tests and separate invocation provenance.
+- [ ] Extend measurement coverage to archive/member backends and supplied network fixtures.
 
 - [x] Record S13 one/eight-worker observations on broad/deep fixtures, with raw runs and timing
       ranges; keep optimized branching/network scaling and storage-traffic claims unproven.

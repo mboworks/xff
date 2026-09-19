@@ -3,6 +3,8 @@
 
 # 0.7.0
 
+- Add a read-only benchmark harness for runtime logical content-read accounting on real files.
+
 - Derive shared expression behavior and help relationships from registry capabilities.
   Treat every explicit archive mode consistently when archive support is unavailable.
 - Escape control bytes in human-readable tables and tree labels, keeping unusual filenames
