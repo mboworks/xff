@@ -1572,7 +1572,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "`<stem>-<index>-of-<total>` (`of`), `<stem>.<NNN>` (`dotnum`), and `<stem>_<NNN>` "
                    "(`underscore`). Restrict to specific schemes with a comma list, e.g. `--shards=of,dotnum`. "
                    "Grouping is "
-                   "per-directory; files that match no scheme are listed unchanged. Off by default.",
+                   "per-directory; files that match no scheme are listed unchanged. Off by default. "
+                   "In `--compare` mode, entries and reductions remain physical files; `--shards` does not "
+                   "collapse them or infer a whole-set comparison result. Its scheme selection still applies "
+                   "to `-shard-status`.",
         .values = kShardsValues,
         .topic = "stats",
     },
@@ -1879,6 +1882,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "exit",
         .header = "Exit code control",
         .summary = "suppress output; exit 0 if anything matched, else 1 (-q: grep-compatible)",
+        .details = "In comparison mode, a match means a left-only, right-only, or different entry in the "
+                   "matched population: `0` means discrepancies, `1` means none, and `2` means an error. "
+                   "`--compare-select` and summary output do not change this status.",
         .see_also = "output",
     },
     {
@@ -1887,6 +1893,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "exit",
         .header = "Exit code control",
         .summary = "keep output; exit 0 if anything matched, else 1",
+        .details = "In comparison mode, a match means a left-only, right-only, or different entry in the "
+                   "matched population: `0` means discrepancies, `1` means none, and `2` means an error. "
+                   "`--compare-select` and summary output do not change this status.",
         .see_also = "output",
     },
     {

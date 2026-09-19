@@ -35,7 +35,8 @@
     "docs/design-summary-scopes.md": "docs/design-summary-scopes.html",
     "docs/design-field-validation.md": "docs/design-field-validation.html",
     "docs/config-inspection.md": "docs/config-inspection.html",
-    "docs/summary-export.md": "docs/summary-export.html"
+    "docs/summary-export.md": "docs/summary-export.html",
+    "docs/shard-populations.md": "docs/shard-populations.html"
   },
   "generated_html": {
     "XFF.md": {

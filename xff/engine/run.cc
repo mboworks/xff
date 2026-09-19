@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <future>
 #include <iostream>
 #include <limits>
@@ -3731,42 +3732,113 @@ Collections MakeCollections(
   return collections;
 }
 
-// The -collect post-walk pass: feeds every collected entry into the reduction sinks, in collection
-// name order then walk order. `-collect` exists so that a truncating test can narrow the LISTING
-// without also narrowing what is summarised, which is only possible if the sinks read a set the walk
-// held back rather than the stream. BOTH sinks switch together: a run where --summary reduced the
-// collection while --histogram reduced the matches would report two different totals for one walk.
-// The Visit is rebuilt per entry because a collected entry owns its storage (see collect.h).
-void FeedCollections(
+// The selected shard policy also applies when reductions consume explicit collections.
+struct CollectionShardPolicy {
+  const ShardsConfig& config;
+  const shard::Matcher& matcher;
+  shard::Dedup dedup;
+};
+
+struct CollectedShardDirectory {
+  std::vector<shard::ShardFile> shards;
+  std::map<std::string_view, std::reference_wrapper<const CollectedEntry>> by_name;
+  std::vector<std::reference_wrapper<const CollectedEntry>> passthrough;
+};
+
+// Views borrow the collection's stable storage until its post-walk reduction finishes.
+std::map<std::string, CollectedShardDirectory> GroupCollectedDirectories(
+    const std::vector<CollectedEntry>& entries,
+    const CollectionShardPolicy& policy) {
+  std::map<std::string, CollectedShardDirectory> groups;
+  for (const CollectedEntry& entry : entries) {
+    const auto slash = entry.path.rfind('/');
+    auto& group = groups[slash == std::string::npos ? "" : entry.path.substr(0, slash + 1)];
+    const auto match = policy.matcher.Decode(entry.name);
+    const bool selected = match.has_value()
+                          && (match->scheme == shard::Scheme::kCustom || policy.config.schemes.empty()
+                              || absl::c_linear_search(policy.config.schemes, match->scheme));
+    if (entry.metadata.type != vfs::FileType::kRegular || !selected) {
+      group.passthrough.emplace_back(entry);
+      continue;
+    }
+    group.by_name.try_emplace(entry.name, std::cref(entry));
+    group.shards.push_back({
+        .name = entry.name,
+        .size = entry.metadata.size,
+        .mode = entry.metadata.mode,
+        .mtime = absl::ToUnixNanos(entry.metadata.mtime),
+    });
+  }
+  return groups;
+}
+
+template<typename Feed>
+int FeedCollectedShards(
+    const std::vector<CollectedEntry>& entries,
+    const CollectionShardPolicy& policy,
+    const Feed& feed) {
+  int errors = 0;
+  for (const auto& [prefix, group] : GroupCollectedDirectories(entries, policy)) {
+    for (const auto& set : shard::GroupShards(group.shards, policy.matcher, policy.dedup)) {
+      if (policy.dedup == shard::Dedup::kError) {
+        errors += ReportShardDuplicateErrors(set, prefix);
+      }
+      CollectedEntry unit = group.by_name.at(ShardRepresentativePath(set)).get();
+      unit.metadata.size = set.total_size;
+      feed(unit, static_cast<std::int64_t>(set.members.size()));
+    }
+    for (const auto& entry : group.passthrough) {
+      feed(entry.get(), std::nullopt);
+    }
+  }
+  return errors;
+}
+
+// Both sinks consume the collected population, never a mixture of matches and collections.
+// Each named collection is independent: an entry collected under two names contributes twice.
+int FeedCollections(
     const Collections& collections,
     const CollectionRenderDefaults& defaults,
     const std::vector<SummarySpec>& summaries,
     const std::vector<std::optional<fields::Template>>& summary_templates,
     SummaryAccumulator& summary_cells,
     const std::vector<HistogramSpec>& histograms,
-    std::vector<std::map<std::string, HistCell>>& histogram_cells) {
+    std::vector<std::map<std::string, HistCell>>& histogram_cells,
+    const CollectionShardPolicy& shards) {
+  const auto feed = [&](const CollectedEntry& collected, std::optional<std::int64_t> shard_count) {
+    const Visit visit = collected.AsVisit();
+    const vfs::FileSystem& fs = visit.fs.has_value() ? *visit.fs : defaults.fs;
+    const std::string link;  // {target} is not resolved for a collected entry
+    const fields::RenderContext key_ctx{
+        .path = visit.path,
+        .root = visit.root,
+        .link_target = link,
+        .metadata = visit.metadata,
+        .depth = visit.depth,
+        .fs = fs,
+        .tz = defaults.tz,
+        .time_format = defaults.time_format,
+        .zone_suffix = defaults.zone_suffix,
+        .hash_algorithm = defaults.hash_algorithm,
+        .hash_encoding = defaults.hash_encoding,
+        .defines = defaults.defines,
+        .shard_count = shard_count,
+    };
+    FeedSummaries(summaries, summary_templates, summary_cells, key_ctx, visit);
+    FeedHistograms(histograms, histogram_cells, visit, fs);
+  };
+  int errors = 0;
   for (const std::string_view name : collections.Names()) {
-    for (const CollectedEntry& collected : collections.Entries(name)) {
-      const Visit visit = collected.AsVisit();
-      const std::string link;  // {target} is not resolved for a collected entry
-      const fields::RenderContext key_ctx{
-          .path = visit.path,
-          .root = visit.root,
-          .link_target = link,
-          .metadata = visit.metadata,
-          .depth = visit.depth,
-          .fs = visit.fs.has_value() ? *visit.fs : defaults.fs,
-          .tz = defaults.tz,
-          .time_format = defaults.time_format,
-          .zone_suffix = defaults.zone_suffix,
-          .hash_algorithm = defaults.hash_algorithm,
-          .hash_encoding = defaults.hash_encoding,
-          .defines = defaults.defines,
-      };
-      FeedSummaries(summaries, summary_templates, summary_cells, key_ctx, visit);
-      FeedHistograms(histograms, histogram_cells, visit, *visit.fs);
+    const auto& entries = collections.Entries(name);
+    if (shards.config.enabled) {
+      errors += FeedCollectedShards(entries, shards, feed);
+    } else {
+      for (const CollectedEntry& entry : entries) {
+        feed(entry, std::nullopt);
+      }
     }
   }
+  return errors;
 }
 
 // The collection's post-walk step: refuse an INCOMPLETE collection, otherwise feed the reduction
@@ -3783,7 +3855,8 @@ int FinishCollections(
     SummaryAccumulator& summary_cells,
     const std::vector<HistogramSpec>& histograms,
     std::vector<std::map<std::string, HistCell>>& histogram_cells,
-    const CollectionRenderDefaults& defaults) {
+    const CollectionRenderDefaults& defaults,
+    const CollectionShardPolicy& shards) {
   if (collections.Overflowed()) {
     const Collections::Budget budget = collections.CurrentBudget();
     on_error(
@@ -3796,7 +3869,8 @@ int FinishCollections(
     return 2;
   }
   if (collections.Active() && (!summaries.empty() || !histograms.empty())) {
-    FeedCollections(collections, defaults, summaries, summary_templates, summary_cells, histograms, histogram_cells);
+    return FeedCollections(
+        collections, defaults, summaries, summary_templates, summary_cells, histograms, histogram_cells, shards);
   }
   return 0;
 }
@@ -4820,7 +4894,7 @@ RunResult RunFindCore(
     on_error("--shards", shards_or.status());
     return RunResult{.errors = 2};
   }
-  const ShardsConfig shards = *std::move(shards_or);
+  ShardsConfig shards = *std::move(shards_or);
   absl::StatusOr<ShardShow> shard_show_or = ResolveShardShow(command.globals);
   if (!shard_show_or.ok()) {
     on_error("--shards-show", shard_show_or.status());
@@ -4856,6 +4930,11 @@ RunResult RunFindCore(
   } else {
     shard_matcher = *shard::Matcher::Make();
   }
+
+  // Comparison pairs physical entries by relative path. Collapsing a side's reductions onto
+  // its representative would assign changed shards to that representative's result category.
+  // Keep scheme selection for -shard-status, but use physical entries throughout comparison.
+  shards.enabled = shards.enabled && !compare_listing;
 
   // A matched file buffered for shard grouping, bucketed by directory (grouping is per-directory).
   // `name` owns the basename so a ShardFile view into it stays valid post-walk; `root` / `depth` /
@@ -4986,6 +5065,8 @@ RunResult RunFindCore(
   // the AST (presence is SYNTACTIC, like find's implicit -print: a -collect in a branch that never
   // runs still switches the summary's source, and the summary is then legitimately empty).
   Collections collections = MakeCollections(expression, command.globals);
+  const bool group_matched_shards =
+      shards.enabled && (!collections.Active() || (summaries.empty() && histograms.empty()));
 
   // --dry-run: route deletions through a previewing wrapper, so -delete reports
   // what it would remove without touching the filesystem.
@@ -5239,7 +5320,7 @@ RunResult RunFindCore(
           });
         }
       }
-      if (shards.enabled) {
+      if (group_matched_shards) {
         const std::string_view path = visit.path;
         const std::string_view::size_type slash = path.rfind('/');
         const std::string_view dir = slash == std::string_view::npos ? std::string_view() : path.substr(0, slash);
@@ -5522,7 +5603,7 @@ RunResult RunFindCore(
     };
     errors += ResolveDeferredRound(
         deferred_candidates, deferred_node_order, *shard_matcher, shard_dedup, scheme_allowed,
-        /*report_dedup_errors=*/!shards.enabled);
+        /*report_dedup_errors=*/!group_matched_shards);
     std::vector<DeferredCandidate> next_round;
     next_round.reserve(deferred_candidates.size());
     for (DeferredCandidate& candidate : deferred_candidates) {
@@ -5725,7 +5806,7 @@ RunResult RunFindCore(
   };
 
   std::vector<GroupedDir> shard_groups;
-  if (shards.enabled) {
+  if (group_matched_shards) {
     const auto scheme_allowed = [&](shard::Scheme scheme) {
       return scheme == shard::Scheme::kCustom || shards.schemes.empty()
              || absl::c_linear_search(shards.schemes, scheme);
@@ -5815,7 +5896,8 @@ RunResult RunFindCore(
               .hash_algorithm = hash_algorithm,
               .hash_encoding = hash_encoding,
               .defines = defines,
-          });
+          },
+          CollectionShardPolicy{.config = shards, .matcher = *shard_matcher, .dedup = shard_dedup});
       collect_status != 0) {
     return RunResult{.errors = collect_status, .any_match = any_match};
   }

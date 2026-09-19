@@ -258,3 +258,24 @@ JSON/Markdown schemas stay the same. The engine accepts an injected width and do
 probing. Unicode segmentation and character properties come from the pinned
 [utf8proc library](https://github.com/JuliaStrings/utf8proc); its complete upstream license document
 is bundled with the executable.
+
+## Shard flags during comparison
+
+Comparison pairs physical entries by relative path. Its result counts and ordinary scoped summaries
+therefore remain physical when `--shards` is present: no side is collapsed to a representative before
+category accounting, and no additional logical-set listing is printed. A set containing both an
+identical shard and a different shard contributes to both categories according to the actual files.
+`--shards=SCHEME,...` still restricts schemes used by `-shard-status`; the predicate still classifies
+the physical entries reaching it. Ordinary scans without `--compare` retain logical-set collapsing
+and logical summary counts. Whole-set content comparison is not implied by `--shards`.
+
+## Collections and shard reductions
+
+`-collect` chooses the population for summaries and histograms at its expression position.
+With `--shards`, each named collection is grouped independently into logical sets before either
+reduction is fed. Physical members are not counted again. Non-shard entries remain individual units,
+and duplicate/out-of-range shard members follow the ordinary shard rules. Collection placement
+still matters: collecting before `-first` retains the larger population, while collecting after it
+retains only entries that reached the action. An entry collected under two names contributes to
+both populations. In comparison mode, physical-entry accounting applies instead of logical
+collapsing. A collection that exceeds its `--buffer` budget fails without publishing partial tables.

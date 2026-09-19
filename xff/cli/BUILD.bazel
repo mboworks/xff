@@ -906,8 +906,30 @@ bashtest(
     data = ["//xff/cli/testing:xff"],
 )
 
+# Executable examples for docs/shard-populations.md.
+bashtest(
+    name = "shard_populations_test",
+    size = "small",
+    srcs = ["shard_populations_test.sh"],
+    data = ["//xff/cli/testing:xff"],
+)
+
 # End-to-end test of --summary output: right-aligned human table (grouped digits)
 # by default, stable one-object-per-row --format=jsonl machine output.
+bashtest(
+    name = "shard_compare_test",
+    size = "small",
+    srcs = ["shard_compare_test.sh"],
+    data = ["//xff/cli/testing:xff"],
+)
+
+bashtest(
+    name = "collected_shard_test",
+    size = "small",
+    srcs = ["collected_shard_test.sh"],
+    data = ["//xff/cli/testing:xff"],
+)
+
 bashtest(
     name = "summary_test",
     size = "small",

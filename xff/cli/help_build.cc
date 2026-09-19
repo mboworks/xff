@@ -1034,6 +1034,16 @@ Section CompareSection(bool in_full) {
       "documented for those features, but it does not cap the comparison inventories, whose memory use grows with "
       "the total number of matched entries."));
 
+  section.children.push_back(ProseOf(
+      "Exit status defaults to `0` for a completed comparison and `2` for an error. With `--exit-match` "
+      "or `--quiet`, a discrepancy counts as a match: `0` means at least one left-only, right-only, or "
+      "different entry; `1` means no discrepancies in the matched population; `2` still means an error. "
+      "This is search-style status, the reverse of `diff`'s equality/difference convention. "
+      "`--compare-select` only selects output and does not change exit status. Summary mode follows the "
+      "same rule. Two empty matched populations return `1` under match-sensitive exit, even if filters "
+      "excluded differing entries. For example, `xff --compare=summary LEFT RIGHT --exit-match` prints "
+      "statistics and returns `0` when the selected trees differ; use `--quiet` to suppress output."));
+
   static constexpr std::array<DocPair, 4> kStatuses = {{
       {"left-only", "the relative path matched only below the left root"},
       {"right-only", "the relative path matched only below the right root"},

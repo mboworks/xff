@@ -35,6 +35,18 @@
 - Suggest close registered option and predicate spellings in usage errors, and explain when a
   short global must be moved before the roots; command arguments remain literal.
 
+- Explain comparison exit status for automation, including summary output, output selection,
+  filtered populations, and error precedence.
+
+- Keep comparison summaries and listings physical when shard flags are present, preventing
+  mixed sets from being assigned wholly to their representative's comparison category.
+
+- Apply shard grouping once to each collected summary/histogram population, preserving collection
+  placement and eliminating logical-set plus physical-member double counting.
+
+- Explain physical files versus logical shard sets with tested examples covering classification,
+  actions, collection placement, reductions, duplicates, and comparison.
+
 - Reject zero, negative, malformed, and overflowing histogram widths before traversal or actions,
   including settings selected from configuration files.
 

@@ -125,7 +125,9 @@ Exit status is `0` for successful execution and `2` for errors. With `--quiet` o
 Archives and compressed streams are composable extras; virtual entries retain their source identity
 and host extraction/writing requires the corresponding capabilities. `--shards` supports the documented
 `of`, `dotnum`, and `underscore` schemes, with custom `--shard-pattern` definitions and explicit display
-and duplicate controls. The reference supplies the complete current vocabulary.
+and duplicate controls. [Physical files and logical shard sets](shard-populations.md) explains
+which population predicates, actions, summaries, and comparison use. The reference supplies the
+complete current vocabulary.
 
 [Near-duplicate design](design-near-duplicates.md), [implementation planning](implementation-plan.md),
 [test planning](test-plan.md), and [coverage policy](coverage.md) describe their boundaries and gates.

@@ -26,6 +26,12 @@
 - Preserve complete inventory and detailed reference under `--help=all` and `--help=long`.
 - Validate terminal widths and executable examples; structure comparison help and stack narrow policy tables.
 
+## Completed: Comparison exit status (audit S11)
+
+- Explain search-style comparison exit codes in focused help and exit flags.
+- Test output selection, summaries, filtered populations, and operational errors.
+- Regenerate the reference and validate focused help, registry documentation, and changed-file checks.
+
 Actionable roadmap and deliberately deferred ideas. Completed implementation records live in
 [`docs/history-roadmap.md`](docs/history-roadmap.md); other resolved design records and investigations
 live in [`docs/history.md`](docs/history.md).
@@ -358,5 +364,38 @@ The safety model and directory-scoped permissions are tracked in
 
 - [x] Define a wide schema with request, scope, root, and total identity; reuse listing encoders.
 - [x] Parse CSV/TSV exports and compare metrics with JSONL across repeated requests and scopes.
-- [ ] Verify output-producer metadata, full-config composition, generated help, and changed-header consumers.
-- [ ] Reconcile B06 total-row identity and S09 truncation metadata before publication.
+- [x] Verify output-producer metadata, full-config composition, generated help, and changed-header consumers.
+- [x] Reconcile B06 total-row identity and S09 truncation metadata before publication.
+
+### Audit B10: physical comparison populations with shard flags
+
+- [x] Reproduce a mixed identical/different set being assigned wholly to its representative's category.
+- [x] Keep comparison results and reductions physical; preserve scheme selection for `-shard-status`.
+- [x] Add regressions for category accounting, side/combined totals, extra listings, and ordinary logical summaries.
+- [x] Complete generated documentation, targeted tests, and changed-file checks before publication.
+
+A two-shard set with one identical pair and one different pair produced two physical comparison
+results, but `--shards --summary=ext --summary-scope=identical,different` placed all eight bytes under
+`identical` and none under `different`. Comparison without ordinary summaries could also emit extra
+collapsed paths. Whole-set comparison semantics remain a separate design question; this fix keeps
+all comparison accounting at the existing physical-entry level.
+
+### Audit B11: collect and shard reductions must use one population
+
+- [x] Reproduce double counting when `-collect` and `--shards` feed a summary together.
+- [x] Feed reductions from the collected population once, with logical shard grouping applied consistently.
+- [x] Test collection placement before/after truncation, named collections, duplicate/incomplete/custom sets,
+      histograms, summaries, root/category scopes, zero-byte files, and ordinary behavior without collections.
+
+Two 2-byte files `data-00000-of-00002` and `data-00001-of-00002` produce count 1 / bytes 4 with
+`xff ROOT -type f --shards --summary --format=jsonl`. Adding `-collect` before `--shards` produces
+count 3 / bytes 8. The post-walk shard pass feeds one logical set, then `FinishCollections` feeds
+the two physical members again. Merely suppressing one feed is insufficient unless the selected
+collection population and logical grouping semantics remain correct. S14's guide must not present
+this as intentional accounting.
+
+### Audit S14: shard population guide
+
+- [x] Explain physical predicates/actions, logical reductions, status-cohort order, collections,
+      missing members, duplicate selection, custom schemes, and physical comparison with executable examples.
+- [ ] Publish after the B10 comparison and B11 collection-accounting corrections.
