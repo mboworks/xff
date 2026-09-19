@@ -52,18 +52,19 @@ so consumers do not need to reimplement inheritance.
 
 ## Retained report ordering
 
-The coverage index pins `main` first. PRs and releases then share one newest-first list based on
-main's first-parent commit history: a directly merged PR uses its merge commit, a nested PR uses
-the first main commit containing its merge, and a release uses its tagged commit (including
-annotated tags). PRs merged after a release therefore appear above that release,
-regardless of PR number, version number, tag publication time, or CI completion time. A release
-precedes a PR anchored to the same commit.
+The coverage index pins `main` first. PRs and releases then share one newest-first list:
+PRs use GitHub's actual `merged_at` timestamp, and annotated tags use their tagger timestamp.
+Lightweight tags contain no creation timestamp, so their tagged commit's committer timestamp
+is the explicit fallback. Neither PR numbers, version numbers, CI completion time, nor a
+commit's position on main controls this order. A nested PR uses its own merge time.
 
-Reports without a matching commit on main, including unmerged PRs, follow the ordered history,
-newest CI run creation first. Each coverage publication refreshes all retained reports from GitHub's
-closed-PR metadata and main's full history, so a PR report produced before its merge is repositioned
-afterward. The stored `history` commit and position control presentation only; workflow creation,
-run ID, and attempt still determine which report may replace an older report for the same target.
+Open PRs and reports without a reference timestamp follow, newest CI run creation first.
+PRs closed without merging are excluded from the overview; their direct report URLs and
+immutable run-history snapshots remain available. Reopening a PR restores its overview row.
+Each publication refreshes these timestamps for all retained reports. The `reference_time`
+metadata controls presentation only; workflow creation, run ID, and attempt still determine
+which report may replace an older report for the same target. Stored `history` ancestry is
+provenance, not a sorting key.
 
 ## Individual run retention and aggregation
 
@@ -75,8 +76,7 @@ replacement. Incoming reports are also archived when a newer run already owns th
 remain available at their existing URL but are not assigned an invented run identity.
 
 An aggregation PR does not combine or relabel the coverage measurements of its constituent PRs.
-Each retains its original tested commit, workflow run, and detailed report. Once the aggregation
-reaches main, nested PR merges are positioned under the first main commit containing them, ordered
-by their individual merge times. For a squashed aggregation, publication uses GitHub PR metadata
-and verifies each nested merge against the aggregation's original head before assigning that position. The aggregation PR's own report remains separate. Before that
-merge, the constituent reports remain in the unpositioned section rather than claiming to be on main.
+Each retains its original tested commit, workflow run, and detailed report. Each constituent
+PR is ordered by its own actual merge time, even when merged into an aggregation branch.
+The recorded main-integration ancestry remains available as provenance, including verified
+membership in squashed aggregations, but does not affect the overview's timestamp order.

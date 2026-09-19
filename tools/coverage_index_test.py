@@ -2,6 +2,7 @@
 """Tests for tools/coverage_index.py."""
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -213,7 +214,8 @@ class CoverageIndexTest(unittest.TestCase):
                     "abc",
                 )
                 positions = {"main": 0, "pr/9": 3, "pr/42": 1, "tag/0.9.0": 2, "tag/0.10.0": 0}
-                metadata["history"] = {"position": positions[report], "commit": "abc"}
+                metadata["history"] = {"position": 999 - positions[report], "commit": "abc"}
+                metadata["reference_time"] = f"2026-08-22T10:0{positions[report]}:00Z"
                 (target / "coverage-meta.json").write_text(json.dumps(metadata))
 
             rendered = coverage_index.render_site(root)
@@ -248,6 +250,9 @@ class CoverageIndexTest(unittest.TestCase):
                      "-c", "user.email=coverage@example.invalid", "-c", "commit.gpgsign=false",
                      "-c", "tag.gpgsign=false", "-c", "core.hooksPath=/dev/null", *args], text=True,
                     stderr=subprocess.DEVNULL,
+                    env={**os.environ, "GIT_AUTHOR_DATE": "2026-08-20T10:30:00Z",
+                         "GIT_COMMITTER_DATE": ("2026-08-20T10:31:00Z" if args[0] == "tag"
+                                                else "2026-08-20T10:30:00Z")},
                 ).strip()
             git("init")
             git("commit", "--allow-empty", "-m", "older merge")
@@ -271,7 +276,7 @@ class CoverageIndexTest(unittest.TestCase):
             pulls = [
                 {"number": 900, "merged_at": "2026-08-20T10:00:00Z", "merge_commit_sha": older},
                 {"number": 1, "merged_at": "2026-08-21T10:00:00Z", "merge_commit_sha": newer},
-                {"number": 2, "merged_at": None, "merge_commit_sha": older},
+                {"number": 2, "state": "closed", "merged_at": None, "merge_commit_sha": older},
             ]
             pages = root / "pulls.json"
             pages.write_text(json.dumps([pulls[:1], pulls[1:]]))
@@ -285,6 +290,11 @@ class CoverageIndexTest(unittest.TestCase):
                 metadata = json.loads((reports / target / "coverage-meta.json").read_text())
                 self.assertEqual(metadata["history"], {"position": position, "commit": commit})
                 self.assertEqual(metadata["source"]["head_sha"], "tested-pr-head")
+            for target, timestamp in (("tag/0.9.0", "2026-08-20T10:30:00Z"),
+                                      ("tag/0.10.0", "2026-08-20T10:31:00Z"),
+                                      ("pr/1", "2026-08-21T10:00:00Z")):
+                metadata = json.loads((reports / target / "coverage-meta.json").read_text())
+                self.assertEqual(metadata["reference_time"], timestamp)
             for target in ("main", "pr/2", "tag/9.9.9"):
                 metadata = json.loads((reports / target / "coverage-meta.json").read_text())
                 self.assertIsNone(metadata["history"])
@@ -292,7 +302,11 @@ class CoverageIndexTest(unittest.TestCase):
             order = ["main", "pr/1", "tag/0.10.0", "tag/0.9.0", "pr/900"]
             offsets = [rendered.index(f'href="{target}/"') for target in order]
             self.assertEqual(offsets, sorted(offsets))
-            self.assertLess(offsets[-1], rendered.index('href="pr/2/"'))
+            self.assertNotIn('href="pr/2/"', rendered)
+            self.assertTrue((reports / "pr/2/coverage-meta.json").is_file())
+            pulls[-1]["state"] = "open"
+            coverage_index.update_history(reports, repository, pulls)
+            self.assertIn('href="pr/2/"', coverage_index.render_site(reports))
             # A PR report can be published before the PR is merged. Refreshing must move it
             # into the main chronology without replacing its coverage or workflow identity.
             pulls[-1]["merged_at"] = "2026-08-22T10:00:00Z"
@@ -312,6 +326,9 @@ class CoverageIndexTest(unittest.TestCase):
                      "-c", "user.email=coverage@example.invalid", "-c", "commit.gpgsign=false",
                      "-c", "tag.gpgsign=false", "-c", "core.hooksPath=/dev/null", *args],
                     text=True, stderr=subprocess.DEVNULL,
+                    env={**os.environ, "GIT_AUTHOR_DATE": "2026-08-20T10:30:00Z",
+                         "GIT_COMMITTER_DATE": ("2026-08-20T10:31:00Z" if args[0] == "tag"
+                                                else "2026-08-20T10:30:00Z")},
                 ).strip()
 
             git("init")
@@ -377,7 +394,7 @@ class CoverageIndexTest(unittest.TestCase):
                 self.assertEqual(metadata["coverage"], originals[target]["coverage"])
                 self.assertEqual((reports / target / "lcov/index.html").read_text(), f"details-{run}")
             rendered = coverage_index.render_site(reports)
-            ordered = ["main", "pr/5", "pr/99", "pr/1", "tag/2.0.0", "tag/1.0.0"]
+            ordered = ["main", "pr/5", "pr/99", "tag/2.0.0", "tag/1.0.0", "pr/1"]
             offsets = [rendered.index(f'href="{target}/"') for target in ordered]
             self.assertEqual(offsets, sorted(offsets))
             self.assertIn("Aggregated PRs retain their own reports", rendered)
@@ -484,6 +501,26 @@ class CoverageIndexTest(unittest.TestCase):
             self.assertEqual(list((root / "runs/200").glob(".archive-*")), [])
             coverage_index.archive_reports(root)
             self.assertTrue((root / "runs/200/1/coverage-meta.json").exists())
+
+    def test_actual_reference_times_override_history_and_ci_recency(self):
+        reports = []
+        for target, timestamp, position in (
+            ("pr/609", "2026-01-01T00:00:00Z", 999),
+            ("pr/876", "2026-09-19T00:00:00Z", -1),
+            ("tag/0.7.0", "2026-09-20T00:00:00Z", 1),
+            ("main", None, 0),
+        ):
+            metadata = coverage_index.report_metadata(
+                _summary(95), target, "2026-09-21T00:00:00Z", "2026-09-21T00:00:00Z",
+                "2026-09-21T01:00:00Z", 1, 1, "sha",
+            )
+            metadata["history"] = {"position": position}
+            metadata["reference_time"] = timestamp
+            reports.append(metadata)
+        self.assertEqual(
+            [item["target"] for item in sorted(reports, key=coverage_index._report_order, reverse=True)],
+            ["main", "tag/0.7.0", "pr/876", "pr/609"],
+        )
 
     def test_unpositioned_reports_use_run_creation_not_completion_time(self):
         reports = [
