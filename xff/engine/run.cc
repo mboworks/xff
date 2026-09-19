@@ -64,6 +64,7 @@
 #include "xff/content/line_match.h"
 #include "xff/datetime/datetime.h"
 #include "xff/engine/collect.h"
+#include "xff/engine/consumers.h"
 #include "xff/engine/evaluate.h"
 #include "xff/engine/extract.h"
 #include "xff/engine/mount.h"
@@ -85,6 +86,7 @@
 #include "xff/presentation/render/scoped_table.h"
 #include "xff/presentation/render/summary_export.h"
 #include "xff/registry/descriptor.h"
+#include "xff/registry/registry.h"
 #include "xff/shard/group.h"
 #include "xff/shard/shard.h"
 #include "xff/values/values.h"
@@ -122,27 +124,15 @@ struct DepthOptions {
 };
 
 DepthOptions ResolveDepthPredicate(const parser::Expr& expr) {
-  if (expr.descriptor->name == "-depth" || expr.descriptor->name == "-d" || expr.descriptor->name == "-delete") {
-    return {.post_order = true};  // -delete implies -depth; -d is the BSD/GNU short spelling
-  }
-  if (expr.descriptor->name == "-xdev" || expr.descriptor->name == "-mount" || expr.descriptor->name == "-x") {
-    return {.single_filesystem = true};  // -mount (GNU/BSD) and -x (BSD) are synonyms for -xdev
-  }
-  if (expr.descriptor->name == "-ignore_readdir_race") {
-    return {.ignore_readdir_race = true};
-  }
-  if (expr.descriptor->name == "-noignore_readdir_race") {
-    return {.ignore_readdir_race = false};  // last occurrence wins, as in find
-  }
-  if (expr.args.empty()) {
-    return {};
-  }
-  const std::optional<int> value = ParseNonNegInt(expr.args.front());
-  if (expr.descriptor->name == "-maxdepth") {
-    return {.max_depth = value};
-  }
-  if (expr.descriptor->name == "-mindepth") {
-    return {.min_depth = value};
+  using Effect = registry::TraversalEffect;
+  switch (expr.descriptor->traversal_effect) {
+    case Effect::kNone: return {};
+    case Effect::kPostOrder: return {.post_order = true};
+    case Effect::kSingleFilesystem: return {.single_filesystem = true};
+    case Effect::kIgnoreRace: return {.ignore_readdir_race = true};
+    case Effect::kReportRace: return {.ignore_readdir_race = false};
+    case Effect::kMaxDepth: return {.max_depth = expr.args.empty() ? std::nullopt : ParseNonNegInt(expr.args.front())};
+    case Effect::kMinDepth: return {.min_depth = expr.args.empty() ? std::nullopt : ParseNonNegInt(expr.args.front())};
   }
   return {};
 }
@@ -449,11 +439,12 @@ std::string SummaryExtension(std::string_view name) {
   return std::string(name.substr(dot + 1));
 }
 
-// The group key for one matched entry under `mode` (kOff never reaches here). The mime/user/group
-// keys render the matching field ({mime}/{user}/{group}) so the reduction reuses the field
+// Metadata-only group keys; hash and template keys use the full rendering context below.
+// The mime/user/group keys render the matching field ({mime}/{user}/{group}) so the reduction
+// reuses the field
 // vocabulary rather than re-deriving the value; the field renderers never return empty (owner /
 // group fall back to the numeric id, mime to application/octet-stream), so no "(none)" bucket.
-std::string SummaryKey(SummaryMode mode, const Visit& visit) {
+std::string MetadataSummaryKey(SummaryMode mode, const Visit& visit) {
   switch (mode) {
     case SummaryMode::kExt: return SummaryExtension(visit.name);
     case SummaryMode::kType: return std::string(TypeName(visit.metadata.type));
@@ -464,9 +455,6 @@ std::string SummaryKey(SummaryMode mode, const Visit& visit) {
     case SummaryMode::kMime: return fields::Render("{mime}", visit.path, visit.metadata, visit.depth);
     case SummaryMode::kUser: return fields::Render("{user}", visit.path, visit.metadata, visit.depth);
     case SummaryMode::kGroup: return fields::Render("{group}", visit.path, visit.metadata, visit.depth);
-    // Digest of the whole file (default sha256/hex): identical files land in one bucket, so the
-    // count column reads as a dedup histogram. Reuses the {hash} field renderer, so it cannot drift.
-    case SummaryMode::kHash: return fields::Render("{hash}", visit.path, visit.metadata, visit.depth);
     default: return "total";  // kOverall: a single bucket
   }
 }
@@ -599,7 +587,7 @@ std::optional<std::pair<std::string, std::string>> HistBucketKey(
           BucketModePair{HistBucket::kGroup, SummaryMode::kGroup});
       const auto it = kBucketModes.find(spec.bucket);
       const SummaryMode mode = it == kBucketModes.end() ? SummaryMode::kOverall : it->second;
-      const std::string key = SummaryKey(mode, visit);
+      const std::string key = MetadataSummaryKey(mode, visit);
       return std::make_pair(key, key);
     }
     case HistBucket::kSizeRange: return MagnitudeBucket(visit.metadata.size);
@@ -787,6 +775,25 @@ absl::StatusOr<GrepContext> ResolveGrepContext(const std::vector<std::string>& g
     }
   }
   return result;
+}
+
+absl::StatusOr<mbo::diff::DiffOptions::OutputFormat> ResolveDiffFormat(const std::vector<std::string>& globals) {
+  std::string_view value;
+  constexpr std::string_view kPrefix = "--diff-format=";
+  for (const std::string& global : globals) {
+    if (global.starts_with(kPrefix)) {
+      value = std::string_view(global).substr(kPrefix.size());
+    }
+  }
+  if (value.empty()) {
+    return mbo::diff::DiffOptions::OutputFormat::kUnified;
+  }
+  const auto parsed = ParseDiffFormatFlag(value);
+  if (!parsed.has_value()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("unknown diff format '", value, "' (use u/unified, c/context, n/normal, or y/side-by-side)"));
+  }
+  return *parsed;
 }
 
 // xff's output selector (position-independent globals, last wins, default plain):
@@ -1115,36 +1122,36 @@ std::optional<std::string> BlockedAction(const parser::Expr& expr, const config:
   return expr.rhs ? BlockedAction(*expr.rhs, policy) : std::nullopt;
 }
 
-// True if the expression mentions the primary `name` anywhere. Used for the
+// True if the expression requires the control anywhere. Used for the
 // positional options that take effect run-wide regardless of position (-daystart).
-bool ContainsPrimary(const parser::Expr& expr, std::string_view name) {
+bool ContainsControl(const parser::Expr& expr, registry::Control control) {
   switch (expr.kind) {
-    case parser::Expr::Kind::kPredicate: return expr.descriptor->name == name;
-    case parser::Expr::Kind::kNot: return ContainsPrimary(*expr.lhs, name);
+    case parser::Expr::Kind::kPredicate: return expr.descriptor->control == control;
+    case parser::Expr::Kind::kNot: return ContainsControl(*expr.lhs, control);
     case parser::Expr::Kind::kAnd:
     case parser::Expr::Kind::kOr:
     case parser::Expr::Kind::kNand:
     case parser::Expr::Kind::kNor:
     case parser::Expr::Kind::kXor:
     case parser::Expr::Kind::kXnor:
-    case parser::Expr::Kind::kComma: return ContainsPrimary(*expr.lhs, name) || ContainsPrimary(*expr.rhs, name);
+    case parser::Expr::Kind::kComma: return ContainsControl(*expr.lhs, control) || ContainsControl(*expr.rhs, control);
   }
   return false;
 }
 
-// Number of occurrences of one primary in the expression. Verification summaries require exactly
+// Number of occurrences of one control in the expression. Verification summaries require exactly
 // one -hasheq because combining independent verdicts would otherwise hide which check failed.
-std::size_t CountPrimary(const parser::Expr& expr, std::string_view name) {
+std::size_t CountControl(const parser::Expr& expr, registry::Control control) {
   switch (expr.kind) {
-    case parser::Expr::Kind::kPredicate: return expr.descriptor->name == name ? 1 : 0;
-    case parser::Expr::Kind::kNot: return CountPrimary(*expr.lhs, name);
+    case parser::Expr::Kind::kPredicate: return expr.descriptor->control == control ? 1 : 0;
+    case parser::Expr::Kind::kNot: return CountControl(*expr.lhs, control);
     case parser::Expr::Kind::kAnd:
     case parser::Expr::Kind::kOr:
     case parser::Expr::Kind::kNand:
     case parser::Expr::Kind::kNor:
     case parser::Expr::Kind::kXor:
     case parser::Expr::Kind::kXnor:
-    case parser::Expr::Kind::kComma: return CountPrimary(*expr.lhs, name) + CountPrimary(*expr.rhs, name);
+    case parser::Expr::Kind::kComma: return CountControl(*expr.lhs, control) + CountControl(*expr.rhs, control);
   }
   std::unreachable();
 }
@@ -1157,7 +1164,7 @@ std::size_t CountPrimary(const parser::Expr& expr, std::string_view name) {
 absl::Status ValidateFirstLimits(const parser::Expr& expr) {
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate: {
-      if (!expr.descriptor.has_value() || expr.descriptor->name != "-first") {
+      if (!expr.descriptor.has_value() || expr.descriptor->control != registry::Control::kFirst) {
         return absl::OkStatus();
       }
       int limit = 0;
@@ -1188,7 +1195,7 @@ absl::Status ValidateFirstLimits(const parser::Expr& expr) {
 absl::Status ValidateTopLimits(const parser::Expr& expr) {
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate: {
-      if (!expr.descriptor.has_value() || expr.descriptor->name != "-top") {
+      if (!expr.descriptor.has_value() || expr.descriptor->control != registry::Control::kTop) {
         return absl::OkStatus();
       }
       int limit = 0;
@@ -1215,10 +1222,6 @@ absl::Status ValidateTopLimits(const parser::Expr& expr) {
   return absl::OkStatus();
 }
 
-// Every primary that SETS the score, so adding one cannot leave ranking silently refusing it.
-constexpr std::array kScoringPrimaries =
-    std::to_array<std::string_view>({"-fuzzy", "-fuzzypath", "-ifuzzy", "-ifuzzypath"});
-
 struct ScoreDomain {
   std::optional<int> threshold;
   std::optional<parser::FuzzyModel> model;
@@ -1229,7 +1232,7 @@ struct ScoreDomain {
 void InspectScoreDomain(const parser::Expr& expr, ScoreDomain& domain) {
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate:
-      if (absl::c_linear_search(kScoringPrimaries, expr.descriptor->name)) {
+      if (expr.descriptor->binding == registry::Binding::kFuzzy) {
         const int threshold = expr.fuzzy_threshold.value_or(0);
         domain.mixed_thresholds |= domain.threshold.value_or(threshold) != threshold;
         domain.threshold = threshold;
@@ -1262,16 +1265,20 @@ absl::Status ValidateScoreRanking(
   if (!rank_by_score) {
     return absl::OkStatus();
   }
-  const bool has_fuzzy =
-      expression.has_value() && absl::c_any_of(kScoringPrimaries, [expression](std::string_view name) {
-        return ContainsPrimary(*expression, name);
-      });
-  if (!has_fuzzy) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("needs one of ", absl::StrJoin(kScoringPrimaries, ", "), " in the expression"));
-  }
   ScoreDomain domain;
-  InspectScoreDomain(*expression, domain);
+  if (expression.has_value()) {
+    InspectScoreDomain(*expression, domain);
+  }
+  if (!domain.model.has_value()) {
+    std::vector<std::string_view> scoring_names;
+    for (const auto& descriptor : registry::All()) {
+      if (descriptor.binding == registry::Binding::kFuzzy) {
+        scoring_names.push_back(descriptor.name);
+      }
+    }
+    return absl::InvalidArgumentError(
+        absl::StrCat("needs one of ", absl::StrJoin(scoring_names, ", "), " in the expression"));
+  }
   if (domain.mixed_models) {
     return absl::InvalidArgumentError(
         "cannot compare fuzzy matches from different models; use the same fzf / sequence / levenshtein / "
@@ -1302,8 +1309,8 @@ struct TopFlow {
 TopFlow InspectTopFlow(const parser::Expr& expr, bool incoming_score) {
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate: {
-      const bool scoring = absl::c_linear_search(kScoringPrimaries, expr.descriptor->name);
-      const bool top = expr.descriptor->name == "-top";
+      const bool scoring = expr.descriptor->binding == registry::Binding::kFuzzy;
+      const bool top = expr.descriptor->control == registry::Control::kTop;
       return {
           .score_on_success = incoming_score || scoring,
           .has_top = top,
@@ -1379,7 +1386,7 @@ absl::Status ValidateTopRanking(mbo::types::OptionalRef<const parser::Expr> expr
 
 absl::Status ValidateShardStatuses(const parser::Expr& expr) {
   if (expr.kind == parser::Expr::Kind::kPredicate) {
-    if (expr.descriptor->name != "-shard-status") {
+    if (expr.descriptor->control != registry::Control::kShardStatus) {
       return absl::OkStatus();
     }
     if (expr.args.size() != 1
@@ -1479,7 +1486,8 @@ CollectedEntry OwnVisit(const Visit& visit) {
 
 void AppendDeferredNodes(const parser::Expr& expr, std::vector<ExprIdentity>& nodes) {
   if (expr.kind == parser::Expr::Kind::kPredicate) {
-    if (expr.descriptor->name == "-top" || expr.descriptor->name == "-shard-status") {
+    if (expr.descriptor->control == registry::Control::kTop
+        || expr.descriptor->control == registry::Control::kShardStatus) {
       nodes.emplace_back(expr);
     }
     return;
@@ -1636,7 +1644,7 @@ int ResolveDeferredRound(
       entries.emplace_back(candidate);
     }
   }
-  if (next_node.Get().descriptor->name == "-shard-status") {
+  if (next_node.Get().descriptor->control == registry::Control::kShardStatus) {
     return ResolveShardStatusRound(
         next_node.Get(), entries, shard_matcher, shard_dedup, scheme_allowed, report_dedup_errors);
   }
@@ -1977,9 +1985,8 @@ GitignoreMode ResolveGitignoreMode(const std::vector<std::string>& globals, std:
 // `roots`.
 enum class ArchiveMode : std::uint8_t { kNone, kRoots, kAll, kAny };
 
-ArchiveMode ResolveArchiveMode(const std::vector<std::string>& globals, std::optional<registry::Style> style) {
-  // find keeps archives opaque; the xff family looks inside one it was pointed at.
-  ArchiveMode mode = style == registry::Style::kFind ? ArchiveMode::kNone : ArchiveMode::kRoots;
+std::optional<ArchiveMode> ResolveArchiveMode(const std::vector<std::string>& globals) {
+  std::optional<ArchiveMode> mode;
   for (const std::string& global : globals) {
     // The short forms come in a lower-case (read) and an upper-case (read + write) family whose
     // RUNGS are identical, so both spellings of a rung are read here and only ResolveArchiveWrite
@@ -2036,16 +2043,6 @@ ArchiveWrite ResolveArchiveWrite(const std::vector<std::string>& globals) {
     }
   }
   return write;
-}
-
-// True when the run EXPLICITLY asked for archive handling (any spelling), as opposed to
-// inheriting a style default. The not-yet-implemented guard fires only on an explicit
-// request, so the xff family's `roots` default cannot break an ordinary walk.
-bool HasArchiveFlag(const std::vector<std::string>& globals) {
-  return absl::c_any_of(globals, [](std::string_view global) {
-    return global == "--archive" || global.starts_with("--archive=") || global == "-z" || global == "-z+"
-           || global == "-z++" || global == "-z-" || global == "-Z" || global == "-Z+" || global == "-Z++";
-  });
 }
 
 // The walk's spelling of the same three modes. Two enums exist because the walk knows nothing about
@@ -2305,9 +2302,11 @@ absl::StatusOr<ResolvedArchiveOptions> ResolveArchiveOptions(
     const std::vector<std::string>& globals,
     std::optional<registry::Style> style) {
   ResolvedArchiveOptions result;
-  const ArchiveMode archive_mode = ResolveArchiveMode(globals, style);
+  const auto requested_mode = ResolveArchiveMode(globals);
+  const ArchiveMode archive_mode =
+      requested_mode.value_or(style == registry::Style::kFind ? ArchiveMode::kNone : ArchiveMode::kRoots);
   if (archive_mode != ArchiveMode::kNone && !archive::ContainerSupportAvailable()) {
-    if (HasArchiveFlag(globals)) {
+    if (requested_mode.has_value()) {
       return absl::UnimplementedError(
           absl::StrCat(
               "archive diving (requested mode '", ArchiveModeName(archive_mode),
@@ -3624,15 +3623,12 @@ void FeedSummaries(
       continue;  // fed from the -hasheq verdict, not from the expression's matched result
     }
     SummaryCells& cells = cells_per_sink[i];
-    if (specs[i].mode != SummaryMode::kTemplate) {
-      std::pair<std::uint64_t, std::uint64_t>& agg = cells[SummaryKey(specs[i].mode, visit)];
+    const auto& tmpl = templates.at(i);
+    if (!tmpl.has_value()) {
+      std::pair<std::uint64_t, std::uint64_t>& agg = cells[MetadataSummaryKey(specs[i].mode, visit)];
       agg.first += 1;
       agg.second += visit.metadata.size;
       continue;
-    }
-    const std::optional<fields::Template>& tmpl = templates[i];
-    if (!tmpl.has_value()) {
-      continue;  // a kTemplate sink always carries its compiled template, but the type allows the gap
     }
     const std::optional<std::vector<std::string>> stream = tmpl->AsExtraction(key_ctx);
     if (!stream.has_value()) {
@@ -4670,7 +4666,7 @@ RunResult RunFindCore(
   // Capture one reference instant so every entry's age test (-mtime/-mmin) is
   // measured against the same clock. -daystart measures from today's local
   // midnight (in tz) instead of find's start time (the run's start).
-  const bool daystart = expression.has_value() && ContainsPrimary(*expression, "-daystart");
+  const bool daystart = expression.has_value() && ContainsControl(*expression, registry::Control::kDayStart);
   const absl::Time now = daystart ? datetime::StartOfDay(absl::Now(), tz) : absl::Now();
   // --time-format=NAME: default spec for a time field with no {:qualifier}.
   const std::string time_format = ResolveTimeFormat(command.globals);
@@ -4748,26 +4744,12 @@ RunResult RunFindCore(
   // --diff-format=u|c|n|y|unified|context|normal|side-by-side: the default -diff output format
   // (last occurrence wins; unset -> unified). A per-action -diff:STYLE letter still overrides it.
   // Validated here so a bad value is a usage error (exit 2) before the walk.
-  mbo::diff::DiffOptions::OutputFormat diff_format = mbo::diff::DiffOptions::OutputFormat::kUnified;
-  std::string diff_format_flag;
-  for (const std::string& global : command.globals) {
-    constexpr std::string_view kDiffFormat = "--diff-format=";
-    if (global.starts_with(kDiffFormat)) {
-      diff_format_flag = global.substr(kDiffFormat.size());
-    }
+  const auto diff_format_result = ResolveDiffFormat(command.globals);
+  if (!diff_format_result.ok()) {
+    on_error("--diff-format", diff_format_result.status());
+    return RunResult{.errors = 2};
   }
-  if (!diff_format_flag.empty()) {
-    const std::optional<mbo::diff::DiffOptions::OutputFormat> parsed = ParseDiffFormatFlag(diff_format_flag);
-    if (!parsed.has_value()) {
-      on_error(
-          "--diff-format", absl::InvalidArgumentError(
-                               absl::StrCat(
-                                   "unknown diff format '", diff_format_flag,
-                                   "' (use u/unified, c/context, n/normal, or y/side-by-side)")));
-      return RunResult{.errors = 2};
-    }
-    diff_format = *parsed;
-  }
+  const mbo::diff::DiffOptions::OutputFormat diff_format = *diff_format_result;
   // --diff-context=N (and --context=N when symmetric): the default -diff context size (built-in 3).
   // --context feeds diff only when before==after (a single symmetric value a diff can represent);
   // --diff-context overrides --context regardless of order; a per-action -diff:uN overrides both.
@@ -4842,7 +4824,8 @@ RunResult RunFindCore(
   const bool hash_verification_summary =
       absl::c_any_of(summaries, [](const SummarySpec& spec) { return spec.mode == SummaryMode::kHashVerification; });
   if (hash_verification_summary) {
-    const std::size_t checks = expression.has_value() ? CountPrimary(*expression, "-hasheq") : 0;
+    const std::size_t checks =
+        expression.has_value() ? CountControl(*expression, registry::Control::kHashVerification) : 0;
     if (checks != 1) {
       on_error(
           "--summary=hash-verification",
@@ -4850,12 +4833,14 @@ RunResult RunFindCore(
       return RunResult{.errors = 2};
     }
   }
-  std::vector<std::optional<fields::Template>> summary_templates(summaries.size());  // compiled, kTemplate only
+  std::vector<std::optional<fields::Template>> summary_templates(summaries.size());  // field-backed groupings
   for (std::size_t i = 0; i < summaries.size(); ++i) {
-    if (summaries[i].mode != SummaryMode::kTemplate) {
+    const auto& spec = summaries.at(i);
+    if (spec.mode != SummaryMode::kTemplate && spec.mode != SummaryMode::kHash) {
       continue;
     }
-    fields::Template tmpl = fields::Template::Compile(summaries[i].key_template);
+    // Hash grouping needs the visit's filesystem and the active hash defaults, just like {hash}.
+    fields::Template tmpl = fields::Template::Compile(spec.mode == SummaryMode::kHash ? "{hash}" : spec.key_template);
     if (tmpl.HasUnreducedExtraction() && !tmpl.IsExtraction()) {
       on_error(
           "--summary", absl::InvalidArgumentError(
@@ -4913,7 +4898,8 @@ RunResult RunFindCore(
   }
   // Matcher over the custom patterns plus all built-in schemes (scheme restriction is applied per set
   // below). Make() can fail on a bad custom pattern; surface it as a usage error.
-  const bool shard_status_enabled = expression.has_value() && ContainsPrimary(*expression, "-shard-status");
+  const bool shard_status_enabled =
+      expression.has_value() && ContainsControl(*expression, registry::Control::kShardStatus);
   std::optional<shard::Matcher> shard_matcher;
   if (shards.enabled || shard_status_enabled) {
     absl::StatusOr<shard::Matcher> matcher_or = shard::Matcher::Make({}, shard_patterns);
@@ -5740,7 +5726,7 @@ RunResult RunFindCore(
   // per-command error, as for `;`.
   for (const auto& [node, by_dir] : exec_batches) {
     const parser::Expr& expr = node.Get();
-    const bool execdir = expr.descriptor->name == "-execdir";
+    const bool execdir = expr.descriptor->execute_in_directory;
     for (const auto& [dir, items] : by_dir) {
       const bool ok = execdir ? exec::ExecuteBatchInDir(expr.args, items, dir) : exec::ExecuteBatch(expr.args, items);
       if (!ok) {
@@ -6067,6 +6053,116 @@ absl::Status ValidateSummaryExport(const parser::Command& command, bool compare)
   return absl::OkStatus();
 }
 
+std::set<registry::ModifierConsumer> ReductionConsumers(
+    const std::vector<SummarySpec>& summaries,
+    const std::vector<HistogramSpec>& histograms,
+    render::Format format) {
+  using registry::ModifierConsumer;
+  std::set<ModifierConsumer> consumers;
+  if (!summaries.empty()
+      || std::ranges::any_of(histograms, [](const HistogramSpec& spec) { return spec.agg == HistAgg::kMean; })) {
+    consumers.insert(ModifierConsumer::kPrecisionReduction);
+  }
+  if (std::ranges::any_of(histograms, [](const HistogramSpec& spec) { return !IsNumericBucket(spec.bucket); })
+      || std::ranges::any_of(
+          summaries, [](const SummarySpec& summary) { return summary.mode != SummaryMode::kCompare; })) {
+    consumers.insert(ModifierConsumer::kRankedReduction);
+  }
+  if (!histograms.empty() && (format == render::Format::kPlain || format == render::Format::kAligned)) {
+    consumers.insert(ModifierConsumer::kHistogramBars);
+  }
+  return consumers;
+}
+
+bool IsTreeComparison(const std::vector<std::string>& globals) {
+  return absl::c_any_of(
+      globals, [](std::string_view global) { return global == "--compare" || global.starts_with("--compare="); });
+}
+
+std::set<registry::ModifierConsumer> HashConsumers(hash::DefaultUsage defaults) {
+  std::set<registry::ModifierConsumer> consumers;
+  if (defaults.algorithm) {
+    consumers.insert(registry::ModifierConsumer::kHashAlgorithm);
+  }
+  if (defaults.encoding) {
+    consumers.insert(registry::ModifierConsumer::kHashEncoding);
+  }
+  return consumers;
+}
+
+std::set<registry::ModifierConsumer> PredicateHashConsumers(
+    const parser::Expr& expr,
+    bool exec_fields,
+    bool grep_count) {
+  std::set<registry::ModifierConsumer> consumers;
+  if (expr.grep_template != nullptr && !grep_count) {
+    consumers.merge(HashConsumers(expr.grep_template->HashDefaultsUsed()));
+  }
+  if (expr.descriptor->binding == registry::Binding::kHash) {
+    const auto spec = hash::ParseSpec(expr.hash_spec, "sha256");
+    if (spec.has_value()) {
+      consumers.merge(HashConsumers(spec->defaults));
+    }
+  }
+  const auto& expansion = expr.descriptor->argument_fields;
+  if (expansion.syntax == registry::ArgumentFields::Syntax::kNone || (expansion.requires_exec_fields && !exec_fields)
+      || expansion.first >= expr.args.size()) {
+    return consumers;
+  }
+  const absl::Span<const std::string> args = expr.args;
+  for (const std::string& arg :
+       args.subspan(expansion.first, expansion.remaining ? args.size() - expansion.first : 1)) {
+    if (expansion.syntax == registry::ArgumentFields::Syntax::kPrintf) {
+      for (const auto& field : fields::PrintfTemplates(arg)) {
+        consumers.merge(HashConsumers(field.HashDefaultsUsed()));
+      }
+    } else {
+      consumers.merge(HashConsumers(fields::Template::Compile(arg).HashDefaultsUsed()));
+    }
+  }
+  return consumers;
+}
+
+std::set<registry::ModifierConsumer> ExpressionConsumers(
+    const parser::Expr& expr,
+    bool grep_count,
+    mbo::diff::DiffOptions::OutputFormat diff_format,
+    bool exec_fields) {
+  using registry::ModifierConsumer;
+  std::set<ModifierConsumer> consumers;
+  if (expr.descriptor.has_value()) {
+    consumers.merge(PredicateHashConsumers(expr, exec_fields, grep_count));
+    const ModifierConsumer consumer = expr.descriptor->modifier_consumer;
+    if (consumer != ModifierConsumer::kNone) {
+      consumers.insert(consumer);
+    }
+    if (consumer == ModifierConsumer::kGrep && !grep_count) {
+      consumers.insert(ModifierConsumer::kGrepLines);
+    }
+    if (consumer == ModifierConsumer::kFileDiff) {
+      consumers.insert(ModifierConsumer::kDiffComputation);
+      const DiffDefaultDependencies defaults = InspectDiffDefaults(expr.diff_style, diff_format);
+      if (defaults.format) {
+        consumers.insert(ModifierConsumer::kDefaultDiffFormat);
+      }
+      if (defaults.context) {
+        consumers.insert(ModifierConsumer::kFileDiffContext);
+        consumers.insert(ModifierConsumer::kDiffContext);
+      }
+    }
+    if (consumer == ModifierConsumer::kShardStatus) {
+      consumers.insert(ModifierConsumer::kShardGrouping);
+    }
+  }
+  if (expr.lhs) {
+    consumers.merge(ExpressionConsumers(*expr.lhs, grep_count, diff_format, exec_fields));
+  }
+  if (expr.rhs) {
+    consumers.merge(ExpressionConsumers(*expr.rhs, grep_count, diff_format, exec_fields));
+  }
+  return consumers;
+}
+
 // Validate formats shared by summary and histogram output before any actions run.
 absl::Status ValidateReductionFormat(const std::vector<std::string>& globals, bool compare, bool has_histograms) {
   const bool has_summary = !ResolveSummaries(globals, compare).empty();
@@ -6127,6 +6223,233 @@ absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, boo
   return ValidateReductionFormat(globals, compare, has_histograms);
 }
 
+std::set<registry::ModifierConsumer> OutputHashConsumers(
+    const parser::Command& command,
+    const std::vector<SummarySpec>& summaries,
+    bool listing) {
+  std::set<registry::ModifierConsumer> consumers;
+  for (const SummarySpec& summary : summaries) {
+    if (summary.mode == SummaryMode::kTemplate) {
+      consumers.merge(HashConsumers(fields::Template::Compile(summary.key_template).HashDefaultsUsed()));
+    }
+    if (summary.mode == SummaryMode::kHash) {
+      consumers.merge(HashConsumers({.algorithm = true, .encoding = true}));
+    }
+  }
+  if (!listing) {
+    return consumers;
+  }
+  const auto columns = ResolveColumns(command.globals);
+  for (const std::string& column : columns) {
+    consumers.merge(HashConsumers(fields::Template::Compile(absl::StrCat("{", column, "}")).HashDefaultsUsed()));
+  }
+  if (columns.empty()) {
+    if (const auto tmpl = ResolveTemplate(command.globals); tmpl.has_value()) {
+      consumers.merge(HashConsumers(fields::Template::Compile(*tmpl).HashDefaultsUsed()));
+    }
+  }
+  return consumers;
+}
+
+absl::StatusOr<std::set<registry::ModifierConsumer>> ArchiveModifierConsumers(
+    const std::vector<std::string>& globals,
+    registry::Style style,
+    const std::vector<SummarySpec>& summaries,
+    const std::vector<HistogramSpec>& histograms,
+    bool shard_grouping) {
+  using registry::ModifierConsumer;
+  MBO_ASSIGN_OR_RETURN(const auto options, ResolveArchiveOptions(globals, style));
+  std::set<ModifierConsumer> consumers;
+  if (options.archive_dive == ArchiveDive::kNone) {
+    return consumers;
+  }
+  consumers.insert(ModifierConsumer::kArchiveTraversal);
+  if (options.archive_dive == ArchiveDive::kAll) {
+    consumers.insert(ModifierConsumer::kArchiveNestedTraversal);
+  }
+  // Match RunFindCore's reduction-dependent mounting, including packing and shards.
+  // A comparison-result table alone does not feed an ordinary reduction.
+  const bool summary =
+      std::ranges::any_of(summaries, [](const SummarySpec& spec) { return spec.mode != SummaryMode::kCompare; });
+  if (summary || !histograms.empty() || shard_grouping || ReadPackTarget(globals).has_value()) {
+    consumers.insert(ModifierConsumer::kArchiveReduction);
+  }
+  return consumers;
+}
+
+struct ExpressionResources {
+  std::size_t content_fields = 0;
+  bool column_buffer = false;
+  bool command_batches = false;
+  std::vector<std::string_view> expensive;
+};
+
+// Own the accumulation while walking the AST once; do not repeatedly copy a growing result
+// vector at each parent of a deeply nested expression.
+class ExpressionResourceInspector final {
+ public:
+  ExpressionResourceInspector(bool exec_fields, bool grep_count) : exec_fields_(exec_fields), grep_count_(grep_count) {}
+
+  ExpressionResources Inspect(const parser::Expr& expr) && {
+    Visit(expr);
+    return std::move(resources_);
+  }
+
+ private:
+  void Visit(const parser::Expr& expr) {
+    if (expr.kind != parser::Expr::Kind::kPredicate) {
+      if (expr.lhs != nullptr) {
+        Visit(*expr.lhs);
+      }
+      if (expr.rhs != nullptr) {
+        Visit(*expr.rhs);
+      }
+      return;
+    }
+    const registry::Descriptor& descriptor = *expr.descriptor;
+    if (descriptor.cost == registry::Cost::kExpensive) {
+      resources_.expensive.push_back(descriptor.name);
+    }
+    resources_.column_buffer |= descriptor.buffers_columns;
+    resources_.command_batches |= expr.exec_batch;
+    if (!grep_count_ && expr.grep_template != nullptr) {
+      resources_.content_fields += expr.grep_template->ContentFieldCount();
+    }
+    const registry::ArgumentFields& fields = descriptor.argument_fields;
+    if (fields.syntax == registry::ArgumentFields::Syntax::kNone || (fields.requires_exec_fields && !exec_fields_)
+        || fields.first >= expr.args.size()) {
+      return;
+    }
+    const absl::Span<const std::string> arguments = expr.args;
+    for (const std::string& argument :
+         arguments.subspan(fields.first, fields.remaining ? arguments.size() - fields.first : 1)) {
+      if (fields.syntax == registry::ArgumentFields::Syntax::kPrintf) {
+        for (const fields::Template& field : fields::PrintfTemplates(argument)) {
+          resources_.content_fields += field.ContentFieldCount();
+        }
+      } else {
+        resources_.content_fields += fields::Template::Compile(argument).ContentFieldCount();
+      }
+    }
+  }
+
+  bool exec_fields_;
+  bool grep_count_;
+  ExpressionResources resources_;
+};
+
+std::string DescribeColumnBuffer(const BufferBound& bound) {
+  if (bound.byte_budget != 0) {
+    return absl::StrCat(bound.byte_budget, " cell bytes; later rows stream");
+  }
+  if (bound.window == 0) {
+    return "off";
+  }
+  if (bound.window == format::ColumnBuffer::kAll) {
+    return "all rows";
+  }
+  return absl::StrCat(bound.window, " rows; later rows stream");
+}
+
+std::size_t ListingAndSummaryContentFields(
+    const std::vector<std::string>& globals,
+    bool listing,
+    render::Format format,
+    const std::vector<SummarySpec>& summaries) {
+  std::size_t count = 0;
+  const auto columns = ResolveColumns(globals);
+  const auto text = ResolveTemplate(globals);
+  if (listing && format != render::Format::kTree) {
+    if (!columns.empty()) {
+      for (const std::string& column : columns) {
+        count += fields::Template::Compile(absl::StrCat("{", column, "}")).ContentFieldCount();
+      }
+    } else if (text.has_value()) {
+      count += fields::Template::Compile(*text).ContentFieldCount();
+    }
+  }
+  for (const SummarySpec& summary : summaries) {
+    if (summary.mode == SummaryMode::kHash) {
+      ++count;
+    } else if (summary.mode == SummaryMode::kTemplate) {
+      count += fields::Template::Compile(summary.key_template).ContentFieldCount();
+    }
+  }
+  return count;
+}
+
+struct RetentionView {
+  bool compare;
+  bool listing;
+  bool pack;
+  bool shards;
+  render::Format format;
+  bool has_summaries;
+  bool has_histograms;
+  absl::Span<const std::string> scopes;
+  bool deferred;
+};
+
+std::string DescribeRetainedResources(
+    const parser::Command& command,
+    const RetentionView& state,
+    const ExpressionResources& resources) {
+  const auto& globals = command.globals;
+  const auto expression = parser::AsConstOptionalExpr(command.expression);
+  const auto columns = ResolveColumns(globals);
+  const auto text = ResolveTemplate(globals);
+  std::string output;
+  if (state.compare) {
+    absl::StrAppend(
+        &output, "comparison-state\tboth matched inventories; statuses follow both completed walks\n",
+        "comparison-reads\tpaired regular-file content may be read on both sides\n");
+  }
+  if (state.has_summaries || state.has_histograms) {
+    absl::StrAppend(&output, "reduction-state\taggregation keys and values; output follows aggregation\n");
+  }
+  if (state.compare && state.has_summaries
+      && absl::c_any_of(state.scopes, [](std::string_view scope) { return scope != "all" && scope != "root"; })) {
+    absl::StrAppend(&output, "comparison-summary-state\tper-entry contributions and result categories\n");
+  }
+  if (state.listing && (!text.has_value() || !columns.empty())
+      && (state.format == render::Format::kAligned || state.format == render::Format::kMarkdown)) {
+    absl::StrAppend(
+        &output, "listing-column-buffer\t",
+        DescribeColumnBuffer(ResolveBufferBound(globals, format::ColumnBuffer::kAll)), "\n");
+  }
+  if (resources.column_buffer) {
+    absl::StrAppend(&output, "action-column-buffer\t", DescribeColumnBuffer(ResolveBufferBound(globals, 100)), "\n");
+  }
+  const Collections collections = MakeCollections(expression, globals);
+  if (collections.Active()) {
+    const auto budget = collections.CurrentBudget();
+    absl::StrAppend(
+        &output, "collection-state\tmatched entries until post-walk sinks; row cap ",
+        budget.rows == 0 ? "unlimited" : std::to_string(budget.rows), "; path/name/root byte cap ",
+        budget.bytes == 0 ? "unlimited" : std::to_string(budget.bytes), "\n");
+  }
+  if (state.deferred) {
+    absl::StrAppend(&output, "deferred-expression-state\tcandidates retained for result-set selection\n");
+  }
+  if (ResolveRankByScore(globals)) {
+    absl::StrAppend(&output, "ranking-state\tentry output retained until traversal completes\n");
+  }
+  if (state.listing && state.format == render::Format::kTree) {
+    absl::StrAppend(
+        &output, "tree-output-state\tmatching paths and ancestor branches retained until traversal completes\n");
+  }
+  if (resources.command_batches) {
+    absl::StrAppend(&output, "command-batch-state\tmatched paths retained for post-walk commands\n");
+  }
+  if (state.shards) {
+    absl::StrAppend(&output, "shard-state\tphysical entries retained for grouping\n");
+  }
+  if (state.pack) {
+    absl::StrAppend(&output, "archive-pack-state\tentry plan retained; packing reads member content\n");
+  }
+  return output;
+}
+
 }  // namespace
 
 absl::Status ValidateCommandFields(const parser::Command& command) {
@@ -6144,6 +6467,111 @@ absl::Status ValidateCommandFields(const parser::Command& command) {
   return command.expression != nullptr
              ? ValidateExpressionFields(*command.expression, HasGlobal(command.globals, "--exec-fields"))
              : absl::OkStatus();
+}
+
+absl::StatusOr<std::set<registry::ModifierConsumer>> ActiveModifierConsumers(
+    const parser::Command& command,
+    registry::Style style) {
+  using registry::ModifierConsumer;
+  const bool grep_count = HasGlobal(command.globals, "--count") || HasGlobal(command.globals, "-c");
+  MBO_ASSIGN_OR_RETURN(const auto diff_format, ResolveDiffFormat(command.globals));
+  std::set<ModifierConsumer> consumers = command.expression ? ExpressionConsumers(
+                                                                  *command.expression, grep_count, diff_format,
+                                                                  HasGlobal(command.globals, "--exec-fields"))
+                                                            : std::set<ModifierConsumer>{};
+  const bool compare = IsTreeComparison(command.globals);
+  MBO_ASSIGN_OR_RETURN(const auto histograms, ResolveHistograms(command.globals));
+  MBO_ASSIGN_OR_RETURN(const auto shards, ResolveShards(command.globals));
+  const auto summaries = ResolveSummaries(command.globals, compare);
+  const bool has_action = command.expression && ContainsAction(*command.expression);
+  const bool listing = ResolveImplicitPrint(command.globals).value_or(!has_action && !compare) && summaries.empty()
+                       && histograms.empty() && !shards.enabled && !ReadPackTarget(command.globals).has_value();
+  consumers.merge(OutputHashConsumers(command, summaries, listing));
+  if (compare && ResolveTreeCompareOutput(command.globals) == TreeCompareOutput::kDiff) {
+    consumers.insert(ModifierConsumer::kDiffComputation);
+    consumers.insert(ModifierConsumer::kDiffContext);
+  }
+  MBO_ASSIGN_OR_RETURN(const auto context, ResolveGrepContext(command.globals));
+  const bool explicit_diff_context =
+      std::ranges::any_of(command.globals, [](std::string_view flag) { return flag.starts_with("--diff-context="); });
+  if (consumers.contains(ModifierConsumer::kGrepLines)
+      || (consumers.contains(ModifierConsumer::kFileDiffContext) && context.specified && context.before == context.after
+          && !explicit_diff_context)) {
+    consumers.insert(ModifierConsumer::kSharedContext);
+  }
+  consumers.merge(ReductionConsumers(summaries, histograms, ResolveFormat(command.globals)));
+  MBO_ASSIGN_OR_RETURN(
+      auto archive_consumers,
+      ArchiveModifierConsumers(command.globals, style, summaries, histograms, shards.enabled && !compare));
+  consumers.merge(archive_consumers);
+  if (shards.enabled && !compare) {
+    consumers.insert(ModifierConsumer::kShardGrouping);
+    if (summaries.empty() && histograms.empty()) {
+      consumers.insert(ModifierConsumer::kShardListing);
+    }
+  }
+  return consumers;
+}
+
+absl::StatusOr<std::string> ExplainResources(const parser::Command& command, std::optional<registry::Style> style) {
+  const auto& globals = command.globals;
+  const bool compare = absl::c_any_of(
+      globals, [](std::string_view global) { return global == "--compare" || global.starts_with("--compare="); });
+  MBO_ASSIGN_OR_RETURN(const auto workers, ResolveJobs(globals, style));
+  MBO_ASSIGN_OR_RETURN(const auto histograms, ResolveHistograms(globals));
+  MBO_RETURN_IF_ERROR(ValidateSummaryOptions(globals, compare, !histograms.empty()));
+  MBO_RETURN_IF_ERROR(ValidateSummaryScopeDriver(globals, compare));
+  MBO_ASSIGN_OR_RETURN(const auto scopes, ResolveSummaryScopes(globals, compare));
+  MBO_ASSIGN_OR_RETURN(const auto shards, ResolveShards(globals));
+  auto summaries = ResolveSummaries(globals, compare);
+  std::erase_if(summaries, [](const SummarySpec& summary) { return summary.mode == SummaryMode::kCompare; });
+  const auto expression = parser::AsConstOptionalExpr(command.expression);
+  const bool has_action = expression.has_value() && ContainsAction(*expression);
+  const bool pack = ReadPackTarget(globals).has_value();
+  const bool reduction = !summaries.empty() || !histograms.empty() || shards.enabled || pack;
+  const bool listing = ResolveImplicitPrint(globals).value_or(!has_action && !compare) && !reduction;
+  const auto format = ResolveFormat(globals);
+  ExpressionResources resources;
+  std::vector<ExprIdentity> deferred;
+  if (expression.has_value()) {
+    resources = ExpressionResourceInspector(
+                    HasGlobal(globals, "--exec-fields"), HasGlobal(globals, "--count") || HasGlobal(globals, "-c"))
+                    .Inspect(*expression);
+    AppendDeferredNodes(*expression, deferred);
+  }
+  resources.content_fields += ListingAndSummaryContentFields(globals, listing, format, summaries);
+  const auto line_histograms = absl::c_count_if(histograms, [](const HistogramSpec& histogram) {
+    return histogram.bucket == HistBucket::kLinesRange
+           || (histogram.agg != HistAgg::kCount && histogram.metric == HistMetric::kLines);
+  });
+  std::string output = absl::StrCat(
+      "\n# execution resources: static inspection, not measured usage\n", "walks\t", compare ? 2 : 1, "\n",
+      "directory-workers-per-walk\t", workers, "\n", "eligible-command-workers-per-walk\t", workers,
+      " (independent semicolon-form child pool)\n", "evaluation\tcoordinated within each walk\n",
+      "traversal-state\tdirectory listings, read-ahead, and traversal stack\n", "content-field-occurrences\t",
+      resources.content_fields, " (hash/lines segments, not predicted read calls)\n", "line-histogram-consumers\t",
+      line_histograms, "\n", "expensive-primaries\t",
+      resources.expensive.empty() ? "none" : absl::StrJoin(resources.expensive, ","),
+      " (registry cost tier, not a content-read classification)\n");
+  absl::StrAppend(
+      &output, DescribeRetainedResources(
+                   command,
+                   RetentionView{
+                       .compare = compare,
+                       .listing = listing,
+                       .pack = pack,
+                       .shards = shards.enabled,
+                       .format = format,
+                       .has_summaries = !summaries.empty(),
+                       .has_histograms = !histograms.empty(),
+                       .scopes = scopes,
+                       .deferred = !deferred.empty()},
+                   resources));
+  absl::StrAppend(
+      &output, "limits\t--buffer is not a process-memory cap or a comparison-inventory bound\n",
+      "uncertainty\tbranches, matches, backends, ignore/config discovery and archive probing affect actual reads; "
+      "no byte, peak-memory, or latency estimate is made\n");
+  return output;
 }
 
 RunResult RunFind(

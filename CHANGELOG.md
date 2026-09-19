@@ -3,6 +3,9 @@
 
 # 0.7.0
 
+- Derive shared expression behavior and help relationships from registry capabilities.
+  Treat every explicit archive mode consistently when archive support is unavailable.
+
 - Distinguish aggregate summary rows with `is_total` in JSONL and quote ambiguous data labels
   in text tables, preserving real groups named `total`.
 
@@ -14,11 +17,20 @@
 
 - Export ordinary and comparison summaries as CSV/TSV with one shared schema and explicit row identity.
 
+- Group archive members correctly with `--summary=hash`, using the active filesystem and
+  configured hash algorithm and encoding consistently with `{hash}`.
+
 - Identify every JSONL summary row by request, grouping, and scope, retaining template text
   and comparison roots so repeated and mixed summaries can be separated reliably.
 
+- Extend `--explain` with effective worker limits, retained-state notes, active content-reading
+  fields, and advisory expression costs without running the search or executing actions.
+
 - Reject invalid field templates before traversal or actions, including configured summaries and
   comparison runs. Printf field escapes share quoted-placeholder parsing with ordinary templates.
+
+- Explain inactive CLI modifiers for grep, diff, hash, shard, archive, and reduction output using the effective
+  configuration; dormant configured defaults remain quiet and valid.
 
 - Resolve the current behavior values shown by `--explain` from the complete configuration,
   including named selections and explicit files, instead of only command-line flags.

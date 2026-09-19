@@ -19,6 +19,8 @@
 #include <cstddef>
 #include <string_view>
 
+#include "xff/registry/consumers.h"
+
 namespace xff::registry {
 
 // Where a token lives on the command line (design.md "CLI grammar & parser").
@@ -65,6 +67,12 @@ struct ArgumentFields {
   bool requires_exec_fields = false;
 };
 
+// Whole-walk effect contributed by an expression primary, independent of its spelling.
+enum class TraversalEffect { kNone, kPostOrder, kSingleFilesystem, kIgnoreRace, kReportRace, kMaxDepth, kMinDepth };
+
+// Engine coordination required beyond ordinary per-entry predicate dispatch.
+enum class Control { kNone, kFirst, kTop, kShardStatus, kCollect, kDayStart, kHashVerification };
+
 // One option / predicate / action description. The registry is the single
 // source of truth from which the parser, --help, completions, --explain, and
 // the cost-warning are all derived.
@@ -99,8 +107,9 @@ struct Descriptor {
   // keying off the leading 'i' in the primary's name.
   bool fold_case = false;
   Safety safety = Safety::kNone;
-  bool writes_file = false;    // named file output; runtime writing/overwrite policy applies
-  Style style = Style::kFind;  // find-native by default; set kXff to mark an xff extension
+  bool buffers_columns = false;  // output uses the shared per-entry column alignment buffer
+  bool writes_file = false;      // named file output; runtime writing/overwrite policy applies
+  Style style = Style::kFind;    // find-native by default; set kXff to mark an xff extension
   Cost cost = Cost::kCheap;
   bool pure = true;  // side-effect-free (reorderable within a conjunction)
   // The help topic (--help=TOPIC) this primary belongs to, or empty for none. The counterpart of
@@ -119,6 +128,16 @@ struct Descriptor {
   bool preserves_implicit_output = false;  // action does not replace the default listing
   ArgumentFields argument_fields;
   bool content_output = false;  // built-in per-line content output, optionally replaced by an attached template
+
+  ModifierConsumer modifier_consumer = ModifierConsumer::kNone;
+  bool regex_argument = false;        // first operand is compiled with the selected regex grammar
+  bool case_pattern = false;          // first operand participates in global smart-case selection
+  bool day_duration = false;          // first operand accepts find days or xff word durations
+  bool accepts_batch = false;         // command may end with '+' instead of ';'
+  bool execute_in_directory = false;  // child runs in the matched entry's directory
+  TraversalEffect traversal_effect = TraversalEffect::kNone;
+  Control control = Control::kNone;
+  bool size_argument = false;  // first operand uses the shared size specification grammar
 };
 
 template<typename Sink>

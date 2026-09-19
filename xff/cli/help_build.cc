@@ -501,9 +501,8 @@ Section GrammarsSection() {
       regex::GrammarDocs());
 }
 
-bool IsRegexPrimary(std::string_view name) {
-  return name == "-regex" || name == "-iregex" || name == "-regextype" || name == "-rxc" || name == "-irxc"
-         || name == "-grep";
+bool IsRegexPrimary(const registry::Descriptor& descriptor) {
+  return descriptor.regex_argument || absl::c_linear_search(absl::StrSplit(descriptor.see_also, ','), "regex");
 }
 
 Section RegexSection(bool in_full) {
@@ -516,17 +515,17 @@ Section RegexSection(bool in_full) {
   if (!in_full) {
     Subsection primaries{.title = "Matching expressions"};
     for (const registry::Descriptor& descriptor : registry::All()) {
-      if (IsRegexPrimary(descriptor.name)) {
+      if (IsRegexPrimary(descriptor)) {
         primaries.children.push_back(PrimaryEntry(descriptor));
       }
     }
     section.children.push_back(Content{.node = std::move(primaries)});
     Subsection flags{.title = "Related controls"};
     for (const GlobalFlag& flag : Globals()) {
-      bool relevant = flag.name == "--regextype" || flag.name == "--case" || flag.name == "--re2"
-                      || flag.name == "--pcre" || flag.name == "-E";
+      bool relevant = flag.topic == "regex";
       for (const std::string_view affected : absl::StrSplit(flag.affects, ',')) {
-        relevant = relevant || IsRegexPrimary(affected);
+        const auto primary = registry::Lookup(affected);
+        relevant = relevant || (primary.has_value() && IsRegexPrimary(*primary));
       }
       if (relevant) {
         flags.children.push_back(FlagEntry(flag));

@@ -3,6 +3,8 @@
     "README.md": "index.html",
     "CHANGELOG.md": "CHANGELOG.html",
     "CONTRIBUTING.md": "CONTRIBUTING.html",
+    "docs/benchmarks/execution-resources.md": "docs/benchmarks/execution-resources.html",
+    "docs/execution-resources.md": "docs/execution-resources.html",
     "docs/ci-performance.md": "docs/ci-performance.html",
     "docs/coverage.md": "docs/coverage.html",
     "docs/design-config.md": "docs/design-config.html",

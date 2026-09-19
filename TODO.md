@@ -404,7 +404,7 @@ this as intentional accounting.
 
 - [x] Explain physical predicates/actions, logical reductions, status-cohort order, collections,
       missing members, duplicate selection, custom schemes, and physical comparison with executable examples.
-- [ ] Publish after the B10 comparison and B11 collection-accounting corrections.
+- [x] Publish with the B10 comparison and B11 collection-accounting corrections in PR #871.
 
 ### Audit B13: archive mode ordering
 
@@ -416,3 +416,48 @@ this as intentional accounting.
 
 - [x] Document minimal capability profiles and format/destination limitations.
 - [x] Execute permitted and blocked recipe variants against isolated fixtures.
+
+- [x] **B14: Preserve hash-summary context.** Fix archive member grouping in `--summary=hash`
+      and honor configured digest/encoding like `{hash}`; verify real archive and ordinary-file
+      regressions. See `docs/review-0.6.0.md`.
+
+### Audit S12: inactive modifier inspection
+
+- [x] Add typed consumer metadata and reuse runtime resolvers for effective output state.
+- [x] Diagnose effective CLI requests while preserving dormant config defaults and operand literals.
+- [x] Verify full configs, cleared consumers, generated help, and every changed-header consumer.
+- [x] Add archive depth, member-path, and aggregate dependencies using resolved flavor and backend availability.
+- [x] Verify archive diagnostics and all affected header consumers.
+- [x] Track algorithm/encoding defaults through parsed hash actions and field templates, including
+      printf/exec syntax, suppressed listings, grep counts, summaries, and configured consumers.
+- [x] Verify hash diagnostics, integrated prerequisites, generated reference, and every affected header consumer.
+
+### Audit S13: execution resource inspection
+
+- [x] Document retained state, content reads, concurrency, and measurement definitions separately.
+- [x] Add an effective-command resource view without presenting static estimates as measured usage.
+- [ ] Measure first output, elapsed time, peak memory, and logical/backend bytes across broad and deep
+      trees, network storage, and repeated content consumers.
+- [x] Investigate directory-at-a-time comparison barriers, ordering, errors, actions, and VFS lifetimes; record the prototype and acceptance criteria in `docs/execution-resources.md`.
+- [ ] Prototype and measure paired-directory comparison after settling its output-order and partial-error contracts.
+
+### Audit S13: resource measurement harness
+
+- [x] Measure first stdout, elapsed/CPU time, byte counts, and normalized peak child RSS.
+- [x] Preserve failure status and bounded stderr diagnostics without pipe deadlocks.
+- [x] Exercise eight real xff workloads on generated broad/deep trees.
+- [x] Measure logical whole-file reads for broad/deep synthetic trees, including repeated content consumers and paired comparison.
+- [x] Inspect effective worker limits, active content fields, and retained-state consumers without traversal.
+- [ ] Integrate general runtime read accounting.
+
+- [x] Record S13 one/eight-worker observations on broad/deep fixtures, with raw runs and timing
+      ranges; keep optimized branching/network scaling and storage-traffic claims unproven.
+
+### Registry capability audit
+
+- [x] Derive primary operand grammar, smart case, traversal effects, deferred controls,
+      execution behavior, and help relationships from descriptor metadata.
+- [x] Preserve literal token lookup, evaluator dispatch, and config-layer directive parsing.
+- [x] Add renamed-descriptor regressions so shared behavior follows capabilities rather than spelling.
+- [x] Resolve explicit archive mode and presence together instead of maintaining a second alias list.
+- [x] Complete integrated tests and changed-header lint before publication with audit group six.

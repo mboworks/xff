@@ -197,6 +197,26 @@ TEST_F(EvaluateTest, ImplicitOutputUsesDescriptorCapabilitiesRatherThanNames) {
   EXPECT_THAT(ContainsAction(expression), IsTrue());
 }
 
+TEST_F(EvaluateTest, SizeValidationUsesOperandMetadata) {
+  MBO_ASSERT_OK_AND_ASSIGN(auto command, parser::Parse({".", "-size", "invalid-size"}));
+  auto descriptor = *command.expression->descriptor;
+  descriptor.name = "-renamed-size";
+  command.expression->descriptor.set_ref(descriptor);
+  EXPECT_THAT(ValidateSizeArgs(*command.expression), StatusIs(absl::StatusCode::kInvalidArgument));
+  descriptor.size_argument = false;
+  EXPECT_THAT(ValidateSizeArgs(*command.expression), IsOk());
+}
+
+TEST_F(EvaluateTest, HashValidationUsesBindingRatherThanName) {
+  MBO_ASSERT_OK_AND_ASSIGN(auto command, parser::Parse({".", "-hash:unknown-algorithm"}));
+  auto descriptor = *command.expression->descriptor;
+  descriptor.name = "-renamed-hash";
+  command.expression->descriptor.set_ref(descriptor);
+  EXPECT_THAT(ValidateHashArgs(*command.expression), StatusIs(absl::StatusCode::kInvalidArgument));
+  descriptor.binding = registry::Binding::kNone;
+  EXPECT_THAT(ValidateHashArgs(*command.expression), IsOk());
+}
+
 TEST_F(EvaluateTest, ExpressionIdentityTracksNodesRatherThanTheirContents) {
   const parser::Expr first{.kind = parser::Expr::Kind::kPredicate};
   const parser::Expr second{.kind = parser::Expr::Kind::kPredicate};

@@ -61,6 +61,12 @@ struct FieldsTest : ::testing::Test {
   }
 };
 
+TEST_F(FieldsTest, ContentFieldCountInspectsCompiledFieldsWithoutRendering) {
+  EXPECT_THAT(Template::Compile("{{hash}} {name} {text}").ContentFieldCount(), Eq(0U));
+  EXPECT_THAT(Template::Compile("{hash} {hash:sha256/base64} {lines}").ContentFieldCount(), Eq(3U));
+  EXPECT_THAT(Template::Compile("{hash:s/a/b/} {lines:m/./x/;join(,)}").ContentFieldCount(), Eq(2U));
+}
+
 TEST_F(FieldsTest, StaticValidationDistinguishesUnknownFieldsFromAbsentValues) {
   for (const std::string_view text : std::to_array<std::string_view>(
            {"", "{}", "{{nmae}}", "{name}", "{env.XFF_UNSET}", "{def.absent}", "{capture.absent}", "{42}"})) {

@@ -233,7 +233,10 @@ cc_fuzz_test(
 cc_library(
     name = "run_cc",
     srcs = ["run.cc"],
-    hdrs = ["run.h"],
+    hdrs = [
+        "consumers.h",
+        "run.h",
+    ],
     visibility = ["//xff:__subpackages__"],
     deps = [
         ":evaluate_cc",
@@ -305,5 +308,43 @@ cc_test(
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:status_cc",
         "@xff_extras_api//:vfs_cc",
+    ],
+)
+
+# Explicit measurement run: logical read counts are recorded in test.xml, not CI thresholds.
+cc_test(
+    name = "read_accounting_test",
+    size = "small",
+    srcs = ["read_accounting_test.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        ":run_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+cc_test(
+    name = "resource_inspection_test",
+    size = "small",
+    srcs = ["resource_inspection_test.cc"],
+    deps = [
+        ":run_cc",
+        "//xff/parser:parser_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )

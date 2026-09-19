@@ -836,4 +836,12 @@ assert not marker.exists()
 PYTEST
 }
 
+test::hash_summary_honors_configured_defaults() {
+  local root out
+  root="$(_new_tree)"
+  printf abc >"${root}/file"
+  out="$(_run "${root}" -type f --summary=hash --hash-algorithm=md5 --hash-encoding=base64 --format=jsonl)"
+  _expect_json_row '{"summary":"hash","group":"kAFQmDzST7DWlj99KOF/cg==","count":1,"bytes":3}' "${out}"
+}
+
 test_runner

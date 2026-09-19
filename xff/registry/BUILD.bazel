@@ -21,6 +21,7 @@ cc_library(
     name = "registry_cc",
     srcs = ["registry.cc"],
     hdrs = [
+        "consumers.h",
         "descriptor.h",
         "registry.h",
     ],

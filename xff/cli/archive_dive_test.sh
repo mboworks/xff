@@ -580,4 +580,32 @@ test::only_the_plus_ladder_spells_the_umbrella() {
   done
 }
 
+test::hash_summary_reads_members_with_active_hash_defaults() {
+  local root out algorithm encoding
+  root="$(_tree)"
+  for algorithm in sha256 md5; do
+    for encoding in hex base64; do
+      out="$("$(_xff_bin)" --archive=roots "${root}/a.tar" -type f --summary=hash \
+        "--hash-algorithm=${algorithm}" "--hash-encoding=${encoding}" --format=jsonl)"
+      python3 - "${algorithm}" "${encoding}" "${out}" <<'PYTHON'
+import base64
+import hashlib
+import json
+import sys
+
+algorithm, encoding, output = sys.argv[1:]
+expected = {}
+for content in (b"needle\n", b"two\n"):
+    digest = hashlib.new(algorithm, content).digest()
+    key = digest.hex() if encoding == "hex" else base64.b64encode(digest).decode()
+    expected[key] = (1, len(content))
+rows = [json.loads(line) for line in output.splitlines()]
+actual = {row["group"]: (row["count"], row["bytes"]) for row in rows if row["group"] != "total"}
+assert actual == expected, (actual, expected)
+assert all(row["summary"] == "hash" for row in rows), rows
+PYTHON
+    done
+  done
+}
+
 test_runner

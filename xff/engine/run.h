@@ -22,6 +22,7 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "xff/engine/evaluate.h"
 #include "xff/engine/walk.h"
@@ -46,6 +47,12 @@ struct FlavorFacet {
 };
 
 [[nodiscard]] absl::Span<const FlavorFacet> FlavorFacets();
+
+// Inspect the fully composed command without walking roots or evaluating actions.
+// Reports scheduling and potential retained state/content consumers, never measured usage.
+absl::StatusOr<std::string> ExplainResources(
+    const parser::Command& command,
+    std::optional<registry::Style> style = std::nullopt);
 
 // Runs a parsed find command over `fs`: walks the roots in pre-order and, for
 // each entry, evaluates the expression -- firing -print/-print0 actions through

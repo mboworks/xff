@@ -46,6 +46,7 @@
 #include "xff/cli/html.h"
 #include "xff/cli/manpage.h"
 #include "xff/cli/markdown.h"
+#include "xff/cli/modifier_diagnostics.h"
 #include "xff/cli/pager.h"
 #include "xff/cli/plain_backend.h"
 #include "xff/cli/wrap.h"
@@ -808,6 +809,12 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
       std::cerr << "xff: field template: " << status.message() << "\n";
       return 2;
     }
+    const auto modifier_notes = xff::cli::InactiveModifierNotes(command, resolved, style);
+    if (!modifier_notes.ok()) {
+      std::cerr << "xff: " << modifier_notes.status().message() << "\n";
+      return 2;
+    }
+    std::cout << *modifier_notes;
     std::cout << xff::config::ExplainSources(inputs.sources, style);
     std::cout << "rc-mode\t" << xff::config::RcModeName(inputs.rc_mode) << "\n";
     std::cout << xff::cli::ExplainProfiles(system_validation.profiles, inputs, effective_configs);
@@ -818,6 +825,12 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     }
     std::cout << "\n# flavor defaults per style, and the value resolved for this run:\n";
     std::cout << RenderFlavorTable(command.globals, style);
+    const auto resources = xff::engine::ExplainResources(command, style);
+    if (!resources.ok()) {
+      std::cerr << "xff: resource inspection: " << resources.status().message() << "\n";
+      return 2;
+    }
+    std::cout << *resources;
     return 0;
   }
   // The find style (--config=find) accepts only find's own expression vocabulary;

@@ -31,6 +31,7 @@
 #include "mbo/types/optional_ref.h"
 #include "mbo/types/string_or_view.h"
 #include "xff/datetime/datetime.h"
+#include "xff/hash/hash.h"
 #include "xff/vfs/entry.h"
 #include "xff/vfs/filesystem.h"
 
@@ -123,6 +124,13 @@ class Template {
 
   // Whether a parsed field reads this command capture; escaped literal braces do not count.
   bool ReferencesCapture(std::string_view name) const;
+
+  // Inspect parsed hash fields, including post-processing, without reading any entry content.
+  hash::DefaultUsage HashDefaultsUsed() const;
+
+  // Number of compiled hash/line-count fields that can read content when rendered.
+  // This describes template structure, not observed reads or bytes.
+  std::size_t ContentFieldCount() const;
 
  private:
   // A literal run (fn == nullptr -> emit `literal`) or a field reference: fn is

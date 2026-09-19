@@ -2476,9 +2476,7 @@ namespace {
 
 bool IsFuzzyOnlyExpression(const parser::Expr& expr) {
   switch (expr.kind) {
-    case parser::Expr::Kind::kPredicate:
-      return expr.descriptor->name == "-fuzzy" || expr.descriptor->name == "-ifuzzy"
-             || expr.descriptor->name == "-fuzzypath" || expr.descriptor->name == "-ifuzzypath";
+    case parser::Expr::Kind::kPredicate: return expr.descriptor->binding == registry::Binding::kFuzzy;
     case parser::Expr::Kind::kNot: return false;
     case parser::Expr::Kind::kAnd:
     case parser::Expr::Kind::kOr:
@@ -2646,7 +2644,7 @@ void PreviewExecution(const parser::Expr& expr, EvalContext& context) {
   std::string preview = absl::StrCat("would execute ", expr.descriptor->name, " for ", context.visit.path, ":");
   const bool capture = expr.descriptor->binds_capture;
   const std::size_t first = capture ? 2 : 0;
-  const bool in_dir = expr.descriptor->name.ends_with("dir");
+  const bool in_dir = expr.descriptor->execute_in_directory;
   const auto target = SplitExecDir(context.visit.path);
   std::vector<std::string> args;
   if (context.exec_fields && !capture) {
@@ -2678,10 +2676,10 @@ EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) 
         PreviewExecution(expr, context);
         return {.unknown = true};
       }
-      if (expr.descriptor->name == "-top") {
+      if (expr.descriptor->control == registry::Control::kTop) {
         return EvaluateTop(expr, context);
       }
-      if (expr.descriptor->name == "-shard-status") {
+      if (expr.descriptor->control == registry::Control::kShardStatus) {
         return EvaluateShardStatus(expr, context);
       }
       const bool matched = EvaluatePredicate(expr, context);
@@ -2739,6 +2737,19 @@ bool ContainsAction(const parser::Expr& expr) {
   return false;  // Unreachable: every Expr::Kind returns above.
 }
 
+DiffDefaultDependencies InspectDiffDefaults(
+    std::string_view style,
+    mbo::diff::DiffOptions::OutputFormat default_format) {
+  const DiffStyle parsed = ParseDiffStyle(style);
+  using OutputFormat = mbo::diff::DiffOptions::OutputFormat;
+  const OutputFormat format = parsed.format.value_or(default_format);
+  return {
+      .format = !parsed.silent && !parsed.format.has_value(),
+      .context = !parsed.silent && !parsed.context.has_value()
+                 && (format == OutputFormat::kUnified || format == OutputFormat::kContext),
+  };
+}
+
 std::optional<mbo::diff::DiffOptions::OutputFormat> ParseDiffFormatFlag(std::string_view flag) {
   using OutputFormat = mbo::diff::DiffOptions::OutputFormat;
   // The -diff:STYLE letters plus the long names, each mapping to one mbo output format. Keys are
@@ -2770,8 +2781,7 @@ absl::Status ValidateDiffIgnore(std::string_view tokens, std::string_view matchi
 
 absl::Status ValidateSizeArgs(const parser::Expr& expr) {
   if (expr.kind == parser::Expr::Kind::kPredicate) {
-    const bool size_like =
-        expr.descriptor.has_value() && (expr.descriptor->name == "-size" || expr.descriptor->name == "-blocks");
+    const bool size_like = expr.descriptor.has_value() && expr.descriptor->size_argument;
     if (size_like && !expr.args.empty()) {
       if (const absl::Status status = ParseSizeSpec(expr.args.front()).status(); !status.ok()) {
         return status;
@@ -2795,7 +2805,7 @@ absl::Status ValidateSizeArgs(const parser::Expr& expr) {
 absl::Status ValidateHashArgs(const parser::Expr& expr) {
   if (expr.kind == parser::Expr::Kind::kPredicate) {
     // -hash and -hasheq share the :ALGO[/ENCODING] spec grammar (Binding::kHash), so both validate here.
-    if (expr.descriptor.has_value() && (expr.descriptor->name == "-hash" || expr.descriptor->name == "-hasheq")
+    if (expr.descriptor.has_value() && expr.descriptor->binding == registry::Binding::kHash
         && !expr.hash_spec.empty()) {
       // Only the spec's explicit parts matter here, so validate against a concrete default.
       if (!hash::ParseSpec(expr.hash_spec, "sha256", hash::Encoding::kHex).has_value()) {
