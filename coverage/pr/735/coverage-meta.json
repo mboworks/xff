@@ -31,5 +31,7 @@
     "position": 725,
     "integration_commit": "759557e1812ac3ad3992db366cedded7ed1532b3",
     "merged_at": "2026-08-31T19:03:45Z"
-  }
+  },
+  "pull_state": "merged",
+  "reference_time": "2026-08-31T19:03:45Z"
 }
