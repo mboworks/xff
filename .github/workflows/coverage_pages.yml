@@ -4,7 +4,12 @@ on:
   # Use trusted default-branch code; never check out or execute a PR head.
   pull_request_target:
     types: [closed, reopened]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Optional completed Test or Release run to publish; empty refreshes metadata only
+        required: false
+        type: string
   workflow_run:
     workflows: [Release, Test]
     types: [completed]
@@ -44,33 +49,39 @@ jobs:
           ref: coverage-pages
       - name: Check coverage job result
         id: coverage-result
-        if: github.event_name == 'workflow_run'
+        if: github.event_name == 'workflow_run' || inputs.source_run_id != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id || inputs.source_run_id }}
         run: |
           set -euo pipefail
+          [[ "${SOURCE_RUN_ID}" =~ ^[1-9][0-9]*$ ]]
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}" > coverage-run.json
+          jq -e '.status == "completed" and (.path == ".github/workflows/main.yml" or .path == ".github/workflows/release.yml")' \
+            coverage-run.json >/dev/null
           gh api --paginate --slurp \
             "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}/jobs?filter=latest&per_page=100" > coverage-jobs.json
           eligible="$(jq 'any(.[].jobs[]; .name == "coverage" and .conclusion == "success")' coverage-jobs.json)"
           echo "eligible=${eligible}" >>"${GITHUB_OUTPUT}"
+          jq -r '{created_at, updated_at, head_sha, run_attempt, id, run_started_at} | to_entries[] | "\(.key)=\(.value)"' \
+            coverage-run.json >>"${GITHUB_OUTPUT}"
       - uses: actions/download-artifact@v8
         if: steps.coverage-result.outputs.eligible == 'true'
         with:
           github-token: ${{ github.token }}
           name: coverage-report
           path: report
-          run-id: ${{ github.event.workflow_run.id }}
+          run-id: ${{ steps.coverage-result.outputs.id }}
       - name: Select and stage the report
         if: steps.coverage-result.outputs.eligible == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          SOURCE_CREATED_AT: ${{ github.event.workflow_run.created_at }}
-          SOURCE_COMPLETED_AT: ${{ github.event.workflow_run.updated_at }}
-          SOURCE_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
-          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
-          SOURCE_STARTED_AT: ${{ github.event.workflow_run.run_started_at }}
+          SOURCE_CREATED_AT: ${{ steps.coverage-result.outputs.created_at }}
+          SOURCE_COMPLETED_AT: ${{ steps.coverage-result.outputs.updated_at }}
+          SOURCE_HEAD_SHA: ${{ steps.coverage-result.outputs.head_sha }}
+          SOURCE_RUN_ATTEMPT: ${{ steps.coverage-result.outputs.run_attempt }}
+          SOURCE_RUN_ID: ${{ steps.coverage-result.outputs.id }}
+          SOURCE_STARTED_AT: ${{ steps.coverage-result.outputs.run_started_at }}
         run: |
           set -euo pipefail
           target="$(<report/coverage-target.txt)"

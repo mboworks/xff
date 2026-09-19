@@ -32,7 +32,15 @@ class CoverageIndexTest(unittest.TestCase):
         for text in (workflow, pages):
             self.assertIn("  group: coverage-pages\n  queue: max\n  cancel-in-progress: false", text)
         self.assertIn("pull_request_target:\n    types: [closed, reopened]", workflow)
-        self.assertIn("  workflow_dispatch: {}", workflow)
+        self.assertIn("      source_run_id:", workflow)
+        self.assertIn("github.event.workflow_run.id || inputs.source_run_id", workflow)
+        self.assertIn('[[ "${SOURCE_RUN_ID}" =~ ^[1-9][0-9]*$ ]]', workflow)
+        self.assertIn('.status == "completed"', workflow)
+        self.assertIn('.path == ".github/workflows/main.yml"', workflow)
+        self.assertIn('.path == ".github/workflows/release.yml"', workflow)
+        self.assertIn('run-id: ${{ steps.coverage-result.outputs.id }}', workflow)
+        for field in ("created_at", "updated_at", "head_sha", "run_attempt", "run_started_at"):
+            self.assertIn("${{ steps.coverage-result.outputs." + field + " }}", workflow)
         self.assertNotIn("github.event.workflow_run.conclusion == 'success'", workflow)
         self.assertIn('.name == "coverage" and .conclusion == "success"', workflow)
         self.assertIn('jobs?filter=latest&per_page=100', workflow)
