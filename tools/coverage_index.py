@@ -410,7 +410,33 @@ def _integration_position(repository: Path, commit: str, commits: list[str]) -> 
     return first
 
 
-def update_history(root: Path, repository: Path, pull_requests: list[dict]) -> None:
+def _squashed_integration_position(repository: Path, pull: dict, merges: dict,
+                                   positions: dict, fetch_heads: bool) -> int | None:
+    """Verify membership in an aggregation whose final merge was squashed."""
+    base = pull.get("base", {})
+    for parent in merges.values():
+        head = parent.get("head", {})
+        position = positions.get(parent["merge_commit_sha"])
+        if (position is None or not base.get("ref") or base["ref"] != head.get("ref")
+                or base.get("repo", {}).get("full_name") != head.get("repo", {}).get("full_name")
+                or pull["merged_at"] > parent["merged_at"]):
+            continue
+        sha = head.get("sha", "")
+        if not re.fullmatch(r"[0-9a-f]{40}", sha):
+            continue
+        present = subprocess.run(
+            ["git", "-C", str(repository), "cat-file", "-e", f"{sha}^{{commit}}"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+        ).returncode == 0
+        if not present and fetch_heads:
+            subprocess.run(["git", "-C", str(repository), "fetch", "--no-tags", "origin", sha], check=True)
+        if _integration_position(repository, pull["merge_commit_sha"], [sha]) is not None:
+            return position
+    return None
+
+
+def update_history(root: Path, repository: Path, pull_requests: list[dict],
+                   fetch_heads: bool = False) -> None:
     """Attach reports to main chronology, including merges through aggregation PRs."""
     commits = subprocess.check_output(
         ["git", "-C", str(repository), "rev-list", "--first-parent", "--reverse", "HEAD"],
@@ -439,6 +465,8 @@ def update_history(root: Path, repository: Path, pull_requests: list[dict]) -> N
         history = {"commit": sha, "position": positions[sha]} if sha in positions else None
         if sha and history is None:
             position = _integration_position(repository, sha, commits)
+            if position is None and pull:
+                position = _squashed_integration_position(repository, pull, merges, positions, fetch_heads)
             if position is not None:
                 history = {
                     "commit": sha,
@@ -519,6 +547,7 @@ def main() -> int:
     history.add_argument("root", type=Path)
     history.add_argument("repository", type=Path)
     history.add_argument("pull_requests", type=Path)
+    history.add_argument("--fetch-aggregation-heads", action="store_true")
     archive = subparsers.add_parser("archive")
     archive.add_argument("root", type=Path)
     archive.add_argument("--incoming", type=Path)
@@ -534,7 +563,8 @@ def main() -> int:
         archive_reports(args.root, args.incoming)
     elif args.command == "history":
         pages = json.loads(args.pull_requests.read_text(encoding="utf-8"))
-        update_history(args.root, args.repository, [pull for page in pages for pull in page])
+        update_history(args.root, args.repository, [pull for page in pages for pull in page],
+                       args.fetch_aggregation_heads)
     elif args.command == "metadata":
         summary = json.loads(args.summary.read_text(encoding="utf-8"))
         value = report_metadata(

@@ -77,5 +77,6 @@ remain available at their existing URL but are not assigned an invented run iden
 An aggregation PR does not combine or relabel the coverage measurements of its constituent PRs.
 Each retains its original tested commit, workflow run, and detailed report. Once the aggregation
 reaches main, nested PR merges are positioned under the first main commit containing them, ordered
-by their individual merge times. The aggregation PR's own report remains separate. Before that
+by their individual merge times. For a squashed aggregation, publication uses GitHub PR metadata
+and verifies each nested merge against the aggregation's original head before assigning that position. The aggregation PR's own report remains separate. Before that
 merge, the constituent reports remain in the unpositioned section rather than claiming to be on main.

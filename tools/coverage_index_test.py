@@ -382,6 +382,26 @@ class CoverageIndexTest(unittest.TestCase):
             self.assertEqual(offsets, sorted(offsets))
             self.assertIn("Aggregated PRs retain their own reports", rendered)
 
+            # Squashing the aggregation removes nested merges from main ancestry.
+            # PR metadata identifies the parent; its recorded head must contain each child.
+            git("checkout", "-b", "squashed-main", f"{integration}^1")
+            git("commit", "--allow-empty", "-m", "squash aggregation")
+            squashed = git("rev-parse", "HEAD")
+            for pull in pulls[:-1]:
+                pull["base"] = {"ref": "integration", "repo": {"full_name": "owner/repo"}}
+            pulls[-1].update(merge_commit_sha=squashed, head={
+                "ref": "integration", "sha": second, "repo": {"full_name": "owner/repo"},
+            })
+            coverage_index.update_history(reports, repository, pulls)
+            for target in ("pr/1", "pr/99"):
+                metadata = json.loads((reports / target / "coverage-meta.json").read_text())
+                self.assertEqual(metadata["history"]["integration_commit"], squashed)
+                self.assertEqual(metadata["history"]["position"], 2)
+                self.assertEqual(metadata["source"], originals[target]["source"])
+            for target in ("pr/77", "pr/88"):
+                metadata = json.loads((reports / target / "coverage-meta.json").read_text())
+                self.assertIsNone(metadata["history"])
+
     def test_archive_retains_details_and_each_run_attempt_without_replacing_old_data(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

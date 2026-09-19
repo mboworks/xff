@@ -121,7 +121,7 @@ jobs:
           # order must not affect placement relative to release tags on main.
           gh api --paginate --slurp \
             "repos/${GITHUB_REPOSITORY}/pulls?state=closed&per_page=100" > coverage-pulls.json
-          python3 source/tools/coverage_index.py history site/coverage source coverage-pulls.json
+          python3 source/tools/coverage_index.py history site/coverage source coverage-pulls.json --fetch-aggregation-heads
           python3 source/tools/coverage_index.py archive site/coverage
           python3 source/tools/coverage_index.py site site/coverage site/coverage/index.html
           git -C site config user.name 'github-actions[bot]'
