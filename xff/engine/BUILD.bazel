@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@mboworks_bashtest//bashtest:bashtest.bzl", "bashtest")
+load("@aspect_rules_py//py:defs.bzl", "py_test")
 load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
 load("//xff:cc.bzl", "cc_binary", "cc_library", "cc_test")
 
@@ -425,13 +425,19 @@ cc_test(
     ],
 )
 
-bashtest(
+py_test(
     name = "read_benchmark_test",
     size = "small",
-    srcs = ["read_benchmark_test.sh"],
+    srcs = ["read_benchmark_test.py"],
+    args = [
+        "$(rlocationpath :read_benchmark)",
+        "$(rlocationpath //xff/cli/testing:xff)",
+        "$(rlocationpath //tools:benchmark_resources)",
+    ],
     data = [
         ":read_benchmark",
-        "//tools:resource_benchmark_scripts",
+        "//tools:benchmark_resources",
         "//xff/cli/testing:xff",
     ],
+    deps = ["@rules_python//python/runfiles"],
 )

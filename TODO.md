@@ -1,5 +1,11 @@
 # TODO
 
+## Completed: F08/F11 Python tooling ownership
+
+- Use Aspect Python rules and a pinned Python 3.13 toolchain for tooling tests and benchmarks.
+- Declare Python libraries, executables, tests, and fixture inputs; retain direct script usage.
+- Keep fast checker tests in pre-commit and run the live-checkout ownership/discovery check in CI.
+
 ## Completed: Fuzzy help-selector diagnostics
 
 - Share ranked fuzzy matching across unknown CLI flags and unknown help selectors.

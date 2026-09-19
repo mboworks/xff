@@ -3,6 +3,9 @@
 
 # 0.7.0
 
+- Run Python tooling tests and resource benchmarks through explicit Aspect Bazel targets and a
+  hermetic Python 3.13 interpreter; keep pre-commit focused on fast checks.
+
 - Suggest similar registered flags, primaries, topics, and aliases for misspelled help selectors.
 
 - Order coverage reports by actual PR merge and tag timestamps, with main pinned first.

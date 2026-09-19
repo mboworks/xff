@@ -7,13 +7,14 @@ import tempfile
 import unittest
 
 import site_artwork
+from test_paths import repository_file
 
 
 class SiteArtworkTest(unittest.TestCase):
     def test_nested_pages_and_idempotence(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            assets = Path(__file__).resolve().parent.parent / "docs/assets"
+            assets = repository_file("docs/assets")
             documents = {
                 "index.html": '<!doctype html><html lang="en"><meta charset="utf-8"><body>Home</body></html>',
                 "site/tag/v0.5.0/XFF.html": '<!doctype html><html><head><title>Help</title></head><body>Help</body></html>',

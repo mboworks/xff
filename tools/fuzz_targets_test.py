@@ -16,6 +16,7 @@ import unittest
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from test_paths import repository_file
 import fuzz_targets  # noqa: E402
 
 
@@ -50,11 +51,6 @@ class FuzzTargetsTest(unittest.TestCase):
                 fuzz_targets.discover_targets(root),
                 ["//xff/parser:parser_fuzz_test_run", "@xff_arc//nested:archive_fuzz_test_run"],
             )
-
-    def test_repository_discovery_parses_the_live_build_graph(self):
-        # A lower bound catches an accidentally narrowed scan without making every newly declared
-        # fuzzer require a hand-maintained count here: BUILD files remain the source of truth.
-        self.assertGreaterEqual(len(fuzz_targets.discover_targets(fuzz_targets._REPO_ROOT)), 6)
 
     def test_campaign_duration_tracks_target_count(self):
         self.assertEqual(fuzz_targets.campaign_duration_seconds(["one", "two", "three"], 60, 180), 180)
@@ -156,7 +152,7 @@ print('stat::average_exec_per_sec: 21')
 
     def test_both_workflows_use_parallel_driver_and_keep_failure_artifacts(self):
         for name in ("main", "fuzz"):
-            workflow = (fuzz_targets._REPO_ROOT / ".github/workflows" / f"{name}.yml").read_text()
+            workflow = (repository_file(f".github/workflows/{name}.yml")).read_text()
             self.assertIn('--jobs="$(getconf _NPROCESSORS_ONLN)"', workflow)
             self.assertIn('--output-dir="${RUNNER_TEMP}/fuzz-campaigns"', workflow)
             self.assertIn("name: Preserve fuzz campaign logs and findings\n        if: always()", workflow)

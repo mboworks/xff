@@ -28,6 +28,35 @@ pre-commit run -a
 
 Without the `-a` only the modified and staged files will be checked.
 
+## Python tooling and test ownership
+
+Use Aspect `py_library`, `py_binary`, and `py_test` from
+`@aspect_rules_py//py:defs.bzl`. `MODULE.bazel` pins the rules and selects the standalone
+Python 3.13 toolchain supplied by `rules_python`; Bazel execution does not use ambient `python3`.
+Declare imported modules as dependencies and non-Python inputs as runfiles, with narrow visibility.
+A filegroup describes data, not an executable Python program.
+
+Run all 33 tooling suites with `bazel test //tools:python_tests`; they also run under `bazel test //...`.
+The benchmark integration is `//xff/engine:read_benchmark_test`. Run the measurement commands with
+`bazel run //tools:measure_resources -- -- COMMAND...` or
+`bazel run //tools:benchmark_resources -- XFF --output=REPORT.json`.
+The benchmark driver declares its measurement executable and runs each measurement in a fresh
+process, preserving per-invocation peak-memory accounting. Direct script invocation remains available.
+
+Pre-commit owns changed-file formatting and policy checks, plus fast, narrowly triggered checker
+self-tests. Its Python hooks use the managed Python 3.13 environment. Process-measurement and fuzz
+scheduler suites belong to Bazel, so commits do not run those suites or start recursive Bazel builds.
+CI's existing release/coverage publishing checks may run their relevant suites directly as an
+additional check of the scripts used in those workflows; Bazel remains their canonical test owner.
+
+`tools/repository_tooling_test.py` is the explicit checkout-integration exception: it verifies live
+fuzz discovery, extra-module coverage mapping, and that every other tooling test has a Bazel owner.
+The main workflow runs it unconditionally on Python 3.13. It does not belong in a sandbox that sees
+only declared fixture files. Other suites use temporary repositories and declared fixtures.
+The coverage-index and release-site suites require host Git; release-note tests require Bash and sed.
+Their Bazel targets carry `requires-host-tools`, and the supported Linux/macOS CI images provide them.
+No tests contact GitHub or recursively invoke Bazel; the separate site integration step does use GitHub.
+
 ## Local clang-tidy scope
 
 The normal commit and push hooks run clang-tidy on their changed C++ files. Changed headers

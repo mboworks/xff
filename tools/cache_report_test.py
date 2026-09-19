@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from test_paths import repository_file
 
 import cache_report
 
@@ -62,7 +63,7 @@ class CacheReportTest(unittest.TestCase):
             self.assertNotIn("| Unavailable", result.stdout)
 
     def test_main_done_reports_even_when_a_dependency_fails(self):
-        root = Path(__file__).resolve().parent.parent
+        root = repository_file("")
         workflow = (root / ".github/workflows/main.yml").read_text()
         done = workflow.split("  done:", 1)[1]
         self.assertIn("if: always() && github.ref == 'refs/heads/main'", done)

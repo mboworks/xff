@@ -34,6 +34,7 @@ jobs:
       - run: python3 -m unittest discover -s tools -p site_artwork_test.py
       - run: python3 -m unittest discover -s tools -p "*cache*test.py"
       - run: python3 -m unittest discover -s tools -p release_notes_test.py
+      - run: python3 -m unittest discover -s tools -p repository_tooling_test.py
       - name: Verify configured documentation and generated links
         env:
           GH_TOKEN: ${{ github.token }}

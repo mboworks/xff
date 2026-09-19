@@ -67,3 +67,33 @@ config_setting(
     name = "is_clang",
     define_values = {"is_clang": "true"},
 )
+
+# Repository files inspected by Python regression tests; no checkout escape is needed.
+filegroup(
+    name = "python_workflow_test_data",
+    srcs = [
+        ".github/actions/bazel-cache-restore/action.yml",
+        ".github/actions/bazel-cache-save/action.yml",
+        ".github/workflows/cache_size.yml",
+        ".github/workflows/fuzz.yml",
+        ".github/workflows/main.yml",
+        ".github/workflows/release.yml",
+    ],
+    visibility = ["//tools:__pkg__"],
+)
+
+filegroup(
+    name = "python_artwork_test_data",
+    srcs = [
+        "docs/assets/apple-touch-icon.png",
+        "docs/assets/favicon.ico",
+        "docs/assets/favicon.png",
+    ],
+    visibility = ["//tools:__pkg__"],
+)
+
+filegroup(
+    name = "python_release_notes_test_data",
+    srcs = [".github/release-notes.md.template"],
+    visibility = ["//tools:__pkg__"],
+)

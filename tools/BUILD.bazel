@@ -15,6 +15,7 @@
 
 """mboworks_xff/tools (mirrors mboworks/mbo)."""
 
+load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library", "py_test")
 load("@mboworks_bashtest//bashtest:bashtest.bzl", "bashtest")
 load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 load("//xff:cc.bzl", "cc_binary")
@@ -99,11 +100,621 @@ sh_binary(
     deps = ["@bazel_tools//tools/bash/runfiles"],
 )
 
-filegroup(
-    name = "resource_benchmark_scripts",
-    srcs = [
-        "benchmark_resources.py",
-        "measure_resources.py",
+py_library(
+    name = "align_markdown_tables_lib",
+    srcs = ["align_markdown_tables.py"],
+    imports = [
+        ".",
+        "..",
     ],
+)
+
+py_library(
+    name = "bazel_cache_lib",
+    srcs = ["bazel_cache.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "build_rules_lib",
+    srcs = ["build_rules.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "cache_report_lib",
+    srcs = ["cache_report.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+    deps = [":align_markdown_tables_lib"],
+)
+
+py_library(
+    name = "cache_size_lib",
+    srcs = ["cache_size.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "check_bazel_policy_lib",
+    srcs = ["check_bazel_policy.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "check_cc_library_tested_lib",
+    srcs = ["check_cc_library_tested.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+    deps = [":build_rules_lib"],
+)
+
+py_library(
+    name = "check_cc_target_naming_lib",
+    srcs = ["check_cc_target_naming.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+    deps = [":build_rules_lib"],
+)
+
+py_library(
+    name = "check_copyright_lib",
+    srcs = ["check_copyright.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "check_docs_extras_lib",
+    srcs = ["check_docs_extras.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "check_host_io_lib",
+    srcs = ["check_host_io.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "check_inline_range_lists_lib",
+    srcs = ["check_inline_range_lists.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "check_module_versions_lib",
+    srcs = ["check_module_versions.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "check_namespace_style_lib",
+    srcs = ["check_namespace_style.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "check_raw_pointers_lib",
+    srcs = ["check_raw_pointers.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "clang_tidy_compdb_lib",
+    srcs = ["clang_tidy_compdb.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "clang_tidy_pre_push_lib",
+    srcs = ["clang_tidy_pre_push.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "clang_tidy_runner_lib",
+    srcs = ["clang_tidy_runner.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "clang_tidy_scope_lib",
+    srcs = ["clang_tidy_scope.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "coverage_lib",
+    srcs = ["coverage.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+    deps = [
+        ":coverage_policy_lib",
+        ":coverage_sources_lib",
+    ],
+)
+
+py_library(
+    name = "coverage_html_lib",
+    srcs = ["coverage_html.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+    deps = [":coverage_policy_lib"],
+)
+
+py_library(
+    name = "coverage_index_lib",
+    srcs = ["coverage_index.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+    deps = [":coverage_policy_lib"],
+)
+
+py_library(
+    name = "coverage_lcovrc_lib",
+    srcs = ["coverage_lcovrc.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+    deps = [":coverage_policy_lib"],
+)
+
+py_library(
+    name = "coverage_policy_lib",
+    srcs = ["coverage_policy.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "coverage_sources_lib",
+    srcs = ["coverage_sources.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+    deps = [":extras_lib"],
+)
+
+py_library(
+    name = "extras_lib",
+    srcs = ["extras.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "fix_compile_commands_lib",
+    srcs = ["fix_compile_commands.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "fuzz_targets_lib",
+    srcs = ["fuzz_targets.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+    deps = [":extras_lib"],
+)
+
+py_library(
+    name = "generate_mime_db_lib",
+    srcs = ["generate_mime_db.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "measure_resources_lib",
+    srcs = ["measure_resources.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "release_site_lib",
+    srcs = ["release_site.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "site_artwork_lib",
+    srcs = ["site_artwork.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_library(
+    name = "test_paths_lib",
+    srcs = ["test_paths.py"],
+    imports = [
+        ".",
+        "..",
+    ],
+)
+
+py_test(
+    name = "align_markdown_tables_test",
+    size = "small",
+    srcs = ["align_markdown_tables_test.py"],
+    deps = [":align_markdown_tables_lib"],
+)
+
+py_test(
+    name = "bazel_cache_test",
+    size = "small",
+    srcs = ["bazel_cache_test.py"],
+    data = ["//:python_workflow_test_data"],
+    deps = [
+        ":bazel_cache_lib",
+        ":test_paths_lib",
+    ],
+)
+
+py_test(
+    name = "build_rules_test",
+    size = "small",
+    srcs = ["build_rules_test.py"],
+    deps = [":build_rules_lib"],
+)
+
+py_test(
+    name = "cache_report_test",
+    size = "small",
+    srcs = ["cache_report_test.py"],
+    data = ["//:python_workflow_test_data"],
+    deps = [
+        ":bazel_cache_lib",
+        ":cache_report_lib",
+        ":test_paths_lib",
+    ],
+)
+
+py_test(
+    name = "cache_size_test",
+    size = "small",
+    srcs = ["cache_size_test.py"],
+    deps = [
+        ":bazel_cache_lib",
+        ":cache_size_lib",
+    ],
+)
+
+py_test(
+    name = "check_bazel_policy_test",
+    size = "small",
+    srcs = ["check_bazel_policy_test.py"],
+    deps = [":check_bazel_policy_lib"],
+)
+
+py_test(
+    name = "check_cc_library_tested_test",
+    size = "small",
+    srcs = ["check_cc_library_tested_test.py"],
+    deps = [":check_cc_library_tested_lib"],
+)
+
+py_test(
+    name = "check_cc_target_naming_test",
+    size = "small",
+    srcs = ["check_cc_target_naming_test.py"],
+    deps = [":check_cc_target_naming_lib"],
+)
+
+py_test(
+    name = "check_copyright_test",
+    size = "small",
+    srcs = ["check_copyright_test.py"],
+    deps = [":check_copyright_lib"],
+)
+
+py_test(
+    name = "check_docs_extras_test",
+    size = "small",
+    srcs = ["check_docs_extras_test.py"],
+    deps = [":check_docs_extras_lib"],
+)
+
+py_test(
+    name = "check_host_io_test",
+    size = "small",
+    srcs = ["check_host_io_test.py"],
+    deps = [":check_host_io_lib"],
+)
+
+py_test(
+    name = "check_inline_range_lists_test",
+    size = "small",
+    srcs = ["check_inline_range_lists_test.py"],
+    deps = [":check_inline_range_lists_lib"],
+)
+
+py_test(
+    name = "check_module_versions_test",
+    size = "small",
+    srcs = ["check_module_versions_test.py"],
+    deps = [":check_module_versions_lib"],
+)
+
+py_test(
+    name = "check_namespace_style_test",
+    size = "small",
+    srcs = ["check_namespace_style_test.py"],
+    deps = [":check_namespace_style_lib"],
+)
+
+py_test(
+    name = "check_raw_pointers_test",
+    size = "small",
+    srcs = ["check_raw_pointers_test.py"],
+    deps = [":check_raw_pointers_lib"],
+)
+
+py_test(
+    name = "clang_tidy_compdb_test",
+    size = "small",
+    srcs = ["clang_tidy_compdb_test.py"],
+    deps = [":clang_tidy_compdb_lib"],
+)
+
+py_test(
+    name = "clang_tidy_pre_push_test",
+    size = "small",
+    srcs = ["clang_tidy_pre_push_test.py"],
+    deps = [":clang_tidy_pre_push_lib"],
+)
+
+py_test(
+    name = "clang_tidy_runner_test",
+    size = "small",
+    srcs = ["clang_tidy_runner_test.py"],
+    deps = [":clang_tidy_runner_lib"],
+)
+
+py_test(
+    name = "clang_tidy_scope_test",
+    size = "small",
+    srcs = ["clang_tidy_scope_test.py"],
+    deps = [":clang_tidy_scope_lib"],
+)
+
+py_test(
+    name = "coverage_html_test",
+    size = "small",
+    srcs = ["coverage_html_test.py"],
+    deps = [":coverage_html_lib"],
+)
+
+py_test(
+    name = "coverage_index_test",
+    size = "small",
+    srcs = ["coverage_index_test.py"],
+    tags = ["requires-host-tools"],
+    deps = [":coverage_index_lib"],
+)
+
+py_test(
+    name = "coverage_lcovrc_test",
+    size = "small",
+    srcs = ["coverage_lcovrc_test.py"],
+    deps = [":coverage_lcovrc_lib"],
+)
+
+py_test(
+    name = "coverage_policy_test",
+    size = "small",
+    srcs = ["coverage_policy_test.py"],
+    deps = [":coverage_policy_lib"],
+)
+
+py_test(
+    name = "coverage_sources_test",
+    size = "small",
+    srcs = ["coverage_sources_test.py"],
+    deps = [":coverage_sources_lib"],
+)
+
+py_test(
+    name = "coverage_test",
+    size = "small",
+    srcs = ["coverage_test.py"],
+    deps = [":coverage_lib"],
+)
+
+py_test(
+    name = "extras_test",
+    size = "small",
+    srcs = ["extras_test.py"],
+    deps = [":extras_lib"],
+)
+
+py_test(
+    name = "fix_compile_commands_test",
+    size = "small",
+    srcs = ["fix_compile_commands_test.py"],
+    deps = [":fix_compile_commands_lib"],
+)
+
+py_test(
+    name = "fuzz_targets_test",
+    size = "small",
+    srcs = ["fuzz_targets_test.py"],
+    data = ["//:python_workflow_test_data"],
+    deps = [
+        ":fuzz_targets_lib",
+        ":test_paths_lib",
+    ],
+)
+
+py_test(
+    name = "generate_mime_db_test",
+    size = "small",
+    srcs = ["generate_mime_db_test.py"],
+    deps = [":generate_mime_db_lib"],
+)
+
+py_test(
+    name = "measure_resources_test",
+    size = "small",
+    srcs = ["measure_resources_test.py"],
+    deps = [":measure_resources_lib"],
+)
+
+py_test(
+    name = "release_notes_test",
+    size = "small",
+    srcs = ["release_notes_test.py"],
+    data = [
+        "release_notes.sh",
+        "//:python_release_notes_test_data",
+    ],
+    tags = ["requires-host-tools"],
+    deps = [":test_paths_lib"],
+)
+
+py_test(
+    name = "release_site_test",
+    size = "small",
+    srcs = ["release_site_test.py"],
+    tags = ["requires-host-tools"],
+    deps = [":release_site_lib"],
+)
+
+py_test(
+    name = "site_artwork_test",
+    size = "small",
+    srcs = ["site_artwork_test.py"],
+    data = ["//:python_artwork_test_data"],
+    deps = [
+        ":site_artwork_lib",
+        ":test_paths_lib",
+    ],
+)
+
+py_binary(
+    name = "measure_resources",
+    srcs = ["measure_resources.py"],
+)
+
+py_binary(
+    name = "benchmark_resources",
+    srcs = ["benchmark_resources.py"],
+    data = [":measure_resources"],
     visibility = ["//xff/engine:__pkg__"],
+    deps = ["@rules_python//python/runfiles"],
+)
+
+test_suite(
+    name = "python_tests",
+    tests = [
+        ":align_markdown_tables_test",
+        ":bazel_cache_test",
+        ":build_rules_test",
+        ":cache_report_test",
+        ":cache_size_test",
+        ":check_bazel_policy_test",
+        ":check_cc_library_tested_test",
+        ":check_cc_target_naming_test",
+        ":check_copyright_test",
+        ":check_docs_extras_test",
+        ":check_host_io_test",
+        ":check_inline_range_lists_test",
+        ":check_module_versions_test",
+        ":check_namespace_style_test",
+        ":check_raw_pointers_test",
+        ":clang_tidy_compdb_test",
+        ":clang_tidy_pre_push_test",
+        ":clang_tidy_runner_test",
+        ":clang_tidy_scope_test",
+        ":coverage_html_test",
+        ":coverage_index_test",
+        ":coverage_lcovrc_test",
+        ":coverage_policy_test",
+        ":coverage_sources_test",
+        ":coverage_test",
+        ":extras_test",
+        ":fix_compile_commands_test",
+        ":fuzz_targets_test",
+        ":generate_mime_db_test",
+        ":measure_resources_test",
+        ":release_notes_test",
+        ":release_site_test",
+        ":site_artwork_test",
+    ],
 )

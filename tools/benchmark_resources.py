@@ -7,6 +7,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -84,7 +85,12 @@ def main() -> int:
         },
         "measurements": [],
     }
-    harness = Path(__file__).with_name("measure_resources.py")
+    # Bazel declares an executable dependency; direct script use retains its interpreter.
+    if os.environ.get("RUNFILES_DIR") or os.environ.get("RUNFILES_MANIFEST_FILE"):
+        from python.runfiles import runfiles
+        harness = [runfiles.Create().Rlocation("_main/tools/measure_resources")]
+    else:
+        harness = [sys.executable, str(Path(__file__).with_name("measure_resources.py"))]
     with tempfile.TemporaryDirectory(prefix="xff-resources-", dir=args.directory) as temporary:
         base = Path(temporary).resolve()
         report["fixture"]["directory"] = str(base)
@@ -100,7 +106,7 @@ def main() -> int:
                     else:
                         command += [str(roots[0]), "-type", "f", *flags]
                     result = subprocess.run(
-                        [sys.executable, str(harness), "--cache-state=just-written;reuse-not-controlled", "--", *command],
+                        [*harness, "--cache-state=just-written;reuse-not-controlled", "--", *command],
                         text=True, capture_output=True, check=False,
                     )
                     if not result.stdout:

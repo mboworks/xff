@@ -177,28 +177,18 @@ implementing PR.
 ## F08: Define ownership of Python tooling tests and pre-commit checks
 
 - Origin: [PR #873](https://github.com/mboworks/xff/pull/873).
-- Location: `.pre-commit-config.yaml`, `tools/BUILD.bazel`, Python tooling tests, and CI workflows.
-- Status: investigated; proposed test-ownership policy pending agreement.
-- Finding: #873 adds one `measure-resources-test` hook running three subprocess tests when either
-  measurement source or test changes. It has no dedicated Bazel test target. Other tooling tests
-  are spread across pre-commit, release-site CI, and coverage CI. The new hook uses `language: system`,
-  so the configured Python 3.13 default for managed Python hooks does not pin its interpreter.
-- Proposal: keep direct formatting and policy checks on changed files in pre-commit. Make Bazel
-  the canonical owner of self-contained Python unit/regression suites, using the same Python source
-  and tests that can run directly. Optionally retain fast, narrowly triggered checker self-tests in
-  pre-commit for immediate feedback; avoid making pre-commit the sole test owner or invoking a
-  broad Bazel build on every commit.
-- Action if agreed: inventory all tooling tests and their runtime/dependencies, introduce consistent
-  Python test targets and interpreter selection, and document narrow exceptions for tests that
-  exercise real Git/pre-commit/Bazel integration. Fixtures must declare their inputs and use temporary
-  repositories/directories; do not make sandboxed unit tests depend on a developer's checkout or
-  recursively launch a full build. Direct hook execution can stay as a script; it need not invoke
-  Bazel simply because its tests have Bazel targets.
-- Verification: demonstrate direct hook behavior on selected paths, Bazel discovery and execution
-  of tooling tests, consistent Python selection, isolated fixture handling, and explicit CI coverage
-  of integration exceptions. Ensure migration leaves no test dependent solely on a filename filter
-  that omits an indirect dependency.
-- Implemented in: not yet assigned.
+- Status: implemented with F11 in the Python tooling follow-up.
+- Bazel owns 33 tooling suites under `//tools:python_tests`; `//...` runs them too.
+  All Python hooks use managed Python 3.13, matching the explicit standalone Bazel toolchain.
+- Pre-commit retains narrowly triggered checker tests. Process-measurement and fuzz scheduler
+  tests move to Bazel; commits never recursively launch Bazel to test hooks.
+- `tools/repository_tooling_test.py` is the explicit live-checkout exception. Main CI runs it
+  unconditionally to verify actual fuzz discovery, registered-extra coverage mapping, and test ownership.
+- Repository fixtures are declared runfiles; grouping tests create temporary source files. Git and
+  shell integration suites use temporary repositories and are marked `requires-host-tools`.
+- Validation: all 33 tooling targets and the benchmark integration passed through Bazel; the three
+  checkout-integration checks and changed-file pre-commit checks passed directly.
+- Implemented in: `tooling/python-bazel-targets` follow-up.
 
 ## F09: Publish benchmark history across PRs and releases
 
@@ -256,23 +246,16 @@ implementing PR.
 ## F11: Model benchmark Python programs as Python targets
 
 - Origin: [PR #875](https://github.com/mboworks/xff/pull/875).
-- Location: `tools/BUILD.bazel` (`resource_benchmark_scripts`), `xff/engine/BUILD.bazel`, and
-  `xff/engine/read_benchmark_test.sh`.
-- Status: investigated; pending follow-up with F08.
-- Finding: the filegroup merely places two `.py` source files in the shell test's runfiles. The test
-  invokes ambient `python3`, then uses `sys.executable` to launch the benchmark source by path.
-  This declares data availability but does not model executable Python dependencies or select a
-  Python toolchain. The shell test itself contains a substantial inline Python test program.
-- Action: replace the source-file execution shortcut with proper `py_binary` targets for executable
-  entry points, `py_library` targets for shared/importable logic where useful, and a `py_test` for
-  the Python integration test. Declare the xff executables and other runtime inputs explicitly and
-  locate them through runfiles. Refactor sibling-script launches into either an imported library
-  operation or a declared executable dependency; do not keep ambient Python as a hidden dependency.
-  Coordinate interpreter selection and direct-script usability with F08.
-- Verification: run the benchmark and integration test through their Bazel targets without relying
-  on a checkout-relative path or ambient `python3`; retain the existing workload, invalid-input,
-  traversal-failure, report-provenance, and measurement assertions.
-- Implemented in: not yet assigned.
+- Status: implemented with F08 in the Python tooling follow-up.
+- Use stable `aspect_rules_py` rules and an explicit standalone Python 3.13 toolchain. MBO has no
+  current first-party Python target convention to copy.
+- Replace `resource_benchmark_scripts` with `py_binary` executables and imported Python libraries.
+  The benchmark driver resolves its declared measurement executable through runfiles, preserving a
+  fresh measurement process per invocation. Direct script execution remains supported.
+- Replace the shell-embedded benchmark test with a `py_test` and declared xff, counter, and driver
+  executables. Retain workload, invalid-input, traversal-failure, provenance, and measurement checks.
+- Validation: the benchmark integration passed under the Aspect launcher and hermetic interpreter.
+- Implemented in: `tooling/python-bazel-targets` follow-up.
 
 ## F12: Preserve detailed coverage for aggregated PRs and individual runs
 

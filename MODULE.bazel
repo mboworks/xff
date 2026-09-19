@@ -38,15 +38,27 @@ bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "rules_cc", version = "0.2.22")
 bazel_dep(name = "rules_fuzzing", version = "0.8.0")
 bazel_dep(name = "rules_shell", version = "0.8.0")
+bazel_dep(name = "aspect_rules_py", version = "1.12.1")
+bazel_dep(name = "rules_python", version = "2.0.1")
+
+# Aspect owns Python rules; rules_python supplies the pinned standalone interpreter.
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    is_default = True,
+    python_version = "3.13",
+)
+
 bazel_dep(name = "abseil-cpp", version = "20260817.0")
 bazel_dep(name = "re2", version = "2025-11-05.bcr.1")
 bazel_dep(name = "utf8proc", version = "2.11.0")
+
 # The published BUILD still uses native C++ rules removed in Bazel 9.
 single_version_override(
     module_name = "utf8proc",
-    patches = ["//bazelmod:utf8proc-bazel9.patch"],
     patch_strip = 1,
+    patches = ["//bazelmod:utf8proc-bazel9.patch"],
 )
+
 bazel_dep(name = "googletest", version = "1.18.0.bcr.1")
 bazel_dep(name = "google_benchmark", version = "1.9.5", repo_name = "com_github_google_benchmark")
 
