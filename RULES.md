@@ -12,6 +12,7 @@ Some rules for the code layout and its development.
   `xff/engine/run.cc`, `xff/cli/histogram_test.sh`, and `docs/history-roadmap.md` so their
   appearance is visible. Tree connectors U+2500, U+2502, U+2514, and U+251C may appear
   literally in `xff/presentation/render/render.cc` and its Unicode-specific tests.
+  The README feature table may use U+2713 checkmarks, with numbered footnotes for partial support.
   Binary assets and fixtures are not text; preserve their bytes.
 - All sources must be unix-text files: https://en.wikipedia.org/wiki/Text_file
   - Lines end in {LF}.

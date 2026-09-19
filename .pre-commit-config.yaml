@@ -75,7 +75,7 @@ repos:
         description: Use ASCII except for documented graphical glyphs checked separately.
         language: pygrep
         entry: '[^\x00-\x7f]'
-        exclude: ^(docs/history-roadmap\.md|xff/cli/histogram_test\.sh|xff/engine/run\.cc|xff/presentation/render/render(_test)?\.cc)$|\.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z|sqfs|png|ico)$
+        exclude: ^README\.md$|^(docs/history-roadmap\.md|xff/cli/histogram_test\.sh|xff/engine/run\.cc|xff/presentation/render/render(_test)?\.cc)$|\.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z|sqfs|png|ico)$
         types: [text]
       - id: histogram-doc-glyphs
         name: Histogram text uses only approved Unicode block glyphs
@@ -91,6 +91,13 @@ repos:
         language: pygrep
         entry: '^(?!(?:[\x00-\x7f]|\xe2\x94[\x80\x82\x94\x9c])*$)'
         files: ^xff/presentation/render/render(_test)?\.cc$
+        types: [text]
+      - id: readme-checkmarks
+        name: README permits checkmarks but no other unapproved Unicode
+        description: Allow U+2713 checkmarks in the feature comparison table.
+        language: pygrep
+        entry: '^(?!(?:[\x00-\x7f]|\xe2\x9c\x93)*$)'
+        files: ^README\.md$
         types: [text]
       - id: no-em-dashes
         name: No em-dashes

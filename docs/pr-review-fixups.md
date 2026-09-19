@@ -312,3 +312,10 @@ is still needed, record the question explicitly instead of treating a proposed s
   Unicode coverage in labeled sections with dedicated fixtures or functions. Use documented
   Latin/fullwidth Latin examples for multibyte and wide text; keep grapheme cases explicit.
 - Implemented in: #876.
+
+## F15: Preserve compact README capability markers
+
+- Origin: PR #876 review of the feature comparison matrix.
+- Action: restore checkmarks and use a numbered footnote for partial support, replacing the
+  triangle without widening the rendered table with Yes/Partial labels.
+- Implemented in: #876.
