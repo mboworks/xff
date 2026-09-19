@@ -162,20 +162,32 @@ test::tree_renders_a_directory_tree_with_ascii_connectors_under_no_unicode() {
 }
 
 test::human_formats_escape_filename_controls() {
-  local dir name out mode unicode
+  local dir name out mode
   dir="$(test_tmpdir display_controls)"
   mkdir -p "${dir}"
-  unicode=$'\351\233\252' # U+96EA: UTF-8 filename round-trip coverage.
-  name=$'a|b\n\r\t\033\177\\'"${unicode}.txt"
+  name=$'a|b\n\r\t\033\177\\.txt'
   : >"${dir}/${name}"
   for mode in aligned tree; do
     out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -type f --format="${mode}" --color=never)"
-    expect_output_contains "a|b\\n\\r\\t\\x1B\\x7F\\\\${unicode}.txt" "${out}"
+    expect_output_contains "a|b\\n\\r\\t\\x1B\\x7F\\\\.txt" "${out}"
     expect_output_not_contains "${name}" "${out}"
   done
   out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -type f --format=md --columns=name)"
-  expect_output_contains "a\\|b\\\\n\\\\r\\\\t\\\\x1B\\\\x7F\\\\\\\\${unicode}.txt" "${out}"
+  expect_output_contains "a\\|b\\\\n\\\\r\\\\t\\\\x1B\\\\x7F\\\\\\\\.txt" "${out}"
   expect_output_not_contains "${name}" "${out}"
+}
+
+# Unicode-specific tests: fixtures are independent of control-character scenarios.
+test::unicode_filename_round_trips_in_human_formats() {
+  local dir name out mode
+  dir="$(test_tmpdir unicode_filename)"
+  mkdir -p "${dir}"
+  name=$'caf\303\251.txt' # U+00E9: Latin e with acute, encoded as UTF-8.
+  : >"${dir}/${name}"
+  for mode in aligned tree md; do
+    out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -type f --format="${mode}" --color=never)"
+    expect_output_contains "${name}" "${out}"
+  done
 }
 
 test_runner

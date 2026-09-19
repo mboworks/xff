@@ -13,7 +13,7 @@ of every tracked file in the user workspace without changing its existing edits.
 - Non-ASCII tracked path names in user workspace: 0.
 
 This report is ASCII-only. Code points and escaped source excerpts identify the findings without
-reproducing the unwanted literal characters. Origins are assigned from line blame to the earliest
+reproducing the literal characters. A finding is an inventory entry, not automatically a violation. Origins are assigned from line blame to the earliest
 PR in the current stack containing that commit; older lines are marked `Before #868`.
 
 ## Actions
@@ -22,9 +22,12 @@ PR in the current stack containing that commit; older lines are marked `Before #
   data where a dedicated Unicode regression needs it. This extends F06 beyond scoped-table tests.
 - Replace decorative typographic punctuation in prose/comments with plain ASCII equivalents.
 - Review README check/triangle markers for replacement with explicit ASCII words.
-- Preserve intentional Unicode tree and histogram output, but spell its source constants and
-  test expectations with escapes. Preserve Unicode filename and column-width regression coverage.
-- Use ASCII escapes for the em-dash prohibition hook itself; do not weaken its detection.
+- Preserve intentional Unicode output. Histogram blocks may appear literally in the documented
+  code, test, and prose locations, with code-point explanations. Tree connector glyphs likewise
+  remain literal in their renderer and Unicode-specific tests. Isolate Unicode filename and
+  column-width regression coverage in specifically named sections and fixtures.
+- The em-dash prohibition hook is legitimate detection code, not unwanted prose. Use an escaped
+  byte pattern for it; do not weaken its detection.
 - Replace HTML separator literals with ASCII markup/entities if preserving the rendered symbol.
 - Do not rewrite binary assets or archive fixtures as text.
 

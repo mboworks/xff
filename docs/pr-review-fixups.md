@@ -304,3 +304,11 @@ is still needed, record the question explicitly instead of treating a proposed s
   ASCII `#` fallback. Permit only these eight glyphs in this documentation file, with a scoped
   pre-commit check; C++ source continues to use escapes.
 - Implemented in: #876.
+
+## F14: Isolate Unicode test coverage
+
+- Origin: PR #876 review of the release smoke filename fixture.
+- Action: remove Unicode from ordinary smoke, control-escaping, and summary fixtures. Group
+  Unicode coverage in labeled sections with dedicated fixtures or functions. Use documented
+  Latin/fullwidth Latin examples for multibyte and wide text; keep grapheme cases explicit.
+- Implemented in: #876.

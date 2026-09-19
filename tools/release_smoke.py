@@ -19,6 +19,20 @@ def check(condition, message):
         raise RuntimeError(message)
 
 
+# Unicode-specific smoke checks use their own fixture and never alter general scenarios.
+def unicode_smoke(run, root):
+    directory = root / "unicode"
+    directory.mkdir()
+    name = "caf\u00e9.txt"  # Latin e with acute: multibyte filename round trip.
+    (directory / name).write_text("unicode filename\n", encoding="utf-8")
+    records = [json.loads(line) for line in run(directory, "-type", "f", "--format=jsonl").splitlines()]
+    check(records == [{"path": str(directory / name)}], "Unicode JSONL filename round trip")
+    rows = list(csv.DictReader(io.StringIO(run(directory, "-type", "f", "--format=csv", "--columns=name"))))
+    check(rows == [{"name": name}], "Unicode CSV filename round trip")
+    check(run(directory, "-type", "f", "--format=nul") == str(directory / name) + "\0",
+          "Unicode NUL filename round trip")
+
+
 def smoke(binary, expected_version):
     binary = str(Path(binary).resolve(strict=True))
     with tempfile.TemporaryDirectory(prefix="xff-release-smoke-") as directory:
@@ -42,7 +56,7 @@ def smoke(binary, expected_version):
         left, right = root / "left", root / "right"
         left.mkdir()
         right.mkdir()
-        left_files = {"same.txt": "same\n", "changed.txt": "before\n", 'left,\"\u96ea\n\t\\.total': "left\n"}
+        left_files = {"same.txt": "same\n", "changed.txt": "before\n", 'left,\"\n\t\\.total': "left\n"}
         right_files = {"same.txt": "same\n", "changed.txt": "after\n", "right.txt": "right\n"}
         for folder, files in ((left, left_files), (right, right_files)):
             for name, content in files.items():
@@ -99,6 +113,7 @@ def smoke(binary, expected_version):
                 re.search(rf"\b{category}\s+1\s+25\.00%", comparison),
                 f"comparison category {category}: {comparison}",
             )
+        unicode_smoke(run, root)
     print(f"Release smoke passed: {binary} ({expected_version})")
 
 

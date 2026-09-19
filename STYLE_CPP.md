@@ -31,9 +31,14 @@ an AI assistant) can follow them without reverse-engineering the tooling.
   never-bin-pack). That is the lever behind the trailing-comma rule below: a _manual_
   trailing comma opts a _single_ aggregate into one-element-per-line.
 
-Source text is ASCII. Spell intentional Unicode string/character data with escapes and explain the
+Source text uses ASCII except for the explicitly allowed graphical glyphs listed in `RULES.md`.
+Spell other intentional Unicode string/character data with escapes and explain the
 purpose in English. Raw strings do not decode escapes: construct Unicode expectations explicitly
 rather than inserting literal non-ASCII characters in golden text. Keep Unicode behavior and tests.
+
+Unicode test data belongs in a clearly labeled Unicode-specific test section with a dedicated
+fixture or test function. Keep ordinary functional fixtures ASCII. Explain the property each
+escaped character exercises; do not mix unrelated Unicode into control-escaping or smoke scenarios.
 
 ### Naming (enforced by `.clang-tidy readability-identifier-naming`)
 

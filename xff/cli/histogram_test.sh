@@ -54,15 +54,6 @@ test::histogram_ascii_bars_scaled_to_tallest() {
   expect_output_not_contains "a.cc" "${out}"
 }
 
-test::histogram_unicode_bars() {
-  local dir out
-  dir="$(test_tmpdir histuni)"
-  _make_tree "${dir}"
-  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=ext --unicode=always "${dir}" -type f 2>&1)"
-  # Unicode block bars use the full-block character.
-  expect_output_contains $'\342\226\210' "${out}"
-}
-
 test::histogram_combines_with_summary() {
   local dir out
   dir="$(test_tmpdir histsum)"
@@ -192,6 +183,16 @@ test::histogram_rejects_unsupported_formats_before_print() {
     expect_output_contains "histograms require --format=plain, aligned, jsonl, or markdown" "${out}"
     expect_output_not_contains "a.cc" "${out}"
   done
+}
+
+# Unicode-specific output tests.
+test::histogram_unicode_bars() {
+  local dir out
+  dir="$(test_tmpdir histuni)"
+  _make_tree "${dir}"
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=ext --unicode=always "${dir}" -type f 2>&1)"
+  # U+2588 FULL BLOCK, UTF-8 bytes E2 96 88.
+  expect_output_contains "█" "${out}"
 }
 
 test_runner

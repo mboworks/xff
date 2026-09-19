@@ -6,9 +6,12 @@ Some rules for the code layout and its development.
 > [`STYLE_SH.md`](STYLE_SH.md). This file keeps the project-level rules that are not language style.
 
 - Everything is under Apache 2 license, see file `LICENSE`.
-- Project-owned text files use ASCII source spelling. Use escapes for intentional Unicode runtime
-  data, and ASCII prose/comments. Histogram documentation in `docs/history-roadmap.md` may show
-  the block glyphs U+2588 through U+258F beside their code points so readers can see their shapes.
+- Project-owned text files use ASCII prose/comments and straight quotation marks. Use escapes
+  for intentional Unicode test data, isolated in Unicode-specific tests. Histogram block glyphs
+  U+2588 through U+258F may appear literally beside code-point explanations in
+  `xff/engine/run.cc`, `xff/cli/histogram_test.sh`, and `docs/history-roadmap.md` so their
+  appearance is visible. Tree connectors U+2500, U+2502, U+2514, and U+251C may appear
+  literally in `xff/presentation/render/render.cc` and its Unicode-specific tests.
   Binary assets and fixtures are not text; preserve their bytes.
 - All sources must be unix-text files: https://en.wikipedia.org/wiki/Text_file
   - Lines end in {LF}.

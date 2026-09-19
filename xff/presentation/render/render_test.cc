@@ -21,7 +21,6 @@
 #include <string_view>
 #include <vector>
 
-#include "absl/strings/str_replace.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
@@ -238,31 +237,23 @@ TEST_F(RenderTest, MarkdownMeasuresEscapedCellsWithoutLosingLineBreaks) {
 TEST_F(RenderTest, DisplayControlsStayInsideCellsBeforeAndAfterBufferFlush) {
   for (const std::size_t window : std::to_array<std::size_t>({0, 1, TableStream::kAll})) {
     TableStream stream(Format::kAligned, {"name"}, false, window);
-    std::string out = stream.Add({"a\n\r\t\x1b\x7f\\\u96ea"});
+    std::string out = stream.Add({"a\n\r\t\x1b\x7f\\"});
     out += stream.Add({R"(literal\n)"});
     out += stream.Flush();
-    EXPECT_THAT(
-        out, WithDropIndent(EqualsText(
-                 absl::StrReplaceAll(
-                     R"out(
-        a\n\r\t\x1B\x7F\\@unicode@
+    EXPECT_THAT(out, WithDropIndent(EqualsText(R"out(
+        a\n\r\t\x1B\x7F\\
         literal\\n
-        )out",
-                     {{"@unicode@", "\u96ea"}}))));
+        )out")));
   }
 }
 
 TEST_F(RenderTest, TreeEscapesRootAndChildControls) {
   Tree tree(false);
-  tree.Add("root\n/child\t\x1b\\\u96ea");
-  EXPECT_THAT(
-      tree.Render(), WithDropIndent(EqualsText(
-                         absl::StrReplaceAll(
-                             R"out(
+  tree.Add("root\n/child\t\x1b\\");
+  EXPECT_THAT(tree.Render(), WithDropIndent(EqualsText(R"out(
       root\n
-      `-- child\t\x1B\\@unicode@
-      )out",
-                             {{"@unicode@", "\u96ea"}}))));
+      `-- child\t\x1B\\
+      )out")));
 }
 
 TEST_F(RenderTest, RenderTableNoHeaderDropsTheHeaderAndRule) {
@@ -345,20 +336,6 @@ TEST_F(RenderTest, TableStreamFlushesOnTheByteBudget) {
 // Tree (--format=tree): splice paths into a shared-prefix structure, render depth-first with
 // box-drawing connectors. Siblings are lexical; the last child gets the elbow connector.
 
-TEST_F(RenderTest, TreeRendersUnicodeConnectorsWithCorrectLastChild) {
-  Tree tree(/*unicode=*/true);
-  tree.Add("root/src/main.cc");
-  tree.Add("root/src/util.cc");
-  tree.Add("root/README.md");  // sorts before "src"; "src" is root's last child (elbow)
-  EXPECT_THAT(
-      tree.Render(), EqualsText(
-                         "root\n"
-                         "\u251c\u2500\u2500 README.md\n"
-                         "\u2514\u2500\u2500 src\n"
-                         "    \u251c\u2500\u2500 main.cc\n"
-                         "    \u2514\u2500\u2500 util.cc\n"));
-}
-
 TEST_F(RenderTest, TreeRendersAsciiConnectorsWhenNotUnicode) {
   Tree tree(/*unicode=*/false);
   tree.Add("root/src/main.cc");
@@ -384,7 +361,37 @@ TEST_F(RenderTest, TreeShowsAncestorsOfADeepMatch) {
                          "    `-- main.cc\n"));
 }
 
-TEST_F(RenderTest, TreeDrawsAVerticalForNonLastBranches) {
+// Unicode-specific rendering tests. Ordinary rendering fixtures remain ASCII.
+struct UnicodeRenderTest : ::testing::Test {};
+
+TEST_F(UnicodeRenderTest, MultibyteLabelsSurviveTableBufferingAndTreeRendering) {
+  // U+00E9 is Latin e with acute; this test exercises UTF-8 preservation only.
+  for (const std::size_t window : std::to_array<std::size_t>({0, 1, TableStream::kAll})) {
+    TableStream stream(Format::kAligned, {"name"}, false, window);
+    std::string out = stream.Add({"caf\u00e9"});
+    out += stream.Flush();
+    EXPECT_THAT(out, EqualsText("caf\u00e9\n"));
+  }
+  Tree tree(false);
+  tree.Add("root/caf\u00e9");
+  EXPECT_THAT(tree.Render(), EqualsText("root\n`-- caf\u00e9\n"));
+}
+
+TEST_F(UnicodeRenderTest, TreeRendersUnicodeConnectorsWithCorrectLastChild) {
+  Tree tree(/*unicode=*/true);
+  tree.Add("root/src/main.cc");
+  tree.Add("root/src/util.cc");
+  tree.Add("root/README.md");  // sorts before "src"; "src" is root's last child (elbow)
+  EXPECT_THAT(
+      tree.Render(), EqualsText(
+                         "root\n"
+                         "├── README.md\n"
+                         "└── src\n"
+                         "    ├── main.cc\n"
+                         "    └── util.cc\n"));
+}
+
+TEST_F(UnicodeRenderTest, TreeDrawsAVerticalForNonLastBranches) {
   // `a` is not root's last child, so its subtree is prefixed with the vertical connector.
   Tree tree(/*unicode=*/true);
   tree.Add("root/a/x");
@@ -392,9 +399,9 @@ TEST_F(RenderTest, TreeDrawsAVerticalForNonLastBranches) {
   EXPECT_THAT(
       tree.Render(), EqualsText(
                          "root\n"
-                         "\u251c\u2500\u2500 a\n"
-                         "\u2502   \u2514\u2500\u2500 x\n"
-                         "\u2514\u2500\u2500 b\n"));
+                         "├── a\n"
+                         "│   └── x\n"
+                         "└── b\n"));
 }
 
 }  // namespace

@@ -664,12 +664,12 @@ std::string HistogramBar(double fraction, std::size_t width, bool unicode) {
     // NOLINTNEXTLINE(modernize-return-braced-init-list): braces would narrow
     return std::string(static_cast<std::size_t>(std::llround(fraction * static_cast<double>(width))), '#');
   }
-  constexpr std::array<std::string_view, 8> kPartials = {"",       "\u258f", "\u258e", "\u258d",
-                                                         "\u258c", "\u258b", "\u258a", "\u2589"};
+  // Empty, then U+258F through U+2589: one through seven eighths of a cell.
+  constexpr std::array<std::string_view, 8> kPartials = {"", "▏", "▎", "▍", "▌", "▋", "▊", "▉"};
   const auto eighths = static_cast<std::size_t>(std::llround(fraction * static_cast<double>(width) * 8.0));
   std::string bar;
   for (std::size_t full = eighths / 8; full > 0; --full) {
-    bar += "\u2588";  // full block
+    bar += "█";  // U+2588 FULL BLOCK.
   }
   bar += kPartials.at(eighths % 8);
   return bar;

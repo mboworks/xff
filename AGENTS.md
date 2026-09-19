@@ -97,6 +97,10 @@ PR's user-visible outcome or motivation actually changes.
    `Optional(matcher)` for a present `std::optional` or `mbo::types::OptionalRef`, and
    `Eq(std::nullopt)` for absence. `StatusOr` uses `IsOkAndHolds(matcher)` as described above.
 
+Unicode test data belongs in a clearly labeled Unicode-specific test section with a dedicated
+fixture or test function. Keep ordinary functional fixtures ASCII. Explain the property each
+escaped character exercises; do not mix unrelated Unicode into control-escaping or smoke scenarios.
+
 ## Markdown
 
 Keep GitHub-flavored Markdown tables **vertically aligned** (the `|` pipes line
