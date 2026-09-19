@@ -33,7 +33,7 @@ eXtended File Find, a find(1)-compatible file finder with modern extensions.
 
 xff walks each starting path and acts on the entries matching an expression, like `find`(1). With no path it searches the current directory; with no action it prints each match. `xff --compare LEFT RIGHT` instead compares two directory trees as selected status records or a patch.
 
-xff has two flavors selected by the program name: invoked as `find` it restricts the expression to find-compatible primaries, operators, and values; invoked as `xff` it enables the modern extensions. Whole-run xff globals remain available as explicit controls in either flavor. An explicit `--config=find|xff` overrides the program name. Items marked as xff extensions below are the additions over find.
+xff has two flavors selected by the program name: invoked as `find` it restricts the expression to find-compatible primaries, operators, and values; invoked as `xff` it enables the modern extensions. Whole-run xff globals remain available as explicit controls in either flavor. An explicit `--config=find|xff` overrides the program name. The detailed reference marks the xff extensions beyond find.
 
 ## Command structure
 
@@ -42,7 +42,7 @@ A command consists of whole-run options, zero or more starting paths, and an opt
 - Whole-run double-dash options are position-independent, so `--summary=ext` may appear before the paths or after the expression. They remain literal arguments inside an argument-taking primary such as `-exec` or `-printf`.
 - The compatibility globals `-H`, `-L`, `-P`, `-g`, `-j`, and `-z` are leading-only because a single-dash word can otherwise be an expression primary.
 - Adjacent tests and actions have an implicit `-a` (AND). Use `!` for NOT, `-o` for OR, and shell-quoted or escaped `(` and `)` for grouping. Evaluation is left to right and short-circuits.
-- With no starting path, xff uses `.`. With no explicit action, it prints each matching entry. A bare `--` ends option parsing so a path beginning with `-` can be named unambiguously.
+- With no starting path, xff searches the current directory (`.`). With no explicit action, it prints each matching entry. A bare `--` ends option parsing so a path beginning with `-` can be named unambiguously.
 
 ### Basic examples
 
@@ -2766,14 +2766,22 @@ The two walks run concurrently and each retains its complete matched-entry inven
 
 Bare `--compare` (or `--compare=status`) writes tab-separated `STATUS` and relative-path records. The default selection reports discrepancies only; `--compare-select=all` also includes equal entries. `--compare-select=none` (or an empty value) suppresses per-path output without changing summary counts. `--path-encoding=escape` makes control bytes in the path unambiguous.
 
-`--summary` (or `--summary=compare`) appends counts, count percentages, combined sizes, and size percentages by entry type and status, followed by a total. Each paired path counts once; its combined size includes both sides. An identical 100-byte pair contributes one result and 200 bytes; a different 100/150-byte pair contributes one result and 250 bytes. Percentages use all results or all combined bytes respectively; zero denominators produce zero percent. `--summary-precision` controls decimals. `--format=jsonl` emits `type`, `group`, `count`, `count_percent`, `bytes`, and `size_percent`. Directories, symlinks, and special entries participate, including matched roots. Directory equality means entry-kind equality, not subtree equality. A type-changing pair appears once under its left-to-right type transition. Sizes use entry metadata, never recursive directory sizes. Ordinary summary groupings default to `--summary-scope=compare` when `--compare` is active: one left/right table across all categories. Without `--compare`, the default is `all`. An explicit scope overrides this conditional default regardless of option order. `compare` expands to `left-total,right-total`, covering every participating entry on each side. Explicit `--summary-scope=all` combines both input trees: its entry count is left-only plus right-only plus twice the paired result count; its byte total equals the comparison's combined bytes for the same population. Ordinary percentages use full table totals before `--top`. `--summary-scope=root` separates roots; `--summary-scope=compare` aligns left and right columns in one table per grouping. Each scope selects a column group containing count, count percentage, size, and size percentage. `diff` selects `left-only,right-only,different`; `identical` selects one column group. Category counts pair entries once and sizes sum both sides; side totals count their own entries and bytes. Different group keys form transition rows. Percentages use each column group's full population before `--top`. Scopes may overlap; their totals are not added together. Missing groups display a dash (JSON `null`); existing zero-byte files retain numeric zeros. `--format=markdown` (alias `md`) exports comparison-result and ordinary summary tables as Markdown; `--columns` remains a listing-only option. Summaries support `plain`, `aligned`, `jsonl`, and `markdown`; listing formats `csv`, `tsv`, `nul`, and `tree` are rejected with active summaries. Per-path status records remain tab-separated even with `--format=jsonl`; suppress them for a summary-only export. Comparison-result tables precede ordinary tables regardless of the order of summary requests. `--top` limits ordinary groups, not comparison-result rows.
-
-`--compare=summary` is shorthand for `--compare=status --compare-select=none --summary=compare` at that position in the option sequence. Later selections can enable per-path output, and `--summary=none` can disable the summary.
-
 - `left-only` - the relative path matched only below the left root
 - `right-only` - the relative path matched only below the right root
 - `different` - both sides matched the path, but its type, bytes, or symlink target differs
 - `identical` - both sides matched and compare equal; omitted unless explicitly selected
+
+### Summary tables
+
+`--summary` (or `--summary=compare`) appends counts, count percentages, combined sizes, and size percentages by entry type and status, followed by a total. Each paired path counts once; its combined size includes both sides. An identical 100-byte pair contributes one result and 200 bytes; a different 100/150-byte pair contributes one result and 250 bytes. Percentages use all results or all combined bytes respectively; zero denominators produce zero percent. `--summary-precision` controls decimals. `--format=jsonl` emits `type`, `group`, `count`, `count_percent`, `bytes`, and `size_percent`. Directories, symlinks, and special entries participate, including matched roots. Directory equality means entry-kind equality, not subtree equality. A type-changing pair appears once under its left-to-right type transition. Sizes use entry metadata, never recursive directory sizes.
+
+Ordinary summary groupings default to `--summary-scope=compare` when `--compare` is active: one left/right table across all categories. Without `--compare`, the default is `all`. An explicit scope overrides this conditional default regardless of option order. `compare` expands to `left-total,right-total`, covering every participating entry on each side. Explicit `--summary-scope=all` combines both input trees: its entry count is left-only plus right-only plus twice the paired result count; its byte total equals the comparison's combined bytes for the same population. Ordinary percentages use full table totals before `--top`.
+
+`--summary-scope=root` separates roots; `--summary-scope=compare` aligns left and right columns in one table per grouping. Each scope selects a column group containing count, count percentage, size, and size percentage. `diff` selects `left-only,right-only,different`; `identical` selects one column group. Category counts pair entries once and sizes sum both sides; side totals count their own entries and bytes. Different group keys form transition rows. Percentages use each column group's full population before `--top`. Scopes may overlap; their totals are not added together. Missing groups display a dash (JSON `null`); existing zero-byte files retain numeric zeros.
+
+`--format=markdown` (alias `md`) exports comparison-result and ordinary summary tables as Markdown; `--columns` remains a listing-only option. Summaries support `plain`, `aligned`, `jsonl`, and `markdown`; listing formats `csv`, `tsv`, `nul`, and `tree` are rejected with active summaries. Per-path status records remain tab-separated even with `--format=jsonl`; suppress them for a summary-only export. Comparison-result tables precede ordinary tables regardless of the order of summary requests. `--top` limits ordinary groups, not comparison-result rows.
+
+`--compare=summary` is shorthand for `--compare=status --compare-select=none --summary=compare` at that position in the option sequence. Later selections can enable per-path output, and `--summary=none` can disable the summary.
 
 ### Patch output
 
@@ -2793,13 +2801,13 @@ Bare `--compare` (or `--compare=status`) writes tab-separated `STATUS` and relat
 xff --compare=summary left-tree right-tree
 ```
 
+show only comparison statistics, with no per-path records
+
 ```sh
 xff --compare=summary left-tree right-tree --summary=ext --summary-scope=compare
 ```
 
-summarize extensions within each comparison category
-
-show only comparison statistics, with no per-path records
+summarize extensions in side-by-side left and right totals
 
 ```sh
 xff --compare left-tree right-tree

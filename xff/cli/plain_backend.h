@@ -29,8 +29,9 @@
 // drops backtick markup, while a term / row description keeps it (matching the
 // hand-written help). Flowing text (prose, a bullet, an entry summary / detail, a
 // see-also note) word-wraps to the configured `width` (#153 / #164), each
-// continuation line carrying its block's indent; an example block and an aligned
-// row table keep their verbatim layout. A `width` of 0 disables wrapping. ANSI
+// continuation line carrying its block's indent. Examples retain their layout; tables
+// use labeled rows when fixed columns leave insufficient room for the last column.
+// A `width` of 0 disables wrapping. ANSI
 // color is a later slice (the color backend).
 namespace xff::cli {
 

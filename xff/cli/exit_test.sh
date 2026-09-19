@@ -159,4 +159,34 @@ test::known_global_flag_is_accepted() {
   expect_eq "0" "${rc}"
 }
 
+test::unknown_spelling_suggestions_are_advisory_before_actions() {
+  local dir out rc flag
+  dir="$(_tree spelling)"
+  for flag in --sumary=ext -naem; do
+    out="$("$(_xff_bin)" "${dir}" -type f -delete "${flag}" 2>&1)" && rc=0 || rc=$?
+    expect_eq "2" "${rc}" || return
+    expect_output_contains 'Did you mean' "${out}" || return
+    [[ -f "${dir}/a.txt" ]] || fail 'action ran before spelling error' || return
+  done
+  out="$("$(_xff_bin)" --help --sumary=ext 2>&1)" && rc=0 || rc=$?
+  expect_eq "2" "${rc}" || return
+  expect_output_contains "Did you mean '--summary'?" "${out}"
+}
+
+test::short_global_position_hint_keeps_argument_literals() {
+  local dir out rc
+  dir="$(_tree placement)"
+  out="$("$(_xff_bin)" "${dir}" -L 2>&1)" && rc=0 || rc=$?
+  expect_eq "2" "${rc}" || return
+  expect_output_contains 'place it before the roots' "${out}" || return
+  expect_output_not_contains '--L' "${out}" || return
+  out="$("$(_xff_bin)" "${dir}" -g+ 2>&1)" && rc=0 || rc=$?
+  expect_eq "2" "${rc}" || return
+  expect_output_contains "'--gitignore' long form" "${out}" || return
+  out="$("$(_xff_bin)" "${dir}" -type f -name a.txt -printf '--sumary')"
+  expect_eq '--sumary' "${out}" || return
+  out="$("$(_xff_bin)" "${dir}" -type f -name a.txt -exec printf '%s' --sumary \;)"
+  expect_eq '--sumary' "${out}"
+}
+
 test_runner

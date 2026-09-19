@@ -28,6 +28,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
+#include "absl/strings/cord.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
@@ -36,6 +37,7 @@
 #include "mbo/status/status_macros.h"
 #include "xff/matching/regex/regex.h"
 #include "xff/parser/ast.h"
+#include "xff/parser/diagnostics.h"
 #include "xff/presentation/fields/fields.h"
 #include "xff/registry/descriptor.h"
 #include "xff/registry/registry.h"
@@ -648,6 +650,9 @@ class ExprParser {
     const auto descriptor = registry::Lookup(token);
     if (!descriptor.has_value()) {
       Fail(absl::StrCat("unknown predicate: '", token, "'"));
+      if (hoist_globals_) {
+        status_.SetPayload(kUnknownPredicatePayload, absl::Cord(token));
+      }
       return nullptr;
     }
     // A binding primary used bare (no :NAME), e.g. "-capture": the registry binding

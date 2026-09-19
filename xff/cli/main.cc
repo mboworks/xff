@@ -37,6 +37,7 @@
 #include "absl/types/span.h"
 #include "mbo/status/status_macros.h"
 #include "xff/cli/config_validation.h"
+#include "xff/cli/diagnostics.h"
 #include "xff/cli/globals.h"
 #include "xff/cli/help.h"
 #include "xff/cli/help_backend.h"
@@ -476,7 +477,7 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   // `--help` to the child instead of turning the whole xff invocation into help.
   absl::StatusOr<xff::parser::Command> parsed = xff::parser::Parse(args);
   if (!parsed.ok()) {
-    std::cerr << "xff: " << parsed.status().message() << "\n";
+    std::cerr << "xff: " << parsed.status().message() << "\n" << xff::cli::ParseErrorHint(parsed.status());
     return 2;
   }
   // Resolve only the globals the parser identified at option boundaries. In particular, a token
@@ -515,6 +516,7 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
       }
       if (!xff::cli::IsKnownGlobal(global)) {
         std::cerr << "xff: unknown option '" << global << "'\n"
+                  << xff::cli::UnknownGlobalHint(global)
                   << "Try 'xff --help' for usage, or 'xff --help=NAME' for one option.\n";
         return 2;
       }
@@ -607,6 +609,7 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     }
     if (!xff::cli::IsKnownGlobal(global)) {
       std::cerr << "xff: unknown option '" << global << "'\n"
+                << xff::cli::UnknownGlobalHint(global)
                 << "Try 'xff --help' for usage, or 'xff --help=NAME' for one option.\n";
       return 2;
     }

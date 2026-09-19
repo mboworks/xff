@@ -302,7 +302,7 @@ category expansion, overlapping directory roots, and environment-expanded roots.
 
 ### S06 - P2: Shorten entry help without losing complete reference coverage
 
-- [ ] Improve the overview and the largest focused help pages.
+- [x] Improve the overview and the largest focused help pages.
 
 The published lean binary's default help is 1,029 lines. Focused `--help=summary` with `--width=80`
 is 288 lines; `--help=safe` is 571. An expanded topic can dominate the requested flag's explanation.
@@ -316,7 +316,7 @@ contains each topic once. Review prose/table width independently of verbatim exa
 
 ### S07 - P2: Bring the README to the user's first successful command sooner
 
-- [ ] Put release installation and a small task guide before the large feature matrices.
+- [x] Put release installation and a small task guide before the large feature matrices.
 
 The Quick Start currently begins with Bazel despite published binaries. The capability matrices
 precede installation and can obscure the most useful everyday workflows.
@@ -457,7 +457,7 @@ Never describe environment substitution as validating trust in the caller's chos
 
 ### S18 - P3: Add useful spelling suggestions and position hints
 
-- [ ] Improve unknown-option/predicate diagnostics without accepting approximate spellings.
+- [x] Improve unknown-option/predicate diagnostics without accepting approximate spellings.
 
 `--sumary=ext` receives generic help; `-naem` is an unknown predicate. A trailing `-L` or `-g+`
 is also reported as an unknown predicate even though it is a recognized leading-only global.

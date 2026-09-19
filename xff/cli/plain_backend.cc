@@ -62,6 +62,26 @@ std::string RenderInlinesRaw(const Inlines& runs) {
   return out;
 }
 
+// A narrow page cannot keep every policy column side by side without overflowing.
+// Retain each row's identity and every column label when stacking its values.
+std::string StackedTable(const Table& table, std::size_t width, std::string_view indent, bool color) {
+  std::string out;
+  const std::string value_indent = absl::StrCat(indent, "  ");
+  for (const auto& row : table.cells) {
+    if (!out.empty()) {
+      absl::StrAppend(&out, "\n");
+    }
+    for (std::size_t index = 0; index < row.size(); ++index) {
+      const auto prefix = index == 0 ? indent : std::string_view(value_indent);
+      absl::StrAppend(
+          &out,
+          WrapText(
+              absl::StrCat(Sgr(table.header.at(index), kValue, color), ": ", row.at(index)), width, prefix, prefix));
+    }
+  }
+  return out;
+}
+
 }  // namespace
 
 std::string PlainRefLocator(const RefTarget& target) {
@@ -103,7 +123,8 @@ void PlainTextBackend::Preamble(const Document& doc) {
   StartBlock();
   // The identity line: the program name reads as a name (bold cyan), the tagline plain.
   const bool color = Context().color;
-  absl::StrAppend(&out_, Sgr(doc.name, kName, color), " - ", doc.tagline, "\n");
+  absl::StrAppend(
+      &out_, WrapText(absl::StrCat(Sgr(doc.name, kName, color), " - ", doc.tagline), Context().width, "", ""));
   // The usage synopsis is a command template, so the whole `name synopsis` reads as code.
   absl::StrAppend(&out_, "\nUsage: ", Sgr(absl::StrCat(doc.name, " ", doc.usage), kExample, color), "\n");
 }
@@ -253,6 +274,16 @@ void PlainTextBackend::EmitTable(const Table& table) {
     hang_width += widths[i] + 2;
   }
   const std::string hang = indent + std::string(hang_width, ' ');
+  std::size_t last_minimum = table.header.back().size();
+  for (const auto& row : table.cells) {
+    for (const std::string_view word : absl::StrSplit(row.back(), absl::ByAnyChar(" \t\n"), absl::SkipEmpty())) {
+      last_minimum = std::max(last_minimum, word.size());
+    }
+  }
+  if (Context().width != 0 && hang.size() + last_minimum > Context().width) {
+    absl::StrAppend(&out_, StackedTable(table, Context().width, indent, Context().color));
+    return;
+  }
   const auto emit_row = [&](const std::vector<std::string>& row, bool colored) {
     std::string prefix = indent;
     for (std::size_t i = 0; i + 1 < row.size(); ++i) {
