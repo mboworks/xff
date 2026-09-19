@@ -309,6 +309,8 @@ def _short_row(metadata: dict, report_path: str | None = None) -> str:
         number = target.removeprefix("pr/")
         label = f"PR {number}"
         source = f'<a href="https://github.com/mboworks/xff/pull/{html.escape(number)}">PR #{html.escape(number)}</a>'
+    if metadata.get("phase"):
+        label += f" ({metadata['phase']})"
     source_metadata = metadata["source"]
     run_id = source_metadata["run_id"]
     if run_id == 0:  # Reports retained before metadata was introduced.
@@ -363,31 +365,69 @@ def archive_reports(root: Path, incoming: Path | None = None) -> None:
     (root / "runs/index.html").write_text(render_run_history(root), encoding="utf-8")
 
 
-def render_run_history(root: Path) -> str:
-    """Render all archived runs, without collapsing attempts or PR identities."""
-    reports = []
-    for path in (root / "runs").glob("*/*/coverage-meta.json"):
+def selected_reports(root: Path, both_phases: bool = False) -> list[tuple[dict, str]]:
+    """Select one result per PR, or one per phase, with exact merge attribution."""
+    registry = root / "pull-requests.json"
+    pulls = json.loads(registry.read_text()) if registry.exists() else []
+    by_target = {f"pr/{pull['number']}": pull for pull in pulls}
+    by_merge = {pull["merge_commit_sha"]: target for target, pull in by_target.items()
+                if pull.get("merged_at") and pull.get("merge_commit_sha")}
+    selected = {}
+    paths = list((root / "runs").glob("*/*/coverage-meta.json")) + _metadata_paths(root)
+    for path in paths:
         metadata = json.loads(path.read_text(encoding="utf-8"))
-        reports.append((metadata, path.parent.relative_to(root / "runs").as_posix()))
-    reports.sort(key=lambda item: (
-        item[0]["source"]["created_at"], item[0]["source"]["run_id"], item[0]["source"]["run_attempt"]
-    ), reverse=True)
+        target = metadata["target"]
+        phase = ""
+        if target == "main":
+            target = by_merge.get(metadata["source"]["head_sha"])
+            if target is None:
+                continue
+            metadata["target"] = target
+            phase = "post-merge"
+        elif target.startswith("pr/"):
+            phase = "pre-merge"
+        if target in by_target:
+            pull = by_target[target]
+            metadata["pull_state"] = "merged" if pull.get("merged_at") else pull.get("state")
+            metadata["reference_time"] = pull.get("merged_at")
+        if metadata.get("pull_state") == "closed":
+            continue
+        metadata["phase"] = phase
+        key = (target, phase)
+        if key not in selected or is_newer(metadata, selected[key][0]):
+            report_path = path.parent
+            if phase == "post-merge":
+                source = metadata["source"]
+                archived = root / "runs" / str(source["run_id"]) / str(source["run_attempt"])
+                if (archived / "coverage-meta.json").exists():
+                    report_path = archived
+            selected[key] = (metadata, report_path.relative_to(root).as_posix())
+    if not both_phases:
+        for target, phase in list(selected):
+            if phase == "pre-merge" and (target, "post-merge") in selected:
+                del selected[(target, phase)]
+    return sorted(selected.values(), key=lambda item: (_report_order(item[0]), item[0]["phase"]), reverse=True)
+
+
+def render_run_history(root: Path) -> str:
+    """Show at most one pre-merge and one post-merge result per PR."""
+    reports = selected_reports(root, both_phases=True)
     body = (
-        '    <h1>xff coverage run history</h1>\n'
+        '    <h1>xff pre-merge and post-merge coverage</h1>\n'
         '    <p><a href="../index.html">Current coverage overview</a></p>\n'
-        '    <p>Immutable snapshots of published reports, including detailed source coverage, '
-        'identified by their original CI run and attempt. Newest runs appear first.</p>\n'
+        '    <p>One result per PR phase and release. Post-merge results test the exact merge commit; '
+        'retries and unrelated main runs are omitted.</p>\n'
     )
     if reports:
         headings = ("Report", "Data", "Source", "Completed", "Commit", "Workflow", "Lines", "Branches", "Functions")
         body += '    <table class="reportsTable"><thead><tr>'
         body += "".join(f"<th>{heading}</th>" for heading in headings)
         body += "</tr></thead><tbody>\n"
-        body += "\n".join(_short_row(metadata, path) for metadata, path in reports)
+        body += "\n".join(_short_row(metadata, "../" + path) for metadata, path in reports)
         body += "\n    </tbody></table>\n"
     else:
-        body += "    <p>No archived coverage runs are available.</p>\n"
-    return _page("xff coverage run history", body)
+        body += "    <p>No PR or release coverage results are available.</p>\n"
+    return _page("xff pre-merge and post-merge coverage", body)
 
 
 def _integration_position(repository: Path, commit: str, commits: list[str]) -> int | None:
@@ -455,6 +495,10 @@ def update_history(root: Path, repository: Path, pull_requests: list[dict],
         text=True,
     ).splitlines()
     positions = {sha: index for index, sha in enumerate(commits)}
+    root.mkdir(parents=True, exist_ok=True)
+    registry = [{key: pull.get(key) for key in ("number", "state", "merged_at", "merge_commit_sha")}
+                for pull in pull_requests]
+    (root / "pull-requests.json").write_text(json.dumps(registry, indent=2) + "\n", encoding="utf-8")
     pulls_by_target = {f"pr/{pull['number']}": pull for pull in pull_requests}
     merges = {
         f"pr/{pull['number']}": pull
@@ -510,23 +554,18 @@ def _report_order(metadata: dict) -> tuple:
 
 
 def render_site(root: Path) -> str:
-    """Returns the overview, main first then newest PR merge/tag timestamp first."""
-    metadata = latest_metadata(
-        [json.loads(source.read_text(encoding="utf-8")) for source in _metadata_paths(root)]
-    )
-    reports = sorted(
-        (report for report in metadata.values() if report.get("pull_state") != "closed"),
-        key=_report_order, reverse=True,
-    )
-    rows = "\n".join(_short_row(metadata) for metadata in reports)
+    """Return one preferred result per PR and release in reference-time order."""
+    reports = selected_reports(root)
+    rows = "\n".join(_short_row(metadata, path) for metadata, path in reports)
     body = (
         "    <h1>xff coverage reports</h1>\n"
-        '    <p><a href="runs/">All retained coverage runs and attempts</a></p>\n'
-        "    <p>Main first, then PRs by actual merge time and releases by tag creation time, newest first. "
+        '    <p><a href="runs/">Pre-merge and post-merge results</a></p>\n'
+        "    <p>PRs by actual merge time and releases by tag creation time, newest first. "
         "Lightweight tags have no creation timestamp, so their tagged commit time is used. "
-        "Aggregated PRs retain their own reports and individual merge times. "
+        "Each PR shows pre-merge coverage until its exact merge-commit coverage is available, then post-merge replaces it. "
+        "Aggregated PRs retain their own pre-merge reports and individual merge times. "
         "Open PRs and reports without a reference timestamp follow, newest CI run first. "
-        "PRs closed without merging are omitted here; their reports remain in run history.</p>\n"
+        "PRs closed without merging are omitted here; their direct report URLs remain available.</p>\n"
     )
     if rows:
         body += """    <table class="reportsTable"><thead><tr><th>Report</th><th>Data</th><th>Source</th><th>Completed</th><th>Commit</th><th>Workflow</th><th>Lines</th><th>Branches</th><th>Functions</th></tr></thead>

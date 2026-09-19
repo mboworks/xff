@@ -52,7 +52,8 @@ so consumers do not need to reimplement inheritance.
 
 ## Retained report ordering
 
-The coverage index pins `main` first. PRs and releases then share one newest-first list:
+The coverage index shows one row per PR or release, with no standalone `main` rows.
+PRs and releases share one newest-first list:
 PRs use GitHub's actual `merged_at` timestamp, and annotated tags use their tagger timestamp.
 Lightweight tags contain no creation timestamp, so their tagged commit's committer timestamp
 is the explicit fallback. Neither PR numbers, version numbers, CI completion time, nor a
@@ -78,7 +79,8 @@ provenance, not a sorting key.
 
 Each published report is retained under `coverage/runs/RUN_ID/ATTEMPT/`, including its LCOV
 source pages, summary JSON, and original source-run metadata. The coverage overview links a
-run-history index. The per-PR/main/release URLs continue to show their latest report; replacing
+pre-merge and post-merge results index, with at most one result per phase per PR and one per release.
+Repeated runs and attempts are not listed. The per-PR/main/release URLs continue to show their latest report; replacing
 one does not replace its archived snapshot. Existing identified reports are archived before
 replacement. Incoming reports are also archived when a newer run already owns the latest URL. Legacy reports without a real run ID
 remain available at their existing URL but are not assigned an invented run identity.
@@ -88,3 +90,15 @@ Each retains its original tested commit, workflow run, and detailed report. Each
 PR is ordered by its own actual merge time, even when merged into an aggregation branch.
 The recorded main-integration ancestry remains available as provenance, including verified
 membership in squashed aggregations, but does not affect the overview's timestamp order.
+
+The overview initially labels a PR result **pre-merge**. A published main report replaces that
+row as **post-merge** only when its tested commit exactly equals the PR's merge commit.
+A later main commit does not stand in for that result. If the merge build fails or never publishes,
+the pre-merge result stays visible. PRs without a pre-merge report can still acquire a post-merge row.
+The separate results index shows both phases when available; retries select the latest report
+within each phase. A late pre-merge publication never replaces an available post-merge result.
+The publisher stores the PR-to-merge-commit mapping in `coverage/pull-requests.json` and resolves
+both current reports and retained snapshots, so out-of-order main publications are attributed
+correctly. Existing snapshots are not rewritten or deleted. Aggregated constituent PRs keep
+pre-merge results unless a main run actually tested their own exact merge commit; the aggregate's
+post-merge result belongs to the aggregation PR alone.
