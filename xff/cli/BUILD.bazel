@@ -688,6 +688,7 @@ cc_library(
 cc_test(
     name = "help_render_test",
     size = "small",
+    timeout = "moderate",  # Full-reference rendering exceeds 60 seconds under MSAN.
     srcs = ["help_render_test.cc"],
     deps = [
         ":globals_cc",

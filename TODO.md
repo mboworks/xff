@@ -1,5 +1,12 @@
 # TODO
 
+## Completed: MSAN help-rendering timeout
+
+- Give `//xff/cli:help_render_test` a target-specific 300-second timeout in PR #878 after
+  MSAN exceeded its 60-second budget while progressing through the suite.
+- Keep other test budgets unchanged; review the new MSAN runtime before deciding on profiling
+  or splitting the broad help tests.
+
 ## Help follow-up: suggestions, width, and spacing
 
 - [x] Rank fuzzy flag suggestions and retain up to three candidates (F02).
