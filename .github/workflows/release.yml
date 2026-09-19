@@ -68,6 +68,8 @@ jobs:
           sudo apt-get install -y lcov mandoc fuse3 libfuse3-3
           tools/install_lcov.sh "${RUNNER_TEMP}/lcov"
           echo "${RUNNER_TEMP}/lcov/bin" >>"${GITHUB_PATH}"
+      - name: Check live repository tooling
+        run: bazel run //tools:repository_tooling_test
       - name: Collect release coverage
         # --config=xff_docs includes the aggregate xff_all switch, so extensions added to the
         # registry join release coverage automatically, as well as the complete documented surface.
@@ -110,9 +112,6 @@ jobs:
             --show-details \
             --title "xff ${RELEASE_TAG} production coverage"
           python3 tools/coverage_html.py coverage-html/lcov coverage_policy.json "${coverage_page}"
-          python3 -m unittest tools/coverage_test.py tools/coverage_sources_test.py \
-            tools/coverage_html_test.py tools/coverage_index_test.py tools/coverage_lcovrc_test.py \
-            tools/coverage_policy_test.py
           python3 tools/coverage.py \
             --json-summary coverage-html/coverage-summary.json \
             --lcov coverage.lcov \

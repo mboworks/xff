@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 import tempfile
 import unittest
+from test_paths import repository_file
 
 import bazel_cache
 
@@ -56,7 +57,7 @@ class BazelCacheTest(unittest.TestCase):
             self.assertFalse((root / "cas/output").exists())
 
     def test_instrumented_jobs_have_explicit_larger_budgets(self):
-        root = Path(__file__).resolve().parent.parent
+        root = repository_file("")
         workflow = (root / ".github/workflows/main.yml").read_text()
         self.assertEqual(workflow.count("max-bytes:"), 4)
         self.assertIn("matrix.config.name == 'asan' && '3000000000' || '1000000000'", workflow)
@@ -84,7 +85,7 @@ class BazelCacheTest(unittest.TestCase):
             self.assertEqual((root / "keep").read_bytes(), b"untouched")
 
     def test_workflows_refresh_only_main_and_release_only_restores(self):
-        root = Path(__file__).resolve().parent.parent
+        root = repository_file("")
         workflow = (root / ".github/workflows/main.yml").read_text()
         restores = workflow.count("uses: ./.github/actions/bazel-cache-restore")
         saves = workflow.count("uses: ./.github/actions/bazel-cache-save")

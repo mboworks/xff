@@ -186,12 +186,12 @@ repos:
         description: |
           Allow short inline lists when the whole formatted for-header fits one line.
           Require names for multiline or overlong literal ranges, including std::to_array wrappers.
-        language: system
+        language: python
         entry: python3 tools/check_inline_range_lists.py
         files: \.(cc|cpp|cxx|h|hpp|hxx)$
       - id: check-inline-range-lists-test
         name: Test inline range-list policy
-        language: system
+        language: python
         entry: python3 tools/check_inline_range_lists_test.py
         files: ^(tools/check_inline_range_lists(_test)?\.py|\.pre-commit-config\.yaml)$
         pass_filenames: false
@@ -201,12 +201,12 @@ repos:
           Project convention (STYLE_CPP.md): project code never declares or reopens a namespace
           named std or imports all of ::std. Using-declarations and namespace aliases targeting
           globally owned namespaces use a leading ::.
-        language: script
+        language: python
         entry: tools/check_namespace_style.py
         files: \.(cc|h)$
       - id: check-namespace-style-test
         name: Test the namespace-style check
-        language: script
+        language: python
         entry: tools/check_namespace_style_test.py
         files: ^tools/check_namespace_style(_test)?\.py$
         pass_filenames: false
@@ -261,7 +261,7 @@ repos:
           value in one step; IsOkAndHolds(m) says it in a single matcher when the value is only
           inspected once. ASSERT_THAT on a plain Status, or on a StatusOr never dereferenced,
           stays legal. To skip once, run `SKIP="no-isok-assert-then-deref" pre-commit`.
-        language: script
+        language: python
         entry: tools/check_status_assert.py
         files: _test\.cc$
       - id: align-markdown-tables
@@ -271,20 +271,20 @@ repos:
           vertically aligned (the pipes line up). This formatter pads each column to
           its widest cell, honoring the delimiter alignment markers, and rewrites the
           file in place. To skip once, run `SKIP="align-markdown-tables" pre-commit`.
-        language: script
+        language: python
         entry: tools/align_markdown_tables.py
         types: [markdown]
       - id: align-markdown-tables-test
         name: Test the Markdown table aligner
         description: Runs the table-aligner unit tests when the tool or its test changes.
-        language: script
+        language: python
         entry: tools/align_markdown_tables_test.py
         files: ^tools/align_markdown_tables(_test)?\.py$
         pass_filenames: false
       - id: generate-mime-db-test
         name: Test MIME database generation
         description: Verifies deterministic extension-conflict resolution for the removable mime-db extra.
-        language: script
+        language: python
         entry: tools/generate_mime_db_test.py
         files: ^tools/generate_mime_db(_test)?\.py$
         pass_filenames: false
@@ -296,7 +296,7 @@ repos:
           asserts every in-repo MODULE.bazel version, every intra-repo bazel_dep on one
           of our modules, and the `xff --version` literal already agree, so the stamp
           has one uniform value to replace and nothing ships a stale version.
-        language: script
+        language: python
         entry: tools/check_module_versions.py
         files: ((^|/)MODULE\.bazel|^xff/cli/main\.cc|^tools/check_module_versions\.py)$
         pass_filenames: false
@@ -306,20 +306,20 @@ repos:
           LICENSE and every SPDX-FileCopyrightText declaration use the project's canonical year and
           holder. The check scans every tracked file, so a stale header cannot hide in a file outside
           the current commit. To skip once, run `SKIP="check-copyright" pre-commit`.
-        language: script
+        language: python
         entry: tools/check_copyright.py
         pass_filenames: false
       - id: check-copyright-test
         name: Test the copyright identity check
         description: Runs the copyright-check unit tests when the tool or its test changes.
-        language: script
+        language: python
         entry: tools/check_copyright_test.py
         files: ^tools/check_copyright(_test)?\.py$
         pass_filenames: false
       - id: check-module-versions-test
         name: Test the module-version check
         description: Runs the version-check unit tests when the tool or its test changes.
-        language: script
+        language: python
         entry: tools/check_module_versions_test.py
         files: ^tools/check_module_versions(_test)?\.py$
         pass_filenames: false
@@ -331,14 +331,14 @@ repos:
           reference is just missing a feature. This asserts every `bool_flag` in xff/BUILD.bazel is
           enabled by that config (following --config= inheritance), with an allowlist in the tool for
           flags that are not extras. To skip once, run `SKIP="check-docs-extras" pre-commit`.
-        language: script
+        language: python
         entry: tools/check_docs_extras.py
         files: ^(\.bazelrc|xff/BUILD\.bazel|tools/check_docs_extras\.py)$
         pass_filenames: false
       - id: check-docs-extras-test
         name: Test the docs-extras check
         description: Runs the docs-extras unit tests when the tool or its test changes.
-        language: script
+        language: python
         entry: tools/check_docs_extras_test.py
         files: ^tools/check_docs_extras(_test)?\.py$
         pass_filenames: false
@@ -363,13 +363,13 @@ repos:
           Every BUILD package defaults to private visibility, so cross-package APIs must opt in at
           their target. Both target and exec C++ compilation enable layering_check and parse_headers.
           The repository check covers existing files and makes new packages fail closed.
-        language: script
+        language: python
         entry: tools/check_bazel_policy.py
         files: (^|/)(BUILD(\.bazel)?|\.bazelrc)$|^tools/check_bazel_policy\.py$
         pass_filenames: false
       - id: check-bazel-policy-test
         name: Test the Bazel policy check
-        language: script
+        language: python
         entry: tools/check_bazel_policy_test.py
         files: ^tools/check_bazel_policy(_test)?\.py$
         pass_filenames: false
@@ -381,7 +381,7 @@ repos:
           and never collides with the directory, header or binary of the same name. Tests
           keep their `_test` suffix and are not checked. To skip once, run
           `SKIP="check-cc-target-naming" pre-commit`.
-        language: script
+        language: python
         entry: tools/check_cc_target_naming.py
         files: (^|/)BUILD(\.bazel)?$
       - id: check-cc-target-naming-test
@@ -389,7 +389,7 @@ repos:
         description: |
           Runs the naming-check unit tests when the tool, its test, or the shared BUILD
           reader it is built on (tools/build_rules.py) changes.
-        language: script
+        language: python
         entry: tools/check_cc_target_naming_test.py
         files: ^tools/(check_cc_target_naming(_test)?|build_rules)\.py$
         pass_filenames: false
@@ -400,7 +400,7 @@ repos:
           variables xff reads, so a new `env::Get("NAME")` needs a row in the kVars table in
           xff/cli/help_build.cc - and a documented name nothing reads is a stale promise.
           Both directions fail. To skip once, run `SKIP="check-env-documented" pre-commit`.
-        language: script
+        language: python
         entry: tools/check_env_documented.py
         # The trigger mirrors what the tool reads: production sources under the three module roots,
         # never a *_test.cc (a test may name any variable it likes, and the tool skips them), so a
@@ -417,7 +417,7 @@ repos:
           count. A library with genuinely no testable surface goes in the tool's
           _ALLOWLIST together with the reason. To skip once, run
           `SKIP="check-cc-library-tested" pre-commit`.
-        language: script
+        language: python
         entry: tools/check_cc_library_tested.py
         files: (^|/)BUILD(\.bazel)?$
       - id: check-cc-library-tested-test
@@ -425,14 +425,14 @@ repos:
         description: |
           Runs the coverage-check unit tests when the tool, its test, or the shared BUILD
           reader it is built on (tools/build_rules.py) changes.
-        language: script
+        language: python
         entry: tools/check_cc_library_tested_test.py
         files: ^tools/(check_cc_library_tested(_test)?|build_rules)\.py$
         pass_filenames: false
       - id: build-rules-test
         name: Test the shared BUILD reader
         description: Runs the BUILD-reader unit tests when it or its test changes.
-        language: script
+        language: python
         entry: tools/build_rules_test.py
         files: ^tools/build_rules(_test)?\.py$
         pass_filenames: false
@@ -443,7 +443,7 @@ repos:
           remapping, macOS SDK libc++ flag stripping) when it or its test changes. The remapping
           is what makes clang-tidy / clangd see the composable extras at all, and it fails
           OPEN - a broken remap looks like clean code rather than an error - so it is tested.
-        language: script
+        language: python
         entry: tools/fix_compile_commands_test.py
         files: ^tools/fix_compile_commands(_test)?\.py$
         pass_filenames: false
@@ -454,18 +454,9 @@ repos:
           tools/extras.py) and //:refresh_compile_commands (via tools/extras_repo.bzl) derive the
           set of composable extras from MODULE.bazel, because an extra missing from either is
           SILENTLY uncovered: `//...` does not match another bazel module.
-        language: script
+        language: python
         entry: tools/extras_test.py
         files: ^tools/extras(_test)?\.py$
-        pass_filenames: false
-      - id: fuzz-targets-test
-        name: Test fuzz campaign discovery and budgets
-        description: |
-          Runs the fuzz-driver unit tests when its implementation or either CI campaign policy
-          changes, so target growth cannot silently exceed the required or deep-fuzz budget.
-        language: script
-        entry: tools/fuzz_targets_test.py
-        files: ^(\.github/workflows/(fuzz|main)\.yml|tools/fuzz_targets(_test)?\.py)$
         pass_filenames: false
       - id: release-prep-test
         name: Test the release prep script
@@ -512,15 +503,9 @@ repos:
         files: (\.(cc|cpp|cxx|h|hh|hpp|hxx|inc|ipp|bzl)$|\.h\.in$)
       - id: clang-tidy-scope-test
         name: Test clang-tidy orchestration
-        language: system
+        language: python
         entry: python3 -m unittest tools/clang_tidy_compdb_test.py tools/clang_tidy_scope_test.py tools/clang_tidy_runner_test.py tools/clang_tidy_pre_push_test.py
         files: ^tools/clang_tidy_(compdb|scope|runner|pre_push)(_test)?\.py$
-        pass_filenames: false
-      - id: measure-resources-test
-        name: Test resource measurement harness
-        language: system
-        entry: python3 -m unittest tools/measure_resources_test.py
-        files: ^tools/measure_resources(_test)?\.py$
         pass_filenames: false
       - id: host-io-policy-test
         name: Test host-I/O policy checker

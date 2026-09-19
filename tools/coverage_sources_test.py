@@ -35,12 +35,6 @@ class CoverageSourcesTest(unittest.TestCase):
         self.assertIn("xff_data/**", actual["include"])
         self.assertNotIn("Data", actual["categories"]["extensions"])
 
-    def test_maps_every_extra_in_the_repository_registry(self):
-        modules = coverage_sources.declared_extras()
-        report = "".join(f"SF:external/{module}+/source.cc\n" for module in modules)
-        expected = "".join(f"SF:{path}/source.cc\n" for path in modules.values())
-        self.assertEqual(expected, coverage_sources.remap(report, modules))
-
     def test_maps_a_future_extra_without_a_mapper_change(self):
         report = (
             "SF:xff/cli/main.cc\n"
@@ -73,8 +67,13 @@ class CoverageSourcesTest(unittest.TestCase):
         )
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
+            workspace = root / "workspace"
+            for name in ("xff/cli/main.cc", "extra_modules/archive/archive_fs.cc"):
+                source = workspace / name
+                source.parent.mkdir(parents=True, exist_ok=True)
+                source.write_text("int covered = 1;\n", encoding="utf-8")
             actual = coverage_sources.grouped(
-                report, {"xff_archive": "extra_modules/archive"}, policy, root
+                report, {"xff_archive": "extra_modules/archive"}, policy, root, workspace
             )
             self.assertIn(f"SF:{root}/program-command-line/xff/cli/main.cc\n", actual)
             self.assertIn(

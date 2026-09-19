@@ -6,8 +6,9 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from test_paths import repository_file
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = repository_file("")
 REPO = "xff"
 
 
