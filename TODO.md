@@ -6,6 +6,13 @@
 - Include registered flags, primaries, topics, and aliases; retain advisory-only behavior.
 - Test dashless and dashed selectors, config-only help, case folding, bounded input, and action isolation.
 
+## Range-list style review
+
+- [x] Permit short inline literal ranges when the complete formatted loop header fits one line.
+- [x] Separate naming/readability from explicit element typing; check typed wrappers as well.
+- [ ] In the next PR, review all C++ sources and headers, name long/reused/unclear collections,
+      remove the temporary baseline, and verify the whole codebase against the clarified rule.
+
 ## Completed: MSAN help-rendering timeout
 
 - Give `//xff/cli:help_render_test` a target-specific 300-second timeout in PR #878 after

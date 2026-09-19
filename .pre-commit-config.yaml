@@ -181,16 +181,20 @@ repos:
         args: [--multiline]
         entry: 'if \(![\w.()]+\.ok\(\)\) \{\s*\n\s*return [\w.()]+\.status\(\);'
         files: \.(cc|h)$
-      - id: no-braced-init-list-loop
-        name: No range-for over an inline braced-init-list
+      - id: check-inline-range-lists
+        name: Name multiline literal loop ranges
         description: |
-          Project convention (STYLE_CPP.md): iterate a NAMED `constexpr std::array` built with
-          `std::to_array<T>({...})`, never an inline `for (x : {a, b, c})`. The named form says
-          what the set IS, is greppable, and can be shared by a second case instead of copied.
-          To skip once, run `SKIP="no-braced-init-list-loop" pre-commit`.
-        language: pygrep
-        entry: 'for\s*\([^)]*:\s*\{'
-        files: \.(cc|h)$
+          Allow short inline lists when the whole formatted for-header fits one line.
+          Require names for multiline or overlong literal ranges, including std::to_array wrappers.
+        language: system
+        entry: python3 tools/check_inline_range_lists.py
+        files: \.(cc|cpp|cxx|h|hpp|hxx)$
+      - id: check-inline-range-lists-test
+        name: Test inline range-list policy
+        language: system
+        entry: python3 tools/check_inline_range_lists_test.py
+        files: ^(tools/check_inline_range_lists(_test)?\.py|tools/inline_range_lists_baseline\.json|\.pre-commit-config\.yaml)$
+        pass_filenames: false
       - id: check-namespace-style
         name: Global namespaces are owned and explicitly rooted
         description: |
