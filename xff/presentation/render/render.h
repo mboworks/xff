@@ -76,6 +76,9 @@ class Renderer {
   PathEncoding encoding_;
 };
 
+// Human-readable display text: preserve Unicode and escape controls and literal backslashes.
+std::string EscapeDisplayText(std::string_view text);
+
 // Streams a buffered tabular table -- kAligned (columns padded to their widest cell,
 // space-separated, with a dashed underline under the header) or kMarkdown (a GitHub Markdown
 // table: `| a | b |` rows, a `| --- | --- |` rule, cells with `|` and newlines escaped) --
@@ -103,15 +106,20 @@ class TableStream {
       std::size_t byte_budget = 0,
       std::vector<format::Align> alignments = {});
 
-  // Feeds one row of already-rendered cells; returns whatever is ready to emit now (empty
+  // Feeds raw cell text, escaping controls and literal backslashes for display. Returns ready output (empty
   // while still buffering the initial window). Missing cells render empty; extras are ignored.
   std::string Add(const std::vector<std::string>& cells);
+  // Already formatted, single-line display cells (for example quoted summary labels).
+  // Preserve their display escapes, adding only the output format's markup escaping.
+  std::string AddDisplay(const std::vector<std::string>& cells);
 
   // Emits any rows still buffered plus a header-only table when nothing matched (call once
   // after the final Add). Idempotent.
   std::string Flush();
 
  private:
+  std::string AddImpl(const std::vector<std::string>& cells, bool display_text);
+
   // The header + rule rows at the current widths, emitted once (nothing if --no-header).
   std::string HeaderAndRule();
   // One data row padded to the current widths.
@@ -134,7 +142,7 @@ class TableStream {
 
 // Renders a whole buffered table at once: the convenience wrapper over TableStream with
 // window == kAll (full alignment). `header` is the column names, `rows` the data rows of
-// already-rendered cells; `with_header` false (from --no-header) drops the header + rule.
+// raw cell text; `with_header` false (from --no-header) drops the header + rule.
 // Holds every row (O(rows) memory); returns "" for the streaming / non-tabular formats.
 std::string RenderTable(
     Format format,

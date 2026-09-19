@@ -355,7 +355,30 @@ TEST_F(RunTest, SummaryDisplayQuotesAmbiguousDataLabels) {
     EXPECT_THAT(last_errors_, Eq(0));
     EXPECT_THAT(records, Contains(HasSubstr("\"total\"")));
     EXPECT_THAT(records, Contains(HasSubstr("\"\"")));
-    EXPECT_THAT(records, Contains(HasSubstr(R"json("\"total\"")json")));
+    // Markdown protects the C-escaped display spelling through its own escaping layer.
+    const std::string_view quoted = format == "--format=md" ? R"md("\\"total\\"")md" : R"json("\"total\"")json";
+    EXPECT_THAT(records, Contains(HasSubstr(quoted)));
+  }
+}
+
+TEST_F(RunTest, OrdinaryAndComparisonSummaryLabelsEscapeControlsOnce) {
+  ASSERT_THAT(fs_.WriteContent(Path("a\nb"), "x"), IsOk());
+  ASSERT_THAT(fs_.WriteContent(Path(R"name(a\nb)name"), "x"), IsOk());
+  for (const bool comparison : std::to_array<bool>({false, true})) {
+    for (const auto& output : std::to_array<std::string>({"--format=plain", "--format=md"})) {
+      std::vector<std::string> args{root_.string()};
+      if (comparison) {
+        args.insert(args.end(), {Path("sub"), "--compare=status", "--compare-select=none"});
+      }
+      args.insert(args.end(), {"-name", "a*b", "--summary={name}", output});
+      const auto records = RunArgvRecords(args);
+      EXPECT_THAT(last_errors_, Eq(0));
+      const std::string_view newline = output == "--format=md" ? R"key(a\\nb)key" : R"key(a\nb)key";
+      const std::string_view backslash = output == "--format=md" ? R"key(a\\\\nb)key" : R"key(a\\nb)key";
+      EXPECT_THAT(records, Contains(HasSubstr(newline)));
+      EXPECT_THAT(records, Contains(HasSubstr(backslash)));
+      EXPECT_THAT(records, Each(Not(HasSubstr("a\nb"))));
+    }
   }
 }
 
@@ -370,7 +393,9 @@ TEST_F(RunTest, ComparisonScopeDisplayQuotesAmbiguousDataLabels) {
     EXPECT_THAT(last_errors_, Eq(0));
     EXPECT_THAT(records, Contains(HasSubstr("\"total\"")));
     EXPECT_THAT(records, Contains(HasSubstr("\"\"")));
-    EXPECT_THAT(records, Contains(HasSubstr(R"json("\"total\"")json")));
+    // Markdown protects the C-escaped display spelling through its own escaping layer.
+    const std::string_view quoted = format == "--format=md" ? R"md("\\"total\\"")md" : R"json("\"total\"")json";
+    EXPECT_THAT(records, Contains(HasSubstr(quoted)));
   }
 }
 

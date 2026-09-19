@@ -255,6 +255,31 @@ occurred anywhere. A later narrower selection therefore does not restore the exp
 re-reading historical spellings. **Acceptance:** real-archive regressions for long and short forms,
 upper-case capability forms, and named configurations selected in both orders.
 
+### B15 - P2: Control characters break human-readable listing layouts
+
+- [x] Implement and verify consistent control-byte rendering for aligned tables, Markdown, and trees.
+
+A filename containing `a|b`, followed by a newline, tab, and an ESC byte, produces extra physical
+lines and terminal control sequences in `--format=aligned` and `--format=tree`. Markdown
+escapes the pipe but replaces the newline with a space, drops CR, and passes tab/ESC through.
+Consequently distinct names can look identical, and a filename can alter the terminal display.
+The behavior was reproduced against the development executable with disposable real files.
+
+Plain output deliberately remains raw by default and offers `--path-encoding=escape`.
+CSV and JSONL encode records losslessly; NUL output retains raw bytes with an unambiguous separator.
+TSV escapes its separators and backslashes but is not a terminal-safe display format.
+These machine-output contracts should be preserved.
+
+**Recommendation:** escape controls in human-readable table cells and tree node labels, preserving
+Unicode and disambiguating literal backslashes. Account for the escaped width before padding.
+Decide Markdown's visible spelling together with its source encoding, so rendered output and raw
+source remain understandable. Display cells are C-escaped before width calculation; Markdown then
+protects that display spelling once. Already-formatted summary labels retain their escapes rather
+than being C-escaped twice. Plain path listings and machine encodings are unchanged.
+**Acceptance:** cover newline, CR, tab, ESC, DEL, literal backslash, pipe, and Unicode in buffered
+and streaming tables, tree roots/children, and actual CLI filenames. Keep intentional generated
+colour separate from filename data. Document the distinction from raw/machine formats.
+
 ## Design and usability improvements
 
 These are observed limitations or deliberate current behaviors, not claims of implementation bugs.
@@ -526,6 +551,12 @@ conformance tests. The uncovered failures cluster at boundaries those individual
 summary identity; literal total keys; numeric controls in CLI and complete INIs; multi-root archive
 collisions; and unusual filenames in every renderer. Add a focused release-artifact smoke corpus.
 Keep race/safety adapter tests and platform integration tests distinct from usability probes.
+
+The final audit group adds fail-fast mutation sinks to the expression fuzz filesystem and runs
+`tools/release_smoke.py` against both stripped staged executables before upload. The corpus checks
+version/help, unusual filenames in JSONL/CSV/NUL/TSV/escaped plain output, named INI selection,
+repeated summaries, literal `total` groups, and comparison counts. Both local staged executables
+pass; the complete cross-feature acceptance list still requires the final audit of the stack.
 
 ## Feature-family coverage and disposition
 

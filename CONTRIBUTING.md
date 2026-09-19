@@ -152,3 +152,22 @@ The `fuzz-campaigns` CI artifact retains logs and findings for seven days, even 
 `summary.json` records workers, campaign wall time, and per-target execution counts and average
 executions per second when libFuzzer supplies them. Compare those statistics alongside elapsed time:
 CPU or memory contention can reduce mutation throughput even when parallel wall time improves.
+
+## Release-artifact smoke checks
+
+The default Linux/macOS jobs and tag builds run `tools/release_smoke.py` against both
+stripped executables after staging. The disposable corpus checks the exact stamped version,
+help, JSONL/CSV/NUL filename round trips, escaped plain/TSV record boundaries, named INI
+selection, repeated summary identity,
+a literal `total` extension, and all four comparison outcomes. No installed executable or
+user data is modified. Existing required system/user configuration still applies; run this
+release check in a clean CI environment. It complements the full tests rather than replacing them.
+
+To check an already built development binary:
+
+```sh
+python3 tools/release_smoke.py PATH_TO_XFF --expected-version=0.0.0
+```
+
+Use the tag's numeric version for release binaries. Each invocation has a 30-second timeout,
+and a failure prevents artifact publication.
