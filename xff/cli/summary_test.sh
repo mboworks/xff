@@ -311,43 +311,44 @@ test::compare_summary_follows_selected_results() {
   printf old >"${root}/left/different"
   printf new >"${root}/right/different"
   out="$(_run --compare "${root}/left" "${root}/right" -type f --summary --compare-select=all)"
-  expect_matches "^different[[:space:]]+different${NL}left-only[[:space:]]+left${NL}right-only[[:space:]]+right${NL}identical[[:space:]]+same" "${out}"
-  expect_matches 'file +different +1 +25.00%' "${out}"
+  expect_matches "^different[[:space:]]+different${NL}left-only[[:space:]]+left${NL}right-only[[:space:]]+right${NL}identical[[:space:]]+same" "${out}" || return
+  expect_matches 'file +different +1 +25.00%' "${out}" || return
   out="$(_run --compare "${root}/left" "${root}/right" -type f --summary=compare --compare-select=different --format=jsonl)"
-  _expect_json_row '{"group":"different","count":1,"type":"file","count_percent":25.0,"bytes":6,"size_percent":26.09}' "${out}"
-  _expect_json_row '{"group":"identical","count":1,"type":"file","count_percent":25.0,"bytes":8,"size_percent":34.78}' "${out}"
-  _expect_json_row '{"group":"total","count":4,"type":"all","count_percent":100.0,"bytes":23,"size_percent":100.0}' "${out}"
+  _expect_json_row '{"group":"different","count":1,"type":"file","count_percent":25.0,"bytes":6,"size_percent":26.09}' "${out}" || return
+  _expect_json_row '{"group":"identical","count":1,"type":"file","count_percent":25.0,"bytes":8,"size_percent":34.78}' "${out}" || return
+  _expect_json_row '{"group":"total","count":4,"type":"all","count_percent":100.0,"bytes":23,"size_percent":100.0}' "${out}" || return
   out="$(_run --compare "${root}/left" "${root}/right" -type f --summary=type --summary --compare-select=all --format=jsonl)"
-  _expect_json_row '{"group":"identical","count":1,"type":"file","count_percent":25.0,"bytes":8,"size_percent":34.78}' "${out}"
-  _expect_json_row '{"group":"total","count":4,"type":"all","count_percent":100.0,"bytes":23,"size_percent":100.0}' "${out}"
+  _expect_json_row '{"group":"identical","count":1,"type":"file","count_percent":25.0,"bytes":8,"size_percent":34.78}' "${out}" || return
+  _expect_json_row '{"group":"total","count":4,"type":"all","count_percent":100.0,"bytes":23,"size_percent":100.0}' "${out}" || return
   out="$(_run --compare "${root}/left" "${root}/right" -type f --summary=compare --compare-select=left-only,right-only,different --summary-precision=1 --format=jsonl)"
-  _expect_json_row '{"group":"left-only","count":1,"type":"file","count_percent":25.0,"bytes":4,"size_percent":17.4}' "${out}"
-  _expect_json_row '{"group":"total","count":4,"type":"all","count_percent":100.0,"bytes":23,"size_percent":100.0}' "${out}"
-  out="$(_run --compare=diff "${root}/left" "${root}/right" -type f --summary --compare-select=different --format=jsonl)"
-  _expect_json_row '{"group":"different","count":1,"type":"file","count_percent":25.0,"bytes":6,"size_percent":26.09}' "${out}"
-  _expect_json_row '{"group":"total","count":4,"type":"all","count_percent":100.0,"bytes":23,"size_percent":100.0}' "${out}"
+  _expect_json_row '{"group":"left-only","count":1,"type":"file","count_percent":25.0,"bytes":4,"size_percent":17.4}' "${out}" || return
+  _expect_json_row '{"group":"total","count":4,"type":"all","count_percent":100.0,"bytes":23,"size_percent":100.0}' "${out}" || return
+  local rc
+  out="$("$(_xff_bin)" --compare=diff "${root}/left" "${root}/right" -type f --summary --compare-select=different --format=jsonl 2>&1)" && rc=0 || rc=$?
+  expect_eq '2' "${rc}" || return
+  expect_output_contains 'plain' "${out}" || return
   local explicit
   explicit="$(_run --compare=status "${root}/left" "${root}/right" -type f --compare-select=none --summary=compare)"
   out="$(_run --compare=summary "${root}/left" "${root}/right" -type f)"
-  expect_eq "${explicit}" "${out}"
+  expect_eq "${explicit}" "${out}" || return
   out="$(_run --compare-select=all --compare=summary "${root}/left" "${root}/right" -type f)"
-  expect_eq "${explicit}" "${out}"
+  expect_eq "${explicit}" "${out}" || return
   out="$(_run --compare=summary "${root}/left" "${root}/right" -type f --compare-select=all)"
-  expect_matches "^different[[:space:]]+different" "${out}"
-  expect_matches 'total +4 +100.00%' "${out}"
+  expect_matches "^different[[:space:]]+different" "${out}" || return
+  expect_matches 'total +4 +100.00%' "${out}" || return
   out="$(_run --compare=summary "${root}/left" "${root}/right" -type f --summary=none)"
-  expect_eq '' "${out}"
+  expect_eq '' "${out}" || return
   out="$(_run --summary=none --compare=summary "${root}/left" "${root}/right" -type f)"
-  expect_eq "${explicit}" "${out}"
+  expect_eq "${explicit}" "${out}" || return
   local selection
   for selection in none ''; do
     out="$(_run --compare "${root}/left" "${root}/right" -type f --summary "--compare-select=${selection}" --format=jsonl)"
-    _expect_json_row '{"type":"all","group":"total","count":4,"count_percent":100,"bytes":23,"size_percent":100}' "${out}"
+    _expect_json_row '{"type":"all","group":"total","count":4,"count_percent":100,"bytes":23,"size_percent":100}' "${out}" || return
     out="$(_run --compare "${root}/left" "${root}/right" -type f "--compare-select=${selection}")"
-    expect_eq '' "${out}"
+    expect_eq '' "${out}" || return
   done
   out="$(_run --compare "${root}/left" "${root}/right" -type f --summary --summary=none --compare-select=all)"
-  expect_not_matches 'total' "${out}"
+  expect_not_matches 'total' "${out}" || return
 }
 
 test::compare_summary_empty_trees_has_zero_total() {
@@ -677,7 +678,7 @@ test::summary_invalid_controls_are_errors_before_actions() {
     expect_eq "2" "${rc}"
     expect_output_not_contains SHOULD_NOT_RUN "${out}"
   done
-  for flag in csv tsv nul tree; do
+  for flag in nul tree; do
     out="$("$(_xff_bin)" "${root}" --summary=ext "--format=${flag}" 2>&1)" && rc=0 || rc=$?
     expect_eq "2" "${rc}"
     expect_output_contains 'summary tables require --format=' "${out}"
@@ -690,6 +691,157 @@ test::summary_owner_alias_is_accepted_by_cli_validation() {
   user="$(_run "${root}" -type f --summary=user --format=jsonl)"
   owner="$(_run "${root}" -type f --summary=owner --format=jsonl)"
   expect_eq "${user}" "${owner}"
+}
+
+test::comparison_summary_width_changes_layout_not_accounting() {
+  local root
+  root="$(_make_tree)"
+  python3 - "$(_xff_bin)" "${root}" <<'PYTEST'
+import json
+import subprocess
+import sys
+
+binary, root = sys.argv[1:]
+base = [binary, "--no-pager", "--compare=summary", root, root, "-type", "f", "--summary=ext",
+        "--summary-scope=left-total,right-total,left-only,right-only,different,identical"]
+def run(*args):
+    return subprocess.check_output(base + list(args), text=True)
+reference = run("--format=jsonl", "--width=none")
+for width in (80, 120, 160):
+    plain = run(f"--width={width}")
+    assert "Group\nScope" in plain, plain
+    table = plain.split("Group\nScope", 1)[1].split("Percentages use", 1)[0]
+    assert all(len(line) <= width for line in table.splitlines()), table
+    assert run("--format=jsonl", f"--width={width}") == reference
+wide = run("--width=none")
+assert "Group\nScope" not in wide, wide
+assert "left-total count" not in wide, wide
+assert any(json.loads(line).get("record") == "summary" for line in reference.splitlines())
+PYTEST
+}
+
+test::child_width_argument_does_not_configure_xff() {
+  local root out
+  root="$(_new_tree)"
+  printf 'x' >"${root}/file"
+  out="$(_run "${root}/file" -exec printf '%s' --width=garbage ';')"
+  expect_eq '--width=garbage' "${out}"
+}
+
+test::summary_delimited_exports_round_trip_with_real_csv_reader() {
+  local root
+  root="$(_new_tree)"
+  python3 - "$(_xff_bin)" "${root}" <<'PYTEST'
+import csv
+import io
+import json
+import pathlib
+import subprocess
+import sys
+
+binary, fixture = sys.argv[1:]
+root = pathlib.Path(fixture)
+left, right = root / "left", root / "right"
+left.mkdir()
+right.mkdir()
+for name, content in [("same.txt", "same"), ("changed.cc", "left"), ('only,\"left\t\\\n.total', "L")]:
+    (left / name).write_text(content)
+for name, content in [("same.txt", "same"), ("changed.cc", "right!!"), ("right.é", "R")]:
+    (right / name).write_text(content)
+(left / "empty-dir").mkdir()
+
+
+def run(args, fmt):
+    result = subprocess.run([binary, *map(str, args), f"--format={fmt}"], capture_output=True, text=True)
+    assert result.returncode == 0, (args, fmt, result.stderr)
+    return result.stdout
+
+
+def untab(value):
+    result = []
+    it = iter(value)
+    for char in it:
+        result.append({"t": "\t", "n": "\n", "r": "\r", "\\": "\\"}[next(it)] if char == "\\" else char)
+    return "".join(result)
+
+
+scopes = ["left-total", "right-total", "left-only", "right-only", "different", "identical"]
+metrics = ["count", "count_percent", "bytes", "size_percent"]
+cases = [
+    [left, "--summary=ext"],
+    [left, right, "--summary={name}", "--summary=ext", "--summary=ext", "--summary-scope=root"],
+    [left, "--summary={name:m/./x/}"],
+    [left / "empty-dir", "-type", "f", "--summary=ext"],
+    ["--compare=summary", left, right],
+    ["--compare=summary", left, right, "--summary=ext"],
+    ["--compare=summary", left, right, "--summary=ext", "--summary-scope=all,root,diff,identical"],
+    ["--compare=summary", left, right, "--summary={name}", "--summary-scope=right,left", "--top=1"],
+    [left, "--summary=ext", "--summary=none", "--summary=type", "--summary-precision=0"],
+]
+for args in cases:
+    expected = [json.loads(line) for line in run(args, "jsonl").splitlines()]
+    for fmt in ["csv", "tsv"]:
+        text = run(args, fmt)
+        reader = csv.DictReader(io.StringIO(text), delimiter="," if fmt == "csv" else "\t", quoting=csv.QUOTE_MINIMAL if fmt == "csv" else csv.QUOTE_NONE)
+        exported = list(reader)
+        assert len(exported) == len(expected), (args, fmt, exported, expected)
+        if fmt == "tsv":
+            exported = [{key: untab(value) for key, value in row.items()} for row in exported]
+        for row, reference in zip(exported, expected):
+            assert None not in row, (args, fmt, row)
+            assert row["record"] == "summary"
+            for key in ["request", "summary", "template", "scope", "root", "left_root", "right_root", "type", "group"]:
+                assert row[key] == str(reference.get(key, "")), (args, fmt, key, row, reference)
+            for key in metrics:
+                assert (float(row[key]) if row[key] else None) == reference.get(key), (args, fmt, key, row, reference)
+            for scope in scopes:
+                values = reference.get(scope)
+                for metric in metrics:
+                    key = f"{scope}.{metric}"
+                    if key in row:
+                        assert (float(row[key]) if row[key] else None) == (values.get(metric) if values else None), (args, fmt, key, row, reference)
+            assert row["is_total"] in ["true", "false"]
+        if args == cases[0]:
+            assert {row["is_total"] for row in exported if row["group"] == "total"} == {"true", "false"}
+        # Header suppression removes the schema once, without changing any data record.
+        assert run([*args, "--no-header"], fmt) == text[text.index("\n") + 1:]
+
+# A whole config file produces the same schema, data, and validation as CLI flags.
+config = root / "export.rc"
+config.write_text("[export]\n--summary=ext\n--format=csv\n[bad]\n-print\n")
+configured = subprocess.run([binary, str(left), f"--xffrc={config}", "--config=export"], capture_output=True, text=True)
+assert configured.returncode == 0, configured.stderr
+assert configured.stdout == run([left, "--summary=ext"], "csv")
+invalid = subprocess.run([binary, str(left), f"--xffrc={config}", "--config=export", "--config=bad"], capture_output=True, text=True)
+assert invalid.returncode == 2, (invalid.stdout, invalid.stderr)
+assert not invalid.stdout
+# Collections, silent diff, and captures are not stdout producers.
+run([left, "-type", "f", "-collect", "--summary=ext"], "csv")
+run([left / "same.txt", "-diff:none", right / "same.txt", "--summary"], "csv")
+run([left, "-type", "f", "-capture:key", "echo", "bucket", ";", "--summary={capture.key}"], "csv")
+
+marker = root / "must-not-exist"
+for args in [
+    [left, "--summary", "-exec", "touch", marker, ";"],
+    [left, "--summary", "-print"],
+    [left, "--summary", "--dry-run", "-delete"],
+    ["--compare=summary", left, right, "--compare-select=all"],
+    [left, "--summary", "--histogram=ext"],
+    [left, "--summary", "--columns=name"],
+]:
+    result = subprocess.run([binary, *map(str, args), "--format=csv"], capture_output=True, text=True)
+    assert result.returncode == 2, (args, result.stdout, result.stderr)
+    assert not result.stdout, (args, result.stdout)
+assert not marker.exists()
+PYTEST
+}
+
+test::hash_summary_honors_configured_defaults() {
+  local root out
+  root="$(_new_tree)"
+  printf abc >"${root}/file"
+  out="$(_run "${root}" -type f --summary=hash --hash-algorithm=md5 --hash-encoding=base64 --format=jsonl)"
+  _expect_json_row '{"summary":"hash","group":"kAFQmDzST7DWlj99KOF/cg==","count":1,"bytes":3}' "${out}"
 }
 
 test_runner

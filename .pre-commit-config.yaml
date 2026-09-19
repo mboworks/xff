@@ -466,8 +466,8 @@ repos:
           Normal commits and pushes check their changed files. To check selected files, use
           `pre-commit run clang-tidy --files PATH...`; a full scan is explicit:
           `pre-commit run clang-tidy --all-files --hook-stage manual`.
-          One coordinator owns parallelism (two workers by default, configurable with
-          CLANG_TIDY_JOBS). The dedicated CI clang-tidy job builds the compile database and
+          One coordinator owns parallelism (detected CPU count minus one by default,
+          minimum one, configurable with CLANG_TIDY_JOBS). The dedicated CI clang-tidy job builds the compile database and
           invokes the same script directly as a hard gate. Findings fail through
           `WarningsAsErrors: '*'`. Trunk does not run clang-tidy.
         language: script
@@ -482,6 +482,12 @@ repos:
         language: system
         entry: python3 -m unittest tools/clang_tidy_compdb_test.py tools/clang_tidy_scope_test.py tools/clang_tidy_runner_test.py tools/clang_tidy_pre_push_test.py
         files: ^tools/clang_tidy_(compdb|scope|runner|pre_push)(_test)?\.py$
+        pass_filenames: false
+      - id: measure-resources-test
+        name: Test resource measurement harness
+        language: system
+        entry: python3 -m unittest tools/measure_resources_test.py
+        files: ^tools/measure_resources(_test)?\.py$
         pass_filenames: false
       - id: host-io-policy-test
         name: Test host-I/O policy checker

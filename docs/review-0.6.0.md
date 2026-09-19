@@ -213,6 +213,73 @@ but `xff --explain` reports current hidden files as `show` and case as `sensitiv
 only CLI globals because configuration is composed after the explain early return. Inspection must
 compose configuration before rendering, without evaluating expressions or running actions.
 
+### B10 - P1: Keep comparison shard populations physical
+
+- [x] Correct scoped summary populations and suppress extra collapsed listings in comparison mode.
+
+A follow-up to S14 reproduced a mixed two-shard set being assigned wholly to its representative's
+comparison category. One identical pair and one different pair produced correct physical result
+counts, but an ordinary scoped summary placed all eight bytes under `identical` and none under
+`different`. Side totals counted one logical set instead of two physical files. Comparison without
+ordinary summaries could also print stray collapsed paths.
+
+**Acceptance:** comparison results and reductions use physical entries consistently; ordinary scans
+still collapse logical sets. Preserve status-predicate scheme selection, validate malformed custom
+patterns, and test identical/different categories, side totals, combined totals, and status output.
+Whole-set comparison requires separate semantics and is not inferred from a representative.
+
+### B11 - P1: Reduce collected shard populations once
+
+- [x] Apply logical grouping to the selected collections without also feeding matched sets.
+
+Two two-byte shard files produce one logical set and four bytes with `--shards --summary`.
+Adding `-collect` produced a count of three and eight bytes: the post-walk shard pass fed one
+logical set, then the collection pass fed its two physical members again. Histograms used the
+same mixed populations. A limiting predicate after collection can make the two source populations
+differ, so removing one feed without preserving collection semantics is insufficient.
+
+**Acceptance:** group each named collection independently, feed both reductions once, preserve
+collection placement and named-population multiplicity, retain deduplication/custom schemes and
+root provenance, keep comparison physical, and reject overflow without partial tables.
+
+### B13 - P1: Earlier archive sniffing survives a later mode selection
+
+- [x] Resolve filename sniffing from the final archive mode and verify CLI/config ordering.
+
+With a tar file named `blob` inside a directory, `--archive=all` leaves it closed, but
+`--archive=any --archive=all` still enters it. The same failure occurs with `-z++ -z+`.
+Traversal depth uses the final mode, while filename sniffing checks whether an any-mode spelling
+occurred anywhere. A later narrower selection therefore does not restore the expected filename gate.
+
+**Fix:** carry sniffing in the resolved archive options, alongside traversal and depth, rather than
+re-reading historical spellings. **Acceptance:** real-archive regressions for long and short forms,
+upper-case capability forms, and named configurations selected in both orders.
+
+### B15 - P2: Control characters break human-readable listing layouts
+
+- [x] Implement and verify consistent control-byte rendering for aligned tables, Markdown, and trees.
+
+A filename containing `a|b`, followed by a newline, tab, and an ESC byte, produces extra physical
+lines and terminal control sequences in `--format=aligned` and `--format=tree`. Markdown
+escapes the pipe but replaces the newline with a space, drops CR, and passes tab/ESC through.
+Consequently distinct names can look identical, and a filename can alter the terminal display.
+The behavior was reproduced against the development executable with disposable real files.
+
+Plain output deliberately remains raw by default and offers `--path-encoding=escape`.
+CSV and JSONL encode records losslessly; NUL output retains raw bytes with an unambiguous separator.
+TSV escapes its separators and backslashes but is not a terminal-safe display format.
+These machine-output contracts should be preserved.
+
+**Recommendation:** escape controls in human-readable table cells and tree node labels, preserving
+Unicode and disambiguating literal backslashes. Account for the escaped width before padding.
+Decide Markdown's visible spelling together with its source encoding, so rendered output and raw
+source remain understandable. Display cells are C-escaped before width calculation; Markdown then
+protects that display spelling once. Already-formatted summary labels retain their escapes rather
+than being C-escaped twice. Plain path listings and machine encodings are unchanged.
+**Acceptance:** cover newline, CR, tab, ESC, DEL, literal backslash, pipe, and Unicode in buffered
+and streaming tables, tree roots/children, and actual CLI filenames. Keep intentional generated
+colour separate from filename data. Document the distinction from raw/machine formats.
+
 ## Design and usability improvements
 
 These are observed limitations or deliberate current behaviors, not claims of implementation bugs.
@@ -273,7 +340,8 @@ summary, explicit groupings, explicit scopes, repeated flags, and `--summary=non
 
 ### S04 - P1: Offer consistent validation of static field names
 
-- [ ] Decide strictness for templates, printf field escapes, and derived grouping keys.
+- [x] Reject static field mistakes before actions; preserve valid absent runtime values.
+      See [field validation](design-field-validation.md).
 
 `--template='{nmae}'` succeeds with empty output, whereas `--format=csv --columns=nmae` rejects the
 unknown field. The empty-template behavior is documented, but a typo can silently erase an important
@@ -287,7 +355,7 @@ namespaces, and malformed syntax. Validate before an action consumes a mistaken 
 
 ### S05 - P1: Add an effective safety-policy view to `--explain`
 
-- [ ] Show final capability decisions, their cause, and their provenance.
+- [x] Show final capability decisions, their cause, and their provenance.
 
 Current explain output lists applied arguments and style defaults. For example, one ordinary
 safe-profile write setting expands into temp/output/archive settings, but the user must mentally
@@ -301,7 +369,7 @@ category expansion, overlapping directory roots, and environment-expanded roots.
 
 ### S06 - P2: Shorten entry help without losing complete reference coverage
 
-- [ ] Improve the overview and the largest focused help pages.
+- [x] Improve the overview and the largest focused help pages.
 
 The published lean binary's default help is 1,029 lines. Focused `--help=summary` with `--width=80`
 is 288 lines; `--help=safe` is 571. An expanded topic can dominate the requested flag's explanation.
@@ -315,7 +383,7 @@ contains each topic once. Review prose/table width independently of verbatim exa
 
 ### S07 - P2: Bring the README to the user's first successful command sooner
 
-- [ ] Put release installation and a small task guide before the large feature matrices.
+- [x] Put release installation and a small task guide before the large feature matrices.
 
 The Quick Start currently begins with Bazel despite published binaries. The capability matrices
 precede installation and can obscure the most useful everyday workflows.
@@ -327,7 +395,7 @@ not allocated blocks or recursive directory size. Retain detailed feature compar
 
 ### S08 - P2: Make paired console tables readable at normal widths
 
-- [ ] Reduce repeated scope text in comparison-summary headers.
+- [x] Reduce repeated scope text in comparison-summary headers.
 
 The two-total table already has eight numeric columns; `diff` has twelve, each repeating the scope
 name. The reproduced two-total example is roughly 150 columns and the three-category example exceeds
@@ -340,7 +408,7 @@ Do not change accounting to solve a presentation problem.
 
 ### S09 - P2: Explain denominators, omitted groups, and grouping identity at the table
 
-- [ ] Make ordinary console tables identify their grouping, and make top-limited output self-explanatory.
+- [x] Make ordinary console tables identify their grouping, and make top-limited output self-explanatory.
 
 Repeated plain summaries use a generic `Group` header, without the grouping-specific heading available
 in Markdown. Totals and percentages intentionally include rows hidden by `--top`, which is useful
@@ -353,7 +421,7 @@ remain distinguishable in plain, Markdown, and JSONL.
 
 ### S10 - P2: Extend summaries to CSV/TSV deliberately
 
-- [ ] Decide and document a flat export schema for ordinary and comparison summaries.
+- [x] Decide and document a flat export schema for ordinary and comparison summaries.
 
 These formats are currently rejected for summaries. That is preferable to silent fallback, but it
 leaves a common spreadsheet/reporting workflow unsupported.
@@ -365,7 +433,7 @@ statistics; test multiple tables and control characters before choosing a concat
 
 ### S11 - P2: Clarify comparison exit status for automation
 
-- [ ] Add a comparison-specific exit-status example and focused-help explanation.
+- [x] Add a comparison-specific exit-status example and focused-help explanation.
 
 Observed behavior is useful: with `--exit-match` or `--quiet`, identical trees return 1 and trees
 with discrepancies return 0; operational errors return 2. `--compare-select=all` or `none` does not
@@ -377,7 +445,7 @@ specific workflow cannot be expressed. Include empty trees, filtered populations
 
 ### S12 - P2: Make potentially ineffective modifiers visible
 
-- [ ] Define a consistent policy for modifiers whose consuming feature is absent.
+- [x] Define a consistent policy for modifiers whose consuming feature is absent.
 
 Examples that currently succeed without effect include `--count` without `-grep`,
 `--shards-show=count` without `--shards`, and `--diff-format=y` in tree-diff mode (which remains unified).
@@ -389,7 +457,10 @@ request. At minimum expose the latter in `--explain`; use errors only where the 
 
 ### S13 - P2: Make expensive operations and retained state inspectable
 
-- [ ] Describe buffering, file reads, and concurrency as separate resources.
+- [x] Describe buffering, file reads, and concurrency as separate resources.
+- [x] Inspect effective resource controls and potential consumers through `--explain`.
+- [x] Publish broad/deep timing measurements and isolated logical-read counts.
+- [ ] Complete network-storage and general runtime read-accounting measurements.
 
 Directory reads and eligible child commands are parallel; expression evaluation is coordinated.
 Tree comparison retains matched inventories until both walks finish. `--buffer` is not a global
@@ -404,7 +475,8 @@ large directories, deep trees, network filesystems, and repeated content consume
 
 ### S14 - P2: Make logical shards versus physical entries explicit
 
-- [ ] Document a small matrix for shard collapsing, status predicates, actions, and reductions.
+- [x] Document a small matrix for shard collapsing, status predicates, actions, and reductions.
+      See [the shard population guide](shard-populations.md) and its executable CLI examples.
 
 `--shards` changes logical presentation, while `-shard-status` selects physical files and classifies
 only entries reaching that node. This is powerful but easy to misuse with a filter before the status
@@ -412,11 +484,13 @@ predicate or an action before deferred classification.
 
 **Acceptance:** examples cover complete/incomplete/duplicate sets, `-size`/fields, summaries, actions,
 comparison, and custom schemes. Label whether a count describes physical files or logical sets.
-No observed shard correctness defect is asserted here.
+Follow-up probes reproduced B10: mixed shard sets were assigned wholly to the representative's comparison category. The physical-versus-logical guide follows that correction.
+
+Follow-up probes reproduced B11's collection double counting. The guide follows the accounting corrections.
 
 ### S15 - P2: Publish a concise order-and-limits guide
 
-- [ ] Put `-first`, `-top`, `--top`, `--max-results`, `-quit`, and `--sort` in one comparison table.
+- [x] Put `-first`, `-top`, `--top`, `--max-results`, `-quit`, and `--sort` in one comparison table.
 
 These controls intentionally act at different stages: expression filtering, deferred fuzzy selection,
 reduction-row selection, implicit listing limits, traversal termination, and ordering. The probe
@@ -427,7 +501,7 @@ which operations stream, which defer, and what `-j` does not reorder. Retain exi
 
 ### S16 - P2: Make archive capability and safety explanations easier to apply
 
-- [ ] Provide task-based recipes alongside the full operation tables.
+- [x] Provide task-based recipes alongside the full operation tables.
 
 The full binary exposes many readers and fewer writers/rewriters. Reading, extraction/mounting,
 member deletion, container creation, category controls, and scoped destinations are different axes.
@@ -441,7 +515,8 @@ claim a policy sandboxes arbitrary child programs; pager policy remains a separa
 
 ### S17 - P2: Improve configuration inspection and failure navigation
 
-- [ ] Show named-profile availability and disabled-profile reasons clearly in explain output.
+- [x] Show named-profile availability and disabled-profile reasons clearly in explain output.
+      See [configuration inspection](config-inspection.md) for tested recipes and interpretation.
 
 The shared grammar, fixed user-config location, ordered composition, global policy, and opt-in rc
 discovery form a coherent design. Invalid selected sections and unsanctioned rc globals produced
@@ -455,7 +530,7 @@ Never describe environment substitution as validating trust in the caller's chos
 
 ### S18 - P3: Add useful spelling suggestions and position hints
 
-- [ ] Improve unknown-option/predicate diagnostics without accepting approximate spellings.
+- [x] Improve unknown-option/predicate diagnostics without accepting approximate spellings.
 
 `--sumary=ext` receives generic help; `-naem` is an unknown predicate. A trailing `-L` or `-g+`
 is also reported as an unknown predicate even though it is a recognized leading-only global.
@@ -467,7 +542,7 @@ the roots; the double-dash form is position-independent” where such a form exi
 
 ### S19 - P2: Strengthen cross-feature tests rather than only individual flags
 
-- [ ] Turn this backlog's reproductions into durable tests when their fixes land.
+- [x] Turn this backlog's reproductions into durable tests alongside their fixes.
 
 The repository already has parser, matching, config, archive, safety, help, CLI, fuzz, and platform
 conformance tests. The uncovered failures cluster at boundaries those individual tests do not prove.
@@ -476,6 +551,27 @@ conformance tests. The uncovered failures cluster at boundaries those individual
 summary identity; literal total keys; numeric controls in CLI and complete INIs; multi-root archive
 collisions; and unusual filenames in every renderer. Add a focused release-artifact smoke corpus.
 Keep race/safety adapter tests and platform integration tests distinct from usability probes.
+
+The final audit group adds fail-fast mutation sinks to the expression fuzz filesystem and runs
+`tools/release_smoke.py` against both stripped staged executables before upload. The corpus checks
+version/help, unusual filenames in JSONL/CSV/NUL/TSV/escaped plain output, named INI selection,
+repeated summaries, literal `total` groups, and comparison counts. Both local staged executables
+pass. The acceptance checks are covered by:
+
+- `run_test.cc`: captures in printf/file-printf, exec/execdir, capture/capturedir, grep,
+  columns, and comparison fields; literal/unused capture checks; JSONL producer composition;
+  format rejection before mutation; repeated request and literal-total identity.
+- `summary_test.sh`: captured summary keys, CSV/TSV/JSONL parity across roots/categories,
+  empty and top-limited populations, repeated requests, full INI selection, and incompatible producers.
+- Full `config_validation` fixtures and engine tests: malformed/overflowing buffer and histogram
+  controls, including failure before actions on either comparison side.
+- `archive_pack_test.sh`: duplicate member rejection preserves output, first-wins ordering,
+  INI policy selection, named roots, and duplicate root labels.
+- `render_test.cc`, `csv_test.sh`, and the release corpus: unusual filenames across display and
+  machine formats, buffered/streaming tables, tree labels, and single-escaped summary labels.
+
+The local repository suites and staged smoke checks pass. Platform, sanitizer, and coverage CI
+remain the publication gates; they are separate from the scope of these cross-feature tests.
 
 ## Feature-family coverage and disposition
 
@@ -518,3 +614,15 @@ Keep race/safety adapter tests and platform integration tests distinct from usab
 
 There is no recommendation to expand the feature vocabulary broadly. Making existing combinations
 predictable and inspectable will produce more immediate value than adding unrelated flags.
+
+### B14 - P1: Hash summary drops the active filesystem and hash defaults
+
+- [x] Reproduce: two distinct archive members collapse into one empty digest bucket with
+      `--summary=hash`, while `--summary={hash}` produces their actual digests.
+- [x] Route hash shorthand through the compiled field-template path, preserving the visit's
+      filesystem and configured hash algorithm/encoding. Keep the summary identity `hash`.
+- [x] Verify archive and ordinary-file regression coverage, reference help, and changed-source lint.
+
+The shorthand previously used a convenience renderer without the visit's filesystem or active
+hash defaults. Tests must independently verify digest values, not merely compare two renderers
+that could share a defect. Existing read-error behavior is outside this change.

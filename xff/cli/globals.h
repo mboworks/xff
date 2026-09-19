@@ -23,6 +23,7 @@
 #include "absl/status/status.h"
 #include "absl/types/span.h"
 #include "mbo/types/optional_ref.h"
+#include "xff/registry/consumers.h"
 
 namespace xff::cli {
 
@@ -125,7 +126,9 @@ struct GlobalFlag {
   ValueCheck value_check = ValueCheck::kNone;
   bool cli_only = false;     // Requires command-line/bootstrap processing; rejected in config files.
   bool config_only = false;  // Accepted only through validated configuration files.
-  bool xff = true;           // false for a find-native option (-H/-L/-P); true for an xff extension
+  // Optional modifier dependency for nonfatal explain diagnostics; affects remains help navigation.
+  registry::ModifierConsumer required_consumer = registry::ModifierConsumer::kNone;
+  bool xff = true;  // false for a find-native option (-H/-L/-P); true for an xff extension
 };
 
 template<typename Sink>

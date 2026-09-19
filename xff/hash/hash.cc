@@ -121,6 +121,7 @@ std::optional<AlgoEncoding> ParseSpec(std::string_view spec, std::string_view de
     algo = spec.substr(0, slash);
     encoding_name = spec.substr(slash + 1);
   }
+  const DefaultUsage defaults{.algorithm = algo.empty(), .encoding = encoding_name.empty()};
   if (algo.empty()) {
     algo = default_algo;
   }
@@ -135,7 +136,7 @@ std::optional<AlgoEncoding> ParseSpec(std::string_view spec, std::string_view de
     }
     encoding = *parsed;
   }
-  return AlgoEncoding{.algo = algo, .encoding = encoding};
+  return AlgoEncoding{.algo = algo, .encoding = encoding, .defaults = defaults};
 }
 
 bool IsAlgorithm(std::string_view algo) {

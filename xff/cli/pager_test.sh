@@ -158,8 +158,8 @@ test::explicit_pager_command_pages_ls() {
 }
 
 test::help_documents_pager() {
-  # Self-documentation: the --help usage page lists --pager in the Output group.
-  expect_output_contains "--pager" "$("$(_xff_bin)" --help 2>&1)"
+  # Self-documentation: the complete option inventory lists --pager.
+  expect_output_contains "--pager" "$("$(_xff_bin)" --help=all 2>&1)"
   # And the command value, whose help has to explain automatic discovery and the escape hatch.
   local out
   out="$("$(_xff_bin)" --help=--pager 2>&1)"

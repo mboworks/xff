@@ -45,9 +45,8 @@ enum class Audience : std::uint8_t {
 
 [[nodiscard]] Document BuildReference(Audience audience = Audience::kThisBinary);
 
-// The terse usage page (bare `--help`): the description, the whole-run options and the
-// expression primaries as summary-only entries (no detail blocks), and the meta/doc
-// flags + `--help=TOPIC` index. The concise counterpart of BuildReference().
+// The compact usage page (bare `--help`): orientation, command structure, common tasks,
+// and routes to focused help, the flag inventory, and the full reference.
 [[nodiscard]] Document BuildUsage();
 
 // The index topics: `list` (the topic index), `all` (every option + primary,

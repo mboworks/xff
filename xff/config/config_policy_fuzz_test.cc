@@ -73,6 +73,8 @@ void CheckGate(const xff::config::ConfigInputs& inputs) {
   const std::vector<xff::config::ResolvedFlag> armed_flags = xff::config::ResolveConfig(armed.config);
   static_cast<void>(xff::config::ExplainConfig(unarmed_flags));
   static_cast<void>(xff::config::ExplainConfig(armed_flags));
+  static_cast<void>(xff::config::ExplainSafety(unarmed_flags, unarmed.config));
+  static_cast<void>(xff::config::ExplainSafety(armed_flags, armed.config));
 
   xff::config::ConfigInputs disabled = inputs;
   disabled.system.globals.clear();

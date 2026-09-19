@@ -3,14 +3,74 @@
 
 # 0.7.0
 
+- Add a read-only benchmark harness for runtime logical content-read accounting on real files.
+
+- Derive shared expression behavior and help relationships from registry capabilities.
+  Treat every explicit archive mode consistently when archive support is unavailable.
+- Escape control bytes in human-readable tables and tree labels, keeping unusual filenames
+  on one display line and preserving newline distinctions in Markdown.
+
 - Distinguish aggregate summary rows with `is_total` in JSONL and quote ambiguous data labels
   in text tables, preserving real groups named `total`.
+
+- Use grouped scope headers in console comparison summaries and compact scope rows when the table
+  exceeds `--width`. Preserve Unicode graphemes, numeric values, and machine-output accounting.
+
+- Label console summary groupings and report omitted groups under `--top`, including
+  machine-readable group counts in truncated JSONL tables.
+
+- Export ordinary and comparison summaries as CSV/TSV with one shared schema and explicit row identity.
+
+- Group archive members correctly with `--summary=hash`, using the active filesystem and
+  configured hash algorithm and encoding consistently with `{hash}`.
 
 - Identify every JSONL summary row by request, grouping, and scope, retaining template text
   and comparison roots so repeated and mixed summaries can be separated reliably.
 
+- Extend `--explain` with effective worker limits, retained-state notes, active content-reading
+  fields, and advisory expression costs without running the search or executing actions.
+
+- Reject invalid field templates before traversal or actions, including configured summaries and
+  comparison runs. Printf field escapes share quoted-placeholder parsing with ordinary templates.
+
+- Explain inactive CLI modifiers for grep, diff, hash, shard, archive, and reduction output using the effective
+  configuration; dormant configured defaults remain quiet and valid.
+
 - Resolve the current behavior values shown by `--explain` from the complete configuration,
   including named selections and explicit files, instead of only command-line flags.
+- Show named-profile availability, declared behavior, skip and validation reasons, and physical
+  flag origins in configuration inspection, with small configuration recipes.
+
+- Show effective safety decisions in `--explain`, including mandatory and profile origins,
+  active modes, per-file categories, and expanded directory roots.
+
+- Make default help a compact command and task guide, with direct routes to the complete
+  flag inventory and detailed reference; wrap the help title to the requested width.
+  Structure comparison guidance and keep safety tables readable with labeled rows on narrow terminals.
+
+- Suggest close registered option and predicate spellings in usage errors, and explain when a
+  short global must be moved before the roots; command arguments remain literal.
+
+- Explain comparison exit status for automation, including summary output, output selection,
+  filtered populations, and error precedence.
+
+- Keep comparison summaries and listings physical when shard flags are present, preventing
+  mixed sets from being assigned wholly to their representative's comparison category.
+
+- Apply shard grouping once to each collected summary/histogram population, preserving collection
+  placement and eliminating logical-set plus physical-member double counting.
+
+- Explain physical files versus logical shard sets with tested examples covering classification,
+  actions, collection placement, reductions, duplicates, and comparison.
+
+- Resolve archive filename sniffing from the final traversal mode, so a later all-mode selection
+  restores the filename gate after any-mode flags or named configuration selections.
+
+- Add an order-and-limits guide covering actions, collections, summaries, packing,
+  parallel traversal, and comparison populations.
+
+- Add executable archive-safety recipes for inspection, new archives, member deletion,
+  and writing reports only beneath a declared output root.
 
 - Reject zero, negative, malformed, and overflowing histogram widths before traversal or actions,
   including settings selected from configuration files.
@@ -28,6 +88,8 @@
 
 - Avoid duplicate comparison tables when combining `--compare=summary` with bare `--summary`,
   while retaining scoped totals and explicitly requested grouping tables.
+
+- Lead the README with binary installation and common tasks before the detailed feature matrices.
 
 - Correct the release archive description: lean and full executables have separate archives,
   each with its own matching debug symbols.

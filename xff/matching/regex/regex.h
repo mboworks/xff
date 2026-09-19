@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "xff/matching/regex/backend.h"  // RegexBackend, the PCRE2 registration API, and Pcre2Available()
@@ -43,6 +44,9 @@ namespace xff::regex {
 // kEre delegates to the platform POSIX regcomp(3) implementation with REG_EXTENDED.
 // kExact and kFnmatch need no real compilation, so Compile(...) never fails for them.
 enum class Grammar { kRe2, kExact, kFnmatch, kGlob, kShglob, kEre, kPcre2 };
+
+// Validate an RE2 field-transform pattern and replacement without executing a rewrite.
+absl::Status ValidateRe2Rewrite(std::string_view pattern, std::string_view replacement, bool case_insensitive);
 
 // A compiled regular expression. -regex matches the whole string (FullMatch); -rxc / -grep match
 // anywhere (PartialMatch / FindFirst). The grammar (RE2 default) is chosen at Compile and

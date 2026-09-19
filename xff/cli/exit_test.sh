@@ -159,4 +159,83 @@ test::known_global_flag_is_accepted() {
   expect_eq "0" "${rc}"
 }
 
+test::unknown_spelling_suggestions_are_advisory_before_actions() {
+  local dir out rc flag
+  dir="$(_tree spelling)"
+  for flag in --sumary=ext -naem; do
+    out="$("$(_xff_bin)" "${dir}" -type f -delete "${flag}" 2>&1)" && rc=0 || rc=$?
+    expect_eq "2" "${rc}" || return
+    expect_output_contains 'Did you mean' "${out}" || return
+    [[ -f "${dir}/a.txt" ]] || fail 'action ran before spelling error' || return
+  done
+  out="$("$(_xff_bin)" --help --sumary=ext 2>&1)" && rc=0 || rc=$?
+  expect_eq "2" "${rc}" || return
+  expect_output_contains "Did you mean '--summary'?" "${out}"
+}
+
+test::short_global_position_hint_keeps_argument_literals() {
+  local dir out rc
+  dir="$(_tree placement)"
+  out="$("$(_xff_bin)" "${dir}" -L 2>&1)" && rc=0 || rc=$?
+  expect_eq "2" "${rc}" || return
+  expect_output_contains 'place it before the roots' "${out}" || return
+  expect_output_not_contains '--L' "${out}" || return
+  out="$("$(_xff_bin)" "${dir}" -g+ 2>&1)" && rc=0 || rc=$?
+  expect_eq "2" "${rc}" || return
+  expect_output_contains "'--gitignore' long form" "${out}" || return
+  out="$("$(_xff_bin)" "${dir}" -type f -name a.txt -printf '--sumary')"
+  expect_eq '--sumary' "${out}" || return
+  out="$("$(_xff_bin)" "${dir}" -type f -name a.txt -exec printf '%s' --sumary \;)"
+  expect_eq '--sumary' "${out}"
+}
+
+test::comparison_exit_status_ignores_output_selection() {
+  local left right mode selection flag rc
+  left="$(_tree compare_left)"
+  right="$(_tree compare_right)"
+  for mode in status summary; do
+    for selection in all none; do
+      for flag in --exit-match --quiet; do
+        XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "--compare=${mode}" "${left}" "${right}" \
+          "--compare-select=${selection}" "${flag}" >/dev/null 2>&1 && rc=0 || rc=$?
+        expect_eq "1" "${rc}" || return
+        printf 'changed' >"${right}/a.txt"
+        XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "--compare=${mode}" "${left}" "${right}" \
+          "--compare-select=${selection}" "${flag}" >/dev/null 2>&1 && rc=0 || rc=$?
+        expect_eq "0" "${rc}" || return
+        : >"${right}/a.txt"
+      done
+    done
+  done
+}
+
+test::empty_comparison_has_no_discrepancies() {
+  local left right flag rc
+  left="$(test_tmpdir compare_empty_left)"
+  right="$(test_tmpdir compare_empty_right)"
+  for flag in --exit-match --quiet; do
+    XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --compare=summary "${left}" "${right}" \
+      "${flag}" >/dev/null 2>&1 && rc=0 || rc=$?
+    expect_eq "1" "${rc}" || return
+  done
+}
+
+test::comparison_exit_status_uses_filtered_population_and_prioritizes_errors() {
+  local left right flag rc
+  left="$(_tree compare_filter_left)"
+  right="$(_tree compare_filter_right)"
+  printf 'changed' >"${right}/a.txt"
+  for flag in --exit-match --quiet; do
+    XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --compare=summary "${left}" "${right}" \
+      "${flag}" -false >/dev/null 2>&1 && rc=0 || rc=$?
+    expect_eq "1" "${rc}" || return
+    XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --compare=summary "${left}" "${right}/missing" \
+      "${flag}" >/dev/null 2>&1 && rc=0 || rc=$?
+    expect_eq "2" "${rc}" || return
+  done
+  XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --compare "${left}" "${right}" \
+    >/dev/null 2>&1 && rc=0 || rc=$?
+  expect_eq "0" "${rc}"
+}
+
 test_runner

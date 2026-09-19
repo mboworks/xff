@@ -44,3 +44,54 @@ cc_test(
         "@nlohmann_json//:json",
     ],
 )
+
+cc_library(
+    name = "scoped_table_cc",
+    srcs = ["scoped_table.cc"],
+    hdrs = ["scoped_table.h"],
+    visibility = ["//xff/engine:__pkg__"],
+    deps = [
+        ":render_cc",
+        "//xff/presentation/format:format_cc",
+        "//xff/presentation/format:text_width_cc",
+    ],
+)
+
+cc_test(
+    name = "scoped_table_test",
+    size = "small",
+    srcs = ["scoped_table_test.cc"],
+    deps = [
+        ":scoped_table_cc",
+        "//xff/presentation/format:text_width_cc",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+    ],
+)
+
+cc_library(
+    name = "summary_export_cc",
+    srcs = ["summary_export.cc"],
+    hdrs = ["summary_export.h"],
+    visibility = ["//xff/engine:__pkg__"],
+    deps = [
+        ":render_cc",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "summary_export_test",
+    size = "small",
+    srcs = ["summary_export_test.cc"],
+    deps = [
+        ":render_cc",
+        ":summary_export_cc",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+    ],
+)

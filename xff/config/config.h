@@ -16,6 +16,7 @@
 #ifndef XFF_CONFIG_CONFIG_H_
 #define XFF_CONFIG_CONFIG_H_
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -35,11 +36,19 @@ enum class Source { kUnset, kSystem, kUser, kXffrc, kCli };
 
 enum class RcMode { kOff, kRoots, kRecursive };
 
-// One resolved config flag plus the layer it came from.
+// Physical location of a setting. Empty path / line zero represent synthesized or CLI settings.
+struct FlagOrigin {
+  std::string path;
+  std::size_t line = 0;
+  std::string section;
+};
+
+// One resolved config flag plus its layer and physical provenance.
 struct ResolvedFlag {
   std::string flag;
   Source source;
   bool is_argument = false;  // a literal primary argument, never a selector or arming directive
+  FlagOrigin origin;
 };
 
 // Views of directive tokens, excluding literal primary arguments. The input strings must outlive
@@ -143,6 +152,10 @@ std::string_view DefaultStyleForProgram(std::string_view argv0);
 // (each prefixed by its provenance) in application order, then the CLI globals
 // (provenance "cli"). Later lines override earlier ones, mirroring resolution.
 std::string ExplainConfig(const std::vector<ResolvedFlag>& application);
+
+// Effective operation blocks, profile state, directory roots and winning setting origins.
+// Application is the already-expanded ordered stream used by execution; primary arguments are ignored.
+std::string ExplainSafety(const std::vector<ResolvedFlag>& application, const ConfigInputs& inputs);
 
 // Renders the discovery trace for --explain: the active find/xff style, then every
 // config file consulted (precedence order: system < user), each tagged with its

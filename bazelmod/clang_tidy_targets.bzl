@@ -9,6 +9,7 @@ keeps the two sets identical.
 """
 
 CLANG_TIDY_MANUAL_TARGETS = [
+    "//xff/engine:read_accounting_test",
     "//xff/matching/similarity:near_duplicate_benchmark",
     "//xff/matching/similarity:similarity_benchmark",
     "//xff/parser:parser_benchmark",

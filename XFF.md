@@ -33,7 +33,7 @@ eXtended File Find, a find(1)-compatible file finder with modern extensions.
 
 xff walks each starting path and acts on the entries matching an expression, like `find`(1). With no path it searches the current directory; with no action it prints each match. `xff --compare LEFT RIGHT` instead compares two directory trees as selected status records or a patch.
 
-xff has two flavors selected by the program name: invoked as `find` it restricts the expression to find-compatible primaries, operators, and values; invoked as `xff` it enables the modern extensions. Whole-run xff globals remain available as explicit controls in either flavor. An explicit `--config=find|xff` overrides the program name. Items marked as xff extensions below are the additions over find.
+xff has two flavors selected by the program name: invoked as `find` it restricts the expression to find-compatible primaries, operators, and values; invoked as `xff` it enables the modern extensions. Whole-run xff globals remain available as explicit controls in either flavor. An explicit `--config=find|xff` overrides the program name. The detailed reference marks the xff extensions beyond find.
 
 ## Command structure
 
@@ -42,7 +42,7 @@ A command consists of whole-run options, zero or more starting paths, and an opt
 - Whole-run double-dash options are position-independent, so `--summary=ext` may appear before the paths or after the expression. They remain literal arguments inside an argument-taking primary such as `-exec` or `-printf`.
 - The compatibility globals `-H`, `-L`, `-P`, `-g`, `-j`, and `-z` are leading-only because a single-dash word can otherwise be an expression primary.
 - Adjacent tests and actions have an implicit `-a` (AND). Use `!` for NOT, `-o` for OR, and shell-quoted or escaped `(` and `)` for grouping. Evaluation is left to right and short-circuits.
-- With no starting path, xff uses `.`. With no explicit action, it prints each matching entry. A bare `--` ends option parsing so a path beginning with `-` can be named unambiguously.
+- With no starting path, xff searches the current directory (`.`). With no explicit action, it prints each matching entry. A bare `--` ends option parsing so a path beginning with `-` can be named unambiguously.
 
 ### Basic examples
 
@@ -428,9 +428,9 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 <a id="flag-explain"></a>
 
-- `--explain` - print the resolved configuration and exit _(global, xff, command-line-only)_
+- `--explain` - inspect resolved configuration and execution resources _(global, xff, command-line-only)_
   Command-line only; rejected in configuration files.
-  Prints the active style, every config source consulted and whether it was found, resolved flags in application order with their provenance, rejected config directives, and the style-default table with this run's effective values. It performs enabled `.xffrc` discovery but does not evaluate the expression. Existing unreadable config files and missing explicit `--xffrc` files are errors.
+  Prints the active style, every config source consulted and whether it was found, resolved flags in application order with their provenance, rejected config directives, and the style-default table with this run's effective values. The effective safety table shows unconditional blocks, the stored safe profile, active decisions, and source file/line/section or CLI origins. It also shows per-file category translation, resolved temp/output roots, and dry-run state. Profile origins remain visible when an unconditional block wins. Named declarations list their source, selection, availability or skip/validation reason, and whether they declare globals, predicates, or actions; availability never authorizes a gated action. The resource view reports worker limits, potential retained state, active hash/line-count fields, and advisory expression costs. It does not predict bytes read, peak memory, or latency. It performs enabled `.xffrc` discovery but does not evaluate the expression. Existing unreadable config files and missing explicit `--xffrc` files are errors. For modifiers with registered dependencies, `inactive-modifier` notes identify effective CLI settings with no consumer. Dormant config defaults and superseded settings stay quiet; the notes do not reject commands or prove that a conditional action will run.
   Affected by: --rc
   See also: [Configuration](#topic-config), [--rc](#flag-rc)
 
@@ -475,7 +475,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `all` - also dive archives found during the walk (what bare `--archive` selects)
   - `any` - `all`, plus offer EVERY file to the reader, not only container-looking names
 
-  Treats each archive (tar, gz, bzip2, xz, zstd, lz4, zip, ...) as a directory, so a member is an ordinary entry at a member path like `foo.tar.gz!inner/x` and the expression matches it with the same -name / -type / -size / -newer every other entry gets - and the predicates and fields that READ an entry (-grep, -content, -hash, {hash}, {lines}) read the member out of its container. The modes are nested: `none` keeps find's behavior (an archive is one plain file); `roots` dives only when a search root is itself an archive (pointing xff AT an archive implies looking inside); `all` also dives archives discovered during the walk; `any` is `all` without the name gate, offering every file to the reader (the older spelling is `--archive-any`). Bare `--archive` means `all`, and the short form carries chmod-style suffix signs (`-z-` none, `-z` roots, `-z+` all, `-z++` any). The UPPER-case family is the same ladder with writing armed (`-Z` is `-z` plus `--archive-write`, `-Z+` is `-z+` plus it, `-Z++` is `-z++` plus it): the case carries the capability and the signs carry the level, so aiming at one cannot reach the other. The two axes resolve independently and later wins, so `-Z++ -z-` arms writing with reading off, while `-Z-` is the full reset (reading off AND writing disarmed). The find style defaults to `none`, every xff-family style to `roots`. Members are read-only until a write spelling arms them, so `-delete` and the exec family refuse them rather than silently skipping. Under `all`, a file met mid-walk is offered to the reader only if its NAME looks like a container (`any` drops that gate); one named on the command line always is. A native phar exposes its executable stub as `.phar/stub.php`, matching tar- and zip-based phars; it is an ordinary regular member for matching, fields, and statistics. If the manifest stores that path, the stored member wins so one path never denotes two entries. The synthetic stub is readable but cannot be deleted because the format requires it. build-time extras: the stock binary is lean and omits readers; rebuild with `--config=xff_full`, `--//xff:xff_archive` for the broad libarchive-backed set, or one of the independent `--//xff:xff_asar` or `--//xff:xff_squashfs` readers. Asking for archive handling without any reader is a hard error.
+  Treats each archive (tar, gz, bzip2, xz, zstd, lz4, zip, ...) as a directory, so a member is an ordinary entry at a member path like `foo.tar.gz!inner/x` and the expression matches it with the same -name / -type / -size / -newer every other entry gets - and the predicates and fields that READ an entry (-grep, -content, -hash, {hash}, {lines}) read the member out of its container. The modes are nested: `none` keeps find's behavior (an archive is one plain file); `roots` dives only when a search root is itself an archive (pointing xff AT an archive implies looking inside); `all` also dives archives discovered during the walk; `any` is `all` without the name gate, offering every file to the reader (the older spelling is `--archive-any`). Bare `--archive` means `all`, and the short form carries chmod-style suffix signs (`-z-` none, `-z` roots, `-z+` all, `-z++` any). The UPPER-case family is the same ladder with writing armed (`-Z` is `-z` plus `--archive-write`, `-Z+` is `-z+` plus it, `-Z++` is `-z++` plus it): the case carries the capability and the signs carry the level, so aiming at one cannot reach the other. The two axes resolve independently and later wins, so `-Z++ -z-` arms writing with reading off, while `-Z-` is the full reset (reading off AND writing disarmed). Filename sniffing follows that final mode too: `--archive=any --archive=all` restores the filename gate, including when the modes come from named configurations applied in that order. The find style defaults to `none`, every xff-family style to `roots`. Members are read-only until a write spelling arms them, so `-delete` and the exec family refuse them rather than silently skipping. Under `all`, a file met mid-walk is offered to the reader only if its NAME looks like a container (`any` drops that gate); one named on the command line always is. A native phar exposes its executable stub as `.phar/stub.php`, matching tar- and zip-based phars; it is an ordinary regular member for matching, fields, and statistics. If the manifest stores that path, the stored member wins so one path never denotes two entries. The synthetic stub is readable but cannot be deleted because the format requires it. build-time extras: the stock binary is lean and omits readers; rebuild with `--config=xff_full`, `--//xff:xff_archive` for the broad libarchive-backed set, or one of the independent `--//xff:xff_asar` or `--//xff:xff_squashfs` readers. Asking for archive handling without any reader is a hard error.
   Affected by: --archive-depth, --archive-aggregate, --archive-delete, --archive-extract, --archive-mount, --archive-any
   See also: [Archives](#topic-archive), [--archive-depth](#flag-archive-depth), [--archive-aggregate](#flag-archive-aggregate), [--archive-delete](#flag-archive-delete), [--archive-extract](#flag-archive-extract), [--archive-mount](#flag-archive-mount), [--archive-any](#flag-archive-any)
 
@@ -531,8 +531,8 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 <a id="flag-archive-any"></a>
 
-- `--archive-any` - under --archive=all, offer EVERY file to the reader, not only likely names _(global, xff)_
-  By default `all` only opens a file the walk met whose NAME looks like a container (`.tar`, `.tgz`, `.zip`, `.jar`, `.phar`, ... - the reader's formats plus the packages that are one of them underneath). Without that gate, walking a source tree would open and format-bid every `.cc` and every binary in it, so the cost of diving would fall on runs that dive nothing. The name is only a heuristic, and this flag is the way out of it: an archive called `blob` or `backup.dat` is found with --archive-any and missed without. It costs a read of every candidate file, which is why it is not the default. A file NAMED on the command line is always opened - pointing xff at it is the request - so this flag changes nothing for `--archive=roots`.
+- `--archive-any` - alias for --archive=any: traverse all archives without the filename gate _(global, xff)_
+  Selects the same traversal mode as `--archive=any` or `-z++`: open archives discovered during the walk, even when their names lack a known archive suffix. This may read every candidate file to identify its format. A root file is always offered to the reader when archive traversal is enabled. Like the other archive mode selectors, a later selector can replace this mode, including `--archive=roots` or `--archive=none`.
   Affects: --archive
   See also: [Archives](#topic-archive), [--archive](#flag-archive)
 
@@ -603,7 +603,8 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `smart` - fold case unless the pattern contains ASCII uppercase (-s / -s+)
 
   Controls the otherwise case-sensitive name, path, symlink-target, fuzzy, regex, and content matchers (`-name`, `-path`, `-lname`, `-fuzzy`, `-fuzzypath`, `-regex`, `-rxc`, `-grep`). Their `-i...` variants always fold independently. `sensitive` matches exactly; `insensitive` (`-i`) folds case; `smart` (`-s` / `-s+`) folds only when the pattern is all free of ASCII uppercase letters and matches exactly otherwise; `-s-` forces `sensitive`. For name, path, and fuzzy matching, xff's filesystem-native folding can additionally apply unless `--exact` is present. rg defaults to `smart`; xff and find default to `sensitive`.
-  See also: [Regex matching](#topic-regex), [Regex grammars](#topic-grammars)
+  Affects: -name, -path, -lname, -fuzzy, -fuzzypath, -regex, -rxc, -grep, -content
+  See also: [Regex matching](#topic-regex), [Regex grammars](#topic-grammars), [-name](#primary-name), [-path](#primary-path), [-lname](#primary-lname), [-fuzzy](#primary-fuzzy), [-fuzzypath](#primary-fuzzypath), [-regex](#primary-regex), [-rxc](#primary-rxc), [-grep](#primary-grep), [-content](#primary-content)
 
 <a id="flag-regextype"></a>
 
@@ -783,7 +784,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `markdown` - a Markdown table (also `md`)
   - `tree` - an indented directory tree
 
-  `markdown` (alias `md`) also renders ordinary, comparison-result, and paired summary tables as Markdown, with vertically aligned separators and right-aligned numeric headers and values in both source and rendered tables. Summary schemas come from `--summary`; `--columns` selects listing fields and cannot change summary columns. Markdown summaries have descriptive headings above their scope and table. `--no-header` omits those headings, table headers, and Markdown separator rows when producing fragments. Summaries support `plain`, `aligned`, `jsonl`, and `markdown` (alias `md`); `csv`, `tsv`, `nul`, and `tree` are listing-only formats and cannot render active summaries. Comparison status records support `plain` and `jsonl`; comparison patches require `plain`. Use `--compare-select=none` to format only comparison summaries. Explicit expression actions retain their own output formats. Built-in `-grep` uses JSON match/context/count records with `jsonl` and rejects formats other than `plain` or `jsonl`; an explicit `-grep:FORMAT` remains authored output. JSONL textual values stay strings when valid UTF-8; other byte sequences use `{"encoding":"base64","data":"..."}` with standard padded base64, preserving every byte.
+  `markdown` (alias `md`) also renders ordinary, comparison-result, and paired summary tables as Markdown, with vertically aligned separators and right-aligned numeric headers and values in both source and rendered tables. Aligned and Markdown cells and tree labels C-escape control bytes and literal backslashes; Markdown additionally escapes that spelling for its renderer. Widths include the escaped text. This does not alter raw plain output or CSV, TSV, NUL, and JSONL encoding; `--path-encoding` controls plain listing paths. Summary schemas come from `--summary`; `--columns` selects listing fields and cannot change summary columns. Markdown summaries have descriptive headings above their scope and table. `--no-header` omits those headings, table headers, and Markdown separator rows when producing fragments. Summaries support `plain`, `aligned`, `jsonl`, `markdown` (alias `md`), `csv`, and `tsv`; `nul` and `tree` are listing-only formats. CSV/TSV summary exports have one header for all requests, explicit row identity, raw numeric values, and canonical scope-prefixed columns. Missing metrics are empty; `--no-header` removes the single header. TSV uses the same backslash escaping as listings. Histograms, action output, and dry-run previews cannot be mixed into these exports. In comparison mode use `--compare=summary` or `--compare-select=none`. Comparison status records support `plain` and `jsonl`; comparison patches require `plain`. Use `--compare-select=none` to format only comparison summaries. Explicit expression actions retain their own output formats. Built-in `-grep` uses JSON match/context/count records with `jsonl` and rejects formats other than `plain` or `jsonl`; an explicit `-grep:FORMAT` remains authored output. JSONL textual values stay strings when valid UTF-8; other byte sequences use `{"encoding":"base64","data":"..."}` with standard padded base64, preserving every byte.
   See also: [Output](#topic-output)
 
 <a id="flag-no-header"></a>
@@ -868,7 +869,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 <a id="flag-hash-algorithm"></a>
 
-- `--hash-algorithm=<ALGO>` - default digest for -hash / {hash} (sha256 default; md5, sha512, blake3, and more) _(global, xff)_
+- `--hash-algorithm=<ALGO>` - default digest for -hash / {hash} / --summary=hash (sha256 default) _(global, xff)_
   ALGO is one of:
 
   - `blake2b` - BLAKE2b, 512-bit
@@ -887,17 +888,18 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `sha512_224` - SHA-2, 512/224 truncated
   - `sha512_256` - SHA-2, 512/256 truncated
 
-  Sets the default digest algorithm for the `-hash` action and the `{hash}` field. `sha256` is the default; a `-hash:ALGO` spec or a `{hash:ALGO}` qualifier overrides it per use.
+  Sets the default digest algorithm for the `-hash` action, the `{hash}` field, and `--summary=hash`. `sha256` is the default; a `-hash:ALGO` spec or a `{hash:ALGO}` qualifier overrides it per use. `--explain` identifies a CLI default with no active consumer; suppressed output does not count.
   See also: [Fields](#topic-fields), [Output](#topic-output)
 
 <a id="flag-hash-encoding"></a>
 
-- `--hash-encoding=hex|base64` - default -hash / {hash} rendering: hex (default) or base64 _(global, xff)_
+- `--hash-encoding=hex|base64` - default -hash / {hash} / --summary=hash rendering: hex (default) or base64 _(global, xff)_
   One of:
 
   - `hex` - lower-case hex digits, as the sha256sum family prints (the default)
   - `base64` - standard padded base64 (RFC 4648), the Subresource-Integrity spelling
 
+  Used by hash actions, fields, and `--summary=hash` unless that use specifies its own encoding. `--explain` identifies a CLI default with no active consumer; suppressed output does not count.
   See also: [Fields](#topic-fields), [Output](#topic-output)
 
 <a id="flag-path-encoding"></a>
@@ -1013,7 +1015,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `hash-verification` - verified / failed tally from exactly one reached `-hasheq`
   - `{template}` - by any field value, e.g. `--summary='{ext}-{type}'`
 
-  With `--compare`, bare `--summary` or `--summary=compare` appends result counts, combined left-plus-right sizes, and percentages by type and status, plus a total after the comparison output. With explicit `--summary-scope`, bare `--summary` also adds ordinary count and size statistics. Other groupings default to one left/right table with `--compare` (`--summary-scope=compare`), and combine all roots otherwise (`--summary-scope=all`). Explicit scope selection overrides this conditional default regardless of option order. `--summary-scope` selects combined, per-root, or comparison-category tables. JSONL summary rows carry `record=summary`, a zero-based `request` index, the canonical `summary` grouping, and `scope`. Template groupings also retain their exact `template`. Comparison tables identify `left_root` and `right_root`; ordinary tables identify `root` (empty when combined). Request indices distinguish repeated groupings and survive table reordering. JSONL rows distinguish aggregate totals with `is_total=true`; data rows have `is_total=false`, even when their group is named `total`. Text and Markdown quote data labels that are empty, equal to `total`, or begin with a quote, keeping the aggregate label unambiguous. Outside comparison, replaces the per-match listing with an aggregate table: match count and total size per group (overall, by type, extension, programming language, media (MIME) type, user (owner), owning group, file digest, or hash-verification result). The categorical keys reuse the {mime}/{user}/{group}/{hash} field vocabulary; --summary=hash groups identical files into one bucket (a dedup count, reading every file). `--summary=hash-verification` requires exactly one `-hasheq` and counts its `verified` or `failed` verdict even when that verdict makes the complete expression false; an entry that short-circuits before reaching `-hasheq` is not counted. Empty expected values and unreadable entries are failed, matching `-hasheq` itself. A {template} key groups by any field value (e.g. --summary='{ext}-{type}'); a single m// extraction key (--summary='{capture.NAME:m/re/\1/}') groups per extracted line, so a per-file command's multi-line output tallies per key (e.g. git-blame lines per author) - the size column is not meaningful there. Explicit groupings are repeatable: each request adds its own table (e.g. `--summary=ext --summary=type`), printed in request order within each scope. In comparison mode, bare `--summary` and `--compare=summary` reuse an existing comparison-results table; explicit `--summary=compare` requests remain repeatable. Comparison-result tables precede ordinary tables regardless of request order. Percentages use the complete table totals before `--top`; a zero denominator yields zero percent. Sizes sum entry metadata sizes, including directory metadata, never recursive subtree sizes. `--format=markdown` (or `md`) renders these tables with grouping-specific headings above their scopes and fixed summary columns. Scope/root labels and explanatory notes are Markdown bullet items so each stays on its own rendered line. Each accounting note stays with its table, separated from the next summary by a blank line. Exact bytes align with scaled sizes at the decimal boundary. `--format=jsonl` includes `count_percent` and `size_percent` alongside `count` and `bytes`. --top=N limits the rows of each, `--summary-precision` sets all summary percentage and scaled-size digits, and --format=jsonl emits one object per group for scripts. Supported summary formats are `plain`, `aligned`, `jsonl`, and `markdown` (alias `md`); listing-only formats `csv`, `tsv`, `nul`, and `tree` are rejected while a summary is active. Per-path comparison records and expression actions retain their own output; use `--compare-select=none` or `--compare=summary` for summary-only exports.
+  With `--compare`, bare `--summary` or `--summary=compare` appends result counts, combined left-plus-right sizes, and percentages by type and status, plus a total after the comparison output. With explicit `--summary-scope`, bare `--summary` also adds ordinary count and size statistics. Other groupings default to one left/right table with `--compare` (`--summary-scope=compare`), and combine all roots otherwise (`--summary-scope=all`). Explicit scope selection overrides this conditional default regardless of option order. `--summary-scope` selects combined, per-root, or comparison-category tables. Plain and Markdown tables identify their grouping unless `--no-header` is set. JSONL summary rows carry `record=summary`, a zero-based `request` index, the canonical `summary` grouping, and `scope`. Template groupings also retain their exact `template`. Comparison tables identify `left_root` and `right_root`; ordinary tables identify `root` (empty when combined). Request indices distinguish repeated groupings and survive table reordering. JSONL rows distinguish aggregate totals with `is_total=true`; data rows have `is_total=false`, even when their group is named `total`. Text and Markdown quote data labels that are empty, equal to `total`, or begin with a quote, keeping the aggregate label unambiguous. Outside comparison, replaces the per-match listing with an aggregate table: match count and total size per group (overall, by type, extension, programming language, media (MIME) type, user (owner), owning group, file digest, or hash-verification result). The categorical keys reuse the {mime}/{user}/{group}/{hash} field vocabulary; --summary=hash groups identical files into one bucket (a dedup count, reading every file through its active filesystem, including archive members). It uses `--hash-algorithm` and `--hash-encoding`, just like `{hash}`. `--summary=hash-verification` requires exactly one `-hasheq` and counts its `verified` or `failed` verdict even when that verdict makes the complete expression false; an entry that short-circuits before reaching `-hasheq` is not counted. Empty expected values and unreadable entries are failed, matching `-hasheq` itself. A {template} key groups by any field value (e.g. --summary='{ext}-{type}'); a single m// extraction key (--summary='{capture.NAME:m/re/\1/}') groups per extracted line, so a per-file command's multi-line output tallies per key (e.g. git-blame lines per author) - the size column is not meaningful there. Explicit groupings are repeatable: each request adds its own table (e.g. `--summary=ext --summary=type`), printed in request order within each scope. In comparison mode, bare `--summary` and `--compare=summary` reuse an existing comparison-results table; explicit `--summary=compare` requests remain repeatable. Comparison-result tables precede ordinary tables regardless of request order. Percentages use the complete table totals before `--top`; a zero denominator yields zero percent. Sizes sum entry metadata sizes, including directory metadata, never recursive subtree sizes. `--format=markdown` (or `md`) renders these tables with grouping-specific headings above their scopes and fixed summary columns. Scope/root labels and explanatory notes are Markdown bullet items so each stays on its own rendered line. Each accounting note stays with its table, separated from the next summary by a blank line. Exact bytes align with scaled sizes at the decimal boundary. `--format=jsonl` includes `count_percent` and `size_percent` alongside `count` and `bytes`. --top=N limits the rows of each, `--summary-precision` sets all summary percentage and scaled-size digits, and --format=jsonl emits one object per group for scripts. Supported summary formats are `plain`, `aligned`, `jsonl`, `markdown` (alias `md`), `csv`, and `tsv`; listing-only formats `nul` and `tree` are rejected. CSV/TSV exports use one header, explicit `is_total` identity, raw numeric metrics, and canonical scope-prefixed columns for comparison groups. They reject histograms, action output, and applicable dry-run previews. Per-path comparison records and expression actions retain their own output; use `--compare-select=none` or `--compare=summary` for summary-only exports.
   Affected by: --summary-scope, --top, --summary-precision
   See also: [Statistics](#topic-stats), [--summary-scope](#flag-summary-scope), [--top](#flag-top), [--summary-precision](#flag-summary-precision)
 
@@ -1021,8 +1023,8 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `--histogram=BUCKET[:MEASURE]` - bar chart per bucket: a count or sum/mean/min/max of size|lines (repeatable) _(global, xff)_
   A terminal reduction like --summary, drawn as bars. BUCKET groups the matches - a category (overall, type, ext, lang, mime, user (owner), or group) or a numeric-range field (size / lines by order of magnitude, depth per level, drawn as an ascending distribution). The optional :MEASURE is the bar's value - `count` (the default) or an aggregate `sum(FIELD)` / `mean(FIELD)` / `min(FIELD)` / `max(FIELD)` over a numeric FIELD (size or lines). A numeric metric needs an aggregator (`ext:lines` is an error; `ext:sum(lines)` is not). Repeatable and combinable with --summary - both are fed by one walk and replace the per-match listing. Bars scale to the tallest, use Unicode block characters on a UTF-8 locale (see --unicode) or ASCII '#' otherwise; --top=N keeps the N tallest and --format=jsonl emits one object per bar for scripts. `--format=markdown` renders bucket/value tables with numeric values right-aligned, including when combined with summaries. `--no-header` omits histogram headings and column headers. `plain` and `aligned` retain text bars; `csv`, `tsv`, `nul`, and `tree` are unsupported for histograms and fail before traversal or actions.
-  Affected by: --top, --histogram-width
-  See also: [Statistics](#topic-stats), [--top](#flag-top), [--histogram-width](#flag-histogram-width)
+  Affected by: --top, --histogram-width, --summary-precision
+  See also: [Statistics](#topic-stats), [--top](#flag-top), [--histogram-width](#flag-histogram-width), [--summary-precision](#flag-summary-precision)
 
 ### Sharded files
 
@@ -1036,7 +1038,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `dotnum` - only `<stem>.<NNN>` (7-Zip-style volumes)
   - `underscore` - only `<stem>_<NNN>`
 
-  Recognizes sharded-file naming conventions and collapses each logical set to a single line instead of listing every shard. Bare `--shards` (or `=auto`) enables all built-in schemes: `<stem>-<index>-of-<total>` (`of`), `<stem>.<NNN>` (`dotnum`), and `<stem>_<NNN>` (`underscore`). Restrict to specific schemes with a comma list, e.g. `--shards=of,dotnum`. Grouping is per-directory; files that match no scheme are listed unchanged. Off by default.
+  Recognizes sharded-file naming conventions and collapses each logical set to a single line instead of listing every shard. Bare `--shards` (or `=auto`) enables all built-in schemes: `<stem>-<index>-of-<total>` (`of`), `<stem>.<NNN>` (`dotnum`), and `<stem>_<NNN>` (`underscore`). Restrict to specific schemes with a comma list, e.g. `--shards=of,dotnum`. Grouping is per-directory; files that match no scheme are listed unchanged. Off by default. In `--compare` mode, entries and reductions remain physical files; `--shards` does not collapse them or infer a whole-set comparison result. Its scheme selection still applies to `-shard-status`.
   See also: [Statistics](#topic-stats)
 
 <a id="flag-shards-show"></a>
@@ -1080,21 +1082,23 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 <a id="flag-context"></a>
 
 - `--context=SPEC` - -grep context lines: N both sides, or A:N,B:N,C:N for after/before/both _(global, xff)_
-  `--context=2` is grep's `-C 2` (two lines either side); the A / B / C keys inside the value select one side (`--context=A:3,B:1`), which is what `--after-context` and `--before-context` spell one at a time. xff has NO single-dash `-A` / `-B` / `-C`: those letters are unclaimed for now (see TODO.md), and a single-dash flag would be an expression primary under xff's dash-count rule rather than a whole-run option.
+  `--context=2` is grep's `-C 2` (two lines either side); the A / B / C keys inside the value select one side (`--context=A:3,B:1`), which is what `--after-context` and `--before-context` spell one at a time. xff has NO single-dash `-A` / `-B` / `-C`: those letters are unclaimed for now (see TODO.md), and a single-dash flag would be an expression primary under xff's dash-count rule rather than a whole-run option. A final symmetric before/after context also supplies the default for contextual `-diff` output, unless `--diff-context` or a per-action count overrides it.
   Affects: -grep, -diff, --diff-context
   See also: [Content](#topic-content), [-grep](#primary-grep), [-diff](#primary-diff), [--diff-context](#flag-diff-context)
 
 <a id="flag-after-context"></a>
 
 - `--after-context=N` - with -grep, print N lines of context after each match (= --context=A:N) _(global, xff)_
-  Affects: -grep
-  See also: [Content](#topic-content), [Regex matching](#topic-regex), [-grep](#primary-grep)
+  Together with the other context settings, a final symmetric context also supplies the default for contextual `-diff` output unless `--diff-context` or a per-action count overrides it.
+  Affects: -grep, -diff
+  See also: [Content](#topic-content), [Regex matching](#topic-regex), [-grep](#primary-grep), [-diff](#primary-diff)
 
 <a id="flag-before-context"></a>
 
 - `--before-context=N` - with -grep, print N lines of context before each match (= --context=B:N) _(global, xff)_
-  Affects: -grep
-  See also: [Content](#topic-content), [Regex matching](#topic-regex), [-grep](#primary-grep)
+  Together with the other context settings, a final symmetric context also supplies the default for contextual `-diff` output unless `--diff-context` or a per-action count overrides it.
+  Affects: -grep, -diff
+  See also: [Content](#topic-content), [Regex matching](#topic-regex), [-grep](#primary-grep), [-diff](#primary-diff)
 
 ### Result limits
 
@@ -1107,7 +1111,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 <a id="flag-top"></a>
 
 - `--top=N` - with --summary or --histogram, keep only the N largest/tallest groups _(global, xff)_
-  Requires a non-negative integer; `0` removes the limit. Last occurrence wins. Ordinary summary groups rank by bytes, then count, then name; comparison-scope tables rank by the sum of displayed column-group bytes, including overlap. Extraction summaries rank by count because they have no byte dimension. Totals and percentage denominators include groups omitted by the limit. Comparison-result summaries always show every type and status; `--top` does not truncate them.
+  Requires a non-negative integer; `0` removes the limit. Last occurrence wins. Ordinary summary groups rank by bytes, then count, then name; comparison-scope tables rank by the sum of displayed column-group bytes, including overlap. Extraction summaries rank by count because they have no byte dimension. Totals and percentage denominators include groups omitted by the limit. When groups are omitted, summary tables state how many are shown out of the complete set; JSONL rows add `groups_shown` and `groups_total`. Comparison scopes count distinct group keys across the selected columns, including overlapping scopes only once. Comparison-result summaries always show every type and status; `--top` does not truncate them. Numeric-range histograms retain every range; only categorical histogram buckets are top-limited.
   Affects: --summary, --histogram
   See also: [Statistics](#topic-stats), [--summary](#flag-summary), [--histogram](#flag-histogram)
 
@@ -1123,9 +1127,9 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 <a id="flag-summary-precision"></a>
 
 - `--summary-precision=N` - fraction digits for summary percentages and human-readable sizes (default 2) _(global, xff)_
-  Accepts integers from `0` through `9`; other values are errors. Last occurrence wins. Applies to ordinary and comparison summaries, including JSON percentage fields. Exact byte counts stay integers.
-  Affects: --summary, --compare
-  See also: [Statistics](#topic-stats), [--summary](#flag-summary), [--compare](#flag-compare)
+  Accepts integers from `0` through `9`; other values are errors. Last occurrence wins. Applies to ordinary and comparison summaries, including JSON percentage fields, and histogram means. Exact byte counts stay integers.
+  Affects: --summary, --compare, --histogram
+  See also: [Statistics](#topic-stats), [--summary](#flag-summary), [--compare](#flag-compare), [--histogram](#flag-histogram)
 
 ### Terminal display
 
@@ -1192,9 +1196,9 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 <a id="flag-width"></a>
 
-- `--width[=auto|none|COLS]` - wrap column for plain --help text: auto (terminal width, else unwrapped), none, or a count _(global, xff, command-line-only)_
+- `--width[=auto|none|COLS]` - width for plain help and comparison summaries: auto, none, or a column count _(global, xff, command-line-only)_
   Command-line only; rejected in configuration files.
-  Wraps the flowing text of --help and --help=TOPIC (option and topic descriptions) to a column width. auto uses the terminal width when stdout is a terminal (honoring $COLUMNS), and leaves output unwrapped when it is not (a pipe or file); none (or 0) disables wrapping; a positive integer sets a fixed width. Aligned vocabulary tables and example blocks keep their own layout. Does not affect the file listing, `--man`, or formatted full help.
+  Wraps the flowing text of `--help` and `--help=TOPIC` to a column width. Also bounds plain/aligned comparison-summary tables: scopes use grouped column headers when they fit, or labelled rows in one table when they do not. Numeric cells are never truncated; a width below one metric row may overflow. `auto` uses `$COLUMNS` when set, otherwise the terminal width when stdout is a terminal, otherwise unlimited width. `none` (or `0`) disables wrapping; a positive integer sets a fixed width (at least 40 columns). Aligned help vocabulary tables and example blocks keep their own layout. Does not affect the file listing, comparison-results table, summary legends or path headings, `--man`, or formatted full help.
   See also: [Output](#topic-output), [Environment](#topic-environment)
 
 <a id="flag-pager"></a>
@@ -1221,11 +1225,13 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 <a id="flag-quiet"></a>
 
 - `--quiet, -q` - suppress output; exit 0 if anything matched, else 1 (-q: grep-compatible) _(global, xff)_
+  In comparison mode, a match means a left-only, right-only, or different entry in the matched population: `0` means discrepancies, `1` means none, and `2` means an error. `--compare-select` and summary output do not change this status.
   See also: [Output](#topic-output)
 
 <a id="flag-exit-match"></a>
 
 - `--exit-match` - keep output; exit 0 if anything matched, else 1 _(global, xff)_
+  In comparison mode, a match means a left-only, right-only, or different entry in the matched population: `0` means discrepancies, `1` means none, and `2` means an error. `--compare-select` and summary output do not change this status.
   See also: [Output](#topic-output)
 
 ### Safety
@@ -1703,7 +1709,8 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `-name ARG, -n ARG` - match the basename against a shell glob _(test, find)_
   Globs the entry's basename (last path component): `*` matches any run including none, `?` one character, `[...]` a class. Unlike the shell a leading dot is matched literally. Case follows `--case` - the xff default folds when the volume does (APFS / HFS+ / NTFS), while `--exact` or `--config=find` forces a byte-exact compare; `-iname` always folds. Contrast `-path` (whole path) and `-regex` (anchored pattern). Example: `xff . -name '*.log'`.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  Affected by: --case
+  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook), [--case](#flag-case)
 
 <a id="primary-iname"></a>
 
@@ -1715,7 +1722,8 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `-path ARG, -p ARG` - match the whole path against a shell glob _(test, find)_
   Globs the whole path as printed (from the start point down), not just the basename. Unlike the shell, `*` and `?` DO match `/`, so `-path '*/build/*'` matches a build directory at any depth. Wildcards and case handling are `-name`'s. GNU spells this `-wholename`.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  Affected by: --case
+  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook), [--case](#flag-case)
 
 <a id="primary-ipath"></a>
 
@@ -1737,7 +1745,8 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `-lname ARG` - match the symlink target against a shell glob _(test, find)_
   Globs the symlink's target text - the path the link points AT, never the resolved destination - so a link matches even when its target is missing. Only a symbolic link can match, and with the default `-P` (or `-H`) a symlink is seen as itself. Wildcards and case handling are `-name`'s; `-ilname` always folds.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  Affected by: --case
+  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook), [--case](#flag-case)
 
 <a id="primary-ilname"></a>
 
@@ -1749,8 +1758,8 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `-regex ARG` - match the whole path against a regular expression _(test, find)_
   Matches when the pattern matches the WHOLE path (anchored both ends, like find), not just a substring - use `.*` to match anywhere. Dialect is chosen by `-regextype` (RE2 by default); capture groups become `{1}`..`{N}` for a following `-exec` / `-printf`. Example: `xff . -regex '.*/[0-9]+\.log'`.
-  Affected by: -E, --regextype, --re2, --pcre
-  See also: [Regex matching](#topic-regex), [Regex grammars](#topic-grammars), [-E](#flag-e), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre)
+  Affected by: -E, --case, --regextype, --re2, --pcre
+  See also: [Regex matching](#topic-regex), [Regex grammars](#topic-grammars), [-E](#flag-e), [--case](#flag-case), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre)
 
 <a id="primary-iregex"></a>
 
@@ -1768,7 +1777,8 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `-content ARG` - match a literal substring in the file's content (xff) _(test, xff)_
   Matches when the file contains SUBSTRING literally (no regex metacharacters - the literal pair sidesteps grep's flavor ambiguity). Reads the file, so it is expensive; a non-regular, unreadable, or binary file (a NUL byte in the first 8,000 bytes) never matches. `-icontent` folds ASCII case. Use `-rxc` for a pattern. This is an xff extension `--config=find` rejects.
-  See also: [Content](#topic-content)
+  Affected by: --case
+  See also: [Content](#topic-content), [--case](#flag-case)
 
 <a id="primary-icontent"></a>
 
@@ -1780,8 +1790,8 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `-rxc ARG` - match the file's content against a regular expression (xff) _(test, xff)_
   The regex counterpart of `-content`: matches when the selected regex pattern is found ANYWHERE in the content (unanchored, like grep - use `^` / `$` to anchor), not the whole-file anchoring `-regex` applies to the path. Same expensive read and non-regular / unreadable / binary skip; `-irxc` folds case. An xff extension `--config=find` rejects.
-  Affected by: -E, --regextype, --re2, --pcre
-  See also: [Content](#topic-content), [-E](#flag-e), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre)
+  Affected by: -E, --case, --regextype, --re2, --pcre
+  See also: [Content](#topic-content), [-E](#flag-e), [--case](#flag-case), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre)
 
 <a id="primary-irxc"></a>
 
@@ -1842,13 +1852,15 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `-fuzzy[:MODEL[:PCT%]|PCT%] PATTERN` - match the basename loosely, optionally requiring a normalized score (xff) _(test, xff)_
   TRUE when PATTERN matches the entry's basename under the selected MODEL. The forms are `-fuzzy PATTERN`, `-fuzzy:MODEL PATTERN`, `-fuzzy:PCT% PATTERN`, and `-fuzzy:MODEL:PCT% PATTERN`; the default model is `fzf`, and `edit` aliases `levenshtein`. The models answer different questions. `sequence` is a literal ordered subsequence: `tmh` finds `the_main_header.h`. `fzf` adds fzf EXTENDED-SEARCH expressions: spaces AND terms, `|` joins OR alternatives, `'` requests exact matching, `^` and `$` anchor, `!` excludes, and `\ ` embeds a literal space. Quote a query containing spaces for the shell, for example `-fuzzy:fzf '^core go$ | rb$ | py$'`. As in fzf, anchors ignore whitespace at the corresponding candidate edge. An OR applies only inside its adjacent group: in that example `^core` remains a required AND term while `go$`, `rb$`, and `py$` are alternatives. Prefix an exact term with `!'` to exclude that fuzzy subsequence; `!^foo` excludes a prefix and `!foo$` a suffix. Backslash only escapes the next query character, so shell quoting and fzf query escaping are separate layers. `levenshtein` is normalized edit similarity (insert, delete, and substitute cost one), while `shingles` is unique character-bigram Jaccard similarity. The first two reject a candidate that is not a subsequence/query match; the latter two score every candidate. Case follows `--case` like `-name` does; `-ifuzzy` always folds. PCT requires normalized quality from 0 through 100, and `{fuzzy}` renders it. Multiple fuzzy tests compose through the expression: AND keeps the weakest required score and OR the best successful alternative, independent of predicate order. Ranking requires every fuzzy test to use the same MODEL and threshold (a bare test means `0%`): different domains are valid filters, but do not define one unambiguous ordering. In `fzf`, the percentage is the best alignment relative to an exact self-match: characters at a word start, matched consecutively, and matched early score higher. Thus nearby candidates can all match while receiving different scores; inspect them with `--format=tsv --columns=fuzzy,path`, rank them with `--sort=score`, or keep the best N with `-top N`. Use `-name` for a glob and `-regex` for a pattern. An xff extension `--config=find` rejects. Example: `xff . -fuzzy rdme --columns=fuzzy,path`.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  Affected by: --case
+  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook), [--case](#flag-case)
 
 <a id="primary-fuzzypath"></a>
 
 - `-fuzzypath[:MODEL[:PCT%]|PCT%] PATTERN` - match the whole path loosely, optionally requiring a normalized score (xff) _(test, xff)_
   `-fuzzy` for the whole PATH instead of the basename - the `-path` to its `-name`. It accepts the same `:MODEL[:PCT%]` syntax and scoring, so `-fuzzypath:sequence eng/wlk` finds `xff/engine/walk.cc`, which no basename match could. It matches far more than `-fuzzy` does (every path shares its directories), so it is most useful RANKED: `--sort=score` puts the best match first, and `{fuzzy}` renders the score. Case follows `--case`; `-ifuzzypath` always folds. An xff extension `--config=find` rejects. Example: `xff . -fuzzypath eng/wlk --sort=score`.
-  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook)
+  Affected by: --case
+  See also: [Expression](#topic-expressions), [Examples](#topic-cookbook), [--case](#flag-case)
 
 <a id="primary-ifuzzy"></a>
 
@@ -2253,15 +2265,15 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 <a id="primary-collect"></a>
 
 - `-collect[:[!]NAME]` - add the entry to a named collection for --summary to reduce (xff) _(action, xff)_
-  xff extension: an ACTION that adds the entry to a collection instead of printing it, and makes `--summary` reduce THAT collection rather than what matched. This is what a truncating test cannot do on its own: a FALSE test removes the entry from every sink, so `-first 10 --summary` summarises ten entries, never "all of them, showing ten". ORDER selects the reading, because these are primaries rather than position-independent globals: `-collect -first 10 -ls --summary` collects everything, lists ten, and summarises ALL of them, while `-first 10 -collect --summary` collects only the ten and summarises those. The second prints no listing because `-collect` is an action, so the implicit `-print` is suppressed - find's own rule, not a new one. `-collect:NAME` uses a second collection; a bare `-collect` uses the one named `default`. A NAME is an identifier (`[A-Za-z_][A-Za-z0-9_]*`), which is what reserves punctuation for modifiers. Two nodes MAY share a collection, but the later one must SAY so with `!`: `\( -type f -collect:all \) -o \( -type d -collect:!all \)` gathers both branches into one collection, while an unmarked repeat is a usage error - a silently shared collection shows up only as a doubled total. The modifier is per node, so it cannot loosen the other `-collect` in a long command the way a whole-run flag would. A collection holds every match until the walk ends, so `--buffer` bounds it (a row count or a byte budget); exceeding it is an ERROR rather than a silent truncation, because a summary over part of the walk is indistinguishable from a correct one. Without `--buffer` there is no cap. Presence is SYNTACTIC, like the implicit print: a `-collect` in a branch that never runs still switches the summary's source, and the summary is then empty. Example: `xff . -type f -collect -first 3 -ls --summary`.
+  xff extension: an ACTION that adds the entry to a collection instead of printing it, and makes `--summary` reduce THAT collection rather than what matched. This is what a truncating test cannot do on its own: a FALSE test removes the entry from every sink, so `-first 10 --summary` summarises ten entries, never "all of them, showing ten". ORDER selects the reading, because these are primaries rather than position-independent globals: `-collect -first 10 -ls --summary` collects everything, lists ten, and summarises ALL of them, while `-first 10 -collect --summary` collects only the ten and summarises those. The second prints no listing because `-collect` is an action, so the implicit `-print` is suppressed - find's own rule, not a new one. `-collect:NAME` uses a second collection; a bare `-collect` uses the one named `default`. A NAME is an identifier (`[A-Za-z_][A-Za-z0-9_]*`), which is what reserves punctuation for modifiers. Two nodes MAY share a collection, but the later one must SAY so with `!`: `\( -type f -collect:all \) -o \( -type d -collect:!all \)` gathers both branches into one collection, while an unmarked repeat is a usage error - a silently shared collection shows up only as a doubled total. The modifier is per node, so it cannot loosen the other `-collect` in a long command the way a whole-run flag would. A collection holds every match until the walk ends, so `--buffer` bounds it (a row count or a byte budget); exceeding it is an ERROR rather than a silent truncation, because a summary over part of the walk is indistinguishable from a correct one. Without `--buffer` there is no cap. Presence is SYNTACTIC, like the implicit print: a `-collect` in a branch that never runs still switches the summary's source, and the summary is then empty. With `--shards`, summaries and histograms group each named collection into logical sets once; they do not also count the physical members. An entry collected under two names contributes to both collections. Comparison reductions remain physical. Example: `xff . -type f -collect -first 3 -ls --summary`.
   See also: [Statistics](#topic-stats), [Output](#topic-output)
 
 <a id="primary-diff"></a>
 
 - `-diff[:STYLE] TARGET` - diff the file against TARGET (a field template); true when equal (xff) _(action, xff)_
   Compares the matched file against TARGET - a {field} template evaluated per entry, so it can name a mirror path like `../b/{relpath}` - and is true when they are equal, false on a difference. The optional :STYLE picks the output: unified `u3` (default; 3 lines of context), context `c`, normal `n`, side-by-side `y`, or `none` for just the boolean. This is a one-sided expression action: it visits only the search roots, so it cannot report paths that exist only under TARGET. Use `--compare[=status|diff] LEFT RIGHT` to walk two roots with the same options and expression, then compare their matches symmetrically. Text files only; expensive.
-  Affected by: --diff-algorithm, --diff-ignore, --diff-ignore-matching, --diff-format, --diff-context, --context
-  See also: [Comparing trees](#topic-compare), [Content](#topic-content), [--diff-algorithm](#flag-diff-algorithm), [--diff-ignore](#flag-diff-ignore), [--diff-ignore-matching](#flag-diff-ignore-matching), [--diff-format](#flag-diff-format), [--diff-context](#flag-diff-context), [--context](#flag-context)
+  Affected by: --diff-algorithm, --diff-ignore, --diff-ignore-matching, --diff-format, --diff-context, --context, --after-context, --before-context
+  See also: [Comparing trees](#topic-compare), [Content](#topic-content), [--diff-algorithm](#flag-diff-algorithm), [--diff-ignore](#flag-diff-ignore), [--diff-ignore-matching](#flag-diff-ignore-matching), [--diff-format](#flag-diff-format), [--diff-context](#flag-diff-context), [--context](#flag-context), [--after-context](#flag-after-context), [--before-context](#flag-before-context)
 
 <a id="primary-hash"></a>
 
@@ -2309,8 +2321,8 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `-grep[:FORMAT] PATTERN` - print each content line matching a regex; -grep:FORMAT for a template (xff) _(action, xff)_
   The line-output companion of `-rxc`: `-grep PATTERN` prints every content line matching the RE2 PATTERN as `path:lineno:text` (grep's piped form; a literal substring under `--regextype=EXACT`). `-grep:FORMAT PATTERN` renders a {line}/{text}/{match}/{column} template instead. Honors `-c` / `--count` (one `path:count` per file) and -A / -B / `--context` (surrounding lines, grep-style). With `--format=jsonl`, built-in output emits `record: grep` objects with `kind` set to `match`, `context`, or `count`; each includes `path`, `root`, and `pattern`. Line records include one-based `line`, zero-based context `group`, and `text`; count records include `count`. Context gaps do not emit text separators in JSONL. Built-in output supports only `plain` and `jsonl`; other formats are rejected before actions execute. Explicit `-grep:FORMAT` templates retain authored output; `--count` supersedes the template. Reads the file (expensive); non-regular / unreadable / binary files yield nothing. Its truth is "matched a line", so it composes with `-o` / `-q`. An xff extension `--config=find` rejects.
-  Affected by: -E, --regextype, --re2, --pcre, --count, --context, --after-context, --before-context
-  See also: [Content](#topic-content), [-E](#flag-e), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre), [--count](#flag-count), [--context](#flag-context), [--after-context](#flag-after-context), [--before-context](#flag-before-context)
+  Affected by: -E, --case, --regextype, --re2, --pcre, --count, --context, --after-context, --before-context
+  See also: [Content](#topic-content), [-E](#flag-e), [--case](#flag-case), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre), [--count](#flag-count), [--context](#flag-context), [--after-context](#flag-after-context), [--before-context](#flag-before-context)
 
 <a id="primary-fprint"></a>
 
@@ -2582,8 +2594,10 @@ The `{field}` placeholder vocabulary, substituted per entry in `--template` / `-
 
 - `{{` and `}}` emit literal braces
 - `{}` is an alias for `{path}`
-- an unknown field renders empty
-- a malformed or unterminated `{` stays literal
+- unknown names, malformed placeholders, and unsupported qualifiers fail before actions
+- valid fields whose runtime value is absent render empty (for example, an unset `{env.NAME}`)
+- a quoted qualifier may contain a literal `}`
+- rewrite patterns, replacements, `g`/`i` flags, and `join` syntax are checked before traversal
 
 ### Dynamic namespaces
 
@@ -2597,14 +2611,14 @@ The `{field}` placeholder vocabulary, substituted per entry in `--template` / `-
 - `{mtime:FMT}` - time format: strftime (%Y-%m-%d) or preset (iso, epoch); see --time-format / --timezone
 - `{size:h}` - human-readable size
 - `{name:s/RE/R/f}` - RE2 rewrite of the value (flags g=all, i=ignore-case; any delimiter)
-- `{cap:m/RE/R/f}` - per-line extraction: a value stream, e.g. a --summary key (m//, s///'s list-producing sibling)
-- `{cap:m/RE/R/;join(SEP)}` - reduce the stream to one scalar (join, SEP default newline) so m// is usable in a scalar context (-printf / --template / -exec); reducers are function-notation, e.g. join(, )
+- `{text:m/RE/R/f}` - per-line extraction: a value stream, e.g. a --summary key (m//, s///'s list-producing sibling)
+- `{text:m/RE/R/;join(SEP)}` - reduce the stream to one scalar (join, SEP default newline) so m// is usable in a scalar context (-printf / --template / -exec); reducers are function-notation, e.g. join(, )
 - `{path:COMP}` - path component of the value: basename|core|dir|ext|extension|file|name|path|stem|suffix|suffixes; any path-valued field composes, e.g. {relpath:stem}, {def.B:dir}
 
 An m// extraction is a left-to-right pipeline: s/// maps whatever is flowing (each line, then the scalar), and a terminal reducer such as join collapses the stream to one scalar.
 
 ```
-  {cap:m/PAT/REP/;s/PAT/REP/;join(SEP);s/PAT/REP/}
+  {text:m/PAT/REP/;s/PAT/REP/;join(SEP);s/PAT/REP/}
        |________| |________| |_______| |________|
        extract    map each   reduce    rewrite
        per line   line       stream    scalar
@@ -2760,18 +2774,28 @@ Regular files are equal when their bytes are equal, for both text and binary dat
 
 The two walks run concurrently and each retains its complete matched-entry inventory until both finish. xff then merges those inventories and emits comparison records in bytewise relative-path order. This final comparison order is fixed: `--sort` controls traversal and the timing of expression actions within each side, not the order of status records or patch entries. Explicit expression actions execute independently for both walks; their synchronized output may interleave. `--buffer` still controls the output and collection buffers documented for those features, but it does not cap the comparison inventories, whose memory use grows with the total number of matched entries.
 
+Exit status defaults to `0` for a completed comparison and `2` for an error. With `--exit-match` or `--quiet`, a discrepancy counts as a match: `0` means at least one left-only, right-only, or different entry; `1` means no discrepancies in the matched population; `2` still means an error. This is search-style status, the reverse of `diff`'s equality/difference convention. `--compare-select` only selects output and does not change exit status. Summary mode follows the same rule. Two empty matched populations return `1` under match-sensitive exit, even if filters excluded differing entries. For example, `xff --compare=summary LEFT RIGHT --exit-match` prints statistics and returns `0` when the selected trees differ; use `--quiet` to suppress output.
+
 ### Status output
 
 Bare `--compare` (or `--compare=status`) writes tab-separated `STATUS` and relative-path records. The default selection reports discrepancies only; `--compare-select=all` also includes equal entries. `--compare-select=none` (or an empty value) suppresses per-path output without changing summary counts. `--path-encoding=escape` makes control bytes in the path unambiguous.
-
-`--summary` (or `--summary=compare`) appends counts, count percentages, combined sizes, and size percentages by entry type and status, followed by a total. Each paired path counts once; its combined size includes both sides. An identical 100-byte pair contributes one result and 200 bytes; a different 100/150-byte pair contributes one result and 250 bytes. Percentages use all results or all combined bytes respectively; zero denominators produce zero percent. `--summary-precision` controls decimals. `--format=jsonl` emits `type`, `group`, `count`, `count_percent`, `bytes`, and `size_percent`. Directories, symlinks, and special entries participate, including matched roots. Directory equality means entry-kind equality, not subtree equality. A type-changing pair appears once under its left-to-right type transition. Sizes use entry metadata, never recursive directory sizes. Ordinary summary groupings default to `--summary-scope=compare` when `--compare` is active: one left/right table across all categories. Without `--compare`, the default is `all`. An explicit scope overrides this conditional default regardless of option order. `compare` expands to `left-total,right-total`, covering every participating entry on each side. Explicit `--summary-scope=all` combines both input trees: its entry count is left-only plus right-only plus twice the paired result count; its byte total equals the comparison's combined bytes for the same population. Ordinary percentages use full table totals before `--top`. `--summary-scope=root` separates roots; `--summary-scope=compare` aligns left and right columns in one table per grouping. Each scope selects a column group containing count, count percentage, size, and size percentage. `diff` selects `left-only,right-only,different`; `identical` selects one column group. Category counts pair entries once and sizes sum both sides; side totals count their own entries and bytes. Different group keys form transition rows. Percentages use each column group's full population before `--top`. Scopes may overlap; their totals are not added together. Missing groups display a dash (JSON `null`); existing zero-byte files retain numeric zeros. `--format=markdown` (alias `md`) exports comparison-result and ordinary summary tables as Markdown; `--columns` remains a listing-only option. Summaries support `plain`, `aligned`, `jsonl`, and `markdown`; listing formats `csv`, `tsv`, `nul`, and `tree` are rejected with active summaries. Per-path status records remain tab-separated even with `--format=jsonl`; suppress them for a summary-only export. Comparison-result tables precede ordinary tables regardless of the order of summary requests. `--top` limits ordinary groups, not comparison-result rows.
-
-`--compare=summary` is shorthand for `--compare=status --compare-select=none --summary=compare` at that position in the option sequence. Later selections can enable per-path output, and `--summary=none` can disable the summary.
 
 - `left-only` - the relative path matched only below the left root
 - `right-only` - the relative path matched only below the right root
 - `different` - both sides matched the path, but its type, bytes, or symlink target differs
 - `identical` - both sides matched and compare equal; omitted unless explicitly selected
+
+### Summary tables
+
+`--summary` (or `--summary=compare`) appends counts, count percentages, combined sizes, and size percentages by entry type and status, followed by a total. Each paired path counts once; its combined size includes both sides. An identical 100-byte pair contributes one result and 200 bytes; a different 100/150-byte pair contributes one result and 250 bytes. Percentages use all results or all combined bytes respectively; zero denominators produce zero percent. `--summary-precision` controls decimals. `--format=jsonl` emits `type`, `group`, `count`, `count_percent`, `bytes`, and `size_percent`. Directories, symlinks, and special entries participate, including matched roots. Directory equality means entry-kind equality, not subtree equality. A type-changing pair appears once under its left-to-right type transition. Sizes use entry metadata, never recursive directory sizes.
+
+Ordinary summary groupings default to `--summary-scope=compare` when `--compare` is active: one left/right table across all categories. Without `--compare`, the default is `all`. An explicit scope overrides this conditional default regardless of option order. `compare` expands to `left-total,right-total`, covering every participating entry on each side. Explicit `--summary-scope=all` combines both input trees: its entry count is left-only plus right-only plus twice the paired result count; its byte total equals the comparison's combined bytes for the same population. Ordinary percentages use full table totals before `--top`.
+
+`--summary-scope=root` separates roots; `--summary-scope=compare` aligns left and right columns in one table per grouping. Each scope selects a column group containing count, count percentage, size, and size percentage. `diff` selects `left-only,right-only,different`; `identical` selects one column group. Category counts pair entries once and sizes sum both sides; side totals count their own entries and bytes. Different group keys form transition rows. Percentages use each column group's full population before `--top`. Scopes may overlap; their totals are not added together. Missing groups display a dash (JSON `null`); existing zero-byte files retain numeric zeros.
+
+`--format=markdown` (alias `md`) exports comparison-result and ordinary summary tables as Markdown; `--columns` remains a listing-only option. Summaries support `plain`, `aligned`, `jsonl`, `markdown`, `csv`, and `tsv`; `nul` and `tree` remain listing-only. CSV/TSV exports share one header across all requests, identify total rows with `is_total`, and use canonical scope-prefixed numeric columns. Use `--compare=summary` or `--compare-select=none`; mixed action output and histograms are rejected. Per-path status records remain tab-separated even with `--format=jsonl`; suppress them for a summary-only export. Comparison-result tables precede ordinary tables regardless of the order of summary requests. `--top` limits ordinary groups, not comparison-result rows.
+
+`--compare=summary` is shorthand for `--compare=status --compare-select=none --summary=compare` at that position in the option sequence. Later selections can enable per-path output, and `--summary=none` can disable the summary.
 
 ### Patch output
 
@@ -2791,13 +2815,13 @@ Bare `--compare` (or `--compare=status`) writes tab-separated `STATUS` and relat
 xff --compare=summary left-tree right-tree
 ```
 
+show only comparison statistics, with no per-path records
+
 ```sh
 xff --compare=summary left-tree right-tree --summary=ext --summary-scope=compare
 ```
 
-summarize extensions within each comparison category
-
-show only comparison statistics, with no per-path records
+summarize extensions in side-by-side left and right totals
 
 ```sh
 xff --compare left-tree right-tree

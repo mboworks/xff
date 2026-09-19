@@ -21,6 +21,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/testing/matchers.h"
 #include "xff/config/safety.h"
 #include "xff/config/xffrc.h"
 #include "xff/registry/descriptor.h"
@@ -28,7 +29,10 @@
 namespace xff::config {
 namespace {
 
+using ::mbo::testing::EqualsText;
+using ::mbo::testing::WithDropIndent;
 using ::testing::AllOf;
+using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
@@ -459,6 +463,26 @@ TEST_F(ConfigTest, ExplainConfigTagsEachFlagWithProvenance) {
   EXPECT_THAT(explained, HasSubstr("cli\t--format=jsonl\n"));
 }
 
+TEST_F(ConfigTest, ExplainConfigShowsPhysicalOriginWithoutChangingApplicationOrder) {
+  const std::vector<ResolvedFlag> application = {
+      {.flag = "--color=never",
+       .source = Source::kUser,
+       .origin = {.path = "/user.ini", .line = 4, .section = "first"}},
+      {.flag = "--color=auto", .source = Source::kCli},
+      {.flag = "--color=always",
+       .source = Source::kUser,
+       .origin = {.path = "/user.ini", .line = 7, .section = "last"}},
+  };
+  EXPECT_THAT(ExplainConfig(application), WithDropIndent(EqualsText(R"out(
+    # xff effective configuration (application order; overrides follow each flag's rules)
+    # at /user.ini:4 [first]
+    user	--color=never
+    cli	--color=auto
+    # at /user.ini:7 [last]
+    user	--color=always
+  )out")));
+}
+
 TEST_F(ConfigTest, SelectorsExpandAtTheirCommandLinePosition) {
   ConfigInputs in;
   in.user = ParseXffrc("--color=auto\n[early]\n--jobs=2\n[late]\n--color=never");
@@ -544,6 +568,123 @@ TEST_F(ConfigTest, SameNameIsRefinedInSystemUserAndEachExplicitFile) {
           FlagIs("--color=always", Source::kUser), FlagIs("--xffrc=/first", Source::kCli),
           FlagIs("--color=never", Source::kXffrc), FlagIs("--xffrc=/second", Source::kCli),
           FlagIs("--color=auto", Source::kXffrc)));
+}
+
+TEST_F(ConfigTest, OrderedResolutionRetainsOriginsAcrossExpansionAndComposition) {
+  ConfigInputs inputs;
+  inputs.system = ParseIni(R"ini(--block-file-writing
+[locked]
+--block-execution
+)ini");
+  inputs.user = ParseIni(R"ini([profile]
+--config=locked
+--no-safe-block-file-writing
+)ini");
+  inputs.xffrc = {{.path = "/task.rc", .config = ParseIni(R"ini([profile]
+--safe
+-name '--safe'
+)ini")}};
+  inputs.sources = {
+      {.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true},
+      {.path = "/home/user/xff.ini", .layer = Source::kUser, .found = true}};
+  const auto resolved = ResolveConfigInOrder(inputs, {"--config=profile", "--xffrc=/task.rc", "--no-safe"}, "xff");
+  const auto origin = [](std::string_view path, std::size_t line, std::string_view section) {
+    return Field(
+        &ResolvedFlag::origin, AllOf(
+                                   Field(&FlagOrigin::path, Eq(path)), Field(&FlagOrigin::line, Eq(line)),
+                                   Field(&FlagOrigin::section, Eq(section))));
+  };
+  EXPECT_THAT(
+      resolved, Contains(AllOf(FlagIs("--block-archive-writing", Source::kSystem), origin("/etc/xff.ini", 1, ""))));
+  EXPECT_THAT(
+      resolved, Contains(AllOf(FlagIs("--block-execution", Source::kSystem), origin("/etc/xff.ini", 3, "locked"))));
+  EXPECT_THAT(
+      resolved,
+      Contains(AllOf(
+          FlagIs("--no-safe-block-temp-file-writing", Source::kUser), origin("/home/user/xff.ini", 3, "profile"))));
+  EXPECT_THAT(
+      resolved, Contains(AllOf(
+                    FlagIs("--safe", Source::kXffrc), Field(&ResolvedFlag::is_argument, IsFalse()),
+                    origin("/task.rc", 2, "profile"))));
+  EXPECT_THAT(
+      resolved, Contains(AllOf(
+                    FlagIs("--safe", Source::kXffrc), Field(&ResolvedFlag::is_argument, IsTrue()),
+                    origin("/task.rc", 3, "profile"))));
+  EXPECT_THAT(resolved, Contains(AllOf(FlagIs("--no-safe", Source::kCli), origin("", 0, ""))));
+}
+
+TEST_F(ConfigTest, LegacyResolutionRetainsOriginsAndSyntheticGlobalsDoNotInventLines) {
+  ConfigInputs inputs;
+  inputs.user = ParseIni(R"ini(--safe
+[profile]
+--no-safe-block-execution
+)ini");
+  inputs.sources = {{.path = "/user.ini", .layer = Source::kUser, .found = true}};
+  inputs.configs = {"profile"};
+  const auto resolved = ResolveConfig(inputs);
+  ASSERT_THAT(resolved, SizeIs(2));
+  EXPECT_THAT(resolved.at(0).origin.path, Eq("/user.ini"));
+  EXPECT_THAT(resolved.at(0).origin.line, Eq(1));
+  EXPECT_THAT(resolved.at(1).origin.section, Eq("profile"));
+  EXPECT_THAT(resolved.at(1).origin.line, Eq(3));
+  inputs.user.globals = {"--no-safe"};
+  const auto synthesized = ResolveConfigInOrder(inputs, {}, "xff");
+  ASSERT_THAT(synthesized, SizeIs(1));
+  EXPECT_THAT(synthesized.at(0).flag, Eq("--no-safe"));
+  EXPECT_THAT(synthesized.at(0).origin.line, Eq(0));
+}
+
+TEST_F(ConfigTest, SafetyExplanationShowsMandatoryAndShadowedProfileOrigins) {
+  ConfigInputs inputs;
+  inputs.system = ParseIni("--block-file-writing");
+  inputs.user = ParseIni("--safe --no-safe-block-file-writing");
+  inputs.sources = {
+      {.path = "/system.ini", .layer = Source::kSystem, .found = true},
+      {.path = "/user.ini", .layer = Source::kUser, .found = true}};
+  const auto resolved = ResolveConfigInOrder(inputs, {}, "xff");
+  const auto explanation = ExplainSafety(resolved, inputs);
+  EXPECT_THAT(explanation, HasSubstr("safe-mode\ton\tuser /user.ini:1 (--safe)"));
+  EXPECT_THAT(
+      explanation, HasSubstr(
+                       "safety\tfile-writing\tblock\tblock\tallow\tunconditional block\t"
+                       "system /system.ini:1 (--block-file-writing)\tuser /user.ini:1 (--no-safe-block-file-writing)"));
+  EXPECT_THAT(explanation, HasSubstr("safety\tarchive-writing\tblock\tblock\tallow\tunconditional block"));
+  EXPECT_THAT(explanation, HasSubstr("safety\texecution\tblock\tnone\tblock\tactive profile block\tdefault"));
+  EXPECT_THAT(explanation, HasSubstr("root\ttemp\t(unset)\tdefault"));
+}
+
+TEST_F(ConfigTest, SafetyExplanationKeepsFirstMandatoryAndRootDeclarations) {
+  ConfigInputs inputs;
+  inputs.system = ParseIni(R"ini(--block-policy-categories=archive,temp
+--block-execution
+--temp-root=/admin/temp
+--output-root=/admin/out
+)ini");
+  inputs.user = ParseIni(R"ini(--block-policy-categories=output
+--block-execution
+--temp-root=/user/temp
+--output-root=/user/out
+)ini");
+  inputs.sources = {
+      {.path = "/system.ini", .layer = Source::kSystem, .found = true},
+      {.path = "/user.ini", .layer = Source::kUser, .found = true}};
+  const auto resolved = ResolveConfigInOrder(inputs, {"--no-safe", "--block-execution"}, "xff");
+  const auto explanation = ExplainSafety(resolved, inputs);
+  EXPECT_THAT(explanation, HasSubstr("policy\tsystem\tarchive,temp"));
+  EXPECT_THAT(explanation, HasSubstr("policy\tuser\toutput"));
+  EXPECT_THAT(explanation, HasSubstr("unconditional block\tsystem /system.ini:2 (--block-execution)"));
+  EXPECT_THAT(explanation, HasSubstr("root\ttemp\t/admin/temp\tsystem /system.ini:3"));
+  EXPECT_THAT(explanation, HasSubstr("root\toutput\t/admin/out\tsystem /system.ini:4"));
+}
+
+TEST_F(ConfigTest, SafetyExplanationIgnoresLiteralArgumentsAndTracksCliDeactivation) {
+  const std::vector<ResolvedFlag> literal = {{.flag = "--safe", .source = Source::kXffrc, .is_argument = true}};
+  EXPECT_THAT(ExplainSafety(literal, {}), HasSubstr("safe-mode\toff\tdefault"));
+  const auto resolved = ResolveConfigInOrder({}, {"--safe", "--no-safe", "--dry-run"}, "xff");
+  const auto explanation = ExplainSafety(resolved, {});
+  EXPECT_THAT(explanation, HasSubstr("safe-mode\toff\tcli (--no-safe)"));
+  EXPECT_THAT(explanation, HasSubstr("dry-run\ton\tcli (--dry-run)"));
+  EXPECT_THAT(explanation, HasSubstr("safety\texecution\tallow\tnone\tblock\tinactive profile\tcli (--no-safe)"));
 }
 
 TEST_F(ConfigTest, ExplainSourcesListsActiveStyleAndConsultedFiles) {

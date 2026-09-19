@@ -21,6 +21,7 @@
 #include <string_view>
 
 #include "absl/types/span.h"
+#include "xff/registry/consumers.h"
 #include "xff/registry/descriptor.h"
 
 namespace xff::registry {
@@ -42,6 +43,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "expressions,cookbook",
+        .case_pattern = true,
     },
     {
         .name = "-iname",
@@ -62,6 +64,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "expressions,cookbook",
+        .case_pattern = true,
     },
     {
         .name = "-ipath",
@@ -97,6 +100,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "expressions,cookbook",
+        .case_pattern = true,
     },
     {
         .name = "-ilname",
@@ -117,6 +121,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "regex,grammars",
+        .regex_argument = true,
     },
     {
         .name = "-iregex",
@@ -127,6 +132,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .fold_case = true,
         .see_also = "regex,grammars",
+        .regex_argument = true,
     },
     {
         .name = "-regextype",
@@ -151,6 +157,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .cost = Cost::kExpensive,
         .topic = "content",
+        .case_pattern = true,
     },
     {
         .name = "-icontent",
@@ -176,6 +183,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .cost = Cost::kExpensive,
         .topic = "content",
+        .regex_argument = true,
     },
     {
         .name = "-irxc",
@@ -187,6 +195,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .cost = Cost::kExpensive,
         .topic = "content",
+        .regex_argument = true,
     },
     // xff content-type predicates: is the file's CONTENT text or binary? Both read the file and use
     // the same NUL-in-first-8,000-bytes heuristic as the content search above, so they classify a file the
@@ -295,12 +304,16 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
             "silent truncation, because a summary over part of the walk is indistinguishable from a correct "
             "one. Without `--buffer` there is no cap. Presence is SYNTACTIC, like the implicit print: "
             "a `-collect` in a branch that never runs still switches the summary's source, and the summary is "
-            "then empty. Example: `xff . -type f -collect -first 3 -ls --summary`.",
+            "then empty. With `--shards`, summaries and histograms group each named collection into "
+            "logical sets once; they do not also count the physical members. An entry collected under two "
+            "names contributes to both collections. Comparison reductions remain physical. "
+            "Example: `xff . -type f -collect -first 3 -ls --summary`.",
         .kind = Kind::kAction,
         .arity = 0,
         .binding = Binding::kLabel,
         .style = Style::kXff,
         .see_also = "stats,output",
+        .control = Control::kCollect,
     },
     // xff -first: the streaming half of result-set shaping (see TODO.md's pinned design). A TEST
     // that keeps a counter: nothing about a test forbids state, it just owes a truth value.
@@ -323,6 +336,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .pure = false,
         .see_also = "stats,output",
+        .control = Control::kFirst,
     },
     // xff -top: the exact ranked half of result-set shaping. Unlike --sort=score this is a TEST in
     // the expression: entries that do not make this instance's N best become false here, and actions
@@ -351,6 +365,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .pure = false,
         .see_also = "stats,output",
+        .control = Control::kTop,
     },
     {
         .name = "-shard-status",
@@ -370,6 +385,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .pure = false,
         .topic = "stats",
+        .modifier_consumer = ModifierConsumer::kShardStatus,
+        .control = Control::kShardStatus,
     },
     // xff -fuzzy: approximate NAME matching, the fzf/fd style of "type a few letters and find it".
     {
@@ -407,6 +424,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .binding = Binding::kFuzzy,
         .style = Style::kXff,
         .see_also = "expressions,cookbook",
+        .case_pattern = true,
     },
     {
         .name = "-fuzzypath",
@@ -423,6 +441,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .binding = Binding::kFuzzy,
         .style = Style::kXff,
         .see_also = "expressions,cookbook",
+        .case_pattern = true,
     },
     {
         .name = "-ifuzzy",
@@ -493,12 +512,14 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "Use `--compare[=status|diff] LEFT RIGHT` to walk two roots with the same options and expression, "
                    "then compare their matches symmetrically. Text files only; expensive.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 1,
         .binding = Binding::kStyle,
         .style = Style::kXff,
         .cost = Cost::kExpensive,
         .see_also = "compare,content",
         .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate},
+        .modifier_consumer = ModifierConsumer::kFileDiff,
     },
     {
         .name = "-hash",
@@ -507,6 +528,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "(sha256 default; also sha1/sha512/...) and encoding (hex default, or base64). Reads the whole "
                    "file, so it is expensive; the same digest is available as the {hash} field.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 0,
         .binding = Binding::kHash,
         .style = Style::kXff,
@@ -532,6 +554,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .cost = Cost::kExpensive,
         .see_also = "content,fields",
         .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate},
+        .control = Control::kHashVerification,
     },
     {
         .name = "-type",
@@ -611,6 +634,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .primary_expansion_topic = "size",
         .see_also = "size,fields",
+        .size_argument = true,
     },
     {
         // xff extension: -size but over ALLOCATED space (st_blocks), not apparent size.
@@ -623,6 +647,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .primary_expansion_topic = "size",
         .see_also = "size,fields",
+        .size_argument = true,
     },
     {
         .name = "-links",
@@ -901,6 +926,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .day_duration = true,
     },
     {
         .name = "-mmin",
@@ -920,6 +946,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .day_duration = true,
     },
     {
         .name = "-amin",
@@ -939,6 +966,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .day_duration = true,
     },
     {
         .name = "-cmin",
@@ -1002,6 +1030,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "ignore,archive",
+        .traversal_effect = TraversalEffect::kMaxDepth,
     },
     {
         .name = "-mindepth",
@@ -1011,6 +1040,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "ignore,archive",
+        .traversal_effect = TraversalEffect::kMinDepth,
     },
     {
         .name = "-depth",
@@ -1021,6 +1051,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 0,
         .see_also = "ignore,archive",
+        .traversal_effect = TraversalEffect::kPostOrder,
     },
     {
         .name = "-d",
@@ -1028,6 +1059,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 0,
         .see_also = "ignore,archive",
+        .traversal_effect = TraversalEffect::kPostOrder,
     },
     {
         .name = "-xdev",
@@ -1038,6 +1070,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 0,
         .see_also = "ignore,archive",
+        .traversal_effect = TraversalEffect::kSingleFilesystem,
     },
     {
         .name = "-mount",
@@ -1045,6 +1078,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 0,
         .see_also = "ignore,archive",
+        .traversal_effect = TraversalEffect::kSingleFilesystem,
     },
     {
         .name = "-x",
@@ -1052,6 +1086,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 0,
         .see_also = "ignore,archive",
+        .traversal_effect = TraversalEffect::kSingleFilesystem,
     },
     {
         .name = "-daystart",
@@ -1063,6 +1098,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 0,
         .see_also = "time,fields",
+        .control = Control::kDayStart,
     },
     {
         .name = "-ignore_readdir_race",
@@ -1070,6 +1106,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 0,
         .see_also = "expressions,cookbook",
+        .traversal_effect = TraversalEffect::kIgnoreRace,
     },
     {
         .name = "-noignore_readdir_race",
@@ -1077,6 +1114,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 0,
         .see_also = "expressions,cookbook",
+        .traversal_effect = TraversalEffect::kReportRace,
     },
     {
         .name = "-empty",
@@ -1145,7 +1183,9 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "time, name (find's `-ls`). Columns align to ls/BSD width defaults. For a custom layout use "
                    "`-printf`; for aligned columns of {field}s use `--format=aligned`.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 0,
+        .buffers_columns = true,
         .see_also = "output,fields",
     },
     {
@@ -1156,6 +1196,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "(including `-print` itself) suppresses that implicit default; `--implicit-print=yes`|no forces "
                    "it on or off.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 0,
         .see_also = "output,fields",
     },
@@ -1166,6 +1207,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "survive a pipe into `xargs -0`. The machine-readable counterpart of `-print`; see also "
                    "`--format=jsonl`.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 0,
         .see_also = "output,fields",
     },
@@ -1177,6 +1219,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "and its qualifiers (see --help=fields, --help=printf). No trailing newline unless you write one; "
                    "`-printfln` adds the OS line ending. Example: `xff . -printf '%s\\t%p\\n'`.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 1,
         .primary_expansion_topic = "printf",
         .see_also = "printf,fields,output",
@@ -1189,6 +1232,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .details = "`-print` but terminated with the OS-native line ending (CRLF on Windows, LF elsewhere) rather "
                    "than always LF. An xff extension `--config=find` rejects.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 0,
         .style = Style::kXff,
         .see_also = "output,fields",
@@ -1200,6 +1244,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .details = "`-printf` plus the OS line ending appended, so you write FORMAT without a trailing `\\n`. An xff "
                    "extension `--config=find` rejects; see `-printf` for the directive vocabulary.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 1,
         .style = Style::kXff,
         .primary_expansion_topic = "printf",
@@ -1225,12 +1270,16 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "files yield nothing. Its truth is \"matched a line\", so it composes with `-o` / `-q`. An xff "
                    "extension `--config=find` rejects.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = 1,
         .binding = Binding::kFormat,
         .style = Style::kXff,
         .cost = Cost::kExpensive,
         .topic = "content",
         .content_output = true,
+
+        .modifier_consumer = ModifierConsumer::kGrep,
+        .regex_argument = true,
     },
     {
         .name = "-fprint",
@@ -1311,6 +1360,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 0,
         .safety = Safety::kSafety,
         .see_also = "safety,archive",
+        .traversal_effect = TraversalEffect::kPostOrder,
     },
     {
         .name = "-prune",
@@ -1342,6 +1392,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "stderr may interleave. The `+` form remains an end-of-walk batch. Sensitive: loaded from an "
                    "`--xffrc` file it needs `--allow-exec`. Example: `xff . -name '*.o' -exec rm {} +`.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = -1,
         .safety = Safety::kSecurity,
 
@@ -1349,6 +1400,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .terminal = true,
         .argument_fields =
             {.syntax = ArgumentFields::Syntax::kTemplate, .remaining = true, .requires_exec_fields = true},
+        .accepts_batch = true,
     },
     {
         .name = "-execdir",
@@ -1357,6 +1409,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "and `{}` is the basename - safer against path injection and directory races. `;` per match or "
                    "`+` batched (a batch shares one directory). Example: `xff . -name '*.log' -execdir gzip {} ;`.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = -1,
         .safety = Safety::kSecurity,
 
@@ -1364,6 +1417,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .terminal = true,
         .argument_fields =
             {.syntax = ArgumentFields::Syntax::kTemplate, .remaining = true, .requires_exec_fields = true},
+        .accepts_batch = true,
+        .execute_in_directory = true,
     },
     {
         .name = "-ok",
@@ -1372,6 +1427,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
                    "with 'y'; a declined or EOF answer skips that entry. `;`-terminated only (no `+` batching, since "
                    "each run needs its own prompt).",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = -1,
         .safety = Safety::kSecurity,
 
@@ -1384,11 +1440,13 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .details = "Like `-execdir` (runs in the matched entry's directory, `{}` is the basename) but prompts before "
                    "each command, exactly as `-ok` does.",
         .kind = Kind::kAction,
+        .stdout_output = true,
         .arity = -1,
         .safety = Safety::kSecurity,
 
         .see_also = "safety,fields,config",
         .terminal = true,
+        .execute_in_directory = true,
     },
     {
         // -capture:NAME[=REGEX] cmd... ;
@@ -1430,6 +1488,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .binds_capture = true,
         .preserves_implicit_output = true,
         .argument_fields = {.syntax = ArgumentFields::Syntax::kTemplate, .first = 2, .remaining = true},
+        .execute_in_directory = true,
     },
     {
         .name = "-a",

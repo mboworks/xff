@@ -28,6 +28,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
+#include "absl/strings/cord.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
@@ -36,6 +37,7 @@
 #include "mbo/status/status_macros.h"
 #include "xff/matching/regex/regex.h"
 #include "xff/parser/ast.h"
+#include "xff/parser/diagnostics.h"
 #include "xff/presentation/fields/fields.h"
 #include "xff/registry/descriptor.h"
 #include "xff/registry/registry.h"
@@ -153,9 +155,7 @@ std::optional<std::string_view> NodeRegexPattern(
     const registry::Descriptor& descriptor,
     const std::vector<std::string>& args) {
   std::string_view pattern;
-  if ((descriptor.name == "-regex" || descriptor.name == "-iregex" || descriptor.name == "-rxc"
-       || descriptor.name == "-irxc" || descriptor.name == "-grep")
-      && !args.empty()) {
+  if (descriptor.regex_argument && !args.empty()) {
     pattern = args[0];
   } else if (descriptor.binding == registry::Binding::kLabelRegex && args.size() > 1 && !args[1].empty()) {
     pattern = args[1];  // the optional :NAME=REGEX extraction regex
@@ -648,6 +648,9 @@ class ExprParser {
     const auto descriptor = registry::Lookup(token);
     if (!descriptor.has_value()) {
       Fail(absl::StrCat("unknown predicate: '", token, "'"));
+      if (hoist_globals_) {
+        status_.SetPayload(kUnknownPredicatePayload, absl::Cord(token));
+      }
       return nullptr;
     }
     // A binding primary used bare (no :NAME), e.g. "-capture": the registry binding
@@ -676,7 +679,7 @@ class ExprParser {
         Fail(absl::StrCat("'", token, "' needs a command before '", Peek(), "'"));
         return nullptr;
       }
-      if (batch && descriptor->name != "-exec" && descriptor->name != "-execdir") {
+      if (batch && !descriptor->accepts_batch) {
         // Only -exec/-execdir batch; the interactive -ok/-okdir never take '+'.
         Fail(absl::StrCat("'", token, " ... +' is not supported; use ';'"));
         return nullptr;
@@ -757,9 +760,7 @@ mbo::types::OptionalRef<const Expr> FirstXffDurationValue(const Expr& expr) {
     if (!descriptor.has_value()) {
       return std::nullopt;
     }
-    const std::string_view name = descriptor->name;
-    const bool day_time = name == "-mtime" || name == "-atime" || name == "-ctime";
-    if (day_time && !expr.args.empty() && absl::StrContains(expr.args.front(), ' ')) {
+    if (descriptor->day_duration && !expr.args.empty() && absl::StrContains(expr.args.front(), ' ')) {
       return expr;
     }
     return std::nullopt;
@@ -801,11 +802,10 @@ mbo::types::OptionalRef<const Expr> FirstXffPrintfField(const Expr& expr) {
   if (expr.kind == Expr::Kind::kPredicate) {
     const auto descriptor = expr.descriptor;
     if (descriptor.has_value()) {
-      const std::string_view name = descriptor->name;
-      const bool is_fprintf = name == "-fprintf";
-      const std::size_t fmt_index = is_fprintf ? 1 : 0;
-      if ((name == "-printf" || is_fprintf) && expr.args.size() > fmt_index
-          && absl::StrContains(expr.args[fmt_index], "%{")) {
+      const auto& fields = descriptor->argument_fields;
+      const std::size_t fmt_index = fields.first;
+      if (fields.syntax == registry::ArgumentFields::Syntax::kPrintf && descriptor->style == registry::Style::kFind
+          && expr.args.size() > fmt_index && absl::StrContains(expr.args[fmt_index], "%{")) {
         return expr;
       }
     }
@@ -1076,10 +1076,7 @@ bool ShouldFold(CaseMode mode, std::string_view pattern) {
 // complete configuration/CLI stream has selected the grammar and case mode.
 void BindMatchersToNode(Expr& expr, CaseMode mode, regex::Grammar grammar) {
   if (expr.kind == Expr::Kind::kPredicate && expr.descriptor.has_value()) {
-    const std::string_view name = expr.descriptor->name;
-    const bool glob_or_content = name == "-name" || name == "-path" || name == "-lname" || name == "-content"
-                                 || name == "-fuzzy" || name == "-fuzzypath";
-    if (glob_or_content && !expr.args.empty()) {
+    if (expr.descriptor->case_pattern && !expr.args.empty()) {
       expr.case_fold = ShouldFold(mode, expr.args.front());
     }
     if (const std::optional<std::string_view> pattern = NodeRegexPattern(*expr.descriptor, expr.args);

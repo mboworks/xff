@@ -37,6 +37,7 @@
 #include "absl/types/span.h"
 #include "mbo/status/status_macros.h"
 #include "xff/cli/config_validation.h"
+#include "xff/cli/diagnostics.h"
 #include "xff/cli/globals.h"
 #include "xff/cli/help.h"
 #include "xff/cli/help_backend.h"
@@ -45,6 +46,7 @@
 #include "xff/cli/html.h"
 #include "xff/cli/manpage.h"
 #include "xff/cli/markdown.h"
+#include "xff/cli/modifier_diagnostics.h"
 #include "xff/cli/pager.h"
 #include "xff/cli/plain_backend.h"
 #include "xff/cli/wrap.h"
@@ -449,11 +451,18 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   });
   xff::env::Prewarm(absl::MakeConstSpan(kKnownEnv));
 
-  // The plain-help wrap width (--width), resolved once so every help / topic render
-  // shares it. A bare --width means auto; --width=VALUE carries the value. Scanned
-  // here (like the help flags) since --help short-circuits before the full parse.
+  // Parse once before dispatching help/version. The parser identifies meta flags
+  // only at option/expression boundaries, so `-exec echo --help ;` passes
+  // `--help` to the child instead of turning the whole xff invocation into help.
+  absl::StatusOr<xff::parser::Command> parsed = xff::parser::Parse(args);
+  if (!parsed.ok()) {
+    std::cerr << "xff: " << parsed.status().message() << "\n" << xff::cli::ParseErrorHint(parsed.status());
+    return 2;
+  }
+  // Help and plain comparison summaries share --width. Inspect only parsed globals:
+  // a --width token inside a child command remains that child's argument.
   std::optional<std::string_view> width_flag;
-  for (const std::string& arg : args) {
+  for (const std::string& arg : parsed->globals) {
     if (arg == "--width") {
       width_flag = "auto";
     } else if (arg.starts_with("--width=")) {
@@ -468,17 +477,10 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   }
   const bool stdout_is_tty = ::isatty(STDOUT_FILENO) != 0;
   // --color drives help color too (auto = a tty with NO_COLOR unset; always overrides).
-  // Scanned from argv like --width, since --help short-circuits before the full parse.
-  const bool help_color = xff::color::Enabled(xff::color::ResolveWhen(args), stdout_is_tty, xff::env::Has("NO_COLOR"));
+  // As with width, only parser-identified globals affect help rendering.
+  const bool help_color =
+      xff::color::Enabled(xff::color::ResolveWhen(parsed->globals), stdout_is_tty, xff::env::Has("NO_COLOR"));
   const xff::cli::HelpRenderContext help_context{.width = *help_width, .color = help_color};
-  // Parse once before dispatching help/version. The parser identifies meta flags
-  // only at option/expression boundaries, so `-exec echo --help ;` passes
-  // `--help` to the child instead of turning the whole xff invocation into help.
-  absl::StatusOr<xff::parser::Command> parsed = xff::parser::Parse(args);
-  if (!parsed.ok()) {
-    std::cerr << "xff: " << parsed.status().message() << "\n";
-    return 2;
-  }
   // Resolve only the globals the parser identified at option boundaries. In particular, a token
   // such as `--pager=always` inside an -exec argument run belongs to the child command.
   const absl::StatusOr<xff::cli::PagerConfig> pager = xff::cli::ResolvePager(parsed->globals);
@@ -515,6 +517,7 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
       }
       if (!xff::cli::IsKnownGlobal(global)) {
         std::cerr << "xff: unknown option '" << global << "'\n"
+                  << xff::cli::UnknownGlobalHint(global)
                   << "Try 'xff --help' for usage, or 'xff --help=NAME' for one option.\n";
         return 2;
       }
@@ -607,6 +610,7 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     }
     if (!xff::cli::IsKnownGlobal(global)) {
       std::cerr << "xff: unknown option '" << global << "'\n"
+                << xff::cli::UnknownGlobalHint(global)
                 << "Try 'xff --help' for usage, or 'xff --help=NAME' for one option.\n";
       return 2;
     }
@@ -704,6 +708,8 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
       std::cerr << "xff: " << diagnostic << "\n";
     }
     MBO_RETURN_IF_ERROR(checked.status);
+    system_validation.profiles.insert(
+        system_validation.profiles.end(), checked.profiles.begin(), checked.profiles.end());
     system_validation.disabled_configs.insert(
         system_validation.disabled_configs.end(), checked.disabled_configs.begin(), checked.disabled_configs.end());
     return std::move(checked.config);
@@ -799,14 +805,32 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   command = *std::move(configured);
 
   if (explain) {
+    if (const absl::Status status = xff::engine::ValidateCommandFields(command); !status.ok()) {
+      std::cerr << "xff: field template: " << status.message() << "\n";
+      return 2;
+    }
+    const auto modifier_notes = xff::cli::InactiveModifierNotes(command, resolved, style);
+    if (!modifier_notes.ok()) {
+      std::cerr << "xff: " << modifier_notes.status().message() << "\n";
+      return 2;
+    }
+    std::cout << *modifier_notes;
     std::cout << xff::config::ExplainSources(inputs.sources, style);
     std::cout << "rc-mode\t" << xff::config::RcModeName(inputs.rc_mode) << "\n";
+    std::cout << xff::cli::ExplainProfiles(system_validation.profiles, inputs, effective_configs);
     std::cout << xff::config::ExplainConfig(resolved);
+    std::cout << xff::config::ExplainSafety(resolved, gated.config);
     for (const xff::config::Drop& drop : gated.drops) {
       std::cout << "dropped\t" << xff::config::DropMessage(drop) << "\n";
     }
     std::cout << "\n# flavor defaults per style, and the value resolved for this run:\n";
     std::cout << RenderFlavorTable(command.globals, style);
+    const auto resources = xff::engine::ExplainResources(command, style);
+    if (!resources.ok()) {
+      std::cerr << "xff: resource inspection: " << resources.status().message() << "\n";
+      return 2;
+    }
+    std::cout << *resources;
     return 0;
   }
   // The find style (--config=find) accepts only find's own expression vocabulary;
@@ -852,7 +876,7 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
       [](std::string_view path, absl::Status status) {
         std::cerr << "xff: " << path << ": " << status.message() << "\n";
       },
-      style);  // style-scoped traversal defaults (xff -> sorted + bounded; find/rg -> unordered)
+      style, *help_width);  // style-scoped traversal defaults (xff -> sorted + bounded; find/rg -> unordered)
   if (result.errors != 0) {
     return 2;  // an error outranks match status
   }

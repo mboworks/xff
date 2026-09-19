@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -65,6 +66,21 @@ class ReadOnlyFuzzFs final : public xff::vfs::FileSystem {
 
   absl::Status Remove(std::string_view) const override {
     // A safety-classification regression must fail the harness rather than mutate any filesystem.
+    std::abort();
+  }
+
+  absl::Status WriteContent(std::string_view, std::string_view) const override { std::abort(); }
+
+  absl::StatusOr<std::unique_ptr<xff::vfs::OutputFile>> OpenOutput(std::string_view, bool) const override {
+    std::abort();
+  }
+
+  absl::Status RemoveControlled(std::string_view, const xff::vfs::MutationPolicy&) const override { std::abort(); }
+
+  absl::StatusOr<std::unique_ptr<xff::vfs::OutputFile>> OpenControlledOutput(
+      std::string_view,
+      bool,
+      const xff::vfs::MutationPolicy&) const override {
     std::abort();
   }
 

@@ -16,11 +16,13 @@
 #ifndef XFF_ENGINE_RUN_H_
 #define XFF_ENGINE_RUN_H_
 
+#include <cstddef>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "xff/engine/evaluate.h"
 #include "xff/engine/walk.h"
@@ -46,6 +48,12 @@ struct FlavorFacet {
 
 [[nodiscard]] absl::Span<const FlavorFacet> FlavorFacets();
 
+// Inspect the fully composed command without walking roots or evaluating actions.
+// Reports scheduling and potential retained state/content consumers, never measured usage.
+absl::StatusOr<std::string> ExplainResources(
+    const parser::Command& command,
+    std::optional<registry::Style> style = std::nullopt);
+
 // Runs a parsed find command over `fs`: walks the roots in pre-order and, for
 // each entry, evaluates the expression -- firing -print/-print0 actions through
 // `emit`. When the expression has no action of its own (or is empty), matching
@@ -69,12 +77,18 @@ struct RunResult {
 // `--exit-match`. It reflects the expression's truth, not emitted output, so an action that
 // suppresses the implicit -print (e.g. `-exec`) still counts as a match. It stays false on usage
 // errors that stop before traversal, where match status is moot.
+// table_width bounds plain comparison-summary layout; zero keeps a wide table.
 RunResult RunFind(
     const parser::Command& command,
     const vfs::FileSystem& fs,
     EmitFn emit,
     WalkErrorFn on_error,
-    std::optional<registry::Style> style = std::nullopt);
+    std::optional<registry::Style> style = std::nullopt,
+    std::size_t table_width = 0);
+
+// Validate all active field consumers without reading paths or evaluating expressions.
+// Shared by execution preflight and --explain after configuration composition.
+absl::Status ValidateCommandFields(const parser::Command& command);
 
 }  // namespace xff::engine
 

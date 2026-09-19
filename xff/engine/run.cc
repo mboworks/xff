@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <future>
 #include <iostream>
 #include <limits>
@@ -63,6 +64,7 @@
 #include "xff/content/line_match.h"
 #include "xff/datetime/datetime.h"
 #include "xff/engine/collect.h"
+#include "xff/engine/consumers.h"
 #include "xff/engine/evaluate.h"
 #include "xff/engine/extract.h"
 #include "xff/engine/mount.h"
@@ -81,7 +83,10 @@
 #include "xff/presentation/fields/fields.h"
 #include "xff/presentation/format/format.h"
 #include "xff/presentation/render/render.h"
+#include "xff/presentation/render/scoped_table.h"
+#include "xff/presentation/render/summary_export.h"
 #include "xff/registry/descriptor.h"
+#include "xff/registry/registry.h"
 #include "xff/shard/group.h"
 #include "xff/shard/shard.h"
 #include "xff/values/values.h"
@@ -119,27 +124,15 @@ struct DepthOptions {
 };
 
 DepthOptions ResolveDepthPredicate(const parser::Expr& expr) {
-  if (expr.descriptor->name == "-depth" || expr.descriptor->name == "-d" || expr.descriptor->name == "-delete") {
-    return {.post_order = true};  // -delete implies -depth; -d is the BSD/GNU short spelling
-  }
-  if (expr.descriptor->name == "-xdev" || expr.descriptor->name == "-mount" || expr.descriptor->name == "-x") {
-    return {.single_filesystem = true};  // -mount (GNU/BSD) and -x (BSD) are synonyms for -xdev
-  }
-  if (expr.descriptor->name == "-ignore_readdir_race") {
-    return {.ignore_readdir_race = true};
-  }
-  if (expr.descriptor->name == "-noignore_readdir_race") {
-    return {.ignore_readdir_race = false};  // last occurrence wins, as in find
-  }
-  if (expr.args.empty()) {
-    return {};
-  }
-  const std::optional<int> value = ParseNonNegInt(expr.args.front());
-  if (expr.descriptor->name == "-maxdepth") {
-    return {.max_depth = value};
-  }
-  if (expr.descriptor->name == "-mindepth") {
-    return {.min_depth = value};
+  using Effect = registry::TraversalEffect;
+  switch (expr.descriptor->traversal_effect) {
+    case Effect::kNone: return {};
+    case Effect::kPostOrder: return {.post_order = true};
+    case Effect::kSingleFilesystem: return {.single_filesystem = true};
+    case Effect::kIgnoreRace: return {.ignore_readdir_race = true};
+    case Effect::kReportRace: return {.ignore_readdir_race = false};
+    case Effect::kMaxDepth: return {.max_depth = expr.args.empty() ? std::nullopt : ParseNonNegInt(expr.args.front())};
+    case Effect::kMinDepth: return {.min_depth = expr.args.empty() ? std::nullopt : ParseNonNegInt(expr.args.front())};
   }
   return {};
 }
@@ -446,11 +439,12 @@ std::string SummaryExtension(std::string_view name) {
   return std::string(name.substr(dot + 1));
 }
 
-// The group key for one matched entry under `mode` (kOff never reaches here). The mime/user/group
-// keys render the matching field ({mime}/{user}/{group}) so the reduction reuses the field
+// Metadata-only group keys; hash and template keys use the full rendering context below.
+// The mime/user/group keys render the matching field ({mime}/{user}/{group}) so the reduction
+// reuses the field
 // vocabulary rather than re-deriving the value; the field renderers never return empty (owner /
 // group fall back to the numeric id, mime to application/octet-stream), so no "(none)" bucket.
-std::string SummaryKey(SummaryMode mode, const Visit& visit) {
+std::string MetadataSummaryKey(SummaryMode mode, const Visit& visit) {
   switch (mode) {
     case SummaryMode::kExt: return SummaryExtension(visit.name);
     case SummaryMode::kType: return std::string(TypeName(visit.metadata.type));
@@ -461,9 +455,6 @@ std::string SummaryKey(SummaryMode mode, const Visit& visit) {
     case SummaryMode::kMime: return fields::Render("{mime}", visit.path, visit.metadata, visit.depth);
     case SummaryMode::kUser: return fields::Render("{user}", visit.path, visit.metadata, visit.depth);
     case SummaryMode::kGroup: return fields::Render("{group}", visit.path, visit.metadata, visit.depth);
-    // Digest of the whole file (default sha256/hex): identical files land in one bucket, so the
-    // count column reads as a dedup histogram. Reuses the {hash} field renderer, so it cannot drift.
-    case SummaryMode::kHash: return fields::Render("{hash}", visit.path, visit.metadata, visit.depth);
     default: return "total";  // kOverall: a single bucket
   }
 }
@@ -596,7 +587,7 @@ std::optional<std::pair<std::string, std::string>> HistBucketKey(
           BucketModePair{HistBucket::kGroup, SummaryMode::kGroup});
       const auto it = kBucketModes.find(spec.bucket);
       const SummaryMode mode = it == kBucketModes.end() ? SummaryMode::kOverall : it->second;
-      const std::string key = SummaryKey(mode, visit);
+      const std::string key = MetadataSummaryKey(mode, visit);
       return std::make_pair(key, key);
     }
     case HistBucket::kSizeRange: return MagnitudeBucket(visit.metadata.size);
@@ -784,6 +775,25 @@ absl::StatusOr<GrepContext> ResolveGrepContext(const std::vector<std::string>& g
     }
   }
   return result;
+}
+
+absl::StatusOr<mbo::diff::DiffOptions::OutputFormat> ResolveDiffFormat(const std::vector<std::string>& globals) {
+  std::string_view value;
+  constexpr std::string_view kPrefix = "--diff-format=";
+  for (const std::string& global : globals) {
+    if (global.starts_with(kPrefix)) {
+      value = std::string_view(global).substr(kPrefix.size());
+    }
+  }
+  if (value.empty()) {
+    return mbo::diff::DiffOptions::OutputFormat::kUnified;
+  }
+  const auto parsed = ParseDiffFormatFlag(value);
+  if (!parsed.has_value()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("unknown diff format '", value, "' (use u/unified, c/context, n/normal, or y/side-by-side)"));
+  }
+  return *parsed;
 }
 
 // xff's output selector (position-independent globals, last wins, default plain):
@@ -1112,36 +1122,36 @@ std::optional<std::string> BlockedAction(const parser::Expr& expr, const config:
   return expr.rhs ? BlockedAction(*expr.rhs, policy) : std::nullopt;
 }
 
-// True if the expression mentions the primary `name` anywhere. Used for the
+// True if the expression requires the control anywhere. Used for the
 // positional options that take effect run-wide regardless of position (-daystart).
-bool ContainsPrimary(const parser::Expr& expr, std::string_view name) {
+bool ContainsControl(const parser::Expr& expr, registry::Control control) {
   switch (expr.kind) {
-    case parser::Expr::Kind::kPredicate: return expr.descriptor->name == name;
-    case parser::Expr::Kind::kNot: return ContainsPrimary(*expr.lhs, name);
+    case parser::Expr::Kind::kPredicate: return expr.descriptor->control == control;
+    case parser::Expr::Kind::kNot: return ContainsControl(*expr.lhs, control);
     case parser::Expr::Kind::kAnd:
     case parser::Expr::Kind::kOr:
     case parser::Expr::Kind::kNand:
     case parser::Expr::Kind::kNor:
     case parser::Expr::Kind::kXor:
     case parser::Expr::Kind::kXnor:
-    case parser::Expr::Kind::kComma: return ContainsPrimary(*expr.lhs, name) || ContainsPrimary(*expr.rhs, name);
+    case parser::Expr::Kind::kComma: return ContainsControl(*expr.lhs, control) || ContainsControl(*expr.rhs, control);
   }
   return false;
 }
 
-// Number of occurrences of one primary in the expression. Verification summaries require exactly
+// Number of occurrences of one control in the expression. Verification summaries require exactly
 // one -hasheq because combining independent verdicts would otherwise hide which check failed.
-std::size_t CountPrimary(const parser::Expr& expr, std::string_view name) {
+std::size_t CountControl(const parser::Expr& expr, registry::Control control) {
   switch (expr.kind) {
-    case parser::Expr::Kind::kPredicate: return expr.descriptor->name == name ? 1 : 0;
-    case parser::Expr::Kind::kNot: return CountPrimary(*expr.lhs, name);
+    case parser::Expr::Kind::kPredicate: return expr.descriptor->control == control ? 1 : 0;
+    case parser::Expr::Kind::kNot: return CountControl(*expr.lhs, control);
     case parser::Expr::Kind::kAnd:
     case parser::Expr::Kind::kOr:
     case parser::Expr::Kind::kNand:
     case parser::Expr::Kind::kNor:
     case parser::Expr::Kind::kXor:
     case parser::Expr::Kind::kXnor:
-    case parser::Expr::Kind::kComma: return CountPrimary(*expr.lhs, name) + CountPrimary(*expr.rhs, name);
+    case parser::Expr::Kind::kComma: return CountControl(*expr.lhs, control) + CountControl(*expr.rhs, control);
   }
   std::unreachable();
 }
@@ -1154,7 +1164,7 @@ std::size_t CountPrimary(const parser::Expr& expr, std::string_view name) {
 absl::Status ValidateFirstLimits(const parser::Expr& expr) {
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate: {
-      if (!expr.descriptor.has_value() || expr.descriptor->name != "-first") {
+      if (!expr.descriptor.has_value() || expr.descriptor->control != registry::Control::kFirst) {
         return absl::OkStatus();
       }
       int limit = 0;
@@ -1185,7 +1195,7 @@ absl::Status ValidateFirstLimits(const parser::Expr& expr) {
 absl::Status ValidateTopLimits(const parser::Expr& expr) {
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate: {
-      if (!expr.descriptor.has_value() || expr.descriptor->name != "-top") {
+      if (!expr.descriptor.has_value() || expr.descriptor->control != registry::Control::kTop) {
         return absl::OkStatus();
       }
       int limit = 0;
@@ -1212,10 +1222,6 @@ absl::Status ValidateTopLimits(const parser::Expr& expr) {
   return absl::OkStatus();
 }
 
-// Every primary that SETS the score, so adding one cannot leave ranking silently refusing it.
-constexpr std::array kScoringPrimaries =
-    std::to_array<std::string_view>({"-fuzzy", "-fuzzypath", "-ifuzzy", "-ifuzzypath"});
-
 struct ScoreDomain {
   std::optional<int> threshold;
   std::optional<parser::FuzzyModel> model;
@@ -1226,7 +1232,7 @@ struct ScoreDomain {
 void InspectScoreDomain(const parser::Expr& expr, ScoreDomain& domain) {
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate:
-      if (absl::c_linear_search(kScoringPrimaries, expr.descriptor->name)) {
+      if (expr.descriptor->binding == registry::Binding::kFuzzy) {
         const int threshold = expr.fuzzy_threshold.value_or(0);
         domain.mixed_thresholds |= domain.threshold.value_or(threshold) != threshold;
         domain.threshold = threshold;
@@ -1259,16 +1265,20 @@ absl::Status ValidateScoreRanking(
   if (!rank_by_score) {
     return absl::OkStatus();
   }
-  const bool has_fuzzy =
-      expression.has_value() && absl::c_any_of(kScoringPrimaries, [expression](std::string_view name) {
-        return ContainsPrimary(*expression, name);
-      });
-  if (!has_fuzzy) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("needs one of ", absl::StrJoin(kScoringPrimaries, ", "), " in the expression"));
-  }
   ScoreDomain domain;
-  InspectScoreDomain(*expression, domain);
+  if (expression.has_value()) {
+    InspectScoreDomain(*expression, domain);
+  }
+  if (!domain.model.has_value()) {
+    std::vector<std::string_view> scoring_names;
+    for (const auto& descriptor : registry::All()) {
+      if (descriptor.binding == registry::Binding::kFuzzy) {
+        scoring_names.push_back(descriptor.name);
+      }
+    }
+    return absl::InvalidArgumentError(
+        absl::StrCat("needs one of ", absl::StrJoin(scoring_names, ", "), " in the expression"));
+  }
   if (domain.mixed_models) {
     return absl::InvalidArgumentError(
         "cannot compare fuzzy matches from different models; use the same fzf / sequence / levenshtein / "
@@ -1299,8 +1309,8 @@ struct TopFlow {
 TopFlow InspectTopFlow(const parser::Expr& expr, bool incoming_score) {
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate: {
-      const bool scoring = absl::c_linear_search(kScoringPrimaries, expr.descriptor->name);
-      const bool top = expr.descriptor->name == "-top";
+      const bool scoring = expr.descriptor->binding == registry::Binding::kFuzzy;
+      const bool top = expr.descriptor->control == registry::Control::kTop;
       return {
           .score_on_success = incoming_score || scoring,
           .has_top = top,
@@ -1376,7 +1386,7 @@ absl::Status ValidateTopRanking(mbo::types::OptionalRef<const parser::Expr> expr
 
 absl::Status ValidateShardStatuses(const parser::Expr& expr) {
   if (expr.kind == parser::Expr::Kind::kPredicate) {
-    if (expr.descriptor->name != "-shard-status") {
+    if (expr.descriptor->control != registry::Control::kShardStatus) {
       return absl::OkStatus();
     }
     if (expr.args.size() != 1
@@ -1476,7 +1486,8 @@ CollectedEntry OwnVisit(const Visit& visit) {
 
 void AppendDeferredNodes(const parser::Expr& expr, std::vector<ExprIdentity>& nodes) {
   if (expr.kind == parser::Expr::Kind::kPredicate) {
-    if (expr.descriptor->name == "-top" || expr.descriptor->name == "-shard-status") {
+    if (expr.descriptor->control == registry::Control::kTop
+        || expr.descriptor->control == registry::Control::kShardStatus) {
       nodes.emplace_back(expr);
     }
     return;
@@ -1633,7 +1644,7 @@ int ResolveDeferredRound(
       entries.emplace_back(candidate);
     }
   }
-  if (next_node.Get().descriptor->name == "-shard-status") {
+  if (next_node.Get().descriptor->control == registry::Control::kShardStatus) {
     return ResolveShardStatusRound(
         next_node.Get(), entries, shard_matcher, shard_dedup, scheme_allowed, report_dedup_errors);
   }
@@ -1974,9 +1985,8 @@ GitignoreMode ResolveGitignoreMode(const std::vector<std::string>& globals, std:
 // `roots`.
 enum class ArchiveMode : std::uint8_t { kNone, kRoots, kAll, kAny };
 
-ArchiveMode ResolveArchiveMode(const std::vector<std::string>& globals, std::optional<registry::Style> style) {
-  // find keeps archives opaque; the xff family looks inside one it was pointed at.
-  ArchiveMode mode = style == registry::Style::kFind ? ArchiveMode::kNone : ArchiveMode::kRoots;
+std::optional<ArchiveMode> ResolveArchiveMode(const std::vector<std::string>& globals) {
+  std::optional<ArchiveMode> mode;
   for (const std::string& global : globals) {
     // The short forms come in a lower-case (read) and an upper-case (read + write) family whose
     // RUNGS are identical, so both spellings of a rung are read here and only ResolveArchiveWrite
@@ -2033,16 +2043,6 @@ ArchiveWrite ResolveArchiveWrite(const std::vector<std::string>& globals) {
     }
   }
   return write;
-}
-
-// True when the run EXPLICITLY asked for archive handling (any spelling), as opposed to
-// inheriting a style default. The not-yet-implemented guard fires only on an explicit
-// request, so the xff family's `roots` default cannot break an ordinary walk.
-bool HasArchiveFlag(const std::vector<std::string>& globals) {
-  return absl::c_any_of(globals, [](std::string_view global) {
-    return global == "--archive" || global.starts_with("--archive=") || global == "-z" || global == "-z+"
-           || global == "-z++" || global == "-z-" || global == "-Z" || global == "-Z+" || global == "-Z++";
-  });
 }
 
 // The walk's spelling of the same three modes. Two enums exist because the walk knows nothing about
@@ -2293,6 +2293,7 @@ absl::StatusOr<ArchiveAggregate> ResolveArchiveAggregate(const std::vector<std::
 // The returned member-path views point into `globals`, which outlives the walk.
 struct ResolvedArchiveOptions {
   ArchiveDive archive_dive = ArchiveDive::kNone;
+  bool sniff_any = false;
   int archive_depth = 1;
   archive::MemberPathOptions member_paths;
 };
@@ -2301,9 +2302,11 @@ absl::StatusOr<ResolvedArchiveOptions> ResolveArchiveOptions(
     const std::vector<std::string>& globals,
     std::optional<registry::Style> style) {
   ResolvedArchiveOptions result;
-  const ArchiveMode archive_mode = ResolveArchiveMode(globals, style);
+  const auto requested_mode = ResolveArchiveMode(globals);
+  const ArchiveMode archive_mode =
+      requested_mode.value_or(style == registry::Style::kFind ? ArchiveMode::kNone : ArchiveMode::kRoots);
   if (archive_mode != ArchiveMode::kNone && !archive::ContainerSupportAvailable()) {
-    if (HasArchiveFlag(globals)) {
+    if (requested_mode.has_value()) {
       return absl::UnimplementedError(
           absl::StrCat(
               "archive diving (requested mode '", ArchiveModeName(archive_mode),
@@ -2311,6 +2314,7 @@ absl::StatusOr<ResolvedArchiveOptions> ResolveArchiveOptions(
     }
   } else {
     result.archive_dive = ArchiveDiveOf(archive_mode);
+    result.sniff_any = archive_mode == ArchiveMode::kAny;
   }
   // --archive-depth=N: how many containers deep diving goes (see WalkOptions::archive_depth). A bad
   // or zero value is a usage error rather than a silent clamp - "0" most likely means "off", which
@@ -2640,26 +2644,8 @@ bool ReportDuplicateBindingName(const parser::Expr& expr, WalkErrorFn on_error) 
 
 // Match the printf scanner's escapes and percent directives: bare braces and %% are literal.
 bool PrintfReferencesCapture(std::string_view format, std::string_view name) {
-  for (std::size_t pos = 0; pos + 1 < format.size(); ++pos) {
-    const char ch = format[pos];
-    if (ch == '\\') {
-      ++pos;
-    } else if (ch == '%') {
-      const char directive = format[++pos];
-      if (directive == '{') {
-        const auto end = format.find('}', pos + 1);
-        if (end != std::string_view::npos) {
-          if (fields::Template::Compile(format.substr(pos, end - pos + 1)).ReferencesCapture(name)) {
-            return true;
-          }
-          pos = end;
-        }
-      } else if (directive == 'A' || directive == 'C' || directive == 'T') {
-        ++pos;
-      }
-    }
-  }
-  return false;
+  return absl::c_any_of(
+      fields::PrintfTemplates(format), [&](const fields::Template& field) { return field.ReferencesCapture(name); });
 }
 
 bool PredicateReferencesCapture(const parser::Expr& expr, std::string_view name, bool exec_fields) {
@@ -2697,36 +2683,78 @@ bool ExpressionReferencesCapture(const parser::Expr& expr, std::string_view name
   return false;
 }
 
-// The first argument anywhere in `expr` that compiles to a field template carrying an UNREDUCED m//
-// extraction (a value stream), or nullopt. An unreduced extraction is only meaningful as a --summary
-// key; in any per-entry scalar render context (-exec/-printf/-grep/... command and format args) a
-// value stream has no single value, so it is a usage error. A reducer-terminated extraction
-// (`;join(...)`) is scalar-valued and allowed, so it does NOT trip this. Checking EVERY arg is safe:
-// HasUnreducedExtraction is true only for a known field with a well-formed unreduced m// qualifier,
-// which a user writes solely to extract -- a -name glob / -regex / -size value never trips it.
-std::optional<std::string> FindScalarExtraction(const parser::Expr& expr) {
-  switch (expr.kind) {
-    case parser::Expr::Kind::kPredicate:
-      for (const std::string& arg : expr.args) {
-        if (fields::Template::Compile(arg).HasUnreducedExtraction()) {
-          return arg;
-        }
+// Inspect only declared field consumers; regexes, globs, and ordinary exec arguments are literal.
+std::optional<std::string> FindScalarExtraction(const parser::Expr& expr, bool exec_fields) {
+  if (expr.kind != parser::Expr::Kind::kPredicate) {
+    if (expr.lhs != nullptr) {
+      if (const auto found = FindScalarExtraction(*expr.lhs, exec_fields); found.has_value()) {
+        return found;
       }
-      return std::nullopt;
-    case parser::Expr::Kind::kNot: return FindScalarExtraction(*expr.lhs);
-    case parser::Expr::Kind::kAnd:
-    case parser::Expr::Kind::kOr:
-    case parser::Expr::Kind::kNand:
-    case parser::Expr::Kind::kNor:
-    case parser::Expr::Kind::kXor:
-    case parser::Expr::Kind::kXnor:
-    case parser::Expr::Kind::kComma:
-      if (const std::optional<std::string> lhs = FindScalarExtraction(*expr.lhs); lhs.has_value()) {
-        return lhs;
+    }
+    return expr.rhs != nullptr ? FindScalarExtraction(*expr.rhs, exec_fields) : std::nullopt;
+  }
+  if (expr.grep_template != nullptr && expr.grep_template->HasUnreducedExtraction()) {
+    return "grep template";
+  }
+  const registry::ArgumentFields& expansion = expr.descriptor->argument_fields;
+  if (expansion.syntax == registry::ArgumentFields::Syntax::kNone || (expansion.requires_exec_fields && !exec_fields)
+      || expansion.first >= expr.args.size()) {
+    return std::nullopt;
+  }
+  const absl::Span<const std::string> args = expr.args;
+  for (const std::string& arg :
+       args.subspan(expansion.first, expansion.remaining ? args.size() - expansion.first : 1)) {
+    if (expansion.syntax == registry::ArgumentFields::Syntax::kPrintf) {
+      if (std::ranges::any_of(fields::PrintfTemplates(arg), &fields::Template::HasUnreducedExtraction)) {
+        return arg;
       }
-      return FindScalarExtraction(*expr.rhs);
+    } else if (fields::Template::Compile(arg).HasUnreducedExtraction()) {
+      return arg;
+    }
   }
   return std::nullopt;
+}
+
+absl::Status ValidateFieldArgument(std::string_view text, registry::ArgumentFields::Syntax syntax) {
+  if (syntax != registry::ArgumentFields::Syntax::kPrintf) {
+    return fields::Template::Compile(text).Validate();
+  }
+  for (const fields::Template& field : fields::PrintfTemplates(text)) {
+    MBO_RETURN_IF_ERROR(field.Validate());
+  }
+  return absl::OkStatus();
+}
+
+absl::Status ValidatePredicateFields(const parser::Expr& expr, bool exec_fields) {
+  if (expr.grep_template != nullptr) {
+    MBO_RETURN_IF_ERROR(expr.grep_template->Validate());
+  }
+  const registry::ArgumentFields& expansion = expr.descriptor->argument_fields;
+  if (expansion.syntax == registry::ArgumentFields::Syntax::kNone || (expansion.requires_exec_fields && !exec_fields)
+      || expansion.first >= expr.args.size()) {
+    return absl::OkStatus();
+  }
+  const absl::Span<const std::string> args = expr.args;
+  for (const std::string& arg :
+       args.subspan(expansion.first, expansion.remaining ? args.size() - expansion.first : 1)) {
+    MBO_RETURN_IF_ERROR(ValidateFieldArgument(arg, expansion.syntax));
+  }
+  return absl::OkStatus();
+}
+
+absl::Status ValidateExpressionFields(const parser::Expr& expr, bool exec_fields) {
+  if (expr.kind == parser::Expr::Kind::kPredicate) {
+    const absl::Status status = ValidatePredicateFields(expr, exec_fields);
+    return status.ok() ? status
+                       : absl::InvalidArgumentError(absl::StrCat(expr.descriptor->name, ": ", status.message()));
+  }
+  if (expr.lhs != nullptr) {
+    MBO_RETURN_IF_ERROR(ValidateExpressionFields(*expr.lhs, exec_fields));
+  }
+  if (expr.rhs != nullptr) {
+    MBO_RETURN_IF_ERROR(ValidateExpressionFields(*expr.rhs, exec_fields));
+  }
+  return absl::OkStatus();
 }
 
 // Check actual field consumers, not text that only resembles a capture reference.
@@ -3149,6 +3177,22 @@ std::string SummaryJson(const SummaryRow& row, const SummaryRow& total, unsigned
   return result;
 }
 
+bool IsDelimitedSummary(render::Format format) {
+  return format == render::Format::kCsv || format == render::Format::kTsv;
+}
+
+bool IsMachineSummary(render::Format format) {
+  return format == render::Format::kJsonl || IsDelimitedSummary(format);
+}
+
+render::SummaryExportMetrics ExportMetrics(const SummaryRow& row, const SummaryRow& total, bool has_size) {
+  return {
+      .count = row.count,
+      .total_count = total.count,
+      .bytes = has_size ? std::optional<render::SummaryExportBytes>({.value = row.size, .total = total.size})
+                        : std::nullopt};
+}
+
 // Summary schemas are fixed by their grouping; reuse the listing Markdown encoder for cells.
 class SummaryTable final {
  public:
@@ -3169,7 +3213,7 @@ class SummaryTable final {
   void AddRow(std::vector<std::string> cells) {
     if (markdown_.has_value()) {
       // The full-table window retains every row until Render().
-      static_cast<void>(markdown_->Add(cells));
+      static_cast<void>(markdown_->AddDisplay(cells));
     } else {
       plain_.AddRow(std::move(cells));
     }
@@ -3209,11 +3253,39 @@ std::string_view SummaryTotalJson(bool is_total) {
 
 // Keep the aggregate label distinct without reserving a data key. Quote leading quotes as well
 // so a literal quoted label cannot collide with the display spelling of an ambiguous key.
+bool SummaryKeyNeedsQuotes(std::string_view key, bool is_total) {
+  return !is_total && (key.empty() || key == "total" || key.starts_with('"'));
+}
+
 std::string SummaryDisplayKey(std::string_view key, bool is_total) {
-  if (!is_total && (key.empty() || key == "total" || key.starts_with('"'))) {
+  if (SummaryKeyNeedsQuotes(key, is_total)) {
     return render::JsonQuote(key);
   }
-  return std::string(key);
+  return render::EscapeDisplayText(key);
+}
+
+struct SummaryPopulation {
+  std::size_t shown = 0;
+  std::size_t total = 0;
+
+  bool Truncated() const { return shown < total; }
+
+  std::string Json() const {
+    return Truncated() ? absl::StrCat(",\"groups_shown\":", shown, ",\"groups_total\":", total) : "";
+  }
+
+  void EmitNote(render::Format format, EmitFn emit) const {
+    if (Truncated()) {
+      emit(
+          absl::StrCat(
+              format == render::Format::kMarkdown ? "- " : "", "Showing ", shown, " of ", total,
+              " groups; totals and percentages include omitted groups.\n"));
+    }
+  }
+};
+
+SummaryPopulation SummaryGroups(SummaryMode mode, const SummaryCells& cells, std::size_t rows) {
+  return {.shown = mode == SummaryMode::kOverall ? cells.size() : rows - 1, .total = cells.size()};
 }
 
 void EmitSummaryRows(
@@ -3221,16 +3293,35 @@ void EmitSummaryRows(
     std::string_view scope,
     std::string_view root,
     const std::vector<SummaryRow>& rows,
+    SummaryPopulation population,
     render::Format output_format,
     std::optional<format::SizeUnits> human,
     unsigned precision,
     bool has_size,
     bool with_header,
-    EmitFn emit) {
+    EmitFn emit,
+    const std::vector<std::string>& export_scopes) {
   if (rows.empty()) {
     return;
   }
   const auto& total = rows.back();
+  if (IsDelimitedSummary(output_format)) {
+    const render::SummaryExport exporter(export_scopes);
+    for (std::size_t index = 0; index < rows.size(); ++index) {
+      const auto& row = rows.at(index);
+      emit(exporter.Row(
+          {.request = summary.request_index,
+           .summary = SummaryGrouping(summary.mode),
+           .key_template = summary.key_template,
+           .scope = scope.empty() ? "all" : scope,
+           .root = root,
+           .group = row.key,
+           .is_total = index + 1 == rows.size(),
+           .metrics = ExportMetrics(row, total, has_size)},
+          output_format, precision));
+    }
+    return;
+  }
   if (output_format == render::Format::kJsonl) {
     for (std::size_t index = 0; index < rows.size(); ++index) {
       const auto& row = rows.at(index);
@@ -3238,7 +3329,8 @@ void EmitSummaryRows(
           absl::StrCat(
               "{", SummaryIdentityJson(summary), ",\"scope\":", render::JsonValue(scope.empty() ? "all" : scope),
               ",\"root\":", render::JsonValue(root), ",\"group\":", render::JsonValue(row.key), ",",
-              SummaryJson(row, total, precision, has_size), SummaryTotalJson(index + 1 == rows.size()), "}\n"));
+              SummaryJson(row, total, precision, has_size), population.Json(),
+              SummaryTotalJson(index + 1 == rows.size()), "}\n"));
     }
     return;
   }
@@ -3253,6 +3345,7 @@ void EmitSummaryRows(
     table.AddRow(std::move(cells));
   }
   emit(table.Render());
+  population.EmitNote(output_format, emit);
 }
 
 std::string_view SummaryTitle(SummaryMode mode) {
@@ -3274,8 +3367,9 @@ std::string_view SummaryTitle(SummaryMode mode) {
 }
 
 void EmitSummaryHeading(SummaryMode mode, const std::vector<std::string>& globals, EmitFn emit) {
-  if (ResolveFormat(globals) == render::Format::kMarkdown && !HasGlobal(globals, "--no-header")) {
-    emit(absl::StrCat("\n## ", SummaryTitle(mode), "\n"));
+  const auto format = ResolveFormat(globals);
+  if (!IsMachineSummary(format) && !HasGlobal(globals, "--no-header")) {
+    emit(absl::StrCat(format == render::Format::kMarkdown ? "\n## " : "", SummaryTitle(mode), "\n"));
   }
 }
 
@@ -3287,22 +3381,24 @@ void EmitSummaries(
     std::optional<format::SizeUnits> human,
     EmitFn emit,
     std::string_view scope = {},
-    std::string_view root = {}) {
+    std::string_view root = {},
+    const std::vector<std::string>& export_scopes = {}) {
   const auto top = ResolveTop(globals);
   const auto precision = ResolveSummaryPrecision(globals);
   const std::string_view scope_label = output_format == render::Format::kMarkdown ? "\n- Scope: " : "Summary scope: ";
   for (std::size_t i = 0; i < summaries.size(); ++i) {
-    if (i > 0 && output_format != render::Format::kJsonl) {
+    if (i > 0 && !IsMachineSummary(output_format)) {
       emit("\n");
     }
     EmitSummaryHeading(summaries.at(i).mode, globals, emit);
-    if (!scope.empty() && output_format != render::Format::kJsonl
-        && (i == 0 || output_format == render::Format::kMarkdown)) {
+    if (!scope.empty() && !IsMachineSummary(output_format) && (i == 0 || output_format == render::Format::kMarkdown)) {
       emit(absl::StrCat(scope_label, scope, root.empty() ? "" : " (", root, root.empty() ? "" : ")", "\n"));
     }
+    const auto rows = SummaryRows(summaries.at(i).mode, tables.at(i), top);
     EmitSummaryRows(
-        summaries.at(i), scope, root, SummaryRows(summaries.at(i).mode, tables.at(i), top), output_format, human,
-        precision, SummaryHasSize(summaries.at(i)), !HasGlobal(globals, "--no-header"), emit);
+        summaries.at(i), scope, root, rows, SummaryGroups(summaries.at(i).mode, tables.at(i), rows.size()),
+        output_format, human, precision, SummaryHasSize(summaries.at(i)), !HasGlobal(globals, "--no-header"), emit,
+        export_scopes);
   }
 }
 
@@ -3314,11 +3410,12 @@ void EmitScopedSummaries(
     std::optional<format::SizeUnits> human,
     std::string_view scope,
     std::string_view root,
-    EmitFn emit) {
+    EmitFn emit,
+    const std::vector<std::string>& export_scopes = {}) {
   if (summaries.empty()) {
     return;
   }
-  EmitSummaries(globals, summaries, tables, format, human, emit, scope, root);
+  EmitSummaries(globals, summaries, tables, format, human, emit, scope, root, export_scopes);
 }
 
 SummaryRow SummaryTotal(const SummaryCells& cells) {
@@ -3347,17 +3444,77 @@ void EmitComparisonScopeHeading(const parser::Command& command, std::string_view
           "Right: ", command.roots.at(1), "\n"));
 }
 
+struct ScopeRowContext {
+  const std::vector<SummaryScopeColumn>& columns;
+  const std::vector<SummaryRow>& totals;
+  std::size_t sink;
+  std::optional<format::SizeUnits> human;
+  unsigned precision;
+  bool has_size;
+  std::string population;
+};
+
+struct ComparisonSummaryRow {
+  std::vector<std::string> cells;
+  std::string json;
+  render::SummaryExportRecord exported;
+  render::ScopedTableRow display;
+};
+
+ComparisonSummaryRow MakeComparisonSummaryRow(
+    render::SummaryExportRecord record,
+    std::string json,
+    const ScopeRowContext& context) {
+  const std::string key(record.group);
+  const std::string label = SummaryDisplayKey(key, record.is_total);
+  const bool quote_label = SummaryKeyNeedsQuotes(key, record.is_total);
+  ComparisonSummaryRow result{
+      .cells = {label},
+      .json = std::move(json),
+      .exported = std::move(record),
+      .display = {.label = key, .quote_label = quote_label}};
+  for (std::size_t column_index = 0; column_index < context.columns.size(); ++column_index) {
+    const auto& column = context.columns.at(column_index);
+    const auto& source = column.tables.at(context.sink);
+    const auto& denominator = context.totals.at(column_index);
+    const auto row = result.exported.is_total ? denominator : SummaryCell(source, key);
+    const bool present = row.count != 0;
+    if (present) {
+      result.exported.scoped_metrics.emplace(column.scope, ExportMetrics(row, denominator, context.has_size));
+    }
+    const auto values = present ? SummaryColumns(row, denominator, context.human, context.precision, context.has_size)
+                                : std::vector<std::string>{"-", "-", "-", "-"};
+    result.cells.insert(result.cells.end(), values.begin(), values.end());
+    result.display.metrics.push_back({values.at(0), values.at(1), values.at(2), values.at(3)});
+    absl::StrAppend(&result.json, ",", render::JsonValue(column.scope), ":");
+    absl::StrAppend(
+        &result.json,
+        present ? absl::StrCat("{", SummaryJson(row, denominator, context.precision, context.has_size), "}") : "null");
+  }
+  absl::StrAppend(&result.json, context.population, SummaryTotalJson(result.exported.is_total), "}\n");
+  return result;
+}
+
 void EmitComparisonScopeSummary(
     const parser::Command& command,
     const std::string& scope,
     const std::vector<SummarySpec>& summaries,
     const std::vector<SummaryScopeColumn>& columns,
     std::optional<registry::Style> style,
-    EmitFn emit) {
+    EmitFn emit,
+    std::size_t table_width) {
   const auto precision = ResolveSummaryPrecision(command.globals);
   const auto human = ResolveHuman(command.globals, style);
   const auto output_format = ResolveFormat(command.globals);
   const bool json = output_format == render::Format::kJsonl;
+  const bool compact = output_format == render::Format::kPlain || output_format == render::Format::kAligned;
+  const bool delimited = IsDelimitedSummary(output_format);
+  std::vector<std::string> export_scopes;
+  export_scopes.reserve(columns.size());
+  for (const auto& column : columns) {
+    export_scopes.push_back(column.scope);
+  }
+  const render::SummaryExport exporter(export_scopes);
   const std::string_view note =
       output_format == render::Format::kMarkdown
           ? "- Percentages use each column group's full population.\n- Category counts pair entries once; "
@@ -3377,6 +3534,7 @@ void EmitComparisonScopeSummary(
   }
   for (std::size_t sink = 0; sink < summaries.size(); ++sink) {
     const auto rows = SummaryRows(summaries.at(sink).mode, combined.at(sink), ResolveTop(command.globals));
+    const auto population = SummaryGroups(summaries.at(sink).mode, combined.at(sink), rows.size());
     const bool has_size = SummaryHasSize(summaries.at(sink));
     std::vector<SummaryRow> totals;
     totals.reserve(columns.size());
@@ -3384,37 +3542,57 @@ void EmitComparisonScopeSummary(
       totals.push_back(SummaryTotal(column.tables.at(sink)));
     }
     SummaryTable table(alignments, header, output_format, !HasGlobal(command.globals, "--no-header"));
+    std::vector<render::ScopedTableRow> display_rows;
     for (std::size_t index = 0; index < rows.size(); ++index) {
       const auto& key = rows.at(index).key;
       const bool total_row = index + 1 == rows.size();
-      std::vector<std::string> cells{SummaryDisplayKey(key, total_row)};
+      render::SummaryExportRecord exported{
+          .request = summaries.at(sink).request_index,
+          .summary = SummaryGrouping(summaries.at(sink).mode),
+          .key_template = summaries.at(sink).key_template,
+          .scope = scope,
+          .left_root = command.roots.at(0),
+          .right_root = command.roots.at(1),
+          .group = key,
+          .is_total = total_row};
       std::string object = absl::StrCat(
           "{", SummaryIdentityJson(summaries.at(sink)), ",\"scope\":", render::JsonValue(scope),
           ",\"left_root\":", render::JsonValue(command.roots.at(0)),
           ",\"right_root\":", render::JsonValue(command.roots.at(1)), ",\"group\":", render::JsonValue(key));
-      for (std::size_t column_index = 0; column_index < columns.size(); ++column_index) {
-        const auto& column = columns.at(column_index);
-        const auto& source = column.tables.at(sink);
-        const auto& denominator = totals.at(column_index);
-        const auto row = total_row ? denominator : SummaryCell(source, key);
-        const bool present = row.count != 0;
-        const auto values = present ? SummaryColumns(row, denominator, human, precision, has_size)
-                                    : std::vector<std::string>{"-", "-", "-", "-"};
-        cells.insert(cells.end(), values.begin(), values.end());
-        absl::StrAppend(&object, ",", render::JsonQuote(column.scope), ":");
-        absl::StrAppend(
-            &object, present ? absl::StrCat("{", SummaryJson(row, denominator, precision, has_size), "}") : "null");
-      }
-      absl::StrAppend(&object, SummaryTotalJson(total_row), "}\n");
-      if (json) {
-        emit(object);
+      auto rendered = MakeComparisonSummaryRow(
+          std::move(exported), std::move(object),
+          {.columns = columns,
+           .totals = totals,
+           .sink = sink,
+           .human = human,
+           .precision = precision,
+           .has_size = has_size,
+           .population = population.Json()});
+      if (delimited) {
+        emit(exporter.Row(rendered.exported, output_format, precision));
+      } else if (json) {
+        emit(rendered.json);
+      } else if (compact) {
+        display_rows.push_back(std::move(rendered.display));
       } else {
-        table.AddRow(std::move(cells));
+        table.AddRow(std::move(rendered.cells));
       }
     }
-    if (!json) {
+    if (!json && !delimited) {
       EmitComparisonScopeHeading(command, scope, summaries.at(sink).mode, emit);
-      emit(table.Render());
+      if (compact) {
+        std::vector<std::string> scopes;
+        scopes.reserve(columns.size());
+        for (const auto& column : columns) {
+          scopes.push_back(column.scope);
+        }
+        emit(
+            render::RenderScopedTable(
+                scopes, std::move(display_rows), table_width, !HasGlobal(command.globals, "--no-header")));
+      } else {
+        emit(table.Render());
+      }
+      population.EmitNote(output_format, emit);
       emit(note);
     }
   }
@@ -3450,15 +3628,12 @@ void FeedSummaries(
       continue;  // fed from the -hasheq verdict, not from the expression's matched result
     }
     SummaryCells& cells = cells_per_sink[i];
-    if (specs[i].mode != SummaryMode::kTemplate) {
-      std::pair<std::uint64_t, std::uint64_t>& agg = cells[SummaryKey(specs[i].mode, visit)];
+    const auto& tmpl = templates.at(i);
+    if (!tmpl.has_value()) {
+      std::pair<std::uint64_t, std::uint64_t>& agg = cells[MetadataSummaryKey(specs[i].mode, visit)];
       agg.first += 1;
       agg.second += visit.metadata.size;
       continue;
-    }
-    const std::optional<fields::Template>& tmpl = templates[i];
-    if (!tmpl.has_value()) {
-      continue;  // a kTemplate sink always carries its compiled template, but the type allows the gap
     }
     const std::optional<std::vector<std::string>> stream = tmpl->AsExtraction(key_ctx);
     if (!stream.has_value()) {
@@ -3560,42 +3735,113 @@ Collections MakeCollections(
   return collections;
 }
 
-// The -collect post-walk pass: feeds every collected entry into the reduction sinks, in collection
-// name order then walk order. `-collect` exists so that a truncating test can narrow the LISTING
-// without also narrowing what is summarised, which is only possible if the sinks read a set the walk
-// held back rather than the stream. BOTH sinks switch together: a run where --summary reduced the
-// collection while --histogram reduced the matches would report two different totals for one walk.
-// The Visit is rebuilt per entry because a collected entry owns its storage (see collect.h).
-void FeedCollections(
+// The selected shard policy also applies when reductions consume explicit collections.
+struct CollectionShardPolicy {
+  const ShardsConfig& config;
+  const shard::Matcher& matcher;
+  shard::Dedup dedup;
+};
+
+struct CollectedShardDirectory {
+  std::vector<shard::ShardFile> shards;
+  std::map<std::string_view, std::reference_wrapper<const CollectedEntry>> by_name;
+  std::vector<std::reference_wrapper<const CollectedEntry>> passthrough;
+};
+
+// Views borrow the collection's stable storage until its post-walk reduction finishes.
+std::map<std::string, CollectedShardDirectory> GroupCollectedDirectories(
+    const std::vector<CollectedEntry>& entries,
+    const CollectionShardPolicy& policy) {
+  std::map<std::string, CollectedShardDirectory> groups;
+  for (const CollectedEntry& entry : entries) {
+    const auto slash = entry.path.rfind('/');
+    auto& group = groups[slash == std::string::npos ? "" : entry.path.substr(0, slash + 1)];
+    const auto match = policy.matcher.Decode(entry.name);
+    const bool selected = match.has_value()
+                          && (match->scheme == shard::Scheme::kCustom || policy.config.schemes.empty()
+                              || absl::c_linear_search(policy.config.schemes, match->scheme));
+    if (entry.metadata.type != vfs::FileType::kRegular || !selected) {
+      group.passthrough.emplace_back(entry);
+      continue;
+    }
+    group.by_name.try_emplace(entry.name, std::cref(entry));
+    group.shards.push_back({
+        .name = entry.name,
+        .size = entry.metadata.size,
+        .mode = entry.metadata.mode,
+        .mtime = absl::ToUnixNanos(entry.metadata.mtime),
+    });
+  }
+  return groups;
+}
+
+template<typename Feed>
+int FeedCollectedShards(
+    const std::vector<CollectedEntry>& entries,
+    const CollectionShardPolicy& policy,
+    const Feed& feed) {
+  int errors = 0;
+  for (const auto& [prefix, group] : GroupCollectedDirectories(entries, policy)) {
+    for (const auto& set : shard::GroupShards(group.shards, policy.matcher, policy.dedup)) {
+      if (policy.dedup == shard::Dedup::kError) {
+        errors += ReportShardDuplicateErrors(set, prefix);
+      }
+      CollectedEntry unit = group.by_name.at(ShardRepresentativePath(set)).get();
+      unit.metadata.size = set.total_size;
+      feed(unit, static_cast<std::int64_t>(set.members.size()));
+    }
+    for (const auto& entry : group.passthrough) {
+      feed(entry.get(), std::nullopt);
+    }
+  }
+  return errors;
+}
+
+// Both sinks consume the collected population, never a mixture of matches and collections.
+// Each named collection is independent: an entry collected under two names contributes twice.
+int FeedCollections(
     const Collections& collections,
     const CollectionRenderDefaults& defaults,
     const std::vector<SummarySpec>& summaries,
     const std::vector<std::optional<fields::Template>>& summary_templates,
     SummaryAccumulator& summary_cells,
     const std::vector<HistogramSpec>& histograms,
-    std::vector<std::map<std::string, HistCell>>& histogram_cells) {
+    std::vector<std::map<std::string, HistCell>>& histogram_cells,
+    const CollectionShardPolicy& shards) {
+  const auto feed = [&](const CollectedEntry& collected, std::optional<std::int64_t> shard_count) {
+    const Visit visit = collected.AsVisit();
+    const vfs::FileSystem& fs = visit.fs.has_value() ? *visit.fs : defaults.fs;
+    const std::string link;  // {target} is not resolved for a collected entry
+    const fields::RenderContext key_ctx{
+        .path = visit.path,
+        .root = visit.root,
+        .link_target = link,
+        .metadata = visit.metadata,
+        .depth = visit.depth,
+        .fs = fs,
+        .tz = defaults.tz,
+        .time_format = defaults.time_format,
+        .zone_suffix = defaults.zone_suffix,
+        .hash_algorithm = defaults.hash_algorithm,
+        .hash_encoding = defaults.hash_encoding,
+        .defines = defaults.defines,
+        .shard_count = shard_count,
+    };
+    FeedSummaries(summaries, summary_templates, summary_cells, key_ctx, visit);
+    FeedHistograms(histograms, histogram_cells, visit, fs);
+  };
+  int errors = 0;
   for (const std::string_view name : collections.Names()) {
-    for (const CollectedEntry& collected : collections.Entries(name)) {
-      const Visit visit = collected.AsVisit();
-      const std::string link;  // {target} is not resolved for a collected entry
-      const fields::RenderContext key_ctx{
-          .path = visit.path,
-          .root = visit.root,
-          .link_target = link,
-          .metadata = visit.metadata,
-          .depth = visit.depth,
-          .fs = visit.fs.has_value() ? *visit.fs : defaults.fs,
-          .tz = defaults.tz,
-          .time_format = defaults.time_format,
-          .zone_suffix = defaults.zone_suffix,
-          .hash_algorithm = defaults.hash_algorithm,
-          .hash_encoding = defaults.hash_encoding,
-          .defines = defaults.defines,
-      };
-      FeedSummaries(summaries, summary_templates, summary_cells, key_ctx, visit);
-      FeedHistograms(histograms, histogram_cells, visit, *visit.fs);
+    const auto& entries = collections.Entries(name);
+    if (shards.config.enabled) {
+      errors += FeedCollectedShards(entries, shards, feed);
+    } else {
+      for (const CollectedEntry& entry : entries) {
+        feed(entry, std::nullopt);
+      }
     }
   }
+  return errors;
 }
 
 // The collection's post-walk step: refuse an INCOMPLETE collection, otherwise feed the reduction
@@ -3612,7 +3858,8 @@ int FinishCollections(
     SummaryAccumulator& summary_cells,
     const std::vector<HistogramSpec>& histograms,
     std::vector<std::map<std::string, HistCell>>& histogram_cells,
-    const CollectionRenderDefaults& defaults) {
+    const CollectionRenderDefaults& defaults,
+    const CollectionShardPolicy& shards) {
   if (collections.Overflowed()) {
     const Collections::Budget budget = collections.CurrentBudget();
     on_error(
@@ -3625,7 +3872,8 @@ int FinishCollections(
     return 2;
   }
   if (collections.Active() && (!summaries.empty() || !histograms.empty())) {
-    FeedCollections(collections, defaults, summaries, summary_templates, summary_cells, histograms, histogram_cells);
+    return FeedCollections(
+        collections, defaults, summaries, summary_templates, summary_cells, histograms, histogram_cells, shards);
   }
   return 0;
 }
@@ -3871,11 +4119,13 @@ void EmitTreeCompareSummary(
     const parser::Command& command,
     const TreeCompareCounts& counts,
     std::optional<registry::Style> style,
-    EmitFn emit) {
+    EmitFn emit,
+    const std::vector<std::string>& export_scopes) {
   const auto& globals = command.globals;
   const auto precision = ResolveSummaryPrecision(globals);
   const auto output_format = ResolveFormat(globals);
   const auto human = ResolveHuman(globals, style);
+  const render::SummaryExport exporter(export_scopes);
   for (const auto& summary : ResolveSummaries(globals, true)) {
     if (summary.mode != SummaryMode::kCompare) {
       continue;
@@ -3886,7 +4136,19 @@ void EmitTreeCompareSummary(
         {"Type", "Status", "Results", "% results", "Combined size", "% size"}, output_format,
         !HasGlobal(globals, "--no-header"));
     const auto add_row = [&](std::string_view type, const SummaryRow& row, bool is_total) {
-      if (output_format == render::Format::kJsonl) {
+      if (IsDelimitedSummary(output_format)) {
+        emit(exporter.Row(
+            {.request = summary.request_index,
+             .summary = SummaryGrouping(summary.mode),
+             .scope = "compare",
+             .left_root = command.roots.at(0),
+             .right_root = command.roots.at(1),
+             .type = type,
+             .group = row.key,
+             .is_total = is_total,
+             .metrics = ExportMetrics(row, counts.total, true)},
+            output_format, precision));
+      } else if (output_format == render::Format::kJsonl) {
         emit(
             absl::StrCat(
                 "{", SummaryIdentityJson(summary), R"(,"scope":"compare","left_root":)",
@@ -3908,7 +4170,7 @@ void EmitTreeCompareSummary(
       }
     }
     add_row("all", counts.total, true);
-    if (output_format != render::Format::kJsonl) {
+    if (!IsMachineSummary(output_format)) {
       EmitSummaryHeading(summary.mode, globals, emit);
       emit(table.Render());
       emit(
@@ -3927,7 +4189,8 @@ RunResult RunTreeCompare(
     const vfs::FileSystem& fs,
     EmitFn emit,
     WalkErrorFn on_error,
-    std::optional<registry::Style> style) {
+    std::optional<registry::Style> style,
+    std::size_t table_width) {
   if (command.roots.size() != 2) {
     on_error("--compare", absl::InvalidArgumentError("requires exactly two roots"));
     return RunResult{.errors = 2};
@@ -4113,9 +4376,23 @@ RunResult RunTreeCompare(
       ++right;
     }
   }
-  EmitTreeCompareSummary(command, counts, style, emit);
   auto summaries = ResolveSummaries(command.globals, true);
+  const bool has_summaries = !summaries.empty();
   std::erase_if(summaries, [](const SummarySpec& spec) { return spec.mode == SummaryMode::kCompare; });
+  std::vector<std::string> export_scopes;
+  if (!summaries.empty()) {
+    export_scopes.reserve(scopes_result->size());
+    for (const auto& selected_scope : *scopes_result) {
+      if (selected_scope != "all" && selected_scope != "root") {
+        export_scopes.push_back(selected_scope);
+      }
+    }
+  }
+  if (has_summaries && IsDelimitedSummary(ResolveFormat(command.globals))
+      && !HasGlobal(command.globals, "--no-header")) {
+    emit(render::SummaryExport(export_scopes).Header(ResolveFormat(command.globals)));
+  }
+  EmitTreeCompareSummary(command, counts, style, emit, export_scopes);
   const auto format = ResolveFormat(command.globals);
   const auto human = ResolveHuman(command.globals, style);
   const auto columns = ComparisonScopeColumns(*scopes_result, side_summaries, categories, summaries.size());
@@ -4129,16 +4406,17 @@ RunResult RunTreeCompare(
     if (scope == "all") {
       auto combined = CombinedSummaryTables(side_summaries.at(0));
       MergeSummaryTables(combined, CombinedSummaryTables(side_summaries.at(1)));
-      EmitScopedSummaries(command.globals, summaries, combined, format, human, scope, "", emit);
+      EmitScopedSummaries(command.globals, summaries, combined, format, human, scope, "", emit, export_scopes);
     } else if (scope == "root") {
       for (std::size_t side = 0; side < side_summaries.size(); ++side) {
         EmitScopedSummaries(
             command.globals, summaries, CombinedSummaryTables(side_summaries.at(side)), format, human, scope,
-            command.roots.at(side), emit);
+            command.roots.at(side), emit, export_scopes);
       }
     } else if (!emitted_columns) {
       emitted_columns = true;
-      EmitComparisonScopeSummary(command, absl::StrJoin(column_scopes, ","), summaries, columns, style, emit);
+      EmitComparisonScopeSummary(
+          command, absl::StrJoin(column_scopes, ","), summaries, columns, style, emit, table_width);
     }
   }
   return RunResult{.errors = 0, .any_match = different};
@@ -4298,7 +4576,7 @@ RunResult RunFindCore(
   {
     std::optional<std::string> extraction;
     if (expression.has_value()) {
-      extraction = FindScalarExtraction(*expression);
+      extraction = FindScalarExtraction(*expression, HasGlobal(command.globals, "--exec-fields"));
     }
     if (!extraction.has_value() && tmpl.has_value() && fields::Template::Compile(*tmpl).HasUnreducedExtraction()) {
       extraction = *tmpl;
@@ -4323,7 +4601,7 @@ RunResult RunFindCore(
   const bool buffered = format == render::Format::kAligned || format == render::Format::kMarkdown;
   const bool is_tree = format == render::Format::kTree;
   const bool tabular = format == render::Format::kCsv || format == render::Format::kTsv || buffered;
-  const bool tabular_summary = buffered && !ResolveSummaries(command.globals, compare_listing).empty();
+  const bool tabular_summary = tabular && !ResolveSummaries(command.globals, compare_listing).empty();
   const bool tabular_reduction = tabular_summary || (buffered && !histograms.empty());
   if (tabular_reduction && !columns.empty()) {
     on_error(
@@ -4393,7 +4671,7 @@ RunResult RunFindCore(
   // Capture one reference instant so every entry's age test (-mtime/-mmin) is
   // measured against the same clock. -daystart measures from today's local
   // midnight (in tz) instead of find's start time (the run's start).
-  const bool daystart = expression.has_value() && ContainsPrimary(*expression, "-daystart");
+  const bool daystart = expression.has_value() && ContainsControl(*expression, registry::Control::kDayStart);
   const absl::Time now = daystart ? datetime::StartOfDay(absl::Now(), tz) : absl::Now();
   // --time-format=NAME: default spec for a time field with no {:qualifier}.
   const std::string time_format = ResolveTimeFormat(command.globals);
@@ -4471,26 +4749,12 @@ RunResult RunFindCore(
   // --diff-format=u|c|n|y|unified|context|normal|side-by-side: the default -diff output format
   // (last occurrence wins; unset -> unified). A per-action -diff:STYLE letter still overrides it.
   // Validated here so a bad value is a usage error (exit 2) before the walk.
-  mbo::diff::DiffOptions::OutputFormat diff_format = mbo::diff::DiffOptions::OutputFormat::kUnified;
-  std::string diff_format_flag;
-  for (const std::string& global : command.globals) {
-    constexpr std::string_view kDiffFormat = "--diff-format=";
-    if (global.starts_with(kDiffFormat)) {
-      diff_format_flag = global.substr(kDiffFormat.size());
-    }
+  const auto diff_format_result = ResolveDiffFormat(command.globals);
+  if (!diff_format_result.ok()) {
+    on_error("--diff-format", diff_format_result.status());
+    return RunResult{.errors = 2};
   }
-  if (!diff_format_flag.empty()) {
-    const std::optional<mbo::diff::DiffOptions::OutputFormat> parsed = ParseDiffFormatFlag(diff_format_flag);
-    if (!parsed.has_value()) {
-      on_error(
-          "--diff-format", absl::InvalidArgumentError(
-                               absl::StrCat(
-                                   "unknown diff format '", diff_format_flag,
-                                   "' (use u/unified, c/context, n/normal, or y/side-by-side)")));
-      return RunResult{.errors = 2};
-    }
-    diff_format = *parsed;
-  }
+  const mbo::diff::DiffOptions::OutputFormat diff_format = *diff_format_result;
   // --diff-context=N (and --context=N when symmetric): the default -diff context size (built-in 3).
   // --context feeds diff only when before==after (a single symmetric value a diff can represent);
   // --diff-context overrides --context regardless of order; a per-action -diff:uN overrides both.
@@ -4519,13 +4783,6 @@ RunResult RunFindCore(
   options.archive = archive_options->archive_dive;
   options.archive_depth = archive_options->archive_depth;
   const archive::MemberPathOptions member_path_options = archive_options->member_paths;
-  // --archive-any: offer every file to the reader instead of only those whose name looks like a
-  // container. Expensive by design (every file is opened and format-bid), so it is opt-in.
-  // `--archive=any` / `-z++` / `-Z++` is the top rung: dive like `all` AND drop the name gate.
-  // `--archive-any` is the older spelling of the same thing.
-  const bool archive_any = absl::c_contains(command.globals, "--archive-any")
-                           || absl::c_contains(command.globals, "--archive=any")
-                           || absl::c_contains(command.globals, "-z++") || absl::c_contains(command.globals, "-Z++");
   // --hash-algorithm=ALGO / --hash-encoding=hex|base64: defaults for a bare -hash action and a
   // bare {hash} field (last occurrence wins; empty -> sha256 / hex). Validated here so a bad value
   // is a usage error (exit 2) before the walk; the explicit -hash:ALGO[/ENCODING] specs in the
@@ -4572,7 +4829,8 @@ RunResult RunFindCore(
   const bool hash_verification_summary =
       absl::c_any_of(summaries, [](const SummarySpec& spec) { return spec.mode == SummaryMode::kHashVerification; });
   if (hash_verification_summary) {
-    const std::size_t checks = expression.has_value() ? CountPrimary(*expression, "-hasheq") : 0;
+    const std::size_t checks =
+        expression.has_value() ? CountControl(*expression, registry::Control::kHashVerification) : 0;
     if (checks != 1) {
       on_error(
           "--summary=hash-verification",
@@ -4580,12 +4838,14 @@ RunResult RunFindCore(
       return RunResult{.errors = 2};
     }
   }
-  std::vector<std::optional<fields::Template>> summary_templates(summaries.size());  // compiled, kTemplate only
+  std::vector<std::optional<fields::Template>> summary_templates(summaries.size());  // field-backed groupings
   for (std::size_t i = 0; i < summaries.size(); ++i) {
-    if (summaries[i].mode != SummaryMode::kTemplate) {
+    const auto& spec = summaries.at(i);
+    if (spec.mode != SummaryMode::kTemplate && spec.mode != SummaryMode::kHash) {
       continue;
     }
-    fields::Template tmpl = fields::Template::Compile(summaries[i].key_template);
+    // Hash grouping needs the visit's filesystem and the active hash defaults, just like {hash}.
+    fields::Template tmpl = fields::Template::Compile(spec.mode == SummaryMode::kHash ? "{hash}" : spec.key_template);
     if (tmpl.HasUnreducedExtraction() && !tmpl.IsExtraction()) {
       on_error(
           "--summary", absl::InvalidArgumentError(
@@ -4619,7 +4879,7 @@ RunResult RunFindCore(
     on_error("--shards", shards_or.status());
     return RunResult{.errors = 2};
   }
-  const ShardsConfig shards = *std::move(shards_or);
+  ShardsConfig shards = *std::move(shards_or);
   absl::StatusOr<ShardShow> shard_show_or = ResolveShardShow(command.globals);
   if (!shard_show_or.ok()) {
     on_error("--shards-show", shard_show_or.status());
@@ -4643,7 +4903,8 @@ RunResult RunFindCore(
   }
   // Matcher over the custom patterns plus all built-in schemes (scheme restriction is applied per set
   // below). Make() can fail on a bad custom pattern; surface it as a usage error.
-  const bool shard_status_enabled = expression.has_value() && ContainsPrimary(*expression, "-shard-status");
+  const bool shard_status_enabled =
+      expression.has_value() && ContainsControl(*expression, registry::Control::kShardStatus);
   std::optional<shard::Matcher> shard_matcher;
   if (shards.enabled || shard_status_enabled) {
     absl::StatusOr<shard::Matcher> matcher_or = shard::Matcher::Make({}, shard_patterns);
@@ -4655,6 +4916,11 @@ RunResult RunFindCore(
   } else {
     shard_matcher = *shard::Matcher::Make();
   }
+
+  // Comparison pairs physical entries by relative path. Collapsing a side's reductions onto
+  // its representative would assign changed shards to that representative's result category.
+  // Keep scheme selection for -shard-status, but use physical entries throughout comparison.
+  shards.enabled = shards.enabled && !compare_listing;
 
   // A matched file buffered for shard grouping, bucketed by directory (grouping is per-directory).
   // `name` owns the basename so a ShardFile view into it stays valid post-walk; `root` / `depth` /
@@ -4785,6 +5051,8 @@ RunResult RunFindCore(
   // the AST (presence is SYNTACTIC, like find's implicit -print: a -collect in a branch that never
   // runs still switches the summary's source, and the summary is then legitimately empty).
   Collections collections = MakeCollections(expression, command.globals);
+  const bool group_matched_shards =
+      shards.enabled && (!collections.Active() || (summaries.empty() && histograms.empty()));
 
   // --dry-run: route deletions through a previewing wrapper, so -delete reports
   // what it would remove without touching the filesystem.
@@ -4993,7 +5261,7 @@ RunResult RunFindCore(
   // The walk's whole view of archives: hand it a container path, get a filesystem over the members
   // or the InvalidArgument that means "an ordinary file after all". Passed unconditionally because
   // `options.archive` decides whether it is ever called.
-  const auto mount_container = MakeContainerMounter(walk_fs, member_path_options, archive_any);
+  const auto mount_container = MakeContainerMounter(walk_fs, member_path_options, archive_options->sniff_any);
   std::size_t listed_results = 0;
 
   // Completes the run-level consequences of one fully evaluated entry. Deferred result-set
@@ -5038,7 +5306,7 @@ RunResult RunFindCore(
           });
         }
       }
-      if (shards.enabled) {
+      if (group_matched_shards) {
         const std::string_view path = visit.path;
         const std::string_view::size_type slash = path.rfind('/');
         const std::string_view dir = slash == std::string_view::npos ? std::string_view() : path.substr(0, slash);
@@ -5321,7 +5589,7 @@ RunResult RunFindCore(
     };
     errors += ResolveDeferredRound(
         deferred_candidates, deferred_node_order, *shard_matcher, shard_dedup, scheme_allowed,
-        /*report_dedup_errors=*/!shards.enabled);
+        /*report_dedup_errors=*/!group_matched_shards);
     std::vector<DeferredCandidate> next_round;
     next_round.reserve(deferred_candidates.size());
     for (DeferredCandidate& candidate : deferred_candidates) {
@@ -5463,7 +5731,7 @@ RunResult RunFindCore(
   // per-command error, as for `;`.
   for (const auto& [node, by_dir] : exec_batches) {
     const parser::Expr& expr = node.Get();
-    const bool execdir = expr.descriptor->name == "-execdir";
+    const bool execdir = expr.descriptor->execute_in_directory;
     for (const auto& [dir, items] : by_dir) {
       const bool ok = execdir ? exec::ExecuteBatchInDir(expr.args, items, dir) : exec::ExecuteBatch(expr.args, items);
       if (!ok) {
@@ -5524,7 +5792,7 @@ RunResult RunFindCore(
   };
 
   std::vector<GroupedDir> shard_groups;
-  if (shards.enabled) {
+  if (group_matched_shards) {
     const auto scheme_allowed = [&](shard::Scheme scheme) {
       return scheme == shard::Scheme::kCustom || shards.schemes.empty()
              || absl::c_linear_search(shards.schemes, scheme);
@@ -5614,7 +5882,8 @@ RunResult RunFindCore(
               .hash_algorithm = hash_algorithm,
               .hash_encoding = hash_encoding,
               .defines = defines,
-          });
+          },
+          CollectionShardPolicy{.config = shards, .matcher = *shard_matcher, .dedup = shard_dedup});
       collect_status != 0) {
     return RunResult{.errors = collect_status, .any_match = any_match};
   }
@@ -5622,6 +5891,9 @@ RunResult RunFindCore(
   if (comparison_summaries.has_value()) {
     *comparison_summaries = std::move(summary_cells);
   } else {
+    if (IsDelimitedSummary(format) && !summaries.empty() && !HasGlobal(command.globals, "--no-header")) {
+      emit(render::SummaryExport().Header(format));
+    }
     for (const std::string& scope : scopes) {
       if (scope == "all") {
         if (absl::c_any_of(
@@ -5751,18 +6023,166 @@ RunResult RunFindCore(
   return RunResult{.errors = errors, .any_match = any_match};
 }
 
+bool HasSummaryExportOutput(const parser::Expr& expression, bool dry_run) {
+  if (expression.descriptor.has_value()) {
+    const auto& descriptor = *expression.descriptor;
+    const bool silent_diff = descriptor.binding == registry::Binding::kStyle && expression.diff_style == "none";
+    if ((descriptor.stdout_output && !silent_diff)
+        || (dry_run && (descriptor.writes_file || descriptor.safety != registry::Safety::kNone))) {
+      return true;
+    }
+  }
+  return (expression.lhs && HasSummaryExportOutput(*expression.lhs, dry_run))
+         || (expression.rhs && HasSummaryExportOutput(*expression.rhs, dry_run));
+}
+
+absl::Status ValidateSummaryExport(const parser::Command& command, bool compare) {
+  if (!IsDelimitedSummary(ResolveFormat(command.globals)) || ResolveSummaries(command.globals, compare).empty()) {
+    return absl::OkStatus();
+  }
+  const bool dry_run = HasGlobal(command.globals, "--dry-run");
+  const bool pack_preview = dry_run && std::ranges::any_of(command.globals, [](std::string_view flag) {
+                              return flag.starts_with("--pack=");
+                            });
+  if (pack_preview || (command.expression && HasSummaryExportOutput(*command.expression, dry_run))) {
+    return absl::InvalidArgumentError(
+        "CSV/TSV summary export cannot mix action output or dry-run previews into its rows");
+  }
+  if (compare) {
+    MBO_ASSIGN_OR_RETURN(const auto selection, ResolveTreeCompareSelection(command.globals));
+    if (selection.left_only || selection.right_only || selection.identical || selection.different) {
+      return absl::InvalidArgumentError(
+          "CSV/TSV summary export requires --compare-select=none; --compare=summary selects it automatically");
+    }
+  }
+  return absl::OkStatus();
+}
+
+std::set<registry::ModifierConsumer> ReductionConsumers(
+    const std::vector<SummarySpec>& summaries,
+    const std::vector<HistogramSpec>& histograms,
+    render::Format format) {
+  using registry::ModifierConsumer;
+  std::set<ModifierConsumer> consumers;
+  if (!summaries.empty()
+      || std::ranges::any_of(histograms, [](const HistogramSpec& spec) { return spec.agg == HistAgg::kMean; })) {
+    consumers.insert(ModifierConsumer::kPrecisionReduction);
+  }
+  if (std::ranges::any_of(histograms, [](const HistogramSpec& spec) { return !IsNumericBucket(spec.bucket); })
+      || std::ranges::any_of(
+          summaries, [](const SummarySpec& summary) { return summary.mode != SummaryMode::kCompare; })) {
+    consumers.insert(ModifierConsumer::kRankedReduction);
+  }
+  if (!histograms.empty() && (format == render::Format::kPlain || format == render::Format::kAligned)) {
+    consumers.insert(ModifierConsumer::kHistogramBars);
+  }
+  return consumers;
+}
+
+bool IsTreeComparison(const std::vector<std::string>& globals) {
+  return absl::c_any_of(
+      globals, [](std::string_view global) { return global == "--compare" || global.starts_with("--compare="); });
+}
+
+std::set<registry::ModifierConsumer> HashConsumers(hash::DefaultUsage defaults) {
+  std::set<registry::ModifierConsumer> consumers;
+  if (defaults.algorithm) {
+    consumers.insert(registry::ModifierConsumer::kHashAlgorithm);
+  }
+  if (defaults.encoding) {
+    consumers.insert(registry::ModifierConsumer::kHashEncoding);
+  }
+  return consumers;
+}
+
+std::set<registry::ModifierConsumer> PredicateHashConsumers(
+    const parser::Expr& expr,
+    bool exec_fields,
+    bool grep_count) {
+  std::set<registry::ModifierConsumer> consumers;
+  if (expr.grep_template != nullptr && !grep_count) {
+    consumers.merge(HashConsumers(expr.grep_template->HashDefaultsUsed()));
+  }
+  if (expr.descriptor->binding == registry::Binding::kHash) {
+    const auto spec = hash::ParseSpec(expr.hash_spec, "sha256");
+    if (spec.has_value()) {
+      consumers.merge(HashConsumers(spec->defaults));
+    }
+  }
+  const auto& expansion = expr.descriptor->argument_fields;
+  if (expansion.syntax == registry::ArgumentFields::Syntax::kNone || (expansion.requires_exec_fields && !exec_fields)
+      || expansion.first >= expr.args.size()) {
+    return consumers;
+  }
+  const absl::Span<const std::string> args = expr.args;
+  for (const std::string& arg :
+       args.subspan(expansion.first, expansion.remaining ? args.size() - expansion.first : 1)) {
+    if (expansion.syntax == registry::ArgumentFields::Syntax::kPrintf) {
+      for (const auto& field : fields::PrintfTemplates(arg)) {
+        consumers.merge(HashConsumers(field.HashDefaultsUsed()));
+      }
+    } else {
+      consumers.merge(HashConsumers(fields::Template::Compile(arg).HashDefaultsUsed()));
+    }
+  }
+  return consumers;
+}
+
+std::set<registry::ModifierConsumer> ExpressionConsumers(
+    const parser::Expr& expr,
+    bool grep_count,
+    mbo::diff::DiffOptions::OutputFormat diff_format,
+    bool exec_fields) {
+  using registry::ModifierConsumer;
+  std::set<ModifierConsumer> consumers;
+  if (expr.descriptor.has_value()) {
+    consumers.merge(PredicateHashConsumers(expr, exec_fields, grep_count));
+    const ModifierConsumer consumer = expr.descriptor->modifier_consumer;
+    if (consumer != ModifierConsumer::kNone) {
+      consumers.insert(consumer);
+    }
+    if (consumer == ModifierConsumer::kGrep && !grep_count) {
+      consumers.insert(ModifierConsumer::kGrepLines);
+    }
+    if (consumer == ModifierConsumer::kFileDiff) {
+      consumers.insert(ModifierConsumer::kDiffComputation);
+      const DiffDefaultDependencies defaults = InspectDiffDefaults(expr.diff_style, diff_format);
+      if (defaults.format) {
+        consumers.insert(ModifierConsumer::kDefaultDiffFormat);
+      }
+      if (defaults.context) {
+        consumers.insert(ModifierConsumer::kFileDiffContext);
+        consumers.insert(ModifierConsumer::kDiffContext);
+      }
+    }
+    if (consumer == ModifierConsumer::kShardStatus) {
+      consumers.insert(ModifierConsumer::kShardGrouping);
+    }
+  }
+  if (expr.lhs) {
+    consumers.merge(ExpressionConsumers(*expr.lhs, grep_count, diff_format, exec_fields));
+  }
+  if (expr.rhs) {
+    consumers.merge(ExpressionConsumers(*expr.rhs, grep_count, diff_format, exec_fields));
+  }
+  return consumers;
+}
+
 // Validate formats shared by summary and histogram output before any actions run.
 absl::Status ValidateReductionFormat(const std::vector<std::string>& globals, bool compare, bool has_histograms) {
   const bool has_summary = !ResolveSummaries(globals, compare).empty();
   if (has_summary || has_histograms) {
     const auto format = ResolveFormat(globals);
+    if (has_summary && !has_histograms && IsDelimitedSummary(format)) {
+      return absl::OkStatus();
+    }
     if (format != render::Format::kPlain && format != render::Format::kAligned && format != render::Format::kJsonl
         && format != render::Format::kMarkdown) {
       return absl::InvalidArgumentError(
           absl::StrCat(
               has_summary ? "summary tables" : "histograms",
               " require --format=plain, aligned, jsonl, or markdown; "
-              "csv, tsv, nul, and tree are listing formats"));
+              "CSV/TSV support summaries only; nul and tree are listing formats"));
     }
   }
   return absl::OkStatus();
@@ -5808,16 +6228,370 @@ absl::Status ValidateSummaryOptions(const std::vector<std::string>& globals, boo
   return ValidateReductionFormat(globals, compare, has_histograms);
 }
 
+std::set<registry::ModifierConsumer> OutputHashConsumers(
+    const parser::Command& command,
+    const std::vector<SummarySpec>& summaries,
+    bool listing) {
+  std::set<registry::ModifierConsumer> consumers;
+  for (const SummarySpec& summary : summaries) {
+    if (summary.mode == SummaryMode::kTemplate) {
+      consumers.merge(HashConsumers(fields::Template::Compile(summary.key_template).HashDefaultsUsed()));
+    }
+    if (summary.mode == SummaryMode::kHash) {
+      consumers.merge(HashConsumers({.algorithm = true, .encoding = true}));
+    }
+  }
+  if (!listing) {
+    return consumers;
+  }
+  const auto columns = ResolveColumns(command.globals);
+  for (const std::string& column : columns) {
+    consumers.merge(HashConsumers(fields::Template::Compile(absl::StrCat("{", column, "}")).HashDefaultsUsed()));
+  }
+  if (columns.empty()) {
+    if (const auto tmpl = ResolveTemplate(command.globals); tmpl.has_value()) {
+      consumers.merge(HashConsumers(fields::Template::Compile(*tmpl).HashDefaultsUsed()));
+    }
+  }
+  return consumers;
+}
+
+absl::StatusOr<std::set<registry::ModifierConsumer>> ArchiveModifierConsumers(
+    const std::vector<std::string>& globals,
+    registry::Style style,
+    const std::vector<SummarySpec>& summaries,
+    const std::vector<HistogramSpec>& histograms,
+    bool shard_grouping) {
+  using registry::ModifierConsumer;
+  MBO_ASSIGN_OR_RETURN(const auto options, ResolveArchiveOptions(globals, style));
+  std::set<ModifierConsumer> consumers;
+  if (options.archive_dive == ArchiveDive::kNone) {
+    return consumers;
+  }
+  consumers.insert(ModifierConsumer::kArchiveTraversal);
+  if (options.archive_dive == ArchiveDive::kAll) {
+    consumers.insert(ModifierConsumer::kArchiveNestedTraversal);
+  }
+  // Match RunFindCore's reduction-dependent mounting, including packing and shards.
+  // A comparison-result table alone does not feed an ordinary reduction.
+  const bool summary =
+      std::ranges::any_of(summaries, [](const SummarySpec& spec) { return spec.mode != SummaryMode::kCompare; });
+  if (summary || !histograms.empty() || shard_grouping || ReadPackTarget(globals).has_value()) {
+    consumers.insert(ModifierConsumer::kArchiveReduction);
+  }
+  return consumers;
+}
+
+struct ExpressionResources {
+  std::size_t content_fields = 0;
+  bool column_buffer = false;
+  bool command_batches = false;
+  std::vector<std::string_view> expensive;
+};
+
+// Own the accumulation while walking the AST once; do not repeatedly copy a growing result
+// vector at each parent of a deeply nested expression.
+class ExpressionResourceInspector final {
+ public:
+  ExpressionResourceInspector(bool exec_fields, bool grep_count) : exec_fields_(exec_fields), grep_count_(grep_count) {}
+
+  ExpressionResources Inspect(const parser::Expr& expr) && {
+    Visit(expr);
+    return std::move(resources_);
+  }
+
+ private:
+  void Visit(const parser::Expr& expr) {
+    if (expr.kind != parser::Expr::Kind::kPredicate) {
+      if (expr.lhs != nullptr) {
+        Visit(*expr.lhs);
+      }
+      if (expr.rhs != nullptr) {
+        Visit(*expr.rhs);
+      }
+      return;
+    }
+    const registry::Descriptor& descriptor = *expr.descriptor;
+    if (descriptor.cost == registry::Cost::kExpensive) {
+      resources_.expensive.push_back(descriptor.name);
+    }
+    resources_.column_buffer |= descriptor.buffers_columns;
+    resources_.command_batches |= expr.exec_batch;
+    if (!grep_count_ && expr.grep_template != nullptr) {
+      resources_.content_fields += expr.grep_template->ContentFieldCount();
+    }
+    const registry::ArgumentFields& fields = descriptor.argument_fields;
+    if (fields.syntax == registry::ArgumentFields::Syntax::kNone || (fields.requires_exec_fields && !exec_fields_)
+        || fields.first >= expr.args.size()) {
+      return;
+    }
+    const absl::Span<const std::string> arguments = expr.args;
+    for (const std::string& argument :
+         arguments.subspan(fields.first, fields.remaining ? arguments.size() - fields.first : 1)) {
+      if (fields.syntax == registry::ArgumentFields::Syntax::kPrintf) {
+        for (const fields::Template& field : fields::PrintfTemplates(argument)) {
+          resources_.content_fields += field.ContentFieldCount();
+        }
+      } else {
+        resources_.content_fields += fields::Template::Compile(argument).ContentFieldCount();
+      }
+    }
+  }
+
+  bool exec_fields_;
+  bool grep_count_;
+  ExpressionResources resources_;
+};
+
+std::string DescribeColumnBuffer(const BufferBound& bound) {
+  if (bound.byte_budget != 0) {
+    return absl::StrCat(bound.byte_budget, " cell bytes; later rows stream");
+  }
+  if (bound.window == 0) {
+    return "off";
+  }
+  if (bound.window == format::ColumnBuffer::kAll) {
+    return "all rows";
+  }
+  return absl::StrCat(bound.window, " rows; later rows stream");
+}
+
+std::size_t ListingAndSummaryContentFields(
+    const std::vector<std::string>& globals,
+    bool listing,
+    render::Format format,
+    const std::vector<SummarySpec>& summaries) {
+  std::size_t count = 0;
+  const auto columns = ResolveColumns(globals);
+  const auto text = ResolveTemplate(globals);
+  if (listing && format != render::Format::kTree) {
+    if (!columns.empty()) {
+      for (const std::string& column : columns) {
+        count += fields::Template::Compile(absl::StrCat("{", column, "}")).ContentFieldCount();
+      }
+    } else if (text.has_value()) {
+      count += fields::Template::Compile(*text).ContentFieldCount();
+    }
+  }
+  for (const SummarySpec& summary : summaries) {
+    if (summary.mode == SummaryMode::kHash) {
+      ++count;
+    } else if (summary.mode == SummaryMode::kTemplate) {
+      count += fields::Template::Compile(summary.key_template).ContentFieldCount();
+    }
+  }
+  return count;
+}
+
+struct RetentionView {
+  bool compare;
+  bool listing;
+  bool pack;
+  bool shards;
+  render::Format format;
+  bool has_summaries;
+  bool has_histograms;
+  absl::Span<const std::string> scopes;
+  bool deferred;
+};
+
+std::string DescribeRetainedResources(
+    const parser::Command& command,
+    const RetentionView& state,
+    const ExpressionResources& resources) {
+  const auto& globals = command.globals;
+  const auto expression = parser::AsConstOptionalExpr(command.expression);
+  const auto columns = ResolveColumns(globals);
+  const auto text = ResolveTemplate(globals);
+  std::string output;
+  if (state.compare) {
+    absl::StrAppend(
+        &output, "comparison-state\tboth matched inventories; statuses follow both completed walks\n",
+        "comparison-reads\tpaired regular-file content may be read on both sides\n");
+  }
+  if (state.has_summaries || state.has_histograms) {
+    absl::StrAppend(&output, "reduction-state\taggregation keys and values; output follows aggregation\n");
+  }
+  if (state.compare && state.has_summaries
+      && absl::c_any_of(state.scopes, [](std::string_view scope) { return scope != "all" && scope != "root"; })) {
+    absl::StrAppend(&output, "comparison-summary-state\tper-entry contributions and result categories\n");
+  }
+  if (state.listing && (!text.has_value() || !columns.empty())
+      && (state.format == render::Format::kAligned || state.format == render::Format::kMarkdown)) {
+    absl::StrAppend(
+        &output, "listing-column-buffer\t",
+        DescribeColumnBuffer(ResolveBufferBound(globals, format::ColumnBuffer::kAll)), "\n");
+  }
+  if (resources.column_buffer) {
+    absl::StrAppend(&output, "action-column-buffer\t", DescribeColumnBuffer(ResolveBufferBound(globals, 100)), "\n");
+  }
+  const Collections collections = MakeCollections(expression, globals);
+  if (collections.Active()) {
+    const auto budget = collections.CurrentBudget();
+    absl::StrAppend(
+        &output, "collection-state\tmatched entries until post-walk sinks; row cap ",
+        budget.rows == 0 ? "unlimited" : std::to_string(budget.rows), "; path/name/root byte cap ",
+        budget.bytes == 0 ? "unlimited" : std::to_string(budget.bytes), "\n");
+  }
+  if (state.deferred) {
+    absl::StrAppend(&output, "deferred-expression-state\tcandidates retained for result-set selection\n");
+  }
+  if (ResolveRankByScore(globals)) {
+    absl::StrAppend(&output, "ranking-state\tentry output retained until traversal completes\n");
+  }
+  if (state.listing && state.format == render::Format::kTree) {
+    absl::StrAppend(
+        &output, "tree-output-state\tmatching paths and ancestor branches retained until traversal completes\n");
+  }
+  if (resources.command_batches) {
+    absl::StrAppend(&output, "command-batch-state\tmatched paths retained for post-walk commands\n");
+  }
+  if (state.shards) {
+    absl::StrAppend(&output, "shard-state\tphysical entries retained for grouping\n");
+  }
+  if (state.pack) {
+    absl::StrAppend(&output, "archive-pack-state\tentry plan retained; packing reads member content\n");
+  }
+  return output;
+}
+
 }  // namespace
+
+absl::Status ValidateCommandFields(const parser::Command& command) {
+  if (const auto tmpl = ResolveTemplate(command.globals); tmpl.has_value()) {
+    MBO_RETURN_IF_ERROR(fields::Template::Compile(*tmpl).Validate());
+  }
+  for (const std::string& column : ResolveColumns(command.globals)) {
+    MBO_RETURN_IF_ERROR(fields::Template::Compile(absl::StrCat("{", column, "}")).Validate());
+  }
+  for (const SummarySpec& summary : ResolveSummaries(command.globals)) {
+    if (summary.mode == SummaryMode::kTemplate) {
+      MBO_RETURN_IF_ERROR(fields::Template::Compile(summary.key_template).Validate());
+    }
+  }
+  return command.expression != nullptr
+             ? ValidateExpressionFields(*command.expression, HasGlobal(command.globals, "--exec-fields"))
+             : absl::OkStatus();
+}
+
+absl::StatusOr<std::set<registry::ModifierConsumer>> ActiveModifierConsumers(
+    const parser::Command& command,
+    registry::Style style) {
+  using registry::ModifierConsumer;
+  const bool grep_count = HasGlobal(command.globals, "--count") || HasGlobal(command.globals, "-c");
+  MBO_ASSIGN_OR_RETURN(const auto diff_format, ResolveDiffFormat(command.globals));
+  std::set<ModifierConsumer> consumers = command.expression ? ExpressionConsumers(
+                                                                  *command.expression, grep_count, diff_format,
+                                                                  HasGlobal(command.globals, "--exec-fields"))
+                                                            : std::set<ModifierConsumer>{};
+  const bool compare = IsTreeComparison(command.globals);
+  MBO_ASSIGN_OR_RETURN(const auto histograms, ResolveHistograms(command.globals));
+  MBO_ASSIGN_OR_RETURN(const auto shards, ResolveShards(command.globals));
+  const auto summaries = ResolveSummaries(command.globals, compare);
+  const bool has_action = command.expression && ContainsAction(*command.expression);
+  const bool listing = ResolveImplicitPrint(command.globals).value_or(!has_action && !compare) && summaries.empty()
+                       && histograms.empty() && !shards.enabled && !ReadPackTarget(command.globals).has_value();
+  consumers.merge(OutputHashConsumers(command, summaries, listing));
+  if (compare && ResolveTreeCompareOutput(command.globals) == TreeCompareOutput::kDiff) {
+    consumers.insert(ModifierConsumer::kDiffComputation);
+    consumers.insert(ModifierConsumer::kDiffContext);
+  }
+  MBO_ASSIGN_OR_RETURN(const auto context, ResolveGrepContext(command.globals));
+  const bool explicit_diff_context =
+      std::ranges::any_of(command.globals, [](std::string_view flag) { return flag.starts_with("--diff-context="); });
+  if (consumers.contains(ModifierConsumer::kGrepLines)
+      || (consumers.contains(ModifierConsumer::kFileDiffContext) && context.specified && context.before == context.after
+          && !explicit_diff_context)) {
+    consumers.insert(ModifierConsumer::kSharedContext);
+  }
+  consumers.merge(ReductionConsumers(summaries, histograms, ResolveFormat(command.globals)));
+  MBO_ASSIGN_OR_RETURN(
+      auto archive_consumers,
+      ArchiveModifierConsumers(command.globals, style, summaries, histograms, shards.enabled && !compare));
+  consumers.merge(archive_consumers);
+  if (shards.enabled && !compare) {
+    consumers.insert(ModifierConsumer::kShardGrouping);
+    if (summaries.empty() && histograms.empty()) {
+      consumers.insert(ModifierConsumer::kShardListing);
+    }
+  }
+  return consumers;
+}
+
+absl::StatusOr<std::string> ExplainResources(const parser::Command& command, std::optional<registry::Style> style) {
+  const auto& globals = command.globals;
+  const bool compare = absl::c_any_of(
+      globals, [](std::string_view global) { return global == "--compare" || global.starts_with("--compare="); });
+  MBO_ASSIGN_OR_RETURN(const auto workers, ResolveJobs(globals, style));
+  MBO_ASSIGN_OR_RETURN(const auto histograms, ResolveHistograms(globals));
+  MBO_RETURN_IF_ERROR(ValidateSummaryOptions(globals, compare, !histograms.empty()));
+  MBO_RETURN_IF_ERROR(ValidateSummaryScopeDriver(globals, compare));
+  MBO_ASSIGN_OR_RETURN(const auto scopes, ResolveSummaryScopes(globals, compare));
+  MBO_ASSIGN_OR_RETURN(const auto shards, ResolveShards(globals));
+  auto summaries = ResolveSummaries(globals, compare);
+  std::erase_if(summaries, [](const SummarySpec& summary) { return summary.mode == SummaryMode::kCompare; });
+  const auto expression = parser::AsConstOptionalExpr(command.expression);
+  const bool has_action = expression.has_value() && ContainsAction(*expression);
+  const bool pack = ReadPackTarget(globals).has_value();
+  const bool reduction = !summaries.empty() || !histograms.empty() || shards.enabled || pack;
+  const bool listing = ResolveImplicitPrint(globals).value_or(!has_action && !compare) && !reduction;
+  const auto format = ResolveFormat(globals);
+  ExpressionResources resources;
+  std::vector<ExprIdentity> deferred;
+  if (expression.has_value()) {
+    resources = ExpressionResourceInspector(
+                    HasGlobal(globals, "--exec-fields"), HasGlobal(globals, "--count") || HasGlobal(globals, "-c"))
+                    .Inspect(*expression);
+    AppendDeferredNodes(*expression, deferred);
+  }
+  resources.content_fields += ListingAndSummaryContentFields(globals, listing, format, summaries);
+  const auto line_histograms = absl::c_count_if(histograms, [](const HistogramSpec& histogram) {
+    return histogram.bucket == HistBucket::kLinesRange
+           || (histogram.agg != HistAgg::kCount && histogram.metric == HistMetric::kLines);
+  });
+  std::string output = absl::StrCat(
+      "\n# execution resources: static inspection, not measured usage\n", "walks\t", compare ? 2 : 1, "\n",
+      "directory-workers-per-walk\t", workers, "\n", "eligible-command-workers-per-walk\t", workers,
+      " (independent semicolon-form child pool)\n", "evaluation\tcoordinated within each walk\n",
+      "traversal-state\tdirectory listings, read-ahead, and traversal stack\n", "content-field-occurrences\t",
+      resources.content_fields, " (hash/lines segments, not predicted read calls)\n", "line-histogram-consumers\t",
+      line_histograms, "\n", "expensive-primaries\t",
+      resources.expensive.empty() ? "none" : absl::StrJoin(resources.expensive, ","),
+      " (registry cost tier, not a content-read classification)\n");
+  absl::StrAppend(
+      &output, DescribeRetainedResources(
+                   command,
+                   RetentionView{
+                       .compare = compare,
+                       .listing = listing,
+                       .pack = pack,
+                       .shards = shards.enabled,
+                       .format = format,
+                       .has_summaries = !summaries.empty(),
+                       .has_histograms = !histograms.empty(),
+                       .scopes = scopes,
+                       .deferred = !deferred.empty()},
+                   resources));
+  absl::StrAppend(
+      &output, "limits\t--buffer is not a process-memory cap or a comparison-inventory bound\n",
+      "uncertainty\tbranches, matches, backends, ignore/config discovery and archive probing affect actual reads; "
+      "no byte, peak-memory, or latency estimate is made\n");
+  return output;
+}
 
 RunResult RunFind(
     const parser::Command& command,
     const vfs::FileSystem& fs,
     EmitFn emit,
     WalkErrorFn on_error,
-    std::optional<registry::Style> style) {
+    std::optional<registry::Style> style,
+    std::size_t table_width) {
   if (!command.root_names.empty() && command.root_names.size() != command.roots.size()) {
     on_error("--root", absl::InvalidArgumentError("root names must match the root operands"));
+    return RunResult{.errors = 2};
+  }
+  if (const absl::Status status = ValidateCommandFields(command); !status.ok()) {
+    on_error("field template", status);
     return RunResult{.errors = 2};
   }
   const bool compare = absl::c_any_of(command.globals, [](std::string_view global) {
@@ -5843,12 +6617,16 @@ RunResult RunFind(
     on_error("options", status);
     return RunResult{.errors = 2};
   }
+  if (const absl::Status status = ValidateSummaryExport(command, compare); !status.ok()) {
+    on_error("--format", status);
+    return RunResult{.errors = 2};
+  }
   if (const absl::Status status = ValidateSummaryScopeDriver(command.globals, compare); !status.ok()) {
     on_error("--summary-scope", status);
     return RunResult{.errors = 2};
   }
   if (compare) {
-    return RunTreeCompare(command, histograms, fs, emit, on_error, style);
+    return RunTreeCompare(command, histograms, fs, emit, on_error, style, table_width);
   }
   return RunFindCore(
       command, histograms, command.roots, fs, emit, on_error, style, mbo::types::OptionalRef<const MatchedEntryFn>{},

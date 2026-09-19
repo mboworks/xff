@@ -33,6 +33,12 @@ const Registrar kRe2{
     {.component = "RE2",
      .spdx = "BSD-3-Clause",
      .text = "Copyright (c) 2009 The RE2 Authors. Redistribution permitted under the BSD-3-Clause license."}};
+const Registrar kUtf8proc{
+    {.component = "utf8proc",
+     .spdx = "LicenseRef-utf8proc",
+     .text = "Copyright (c) 2014-2021 Steven G. Johnson, Jiahao Chen, Tony Kelman, Jonas Fonseca, and contributors. "
+             "Copyright (c) 2009, 2013 Public Software Group e. V. Unicode data: Copyright (c) 1991-2007 Unicode, Inc. "
+             "MIT library license and Unicode data terms; see the complete bundled upstream license."}};
 const Registrar kMbo{
     {.component = "mboworks/mbo",
      .spdx = "Apache-2.0",

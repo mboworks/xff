@@ -6,7 +6,13 @@
 #include <optional>
 #include <utility>
 
+#include "absl/algorithm/container.h"
+#include "absl/strings/escaping.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 #include "mbo/status/status_macros.h"
+#include "xff/config/config.h"
 
 namespace xff::config {
 namespace {
@@ -130,32 +136,167 @@ std::vector<std::string> ExpandSafetyFlag(std::string_view flag, DetailedPolicy 
   return result;
 }
 
-SafetyPolicy ResolveSafety(const std::vector<std::string>& globals, bool expanded) {
-  SafetyPolicy result;
-  for (const auto& original : globals) {
-    for (const std::string_view flag :
-         ExpandSafetyFlag(original, {.archive = expanded, .temp = expanded, .output = expanded})) {
-      if (flag == "--safe" || flag == "--no-safe") {
-        result.safe = flag == "--safe";
-      } else if (flag.starts_with("--temp-root=") && result.temp_root.empty()) {
-        result.temp_root = flag.substr(12);
-      } else if (flag.starts_with("--output-root=") && result.output_root.empty()) {
-        result.output_root = flag.substr(14);
-      } else if (flag == "--dry-run") {
-        result.dry_run = true;
-      } else {
-        for (std::size_t index = 0; index < kNames.size(); ++index) {
-          if (flag.starts_with("--block-") && flag.substr(8) == kNames.at(index)) {
-            result.unconditional.at(index) = true;
-          } else if (flag.starts_with("--safe-block-") && flag.substr(13) == kNames.at(index)) {
-            result.profile.at(index) = true;
-          } else if (flag.starts_with("--no-safe-block-") && flag.substr(16) == kNames.at(index)) {
-            result.profile.at(index) = false;
-          }
+namespace {
+
+// The same state transitions serve execution and inspection. Origins are indices into the
+// explanation's application stream; execution leaves them unset.
+struct SafetyResolution {
+  SafetyPolicy policy;
+  std::array<std::optional<std::size_t>, SafetyPolicy::kCapabilities> mandatory = {};
+  std::array<std::optional<std::size_t>, SafetyPolicy::kCapabilities> profile = {};
+  std::optional<std::size_t> activation;
+  std::optional<std::size_t> dry_run;
+  std::optional<std::size_t> temp_root;
+  std::optional<std::size_t> output_root;
+
+  void ApplyCapability(std::string_view flag, std::optional<std::size_t> source) {
+    for (std::size_t index = 0; index < kNames.size(); ++index) {
+      if (flag.starts_with("--block-") && flag.substr(8) == kNames.at(index)) {
+        if (!policy.unconditional.at(index)) {
+          mandatory.at(index) = source;
         }
+        policy.unconditional.at(index) = true;
+      } else if (flag.starts_with("--safe-block-") && flag.substr(13) == kNames.at(index)) {
+        policy.profile.at(index) = true;
+        profile.at(index) = source;
+      } else if (flag.starts_with("--no-safe-block-") && flag.substr(16) == kNames.at(index)) {
+        policy.profile.at(index) = false;
+        profile.at(index) = source;
       }
     }
   }
+
+  void Apply(std::string_view flag, std::optional<std::size_t> source = std::nullopt) {
+    if (flag == "--safe" || flag == "--no-safe") {
+      policy.safe = flag == "--safe";
+      activation = source;
+    } else if (flag.starts_with("--temp-root=") && policy.temp_root.empty()) {
+      policy.temp_root = flag.substr(12);
+      temp_root = source;
+    } else if (flag.starts_with("--output-root=") && policy.output_root.empty()) {
+      policy.output_root = flag.substr(14);
+      output_root = source;
+    } else if (flag == "--dry-run") {
+      policy.dry_run = true;
+      dry_run = source;
+    } else {
+      ApplyCapability(flag, source);
+    }
+  }
+};
+
+std::string ExplainOrigin(const std::vector<ResolvedFlag>& application, std::optional<std::size_t> index) {
+  if (!index.has_value()) {
+    return "default";
+  }
+  const auto& setting = application.at(*index);
+  std::string result(SourceName(setting.source));
+  if (!setting.origin.path.empty()) {
+    absl::StrAppend(&result, " ", absl::CEscape(setting.origin.path));
+  }
+  if (setting.origin.line != 0) {
+    absl::StrAppend(&result, ":", setting.origin.line);
+  }
+  if (!setting.origin.section.empty()) {
+    absl::StrAppend(&result, " [", absl::CEscape(setting.origin.section), "]");
+  }
+  absl::StrAppend(&result, " (", absl::CEscape(setting.flag), ")");
   return result;
+}
+
+std::string DetailedPolicyNames(DetailedPolicy policy) {
+  std::vector<std::string_view> names;
+  if (policy.archive) {
+    names.emplace_back("archive");
+  }
+  if (policy.temp) {
+    names.emplace_back("temp");
+  }
+  if (policy.output) {
+    names.emplace_back("output");
+  }
+  return names.empty() ? "none (file controls throughout)" : absl::StrJoin(names, ",");
+}
+
+std::string ExplainCapability(
+    const SafetyResolution& resolved,
+    const std::vector<ResolvedFlag>& application,
+    std::size_t index) {
+  const auto& policy = resolved.policy;
+  std::string_view reason = "inactive profile";
+  auto source = resolved.activation;
+  if (policy.unconditional.at(index)) {
+    reason = "unconditional block";
+    source = resolved.mandatory.at(index);
+  } else if (policy.safe) {
+    reason = policy.profile.at(index) ? "active profile block" : "profile permits";
+    source = resolved.profile.at(index);
+  }
+  return absl::StrCat(
+      "safety\t", kNames.at(index), "\t", policy.Blocks(static_cast<Capability>(index)) ? "block" : "allow", "\t",
+      policy.unconditional.at(index) ? "block" : "none", "\t", policy.profile.at(index) ? "block" : "allow", "\t",
+      reason, "\t", ExplainOrigin(application, source), "\t", ExplainOrigin(application, resolved.profile.at(index)),
+      "\n");
+}
+
+}  // namespace
+
+DetailedPolicy ResolveDetailedPolicy(const std::vector<std::string>& globals) {
+  DetailedPolicy result;
+  for (const auto token : DirectiveTokens(globals)) {
+    constexpr std::string_view kPrefix = "--block-policy-categories=";
+    if (!token.starts_with(kPrefix)) {
+      continue;
+    }
+    const auto categories = absl::StrSplit(token.substr(kPrefix.size()), ',');
+    result.archive = absl::c_contains(categories, "archive");
+    result.temp = absl::c_contains(categories, "temp");
+    result.output = absl::c_contains(categories, "output");
+  }
+  return result;
+}
+
+SafetyPolicy ResolveSafety(const std::vector<std::string>& globals, bool expanded) {
+  SafetyResolution result;
+  for (const auto& original : globals) {
+    for (const std::string_view flag :
+         ExpandSafetyFlag(original, {.archive = expanded, .temp = expanded, .output = expanded})) {
+      result.Apply(flag);
+    }
+  }
+  return std::move(result.policy);
+}
+
+std::string ExplainSafety(const std::vector<ResolvedFlag>& application, const ConfigInputs& inputs) {
+  SafetyResolution resolved;
+  for (std::size_t index = 0; index < application.size(); ++index) {
+    if (!application.at(index).is_argument) {
+      resolved.Apply(application.at(index).flag, index);
+    }
+  }
+  const auto& policy = resolved.policy;
+  const auto active_inputs = ApplyConfigSkips(inputs);
+  std::string out =
+      "\n# effective safety policy (operation blocks; config arming and filesystem permissions also apply)\n";
+  absl::StrAppend(
+      &out, "safe-mode\t", policy.safe ? "on" : "off", "\t", ExplainOrigin(application, resolved.activation), "\n",
+      "dry-run\t", policy.dry_run ? "on" : "off", "\t", ExplainOrigin(application, resolved.dry_run), "\n",
+      "# selected detailed categories per file; other categories inherit that file's ordinary controls\n",
+      "policy\tsystem\t", DetailedPolicyNames(ResolveDetailedPolicy(active_inputs.system.globals)), "\n",
+      "policy\tuser\t", DetailedPolicyNames(ResolveDetailedPolicy(active_inputs.user.globals)), "\n",
+      "policy\tcli/xffrc\tnone (file controls throughout)\n",
+      "# row\tcapability\tdecision\tunconditional\tprofile definition\treason\tdecision origin\tprofile origin\n");
+  for (std::size_t index = 0; index < SafetyPolicy::kCapabilities; ++index) {
+    absl::StrAppend(&out, ExplainCapability(resolved, application, index));
+  }
+  absl::StrAppend(
+      &out, "# directory scopes apply recursively; overlapping scope restrictions combine\n", "root\ttemp\t",
+      policy.temp_root.empty() ? "(unset)" : absl::CEscape(policy.temp_root), "\t",
+      ExplainOrigin(application, resolved.temp_root), "\n", "root\toutput\t",
+      policy.output_root.empty() ? "(unset)" : absl::CEscape(policy.output_root), "\t",
+      ExplainOrigin(application, resolved.output_root), "\n",
+      "# temp/output capabilities apply beneath configured roots; root validity is checked before actions\n",
+      "# an operation must satisfy every applicable capability; see --help=safety\n");
+  return out;
 }
 }  // namespace xff::config

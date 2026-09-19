@@ -147,12 +147,8 @@ jobs:
           lean="bazel-bin/xff/cli/xff"
           full="bazel-bin/xff/cli/xff_full"
           tools/stage_release_artifacts.sh "${platform}" "${arch}" "${lean}" "${full}" dist
-          lean_staged="dist/.xff-${platform}-${arch}-staging/xff-${platform}-${arch}/xff"
-          full_staged="dist/.xff_full-${platform}-${arch}-staging/xff_full-${platform}-${arch}/xff_full"
-          "${lean_staged}" --version
-          "${lean_staged}" --help >/dev/null
-          "${full_staged}" --version
-          "${full_staged}" --help >/dev/null
+          python3 tools/release_smoke.py "dist/xff-${platform}-${arch}" --expected-version="0.0.0"
+          python3 tools/release_smoke.py "dist/xff_full-${platform}-${arch}" --expected-version="0.0.0"
           ls -lh dist/*
       - name: Upload release candidates
         if: matrix.config.name == 'default' && github.event_name == 'pull_request'

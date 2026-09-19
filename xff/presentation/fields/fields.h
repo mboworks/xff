@@ -25,11 +25,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "mbo/types/optional_ref.h"
 #include "mbo/types/string_or_view.h"
 #include "xff/datetime/datetime.h"
+#include "xff/hash/hash.h"
 #include "xff/vfs/entry.h"
 #include "xff/vfs/filesystem.h"
 
@@ -94,6 +96,10 @@ class Template {
  public:
   static Template Compile(std::string_view tmpl);
 
+  // Static syntax, field-name, and qualifier diagnostics, independent of per-entry values.
+  // Consumers must validate before traversal or actions; absent runtime values are valid.
+  absl::Status Validate() const;
+
   std::string Render(const RenderContext& context) const;
 
   // The value stream when this template is a single `{field:m<delim>PAT<delim>REPL<delim>flags}`
@@ -119,6 +125,13 @@ class Template {
   // Whether a parsed field reads this command capture; escaped literal braces do not count.
   bool ReferencesCapture(std::string_view name) const;
 
+  // Inspect parsed hash fields, including post-processing, without reading any entry content.
+  hash::DefaultUsage HashDefaultsUsed() const;
+
+  // Number of compiled hash/line-count fields that can read content when rendered.
+  // This describes template structure, not observed reads or bytes.
+  std::size_t ContentFieldCount() const;
+
  private:
   // A literal run (fn == nullptr -> emit `literal`) or a field reference: fn is
   // the renderer and `key` its bound argument (capture index, {env.NAME} var, ...).
@@ -138,7 +151,16 @@ class Template {
   };
 
   std::vector<Segment> segments_;
+  absl::Status validation_;
 };
+
+// Length of one well-formed placeholder at the start of text, including its braces.
+// Quoted qualifiers may contain closing braces. Malformed placeholders return nullopt.
+std::optional<std::size_t> PlaceholderSize(std::string_view text);
+
+// Compile only printf's %{...} field escapes; ordinary braces and escaped percent signs
+// are literal. Malformed field escapes retain their template validation diagnostic.
+std::vector<Template> PrintfTemplates(std::string_view format);
 
 // One documented named field, for the `--help=fields` reference. The vocabulary's
 // documentation source: FieldDocs() below is asserted (fields_test) to cover exactly

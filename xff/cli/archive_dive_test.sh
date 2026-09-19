@@ -199,6 +199,36 @@ test::archive_any_offers_every_file_to_the_reader() {
   expect_output_not_contains "xff:" "${out}"
 }
 
+test::later_all_modes_restore_the_filename_gate() {
+  local root out earlier later
+  root="$(_tree)"
+  cp "${root}/a.tar" "${root}/blob"
+  for earlier in --archive=any --archive-any -z++ -Z++; do
+    for later in --archive=all --archive -z+ -Z+; do
+      out="$("$(_xff_bin)" "${earlier}" "${later}" "${root}")"
+      expect_output_contains "a.tar!one.txt" "${out}"
+      expect_output_not_contains "blob!" "${out}"
+    done
+  done
+}
+
+test::archive_sniffing_follows_selected_config_order() {
+  local root out
+  root="$(_tree)"
+  cp "${root}/a.tar" "${root}/blob"
+  cat >"${root}/modes.rc" <<'INI'
+[sniff]
+--archive=any
+[named]
+--archive=all
+INI
+  out="$("$(_xff_bin)" --xffrc="${root}/modes.rc" --config=sniff --config=named "${root}")"
+  expect_output_contains "a.tar!one.txt" "${out}"
+  expect_output_not_contains "blob!" "${out}"
+  out="$("$(_xff_bin)" --xffrc="${root}/modes.rc" --config=named --config=sniff "${root}")"
+  expect_output_contains "blob!one.txt" "${out}"
+}
+
 test::a_container_named_on_the_command_line_is_never_gated_by_its_name() {
   local root out
   root="$(_tree)"
@@ -547,6 +577,34 @@ test::only_the_plus_ladder_spells_the_umbrella() {
     out="$("$(_xff_bin)" "${spelling}" "${root}" 2>&1)" && rc=0 || rc=$?
     expect_eq "2" "${rc}"
     expect_output_contains "unknown option" "${out}"
+  done
+}
+
+test::hash_summary_reads_members_with_active_hash_defaults() {
+  local root out algorithm encoding
+  root="$(_tree)"
+  for algorithm in sha256 md5; do
+    for encoding in hex base64; do
+      out="$("$(_xff_bin)" --archive=roots "${root}/a.tar" -type f --summary=hash \
+        "--hash-algorithm=${algorithm}" "--hash-encoding=${encoding}" --format=jsonl)"
+      python3 - "${algorithm}" "${encoding}" "${out}" <<'PYTHON'
+import base64
+import hashlib
+import json
+import sys
+
+algorithm, encoding, output = sys.argv[1:]
+expected = {}
+for content in (b"needle\n", b"two\n"):
+    digest = hashlib.new(algorithm, content).digest()
+    key = digest.hex() if encoding == "hex" else base64.b64encode(digest).decode()
+    expected[key] = (1, len(content))
+rows = [json.loads(line) for line in output.splitlines()]
+actual = {row["group"]: (row["count"], row["bytes"]) for row in rows if row["group"] != "total"}
+assert actual == expected, (actual, expected)
+assert all(row["summary"] == "hash" for row in rows), rows
+PYTHON
+    done
   done
 }
 

@@ -16,6 +16,41 @@ This `README.md` is a short overview. The complete, always-current reference liv
 
 ---
 
+## Quick Start
+
+Download the executable for your platform from the [latest release](https://github.com/mboworks/xff/releases/latest).
+Choose `xff` for the lean core, or `xff_full` for all extras, including PCRE2 and archive support.
+The release includes checksums, verification instructions, and separate archives with debug symbols.
+You do not need Bazel to use a published executable.
+
+For example, after downloading `xff-macos-arm64`:
+
+```sh
+chmod +x xff-macos-arm64
+./xff-macos-arm64 . -type f -name '*.md'
+```
+
+Place the chosen executable on your `PATH` as `xff` to use these commands:
+
+```sh
+# Find source files.
+xff . -type f -name '*.cc'
+
+# Search file contents.
+xff . -type f -grep 'TODO'
+
+# Compare two trees without listing every result.
+xff --compare=summary LEFT RIGHT
+
+# Report matched file counts and apparent bytes by extension.
+xff . -type f --summary=ext
+```
+
+Summary sizes are apparent entry sizes, not allocated disk blocks or recursive directory sizes.
+For building from source, see [Building & Dependencies](#building--dependencies).
+
+---
+
 ## Core Highlights & Architectural Advantages
 
 - **`find`-Compatible Core:** The standard primaries (`-name`, `-type`, `-size`, `-mtime`, `-regex`, `-exec`, `-prune`, ...), operators, and exit-status conventions provide a portable union of GNU, BSD, and POSIX `find` behavior. Invoking the binary as `find` selects the find expression vocabulary and compatibility-oriented defaults while retaining explicit xff global controls.
@@ -128,28 +163,13 @@ Otherwise the find expression vocabulary follows the documented GNU, BSD, and PO
 
 ---
 
-## Quick Start
-
-`xff` builds with Bazel and runs on macOS and Linux.
-
-```bash
-# Build and run the stock binary.
-bazel run //xff -- . -type f -name '*.md'
-
-# Or build it once and put it on your PATH.
-bazel build //xff
-cp bazel-bin/xff/cli/xff /usr/local/bin/xff
-```
-
----
-
 ## Examples
 
 ```bash
 # Ten largest files (-printf builds any columnar line; the shell sorts).
 xff . -type f -printf '%s\t%p\n' | sort -rn | head
 
-# Disk use per file type (a whole-run option like --summary may sit at the end).
+# Apparent bytes per extension (--summary may sit at the end).
 xff . -type f --summary=ext
 
 # Delete stale temp files, safely (prints what -delete WOULD remove).
@@ -176,11 +196,22 @@ The vocabulary and options are defined once inside the C++ binary (the engine re
 - **`XFF.md`**: The full comprehensive reference in Markdown. Run `xff-md-update.sh` to regenerate it; the `//xff/cli:xff_markdown_test` target fails CI if it drifts from the binary.
 - **`xff --help`**: Renders the main utility usage page. Use `xff --help=TOPIC` to review specific sub-topics (`fields`, `printf`, `time`, `size`, `grammars`, `stats`, etc.), or `xff --help=full` to dump all help sections.
 - **Formatted full reference**: Append `:markdown` (or `:md`), `:html`, or `:roff` to `--help=full` (or its `long` alias). HTML is a standalone, self-contained HTML5 document with no scripts or external assets; `--man` remains the conventional alias for the roff form.
+- **[Order and limits](docs/order-and-limits.md)**: Choose expression filters, display limits, or traversal termination, and see how each affects actions, reductions, and packing.
 - **Paired release docs**: The shared `//xff/cli:xff_reference_gen` action always generates Markdown and HTML together, and release Pages publish that exact pair so the formats cannot silently diverge.
 
 ---
 
 ## Building & Dependencies
+
+Building from source requires Bazel:
+
+```sh
+# Build and run the lean binary.
+bazel run //xff -- . -type f -name '*.md'
+
+# Or build once; the executable is bazel-bin/xff/cli/xff.
+bazel build //xff
+```
 
 The default build provides a lean, dependency-light core. Heavier processing capabilities (such as the advanced `PCRE2` regex grammar or recursive archive diving) are decoupled as composable build-time extras that are disabled by default to keep the core binary small. The extended target links them all:
 

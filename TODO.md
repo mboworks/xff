@@ -20,6 +20,24 @@
 - [x] Validate file/directory prefix conflicts and deterministic root/traversal ordering.
 - [x] Complete registry help, generated reference, integration tests, and affected-file lint.
 
+## Completed: Compact help overview (audit S06)
+
+- Replace the exhaustive default catalogue with command structure and task-oriented help routes.
+- Preserve complete inventory and detailed reference under `--help=all` and `--help=long`.
+- Validate terminal widths and executable examples; structure comparison help and stack narrow policy tables.
+
+## Completed: Comparison exit status (audit S11)
+
+- Explain search-style comparison exit codes in focused help and exit flags.
+- Test output selection, summaries, filtered populations, and operational errors.
+- Regenerate the reference and validate focused help, registry documentation, and changed-file checks.
+
+## Completed: Order and limits guide (audit S15)
+
+- Compare expression, listing, reduction, traversal, and sorting controls in one table.
+- Verify collection placement, explicit actions, full denominators, fuzzy selection, and archive populations.
+- Explain parallel ordering, retained state, and partial comparison populations.
+
 Actionable roadmap and deliberately deferred ideas. Completed implementation records live in
 [`docs/history-roadmap.md`](docs/history-roadmap.md); other resolved design records and investigations
 live in [`docs/history.md`](docs/history.md).
@@ -48,6 +66,12 @@ live in [`docs/history.md`](docs/history.md).
 
 - Preserve scoped totals while coalescing the comparison table requested by the shorthand and bare summary.
 - Test both argument orders and retain the extension-summary composition regression.
+
+## Completed: Install-first README (audit S07)
+
+- Put published binaries and a four-command task guide before feature matrices.
+- Keep Bazel instructions under building from source.
+- Describe summary bytes as apparent sizes, not allocated disk usage.
 
 ## Completed: Release archive documentation (audit B08)
 
@@ -291,3 +315,162 @@ The safety model and directory-scoped permissions are tracked in
 - [x] Reproduce config flags absent from the current flavor table.
 - [x] Share the fully composed command between explain and execution; verify defaults, selectors,
       explicit files, skip policy, literal operands, and no action execution.
+
+### Audit S04: static template validation
+
+- [x] Reject overflowing numeric capture indices without signed arithmetic overflow.
+- [x] Preserve parsed syntax/name diagnostics on compiled templates, distinguishing absent values.
+- [x] Validate native qualifiers through field renderers and the shared hash vocabulary.
+- [x] Validate rewrite/extraction patterns, replacements, flags, and reducer syntax.
+- [x] Share placeholder parsing with printf consumers, including quoted closing braces.
+- [x] Check active template consumers before traversal or actions, including comparison mode and explain.
+- [x] Update help and pass full-config, before-mutation, summary, and engine regression checks.
+- [x] Verify generated reference and all 24 affected-header consumers; complete local commit hooks.
+
+### Audit S19: fuzz filesystem isolation
+
+- [x] Supply an in-memory VFS for every fuzz-generated path and abort on attempted mutation.
+- [x] Assert that content fields read synthetic bytes, with absolute and traversal-path corpus cases.
+- [x] Verify corpus replay and local lint; audit every mutation entrypoint for fail-fast rejection.
+- [x] Make expression-evaluation fuzzing abort on all write and controlled-mutation entrypoints.
+- [x] Exercise both staged release executables with a cross-feature smoke corpus before upload.
+- [x] Cover NUL, escaped plain, and TSV record boundaries in the release smoke corpus.
+
+### Audit S05: effective safety explanation
+
+- [x] Share safety resolution between execution and inspection; retain file/line/section origins.
+- [x] Show final capabilities, mandatory and profile causes, modes, categories, and directory roots.
+- [x] Exercise system blocks, user overrides, skipped sections, expansions, and nested roots with full INI fixtures.
+- [x] Complete changed-file lint, affected-header-consumer checks, and generated-reference verification.
+
+### Audit S17: configuration inspection
+
+- [x] Preserve named declarations and structured validation reasons for explain output.
+- [x] Show skip/selection state, declared behavior, and physical application origins.
+- [x] Add personal, project, mandatory-policy, and environment-root recipes.
+- [x] Verify complete CLI configurations, generated reference, and changed-header consumers.
+
+### Audit S18: spelling and placement diagnostics
+
+- [x] Derive conservative spelling hints and short-global placement hints from registries.
+- [x] Verify parser boundaries, CLI errors before actions, normal hooks, and changed-file clang-tidy.
+
+### Audit S08: compact comparison summaries
+
+- [x] Group console scope headings and retain one table at narrow widths.
+- [x] Inject width from parsed CLI globals and preserve JSON accounting.
+- [x] Test exact 80/120/160-column layouts, Unicode wrapping, controls, missing values, and headers.
+- [x] Complete generated reference/notices and Linux Unicode-width portability checks.
+- [x] Complete normal commit hooks and affected-source lint.
+
+### Audit S09: summary grouping and population labels
+
+- [x] Label console summary groupings and explain full-population denominators when top-limited.
+- [x] Add truncated JSONL group counts and count comparison union keys once.
+- [x] Verify empty, zero-size, repeated, scoped, and top-limited summaries; complete docs and lint.
+
+### Audit S10: delimited summary exports
+
+- [x] Define a wide schema with request, scope, root, and total identity; reuse listing encoders.
+- [x] Parse CSV/TSV exports and compare metrics with JSONL across repeated requests and scopes.
+- [x] Verify output-producer metadata, full-config composition, generated help, and changed-header consumers.
+- [x] Reconcile B06 total-row identity and S09 truncation metadata before publication.
+
+### Audit B10: physical comparison populations with shard flags
+
+- [x] Reproduce a mixed identical/different set being assigned wholly to its representative's category.
+- [x] Keep comparison results and reductions physical; preserve scheme selection for `-shard-status`.
+- [x] Add regressions for category accounting, side/combined totals, extra listings, and ordinary logical summaries.
+- [x] Complete generated documentation, targeted tests, and changed-file checks before publication.
+
+A two-shard set with one identical pair and one different pair produced two physical comparison
+results, but `--shards --summary=ext --summary-scope=identical,different` placed all eight bytes under
+`identical` and none under `different`. Comparison without ordinary summaries could also emit extra
+collapsed paths. Whole-set comparison semantics remain a separate design question; this fix keeps
+all comparison accounting at the existing physical-entry level.
+
+### Audit B11: collect and shard reductions must use one population
+
+- [x] Reproduce double counting when `-collect` and `--shards` feed a summary together.
+- [x] Feed reductions from the collected population once, with logical shard grouping applied consistently.
+- [x] Test collection placement before/after truncation, named collections, duplicate/incomplete/custom sets,
+      histograms, summaries, root/category scopes, zero-byte files, and ordinary behavior without collections.
+
+Two 2-byte files `data-00000-of-00002` and `data-00001-of-00002` produce count 1 / bytes 4 with
+`xff ROOT -type f --shards --summary --format=jsonl`. Adding `-collect` before `--shards` produces
+count 3 / bytes 8. The post-walk shard pass feeds one logical set, then `FinishCollections` feeds
+the two physical members again. Merely suppressing one feed is insufficient unless the selected
+collection population and logical grouping semantics remain correct. S14's guide must not present
+this as intentional accounting.
+
+### Audit S14: shard population guide
+
+- [x] Explain physical predicates/actions, logical reductions, status-cohort order, collections,
+      missing members, duplicate selection, custom schemes, and physical comparison with executable examples.
+- [x] Publish with the B10 comparison and B11 collection-accounting corrections in PR #871.
+
+### Audit B13: archive mode ordering
+
+- [x] Reproduce stale filename sniffing after a later all-mode selection.
+- [x] Resolve traversal and sniffing together; test CLI aliases and full INI selection order.
+- [x] Verify generated help, archive regression tests, and changed-source lint.
+
+### Audit S16: task-based archive safety recipes
+
+- [x] Document minimal capability profiles and format/destination limitations.
+- [x] Execute permitted and blocked recipe variants against isolated fixtures.
+
+- [x] **B14: Preserve hash-summary context.** Fix archive member grouping in `--summary=hash`
+      and honor configured digest/encoding like `{hash}`; verify real archive and ordinary-file
+      regressions. See `docs/review-0.6.0.md`.
+
+### Audit S12: inactive modifier inspection
+
+- [x] Add typed consumer metadata and reuse runtime resolvers for effective output state.
+- [x] Diagnose effective CLI requests while preserving dormant config defaults and operand literals.
+- [x] Verify full configs, cleared consumers, generated help, and every changed-header consumer.
+- [x] Add archive depth, member-path, and aggregate dependencies using resolved flavor and backend availability.
+- [x] Verify archive diagnostics and all affected header consumers.
+- [x] Track algorithm/encoding defaults through parsed hash actions and field templates, including
+      printf/exec syntax, suppressed listings, grep counts, summaries, and configured consumers.
+- [x] Verify hash diagnostics, integrated prerequisites, generated reference, and every affected header consumer.
+
+### Audit S13: execution resource inspection
+
+- [x] Document retained state, content reads, concurrency, and measurement definitions separately.
+- [x] Add an effective-command resource view without presenting static estimates as measured usage.
+- [ ] Measure first output, elapsed time, peak memory, and logical/backend bytes across broad and deep
+      trees, network storage, and repeated content consumers.
+- [x] Investigate directory-at-a-time comparison barriers, ordering, errors, actions, and VFS lifetimes; record the prototype and acceptance criteria in `docs/execution-resources.md`.
+- [ ] Prototype and measure paired-directory comparison after settling its output-order and partial-error contracts.
+
+### Audit S13: resource measurement harness
+
+- [x] Measure first stdout, elapsed/CPU time, byte counts, and normalized peak child RSS.
+- [x] Preserve failure status and bounded stderr diagnostics without pipe deadlocks.
+- [x] Exercise eight real xff workloads on generated broad/deep trees.
+- [x] Measure logical whole-file reads for broad/deep synthetic trees, including repeated content consumers and paired comparison.
+- [x] Inspect effective worker limits, active content fields, and retained-state consumers without traversal.
+- [ ] Integrate general runtime read accounting.
+- [x] Add a read-only benchmark observer for whole-file/range calls on real broad/deep fixtures,
+      with failed/empty/concurrent-read tests and separate invocation provenance.
+- [ ] Extend measurement coverage to archive/member backends and supplied network fixtures.
+
+- [x] Record S13 one/eight-worker observations on broad/deep fixtures, with raw runs and timing
+      ranges; keep optimized branching/network scaling and storage-traffic claims unproven.
+
+### Registry capability audit
+
+- [x] Derive primary operand grammar, smart case, traversal effects, deferred controls,
+      execution behavior, and help relationships from descriptor metadata.
+- [x] Preserve literal token lookup, evaluator dispatch, and config-layer directive parsing.
+- [x] Add renamed-descriptor regressions so shared behavior follows capabilities rather than spelling.
+- [x] Resolve explicit archive mode and presence together instead of maintaining a second alias list.
+- [x] Complete integrated tests and changed-header lint before publication with audit group six.
+
+### Audit B15: filename controls in display output
+
+- [x] Escape controls and backslashes before table width calculation and tree rendering.
+- [x] Preserve raw and machine-output encoding; document the display distinction.
+- [x] Verify buffered/streaming tables, tree labels, and actual filenames.
+- [x] Regenerate and verify the flag reference.

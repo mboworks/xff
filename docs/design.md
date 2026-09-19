@@ -36,6 +36,10 @@ predicates mean AND. Config expressions are grouped and ANDed with the CLI expre
 Double-dash options are not hoisted out of a primary's argument run: inside an `-exec`
 command they belong to the child. Bare `--` ends option recognition. Single-dash globals
 retain their documented leading placement.
+Unknown options remain usage errors. Close registered spellings may be suggested, but are never
+accepted automatically. A recognized short global in an expression gets a placement hint; a
+position-independent long form is named only if the registry provides one. Tokens inside primary
+argument runs, or after `--`, are never rescanned to generate these hints.
 
 Boolean pairs, enum values, repeatable lists, keyed options, and sign suffixes are distinct
 mechanisms. Accepted forms and repetition behavior come from the flag's metadata or compatibility
@@ -90,6 +94,9 @@ stated threat model; they are not a proof against every adversarial filesystem r
 
 ## Matching, traversal, and output
 
+[Field validation](design-field-validation.md) defines static template errors, runtime-absent
+values, shared printf parsing, and validation before actions.
+
 RE2 is the default regex engine. Optional PCRE2 is selected explicitly and has built-in match/depth
 limits; there is no silent fallback. Native ERE, literal, and glob modes have their documented
 registry contracts. Patterns need not be portable between engines.
@@ -103,6 +110,8 @@ tests can require full file reads.
 insensitive primaries control matching. Ignore files and include/exclude patterns are traversal
 filters, distinct from config discovery. [Parallel traversal](design-parallel.md) defines ordering,
 worker responsibilities, and bounded read-ahead; directory concurrency does not reorder actions.
+[Execution resources](execution-resources.md) separates retained state, content reads, and concurrency,
+and defines the measurements needed before optimizing them.
 
 Streaming, aligned, structured, and aggregate output modes have explicit buffering controls.
 Plain output preserves path bytes by default; `--path-encoding=escape` escapes controls.
@@ -118,7 +127,9 @@ Exit status is `0` for successful execution and `2` for errors. With `--quiet` o
 Archives and compressed streams are composable extras; virtual entries retain their source identity
 and host extraction/writing requires the corresponding capabilities. `--shards` supports the documented
 `of`, `dotnum`, and `underscore` schemes, with custom `--shard-pattern` definitions and explicit display
-and duplicate controls. The reference supplies the complete current vocabulary.
+and duplicate controls. [Physical files and logical shard sets](shard-populations.md) explains
+which population predicates, actions, summaries, and comparison use. The reference supplies the
+complete current vocabulary.
 
 [Near-duplicate design](design-near-duplicates.md), [implementation planning](implementation-plan.md),
 [test planning](test-plan.md), and [coverage policy](coverage.md) describe their boundaries and gates.

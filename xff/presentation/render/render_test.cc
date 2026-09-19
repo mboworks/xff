@@ -16,7 +16,9 @@
 #include "xff/presentation/render/render.h"
 
 #include <array>
+#include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "gmock/gmock.h"
@@ -31,8 +33,27 @@ namespace {
 using ::mbo::testing::EqualsText;
 using ::mbo::testing::WithDropIndent;
 using ::testing::Eq;
+using ::testing::Not;
 
 struct RenderTest : ::testing::Test {};
+
+TEST_F(RenderTest, RawAndPreparedDisplayCellsHaveEquivalentVisibleEscapes) {
+  for (const Format output : std::to_array<Format>({Format::kAligned, Format::kMarkdown})) {
+    for (const std::size_t window : std::to_array<std::size_t>({0, 1, TableStream::kAll})) {
+      SCOPED_TRACE(window);
+      const auto render = [&](std::string_view text, bool prepared) {
+        TableStream table(output, {"value"}, false, window);
+        const std::vector<std::string> cells{std::string(text)};
+        std::string result = prepared ? table.AddDisplay(cells) : table.Add(cells);
+        result.append(table.Flush());
+        return result;
+      };
+      const std::string raw = render("a\nb", false);
+      EXPECT_THAT(render(R"cell(a\nb)cell", true), EqualsText(raw));
+      EXPECT_THAT(render(R"cell(a\nb)cell", false), Not(EqualsText(raw)));
+    }
+  }
+}
 
 TEST_F(RenderTest, JsonQuoteEscapesControlCharactersAndDelimiters) {
   EXPECT_THAT(JsonQuote("a\"\\\n\r\t\x01"), Eq(R"json("a\"\\\n\r\t\u0001")json"));
@@ -200,16 +221,38 @@ TEST_F(RenderTest, RenderTableMarkdownEscapesInteriorPipes) {
       )out")));
 }
 
-TEST_F(RenderTest, MarkdownMeasuresCellsAfterNormalizingLineBreaks) {
+TEST_F(RenderTest, MarkdownMeasuresEscapedCellsWithoutLosingLineBreaks) {
   EXPECT_THAT(
       RenderTable(Format::kMarkdown, {"name"}, {{"a\nb"}, {"a\r\nb"}, {"abcdef"}, {"a|b"}}),
       WithDropIndent(EqualsText(R"out(
-      | name   |
-      | ------ |
-      | a b    |
-      | a b    |
-      | abcdef |
-      | a\|b   |
+      | name     |
+      | -------- |
+      | a\\nb    |
+      | a\\r\\nb |
+      | abcdef   |
+      | a\|b     |
+      )out")));
+}
+
+TEST_F(RenderTest, DisplayControlsStayInsideCellsBeforeAndAfterBufferFlush) {
+  for (const std::size_t window : std::to_array<std::size_t>({0, 1, TableStream::kAll})) {
+    TableStream stream(Format::kAligned, {"name"}, false, window);
+    std::string out = stream.Add({"a\n\r\t\x1b\x7f\\雪"});
+    out += stream.Add({R"(literal\n)"});
+    out += stream.Flush();
+    EXPECT_THAT(out, WithDropIndent(EqualsText(R"out(
+        a\n\r\t\x1B\x7F\\雪
+        literal\\n
+        )out")));
+  }
+}
+
+TEST_F(RenderTest, TreeEscapesRootAndChildControls) {
+  Tree tree(false);
+  tree.Add("root\n/child\t\x1b\\雪");
+  EXPECT_THAT(tree.Render(), WithDropIndent(EqualsText(R"out(
+      root\n
+      `-- child\t\x1B\\雪
       )out")));
 }
 

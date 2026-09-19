@@ -10,6 +10,7 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
@@ -17,6 +18,7 @@
 #include "mbo/types/optional_ref.h"
 #include "xff/cli/globals.h"
 #include "xff/config/config.h"
+#include "xff/config/policy.h"
 #include "xff/config/xffrc.h"
 #include "xff/parser/parser.h"
 #include "xff/registry/descriptor.h"
@@ -31,10 +33,8 @@ bool IsDirectoryRoot(std::string_view token) {
 }
 
 bool IsSystemControl(std::string_view token) {
-  return IsDirectoryRoot(token) || token == "--no-require-system-globals" || token == "--require-system-globals"
-         || token == "--no-require-user-globals" || token == "--require-user-globals" || token == "--allow-xffrc"
-         || token == "--no-allow-xffrc" || token == "--allow-rc-globals" || token == "--no-allow-rc-globals"
-         || token == "--block-policy-categories" || token.starts_with("--block-policy-categories=");
+  const auto flag = LookupGlobalArgument(token);
+  return flag.has_value() && flag->config_only;
 }
 
 absl::StatusOr<std::size_t> PrimaryArgumentCount(
@@ -220,6 +220,20 @@ void FindFileOverrides(const config::ConfigFile& file, std::string_view path, st
   }
 }
 
+std::string DeclaredKinds(const ConfigProfile& profile) {
+  std::string kinds;
+  if (profile.globals) {
+    kinds = "globals";
+  }
+  if (profile.predicates) {
+    absl::StrAppend(&kinds, kinds.empty() ? "" : ",", "predicates");
+  }
+  if (profile.actions) {
+    absl::StrAppend(&kinds, kinds.empty() ? "" : ",", "actions");
+  }
+  return kinds.empty() ? "empty" : kinds;
+}
+
 class ConfigFileValidator {
  public:
   ConfigFileValidator(config::ConfigFile config, std::string_view path, config::Source source)
@@ -230,6 +244,9 @@ class ConfigFileValidator {
     ValidateNames();
     ValidateSections();
     PropagateDisablement();
+    for (const config::IniSection& section : result_.config.named) {
+      result_.profiles.push_back(DescribeProfile(section));
+    }
     result_.disabled_configs.assign(disabled_.begin(), disabled_.end());
     std::ranges::sort(result_.disabled_configs);
     result_.config.named.erase(
@@ -248,6 +265,35 @@ class ConfigFileValidator {
   }
 
  private:
+  ConfigProfile DescribeProfile(const config::IniSection& section) const {
+    ConfigProfile profile{
+        .name = section.name,
+        .path = std::string(path_),
+        .line = section.number,
+        .source = source_,
+    };
+    if (const auto reasons = disabled_reasons_.find(section.name); reasons != disabled_reasons_.end()) {
+      profile.disabled_reasons = reasons->second;
+    }
+    for (const config::IniLine& line : section.lines) {
+      for (const std::string_view token : config::DirectiveTokens(line.tokens)) {
+        if (LookupGlobalArgument(token).has_value()) {
+          profile.globals = true;
+        } else if (const auto primary = registry::Lookup(token.substr(0, token.find(':'))); primary.has_value()) {
+          profile.predicates |= primary->kind == registry::Kind::kTest;
+          profile.actions |= primary->kind == registry::Kind::kAction;
+        }
+      }
+    }
+    return profile;
+  }
+
+  void Disable(const std::string& name, std::string message) {
+    disabled_.insert(name);
+    disabled_reasons_.try_emplace(name).first->second.push_back(message);
+    result_.diagnostics.push_back(std::move(message));
+  }
+
   void ValidateGlobals() {
     if (!result_.config.global_lines.empty()) {
       result_.config.globals.clear();
@@ -278,16 +324,14 @@ class ConfigFileValidator {
     absl::flat_hash_set<std::string> names;
     for (const config::IniSection& section : result_.config.named) {
       if (section.name.empty()) {
-        disabled_.insert(section.name);
-        result_.diagnostics.push_back(absl::StrCat(path_, ":", section.number, ": disabling empty config name"));
+        Disable(section.name, absl::StrCat(path_, ":", section.number, ": disabling empty config name"));
         continue;
       }
       if (!names.insert(section.name).second) {
-        disabled_.insert(section.name);
-        result_.diagnostics.push_back(
-            absl::StrCat(
-                path_, ":", section.number, ": disabling config [", section.name,
-                "] because its name is declared more than once in this file"));
+        Disable(
+            section.name, absl::StrCat(
+                              path_, ":", section.number, ": disabling config [", section.name,
+                              "] because its name is declared more than once in this file"));
       }
     }
   }
@@ -307,11 +351,10 @@ class ConfigFileValidator {
                         : (line.syntax_error.empty() ? ValidateTokens(line.tokens)
                                                      : absl::InvalidArgumentError(line.syntax_error));
         if (!status.ok()) {
-          disabled_.insert(section.name);
-          result_.diagnostics.push_back(
-              absl::StrCat(
-                  path_, ":", line.number, ": disabling config [", section.name, "] because line '", line.text,
-                  "' is invalid: ", status.message()));
+          Disable(
+              section.name, absl::StrCat(
+                                path_, ":", line.number, ": disabling config [", section.name, "] because line '",
+                                line.text, "' is invalid: ", status.message()));
         }
       }
     }
@@ -327,11 +370,10 @@ class ConfigFileValidator {
         }
         for (const std::string& dependency : ConfigReferences(section)) {
           if (disabled_.contains(dependency)) {
-            disabled_.insert(section.name);
-            result_.diagnostics.push_back(
-                absl::StrCat(
-                    path_, ":", section.number, ": disabling config [", section.name,
-                    "] because it references disabled config [", dependency, "]"));
+            Disable(
+                section.name, absl::StrCat(
+                                  path_, ":", section.number, ": disabling config [", section.name,
+                                  "] because it references disabled config [", dependency, "]"));
             changed = true;
             break;
           }
@@ -345,6 +387,7 @@ class ConfigFileValidator {
   config::Source source_;
   absl::flat_hash_set<std::string> controls_;
   absl::flat_hash_set<std::string> disabled_;
+  absl::flat_hash_map<std::string, std::vector<std::string>> disabled_reasons_;
 };
 
 }  // namespace
@@ -355,6 +398,42 @@ ConfigFileValidation ValidateConfigFile(
     std::string_view path,
     config::Source source) {
   return ConfigFileValidator(std::move(file), path, source).Validate(selected_configs);
+}
+
+std::string ExplainProfiles(
+    const std::vector<ConfigProfile>& profiles,
+    const config::ConfigInputs& inputs,
+    const std::vector<std::string>& selected) {
+  absl::flat_hash_set<std::string_view> disabled;
+  for (const ConfigProfile& profile : profiles) {
+    if (!profile.disabled_reasons.empty()) {
+      disabled.insert(profile.name);
+    }
+  }
+  std::string out = "# named profile declarations (available does not arm gated actions)\n";
+  for (const ConfigProfile& profile : profiles) {
+    const bool skipped = (profile.source == config::Source::kSystem && (inputs.no_config || inputs.no_system_config))
+                         || (profile.source == config::Source::kUser && (inputs.no_config || inputs.no_user_config));
+    const std::string_view state = disabled.contains(profile.name)         ? "disabled"
+                                   : config::OverloadsPreset(profile.name) ? "reserved-preset"
+                                   : skipped                               ? "skipped"
+                                                                           : "available";
+    const bool active = std::ranges::find(selected, profile.name) != selected.end();
+    const std::string kinds = DeclaredKinds(profile);
+    absl::StrAppend(
+        &out, "profile\t", profile.name, "\t", config::SourceName(profile.source), "\t", state, "\t",
+        active ? "selected" : "not-selected", "\tdeclares=", kinds, "\t", profile.path, ":", profile.line, "\n");
+    for (const std::string& reason : profile.disabled_reasons) {
+      absl::StrAppend(&out, "profile-reason\t", profile.name, "\t", reason, "\n");
+    }
+    if (state == "disabled" && profile.disabled_reasons.empty()) {
+      absl::StrAppend(&out, "profile-reason\t", profile.name, "\tdisabled declaration of this name in another file\n");
+    }
+    if (skipped) {
+      absl::StrAppend(&out, "profile-reason\t", profile.name, "\tnamed sections excluded by config skip request\n");
+    }
+  }
+  return out;
 }
 
 absl::Status ValidateConfigSelections(

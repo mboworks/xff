@@ -42,10 +42,11 @@ test::help_prints_usage_and_options() {
   expect_eq "0" "${rc}"
   expect_output_contains 'Usage:' "${out}"
   expect_matches '\-\-config' "${out}" # a shipped global, not the old stub
-  expect_matches '\-\-quiet' "${out}"
-  expect_output_contains 'EXPRESSION' "${out}"
-  # The Expression section groups the primaries (Tests / Actions / Operators).
-  expect_output_contains 'Tests:' "${out}"
+  expect_output_contains '--help=safety' "${out}"
+  expect_output_contains 'COMMAND STRUCTURE' "${out}"
+  expect_output_contains 'COMMON TASKS' "${out}"
+  expect_output_contains '--help=all' "${out}"
+  expect_output_contains '--help=long' "${out}"
   expect_matches 'expressions' "${out}" # the --help=TOPIC index lists the expressions topic
   local n
   n="$(printf '%s\n' "${out}" | wc -l)"
@@ -128,6 +129,23 @@ test::removed_standalone_document_flags_are_unknown() {
     expect_eq "2" "${rc}"
     expect_output_contains "unknown option '${flag}'" "${out}"
   done
+}
+
+test::overview_examples_run_as_shown() {
+  local dir out
+  dir="$(test_tmpdir overview_examples)"
+  mkdir -p "${dir}/src" "${dir}/left-tree" "${dir}/right-tree"
+  : >"${dir}/src/a.cc"
+  : >"${dir}/src/a.h"
+  : >"${dir}/src/b.txt"
+  out="$(cd "${dir}" && "$(_xff_bin)" src -type f -name '*.cc')"
+  expect_eq "src/a.cc" "${out}" || return
+  out="$(cd "${dir}" && "$(_xff_bin)" . \( -name '*.cc' -o -name '*.h' \) -print)"
+  expect_output_contains 'a.cc' "${out}" || return
+  expect_output_contains 'a.h' "${out}" || return
+  expect_eq "no" "$([[ ${out} == *b.txt* ]] && echo yes || echo no)" || return
+  out="$(cd "${dir}" && "$(_xff_bin)" --compare left-tree right-tree)"
+  expect_eq "" "${out}"
 }
 
 test_runner

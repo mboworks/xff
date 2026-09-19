@@ -42,3 +42,22 @@ cc_test(
         "@mboworks_mbo//mbo/testing:matchers_cc",
     ],
 )
+
+cc_library(
+    name = "text_width_cc",
+    srcs = ["text_width.cc"],
+    hdrs = ["text_width.h"],
+    visibility = ["//xff/presentation/render:__pkg__"],
+    deps = ["@utf8proc"],
+)
+
+cc_test(
+    name = "text_width_test",
+    size = "small",
+    srcs = ["text_width_test.cc"],
+    deps = [
+        ":text_width_cc",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
+)

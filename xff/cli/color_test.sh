@@ -171,8 +171,8 @@ test::bsd_lscolors_themes_the_listing_on_macos() {
 }
 
 test::help_documents_color() {
-  # Self-documentation: the --help usage page lists --color in the Output group.
-  expect_output_contains "--color" "$("$(_xff_bin)" --help 2>&1)"
+  # Self-documentation: the complete option inventory lists --color.
+  expect_output_contains "--color" "$("$(_xff_bin)" --help=all 2>&1)"
   # And the palette flag, whose help has to say where the colours come from.
   out="$("$(_xff_bin)" --help=--color-scheme 2>&1)"
   expect_output_contains "LS_COLORS" "${out}"
