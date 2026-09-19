@@ -108,3 +108,16 @@ in that workflow. An unrelated sanitizer or lint failure does not suppress a val
 report. A failed, cancelled, or skipped coverage job leaves the previous report intact while
 PR metadata still refreshes. In the two-phase view, post-merge precedes pre-merge within each PR;
 PR groups retain their merge-time ordering even when a pre-merge retry finishes later.
+
+To recover an unpublished report without rerunning tests, dispatch `Publish coverage` with
+`source_run_id` set to the original completed Test or Release workflow run ID. For example:
+
+```sh
+gh workflow run coverage_pages.yml -f source_run_id=35460479026
+```
+
+The source run's coverage job must have succeeded and its report artifact must still be available.
+The publisher uses the source run's original commit, timestamps, run ID, and attempt; it does not
+assign the recovery dispatch's identity to the measurements. Older reports are archived without
+replacing newer target reports. Recovery shares the normal publication queue. Omitting the input
+continues to refresh metadata only. Expired artifacts cannot be recovered by this command.

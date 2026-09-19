@@ -3,6 +3,8 @@
 
 # 0.7.0
 
+- Allow serialized coverage backfill from an existing completed CI run without rerunning tests.
+
 - Publish successful coverage despite unrelated CI failures, and show post-merge before
   pre-merge within each PR in the two-phase coverage view.
 
