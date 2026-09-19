@@ -193,29 +193,46 @@ clang-format picks a layout per line; these habits steer it toward the readable 
 - **Pass `absl::Status` by value**, not `const&`: it is a tagged pointer, and
   `.clang-tidy performance-unnecessary-value-param` allowlists it (with `absl::StatusOr`
   and `std::string_view`). `StatusOr<T>`'s cost depends on `T`.
-- **Never range-iterate an inline braced-init-list; iterate a NAMED `constexpr std::array`.** A loop
-  over `{a, b, c}` hides what the set IS behind the mechanics of visiting it, gives the reader nothing
-  to grep for, and puts the data at the point of use so the next case that needs the same set copies it
-  instead of sharing it. Build the set with `std::to_array<T>({...})` (a trailing comma on the last
-  element, so `clang-format` breaks it one per line - see the Formatting section) and give it a `k`
-  name that says what the set is, not what the loop does. `static constexpr` inside a function when it
-  is used once; at namespace scope in the anonymous namespace when more than one case needs it.
-  Deducing `std::array` from `to_array` also keeps the element type in exactly one place, and an
-  explicit type stops a literal from being deduced as `const char*` where `std::string_view` was meant.
+- **Short literal ranges may be inline when the complete `for (...)` header fits on one
+  clang-formatted line (the 120-column limit includes indentation).** For example:
 
   ```cpp
-  // POSIX precedence: LC_ALL overrides LC_CTYPE, which overrides LANG.
-  static constexpr std::array kLocaleVars = std::to_array<std::string_view>({
+  for (const auto value : {1, 2, 3}) {
+    Check(value);
+  }
+  ```
+
+  Name the collection when the header would wrap, when it is reused, or when a name explains
+  the values' meaning. A typed wrapper such as `std::to_array<T>({...})` does not name a list;
+  it follows the same one-line rule. Do not compress a long list or disable formatting to evade it.
+  Only the header matters: a multiline loop body does not require naming the range.
+
+  For named constant data, prefer `static constexpr std::array` initialized with
+  `std::to_array<T>({...})`. Give it a meaningful `k` name and a trailing comma on its final
+  element. Use local scope for a single consumer, or anonymous-namespace scope when shared.
+  Runtime values need an ordinary appropriately scoped collection, not forced `constexpr`.
+
+  ```cpp
+  static constexpr std::array kLocaleVariablesByPrecedence = std::to_array<std::string_view>({
       "LC_ALL",
       "LC_CTYPE",
       "LANG",
   });
-  for (const std::string_view var : kLocaleVars) {  // not: for (... : {"LC_ALL", "LC_CTYPE", "LANG"})
+  for (const std::string_view variable : kLocaleVariablesByPrecedence) {
+    ReadLocale(variable);
+  }
   ```
 
-  Enforced by the `no-braced-init-list-loop` pre-commit hook, so it cannot drift back. This is about a
-  RANGE-FOR over a literal list; passing a braced list as an argument (`ElementsAre`, a `std::vector`
-  initializer, an aggregate) is untouched by the rule.
+  Element typing is a separate decision: `std::to_array<T>` explicitly chooses the stored
+  element type; a braced list of string literals normally stores `const char*`, even if the
+  loop variable is a `std::string_view`. Choose the type deliberately, without inventing a name
+  solely for a short one-use list.
+
+  The `check-inline-range-lists` hook checks multiline/overlong literal range headers, including
+  common typed wrappers. Semantic reasons to name a short list (meaning or reuse) remain a review
+  decision. Other braced arguments, aggregates, and ordinary computed ranges are unaffected.
+  Existing violations are temporarily fingerprinted in `tools/inline_range_lists_baseline.json`
+  so the separate codebase-review PR can remove them without mixing that cleanup into this policy.
 
 - **Prefer container algorithms** from `absl/algorithm/container.h` (`absl::c_contains`,
   `c_any_of`, `c_find`, `c_equal`, `c_sort`, ...) or C++23 `std::ranges` over hand-rolled
