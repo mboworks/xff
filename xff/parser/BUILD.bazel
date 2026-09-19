@@ -82,9 +82,3 @@ cc_binary(
         "@com_github_google_benchmark//:benchmark",
     ],
 )
-
-# Input for the Python regression check of core fuzz campaign discovery.
-exports_files(
-    ["BUILD.bazel"],
-    visibility = ["//tools:__pkg__"],
-)

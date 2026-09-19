@@ -74,9 +74,3 @@ cc_fuzz_test(
         "@abseil-cpp//absl/time",
     ],
 )
-
-# Input for the Python regression check of core fuzz campaign discovery.
-exports_files(
-    ["BUILD.bazel"],
-    visibility = ["//tools:__pkg__"],
-)

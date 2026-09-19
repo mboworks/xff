@@ -52,9 +52,3 @@ cc_fuzz_test(
     dicts = ["fuzzy_fuzz_test.dict"],
     deps = [":fuzzy_cc"],
 )
-
-# Input for the Python regression check of core fuzz campaign discovery.
-exports_files(
-    ["BUILD.bazel"],
-    visibility = ["//tools:__pkg__"],
-)

@@ -178,16 +178,17 @@ implementing PR.
 
 - Origin: [PR #873](https://github.com/mboworks/xff/pull/873).
 - Status: implemented with F11 in the Python tooling follow-up.
-- Bazel owns 34 tooling suites under `//tools:python_tests`; `//...` runs them too.
+- Bazel owns 33 tooling suites under `//tools:python_tests`; `//...` runs them too.
   All Python hooks use managed Python 3.13, matching the explicit standalone Bazel toolchain.
 - Pre-commit retains narrowly triggered checker tests. Process-measurement and fuzz scheduler
   tests move to Bazel; commits never recursively launch Bazel to test hooks.
-- `//tools:repository_tooling_test` verifies actual core fuzz BUILD files, registered-extra coverage
-  mapping, and test ownership using declared runfiles and a temporary fixture tree.
+- `bazel run //tools:repository_tooling_test` checks all live BUILD files, registered-extra coverage
+  mapping, and test ownership via `BUILD_WORKSPACE_DIRECTORY`. Main and release CI run it explicitly;
+  no maintained list of BUILD exports or sandbox fixtures restricts repository discovery.
 - Repository fixtures are declared runfiles; grouping tests create temporary source files. Git and
   shell integration suites use temporary repositories and are marked `requires-host-tools`.
-- Validation: all 34 tooling targets and the benchmark integration passed through Bazel; the three
-  repository-data checks and changed-file pre-commit checks passed directly.
+- Validation: all 33 tooling targets and the benchmark integration passed through Bazel; the three
+  live repository checks and changed-file pre-commit checks passed directly.
 - Implemented in: `tooling/python-bazel-targets` follow-up.
 
 ## F09: Publish benchmark history across PRs and releases

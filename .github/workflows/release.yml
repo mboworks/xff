@@ -68,6 +68,8 @@ jobs:
           sudo apt-get install -y lcov mandoc fuse3 libfuse3-3
           tools/install_lcov.sh "${RUNNER_TEMP}/lcov"
           echo "${RUNNER_TEMP}/lcov/bin" >>"${GITHUB_PATH}"
+      - name: Check live repository tooling
+        run: bazel run //tools:repository_tooling_test
       - name: Collect release coverage
         # --config=xff_docs includes the aggregate xff_all switch, so extensions added to the
         # registry join release coverage automatically, as well as the complete documented surface.
