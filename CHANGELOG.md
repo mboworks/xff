@@ -47,6 +47,15 @@
 - Explain physical files versus logical shard sets with tested examples covering classification,
   actions, collection placement, reductions, duplicates, and comparison.
 
+- Resolve archive filename sniffing from the final traversal mode, so a later all-mode selection
+  restores the filename gate after any-mode flags or named configuration selections.
+
+- Add an order-and-limits guide covering actions, collections, summaries, packing,
+  parallel traversal, and comparison populations.
+
+- Add executable archive-safety recipes for inspection, new archives, member deletion,
+  and writing reports only beneath a declared output root.
+
 - Reject zero, negative, malformed, and overflowing histogram widths before traversal or actions,
   including settings selected from configuration files.
 

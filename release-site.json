@@ -36,7 +36,9 @@
     "docs/design-field-validation.md": "docs/design-field-validation.html",
     "docs/config-inspection.md": "docs/config-inspection.html",
     "docs/summary-export.md": "docs/summary-export.html",
-    "docs/shard-populations.md": "docs/shard-populations.html"
+    "docs/shard-populations.md": "docs/shard-populations.html",
+    "docs/order-and-limits.md": "docs/order-and-limits.html",
+    "docs/archive-safety-recipes.md": "docs/archive-safety-recipes.html"
   },
   "generated_html": {
     "XFF.md": {

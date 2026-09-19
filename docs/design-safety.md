@@ -37,6 +37,8 @@ actions. This table reports xff's operation policy, not filesystem authorization
 arming and operating-system permissions also apply. Dry-run is reported independently because it
 previews supported operations without removing capability blocks.
 
+Task-based examples with tested profiles are in [Archive safety recipes](archive-safety-recipes.md).
+
 ## Capabilities
 
 File controls also cover archive operations under the default empty category list. With `archive` selected,

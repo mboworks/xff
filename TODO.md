@@ -32,6 +32,12 @@
 - Test output selection, summaries, filtered populations, and operational errors.
 - Regenerate the reference and validate focused help, registry documentation, and changed-file checks.
 
+## Completed: Order and limits guide (audit S15)
+
+- Compare expression, listing, reduction, traversal, and sorting controls in one table.
+- Verify collection placement, explicit actions, full denominators, fuzzy selection, and archive populations.
+- Explain parallel ordering, retained state, and partial comparison populations.
+
 Actionable roadmap and deliberately deferred ideas. Completed implementation records live in
 [`docs/history-roadmap.md`](docs/history-roadmap.md); other resolved design records and investigations
 live in [`docs/history.md`](docs/history.md).
@@ -399,3 +405,14 @@ this as intentional accounting.
 - [x] Explain physical predicates/actions, logical reductions, status-cohort order, collections,
       missing members, duplicate selection, custom schemes, and physical comparison with executable examples.
 - [ ] Publish after the B10 comparison and B11 collection-accounting corrections.
+
+### Audit B13: archive mode ordering
+
+- [x] Reproduce stale filename sniffing after a later all-mode selection.
+- [x] Resolve traversal and sniffing together; test CLI aliases and full INI selection order.
+- [x] Verify generated help, archive regression tests, and changed-source lint.
+
+### Audit S16: task-based archive safety recipes
+
+- [x] Document minimal capability profiles and format/destination limitations.
+- [x] Execute permitted and blocked recipe variants against isolated fixtures.

@@ -2296,6 +2296,7 @@ absl::StatusOr<ArchiveAggregate> ResolveArchiveAggregate(const std::vector<std::
 // The returned member-path views point into `globals`, which outlives the walk.
 struct ResolvedArchiveOptions {
   ArchiveDive archive_dive = ArchiveDive::kNone;
+  bool sniff_any = false;
   int archive_depth = 1;
   archive::MemberPathOptions member_paths;
 };
@@ -2314,6 +2315,7 @@ absl::StatusOr<ResolvedArchiveOptions> ResolveArchiveOptions(
     }
   } else {
     result.archive_dive = ArchiveDiveOf(archive_mode);
+    result.sniff_any = archive_mode == ArchiveMode::kAny;
   }
   // --archive-depth=N: how many containers deep diving goes (see WalkOptions::archive_depth). A bad
   // or zero value is a usage error rather than a silent clamp - "0" most likely means "off", which
@@ -4794,13 +4796,6 @@ RunResult RunFindCore(
   options.archive = archive_options->archive_dive;
   options.archive_depth = archive_options->archive_depth;
   const archive::MemberPathOptions member_path_options = archive_options->member_paths;
-  // --archive-any: offer every file to the reader instead of only those whose name looks like a
-  // container. Expensive by design (every file is opened and format-bid), so it is opt-in.
-  // `--archive=any` / `-z++` / `-Z++` is the top rung: dive like `all` AND drop the name gate.
-  // `--archive-any` is the older spelling of the same thing.
-  const bool archive_any = absl::c_contains(command.globals, "--archive-any")
-                           || absl::c_contains(command.globals, "--archive=any")
-                           || absl::c_contains(command.globals, "-z++") || absl::c_contains(command.globals, "-Z++");
   // --hash-algorithm=ALGO / --hash-encoding=hex|base64: defaults for a bare -hash action and a
   // bare {hash} field (last occurrence wins; empty -> sha256 / hex). Validated here so a bad value
   // is a usage error (exit 2) before the walk; the explicit -hash:ALGO[/ENCODING] specs in the
@@ -5275,7 +5270,7 @@ RunResult RunFindCore(
   // The walk's whole view of archives: hand it a container path, get a filesystem over the members
   // or the InvalidArgument that means "an ordinary file after all". Passed unconditionally because
   // `options.archive` decides whether it is ever called.
-  const auto mount_container = MakeContainerMounter(walk_fs, member_path_options, archive_any);
+  const auto mount_container = MakeContainerMounter(walk_fs, member_path_options, archive_options->sniff_any);
   std::size_t listed_results = 0;
 
   // Completes the run-level consequences of one fully evaluated entry. Deferred result-set

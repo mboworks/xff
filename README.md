@@ -196,6 +196,7 @@ The vocabulary and options are defined once inside the C++ binary (the engine re
 - **`XFF.md`**: The full comprehensive reference in Markdown. Run `xff-md-update.sh` to regenerate it; the `//xff/cli:xff_markdown_test` target fails CI if it drifts from the binary.
 - **`xff --help`**: Renders the main utility usage page. Use `xff --help=TOPIC` to review specific sub-topics (`fields`, `printf`, `time`, `size`, `grammars`, `stats`, etc.), or `xff --help=full` to dump all help sections.
 - **Formatted full reference**: Append `:markdown` (or `:md`), `:html`, or `:roff` to `--help=full` (or its `long` alias). HTML is a standalone, self-contained HTML5 document with no scripts or external assets; `--man` remains the conventional alias for the roff form.
+- **[Order and limits](docs/order-and-limits.md)**: Choose expression filters, display limits, or traversal termination, and see how each affects actions, reductions, and packing.
 - **Paired release docs**: The shared `//xff/cli:xff_reference_gen` action always generates Markdown and HTML together, and release Pages publish that exact pair so the formats cannot silently diverge.
 
 ---
