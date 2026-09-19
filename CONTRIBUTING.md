@@ -36,7 +36,7 @@ Python 3.13 toolchain supplied by `rules_python`; Bazel execution does not use a
 Declare imported modules as dependencies and non-Python inputs as runfiles, with narrow visibility.
 A filegroup describes data, not an executable Python program.
 
-Run all 33 tooling suites with `bazel test //tools:python_tests`; they also run under `bazel test //...`.
+Run all 34 tooling suites with `bazel test //tools:python_tests`; they also run under `bazel test //...`.
 The benchmark integration is `//xff/engine:read_benchmark_test`. Run the measurement commands with
 `bazel run //tools:measure_resources -- -- COMMAND...` or
 `bazel run //tools:benchmark_resources -- XFF --output=REPORT.json`.
@@ -46,13 +46,16 @@ process, preserving per-invocation peak-memory accounting. Direct script invocat
 Pre-commit owns changed-file formatting and policy checks, plus fast, narrowly triggered checker
 self-tests. Its Python hooks use the managed Python 3.13 environment. Process-measurement and fuzz
 scheduler suites belong to Bazel, so commits do not run those suites or start recursive Bazel builds.
-CI's existing release/coverage publishing checks may run their relevant suites directly as an
-additional check of the scripts used in those workflows; Bazel remains their canonical test owner.
+Main and release coverage CI run these suites through their existing Bazel test/coverage commands,
+without additional direct unit-test invocations. The Pages workflow is a compatibility exception:
+it checks out historical release tags and tests that tag's site builder directly, since older tags
+need not provide Bazel Python targets.
 
-`tools/repository_tooling_test.py` is the explicit checkout-integration exception: it verifies live
-fuzz discovery, extra-module coverage mapping, and that every other tooling test has a Bazel owner.
-The main workflow runs it unconditionally on Python 3.13. It does not belong in a sandbox that sees
-only declared fixture files. Other suites use temporary repositories and declared fixtures.
+`//tools:repository_tooling_test` verifies actual core fuzz BUILD files, extra-module coverage
+mapping, and a Bazel owner for every tooling test. All its repository inputs are declared runfiles;
+the discovery scan uses a temporary fixture tree. New test files are included by the data glob, so
+forgetting their Bazel target fails the ownership test. Other suites also use temporary repositories
+and declared fixtures.
 The coverage-index and release-site suites require host Git; release-note tests require Bash and sed.
 Their Bazel targets carry `requires-host-tools`, and the supported Linux/macOS CI images provide them.
 No tests contact GitHub or recursively invoke Bazel; the separate site integration step does use GitHub.

@@ -208,3 +208,9 @@ cc_fuzz_test(
         ":xffrc_cc",
     ],
 )
+
+# Input for the Python regression check of core fuzz campaign discovery.
+exports_files(
+    ["BUILD.bazel"],
+    visibility = ["//tools:__pkg__"],
+)

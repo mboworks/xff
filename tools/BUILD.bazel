@@ -680,6 +680,29 @@ py_binary(
     deps = ["@rules_python//python/runfiles"],
 )
 
+py_test(
+    name = "repository_tooling_test",
+    size = "small",
+    srcs = ["repository_tooling_test.py"],
+    data = [
+        "BUILD.bazel",
+        "//bazelmod:extras.MODULE.bazel",
+        "//xff/config:BUILD.bazel",
+        "//xff/engine:BUILD.bazel",
+        "//xff/fuzzy:BUILD.bazel",
+        "//xff/matching/similarity:BUILD.bazel",
+        "//xff/parser:BUILD.bazel",
+        "//xff/presentation/fields:BUILD.bazel",
+    ] + glob(["*_test.py"]),
+    deps = [
+        ":build_rules_lib",
+        ":coverage_sources_lib",
+        ":extras_lib",
+        ":fuzz_targets_lib",
+        ":test_paths_lib",
+    ],
+)
+
 test_suite(
     name = "python_tests",
     tests = [
@@ -715,6 +738,7 @@ test_suite(
         ":measure_resources_test",
         ":release_notes_test",
         ":release_site_test",
+        ":repository_tooling_test",
         ":site_artwork_test",
     ],
 )

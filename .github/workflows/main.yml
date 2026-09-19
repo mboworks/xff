@@ -30,11 +30,6 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      - run: python3 -m unittest discover -s tools -p release_site_test.py
-      - run: python3 -m unittest discover -s tools -p site_artwork_test.py
-      - run: python3 -m unittest discover -s tools -p "*cache*test.py"
-      - run: python3 -m unittest discover -s tools -p release_notes_test.py
-      - run: python3 -m unittest discover -s tools -p repository_tooling_test.py
       - name: Verify configured documentation and generated links
         env:
           GH_TOKEN: ${{ github.token }}
@@ -357,9 +352,6 @@ jobs:
             --show-details \
             --title "xff production coverage"
           python3 tools/coverage_html.py coverage-html/lcov coverage_policy.json "${COVERAGE_PAGE}"
-          python3 -m unittest tools/coverage_test.py tools/coverage_sources_test.py \
-            tools/coverage_html_test.py tools/coverage_index_test.py tools/coverage_lcovrc_test.py \
-            tools/coverage_policy_test.py
           BASE_ARGS=()
           if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
             git fetch --quiet --no-tags origin main

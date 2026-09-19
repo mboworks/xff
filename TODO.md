@@ -4,7 +4,7 @@
 
 - Use Aspect Python rules and a pinned Python 3.13 toolchain for tooling tests and benchmarks.
 - Declare Python libraries, executables, tests, and fixture inputs; retain direct script usage.
-- Keep fast checker tests in pre-commit and run the live-checkout ownership/discovery check in CI.
+- Keep fast checker tests in pre-commit and run ownership/discovery checks through Bazel with declared inputs.
 
 ## Completed: Fuzzy help-selector diagnostics
 
