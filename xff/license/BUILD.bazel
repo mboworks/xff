@@ -51,6 +51,13 @@ license_body(
     spdx = "MIT",
 )
 
+# Preserve the complete upstream document: both MIT notices and the Unicode data terms.
+license_body(
+    name = "utf8proc_license_cc",
+    src = "utf8proc-LICENSE.txt",
+    spdx = "LicenseRef-utf8proc",
+)
+
 cc_library(
     name = "license_cc",
     srcs = [
@@ -62,6 +69,7 @@ cc_library(
     deps = [
         ":bsd_3_clause_license_cc",
         ":mit_license_cc",
+        ":utf8proc_license_cc",
         "@abseil-cpp//absl/strings",
         "@xff_extras_api//:license_notice_cc",
     ],

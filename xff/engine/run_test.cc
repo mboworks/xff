@@ -2426,8 +2426,8 @@ TEST_F(RunTest, SummaryTopKeepsTheLargestGroupsBySize) {
   EXPECT_THAT(
       RunArgvRecords({"--summary=ext", "--top=1", "--format=jsonl", root_.string(), "-type", "f"}),
       ElementsAre(
-          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"txt","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67,"is_total":false})",
-          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00,"is_total":true})"));
+          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"txt","count":2,"count_percent":66.67,"bytes":2,"size_percent":66.67,"groups_shown":1,"groups_total":2,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"total","count":3,"count_percent":100.00,"bytes":3,"size_percent":100.00,"groups_shown":1,"groups_total":2,"is_total":true})"));
 }
 
 TEST_F(RunTest, SummaryControlsRejectInvalidNumbersBeforeActions) {
@@ -2524,9 +2524,9 @@ TEST_F(RunTest, SummaryTopBreaksEqualSizeTiesByCountThenName) {
   EXPECT_THAT(
       RunArgvRecords({"--summary=ext", "--top=2", "--format=jsonl", root_.string(), "-type", "f"}),
       ElementsAre(
-          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"txt","count":2,"count_percent":50.00,"bytes":0,"size_percent":0.00,"is_total":false})",
-          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"h","count":1,"count_percent":25.00,"bytes":0,"size_percent":0.00,"is_total":false})",
-          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"total","count":4,"count_percent":100.00,"bytes":0,"size_percent":0.00,"is_total":true})"));
+          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"txt","count":2,"count_percent":50.00,"bytes":0,"size_percent":0.00,"groups_shown":2,"groups_total":3,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"h","count":1,"count_percent":25.00,"bytes":0,"size_percent":0.00,"groups_shown":2,"groups_total":3,"is_total":false})",
+          R"({"record":"summary","request":0,"summary":"ext","scope":"all","root":"","group":"total","count":4,"count_percent":100.00,"bytes":0,"size_percent":0.00,"groups_shown":2,"groups_total":3,"is_total":true})"));
 }
 
 TEST_F(RunTest, ComparisonScopesSelectOrderedColumnGroups) {
@@ -2632,7 +2632,7 @@ TEST_F(RunTest, PairedSummaryDistinguishesZeroBytesAndUsesSelectedCategoryDenomi
   const auto plain = RunArgvRecords(
       {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--summary-scope=compare",
        "--human=off"});
-  EXPECT_THAT(plain, Contains(HasSubstr("left-total % count")).Times(1));
+  EXPECT_THAT(plain, Contains(AllOf(HasSubstr("Group  left-total"), HasSubstr("Count  % count"))).Times(1));
   EXPECT_THAT(plain, Contains(HasSubstr("-")));
   EXPECT_THAT(last_errors_, 0);
 }
@@ -2727,6 +2727,71 @@ TEST_F(RunTest, ComparisonSummaryResetClearsEarlierImplicitRequests) {
   EXPECT_THAT(last_errors_, 0);
 }
 
+TEST_F(RunTest, TruncatedSummariesReportCompleteGroupPopulation) {
+  for (const auto format : std::to_array<std::string_view>({"plain", "markdown", "jsonl"})) {
+    for (const bool compare : std::to_array<bool>({false, true})) {
+      SCOPED_TRACE(format);
+      SCOPED_TRACE(compare);
+      std::vector<std::string> args = {root_.string(),  "-type",   "f",
+                                       "--summary=ext", "--top=1", absl::StrCat("--format=", format)};
+      if (compare) {
+        args.insert(args.begin(), "--compare=summary");
+        args.insert(args.begin() + 2, Path("sub"));
+        args.emplace_back("--summary-scope=left-total,left-only");
+      }
+      const auto records = RunArgvRecords(args);
+      EXPECT_THAT(last_errors_, 0);
+      if (format == "jsonl") {
+        std::size_t seen = 0;
+        for (const auto& record : records) {
+          const auto row = nlohmann::json::parse(record);
+          if (row.at("summary") != "ext") {
+            continue;
+          }
+          ++seen;
+          EXPECT_THAT(row.at("groups_shown").get<int>(), Eq(1));
+          EXPECT_THAT(row.at("groups_total").get<int>(), Eq(2));
+        }
+        EXPECT_THAT(seen, Eq(2));
+      } else {
+        EXPECT_THAT(
+            records, Contains(HasSubstr("Showing 1 of 2 groups; totals and percentages include omitted groups.")));
+      }
+    }
+  }
+}
+
+TEST_F(RunTest, RootSummaryTruncationIsSpecificToEachRequest) {
+  const auto records = RunArgvRecords(
+      {root_.string(), "-type", "f", "--summary=ext", "--summary=type", "--summary-scope=root", "--top=1",
+       "--format=jsonl"});
+  ASSERT_THAT(records, SizeIs(4));
+  for (const auto& record : records) {
+    const auto row = nlohmann::json::parse(record);
+    EXPECT_THAT(row.at("root").get<std::string>(), Eq(root_.string()));
+    if (row.at("summary") == "ext") {
+      EXPECT_THAT(row.at("groups_shown").get<int>(), Eq(1));
+      EXPECT_THAT(row.at("groups_total").get<int>(), Eq(2));
+    } else {
+      EXPECT_THAT(row.contains("groups_shown"), IsFalse());
+      EXPECT_THAT(row.contains("groups_total"), IsFalse());
+    }
+  }
+}
+
+TEST_F(RunTest, CompleteAndEmptySummariesDoNotClaimOmittedGroups) {
+  for (const auto predicate : std::to_array<std::string_view>({"-true", "-false"})) {
+    const auto records =
+        RunArgvRecords({root_.string(), std::string(predicate), "--summary=ext", "--summary=type", "--top=0"});
+    EXPECT_THAT(records, Contains("Summary by extension"));
+    EXPECT_THAT(records, Contains("Summary by file type"));
+    EXPECT_THAT(records, Not(Contains(HasSubstr("omitted groups"))));
+  }
+  const auto records = RunArgvRecords({root_.string(), "--summary=ext", "--top=1", "--no-header"});
+  EXPECT_THAT(records, Not(Contains("Summary by extension")));
+  EXPECT_THAT(records, Contains(HasSubstr("omitted groups")));
+}
+
 TEST_F(RunTest, MarkdownSummaryHeadingsDescribeEachGrouping) {
   constexpr std::string_view kSha256A = "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb";
   const std::vector<std::pair<std::string, std::string>> cases = {
@@ -2747,6 +2812,10 @@ TEST_F(RunTest, MarkdownSummaryHeadingsDescribeEachGrouping) {
         RunArgvRecords(
             {root_.string(), "-name", "a.txt", "-hasheq", std::string(kSha256A), "--summary=" + mode, "--format=md"}),
         Contains("\n## " + title));
+    EXPECT_THAT(last_errors_, 0);
+    EXPECT_THAT(
+        RunArgvRecords({root_.string(), "-name", "a.txt", "-hasheq", std::string(kSha256A), "--summary=" + mode}),
+        Contains(title));
     EXPECT_THAT(last_errors_, 0);
   }
 }
@@ -2769,8 +2838,8 @@ TEST_F(RunTest, SummarySizesAlignExactBytesWithScaledIntegerDigits) {
   ASSERT_THAT(fs_.WriteContent(Path("size-scaled.b"), std::string(44'450, 'x')), IsOk());
   const auto records =
       RunArgvRecords({root_.string(), "-name", "size-*", "--summary=ext", "--human=si", "--summary-precision=2"});
-  ASSERT_THAT(records, SizeIs(1));
-  EXPECT_THAT(records.at(0) + "\n", WithDropIndent(EqualsText(R"out(
+  ASSERT_THAT(records, SizeIs(2));
+  EXPECT_THAT(records.at(1) + "\n", WithDropIndent(EqualsText(R"out(
       Group  Count  % count      Size   % size
       a          1   50.00%   0     B    0.00%
       b          1   50.00%  44.45 kB  100.00%

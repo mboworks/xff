@@ -450,11 +450,18 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   });
   xff::env::Prewarm(absl::MakeConstSpan(kKnownEnv));
 
-  // The plain-help wrap width (--width), resolved once so every help / topic render
-  // shares it. A bare --width means auto; --width=VALUE carries the value. Scanned
-  // here (like the help flags) since --help short-circuits before the full parse.
+  // Parse once before dispatching help/version. The parser identifies meta flags
+  // only at option/expression boundaries, so `-exec echo --help ;` passes
+  // `--help` to the child instead of turning the whole xff invocation into help.
+  absl::StatusOr<xff::parser::Command> parsed = xff::parser::Parse(args);
+  if (!parsed.ok()) {
+    std::cerr << "xff: " << parsed.status().message() << "\n" << xff::cli::ParseErrorHint(parsed.status());
+    return 2;
+  }
+  // Help and plain comparison summaries share --width. Inspect only parsed globals:
+  // a --width token inside a child command remains that child's argument.
   std::optional<std::string_view> width_flag;
-  for (const std::string& arg : args) {
+  for (const std::string& arg : parsed->globals) {
     if (arg == "--width") {
       width_flag = "auto";
     } else if (arg.starts_with("--width=")) {
@@ -469,17 +476,10 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   }
   const bool stdout_is_tty = ::isatty(STDOUT_FILENO) != 0;
   // --color drives help color too (auto = a tty with NO_COLOR unset; always overrides).
-  // Scanned from argv like --width, since --help short-circuits before the full parse.
-  const bool help_color = xff::color::Enabled(xff::color::ResolveWhen(args), stdout_is_tty, xff::env::Has("NO_COLOR"));
+  // As with width, only parser-identified globals affect help rendering.
+  const bool help_color =
+      xff::color::Enabled(xff::color::ResolveWhen(parsed->globals), stdout_is_tty, xff::env::Has("NO_COLOR"));
   const xff::cli::HelpRenderContext help_context{.width = *help_width, .color = help_color};
-  // Parse once before dispatching help/version. The parser identifies meta flags
-  // only at option/expression boundaries, so `-exec echo --help ;` passes
-  // `--help` to the child instead of turning the whole xff invocation into help.
-  absl::StatusOr<xff::parser::Command> parsed = xff::parser::Parse(args);
-  if (!parsed.ok()) {
-    std::cerr << "xff: " << parsed.status().message() << "\n" << xff::cli::ParseErrorHint(parsed.status());
-    return 2;
-  }
   // Resolve only the globals the parser identified at option boundaries. In particular, a token
   // such as `--pager=always` inside an -exec argument run belongs to the child command.
   const absl::StatusOr<xff::cli::PagerConfig> pager = xff::cli::ResolvePager(parsed->globals);
@@ -863,7 +863,7 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
       [](std::string_view path, absl::Status status) {
         std::cerr << "xff: " << path << ": " << status.message() << "\n";
       },
-      style);  // style-scoped traversal defaults (xff -> sorted + bounded; find/rg -> unordered)
+      style, *help_width);  // style-scoped traversal defaults (xff -> sorted + bounded; find/rg -> unordered)
   if (result.errors != 0) {
     return 2;  // an error outranks match status
   }

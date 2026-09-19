@@ -6,6 +6,14 @@
 - Distinguish aggregate summary rows with `is_total` in JSONL and quote ambiguous data labels
   in text tables, preserving real groups named `total`.
 
+- Use grouped scope headers in console comparison summaries and compact scope rows when the table
+  exceeds `--width`. Preserve Unicode graphemes, numeric values, and machine-output accounting.
+
+- Label console summary groupings and report omitted groups under `--top`, including
+  machine-readable group counts in truncated JSONL tables.
+
+- Export ordinary and comparison summaries as CSV/TSV with one shared schema and explicit row identity.
+
 - Identify every JSONL summary row by request, grouping, and scope, retaining template text
   and comparison roots so repeated and mixed summaries can be separated reliably.
 

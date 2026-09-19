@@ -81,6 +81,8 @@
 #include "xff/presentation/fields/fields.h"
 #include "xff/presentation/format/format.h"
 #include "xff/presentation/render/render.h"
+#include "xff/presentation/render/scoped_table.h"
+#include "xff/presentation/render/summary_export.h"
 #include "xff/registry/descriptor.h"
 #include "xff/shard/group.h"
 #include "xff/shard/shard.h"
@@ -3173,6 +3175,22 @@ std::string SummaryJson(const SummaryRow& row, const SummaryRow& total, unsigned
   return result;
 }
 
+bool IsDelimitedSummary(render::Format format) {
+  return format == render::Format::kCsv || format == render::Format::kTsv;
+}
+
+bool IsMachineSummary(render::Format format) {
+  return format == render::Format::kJsonl || IsDelimitedSummary(format);
+}
+
+render::SummaryExportMetrics ExportMetrics(const SummaryRow& row, const SummaryRow& total, bool has_size) {
+  return {
+      .count = row.count,
+      .total_count = total.count,
+      .bytes = has_size ? std::optional<render::SummaryExportBytes>({.value = row.size, .total = total.size})
+                        : std::nullopt};
+}
+
 // Summary schemas are fixed by their grouping; reuse the listing Markdown encoder for cells.
 class SummaryTable final {
  public:
@@ -3240,21 +3258,64 @@ std::string SummaryDisplayKey(std::string_view key, bool is_total) {
   return std::string(key);
 }
 
+struct SummaryPopulation {
+  std::size_t shown = 0;
+  std::size_t total = 0;
+
+  bool Truncated() const { return shown < total; }
+
+  std::string Json() const {
+    return Truncated() ? absl::StrCat(",\"groups_shown\":", shown, ",\"groups_total\":", total) : "";
+  }
+
+  void EmitNote(render::Format format, EmitFn emit) const {
+    if (Truncated()) {
+      emit(
+          absl::StrCat(
+              format == render::Format::kMarkdown ? "- " : "", "Showing ", shown, " of ", total,
+              " groups; totals and percentages include omitted groups.\n"));
+    }
+  }
+};
+
+SummaryPopulation SummaryGroups(SummaryMode mode, const SummaryCells& cells, std::size_t rows) {
+  return {.shown = mode == SummaryMode::kOverall ? cells.size() : rows - 1, .total = cells.size()};
+}
+
 void EmitSummaryRows(
     const SummarySpec& summary,
     std::string_view scope,
     std::string_view root,
     const std::vector<SummaryRow>& rows,
+    SummaryPopulation population,
     render::Format output_format,
     std::optional<format::SizeUnits> human,
     unsigned precision,
     bool has_size,
     bool with_header,
-    EmitFn emit) {
+    EmitFn emit,
+    const std::vector<std::string>& export_scopes) {
   if (rows.empty()) {
     return;
   }
   const auto& total = rows.back();
+  if (IsDelimitedSummary(output_format)) {
+    const render::SummaryExport exporter(export_scopes);
+    for (std::size_t index = 0; index < rows.size(); ++index) {
+      const auto& row = rows.at(index);
+      emit(exporter.Row(
+          {.request = summary.request_index,
+           .summary = SummaryGrouping(summary.mode),
+           .key_template = summary.key_template,
+           .scope = scope.empty() ? "all" : scope,
+           .root = root,
+           .group = row.key,
+           .is_total = index + 1 == rows.size(),
+           .metrics = ExportMetrics(row, total, has_size)},
+          output_format, precision));
+    }
+    return;
+  }
   if (output_format == render::Format::kJsonl) {
     for (std::size_t index = 0; index < rows.size(); ++index) {
       const auto& row = rows.at(index);
@@ -3262,7 +3323,8 @@ void EmitSummaryRows(
           absl::StrCat(
               "{", SummaryIdentityJson(summary), ",\"scope\":", render::JsonValue(scope.empty() ? "all" : scope),
               ",\"root\":", render::JsonValue(root), ",\"group\":", render::JsonValue(row.key), ",",
-              SummaryJson(row, total, precision, has_size), SummaryTotalJson(index + 1 == rows.size()), "}\n"));
+              SummaryJson(row, total, precision, has_size), population.Json(),
+              SummaryTotalJson(index + 1 == rows.size()), "}\n"));
     }
     return;
   }
@@ -3277,6 +3339,7 @@ void EmitSummaryRows(
     table.AddRow(std::move(cells));
   }
   emit(table.Render());
+  population.EmitNote(output_format, emit);
 }
 
 std::string_view SummaryTitle(SummaryMode mode) {
@@ -3298,8 +3361,9 @@ std::string_view SummaryTitle(SummaryMode mode) {
 }
 
 void EmitSummaryHeading(SummaryMode mode, const std::vector<std::string>& globals, EmitFn emit) {
-  if (ResolveFormat(globals) == render::Format::kMarkdown && !HasGlobal(globals, "--no-header")) {
-    emit(absl::StrCat("\n## ", SummaryTitle(mode), "\n"));
+  const auto format = ResolveFormat(globals);
+  if (!IsMachineSummary(format) && !HasGlobal(globals, "--no-header")) {
+    emit(absl::StrCat(format == render::Format::kMarkdown ? "\n## " : "", SummaryTitle(mode), "\n"));
   }
 }
 
@@ -3311,22 +3375,24 @@ void EmitSummaries(
     std::optional<format::SizeUnits> human,
     EmitFn emit,
     std::string_view scope = {},
-    std::string_view root = {}) {
+    std::string_view root = {},
+    const std::vector<std::string>& export_scopes = {}) {
   const auto top = ResolveTop(globals);
   const auto precision = ResolveSummaryPrecision(globals);
   const std::string_view scope_label = output_format == render::Format::kMarkdown ? "\n- Scope: " : "Summary scope: ";
   for (std::size_t i = 0; i < summaries.size(); ++i) {
-    if (i > 0 && output_format != render::Format::kJsonl) {
+    if (i > 0 && !IsMachineSummary(output_format)) {
       emit("\n");
     }
     EmitSummaryHeading(summaries.at(i).mode, globals, emit);
-    if (!scope.empty() && output_format != render::Format::kJsonl
-        && (i == 0 || output_format == render::Format::kMarkdown)) {
+    if (!scope.empty() && !IsMachineSummary(output_format) && (i == 0 || output_format == render::Format::kMarkdown)) {
       emit(absl::StrCat(scope_label, scope, root.empty() ? "" : " (", root, root.empty() ? "" : ")", "\n"));
     }
+    const auto rows = SummaryRows(summaries.at(i).mode, tables.at(i), top);
     EmitSummaryRows(
-        summaries.at(i), scope, root, SummaryRows(summaries.at(i).mode, tables.at(i), top), output_format, human,
-        precision, SummaryHasSize(summaries.at(i)), !HasGlobal(globals, "--no-header"), emit);
+        summaries.at(i), scope, root, rows, SummaryGroups(summaries.at(i).mode, tables.at(i), rows.size()),
+        output_format, human, precision, SummaryHasSize(summaries.at(i)), !HasGlobal(globals, "--no-header"), emit,
+        export_scopes);
   }
 }
 
@@ -3338,11 +3404,12 @@ void EmitScopedSummaries(
     std::optional<format::SizeUnits> human,
     std::string_view scope,
     std::string_view root,
-    EmitFn emit) {
+    EmitFn emit,
+    const std::vector<std::string>& export_scopes = {}) {
   if (summaries.empty()) {
     return;
   }
-  EmitSummaries(globals, summaries, tables, format, human, emit, scope, root);
+  EmitSummaries(globals, summaries, tables, format, human, emit, scope, root, export_scopes);
 }
 
 SummaryRow SummaryTotal(const SummaryCells& cells) {
@@ -3371,17 +3438,76 @@ void EmitComparisonScopeHeading(const parser::Command& command, std::string_view
           "Right: ", command.roots.at(1), "\n"));
 }
 
+struct ScopeRowContext {
+  const std::vector<SummaryScopeColumn>& columns;
+  const std::vector<SummaryRow>& totals;
+  std::size_t sink;
+  std::optional<format::SizeUnits> human;
+  unsigned precision;
+  bool has_size;
+  std::string population;
+};
+
+struct ComparisonSummaryRow {
+  std::vector<std::string> cells;
+  std::string json;
+  render::SummaryExportRecord exported;
+  render::ScopedTableRow display;
+};
+
+ComparisonSummaryRow MakeComparisonSummaryRow(
+    render::SummaryExportRecord record,
+    std::string json,
+    const ScopeRowContext& context) {
+  const std::string key(record.group);
+  const std::string label = SummaryDisplayKey(key, record.is_total);
+  ComparisonSummaryRow result{
+      .cells = {label},
+      .json = std::move(json),
+      .exported = std::move(record),
+      .display = {.label = key, .quote_label = label != key}};
+  for (std::size_t column_index = 0; column_index < context.columns.size(); ++column_index) {
+    const auto& column = context.columns.at(column_index);
+    const auto& source = column.tables.at(context.sink);
+    const auto& denominator = context.totals.at(column_index);
+    const auto row = result.exported.is_total ? denominator : SummaryCell(source, key);
+    const bool present = row.count != 0;
+    if (present) {
+      result.exported.scoped_metrics.emplace(column.scope, ExportMetrics(row, denominator, context.has_size));
+    }
+    const auto values = present ? SummaryColumns(row, denominator, context.human, context.precision, context.has_size)
+                                : std::vector<std::string>{"-", "-", "-", "-"};
+    result.cells.insert(result.cells.end(), values.begin(), values.end());
+    result.display.metrics.push_back({values.at(0), values.at(1), values.at(2), values.at(3)});
+    absl::StrAppend(&result.json, ",", render::JsonValue(column.scope), ":");
+    absl::StrAppend(
+        &result.json,
+        present ? absl::StrCat("{", SummaryJson(row, denominator, context.precision, context.has_size), "}") : "null");
+  }
+  absl::StrAppend(&result.json, context.population, SummaryTotalJson(result.exported.is_total), "}\n");
+  return result;
+}
+
 void EmitComparisonScopeSummary(
     const parser::Command& command,
     const std::string& scope,
     const std::vector<SummarySpec>& summaries,
     const std::vector<SummaryScopeColumn>& columns,
     std::optional<registry::Style> style,
-    EmitFn emit) {
+    EmitFn emit,
+    std::size_t table_width) {
   const auto precision = ResolveSummaryPrecision(command.globals);
   const auto human = ResolveHuman(command.globals, style);
   const auto output_format = ResolveFormat(command.globals);
   const bool json = output_format == render::Format::kJsonl;
+  const bool compact = output_format == render::Format::kPlain || output_format == render::Format::kAligned;
+  const bool delimited = IsDelimitedSummary(output_format);
+  std::vector<std::string> export_scopes;
+  export_scopes.reserve(columns.size());
+  for (const auto& column : columns) {
+    export_scopes.push_back(column.scope);
+  }
+  const render::SummaryExport exporter(export_scopes);
   const std::string_view note =
       output_format == render::Format::kMarkdown
           ? "- Percentages use each column group's full population.\n- Category counts pair entries once; "
@@ -3401,6 +3527,7 @@ void EmitComparisonScopeSummary(
   }
   for (std::size_t sink = 0; sink < summaries.size(); ++sink) {
     const auto rows = SummaryRows(summaries.at(sink).mode, combined.at(sink), ResolveTop(command.globals));
+    const auto population = SummaryGroups(summaries.at(sink).mode, combined.at(sink), rows.size());
     const bool has_size = SummaryHasSize(summaries.at(sink));
     std::vector<SummaryRow> totals;
     totals.reserve(columns.size());
@@ -3408,37 +3535,57 @@ void EmitComparisonScopeSummary(
       totals.push_back(SummaryTotal(column.tables.at(sink)));
     }
     SummaryTable table(alignments, header, output_format, !HasGlobal(command.globals, "--no-header"));
+    std::vector<render::ScopedTableRow> display_rows;
     for (std::size_t index = 0; index < rows.size(); ++index) {
       const auto& key = rows.at(index).key;
       const bool total_row = index + 1 == rows.size();
-      std::vector<std::string> cells{SummaryDisplayKey(key, total_row)};
+      render::SummaryExportRecord exported{
+          .request = summaries.at(sink).request_index,
+          .summary = SummaryGrouping(summaries.at(sink).mode),
+          .key_template = summaries.at(sink).key_template,
+          .scope = scope,
+          .left_root = command.roots.at(0),
+          .right_root = command.roots.at(1),
+          .group = key,
+          .is_total = total_row};
       std::string object = absl::StrCat(
           "{", SummaryIdentityJson(summaries.at(sink)), ",\"scope\":", render::JsonValue(scope),
           ",\"left_root\":", render::JsonValue(command.roots.at(0)),
           ",\"right_root\":", render::JsonValue(command.roots.at(1)), ",\"group\":", render::JsonValue(key));
-      for (std::size_t column_index = 0; column_index < columns.size(); ++column_index) {
-        const auto& column = columns.at(column_index);
-        const auto& source = column.tables.at(sink);
-        const auto& denominator = totals.at(column_index);
-        const auto row = total_row ? denominator : SummaryCell(source, key);
-        const bool present = row.count != 0;
-        const auto values = present ? SummaryColumns(row, denominator, human, precision, has_size)
-                                    : std::vector<std::string>{"-", "-", "-", "-"};
-        cells.insert(cells.end(), values.begin(), values.end());
-        absl::StrAppend(&object, ",", render::JsonQuote(column.scope), ":");
-        absl::StrAppend(
-            &object, present ? absl::StrCat("{", SummaryJson(row, denominator, precision, has_size), "}") : "null");
-      }
-      absl::StrAppend(&object, SummaryTotalJson(total_row), "}\n");
-      if (json) {
-        emit(object);
+      auto rendered = MakeComparisonSummaryRow(
+          std::move(exported), std::move(object),
+          {.columns = columns,
+           .totals = totals,
+           .sink = sink,
+           .human = human,
+           .precision = precision,
+           .has_size = has_size,
+           .population = population.Json()});
+      if (delimited) {
+        emit(exporter.Row(rendered.exported, output_format, precision));
+      } else if (json) {
+        emit(rendered.json);
+      } else if (compact) {
+        display_rows.push_back(std::move(rendered.display));
       } else {
-        table.AddRow(std::move(cells));
+        table.AddRow(std::move(rendered.cells));
       }
     }
-    if (!json) {
+    if (!json && !delimited) {
       EmitComparisonScopeHeading(command, scope, summaries.at(sink).mode, emit);
-      emit(table.Render());
+      if (compact) {
+        std::vector<std::string> scopes;
+        scopes.reserve(columns.size());
+        for (const auto& column : columns) {
+          scopes.push_back(column.scope);
+        }
+        emit(
+            render::RenderScopedTable(
+                scopes, std::move(display_rows), table_width, !HasGlobal(command.globals, "--no-header")));
+      } else {
+        emit(table.Render());
+      }
+      population.EmitNote(output_format, emit);
       emit(note);
     }
   }
@@ -3895,11 +4042,13 @@ void EmitTreeCompareSummary(
     const parser::Command& command,
     const TreeCompareCounts& counts,
     std::optional<registry::Style> style,
-    EmitFn emit) {
+    EmitFn emit,
+    const std::vector<std::string>& export_scopes) {
   const auto& globals = command.globals;
   const auto precision = ResolveSummaryPrecision(globals);
   const auto output_format = ResolveFormat(globals);
   const auto human = ResolveHuman(globals, style);
+  const render::SummaryExport exporter(export_scopes);
   for (const auto& summary : ResolveSummaries(globals, true)) {
     if (summary.mode != SummaryMode::kCompare) {
       continue;
@@ -3910,7 +4059,19 @@ void EmitTreeCompareSummary(
         {"Type", "Status", "Results", "% results", "Combined size", "% size"}, output_format,
         !HasGlobal(globals, "--no-header"));
     const auto add_row = [&](std::string_view type, const SummaryRow& row, bool is_total) {
-      if (output_format == render::Format::kJsonl) {
+      if (IsDelimitedSummary(output_format)) {
+        emit(exporter.Row(
+            {.request = summary.request_index,
+             .summary = SummaryGrouping(summary.mode),
+             .scope = "compare",
+             .left_root = command.roots.at(0),
+             .right_root = command.roots.at(1),
+             .type = type,
+             .group = row.key,
+             .is_total = is_total,
+             .metrics = ExportMetrics(row, counts.total, true)},
+            output_format, precision));
+      } else if (output_format == render::Format::kJsonl) {
         emit(
             absl::StrCat(
                 "{", SummaryIdentityJson(summary), R"(,"scope":"compare","left_root":)",
@@ -3932,7 +4093,7 @@ void EmitTreeCompareSummary(
       }
     }
     add_row("all", counts.total, true);
-    if (output_format != render::Format::kJsonl) {
+    if (!IsMachineSummary(output_format)) {
       EmitSummaryHeading(summary.mode, globals, emit);
       emit(table.Render());
       emit(
@@ -3951,7 +4112,8 @@ RunResult RunTreeCompare(
     const vfs::FileSystem& fs,
     EmitFn emit,
     WalkErrorFn on_error,
-    std::optional<registry::Style> style) {
+    std::optional<registry::Style> style,
+    std::size_t table_width) {
   if (command.roots.size() != 2) {
     on_error("--compare", absl::InvalidArgumentError("requires exactly two roots"));
     return RunResult{.errors = 2};
@@ -4137,9 +4299,23 @@ RunResult RunTreeCompare(
       ++right;
     }
   }
-  EmitTreeCompareSummary(command, counts, style, emit);
   auto summaries = ResolveSummaries(command.globals, true);
+  const bool has_summaries = !summaries.empty();
   std::erase_if(summaries, [](const SummarySpec& spec) { return spec.mode == SummaryMode::kCompare; });
+  std::vector<std::string> export_scopes;
+  if (!summaries.empty()) {
+    export_scopes.reserve(scopes_result->size());
+    for (const auto& selected_scope : *scopes_result) {
+      if (selected_scope != "all" && selected_scope != "root") {
+        export_scopes.push_back(selected_scope);
+      }
+    }
+  }
+  if (has_summaries && IsDelimitedSummary(ResolveFormat(command.globals))
+      && !HasGlobal(command.globals, "--no-header")) {
+    emit(render::SummaryExport(export_scopes).Header(ResolveFormat(command.globals)));
+  }
+  EmitTreeCompareSummary(command, counts, style, emit, export_scopes);
   const auto format = ResolveFormat(command.globals);
   const auto human = ResolveHuman(command.globals, style);
   const auto columns = ComparisonScopeColumns(*scopes_result, side_summaries, categories, summaries.size());
@@ -4153,16 +4329,17 @@ RunResult RunTreeCompare(
     if (scope == "all") {
       auto combined = CombinedSummaryTables(side_summaries.at(0));
       MergeSummaryTables(combined, CombinedSummaryTables(side_summaries.at(1)));
-      EmitScopedSummaries(command.globals, summaries, combined, format, human, scope, "", emit);
+      EmitScopedSummaries(command.globals, summaries, combined, format, human, scope, "", emit, export_scopes);
     } else if (scope == "root") {
       for (std::size_t side = 0; side < side_summaries.size(); ++side) {
         EmitScopedSummaries(
             command.globals, summaries, CombinedSummaryTables(side_summaries.at(side)), format, human, scope,
-            command.roots.at(side), emit);
+            command.roots.at(side), emit, export_scopes);
       }
     } else if (!emitted_columns) {
       emitted_columns = true;
-      EmitComparisonScopeSummary(command, absl::StrJoin(column_scopes, ","), summaries, columns, style, emit);
+      EmitComparisonScopeSummary(
+          command, absl::StrJoin(column_scopes, ","), summaries, columns, style, emit, table_width);
     }
   }
   return RunResult{.errors = 0, .any_match = different};
@@ -4347,7 +4524,7 @@ RunResult RunFindCore(
   const bool buffered = format == render::Format::kAligned || format == render::Format::kMarkdown;
   const bool is_tree = format == render::Format::kTree;
   const bool tabular = format == render::Format::kCsv || format == render::Format::kTsv || buffered;
-  const bool tabular_summary = buffered && !ResolveSummaries(command.globals, compare_listing).empty();
+  const bool tabular_summary = tabular && !ResolveSummaries(command.globals, compare_listing).empty();
   const bool tabular_reduction = tabular_summary || (buffered && !histograms.empty());
   if (tabular_reduction && !columns.empty()) {
     on_error(
@@ -5646,6 +5823,9 @@ RunResult RunFindCore(
   if (comparison_summaries.has_value()) {
     *comparison_summaries = std::move(summary_cells);
   } else {
+    if (IsDelimitedSummary(format) && !summaries.empty() && !HasGlobal(command.globals, "--no-header")) {
+      emit(render::SummaryExport().Header(format));
+    }
     for (const std::string& scope : scopes) {
       if (scope == "all") {
         if (absl::c_any_of(
@@ -5775,18 +5955,56 @@ RunResult RunFindCore(
   return RunResult{.errors = errors, .any_match = any_match};
 }
 
+bool HasSummaryExportOutput(const parser::Expr& expression, bool dry_run) {
+  if (expression.descriptor.has_value()) {
+    const auto& descriptor = *expression.descriptor;
+    const bool silent_diff = descriptor.binding == registry::Binding::kStyle && expression.diff_style == "none";
+    if ((descriptor.stdout_output && !silent_diff)
+        || (dry_run && (descriptor.writes_file || descriptor.safety != registry::Safety::kNone))) {
+      return true;
+    }
+  }
+  return (expression.lhs && HasSummaryExportOutput(*expression.lhs, dry_run))
+         || (expression.rhs && HasSummaryExportOutput(*expression.rhs, dry_run));
+}
+
+absl::Status ValidateSummaryExport(const parser::Command& command, bool compare) {
+  if (!IsDelimitedSummary(ResolveFormat(command.globals)) || ResolveSummaries(command.globals, compare).empty()) {
+    return absl::OkStatus();
+  }
+  const bool dry_run = HasGlobal(command.globals, "--dry-run");
+  const bool pack_preview = dry_run && std::ranges::any_of(command.globals, [](std::string_view flag) {
+                              return flag.starts_with("--pack=");
+                            });
+  if (pack_preview || (command.expression && HasSummaryExportOutput(*command.expression, dry_run))) {
+    return absl::InvalidArgumentError(
+        "CSV/TSV summary export cannot mix action output or dry-run previews into its rows");
+  }
+  if (compare) {
+    MBO_ASSIGN_OR_RETURN(const auto selection, ResolveTreeCompareSelection(command.globals));
+    if (selection.left_only || selection.right_only || selection.identical || selection.different) {
+      return absl::InvalidArgumentError(
+          "CSV/TSV summary export requires --compare-select=none; --compare=summary selects it automatically");
+    }
+  }
+  return absl::OkStatus();
+}
+
 // Validate formats shared by summary and histogram output before any actions run.
 absl::Status ValidateReductionFormat(const std::vector<std::string>& globals, bool compare, bool has_histograms) {
   const bool has_summary = !ResolveSummaries(globals, compare).empty();
   if (has_summary || has_histograms) {
     const auto format = ResolveFormat(globals);
+    if (has_summary && !has_histograms && IsDelimitedSummary(format)) {
+      return absl::OkStatus();
+    }
     if (format != render::Format::kPlain && format != render::Format::kAligned && format != render::Format::kJsonl
         && format != render::Format::kMarkdown) {
       return absl::InvalidArgumentError(
           absl::StrCat(
               has_summary ? "summary tables" : "histograms",
               " require --format=plain, aligned, jsonl, or markdown; "
-              "csv, tsv, nul, and tree are listing formats"));
+              "CSV/TSV support summaries only; nul and tree are listing formats"));
     }
   }
   return absl::OkStatus();
@@ -5856,7 +6074,8 @@ RunResult RunFind(
     const vfs::FileSystem& fs,
     EmitFn emit,
     WalkErrorFn on_error,
-    std::optional<registry::Style> style) {
+    std::optional<registry::Style> style,
+    std::size_t table_width) {
   if (!command.root_names.empty() && command.root_names.size() != command.roots.size()) {
     on_error("--root", absl::InvalidArgumentError("root names must match the root operands"));
     return RunResult{.errors = 2};
@@ -5888,12 +6107,16 @@ RunResult RunFind(
     on_error("options", status);
     return RunResult{.errors = 2};
   }
+  if (const absl::Status status = ValidateSummaryExport(command, compare); !status.ok()) {
+    on_error("--format", status);
+    return RunResult{.errors = 2};
+  }
   if (const absl::Status status = ValidateSummaryScopeDriver(command.globals, compare); !status.ok()) {
     on_error("--summary-scope", status);
     return RunResult{.errors = 2};
   }
   if (compare) {
-    return RunTreeCompare(command, histograms, fs, emit, on_error, style);
+    return RunTreeCompare(command, histograms, fs, emit, on_error, style, table_width);
   }
   return RunFindCore(
       command, histograms, command.roots, fs, emit, on_error, style, mbo::types::OptionalRef<const MatchedEntryFn>{},

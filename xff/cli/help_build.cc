@@ -1079,8 +1079,11 @@ Section CompareSection(bool in_full) {
       "Missing groups display a dash (JSON `null`); existing zero-byte files retain numeric zeros."));
   summaries.children.push_back(ProseOf(
       "`--format=markdown` (alias `md`) exports comparison-result and ordinary summary tables as Markdown; "
-      "`--columns` remains a listing-only option. Summaries support `plain`, `aligned`, `jsonl`, and `markdown`; "
-      "listing formats `csv`, `tsv`, `nul`, and `tree` are rejected with active summaries. Per-path status "
+      "`--columns` remains a listing-only option. Summaries support `plain`, `aligned`, `jsonl`, `markdown`, "
+      "`csv`, and `tsv`; `nul` and `tree` remain listing-only. CSV/TSV exports share one header across all "
+      "requests, identify total rows with `is_total`, and use canonical scope-prefixed numeric columns. "
+      "Use `--compare=summary` or `--compare-select=none`; mixed action output and histograms are rejected. "
+      "Per-path status "
       "records remain tab-separated even with `--format=jsonl`; suppress them for a summary-only export. "
       "Comparison-result tables precede ordinary tables regardless of the order of summary requests. "
       "`--top` limits ordinary groups, not comparison-result rows."));

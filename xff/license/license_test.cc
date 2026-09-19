@@ -115,6 +115,12 @@ TEST_F(LicenseTest, TheApacheBodyIsRetrievableByItsSpdxId) {
   EXPECT_THAT(std::string(LicenseBodyFor("Apache-2.0")), EqualsText(std::string(LicenseText())));
 }
 
+TEST_F(LicenseTest, UnicodeDependencyRetainsItsCompleteUpstreamLicense) {
+  EXPECT_THAT(NoticeText(), HasSubstr("utf8proc"));
+  EXPECT_THAT(LicenseBodyFor("LicenseRef-utf8proc"), HasSubstr("Public Software Group"));
+  EXPECT_THAT(LicenseBodyFor("LicenseRef-utf8proc"), HasSubstr("Unicode data license"));
+}
+
 TEST_F(LicenseTest, TheRe2LicenseBodyIsRetrievableByItsSpdxId) {
   EXPECT_THAT(LicenseBodyFor("BSD-3-Clause"), HasSubstr("Redistribution and use"));
   EXPECT_THAT(LicenseBodyFor("no-such-license"), IsEmpty());

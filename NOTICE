@@ -22,6 +22,9 @@ RE2  [BSD-3-Clause]
 mboworks/mbo  [Apache-2.0]
   Copyright MBO Works. Licensed under the Apache License, Version 2.0.
 
+utf8proc  [LicenseRef-utf8proc]
+  Copyright (c) 2014-2021 Steven G. Johnson, Jiahao Chen, Tony Kelman, Jonas Fonseca, and contributors. Copyright (c) 2009, 2013 Public Software Group e. V. Unicode data: Copyright (c) 1991-2007 Unicode, Inc. MIT library license and Unicode data terms; see the complete bundled upstream license.
+
 Build extension: Archive (@xff_archive):
 
   xff archive extra (@xff_archive)  [Apache-2.0]

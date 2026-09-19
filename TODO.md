@@ -339,3 +339,24 @@ The safety model and directory-scoped permissions are tracked in
 
 - [x] Derive conservative spelling hints and short-global placement hints from registries.
 - [x] Verify parser boundaries, CLI errors before actions, normal hooks, and changed-file clang-tidy.
+
+### Audit S08: compact comparison summaries
+
+- [x] Group console scope headings and retain one table at narrow widths.
+- [x] Inject width from parsed CLI globals and preserve JSON accounting.
+- [x] Test exact 80/120/160-column layouts, Unicode wrapping, controls, missing values, and headers.
+- [x] Complete generated reference/notices and Linux Unicode-width portability checks.
+- [x] Complete normal commit hooks and affected-source lint.
+
+### Audit S09: summary grouping and population labels
+
+- [x] Label console summary groupings and explain full-population denominators when top-limited.
+- [x] Add truncated JSONL group counts and count comparison union keys once.
+- [x] Verify empty, zero-size, repeated, scoped, and top-limited summaries; complete docs and lint.
+
+### Audit S10: delimited summary exports
+
+- [x] Define a wide schema with request, scope, root, and total identity; reuse listing encoders.
+- [x] Parse CSV/TSV exports and compare metrics with JSONL across repeated requests and scopes.
+- [ ] Verify output-producer metadata, full-config composition, generated help, and changed-header consumers.
+- [ ] Reconcile B06 total-row identity and S09 truncation metadata before publication.
