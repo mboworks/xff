@@ -109,7 +109,11 @@ TEST_F(ArchiveBackendTest, PackPlanFirstWinsPreservesInputOrder) {
 TEST_F(ArchiveBackendTest, PackPlanRejectsNonDirectoryAncestorsInEitherOrder) {
   const PackFile parent{.source = "file", .name = "a"};
   const PackFile child{.source = "child", .name = "a/b"};
-  for (const auto& files : std::to_array<std::vector<PackFile>>({{parent, child}, {child, parent}})) {
+  const auto entry_orders = std::to_array<std::vector<PackFile>>({
+      {parent, child},
+      {child, parent},
+  });
+  for (const auto& files : entry_orders) {
     EXPECT_THAT(
         PlanPackFiles(files), StatusIs(absl::StatusCode::kAlreadyExists, AllOf(HasSubstr("file"), HasSubstr("child"))));
     EXPECT_THAT(
@@ -121,7 +125,11 @@ TEST_F(ArchiveBackendTest, PackPlanRejectsNonDirectoryAncestorsInEitherOrder) {
 TEST_F(ArchiveBackendTest, PackPlanAllowsDirectoryAncestorsAndSiblingPrefixes) {
   const PackFile parent{.source = "directory", .name = "a", .is_directory = true};
   const PackFile child{.source = "child", .name = "a/b"};
-  for (const auto& files : std::to_array<std::vector<PackFile>>({{parent, child}, {child, parent}})) {
+  const auto entry_orders = std::to_array<std::vector<PackFile>>({
+      {parent, child},
+      {child, parent},
+  });
+  for (const auto& files : entry_orders) {
     EXPECT_THAT(PlanPackFiles(files), IsOkAndHolds(SizeIs(2)));
   }
   EXPECT_THAT(
@@ -129,8 +137,13 @@ TEST_F(ArchiveBackendTest, PackPlanAllowsDirectoryAncestorsAndSiblingPrefixes) {
 }
 
 TEST_F(ArchiveBackendTest, PackPlanRejectsInvalidDestinations) {
-  for (const auto& name :
-       {std::string(), std::string("/absolute"), std::string("dir/../file"), std::string("bad\0name", 8)}) {
+  const std::array invalid_destinations = std::to_array<std::string>({
+      std::string(),
+      std::string("/absolute"),
+      std::string("dir/../file"),
+      std::string("bad\0name", 8),
+  });
+  for (const auto& name : invalid_destinations) {
     EXPECT_THAT(PlanPackFiles({{.source = "source", .name = name}}), StatusIs(absl::StatusCode::kInvalidArgument));
   }
   EXPECT_THAT(PlanPackFiles({}), IsOkAndHolds(IsEmpty()));

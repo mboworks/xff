@@ -69,8 +69,15 @@ struct ReadMeasurementTest : ::testing::Test {
 };
 
 TEST_F(ReadMeasurementTest, EveryWorkloadExecutesAgainstTheObservedBackend) {
-  for (const auto name :
-       std::to_array<std::string_view>({"listing", "summary", "hash", "hash_twice", "hash_lines", "compare"})) {
+  static constexpr std::array kReadWorkloadNames = std::to_array<std::string_view>({
+      "listing",
+      "summary",
+      "hash",
+      "hash_twice",
+      "hash_lines",
+      "compare",
+  });
+  for (const auto name : kReadWorkloadNames) {
     SCOPED_TRACE(name);
     ASSERT_OK_AND_ASSIGN(const auto workload, ParseReadWorkload(name));
     std::vector<std::string> roots{"/left"};

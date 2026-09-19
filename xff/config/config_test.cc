@@ -62,8 +62,14 @@ TEST_F(ConfigTest, SafetyDefaultsAndProfilesRemainSeparateFromUnconditionalBlock
 }
 
 TEST_F(ConfigTest, DirectoryPolicyTranslationPreservesEarlierMandatoryBlocks) {
-  for (const std::string_view categories :
-       std::to_array<std::string_view>({"", "temp", "output", "temp,output", "archive,temp,output"})) {
+  static constexpr std::array kPolicyCategorySelections = std::to_array<std::string_view>({
+      "",
+      "temp",
+      "output",
+      "temp,output",
+      "archive,temp,output",
+  });
+  for (const std::string_view categories : kPolicyCategorySelections) {
     ConfigInputs inputs;
     inputs.system = ParseIni(std::string("--block-policy-categories=") + std::string(categories) + R"ini(
 --temp-root=/system/temp

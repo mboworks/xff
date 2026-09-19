@@ -100,8 +100,15 @@ TEST_F(ResolveHelpWidthTest, CappedAutoHandlesKnownAndUnknownWidths) {
 }
 
 TEST_F(ResolveHelpWidthTest, RejectsInvalidCaps) {
-  for (const std::string_view value :
-       {"auto:", "auto:wide", "auto:-1", "auto:0", "auto:39", "auto:999999999999999999999999999999999999"}) {
+  static constexpr std::array kInvalidWidthCaps = std::to_array<std::string_view>({
+      "auto:",
+      "auto:wide",
+      "auto:-1",
+      "auto:0",
+      "auto:39",
+      "auto:999999999999999999999999999999999999",
+  });
+  for (const std::string_view value : kInvalidWidthCaps) {
     EXPECT_THAT(ResolveHelpWidth(value, 80), StatusIs(absl::StatusCode::kInvalidArgument)) << value;
   }
 }

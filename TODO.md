@@ -10,7 +10,7 @@
 
 - [x] Permit short inline literal ranges when the complete formatted loop header fits one line.
 - [x] Separate naming/readability from explicit element typing; check typed wrappers as well.
-- [ ] In the next PR, review all C++ sources and headers, name long/reused/unclear collections,
+- [x] Review all C++ sources and headers, name long/reused/unclear collections,
       remove the temporary baseline, and verify the whole codebase against the clarified rule.
 
 ## Completed: MSAN help-rendering timeout

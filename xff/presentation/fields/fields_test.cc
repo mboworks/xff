@@ -68,12 +68,27 @@ TEST_F(FieldsTest, ContentFieldCountInspectsCompiledFieldsWithoutRendering) {
 }
 
 TEST_F(FieldsTest, StaticValidationDistinguishesUnknownFieldsFromAbsentValues) {
-  for (const std::string_view text : std::to_array<std::string_view>(
-           {"", "{}", "{{nmae}}", "{name}", "{env.XFF_UNSET}", "{def.absent}", "{capture.absent}", "{42}"})) {
+  static constexpr std::array kValidFieldTemplates = std::to_array<std::string_view>({
+      "",
+      "{}",
+      "{{nmae}}",
+      "{name}",
+      "{env.XFF_UNSET}",
+      "{def.absent}",
+      "{capture.absent}",
+      "{42}",
+  });
+  for (const std::string_view text : kValidFieldTemplates) {
     EXPECT_THAT(Template::Compile(text).Validate(), IsOk()) << text;
   }
-  for (const std::string_view text :
-       std::to_array<std::string_view>({"{nmae}", "{env.}", "{def.}", "{capture.}", "{4294967296}"})) {
+  static constexpr std::array kUnknownFieldTemplates = std::to_array<std::string_view>({
+      "{nmae}",
+      "{env.}",
+      "{def.}",
+      "{capture.}",
+      "{4294967296}",
+  });
+  for (const std::string_view text : kUnknownFieldTemplates) {
     EXPECT_THAT(
         Template::Compile(text).Validate(), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("unknown field")))
         << text;
@@ -94,28 +109,57 @@ TEST_F(FieldsTest, PrintfFieldScanningPreservesLiteralsAndQuotedBraces) {
 }
 
 TEST_F(FieldsTest, TransformValidationChecksPatternsReplacementsFlagsAndReducers) {
-  for (const std::string_view text : std::to_array<std::string_view>(
-           {R"({name:s/(a)/\1/gi})", "{name:s/a/b/;/b/c/}", "{name:m/a/b/;join}", "{name:m/a/b/;join()}",
-            R"({name:m/a/b/;join(\))})", "{name:m/a/b/;join(, );s/b/c/}"})) {
+  static constexpr std::array kValidTransformTemplates = std::to_array<std::string_view>({
+      R"({name:s/(a)/\1/gi})",
+      "{name:s/a/b/;/b/c/}",
+      "{name:m/a/b/;join}",
+      "{name:m/a/b/;join()}",
+      R"({name:m/a/b/;join(\))})",
+      "{name:m/a/b/;join(, );s/b/c/}",
+  });
+  for (const std::string_view text : kValidTransformTemplates) {
     EXPECT_THAT(Template::Compile(text).Validate(), IsOk()) << text;
   }
-  for (const std::string_view text : std::to_array<std::string_view>(
-           {"{name:s/a/b}", "{name:s/[/b/}", R"({name:s/a/\1/})", R"({name:s/a/\q/})", "{name:s/a/b/x}",
-            "{name:s/a/b/;}", "{name:m/a/b/;join(}", "{name:m/a/b/;join()junk}", "{name:m/a/b/;join();}",
-            "{name:m/a/b/;join();join()}"})) {
+  static constexpr std::array kInvalidTransformTemplates = std::to_array<std::string_view>({
+      "{name:s/a/b}",
+      "{name:s/[/b/}",
+      R"({name:s/a/\1/})",
+      R"({name:s/a/\q/})",
+      "{name:s/a/b/x}",
+      "{name:s/a/b/;}",
+      "{name:m/a/b/;join(}",
+      "{name:m/a/b/;join()junk}",
+      "{name:m/a/b/;join();}",
+      "{name:m/a/b/;join();join()}",
+  });
+  for (const std::string_view text : kInvalidTransformTemplates) {
     EXPECT_THAT(Template::Compile(text).Validate(), StatusIs(absl::StatusCode::kInvalidArgument)) << text;
   }
 }
 
 TEST_F(FieldsTest, NativeQualifierValidationFollowsTheFieldRenderer) {
-  for (const std::string_view text : std::to_array<std::string_view>(
-           {"{size:h}", "{blocks:h}", "{hash:sha256/base64}", "{hash:/hex}", "{mtime:%Y}", "{mtime:literal text}",
-            "{name:stem}", "{capture.answer:ext}"})) {
+  static constexpr std::array kValidQualifierTemplates = std::to_array<std::string_view>({
+      "{size:h}",
+      "{blocks:h}",
+      "{hash:sha256/base64}",
+      "{hash:/hex}",
+      "{mtime:%Y}",
+      "{mtime:literal text}",
+      "{name:stem}",
+      "{capture.answer:ext}",
+  });
+  for (const std::string_view text : kValidQualifierTemplates) {
     EXPECT_THAT(Template::Compile(text).Validate(), IsOk()) << text;
   }
-  for (const std::string_view text : std::to_array<std::string_view>(
-           {"{size:garbage}", "{blocks:garbage}", "{hash:garbage}", "{hash:sha256/garbage}", "{name:garbage}",
-            "{capture.answer:garbage}"})) {
+  static constexpr std::array kInvalidQualifierTemplates = std::to_array<std::string_view>({
+      "{size:garbage}",
+      "{blocks:garbage}",
+      "{hash:garbage}",
+      "{hash:sha256/garbage}",
+      "{name:garbage}",
+      "{capture.answer:garbage}",
+  });
+  for (const std::string_view text : kInvalidQualifierTemplates) {
     EXPECT_THAT(Template::Compile(text).Validate(), StatusIs(absl::StatusCode::kInvalidArgument)) << text;
   }
 }
@@ -123,8 +167,13 @@ TEST_F(FieldsTest, NativeQualifierValidationFollowsTheFieldRenderer) {
 TEST_F(FieldsTest, StaticValidationUsesTheQuotedPlaceholderParser) {
   EXPECT_THAT(Template::Compile(R"({name:s/a/b/})").Validate(), IsOk());
   EXPECT_THAT(Template::Compile(R"({name:"s/a/}/"})").Validate(), IsOk());
-  for (const std::string_view text :
-       std::to_array<std::string_view>({"{", "{name", R"({name:"unterminated})", "name}"})) {
+  static constexpr std::array kMalformedFieldTemplates = std::to_array<std::string_view>({
+      "{",
+      "{name",
+      R"({name:"unterminated})",
+      "name}",
+  });
+  for (const std::string_view text : kMalformedFieldTemplates) {
     EXPECT_THAT(Template::Compile(text).Validate(), StatusIs(absl::StatusCode::kInvalidArgument)) << text;
   }
   EXPECT_THAT(
@@ -138,8 +187,13 @@ TEST_F(FieldsTest, OverflowingCaptureIndicesDoNotAliasAnExistingCapture) {
   const RenderContext context{.path = "sample", .metadata = metadata, .captures = captures};
   EXPECT_THAT(Template::Compile("{0}").Render(context), Eq("captured"));
   EXPECT_THAT(Template::Compile("{0000}").Render(context), Eq("captured"));
-  for (const std::string_view text : std::to_array<std::string_view>(
-           {"{2147483648}", "{4294967296}", "{18446744073709551616}", "{999999999999999999999999999999999999}"})) {
+  static constexpr std::array kOutOfRangeCaptureReferences = std::to_array<std::string_view>({
+      "{2147483648}",
+      "{4294967296}",
+      "{18446744073709551616}",
+      "{999999999999999999999999999999999999}",
+  });
+  for (const std::string_view text : kOutOfRangeCaptureReferences) {
     EXPECT_THAT(Template::Compile(text).Render(context), IsEmpty()) << text;
   }
 }

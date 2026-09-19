@@ -25,8 +25,15 @@ using ::testing::Not;
 struct DiagnosticsTest : ::testing::Test {};
 
 TEST_F(DiagnosticsTest, SuggestsOneEditIncludingTranspositionWithoutGuessingValues) {
-  for (const std::string_view token : std::to_array<std::string_view>(
-           {"--sumary=ext", "--summaryy=ext", "--summxry=ext", "--summray=ext", "--summar=ext", "--xsummary=ext"})) {
+  static constexpr std::array kSummarySpellingMistakes = std::to_array<std::string_view>({
+      "--sumary=ext",
+      "--summaryy=ext",
+      "--summxry=ext",
+      "--summray=ext",
+      "--summar=ext",
+      "--xsummary=ext",
+  });
+  for (const std::string_view token : kSummarySpellingMistakes) {
     EXPECT_THAT(UnknownGlobalHint(token), HasSubstr("'--summary'"));
     EXPECT_THAT(UnknownGlobalHint(token), Not(HasSubstr("=ext")));
   }
@@ -44,8 +51,16 @@ TEST_F(DiagnosticsTest, SuggestsHelpFlagsTopicsPrimariesAndAliases) {
 }
 
 TEST_F(DiagnosticsTest, HelpHintsDoNotGuessKnownSelectorsValuesOrUnrelatedInput) {
-  for (const std::string_view selector :
-       std::to_array<std::string_view>({"width", "--width", "recipes", "regex", "zzzzzzzz", "x", "license=wildth"})) {
+  static constexpr std::array kSelectorsWithoutSuggestions = std::to_array<std::string_view>({
+      "width",
+      "--width",
+      "recipes",
+      "regex",
+      "zzzzzzzz",
+      "x",
+      "license=wildth",
+  });
+  for (const std::string_view selector : kSelectorsWithoutSuggestions) {
     EXPECT_THAT(UnknownHelpHint(selector), Eq("")) << selector;
   }
   EXPECT_THAT(UnknownHelpHint(std::string(10'000, 'x')), Eq(""));
@@ -57,8 +72,14 @@ TEST_F(DiagnosticsTest, RanksMultiEditLongNamesAboveWeakerMatches) {
 }
 
 TEST_F(DiagnosticsTest, DoesNotGuessUnrelatedShortOrConfigOnlyNames) {
-  for (const std::string_view token :
-       std::to_array<std::string_view>({"--zzzzzzzz", "-x", "--require-system-globalz", "--summary", "-sumary"})) {
+  static constexpr std::array kFlagsWithoutSuggestions = std::to_array<std::string_view>({
+      "--zzzzzzzz",
+      "-x",
+      "--require-system-globalz",
+      "--summary",
+      "-sumary",
+  });
+  for (const std::string_view token : kFlagsWithoutSuggestions) {
     EXPECT_THAT(UnknownGlobalHint(token), Eq(""));
   }
   EXPECT_THAT(UnknownGlobalHint(std::string(10'000, 'x')), Eq(""));

@@ -193,7 +193,7 @@ repos:
         name: Test inline range-list policy
         language: system
         entry: python3 tools/check_inline_range_lists_test.py
-        files: ^(tools/check_inline_range_lists(_test)?\.py|tools/inline_range_lists_baseline\.json|\.pre-commit-config\.yaml)$
+        files: ^(tools/check_inline_range_lists(_test)?\.py|\.pre-commit-config\.yaml)$
         pass_filenames: false
       - id: check-namespace-style
         name: Global namespaces are owned and explicitly rooted
