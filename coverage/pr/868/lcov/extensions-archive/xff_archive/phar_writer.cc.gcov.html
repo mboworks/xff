@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-18 22:39:30</td>
+            <td class="headerValue">2026-09-19 10:23:36</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -293,10 +293,10 @@
 <span id="L213"><span class="lineNum">     213</span>                 :             : </span>
 <span id="L214"><span class="lineNum">     214</span>                 :             : }  // namespace</span>
 <span id="L215"><span class="lineNum">     215</span>                 :             : </span>
-<span id="L216"><span class="lineNum">     216</span>                 :<span class="tlaGNC">           7 : bool IsSignedTarOrZipPhar(const std::vector&lt;Member&gt;&amp; members) {</span></span>
-<span id="L217"><span class="lineNum">     217</span>                 :<span class="tlaGNC">           7 :   return absl::c_any_of(</span></span>
-<span id="L218"><span class="lineNum">     218</span>                 :<span class="tlaGNC">          32 :       members, [](const Member&amp; member) { return NormalizeMemberName(member.path) == kPharSignatureMember; });</span></span>
-<span id="L219"><span class="lineNum">     219</span>                 :<span class="tlaGNC">           7 : }</span></span>
+<span id="L216"><span class="lineNum">     216</span>                 :<span class="tlaGNC">           8 : bool IsSignedTarOrZipPhar(const std::vector&lt;Member&gt;&amp; members) {</span></span>
+<span id="L217"><span class="lineNum">     217</span>                 :<span class="tlaGNC">           8 :   return absl::c_any_of(</span></span>
+<span id="L218"><span class="lineNum">     218</span>                 :<span class="tlaGNC">          36 :       members, [](const Member&amp; member) { return NormalizeMemberName(member.path) == kPharSignatureMember; });</span></span>
+<span id="L219"><span class="lineNum">     219</span>                 :<span class="tlaGNC">           8 : }</span></span>
 <span id="L220"><span class="lineNum">     220</span>                 :             : </span>
 <span id="L221"><span class="lineNum">     221</span>                 :             : namespace {</span>
 <span id="L222"><span class="lineNum">     222</span>                 :<span class="tlaGNC">          12 : absl::Status ValidateStubRemoval(const PharLayout&amp; layout, const std::vector&lt;std::string&gt;&amp; members) {</span></span>

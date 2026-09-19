@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-18 22:39:30</td>
+            <td class="headerValue">2026-09-19 10:23:36</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -147,14 +147,14 @@
 <span id="L67"><span class="lineNum">      67</span>                 :             :   mbo::types::OptionalRef&lt;const LanguageVocabulary&gt; active ABSL_GUARDED_BY(mutex);</span>
 <span id="L68"><span class="lineNum">      68</span>                 :             : };</span>
 <span id="L69"><span class="lineNum">      69</span>                 :             : </span>
-<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">        1386 : State&amp; GlobalState() {</span></span>
-<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">        1386 :   static State state;</span></span>
-<span id="L72"><span class="lineNum">      72</span>                 :<span class="tlaGNC">        1386 :   return state;</span></span>
-<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">        1386 : }</span></span>
+<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">        1679 : State&amp; GlobalState() {</span></span>
+<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">        1679 :   static State state;</span></span>
+<span id="L72"><span class="lineNum">      72</span>                 :<span class="tlaGNC">        1679 :   return state;</span></span>
+<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">        1679 : }</span></span>
 <span id="L74"><span class="lineNum">      74</span>                 :             : </span>
-<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">        1557 : std::string Lower(std::string_view value) {</span></span>
-<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">        1557 :   return absl::AsciiStrToLower(std::string(value));</span></span>
-<span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaGNC">        1557 : }</span></span>
+<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">        1558 : std::string Lower(std::string_view value) {</span></span>
+<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">        1558 :   return absl::AsciiStrToLower(std::string(value));</span></span>
+<span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaGNC">        1558 : }</span></span>
 <span id="L78"><span class="lineNum">      78</span>                 :             : </span>
 <span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">        4092 : std::optional&lt;std::uint8_t&gt; HexDigit(char digit) {</span></span>
 <span id="L80"><span class="lineNum">      80</span> [<span class="tlaGBC" title="branch 0 was taken 4092 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2622 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1470 times"> + </span>]:<span class="tlaGNC">        4092 :   if (digit &gt;= '0' &amp;&amp; digit &lt;= '9') {</span></span>
@@ -191,11 +191,11 @@
 <span id="L111"><span class="lineNum">     111</span>                 :<span class="tlaGNC">        2043 :   append(static_cast&lt;char&gt;('0' + (value % 10)));</span></span>
 <span id="L112"><span class="lineNum">     112</span>                 :<span class="tlaGNC">        2043 : }</span></span>
 <span id="L113"><span class="lineNum">     113</span>                 :             : </span>
-<span id="L114"><span class="lineNum">     114</span>                 :<span class="tlaGNC">        3905 : LanguageVocabulary::TerminalColor MakeTerminalColor(std::string_view color) {</span></span>
-<span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">        3905 :   LanguageVocabulary::TerminalColor result;</span></span>
-<span id="L116"><span class="lineNum">     116</span> [<span class="tlaGBC" title="branch 0 was taken 3223 times"> + </span><span class="tlaGBC" title="branch 1 was taken 682 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 682 times"> + </span>]:<span class="tlaGNC">        3905 :   if (color.size() != 7 || color.front() != '#') {</span></span>
-<span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">        3223 :     return result;</span></span>
-<span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">        3223 :   }</span></span>
+<span id="L114"><span class="lineNum">     114</span>                 :<span class="tlaGNC">        3964 : LanguageVocabulary::TerminalColor MakeTerminalColor(std::string_view color) {</span></span>
+<span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">        3964 :   LanguageVocabulary::TerminalColor result;</span></span>
+<span id="L116"><span class="lineNum">     116</span> [<span class="tlaGBC" title="branch 0 was taken 3282 times"> + </span><span class="tlaGBC" title="branch 1 was taken 682 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 682 times"> + </span>]:<span class="tlaGNC">        3964 :   if (color.size() != 7 || color.front() != '#') {</span></span>
+<span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">        3282 :     return result;</span></span>
+<span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">        3282 :   }</span></span>
 <span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">         682 :   const std::optional&lt;std::uint8_t&gt; red = HexByte(color.substr(1, 2));</span></span>
 <span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaGNC">         682 :   const std::optional&lt;std::uint8_t&gt; green = HexByte(color.substr(3, 2));</span></span>
 <span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">         682 :   const std::optional&lt;std::uint8_t&gt; blue = HexByte(color.substr(5, 2));</span></span>
@@ -214,126 +214,126 @@
 <span id="L133"><span class="lineNum">     133</span>                 :<span class="tlaGNC">         681 :   return result;</span></span>
 <span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">         682 : }</span></span>
 <span id="L135"><span class="lineNum">     135</span>                 :             : </span>
-<span id="L136"><span class="lineNum">     136</span>                 :<span class="tlaGNC">        5304 : void AddCore(LanguageVocabulary&amp; vocabulary, std::string_view extension, std::string_view language) {</span></span>
-<span id="L137"><span class="lineNum">     137</span>                 :<span class="tlaGNC">        5304 :   LanguageVocabulary::Record&amp; info = vocabulary.languages[std::string(language)];</span></span>
-<span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">        5304 :   info.extensions.emplace_back(extension);</span></span>
-<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">        5304 :   vocabulary.extensions[std::string(extension)] = language;</span></span>
-<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">        5304 : }</span></span>
+<span id="L136"><span class="lineNum">     136</span>                 :<span class="tlaGNC">        5382 : void AddCore(LanguageVocabulary&amp; vocabulary, std::string_view extension, std::string_view language) {</span></span>
+<span id="L137"><span class="lineNum">     137</span>                 :<span class="tlaGNC">        5382 :   LanguageVocabulary::Record&amp; info = vocabulary.languages[std::string(language)];</span></span>
+<span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">        5382 :   info.extensions.emplace_back(extension);</span></span>
+<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">        5382 :   vocabulary.extensions[std::string(extension)] = language;</span></span>
+<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">        5382 : }</span></span>
 <span id="L141"><span class="lineNum">     141</span>                 :             : </span>
-<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">        1088 : void AddCoreFilename(LanguageVocabulary&amp; vocabulary, std::string_view filename, std::string_view language) {</span></span>
-<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">        1088 :   LanguageVocabulary::Record&amp; info = vocabulary.languages[std::string(language)];</span></span>
-<span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">        1088 :   info.filenames.emplace_back(filename);</span></span>
-<span id="L145"><span class="lineNum">     145</span>                 :<span class="tlaGNC">        1088 :   vocabulary.filenames[std::string(filename)] = language;</span></span>
-<span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">        1088 : }</span></span>
+<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">        1104 : void AddCoreFilename(LanguageVocabulary&amp; vocabulary, std::string_view filename, std::string_view language) {</span></span>
+<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">        1104 :   LanguageVocabulary::Record&amp; info = vocabulary.languages[std::string(language)];</span></span>
+<span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">        1104 :   info.filenames.emplace_back(filename);</span></span>
+<span id="L145"><span class="lineNum">     145</span>                 :<span class="tlaGNC">        1104 :   vocabulary.filenames[std::string(filename)] = language;</span></span>
+<span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">        1104 : }</span></span>
 <span id="L147"><span class="lineNum">     147</span>                 :             : </span>
-<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">          68 : LanguageVocabulary CoreVocabulary() {</span></span>
-<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">          68 :   LanguageVocabulary vocabulary;</span></span>
-<span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">          68 :   constexpr auto kExtensions = std::to_array&lt;std::pair&lt;std::string_view, std::string_view&gt;&gt;({</span></span>
-<span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">          68 :       {&quot;asm&quot;, &quot;Assembly&quot;},</span></span>
-<span id="L152"><span class="lineNum">     152</span>                 :<span class="tlaGNC">          68 :       {&quot;awk&quot;, &quot;Awk&quot;},</span></span>
-<span id="L153"><span class="lineNum">     153</span>                 :<span class="tlaGNC">          68 :       {&quot;bash&quot;, &quot;Shell&quot;},</span></span>
-<span id="L154"><span class="lineNum">     154</span>                 :<span class="tlaGNC">          68 :       {&quot;bat&quot;, &quot;Batchfile&quot;},</span></span>
-<span id="L155"><span class="lineNum">     155</span>                 :<span class="tlaGNC">          68 :       {&quot;bzl&quot;, &quot;Starlark&quot;},</span></span>
-<span id="L156"><span class="lineNum">     156</span>                 :<span class="tlaGNC">          68 :       {&quot;c&quot;, &quot;C&quot;},</span></span>
-<span id="L157"><span class="lineNum">     157</span>                 :<span class="tlaGNC">          68 :       {&quot;cc&quot;, &quot;C++&quot;},</span></span>
-<span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">          68 :       {&quot;clj&quot;, &quot;Clojure&quot;},</span></span>
-<span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaGNC">          68 :       {&quot;cljc&quot;, &quot;Clojure&quot;},</span></span>
-<span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">          68 :       {&quot;cljs&quot;, &quot;Clojure&quot;},</span></span>
-<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">          68 :       {&quot;cmake&quot;, &quot;CMake&quot;},</span></span>
-<span id="L162"><span class="lineNum">     162</span>                 :<span class="tlaGNC">          68 :       {&quot;cpp&quot;, &quot;C++&quot;},</span></span>
-<span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">          68 :       {&quot;cs&quot;, &quot;C#&quot;},</span></span>
-<span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">          68 :       {&quot;css&quot;, &quot;CSS&quot;},</span></span>
-<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">          68 :       {&quot;cxx&quot;, &quot;C++&quot;},</span></span>
-<span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">          68 :       {&quot;d&quot;, &quot;D&quot;},</span></span>
-<span id="L167"><span class="lineNum">     167</span>                 :<span class="tlaGNC">          68 :       {&quot;dart&quot;, &quot;Dart&quot;},</span></span>
-<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">          68 :       {&quot;el&quot;, &quot;Emacs Lisp&quot;},</span></span>
-<span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">          68 :       {&quot;erl&quot;, &quot;Erlang&quot;},</span></span>
-<span id="L170"><span class="lineNum">     170</span>                 :<span class="tlaGNC">          68 :       {&quot;ex&quot;, &quot;Elixir&quot;},</span></span>
-<span id="L171"><span class="lineNum">     171</span>                 :<span class="tlaGNC">          68 :       {&quot;exs&quot;, &quot;Elixir&quot;},</span></span>
-<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">          68 :       {&quot;f90&quot;, &quot;Fortran&quot;},</span></span>
-<span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">          68 :       {&quot;go&quot;, &quot;Go&quot;},</span></span>
-<span id="L174"><span class="lineNum">     174</span>                 :<span class="tlaGNC">          68 :       {&quot;groovy&quot;, &quot;Groovy&quot;},</span></span>
-<span id="L175"><span class="lineNum">     175</span>                 :<span class="tlaGNC">          68 :       {&quot;h&quot;, &quot;C&quot;},</span></span>
-<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">          68 :       {&quot;hh&quot;, &quot;C++&quot;},</span></span>
-<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">          68 :       {&quot;hpp&quot;, &quot;C++&quot;},</span></span>
-<span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC">          68 :       {&quot;hrl&quot;, &quot;Erlang&quot;},</span></span>
-<span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">          68 :       {&quot;hs&quot;, &quot;Haskell&quot;},</span></span>
-<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">          68 :       {&quot;htm&quot;, &quot;HTML&quot;},</span></span>
-<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">          68 :       {&quot;html&quot;, &quot;HTML&quot;},</span></span>
-<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">          68 :       {&quot;hxx&quot;, &quot;C++&quot;},</span></span>
-<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">          68 :       {&quot;ini&quot;, &quot;INI&quot;},</span></span>
-<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">          68 :       {&quot;java&quot;, &quot;Java&quot;},</span></span>
-<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">          68 :       {&quot;jl&quot;, &quot;Julia&quot;},</span></span>
-<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">          68 :       {&quot;js&quot;, &quot;JavaScript&quot;},</span></span>
-<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">          68 :       {&quot;json&quot;, &quot;JSON&quot;},</span></span>
-<span id="L188"><span class="lineNum">     188</span>                 :<span class="tlaGNC">          68 :       {&quot;jsx&quot;, &quot;JavaScript&quot;},</span></span>
-<span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">          68 :       {&quot;kt&quot;, &quot;Kotlin&quot;},</span></span>
-<span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">          68 :       {&quot;kts&quot;, &quot;Kotlin&quot;},</span></span>
-<span id="L191"><span class="lineNum">     191</span>                 :<span class="tlaGNC">          68 :       {&quot;less&quot;, &quot;Less&quot;},</span></span>
-<span id="L192"><span class="lineNum">     192</span>                 :<span class="tlaGNC">          68 :       {&quot;lua&quot;, &quot;Lua&quot;},</span></span>
-<span id="L193"><span class="lineNum">     193</span>                 :<span class="tlaGNC">          68 :       {&quot;m&quot;, &quot;Objective-C&quot;},</span></span>
-<span id="L194"><span class="lineNum">     194</span>                 :<span class="tlaGNC">          68 :       {&quot;markdown&quot;, &quot;Markdown&quot;},</span></span>
-<span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">          68 :       {&quot;md&quot;, &quot;Markdown&quot;},</span></span>
-<span id="L196"><span class="lineNum">     196</span>                 :<span class="tlaGNC">          68 :       {&quot;mjs&quot;, &quot;JavaScript&quot;},</span></span>
-<span id="L197"><span class="lineNum">     197</span>                 :<span class="tlaGNC">          68 :       {&quot;ml&quot;, &quot;OCaml&quot;},</span></span>
-<span id="L198"><span class="lineNum">     198</span>                 :<span class="tlaGNC">          68 :       {&quot;mli&quot;, &quot;OCaml&quot;},</span></span>
-<span id="L199"><span class="lineNum">     199</span>                 :<span class="tlaGNC">          68 :       {&quot;mm&quot;, &quot;Objective-C++&quot;},</span></span>
-<span id="L200"><span class="lineNum">     200</span>                 :<span class="tlaGNC">          68 :       {&quot;nim&quot;, &quot;Nim&quot;},</span></span>
-<span id="L201"><span class="lineNum">     201</span>                 :<span class="tlaGNC">          68 :       {&quot;php&quot;, &quot;PHP&quot;},</span></span>
-<span id="L202"><span class="lineNum">     202</span>                 :<span class="tlaGNC">          68 :       {&quot;pl&quot;, &quot;Perl&quot;},</span></span>
-<span id="L203"><span class="lineNum">     203</span>                 :<span class="tlaGNC">          68 :       {&quot;pm&quot;, &quot;Perl&quot;},</span></span>
-<span id="L204"><span class="lineNum">     204</span>                 :<span class="tlaGNC">          68 :       {&quot;proto&quot;, &quot;Protocol Buffer&quot;},</span></span>
-<span id="L205"><span class="lineNum">     205</span>                 :<span class="tlaGNC">          68 :       {&quot;ps1&quot;, &quot;PowerShell&quot;},</span></span>
-<span id="L206"><span class="lineNum">     206</span>                 :<span class="tlaGNC">          68 :       {&quot;py&quot;, &quot;Python&quot;},</span></span>
-<span id="L207"><span class="lineNum">     207</span>                 :<span class="tlaGNC">          68 :       {&quot;pyi&quot;, &quot;Python&quot;},</span></span>
-<span id="L208"><span class="lineNum">     208</span>                 :<span class="tlaGNC">          68 :       {&quot;r&quot;, &quot;R&quot;},</span></span>
-<span id="L209"><span class="lineNum">     209</span>                 :<span class="tlaGNC">          68 :       {&quot;rb&quot;, &quot;Ruby&quot;},</span></span>
-<span id="L210"><span class="lineNum">     210</span>                 :<span class="tlaGNC">          68 :       {&quot;rs&quot;, &quot;Rust&quot;},</span></span>
-<span id="L211"><span class="lineNum">     211</span>                 :<span class="tlaGNC">          68 :       {&quot;rst&quot;, &quot;reStructuredText&quot;},</span></span>
-<span id="L212"><span class="lineNum">     212</span>                 :<span class="tlaGNC">          68 :       {&quot;sass&quot;, &quot;Sass&quot;},</span></span>
-<span id="L213"><span class="lineNum">     213</span>                 :<span class="tlaGNC">          68 :       {&quot;scala&quot;, &quot;Scala&quot;},</span></span>
-<span id="L214"><span class="lineNum">     214</span>                 :<span class="tlaGNC">          68 :       {&quot;scm&quot;, &quot;Scheme&quot;},</span></span>
-<span id="L215"><span class="lineNum">     215</span>                 :<span class="tlaGNC">          68 :       {&quot;scss&quot;, &quot;SCSS&quot;},</span></span>
-<span id="L216"><span class="lineNum">     216</span>                 :<span class="tlaGNC">          68 :       {&quot;sh&quot;, &quot;Shell&quot;},</span></span>
-<span id="L217"><span class="lineNum">     217</span>                 :<span class="tlaGNC">          68 :       {&quot;sql&quot;, &quot;SQL&quot;},</span></span>
-<span id="L218"><span class="lineNum">     218</span>                 :<span class="tlaGNC">          68 :       {&quot;swift&quot;, &quot;Swift&quot;},</span></span>
-<span id="L219"><span class="lineNum">     219</span>                 :<span class="tlaGNC">          68 :       {&quot;tex&quot;, &quot;TeX&quot;},</span></span>
-<span id="L220"><span class="lineNum">     220</span>                 :<span class="tlaGNC">          68 :       {&quot;tf&quot;, &quot;HCL&quot;},</span></span>
-<span id="L221"><span class="lineNum">     221</span>                 :<span class="tlaGNC">          68 :       {&quot;toml&quot;, &quot;TOML&quot;},</span></span>
-<span id="L222"><span class="lineNum">     222</span>                 :<span class="tlaGNC">          68 :       {&quot;ts&quot;, &quot;TypeScript&quot;},</span></span>
-<span id="L223"><span class="lineNum">     223</span>                 :<span class="tlaGNC">          68 :       {&quot;tsx&quot;, &quot;TypeScript&quot;},</span></span>
-<span id="L224"><span class="lineNum">     224</span>                 :<span class="tlaGNC">          68 :       {&quot;vim&quot;, &quot;Vim Script&quot;},</span></span>
-<span id="L225"><span class="lineNum">     225</span>                 :<span class="tlaGNC">          68 :       {&quot;xml&quot;, &quot;XML&quot;},</span></span>
-<span id="L226"><span class="lineNum">     226</span>                 :<span class="tlaGNC">          68 :       {&quot;yaml&quot;, &quot;YAML&quot;},</span></span>
-<span id="L227"><span class="lineNum">     227</span>                 :<span class="tlaGNC">          68 :       {&quot;yml&quot;, &quot;YAML&quot;},</span></span>
-<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">          68 :       {&quot;zig&quot;, &quot;Zig&quot;},</span></span>
-<span id="L229"><span class="lineNum">     229</span>                 :<span class="tlaGNC">          68 :   });</span></span>
-<span id="L230"><span class="lineNum">     230</span>         [<span class="tlaGBC" title="branch 0 was taken 5304 times"> + </span><span class="tlaGBC" title="branch 1 was taken 68 times"> + </span>]:<span class="tlaGNC">        5304 :   for (const auto&amp; [extension, language] : kExtensions) {</span></span>
-<span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaGNC">        5304 :     AddCore(vocabulary, extension, language);</span></span>
-<span id="L232"><span class="lineNum">     232</span>                 :<span class="tlaGNC">        5304 :   }</span></span>
-<span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">          68 :   constexpr auto kFilenames = std::to_array&lt;std::pair&lt;std::string_view, std::string_view&gt;&gt;({</span></span>
-<span id="L234"><span class="lineNum">     234</span>                 :<span class="tlaGNC">          68 :       {&quot;.bash_profile&quot;, &quot;Shell&quot;},</span></span>
-<span id="L235"><span class="lineNum">     235</span>                 :<span class="tlaGNC">          68 :       {&quot;.bashrc&quot;, &quot;Shell&quot;},</span></span>
-<span id="L236"><span class="lineNum">     236</span>                 :<span class="tlaGNC">          68 :       {&quot;.profile&quot;, &quot;Shell&quot;},</span></span>
-<span id="L237"><span class="lineNum">     237</span>                 :<span class="tlaGNC">          68 :       {&quot;.zshrc&quot;, &quot;Shell&quot;},</span></span>
-<span id="L238"><span class="lineNum">     238</span>                 :<span class="tlaGNC">          68 :       {&quot;BUILD&quot;, &quot;Starlark&quot;},</span></span>
-<span id="L239"><span class="lineNum">     239</span>                 :<span class="tlaGNC">          68 :       {&quot;BUILD.bazel&quot;, &quot;Starlark&quot;},</span></span>
-<span id="L240"><span class="lineNum">     240</span>                 :<span class="tlaGNC">          68 :       {&quot;CMakeLists.txt&quot;, &quot;CMake&quot;},</span></span>
-<span id="L241"><span class="lineNum">     241</span>                 :<span class="tlaGNC">          68 :       {&quot;Dockerfile&quot;, &quot;Dockerfile&quot;},</span></span>
-<span id="L242"><span class="lineNum">     242</span>                 :<span class="tlaGNC">          68 :       {&quot;GNUmakefile&quot;, &quot;Makefile&quot;},</span></span>
-<span id="L243"><span class="lineNum">     243</span>                 :<span class="tlaGNC">          68 :       {&quot;Gemfile&quot;, &quot;Ruby&quot;},</span></span>
-<span id="L244"><span class="lineNum">     244</span>                 :<span class="tlaGNC">          68 :       {&quot;MODULE.bazel&quot;, &quot;Starlark&quot;},</span></span>
-<span id="L245"><span class="lineNum">     245</span>                 :<span class="tlaGNC">          68 :       {&quot;Makefile&quot;, &quot;Makefile&quot;},</span></span>
-<span id="L246"><span class="lineNum">     246</span>                 :<span class="tlaGNC">          68 :       {&quot;Rakefile&quot;, &quot;Ruby&quot;},</span></span>
-<span id="L247"><span class="lineNum">     247</span>                 :<span class="tlaGNC">          68 :       {&quot;WORKSPACE&quot;, &quot;Starlark&quot;},</span></span>
-<span id="L248"><span class="lineNum">     248</span>                 :<span class="tlaGNC">          68 :       {&quot;WORKSPACE.bazel&quot;, &quot;Starlark&quot;},</span></span>
-<span id="L249"><span class="lineNum">     249</span>                 :<span class="tlaGNC">          68 :       {&quot;makefile&quot;, &quot;Makefile&quot;},</span></span>
-<span id="L250"><span class="lineNum">     250</span>                 :<span class="tlaGNC">          68 :   });</span></span>
-<span id="L251"><span class="lineNum">     251</span>         [<span class="tlaGBC" title="branch 0 was taken 1088 times"> + </span><span class="tlaGBC" title="branch 1 was taken 68 times"> + </span>]:<span class="tlaGNC">        1088 :   for (const auto&amp; [filename, language] : kFilenames) {</span></span>
-<span id="L252"><span class="lineNum">     252</span>                 :<span class="tlaGNC">        1088 :     AddCoreFilename(vocabulary, filename, language);</span></span>
-<span id="L253"><span class="lineNum">     253</span>                 :<span class="tlaGNC">        1088 :   }</span></span>
-<span id="L254"><span class="lineNum">     254</span>                 :<span class="tlaGNC">          68 :   return vocabulary;</span></span>
-<span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">          68 : }</span></span>
+<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">          69 : LanguageVocabulary CoreVocabulary() {</span></span>
+<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">          69 :   LanguageVocabulary vocabulary;</span></span>
+<span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">          69 :   constexpr auto kExtensions = std::to_array&lt;std::pair&lt;std::string_view, std::string_view&gt;&gt;({</span></span>
+<span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">          69 :       {&quot;asm&quot;, &quot;Assembly&quot;},</span></span>
+<span id="L152"><span class="lineNum">     152</span>                 :<span class="tlaGNC">          69 :       {&quot;awk&quot;, &quot;Awk&quot;},</span></span>
+<span id="L153"><span class="lineNum">     153</span>                 :<span class="tlaGNC">          69 :       {&quot;bash&quot;, &quot;Shell&quot;},</span></span>
+<span id="L154"><span class="lineNum">     154</span>                 :<span class="tlaGNC">          69 :       {&quot;bat&quot;, &quot;Batchfile&quot;},</span></span>
+<span id="L155"><span class="lineNum">     155</span>                 :<span class="tlaGNC">          69 :       {&quot;bzl&quot;, &quot;Starlark&quot;},</span></span>
+<span id="L156"><span class="lineNum">     156</span>                 :<span class="tlaGNC">          69 :       {&quot;c&quot;, &quot;C&quot;},</span></span>
+<span id="L157"><span class="lineNum">     157</span>                 :<span class="tlaGNC">          69 :       {&quot;cc&quot;, &quot;C++&quot;},</span></span>
+<span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">          69 :       {&quot;clj&quot;, &quot;Clojure&quot;},</span></span>
+<span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaGNC">          69 :       {&quot;cljc&quot;, &quot;Clojure&quot;},</span></span>
+<span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">          69 :       {&quot;cljs&quot;, &quot;Clojure&quot;},</span></span>
+<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">          69 :       {&quot;cmake&quot;, &quot;CMake&quot;},</span></span>
+<span id="L162"><span class="lineNum">     162</span>                 :<span class="tlaGNC">          69 :       {&quot;cpp&quot;, &quot;C++&quot;},</span></span>
+<span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">          69 :       {&quot;cs&quot;, &quot;C#&quot;},</span></span>
+<span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">          69 :       {&quot;css&quot;, &quot;CSS&quot;},</span></span>
+<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">          69 :       {&quot;cxx&quot;, &quot;C++&quot;},</span></span>
+<span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">          69 :       {&quot;d&quot;, &quot;D&quot;},</span></span>
+<span id="L167"><span class="lineNum">     167</span>                 :<span class="tlaGNC">          69 :       {&quot;dart&quot;, &quot;Dart&quot;},</span></span>
+<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">          69 :       {&quot;el&quot;, &quot;Emacs Lisp&quot;},</span></span>
+<span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">          69 :       {&quot;erl&quot;, &quot;Erlang&quot;},</span></span>
+<span id="L170"><span class="lineNum">     170</span>                 :<span class="tlaGNC">          69 :       {&quot;ex&quot;, &quot;Elixir&quot;},</span></span>
+<span id="L171"><span class="lineNum">     171</span>                 :<span class="tlaGNC">          69 :       {&quot;exs&quot;, &quot;Elixir&quot;},</span></span>
+<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">          69 :       {&quot;f90&quot;, &quot;Fortran&quot;},</span></span>
+<span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">          69 :       {&quot;go&quot;, &quot;Go&quot;},</span></span>
+<span id="L174"><span class="lineNum">     174</span>                 :<span class="tlaGNC">          69 :       {&quot;groovy&quot;, &quot;Groovy&quot;},</span></span>
+<span id="L175"><span class="lineNum">     175</span>                 :<span class="tlaGNC">          69 :       {&quot;h&quot;, &quot;C&quot;},</span></span>
+<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">          69 :       {&quot;hh&quot;, &quot;C++&quot;},</span></span>
+<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">          69 :       {&quot;hpp&quot;, &quot;C++&quot;},</span></span>
+<span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC">          69 :       {&quot;hrl&quot;, &quot;Erlang&quot;},</span></span>
+<span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">          69 :       {&quot;hs&quot;, &quot;Haskell&quot;},</span></span>
+<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">          69 :       {&quot;htm&quot;, &quot;HTML&quot;},</span></span>
+<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">          69 :       {&quot;html&quot;, &quot;HTML&quot;},</span></span>
+<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">          69 :       {&quot;hxx&quot;, &quot;C++&quot;},</span></span>
+<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">          69 :       {&quot;ini&quot;, &quot;INI&quot;},</span></span>
+<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">          69 :       {&quot;java&quot;, &quot;Java&quot;},</span></span>
+<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">          69 :       {&quot;jl&quot;, &quot;Julia&quot;},</span></span>
+<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">          69 :       {&quot;js&quot;, &quot;JavaScript&quot;},</span></span>
+<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">          69 :       {&quot;json&quot;, &quot;JSON&quot;},</span></span>
+<span id="L188"><span class="lineNum">     188</span>                 :<span class="tlaGNC">          69 :       {&quot;jsx&quot;, &quot;JavaScript&quot;},</span></span>
+<span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">          69 :       {&quot;kt&quot;, &quot;Kotlin&quot;},</span></span>
+<span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">          69 :       {&quot;kts&quot;, &quot;Kotlin&quot;},</span></span>
+<span id="L191"><span class="lineNum">     191</span>                 :<span class="tlaGNC">          69 :       {&quot;less&quot;, &quot;Less&quot;},</span></span>
+<span id="L192"><span class="lineNum">     192</span>                 :<span class="tlaGNC">          69 :       {&quot;lua&quot;, &quot;Lua&quot;},</span></span>
+<span id="L193"><span class="lineNum">     193</span>                 :<span class="tlaGNC">          69 :       {&quot;m&quot;, &quot;Objective-C&quot;},</span></span>
+<span id="L194"><span class="lineNum">     194</span>                 :<span class="tlaGNC">          69 :       {&quot;markdown&quot;, &quot;Markdown&quot;},</span></span>
+<span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">          69 :       {&quot;md&quot;, &quot;Markdown&quot;},</span></span>
+<span id="L196"><span class="lineNum">     196</span>                 :<span class="tlaGNC">          69 :       {&quot;mjs&quot;, &quot;JavaScript&quot;},</span></span>
+<span id="L197"><span class="lineNum">     197</span>                 :<span class="tlaGNC">          69 :       {&quot;ml&quot;, &quot;OCaml&quot;},</span></span>
+<span id="L198"><span class="lineNum">     198</span>                 :<span class="tlaGNC">          69 :       {&quot;mli&quot;, &quot;OCaml&quot;},</span></span>
+<span id="L199"><span class="lineNum">     199</span>                 :<span class="tlaGNC">          69 :       {&quot;mm&quot;, &quot;Objective-C++&quot;},</span></span>
+<span id="L200"><span class="lineNum">     200</span>                 :<span class="tlaGNC">          69 :       {&quot;nim&quot;, &quot;Nim&quot;},</span></span>
+<span id="L201"><span class="lineNum">     201</span>                 :<span class="tlaGNC">          69 :       {&quot;php&quot;, &quot;PHP&quot;},</span></span>
+<span id="L202"><span class="lineNum">     202</span>                 :<span class="tlaGNC">          69 :       {&quot;pl&quot;, &quot;Perl&quot;},</span></span>
+<span id="L203"><span class="lineNum">     203</span>                 :<span class="tlaGNC">          69 :       {&quot;pm&quot;, &quot;Perl&quot;},</span></span>
+<span id="L204"><span class="lineNum">     204</span>                 :<span class="tlaGNC">          69 :       {&quot;proto&quot;, &quot;Protocol Buffer&quot;},</span></span>
+<span id="L205"><span class="lineNum">     205</span>                 :<span class="tlaGNC">          69 :       {&quot;ps1&quot;, &quot;PowerShell&quot;},</span></span>
+<span id="L206"><span class="lineNum">     206</span>                 :<span class="tlaGNC">          69 :       {&quot;py&quot;, &quot;Python&quot;},</span></span>
+<span id="L207"><span class="lineNum">     207</span>                 :<span class="tlaGNC">          69 :       {&quot;pyi&quot;, &quot;Python&quot;},</span></span>
+<span id="L208"><span class="lineNum">     208</span>                 :<span class="tlaGNC">          69 :       {&quot;r&quot;, &quot;R&quot;},</span></span>
+<span id="L209"><span class="lineNum">     209</span>                 :<span class="tlaGNC">          69 :       {&quot;rb&quot;, &quot;Ruby&quot;},</span></span>
+<span id="L210"><span class="lineNum">     210</span>                 :<span class="tlaGNC">          69 :       {&quot;rs&quot;, &quot;Rust&quot;},</span></span>
+<span id="L211"><span class="lineNum">     211</span>                 :<span class="tlaGNC">          69 :       {&quot;rst&quot;, &quot;reStructuredText&quot;},</span></span>
+<span id="L212"><span class="lineNum">     212</span>                 :<span class="tlaGNC">          69 :       {&quot;sass&quot;, &quot;Sass&quot;},</span></span>
+<span id="L213"><span class="lineNum">     213</span>                 :<span class="tlaGNC">          69 :       {&quot;scala&quot;, &quot;Scala&quot;},</span></span>
+<span id="L214"><span class="lineNum">     214</span>                 :<span class="tlaGNC">          69 :       {&quot;scm&quot;, &quot;Scheme&quot;},</span></span>
+<span id="L215"><span class="lineNum">     215</span>                 :<span class="tlaGNC">          69 :       {&quot;scss&quot;, &quot;SCSS&quot;},</span></span>
+<span id="L216"><span class="lineNum">     216</span>                 :<span class="tlaGNC">          69 :       {&quot;sh&quot;, &quot;Shell&quot;},</span></span>
+<span id="L217"><span class="lineNum">     217</span>                 :<span class="tlaGNC">          69 :       {&quot;sql&quot;, &quot;SQL&quot;},</span></span>
+<span id="L218"><span class="lineNum">     218</span>                 :<span class="tlaGNC">          69 :       {&quot;swift&quot;, &quot;Swift&quot;},</span></span>
+<span id="L219"><span class="lineNum">     219</span>                 :<span class="tlaGNC">          69 :       {&quot;tex&quot;, &quot;TeX&quot;},</span></span>
+<span id="L220"><span class="lineNum">     220</span>                 :<span class="tlaGNC">          69 :       {&quot;tf&quot;, &quot;HCL&quot;},</span></span>
+<span id="L221"><span class="lineNum">     221</span>                 :<span class="tlaGNC">          69 :       {&quot;toml&quot;, &quot;TOML&quot;},</span></span>
+<span id="L222"><span class="lineNum">     222</span>                 :<span class="tlaGNC">          69 :       {&quot;ts&quot;, &quot;TypeScript&quot;},</span></span>
+<span id="L223"><span class="lineNum">     223</span>                 :<span class="tlaGNC">          69 :       {&quot;tsx&quot;, &quot;TypeScript&quot;},</span></span>
+<span id="L224"><span class="lineNum">     224</span>                 :<span class="tlaGNC">          69 :       {&quot;vim&quot;, &quot;Vim Script&quot;},</span></span>
+<span id="L225"><span class="lineNum">     225</span>                 :<span class="tlaGNC">          69 :       {&quot;xml&quot;, &quot;XML&quot;},</span></span>
+<span id="L226"><span class="lineNum">     226</span>                 :<span class="tlaGNC">          69 :       {&quot;yaml&quot;, &quot;YAML&quot;},</span></span>
+<span id="L227"><span class="lineNum">     227</span>                 :<span class="tlaGNC">          69 :       {&quot;yml&quot;, &quot;YAML&quot;},</span></span>
+<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">          69 :       {&quot;zig&quot;, &quot;Zig&quot;},</span></span>
+<span id="L229"><span class="lineNum">     229</span>                 :<span class="tlaGNC">          69 :   });</span></span>
+<span id="L230"><span class="lineNum">     230</span>         [<span class="tlaGBC" title="branch 0 was taken 5382 times"> + </span><span class="tlaGBC" title="branch 1 was taken 69 times"> + </span>]:<span class="tlaGNC">        5382 :   for (const auto&amp; [extension, language] : kExtensions) {</span></span>
+<span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaGNC">        5382 :     AddCore(vocabulary, extension, language);</span></span>
+<span id="L232"><span class="lineNum">     232</span>                 :<span class="tlaGNC">        5382 :   }</span></span>
+<span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">          69 :   constexpr auto kFilenames = std::to_array&lt;std::pair&lt;std::string_view, std::string_view&gt;&gt;({</span></span>
+<span id="L234"><span class="lineNum">     234</span>                 :<span class="tlaGNC">          69 :       {&quot;.bash_profile&quot;, &quot;Shell&quot;},</span></span>
+<span id="L235"><span class="lineNum">     235</span>                 :<span class="tlaGNC">          69 :       {&quot;.bashrc&quot;, &quot;Shell&quot;},</span></span>
+<span id="L236"><span class="lineNum">     236</span>                 :<span class="tlaGNC">          69 :       {&quot;.profile&quot;, &quot;Shell&quot;},</span></span>
+<span id="L237"><span class="lineNum">     237</span>                 :<span class="tlaGNC">          69 :       {&quot;.zshrc&quot;, &quot;Shell&quot;},</span></span>
+<span id="L238"><span class="lineNum">     238</span>                 :<span class="tlaGNC">          69 :       {&quot;BUILD&quot;, &quot;Starlark&quot;},</span></span>
+<span id="L239"><span class="lineNum">     239</span>                 :<span class="tlaGNC">          69 :       {&quot;BUILD.bazel&quot;, &quot;Starlark&quot;},</span></span>
+<span id="L240"><span class="lineNum">     240</span>                 :<span class="tlaGNC">          69 :       {&quot;CMakeLists.txt&quot;, &quot;CMake&quot;},</span></span>
+<span id="L241"><span class="lineNum">     241</span>                 :<span class="tlaGNC">          69 :       {&quot;Dockerfile&quot;, &quot;Dockerfile&quot;},</span></span>
+<span id="L242"><span class="lineNum">     242</span>                 :<span class="tlaGNC">          69 :       {&quot;GNUmakefile&quot;, &quot;Makefile&quot;},</span></span>
+<span id="L243"><span class="lineNum">     243</span>                 :<span class="tlaGNC">          69 :       {&quot;Gemfile&quot;, &quot;Ruby&quot;},</span></span>
+<span id="L244"><span class="lineNum">     244</span>                 :<span class="tlaGNC">          69 :       {&quot;MODULE.bazel&quot;, &quot;Starlark&quot;},</span></span>
+<span id="L245"><span class="lineNum">     245</span>                 :<span class="tlaGNC">          69 :       {&quot;Makefile&quot;, &quot;Makefile&quot;},</span></span>
+<span id="L246"><span class="lineNum">     246</span>                 :<span class="tlaGNC">          69 :       {&quot;Rakefile&quot;, &quot;Ruby&quot;},</span></span>
+<span id="L247"><span class="lineNum">     247</span>                 :<span class="tlaGNC">          69 :       {&quot;WORKSPACE&quot;, &quot;Starlark&quot;},</span></span>
+<span id="L248"><span class="lineNum">     248</span>                 :<span class="tlaGNC">          69 :       {&quot;WORKSPACE.bazel&quot;, &quot;Starlark&quot;},</span></span>
+<span id="L249"><span class="lineNum">     249</span>                 :<span class="tlaGNC">          69 :       {&quot;makefile&quot;, &quot;Makefile&quot;},</span></span>
+<span id="L250"><span class="lineNum">     250</span>                 :<span class="tlaGNC">          69 :   });</span></span>
+<span id="L251"><span class="lineNum">     251</span>         [<span class="tlaGBC" title="branch 0 was taken 1104 times"> + </span><span class="tlaGBC" title="branch 1 was taken 69 times"> + </span>]:<span class="tlaGNC">        1104 :   for (const auto&amp; [filename, language] : kFilenames) {</span></span>
+<span id="L252"><span class="lineNum">     252</span>                 :<span class="tlaGNC">        1104 :     AddCoreFilename(vocabulary, filename, language);</span></span>
+<span id="L253"><span class="lineNum">     253</span>                 :<span class="tlaGNC">        1104 :   }</span></span>
+<span id="L254"><span class="lineNum">     254</span>                 :<span class="tlaGNC">          69 :   return vocabulary;</span></span>
+<span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">          69 : }</span></span>
 <span id="L256"><span class="lineNum">     256</span>                 :             : </span>
 <span id="L257"><span class="lineNum">     257</span>                 :<span class="tlaGNC">          14 : absl::Status JsonError(std::string_view layer, std::string_view message) {</span></span>
 <span id="L258"><span class="lineNum">     258</span>                 :<span class="tlaGNC">          14 :   return absl::InvalidArgumentError(absl::StrCat(&quot;language vocabulary '&quot;, layer, &quot;': &quot;, message));</span></span>
@@ -557,71 +557,71 @@
 <span id="L476"><span class="lineNum">     476</span>                 :             :   mbo::types::OptionalRef&lt;const LanguageVocabulary::Record&gt; record;</span>
 <span id="L477"><span class="lineNum">     477</span>                 :             : };</span>
 <span id="L478"><span class="lineNum">     478</span>                 :             : </span>
-<span id="L479"><span class="lineNum">     479</span>                 :<span class="tlaGNC">         225 : LookupResult Lookup(const LanguageVocabulary&amp; vocabulary, std::string_view name) {</span></span>
-<span id="L480"><span class="lineNum">     480</span>         [<span class="tlaGBC" title="branch 0 was taken 15 times"> + </span><span class="tlaGBC" title="branch 1 was taken 210 times"> + </span>]:<span class="tlaGNC">         225 :   if (const auto found = vocabulary.filenames.find(name); found != vocabulary.filenames.end()) {</span></span>
+<span id="L479"><span class="lineNum">     479</span>                 :<span class="tlaGNC">         226 : LookupResult Lookup(const LanguageVocabulary&amp; vocabulary, std::string_view name) {</span></span>
+<span id="L480"><span class="lineNum">     480</span>         [<span class="tlaGBC" title="branch 0 was taken 15 times"> + </span><span class="tlaGBC" title="branch 1 was taken 211 times"> + </span>]:<span class="tlaGNC">         226 :   if (const auto found = vocabulary.filenames.find(name); found != vocabulary.filenames.end()) {</span></span>
 <span id="L481"><span class="lineNum">     481</span>                 :<span class="tlaGNC">          15 :     return {.name = found-&gt;second, .record = vocabulary.languages.at(found-&gt;second)};</span></span>
 <span id="L482"><span class="lineNum">     482</span>                 :<span class="tlaGNC">          15 :   }</span></span>
-<span id="L483"><span class="lineNum">     483</span>                 :<span class="tlaGNC">         210 :   const std::string folded = Lower(name);</span></span>
-<span id="L484"><span class="lineNum">     484</span>         [<span class="tlaGBC" title="branch 0 was taken 144 times"> + </span><span class="tlaGBC" title="branch 1 was taken 143 times"> + </span>]:<span class="tlaGNC">         287 :   for (std::size_t dot = folded.find('.'); dot != std::string::npos; dot = folded.find('.', dot + 1)) {</span></span>
-<span id="L485"><span class="lineNum">     485</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 144 times"> + </span>]:<span class="tlaGNC">         144 :     if (dot + 1 == folded.size()) {</span></span>
+<span id="L483"><span class="lineNum">     483</span>                 :<span class="tlaGNC">         211 :   const std::string folded = Lower(name);</span></span>
+<span id="L484"><span class="lineNum">     484</span>         [<span class="tlaGBC" title="branch 0 was taken 145 times"> + </span><span class="tlaGBC" title="branch 1 was taken 144 times"> + </span>]:<span class="tlaGNC">         289 :   for (std::size_t dot = folded.find('.'); dot != std::string::npos; dot = folded.find('.', dot + 1)) {</span></span>
+<span id="L485"><span class="lineNum">     485</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 145 times"> + </span>]:<span class="tlaGNC">         145 :     if (dot + 1 == folded.size()) {</span></span>
 <span id="L486"><span class="lineNum">     486</span>                 :<span class="tlaUNC">           0 :       continue;</span></span>
 <span id="L487"><span class="lineNum">     487</span>                 :<span class="tlaUNC">           0 :     }</span></span>
-<span id="L488"><span class="lineNum">     488</span>                 :<span class="tlaGNC">         144 :     const auto found = vocabulary.extensions.find(std::string_view(folded).substr(dot + 1));</span></span>
-<span id="L489"><span class="lineNum">     489</span>         [<span class="tlaGBC" title="branch 0 was taken 67 times"> + </span><span class="tlaGBC" title="branch 1 was taken 77 times"> + </span>]:<span class="tlaGNC">         144 :     if (found != vocabulary.extensions.end()) {</span></span>
+<span id="L488"><span class="lineNum">     488</span>                 :<span class="tlaGNC">         145 :     const auto found = vocabulary.extensions.find(std::string_view(folded).substr(dot + 1));</span></span>
+<span id="L489"><span class="lineNum">     489</span>         [<span class="tlaGBC" title="branch 0 was taken 67 times"> + </span><span class="tlaGBC" title="branch 1 was taken 78 times"> + </span>]:<span class="tlaGNC">         145 :     if (found != vocabulary.extensions.end()) {</span></span>
 <span id="L490"><span class="lineNum">     490</span>                 :<span class="tlaGNC">          67 :       return {.name = found-&gt;second, .record = vocabulary.languages.at(found-&gt;second)};</span></span>
 <span id="L491"><span class="lineNum">     491</span>                 :<span class="tlaGNC">          67 :     }</span></span>
-<span id="L492"><span class="lineNum">     492</span>                 :<span class="tlaGNC">         144 :   }</span></span>
-<span id="L493"><span class="lineNum">     493</span>                 :<span class="tlaGNC">         143 :   return {};</span></span>
-<span id="L494"><span class="lineNum">     494</span>                 :<span class="tlaGNC">         210 : }</span></span>
+<span id="L492"><span class="lineNum">     492</span>                 :<span class="tlaGNC">         145 :   }</span></span>
+<span id="L493"><span class="lineNum">     493</span>                 :<span class="tlaGNC">         144 :   return {};</span></span>
+<span id="L494"><span class="lineNum">     494</span>                 :<span class="tlaGNC">         211 : }</span></span>
 <span id="L495"><span class="lineNum">     495</span>                 :             : </span>
-<span id="L496"><span class="lineNum">     496</span>                 :<span class="tlaGNC">        3933 : LanguageInfo View(std::string_view name, const LanguageVocabulary::Record&amp; record) {</span></span>
-<span id="L497"><span class="lineNum">     497</span>                 :<span class="tlaGNC">        3933 :   return {</span></span>
-<span id="L498"><span class="lineNum">     498</span>                 :<span class="tlaGNC">        3933 :       .name = name,</span></span>
-<span id="L499"><span class="lineNum">     499</span>                 :<span class="tlaGNC">        3933 :       .type = record.type,</span></span>
-<span id="L500"><span class="lineNum">     500</span>                 :<span class="tlaGNC">        3933 :       .color = record.color,</span></span>
-<span id="L501"><span class="lineNum">     501</span>                 :<span class="tlaGNC">        3933 :       .group = record.group,</span></span>
-<span id="L502"><span class="lineNum">     502</span>                 :<span class="tlaGNC">        3933 :       .source = record.source,</span></span>
-<span id="L503"><span class="lineNum">     503</span>                 :<span class="tlaGNC">        3933 :       .aliases = record.aliases,</span></span>
-<span id="L504"><span class="lineNum">     504</span>                 :<span class="tlaGNC">        3933 :       .extensions = record.extensions,</span></span>
-<span id="L505"><span class="lineNum">     505</span>                 :<span class="tlaGNC">        3933 :       .filenames = record.filenames,</span></span>
-<span id="L506"><span class="lineNum">     506</span>                 :<span class="tlaGNC">        3933 :   };</span></span>
-<span id="L507"><span class="lineNum">     507</span>                 :<span class="tlaGNC">        3933 : }</span></span>
+<span id="L496"><span class="lineNum">     496</span>                 :<span class="tlaGNC">        3992 : LanguageInfo View(std::string_view name, const LanguageVocabulary::Record&amp; record) {</span></span>
+<span id="L497"><span class="lineNum">     497</span>                 :<span class="tlaGNC">        3992 :   return {</span></span>
+<span id="L498"><span class="lineNum">     498</span>                 :<span class="tlaGNC">        3992 :       .name = name,</span></span>
+<span id="L499"><span class="lineNum">     499</span>                 :<span class="tlaGNC">        3992 :       .type = record.type,</span></span>
+<span id="L500"><span class="lineNum">     500</span>                 :<span class="tlaGNC">        3992 :       .color = record.color,</span></span>
+<span id="L501"><span class="lineNum">     501</span>                 :<span class="tlaGNC">        3992 :       .group = record.group,</span></span>
+<span id="L502"><span class="lineNum">     502</span>                 :<span class="tlaGNC">        3992 :       .source = record.source,</span></span>
+<span id="L503"><span class="lineNum">     503</span>                 :<span class="tlaGNC">        3992 :       .aliases = record.aliases,</span></span>
+<span id="L504"><span class="lineNum">     504</span>                 :<span class="tlaGNC">        3992 :       .extensions = record.extensions,</span></span>
+<span id="L505"><span class="lineNum">     505</span>                 :<span class="tlaGNC">        3992 :       .filenames = record.filenames,</span></span>
+<span id="L506"><span class="lineNum">     506</span>                 :<span class="tlaGNC">        3992 :   };</span></span>
+<span id="L507"><span class="lineNum">     507</span>                 :<span class="tlaGNC">        3992 : }</span></span>
 <span id="L508"><span class="lineNum">     508</span>                 :             : </span>
-<span id="L509"><span class="lineNum">     509</span>                 :<span class="tlaGNC">          53 : void Finalize(LanguageVocabulary&amp; vocabulary) {</span></span>
-<span id="L510"><span class="lineNum">     510</span>                 :<span class="tlaGNC">          53 :   vocabulary.views.reserve(vocabulary.languages.size());</span></span>
-<span id="L511"><span class="lineNum">     511</span>         [<span class="tlaGBC" title="branch 0 was taken 3905 times"> + </span><span class="tlaGBC" title="branch 1 was taken 53 times"> + </span>]:<span class="tlaGNC">        3905 :   for (auto&amp; [name, record] : vocabulary.languages) {</span></span>
-<span id="L512"><span class="lineNum">     512</span>                 :<span class="tlaGNC">        3905 :     record.terminal_color = MakeTerminalColor(record.color);</span></span>
-<span id="L513"><span class="lineNum">     513</span>                 :<span class="tlaGNC">        3905 :     vocabulary.views.push_back(View(name, record));</span></span>
-<span id="L514"><span class="lineNum">     514</span>                 :<span class="tlaGNC">        3905 :   }</span></span>
-<span id="L515"><span class="lineNum">     515</span>                 :<span class="tlaGNC">          53 : }</span></span>
+<span id="L509"><span class="lineNum">     509</span>                 :<span class="tlaGNC">          54 : void Finalize(LanguageVocabulary&amp; vocabulary) {</span></span>
+<span id="L510"><span class="lineNum">     510</span>                 :<span class="tlaGNC">          54 :   vocabulary.views.reserve(vocabulary.languages.size());</span></span>
+<span id="L511"><span class="lineNum">     511</span>         [<span class="tlaGBC" title="branch 0 was taken 3964 times"> + </span><span class="tlaGBC" title="branch 1 was taken 54 times"> + </span>]:<span class="tlaGNC">        3964 :   for (auto&amp; [name, record] : vocabulary.languages) {</span></span>
+<span id="L512"><span class="lineNum">     512</span>                 :<span class="tlaGNC">        3964 :     record.terminal_color = MakeTerminalColor(record.color);</span></span>
+<span id="L513"><span class="lineNum">     513</span>                 :<span class="tlaGNC">        3964 :     vocabulary.views.push_back(View(name, record));</span></span>
+<span id="L514"><span class="lineNum">     514</span>                 :<span class="tlaGNC">        3964 :   }</span></span>
+<span id="L515"><span class="lineNum">     515</span>                 :<span class="tlaGNC">          54 : }</span></span>
 <span id="L516"><span class="lineNum">     516</span>                 :             : </span>
-<span id="L517"><span class="lineNum">     517</span>                 :<span class="tlaGNC">         132 : void EnsureConfigured(State&amp; state) ABSL_EXCLUSIVE_LOCKS_REQUIRED(state.mutex) {</span></span>
-<span id="L518"><span class="lineNum">     518</span>         [<span class="tlaGBC" title="branch 0 was taken 93 times"> + </span><span class="tlaGBC" title="branch 1 was taken 39 times"> + </span>]:<span class="tlaGNC">         132 :   if (state.active.has_value()) {</span></span>
+<span id="L517"><span class="lineNum">     517</span>                 :<span class="tlaGNC">         133 : void EnsureConfigured(State&amp; state) ABSL_EXCLUSIVE_LOCKS_REQUIRED(state.mutex) {</span></span>
+<span id="L518"><span class="lineNum">     518</span>         [<span class="tlaGBC" title="branch 0 was taken 93 times"> + </span><span class="tlaGBC" title="branch 1 was taken 40 times"> + </span>]:<span class="tlaGNC">         133 :   if (state.active.has_value()) {</span></span>
 <span id="L519"><span class="lineNum">     519</span>                 :<span class="tlaGNC">          93 :     return;</span></span>
 <span id="L520"><span class="lineNum">     520</span>                 :<span class="tlaGNC">          93 :   }</span></span>
-<span id="L521"><span class="lineNum">     521</span>                 :<span class="tlaGNC">          39 :   auto vocabulary = std::make_unique&lt;LanguageVocabulary&gt;(CoreVocabulary());</span></span>
-<span id="L522"><span class="lineNum">     522</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 39 times"> + </span>]:<span class="tlaGNC">          39 :   for (const Database&amp; database : Databases()) {</span></span>
+<span id="L521"><span class="lineNum">     521</span>                 :<span class="tlaGNC">          40 :   auto vocabulary = std::make_unique&lt;LanguageVocabulary&gt;(CoreVocabulary());</span></span>
+<span id="L522"><span class="lineNum">     522</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 40 times"> + </span>]:<span class="tlaGNC">          40 :   for (const Database&amp; database : Databases()) {</span></span>
 <span id="L523"><span class="lineNum">     523</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :     CHECK_OK(LayerProcessor(*vocabulary, database.name, ConflictPolicy::kLast).Apply(database.json()));</span></span>
 <span id="L524"><span class="lineNum">     524</span>                 :<span class="tlaGNC">           1 :   }</span></span>
-<span id="L525"><span class="lineNum">     525</span>                 :<span class="tlaGNC">          39 :   Finalize(*vocabulary);</span></span>
-<span id="L526"><span class="lineNum">     526</span>                 :<span class="tlaGNC">          39 :   state.snapshots.push_back(std::move(vocabulary));</span></span>
-<span id="L527"><span class="lineNum">     527</span>                 :<span class="tlaGNC">          39 :   state.active.set_ref(*state.snapshots.back());</span></span>
-<span id="L528"><span class="lineNum">     528</span>                 :<span class="tlaGNC">          39 : }</span></span>
+<span id="L525"><span class="lineNum">     525</span>                 :<span class="tlaGNC">          40 :   Finalize(*vocabulary);</span></span>
+<span id="L526"><span class="lineNum">     526</span>                 :<span class="tlaGNC">          40 :   state.snapshots.push_back(std::move(vocabulary));</span></span>
+<span id="L527"><span class="lineNum">     527</span>                 :<span class="tlaGNC">          40 :   state.active.set_ref(*state.snapshots.back());</span></span>
+<span id="L528"><span class="lineNum">     528</span>                 :<span class="tlaGNC">          40 : }</span></span>
 <span id="L529"><span class="lineNum">     529</span>                 :             : </span>
 <span id="L530"><span class="lineNum">     530</span>                 :             : }  // namespace</span>
 <span id="L531"><span class="lineNum">     531</span>                 :             : </span>
-<span id="L532"><span class="lineNum">     532</span>                 :<span class="tlaGNC">        1263 : absl::Status Configure(absl::Span&lt;const std::string&gt; files, ConflictPolicy conflicts) {</span></span>
-<span id="L533"><span class="lineNum">     533</span>         [<span class="tlaGBC" title="branch 0 was taken 1240 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4294967319 times"> + </span>]:<span class="tlaGNC">        1269 :   if (files.empty()) {</span></span>
-<span id="L534"><span class="lineNum">     534</span>                 :<span class="tlaGNC">        1240 :     State&amp; state = GlobalState();</span></span>
-<span id="L535"><span class="lineNum">     535</span>                 :<span class="tlaGNC">        1240 :     const absl::MutexLock lock(state.mutex);</span></span>
-<span id="L536"><span class="lineNum">     536</span>                 :<span class="tlaGNC">        1240 :     state.active.reset();</span></span>
-<span id="L537"><span class="lineNum">     537</span>                 :<span class="tlaGNC">        1240 :     return absl::OkStatus();</span></span>
-<span id="L538"><span class="lineNum">     538</span>                 :<span class="tlaGNC">        1240 :   }</span></span>
+<span id="L532"><span class="lineNum">     532</span>                 :<span class="tlaGNC">        1561 : absl::Status Configure(absl::Span&lt;const std::string&gt; files, ConflictPolicy conflicts) {</span></span>
+<span id="L533"><span class="lineNum">     533</span>         [<span class="tlaGBC" title="branch 0 was taken 1532 times"> + </span><span class="tlaGBC" title="branch 1 was taken 29 times"> + </span>]:<span class="tlaGNC">        1561 :   if (files.empty()) {</span></span>
+<span id="L534"><span class="lineNum">     534</span>                 :<span class="tlaGNC">        1532 :     State&amp; state = GlobalState();</span></span>
+<span id="L535"><span class="lineNum">     535</span>                 :<span class="tlaGNC">        1532 :     const absl::MutexLock lock(state.mutex);</span></span>
+<span id="L536"><span class="lineNum">     536</span>                 :<span class="tlaGNC">        1532 :     state.active.reset();</span></span>
+<span id="L537"><span class="lineNum">     537</span>                 :<span class="tlaGNC">        1532 :     return absl::OkStatus();</span></span>
+<span id="L538"><span class="lineNum">     538</span>                 :<span class="tlaGNC">        1532 :   }</span></span>
 <span id="L539"><span class="lineNum">     539</span>                 :<span class="tlaGNC">          29 :   LanguageVocabulary vocabulary = CoreVocabulary();</span></span>
-<span id="L540"><span class="lineNum">     540</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 4294967319 times"> + </span>]:<span class="tlaGNC">          29 :   for (const Database&amp; database : Databases()) {</span></span>
+<span id="L540"><span class="lineNum">     540</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 29 times"> + </span>]:<span class="tlaGNC">          29 :   for (const Database&amp; database : Databases()) {</span></span>
 <span id="L541"><span class="lineNum">     541</span>         [<span class="tlaUNC" title="branch 0 was not executed"> # </span><span class="tlaUNC" title="branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :     MBO_RETURN_IF_ERROR(LayerProcessor(vocabulary, database.name, ConflictPolicy::kLast).Apply(database.json()));</span></span>
 <span id="L542"><span class="lineNum">     542</span>                 :<span class="tlaUNC">           0 :   }</span></span>
-<span id="L543"><span class="lineNum">     543</span>         [<span class="tlaGBC" title="branch 0 was taken 32 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4294967304 times"> + </span>]:<span class="tlaGNC">          32 :   for (const std::string&amp; file : files) {</span></span>
+<span id="L543"><span class="lineNum">     543</span>         [<span class="tlaGBC" title="branch 0 was taken 32 times"> + </span><span class="tlaGBC" title="branch 1 was taken 14 times"> + </span>]:<span class="tlaGNC">          32 :   for (const std::string&amp; file : files) {</span></span>
 <span id="L544"><span class="lineNum">     544</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 31 times"> + </span>]:<span class="tlaGNC">          32 :     MBO_ASSIGN_OR_RETURN(const std::string text, ReadFile(file));</span></span>
 <span id="L545"><span class="lineNum">     545</span>         [<span class="tlaGBC" title="branch 0 was taken 48 times"> + </span><span class="tlaGBC" title="branch 1 was taken 45 times"> + </span>]:<span class="tlaGNC">          31 :     MBO_RETURN_IF_ERROR(LayerProcessor(vocabulary, file, conflicts).Apply(text));</span></span>
 <span id="L546"><span class="lineNum">     546</span>                 :<span class="tlaGNC">          31 :   }</span></span>
@@ -634,21 +634,21 @@
 <span id="L553"><span class="lineNum">     553</span>                 :<span class="tlaGNC">          14 :   return absl::OkStatus();</span></span>
 <span id="L554"><span class="lineNum">     554</span>                 :<span class="tlaGNC">          29 : }</span></span>
 <span id="L555"><span class="lineNum">     555</span>                 :             : </span>
-<span id="L556"><span class="lineNum">     556</span>                 :<span class="tlaGNC">         132 : LanguageSnapshot ActiveSnapshot() {</span></span>
-<span id="L557"><span class="lineNum">     557</span>                 :<span class="tlaGNC">         132 :   State&amp; state = GlobalState();</span></span>
-<span id="L558"><span class="lineNum">     558</span>                 :<span class="tlaGNC">         132 :   const absl::MutexLock lock(state.mutex);</span></span>
-<span id="L559"><span class="lineNum">     559</span>                 :<span class="tlaGNC">         132 :   EnsureConfigured(state);</span></span>
-<span id="L560"><span class="lineNum">     560</span>                 :<span class="tlaGNC">         132 :   return LanguageSnapshot(*state.active);</span></span>
-<span id="L561"><span class="lineNum">     561</span>                 :<span class="tlaGNC">         132 : }</span></span>
+<span id="L556"><span class="lineNum">     556</span>                 :<span class="tlaGNC">         133 : LanguageSnapshot ActiveSnapshot() {</span></span>
+<span id="L557"><span class="lineNum">     557</span>                 :<span class="tlaGNC">         133 :   State&amp; state = GlobalState();</span></span>
+<span id="L558"><span class="lineNum">     558</span>                 :<span class="tlaGNC">         133 :   const absl::MutexLock lock(state.mutex);</span></span>
+<span id="L559"><span class="lineNum">     559</span>                 :<span class="tlaGNC">         133 :   EnsureConfigured(state);</span></span>
+<span id="L560"><span class="lineNum">     560</span>                 :<span class="tlaGNC">         133 :   return LanguageSnapshot(*state.active);</span></span>
+<span id="L561"><span class="lineNum">     561</span>                 :<span class="tlaGNC">         133 : }</span></span>
 <span id="L562"><span class="lineNum">     562</span>                 :             : </span>
 <span id="L563"><span class="lineNum">     563</span>                 :<span class="tlaGNC">          51 : std::optional&lt;LanguageInfo&gt; LanguageSnapshot::InfoForName(std::string_view name) const {</span></span>
 <span id="L564"><span class="lineNum">     564</span>                 :<span class="tlaGNC">          51 :   const LookupResult found = Lookup(vocabulary_.get(), name);</span></span>
 <span id="L565"><span class="lineNum">     565</span>         [<span class="tlaGBC" title="branch 0 was taken 28 times"> + </span><span class="tlaGBC" title="branch 1 was taken 23 times"> + </span>]:<span class="tlaGNC">          51 :   return found.record.has_value() ? std::optional&lt;LanguageInfo&gt;(View(found.name, *found.record)) : std::nullopt;</span></span>
 <span id="L566"><span class="lineNum">     566</span>                 :<span class="tlaGNC">          51 : }</span></span>
 <span id="L567"><span class="lineNum">     567</span>                 :             : </span>
-<span id="L568"><span class="lineNum">     568</span>                 :<span class="tlaGNC">          47 : std::string_view LanguageSnapshot::LanguageForName(std::string_view name) const {</span></span>
-<span id="L569"><span class="lineNum">     569</span>                 :<span class="tlaGNC">          47 :   return Lookup(vocabulary_.get(), name).name;</span></span>
-<span id="L570"><span class="lineNum">     570</span>                 :<span class="tlaGNC">          47 : }</span></span>
+<span id="L568"><span class="lineNum">     568</span>                 :<span class="tlaGNC">          48 : std::string_view LanguageSnapshot::LanguageForName(std::string_view name) const {</span></span>
+<span id="L569"><span class="lineNum">     569</span>                 :<span class="tlaGNC">          48 :   return Lookup(vocabulary_.get(), name).name;</span></span>
+<span id="L570"><span class="lineNum">     570</span>                 :<span class="tlaGNC">          48 : }</span></span>
 <span id="L571"><span class="lineNum">     571</span>                 :             : </span>
 <span id="L572"><span class="lineNum">     572</span>                 :<span class="tlaGNC">         127 : std::string_view LanguageSnapshot::TerminalColorForName(std::string_view name) const {</span></span>
 <span id="L573"><span class="lineNum">     573</span>                 :<span class="tlaGNC">         127 :   const LookupResult found = Lookup(vocabulary_.get(), name);</span></span>
@@ -663,9 +663,9 @@
 <span id="L582"><span class="lineNum">     582</span>                 :<span class="tlaGNC">          51 :   return ActiveSnapshot().InfoForName(name);</span></span>
 <span id="L583"><span class="lineNum">     583</span>                 :<span class="tlaGNC">          51 : }</span></span>
 <span id="L584"><span class="lineNum">     584</span>                 :             : </span>
-<span id="L585"><span class="lineNum">     585</span>                 :<span class="tlaGNC">          45 : std::string_view LanguageForName(std::string_view name) {</span></span>
-<span id="L586"><span class="lineNum">     586</span>                 :<span class="tlaGNC">          45 :   return ActiveSnapshot().LanguageForName(name);</span></span>
-<span id="L587"><span class="lineNum">     587</span>                 :<span class="tlaGNC">          45 : }</span></span>
+<span id="L585"><span class="lineNum">     585</span>                 :<span class="tlaGNC">          46 : std::string_view LanguageForName(std::string_view name) {</span></span>
+<span id="L586"><span class="lineNum">     586</span>                 :<span class="tlaGNC">          46 :   return ActiveSnapshot().LanguageForName(name);</span></span>
+<span id="L587"><span class="lineNum">     587</span>                 :<span class="tlaGNC">          46 : }</span></span>
 <span id="L588"><span class="lineNum">     588</span>                 :             : </span>
 <span id="L589"><span class="lineNum">     589</span>                 :<span class="tlaGNC">           7 : std::string_view TerminalColorForName(std::string_view name) {</span></span>
 <span id="L590"><span class="lineNum">     590</span>                 :<span class="tlaGNC">           7 :   return ActiveSnapshot().TerminalColorForName(name);</span></span>

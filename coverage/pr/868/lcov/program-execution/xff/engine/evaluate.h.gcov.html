@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-18 22:39:30</td>
+            <td class="headerValue">2026-09-19 10:23:36</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -146,27 +146,27 @@
 <span id="L75"><span class="lineNum">      75</span>              :   std::string unsupported_storage;</span>
 <span id="L76"><span class="lineNum">      76</span>              : </span>
 <span id="L77"><span class="lineNum">      77</span>              :   // Records a composed reason, keeping it alive for as long as the Control lives.</span>
-<span id="L78"><span class="lineNum">      78</span> <span class="tlaGNC">          14 :   void SetUnsupported(std::string reason) {</span></span>
-<span id="L79"><span class="lineNum">      79</span> <span class="tlaGNC">          14 :     unsupported_storage = std::move(reason);</span></span>
-<span id="L80"><span class="lineNum">      80</span> <span class="tlaGNC">          14 :     unsupported = unsupported_storage;</span></span>
-<span id="L81"><span class="lineNum">      81</span> <span class="tlaGNC">          14 :   }</span></span>
+<span id="L78"><span class="lineNum">      78</span> <span class="tlaGNC">          15 :   void SetUnsupported(std::string reason) {</span></span>
+<span id="L79"><span class="lineNum">      79</span> <span class="tlaGNC">          15 :     unsupported_storage = std::move(reason);</span></span>
+<span id="L80"><span class="lineNum">      80</span> <span class="tlaGNC">          15 :     unsupported = unsupported_storage;</span></span>
+<span id="L81"><span class="lineNum">      81</span> <span class="tlaGNC">          15 :   }</span></span>
 <span id="L82"><span class="lineNum">      82</span>              : };</span>
 <span id="L83"><span class="lineNum">      83</span>              : </span>
 <span id="L84"><span class="lineNum">      84</span>              : // Stable identity of an expression node owned by the parsed expression tree.</span>
 <span id="L85"><span class="lineNum">      85</span>              : // The wrapper makes address identity explicit without exposing a nullable pointer.</span>
 <span id="L86"><span class="lineNum">      86</span>              : class ExprIdentity final {</span>
 <span id="L87"><span class="lineNum">      87</span>              :  public:</span>
-<span id="L88"><span class="lineNum">      88</span> <span class="tlaGNC">        7350 :   explicit ExprIdentity(const parser::Expr&amp; expr) : expr_(expr) {}</span></span>
+<span id="L88"><span class="lineNum">      88</span> <span class="tlaGNC">        8482 :   explicit ExprIdentity(const parser::Expr&amp; expr) : expr_(expr) {}</span></span>
 <span id="L89"><span class="lineNum">      89</span>              : </span>
-<span id="L90"><span class="lineNum">      90</span> <span class="tlaGNC">       16229 :   [[nodiscard]] const parser::Expr&amp; Get() const { return expr_.get(); }</span></span>
+<span id="L90"><span class="lineNum">      90</span> <span class="tlaGNC">       18913 :   [[nodiscard]] const parser::Expr&amp; Get() const { return expr_.get(); }</span></span>
 <span id="L91"><span class="lineNum">      91</span>              : </span>
-<span id="L92"><span class="lineNum">      92</span> <span class="tlaGNC">         100 :   friend bool operator==(ExprIdentity lhs, ExprIdentity rhs) {</span></span>
-<span id="L93"><span class="lineNum">      93</span> <span class="tlaGNC">         100 :     return std::addressof(lhs.Get()) == std::addressof(rhs.Get());</span></span>
-<span id="L94"><span class="lineNum">      94</span> <span class="tlaGNC">         100 :   }</span></span>
+<span id="L92"><span class="lineNum">      92</span> <span class="tlaGNC">         120 :   friend bool operator==(ExprIdentity lhs, ExprIdentity rhs) {</span></span>
+<span id="L93"><span class="lineNum">      93</span> <span class="tlaGNC">         120 :     return std::addressof(lhs.Get()) == std::addressof(rhs.Get());</span></span>
+<span id="L94"><span class="lineNum">      94</span> <span class="tlaGNC">         120 :   }</span></span>
 <span id="L95"><span class="lineNum">      95</span>              : </span>
-<span id="L96"><span class="lineNum">      96</span> <span class="tlaGNC">        7989 :   friend bool operator&lt;(ExprIdentity lhs, ExprIdentity rhs) {</span></span>
-<span id="L97"><span class="lineNum">      97</span> <span class="tlaGNC">        7989 :     return std::less{}(std::addressof(lhs.Get()), std::addressof(rhs.Get()));</span></span>
-<span id="L98"><span class="lineNum">      98</span> <span class="tlaGNC">        7989 :   }</span></span>
+<span id="L96"><span class="lineNum">      96</span> <span class="tlaGNC">        9302 :   friend bool operator&lt;(ExprIdentity lhs, ExprIdentity rhs) {</span></span>
+<span id="L97"><span class="lineNum">      97</span> <span class="tlaGNC">        9302 :     return std::less{}(std::addressof(lhs.Get()), std::addressof(rhs.Get()));</span></span>
+<span id="L98"><span class="lineNum">      98</span> <span class="tlaGNC">        9302 :   }</span></span>
 <span id="L99"><span class="lineNum">      99</span>              : </span>
 <span id="L100"><span class="lineNum">     100</span>              :  private:</span>
 <span id="L101"><span class="lineNum">     101</span>              :   std::reference_wrapper&lt;const parser::Expr&gt; expr_;</span>
@@ -362,72 +362,82 @@
 <span id="L291"><span class="lineNum">     291</span>              : // silent per-entry no-op; -diff then trusts the validated values.</span>
 <span id="L292"><span class="lineNum">     292</span>              : absl::Status ValidateDiffIgnore(std::string_view tokens, std::string_view matching);</span>
 <span id="L293"><span class="lineNum">     293</span>              : </span>
-<span id="L294"><span class="lineNum">     294</span>              : // Parses a `--diff-format` value into an mbo output format: the letters u/c/n/y (matching the</span>
-<span id="L295"><span class="lineNum">     295</span>              : // -diff:STYLE token) or the long names unified/context/normal/side-by-side; nullopt for an</span>
-<span id="L296"><span class="lineNum">     296</span>              : // unknown value. `none` is intentionally not a format (it is the per-action -diff:none silencer,</span>
-<span id="L297"><span class="lineNum">     297</span>              : // not a default the walk carries). The driver uses it to validate + resolve the global once</span>
-<span id="L298"><span class="lineNum">     298</span>              : // before the walk; -diff then falls back to the resolved format when its own token omits one.</span>
-<span id="L299"><span class="lineNum">     299</span>              : std::optional&lt;mbo::diff::DiffOptions::OutputFormat&gt; ParseDiffFormatFlag(std::string_view flag);</span>
-<span id="L300"><span class="lineNum">     300</span>              : </span>
-<span id="L301"><span class="lineNum">     301</span>              : // Validates every `-hash:ALGO[/ENCODING]` spec in `expr`, returning the first malformed one as</span>
-<span id="L302"><span class="lineNum">     302</span>              : // an InvalidArgument (unknown algorithm or encoding, naming it) or Ok. The driver calls it before</span>
-<span id="L303"><span class="lineNum">     303</span>              : // the walk so a bad `-hash` spec is a usage error (exit 2) rather than a silent per-entry no-op,</span>
-<span id="L304"><span class="lineNum">     304</span>              : // matching how the other payload primaries validate up front.</span>
-<span id="L305"><span class="lineNum">     305</span>              : absl::Status ValidateHashArgs(const parser::Expr&amp; expr);</span>
-<span id="L306"><span class="lineNum">     306</span>              : </span>
-<span id="L307"><span class="lineNum">     307</span>              : // Parses a `--block-size=SIZE` value into bytes: a bare number is bytes; legacy</span>
-<span id="L308"><span class="lineNum">     308</span>              : // c/w/k/M/G/T/P/E units are binary; explicit B/kB/.../EB units are SI and</span>
-<span id="L309"><span class="lineNum">     309</span>              : // KiB/.../EiB units are IEC. Lowercase 'b' and overflow are rejected. The result is</span>
-<span id="L310"><span class="lineNum">     310</span>              : // for a bare `-size N` and the `-size Nb` unit (find's default is 512). Returns an</span>
-<span id="L311"><span class="lineNum">     311</span>              : // InvalidArgument status (naming the problem) for a malformed or zero size.</span>
-<span id="L312"><span class="lineNum">     312</span>              : absl::StatusOr&lt;std::uint64_t&gt; ParseBlockSize(std::string_view spec);</span>
-<span id="L313"><span class="lineNum">     313</span>              : </span>
-<span id="L314"><span class="lineNum">     314</span>              : // The `-ls` columns for one entry, in display order: inode, 1 KiB blocks, symbolic</span>
-<span id="L315"><span class="lineNum">     315</span>              : // permissions, link count, owner, group, size, time (in `tz`), path. The size is</span>
-<span id="L316"><span class="lineNum">     316</span>              : // rendered in `size_units` (human iec/si) or, when nullopt, as raw bytes. The</span>
-<span id="L317"><span class="lineNum">     317</span>              : // aligned renderer (format::ColumnBuffer) consumes these; LsRecord joins them</span>
-<span id="L318"><span class="lineNum">     318</span>              : // single-spaced for the unbuffered fallback.</span>
-<span id="L319"><span class="lineNum">     319</span>              : std::vector&lt;std::string&gt; LsCells(</span>
-<span id="L320"><span class="lineNum">     320</span>              :     const Visit&amp; visit,</span>
-<span id="L321"><span class="lineNum">     321</span>              :     absl::Time now,</span>
-<span id="L322"><span class="lineNum">     322</span>              :     absl::TimeZone tz,</span>
-<span id="L323"><span class="lineNum">     323</span>              :     std::optional&lt;format::SizeUnits&gt; size_units,</span>
-<span id="L324"><span class="lineNum">     324</span>              :     std::string_view color = {});</span>
-<span id="L325"><span class="lineNum">     325</span>              : </span>
-<span id="L326"><span class="lineNum">     326</span>              : // One `-ls` column's alignment and minimum (also fixed, when --buffer=off) width.</span>
-<span id="L327"><span class="lineNum">     327</span>              : struct LsColumn {</span>
-<span id="L328"><span class="lineNum">     328</span>              :   format::Align align;</span>
-<span id="L329"><span class="lineNum">     329</span>              :   std::size_t min_width;</span>
-<span id="L330"><span class="lineNum">     330</span>              : };</span>
-<span id="L331"><span class="lineNum">     331</span>              : </span>
-<span id="L332"><span class="lineNum">     332</span>              : // The `-ls` column layout (alignment + minimum width per column), in LsCells order:</span>
-<span id="L333"><span class="lineNum">     333</span>              : // numeric columns right-aligned, text left; the driver builds the --buffer</span>
-<span id="L334"><span class="lineNum">     334</span>              : // format::ColumnBuffer from this. The minimums are ls -l-like defaults for the</span>
-<span id="L335"><span class="lineNum">     335</span>              : // flexible fields (owner/group/size), a fixed 10 for the permission string, and 0</span>
-<span id="L336"><span class="lineNum">     336</span>              : // for the trailing path.</span>
-<span id="L337"><span class="lineNum">     337</span>              : [[nodiscard]] absl::Span&lt;const LsColumn&gt; LsColumns();</span>
-<span id="L338"><span class="lineNum">     338</span>              : </span>
-<span id="L339"><span class="lineNum">     339</span>              : // The -printf directive vocabulary for `--help=printf`, as {code, description} rows:</span>
-<span id="L340"><span class="lineNum">     340</span>              : // find's % directives (the kPrintfDirectives table), the a/c/t + Ak/Ck/Tk time families,</span>
-<span id="L341"><span class="lineNum">     341</span>              : // the \ escapes, and xff's %{field} escape. evaluate_test guards that it documents every</span>
-<span id="L342"><span class="lineNum">     342</span>              : // directive in PrintfDirectiveLetters().</span>
-<span id="L343"><span class="lineNum">     343</span>              : [[nodiscard]] absl::Span&lt;const std::pair&lt;std::string_view, std::string_view&gt;&gt; PrintfDocs();</span>
-<span id="L344"><span class="lineNum">     344</span>              : </span>
-<span id="L345"><span class="lineNum">     345</span>              : // The letters of find's -printf % directives (the kPrintfDirectives keys), for the</span>
-<span id="L346"><span class="lineNum">     346</span>              : // `--help=printf` coverage guard.</span>
-<span id="L347"><span class="lineNum">     347</span>              : std::string PrintfDirectiveLetters();</span>
+<span id="L294"><span class="lineNum">     294</span>              : struct DiffDefaultDependencies {</span>
+<span id="L295"><span class="lineNum">     295</span>              :   bool format = false;</span>
+<span id="L296"><span class="lineNum">     296</span>              :   bool context = false;</span>
+<span id="L297"><span class="lineNum">     297</span>              : };</span>
+<span id="L298"><span class="lineNum">     298</span>              : </span>
+<span id="L299"><span class="lineNum">     299</span>              : // Uses the same attached-style parser as execution; silent output consumes no display defaults.</span>
+<span id="L300"><span class="lineNum">     300</span>              : DiffDefaultDependencies InspectDiffDefaults(</span>
+<span id="L301"><span class="lineNum">     301</span>              :     std::string_view style,</span>
+<span id="L302"><span class="lineNum">     302</span>              :     mbo::diff::DiffOptions::OutputFormat default_format);</span>
+<span id="L303"><span class="lineNum">     303</span>              : </span>
+<span id="L304"><span class="lineNum">     304</span>              : // Parses a `--diff-format` value into an mbo output format: the letters u/c/n/y (matching the</span>
+<span id="L305"><span class="lineNum">     305</span>              : // -diff:STYLE token) or the long names unified/context/normal/side-by-side; nullopt for an</span>
+<span id="L306"><span class="lineNum">     306</span>              : // unknown value. `none` is intentionally not a format (it is the per-action -diff:none silencer,</span>
+<span id="L307"><span class="lineNum">     307</span>              : // not a default the walk carries). The driver uses it to validate + resolve the global once</span>
+<span id="L308"><span class="lineNum">     308</span>              : // before the walk; -diff then falls back to the resolved format when its own token omits one.</span>
+<span id="L309"><span class="lineNum">     309</span>              : std::optional&lt;mbo::diff::DiffOptions::OutputFormat&gt; ParseDiffFormatFlag(std::string_view flag);</span>
+<span id="L310"><span class="lineNum">     310</span>              : </span>
+<span id="L311"><span class="lineNum">     311</span>              : // Validates every `-hash:ALGO[/ENCODING]` spec in `expr`, returning the first malformed one as</span>
+<span id="L312"><span class="lineNum">     312</span>              : // an InvalidArgument (unknown algorithm or encoding, naming it) or Ok. The driver calls it before</span>
+<span id="L313"><span class="lineNum">     313</span>              : // the walk so a bad `-hash` spec is a usage error (exit 2) rather than a silent per-entry no-op,</span>
+<span id="L314"><span class="lineNum">     314</span>              : // matching how the other payload primaries validate up front.</span>
+<span id="L315"><span class="lineNum">     315</span>              : absl::Status ValidateHashArgs(const parser::Expr&amp; expr);</span>
+<span id="L316"><span class="lineNum">     316</span>              : </span>
+<span id="L317"><span class="lineNum">     317</span>              : // Parses a `--block-size=SIZE` value into bytes: a bare number is bytes; legacy</span>
+<span id="L318"><span class="lineNum">     318</span>              : // c/w/k/M/G/T/P/E units are binary; explicit B/kB/.../EB units are SI and</span>
+<span id="L319"><span class="lineNum">     319</span>              : // KiB/.../EiB units are IEC. Lowercase 'b' and overflow are rejected. The result is</span>
+<span id="L320"><span class="lineNum">     320</span>              : // for a bare `-size N` and the `-size Nb` unit (find's default is 512). Returns an</span>
+<span id="L321"><span class="lineNum">     321</span>              : // InvalidArgument status (naming the problem) for a malformed or zero size.</span>
+<span id="L322"><span class="lineNum">     322</span>              : absl::StatusOr&lt;std::uint64_t&gt; ParseBlockSize(std::string_view spec);</span>
+<span id="L323"><span class="lineNum">     323</span>              : </span>
+<span id="L324"><span class="lineNum">     324</span>              : // The `-ls` columns for one entry, in display order: inode, 1 KiB blocks, symbolic</span>
+<span id="L325"><span class="lineNum">     325</span>              : // permissions, link count, owner, group, size, time (in `tz`), path. The size is</span>
+<span id="L326"><span class="lineNum">     326</span>              : // rendered in `size_units` (human iec/si) or, when nullopt, as raw bytes. The</span>
+<span id="L327"><span class="lineNum">     327</span>              : // aligned renderer (format::ColumnBuffer) consumes these; LsRecord joins them</span>
+<span id="L328"><span class="lineNum">     328</span>              : // single-spaced for the unbuffered fallback.</span>
+<span id="L329"><span class="lineNum">     329</span>              : std::vector&lt;std::string&gt; LsCells(</span>
+<span id="L330"><span class="lineNum">     330</span>              :     const Visit&amp; visit,</span>
+<span id="L331"><span class="lineNum">     331</span>              :     absl::Time now,</span>
+<span id="L332"><span class="lineNum">     332</span>              :     absl::TimeZone tz,</span>
+<span id="L333"><span class="lineNum">     333</span>              :     std::optional&lt;format::SizeUnits&gt; size_units,</span>
+<span id="L334"><span class="lineNum">     334</span>              :     std::string_view color = {});</span>
+<span id="L335"><span class="lineNum">     335</span>              : </span>
+<span id="L336"><span class="lineNum">     336</span>              : // One `-ls` column's alignment and minimum (also fixed, when --buffer=off) width.</span>
+<span id="L337"><span class="lineNum">     337</span>              : struct LsColumn {</span>
+<span id="L338"><span class="lineNum">     338</span>              :   format::Align align;</span>
+<span id="L339"><span class="lineNum">     339</span>              :   std::size_t min_width;</span>
+<span id="L340"><span class="lineNum">     340</span>              : };</span>
+<span id="L341"><span class="lineNum">     341</span>              : </span>
+<span id="L342"><span class="lineNum">     342</span>              : // The `-ls` column layout (alignment + minimum width per column), in LsCells order:</span>
+<span id="L343"><span class="lineNum">     343</span>              : // numeric columns right-aligned, text left; the driver builds the --buffer</span>
+<span id="L344"><span class="lineNum">     344</span>              : // format::ColumnBuffer from this. The minimums are ls -l-like defaults for the</span>
+<span id="L345"><span class="lineNum">     345</span>              : // flexible fields (owner/group/size), a fixed 10 for the permission string, and 0</span>
+<span id="L346"><span class="lineNum">     346</span>              : // for the trailing path.</span>
+<span id="L347"><span class="lineNum">     347</span>              : [[nodiscard]] absl::Span&lt;const LsColumn&gt; LsColumns();</span>
 <span id="L348"><span class="lineNum">     348</span>              : </span>
-<span id="L349"><span class="lineNum">     349</span>              : // The -size unit vocabulary for `--help=size`, as {code, description} rows: the unit</span>
-<span id="L350"><span class="lineNum">     350</span>              : // legacy suffixes, explicit SI/IEC suffixes, the block default, and +/- comparison.</span>
-<span id="L351"><span class="lineNum">     351</span>              : // evaluate_test guards that it covers SizeUnitSuffixes().</span>
-<span id="L352"><span class="lineNum">     352</span>              : [[nodiscard]] absl::Span&lt;const std::pair&lt;std::string_view, std::string_view&gt;&gt; SizeUnitDocs();</span>
-<span id="L353"><span class="lineNum">     353</span>              : </span>
-<span id="L354"><span class="lineNum">     354</span>              : // The -size unit suffixes (the kSizeUnits keys), for the `--help=size` coverage guard.</span>
-<span id="L355"><span class="lineNum">     355</span>              : std::string SizeUnitSuffixes();</span>
-<span id="L356"><span class="lineNum">     356</span>              : </span>
-<span id="L357"><span class="lineNum">     357</span>              : }  // namespace xff::engine</span>
+<span id="L349"><span class="lineNum">     349</span>              : // The -printf directive vocabulary for `--help=printf`, as {code, description} rows:</span>
+<span id="L350"><span class="lineNum">     350</span>              : // find's % directives (the kPrintfDirectives table), the a/c/t + Ak/Ck/Tk time families,</span>
+<span id="L351"><span class="lineNum">     351</span>              : // the \ escapes, and xff's %{field} escape. evaluate_test guards that it documents every</span>
+<span id="L352"><span class="lineNum">     352</span>              : // directive in PrintfDirectiveLetters().</span>
+<span id="L353"><span class="lineNum">     353</span>              : [[nodiscard]] absl::Span&lt;const std::pair&lt;std::string_view, std::string_view&gt;&gt; PrintfDocs();</span>
+<span id="L354"><span class="lineNum">     354</span>              : </span>
+<span id="L355"><span class="lineNum">     355</span>              : // The letters of find's -printf % directives (the kPrintfDirectives keys), for the</span>
+<span id="L356"><span class="lineNum">     356</span>              : // `--help=printf` coverage guard.</span>
+<span id="L357"><span class="lineNum">     357</span>              : std::string PrintfDirectiveLetters();</span>
 <span id="L358"><span class="lineNum">     358</span>              : </span>
-<span id="L359"><span class="lineNum">     359</span>              : #endif  // XFF_ENGINE_EVALUATE_H_</span>
+<span id="L359"><span class="lineNum">     359</span>              : // The -size unit vocabulary for `--help=size`, as {code, description} rows: the unit</span>
+<span id="L360"><span class="lineNum">     360</span>              : // legacy suffixes, explicit SI/IEC suffixes, the block default, and +/- comparison.</span>
+<span id="L361"><span class="lineNum">     361</span>              : // evaluate_test guards that it covers SizeUnitSuffixes().</span>
+<span id="L362"><span class="lineNum">     362</span>              : [[nodiscard]] absl::Span&lt;const std::pair&lt;std::string_view, std::string_view&gt;&gt; SizeUnitDocs();</span>
+<span id="L363"><span class="lineNum">     363</span>              : </span>
+<span id="L364"><span class="lineNum">     364</span>              : // The -size unit suffixes (the kSizeUnits keys), for the `--help=size` coverage guard.</span>
+<span id="L365"><span class="lineNum">     365</span>              : std::string SizeUnitSuffixes();</span>
+<span id="L366"><span class="lineNum">     366</span>              : </span>
+<span id="L367"><span class="lineNum">     367</span>              : }  // namespace xff::engine</span>
+<span id="L368"><span class="lineNum">     368</span>              : </span>
+<span id="L369"><span class="lineNum">     369</span>              : #endif  // XFF_ENGINE_EVALUATE_H_</span>
         </pre>
               </td>
             </tr>
