@@ -1907,6 +1907,8 @@ Section GuideSection() {
       ProseOf(
           "xff has no subcommands; every kind of help is a flag. `--help` is this usage overview; "
           "`--help=NAME` documents one option or primary (e.g. `--help=-regex`, `--help=--sort`); "
+          "Unknown help selectors suggest up to three similar registered flags, primaries, topics, or aliases; "
+          "suggestions never select a page or run actions automatically. "
           "Option and primary pages append at most one related topic for context. "
           "`--help=TOPIC` opens one of the topics below; `--help=full` is the complete detailed reference. "
           "Append `:markdown` (or `:md`), `:html`, or `:roff` to select a non-console renderer, for example "

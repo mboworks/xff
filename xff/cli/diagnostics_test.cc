@@ -32,6 +32,24 @@ TEST_F(DiagnosticsTest, SuggestsOneEditIncludingTranspositionWithoutGuessingValu
   }
 }
 
+TEST_F(DiagnosticsTest, SuggestsHelpFlagsTopicsPrimariesAndAliases) {
+  EXPECT_THAT(UnknownGlobalHint("--wildth"), HasSubstr("'--width'"));
+  EXPECT_THAT(UnknownHelpHint("wildth"), HasSubstr("'--help=width'"));
+  EXPECT_THAT(UnknownHelpHint("--wildth"), HasSubstr("'--help=--width'"));
+  EXPECT_THAT(UnknownHelpHint("comapre"), Eq("Did you mean '--help=compare'?\n"));
+  EXPECT_THAT(UnknownHelpHint("recpies"), HasSubstr("'--help=recipes'"));
+  EXPECT_THAT(UnknownHelpHint("-naem"), HasSubstr("'--help=-name'"));
+  EXPECT_THAT(UnknownHelpHint("WILDTH"), Eq(UnknownHelpHint("wildth")));
+  EXPECT_THAT(UnknownHelpHint("--require-system-globalz"), HasSubstr("'--help=--require-system-globals'"));
+}
+
+TEST_F(DiagnosticsTest, HelpHintsDoNotGuessKnownSelectorsValuesOrUnrelatedInput) {
+  for (const std::string_view selector : {"width", "--width", "recipes", "regex", "zzzzzzzz", "x", "license=wildth"}) {
+    EXPECT_THAT(UnknownHelpHint(selector), Eq("")) << selector;
+  }
+  EXPECT_THAT(UnknownHelpHint(std::string(10'000, 'x')), Eq(""));
+}
+
 TEST_F(DiagnosticsTest, RanksMultiEditLongNamesAboveWeakerMatches) {
   EXPECT_THAT(UnknownGlobalHint("--summary-scp=all"), HasSubstr("Did you mean '--summary-scope'"));
   EXPECT_THAT(UnknownGlobalHint("--summary-scp=all"), Not(HasSubstr("=all")));

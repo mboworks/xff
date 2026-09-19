@@ -15,6 +15,9 @@ namespace xff::cli {
 // Empty when no close registered CLI spelling is available. Includes its final newline.
 std::string UnknownGlobalHint(std::string_view token);
 
+// Suggest registered help selectors (including config-only flags); never resolve automatically.
+std::string UnknownHelpHint(std::string_view selector);
+
 // Consumes parser provenance, never scans arbitrary argv or matches diagnostic prose.
 std::string ParseErrorHint(const absl::Status& status);
 

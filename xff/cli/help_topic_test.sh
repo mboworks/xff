@@ -586,4 +586,22 @@ test::ini_width_preferences_apply_to_comparison_summaries() {
   expect_eq "${expected}" "${actual}"
 }
 
+test::unknown_help_selectors_suggest_registered_spellings_without_running_actions() {
+  local selector expected out rc tmp
+  tmp="$(test_tmpdir)"
+  for selector in wildth --wildth comapre recpies -naem; do
+    case "${selector}" in
+      wildth) expected=width ;;
+      --wildth) expected=--width ;;
+      comapre) expected=compare ;;
+      recpies) expected=recipes ;;
+      -naem) expected=-name ;;
+    esac
+    out="$("$(_xff_bin)" "--help=${selector}" "${tmp}" -exec touch "${tmp}/must-not-exist" ';' 2>&1)" && rc=0 || rc=$?
+    expect_eq 2 "${rc}"
+    expect_output_contains "'--help=${expected}'" "${out}"
+  done
+  expect_eq absent "$(if [[ -e "${tmp}/must-not-exist" ]]; then echo present; else echo absent; fi)"
+}
+
 test_runner

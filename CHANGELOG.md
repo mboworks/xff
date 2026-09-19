@@ -3,6 +3,8 @@
 
 # 0.7.0
 
+- Suggest similar registered flags, primaries, topics, and aliases for misspelled help selectors.
+
 - Order coverage reports by actual PR merge and tag timestamps, with main pinned first.
   Omit closed, unmerged PRs from the overview while retaining their reports.
 
