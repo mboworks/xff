@@ -1,0 +1,1585 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - xff production coverage - program-execution/xff/engine/run.cc - functions</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+  <style>
+    .xffNavigation { padding: .35rem 0; text-align: center; }
+    .xffHeaderSummary { margin: 0 auto; width: 80%; }
+    .xffPolicy { border-collapse: collapse; margin: .75rem auto 1rem; width: auto; }
+    .xffPolicy th { padding: .2rem .75rem; text-align: left; }
+    .xffPolicy td { font-size: 100%; padding: .2rem .75rem; text-align: center; }
+  </style>
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="xffNavigation"><a href="../../../../index.html">Report overview</a> &middot; <a href="../../../../../../index.html">All coverage reports</a></td></tr>
+
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table class="xffHeaderSummary" cellpadding=1 border=0>
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../index.html" title="Click to go to top-level">top level</a> - <a href="index.html" title="Click to go to directory program-execution/xff/engine">program-execution/xff/engine</a> - run.cc<span style="font-size: 80%;"> (<a href="run.cc.gcov.html" title="Click to go to source detail">source</a> / functions)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">xff production coverage</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">95.0&nbsp;%</td>
+            <td class="headerCovTableEntry">3547</td>
+            <td class="headerCovTableEntry">3368</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-09-05 20:57:20</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">97.3&nbsp;%</td>
+            <td class="headerCovTableEntry">182</td>
+            <td class="headerCovTableEntry">177</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryHi">85.9&nbsp;%</td>
+            <td class="headerCovTableEntry">2298</td>
+            <td class="headerCovTableEntry">1973</td>
+          </tr>
+                  <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <center>
+          <table cellpadding=1 cellspacing=1 border=0>
+            <tr><td><br></td></tr>
+            <tr>
+              <td class="tableHead">Function Name <span  title="Click to sort table by function name" class="tableHeadSort"><img src="../../../glass.png" width=10 height=14 alt="Sort by function name" title="Click to sort table by function name" border=0></span></td>
+              
+              <td class="tableHead">Hit count <span  title="Click to sort table by function hit count" class="tableHeadSort"><a href="run.cc.func-c.html"><img src="../../../updown.png" width=10 height=14 alt="Sort by function hit count" title="Click to sort table by function hit count" border=0></a></span></td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L226">run.cc:auto xff::engine::(anonymous namespace)::EmitRanked(std::__1::vector&lt;std::__1::pair&lt;int, std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;int, std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; &gt;&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt; const&amp;)::$_0::operator()&lt;std::__1::pair&lt;int, std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::pair&lt;int, std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt;(std::__1::pair&lt;int, std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; const&amp;, std::__1::pair&lt;int, std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; const&amp;) const</a></td>
+              
+              <td class="coverFnHi">4</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1487">run.cc:int xff::engine::(anonymous namespace)::ResolveDeferredRound&lt;xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_9&gt;(std::__1::vector&lt;xff::engine::(anonymous namespace)::DeferredCandidate, std::__1::allocator&lt;xff::engine::(anonymous namespace)::DeferredCandidate&gt; &gt;&amp;, std::__1::map&lt;xff::engine::ExprIdentity, unsigned long, std::__1::less&lt;xff::engine::ExprIdentity&gt;, std::__1::allocator&lt;std::__1::pair&lt;xff::engine::ExprIdentity const, unsigned long&gt; &gt; &gt; const&amp;, xff::shard::Matcher const&amp;, xff::shard::Dedup, xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_9 const&amp;, bool)</a></td>
+              
+              <td class="coverFnHi">20</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1462">run.cc:int xff::engine::(anonymous namespace)::ResolveShardStatusRound&lt;xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_9&gt;(xff::parser::Expr const&amp;, std::__1::vector&lt;std::__1::reference_wrapper&lt;xff::engine::(anonymous namespace)::DeferredCandidate&gt;, std::__1::allocator&lt;std::__1::reference_wrapper&lt;xff::engine::(anonymous namespace)::DeferredCandidate&gt; &gt; &gt; const&amp;, xff::shard::Matcher const&amp;, xff::shard::Dedup, xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_9 const&amp;, bool)</a></td>
+              
+              <td class="coverFnHi">13</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4946">run.cc:xff::engine::(anonymous namespace)::$_31::operator()(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, xff::registry::Style) const</a></td>
+              
+              <td class="coverFnHi">43</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4950">run.cc:xff::engine::(anonymous namespace)::$_32::operator()(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, xff::registry::Style) const</a></td>
+              
+              <td class="coverFnHi">43</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4954">run.cc:xff::engine::(anonymous namespace)::$_33::operator()(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, xff::registry::Style) const</a></td>
+              
+              <td class="coverFnHi">43</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4958">run.cc:xff::engine::(anonymous namespace)::$_34::operator()(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, xff::registry::Style) const</a></td>
+              
+              <td class="coverFnHi">43</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4962">run.cc:xff::engine::(anonymous namespace)::$_35::operator()(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, xff::registry::Style) const</a></td>
+              
+              <td class="coverFnHi">43</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1558">run.cc:xff::engine::(anonymous namespace)::AbsoluteDir(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">89</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L332">run.cc:xff::engine::(anonymous namespace)::AllSummaryTemplates(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">661</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2320">run.cc:xff::engine::(anonymous namespace)::AnyRootInRepo(xff::vfs::FileSystem const&amp;, std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">13</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2322">run.cc:xff::engine::(anonymous namespace)::AnyRootInRepo(xff::vfs::FileSystem const&amp;, std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)::$_0::operator()(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;) const</a></td>
+              
+              <td class="coverFnHi">13</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2395">run.cc:xff::engine::(anonymous namespace)::AppendCaptureNames(xff::parser::Expr const&amp;, std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt;&amp;)</a></td>
+              
+              <td class="coverFnHi">2874</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2477">run.cc:xff::engine::(anonymous namespace)::AppendCaptureRefs(xff::parser::Expr const&amp;, std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt;&amp;)</a></td>
+              
+              <td class="coverFnHi">39</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1346">run.cc:xff::engine::(anonymous namespace)::AppendDeferredNodes(xff::parser::Expr const&amp;, std::__1::vector&lt;xff::engine::ExprIdentity, std::__1::allocator&lt;xff::engine::ExprIdentity&gt; &gt;&amp;)</a></td>
+              
+              <td class="coverFnHi">1339</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1440">run.cc:xff::engine::(anonymous namespace)::ApplyShardStatus(xff::shard::ShardSet const&amp;, std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, xff::parser::Expr const&amp;, std::__1::vector&lt;std::__1::reference_wrapper&lt;xff::engine::(anonymous namespace)::DeferredCandidate&gt;, std::__1::allocator&lt;std::__1::reference_wrapper&lt;xff::engine::(anonymous namespace)::DeferredCandidate&gt; &gt; &gt; const&amp;, std::__1::map&lt;std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, std::__1::vector&lt;unsigned long, std::__1::allocator&lt;unsigned long&gt; &gt;, std::__1::less&lt;std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt; const, std::__1::vector&lt;unsigned long, std::__1::allocator&lt;unsigned long&gt; &gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">12</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1919">run.cc:xff::engine::(anonymous namespace)::ArchiveDiveOf(xff::engine::(anonymous namespace)::ArchiveMode)</a></td>
+              
+              <td class="coverFnHi">146</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2075">run.cc:xff::engine::(anonymous namespace)::ArchiveModeName(xff::engine::(anonymous namespace)::ArchiveMode)</a></td>
+              
+              <td class="coverFnLo">0</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2174">run.cc:xff::engine::(anonymous namespace)::BasenameOf(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">25</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1541">run.cc:xff::engine::(anonymous namespace)::BuildIgnorePatterns(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">796</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4933">run.cc:xff::engine::(anonymous namespace)::CaseName(xff::parser::CaseMode)</a></td>
+              
+              <td class="coverFnHi">43</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2034">run.cc:xff::engine::(anonymous namespace)::CheckPackOptionNames(std::__1::vector&lt;xff::archive::PackOption, std::__1::allocator&lt;xff::archive::PackOption&gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">30</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2037">run.cc:xff::engine::(anonymous namespace)::CheckPackOptionNames(std::__1::vector&lt;xff::archive::PackOption, std::__1::allocator&lt;xff::archive::PackOption&gt; &gt; const&amp;)::$_0::operator()(xff::archive::PackOptionInfo const&amp;) const</a></td>
+              
+              <td class="coverFnHi">89</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2047">run.cc:xff::engine::(anonymous namespace)::CheckPackOptionNames(std::__1::vector&lt;xff::archive::PackOption, std::__1::allocator&lt;xff::archive::PackOption&gt; &gt; const&amp;)::$_1::operator()(std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;*, xff::archive::PackOptionInfo const&amp;) const</a></td>
+              
+              <td class="coverFnHi">16</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2417">run.cc:xff::engine::(anonymous namespace)::CollectCaptureNames(xff::parser::Expr const&amp;)</a></td>
+              
+              <td class="coverFnHi">1324</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2500">run.cc:xff::engine::(anonymous namespace)::CollectCaptureRefs(xff::parser::Expr const&amp;)</a></td>
+              
+              <td class="coverFnHi">10</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L141">run.cc:xff::engine::(anonymous namespace)::CombineDepthOptions(xff::engine::(anonymous namespace)::DepthOptions, xff::engine::(anonymous namespace)::DepthOptions const&amp;)</a></td>
+              
+              <td class="coverFnHi">379</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L970">run.cc:xff::engine::(anonymous namespace)::ContainsArmedAction(xff::parser::Expr const&amp;)</a></td>
+              
+              <td class="coverFnHi">2</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L987">run.cc:xff::engine::(anonymous namespace)::ContainsPrimary(xff::parser::Expr const&amp;, std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">2780</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1004">run.cc:xff::engine::(anonymous namespace)::CountPrimary(xff::parser::Expr const&amp;, std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">28</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L187">run.cc:xff::engine::(anonymous namespace)::DefaultWorkers(std::__1::optional&lt;xff::registry::Style&gt;)</a></td>
+              
+              <td class="coverFnHi">784</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L491">run.cc:xff::engine::(anonymous namespace)::DepthBucket(int)</a></td>
+              
+              <td class="coverFnHi">5</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L947">run.cc:xff::engine::(anonymous namespace)::DryRunFileSystem::Access(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, xff::vfs::AccessMode) const</a></td>
+              
+              <td class="coverFnLo">0</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L939">run.cc:xff::engine::(anonymous namespace)::DryRunFileSystem::DryRunFileSystem(xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;)</a></td>
+              
+              <td class="coverFnHi">711</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L951">run.cc:xff::engine::(anonymous namespace)::DryRunFileSystem::FsType(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;) const</a></td>
+              
+              <td class="coverFnLo">0</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L953">run.cc:xff::engine::(anonymous namespace)::DryRunFileSystem::IsCaseSensitive(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;) const</a></td>
+              
+              <td class="coverFnHi">4</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L955">run.cc:xff::engine::(anonymous namespace)::DryRunFileSystem::ReadContent(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;) const</a></td>
+              
+              <td class="coverFnLo">0</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L941">run.cc:xff::engine::(anonymous namespace)::DryRunFileSystem::ReadDir(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;) const</a></td>
+              
+              <td class="coverFnHi">6</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L949">run.cc:xff::engine::(anonymous namespace)::DryRunFileSystem::ReadLink(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;) const</a></td>
+              
+              <td class="coverFnLo">0</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L957">run.cc:xff::engine::(anonymous namespace)::DryRunFileSystem::Remove(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;) const</a></td>
+              
+              <td class="coverFnHi">2</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L943">run.cc:xff::engine::(anonymous namespace)::DryRunFileSystem::Stat(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, bool) const</a></td>
+              
+              <td class="coverFnHi">22</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2424">run.cc:xff::engine::(anonymous namespace)::DuplicateCaptureName(xff::parser::Expr const&amp;)</a></td>
+              
+              <td class="coverFnHi">663</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2434">run.cc:xff::engine::(anonymous namespace)::DuplicateCollectionName(xff::parser::Expr const&amp;)</a></td>
+              
+              <td class="coverFnHi">662</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L224">run.cc:xff::engine::(anonymous namespace)::EmitRanked(std::__1::vector&lt;std::__1::pair&lt;int, std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;int, std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; &gt;&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">3</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L3024">run.cc:xff::engine::(anonymous namespace)::FeedCollections(xff::engine::Collections const&amp;, xff::engine::(anonymous namespace)::CollectionRenderDefaults const&amp;, std::__1::vector&lt;xff::engine::(anonymous namespace)::SummarySpec, std::__1::allocator&lt;xff::engine::(anonymous namespace)::SummarySpec&gt; &gt; const&amp;, std::__1::vector&lt;std::__1::optional&lt;xff::fields::Template&gt;, std::__1::allocator&lt;std::__1::optional&lt;xff::fields::Template&gt; &gt; &gt; const&amp;, std::__1::vector&lt;std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::pair&lt;unsigned long, unsigned long&gt;, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, std::__1::pair&lt;unsigned long, unsigned long&gt; &gt; &gt; &gt;, std::__1::allocator&lt;std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::pair&lt;unsigned long, unsigned long&gt;, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, std::__1::pair&lt;unsigned long, unsigned long&gt; &gt; &gt; &gt; &gt; &gt;&amp;, std::__1::vector&lt;xff::engine::(anonymous namespace)::HistogramSpec, std::__1::allocator&lt;xff::engine::(anonymous namespace)::HistogramSpec&gt; &gt; const&amp;, std::__1::vector&lt;std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, xff::engine::(anonymous namespace)::HistCell, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, xff::engine::(anonymous namespace)::HistCell&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, xff::engine::(anonymous namespace)::HistCell, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, xff::engine::(anonymous namespace)::HistCell&gt; &gt; &gt; &gt; &gt;&amp;)</a></td>
+              
+              <td class="coverFnHi">11</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2968">run.cc:xff::engine::(anonymous namespace)::FeedHistograms(std::__1::vector&lt;xff::engine::(anonymous namespace)::HistogramSpec, std::__1::allocator&lt;xff::engine::(anonymous namespace)::HistogramSpec&gt; &gt; const&amp;, std::__1::vector&lt;std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, xff::engine::(anonymous namespace)::HistCell, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, xff::engine::(anonymous namespace)::HistCell&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, xff::engine::(anonymous namespace)::HistCell, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, xff::engine::(anonymous namespace)::HistCell&gt; &gt; &gt; &gt; &gt;&amp;, xff::engine::Visit const&amp;, xff::vfs::FileSystem const&amp;)</a></td>
+              
+              <td class="coverFnHi">328</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2896">run.cc:xff::engine::(anonymous namespace)::FeedSummaries(std::__1::vector&lt;xff::engine::(anonymous namespace)::SummarySpec, std::__1::allocator&lt;xff::engine::(anonymous namespace)::SummarySpec&gt; &gt; const&amp;, std::__1::vector&lt;std::__1::optional&lt;xff::fields::Template&gt;, std::__1::allocator&lt;std::__1::optional&lt;xff::fields::Template&gt; &gt; &gt; const&amp;, std::__1::vector&lt;std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::pair&lt;unsigned long, unsigned long&gt;, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, std::__1::pair&lt;unsigned long, unsigned long&gt; &gt; &gt; &gt;, std::__1::allocator&lt;std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::pair&lt;unsigned long, unsigned long&gt;, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, std::__1::pair&lt;unsigned long, unsigned long&gt; &gt; &gt; &gt; &gt; &gt;&amp;, xff::fields::RenderContext const&amp;, xff::engine::Visit const&amp;)</a></td>
+              
+              <td class="coverFnHi">328</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2933">run.cc:xff::engine::(anonymous namespace)::FeedVerificationSummaries(std::__1::vector&lt;xff::engine::(anonymous namespace)::SummarySpec, std::__1::allocator&lt;xff::engine::(anonymous namespace)::SummarySpec&gt; &gt; const&amp;, std::__1::vector&lt;std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::pair&lt;unsigned long, unsigned long&gt;, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, std::__1::pair&lt;unsigned long, unsigned long&gt; &gt; &gt; &gt;, std::__1::allocator&lt;std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::pair&lt;unsigned long, unsigned long&gt;, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, std::__1::pair&lt;unsigned long, unsigned long&gt; &gt; &gt; &gt; &gt; &gt;&amp;, xff::engine::Visit const&amp;, std::__1::optional&lt;bool&gt;)</a></td>
+              
+              <td class="coverFnHi">3652</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2513">run.cc:xff::engine::(anonymous namespace)::FindScalarExtraction(xff::parser::Expr const&amp;)</a></td>
+              
+              <td class="coverFnHi">1430</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L3063">run.cc:xff::engine::(anonymous namespace)::FinishCollections(xff::engine::Collections const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::vector&lt;xff::engine::(anonymous namespace)::SummarySpec, std::__1::allocator&lt;xff::engine::(anonymous namespace)::SummarySpec&gt; &gt; const&amp;, std::__1::vector&lt;std::__1::optional&lt;xff::fields::Template&gt;, std::__1::allocator&lt;std::__1::optional&lt;xff::fields::Template&gt; &gt; &gt; const&amp;, std::__1::vector&lt;std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::pair&lt;unsigned long, unsigned long&gt;, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, std::__1::pair&lt;unsigned long, unsigned long&gt; &gt; &gt; &gt;, std::__1::allocator&lt;std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::pair&lt;unsigned long, unsigned long&gt;, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, std::__1::pair&lt;unsigned long, unsigned long&gt; &gt; &gt; &gt; &gt; &gt;&amp;, std::__1::vector&lt;xff::engine::(anonymous namespace)::HistogramSpec, std::__1::allocator&lt;xff::engine::(anonymous namespace)::HistogramSpec&gt; &gt; const&amp;, std::__1::vector&lt;std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, xff::engine::(anonymous namespace)::HistCell, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, xff::engine::(anonymous namespace)::HistCell&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, xff::engine::(anonymous namespace)::HistCell, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, xff::engine::(anonymous namespace)::HistCell&gt; &gt; &gt; &gt; &gt;&amp;, xff::engine::(anonymous namespace)::CollectionRenderDefaults const&amp;)</a></td>
+              
+              <td class="coverFnHi">710</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2837">run.cc:xff::engine::(anonymous namespace)::FlushArchiveDeletions(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, xff::archive::MemberPathOptions const&amp;, bool, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;)</a></td>
+              
+              <td class="coverFnHi">4</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4903">run.cc:xff::engine::(anonymous namespace)::GitignoreName(xff::engine::(anonymous namespace)::GitignoreMode)</a></td>
+              
+              <td class="coverFnHi">43</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1910">run.cc:xff::engine::(anonymous namespace)::HasArchiveFlag(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">599</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1911">run.cc:xff::engine::(anonymous namespace)::HasArchiveFlag(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)::$_0::operator()(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;) const</a></td>
+              
+              <td class="coverFnHi">619</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1787">run.cc:xff::engine::(anonymous namespace)::HasGlobal(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">9076</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1788">run.cc:xff::engine::(anonymous namespace)::HasGlobal(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)::$_0::operator()(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;) const</a></td>
+              
+              <td class="coverFnHi">10087</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4912">run.cc:xff::engine::(anonymous namespace)::HiddenName(bool)</a></td>
+              
+              <td class="coverFnHi">43</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L501">run.cc:xff::engine::(anonymous namespace)::HistBucketKey(xff::engine::(anonymous namespace)::HistogramSpec const&amp;, xff::engine::Visit const&amp;, xff::vfs::FileSystem const&amp;)</a></td>
+              
+              <td class="coverFnHi">80</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L616">run.cc:xff::engine::(anonymous namespace)::HistMeasureValue(xff::engine::(anonymous namespace)::HistAgg, xff::engine::(anonymous namespace)::HistCell const&amp;, unsigned int)</a></td>
+              
+              <td class="coverFnHi">41</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L617">run.cc:xff::engine::(anonymous namespace)::HistMeasureValue(xff::engine::(anonymous namespace)::HistAgg, xff::engine::(anonymous namespace)::HistCell const&amp;, unsigned int)::$_0::operator()(unsigned long) const</a></td>
+              
+              <td class="coverFnHi">40</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L591">run.cc:xff::engine::(anonymous namespace)::HistogramBar(double, unsigned long, bool)</a></td>
+              
+              <td class="coverFnHi">15</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2947">run.cc:xff::engine::(anonymous namespace)::HistogramValue(xff::engine::(anonymous namespace)::HistogramSpec const&amp;, xff::engine::Visit const&amp;, xff::vfs::FileSystem const&amp;)</a></td>
+              
+              <td class="coverFnHi">78</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4916">run.cc:xff::engine::(anonymous namespace)::HumanName(std::__1::optional&lt;xff::format::SizeUnits&gt;)</a></td>
+              
+              <td class="coverFnHi">43</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1590">run.cc:xff::engine::(anonymous namespace)::IgnoreFileCache::Active() const</a></td>
+              
+              <td class="coverFnHi">4232</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1592">run.cc:xff::engine::(anonymous namespace)::IgnoreFileCache::Decide(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, bool)</a></td>
+              
+              <td class="coverFnHi">253</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1585">run.cc:xff::engine::(anonymous namespace)::IgnoreFileCache::IgnoreFileCache(xff::vfs::FileSystem const&amp;, std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt;, bool, xff::ignore::PatternList)</a></td>
+              
+              <td class="coverFnHi">729</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1670">run.cc:xff::engine::(anonymous namespace)::IgnoreFileCache::ListFor(std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">294</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1686">run.cc:xff::engine::(anonymous namespace)::IgnoreFileCache::RepoExcludeFor(std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">85</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1651">run.cc:xff::engine::(anonymous namespace)::IgnoreFileCache::ScopeFor(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">253</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1380">run.cc:xff::engine::(anonymous namespace)::IndexCandidatesByDirectory(std::__1::vector&lt;std::__1::reference_wrapper&lt;xff::engine::(anonymous namespace)::DeferredCandidate&gt;, std::__1::allocator&lt;std::__1::reference_wrapper&lt;xff::engine::(anonymous namespace)::DeferredCandidate&gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">13</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1096">run.cc:xff::engine::(anonymous namespace)::InspectScoreDomain(xff::parser::Expr const&amp;, xff::engine::(anonymous namespace)::ScoreDomain&amp;)</a></td>
+              
+              <td class="coverFnHi">74</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1169">run.cc:xff::engine::(anonymous namespace)::InspectTopFlow(xff::parser::Expr const&amp;, bool)</a></td>
+              
+              <td class="coverFnHi">1410</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L412">run.cc:xff::engine::(anonymous namespace)::IsNumericBucket(xff::engine::(anonymous namespace)::HistBucket)</a></td>
+              
+              <td class="coverFnHi">24</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2800">run.cc:xff::engine::(anonymous namespace)::JsonQuote(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">96</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L477">run.cc:xff::engine::(anonymous namespace)::MagnitudeBucket(unsigned long)</a></td>
+              
+              <td class="coverFnHi">8</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2996">run.cc:xff::engine::(anonymous namespace)::MakeCollections(mbo::types::OptionalRef&lt;xff::parser::Expr const&gt;, std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">711</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2182">run.cc:xff::engine::(anonymous namespace)::MakeContainerMounter(xff::vfs::FileSystem const&amp;, xff::archive::MemberPathOptions const&amp;, bool)</a></td>
+              
+              <td class="coverFnHi">710</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2185">run.cc:xff::engine::(anonymous namespace)::MakeContainerMounter(xff::vfs::FileSystem const&amp;, xff::archive::MemberPathOptions const&amp;, bool)::$_0::operator()(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, xff::vfs::FileSystem const&amp;, int) const</a></td>
+              
+              <td class="coverFnHi">96</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1334">run.cc:xff::engine::(anonymous namespace)::OwnVisit(xff::engine::Visit const&amp;)</a></td>
+              
+              <td class="coverFnHi">91</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2069">run.cc:xff::engine::(anonymous namespace)::PackIdentity(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">29</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2058">run.cc:xff::engine::(anonymous namespace)::PackMemberName(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">58</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L646">run.cc:xff::engine::(anonymous namespace)::ParseContextSpec(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">9</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L441">run.cc:xff::engine::(anonymous namespace)::ParseHistMeasure(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">9</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L89">run.cc:xff::engine::(anonymous namespace)::ParseNonNegInt(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">907</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2217">run.cc:xff::engine::(anonymous namespace)::ReadHashDefaults(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">743</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1935">run.cc:xff::engine::(anonymous namespace)::ReadMemberPathOptions(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">743</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1965">run.cc:xff::engine::(anonymous namespace)::ReadPackOptionFile(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">10</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2001">run.cc:xff::engine::(anonymous namespace)::ReadPackOptions(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">726</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1951">run.cc:xff::engine::(anonymous namespace)::ReadPackTarget(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">726</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1524">run.cc:xff::engine::(anonymous namespace)::RelativeTo(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">755</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2787">run.cc:xff::engine::(anonymous namespace)::RenderShardSet(xff::shard::ShardSet const&amp;, std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, xff::engine::(anonymous namespace)::ShardShow)</a></td>
+              
+              <td class="coverFnHi">9</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2454">run.cc:xff::engine::(anonymous namespace)::ReportDuplicateBindingName(xff::parser::Expr const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;)</a></td>
+              
+              <td class="coverFnHi">663</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1361">run.cc:xff::engine::(anonymous namespace)::ReportShardDuplicateErrors(xff::shard::ShardSet const&amp;, std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">2</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2097">run.cc:xff::engine::(anonymous namespace)::ResolveArchiveAggregate(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">712</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1846">run.cc:xff::engine::(anonymous namespace)::ResolveArchiveMode(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, std::__1::optional&lt;xff::registry::Style&gt;)</a></td>
+              
+              <td class="coverFnHi">745</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2135">run.cc:xff::engine::(anonymous namespace)::ResolveArchiveOptions(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, std::__1::optional&lt;xff::registry::Style&gt;)</a></td>
+              
+              <td class="coverFnHi">745</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1880">run.cc:xff::engine::(anonymous namespace)::ResolveArchiveWrite(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">726</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L850">run.cc:xff::engine::(anonymous namespace)::ResolveBlockSize(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">775</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2612">run.cc:xff::engine::(anonymous namespace)::ResolveBufferBound(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, unsigned long)</a></td>
+              
+              <td class="coverFnHi">727</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L781">run.cc:xff::engine::(anonymous namespace)::ResolveColumns(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">783</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1513">run.cc:xff::engine::(anonymous namespace)::ResolveDeferredRound&lt;xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_9&gt;(std::__1::vector&lt;xff::engine::(anonymous namespace)::DeferredCandidate, std::__1::allocator&lt;xff::engine::(anonymous namespace)::DeferredCandidate&gt; &gt;&amp;, std::__1::map&lt;xff::engine::ExprIdentity, unsigned long, std::__1::less&lt;xff::engine::ExprIdentity&gt;, std::__1::allocator&lt;std::__1::pair&lt;xff::engine::ExprIdentity const, unsigned long&gt; &gt; &gt; const&amp;, xff::shard::Matcher const&amp;, xff::shard::Dedup, xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_9 const&amp;, bool)::{lambda(xff::engine::(anonymous namespace)::DeferredCandidate const&amp;, xff::engine::(anonymous namespace)::DeferredCandidate const&amp;)#1}::operator()(xff::engine::(anonymous namespace)::DeferredCandidate const&amp;, xff::engine::(anonymous namespace)::DeferredCandidate const&amp;) const</a></td>
+              
+              <td class="coverFnHi">38</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2376">run.cc:xff::engine::(anonymous namespace)::ResolveDefines(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">777</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L151">run.cc:xff::engine::(anonymous namespace)::ResolveDepthOptions(xff::parser::Expr const&amp;)</a></td>
+              
+              <td class="coverFnHi">1424</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L115">run.cc:xff::engine::(anonymous namespace)::ResolveDepthPredicate(xff::parser::Expr const&amp;)</a></td>
+              
+              <td class="coverFnHi">1035</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L713">run.cc:xff::engine::(anonymous namespace)::ResolveFormat(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">784</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1803">run.cc:xff::engine::(anonymous namespace)::ResolveGitignoreMode(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, std::__1::optional&lt;xff::registry::Style&gt;)</a></td>
+              
+              <td class="coverFnHi">754</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L681">run.cc:xff::engine::(anonymous namespace)::ResolveGrepContext(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">758</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2649">run.cc:xff::engine::(anonymous namespace)::ResolveHistogramWidth(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">23</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L540">run.cc:xff::engine::(anonymous namespace)::ResolveHistograms(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">735</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2581">run.cc:xff::engine::(anonymous namespace)::ResolveHuman(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, std::__1::optional&lt;xff::registry::Style&gt;)</a></td>
+              
+              <td class="coverFnHi">778</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2333">run.cc:xff::engine::(anonymous namespace)::ResolveIgnoreFileNames(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, bool, std::__1::optional&lt;xff::registry::Style&gt;)</a></td>
+              
+              <td class="coverFnHi">729</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2355">run.cc:xff::engine::(anonymous namespace)::ResolveImplicitPrint(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">788</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L253">run.cc:xff::engine::(anonymous namespace)::ResolveJobs(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, std::__1::optional&lt;xff::registry::Style&gt;)</a></td>
+              
+              <td class="coverFnHi">784</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1268">run.cc:xff::engine::(anonymous namespace)::ResolveMaxResults(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">715</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L795">run.cc:xff::engine::(anonymous namespace)::ResolvePathEncoding(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">784</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L237">run.cc:xff::engine::(anonymous namespace)::ResolveRankByScore(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">774</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2757">run.cc:xff::engine::(anonymous namespace)::ResolveShardDedup(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">728</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2731">run.cc:xff::engine::(anonymous namespace)::ResolveShardShow(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">729</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2693">run.cc:xff::engine::(anonymous namespace)::ResolveShards(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">730</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2236">run.cc:xff::engine::(anonymous namespace)::ResolveSkipHidden(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, std::__1::optional&lt;xff::registry::Style&gt;)</a></td>
+              
+              <td class="coverFnHi">772</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2268">run.cc:xff::engine::(anonymous namespace)::ResolveSkipVcs(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, bool)</a></td>
+              
+              <td class="coverFnHi">731</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2278">run.cc:xff::engine::(anonymous namespace)::ResolveSkipVcs(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, bool)::$_0::operator()(absl::lts_20260817::flat_hash_set&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, absl::lts_20260817::container_internal::StringHash, absl::lts_20260817::container_internal::StringEq, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt;&amp;) const</a></td>
+              
+              <td class="coverFnHi">1</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2270">run.cc:xff::engine::(anonymous namespace)::ResolveSkipVcs(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, bool)::$_1::operator()(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;) const</a></td>
+              
+              <td class="coverFnHi">6</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L205">run.cc:xff::engine::(anonymous namespace)::ResolveSort(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;, std::__1::optional&lt;xff::registry::Style&gt;)</a></td>
+              
+              <td class="coverFnHi">827</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L307">run.cc:xff::engine::(anonymous namespace)::ResolveSummaries(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">738</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2667">run.cc:xff::engine::(anonymous namespace)::ResolveSummaryPrecision(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">87</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L169">run.cc:xff::engine::(anonymous namespace)::ResolveSymlinkMode(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">784</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L810">run.cc:xff::engine::(anonymous namespace)::ResolveTemplate(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">784</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L904">run.cc:xff::engine::(anonymous namespace)::ResolveTimeFormat(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">775</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L824">run.cc:xff::engine::(anonymous namespace)::ResolveTimeZone(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">776</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2633">run.cc:xff::engine::(anonymous namespace)::ResolveTop(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">87</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L3101">run.cc:xff::engine::(anonymous namespace)::ResolveTreeCompareOutput(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">19</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L3112">run.cc:xff::engine::(anonymous namespace)::ResolveTreeCompareSelection(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">19</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L741">run.cc:xff::engine::(anonymous namespace)::ResolveUnicode(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">24</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L919">run.cc:xff::engine::(anonymous namespace)::ResolveZoneSuffix(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">775</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1300">run.cc:xff::engine::(anonymous namespace)::ResultShapingIsValid(mbo::types::OptionalRef&lt;xff::parser::Expr const&gt;, bool, bool, bool, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;)</a></td>
+              
+              <td class="coverFnHi">774</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1745">run.cc:xff::engine::(anonymous namespace)::RootedIgnoreFiles::Active() const</a></td>
+              
+              <td class="coverFnHi">3998</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1750">run.cc:xff::engine::(anonymous namespace)::RootedIgnoreFiles::Decide(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, bool) const</a></td>
+              
+              <td class="coverFnHi">17</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1723">run.cc:xff::engine::(anonymous namespace)::RootedIgnoreFiles::FromGlobals(xff::vfs::FileSystem const&amp;, std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">729</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1719">run.cc:xff::engine::(anonymous namespace)::RootedIgnoreFiles::RootedIgnoreFiles()</a></td>
+              
+              <td class="coverFnHi">729</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1774">run.cc:xff::engine::(anonymous namespace)::RootedIgnoreFiles::Under(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">17</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L3210">run.cc:xff::engine::(anonymous namespace)::RunTreeCompare(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)</a></td>
+              
+              <td class="coverFnHi">24</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L3293">run.cc:xff::engine::(anonymous namespace)::RunTreeCompare(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_0::operator()(xff::engine::Visit const&amp;) const</a></td>
+              
+              <td class="coverFnHi">202</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L3144">run.cc:xff::engine::(anonymous namespace)::SameTreeEntry(xff::vfs::FileSystem const&amp;, xff::engine::(anonymous namespace)::TreeCompareEntry const&amp;, xff::engine::(anonymous namespace)::TreeCompareEntry const&amp;)</a></td>
+              
+              <td class="coverFnHi">65</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1429">run.cc:xff::engine::(anonymous namespace)::SelectShardPath(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, xff::parser::Expr const&amp;, std::__1::vector&lt;std::__1::reference_wrapper&lt;xff::engine::(anonymous namespace)::DeferredCandidate&gt;, std::__1::allocator&lt;std::__1::reference_wrapper&lt;xff::engine::(anonymous namespace)::DeferredCandidate&gt; &gt; &gt; const&amp;, std::__1::map&lt;std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, std::__1::vector&lt;unsigned long, std::__1::allocator&lt;unsigned long&gt; &gt;, std::__1::less&lt;std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt; const, std::__1::vector&lt;unsigned long, std::__1::allocator&lt;unsigned long&gt; &gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">15</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2782">run.cc:xff::engine::(anonymous namespace)::ShardRepresentativePath(xff::shard::ShardSet const&amp;)</a></td>
+              
+              <td class="coverFnHi">9</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1401">run.cc:xff::engine::(anonymous namespace)::ShardStatusCohort xff::engine::(anonymous namespace)::MakeShardStatusCohort&lt;xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_9&gt;(std::__1::vector&lt;std::__1::reference_wrapper&lt;xff::engine::(anonymous namespace)::DeferredCandidate&gt;, std::__1::allocator&lt;std::__1::reference_wrapper&lt;xff::engine::(anonymous namespace)::DeferredCandidate&gt; &gt; &gt; const&amp;, absl::lts_20260817::Span&lt;unsigned long const&gt;, xff::shard::Matcher const&amp;, xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_9 const&amp;)</a></td>
+              
+              <td class="coverFnHi">25</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4923">run.cc:xff::engine::(anonymous namespace)::SortName(xff::engine::SortOrder)</a></td>
+              
+              <td class="coverFnHi">43</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L362">run.cc:xff::engine::(anonymous namespace)::SummaryExtension(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">80</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L374">run.cc:xff::engine::(anonymous namespace)::SummaryKey(xff::engine::(anonymous namespace)::SummaryMode, xff::engine::Visit const&amp;)</a></td>
+              
+              <td class="coverFnHi">249</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L3179">run.cc:xff::engine::(anonymous namespace)::TreeEntryPatch(xff::vfs::FileSystem const&amp;, std::__1::optional&lt;xff::engine::(anonymous namespace)::TreeCompareEntry&gt; const&amp;, std::__1::optional&lt;xff::engine::(anonymous namespace)::TreeCompareEntry&gt; const&amp;, std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, mbo::diff::DiffOptions const&amp;)</a></td>
+              
+              <td class="coverFnHi">14</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L355">run.cc:xff::engine::(anonymous namespace)::TypeName(xff::vfs::FileType)</a></td>
+              
+              <td class="coverFnHi">33</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2544">run.cc:xff::engine::(anonymous namespace)::UnusedCaptureName(xff::parser::Expr const&amp;, std::__1::optional&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; const&amp;, std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)</a></td>
+              
+              <td class="coverFnHi">661</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L2559">run.cc:xff::engine::(anonymous namespace)::UnusedCaptureName(xff::parser::Expr const&amp;, std::__1::optional&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; const&amp;, std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)::$_0::operator()(std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const&amp;) const</a></td>
+              
+              <td class="coverFnHi">55</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1024">run.cc:xff::engine::(anonymous namespace)::ValidateFirstLimits(xff::parser::Expr const&amp;)</a></td>
+              
+              <td class="coverFnHi">1423</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L871">run.cc:xff::engine::(anonymous namespace)::ValidateRegextype(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;)</a></td>
+              
+              <td class="coverFnHi">762</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1128">run.cc:xff::engine::(anonymous namespace)::ValidateScoreRanking(bool, mbo::types::OptionalRef&lt;xff::parser::Expr const&gt;, bool, bool)</a></td>
+              
+              <td class="coverFnHi">766</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1133">run.cc:xff::engine::(anonymous namespace)::ValidateScoreRanking(bool, mbo::types::OptionalRef&lt;xff::parser::Expr const&gt;, bool, bool)::$_0::operator()(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;) const</a></td>
+              
+              <td class="coverFnHi">11</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1247">run.cc:xff::engine::(anonymous namespace)::ValidateShardStatuses(xff::parser::Expr const&amp;)</a></td>
+              
+              <td class="coverFnHi">1417</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1055">run.cc:xff::engine::(anonymous namespace)::ValidateTopLimits(xff::parser::Expr const&amp;)</a></td>
+              
+              <td class="coverFnHi">1416</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L1221">run.cc:xff::engine::(anonymous namespace)::ValidateTopRanking(mbo::types::OptionalRef&lt;xff::parser::Expr const&gt;)</a></td>
+              
+              <td class="coverFnHi">771</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L3399">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_0::operator()(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;) const</a></td>
+              
+              <td class="coverFnHi">910</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4132">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_10::operator()(xff::engine::Visit const&amp;, std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; &gt;&amp;, bool, std::__1::optional&lt;bool&gt;) const</a></td>
+              
+              <td class="coverFnHi">3661</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4613">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_11::operator()(xff::shard::Scheme) const</a></td>
+              
+              <td class="coverFnHi">29</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4628">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_12::operator()(xff::engine::Visit const&amp;, std::__1::optional&lt;long&gt;) const</a></td>
+              
+              <td class="coverFnHi">2</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4663">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_13::operator()(xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::ShardBufFile const&amp;, std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, xff::vfs::Metadata const&amp;) const</a></td>
+              
+              <td class="coverFnHi">2</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4089">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_14::operator()(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;) const</a></td>
+              
+              <td class="coverFnHi">1057</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4621">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_15::operator()(xff::fields::RenderContext const&amp;, xff::engine::Visit const&amp;) const</a></td>
+              
+              <td class="coverFnHi">2</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4624">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_16::operator()(xff::engine::Visit const&amp;) const</a></td>
+              
+              <td class="coverFnHi">2</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4724">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_17::operator()(std::__1::vector&lt;xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::Row, std::__1::allocator&lt;xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::Row&gt; &gt; const&amp;) const</a></td>
+              
+              <td class="coverFnHi">26</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L3770">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_1::operator()(xff::engine::(anonymous namespace)::SummarySpec const&amp;) const</a></td>
+              
+              <td class="coverFnHi">71</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4012">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_2::operator()(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;) const</a></td>
+              
+              <td class="coverFnHi">4</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4034">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_3::operator()(std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt;) const</a></td>
+              
+              <td class="coverFnHi">26</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L3997">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_4::operator()(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;) const</a></td>
+              
+              <td class="coverFnHi">710</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4252">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_5::operator()(xff::engine::Visit const&amp;) const</a></td>
+              
+              <td class="coverFnHi">3729</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4403">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_6::operator()(std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status) const</a></td>
+              
+              <td class="coverFnHi">3</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4742">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_7::operator()(xff::engine::(anonymous namespace)::SummaryMode, std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::pair&lt;unsigned long, unsigned long&gt;, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, std::__1::pair&lt;unsigned long, unsigned long&gt; &gt; &gt; &gt; const&amp;) const</a></td>
+              
+              <td class="coverFnHi">66</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4758">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_7::operator()(xff::engine::(anonymous namespace)::SummaryMode, std::__1::map&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::pair&lt;unsigned long, unsigned long&gt;, std::__1::less&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; const, std::__1::pair&lt;unsigned long, unsigned long&gt; &gt; &gt; &gt; const&amp;) const::{lambda(xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::Row const&amp;, xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::Row const&amp;)#1}::operator()(xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::Row const&amp;, xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::Row const&amp;) const</a></td>
+              
+              <td class="coverFnHi">2</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4835">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_8::operator()(xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::Bar const&amp;, xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::Bar const&amp;) const</a></td>
+              
+              <td class="coverFnHi">14</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4416">run.cc:xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)::$_9::operator()(xff::shard::Scheme) const</a></td>
+              
+              <td class="coverFnHi">23</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L4967">xff::engine::FlavorFacets()</a></td>
+              
+              <td class="coverFnHi">11</td>
+              
+              
+              
+            </tr>
+            <tr>
+              <td class="coverFn"><a href="run.cc.gcov.html#L3398">xff::engine::RunFind(xff::parser::Command const&amp;, xff::vfs::FileSystem const&amp;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;)&gt;, absl::lts_20260817::FunctionRef&lt;void (std::__1::basic_string_view&lt;char, std::__1::char_traits&lt;char&gt; &gt;, absl::lts_20260817::Status)&gt;, std::__1::optional&lt;xff::registry::Style&gt;)</a></td>
+              
+              <td class="coverFnHi">816</td>
+              
+              
+              
+            </tr>
+          </table>
+          <br>
+          </center>
+          <table class="xffPolicy">
+            <thead>
+              <tr>
+                <th scope="col">Global coverage policy</th>
+                <th scope="col">Low</th>
+                <th scope="col">Medium</th>
+                <th scope="col">High</th>
+                <th scope="col">Enforced</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <th scope="row">Lines</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 92%</td>
+              <td class="headerValueLegH">&ge; 92%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Branches</th>
+              <td class="headerValueLegL">&lt; 80%</td>
+              <td class="headerValueLegM">&ge; 80% and &lt; 82%</td>
+              <td class="headerValueLegH">&ge; 82%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Functions</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 95%</td>
+              <td class="headerValueLegH">&ge; 95%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            </tbody>
+          </table>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 2.5-0</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

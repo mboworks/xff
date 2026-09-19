@@ -1,0 +1,741 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - xff production coverage - extensions-archive/xff_archive/archive_pack.cc</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+  <style>
+    .xffNavigation { padding: .35rem 0; text-align: center; }
+    .xffHeaderSummary { margin: 0 auto; width: 80%; }
+    .xffPolicy { border-collapse: collapse; margin: .75rem auto 1rem; width: auto; }
+    .xffPolicy th { padding: .2rem .75rem; text-align: left; }
+    .xffPolicy td { font-size: 100%; padding: .2rem .75rem; text-align: center; }
+  </style>
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="xffNavigation"><a href="../../../index.html">Report overview</a> &middot; <a href="../../../../../index.html">All coverage reports</a></td></tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table class="xffHeaderSummary" cellpadding=1 border=0>
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../index.html" title="Click to go to top-level">top level</a> - <a href="index.html" title="Click to go to directory extensions-archive/xff_archive">extensions-archive/xff_archive</a> - archive_pack.cc<span style="font-size: 80%;"> (source / <a href="archive_pack.cc.func-c.html" title="Click to go to function table">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">xff production coverage</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryLo">89.8&nbsp;%</td>
+            <td class="headerCovTableEntry">176</td>
+            <td class="headerCovTableEntry">158</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-09-04 10:04:25</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">14</td>
+            <td class="headerCovTableEntry">14</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryHi">85.3&nbsp;%</td>
+            <td class="headerCovTableEntry">116</td>
+            <td class="headerCovTableEntry">99</td>
+          </tr>
+                  <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : // SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors</span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : // SPDX-License-Identifier: Apache-2.0</span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : //</span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : // Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : // you may not use this file except in compliance with the License.</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : // You may obtain a copy of the License at</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : //</span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : //      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : //</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             : // Unless required by applicable law or agreed to in writing, software</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : // distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : // See the License for the specific language governing permissions and</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : // limitations under the License.</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : </span>
+<span id="L16"><span class="lineNum">      16</span>                 :             : #include &quot;xff/archive/archive_pack.h&quot;</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             : </span>
+<span id="L18"><span class="lineNum">      18</span>                 :             : #include &lt;archive.h&gt;</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             : #include &lt;archive_entry.h&gt;</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             : </span>
+<span id="L21"><span class="lineNum">      21</span>                 :             : #include &lt;array&gt;</span>
+<span id="L22"><span class="lineNum">      22</span>                 :             : #include &lt;chrono&gt;</span>
+<span id="L23"><span class="lineNum">      23</span>                 :             : #include &lt;cstddef&gt;</span>
+<span id="L24"><span class="lineNum">      24</span>                 :             : #include &lt;filesystem&gt;</span>
+<span id="L25"><span class="lineNum">      25</span>                 :             : #include &lt;fstream&gt;</span>
+<span id="L26"><span class="lineNum">      26</span>                 :             : #include &lt;ios&gt;</span>
+<span id="L27"><span class="lineNum">      27</span>                 :             : #include &lt;memory&gt;</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             : #include &lt;optional&gt;</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             : #include &lt;string&gt;</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             : #include &lt;string_view&gt;</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             : #include &lt;system_error&gt;</span>
+<span id="L32"><span class="lineNum">      32</span>                 :             : #include &lt;vector&gt;</span>
+<span id="L33"><span class="lineNum">      33</span>                 :             : </span>
+<span id="L34"><span class="lineNum">      34</span>                 :             : #include &quot;absl/algorithm/container.h&quot;</span>
+<span id="L35"><span class="lineNum">      35</span>                 :             : #include &quot;absl/container/btree_map.h&quot;</span>
+<span id="L36"><span class="lineNum">      36</span>                 :             : #include &quot;absl/status/status.h&quot;</span>
+<span id="L37"><span class="lineNum">      37</span>                 :             : #include &quot;absl/status/statusor.h&quot;</span>
+<span id="L38"><span class="lineNum">      38</span>                 :             : #include &quot;absl/strings/ascii.h&quot;</span>
+<span id="L39"><span class="lineNum">      39</span>                 :             : #include &quot;absl/strings/numbers.h&quot;</span>
+<span id="L40"><span class="lineNum">      40</span>                 :             : #include &quot;absl/strings/str_cat.h&quot;</span>
+<span id="L41"><span class="lineNum">      41</span>                 :             : #include &quot;absl/strings/str_join.h&quot;</span>
+<span id="L42"><span class="lineNum">      42</span>                 :             : #include &quot;absl/types/span.h&quot;</span>
+<span id="L43"><span class="lineNum">      43</span>                 :             : #include &quot;mbo/status/status_macros.h&quot;</span>
+<span id="L44"><span class="lineNum">      44</span>                 :             : #include &quot;mbo/types/optional_ref.h&quot;</span>
+<span id="L45"><span class="lineNum">      45</span>                 :             : </span>
+<span id="L46"><span class="lineNum">      46</span>                 :             : namespace xff::archive {</span>
+<span id="L47"><span class="lineNum">      47</span>                 :             : namespace {</span>
+<span id="L48"><span class="lineNum">      48</span>                 :             : </span>
+<span id="L49"><span class="lineNum">      49</span>                 :             : namespace stdfs = ::std::filesystem;</span>
+<span id="L50"><span class="lineNum">      50</span>                 :             : </span>
+<span id="L51"><span class="lineNum">      51</span>                 :             : constexpr std::size_t kBlockSize = std::size_t{64} * 1'024;</span>
+<span id="L52"><span class="lineNum">      52</span>                 :             : </span>
+<span id="L53"><span class="lineNum">      53</span>                 :             : // std::filesystem::file_time_type has an unspecified epoch, and C++20's file_clock::to_sys is not</span>
+<span id="L54"><span class="lineNum">      54</span>                 :             : // available on every platform this builds on, so the offset is measured once against a known point.</span>
+<span id="L55"><span class="lineNum">      55</span>                 :             : // Both clocks tick in seconds here, which is all an archive header records anyway.</span>
+<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">          25 : std::int64_t FileClockToUnixEpoch() {</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">          25 :   const auto file_now = stdfs::file_time_type::clock::now().time_since_epoch();</span></span>
+<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">          25 :   const auto system_now = std::chrono::system_clock::now().time_since_epoch();</span></span>
+<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">          25 :   return std::chrono::duration_cast&lt;std::chrono::seconds&gt;(system_now).count()</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">          25 :          - std::chrono::duration_cast&lt;std::chrono::seconds&gt;(file_now).count();</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :             : }</span>
+<span id="L62"><span class="lineNum">      62</span>                 :             : </span>
+<span id="L63"><span class="lineNum">      63</span>                 :             : // Closes before freeing: zip writes its central directory at close time, so a handle that is only</span>
+<span id="L64"><span class="lineNum">      64</span>                 :             : // freed produces a truncated archive rather than an error.</span>
+<span id="L65"><span class="lineNum">      65</span>                 :             : struct WriteDeleter {</span>
+<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">          89 :   void operator()(struct ::archive* handle) const noexcept {</span></span>
+<span id="L67"><span class="lineNum">      67</span>         [<span class="tlaGBC" title="branch 0 was taken 89 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          89 :     if (handle != nullptr) {</span></span>
+<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">          89 :       ::archive_write_close(handle);</span></span>
+<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">          89 :       ::archive_write_free(handle);</span></span>
+<span id="L70"><span class="lineNum">      70</span>                 :             :     }</span>
+<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">          89 :   }</span></span>
+<span id="L72"><span class="lineNum">      72</span>                 :             : };</span>
+<span id="L73"><span class="lineNum">      73</span>                 :             : </span>
+<span id="L74"><span class="lineNum">      74</span>                 :             : struct EntryDeleter {</span>
+<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">         131 :   void operator()(struct ::archive_entry* entry) const noexcept {</span></span>
+<span id="L76"><span class="lineNum">      76</span>         [<span class="tlaGBC" title="branch 0 was taken 131 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">         131 :     if (entry != nullptr) {</span></span>
+<span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaGNC">         131 :       ::archive_entry_free(entry);</span></span>
+<span id="L78"><span class="lineNum">      78</span>                 :             :     }</span>
+<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">         131 :   }</span></span>
+<span id="L80"><span class="lineNum">      80</span>                 :             : };</span>
+<span id="L81"><span class="lineNum">      81</span>                 :             : </span>
+<span id="L82"><span class="lineNum">      82</span>                 :             : using WritePtr = std::unique_ptr&lt;struct ::archive, WriteDeleter&gt;;</span>
+<span id="L83"><span class="lineNum">      83</span>                 :             : using EntryPtr = std::unique_ptr&lt;struct ::archive_entry, EntryDeleter&gt;;</span>
+<span id="L84"><span class="lineNum">      84</span>                 :             : </span>
+<span id="L85"><span class="lineNum">      85</span>                 :             : // One output suffix and what it selects. Longest suffix first, so `.tar.gz` is not read as `.gz`.</span>
+<span id="L86"><span class="lineNum">      86</span>                 :             : //</span>
+<span id="L87"><span class="lineNum">      87</span>                 :             : // The single-word forms are the shortcuts GNU tar recognises for the same thing, and people type</span>
+<span id="L88"><span class="lineNum">      88</span>                 :             : // them: `--pack=x.txz` meaning `x.tar.xz` is not a typo to refuse. Suffix matching folds case, so</span>
+<span id="L89"><span class="lineNum">      89</span>                 :             : // `.tar.z` / `.taz` below accept the conventional `.tar.Z` / `.taZ` spellings too.</span>
+<span id="L90"><span class="lineNum">      90</span>                 :             : struct FormatSuffix {</span>
+<span id="L91"><span class="lineNum">      91</span>                 :             :   std::string_view suffix;</span>
+<span id="L92"><span class="lineNum">      92</span>                 :             :   std::string_view name;  // what PackFormats / the help calls it</span>
+<span id="L93"><span class="lineNum">      93</span>                 :             :   int format;             // ARCHIVE_FORMAT_*</span>
+<span id="L94"><span class="lineNum">      94</span>                 :             :   int filter;             // ARCHIVE_FILTER_*</span>
+<span id="L95"><span class="lineNum">      95</span>                 :             :   // The compressor's level range, both 0 when the format has no compressor. Checked here rather than</span>
+<span id="L96"><span class="lineNum">      96</span>                 :             :   // left to libarchive, which answers an out-of-range level with &quot;Undefined option&quot; and sends the</span>
+<span id="L97"><span class="lineNum">      97</span>                 :             :   // reader looking for a misspelled flag.</span>
+<span id="L98"><span class="lineNum">      98</span>                 :             :   int level_min;</span>
+<span id="L99"><span class="lineNum">      99</span>                 :             :   int level_max;</span>
+<span id="L100"><span class="lineNum">     100</span>                 :             : };</span>
+<span id="L101"><span class="lineNum">     101</span>                 :             : </span>
+<span id="L102"><span class="lineNum">     102</span>                 :             : constexpr std::array kFormats = std::to_array&lt;FormatSuffix&gt;({</span>
+<span id="L103"><span class="lineNum">     103</span>                 :             :     {</span>
+<span id="L104"><span class="lineNum">     104</span>                 :             :         .suffix = &quot;.tar.gz&quot;,</span>
+<span id="L105"><span class="lineNum">     105</span>                 :             :         .name = &quot;tar.gz&quot;,</span>
+<span id="L106"><span class="lineNum">     106</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L107"><span class="lineNum">     107</span>                 :             :         .filter = ARCHIVE_FILTER_GZIP,</span>
+<span id="L108"><span class="lineNum">     108</span>                 :             :         .level_min = 0,</span>
+<span id="L109"><span class="lineNum">     109</span>                 :             :         .level_max = 9,</span>
+<span id="L110"><span class="lineNum">     110</span>                 :             :     },</span>
+<span id="L111"><span class="lineNum">     111</span>                 :             :     {</span>
+<span id="L112"><span class="lineNum">     112</span>                 :             :         .suffix = &quot;.tar.bz2&quot;,</span>
+<span id="L113"><span class="lineNum">     113</span>                 :             :         .name = &quot;tar.bz2&quot;,</span>
+<span id="L114"><span class="lineNum">     114</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L115"><span class="lineNum">     115</span>                 :             :         .filter = ARCHIVE_FILTER_BZIP2,</span>
+<span id="L116"><span class="lineNum">     116</span>                 :             :         .level_min = 1,</span>
+<span id="L117"><span class="lineNum">     117</span>                 :             :         .level_max = 9,</span>
+<span id="L118"><span class="lineNum">     118</span>                 :             :     },</span>
+<span id="L119"><span class="lineNum">     119</span>                 :             :     {</span>
+<span id="L120"><span class="lineNum">     120</span>                 :             :         .suffix = &quot;.tar.xz&quot;,</span>
+<span id="L121"><span class="lineNum">     121</span>                 :             :         .name = &quot;tar.xz&quot;,</span>
+<span id="L122"><span class="lineNum">     122</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L123"><span class="lineNum">     123</span>                 :             :         .filter = ARCHIVE_FILTER_XZ,</span>
+<span id="L124"><span class="lineNum">     124</span>                 :             :         .level_min = 0,</span>
+<span id="L125"><span class="lineNum">     125</span>                 :             :         .level_max = 9,</span>
+<span id="L126"><span class="lineNum">     126</span>                 :             :     },</span>
+<span id="L127"><span class="lineNum">     127</span>                 :             :     {</span>
+<span id="L128"><span class="lineNum">     128</span>                 :             :         .suffix = &quot;.tar.zst&quot;,</span>
+<span id="L129"><span class="lineNum">     129</span>                 :             :         .name = &quot;tar.zst&quot;,</span>
+<span id="L130"><span class="lineNum">     130</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L131"><span class="lineNum">     131</span>                 :             :         .filter = ARCHIVE_FILTER_ZSTD,</span>
+<span id="L132"><span class="lineNum">     132</span>                 :             :         .level_min = 1,</span>
+<span id="L133"><span class="lineNum">     133</span>                 :             :         .level_max = 22,</span>
+<span id="L134"><span class="lineNum">     134</span>                 :             :     },</span>
+<span id="L135"><span class="lineNum">     135</span>                 :             :     {</span>
+<span id="L136"><span class="lineNum">     136</span>                 :             :         .suffix = &quot;.tar.lzma&quot;,</span>
+<span id="L137"><span class="lineNum">     137</span>                 :             :         .name = &quot;tar.lzma&quot;,</span>
+<span id="L138"><span class="lineNum">     138</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L139"><span class="lineNum">     139</span>                 :             :         .filter = ARCHIVE_FILTER_LZMA,</span>
+<span id="L140"><span class="lineNum">     140</span>                 :             :         .level_min = 0,</span>
+<span id="L141"><span class="lineNum">     141</span>                 :             :         .level_max = 9,</span>
+<span id="L142"><span class="lineNum">     142</span>                 :             :     },</span>
+<span id="L143"><span class="lineNum">     143</span>                 :             :     {</span>
+<span id="L144"><span class="lineNum">     144</span>                 :             :         .suffix = &quot;.tar.lz4&quot;,</span>
+<span id="L145"><span class="lineNum">     145</span>                 :             :         .name = &quot;tar.lz4&quot;,</span>
+<span id="L146"><span class="lineNum">     146</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L147"><span class="lineNum">     147</span>                 :             :         .filter = ARCHIVE_FILTER_LZ4,</span>
+<span id="L148"><span class="lineNum">     148</span>                 :             :         .level_min = 1,</span>
+<span id="L149"><span class="lineNum">     149</span>                 :             :         .level_max = 9,</span>
+<span id="L150"><span class="lineNum">     150</span>                 :             :     },</span>
+<span id="L151"><span class="lineNum">     151</span>                 :             :     {</span>
+<span id="L152"><span class="lineNum">     152</span>                 :             :         .suffix = &quot;.tar.lz&quot;,</span>
+<span id="L153"><span class="lineNum">     153</span>                 :             :         .name = &quot;tar.lz&quot;,</span>
+<span id="L154"><span class="lineNum">     154</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L155"><span class="lineNum">     155</span>                 :             :         .filter = ARCHIVE_FILTER_LZIP,</span>
+<span id="L156"><span class="lineNum">     156</span>                 :             :         .level_min = 0,</span>
+<span id="L157"><span class="lineNum">     157</span>                 :             :         .level_max = 9,</span>
+<span id="L158"><span class="lineNum">     158</span>                 :             :     },</span>
+<span id="L159"><span class="lineNum">     159</span>                 :             :     {</span>
+<span id="L160"><span class="lineNum">     160</span>                 :             :         .suffix = &quot;.tar.z&quot;,</span>
+<span id="L161"><span class="lineNum">     161</span>                 :             :         .name = &quot;tar.Z&quot;,</span>
+<span id="L162"><span class="lineNum">     162</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L163"><span class="lineNum">     163</span>                 :             :         .filter = ARCHIVE_FILTER_COMPRESS,</span>
+<span id="L164"><span class="lineNum">     164</span>                 :             :         .level_min = 0,</span>
+<span id="L165"><span class="lineNum">     165</span>                 :             :         .level_max = 0,</span>
+<span id="L166"><span class="lineNum">     166</span>                 :             :     },</span>
+<span id="L167"><span class="lineNum">     167</span>                 :             :     {</span>
+<span id="L168"><span class="lineNum">     168</span>                 :             :         .suffix = &quot;.tbz2&quot;,</span>
+<span id="L169"><span class="lineNum">     169</span>                 :             :         .name = &quot;tbz2&quot;,</span>
+<span id="L170"><span class="lineNum">     170</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L171"><span class="lineNum">     171</span>                 :             :         .filter = ARCHIVE_FILTER_BZIP2,</span>
+<span id="L172"><span class="lineNum">     172</span>                 :             :         .level_min = 1,</span>
+<span id="L173"><span class="lineNum">     173</span>                 :             :         .level_max = 9,</span>
+<span id="L174"><span class="lineNum">     174</span>                 :             :     },</span>
+<span id="L175"><span class="lineNum">     175</span>                 :             :     {</span>
+<span id="L176"><span class="lineNum">     176</span>                 :             :         .suffix = &quot;.tzst&quot;,</span>
+<span id="L177"><span class="lineNum">     177</span>                 :             :         .name = &quot;tzst&quot;,</span>
+<span id="L178"><span class="lineNum">     178</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L179"><span class="lineNum">     179</span>                 :             :         .filter = ARCHIVE_FILTER_ZSTD,</span>
+<span id="L180"><span class="lineNum">     180</span>                 :             :         .level_min = 1,</span>
+<span id="L181"><span class="lineNum">     181</span>                 :             :         .level_max = 22,</span>
+<span id="L182"><span class="lineNum">     182</span>                 :             :     },</span>
+<span id="L183"><span class="lineNum">     183</span>                 :             :     {</span>
+<span id="L184"><span class="lineNum">     184</span>                 :             :         .suffix = &quot;.tbz&quot;,</span>
+<span id="L185"><span class="lineNum">     185</span>                 :             :         .name = &quot;tbz&quot;,</span>
+<span id="L186"><span class="lineNum">     186</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L187"><span class="lineNum">     187</span>                 :             :         .filter = ARCHIVE_FILTER_BZIP2,</span>
+<span id="L188"><span class="lineNum">     188</span>                 :             :         .level_min = 1,</span>
+<span id="L189"><span class="lineNum">     189</span>                 :             :         .level_max = 9,</span>
+<span id="L190"><span class="lineNum">     190</span>                 :             :     },</span>
+<span id="L191"><span class="lineNum">     191</span>                 :             :     {</span>
+<span id="L192"><span class="lineNum">     192</span>                 :             :         .suffix = &quot;.tz2&quot;,</span>
+<span id="L193"><span class="lineNum">     193</span>                 :             :         .name = &quot;tz2&quot;,</span>
+<span id="L194"><span class="lineNum">     194</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L195"><span class="lineNum">     195</span>                 :             :         .filter = ARCHIVE_FILTER_BZIP2,</span>
+<span id="L196"><span class="lineNum">     196</span>                 :             :         .level_min = 1,</span>
+<span id="L197"><span class="lineNum">     197</span>                 :             :         .level_max = 9,</span>
+<span id="L198"><span class="lineNum">     198</span>                 :             :     },</span>
+<span id="L199"><span class="lineNum">     199</span>                 :             :     {</span>
+<span id="L200"><span class="lineNum">     200</span>                 :             :         .suffix = &quot;.txz&quot;,</span>
+<span id="L201"><span class="lineNum">     201</span>                 :             :         .name = &quot;txz&quot;,</span>
+<span id="L202"><span class="lineNum">     202</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L203"><span class="lineNum">     203</span>                 :             :         .filter = ARCHIVE_FILTER_XZ,</span>
+<span id="L204"><span class="lineNum">     204</span>                 :             :         .level_min = 0,</span>
+<span id="L205"><span class="lineNum">     205</span>                 :             :         .level_max = 9,</span>
+<span id="L206"><span class="lineNum">     206</span>                 :             :     },</span>
+<span id="L207"><span class="lineNum">     207</span>                 :             :     {</span>
+<span id="L208"><span class="lineNum">     208</span>                 :             :         .suffix = &quot;.tgz&quot;,</span>
+<span id="L209"><span class="lineNum">     209</span>                 :             :         .name = &quot;tgz&quot;,</span>
+<span id="L210"><span class="lineNum">     210</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L211"><span class="lineNum">     211</span>                 :             :         .filter = ARCHIVE_FILTER_GZIP,</span>
+<span id="L212"><span class="lineNum">     212</span>                 :             :         .level_min = 0,</span>
+<span id="L213"><span class="lineNum">     213</span>                 :             :         .level_max = 9,</span>
+<span id="L214"><span class="lineNum">     214</span>                 :             :     },</span>
+<span id="L215"><span class="lineNum">     215</span>                 :             :     {</span>
+<span id="L216"><span class="lineNum">     216</span>                 :             :         .suffix = &quot;.tlz&quot;,</span>
+<span id="L217"><span class="lineNum">     217</span>                 :             :         .name = &quot;tlz&quot;,</span>
+<span id="L218"><span class="lineNum">     218</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L219"><span class="lineNum">     219</span>                 :             :         .filter = ARCHIVE_FILTER_LZMA,</span>
+<span id="L220"><span class="lineNum">     220</span>                 :             :         .level_min = 0,</span>
+<span id="L221"><span class="lineNum">     221</span>                 :             :         .level_max = 9,</span>
+<span id="L222"><span class="lineNum">     222</span>                 :             :     },</span>
+<span id="L223"><span class="lineNum">     223</span>                 :             :     {</span>
+<span id="L224"><span class="lineNum">     224</span>                 :             :         .suffix = &quot;.taz&quot;,</span>
+<span id="L225"><span class="lineNum">     225</span>                 :             :         .name = &quot;taZ&quot;,</span>
+<span id="L226"><span class="lineNum">     226</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L227"><span class="lineNum">     227</span>                 :             :         .filter = ARCHIVE_FILTER_COMPRESS,</span>
+<span id="L228"><span class="lineNum">     228</span>                 :             :         .level_min = 0,</span>
+<span id="L229"><span class="lineNum">     229</span>                 :             :         .level_max = 0,</span>
+<span id="L230"><span class="lineNum">     230</span>                 :             :     },</span>
+<span id="L231"><span class="lineNum">     231</span>                 :             :     {</span>
+<span id="L232"><span class="lineNum">     232</span>                 :             :         .suffix = &quot;.tar&quot;,</span>
+<span id="L233"><span class="lineNum">     233</span>                 :             :         .name = &quot;tar&quot;,</span>
+<span id="L234"><span class="lineNum">     234</span>                 :             :         .format = ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,</span>
+<span id="L235"><span class="lineNum">     235</span>                 :             :         .filter = ARCHIVE_FILTER_NONE,</span>
+<span id="L236"><span class="lineNum">     236</span>                 :             :         .level_min = 0,</span>
+<span id="L237"><span class="lineNum">     237</span>                 :             :         .level_max = 0,</span>
+<span id="L238"><span class="lineNum">     238</span>                 :             :     },</span>
+<span id="L239"><span class="lineNum">     239</span>                 :             :     {</span>
+<span id="L240"><span class="lineNum">     240</span>                 :             :         .suffix = &quot;.zip&quot;,</span>
+<span id="L241"><span class="lineNum">     241</span>                 :             :         .name = &quot;zip&quot;,</span>
+<span id="L242"><span class="lineNum">     242</span>                 :             :         .format = ARCHIVE_FORMAT_ZIP,</span>
+<span id="L243"><span class="lineNum">     243</span>                 :             :         .filter = ARCHIVE_FILTER_NONE,</span>
+<span id="L244"><span class="lineNum">     244</span>                 :             :         .level_min = 0,</span>
+<span id="L245"><span class="lineNum">     245</span>                 :             :         .level_max = 9,</span>
+<span id="L246"><span class="lineNum">     246</span>                 :             :     },</span>
+<span id="L247"><span class="lineNum">     247</span>                 :             : });</span>
+<span id="L248"><span class="lineNum">     248</span>                 :             : </span>
+<span id="L249"><span class="lineNum">     249</span>                 :             : // How an option's value is spelled, which decides both the validation and the translation: libarchive</span>
+<span id="L250"><span class="lineNum">     250</span>                 :             : // spells a boolean by PRESENCE (`name` on, `!name` off) rather than by value, so a bool cannot simply</span>
+<span id="L251"><span class="lineNum">     251</span>                 :             : enum class PackValue {</span>
+<span id="L252"><span class="lineNum">     252</span>                 :             :   kBool,</span>
+<span id="L253"><span class="lineNum">     253</span>                 :             :   kEnum,</span>
+<span id="L254"><span class="lineNum">     254</span>                 :             :   kInt,</span>
+<span id="L255"><span class="lineNum">     255</span>                 :             : };</span>
+<span id="L256"><span class="lineNum">     256</span>                 :             : </span>
+<span id="L257"><span class="lineNum">     257</span>                 :             : // One entry of xff's writer vocabulary and what it becomes for libarchive. Alphabetical by xff name,</span>
+<span id="L258"><span class="lineNum">     258</span>                 :             : // which is also the order the help lists them.</span>
+<span id="L259"><span class="lineNum">     259</span>                 :             : struct PackOptionSpec {</span>
+<span id="L260"><span class="lineNum">     260</span>                 :             :   std::string_view name;           // xff's name, the only one a user ever types</span>
+<span id="L261"><span class="lineNum">     261</span>                 :             :   std::string_view writer_option;  // what libarchive calls it</span>
+<span id="L262"><span class="lineNum">     262</span>                 :             :   PackValue kind;</span>
+<span id="L263"><span class="lineNum">     263</span>                 :             :   absl::Span&lt;const std::string_view&gt; values;   // kEnum: the accepted set; empty otherwise</span>
+<span id="L264"><span class="lineNum">     264</span>                 :             :   absl::Span&lt;const std::string_view&gt; formats;  // output names it applies to</span>
+<span id="L265"><span class="lineNum">     265</span>                 :             :   std::string_view detail;                     // one line, rendered into --help=archive</span>
+<span id="L266"><span class="lineNum">     266</span>                 :             : };</span>
+<span id="L267"><span class="lineNum">     267</span>                 :             : </span>
+<span id="L268"><span class="lineNum">     268</span>                 :             : // The backing sets for the spans above. Named so the table reads as WHAT applies, and shared where</span>
+<span id="L269"><span class="lineNum">     269</span>                 :             : // two options genuinely mean the same set (zip-only), not merely coincide.</span>
+<span id="L270"><span class="lineNum">     270</span>                 :             : constexpr std::array kZipCompressionValues = std::to_array&lt;std::string_view&gt;({</span>
+<span id="L271"><span class="lineNum">     271</span>                 :             :     &quot;store&quot;,</span>
+<span id="L272"><span class="lineNum">     272</span>                 :             :     &quot;deflate&quot;,</span>
+<span id="L273"><span class="lineNum">     273</span>                 :             : });</span>
+<span id="L274"><span class="lineNum">     274</span>                 :             : constexpr std::array kZipOnlyFormats = std::to_array&lt;std::string_view&gt;({</span>
+<span id="L275"><span class="lineNum">     275</span>                 :             :     &quot;zip&quot;,</span>
+<span id="L276"><span class="lineNum">     276</span>                 :             : });</span>
+<span id="L277"><span class="lineNum">     277</span>                 :             : constexpr std::array kLevelFormats = std::to_array&lt;std::string_view&gt;({</span>
+<span id="L278"><span class="lineNum">     278</span>                 :             :     &quot;tar.gz&quot;,</span>
+<span id="L279"><span class="lineNum">     279</span>                 :             :     &quot;tar.bz2&quot;,</span>
+<span id="L280"><span class="lineNum">     280</span>                 :             :     &quot;tar.xz&quot;,</span>
+<span id="L281"><span class="lineNum">     281</span>                 :             :     &quot;tar.zst&quot;,</span>
+<span id="L282"><span class="lineNum">     282</span>                 :             :     &quot;tar.lzma&quot;,</span>
+<span id="L283"><span class="lineNum">     283</span>                 :             :     &quot;tar.lz4&quot;,</span>
+<span id="L284"><span class="lineNum">     284</span>                 :             :     &quot;tar.lz&quot;,</span>
+<span id="L285"><span class="lineNum">     285</span>                 :             :     &quot;tgz&quot;,</span>
+<span id="L286"><span class="lineNum">     286</span>                 :             :     &quot;tbz2&quot;,</span>
+<span id="L287"><span class="lineNum">     287</span>                 :             :     &quot;tbz&quot;,</span>
+<span id="L288"><span class="lineNum">     288</span>                 :             :     &quot;tz2&quot;,</span>
+<span id="L289"><span class="lineNum">     289</span>                 :             :     &quot;txz&quot;,</span>
+<span id="L290"><span class="lineNum">     290</span>                 :             :     &quot;tzst&quot;,</span>
+<span id="L291"><span class="lineNum">     291</span>                 :             :     &quot;tlz&quot;,</span>
+<span id="L292"><span class="lineNum">     292</span>                 :             :     &quot;zip&quot;,</span>
+<span id="L293"><span class="lineNum">     293</span>                 :             : });</span>
+<span id="L294"><span class="lineNum">     294</span>                 :             : constexpr std::array kThreadsFormats = std::to_array&lt;std::string_view&gt;({</span>
+<span id="L295"><span class="lineNum">     295</span>                 :             :     &quot;tar.xz&quot;,</span>
+<span id="L296"><span class="lineNum">     296</span>                 :             :     &quot;tar.zst&quot;,</span>
+<span id="L297"><span class="lineNum">     297</span>                 :             :     &quot;txz&quot;,</span>
+<span id="L298"><span class="lineNum">     298</span>                 :             :     &quot;tzst&quot;,</span>
+<span id="L299"><span class="lineNum">     299</span>                 :             : });</span>
+<span id="L300"><span class="lineNum">     300</span>                 :             : constexpr std::array kGzipHeaderFormats = std::to_array&lt;std::string_view&gt;({</span>
+<span id="L301"><span class="lineNum">     301</span>                 :             :     &quot;tar.gz&quot;,</span>
+<span id="L302"><span class="lineNum">     302</span>                 :             :     &quot;tgz&quot;,</span>
+<span id="L303"><span class="lineNum">     303</span>                 :             : });</span>
+<span id="L304"><span class="lineNum">     304</span>                 :             : </span>
+<span id="L305"><span class="lineNum">     305</span>                 :             : constexpr std::array kPackOptions = std::to_array&lt;PackOptionSpec&gt;({</span>
+<span id="L306"><span class="lineNum">     306</span>                 :             :     {</span>
+<span id="L307"><span class="lineNum">     307</span>                 :             :         .name = &quot;compression&quot;,</span>
+<span id="L308"><span class="lineNum">     308</span>                 :             :         .writer_option = &quot;compression&quot;,</span>
+<span id="L309"><span class="lineNum">     309</span>                 :             :         .kind = PackValue::kEnum,</span>
+<span id="L310"><span class="lineNum">     310</span>                 :             :         .values = kZipCompressionValues,</span>
+<span id="L311"><span class="lineNum">     311</span>                 :             :         .formats = kZipOnlyFormats,</span>
+<span id="L312"><span class="lineNum">     312</span>                 :             :         .detail = &quot;`store` writes members uncompressed, which is what an archive of already-compressed &quot;</span>
+<span id="L313"><span class="lineNum">     313</span>                 :             :                   &quot;payloads (images, other archives) wants&quot;,</span>
+<span id="L314"><span class="lineNum">     314</span>                 :             :     },</span>
+<span id="L315"><span class="lineNum">     315</span>                 :             :     {</span>
+<span id="L316"><span class="lineNum">     316</span>                 :             :         .name = &quot;level&quot;,</span>
+<span id="L317"><span class="lineNum">     317</span>                 :             :         .writer_option = &quot;compression-level&quot;,</span>
+<span id="L318"><span class="lineNum">     318</span>                 :             :         .kind = PackValue::kInt,</span>
+<span id="L319"><span class="lineNum">     319</span>                 :             :         .values = {},</span>
+<span id="L320"><span class="lineNum">     320</span>                 :             :         .formats = kLevelFormats,</span>
+<span id="L321"><span class="lineNum">     321</span>                 :             :         .detail = &quot;how hard the compressor works, on the scale the format uses (also spelled &quot;</span>
+<span id="L322"><span class="lineNum">     322</span>                 :             :                   &quot;`--pack-level`)&quot;,</span>
+<span id="L323"><span class="lineNum">     323</span>                 :             :     },</span>
+<span id="L324"><span class="lineNum">     324</span>                 :             :     {</span>
+<span id="L325"><span class="lineNum">     325</span>                 :             :         .name = &quot;threads&quot;,</span>
+<span id="L326"><span class="lineNum">     326</span>                 :             :         .writer_option = &quot;threads&quot;,</span>
+<span id="L327"><span class="lineNum">     327</span>                 :             :         .kind = PackValue::kInt,</span>
+<span id="L328"><span class="lineNum">     328</span>                 :             :         .values = {},</span>
+<span id="L329"><span class="lineNum">     329</span>                 :             :         .formats = kThreadsFormats,</span>
+<span id="L330"><span class="lineNum">     330</span>                 :             :         .detail = &quot;compressor threads; `0` lets the compressor pick from the machine&quot;,</span>
+<span id="L331"><span class="lineNum">     331</span>                 :             :     },</span>
+<span id="L332"><span class="lineNum">     332</span>                 :             :     {</span>
+<span id="L333"><span class="lineNum">     333</span>                 :             :         .name = &quot;timestamp&quot;,</span>
+<span id="L334"><span class="lineNum">     334</span>                 :             :         .writer_option = &quot;timestamp&quot;,</span>
+<span id="L335"><span class="lineNum">     335</span>                 :             :         .kind = PackValue::kBool,</span>
+<span id="L336"><span class="lineNum">     336</span>                 :             :         .values = {},</span>
+<span id="L337"><span class="lineNum">     337</span>                 :             :         .formats = kGzipHeaderFormats,</span>
+<span id="L338"><span class="lineNum">     338</span>                 :             :         .detail = &quot;store the modification time in the gzip header; `no` is what makes two runs over &quot;</span>
+<span id="L339"><span class="lineNum">     339</span>                 :             :                   &quot;the same input byte-identical&quot;,</span>
+<span id="L340"><span class="lineNum">     340</span>                 :             :     },</span>
+<span id="L341"><span class="lineNum">     341</span>                 :             :     {</span>
+<span id="L342"><span class="lineNum">     342</span>                 :             :         .name = &quot;zip64&quot;,</span>
+<span id="L343"><span class="lineNum">     343</span>                 :             :         .writer_option = &quot;zip64&quot;,</span>
+<span id="L344"><span class="lineNum">     344</span>                 :             :         .kind = PackValue::kBool,</span>
+<span id="L345"><span class="lineNum">     345</span>                 :             :         .values = {},</span>
+<span id="L346"><span class="lineNum">     346</span>                 :             :         .formats = kZipOnlyFormats,</span>
+<span id="L347"><span class="lineNum">     347</span>                 :             :         .detail = &quot;force the zip64 extensions, which lift the 4 GiB member and archive limits&quot;,</span>
+<span id="L348"><span class="lineNum">     348</span>                 :             :     },</span>
+<span id="L349"><span class="lineNum">     349</span>                 :             : });</span>
+<span id="L350"><span class="lineNum">     350</span>                 :             : </span>
+<span id="L351"><span class="lineNum">     351</span>                 :             : using OptionalPackOptionSpec = mbo::types::OptionalRef&lt;const PackOptionSpec&gt;;</span>
+<span id="L352"><span class="lineNum">     352</span>                 :             : </span>
+<span id="L353"><span class="lineNum">     353</span>                 :<span class="tlaGNC">          59 : OptionalPackOptionSpec PackOptionSpecFor(std::string_view name) {</span></span>
+<span id="L354"><span class="lineNum">     354</span>                 :             :   // The array search produces an iterator. Keep that abstraction even though this implementation's</span>
+<span id="L355"><span class="lineNum">     355</span>                 :             :   // contiguous iterator is a pointer; spelling it as an object pointer would misstate its role.</span>
+<span id="L356"><span class="lineNum">     356</span>                 :             :   // NOLINTNEXTLINE(llvm-qualified-auto,readability-qualified-auto)</span>
+<span id="L357"><span class="lineNum">     357</span>                 :<span class="tlaGNC">         212 :   const auto found = absl::c_find_if(kPackOptions, [name](const PackOptionSpec&amp; spec) { return spec.name == name; });</span></span>
+<span id="L358"><span class="lineNum">     358</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 57 times"> + </span>]:<span class="tlaGNC">          59 :   return found == kPackOptions.end() ? OptionalPackOptionSpec{} : OptionalPackOptionSpec{*found};</span></span>
+<span id="L359"><span class="lineNum">     359</span>                 :             : }</span>
+<span id="L360"><span class="lineNum">     360</span>                 :             : </span>
+<span id="L361"><span class="lineNum">     361</span>                 :<span class="tlaGNC">          57 : bool AppliesTo(const PackOptionSpec&amp; spec, std::string_view format) {</span></span>
+<span id="L362"><span class="lineNum">     362</span>                 :<span class="tlaGNC">          57 :   return absl::c_linear_search(spec.formats, format);</span></span>
+<span id="L363"><span class="lineNum">     363</span>                 :             : }</span>
+<span id="L364"><span class="lineNum">     364</span>                 :             : </span>
+<span id="L365"><span class="lineNum">     365</span>                 :             : // Validates one option against the vocabulary AND the chosen format, and renders what libarchive</span>
+<span id="L366"><span class="lineNum">     366</span>                 :             : // should be told. Booleans become a presence/absence spelling, which is how libarchive reads them.</span>
+<span id="L367"><span class="lineNum">     367</span>                 :<span class="tlaGNC">          59 : absl::StatusOr&lt;std::string&gt; TranslateOption(const PackSetting&amp; option, const FormatSuffix&amp; format) {</span></span>
+<span id="L368"><span class="lineNum">     368</span>                 :<span class="tlaGNC">          59 :   const OptionalPackOptionSpec spec = PackOptionSpecFor(option.name);</span></span>
+<span id="L369"><span class="lineNum">     369</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 57 times"> + </span>]:<span class="tlaGNC">          59 :   if (!spec.has_value()) {</span></span>
+<span id="L370"><span class="lineNum">     370</span>                 :             :     // Joined with a projection rather than copied into a vector first: the names are only needed to</span>
+<span id="L371"><span class="lineNum">     371</span>                 :             :     // build this one message.</span>
+<span id="L372"><span class="lineNum">     372</span>                 :<span class="tlaGNC">           2 :     const std::string known_names = absl::StrJoin(</span></span>
+<span id="L373"><span class="lineNum">     373</span>                 :<span class="tlaGNC">          12 :         kPackOptions, &quot;, &quot;, [](std::string* out, const PackOptionSpec&amp; known) { absl::StrAppend(out, known.name); });</span></span>
+<span id="L374"><span class="lineNum">     374</span>                 :<span class="tlaGNC">           4 :     return absl::InvalidArgumentError(</span></span>
+<span id="L375"><span class="lineNum">     375</span>                 :<span class="tlaGNC">           6 :         absl::StrCat(&quot;unknown pack option '&quot;, option.name, &quot;'; known options are &quot;, known_names));</span></span>
+<span id="L376"><span class="lineNum">     376</span>                 :<span class="tlaGNC">           2 :   }</span></span>
+<span id="L377"><span class="lineNum">     377</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 52 times"> + </span>]:<span class="tlaGNC">          57 :   if (!AppliesTo(*spec, format.name)) {</span></span>
+<span id="L378"><span class="lineNum">     378</span>                 :<span class="tlaGNC">          10 :     return absl::InvalidArgumentError(</span></span>
+<span id="L379"><span class="lineNum">     379</span>                 :<span class="tlaGNC">          15 :         absl::StrCat(</span></span>
+<span id="L380"><span class="lineNum">     380</span>                 :<span class="tlaGNC">           5 :             &quot;pack option '&quot;, spec-&gt;name, &quot;' does not apply to &quot;, format.name, &quot;; it applies to &quot;,</span></span>
+<span id="L381"><span class="lineNum">     381</span>                 :<span class="tlaGNC">          15 :             absl::StrJoin(spec-&gt;formats, &quot;, &quot;)));</span></span>
+<span id="L382"><span class="lineNum">     382</span>                 :             :   }</span>
+<span id="L383"><span class="lineNum">     383</span>   [<span class="tlaGBC" title="branch 0 was taken 11 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span><span class="tlaGBC" title="branch 2 was taken 36 times"> + </span><span class="tlaUNC" title="branch 3 was not taken"> - </span>]:<span class="tlaGNC">          52 :   switch (spec-&gt;kind) {</span></span>
+<span id="L384"><span class="lineNum">     384</span>                 :<span class="tlaGNC">          11 :     case PackValue::kBool: {</span></span>
+<span id="L385"><span class="lineNum">     385</span>   [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span><span class="tlaGBC" title="branch 2 was taken 1 time"> + </span><span class="tlaGBC" title="branch 3 was taken 9 times"> + </span> :<span class="tlaGNC">          11 :       if (option.value != &quot;yes&quot; &amp;&amp; option.value != &quot;no&quot;) {</span></span>
+<span class="lineNum">        </span>          <span class="tlaGBC" title="branch 4 was taken 1 time"> + </span><span class="tlaGBC" title="branch 5 was taken 10 times"> + </span>]
+<span id="L386"><span class="lineNum">     386</span>                 :<span class="tlaGNC">           2 :         return absl::InvalidArgumentError(</span></span>
+<span id="L387"><span class="lineNum">     387</span>                 :<span class="tlaGNC">           3 :             absl::StrCat(&quot;pack option '&quot;, spec-&gt;name, &quot;' takes yes or no, got '&quot;, option.value, &quot;'&quot;));</span></span>
+<span id="L388"><span class="lineNum">     388</span>                 :             :       }</span>
+<span id="L389"><span class="lineNum">     389</span>                 :             :       // Presence is the value: libarchive reads `name` as on and `!name` as off.</span>
+<span id="L390"><span class="lineNum">     390</span>   [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span><span class="tlaGBC" title="branch 2 was taken 1 time"> + </span><span class="tlaGBC" title="branch 3 was taken 9 times"> + </span>]:<span class="tlaGNC">          12 :       return option.value == &quot;yes&quot; ? std::string(spec-&gt;writer_option) : absl::StrCat(&quot;!&quot;, spec-&gt;writer_option);</span></span>
+<span id="L391"><span class="lineNum">     391</span>                 :             :     }</span>
+<span id="L392"><span class="lineNum">     392</span>                 :<span class="tlaGNC">           5 :     case PackValue::kEnum: {</span></span>
+<span id="L393"><span class="lineNum">     393</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 4 times"> + </span>]:<span class="tlaGNC">           5 :       if (!absl::c_linear_search(spec-&gt;values, option.value)) {</span></span>
+<span id="L394"><span class="lineNum">     394</span>                 :<span class="tlaGNC">           2 :         return absl::InvalidArgumentError(</span></span>
+<span id="L395"><span class="lineNum">     395</span>                 :<span class="tlaGNC">           3 :             absl::StrCat(</span></span>
+<span id="L396"><span class="lineNum">     396</span>                 :<span class="tlaGNC">           3 :                 &quot;pack option '&quot;, spec-&gt;name, &quot;' takes one of &quot;, absl::StrJoin(spec-&gt;values, &quot;, &quot;), &quot;, got '&quot;,</span></span>
+<span id="L397"><span class="lineNum">     397</span>                 :<span class="tlaGNC">           2 :                 option.value, &quot;'&quot;));</span></span>
+<span id="L398"><span class="lineNum">     398</span>                 :             :       }</span>
+<span id="L399"><span class="lineNum">     399</span>                 :<span class="tlaGNC">           4 :       return absl::StrCat(spec-&gt;writer_option, &quot;=&quot;, option.value);</span></span>
+<span id="L400"><span class="lineNum">     400</span>                 :             :     }</span>
+<span id="L401"><span class="lineNum">     401</span>                 :<span class="tlaGNC">          36 :     case PackValue::kInt: {</span></span>
+<span id="L402"><span class="lineNum">     402</span>                 :<span class="tlaGNC">          36 :       int parsed = 0;</span></span>
+<span id="L403"><span class="lineNum">     403</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 35 times"> + </span>]:<span class="tlaGNC">          36 :       if (!absl::SimpleAtoi(option.value, &amp;parsed)) {</span></span>
+<span id="L404"><span class="lineNum">     404</span>                 :<span class="tlaGNC">           2 :         return absl::InvalidArgumentError(</span></span>
+<span id="L405"><span class="lineNum">     405</span>                 :<span class="tlaGNC">           3 :             absl::StrCat(&quot;pack option '&quot;, spec-&gt;name, &quot;' takes a number, got '&quot;, option.value, &quot;'&quot;));</span></span>
+<span id="L406"><span class="lineNum">     406</span>                 :             :       }</span>
+<span id="L407"><span class="lineNum">     407</span>                 :             :       // Only `level` has a range, and it is the FORMAT's, which is why it cannot live in the option</span>
+<span id="L408"><span class="lineNum">     408</span>                 :             :       // table: gzip stops at 9 where zstd goes to 22.</span>
+<span id="L409"><span class="lineNum">     409</span>   [<span class="tlaGBC" title="branch 0 was taken 33 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span><span class="tlaGBC" title="branch 2 was taken 32 times"> + </span><span class="tlaGBC" title="branch 3 was taken 1 time"> + </span> :<span class="tlaGNC">          35 :       if (spec-&gt;name == &quot;level&quot; &amp;&amp; (parsed &lt; format.level_min || parsed &gt; format.level_max)) {</span></span>
+<span class="lineNum">        </span>    <span class="tlaGBC" title="branch 4 was taken 4 times"> + </span><span class="tlaGBC" title="branch 5 was taken 28 times"> + </span><span class="tlaGBC" title="branch 6 was taken 5 times"> + </span><span class="tlaGBC" title="branch 7 was taken 30 times"> + </span>]
+<span id="L410"><span class="lineNum">     410</span>                 :<span class="tlaGNC">          10 :         return absl::InvalidArgumentError(</span></span>
+<span id="L411"><span class="lineNum">     411</span>                 :<span class="tlaGNC">          10 :             absl::StrCat(</span></span>
+<span id="L412"><span class="lineNum">     412</span>                 :             :                 &quot;compression level &quot;, parsed, &quot; is out of range for &quot;, format.name, &quot;, which accepts &quot;,</span>
+<span id="L413"><span class="lineNum">     413</span>                 :<span class="tlaGNC">          10 :                 format.level_min, &quot;-&quot;, format.level_max));</span></span>
+<span id="L414"><span class="lineNum">     414</span>                 :             :       }</span>
+<span id="L415"><span class="lineNum">     415</span>                 :<span class="tlaGNC">          30 :       return absl::StrCat(spec-&gt;writer_option, &quot;=&quot;, parsed);</span></span>
+<span id="L416"><span class="lineNum">     416</span>                 :             :     }</span>
+<span id="L417"><span class="lineNum">     417</span>                 :             :   }</span>
+<span id="L418"><span class="lineNum">     418</span>                 :<span class="tlaUNC">           0 :   return absl::InternalError(&quot;unhandled pack option kind&quot;);</span></span>
+<span id="L419"><span class="lineNum">     419</span>                 :             : }</span>
+<span id="L420"><span class="lineNum">     420</span>                 :             : </span>
+<span id="L421"><span class="lineNum">     421</span>                 :             : using OptionalFormatSuffix = mbo::types::OptionalRef&lt;const FormatSuffix&gt;;</span>
+<span id="L422"><span class="lineNum">     422</span>                 :             : </span>
+<span id="L423"><span class="lineNum">     423</span>                 :<span class="tlaGNC">         127 : OptionalFormatSuffix FormatEntryFor(std::string_view path) {</span></span>
+<span id="L424"><span class="lineNum">     424</span>                 :<span class="tlaGNC">         127 :   const std::string lower = absl::AsciiStrToLower(path);</span></span>
+<span id="L425"><span class="lineNum">     425</span>         [<span class="tlaGBC" title="branch 0 was taken 1236 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">        1241 :   for (const FormatSuffix&amp; candidate : kFormats) {</span></span>
+<span id="L426"><span class="lineNum">     426</span>         [<span class="tlaGBC" title="branch 0 was taken 122 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1114 times"> + </span>]:<span class="tlaGNC">        1236 :     if (std::string_view(lower).ends_with(candidate.suffix)) {</span></span>
+<span id="L427"><span class="lineNum">     427</span>                 :<span class="tlaGNC">         122 :       return OptionalFormatSuffix{candidate};</span></span>
+<span id="L428"><span class="lineNum">     428</span>                 :             :     }</span>
+<span id="L429"><span class="lineNum">     429</span>                 :             :   }</span>
+<span id="L430"><span class="lineNum">     430</span>                 :<span class="tlaGNC">           5 :   return {};</span></span>
+<span id="L431"><span class="lineNum">     431</span>                 :<span class="tlaGNC">         127 : }</span></span>
+<span id="L432"><span class="lineNum">     432</span>                 :             : </span>
+<span id="L433"><span class="lineNum">     433</span>                 :             : // Writes one entry's header and, for a regular file, its bytes. The size has to be known up front</span>
+<span id="L434"><span class="lineNum">     434</span>                 :             : // (tar puts it in the header), so it is taken from the stat rather than from the read.</span>
+<span id="L435"><span class="lineNum">     435</span>                 :<span class="tlaGNC">         134 : absl::Status WriteOne(struct ::archive&amp; writer_ref, const PackEntry&amp; entry) {</span></span>
+<span id="L436"><span class="lineNum">     436</span>                 :<span class="tlaGNC">         134 :   struct ::archive* const writer = &amp;writer_ref;</span></span>
+<span id="L437"><span class="lineNum">     437</span>                 :<span class="tlaGNC">         134 :   std::error_code error;</span></span>
+<span id="L438"><span class="lineNum">     438</span>                 :<span class="tlaGNC">         134 :   const stdfs::path source(entry.source);</span></span>
+<span id="L439"><span class="lineNum">     439</span>   [<span class="tlaGBC" title="branch 0 was taken 25 times"> + </span><span class="tlaGBC" title="branch 1 was taken 109 times"> + </span><span class="tlaGBC" title="branch 2 was taken 25 times"> + </span><span class="tlaUNC" title="branch 3 was not taken"> - </span>]:<span class="tlaGNC">         134 :   static const std::int64_t kFileClockToUnixEpoch = FileClockToUnixEpoch();</span></span>
+<span id="L440"><span class="lineNum">     440</span>                 :<span class="tlaGNC">         134 :   const stdfs::file_status status = stdfs::symlink_status(source, error);</span></span>
+<span id="L441"><span class="lineNum">     441</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 131 times"> + </span>]:<span class="tlaGNC">         134 :   if (error) {</span></span>
+<span id="L442"><span class="lineNum">     442</span>                 :<span class="tlaGNC">           3 :     return absl::NotFoundError(absl::StrCat(&quot;cannot stat '&quot;, entry.source, &quot;': &quot;, error.message()));</span></span>
+<span id="L443"><span class="lineNum">     443</span>                 :             :   }</span>
+<span id="L444"><span class="lineNum">     444</span>                 :<span class="tlaGNC">         131 :   const EntryPtr header{::archive_entry_new()};</span></span>
+<span id="L445"><span class="lineNum">     445</span>                 :<span class="tlaGNC">         131 :   if (header == nullptr) {  // LCOV_EXCL_BR_LINE: libarchive allocation failure injection.</span></span>
+<span id="L446"><span class="lineNum">     446</span>                 :<span class="tlaUNC">           0 :     return absl::UnavailableError(&quot;out of memory building an archive entry&quot;);</span></span>
+<span id="L447"><span class="lineNum">     447</span>                 :             :   }</span>
+<span id="L448"><span class="lineNum">     448</span>                 :<span class="tlaGNC">         131 :   ::archive_entry_set_pathname(header.get(), entry.name.c_str());</span></span>
+<span id="L449"><span class="lineNum">     449</span>                 :             :   // Masked as filesystem perms rather than as an int, which keeps the bit operation off a signed</span>
+<span id="L450"><span class="lineNum">     450</span>                 :             :   // type; `perms::all` is the 0777 the archive header wants.</span>
+<span id="L451"><span class="lineNum">     451</span>                 :<span class="tlaGNC">         131 :   ::archive_entry_set_perm(header.get(), static_cast&lt;::mode_t&gt;(status.permissions() &amp; stdfs::perms::all));</span></span>
+<span id="L452"><span class="lineNum">     452</span>                 :             :   // The modification time travels with the file; without it every member unpacks stamped 1970, which</span>
+<span id="L453"><span class="lineNum">     453</span>                 :             :   // breaks the make / rsync comparisons an archive of source files exists for. Ownership deliberately</span>
+<span id="L454"><span class="lineNum">     454</span>                 :             :   // does NOT travel: it is stored as 0:0, the reproducible-archive convention, so unpacking as root</span>
+<span id="L455"><span class="lineNum">     455</span>                 :             :   // cannot hand files to whoever happened to own them on the machine that packed them.</span>
+<span id="L456"><span class="lineNum">     456</span>         [<span class="tlaGBC" title="branch 0 was taken 131 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">         131 :   if (const stdfs::file_time_type when = stdfs::last_write_time(source, error); !error) {</span></span>
+<span id="L457"><span class="lineNum">     457</span>                 :             :     const auto seconds =</span>
+<span id="L458"><span class="lineNum">     458</span>                 :<span class="tlaGNC">         131 :         std::chrono::duration_cast&lt;std::chrono::seconds&gt;(when.time_since_epoch()).count() + kFileClockToUnixEpoch;</span></span>
+<span id="L459"><span class="lineNum">     459</span>                 :<span class="tlaGNC">         131 :     ::archive_entry_set_mtime(header.get(), static_cast&lt;::time_t&gt;(seconds), 0);</span></span>
+<span id="L460"><span class="lineNum">     460</span>                 :             :   }</span>
+<span id="L461"><span class="lineNum">     461</span>                 :<span class="tlaGNC">         131 :   error.clear();</span></span>
+<span id="L462"><span class="lineNum">     462</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 130 times"> + </span>]:<span class="tlaGNC">         131 :   if (stdfs::is_symlink(status)) {</span></span>
+<span id="L463"><span class="lineNum">     463</span>                 :<span class="tlaGNC">           1 :     const stdfs::path target = stdfs::read_symlink(source, error);</span></span>
+<span id="L464"><span class="lineNum">     464</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :     if (error) {</span></span>
+<span id="L465"><span class="lineNum">     465</span>                 :<span class="tlaUNC">           0 :       return absl::NotFoundError(absl::StrCat(&quot;cannot read the link '&quot;, entry.source, &quot;': &quot;, error.message()));</span></span>
+<span id="L466"><span class="lineNum">     466</span>                 :             :     }</span>
+<span id="L467"><span class="lineNum">     467</span>                 :<span class="tlaGNC">           1 :     ::archive_entry_set_filetype(header.get(), AE_IFLNK);</span></span>
+<span id="L468"><span class="lineNum">     468</span>                 :<span class="tlaGNC">           1 :     ::archive_entry_set_symlink(header.get(), target.string().c_str());</span></span>
+<span id="L469"><span class="lineNum">     469</span>   [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span><span class="tlaGBC" title="branch 2 was taken 4 times"> + </span><span class="tlaGBC" title="branch 3 was taken 126 times"> + </span>]:<span class="tlaGNC">         131 :   } else if (stdfs::is_directory(status)) {</span></span>
+<span id="L470"><span class="lineNum">     470</span>                 :<span class="tlaGNC">           4 :     ::archive_entry_set_filetype(header.get(), AE_IFDIR);</span></span>
+<span id="L471"><span class="lineNum">     471</span>                 :             :   } else {</span>
+<span id="L472"><span class="lineNum">     472</span>                 :<span class="tlaGNC">         126 :     const std::uintmax_t size = stdfs::file_size(source, error);</span></span>
+<span id="L473"><span class="lineNum">     473</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 126 times"> + </span>]:<span class="tlaGNC">         126 :     if (error) {</span></span>
+<span id="L474"><span class="lineNum">     474</span>                 :<span class="tlaUNC">           0 :       return absl::NotFoundError(absl::StrCat(&quot;cannot size '&quot;, entry.source, &quot;': &quot;, error.message()));</span></span>
+<span id="L475"><span class="lineNum">     475</span>                 :             :     }</span>
+<span id="L476"><span class="lineNum">     476</span>                 :<span class="tlaGNC">         126 :     ::archive_entry_set_filetype(header.get(), AE_IFREG);</span></span>
+<span id="L477"><span class="lineNum">     477</span>                 :<span class="tlaGNC">         126 :     ::archive_entry_set_size(header.get(), static_cast&lt;::la_int64_t&gt;(size));</span></span>
+<span id="L478"><span class="lineNum">     478</span>                 :             :   }</span>
+<span id="L479"><span class="lineNum">     479</span>                 :<span class="tlaGNC">         131 :   if (::archive_write_header(writer, header.get()) &lt; ARCHIVE_WARN) {  // LCOV_EXCL_BR_LINE</span></span>
+<span id="L480"><span class="lineNum">     480</span>                 :             :     return absl::UnavailableError(</span>
+<span id="L481"><span class="lineNum">     481</span>                 :<span class="tlaUNC">           0 :         absl::StrCat(&quot;cannot write the entry '&quot;, entry.name, &quot;': &quot;, ::archive_error_string(writer)));</span></span>
+<span id="L482"><span class="lineNum">     482</span>                 :             :   }</span>
+<span id="L483"><span class="lineNum">     483</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 126 times"> + </span>]:<span class="tlaGNC">         131 :   if (!stdfs::is_regular_file(status)) {</span></span>
+<span id="L484"><span class="lineNum">     484</span>                 :<span class="tlaGNC">           5 :     return absl::OkStatus();  // a directory or link has a header and no content</span></span>
+<span id="L485"><span class="lineNum">     485</span>                 :             :   }</span>
+<span id="L486"><span class="lineNum">     486</span>                 :             :   // Streamed in blocks: an archive may hold files far larger than memory. A stream rather than</span>
+<span id="L487"><span class="lineNum">     487</span>                 :             :   // stdio because it closes itself on every path out of here, including the error returns below.</span>
+<span id="L488"><span class="lineNum">     488</span>                 :             :   // XFF_HOST_IO: archive pack consumes the explicitly selected host input file.</span>
+<span id="L489"><span class="lineNum">     489</span>                 :<span class="tlaGNC">         126 :   std::ifstream file(source, std::ios::binary);</span></span>
+<span id="L490"><span class="lineNum">     490</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 126 times"> + </span>]:<span class="tlaGNC">         126 :   if (!file.is_open()) {</span></span>
+<span id="L491"><span class="lineNum">     491</span>                 :<span class="tlaUNC">           0 :     return absl::NotFoundError(absl::StrCat(&quot;cannot open '&quot;, entry.source, &quot;'&quot;));</span></span>
+<span id="L492"><span class="lineNum">     492</span>                 :             :   }</span>
+<span id="L493"><span class="lineNum">     493</span>                 :<span class="tlaGNC">         126 :   std::array&lt;char, kBlockSize&gt; buffer{};</span></span>
+<span id="L494"><span class="lineNum">     494</span>   [<span class="tlaGBC" title="branch 0 was taken 252 times"> + </span><span class="tlaGBC" title="branch 1 was taken 63 times"> + </span><span class="tlaGBC" title="branch 2 was taken 126 times"> + </span><span class="tlaGBC" title="branch 3 was taken 126 times"> + </span> :<span class="tlaGNC">         756 :   while (file.read(buffer.data(), static_cast&lt;std::streamsize&gt;(buffer.size())) || file.gcount() &gt; 0) {</span></span>
+<span class="lineNum">        </span>          <span class="tlaGBC" title="branch 4 was taken 189 times"> + </span><span class="tlaGBC" title="branch 5 was taken 126 times"> + </span>]
+<span id="L495"><span class="lineNum">     495</span>                 :<span class="tlaGNC">         189 :     const std::streamsize read = file.gcount();</span></span>
+<span id="L496"><span class="lineNum">     496</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 189 times"> + </span>]:<span class="tlaGNC">         189 :     if (read &lt;= 0) {</span></span>
+<span id="L497"><span class="lineNum">     497</span>                 :<span class="tlaUNC">           0 :       break;</span></span>
+<span id="L498"><span class="lineNum">     498</span>                 :             :     }</span>
+<span id="L499"><span class="lineNum">     499</span>                 :<span class="tlaGNC">         378 :     if (::archive_write_data(writer, buffer.data(), static_cast&lt;std::size_t&gt;(read)) &lt; 0) {  // LCOV_EXCL_BR_LINE</span></span>
+<span id="L500"><span class="lineNum">     500</span>                 :<span class="tlaUNC">           0 :       return absl::UnavailableError(absl::StrCat(&quot;cannot write '&quot;, entry.name, &quot;': &quot;, ::archive_error_string(writer)));</span></span>
+<span id="L501"><span class="lineNum">     501</span>                 :             :     }</span>
+<span id="L502"><span class="lineNum">     502</span>                 :             :   }</span>
+<span id="L503"><span class="lineNum">     503</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 126 times"> + </span>]:<span class="tlaGNC">         126 :   if (file.bad()) {</span></span>
+<span id="L504"><span class="lineNum">     504</span>                 :<span class="tlaUNC">           0 :     return absl::DataLossError(absl::StrCat(&quot;read failed part way through '&quot;, entry.source, &quot;'&quot;));</span></span>
+<span id="L505"><span class="lineNum">     505</span>                 :             :   }</span>
+<span id="L506"><span class="lineNum">     506</span>                 :<span class="tlaGNC">         126 :   return absl::OkStatus();</span></span>
+<span id="L507"><span class="lineNum">     507</span>                 :<span class="tlaGNC">         134 : }</span></span>
+<span id="L508"><span class="lineNum">     508</span>                 :             : </span>
+<span id="L509"><span class="lineNum">     509</span>                 :             : }  // namespace</span>
+<span id="L510"><span class="lineNum">     510</span>                 :             : </span>
+<span id="L511"><span class="lineNum">     511</span>                 :<span class="tlaGNC">          35 : std::string FormatFromName(std::string_view path) {</span></span>
+<span id="L512"><span class="lineNum">     512</span>                 :<span class="tlaGNC">          35 :   const OptionalFormatSuffix found = FormatEntryFor(path);</span></span>
+<span id="L513"><span class="lineNum">     513</span>   [<span class="tlaGBC" title="branch 0 was taken 33 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span><span class="tlaGBC" title="branch 2 was taken 33 times"> + </span><span class="tlaGBC" title="branch 3 was taken 2 times"> + </span>]:<span class="tlaGNC">         101 :   return found.has_value() ? std::string(found-&gt;name) : std::string();</span></span>
+<span id="L514"><span class="lineNum">     514</span>                 :             : }</span>
+<span id="L515"><span class="lineNum">     515</span>                 :             : </span>
+<span id="L516"><span class="lineNum">     516</span>                 :<span class="tlaGNC">         298 : std::vector&lt;PackOptionDoc&gt; PackOptionDocs() {</span></span>
+<span id="L517"><span class="lineNum">     517</span>                 :<span class="tlaGNC">         298 :   std::vector&lt;PackOptionDoc&gt; docs;</span></span>
+<span id="L518"><span class="lineNum">     518</span>                 :<span class="tlaGNC">         298 :   docs.reserve(kPackOptions.size());</span></span>
+<span id="L519"><span class="lineNum">     519</span>         [<span class="tlaGBC" title="branch 0 was taken 1490 times"> + </span><span class="tlaGBC" title="branch 1 was taken 298 times"> + </span>]:<span class="tlaGNC">        1788 :   for (const PackOptionSpec&amp; spec : kPackOptions) {</span></span>
+<span id="L520"><span class="lineNum">     520</span>                 :<span class="tlaGNC">        1490 :     std::string syntax;</span></span>
+<span id="L521"><span class="lineNum">     521</span>   [<span class="tlaGBC" title="branch 0 was taken 596 times"> + </span><span class="tlaGBC" title="branch 1 was taken 298 times"> + </span><span class="tlaGBC" title="branch 2 was taken 596 times"> + </span><span class="tlaUNC" title="branch 3 was not taken"> - </span>]:<span class="tlaGNC">        1490 :     switch (spec.kind) {</span></span>
+<span id="L522"><span class="lineNum">     522</span>                 :<span class="tlaGNC">         596 :       case PackValue::kBool: syntax = &quot;yes|no&quot;; break;</span></span>
+<span id="L523"><span class="lineNum">     523</span>                 :<span class="tlaGNC">         298 :       case PackValue::kEnum: syntax = absl::StrJoin(spec.values, &quot;|&quot;); break;</span></span>
+<span id="L524"><span class="lineNum">     524</span>                 :<span class="tlaGNC">         596 :       case PackValue::kInt: syntax = &quot;N&quot;; break;</span></span>
+<span id="L525"><span class="lineNum">     525</span>                 :             :     }</span>
+<span id="L526"><span class="lineNum">     526</span>                 :<span class="tlaGNC">        2980 :     docs.push_back(</span></span>
+<span id="L527"><span class="lineNum">     527</span>                 :<span class="tlaGNC">        1490 :         {.name = std::string(spec.name),</span></span>
+<span id="L528"><span class="lineNum">     528</span>                 :<span class="tlaGNC">        1490 :          .value_syntax = std::move(syntax),</span></span>
+<span id="L529"><span class="lineNum">     529</span>                 :             :          .formats = spec.formats,</span>
+<span id="L530"><span class="lineNum">     530</span>                 :<span class="tlaGNC">        2980 :          .detail = std::string(spec.detail)});</span></span>
+<span id="L531"><span class="lineNum">     531</span>                 :<span class="tlaGNC">        1490 :   }</span></span>
+<span id="L532"><span class="lineNum">     532</span>                 :<span class="tlaGNC">         298 :   return docs;</span></span>
+<span id="L533"><span class="lineNum">     533</span>                 :             : }</span>
+<span id="L534"><span class="lineNum">     534</span>                 :             : </span>
+<span id="L535"><span class="lineNum">     535</span>                 :<span class="tlaGNC">         302 : std::vector&lt;std::string&gt; PackFormats() {</span></span>
+<span id="L536"><span class="lineNum">     536</span>                 :<span class="tlaGNC">         302 :   std::vector&lt;std::string&gt; names;</span></span>
+<span id="L537"><span class="lineNum">     537</span>                 :<span class="tlaGNC">         302 :   names.reserve(kFormats.size());</span></span>
+<span id="L538"><span class="lineNum">     538</span>         [<span class="tlaGBC" title="branch 0 was taken 5436 times"> + </span><span class="tlaGBC" title="branch 1 was taken 302 times"> + </span>]:<span class="tlaGNC">        5738 :   for (const FormatSuffix&amp; format : kFormats) {</span></span>
+<span id="L539"><span class="lineNum">     539</span>                 :<span class="tlaGNC">        5436 :     names.emplace_back(format.name);</span></span>
+<span id="L540"><span class="lineNum">     540</span>                 :             :   }</span>
+<span id="L541"><span class="lineNum">     541</span>                 :<span class="tlaGNC">         302 :   return names;</span></span>
+<span id="L542"><span class="lineNum">     542</span>                 :             : }</span>
+<span id="L543"><span class="lineNum">     543</span>                 :             : </span>
+<span id="L544"><span class="lineNum">     544</span>                 :<span class="tlaGNC">          92 : absl::Status PackFiles(std::string_view path, const std::vector&lt;PackEntry&gt;&amp; entries, const PackSettings&amp; options) {</span></span>
+<span id="L545"><span class="lineNum">     545</span>                 :<span class="tlaGNC">          92 :   const OptionalFormatSuffix format = FormatEntryFor(path);</span></span>
+<span id="L546"><span class="lineNum">     546</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 89 times"> + </span>]:<span class="tlaGNC">          92 :   if (!format.has_value()) {</span></span>
+<span id="L547"><span class="lineNum">     547</span>                 :             :     return absl::InvalidArgumentError(</span>
+<span id="L548"><span class="lineNum">     548</span>                 :<span class="tlaGNC">           6 :         absl::StrCat(</span></span>
+<span id="L549"><span class="lineNum">     549</span>                 :             :             &quot;cannot tell the archive format from '&quot;, path, &quot;'; expected one ending in .&quot;,</span>
+<span id="L550"><span class="lineNum">     550</span>                 :<span class="tlaGNC">           9 :             absl::StrJoin(PackFormats(), &quot;, .&quot;)));</span></span>
+<span id="L551"><span class="lineNum">     551</span>                 :             :   }</span>
+<span id="L552"><span class="lineNum">     552</span>                 :             :   // Written beside the target and renamed over it, so a failure part way leaves no half archive -</span>
+<span id="L553"><span class="lineNum">     553</span>                 :             :   // and an existing file survives an attempt that fails. Same contract as the member rewrite.</span>
+<span id="L554"><span class="lineNum">     554</span>                 :<span class="tlaGNC">          89 :   const stdfs::path target(path);</span></span>
+<span id="L555"><span class="lineNum">     555</span>                 :<span class="tlaGNC">          89 :   const stdfs::path temporary = stdfs::path(target).concat(&quot;.xff-pack&quot;);</span></span>
+<span id="L556"><span class="lineNum">     556</span>                 :             :   {</span>
+<span id="L557"><span class="lineNum">     557</span>                 :<span class="tlaGNC">          89 :     const WritePtr writer{::archive_write_new()};</span></span>
+<span id="L558"><span class="lineNum">     558</span>                 :<span class="tlaGNC">          89 :     if (writer == nullptr) {  // LCOV_EXCL_BR_LINE: libarchive allocation failure injection.</span></span>
+<span id="L559"><span class="lineNum">     559</span>                 :<span class="tlaUNC">           0 :       return absl::UnavailableError(&quot;out of memory creating the archive writer&quot;);</span></span>
+<span id="L560"><span class="lineNum">     560</span>                 :             :     }</span>
+<span id="L561"><span class="lineNum">     561</span>                 :<span class="tlaGNC">          89 :     if (::archive_write_set_format(writer.get(), format-&gt;format) != ARCHIVE_OK</span></span>
+<span id="L562"><span class="lineNum">     562</span>   [<span class="tlaGBC" title="branch 0 was taken 89 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span><span class="tlaGBC" title="branch 2 was taken 56 times"> + </span><span class="tlaGBC" title="branch 3 was taken 33 times"> + </span> :<span class="tlaGNC">         145 :         || (format-&gt;filter != ARCHIVE_FILTER_NONE</span></span>
+<span class="lineNum">        </span>          <span class="tlaUNC" title="branch 4 was not taken"> - </span><span class="tlaGBC" title="branch 5 was taken 89 times"> + </span>]
+<span id="L563"><span class="lineNum">     563</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 56 times"> + </span>]:<span class="tlaGNC">          56 :             &amp;&amp; ::archive_write_add_filter(writer.get(), format-&gt;filter) != ARCHIVE_OK)) {</span></span>
+<span id="L564"><span class="lineNum">     564</span>                 :             :       return absl::InvalidArgumentError(</span>
+<span id="L565"><span class="lineNum">     565</span>                 :<span class="tlaUNC">           0 :           absl::StrCat(&quot;this build cannot write &quot;, format-&gt;name, &quot;: &quot;, ::archive_error_string(writer.get())));</span></span>
+<span id="L566"><span class="lineNum">     566</span>                 :             :     }</span>
+<span id="L567"><span class="lineNum">     567</span>                 :             :     // Options are translated and applied before anything is written, so a rejected one costs no file.</span>
+<span id="L568"><span class="lineNum">     568</span>                 :             :     // Last value for a name wins, which is what lets a caller append rather than rewrite its list.</span>
+<span id="L569"><span class="lineNum">     569</span>                 :<span class="tlaGNC">          89 :     absl::btree_map&lt;std::string, std::string&gt; resolved;</span></span>
+<span id="L570"><span class="lineNum">     570</span>         [<span class="tlaGBC" title="branch 0 was taken 63 times"> + </span><span class="tlaGBC" title="branch 1 was taken 89 times"> + </span>]:<span class="tlaGNC">         152 :     for (const PackSetting&amp; option : options.options) {</span></span>
+<span id="L571"><span class="lineNum">     571</span>                 :<span class="tlaGNC">          63 :       resolved[option.name] = option.value;</span></span>
+<span id="L572"><span class="lineNum">     572</span>                 :             :     }</span>
+<span id="L573"><span class="lineNum">     573</span>         [<span class="tlaGBC" title="branch 0 was taken 59 times"> + </span><span class="tlaGBC" title="branch 1 was taken 74 times"> + </span>]:<span class="tlaGNC">         133 :     for (const auto&amp; [name, value] : resolved) {</span></span>
+<span id="L574"><span class="lineNum">     574</span>         [<span class="tlaGBC" title="branch 0 was taken 15 times"> + </span><span class="tlaGBC" title="branch 1 was taken 44 times"> + </span>]:<span class="tlaGNC">          59 :       MBO_ASSIGN_OR_RETURN(</span></span>
+<span id="L575"><span class="lineNum">     575</span>                 :             :           const std::string setting, TranslateOption(PackSetting{.name = name, .value = value}, *format));</span>
+<span id="L576"><span class="lineNum">     576</span>                 :<span class="tlaGNC">          44 :       if (::archive_write_set_options(writer.get(), setting.c_str()) != ARCHIVE_OK) {  // LCOV_EXCL_BR_LINE</span></span>
+<span id="L577"><span class="lineNum">     577</span>                 :             :         return absl::InvalidArgumentError(</span>
+<span id="L578"><span class="lineNum">     578</span>                 :<span class="tlaUNC">           0 :             absl::StrCat(</span></span>
+<span id="L579"><span class="lineNum">     579</span>                 :<span class="tlaUNC">           0 :                 &quot;this build cannot set '&quot;, name, &quot;=&quot;, value, &quot;' on &quot;, format-&gt;name, &quot;: &quot;,</span></span>
+<span id="L580"><span class="lineNum">     580</span>                 :<span class="tlaUNC">           0 :                 ::archive_error_string(writer.get())));</span></span>
+<span id="L581"><span class="lineNum">     581</span>                 :             :       }</span>
+<span id="L582"><span class="lineNum">     582</span>   [<span class="tlaGBC" title="branch 0 was taken 44 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span><span class="tlaGBC" title="branch 2 was taken 44 times"> + </span><span class="tlaGBC" title="branch 3 was taken 15 times"> + </span>]:<span class="tlaGNC">          59 :     }</span></span>
+<span id="L583"><span class="lineNum">     583</span>                 :<span class="tlaGNC">          74 :     if (::archive_write_open_filename(writer.get(), temporary.string().c_str()) != ARCHIVE_OK) {  // LCOV_EXCL_BR_LINE</span></span>
+<span id="L584"><span class="lineNum">     584</span>                 :             :       return absl::UnavailableError(</span>
+<span id="L585"><span class="lineNum">     585</span>                 :<span class="tlaUNC">           0 :           absl::StrCat(&quot;cannot create '&quot;, temporary.string(), &quot;': &quot;, ::archive_error_string(writer.get())));</span></span>
+<span id="L586"><span class="lineNum">     586</span>                 :             :     }</span>
+<span id="L587"><span class="lineNum">     587</span>         [<span class="tlaGBC" title="branch 0 was taken 134 times"> + </span><span class="tlaGBC" title="branch 1 was taken 71 times"> + </span>]:<span class="tlaGNC">         205 :     for (const PackEntry&amp; entry : entries) {</span></span>
+<span id="L588"><span class="lineNum">     588</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 131 times"> + </span>]:<span class="tlaGNC">         134 :       if (const absl::Status status = WriteOne(*writer, entry); !status.ok()) {</span></span>
+<span id="L589"><span class="lineNum">     589</span>                 :<span class="tlaGNC">           3 :         std::error_code ignored;</span></span>
+<span id="L590"><span class="lineNum">     590</span>                 :             :         // XFF_HOST_IO: archive pack removes its explicitly selected temporary output.</span>
+<span id="L591"><span class="lineNum">     591</span>                 :<span class="tlaGNC">           3 :         stdfs::remove(temporary, ignored);</span></span>
+<span id="L592"><span class="lineNum">     592</span>                 :<span class="tlaGNC">           3 :         return status;</span></span>
+<span id="L593"><span class="lineNum">     593</span>         [<span class="tlaGBC" title="branch 0 was taken 131 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">         134 :       }</span></span>
+<span id="L594"><span class="lineNum">     594</span>                 :             :     }</span>
+<span id="L595"><span class="lineNum">     595</span>   [<span class="tlaGBC" title="branch 0 was taken 71 times"> + </span><span class="tlaGBC" title="branch 1 was taken 18 times"> + </span><span class="tlaGBC" title="branch 2 was taken 71 times"> + </span><span class="tlaGBC" title="branch 3 was taken 18 times"> + </span>]:<span class="tlaGNC">         107 :   }  // the deleter closes the writer, which is when zip writes its directory</span></span>
+<span id="L596"><span class="lineNum">     596</span>                 :<span class="tlaGNC">          71 :   std::error_code error;</span></span>
+<span id="L597"><span class="lineNum">     597</span>                 :             :   // XFF_HOST_IO: archive pack publishes its explicitly selected output file.</span>
+<span id="L598"><span class="lineNum">     598</span>                 :<span class="tlaGNC">          71 :   stdfs::rename(temporary, target, error);</span></span>
+<span id="L599"><span class="lineNum">     599</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 71 times"> + </span>]:<span class="tlaGNC">          71 :   if (error) {</span></span>
+<span id="L600"><span class="lineNum">     600</span>                 :<span class="tlaUNC">           0 :     std::error_code ignored;</span></span>
+<span id="L601"><span class="lineNum">     601</span>                 :             :     // XFF_HOST_IO: archive pack removes its explicitly selected temporary output.</span>
+<span id="L602"><span class="lineNum">     602</span>                 :<span class="tlaUNC">           0 :     stdfs::remove(temporary, ignored);</span></span>
+<span id="L603"><span class="lineNum">     603</span>                 :<span class="tlaUNC">           0 :     return absl::UnavailableError(absl::StrCat(&quot;cannot place '&quot;, path, &quot;': &quot;, error.message()));</span></span>
+<span id="L604"><span class="lineNum">     604</span>                 :             :   }</span>
+<span id="L605"><span class="lineNum">     605</span>                 :<span class="tlaGNC">          71 :   return absl::OkStatus();</span></span>
+<span id="L606"><span class="lineNum">     606</span>                 :<span class="tlaGNC">          89 : }</span></span>
+<span id="L607"><span class="lineNum">     607</span>                 :             : </span>
+<span id="L608"><span class="lineNum">     608</span>                 :             : }  // namespace xff::archive</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table class="xffPolicy">
+            <thead>
+              <tr>
+                <th scope="col">Global coverage policy</th>
+                <th scope="col">Low</th>
+                <th scope="col">Medium</th>
+                <th scope="col">High</th>
+                <th scope="col">Enforced</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <th scope="row">Lines</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 92%</td>
+              <td class="headerValueLegH">&ge; 92%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Branches</th>
+              <td class="headerValueLegL">&lt; 80%</td>
+              <td class="headerValueLegM">&ge; 80% and &lt; 82%</td>
+              <td class="headerValueLegH">&ge; 82%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Functions</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 95%</td>
+              <td class="headerValueLegH">&ge; 95%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            </tbody>
+          </table>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 2.5-0</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

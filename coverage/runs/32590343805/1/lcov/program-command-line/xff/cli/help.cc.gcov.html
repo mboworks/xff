@@ -1,0 +1,263 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - xff production coverage - program-command-line/xff/cli/help.cc</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../index.html">top level</a> - <a href="index.html">program-command-line/xff/cli</a> - help.cc<span style="font-size: 80%;"> (source / <a href="help.cc.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">xff production coverage</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">31</td>
+            <td class="headerCovTableEntry">31</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-08-22 18:27:53</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">4</td>
+            <td class="headerCovTableEntry">4</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+            | Branches:
+            <span class="coverLegendCov">+</span> taken
+            <span class="coverLegendNoCov">-</span> not taken
+            <span class="coverLegendNoCov">#</span> not executed
+</td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryHi">96.4&nbsp;%</td>
+            <td class="headerCovTableEntry">28</td>
+            <td class="headerCovTableEntry">27</td>
+          </tr>
+                  <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : // SPDX-FileCopyrightText: Copyright (c) The helly25 authors (helly25.com)</span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : // SPDX-License-Identifier: Apache-2.0</span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : //</span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : // Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : // you may not use this file except in compliance with the License.</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : // You may obtain a copy of the License at</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : //</span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : //      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : //</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             : // Unless required by applicable law or agreed to in writing, software</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : // distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : // See the License for the specific language governing permissions and</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : // limitations under the License.</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : </span>
+<span id="L16"><span class="lineNum">      16</span>                 :             : #include &quot;xff/cli/help.h&quot;</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             : </span>
+<span id="L18"><span class="lineNum">      18</span>                 :             : #include &lt;string&gt;</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             : #include &lt;vector&gt;</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             : </span>
+<span id="L21"><span class="lineNum">      21</span>                 :             : #include &quot;absl/strings/str_cat.h&quot;</span>
+<span id="L22"><span class="lineNum">      22</span>                 :             : #include &quot;xff/registry/descriptor.h&quot;</span>
+<span id="L23"><span class="lineNum">      23</span>                 :             : </span>
+<span id="L24"><span class="lineNum">      24</span>                 :             : namespace xff::cli {</span>
+<span id="L25"><span class="lineNum">      25</span>                 :             : </span>
+<span id="L26"><span class="lineNum">      26</span>                 :             : // The `--help=cookbook` topic (aliases examples / recipes), folded into --help=full: task-oriented</span>
+<span id="L27"><span class="lineNum">      27</span>                 :             : // worked examples that compose xff's building blocks end to end. The SOT is the recipe list below;</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             : // every command is kept runnable as written, and is executed end to end by the tests in</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             : // //xff/examples:cookbook_test - whose guard case fails CI if a recipe is added or reworded here</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             : // without a matching test, so these examples ship tested, not just rendered. This complements the</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             : // reference topics (--help=fields / --help=stats / --help=NAME), which describe pieces in isolation.</span>
+<span id="L32"><span class="lineNum">      32</span>                 :             : // Rendered as model nodes by help_build.cc's BuildExamples().</span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC tlaBgGNC">          49 : absl::Span&lt;const Recipe&gt; CookbookRecipes() {</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :             :   static const std::vector&lt;Recipe&gt;* const kRecipes = new std::vector&lt;Recipe&gt;{</span>
+<span id="L35"><span class="lineNum">      35</span>                 :             :       {.task = &quot;Ten largest files&quot;,</span>
+<span id="L36"><span class="lineNum">      36</span>                 :             :        .command = &quot;xff . -type f -printf '%s\\t%p\\n' | sort -rn | head&quot;,</span>
+<span id="L37"><span class="lineNum">      37</span>                 :             :        .note = &quot;%s is the size, %p the path; the shell sorts and takes the top ten. -printf builds any &quot;</span>
+<span id="L38"><span class="lineNum">      38</span>                 :             :                &quot;columnar line you need.&quot;},</span>
+<span id="L39"><span class="lineNum">      39</span>                 :             :       {.task = &quot;Disk use per file type&quot;,</span>
+<span id="L40"><span class="lineNum">      40</span>                 :             :        .command = &quot;xff . -type f --summary=ext&quot;,</span>
+<span id="L41"><span class="lineNum">      41</span>                 :             :        .note = &quot;a count + total size per extension; the --summary global reads naturally at the end, &quot;</span>
+<span id="L42"><span class="lineNum">      42</span>                 :             :                &quot;after the expression (a --long global may sit anywhere). Swap in --histogram=ext for &quot;</span>
+<span id="L43"><span class="lineNum">      43</span>                 :             :                &quot;bars, or --histogram='ext:sum(lines)' to rank by lines. See --help=stats.&quot;},</span>
+<span id="L44"><span class="lineNum">      44</span>                 :             :       {.task = &quot;Delete stale temp files, safely&quot;,</span>
+<span id="L45"><span class="lineNum">      45</span>                 :             :        .command = &quot;xff . -type f -name '*.tmp' -mtime +7 -delete --dry-run&quot;,</span>
+<span id="L46"><span class="lineNum">      46</span>                 :             :        .note = &quot;lists what -delete WOULD remove (guarded by --dry-run); rerun without it to delete. &quot;</span>
+<span id="L47"><span class="lineNum">      47</span>                 :             :                &quot;-delete implies -depth so directories empty first.&quot;},</span>
+<span id="L48"><span class="lineNum">      48</span>                 :             :       {.task = &quot;Search code content, filtered by language&quot;,</span>
+<span id="L49"><span class="lineNum">      49</span>                 :             :        .command = &quot;xff src -lang 'C*' -grep 'TODO'&quot;,</span>
+<span id="L50"><span class="lineNum">      50</span>                 :             :        .note = &quot;prints every TODO line as path:lineno:text in C / C++ / C# files; add -c for per-file &quot;</span>
+<span id="L51"><span class="lineNum">      51</span>                 :             :                &quot;counts or --context=2 for surrounding lines.&quot;},</span>
+<span id="L52"><span class="lineNum">      52</span>                 :             :       {.task = &quot;Per-file git-blame author line counts&quot;,</span>
+<span id="L53"><span class="lineNum">      53</span>                 :             :        .command = &quot;xff . -text -exec git blame --line-porcelain {} \\; &quot;</span>
+<span id="L54"><span class="lineNum">      54</span>                 :             :                   &quot;| grep '^author ' | sort | uniq -c | sort -rn&quot;,</span>
+<span id="L55"><span class="lineNum">      55</span>                 :             :        .note = &quot;runs git blame on each text file; the shell pipe tallies lines per author across the &quot;</span>
+<span id="L56"><span class="lineNum">      56</span>                 :             :                &quot;tree. -text skips binaries (which git blame cannot line-blame). -exec feeds any pipeline &quot;</span>
+<span id="L57"><span class="lineNum">      57</span>                 :             :                &quot;the field vocabulary cannot express alone.&quot;},</span>
+<span id="L58"><span class="lineNum">      58</span>                 :             :       {.task = &quot;Author line counts, natively (no shell pipe)&quot;,</span>
+<span id="L59"><span class="lineNum">      59</span>                 :             :        .command = &quot;xff -g . -text -capturedir:blame git blame --line-porcelain {} \\; &quot;</span>
+<span id="L60"><span class="lineNum">      60</span>                 :             :                   &quot;--summary='{capture.blame:m/^author (.+)$/\\1/}'&quot;,</span>
+<span id="L61"><span class="lineNum">      61</span>                 :             :        .note = &quot;the recipe above with the awk|sort tail folded into xff. -capturedir runs git blame in each &quot;</span>
+<span id="L62"><span class="lineNum">      62</span>                 :             :                &quot;file's own directory (repo-safe, works across nested repos); --summary folds that output via &quot;</span>
+<span id="L63"><span class="lineNum">      63</span>                 :             :                &quot;an m// extraction, tallying lines per author across the tree - no external pipe. -g honors &quot;</span>
+<span id="L64"><span class="lineNum">      64</span>                 :             :                &quot;.gitignore and skips .git; -text keeps blame off binaries. Pass several roots (a b c ...) to &quot;</span>
+<span id="L65"><span class="lineNum">      65</span>                 :             :                &quot;span multiple trees. A single-dash global like -g leads; double-dash globals such as &quot;</span>
+<span id="L66"><span class="lineNum">      66</span>                 :             :                &quot;--summary may sit anywhere (before or after the paths).&quot;},</span>
+<span id="L67"><span class="lineNum">      67</span>                 :             :       {.task = &quot;Checksum manifest for a tree&quot;,</span>
+<span id="L68"><span class="lineNum">      68</span>                 :             :        .command = &quot;xff . -type f -hash:sha256&quot;,</span>
+<span id="L69"><span class="lineNum">      69</span>                 :             :        .note = &quot;prints `DIGEST  PATH` per file (like sha256sum); redirect to a file to snapshot a tree, &quot;</span>
+<span id="L70"><span class="lineNum">      70</span>                 :             :                &quot;then diff two runs to spot changes.&quot;},</span>
+<span id="L71"><span class="lineNum">      71</span>                 :             :       {.task = &quot;Recently changed files as machine rows&quot;,</span>
+<span id="L72"><span class="lineNum">      72</span>                 :             :        .command = &quot;xff . -type f -mtime -1 --format=jsonl&quot;,</span>
+<span id="L73"><span class="lineNum">      73</span>                 :             :        .note = &quot;everything modified in the last day, one JSON object per file, ready for jq or a script.&quot;},</span>
+<span id="L74"><span class="lineNum">      74</span>   [<span class="tlaGBC" title="Branch 0 was taken 21 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 28 times"> + </span><span class="tlaGBC" title="Branch 2 was taken 21 times"> + </span><span class="tlaUNC" title="Branch 3 was not taken"> - </span>]:<span class="tlaGNC">          91 :   };</span></span>
+<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">          49 :   return *kRecipes;</span></span>
+<span id="L76"><span class="lineNum">      76</span>                 :             : }</span>
+<span id="L77"><span class="lineNum">      77</span>                 :             : </span>
+<span id="L78"><span class="lineNum">      78</span>                 :             : // Read from the descriptor grammar (arity / binding) so the synopsis never drifts</span>
+<span id="L79"><span class="lineNum">      79</span>                 :             : // from the parser; shared with the man page. Documented in help.h.</span>
+<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">        9536 : std::string ArgHint(const registry::Descriptor&amp; descriptor) {</span></span>
+<span id="L81"><span class="lineNum">      81</span>         [<span class="tlaGBC" title="Branch 0 was taken 73 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 9463 times"> + </span>]:<span class="tlaGNC">        9536 :   if (descriptor.binding == registry::Binding::kLabel) {</span></span>
+<span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">         146 :     return &quot;[:[!]NAME]&quot;;</span></span>
+<span id="L83"><span class="lineNum">      83</span>                 :             :   }</span>
+<span id="L84"><span class="lineNum">      84</span>         [<span class="tlaGBC" title="Branch 0 was taken 146 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 9317 times"> + </span>]:<span class="tlaGNC">        9463 :   if (descriptor.binding == registry::Binding::kLabelRegex) {</span></span>
+<span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaGNC">         292 :     return &quot;:[!]NAME[=REGEX] CMD... ;&quot;;</span></span>
+<span id="L86"><span class="lineNum">      86</span>                 :             :   }</span>
+<span id="L87"><span class="lineNum">      87</span>         [<span class="tlaGBC" title="Branch 0 was taken 77 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 9240 times"> + </span>]:<span class="tlaGNC">        9317 :   if (descriptor.binding == registry::Binding::kFormat) {</span></span>
+<span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaGNC">         154 :     return &quot;[:FORMAT] PATTERN&quot;;</span></span>
+<span id="L89"><span class="lineNum">      89</span>                 :             :   }</span>
+<span id="L90"><span class="lineNum">      90</span>         [<span class="tlaGBC" title="Branch 0 was taken 74 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 9166 times"> + </span>]:<span class="tlaGNC">        9240 :   if (descriptor.binding == registry::Binding::kStyle) {</span></span>
+<span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">         148 :     return &quot;[:STYLE] TARGET&quot;;</span></span>
+<span id="L92"><span class="lineNum">      92</span>                 :             :   }</span>
+<span id="L93"><span class="lineNum">      93</span>         [<span class="tlaGBC" title="Branch 0 was taken 146 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 9020 times"> + </span>]:<span class="tlaGNC">        9166 :   if (descriptor.binding == registry::Binding::kHash) {</span></span>
+<span id="L94"><span class="lineNum">      94</span>         [<span class="tlaGBC" title="Branch 0 was taken 73 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 73 times"> + </span>]:<span class="tlaGNC">         292 :     return descriptor.arity == 0 ? &quot;[:ALGO[/ENCODING]]&quot; : &quot;[:ALGO[/ENCODING]] EXPECTED&quot;;</span></span>
+<span id="L95"><span class="lineNum">      95</span>                 :             :   }</span>
+<span id="L96"><span class="lineNum">      96</span>         [<span class="tlaGBC" title="Branch 0 was taken 75 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 8945 times"> + </span>]:<span class="tlaGNC">        9020 :   if (descriptor.binding == registry::Binding::kText) {</span></span>
+<span id="L97"><span class="lineNum">      97</span>                 :<span class="tlaGNC">         150 :     return &quot;[:FLAVOR]&quot;;</span></span>
+<span id="L98"><span class="lineNum">      98</span>                 :             :   }</span>
+<span id="L99"><span class="lineNum">      99</span>         [<span class="tlaGBC" title="Branch 0 was taken 292 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 8653 times"> + </span>]:<span class="tlaGNC">        8945 :   if (descriptor.binding == registry::Binding::kFuzzy) {</span></span>
+<span id="L100"><span class="lineNum">     100</span>                 :<span class="tlaGNC">         584 :     return &quot;[:MODEL[:PCT%]|PCT%] PATTERN&quot;;</span></span>
+<span id="L101"><span class="lineNum">     101</span>                 :             :   }</span>
+<span id="L102"><span class="lineNum">     102</span>         [<span class="tlaGBC" title="Branch 0 was taken 76 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 8577 times"> + </span>]:<span class="tlaGNC">        8653 :   if (descriptor.binding == registry::Binding::kSimilarity) {</span></span>
+<span id="L103"><span class="lineNum">     103</span>                 :<span class="tlaGNC">         152 :     return &quot;[:WIDTH[:PCT%]|PCT%] TARGET&quot;;</span></span>
+<span id="L104"><span class="lineNum">     104</span>                 :             :   }</span>
+<span id="L105"><span class="lineNum">     105</span>         [<span class="tlaGBC" title="Branch 0 was taken 294 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 8283 times"> + </span>]:<span class="tlaGNC">        8577 :   if (descriptor.arity &lt; 0) {</span></span>
+<span id="L106"><span class="lineNum">     106</span>                 :<span class="tlaGNC">         588 :     return &quot; CMD... ;&quot;;  // variadic until ';' (or '+' for -exec / -execdir)</span></span>
+<span id="L107"><span class="lineNum">     107</span>                 :             :   }</span>
+<span id="L108"><span class="lineNum">     108</span>                 :<span class="tlaGNC">        8283 :   std::string hint;</span></span>
+<span id="L109"><span class="lineNum">     109</span>         [<span class="tlaGBC" title="Branch 0 was taken 5648 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 8283 times"> + </span>]:<span class="tlaGNC">       13931 :   for (int i = 0; i &lt; descriptor.arity; ++i) {</span></span>
+<span id="L110"><span class="lineNum">     110</span>                 :<span class="tlaGNC">        5648 :     absl::StrAppend(&amp;hint, &quot; ARG&quot;);</span></span>
+<span id="L111"><span class="lineNum">     111</span>                 :             :   }</span>
+<span id="L112"><span class="lineNum">     112</span>                 :<span class="tlaGNC">        8283 :   return hint;</span></span>
+<span id="L113"><span class="lineNum">     113</span>                 :<span class="tlaGNC">        8283 : }</span></span>
+<span id="L114"><span class="lineNum">     114</span>                 :             : </span>
+<span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">          41 : std::vector&lt;HelpTopic&gt; HelpTopics() {</span></span>
+<span id="L116"><span class="lineNum">     116</span>                 :             :   return {</span>
+<span id="L117"><span class="lineNum">     117</span>                 :             :       {.name = &quot;help&quot;, .aliases = {}, .summary = &quot;how the help system works, and the topics here&quot;},</span>
+<span id="L118"><span class="lineNum">     118</span>                 :             :       {.name = &quot;list&quot;, .aliases = {&quot;topic&quot;, &quot;topics&quot;}, .summary = &quot;this list of help topics&quot;},</span>
+<span id="L119"><span class="lineNum">     119</span>                 :             :       {.name = &quot;all&quot;, .aliases = {}, .summary = &quot;every option and primary, summaries only&quot;},</span>
+<span id="L120"><span class="lineNum">     120</span>                 :             :       {.name = &quot;expressions&quot;, .aliases = {}, .summary = &quot;the expression vocabulary: tests, operators, actions&quot;},</span>
+<span id="L121"><span class="lineNum">     121</span>                 :             :       {.name = &quot;fields&quot;, .aliases = {}, .summary = &quot;the {field} placeholder vocabulary&quot;, .in_full = true},</span>
+<span id="L122"><span class="lineNum">     122</span>                 :             :       {.name = &quot;printf&quot;, .aliases = {}, .summary = &quot;the -printf % directives and the %{field} escape&quot;, .in_full = true},</span>
+<span id="L123"><span class="lineNum">     123</span>                 :             :       {.name = &quot;time&quot;, .aliases = {}, .summary = &quot;time-format presets and strftime patterns&quot;, .in_full = true},</span>
+<span id="L124"><span class="lineNum">     124</span>                 :             :       {.name = &quot;size&quot;, .aliases = {}, .summary = &quot;-size/-blocks legacy, SI, and IEC units plus +/-&quot;, .in_full = true},</span>
+<span id="L125"><span class="lineNum">     125</span>                 :             :       {.name = &quot;grammars&quot;,</span>
+<span id="L126"><span class="lineNum">     126</span>                 :             :        .aliases = {&quot;regex&quot;, &quot;regexp&quot;},</span>
+<span id="L127"><span class="lineNum">     127</span>                 :             :        .summary = &quot;the --regextype grammars (RE2, EXACT, FNMATCH, GLOB, SHGLOB, PCRE2)&quot;,</span>
+<span id="L128"><span class="lineNum">     128</span>                 :             :        .in_full = true},</span>
+<span id="L129"><span class="lineNum">     129</span>                 :             :       {.name = &quot;content&quot;,</span>
+<span id="L130"><span class="lineNum">     130</span>                 :             :        .aliases = {},</span>
+<span id="L131"><span class="lineNum">     131</span>                 :             :        .summary = &quot;reading inside files: -grep, -content, -rxc, -text, and their fields&quot;,</span>
+<span id="L132"><span class="lineNum">     132</span>                 :             :        .in_full = true},</span>
+<span id="L133"><span class="lineNum">     133</span>                 :             :       {.name = &quot;config&quot;, .aliases = {}, .summary = &quot;config tiers, style selection (--config / argv[0]), and arming&quot;},</span>
+<span id="L134"><span class="lineNum">     134</span>                 :             :       {.name = &quot;environment&quot;,</span>
+<span id="L135"><span class="lineNum">     135</span>                 :             :        .aliases = {&quot;env&quot;},</span>
+<span id="L136"><span class="lineNum">     136</span>                 :             :        .summary = &quot;the environment variables xff reads (NO_COLOR, PAGER, ...)&quot;,</span>
+<span id="L137"><span class="lineNum">     137</span>                 :             :        .in_full = true},</span>
+<span id="L138"><span class="lineNum">     138</span>                 :             :       {.name = &quot;styles&quot;, .aliases = {&quot;flavors&quot;}, .summary = &quot;the find / xff / rg flavor comparison&quot;},</span>
+<span id="L139"><span class="lineNum">     139</span>                 :             :       {.name = &quot;extras&quot;,</span>
+<span id="L140"><span class="lineNum">     140</span>                 :             :        .aliases = {},</span>
+<span id="L141"><span class="lineNum">     141</span>                 :             :        .summary = &quot;optional build extras (PCRE2, archive) and whether this binary has them&quot;},</span>
+<span id="L142"><span class="lineNum">     142</span>                 :             :       {.name = &quot;archive&quot;,</span>
+<span id="L143"><span class="lineNum">     143</span>                 :             :        .aliases = {&quot;archives&quot;},</span>
+<span id="L144"><span class="lineNum">     144</span>                 :             :        .summary = &quot;walking INTO containers: dive modes, member paths, and what is writable&quot;},</span>
+<span id="L145"><span class="lineNum">     145</span>                 :             :       {.name = &quot;stats&quot;, .aliases = {}, .summary = &quot;the --summary and --histogram reductions&quot;},</span>
+<span id="L146"><span class="lineNum">     146</span>                 :             :       {.name = &quot;cookbook&quot;,</span>
+<span id="L147"><span class="lineNum">     147</span>                 :             :        .aliases = {&quot;examples&quot;, &quot;recipes&quot;},</span>
+<span id="L148"><span class="lineNum">     148</span>                 :             :        .summary = &quot;worked examples that compose xff end to end&quot;,</span>
+<span id="L149"><span class="lineNum">     149</span>                 :             :        .in_full = true},</span>
+<span id="L150"><span class="lineNum">     150</span>                 :             :       {.name = &quot;notice&quot;, .aliases = {&quot;notices&quot;}, .summary = &quot;third-party components + what this binary contains&quot;},</span>
+<span id="L151"><span class="lineNum">     151</span>                 :             :       {.name = &quot;license&quot;,</span>
+<span id="L152"><span class="lineNum">     152</span>                 :             :        .aliases = {&quot;licenses&quot;},</span>
+<span id="L153"><span class="lineNum">     153</span>                 :             :        .summary = &quot;xff's license in full (Apache-2.0); =COMPONENT for one component's&quot;},</span>
+<span id="L154"><span class="lineNum">     154</span>                 :             :       {.name = &quot;full&quot;, .aliases = {&quot;long&quot;}, .summary = &quot;every option and primary, with the long explanations&quot;},</span>
+<span id="L155"><span class="lineNum">     155</span>         [<span class="tlaGBC" title="Branch 0 was taken 820 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 41 times"> + </span>]:<span class="tlaGNC">        1353 :   };</span></span>
+<span id="L156"><span class="lineNum">     156</span>                 :             : }</span>
+<span id="L157"><span class="lineNum">     157</span>                 :             : </span>
+<span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">          24 : std::vector&lt;HelpFlag&gt; HelpFlags() {</span></span>
+<span id="L159"><span class="lineNum">     159</span>                 :             :   return {</span>
+<span id="L160"><span class="lineNum">     160</span>                 :             :       {.display = &quot;-h, --help, -help&quot;, .summary = &quot;print this usage page and exit (-help for GNU find compatibility)&quot;},</span>
+<span id="L161"><span class="lineNum">     161</span>                 :             :       {.display = &quot;--help=NAME&quot;, .summary = &quot;full help for one option or primary (e.g. --help=-regex, --help=--sort)&quot;},</span>
+<span id="L162"><span class="lineNum">     162</span>                 :             :       {.display = &quot;--help=TOPIC&quot;, .summary = &quot;detailed help for a topic:&quot;},</span>
+<span id="L163"><span class="lineNum">     163</span>                 :             :       {.display = &quot;--help-full&quot;, .summary = &quot;the full detailed reference (also --help-long); --help-all = --help=all&quot;},</span>
+<span id="L164"><span class="lineNum">     164</span>                 :             :       {.display = &quot;--man&quot;,</span>
+<span id="L165"><span class="lineNum">     165</span>                 :             :        .summary = &quot;print the man page: formatted on a terminal (see --pager), else raw roff, and exit&quot;},</span>
+<span id="L166"><span class="lineNum">     166</span>                 :             :       {.display = &quot;--markdown&quot;, .summary = &quot;print a Markdown reference of all options and primaries and exit&quot;},</span>
+<span id="L167"><span class="lineNum">     167</span>                 :             :       {.display = &quot;--version, -version&quot;, .summary = &quot;print the version and exit&quot;},</span>
+<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">          72 :   };</span></span>
+<span id="L169"><span class="lineNum">     169</span>                 :             : }</span>
+<span id="L170"><span class="lineNum">     170</span>                 :             : </span>
+<span id="L171"><span class="lineNum">     171</span>                 :             : }  // namespace xff::cli</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

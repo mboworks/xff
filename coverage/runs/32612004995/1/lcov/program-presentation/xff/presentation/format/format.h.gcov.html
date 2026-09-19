@@ -1,0 +1,243 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - xff production coverage - program-presentation/xff/presentation/format/format.h</title>
+  <link rel="stylesheet" type="text/css" href="../../../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../../index.html" title="Click to go to top-level">top level</a> - <a href="index.html" title="Click to go to directory program-presentation/xff/presentation/format">program-presentation/xff/presentation/format</a> - format.h<span style="font-size: 80%;"> (source / <a href="format.h.func-c.html" title="Click to go to function table">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">xff production coverage</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">2</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-08-23 02:15:39</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">1</td>
+            <td class="headerCovTableEntry">1</td>
+          </tr>
+                  <tr><td><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">            Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>              : // SPDX-FileCopyrightText: Copyright (c) 2026 M. Boerger, The helly25 authors</span>
+<span id="L2"><span class="lineNum">       2</span>              : // SPDX-License-Identifier: Apache-2.0</span>
+<span id="L3"><span class="lineNum">       3</span>              : //</span>
+<span id="L4"><span class="lineNum">       4</span>              : // Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span id="L5"><span class="lineNum">       5</span>              : // you may not use this file except in compliance with the License.</span>
+<span id="L6"><span class="lineNum">       6</span>              : // You may obtain a copy of the License at</span>
+<span id="L7"><span class="lineNum">       7</span>              : //</span>
+<span id="L8"><span class="lineNum">       8</span>              : //      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span id="L9"><span class="lineNum">       9</span>              : //</span>
+<span id="L10"><span class="lineNum">      10</span>              : // Unless required by applicable law or agreed to in writing, software</span>
+<span id="L11"><span class="lineNum">      11</span>              : // distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span id="L12"><span class="lineNum">      12</span>              : // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span id="L13"><span class="lineNum">      13</span>              : // See the License for the specific language governing permissions and</span>
+<span id="L14"><span class="lineNum">      14</span>              : // limitations under the License.</span>
+<span id="L15"><span class="lineNum">      15</span>              : </span>
+<span id="L16"><span class="lineNum">      16</span>              : #ifndef XFF_PRESENTATION_FORMAT_FORMAT_H_</span>
+<span id="L17"><span class="lineNum">      17</span>              : #define XFF_PRESENTATION_FORMAT_FORMAT_H_</span>
+<span id="L18"><span class="lineNum">      18</span>              : </span>
+<span id="L19"><span class="lineNum">      19</span>              : #include &lt;cstddef&gt;</span>
+<span id="L20"><span class="lineNum">      20</span>              : #include &lt;cstdint&gt;</span>
+<span id="L21"><span class="lineNum">      21</span>              : #include &lt;optional&gt;</span>
+<span id="L22"><span class="lineNum">      22</span>              : #include &lt;string&gt;</span>
+<span id="L23"><span class="lineNum">      23</span>              : #include &lt;string_view&gt;</span>
+<span id="L24"><span class="lineNum">      24</span>              : #include &lt;vector&gt;</span>
+<span id="L25"><span class="lineNum">      25</span>              : </span>
+<span id="L26"><span class="lineNum">      26</span>              : // Shared number/text formatting for xff's human-facing output (the --summary</span>
+<span id="L27"><span class="lineNum">      27</span>              : // table today; -ls column alignment and more later). The single place that knows</span>
+<span id="L28"><span class="lineNum">      28</span>              : // how a count or a byte size is rendered, so every report groups digits and pads</span>
+<span id="L29"><span class="lineNum">      29</span>              : // columns the same way. Size-unit rendering (--human) is layered on in a follow-up.</span>
+<span id="L30"><span class="lineNum">      30</span>              : namespace xff::format {</span>
+<span id="L31"><span class="lineNum">      31</span>              : </span>
+<span id="L32"><span class="lineNum">      32</span>              : // Renders `value` in decimal. When `group_sep` is non-zero the digits are grouped</span>
+<span id="L33"><span class="lineNum">      33</span>              : // in threes from the right with that separator (e.g. Int(1234567, ',') ==</span>
+<span id="L34"><span class="lineNum">      34</span>              : // &quot;1,234,567&quot;); the default (`\0`) leaves them ungrouped (&quot;1234567&quot;).</span>
+<span id="L35"><span class="lineNum">      35</span>              : std::string Int(std::uint64_t value, char group_sep = '\0');</span>
+<span id="L36"><span class="lineNum">      36</span>              : </span>
+<span id="L37"><span class="lineNum">      37</span>              : // Which powers/suffixes Size() uses: kIec is binary (1024) with IEC suffixes</span>
+<span id="L38"><span class="lineNum">      38</span>              : // (B/KiB/MiB/GiB/...), matching xff's -size units; kSi is decimal (1000) with SI</span>
+<span id="L39"><span class="lineNum">      39</span>              : // suffixes (B/kB/MB/GB/...), like `ls --si` and disk-vendor sizes.</span>
+<span id="L40"><span class="lineNum">      40</span>              : enum class SizeUnits { kIec, kSi };</span>
+<span id="L41"><span class="lineNum">      41</span>              : </span>
+<span id="L42"><span class="lineNum">      42</span>              : // Renders `bytes` as a human-readable size (du -h / ls -h style): exact bytes under</span>
+<span id="L43"><span class="lineNum">      43</span>              : // one unit (&quot;56 B&quot;), otherwise the value scaled to the largest fitting unit with one</span>
+<span id="L44"><span class="lineNum">      44</span>              : // decimal and a space before the suffix (&quot;5.6 MiB&quot;, &quot;5.9 MB&quot;). `units` picks the</span>
+<span id="L45"><span class="lineNum">      45</span>              : // binary (kIec) or decimal (kSi) scale.</span>
+<span id="L46"><span class="lineNum">      46</span>              : std::string Size(std::uint64_t bytes, SizeUnits units);</span>
+<span id="L47"><span class="lineNum">      47</span>              : </span>
+<span id="L48"><span class="lineNum">      48</span>              : // A human size split into a right-alignable number and a left-alignable unit suffix,</span>
+<span id="L49"><span class="lineNum">      49</span>              : // for a column-aligned report (--summary). See SizeColumns.</span>
+<span id="L50"><span class="lineNum">      50</span>              : struct SizeParts {</span>
+<span id="L51"><span class="lineNum">      51</span>              :   std::string number;</span>
+<span id="L52"><span class="lineNum">      52</span>              :   std::string suffix;</span>
+<span id="L53"><span class="lineNum">      53</span>              : };</span>
+<span id="L54"><span class="lineNum">      54</span>              : </span>
+<span id="L55"><span class="lineNum">      55</span>              : // Like Size, but with the UNIT right-aligned in the width of this system's prefixed suffixes</span>
+<span id="L56"><span class="lineNum">      56</span>              : // (2 for SI's kB / MB, 3 for IEC's KiB / MiB), so a bare byte count gets the extra space its</span>
+<span id="L57"><span class="lineNum">      57</span>              : // missing prefix letter would occupy: &quot;991  B&quot; lines its `B` up under the `B` of &quot;1.2 kB&quot;. For a</span>
+<span id="L58"><span class="lineNum">      58</span>              : // size COLUMN that is right-aligned as a whole (`-ls`), where Size alone would align the last</span>
+<span id="L59"><span class="lineNum">      59</span>              : // letter but leave the numbers ragged. Size stays the scalar spelling, for prose and fields.</span>
+<span id="L60"><span class="lineNum">      60</span>              : std::string SizeAligned(std::uint64_t bytes, SizeUnits units);</span>
+<span id="L61"><span class="lineNum">      61</span>              : </span>
+<span id="L62"><span class="lineNum">      62</span>              : // Like Size, but split for two-column alignment. `number` carries a fixed-width fraction</span>
+<span id="L63"><span class="lineNum">      63</span>              : // area -- `fraction_digits` decimals for a scaled unit (&quot;12.34&quot;), or, for an exact byte</span>
+<span id="L64"><span class="lineNum">      64</span>              : // count, the integer with that area blanked (&quot;12   &quot;) -- so right-aligning the number</span>
+<span id="L65"><span class="lineNum">      65</span>              : // column lines every decimal point up (and blanks it for bytes) while the suffixes, in a</span>
+<span id="L66"><span class="lineNum">      66</span>              : // left-aligned column, all start at one place. So a caller pads: PadLeft(number, w) + &quot; &quot;</span>
+<span id="L67"><span class="lineNum">      67</span>              : // + suffix. `fraction_digits == 0` drops the point (both scaled and bytes are integers).</span>
+<span id="L68"><span class="lineNum">      68</span>              : SizeParts SizeColumns(std::uint64_t bytes, SizeUnits units, unsigned fraction_digits);</span>
+<span id="L69"><span class="lineNum">      69</span>              : </span>
+<span id="L70"><span class="lineNum">      70</span>              : // Right-justifies `text` in a field of `width` columns by prepending spaces (no</span>
+<span id="L71"><span class="lineNum">      71</span>              : // truncation: a longer `text` is returned unchanged). For aligning a numeric</span>
+<span id="L72"><span class="lineNum">      72</span>              : // column to its widest cell.</span>
+<span id="L73"><span class="lineNum">      73</span>              : std::string PadLeft(std::string_view text, std::size_t width);</span>
+<span id="L74"><span class="lineNum">      74</span>              : </span>
+<span id="L75"><span class="lineNum">      75</span>              : // Left-justifies `text` in a field of `width` columns by appending spaces (no</span>
+<span id="L76"><span class="lineNum">      76</span>              : // truncation). For a left-aligned label column.</span>
+<span id="L77"><span class="lineNum">      77</span>              : std::string PadRight(std::string_view text, std::size_t width);</span>
+<span id="L78"><span class="lineNum">      78</span>              : </span>
+<span id="L79"><span class="lineNum">      79</span>              : // Per-column alignment for a Table cell.</span>
+<span id="L80"><span class="lineNum">      80</span>              : enum class Align { kLeft, kRight };</span>
+<span id="L81"><span class="lineNum">      81</span>              : </span>
+<span id="L82"><span class="lineNum">      82</span>              : // Accumulates rows of already-formatted cells and tracks the maximum width of each</span>
+<span id="L83"><span class="lineNum">      83</span>              : // column as rows are added, so the whole table can be rendered aligned to its</span>
+<span id="L84"><span class="lineNum">      84</span>              : // widest cell per column. This is the shared &quot;column context&quot; for xff's aligned</span>
+<span id="L85"><span class="lineNum">      85</span>              : // reports (--summary now; -ls and other tabular output next) -- callers format each</span>
+<span id="L86"><span class="lineNum">      86</span>              : // cell (via Int/human sizes/etc.), AddRow them, then Render once.</span>
+<span id="L87"><span class="lineNum">      87</span>              : class Table {</span>
+<span id="L88"><span class="lineNum">      88</span>              :  public:</span>
+<span id="L89"><span class="lineNum">      89</span>              :   // One Align per column; every AddRow must supply exactly this many cells.</span>
+<span id="L90"><span class="lineNum">      90</span>              :   explicit Table(std::vector&lt;Align&gt; alignments);</span>
+<span id="L91"><span class="lineNum">      91</span>              : </span>
+<span id="L92"><span class="lineNum">      92</span>              :   // Appends a row of pre-formatted cells, widening each column to fit. Extra cells</span>
+<span id="L93"><span class="lineNum">      93</span>              :   // beyond the column count are ignored; missing ones render empty.</span>
+<span id="L94"><span class="lineNum">      94</span>              :   void AddRow(std::vector&lt;std::string&gt; cells);</span>
+<span id="L95"><span class="lineNum">      95</span>              : </span>
+<span id="L96"><span class="lineNum">      96</span>              :   // Renders every row with each cell padded to its column's width per its Align,</span>
+<span id="L97"><span class="lineNum">      97</span>              :   // columns separated by `gap`, each row '\n'-terminated. The right-most cell is not</span>
+<span id="L98"><span class="lineNum">      98</span>              :   // right-padded, so no line carries trailing whitespace.</span>
+<span id="L99"><span class="lineNum">      99</span> <span class="tlaGNC">          56 :   std::string Render(std::string_view gap = &quot;  &quot;) const;</span></span>
+<span id="L100"><span class="lineNum">     100</span>              : </span>
+<span id="L101"><span class="lineNum">     101</span> <span class="tlaGNC">           1 :   std::size_t RowCount() const { return rows_.size(); }</span></span>
+<span id="L102"><span class="lineNum">     102</span>              : </span>
+<span id="L103"><span class="lineNum">     103</span>              :  private:</span>
+<span id="L104"><span class="lineNum">     104</span>              :   std::vector&lt;Align&gt; aligns_;</span>
+<span id="L105"><span class="lineNum">     105</span>              :   std::vector&lt;std::size_t&gt; widths_;</span>
+<span id="L106"><span class="lineNum">     106</span>              :   std::vector&lt;std::vector&lt;std::string&gt;&gt; rows_;</span>
+<span id="L107"><span class="lineNum">     107</span>              : };</span>
+<span id="L108"><span class="lineNum">     108</span>              : </span>
+<span id="L109"><span class="lineNum">     109</span>              : // Streaming column aligner for tabular output that arrives row by row (e.g. -ls,</span>
+<span id="L110"><span class="lineNum">     110</span>              : // which emits one line per entry during the walk). Buffers up to `window` rows to</span>
+<span id="L111"><span class="lineNum">     111</span>              : // compute per-column widths, emits that block aligned, then streams each later row</span>
+<span id="L112"><span class="lineNum">     112</span>              : // using those widths -- growing a column when a wider cell appears. `window == 0`</span>
+<span id="L113"><span class="lineNum">     113</span>              : // disables buffering (every row is emitted immediately at the minimum widths, so</span>
+<span id="L114"><span class="lineNum">     114</span>              : // rows do not align across each other); `window == kAll` buffers everything (full</span>
+<span id="L115"><span class="lineNum">     115</span>              : // alignment, emitted on Flush). Backs -ls's --buffer=auto|off|all|N.</span>
+<span id="L116"><span class="lineNum">     116</span>              : class ColumnBuffer {</span>
+<span id="L117"><span class="lineNum">     117</span>              :  public:</span>
+<span id="L118"><span class="lineNum">     118</span>              :   static constexpr std::size_t kAll = static_cast&lt;std::size_t&gt;(-1);</span>
+<span id="L119"><span class="lineNum">     119</span>              : </span>
+<span id="L120"><span class="lineNum">     120</span>              :   // `aligns` and `mins` are per-column (mins are the minimum, and the fixed, widths</span>
+<span id="L121"><span class="lineNum">     121</span>              :   // when window == 0); `window` is how many rows to buffer before the first flush.</span>
+<span id="L122"><span class="lineNum">     122</span>              :   // `byte_budget` (0 = none) flushes the window early once the buffered cell bytes reach it,</span>
+<span id="L123"><span class="lineNum">     123</span>              :   // so a --buffer memory cap bounds the buffer regardless of row count.</span>
+<span id="L124"><span class="lineNum">     124</span>              :   ColumnBuffer(</span>
+<span id="L125"><span class="lineNum">     125</span>              :       std::vector&lt;Align&gt; aligns,</span>
+<span id="L126"><span class="lineNum">     126</span>              :       std::vector&lt;std::size_t&gt; mins,</span>
+<span id="L127"><span class="lineNum">     127</span>              :       std::size_t window,</span>
+<span id="L128"><span class="lineNum">     128</span>              :       std::size_t byte_budget = 0);</span>
+<span id="L129"><span class="lineNum">     129</span>              : </span>
+<span id="L130"><span class="lineNum">     130</span>              :   // Feeds one row; returns whatever is now ready to emit (empty while still buffering</span>
+<span id="L131"><span class="lineNum">     131</span>              :   // the initial window). Extra cells beyond the column count are ignored; missing</span>
+<span id="L132"><span class="lineNum">     132</span>              :   // ones render empty.</span>
+<span id="L133"><span class="lineNum">     133</span>              :   std::string Add(std::vector&lt;std::string&gt; cells);</span>
+<span id="L134"><span class="lineNum">     134</span>              : </span>
+<span id="L135"><span class="lineNum">     135</span>              :   // Emits any rows still buffered (call once after the final Add). Idempotent.</span>
+<span id="L136"><span class="lineNum">     136</span>              :   std::string Flush();</span>
+<span id="L137"><span class="lineNum">     137</span>              : </span>
+<span id="L138"><span class="lineNum">     138</span>              :  private:</span>
+<span id="L139"><span class="lineNum">     139</span>              :   std::vector&lt;Align&gt; aligns_;</span>
+<span id="L140"><span class="lineNum">     140</span>              :   std::vector&lt;std::size_t&gt; widths_;  // starts at the mins; grows to the widest cell seen</span>
+<span id="L141"><span class="lineNum">     141</span>              :   std::size_t window_;</span>
+<span id="L142"><span class="lineNum">     142</span>              :   std::size_t byte_budget_;         // 0 = no byte cap; else flush the window at this many buffered bytes</span>
+<span id="L143"><span class="lineNum">     143</span>              :   std::size_t buffered_bytes_ = 0;  // running total of buffered cell bytes (while buffering_)</span>
+<span id="L144"><span class="lineNum">     144</span>              :   bool buffering_;</span>
+<span id="L145"><span class="lineNum">     145</span>              :   std::vector&lt;std::vector&lt;std::string&gt;&gt; buffer_;</span>
+<span id="L146"><span class="lineNum">     146</span>              : };</span>
+<span id="L147"><span class="lineNum">     147</span>              : </span>
+<span id="L148"><span class="lineNum">     148</span>              : // Parses a --buffer=VALUE selector into a row window for the column buffers: &quot;auto&quot; -&gt; 100,</span>
+<span id="L149"><span class="lineNum">     149</span>              : // &quot;off&quot; -&gt; 0, &quot;all&quot; -&gt; ColumnBuffer::kAll, a bare integer -&gt; that many rows, or an integer</span>
+<span id="L150"><span class="lineNum">     150</span>              : // with a decimal SI multiplier suffix k/M/G/T (case-insensitive: `10k` = 10'000, `10M` = ten</span>
+<span id="L151"><span class="lineNum">     151</span>              : // million). Returns nullopt for anything else -- a byte-budget form such as `10MB` / `10MiB`</span>
+<span id="L152"><span class="lineNum">     152</span>              : // (a memory bound, handled elsewhere) or garbage -- so the caller keeps its current window.</span>
+<span id="L153"><span class="lineNum">     153</span>              : // `auto` maps to 100 here; the per-format default for an absent flag is the caller's concern.</span>
+<span id="L154"><span class="lineNum">     154</span>              : std::optional&lt;std::size_t&gt; ParseBufferWindow(std::string_view value);</span>
+<span id="L155"><span class="lineNum">     155</span>              : </span>
+<span id="L156"><span class="lineNum">     156</span>              : // Parses a --buffer=VALUE memory budget into a byte count: an integer with a byte unit whose</span>
+<span id="L157"><span class="lineNum">     157</span>              : // final letter is `B` (case-insensitive) -- bare `B` (bytes), or a scale letter k/M/G/T/P/E with a</span>
+<span id="L158"><span class="lineNum">     158</span>              : // decimal (SI) base (`10MB` = 10 * 10^6) or an `i` before the `B` for the binary (IEC) base</span>
+<span id="L159"><span class="lineNum">     159</span>              : // (`10MiB` = 10 * 2^20). The trailing `B` is what marks a byte budget rather than a row count</span>
+<span id="L160"><span class="lineNum">     160</span>              : // (`10M` = ten million rows, `10MB` = ten megabytes). Returns nullopt for a non-byte value (a</span>
+<span id="L161"><span class="lineNum">     161</span>              : // row count or keyword, or garbage such as `10iB` with no scale), so the caller treats it as a</span>
+<span id="L162"><span class="lineNum">     162</span>              : // row window instead. Pair with ParseBufferWindow: try the window first, then the byte budget.</span>
+<span id="L163"><span class="lineNum">     163</span>              : std::optional&lt;std::size_t&gt; ParseByteBudget(std::string_view value);</span>
+<span id="L164"><span class="lineNum">     164</span>              : </span>
+<span id="L165"><span class="lineNum">     165</span>              : }  // namespace xff::format</span>
+<span id="L166"><span class="lineNum">     166</span>              : </span>
+<span id="L167"><span class="lineNum">     167</span>              : #endif  // XFF_PRESENTATION_FORMAT_FORMAT_H_</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 2.5-0</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

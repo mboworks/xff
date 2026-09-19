@@ -1,0 +1,225 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - xff production coverage - program-command-line/xff/cli/wrap.cc</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+  <style>
+    .xffNavigation { padding: .35rem 0; text-align: center; }
+    .xffHeaderSummary { margin: 0 auto; width: 80%; }
+    .xffPolicy { border-collapse: collapse; margin: .75rem auto 1rem; width: auto; }
+    .xffPolicy th { padding: .2rem .75rem; text-align: left; }
+    .xffPolicy td { font-size: 100%; padding: .2rem .75rem; text-align: center; }
+  </style>
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="xffNavigation"><a href="../../../../index.html">Report overview</a> &middot; <a href="../../../../../../index.html">All coverage reports</a></td></tr>
+
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table class="xffHeaderSummary" cellpadding=1 border=0>
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../index.html" title="Click to go to top-level">top level</a> - <a href="index.html" title="Click to go to directory program-command-line/xff/cli">program-command-line/xff/cli</a> - wrap.cc<span style="font-size: 80%;"> (source / <a href="wrap.cc.func-c.html" title="Click to go to function table">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">xff production coverage</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">38</td>
+            <td class="headerCovTableEntry">38</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-08-30 09:42:07</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntry">3</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryMed">81.2&nbsp;%</td>
+            <td class="headerCovTableEntry">32</td>
+            <td class="headerCovTableEntry">26</td>
+          </tr>
+                  <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : // SPDX-FileCopyrightText: Copyright (c) 2026 M. Boerger, The helly25 authors</span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : // SPDX-License-Identifier: Apache-2.0</span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : //</span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : // Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : // you may not use this file except in compliance with the License.</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : // You may obtain a copy of the License at</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : //</span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : //      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : //</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             : // Unless required by applicable law or agreed to in writing, software</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : // distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : // See the License for the specific language governing permissions and</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : // limitations under the License.</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : </span>
+<span id="L16"><span class="lineNum">      16</span>                 :             : #include &quot;xff/cli/wrap.h&quot;</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             : </span>
+<span id="L18"><span class="lineNum">      18</span>                 :             : #include &lt;cstddef&gt;</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             : #include &lt;string&gt;</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             : #include &lt;string_view&gt;</span>
+<span id="L21"><span class="lineNum">      21</span>                 :             : </span>
+<span id="L22"><span class="lineNum">      22</span>                 :             : #include &quot;absl/strings/str_cat.h&quot;</span>
+<span id="L23"><span class="lineNum">      23</span>                 :             : #include &quot;absl/strings/str_split.h&quot;</span>
+<span id="L24"><span class="lineNum">      24</span>                 :             : </span>
+<span id="L25"><span class="lineNum">      25</span>                 :             : namespace xff::cli {</span>
+<span id="L26"><span class="lineNum">      26</span>                 :             : namespace {</span>
+<span id="L27"><span class="lineNum">      27</span>                 :             : </span>
+<span id="L28"><span class="lineNum">      28</span>                 :             : // The visible column width of `s`, skipping ANSI SGR escape sequences (&quot;\x1b[...m&quot;). So a</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             : // colored word or indent wraps by its on-screen width, not its byte length - the escapes</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             : // are zero-width. Used for every width comparison below; the raw (colored) bytes are still</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             : // what gets emitted.</span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">       12466 : std::size_t VisibleWidth(std::string_view text) {</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">       12466 :   std::size_t width = 0;</span></span>
+<span id="L34"><span class="lineNum">      34</span>         [<span class="tlaGBC" title="branch 0 was taken 229782 times"> + </span><span class="tlaGBC" title="branch 1 was taken 12466 times"> + </span>]:<span class="tlaGNC">      242248 :   for (std::size_t i = 0; i &lt; text.size();) {</span></span>
+<span id="L35"><span class="lineNum">      35</span>   [<span class="tlaGBC" title="branch 0 was taken 14 times"> + </span><span class="tlaGBC" title="branch 1 was taken 229768 times"> + </span><span class="tlaGBC" title="branch 2 was taken 14 times"> + </span><span class="tlaUNC" title="branch 3 was not taken"> - </span> :<span class="tlaGNC">      229782 :     if (text[i] == '\x1b' &amp;&amp; i + 1 &lt; text.size() &amp;&amp; text[i + 1] == '[') {</span></span>
+<span class="lineNum">        </span>    <span class="tlaGBC" title="branch 4 was taken 14 times"> + </span><span class="tlaUNC" title="branch 5 was not taken"> - </span><span class="tlaGBC" title="branch 6 was taken 14 times"> + </span><span class="tlaGBC" title="branch 7 was taken 229768 times"> + </span>]
+<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">          14 :       i += 2;</span></span>
+<span id="L37"><span class="lineNum">      37</span>   [<span class="tlaGBC" title="branch 0 was taken 33 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span><span class="tlaGBC" title="branch 2 was taken 14 times"> + </span><span class="tlaGBC" title="branch 3 was taken 19 times"> + </span> :<span class="tlaGNC">          33 :       while (i &lt; text.size() &amp;&amp; (text[i] &lt; '@' || text[i] &gt; '~')) {</span></span>
+<span class="lineNum">        </span>    <span class="tlaUNC" title="branch 4 was not taken"> - </span><span class="tlaGBC" title="branch 5 was taken 14 times"> + </span><span class="tlaGBC" title="branch 6 was taken 19 times"> + </span><span class="tlaGBC" title="branch 7 was taken 14 times"> + </span>]
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">          19 :         ++i;  // CSI parameter / intermediate bytes</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :             :       }</span>
+<span id="L40"><span class="lineNum">      40</span>         [<span class="tlaGBC" title="branch 0 was taken 14 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          14 :       if (i &lt; text.size()) {</span></span>
+<span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">          14 :         ++i;  // the final byte (e.g. 'm')</span></span>
+<span id="L42"><span class="lineNum">      42</span>                 :             :       }</span>
+<span id="L43"><span class="lineNum">      43</span>                 :             :     } else {</span>
+<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">      229768 :       ++width;</span></span>
+<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">      229768 :       ++i;</span></span>
+<span id="L46"><span class="lineNum">      46</span>                 :             :     }</span>
+<span id="L47"><span class="lineNum">      47</span>                 :             :   }</span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">       12466 :   return width;</span></span>
+<span id="L49"><span class="lineNum">      49</span>                 :             : }</span>
+<span id="L50"><span class="lineNum">      50</span>                 :             : </span>
+<span id="L51"><span class="lineNum">      51</span>                 :             : }  // namespace</span>
+<span id="L52"><span class="lineNum">      52</span>                 :             : </span>
+<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">       17720 : std::string WrapText(</span></span>
+<span id="L54"><span class="lineNum">      54</span>                 :             :     std::string_view text,</span>
+<span id="L55"><span class="lineNum">      55</span>                 :             :     std::size_t width,</span>
+<span id="L56"><span class="lineNum">      56</span>                 :             :     std::string_view first_indent,</span>
+<span id="L57"><span class="lineNum">      57</span>                 :             :     std::string_view cont_indent) {</span>
+<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">       17720 :   std::string out;</span></span>
+<span id="L59"><span class="lineNum">      59</span>         [<span class="tlaGBC" title="branch 0 was taken 17595 times"> + </span><span class="tlaGBC" title="branch 1 was taken 125 times"> + </span>]:<span class="tlaGNC">       17720 :   if (width == 0) {</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :             :     // No wrapping: the whole (already single-line) text on one indented line. Emitted</span>
+<span id="L61"><span class="lineNum">      61</span>                 :             :     // even when empty so it reproduces the pre-wrap &quot;indent + text + newline&quot; output.</span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">       17595 :     absl::StrAppend(&amp;out, first_indent, text, &quot;\n&quot;);</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">       17595 :     return out;</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :             :   }</span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">         125 :   std::string_view indent = first_indent;</span></span>
+<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">         125 :   std::string line;</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">         366 :   const auto flush = [&amp;] {</span></span>
+<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">         366 :     absl::StrAppend(&amp;out, indent, line, &quot;\n&quot;);</span></span>
+<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">         366 :     indent = cont_indent;</span></span>
+<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">         366 :     line.clear();</span></span>
+<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">         491 :   };</span></span>
+<span id="L72"><span class="lineNum">      72</span>         [<span class="tlaGBC" title="branch 0 was taken 4238 times"> + </span><span class="tlaGBC" title="branch 1 was taken 125 times"> + </span>]:<span class="tlaGNC">        4363 :   for (const std::string_view word : absl::StrSplit(text, absl::ByAnyChar(&quot; \t\n&quot;), absl::SkipEmpty())) {</span></span>
+<span id="L73"><span class="lineNum">      73</span>                 :             :     // The content budget is the columns left once this line's indent is spent; a</span>
+<span id="L74"><span class="lineNum">      74</span>                 :             :     // fresh line always takes the word (even if it overflows) rather than looping.</span>
+<span id="L75"><span class="lineNum">      75</span>                 :             :     // Widths are visible widths (ANSI escapes are zero-width) so colored words / indents</span>
+<span id="L76"><span class="lineNum">      76</span>                 :             :     // wrap by their on-screen size.</span>
+<span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaGNC">        4238 :     const std::size_t indent_width = VisibleWidth(indent);</span></span>
+<span id="L78"><span class="lineNum">      78</span>         [<span class="tlaGBC" title="branch 0 was taken 4238 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">        4238 :     const std::size_t budget = width &gt; indent_width ? width - indent_width : 0;</span></span>
+<span id="L79"><span class="lineNum">      79</span>         [<span class="tlaGBC" title="branch 0 was taken 124 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4114 times"> + </span>]:<span class="tlaGNC">        4238 :     if (line.empty()) {</span></span>
+<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">         248 :       line = std::string(word);</span></span>
+<span id="L81"><span class="lineNum">      81</span>         [<span class="tlaGBC" title="branch 0 was taken 3872 times"> + </span><span class="tlaGBC" title="branch 1 was taken 242 times"> + </span>]:<span class="tlaGNC">        4114 :     } else if (VisibleWidth(line) + 1 + VisibleWidth(word) &lt;= budget) {</span></span>
+<span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">        3872 :       absl::StrAppend(&amp;line, &quot; &quot;, word);</span></span>
+<span id="L83"><span class="lineNum">      83</span>                 :             :     } else {</span>
+<span id="L84"><span class="lineNum">      84</span>                 :<span class="tlaGNC">         242 :       flush();</span></span>
+<span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaGNC">         484 :       line = std::string(word);</span></span>
+<span id="L86"><span class="lineNum">      86</span>                 :             :     }</span>
+<span id="L87"><span class="lineNum">      87</span>                 :<span class="tlaGNC">         125 :   }</span></span>
+<span id="L88"><span class="lineNum">      88</span>         [<span class="tlaGBC" title="branch 0 was taken 124 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">         125 :   if (!line.empty()) {</span></span>
+<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">         124 :     flush();</span></span>
+<span id="L90"><span class="lineNum">      90</span>                 :             :   }</span>
+<span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">         125 :   return out;</span></span>
+<span id="L92"><span class="lineNum">      92</span>                 :<span class="tlaGNC">         125 : }</span></span>
+<span id="L93"><span class="lineNum">      93</span>                 :             : </span>
+<span id="L94"><span class="lineNum">      94</span>                 :             : }  // namespace xff::cli</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table class="xffPolicy">
+            <thead>
+              <tr>
+                <th scope="col">Global coverage policy</th>
+                <th scope="col">Low</th>
+                <th scope="col">Medium</th>
+                <th scope="col">High</th>
+                <th scope="col">Enforced</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <th scope="row">Lines</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 92%</td>
+              <td class="headerValueLegH">&ge; 92%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Branches</th>
+              <td class="headerValueLegL">&lt; 80%</td>
+              <td class="headerValueLegM">&ge; 80% and &lt; 82%</td>
+              <td class="headerValueLegH">&ge; 82%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Functions</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 95%</td>
+              <td class="headerValueLegH">&ge; 95%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            </tbody>
+          </table>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 2.5-0</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

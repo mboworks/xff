@@ -1,0 +1,197 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - xff production coverage - program-configuration/xff/config/xffrc.cc</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+  <style>
+    .xffNavigation { padding: .35rem 0; text-align: center; }
+    .xffHeaderSummary { margin: 0 auto; width: 80%; }
+    .xffPolicy { border-collapse: collapse; margin: .75rem auto 1rem; width: auto; }
+    .xffPolicy th { padding: .2rem .75rem; text-align: left; }
+    .xffPolicy td { font-size: 100%; padding: .2rem .75rem; text-align: center; }
+  </style>
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="xffNavigation"><a href="../../../../index.html">Report overview</a> &middot; <a href="../../../../../../index.html">All coverage reports</a></td></tr>
+
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table class="xffHeaderSummary" cellpadding=1 border=0>
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../index.html" title="Click to go to top-level">top level</a> - <a href="index.html" title="Click to go to directory program-configuration/xff/config">program-configuration/xff/config</a> - xffrc.cc<span style="font-size: 80%;"> (source / <a href="xffrc.cc.func-c.html" title="Click to go to function table">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">xff production coverage</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">33</td>
+            <td class="headerCovTableEntry">33</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-09-05 18:18:20</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">2</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryHi">87.5&nbsp;%</td>
+            <td class="headerCovTableEntry">16</td>
+            <td class="headerCovTableEntry">14</td>
+          </tr>
+                  <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : // SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors</span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : // SPDX-License-Identifier: Apache-2.0</span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : //</span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : // Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : // you may not use this file except in compliance with the License.</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : // You may obtain a copy of the License at</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : //</span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : //      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : //</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             : // Unless required by applicable law or agreed to in writing, software</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : // distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : // See the License for the specific language governing permissions and</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : // limitations under the License.</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : </span>
+<span id="L16"><span class="lineNum">      16</span>                 :             : #include &quot;xff/config/xffrc.h&quot;</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             : </span>
+<span id="L18"><span class="lineNum">      18</span>                 :             : #include &lt;cstddef&gt;</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             : #include &lt;string&gt;</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             : #include &lt;string_view&gt;</span>
+<span id="L21"><span class="lineNum">      21</span>                 :             : #include &lt;vector&gt;</span>
+<span id="L22"><span class="lineNum">      22</span>                 :             : </span>
+<span id="L23"><span class="lineNum">      23</span>                 :             : #include &quot;absl/strings/ascii.h&quot;</span>
+<span id="L24"><span class="lineNum">      24</span>                 :             : #include &quot;absl/strings/str_split.h&quot;</span>
+<span id="L25"><span class="lineNum">      25</span>                 :             : </span>
+<span id="L26"><span class="lineNum">      26</span>                 :             : namespace xff::config {</span>
+<span id="L27"><span class="lineNum">      27</span>                 :             : namespace {</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             : </span>
+<span id="L29"><span class="lineNum">      29</span>                 :             : // Splits a selector token (known to end in ':') into base and config:</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             : // &quot;xff:debug:&quot; -&gt; {&quot;xff&quot;, &quot;debug&quot;}; &quot;common:&quot; -&gt; {&quot;common&quot;, &quot;&quot;}; &quot;:&quot; -&gt; {&quot;&quot;, &quot;&quot;}.</span>
+<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">          66 : RcLine SplitSelector(std::string_view selector) {</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">          66 :   selector.remove_suffix(1);  // drop the known trailing ':'</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">          66 :   const std::vector&lt;std::string_view&gt; parts = absl::StrSplit(selector, ':');</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">          66 :   RcLine line;</span></span>
+<span id="L35"><span class="lineNum">      35</span>         [<span class="tlaGBC" title="branch 0 was taken 66 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          66 :   if (!parts.empty()) {</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">          66 :     line.base = std::string(parts[0]);</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">          66 :   }</span></span>
+<span id="L38"><span class="lineNum">      38</span>         [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 62 times"> + </span>]:<span class="tlaGNC">          66 :   if (parts.size() &gt;= 2) {</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">           4 :     line.config = std::string(parts[1]);</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">           4 :   }</span></span>
+<span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">          66 :   return line;</span></span>
+<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">          66 : }</span></span>
+<span id="L43"><span class="lineNum">      43</span>                 :             : </span>
+<span id="L44"><span class="lineNum">      44</span>                 :             : }  // namespace</span>
+<span id="L45"><span class="lineNum">      45</span>                 :             : </span>
+<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">          45 : std::vector&lt;RcLine&gt; ParseXffrc(std::string_view text) {</span></span>
+<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">          45 :   std::vector&lt;RcLine&gt; lines;</span></span>
+<span id="L48"><span class="lineNum">      48</span>         [<span class="tlaGBC" title="branch 0 was taken 111 times"> + </span><span class="tlaGBC" title="branch 1 was taken 45 times"> + </span>]:<span class="tlaGNC">         111 :   for (const std::string_view raw : absl::StrSplit(text, '\n')) {</span></span>
+<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">         111 :     const std::string_view trimmed = absl::StripAsciiWhitespace(raw);</span></span>
+<span id="L50"><span class="lineNum">      50</span> [<span class="tlaGBC" title="branch 0 was taken 28 times"> + </span><span class="tlaGBC" title="branch 1 was taken 83 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 2 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 81 times"> + </span>]:<span class="tlaGNC">         111 :     if (trimmed.empty() || trimmed.front() == '#') {</span></span>
+<span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">          30 :       continue;  // blank or comment</span></span>
+<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">          30 :     }</span></span>
+<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">          81 :     const std::vector&lt;std::string_view&gt; tokens = absl::StrSplit(trimmed, absl::ByAnyChar(&quot; \t&quot;), absl::SkipEmpty());</span></span>
+<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">          81 :     RcLine line;</span></span>
+<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">          81 :     std::size_t first_flag = 0;</span></span>
+<span id="L56"><span class="lineNum">      56</span> [<span class="tlaGBC" title="branch 0 was taken 81 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 66 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 15 times"> + </span>]:<span class="tlaGNC">          81 :     if (!tokens.empty() &amp;&amp; tokens.front().back() == ':') {</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">          66 :       line = SplitSelector(tokens.front());  // a leading &quot;selector:&quot; token</span></span>
+<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">          66 :       first_flag = 1;</span></span>
+<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">          66 :     }</span></span>
+<span id="L60"><span class="lineNum">      60</span>         [<span class="tlaGBC" title="branch 0 was taken 111 times"> + </span><span class="tlaGBC" title="branch 1 was taken 81 times"> + </span>]:<span class="tlaGNC">         192 :     for (std::size_t i = first_flag; i &lt; tokens.size(); ++i) {</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">         111 :       line.flags.emplace_back(tokens[i]);</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">         111 :     }</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">          81 :     lines.push_back(std::move(line));</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">          81 :   }</span></span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">          45 :   return lines;</span></span>
+<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">          45 : }</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :             : </span>
+<span id="L68"><span class="lineNum">      68</span>                 :             : }  // namespace xff::config</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table class="xffPolicy">
+            <thead>
+              <tr>
+                <th scope="col">Global coverage policy</th>
+                <th scope="col">Low</th>
+                <th scope="col">Medium</th>
+                <th scope="col">High</th>
+                <th scope="col">Enforced</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <th scope="row">Lines</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 92%</td>
+              <td class="headerValueLegH">&ge; 92%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Branches</th>
+              <td class="headerValueLegL">&lt; 80%</td>
+              <td class="headerValueLegM">&ge; 80% and &lt; 82%</td>
+              <td class="headerValueLegH">&ge; 82%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Functions</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 95%</td>
+              <td class="headerValueLegH">&ge; 95%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            </tbody>
+          </table>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 2.5-0</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

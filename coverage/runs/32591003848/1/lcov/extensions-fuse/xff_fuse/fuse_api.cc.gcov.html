@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - xff production coverage - extensions-fuse/xff_fuse/fuse_api.cc</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">extensions-fuse/xff_fuse</a> - fuse_api.cc<span style="font-size: 80%;"> (source / <a href="fuse_api.cc.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">xff production coverage</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">90.0&nbsp;%</td>
+            <td class="headerCovTableEntry">30</td>
+            <td class="headerCovTableEntry">27</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-08-22 18:41:27</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">14</td>
+            <td class="headerCovTableEntry">14</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+            | Branches:
+            <span class="coverLegendCov">+</span> taken
+            <span class="coverLegendNoCov">-</span> not taken
+            <span class="coverLegendNoCov">#</span> not executed
+</td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryLo">50.0&nbsp;%</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntry">3</td>
+          </tr>
+                  <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : // SPDX-FileCopyrightText: Copyright (c) 2026 M. Boerger, The helly25 authors</span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : // SPDX-License-Identifier: Apache-2.0</span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : //</span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : // Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : // you may not use this file except in compliance with the License.</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : // You may obtain a copy of the License at</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : //</span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : //      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : //</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             : // Unless required by applicable law or agreed to in writing, software</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : // distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : // See the License for the specific language governing permissions and</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : // limitations under the License.</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : </span>
+<span id="L16"><span class="lineNum">      16</span>                 :             : #include &quot;xff/fuse/fuse_api.h&quot;</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             : </span>
+<span id="L18"><span class="lineNum">      18</span>                 :             : #include &lt;string_view&gt;</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             : </span>
+<span id="L20"><span class="lineNum">      20</span>                 :             : #include &quot;absl/status/status.h&quot;</span>
+<span id="L21"><span class="lineNum">      21</span>                 :             : #include &quot;absl/status/statusor.h&quot;</span>
+<span id="L22"><span class="lineNum">      22</span>                 :             : #include &quot;absl/strings/str_cat.h&quot;</span>
+<span id="L23"><span class="lineNum">      23</span>                 :             : #include &quot;xff/fuse/fuse_loader.h&quot;</span>
+<span id="L24"><span class="lineNum">      24</span>                 :             : </span>
+<span id="L25"><span class="lineNum">      25</span>                 :             : namespace xff::fuse {</span>
+<span id="L26"><span class="lineNum">      26</span>                 :             : namespace {</span>
+<span id="L27"><span class="lineNum">      27</span>                 :             : </span>
+<span id="L28"><span class="lineNum">      28</span>                 :             : // The single dlsym boundary: a void* from the loader becomes the declared function type. dlsym's</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             : // contract IS this cast (POSIX defines it for function pointers); it is funneled here with the</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             : // loader's eager resolution guaranteeing the symbol exists.</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             : template&lt;typename Fn&gt;</span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC tlaBgGNC">          90 : absl::Status Assign(const FuseLoader&amp; loader, std::string_view name, Fn&amp; target) {</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">          90 :   void* symbol = loader.Symbol(name);</span></span>
+<span id="L34"><span class="lineNum">      34</span>         [<span class="tlaUNC" title="Branch 0 was not taken"> - </span><span class="tlaGBC" title="Branch 1 was taken 90 times"> + </span>]:<span class="tlaGNC">          90 :   if (symbol == nullptr) {</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaUNC tlaBgUNC">           0 :     return absl::InternalError(absl::StrCat(&quot;symbol vanished between probe and use: &quot;, name));</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :             :   }</span>
+<span id="L37"><span class="lineNum">      37</span>                 :             :   // NOLINTNEXTLINE(bugprone-casting-through-void,cppcoreguidelines-pro-type-reinterpret-cast)</span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC tlaBgGNC">          90 :   target = reinterpret_cast&lt;Fn&gt;(symbol);</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">          90 :   return absl::OkStatus();</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :             : }</span>
+<span id="L41"><span class="lineNum">      41</span>                 :             : </span>
+<span id="L42"><span class="lineNum">      42</span>                 :             : }  // namespace</span>
+<span id="L43"><span class="lineNum">      43</span>                 :             : </span>
+<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">           6 : absl::StatusOr&lt;FuseApi&gt; FuseApi::Resolve() {</span></span>
+<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">           6 :   const FuseLoader&amp; loader = FuseLoader::Instance();</span></span>
+<span id="L46"><span class="lineNum">      46</span>         [<span class="tlaUNC" title="Branch 0 was not taken"> - </span><span class="tlaGBC" title="Branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">           6 :   if (!loader.available()) {</span></span>
+<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaUNC tlaBgUNC">           0 :     return absl::UnavailableError(loader.error());</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :             :   }</span>
+<span id="L49"><span class="lineNum">      49</span>                 :             :   // Mutated through the reference parameter of Assign below, which misc-const-correctness cannot</span>
+<span id="L50"><span class="lineNum">      50</span>                 :             :   // see through the template - the NOLINT documents the false positive rather than restructuring</span>
+<span id="L51"><span class="lineNum">      51</span>                 :             :   // the one honest builder this struct has.</span>
+<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC tlaBgGNC">           6 :   FuseApi api;  // NOLINT(misc-const-correctness)</span></span>
+<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">           6 :   absl::Status status = Assign(loader, &quot;fuse_add_direntry&quot;, api.add_direntry);</span></span>
+<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">           6 :   status.Update(Assign(loader, &quot;fuse_session_new&quot;, api.session_new));</span></span>
+<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">           6 :   status.Update(Assign(loader, &quot;fuse_session_mount&quot;, api.session_mount));</span></span>
+<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">           6 :   status.Update(Assign(loader, &quot;fuse_session_loop&quot;, api.session_loop));</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">           6 :   status.Update(Assign(loader, &quot;fuse_session_exit&quot;, api.session_exit));</span></span>
+<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">           6 :   status.Update(Assign(loader, &quot;fuse_session_unmount&quot;, api.session_unmount));</span></span>
+<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">           6 :   status.Update(Assign(loader, &quot;fuse_session_destroy&quot;, api.session_destroy));</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">           6 :   status.Update(Assign(loader, &quot;fuse_reply_err&quot;, api.reply_err));</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">           6 :   status.Update(Assign(loader, &quot;fuse_reply_attr&quot;, api.reply_attr));</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">           6 :   status.Update(Assign(loader, &quot;fuse_reply_entry&quot;, api.reply_entry));</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">           6 :   status.Update(Assign(loader, &quot;fuse_reply_buf&quot;, api.reply_buf));</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">           6 :   status.Update(Assign(loader, &quot;fuse_opt_free_args&quot;, api.opt_free_args));</span></span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">           6 :   status.Update(Assign(loader, &quot;fuse_reply_open&quot;, api.reply_open));</span></span>
+<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">           6 :   status.Update(Assign(loader, &quot;fuse_reply_readlink&quot;, api.reply_readlink));</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">           6 :   status.Update(Assign(loader, &quot;fuse_req_userdata&quot;, api.req_userdata));</span></span>
+<span id="L68"><span class="lineNum">      68</span>         [<span class="tlaUNC" title="Branch 0 was not taken"> - </span><span class="tlaGBC" title="Branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">           6 :   if (!status.ok()) {</span></span>
+<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaUNC tlaBgUNC">           0 :     return status;</span></span>
+<span id="L70"><span class="lineNum">      70</span>                 :             :   }</span>
+<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC tlaBgGNC">           6 :   return api;</span></span>
+<span id="L72"><span class="lineNum">      72</span>                 :<span class="tlaGNC">           6 : }</span></span>
+<span id="L73"><span class="lineNum">      73</span>                 :             : </span>
+<span id="L74"><span class="lineNum">      74</span>                 :             : }  // namespace xff::fuse</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

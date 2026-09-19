@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>xff coverage: pr/619</title>
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; margin: 2rem auto; max-width: 76rem; padding: 0 1rem; }
+      a { color: #0969da; }
+      table { border-collapse: collapse; margin: 1rem 0 2rem; }
+      th, td { border: 1px solid #d0d7de; padding: .35rem .65rem; text-align: right; }
+      th:nth-child(-n+5), td:nth-child(-n+5) { text-align: left; }
+      td:nth-child(n+3) { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-variant-numeric: tabular-nums; }
+      .fail { font-weight: bold; color: #cf222e; }
+    </style>
+  </head>
+  <body>
+    <h1>xff coverage: pr/619</h1>
+    <table>
+      <thead>
+        <tr><th rowspan="2">Category</th><th rowspan="2">Status</th><th colspan="3">Lines</th><th colspan="3">Functions</th><th colspan="3">Branches</th></tr>
+        <tr><th>Rate</th><th>Covered</th><th>Total</th><th>Rate</th><th>Covered</th><th>Total</th><th>Rate</th><th>Covered</th><th>Total</th></tr>
+      </thead>
+      <tbody>
+      <tr><td>overall</td><td>OK</td><td>93.85%</td><td>10335</td><td>11012</td><td>97.41%</td><td>1204</td><td>1236</td><td>83.64%</td><td>7307</td><td>8736</td></tr>
+      <tr><td>program / command line</td><td>OK</td><td>95.55%</td><td>1567</td><td>1640</td><td>97.65%</td><td>166</td><td>170</td><td>87.93%</td><td>896</td><td>1019</td></tr>
+      <tr><td>program / configuration</td><td>OK</td><td>97.66%</td><td>292</td><td>299</td><td>100.00%</td><td>40</td><td>40</td><td>92.44%</td><td>220</td><td>238</td></tr>
+      <tr><td>program / command grammar</td><td>OK</td><td>94.64%</td><td>530</td><td>560</td><td>100.00%</td><td>47</td><td>47</td><td>86.92%</td><td>505</td><td>581</td></tr>
+      <tr><td>program / execution</td><td>OK</td><td>92.50%</td><td>3811</td><td>4120</td><td>97.32%</td><td>400</td><td>411</td><td>81.56%</td><td>2942</td><td>3607</td></tr>
+      <tr><td>program / filesystem</td><td>OK</td><td>94.82%</td><td>439</td><td>463</td><td>98.04%</td><td>50</td><td>51</td><td>87.03%</td><td>275</td><td>316</td></tr>
+      <tr><td>program / matching</td><td>OK</td><td>98.53%</td><td>669</td><td>679</td><td>100.00%</td><td>100</td><td>100</td><td>87.70%</td><td>499</td><td>569</td></tr>
+      <tr><td>program / presentation</td><td>OK</td><td>95.15%</td><td>1176</td><td>1236</td><td>96.05%</td><td>146</td><td>152</td><td>87.05%</td><td>975</td><td>1120</td></tr>
+      <tr><td>extensions / API</td><td>OK</td><td>97.93%</td><td>237</td><td>242</td><td>95.24%</td><td>60</td><td>63</td><td>87.95%</td><td>146</td><td>166</td></tr>
+      <tr><td>extensions / archive</td><td>OK</td><td>90.42%</td><td>1076</td><td>1190</td><td>94.87%</td><td>111</td><td>117</td><td>75.43%</td><td>611</td><td>810</td></tr>
+      <tr><td>extensions / FUSE</td><td>OK</td><td>90.68%</td><td>438</td><td>483</td><td>98.59%</td><td>70</td><td>71</td><td>75.19%</td><td>203</td><td>270</td></tr>
+      <tr><td>extensions / PCRE2</td><td>OK</td><td>100.00%</td><td>100</td><td>100</td><td>100.00%</td><td>14</td><td>14</td><td>87.50%</td><td>35</td><td>40</td></tr>
+      </tbody>
+    </table>
+    <p><a href="lcov/">Browse detailed LCOV source coverage</a> · <a href="../../">All reports</a></p>
+  </body>
+</html>

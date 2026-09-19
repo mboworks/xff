@@ -1,0 +1,545 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - xff production coverage - extensions-archive/xff_archive/archive_fs.cc</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+  <style>
+    .xffNavigation { padding: .35rem 0; text-align: center; }
+    .xffHeaderSummary { margin: 0 auto; width: 80%; }
+    .xffPolicy { border-collapse: collapse; margin: .75rem auto 1rem; width: auto; }
+    .xffPolicy th { padding: .2rem .75rem; text-align: left; }
+    .xffPolicy td { font-size: 100%; padding: .2rem .75rem; text-align: center; }
+  </style>
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="xffNavigation"><a href="../../../index.html">Report overview</a> &middot; <a href="../../../../../index.html">All coverage reports</a></td></tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table class="xffHeaderSummary" cellpadding=1 border=0>
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../index.html" title="Click to go to top-level">top level</a> - <a href="index.html" title="Click to go to directory extensions-archive/xff_archive">extensions-archive/xff_archive</a> - archive_fs.cc<span style="font-size: 80%;"> (source / <a href="archive_fs.cc.func-c.html" title="Click to go to function table">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">xff production coverage</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">99.3&nbsp;%</td>
+            <td class="headerCovTableEntry">274</td>
+            <td class="headerCovTableEntry">272</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-09-05 17:04:36</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">21</td>
+            <td class="headerCovTableEntry">21</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryHi">90.1&nbsp;%</td>
+            <td class="headerCovTableEntry">142</td>
+            <td class="headerCovTableEntry">128</td>
+          </tr>
+                  <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : // SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors</span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : // SPDX-License-Identifier: Apache-2.0</span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : //</span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : // Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : // you may not use this file except in compliance with the License.</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : // You may obtain a copy of the License at</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : //</span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : //      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : //</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             : // Unless required by applicable law or agreed to in writing, software</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : // distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : // See the License for the specific language governing permissions and</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : // limitations under the License.</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : </span>
+<span id="L16"><span class="lineNum">      16</span>                 :             : #include &quot;xff/archive/archive_fs.h&quot;</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             : </span>
+<span id="L18"><span class="lineNum">      18</span>                 :             : #include &lt;optional&gt;</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             : #include &lt;string&gt;</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             : #include &lt;string_view&gt;</span>
+<span id="L21"><span class="lineNum">      21</span>                 :             : #include &lt;utility&gt;</span>
+<span id="L22"><span class="lineNum">      22</span>                 :             : #include &lt;vector&gt;</span>
+<span id="L23"><span class="lineNum">      23</span>                 :             : </span>
+<span id="L24"><span class="lineNum">      24</span>                 :             : #include &quot;absl/hash/hash.h&quot;</span>
+<span id="L25"><span class="lineNum">      25</span>                 :             : #include &quot;absl/status/status.h&quot;</span>
+<span id="L26"><span class="lineNum">      26</span>                 :             : #include &quot;absl/status/statusor.h&quot;</span>
+<span id="L27"><span class="lineNum">      27</span>                 :             : #include &quot;absl/strings/str_cat.h&quot;</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             : #include &quot;absl/time/time.h&quot;</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             : #include &quot;mbo/status/status_macros.h&quot;</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             : #include &quot;xff/archive/archive_extension.h&quot;</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             : #include &quot;xff/archive/archive_reader.h&quot;</span>
+<span id="L32"><span class="lineNum">      32</span>                 :             : #include &quot;xff/archive/member_path.h&quot;</span>
+<span id="L33"><span class="lineNum">      33</span>                 :             : #include &quot;xff/archive/phar_reader.h&quot;</span>
+<span id="L34"><span class="lineNum">      34</span>                 :             : #include &quot;xff/vfs/entry.h&quot;</span>
+<span id="L35"><span class="lineNum">      35</span>                 :             : </span>
+<span id="L36"><span class="lineNum">      36</span>                 :             : namespace xff::archive {</span>
+<span id="L37"><span class="lineNum">      37</span>                 :             : namespace {</span>
+<span id="L38"><span class="lineNum">      38</span>                 :             : </span>
+<span id="L39"><span class="lineNum">      39</span>                 :             : // A stored member path, normalized for indexing: no leading &quot;./&quot;, no trailing slash. The trailing</span>
+<span id="L40"><span class="lineNum">      40</span>                 :             : // slash is how tar marks a directory, so it is information - the caller records the type before</span>
+<span id="L41"><span class="lineNum">      41</span>                 :             : // stripping it, and an ABSOLUTE member keeps its leading slash (see member_path.h: hiding it would</span>
+<span id="L42"><span class="lineNum">      42</span>                 :             : // hide the Zip-Slip red flag).</span>
+<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">       12768 : std::string IndexKey(std::string_view stored) {</span></span>
+<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">       12768 :   std::string_view key = stored;</span></span>
+<span id="L45"><span class="lineNum">      45</span>         [<span class="tlaGBC" title="branch 0 was taken 17 times"> + </span><span class="tlaGBC" title="branch 1 was taken 12768 times"> + </span>]:<span class="tlaGNC">       12785 :   while (key.starts_with(&quot;./&quot;)) {</span></span>
+<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">          17 :     key.remove_prefix(2);</span></span>
+<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">          17 :   }</span></span>
+<span id="L48"><span class="lineNum">      48</span> [<span class="tlaGBC" title="branch 0 was taken 12945 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 177 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 12768 times"> + </span>]:<span class="tlaGNC">       12945 :   while (key.size() &gt; 1 &amp;&amp; key.ends_with('/')) {</span></span>
+<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">         177 :     key.remove_suffix(1);</span></span>
+<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">         177 :   }</span></span>
+<span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">       12768 :   return std::string(key);</span></span>
+<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">       12768 : }</span></span>
+<span id="L53"><span class="lineNum">      53</span>                 :             : </span>
+<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">       14015 : std::string_view ParentOf(std::string_view key) {</span></span>
+<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">       14015 :   const std::string_view::size_type slash = key.rfind('/');</span></span>
+<span id="L56"><span class="lineNum">      56</span>         [<span class="tlaGBC" title="branch 0 was taken 680 times"> + </span><span class="tlaGBC" title="branch 1 was taken 13335 times"> + </span>]:<span class="tlaGNC">       14015 :   return slash == std::string_view::npos ? std::string_view{} : key.substr(0, slash);</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">       14015 : }</span></span>
+<span id="L58"><span class="lineNum">      58</span>                 :             : </span>
+<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">         362 : std::string_view NameOf(std::string_view key) {</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">         362 :   const std::string_view::size_type slash = key.rfind('/');</span></span>
+<span id="L61"><span class="lineNum">      61</span>         [<span class="tlaGBC" title="branch 0 was taken 196 times"> + </span><span class="tlaGBC" title="branch 1 was taken 166 times"> + </span>]:<span class="tlaGNC">         362 :   return slash == std::string_view::npos ? key : key.substr(slash + 1);</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">         362 : }</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :             : </span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">          73 : vfs::Metadata DirectoryMetadata() {</span></span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">          73 :   return vfs::Metadata{</span></span>
+<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">          73 :       .type = vfs::FileType::kDirectory,</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">          73 :       .source = vfs::Source::kArchiveMember,</span></span>
+<span id="L68"><span class="lineNum">      68</span>                 :             :       // 0555: readable and traversable, never writable - members cannot be modified.</span>
+<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">          73 :       .mode = 0555,</span></span>
+<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">          73 :   };</span></span>
+<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">          73 : }</span></span>
+<span id="L72"><span class="lineNum">      72</span>                 :             : </span>
+<span id="L73"><span class="lineNum">      73</span>                 :             : // A synthetic device id for one container, so that every member of it shares a device and members of</span>
+<span id="L74"><span class="lineNum">      74</span>                 :             : // two containers do not. Derived from the container path rather than counted, so the value is stable</span>
+<span id="L75"><span class="lineNum">      75</span>                 :             : // across runs (a walk that prints it, or compares it between invocations, sees no churn).</span>
+<span id="L76"><span class="lineNum">      76</span>                 :             : //</span>
+<span id="L77"><span class="lineNum">      77</span>                 :             : // The high bit is set to keep it clear of real device numbers, which are small: a member must never</span>
+<span id="L78"><span class="lineNum">      78</span>                 :             : // compare equal to a file on a real filesystem.</span>
+<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">         122 : std::uint64_t SyntheticDevice(std::string_view container) {</span></span>
+<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">         122 :   constexpr std::uint64_t kVirtualDeviceBit = std::uint64_t{1} &lt;&lt; 63U;</span></span>
+<span id="L81"><span class="lineNum">      81</span>                 :<span class="tlaGNC">         122 :   return kVirtualDeviceBit | absl::HashOf(container);</span></span>
+<span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">         122 : }</span></span>
+<span id="L83"><span class="lineNum">      83</span>                 :             : </span>
+<span id="L84"><span class="lineNum">      84</span>                 :             : }  // namespace</span>
+<span id="L85"><span class="lineNum">      85</span>                 :             : </span>
+<span id="L86"><span class="lineNum">      86</span>                 :<span class="tlaGNC">         124 : absl::StatusOr&lt;ArchiveFileSystem&gt; ArchiveFileSystem::Open(std::string_view container, MemberPathOptions options) {</span></span>
+<span id="L87"><span class="lineNum">      87</span>                 :             :   // The reader's status passes through unchanged: &quot;not a readable archive&quot; and &quot;corrupt archive&quot; are</span>
+<span id="L88"><span class="lineNum">      88</span>                 :             :   // different answers and the caller decides what to do with each.</span>
+<span id="L89"><span class="lineNum">      89</span>                 :             :   // libarchive first, the phar reader second. A native phar is a PHP stub followed by a manifest</span>
+<span id="L90"><span class="lineNum">      90</span>                 :             :   // libarchive knows nothing about, so it answers InvalidArgument (&quot;not an archive&quot;) - and without this</span>
+<span id="L91"><span class="lineNum">      91</span>                 :             :   // fallback the reader that DOES understand it is unreachable from a real run, which is exactly what</span>
+<span id="L92"><span class="lineNum">      92</span>                 :             :   // happened: every native fixture listed zero members while the tar/zip-based ones worked. Only</span>
+<span id="L93"><span class="lineNum">      93</span>                 :             :   // InvalidArgument falls through: a corrupt archive (DataLoss) is an answer, not a reason to guess</span>
+<span id="L94"><span class="lineNum">      94</span>                 :             :   // again with a different parser.</span>
+<span id="L95"><span class="lineNum">      95</span>                 :<span class="tlaGNC">         124 :   absl::StatusOr&lt;std::vector&lt;Member&gt;&gt; members = ListMembersOfFile(container);</span></span>
+<span id="L96"><span class="lineNum">      96</span>                 :<span class="tlaGNC">         124 :   bool phar = false;</span></span>
+<span id="L97"><span class="lineNum">      97</span>         [<span class="tlaGBC" title="branch 0 was taken 21 times"> + </span><span class="tlaGBC" title="branch 1 was taken 103 times"> + </span>]:<span class="tlaGNC">         124 :   if (absl::IsInvalidArgument(members.status())) {</span></span>
+<span id="L98"><span class="lineNum">      98</span>                 :<span class="tlaGNC">          21 :     absl::StatusOr&lt;std::vector&lt;Member&gt;&gt; phar_members = ListPharMembersOfFile(container);</span></span>
+<span id="L99"><span class="lineNum">      99</span>         [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 17 times"> + </span>]:<span class="tlaGNC">          21 :     if (phar_members.ok()) {</span></span>
+<span id="L100"><span class="lineNum">     100</span>                 :<span class="tlaGNC">           4 :       members = std::move(phar_members);</span></span>
+<span id="L101"><span class="lineNum">     101</span>                 :<span class="tlaGNC">           4 :       phar = true;</span></span>
+<span id="L102"><span class="lineNum">     102</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 16 times"> + </span>]:<span class="tlaGNC">          19 :     } else if (!absl::IsInvalidArgument(phar_members.status())) {</span></span>
+<span id="L103"><span class="lineNum">     103</span>                 :<span class="tlaGNC">           1 :       return phar_members.status();  // it IS a phar, and a broken one: say so</span></span>
+<span id="L104"><span class="lineNum">     104</span>                 :<span class="tlaGNC">           1 :     }</span></span>
+<span id="L105"><span class="lineNum">     105</span>                 :<span class="tlaGNC">          21 :   }</span></span>
+<span id="L106"><span class="lineNum">     106</span>         [<span class="tlaGBC" title="branch 0 was taken 16 times"> + </span><span class="tlaGBC" title="branch 1 was taken 107 times"> + </span>]:<span class="tlaGNC">         123 :   if (absl::IsInvalidArgument(members.status())) {</span></span>
+<span id="L107"><span class="lineNum">     107</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 13 times"> + </span>]:<span class="tlaGNC">          16 :     if (CompressionExtensionFor(container).has_value()) {</span></span>
+<span id="L108"><span class="lineNum">     108</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">           3 :       MBO_ASSIGN_OR_RETURN(std::string content, DecodeCompressionExtension(container, std::nullopt));</span></span>
+<span id="L109"><span class="lineNum">     109</span>                 :<span class="tlaGNC">           3 :       return OpenDecodedExtension(container, std::move(content), options);</span></span>
+<span id="L110"><span class="lineNum">     110</span>                 :<span class="tlaGNC">           3 :     }</span></span>
+<span id="L111"><span class="lineNum">     111</span>                 :             :     // Third and last: a compressed single file. Its InvalidArgument means &quot;not that either&quot;, which</span>
+<span id="L112"><span class="lineNum">     112</span>                 :             :     // falls through to report the original member-list error below.</span>
+<span id="L113"><span class="lineNum">     113</span>                 :<span class="tlaGNC">          13 :     absl::StatusOr&lt;ArchiveFileSystem&gt; single = OpenCompressedSingle(container, options);</span></span>
+<span id="L114"><span class="lineNum">     114</span> [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 7 times"> + </span>]:<span class="tlaGNC">          13 :     if (single.ok() || !absl::IsInvalidArgument(single.status())) {</span></span>
+<span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">           6 :       return single;</span></span>
+<span id="L116"><span class="lineNum">     116</span>                 :<span class="tlaGNC">           6 :     }</span></span>
+<span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">          13 :   }</span></span>
+<span id="L118"><span class="lineNum">     118</span>         [<span class="tlaGBC" title="branch 0 was taken 221 times"> + </span><span class="tlaGBC" title="branch 1 was taken 121 times"> + </span>]:<span class="tlaGNC">         123 :   MBO_RETURN_IF_ERROR(members.status());</span></span>
+<span id="L119"><span class="lineNum">     119</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 107 times"> + </span>]:<span class="tlaGNC">         114 :   MBO_ASSIGN_OR_RETURN(ArchiveFileSystem fs, Index(std::string(container), std::string(), *members, options));</span></span>
+<span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaGNC">         107 :   fs.phar_ = phar;</span></span>
+<span id="L121"><span class="lineNum">     121</span>                 :             :   // Not single_: the only path that sets it returns from inside the branch above, so reaching here</span>
+<span id="L122"><span class="lineNum">     122</span>                 :             :   // means this container HAS a member list and the field keeps its false default.</span>
+<span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">         107 :   return fs;</span></span>
+<span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">         107 : }</span></span>
+<span id="L125"><span class="lineNum">     125</span>                 :             : </span>
+<span id="L126"><span class="lineNum">     126</span>                 :             : absl::StatusOr&lt;ArchiveFileSystem&gt; ArchiveFileSystem::OpenCompressedSingle(</span>
+<span id="L127"><span class="lineNum">     127</span>                 :             :     std::string_view container,</span>
+<span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">          13 :     MemberPathOptions options) {</span></span>
+<span id="L129"><span class="lineNum">     129</span>                 :             :   // A compressed single file has no member list to read, so the content is decompressed once here</span>
+<span id="L130"><span class="lineNum">     130</span>                 :             :   // and the filesystem holds it - which also makes the size it reports the real, uncompressed one.</span>
+<span id="L131"><span class="lineNum">     131</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">          13 :   MBO_ASSIGN_OR_RETURN(std::string content, ReadCompressedSingleFile(container));</span></span>
+<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">           6 :   return OpenDecodedExtension(container, std::move(content), options);</span></span>
+<span id="L133"><span class="lineNum">     133</span>                 :<span class="tlaGNC">          13 : }</span></span>
+<span id="L134"><span class="lineNum">     134</span>                 :             : </span>
+<span id="L135"><span class="lineNum">     135</span>                 :             : absl::StatusOr&lt;ArchiveFileSystem&gt; ArchiveFileSystem::OpenDecodedExtension(</span>
+<span id="L136"><span class="lineNum">     136</span>                 :             :     std::string_view container,</span>
+<span id="L137"><span class="lineNum">     137</span>                 :             :     std::string content,</span>
+<span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">          10 :     MemberPathOptions options) {</span></span>
+<span id="L139"><span class="lineNum">     139</span>                 :             :   // What the decompressed bytes turn out to BE decides this. `Phar::compress()` wraps a whole phar,</span>
+<span id="L140"><span class="lineNum">     140</span>                 :             :   // and `.tar.gz` is a whole tar, so a container can hide inside the compression: OpenBytes asks</span>
+<span id="L141"><span class="lineNum">     141</span>                 :             :   // libarchive and then the phar reader about the decompressed bytes, and when either claims them</span>
+<span id="L142"><span class="lineNum">     142</span>                 :             :   // the members are the real answer. Only when nothing claims them is this a single compressed FILE.</span>
+<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">          10 :   absl::StatusOr&lt;ArchiveFileSystem&gt; inner = OpenBytesImpl(container, content, options, /*allow_extensions=*/false);</span></span>
+<span id="L144"><span class="lineNum">     144</span> [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 6 times"> + </span>]:<span class="tlaGNC">          10 :   if (inner.ok() || !absl::IsInvalidArgument(inner.status())) {</span></span>
+<span id="L145"><span class="lineNum">     145</span>                 :<span class="tlaGNC">           4 :     return inner;</span></span>
+<span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">           4 :   }</span></span>
+<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">           6 :   const std::string_view::size_type slash = container.rfind('/');</span></span>
+<span id="L148"><span class="lineNum">     148</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">           6 :   const std::string_view name = slash == std::string_view::npos ? container : container.substr(slash + 1);</span></span>
+<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">           6 :   std::optional&lt;std::string&gt; stem = CompressionSuffixStripped(name);</span></span>
+<span id="L150"><span class="lineNum">     150</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4 times"> + </span>]:<span class="tlaGNC">           6 :   if (!stem.has_value()) {</span></span>
+<span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">           2 :     stem = CompressionExtensionStem(name);</span></span>
+<span id="L152"><span class="lineNum">     152</span>                 :<span class="tlaGNC">           2 :   }</span></span>
+<span id="L153"><span class="lineNum">     153</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">           6 :   MBO_ASSIGN_OR_RETURN(</span></span>
+<span id="L154"><span class="lineNum">     154</span>                 :<span class="tlaGNC">           6 :       ArchiveFileSystem fs, Index(</span></span>
+<span id="L155"><span class="lineNum">     155</span>                 :<span class="tlaGNC">           6 :                                 std::string(container), std::string(),</span></span>
+<span id="L156"><span class="lineNum">     156</span>                 :<span class="tlaGNC">           6 :                                 {Member{</span></span>
+<span id="L157"><span class="lineNum">     157</span>                 :<span class="tlaGNC">           6 :                                     .path = stem.value_or(std::string(name)),</span></span>
+<span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">           6 :                                     .size = static_cast&lt;std::int64_t&gt;(content.size()),</span></span>
+<span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaGNC">           6 :                                     .mode = 0444,</span></span>
+<span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">           6 :                                 }},</span></span>
+<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">           6 :                                 options));</span></span>
+<span id="L162"><span class="lineNum">     162</span>                 :<span class="tlaGNC">           6 :   fs.single_file_content_ = std::move(content);</span></span>
+<span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">           6 :   fs.single_ = true;</span></span>
+<span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">           6 :   return fs;</span></span>
+<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">           6 : }</span></span>
+<span id="L166"><span class="lineNum">     166</span>                 :             : </span>
+<span id="L167"><span class="lineNum">     167</span>                 :             : absl::StatusOr&lt;ArchiveFileSystem&gt; ArchiveFileSystem::OpenBytes(</span>
+<span id="L168"><span class="lineNum">     168</span>                 :             :     std::string_view container,</span>
+<span id="L169"><span class="lineNum">     169</span>                 :             :     std::string bytes,</span>
+<span id="L170"><span class="lineNum">     170</span>                 :<span class="tlaGNC">           7 :     MemberPathOptions options) {</span></span>
+<span id="L171"><span class="lineNum">     171</span>                 :<span class="tlaGNC">           7 :   return OpenBytesImpl(container, std::move(bytes), options, /*allow_extensions=*/true);</span></span>
+<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">           7 : }</span></span>
+<span id="L173"><span class="lineNum">     173</span>                 :             : </span>
+<span id="L174"><span class="lineNum">     174</span>                 :             : absl::StatusOr&lt;ArchiveFileSystem&gt; ArchiveFileSystem::OpenBytesImpl(</span>
+<span id="L175"><span class="lineNum">     175</span>                 :             :     std::string_view container,</span>
+<span id="L176"><span class="lineNum">     176</span>                 :             :     std::string bytes,</span>
+<span id="L177"><span class="lineNum">     177</span>                 :             :     MemberPathOptions options,</span>
+<span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC">          17 :     bool allow_extensions) {</span></span>
+<span id="L179"><span class="lineNum">     179</span>                 :             :   // A container INSIDE a container: its bytes came out of its parent, so there is no path to open</span>
+<span id="L180"><span class="lineNum">     180</span>                 :             :   // and the filesystem keeps them for as long as it lives (member reads stream from them).</span>
+<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">          17 :   absl::StatusOr&lt;std::vector&lt;Member&gt;&gt; members = ListMembers(bytes);</span></span>
+<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">          17 :   bool phar = false;</span></span>
+<span id="L183"><span class="lineNum">     183</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>]:<span class="tlaGNC">          17 :   if (absl::IsInvalidArgument(members.status())) {</span></span>
+<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">          10 :     absl::StatusOr&lt;std::vector&lt;Member&gt;&gt; phar_members = ListPharMembers(bytes);</span></span>
+<span id="L185"><span class="lineNum">     185</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">          10 :     if (phar_members.ok()) {</span></span>
+<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">           2 :       members = std::move(phar_members);</span></span>
+<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">           2 :       phar = true;</span></span>
+<span id="L188"><span class="lineNum">     188</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>]:<span class="tlaGNC">          10 :     } else if (!absl::IsInvalidArgument(phar_members.status())) {</span></span>
+<span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">           1 :       return phar_members.status();</span></span>
+<span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">           1 :     }</span></span>
+<span id="L191"><span class="lineNum">     191</span>                 :<span class="tlaGNC">          10 :   }</span></span>
+<span id="L192"><span class="lineNum">     192</span> [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 25 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 5 times"> + </span>]:<span class="tlaGNC">          16 :   if (allow_extensions &amp;&amp; absl::IsInvalidArgument(members.status()) &amp;&amp; CompressionExtensionFor(container).has_value()) {</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 1 time"> + </span><span class="tlaUNC" title="branch &quot;5&quot; was not taken"> - </span>]
+<span id="L193"><span class="lineNum">     193</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :     MBO_ASSIGN_OR_RETURN(std::string content, DecodeCompressionExtension(container, bytes));</span></span>
+<span id="L194"><span class="lineNum">     194</span>                 :<span class="tlaGNC">           1 :     return OpenDecodedExtension(container, std::move(content), options);</span></span>
+<span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L196"><span class="lineNum">     196</span>         [<span class="tlaGBC" title="branch 0 was taken 24 times"> + </span><span class="tlaGBC" title="branch 1 was taken 21 times"> + </span>]:<span class="tlaGNC">          16 :   MBO_RETURN_IF_ERROR(members.status());</span></span>
+<span id="L197"><span class="lineNum">     197</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">          15 :   MBO_ASSIGN_OR_RETURN(ArchiveFileSystem fs, Index(std::string(container), std::move(bytes), *members, options));</span></span>
+<span id="L198"><span class="lineNum">     198</span>                 :<span class="tlaGNC">           9 :   fs.phar_ = phar;</span></span>
+<span id="L199"><span class="lineNum">     199</span>                 :<span class="tlaGNC">           9 :   return fs;</span></span>
+<span id="L200"><span class="lineNum">     200</span>                 :<span class="tlaGNC">           9 : }</span></span>
+<span id="L201"><span class="lineNum">     201</span>                 :             : </span>
+<span id="L202"><span class="lineNum">     202</span>                 :             : // The shared indexing pass: whatever the source, a member list becomes nodes the same way.</span>
+<span id="L203"><span class="lineNum">     203</span>                 :             : absl::StatusOr&lt;ArchiveFileSystem&gt; ArchiveFileSystem::Index(</span>
+<span id="L204"><span class="lineNum">     204</span>                 :             :     std::string container,</span>
+<span id="L205"><span class="lineNum">     205</span>                 :             :     std::string bytes,</span>
+<span id="L206"><span class="lineNum">     206</span>                 :             :     const std::vector&lt;Member&gt;&amp; members,</span>
+<span id="L207"><span class="lineNum">     207</span>                 :<span class="tlaGNC">         122 :     MemberPathOptions options) {</span></span>
+<span id="L208"><span class="lineNum">     208</span>                 :<span class="tlaGNC">         122 :   ArchiveFileSystem fs(std::move(container), options);</span></span>
+<span id="L209"><span class="lineNum">     209</span>                 :<span class="tlaGNC">         122 :   fs.bytes_ = std::move(bytes);</span></span>
+<span id="L210"><span class="lineNum">     210</span>                 :<span class="tlaGNC">         122 :   const std::uint64_t device = SyntheticDevice(fs.container_);</span></span>
+<span id="L211"><span class="lineNum">     211</span>                 :             :   // Inode numbers are handed out in index order, starting at 1 so that 0 stays &quot;unset&quot;. They have to</span>
+<span id="L212"><span class="lineNum">     212</span>                 :             :   // be DISTINCT per member: the walk's loop detector keys on (dev, ino) and reports &quot;filesystem loop</span>
+<span id="L213"><span class="lineNum">     213</span>                 :             :   // detected&quot; the second time it sees a pair, so members all reporting {0, 0} would make the second</span>
+<span id="L214"><span class="lineNum">     214</span>                 :             :   // directory in any archive look like a cycle. Synthesizing them also makes `-xdev` do the right</span>
+<span id="L215"><span class="lineNum">     215</span>                 :             :   // thing - one device per container, so a walk that started on a real filesystem stops at it.</span>
+<span id="L216"><span class="lineNum">     216</span>                 :<span class="tlaGNC">         122 :   std::uint64_t next_ino = 1;</span></span>
+<span id="L217"><span class="lineNum">     217</span>         [<span class="tlaGBC" title="branch 0 was taken 11430 times"> + </span><span class="tlaGBC" title="branch 1 was taken 122 times"> + </span>]:<span class="tlaGNC">       11430 :   for (const Member&amp; member : members) {</span></span>
+<span id="L218"><span class="lineNum">     218</span> [<span class="tlaGBC" title="branch 0 was taken 177 times"> + </span><span class="tlaGBC" title="branch 1 was taken 11253 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 7 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 11246 times"> + </span>]:<span class="tlaGNC">       11430 :     const bool is_dir = member.path.ends_with('/') || member.is_directory;</span></span>
+<span id="L219"><span class="lineNum">     219</span>                 :<span class="tlaGNC">       11430 :     const std::string key = IndexKey(member.path);</span></span>
+<span id="L220"><span class="lineNum">     220</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 11430 times"> + </span>]:<span class="tlaGNC">       11430 :     if (key.empty()) {</span></span>
+<span id="L221"><span class="lineNum">     221</span>                 :<span class="tlaUNC">           0 :       continue;  // the archive's own root, which the container path already names</span></span>
+<span id="L222"><span class="lineNum">     222</span>                 :<span class="tlaUNC">           0 :     }</span></span>
+<span id="L223"><span class="lineNum">     223</span>                 :<span class="tlaGNC">       11430 :     Node node;</span></span>
+<span id="L224"><span class="lineNum">     224</span>                 :             :     // The reader reports the type explicitly, so trust it rather than inferring from link_target.</span>
+<span id="L225"><span class="lineNum">     225</span>         [<span class="tlaGBC" title="branch 0 was taken 184 times"> + </span><span class="tlaGBC" title="branch 1 was taken 11246 times"> + </span>]:<span class="tlaGNC">       11430 :     node.metadata.type = is_dir              ? vfs::FileType::kDirectory</span></span>
+<span id="L226"><span class="lineNum">     226</span>         [<span class="tlaGBC" title="branch 0 was taken 17 times"> + </span><span class="tlaGBC" title="branch 1 was taken 11229 times"> + </span>]:<span class="tlaGNC">       11430 :                          : member.is_symlink ? vfs::FileType::kSymlink</span></span>
+<span id="L227"><span class="lineNum">     227</span>                 :<span class="tlaGNC">       11246 :                                              : vfs::FileType::kRegular;</span></span>
+<span id="L228"><span class="lineNum">     228</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 11430 times"> + </span>]:<span class="tlaGNC">       11430 :     node.metadata.size = static_cast&lt;std::uint64_t&gt;(member.size &lt; 0 ? 0 : member.size);</span></span>
+<span id="L229"><span class="lineNum">     229</span> [<span class="tlaGBC" title="branch 0 was taken 11429 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">       11430 :     node.metadata.mode = member.mode != 0 ? member.mode : (is_dir ? 0555U : 0444U);</span></span>
+<span id="L230"><span class="lineNum">     230</span>                 :<span class="tlaGNC">       11430 :     node.metadata.mtime = absl::FromUnixSeconds(member.mtime);</span></span>
+<span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaGNC">       11430 :     node.metadata.dev = device;</span></span>
+<span id="L232"><span class="lineNum">     232</span>                 :<span class="tlaGNC">       11430 :     node.metadata.ino = next_ino++;</span></span>
+<span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">       11430 :     node.metadata.nlink = 1;</span></span>
+<span id="L234"><span class="lineNum">     234</span>                 :             :     // What makes -delete and the exec family refuse this entry rather than act on a path no process</span>
+<span id="L235"><span class="lineNum">     235</span>                 :             :     // can open. The listing's Entry already says read_only; this is the same fact where the walk and</span>
+<span id="L236"><span class="lineNum">     236</span>                 :             :     // the evaluator can see it.</span>
+<span id="L237"><span class="lineNum">     237</span>                 :<span class="tlaGNC">       11430 :     node.metadata.source = vfs::Source::kArchiveMember;</span></span>
+<span id="L238"><span class="lineNum">     238</span>                 :<span class="tlaGNC">       11430 :     node.link_target = member.link_target;</span></span>
+<span id="L239"><span class="lineNum">     239</span>                 :<span class="tlaGNC">       11430 :     fs.nodes_[key] = std::move(node);</span></span>
+<span id="L240"><span class="lineNum">     240</span>                 :             : </span>
+<span id="L241"><span class="lineNum">     241</span>                 :             :     // Synthesize every missing ancestor: tar streams routinely omit directory entries, and a walk</span>
+<span id="L242"><span class="lineNum">     242</span>                 :             :     // that trusted the stored list would never descend into them.</span>
+<span id="L243"><span class="lineNum">     243</span>         [<span class="tlaGBC" title="branch 0 was taken 11157 times"> + </span><span class="tlaGBC" title="branch 1 was taken 344 times"> + </span>]:<span class="tlaGNC">       11501 :     for (std::string_view parent = ParentOf(key); !parent.empty(); parent = ParentOf(parent)) {</span></span>
+<span id="L244"><span class="lineNum">     244</span>                 :<span class="tlaGNC">       11157 :       const std::string parent_key(parent);</span></span>
+<span id="L245"><span class="lineNum">     245</span>         [<span class="tlaGBC" title="branch 0 was taken 11086 times"> + </span><span class="tlaGBC" title="branch 1 was taken 71 times"> + </span>]:<span class="tlaGNC">       11157 :       if (fs.nodes_.contains(parent_key)) {</span></span>
+<span id="L246"><span class="lineNum">     246</span>                 :<span class="tlaGNC">       11086 :         break;  // this ancestor exists, so all further ancestors do too</span></span>
+<span id="L247"><span class="lineNum">     247</span>                 :<span class="tlaGNC">       11086 :       }</span></span>
+<span id="L248"><span class="lineNum">     248</span>                 :<span class="tlaGNC">          71 :       Node parent_node{.metadata = DirectoryMetadata(), .synthesized = true};</span></span>
+<span id="L249"><span class="lineNum">     249</span>                 :<span class="tlaGNC">          71 :       parent_node.metadata.dev = device;</span></span>
+<span id="L250"><span class="lineNum">     250</span>                 :<span class="tlaGNC">          71 :       parent_node.metadata.ino = next_ino++;</span></span>
+<span id="L251"><span class="lineNum">     251</span>                 :<span class="tlaGNC">          71 :       parent_node.metadata.nlink = 1;</span></span>
+<span id="L252"><span class="lineNum">     252</span>                 :<span class="tlaGNC">          71 :       fs.nodes_[parent_key] = std::move(parent_node);</span></span>
+<span id="L253"><span class="lineNum">     253</span>                 :<span class="tlaGNC">          71 :     }</span></span>
+<span id="L254"><span class="lineNum">     254</span>                 :<span class="tlaGNC">       11430 :   }</span></span>
+<span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">         122 :   return fs;</span></span>
+<span id="L256"><span class="lineNum">     256</span>                 :<span class="tlaGNC">         122 : }</span></span>
+<span id="L257"><span class="lineNum">     257</span>                 :             : </span>
+<span id="L258"><span class="lineNum">     258</span>                 :<span class="tlaGNC">        1444 : std::optional&lt;std::string&gt; ArchiveFileSystem::MemberKeyOf(std::string_view path) const {</span></span>
+<span id="L259"><span class="lineNum">     259</span>         [<span class="tlaGBC" title="branch 0 was taken 100 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1344 times"> + </span>]:<span class="tlaGNC">        1444 :   if (path == container_) {</span></span>
+<span id="L260"><span class="lineNum">     260</span>                 :<span class="tlaGNC">         100 :     return std::string{};  // the container itself: the archive's root directory</span></span>
+<span id="L261"><span class="lineNum">     261</span>                 :<span class="tlaGNC">         100 :   }</span></span>
+<span id="L262"><span class="lineNum">     262</span>                 :             :   // The probing split, with the answer already known: this filesystem's container is the only one it</span>
+<span id="L263"><span class="lineNum">     263</span>                 :             :   // can be. A plain first-separator split would be wrong for a NESTED container, whose own path</span>
+<span id="L264"><span class="lineNum">     264</span>                 :             :   // contains a separator (`outer.tar!inner.tar`) and would be attributed to the outer archive.</span>
+<span id="L265"><span class="lineNum">     265</span>                 :<span class="tlaGNC">        1344 :   const std::optional&lt;MemberPathParts&gt; parts =</span></span>
+<span id="L266"><span class="lineNum">     266</span>                 :<span class="tlaGNC">        1370 :       SplitMemberPath(path, options_, [this](std::string_view candidate) { return candidate == container_; });</span></span>
+<span id="L267"><span class="lineNum">     267</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1338 times"> + </span>]:<span class="tlaGNC">        1344 :   if (!parts.has_value()) {</span></span>
+<span id="L268"><span class="lineNum">     268</span>                 :<span class="tlaGNC">           6 :     return std::nullopt;</span></span>
+<span id="L269"><span class="lineNum">     269</span>                 :<span class="tlaGNC">           6 :   }</span></span>
+<span id="L270"><span class="lineNum">     270</span>                 :<span class="tlaGNC">        1338 :   return IndexKey(parts-&gt;member);</span></span>
+<span id="L271"><span class="lineNum">     271</span>                 :<span class="tlaGNC">        1344 : }</span></span>
+<span id="L272"><span class="lineNum">     272</span>                 :             : </span>
+<span id="L273"><span class="lineNum">     273</span>                 :<span class="tlaGNC">         165 : absl::StatusOr&lt;std::vector&lt;vfs::Entry&gt;&gt; ArchiveFileSystem::ReadDir(std::string_view dir) const {</span></span>
+<span id="L274"><span class="lineNum">     274</span>                 :<span class="tlaGNC">         165 :   const std::optional&lt;std::string&gt; key = MemberKeyOf(dir);</span></span>
+<span id="L275"><span class="lineNum">     275</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 164 times"> + </span>]:<span class="tlaGNC">         165 :   if (!key.has_value()) {</span></span>
+<span id="L276"><span class="lineNum">     276</span>                 :<span class="tlaGNC">           1 :     return absl::InvalidArgumentError(absl::StrCat(&quot;not a path in &quot;, container_, &quot;: &quot;, dir));</span></span>
+<span id="L277"><span class="lineNum">     277</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L278"><span class="lineNum">     278</span>         [<span class="tlaGBC" title="branch 0 was taken 69 times"> + </span><span class="tlaGBC" title="branch 1 was taken 95 times"> + </span>]:<span class="tlaGNC">         164 :   if (!key-&gt;empty()) {</span></span>
+<span id="L279"><span class="lineNum">     279</span>                 :<span class="tlaGNC">          69 :     const auto found = nodes_.find(*key);</span></span>
+<span id="L280"><span class="lineNum">     280</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 68 times"> + </span>]:<span class="tlaGNC">          69 :     if (found == nodes_.end()) {</span></span>
+<span id="L281"><span class="lineNum">     281</span>                 :<span class="tlaGNC">           1 :       return absl::NotFoundError(absl::StrCat(&quot;no such member: &quot;, *key));</span></span>
+<span id="L282"><span class="lineNum">     282</span>                 :<span class="tlaGNC">           1 :     }</span></span>
+<span id="L283"><span class="lineNum">     283</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 67 times"> + </span>]:<span class="tlaGNC">          68 :     if (found-&gt;second.metadata.type != vfs::FileType::kDirectory) {</span></span>
+<span id="L284"><span class="lineNum">     284</span>                 :<span class="tlaGNC">           1 :       return absl::InvalidArgumentError(absl::StrCat(&quot;not a directory: &quot;, *key));</span></span>
+<span id="L285"><span class="lineNum">     285</span>                 :<span class="tlaGNC">           1 :     }</span></span>
+<span id="L286"><span class="lineNum">     286</span>                 :<span class="tlaGNC">          68 :   }</span></span>
+<span id="L287"><span class="lineNum">     287</span>                 :<span class="tlaGNC">         162 :   std::vector&lt;vfs::Entry&gt; entries;</span></span>
+<span id="L288"><span class="lineNum">     288</span>         [<span class="tlaGBC" title="branch 0 was taken 2514 times"> + </span><span class="tlaGBC" title="branch 1 was taken 162 times"> + </span>]:<span class="tlaGNC">        2515 :   for (const auto&amp; [member_key, node] : nodes_) {</span></span>
+<span id="L289"><span class="lineNum">     289</span>         [<span class="tlaGBC" title="branch 0 was taken 2152 times"> + </span><span class="tlaGBC" title="branch 1 was taken 362 times"> + </span>]:<span class="tlaGNC">        2514 :     if (ParentOf(member_key) != *key) {</span></span>
+<span id="L290"><span class="lineNum">     290</span>                 :<span class="tlaGNC">        2152 :       continue;  // only direct children; the walk recurses for the rest</span></span>
+<span id="L291"><span class="lineNum">     291</span>                 :<span class="tlaGNC">        2152 :     }</span></span>
+<span id="L292"><span class="lineNum">     292</span>                 :<span class="tlaGNC">         362 :     entries.push_back(</span></span>
+<span id="L293"><span class="lineNum">     293</span>                 :<span class="tlaGNC">         362 :         vfs::Entry{</span></span>
+<span id="L294"><span class="lineNum">     294</span>                 :<span class="tlaGNC">         362 :             .path = JoinMemberPath(container_, member_key, options_),</span></span>
+<span id="L295"><span class="lineNum">     295</span>                 :<span class="tlaGNC">         362 :             .name = std::string(NameOf(member_key)),</span></span>
+<span id="L296"><span class="lineNum">     296</span>                 :<span class="tlaGNC">         362 :             .type = node.metadata.type,</span></span>
+<span id="L297"><span class="lineNum">     297</span>                 :             :             // Both fields matter downstream: kArchiveMember tags the origin, and read_only is what</span>
+<span id="L298"><span class="lineNum">     298</span>                 :             :             // makes -delete and the exec family refuse rather than silently skip.</span>
+<span id="L299"><span class="lineNum">     299</span>                 :<span class="tlaGNC">         362 :             .source = vfs::Source::kArchiveMember,</span></span>
+<span id="L300"><span class="lineNum">     300</span>                 :<span class="tlaGNC">         362 :             .read_only = true,</span></span>
+<span id="L301"><span class="lineNum">     301</span>                 :<span class="tlaGNC">         362 :         });</span></span>
+<span id="L302"><span class="lineNum">     302</span>                 :<span class="tlaGNC">         362 :   }</span></span>
+<span id="L303"><span class="lineNum">     303</span>                 :<span class="tlaGNC">         162 :   return entries;</span></span>
+<span id="L304"><span class="lineNum">     304</span>                 :<span class="tlaGNC">         164 : }</span></span>
+<span id="L305"><span class="lineNum">     305</span>                 :             : </span>
+<span id="L306"><span class="lineNum">     306</span>                 :<span class="tlaGNC">         222 : absl::StatusOr&lt;vfs::Metadata&gt; ArchiveFileSystem::Stat(std::string_view path, bool /*follow_symlinks*/) const {</span></span>
+<span id="L307"><span class="lineNum">     307</span>                 :<span class="tlaGNC">         222 :   const std::optional&lt;std::string&gt; key = MemberKeyOf(path);</span></span>
+<span id="L308"><span class="lineNum">     308</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 220 times"> + </span>]:<span class="tlaGNC">         222 :   if (!key.has_value()) {</span></span>
+<span id="L309"><span class="lineNum">     309</span>                 :<span class="tlaGNC">           2 :     return absl::InvalidArgumentError(absl::StrCat(&quot;not a path in &quot;, container_, &quot;: &quot;, path));</span></span>
+<span id="L310"><span class="lineNum">     310</span>                 :<span class="tlaGNC">           2 :   }</span></span>
+<span id="L311"><span class="lineNum">     311</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 218 times"> + </span>]:<span class="tlaGNC">         220 :   if (key-&gt;empty()) {</span></span>
+<span id="L312"><span class="lineNum">     312</span>                 :             :     // The container presents as a directory here so a walk can enter it. Its real-filesystem</span>
+<span id="L313"><span class="lineNum">     313</span>                 :             :     // identity (size, mode, times of the archive FILE) comes from the local backend, not this one.</span>
+<span id="L314"><span class="lineNum">     314</span>                 :<span class="tlaGNC">           2 :     return DirectoryMetadata();</span></span>
+<span id="L315"><span class="lineNum">     315</span>                 :<span class="tlaGNC">           2 :   }</span></span>
+<span id="L316"><span class="lineNum">     316</span>                 :<span class="tlaGNC">         218 :   const auto found = nodes_.find(*key);</span></span>
+<span id="L317"><span class="lineNum">     317</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 217 times"> + </span>]:<span class="tlaGNC">         218 :   if (found == nodes_.end()) {</span></span>
+<span id="L318"><span class="lineNum">     318</span>                 :<span class="tlaGNC">           1 :     return absl::NotFoundError(absl::StrCat(&quot;no such member: &quot;, *key));</span></span>
+<span id="L319"><span class="lineNum">     319</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L320"><span class="lineNum">     320</span>                 :<span class="tlaGNC">         217 :   return found-&gt;second.metadata;</span></span>
+<span id="L321"><span class="lineNum">     321</span>                 :<span class="tlaGNC">         218 : }</span></span>
+<span id="L322"><span class="lineNum">     322</span>                 :             : </span>
+<span id="L323"><span class="lineNum">     323</span>                 :<span class="tlaGNC">           1 : absl::Status ArchiveFileSystem::Remove(std::string_view path) const {</span></span>
+<span id="L324"><span class="lineNum">     324</span>                 :             :   // A refusal, never a silent success: an archive member cannot be deleted in place, and reporting</span>
+<span id="L325"><span class="lineNum">     325</span>                 :             :   // success would make `-delete` look like it worked.</span>
+<span id="L326"><span class="lineNum">     326</span>                 :<span class="tlaGNC">           1 :   return absl::PermissionDeniedError(absl::StrCat(&quot;archive members are read-only, cannot remove: &quot;, path));</span></span>
+<span id="L327"><span class="lineNum">     327</span>                 :<span class="tlaGNC">           1 : }</span></span>
+<span id="L328"><span class="lineNum">     328</span>                 :             : </span>
+<span id="L329"><span class="lineNum">     329</span>                 :<span class="tlaGNC">           7 : bool ArchiveFileSystem::Access(std::string_view path, vfs::AccessMode mode) const {</span></span>
+<span id="L330"><span class="lineNum">     330</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">           7 :   if (mode == vfs::AccessMode::kWrite) {</span></span>
+<span id="L331"><span class="lineNum">     331</span>                 :<span class="tlaGNC">           2 :     return false;  // read-only, unconditionally</span></span>
+<span id="L332"><span class="lineNum">     332</span>                 :<span class="tlaGNC">           2 :   }</span></span>
+<span id="L333"><span class="lineNum">     333</span>                 :<span class="tlaGNC">           5 :   const std::optional&lt;std::string&gt; key = MemberKeyOf(path);</span></span>
+<span id="L334"><span class="lineNum">     334</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 4 times"> + </span>]:<span class="tlaGNC">           5 :   if (!key.has_value()) {</span></span>
+<span id="L335"><span class="lineNum">     335</span>                 :<span class="tlaGNC">           1 :     return false;</span></span>
+<span id="L336"><span class="lineNum">     336</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L337"><span class="lineNum">     337</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">           4 :   if (key-&gt;empty()) {</span></span>
+<span id="L338"><span class="lineNum">     338</span>                 :<span class="tlaGNC">           1 :     return true;  // the archive root is readable and traversable</span></span>
+<span id="L339"><span class="lineNum">     339</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L340"><span class="lineNum">     340</span>                 :<span class="tlaGNC">           3 :   const auto found = nodes_.find(*key);</span></span>
+<span id="L341"><span class="lineNum">     341</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           3 :   if (found == nodes_.end()) {</span></span>
+<span id="L342"><span class="lineNum">     342</span>                 :<span class="tlaGNC">           1 :     return false;</span></span>
+<span id="L343"><span class="lineNum">     343</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L344"><span class="lineNum">     344</span>                 :<span class="tlaGNC">           2 :   const std::uint32_t bits = found-&gt;second.metadata.mode;</span></span>
+<span id="L345"><span class="lineNum">     345</span>                 :             :   // Any of user/group/other suffices: xff reports what the archive stored, and a member has no</span>
+<span id="L346"><span class="lineNum">     346</span>                 :             :   // meaningful owner on the reading machine.</span>
+<span id="L347"><span class="lineNum">     347</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           2 :   return mode == vfs::AccessMode::kRead ? (bits &amp; 0444U) != 0 : (bits &amp; 0111U) != 0;</span></span>
+<span id="L348"><span class="lineNum">     348</span>                 :<span class="tlaGNC">           3 : }</span></span>
+<span id="L349"><span class="lineNum">     349</span>                 :             : </span>
+<span id="L350"><span class="lineNum">     350</span>                 :<span class="tlaGNC">           5 : absl::StatusOr&lt;std::string&gt; ArchiveFileSystem::ReadLink(std::string_view path) const {</span></span>
+<span id="L351"><span class="lineNum">     351</span>                 :<span class="tlaGNC">           5 :   const std::optional&lt;std::string&gt; key = MemberKeyOf(path);</span></span>
+<span id="L352"><span class="lineNum">     352</span> [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 4 times"> + </span>]:<span class="tlaGNC">           5 :   if (!key.has_value() || key-&gt;empty()) {</span></span>
+<span id="L353"><span class="lineNum">     353</span>                 :<span class="tlaGNC">           1 :     return absl::InvalidArgumentError(absl::StrCat(&quot;not a member path: &quot;, path));</span></span>
+<span id="L354"><span class="lineNum">     354</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L355"><span class="lineNum">     355</span>                 :<span class="tlaGNC">           4 :   const auto found = nodes_.find(*key);</span></span>
+<span id="L356"><span class="lineNum">     356</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">           4 :   if (found == nodes_.end()) {</span></span>
+<span id="L357"><span class="lineNum">     357</span>                 :<span class="tlaGNC">           1 :     return absl::NotFoundError(absl::StrCat(&quot;no such member: &quot;, *key));</span></span>
+<span id="L358"><span class="lineNum">     358</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L359"><span class="lineNum">     359</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           3 :   if (found-&gt;second.metadata.type != vfs::FileType::kSymlink) {</span></span>
+<span id="L360"><span class="lineNum">     360</span>                 :<span class="tlaGNC">           1 :     return absl::InvalidArgumentError(absl::StrCat(&quot;not a symlink: &quot;, *key));</span></span>
+<span id="L361"><span class="lineNum">     361</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L362"><span class="lineNum">     362</span>                 :<span class="tlaGNC">           2 :   return found-&gt;second.link_target;</span></span>
+<span id="L363"><span class="lineNum">     363</span>                 :<span class="tlaGNC">           3 : }</span></span>
+<span id="L364"><span class="lineNum">     364</span>                 :             : </span>
+<span id="L365"><span class="lineNum">     365</span>                 :<span class="tlaGNC">           1 : absl::StatusOr&lt;std::string&gt; ArchiveFileSystem::FsType(std::string_view /*path*/) const {</span></span>
+<span id="L366"><span class="lineNum">     366</span>                 :<span class="tlaGNC">           1 :   return std::string(&quot;archive&quot;);</span></span>
+<span id="L367"><span class="lineNum">     367</span>                 :<span class="tlaGNC">           1 : }</span></span>
+<span id="L368"><span class="lineNum">     368</span>                 :             : </span>
+<span id="L369"><span class="lineNum">     369</span>                 :<span class="tlaGNC">           1 : absl::StatusOr&lt;bool&gt; ArchiveFileSystem::IsCaseSensitive(std::string_view /*path*/) const {</span></span>
+<span id="L370"><span class="lineNum">     370</span>                 :             :   // Stored member names are bytes, compared byte-wise, whatever the host filesystem does.</span>
+<span id="L371"><span class="lineNum">     371</span>                 :<span class="tlaGNC">           1 :   return true;</span></span>
+<span id="L372"><span class="lineNum">     372</span>                 :<span class="tlaGNC">           1 : }</span></span>
+<span id="L373"><span class="lineNum">     373</span>                 :             : </span>
+<span id="L374"><span class="lineNum">     374</span>                 :<span class="tlaGNC">        1047 : absl::StatusOr&lt;std::string&gt; ArchiveFileSystem::ReadContent(std::string_view path) const {</span></span>
+<span id="L375"><span class="lineNum">     375</span>                 :             :   // What makes -grep / -content / {hash} work on a member: the bytes come out of the container, one</span>
+<span id="L376"><span class="lineNum">     376</span>                 :             :   // streamed pass per read. The index is consulted FIRST so this filesystem's own errors (not mine,</span>
+<span id="L377"><span class="lineNum">     377</span>                 :             :   // no such member, has no content) are answered from what it already knows, and libarchive is only</span>
+<span id="L378"><span class="lineNum">     378</span>                 :             :   // asked to extract something that is really there.</span>
+<span id="L379"><span class="lineNum">     379</span>                 :<span class="tlaGNC">        1047 :   const std::optional&lt;std::string&gt; key = MemberKeyOf(path);</span></span>
+<span id="L380"><span class="lineNum">     380</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1045 times"> + </span>]:<span class="tlaGNC">        1047 :   if (!key.has_value()) {</span></span>
+<span id="L381"><span class="lineNum">     381</span>                 :<span class="tlaGNC">           2 :     return absl::InvalidArgumentError(absl::StrCat(&quot;not a path in &quot;, container_, &quot;: &quot;, path));</span></span>
+<span id="L382"><span class="lineNum">     382</span>                 :<span class="tlaGNC">           2 :   }</span></span>
+<span id="L383"><span class="lineNum">     383</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1044 times"> + </span>]:<span class="tlaGNC">        1045 :   if (key-&gt;empty()) {</span></span>
+<span id="L384"><span class="lineNum">     384</span>                 :             :     // The container itself: as a directory here (see Stat), it has no content of its own. Reading</span>
+<span id="L385"><span class="lineNum">     385</span>                 :             :     // the archive FILE is the local backend's job, and the walk asks that one for it.</span>
+<span id="L386"><span class="lineNum">     386</span>                 :<span class="tlaGNC">           1 :     return absl::FailedPreconditionError(absl::StrCat(&quot;not a regular file: &quot;, container_));</span></span>
+<span id="L387"><span class="lineNum">     387</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L388"><span class="lineNum">     388</span>                 :<span class="tlaGNC">        1044 :   const auto found = nodes_.find(*key);</span></span>
+<span id="L389"><span class="lineNum">     389</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1043 times"> + </span>]:<span class="tlaGNC">        1044 :   if (found == nodes_.end()) {</span></span>
+<span id="L390"><span class="lineNum">     390</span>                 :<span class="tlaGNC">           1 :     return absl::NotFoundError(absl::StrCat(&quot;no such member: &quot;, *key));</span></span>
+<span id="L391"><span class="lineNum">     391</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L392"><span class="lineNum">     392</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1042 times"> + </span>]:<span class="tlaGNC">        1043 :   if (found-&gt;second.metadata.type != vfs::FileType::kRegular) {</span></span>
+<span id="L393"><span class="lineNum">     393</span>                 :<span class="tlaGNC">           1 :     return absl::FailedPreconditionError(absl::StrCat(&quot;not a regular file: &quot;, *key));</span></span>
+<span id="L394"><span class="lineNum">     394</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L395"><span class="lineNum">     395</span>                 :             :   // Whichever reader indexed this container also extracts from it: a phar's data lies at offsets its</span>
+<span id="L396"><span class="lineNum">     396</span>                 :             :   // own manifest gives, which libarchive cannot compute.</span>
+<span id="L397"><span class="lineNum">     397</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1041 times"> + </span>]:<span class="tlaGNC">        1042 :   if (single_) {</span></span>
+<span id="L398"><span class="lineNum">     398</span>                 :<span class="tlaGNC">           1 :     return single_file_content_;  // one member, already decompressed when the container was opened</span></span>
+<span id="L399"><span class="lineNum">     399</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L400"><span class="lineNum">     400</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1036 times"> + </span>]:<span class="tlaGNC">        1041 :   if (std::optional&lt;std::string&gt; cached = member_cache_-&gt;Get(*key); cached.has_value()) {</span></span>
+<span id="L401"><span class="lineNum">     401</span>                 :<span class="tlaGNC">           5 :     return *std::move(cached);</span></span>
+<span id="L402"><span class="lineNum">     402</span>                 :<span class="tlaGNC">           5 :   }</span></span>
+<span id="L403"><span class="lineNum">     403</span>                 :<span class="tlaGNC">        1036 :   absl::StatusOr&lt;std::string&gt; content;</span></span>
+<span id="L404"><span class="lineNum">     404</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1029 times"> + </span>]:<span class="tlaGNC">        1036 :   if (phar_) {</span></span>
+<span id="L405"><span class="lineNum">     405</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           7 :     content = bytes_.empty() ? ReadPharMemberOfFile(container_, *key) : ReadPharMember(bytes_, *key);</span></span>
+<span id="L406"><span class="lineNum">     406</span>                 :<span class="tlaGNC">        1035 :   } else {</span></span>
+<span id="L407"><span class="lineNum">     407</span>         [<span class="tlaGBC" title="branch 0 was taken 1024 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">        1029 :     content = bytes_.empty() ? ReadMemberOfFile(container_, *key) : ReadMember(bytes_, *key);</span></span>
+<span id="L408"><span class="lineNum">     408</span>                 :<span class="tlaGNC">        1029 :   }</span></span>
+<span id="L409"><span class="lineNum">     409</span>         [<span class="tlaGBC" title="branch 0 was taken 1036 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">        1036 :   if (content.ok()) {</span></span>
+<span id="L410"><span class="lineNum">     410</span>                 :<span class="tlaGNC">        1036 :     member_cache_-&gt;Put(*key, *content);</span></span>
+<span id="L411"><span class="lineNum">     411</span>                 :<span class="tlaGNC">        1036 :   }</span></span>
+<span id="L412"><span class="lineNum">     412</span>                 :<span class="tlaGNC">        1036 :   return content;</span></span>
+<span id="L413"><span class="lineNum">     413</span>                 :<span class="tlaGNC">        1041 : }</span></span>
+<span id="L414"><span class="lineNum">     414</span>                 :             : </span>
+<span id="L415"><span class="lineNum">     415</span>                 :             : }  // namespace xff::archive</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table class="xffPolicy">
+            <thead>
+              <tr>
+                <th scope="col">Global coverage policy</th>
+                <th scope="col">Low</th>
+                <th scope="col">Medium</th>
+                <th scope="col">High</th>
+                <th scope="col">Enforced</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <th scope="row">Lines</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 92%</td>
+              <td class="headerValueLegH">&ge; 92%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Branches</th>
+              <td class="headerValueLegL">&lt; 80%</td>
+              <td class="headerValueLegM">&ge; 80% and &lt; 82%</td>
+              <td class="headerValueLegH">&ge; 82%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Functions</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 95%</td>
+              <td class="headerValueLegH">&ge; 95%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            </tbody>
+          </table>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 2.5-0</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - xff production coverage - program-command-line/xff/cli/plain_backend.h</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../index.html">top level</a> - <a href="index.html">program-command-line/xff/cli</a> - plain_backend.h<span style="font-size: 80%;"> (source / <a href="plain_backend.h.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">xff production coverage</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">2</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-08-22 20:09:20</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">2</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+            | Branches:
+            <span class="coverLegendCov">+</span> taken
+            <span class="coverLegendNoCov">-</span> not taken
+            <span class="coverLegendNoCov">#</span> not executed
+</td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryHi">-</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+          </tr>
+                  <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : // SPDX-FileCopyrightText: Copyright (c) 2026 M. Boerger, The helly25 authors</span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : // SPDX-License-Identifier: Apache-2.0</span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : //</span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : // Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : // you may not use this file except in compliance with the License.</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : // You may obtain a copy of the License at</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : //</span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : //      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : //</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             : // Unless required by applicable law or agreed to in writing, software</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : // distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : // See the License for the specific language governing permissions and</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : // limitations under the License.</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : </span>
+<span id="L16"><span class="lineNum">      16</span>                 :             : #ifndef XFF_CLI_PLAIN_BACKEND_H_</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             : #define XFF_CLI_PLAIN_BACKEND_H_</span>
+<span id="L18"><span class="lineNum">      18</span>                 :             : </span>
+<span id="L19"><span class="lineNum">      19</span>                 :             : #include &lt;string&gt;</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             : #include &lt;utility&gt;</span>
+<span id="L21"><span class="lineNum">      21</span>                 :             : </span>
+<span id="L22"><span class="lineNum">      22</span>                 :             : #include &quot;xff/cli/help_backend.h&quot;</span>
+<span id="L23"><span class="lineNum">      23</span>                 :             : #include &quot;xff/cli/help_model.h&quot;</span>
+<span id="L24"><span class="lineNum">      24</span>                 :             : </span>
+<span id="L25"><span class="lineNum">      25</span>                 :             : // The plain-text help backend: renders the help model to unadorned terminal text -</span>
+<span id="L26"><span class="lineNum">      26</span>                 :             : // the `--help` / topic format. Blocks are separated by a blank line; a section</span>
+<span id="L27"><span class="lineNum">      27</span>                 :             : // heading is upper-cased, a subsection ends in a colon, an entry is a term line</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             : // with an indented summary, and a vocabulary table aligns on its widest term. Prose</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             : // drops backtick markup, while a term / row description keeps it (matching the</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             : // hand-written help). Flowing text (prose, a bullet, an entry summary / detail, a</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             : // see-also note) word-wraps to the configured `width` (#153 / #164), each</span>
+<span id="L32"><span class="lineNum">      32</span>                 :             : // continuation line carrying its block's indent; an example block and an aligned</span>
+<span id="L33"><span class="lineNum">      33</span>                 :             : // row table keep their verbatim layout. A `width` of 0 disables wrapping. ANSI</span>
+<span id="L34"><span class="lineNum">      34</span>                 :             : // color is a later slice (the color backend).</span>
+<span id="L35"><span class="lineNum">      35</span>                 :             : namespace xff::cli {</span>
+<span id="L36"><span class="lineNum">      36</span>                 :             : </span>
+<span id="L37"><span class="lineNum">      37</span>                 :             : // A HelpBackend that accumulates plain text. Construct (optionally with a render</span>
+<span id="L38"><span class="lineNum">      38</span>                 :             : // context - its width drives wrapping, 0 = no wrap), RenderDocument() into it, then</span>
+<span id="L39"><span class="lineNum">      39</span>                 :             : // Take() the result.</span>
+<span id="L40"><span class="lineNum">      40</span>                 :             : class PlainTextBackend final : public HelpBackend {</span>
+<span id="L41"><span class="lineNum">      41</span>                 :             :  public:</span>
+<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC tlaBgGNC">          60 :   PlainTextBackend() = default;</span></span>
+<span id="L43"><span class="lineNum">      43</span>                 :             : </span>
+<span id="L44"><span class="lineNum">      44</span>                 :             :   // std::move keeps the sink-parameter idiom; a no-op while HelpRenderContext is</span>
+<span id="L45"><span class="lineNum">      45</span>                 :             :   // trivially copyable (see HelpBackend), hence the lint suppression.</span>
+<span id="L46"><span class="lineNum">      46</span>                 :             :   // NOLINTNEXTLINE(*-move-const-arg)</span>
+<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">         122 :   explicit PlainTextBackend(HelpRenderContext context) : HelpBackend(std::move(context)) {}</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :             : </span>
+<span id="L49"><span class="lineNum">      49</span>                 :             :   void Preamble(const Document&amp; doc) override;</span>
+<span id="L50"><span class="lineNum">      50</span>                 :             :   void BeginSection(const Section&amp; section) override;</span>
+<span id="L51"><span class="lineNum">      51</span>                 :             :   void EndSection(const Section&amp; section) override;</span>
+<span id="L52"><span class="lineNum">      52</span>                 :             :   void BeginSubsection(const Subsection&amp; subsection) override;</span>
+<span id="L53"><span class="lineNum">      53</span>                 :             :   void EndSubsection(const Subsection&amp; subsection) override;</span>
+<span id="L54"><span class="lineNum">      54</span>                 :             :   void BeginEntry(const Entry&amp; entry) override;</span>
+<span id="L55"><span class="lineNum">      55</span>                 :             :   void EndEntry(const Entry&amp; entry) override;</span>
+<span id="L56"><span class="lineNum">      56</span>                 :             :   void EmitProse(const Prose&amp; prose) override;</span>
+<span id="L57"><span class="lineNum">      57</span>                 :             :   void EmitExample(const Example&amp; example) override;</span>
+<span id="L58"><span class="lineNum">      58</span>                 :             :   void EmitBullets(const Bullets&amp; bullets) override;</span>
+<span id="L59"><span class="lineNum">      59</span>                 :             :   void EmitRows(const Rows&amp; rows) override;</span>
+<span id="L60"><span class="lineNum">      60</span>                 :             : </span>
+<span id="L61"><span class="lineNum">      61</span>                 :             :   void EmitTable(const Table&amp; table) override;</span>
+<span id="L62"><span class="lineNum">      62</span>                 :             :   void EmitSeeAlso(const SeeAlso&amp; see_also) override;</span>
+<span id="L63"><span class="lineNum">      63</span>                 :             :   [[nodiscard]] std::string Take() override;</span>
+<span id="L64"><span class="lineNum">      64</span>                 :             : </span>
+<span id="L65"><span class="lineNum">      65</span>                 :             :  private:</span>
+<span id="L66"><span class="lineNum">      66</span>                 :             :   // Separates blocks: emits a blank line before the next block unless at the start.</span>
+<span id="L67"><span class="lineNum">      67</span>                 :             :   void StartBlock();</span>
+<span id="L68"><span class="lineNum">      68</span>                 :             : </span>
+<span id="L69"><span class="lineNum">      69</span>                 :             :   // The body indent for content at the current nesting depth (2 spaces per level), so</span>
+<span id="L70"><span class="lineNum">      70</span>                 :             :   // every section / subsection / entry visibly owns the content indented beneath it.</span>
+<span id="L71"><span class="lineNum">      71</span>                 :             :   [[nodiscard]] std::string BodyIndent() const;</span>
+<span id="L72"><span class="lineNum">      72</span>                 :             : </span>
+<span id="L73"><span class="lineNum">      73</span>                 :             :   std::string out_;</span>
+<span id="L74"><span class="lineNum">      74</span>                 :             :   bool in_entry_ = false;  // an entry's detail prose renders under its (deeper) term indent</span>
+<span id="L75"><span class="lineNum">      75</span>                 :             :   int depth_ = 0;          // nesting depth: each Begin* heading/term increments, each End* decrements</span>
+<span id="L76"><span class="lineNum">      76</span>                 :             : };</span>
+<span id="L77"><span class="lineNum">      77</span>                 :             : </span>
+<span id="L78"><span class="lineNum">      78</span>                 :             : // Renders inline runs to plain text: literal content with emphasis markup dropped</span>
+<span id="L79"><span class="lineNum">      79</span>                 :             : // and each cross-reference shown as its plain locator. Exposed for reuse / testing.</span>
+<span id="L80"><span class="lineNum">      80</span>                 :             : [[nodiscard]] std::string RenderInlinesPlain(const Inlines&amp; runs);</span>
+<span id="L81"><span class="lineNum">      81</span>                 :             : </span>
+<span id="L82"><span class="lineNum">      82</span>                 :             : // The plain locator a cross-reference resolves to in text output (e.g. a kManPage</span>
+<span id="L83"><span class="lineNum">      83</span>                 :             : // target -&gt; &quot;find(1)&quot;, a kTopic -&gt; &quot;--help=fields&quot;). Exposed for reuse / testing.</span>
+<span id="L84"><span class="lineNum">      84</span>                 :             : [[nodiscard]] std::string PlainRefLocator(const RefTarget&amp; target);</span>
+<span id="L85"><span class="lineNum">      85</span>                 :             : </span>
+<span id="L86"><span class="lineNum">      86</span>                 :             : }  // namespace xff::cli</span>
+<span id="L87"><span class="lineNum">      87</span>                 :             : </span>
+<span id="L88"><span class="lineNum">      88</span>                 :             : #endif  // XFF_CLI_PLAIN_BACKEND_H_</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - xff production coverage - program-presentation/xff/presentation/fields/fields.h</title>
+  <link rel="stylesheet" type="text/css" href="../../../../gcov.css">
+  <style>
+    .xffNavigation { padding: .35rem 0; text-align: center; }
+    .xffHeaderSummary { margin: 0 auto; width: 80%; }
+    .xffPolicy { border-collapse: collapse; margin: .75rem auto 1rem; width: auto; }
+    .xffPolicy th { padding: .2rem .75rem; text-align: left; }
+    .xffPolicy td { font-size: 100%; padding: .2rem .75rem; text-align: center; }
+  </style>
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="xffNavigation"><a href="../../../../../index.html">Report overview</a> &middot; <a href="../../../../../../../index.html">All coverage reports</a></td></tr>
+
+            <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table class="xffHeaderSummary" cellpadding=1 border=0>
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../../index.html" title="Click to go to top-level">top level</a> - <a href="index.html" title="Click to go to directory program-presentation/xff/presentation/fields">program-presentation/xff/presentation/fields</a> - fields.h<span style="font-size: 80%;"> (source / <a href="fields.h.func-c.html" title="Click to go to function table">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">xff production coverage</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntry">10</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-08-24 06:23:02</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">4</td>
+            <td class="headerCovTableEntry">4</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">2</td>
+          </tr>
+                  <tr><td><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : // SPDX-FileCopyrightText: Copyright (c) 2026 M. Boerger, The helly25 authors</span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : // SPDX-License-Identifier: Apache-2.0</span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : //</span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : // Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : // you may not use this file except in compliance with the License.</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : // You may obtain a copy of the License at</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : //</span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : //      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : //</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             : // Unless required by applicable law or agreed to in writing, software</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : // distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : // See the License for the specific language governing permissions and</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : // limitations under the License.</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : </span>
+<span id="L16"><span class="lineNum">      16</span>                 :             : #ifndef XFF_PRESENTATION_FIELDS_FIELDS_H_</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             : #define XFF_PRESENTATION_FIELDS_FIELDS_H_</span>
+<span id="L18"><span class="lineNum">      18</span>                 :             : </span>
+<span id="L19"><span class="lineNum">      19</span>                 :             : #include &lt;cstddef&gt;</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             : #include &lt;cstdint&gt;</span>
+<span id="L21"><span class="lineNum">      21</span>                 :             : #include &lt;map&gt;</span>
+<span id="L22"><span class="lineNum">      22</span>                 :             : #include &lt;optional&gt;</span>
+<span id="L23"><span class="lineNum">      23</span>                 :             : #include &lt;string&gt;</span>
+<span id="L24"><span class="lineNum">      24</span>                 :             : #include &lt;string_view&gt;</span>
+<span id="L25"><span class="lineNum">      25</span>                 :             : #include &lt;utility&gt;</span>
+<span id="L26"><span class="lineNum">      26</span>                 :             : #include &lt;variant&gt;</span>
+<span id="L27"><span class="lineNum">      27</span>                 :             : #include &lt;vector&gt;</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             : </span>
+<span id="L29"><span class="lineNum">      29</span>                 :             : #include &quot;absl/time/time.h&quot;</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             : #include &quot;absl/types/span.h&quot;</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             : #include &quot;xff/datetime/datetime.h&quot;</span>
+<span id="L32"><span class="lineNum">      32</span>                 :             : #include &quot;xff/vfs/entry.h&quot;</span>
+<span id="L33"><span class="lineNum">      33</span>                 :             : #include &quot;xff/vfs/filesystem.h&quot;</span>
+<span id="L34"><span class="lineNum">      34</span>                 :             : </span>
+<span id="L35"><span class="lineNum">      35</span>                 :             : namespace xff::fields {</span>
+<span id="L36"><span class="lineNum">      36</span>                 :             : </span>
+<span id="L37"><span class="lineNum">      37</span>                 :             : // The per-entry inputs a field renderer reads. Bundled into a context so new</span>
+<span id="L38"><span class="lineNum">      38</span>                 :             : // fields can draw on more inputs without changing every renderer's signature.</span>
+<span id="L39"><span class="lineNum">      39</span>                 :             : struct RenderContext {</span>
+<span id="L40"><span class="lineNum">      40</span>                 :             :   std::string_view path;          // path as traversed</span>
+<span id="L41"><span class="lineNum">      41</span>                 :             :   std::string_view root;          // command-line search root it was reached from (find %H); may be empty</span>
+<span id="L42"><span class="lineNum">      42</span>                 :             :   std::string_view link_target;   // {target}: a symlink's target (find %l); empty for non-symlinks</span>
+<span id="L43"><span class="lineNum">      43</span>                 :             :   const vfs::Metadata&amp; metadata;  // the entry's metadata</span>
+<span id="L44"><span class="lineNum">      44</span>                 :             :   int depth = 0;                  // 0 for a root operand, +1 per directory level</span>
+<span id="L45"><span class="lineNum">      45</span>                 :             :   // The filesystem the entry came FROM, for the fields that READ it ({hash}, {lines}). Inside a</span>
+<span id="L46"><span class="lineNum">      46</span>                 :             :   // mounted container that is the container's, so a member renders its own bytes rather than nothing</span>
+<span id="L47"><span class="lineNum">      47</span>                 :             :   // (`a.tar!x` is not a path the real filesystem has). Null means &quot;read by path&quot;, which is what a</span>
+<span id="L48"><span class="lineNum">      48</span>                 :             :   // caller with no walk behind it (a bare Render) wants.</span>
+<span id="L49"><span class="lineNum">      49</span>                 :             :   const vfs::FileSystem* fs = nullptr;</span>
+<span id="L50"><span class="lineNum">      50</span>                 :             :   absl::TimeZone tz = absl::LocalTimeZone();  // zone for {atime}/{mtime}/{ctime}/{btime} formatting; --timezone</span>
+<span id="L51"><span class="lineNum">      51</span>                 :             :   std::string_view time_format;               // default format for a time field with no {:qualifier}; --time-format</span>
+<span id="L52"><span class="lineNum">      52</span>                 :             :   // --time-zone-suffix: whether a named preset renders its zone suffix (kAuto keeps the</span>
+<span id="L53"><span class="lineNum">      53</span>                 :             :   // preset default, kNever suppresses the optional offset, kAlways forces one).</span>
+<span id="L54"><span class="lineNum">      54</span>                 :             :   datetime::ZoneSuffix zone_suffix = datetime::ZoneSuffix::kAuto;</span>
+<span id="L55"><span class="lineNum">      55</span>                 :             :   // --hash-algorithm / --hash-encoding: defaults for a bare {hash} (empty -&gt; sha256 / hex); a</span>
+<span id="L56"><span class="lineNum">      56</span>                 :             :   // {hash:ALGO[/ENCODING]} qualifier overrides per use. Only {hash} reads them.</span>
+<span id="L57"><span class="lineNum">      57</span>                 :             :   std::string_view hash_algorithm;</span>
+<span id="L58"><span class="lineNum">      58</span>                 :             :   std::string_view hash_encoding;</span>
+<span id="L59"><span class="lineNum">      59</span>                 :             :   const std::vector&lt;std::string&gt;* captures = nullptr;  // -regex groups for {0..N}: [0] whole match, 1..N groups</span>
+<span id="L60"><span class="lineNum">      60</span>                 :             :   const std::map&lt;std::string, std::string&gt;* defines = nullptr;  // --define values for {def.NAME}</span>
+<span id="L61"><span class="lineNum">      61</span>                 :             :   const std::map&lt;std::string, std::string&gt;* outputs = nullptr;  // -capture results for {capture.NAME}</span>
+<span id="L62"><span class="lineNum">      62</span>                 :             :   // Per-line match context for -grep:FORMAT: the 1-based number and text of the</span>
+<span id="L63"><span class="lineNum">      63</span>                 :             :   // matching line. `{line}` renders the number, `{text}` the line; both are empty</span>
+<span id="L64"><span class="lineNum">      64</span>                 :             :   // outside a -grep line (line_number unset), so they no-op in --template/-printf.</span>
+<span id="L65"><span class="lineNum">      65</span>                 :             :   std::optional&lt;std::size_t&gt; line_number;</span>
+<span id="L66"><span class="lineNum">      66</span>                 :             :   std::string_view line_text;</span>
+<span id="L67"><span class="lineNum">      67</span>                 :             :   // The matched span within the line (grep -o): `{match}` is the matched substring,</span>
+<span id="L68"><span class="lineNum">      68</span>                 :             :   // `{column}` its 1-based byte start. Empty/unset unless match_column is set (only</span>
+<span id="L69"><span class="lineNum">      69</span>                 :             :   // -grep:FORMAT computes it), so they no-op elsewhere.</span>
+<span id="L70"><span class="lineNum">      70</span>                 :             :   std::string_view match_text;</span>
+<span id="L71"><span class="lineNum">      71</span>                 :             :   std::optional&lt;std::size_t&gt; match_column;</span>
+<span id="L72"><span class="lineNum">      72</span>                 :             :   // --shards: when this render represents a collapsed shard set, `{shard}` is the number of shards</span>
+<span id="L73"><span class="lineNum">      73</span>                 :             :   // in the set and size-like fields aggregate across them (the RenderContext's metadata.size is the</span>
+<span id="L74"><span class="lineNum">      74</span>                 :             :   // set total). Unset for a normal entry, so `{shard}` no-ops there.</span>
+<span id="L75"><span class="lineNum">      75</span>                 :             :   std::optional&lt;std::int64_t&gt; shard_count;</span>
+<span id="L76"><span class="lineNum">      76</span>                 :             :   // {fuzzy}: normalized quality composed across successful fuzzy predicates. Unset when no fuzzy</span>
+<span id="L77"><span class="lineNum">      77</span>                 :             :   // test ran, so it no-ops in a -printf / --template that has none.</span>
+<span id="L78"><span class="lineNum">      78</span>                 :             :   std::optional&lt;int&gt; fuzzy_score;</span>
+<span id="L79"><span class="lineNum">      79</span>                 :             : };</span>
+<span id="L80"><span class="lineNum">      80</span>                 :             : </span>
+<span id="L81"><span class="lineNum">      81</span>                 :             : // A field value either owns a computed string or views storage whose lifetime covers rendering.</span>
+<span id="L82"><span class="lineNum">      82</span>                 :             : // Keeping that distinction through dispatch avoids allocating for fields backed by immutable</span>
+<span id="L83"><span class="lineNum">      83</span>                 :             : // registries or RenderContext strings while preserving safe value semantics for computed fields.</span>
+<span id="L84"><span class="lineNum">      84</span>                 :             : class FieldValue {</span>
+<span id="L85"><span class="lineNum">      85</span>                 :             :  public:</span>
+<span id="L86"><span class="lineNum">      86</span>                 :             :   FieldValue() : value_(std::string_view{}) {}</span>
+<span id="L87"><span class="lineNum">      87</span>                 :             : </span>
+<span id="L88"><span class="lineNum">      88</span>                 :             :   // These conversions let field renderers naturally return either owned text or stable views.</span>
+<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">          14 :   FieldValue(const char* value)  // NOLINT(google-explicit-constructor,hicpp-explicit-conversions)</span></span>
+<span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">          14 :       : value_(std::string_view(value)) {}</span></span>
+<span id="L91"><span class="lineNum">      91</span>                 :             : </span>
+<span id="L92"><span class="lineNum">      92</span>                 :<span class="tlaGNC">         243 :   FieldValue(std::string value)  // NOLINT(google-explicit-constructor,hicpp-explicit-conversions)</span></span>
+<span id="L93"><span class="lineNum">      93</span>                 :<span class="tlaGNC">         243 :       : value_(std::move(value)) {}</span></span>
+<span id="L94"><span class="lineNum">      94</span>                 :             : </span>
+<span id="L95"><span class="lineNum">      95</span>                 :<span class="tlaGNC">         142 :   FieldValue(std::string_view value)  // NOLINT(google-explicit-constructor,hicpp-explicit-conversions)</span></span>
+<span id="L96"><span class="lineNum">      96</span>                 :<span class="tlaGNC">         142 :       : value_(value) {}</span></span>
+<span id="L97"><span class="lineNum">      97</span>                 :             : </span>
+<span id="L98"><span class="lineNum">      98</span>                 :<span class="tlaGNC">         400 :   [[nodiscard]] std::string_view View() const {</span></span>
+<span id="L99"><span class="lineNum">      99</span>         [<span class="tlaGBC" title="branch 0 was taken 243 times"> + </span><span class="tlaGBC" title="branch 1 was taken 157 times"> + </span>]:<span class="tlaGNC">         400 :     if (const auto* const owned = std::get_if&lt;std::string&gt;(&amp;value_); owned != nullptr) {</span></span>
+<span id="L100"><span class="lineNum">     100</span>                 :<span class="tlaGNC">         243 :       return *owned;</span></span>
+<span id="L101"><span class="lineNum">     101</span>                 :             :     }</span>
+<span id="L102"><span class="lineNum">     102</span>                 :<span class="tlaGNC">         157 :     return std::get&lt;std::string_view&gt;(value_);</span></span>
+<span id="L103"><span class="lineNum">     103</span>                 :             :   }</span>
+<span id="L104"><span class="lineNum">     104</span>                 :             : </span>
+<span id="L105"><span class="lineNum">     105</span>                 :             :  private:</span>
+<span id="L106"><span class="lineNum">     106</span>                 :             :   std::variant&lt;std::string, std::string_view&gt; value_;</span>
+<span id="L107"><span class="lineNum">     107</span>                 :             : };</span>
+<span id="L108"><span class="lineNum">     108</span>                 :             : </span>
+<span id="L109"><span class="lineNum">     109</span>                 :             : // A resolved field renderer: produces one field's value for an entry. `key` is</span>
+<span id="L110"><span class="lineNum">     110</span>                 :             : // the bound argument for dynamic/namespaced fields (a capture index, an</span>
+<span id="L111"><span class="lineNum">     111</span>                 :             : // {env.NAME} variable, ...), empty for builtins. Compile resolves each {field}</span>
+<span id="L112"><span class="lineNum">     112</span>                 :             : // to one of these once, so Render is a direct call per entry, not name matching.</span>
+<span id="L113"><span class="lineNum">     113</span>                 :             : using FieldFn = FieldValue (*)(std::string_view key, std::string_view qualifier, const RenderContext&amp; context);</span>
+<span id="L114"><span class="lineNum">     114</span>                 :             : </span>
+<span id="L115"><span class="lineNum">     115</span>                 :             : // Renders {field} placeholder templates against a visited entry, substituting</span>
+<span id="L116"><span class="lineNum">     116</span>                 :             : // values from a RenderContext (path, root, metadata, depth). `{{` and `}}` emit</span>
+<span id="L117"><span class="lineNum">     117</span>                 :             : // literal braces; an unterminated or malformed `{` stays literal; an unknown</span>
+<span id="L118"><span class="lineNum">     118</span>                 :             : // field renders empty. This backs the --format/--template output and (gated)</span>
+<span id="L119"><span class="lineNum">     119</span>                 :             : // -exec substitution.</span>
+<span id="L120"><span class="lineNum">     120</span>                 :             : //</span>
+<span id="L121"><span class="lineNum">     121</span>                 :             : // Supported: {path} {root} {relpath} (path relative to the search root, find's %P)</span>
+<span id="L122"><span class="lineNum">     122</span>                 :             : // {dir} {name}/{file} {stem} {core} (name minus ALL extensions: &quot;foo&quot;) {ext}/{extension}</span>
+<span id="L123"><span class="lineNum">     123</span>                 :             : // {suffix} (last, with dot: &quot;.gz&quot;)</span>
+<span id="L124"><span class="lineNum">     124</span>                 :             : // {suffixes} {target} (a symlink's target, find %l) {depth} {size} ({size:h}</span>
+<span id="L125"><span class="lineNum">     125</span>                 :             : // human-readable) {type} {lang}/{language} (programming language by</span>
+<span id="L126"><span class="lineNum">     126</span>                 :             : // extension/filename) {inode} {links} {dev}</span>
+<span id="L127"><span class="lineNum">     127</span>                 :             : // {hash} (file digest; {hash:ALGO[/ENCODING]} picks the algorithm, default sha256,</span>
+<span id="L128"><span class="lineNum">     128</span>                 :             : // and hex or base64, e.g. {hash:sha256/base64})</span>
+<span id="L129"><span class="lineNum">     129</span>                 :             : // {mode}/{perm} (octal) {access} (ls -l / stat %A symbolic) {user} {group} {uid}</span>
+<span id="L130"><span class="lineNum">     130</span>                 :             : // {gid}, and time fields {atime} {mtime} {ctime}</span>
+<span id="L131"><span class="lineNum">     131</span>                 :             : // {btime} with an optional qualifier {field:QUAL} -- a strftime format</span>
+<span id="L132"><span class="lineNum">     132</span>                 :             : // ({mtime:%Y-%m-%d}) or preset ({mtime:iso|epoch}); rendered in</span>
+<span id="L133"><span class="lineNum">     133</span>                 :             : // RenderContext::tz (the local zone unless --timezone overrides it), default</span>
+<span id="L134"><span class="lineNum">     134</span>                 :             : // ISO-8601. A qualifier may also be a &quot;C-quoted string&quot;</span>
+<span id="L135"><span class="lineNum">     135</span>                 :             : // ({mtime:&quot;{\&quot;t\&quot;:\&quot;%H:%M\&quot;}&quot;}) so it can hold a literal '}' or ':'; inside it</span>
+<span id="L136"><span class="lineNum">     136</span>                 :             : // \&quot; and \\ are escapes. A numeric placeholder {0}..{N} renders a regex capture</span>
+<span id="L137"><span class="lineNum">     137</span>                 :             : // from RenderContext::captures ({0} the whole match, {1}..{N} the groups; empty</span>
+<span id="L138"><span class="lineNum">     138</span>                 :             : // when unset or out of range) -- used by gated -exec after a -regex match. The</span>
+<span id="L139"><span class="lineNum">     139</span>                 :             : // {env.NAME} namespace renders a process environment variable, {def.NAME} a</span>
+<span id="L140"><span class="lineNum">     140</span>                 :             : // --define value, and {capture.NAME} a -capture result (each empty when unset).</span>
+<span id="L141"><span class="lineNum">     141</span>                 :             : // As a qualifier, a sed-style rewrite {field:s/PAT/REPL/flags} (any delimiter;</span>
+<span id="L142"><span class="lineNum">     142</span>                 :             : // flags g=all, i=ignore-case) post-processes the field's value via RE2. Several rewrites chain with</span>
+<span id="L143"><span class="lineNum">     143</span>                 :             : // `;` and apply left to right ({name:s/a/b/;s/c/d/}); a command after `;` may omit the leading `s`</span>
+<span id="L144"><span class="lineNum">     144</span>                 :             : // ({name:s/a/b/;/c/d/}). A</span>
+<span id="L145"><span class="lineNum">     145</span>                 :             : // path-component qualifier likewise post-processes, treating the value as a path and</span>
+<span id="L146"><span class="lineNum">     146</span>                 :             : // extracting a component -- {field:dir|name|basename|file|core|stem|ext|extension|</span>
+<span id="L147"><span class="lineNum">     147</span>                 :             : // suffix|suffixes|path} -- so any path-valued field composes: {path:name} == {name},</span>
+<span id="L148"><span class="lineNum">     148</span>                 :             : // {relpath:stem}, {def.B:dir}, {target:ext}.</span>
+<span id="L149"><span class="lineNum">     149</span>                 :             : //</span>
+<span id="L150"><span class="lineNum">     150</span>                 :             : // The {field:m&lt;delim&gt;PAT&lt;delim&gt;REPL&lt;delim&gt;flags} qualifier is the LINE-oriented, LIST-producing</span>
+<span id="L151"><span class="lineNum">     151</span>                 :             : // sibling of s///: it splits the field's (multi-line) value into lines, and for each line that</span>
+<span id="L152"><span class="lineNum">     152</span>                 :             : // matches PAT emits the RE2 rewrite REPL (\0 whole match, \1..\9 groups; flags g/i). Lines that do</span>
+<span id="L153"><span class="lineNum">     153</span>                 :             : // not match are dropped -- so it filters as well as transforms. Unlike s/// (scalar -&gt; scalar over</span>
+<span id="L154"><span class="lineNum">     154</span>                 :             : // the whole value), m// is multi-line -&gt; a value stream, consumed by an aggregation key</span>
+<span id="L155"><span class="lineNum">     155</span>                 :             : // (AsExtraction below). In a scalar Render context it degrades to the matches newline-joined. Like</span>
+<span id="L156"><span class="lineNum">     156</span>                 :             : // s///, an m// qualifier chains with `;`: the FIRST command filters+extracts each line, and the rest</span>
+<span id="L157"><span class="lineNum">     157</span>                 :             : // substitute on the surviving per-line value ({capture.NAME:m/^author (.+)$/\1/;s/ /_/g}).</span>
+<span id="L158"><span class="lineNum">     158</span>                 :             : //</span>
+<span id="L159"><span class="lineNum">     159</span>                 :             : // Compile parses the template once into literal/field segments; the resulting</span>
+<span id="L160"><span class="lineNum">     160</span>                 :             : // Template renders against many entries without re-scanning -- the hot path for</span>
+<span id="L161"><span class="lineNum">     161</span>                 :             : // --template (and -exec), which render every match.</span>
+<span id="L162"><span class="lineNum">     162</span>                 :             : class Template {</span>
+<span id="L163"><span class="lineNum">     163</span>                 :             :  public:</span>
+<span id="L164"><span class="lineNum">     164</span>                 :             :   static Template Compile(std::string_view tmpl);</span>
+<span id="L165"><span class="lineNum">     165</span>                 :             : </span>
+<span id="L166"><span class="lineNum">     166</span>                 :             :   std::string Render(const RenderContext&amp; context) const;</span>
+<span id="L167"><span class="lineNum">     167</span>                 :             : </span>
+<span id="L168"><span class="lineNum">     168</span>                 :             :   // The value stream when this template is a single `{field:m&lt;delim&gt;PAT&lt;delim&gt;REPL&lt;delim&gt;flags}`</span>
+<span id="L169"><span class="lineNum">     169</span>                 :             :   // extraction with NO terminal reducer: the field's multi-line value split into lines, each matching</span>
+<span id="L170"><span class="lineNum">     170</span>                 :             :   // line rewritten by REPL, non-matching lines dropped. nullopt when the template is not exactly one</span>
+<span id="L171"><span class="lineNum">     171</span>                 :             :   // unreduced m// extraction (a literal, several segments, a non-m field, or an m// ending in a</span>
+<span id="L172"><span class="lineNum">     172</span>                 :             :   // reducer such as `;join(...)`, which is scalar-valued) -- i.e. it is an ordinary scalar template.</span>
+<span id="L173"><span class="lineNum">     173</span>                 :             :   // Backs the value-stream aggregation key (--summary of a per-line extraction) without a &quot;list&quot;</span>
+<span id="L174"><span class="lineNum">     174</span>                 :             :   // concept in the reduction: it just folds the returned values.</span>
+<span id="L175"><span class="lineNum">     175</span>                 :             :   std::optional&lt;std::vector&lt;std::string&gt;&gt; AsExtraction(const RenderContext&amp; context) const;</span>
+<span id="L176"><span class="lineNum">     176</span>                 :             : </span>
+<span id="L177"><span class="lineNum">     177</span>                 :             :   // True when the template is exactly one unreduced `{field:m/.../.../}` extraction -- the</span>
+<span id="L178"><span class="lineNum">     178</span>                 :             :   // context-free shape AsExtraction requires (so a caller can branch stream-vs-scalar before it has a</span>
+<span id="L179"><span class="lineNum">     179</span>                 :             :   // context). False once a terminal reducer (`;join(...)`) collapses it to a scalar.</span>
+<span id="L180"><span class="lineNum">     180</span>                 :             :   bool IsExtraction() const;</span>
+<span id="L181"><span class="lineNum">     181</span>                 :             : </span>
+<span id="L182"><span class="lineNum">     182</span>                 :             :   // True when ANY segment is an UNREDUCED m// extraction (a value stream, including mid-template). A</span>
+<span id="L183"><span class="lineNum">     183</span>                 :             :   // scalar-output context (-printf / --format / --template / --columns / -exec) uses this to reject a</span>
+<span id="L184"><span class="lineNum">     184</span>                 :             :   // list-valued template up front. An m// pipeline that ends in a reducer (`;join(...)`) is scalar-</span>
+<span id="L185"><span class="lineNum">     185</span>                 :             :   // valued and does NOT trip this, so it is allowed in a scalar context.</span>
+<span id="L186"><span class="lineNum">     186</span>                 :             :   bool HasUnreducedExtraction() const;</span>
+<span id="L187"><span class="lineNum">     187</span>                 :             : </span>
+<span id="L188"><span class="lineNum">     188</span>                 :             :  private:</span>
+<span id="L189"><span class="lineNum">     189</span>                 :             :   // A literal run (fn == nullptr -&gt; emit `literal`) or a field reference: fn is</span>
+<span id="L190"><span class="lineNum">     190</span>                 :             :   // the renderer and `key` its bound argument (capture index, {env.NAME} var, ...).</span>
+<span id="L191"><span class="lineNum">     191</span>                 :             :   struct Segment {</span>
+<span id="L192"><span class="lineNum">     192</span>                 :             :     // How the qualifier transforms the rendered value: none (the qualifier is the</span>
+<span id="L193"><span class="lineNum">     193</span>                 :             :     // field's own format argument), a sed-style s/PAT/REPL/ rewrite, a path-component</span>
+<span id="L194"><span class="lineNum">     194</span>                 :             :     // extraction ({field:stem} etc.) that treats the value as a path, or a per-line</span>
+<span id="L195"><span class="lineNum">     195</span>                 :             :     // m/PAT/REPL/ extraction that yields a value stream (see AsExtraction; in a scalar</span>
+<span id="L196"><span class="lineNum">     196</span>                 :             :     // Render it is the matches newline-joined). All but kNone are post-render transforms;</span>
+<span id="L197"><span class="lineNum">     197</span>                 :             :     // the field then renders with no qualifier.</span>
+<span id="L198"><span class="lineNum">     198</span>                 :             :     enum class PostProcess { kNone, kRewrite, kComponent, kExtract };</span>
+<span id="L199"><span class="lineNum">     199</span>                 :             :     std::string literal;</span>
+<span id="L200"><span class="lineNum">     200</span>                 :             :     FieldFn fn = nullptr;</span>
+<span id="L201"><span class="lineNum">     201</span>                 :             :     std::string key;</span>
+<span id="L202"><span class="lineNum">     202</span>                 :             :     std::string qualifier;</span>
+<span id="L203"><span class="lineNum">     203</span>                 :             :     PostProcess post = PostProcess::kNone;</span>
+<span id="L204"><span class="lineNum">     204</span>                 :             :   };</span>
+<span id="L205"><span class="lineNum">     205</span>                 :             : </span>
+<span id="L206"><span class="lineNum">     206</span>                 :             :   std::vector&lt;Segment&gt; segments_;</span>
+<span id="L207"><span class="lineNum">     207</span>                 :             : };</span>
+<span id="L208"><span class="lineNum">     208</span>                 :             : </span>
+<span id="L209"><span class="lineNum">     209</span>                 :             : // One documented named field, for the `--help=fields` reference. The vocabulary's</span>
+<span id="L210"><span class="lineNum">     210</span>                 :             : // documentation source: FieldDocs() below is asserted (fields_test) to cover exactly</span>
+<span id="L211"><span class="lineNum">     211</span>                 :             : // the renderable field names, so the help topic cannot drift from the renderers.</span>
+<span id="L212"><span class="lineNum">     212</span>                 :             : struct FieldDoc {</span>
+<span id="L213"><span class="lineNum">     213</span>                 :             :   std::string_view name;                       // canonical placeholder name ({name})</span>
+<span id="L214"><span class="lineNum">     214</span>                 :             :   absl::Span&lt;const std::string_view&gt; aliases;  // alternate names, or empty</span>
+<span id="L215"><span class="lineNum">     215</span>                 :             :   std::string_view group;                      // short group key (path, type, owner, time, grep)</span>
+<span id="L216"><span class="lineNum">     216</span>                 :             :   std::string_view header;                     // display heading for the group (shown at its first field)</span>
+<span id="L217"><span class="lineNum">     217</span>                 :             :   std::string_view summary;                    // one-line description</span>
+<span id="L218"><span class="lineNum">     218</span>                 :             : };</span>
+<span id="L219"><span class="lineNum">     219</span>                 :             : </span>
+<span id="L220"><span class="lineNum">     220</span>                 :             : // The named {field} vocabulary, grouped for display (rows are pre-ordered by group).</span>
+<span id="L221"><span class="lineNum">     221</span>                 :             : // Covers exactly the renderable field names; the dynamic namespaces ({env.NAME},</span>
+<span id="L222"><span class="lineNum">     222</span>                 :             : // {def.NAME}, {capture.NAME}, {0}..{N}) and the qualifiers are prose in the renderer.</span>
+<span id="L223"><span class="lineNum">     223</span>                 :             : [[nodiscard]] absl::Span&lt;const FieldDoc&gt; FieldDocs();</span>
+<span id="L224"><span class="lineNum">     224</span>                 :             : </span>
+<span id="L225"><span class="lineNum">     225</span>                 :             : // Every renderable field name (the {field} table keys), including the empty name that</span>
+<span id="L226"><span class="lineNum">     226</span>                 :             : // backs {} (find's full-path placeholder). Powers the FieldDocs() coverage test.</span>
+<span id="L227"><span class="lineNum">     227</span>                 :             : [[nodiscard]] absl::Span&lt;const std::string_view&gt; FieldNames();</span>
+<span id="L228"><span class="lineNum">     228</span>                 :             : </span>
+<span id="L229"><span class="lineNum">     229</span>                 :             : // Whether `spec` (a --columns entry / field name, optionally with a `:qualifier`) names a</span>
+<span id="L230"><span class="lineNum">     230</span>                 :             : // renderable field: a builtin (FieldNames), a {0}..{N} capture, or an {env./def./capture.}</span>
+<span id="L231"><span class="lineNum">     231</span>                 :             : // namespace. Powers --columns validation, so an unknown name is a usage error rather than</span>
+<span id="L232"><span class="lineNum">     232</span>                 :             : // a silently-empty column.</span>
+<span id="L233"><span class="lineNum">     233</span>                 :             : bool IsKnownField(std::string_view spec);</span>
+<span id="L234"><span class="lineNum">     234</span>                 :             : </span>
+<span id="L235"><span class="lineNum">     235</span>                 :             : // The path-component qualifier keywords ({field:KEYWORD}: dir, name, stem, ...), so</span>
+<span id="L236"><span class="lineNum">     236</span>                 :             : // the help topic lists exactly the keywords the renderer accepts.</span>
+<span id="L237"><span class="lineNum">     237</span>                 :             : [[nodiscard]] absl::Span&lt;const std::string_view&gt; PathComponentKeywords();</span>
+<span id="L238"><span class="lineNum">     238</span>                 :             : </span>
+<span id="L239"><span class="lineNum">     239</span>                 :             : // Convenience wrapper: Compile(tmpl).Render({path, metadata, depth}) with an</span>
+<span id="L240"><span class="lineNum">     240</span>                 :             : // empty root. Prefer Compile once + Render per entry on hot paths.</span>
+<span id="L241"><span class="lineNum">     241</span>                 :             : std::string Render(std::string_view tmpl, std::string_view path, const vfs::Metadata&amp; metadata, int depth);</span>
+<span id="L242"><span class="lineNum">     242</span>                 :             : </span>
+<span id="L243"><span class="lineNum">     243</span>                 :             : // Convenience wrapper rendering against a full context (so {root} resolves).</span>
+<span id="L244"><span class="lineNum">     244</span>                 :             : // Like the overload above, compiles per call -- prefer Compile once on hot paths.</span>
+<span id="L245"><span class="lineNum">     245</span>                 :             : std::string Render(std::string_view tmpl, const RenderContext&amp; context);</span>
+<span id="L246"><span class="lineNum">     246</span>                 :             : </span>
+<span id="L247"><span class="lineNum">     247</span>                 :             : }  // namespace xff::fields</span>
+<span id="L248"><span class="lineNum">     248</span>                 :             : </span>
+<span id="L249"><span class="lineNum">     249</span>                 :             : #endif  // XFF_PRESENTATION_FIELDS_FIELDS_H_</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table class="xffPolicy">
+            <thead>
+              <tr>
+                <th scope="col">Global coverage policy</th>
+                <th scope="col">Low</th>
+                <th scope="col">Medium</th>
+                <th scope="col">High</th>
+                <th scope="col">Enforced</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <th scope="row">Lines</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 92%</td>
+              <td class="headerValueLegH">&ge; 92%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Branches</th>
+              <td class="headerValueLegL">&lt; 80%</td>
+              <td class="headerValueLegM">&ge; 80% and &lt; 82%</td>
+              <td class="headerValueLegH">&ge; 82%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Functions</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 95%</td>
+              <td class="headerValueLegH">&ge; 95%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            </tbody>
+          </table>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 2.5-0</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

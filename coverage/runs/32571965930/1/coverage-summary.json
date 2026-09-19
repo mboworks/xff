@@ -1,0 +1,333 @@
+{
+  "schema": 1,
+  "measurements": {
+    "overall": {
+      "lines": {
+        "covered": 10289,
+        "total": 11012,
+        "percent": 93.43
+      },
+      "functions": {
+        "covered": 1200,
+        "total": 1236,
+        "percent": 97.09
+      },
+      "branches": {
+        "covered": 7259,
+        "total": 8736,
+        "percent": 83.09
+      }
+    },
+    "program / command line": {
+      "lines": {
+        "covered": 1567,
+        "total": 1640,
+        "percent": 95.55
+      },
+      "functions": {
+        "covered": 166,
+        "total": 170,
+        "percent": 97.65
+      },
+      "branches": {
+        "covered": 896,
+        "total": 1019,
+        "percent": 87.93
+      }
+    },
+    "program / configuration": {
+      "lines": {
+        "covered": 292,
+        "total": 299,
+        "percent": 97.66
+      },
+      "functions": {
+        "covered": 40,
+        "total": 40,
+        "percent": 100.0
+      },
+      "branches": {
+        "covered": 220,
+        "total": 238,
+        "percent": 92.44
+      }
+    },
+    "program / command grammar": {
+      "lines": {
+        "covered": 530,
+        "total": 560,
+        "percent": 94.64
+      },
+      "functions": {
+        "covered": 47,
+        "total": 47,
+        "percent": 100.0
+      },
+      "branches": {
+        "covered": 505,
+        "total": 581,
+        "percent": 86.92
+      }
+    },
+    "program / execution": {
+      "lines": {
+        "covered": 3811,
+        "total": 4120,
+        "percent": 92.5
+      },
+      "functions": {
+        "covered": 400,
+        "total": 411,
+        "percent": 97.32
+      },
+      "branches": {
+        "covered": 2942,
+        "total": 3607,
+        "percent": 81.56
+      }
+    },
+    "program / filesystem": {
+      "lines": {
+        "covered": 425,
+        "total": 463,
+        "percent": 91.79
+      },
+      "functions": {
+        "covered": 50,
+        "total": 51,
+        "percent": 98.04
+      },
+      "branches": {
+        "covered": 263,
+        "total": 316,
+        "percent": 83.23
+      }
+    },
+    "program / matching": {
+      "lines": {
+        "covered": 641,
+        "total": 679,
+        "percent": 94.4
+      },
+      "functions": {
+        "covered": 96,
+        "total": 100,
+        "percent": 96.0
+      },
+      "branches": {
+        "covered": 467,
+        "total": 569,
+        "percent": 82.07
+      }
+    },
+    "program / presentation": {
+      "lines": {
+        "covered": 1174,
+        "total": 1236,
+        "percent": 94.98
+      },
+      "functions": {
+        "covered": 146,
+        "total": 152,
+        "percent": 96.05
+      },
+      "branches": {
+        "covered": 974,
+        "total": 1120,
+        "percent": 86.96
+      }
+    },
+    "extensions / API": {
+      "lines": {
+        "covered": 237,
+        "total": 242,
+        "percent": 97.93
+      },
+      "functions": {
+        "covered": 60,
+        "total": 63,
+        "percent": 95.24
+      },
+      "branches": {
+        "covered": 146,
+        "total": 166,
+        "percent": 87.95
+      }
+    },
+    "extensions / archive": {
+      "lines": {
+        "covered": 1076,
+        "total": 1190,
+        "percent": 90.42
+      },
+      "functions": {
+        "covered": 111,
+        "total": 117,
+        "percent": 94.87
+      },
+      "branches": {
+        "covered": 611,
+        "total": 810,
+        "percent": 75.43
+      }
+    },
+    "extensions / FUSE": {
+      "lines": {
+        "covered": 436,
+        "total": 483,
+        "percent": 90.27
+      },
+      "functions": {
+        "covered": 70,
+        "total": 71,
+        "percent": 98.59
+      },
+      "branches": {
+        "covered": 200,
+        "total": 270,
+        "percent": 74.07
+      }
+    },
+    "extensions / PCRE2": {
+      "lines": {
+        "covered": 100,
+        "total": 100,
+        "percent": 100.0
+      },
+      "functions": {
+        "covered": 14,
+        "total": 14,
+        "percent": 100.0
+      },
+      "branches": {
+        "covered": 35,
+        "total": 40,
+        "percent": 87.5
+      }
+    }
+  },
+  "minimums": {
+    "overall": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 75
+    },
+    "program / command line": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 75
+    },
+    "program / configuration": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 75
+    },
+    "program / command grammar": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 75
+    },
+    "program / execution": {
+      "lines": 92,
+      "functions": 94,
+      "branches": 81
+    },
+    "program / filesystem": {
+      "lines": 91,
+      "functions": 94,
+      "branches": 82
+    },
+    "program / matching": {
+      "lines": 92,
+      "functions": 90,
+      "branches": 82
+    },
+    "program / presentation": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 75
+    },
+    "extensions / API": {
+      "lines": 97,
+      "functions": 95,
+      "branches": 87
+    },
+    "extensions / archive": {
+      "lines": 90,
+      "functions": 94,
+      "branches": 75
+    },
+    "extensions / FUSE": {
+      "lines": 90,
+      "functions": 95,
+      "branches": 74
+    },
+    "extensions / PCRE2": {
+      "lines": 98,
+      "functions": 98,
+      "branches": 87
+    }
+  },
+  "targets": {
+    "overall": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 75
+    },
+    "program / command line": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 75
+    },
+    "program / configuration": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 75
+    },
+    "program / command grammar": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 75
+    },
+    "program / execution": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 75
+    },
+    "program / filesystem": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 75
+    },
+    "program / matching": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 75
+    },
+    "program / presentation": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 75
+    },
+    "extensions / API": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 75
+    },
+    "extensions / archive": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 75
+    },
+    "extensions / FUSE": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 74
+    },
+    "extensions / PCRE2": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 75
+    }
+  }
+}

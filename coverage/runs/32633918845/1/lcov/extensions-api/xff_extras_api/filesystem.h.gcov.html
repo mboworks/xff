@@ -1,0 +1,192 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - xff production coverage - extensions-api/xff_extras_api/filesystem.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+  <style>
+    .xffNavigation { padding: .35rem 0; text-align: center; }
+    .xffHeaderSummary { margin: 0 auto; width: 80%; }
+    .xffPolicy { margin: .35rem 0 1rem; }
+  </style>
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="xffNavigation"><a href="../../../index.html">Report overview</a> &middot; <a href="../../../../../index.html">All coverage reports</a></td></tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table class="xffHeaderSummary" cellpadding=1 border=0>
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../index.html" title="Click to go to top-level">top level</a> - <a href="index.html" title="Click to go to directory extensions-api/xff_extras_api">extensions-api/xff_extras_api</a> - filesystem.h<span style="font-size: 80%;"> (source / <a href="filesystem.h.func-c.html" title="Click to go to function table">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">xff production coverage</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">2</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-08-23 10:43:15</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">2</td>
+          </tr>
+                  <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table class="xffPolicy" width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr>
+              <td class="headerItem">Coverage policy:</td>
+              <td class="headerValue"><b>Lines:</b> <span class="coverLegendCovLo">low: &lt; 90 %</span> <span class="coverLegendCovMed">medium: &gt;= 90 % and &lt; 92 %</span> <span class="coverLegendCovHi">high: &gt;= 92 %</span> &middot; <b>Branches:</b> <span class="coverLegendCovLo">low: &lt; 90 %</span> <span class="coverLegendCovMed">medium: &gt;= 90 % and &lt; 95 %</span> <span class="coverLegendCovHi">high: &gt;= 95 %</span> &middot; <b>Functions:</b> <span class="coverLegendCovLo">low: &lt; 90 %</span> <span class="coverLegendCovMed">medium: &gt;= 90 % and &lt; 95 %</span> <span class="coverLegendCovHi">high: &gt;= 95 %</span></td>
+            </tr>
+          </table>
+
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">            Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>              : // SPDX-FileCopyrightText: Copyright (c) 2026 M. Boerger, The helly25 authors</span>
+<span id="L2"><span class="lineNum">       2</span>              : // SPDX-License-Identifier: Apache-2.0</span>
+<span id="L3"><span class="lineNum">       3</span>              : //</span>
+<span id="L4"><span class="lineNum">       4</span>              : // Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span id="L5"><span class="lineNum">       5</span>              : // you may not use this file except in compliance with the License.</span>
+<span id="L6"><span class="lineNum">       6</span>              : // You may obtain a copy of the License at</span>
+<span id="L7"><span class="lineNum">       7</span>              : //</span>
+<span id="L8"><span class="lineNum">       8</span>              : //      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span id="L9"><span class="lineNum">       9</span>              : //</span>
+<span id="L10"><span class="lineNum">      10</span>              : // Unless required by applicable law or agreed to in writing, software</span>
+<span id="L11"><span class="lineNum">      11</span>              : // distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span id="L12"><span class="lineNum">      12</span>              : // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span id="L13"><span class="lineNum">      13</span>              : // See the License for the specific language governing permissions and</span>
+<span id="L14"><span class="lineNum">      14</span>              : // limitations under the License.</span>
+<span id="L15"><span class="lineNum">      15</span>              : </span>
+<span id="L16"><span class="lineNum">      16</span>              : #ifndef XFF_VFS_FILESYSTEM_H_</span>
+<span id="L17"><span class="lineNum">      17</span>              : #define XFF_VFS_FILESYSTEM_H_</span>
+<span id="L18"><span class="lineNum">      18</span>              : </span>
+<span id="L19"><span class="lineNum">      19</span>              : #include &lt;string&gt;</span>
+<span id="L20"><span class="lineNum">      20</span>              : #include &lt;string_view&gt;</span>
+<span id="L21"><span class="lineNum">      21</span>              : #include &lt;vector&gt;</span>
+<span id="L22"><span class="lineNum">      22</span>              : </span>
+<span id="L23"><span class="lineNum">      23</span>              : #include &quot;absl/status/status.h&quot;</span>
+<span id="L24"><span class="lineNum">      24</span>              : #include &quot;absl/status/statusor.h&quot;</span>
+<span id="L25"><span class="lineNum">      25</span>              : #include &quot;xff/vfs/entry.h&quot;</span>
+<span id="L26"><span class="lineNum">      26</span>              : </span>
+<span id="L27"><span class="lineNum">      27</span>              : namespace xff::vfs {</span>
+<span id="L28"><span class="lineNum">      28</span>              : </span>
+<span id="L29"><span class="lineNum">      29</span>              : // Permission to probe with `FileSystem::Access` (find's -readable/-writable/</span>
+<span id="L30"><span class="lineNum">      30</span>              : // -executable). Platform-neutral; LocalFs maps these to R_OK/W_OK/X_OK.</span>
+<span id="L31"><span class="lineNum">      31</span>              : enum class AccessMode { kRead, kWrite, kExecute };</span>
+<span id="L32"><span class="lineNum">      32</span>              : </span>
+<span id="L33"><span class="lineNum">      33</span>              : // Abstraction over a source of files. `LocalFs` (the real filesystem) is the</span>
+<span id="L34"><span class="lineNum">      34</span>              : // only backend today; archive and remote backends slot in behind this same</span>
+<span id="L35"><span class="lineNum">      35</span>              : // interface as read-only virtual entries (design.md &quot;Virtual entries&quot;).</span>
+<span id="L36"><span class="lineNum">      36</span>              : //</span>
+<span id="L37"><span class="lineNum">      37</span>              : // Implementations must be safe to call concurrently from multiple threads, as</span>
+<span id="L38"><span class="lineNum">      38</span>              : // the engine traverses in parallel (design.md &quot;Determinism&quot; / &quot;Parallel exec&quot;).</span>
+<span id="L39"><span class="lineNum">      39</span>              : class FileSystem {</span>
+<span id="L40"><span class="lineNum">      40</span>              :  public:</span>
+<span id="L41"><span class="lineNum">      41</span> <span class="tlaGNC">           5 :   FileSystem() = default;</span></span>
+<span id="L42"><span class="lineNum">      42</span> <span class="tlaGNC">          10 :   virtual ~FileSystem() = default;</span></span>
+<span id="L43"><span class="lineNum">      43</span>              :   FileSystem(const FileSystem&amp;) = default;</span>
+<span id="L44"><span class="lineNum">      44</span>              :   FileSystem&amp; operator=(const FileSystem&amp;) = default;</span>
+<span id="L45"><span class="lineNum">      45</span>              :   FileSystem(FileSystem&amp;&amp;) noexcept = default;</span>
+<span id="L46"><span class="lineNum">      46</span>              :   FileSystem&amp; operator=(FileSystem&amp;&amp;) noexcept = default;</span>
+<span id="L47"><span class="lineNum">      47</span>              : </span>
+<span id="L48"><span class="lineNum">      48</span>              :   // Lists the direct children of `dir`: no recursion, and excluding `.`/`..`.</span>
+<span id="L49"><span class="lineNum">      49</span>              :   // Order is unspecified (the engine imposes `--sort` when determinism is</span>
+<span id="L50"><span class="lineNum">      50</span>              :   // requested). A per-directory failure (not a directory, permission denied,</span>
+<span id="L51"><span class="lineNum">      51</span>              :   // ...) is returned as an error; the engine continues traversal and reflects</span>
+<span id="L52"><span class="lineNum">      52</span>              :   // it in the exit code (design.md &quot;Exit-code model&quot;), rather than aborting.</span>
+<span id="L53"><span class="lineNum">      53</span>              :   virtual absl::StatusOr&lt;std::vector&lt;Entry&gt;&gt; ReadDir(std::string_view dir) const = 0;</span>
+<span id="L54"><span class="lineNum">      54</span>              : </span>
+<span id="L55"><span class="lineNum">      55</span>              :   // Returns metadata for `path`. When `path` is a symlink, `follow_symlinks`</span>
+<span id="L56"><span class="lineNum">      56</span>              :   // selects `stat` (follow the link, like `-L`) vs `lstat` (the link itself,</span>
+<span id="L57"><span class="lineNum">      57</span>              :   // like the default `-P`).</span>
+<span id="L58"><span class="lineNum">      58</span>              :   virtual absl::StatusOr&lt;Metadata&gt; Stat(std::string_view path, bool follow_symlinks) const = 0;</span>
+<span id="L59"><span class="lineNum">      59</span>              : </span>
+<span id="L60"><span class="lineNum">      60</span>              :   // Removes `path` (a file, symlink, or empty directory; find's -delete relies</span>
+<span id="L61"><span class="lineNum">      61</span>              :   // on -depth to empty directories first). Read-only backends (archive/remote)</span>
+<span id="L62"><span class="lineNum">      62</span>              :   // return an error. The object is not mutated, only the underlying source.</span>
+<span id="L63"><span class="lineNum">      63</span>              :   virtual absl::Status Remove(std::string_view path) const = 0;</span>
+<span id="L64"><span class="lineNum">      64</span>              : </span>
+<span id="L65"><span class="lineNum">      65</span>              :   // True if `path` is accessible to the current (effective) user for `mode`</span>
+<span id="L66"><span class="lineNum">      66</span>              :   // (find's -readable/-writable/-executable). Resolves symlinks and reflects</span>
+<span id="L67"><span class="lineNum">      67</span>              :   // the real permission check (ownership, groups, ACLs), not just mode bits.</span>
+<span id="L68"><span class="lineNum">      68</span>              :   // A missing/unreadable path is false.</span>
+<span id="L69"><span class="lineNum">      69</span>              :   virtual bool Access(std::string_view path, AccessMode mode) const = 0;</span>
+<span id="L70"><span class="lineNum">      70</span>              : </span>
+<span id="L71"><span class="lineNum">      71</span>              :   // Reads the target path of the symlink at `path` (find's -lname/-ilname),</span>
+<span id="L72"><span class="lineNum">      72</span>              :   // without resolving it. An error if `path` is not a symlink or cannot be read.</span>
+<span id="L73"><span class="lineNum">      73</span>              :   virtual absl::StatusOr&lt;std::string&gt; ReadLink(std::string_view path) const = 0;</span>
+<span id="L74"><span class="lineNum">      74</span>              : </span>
+<span id="L75"><span class="lineNum">      75</span>              :   // The filesystem type name at `path` (find's -fstype), e.g. &quot;ext2/ext3&quot;,</span>
+<span id="L76"><span class="lineNum">      76</span>              :   // &quot;apfs&quot;, &quot;tmpfs&quot;, &quot;nfs&quot;. An error if `path` cannot be queried (`statfs`).</span>
+<span id="L77"><span class="lineNum">      77</span>              :   virtual absl::StatusOr&lt;std::string&gt; FsType(std::string_view path) const = 0;</span>
+<span id="L78"><span class="lineNum">      78</span>              : </span>
+<span id="L79"><span class="lineNum">      79</span>              :   // Whether name lookups on the volume holding `path` distinguish case: true =</span>
+<span id="L80"><span class="lineNum">      80</span>              :   // case-sensitive (ext4 / xfs and most Linux filesystems, where `foo` and `FOO`</span>
+<span id="L81"><span class="lineNum">      81</span>              :   // are distinct files), false = case-folding (APFS / HFS+ in their default</span>
+<span id="L82"><span class="lineNum">      82</span>              :   // configuration, NTFS, exFAT, where they are the same file). Backs xff's</span>
+<span id="L83"><span class="lineNum">      83</span>              :   // FS-native name matching (`--exact` opts out): the default xff style matches</span>
+<span id="L84"><span class="lineNum">      84</span>              :   // `-name` the way the filesystem itself would, so a lookup that the OS would</span>
+<span id="L85"><span class="lineNum">      85</span>              :   // satisfy case-insensitively also matches here. Returns an error when the</span>
+<span id="L86"><span class="lineNum">      86</span>              :   // volume cannot be probed; the caller falls back to the conservative</span>
+<span id="L87"><span class="lineNum">      87</span>              :   // case-sensitive (byte-exact) behaviour, which is always find-faithful.</span>
+<span id="L88"><span class="lineNum">      88</span>              :   virtual absl::StatusOr&lt;bool&gt; IsCaseSensitive(std::string_view path) const = 0;</span>
+<span id="L89"><span class="lineNum">      89</span>              : </span>
+<span id="L90"><span class="lineNum">      90</span>              :   // Reads the entire byte content of the regular file at `path` (xff's content</span>
+<span id="L91"><span class="lineNum">      91</span>              :   // predicates -content / -icontent / -rxc / -irxc). Returns an error when the</span>
+<span id="L92"><span class="lineNum">      92</span>              :   // path cannot be opened or read; content search treats that as a non-match</span>
+<span id="L93"><span class="lineNum">      93</span>              :   // rather than aborting the walk. Reading the whole file is what makes those</span>
+<span id="L94"><span class="lineNum">      94</span>              :   // predicates Cost::kExpensive. Only meaningful for regular files; the caller is</span>
+<span id="L95"><span class="lineNum">      95</span>              :   // expected to gate on the entry type.</span>
+<span id="L96"><span class="lineNum">      96</span>              :   virtual absl::StatusOr&lt;std::string&gt; ReadContent(std::string_view path) const = 0;</span>
+<span id="L97"><span class="lineNum">      97</span>              : };</span>
+<span id="L98"><span class="lineNum">      98</span>              : </span>
+<span id="L99"><span class="lineNum">      99</span>              : }  // namespace xff::vfs</span>
+<span id="L100"><span class="lineNum">     100</span>              : </span>
+<span id="L101"><span class="lineNum">     101</span>              : #endif  // XFF_VFS_FILESYSTEM_H_</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 2.5-0</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

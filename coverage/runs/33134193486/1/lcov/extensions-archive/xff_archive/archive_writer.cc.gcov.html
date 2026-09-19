@@ -1,0 +1,441 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - xff production coverage - extensions-archive/xff_archive/archive_writer.cc</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+  <style>
+    .xffNavigation { padding: .35rem 0; text-align: center; }
+    .xffHeaderSummary { margin: 0 auto; width: 80%; }
+    .xffPolicy { border-collapse: collapse; margin: .75rem auto 1rem; width: auto; }
+    .xffPolicy th { padding: .2rem .75rem; text-align: left; }
+    .xffPolicy td { font-size: 100%; padding: .2rem .75rem; text-align: center; }
+  </style>
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="xffNavigation"><a href="../../../index.html">Report overview</a> &middot; <a href="../../../../../index.html">All coverage reports</a></td></tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table class="xffHeaderSummary" cellpadding=1 border=0>
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../index.html" title="Click to go to top-level">top level</a> - <a href="index.html" title="Click to go to directory extensions-archive/xff_archive">extensions-archive/xff_archive</a> - archive_writer.cc<span style="font-size: 80%;"> (source / <a href="archive_writer.cc.func-c.html" title="Click to go to function table">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">xff production coverage</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryLo">87.3&nbsp;%</td>
+            <td class="headerCovTableEntry">157</td>
+            <td class="headerCovTableEntry">137</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-08-28 02:03:30</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">13</td>
+            <td class="headerCovTableEntry">13</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryLo">76.6&nbsp;%</td>
+            <td class="headerCovTableEntry">64</td>
+            <td class="headerCovTableEntry">49</td>
+          </tr>
+                  <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : // SPDX-FileCopyrightText: Copyright (c) 2026 M. Boerger, The helly25 authors</span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : // SPDX-License-Identifier: Apache-2.0</span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : //</span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : // Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : // you may not use this file except in compliance with the License.</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : // You may obtain a copy of the License at</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : //</span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : //      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : //</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             : // Unless required by applicable law or agreed to in writing, software</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : // distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : // See the License for the specific language governing permissions and</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : // limitations under the License.</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : </span>
+<span id="L16"><span class="lineNum">      16</span>                 :             : #include &quot;xff/archive/archive_writer.h&quot;</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             : </span>
+<span id="L18"><span class="lineNum">      18</span>                 :             : #include &lt;archive.h&gt;</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             : #include &lt;archive_entry.h&gt;</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             : </span>
+<span id="L21"><span class="lineNum">      21</span>                 :             : #include &lt;cstddef&gt;</span>
+<span id="L22"><span class="lineNum">      22</span>                 :             : #include &lt;cstdint&gt;</span>
+<span id="L23"><span class="lineNum">      23</span>                 :             : #include &lt;filesystem&gt;</span>
+<span id="L24"><span class="lineNum">      24</span>                 :             : #include &lt;memory&gt;</span>
+<span id="L25"><span class="lineNum">      25</span>                 :             : #include &lt;string&gt;</span>
+<span id="L26"><span class="lineNum">      26</span>                 :             : #include &lt;string_view&gt;</span>
+<span id="L27"><span class="lineNum">      27</span>                 :             : #include &lt;system_error&gt;</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             : #include &lt;vector&gt;</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             : </span>
+<span id="L30"><span class="lineNum">      30</span>                 :             : #include &quot;absl/algorithm/container.h&quot;</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             : #include &quot;absl/status/status.h&quot;</span>
+<span id="L32"><span class="lineNum">      32</span>                 :             : #include &quot;absl/strings/str_cat.h&quot;</span>
+<span id="L33"><span class="lineNum">      33</span>                 :             : #include &quot;absl/strings/str_join.h&quot;</span>
+<span id="L34"><span class="lineNum">      34</span>                 :             : #include &quot;mbo/status/status_macros.h&quot;</span>
+<span id="L35"><span class="lineNum">      35</span>                 :             : #include &quot;xff/archive/archive_filters.h&quot;</span>
+<span id="L36"><span class="lineNum">      36</span>                 :             : #include &quot;xff/archive/member_path.h&quot;</span>
+<span id="L37"><span class="lineNum">      37</span>                 :             : </span>
+<span id="L38"><span class="lineNum">      38</span>                 :             : namespace xff::archive {</span>
+<span id="L39"><span class="lineNum">      39</span>                 :             : namespace {</span>
+<span id="L40"><span class="lineNum">      40</span>                 :             : </span>
+<span id="L41"><span class="lineNum">      41</span>                 :             : namespace stdfs = ::std::filesystem;</span>
+<span id="L42"><span class="lineNum">      42</span>                 :             : </span>
+<span id="L43"><span class="lineNum">      43</span>                 :             : constexpr std::size_t kBlockSize = std::size_t{64} * 1'024;</span>
+<span id="L44"><span class="lineNum">      44</span>                 :             : </span>
+<span id="L45"><span class="lineNum">      45</span>                 :             : // `archive_read_free` / `archive_write_free` for a unique_ptr, so every early return releases the</span>
+<span id="L46"><span class="lineNum">      46</span>                 :             : // handle - and, for the writer, closes it first, since a format like zip writes its directory at</span>
+<span id="L47"><span class="lineNum">      47</span>                 :             : // close time.</span>
+<span id="L48"><span class="lineNum">      48</span>                 :             : struct ReadDeleter {</span>
+<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">          10 :   void operator()(struct ::archive* handle) const noexcept {</span></span>
+<span id="L50"><span class="lineNum">      50</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">          10 :     if (handle != nullptr) {</span></span>
+<span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">          10 :       ::archive_read_free(handle);</span></span>
+<span id="L52"><span class="lineNum">      52</span>                 :             :     }</span>
+<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">          10 :   }</span></span>
+<span id="L54"><span class="lineNum">      54</span>                 :             : };</span>
+<span id="L55"><span class="lineNum">      55</span>                 :             : </span>
+<span id="L56"><span class="lineNum">      56</span>                 :             : struct WriteDeleter {</span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">           8 :   void operator()(struct ::archive* handle) const noexcept {</span></span>
+<span id="L58"><span class="lineNum">      58</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">           8 :     if (handle != nullptr) {</span></span>
+<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">           8 :       ::archive_write_free(handle);</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :             :     }</span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">           8 :   }</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :             : };</span>
+<span id="L63"><span class="lineNum">      63</span>                 :             : </span>
+<span id="L64"><span class="lineNum">      64</span>                 :             : using ReadPtr = std::unique_ptr&lt;struct ::archive, ReadDeleter&gt;;</span>
+<span id="L65"><span class="lineNum">      65</span>                 :             : using WritePtr = std::unique_ptr&lt;struct ::archive, WriteDeleter&gt;;</span>
+<span id="L66"><span class="lineNum">      66</span>                 :             : </span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">           1 : std::string LastError(struct ::archive* handle) {</span></span>
+<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">           1 :   const char* message = ::archive_error_string(handle);</span></span>
+<span id="L69"><span class="lineNum">      69</span>   [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span><span class="tlaGBC" title="branch 2 was taken 1 time"> + </span><span class="tlaUNC" title="branch 3 was not taken"> - </span> :<span class="tlaGNC">           3 :   return message == nullptr ? std::string(&quot;unknown libarchive error&quot;) : std::string(message);</span></span>
+<span class="lineNum">        </span>          <span class="tlaUNC" title="branch 4 was not taken"> - </span><span class="tlaGBC" title="branch 5 was taken 1 time"> + </span>]
+<span id="L70"><span class="lineNum">      70</span>                 :             : }</span>
+<span id="L71"><span class="lineNum">      71</span>                 :             : </span>
+<span id="L72"><span class="lineNum">      72</span>                 :             : // The same format set the reader registers, and for the same reason: `mtree` and `raw` bid on</span>
+<span id="L73"><span class="lineNum">      73</span>                 :             : // anything, so a text file must not present as an archive here either.</span>
+<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">          10 : ReadPtr OpenReader(const std::string&amp; path) {</span></span>
+<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">          10 :   ReadPtr handle{::archive_read_new()};</span></span>
+<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">          10 :   if (handle == nullptr) {  // LCOV_EXCL_BR_LINE: libarchive allocation failure injection.</span></span>
+<span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaUNC">           0 :     return handle;</span></span>
+<span id="L78"><span class="lineNum">      78</span>                 :             :   }</span>
+<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">          10 :   if (!EnableNativeFilters(*handle)) {  // LCOV_EXCL_BR_LINE: compiled-in filter registration failure.</span></span>
+<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaUNC">           0 :     return nullptr;</span></span>
+<span id="L81"><span class="lineNum">      81</span>                 :             :   }</span>
+<span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">          10 :   ::archive_read_support_format_7zip(handle.get());</span></span>
+<span id="L83"><span class="lineNum">      83</span>                 :<span class="tlaGNC">          10 :   ::archive_read_support_format_ar(handle.get());</span></span>
+<span id="L84"><span class="lineNum">      84</span>                 :<span class="tlaGNC">          10 :   ::archive_read_support_format_cab(handle.get());</span></span>
+<span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaGNC">          10 :   ::archive_read_support_format_cpio(handle.get());</span></span>
+<span id="L86"><span class="lineNum">      86</span>                 :<span class="tlaGNC">          10 :   ::archive_read_support_format_empty(handle.get());</span></span>
+<span id="L87"><span class="lineNum">      87</span>                 :<span class="tlaGNC">          10 :   ::archive_read_support_format_iso9660(handle.get());</span></span>
+<span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaGNC">          10 :   ::archive_read_support_format_lha(handle.get());</span></span>
+<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">          10 :   ::archive_read_support_format_rar(handle.get());</span></span>
+<span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">          10 :   ::archive_read_support_format_rar5(handle.get());</span></span>
+<span id="L91"><span class="lineNum">      91</span>                 :<span class="tlaGNC">          10 :   ::archive_read_support_format_tar(handle.get());</span></span>
+<span id="L92"><span class="lineNum">      92</span>                 :<span class="tlaGNC">          10 :   ::archive_read_support_format_warc(handle.get());</span></span>
+<span id="L93"><span class="lineNum">      93</span>                 :<span class="tlaGNC">          10 :   ::archive_read_support_format_xar(handle.get());</span></span>
+<span id="L94"><span class="lineNum">      94</span>                 :<span class="tlaGNC">          10 :   ::archive_read_support_format_zip(handle.get());</span></span>
+<span id="L95"><span class="lineNum">      95</span>                 :<span class="tlaGNC">          10 :   if (::archive_read_open_filename(handle.get(), path.c_str(), kBlockSize) != ARCHIVE_OK) {  // LCOV_EXCL_BR_LINE</span></span>
+<span id="L96"><span class="lineNum">      96</span>                 :<span class="tlaGNC">           2 :     return nullptr;</span></span>
+<span id="L97"><span class="lineNum">      97</span>                 :             :   }</span>
+<span id="L98"><span class="lineNum">      98</span>                 :<span class="tlaGNC">           8 :   return handle;</span></span>
+<span id="L99"><span class="lineNum">      99</span>                 :<span class="tlaGNC">          10 : }</span></span>
+<span id="L100"><span class="lineNum">     100</span>                 :             : </span>
+<span id="L101"><span class="lineNum">     101</span>                 :             : // Copies one member's data across. Block-wise rather than whole-member, so rewriting a container</span>
+<span id="L102"><span class="lineNum">     102</span>                 :             : // holding a huge member does not need it in memory. `archive_write_data` and not the _block variant:</span>
+<span id="L103"><span class="lineNum">     103</span>                 :             : // the latter belongs to the write-to-DISK API and answers &quot;not supported&quot; on an archive writer.</span>
+<span id="L104"><span class="lineNum">     104</span>                 :<span class="tlaGNC">           9 : absl::Status CopyData(struct ::archive&amp; reader_ref, struct ::archive&amp; writer_ref) {</span></span>
+<span id="L105"><span class="lineNum">     105</span>                 :<span class="tlaGNC">           9 :   struct ::archive* const reader = &amp;reader_ref;</span></span>
+<span id="L106"><span class="lineNum">     106</span>                 :<span class="tlaGNC">           9 :   struct ::archive* const writer = &amp;writer_ref;</span></span>
+<span id="L107"><span class="lineNum">     107</span>                 :             :   for (;;) {</span>
+<span id="L108"><span class="lineNum">     108</span>                 :<span class="tlaGNC">          18 :     const void* block = nullptr;</span></span>
+<span id="L109"><span class="lineNum">     109</span>                 :<span class="tlaGNC">          18 :     std::size_t size = 0;</span></span>
+<span id="L110"><span class="lineNum">     110</span>                 :<span class="tlaGNC">          18 :     std::int64_t offset = 0;</span></span>
+<span id="L111"><span class="lineNum">     111</span>                 :<span class="tlaGNC">          18 :     const int status = ::archive_read_data_block(reader, &amp;block, &amp;size, &amp;offset);</span></span>
+<span id="L112"><span class="lineNum">     112</span>         [<span class="tlaGBC" title="branch 0 was taken 9 times"> + </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">          18 :     if (status == ARCHIVE_EOF) {</span></span>
+<span id="L113"><span class="lineNum">     113</span>                 :<span class="tlaGNC">           9 :       return absl::OkStatus();</span></span>
+<span id="L114"><span class="lineNum">     114</span>                 :             :     }</span>
+<span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">           9 :     if (status &lt; ARCHIVE_WARN) {  // LCOV_EXCL_BR_LINE: libarchive streaming failure injection.</span></span>
+<span id="L116"><span class="lineNum">     116</span>                 :<span class="tlaUNC">           0 :       return absl::DataLossError(LastError(reader));</span></span>
+<span id="L117"><span class="lineNum">     117</span>                 :             :     }</span>
+<span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">           9 :     if (::archive_write_data(writer, block, size) &lt; 0) {  // LCOV_EXCL_BR_LINE: libarchive write failure injection.</span></span>
+<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaUNC">           0 :       return absl::UnavailableError(LastError(writer));</span></span>
+<span id="L120"><span class="lineNum">     120</span>                 :             :     }</span>
+<span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">           9 :   }</span></span>
+<span id="L122"><span class="lineNum">     122</span>                 :             : }</span>
+<span id="L123"><span class="lineNum">     123</span>                 :             : </span>
+<span id="L124"><span class="lineNum">     124</span>                 :             : // The rewrite itself, into an already-created writer. Split out so the caller owns the temporary</span>
+<span id="L125"><span class="lineNum">     125</span>                 :             : // file's lifetime: whatever happens here, an unfinished temporary is removed rather than renamed.</span>
+<span id="L126"><span class="lineNum">     126</span>                 :             : class RemovalTracker final {</span>
+<span id="L127"><span class="lineNum">     127</span>                 :             :  public:</span>
+<span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">           7 :   explicit RemovalTracker(const std::vector&lt;std::string&gt;&amp; requested)</span></span>
+<span id="L129"><span class="lineNum">     129</span>                 :<span class="tlaGNC">          14 :       : requested_(requested), removed_(requested.size(), false) {}</span></span>
+<span id="L130"><span class="lineNum">     130</span>                 :             : </span>
+<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">          19 :   bool ShouldRemove(std::string_view name) {</span></span>
+<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">          19 :     bool drop = false;</span></span>
+<span id="L133"><span class="lineNum">     133</span>         [<span class="tlaGBC" title="branch 0 was taken 25 times"> + </span><span class="tlaGBC" title="branch 1 was taken 19 times"> + </span>]:<span class="tlaGNC">          44 :     for (std::size_t i = 0; i &lt; requested_.size(); ++i) {</span></span>
+<span id="L134"><span class="lineNum">     134</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 17 times"> + </span>]:<span class="tlaGNC">          25 :       if (NormalizeMemberName(requested_[i]) == name) {</span></span>
+<span id="L135"><span class="lineNum">     135</span>                 :<span class="tlaGNC">           8 :         drop = true;</span></span>
+<span id="L136"><span class="lineNum">     136</span>                 :<span class="tlaGNC">           8 :         removed_[i] = true;</span></span>
+<span id="L137"><span class="lineNum">     137</span>                 :             :       }</span>
+<span id="L138"><span class="lineNum">     138</span>                 :             :     }</span>
+<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">          19 :     return drop;</span></span>
+<span id="L140"><span class="lineNum">     140</span>                 :             :   }</span>
+<span id="L141"><span class="lineNum">     141</span>                 :             : </span>
+<span id="L142"><span class="lineNum">     142</span>                 :             :   // NotFound names every requested member the rewrite never saw.</span>
+<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">           7 :   absl::Status CheckAll(std::string_view path) const {</span></span>
+<span id="L144"><span class="lineNum">     144</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">          16 :     if (absl::c_all_of(removed_, [](bool found) { return found; })) {</span></span>
+<span id="L145"><span class="lineNum">     145</span>                 :<span class="tlaGNC">           6 :       return absl::OkStatus();</span></span>
+<span id="L146"><span class="lineNum">     146</span>                 :             :     }</span>
+<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">           1 :     std::vector&lt;std::string&gt; missing;</span></span>
+<span id="L148"><span class="lineNum">     148</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           3 :     for (std::size_t i = 0; i &lt; requested_.size(); ++i) {</span></span>
+<span id="L149"><span class="lineNum">     149</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           2 :       if (!removed_[i]) {</span></span>
+<span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">           1 :         missing.push_back(requested_[i]);</span></span>
+<span id="L151"><span class="lineNum">     151</span>                 :             :       }</span>
+<span id="L152"><span class="lineNum">     152</span>                 :             :     }</span>
+<span id="L153"><span class="lineNum">     153</span>                 :<span class="tlaGNC">           1 :     return absl::NotFoundError(absl::StrCat(&quot;no such member in &quot;, path, &quot;: &quot;, absl::StrJoin(missing, &quot;, &quot;)));</span></span>
+<span id="L154"><span class="lineNum">     154</span>                 :<span class="tlaGNC">           1 :   }</span></span>
+<span id="L155"><span class="lineNum">     155</span>                 :             : </span>
+<span id="L156"><span class="lineNum">     156</span>                 :             :  private:</span>
+<span id="L157"><span class="lineNum">     157</span>                 :             :   const std::vector&lt;std::string&gt;&amp; requested_;</span>
+<span id="L158"><span class="lineNum">     158</span>                 :             :   std::vector&lt;bool&gt; removed_;</span>
+<span id="L159"><span class="lineNum">     159</span>                 :             : };</span>
+<span id="L160"><span class="lineNum">     160</span>                 :             : </span>
+<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">           7 : absl::Status RewriteWithout(struct ::archive&amp; reader_ref, struct ::archive&amp; writer_ref, RemovalTracker&amp; removals) {</span></span>
+<span id="L162"><span class="lineNum">     162</span>                 :<span class="tlaGNC">           7 :   struct ::archive* const reader = &amp;reader_ref;</span></span>
+<span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">           7 :   struct ::archive* const writer = &amp;writer_ref;</span></span>
+<span id="L164"><span class="lineNum">     164</span>                 :             :   for (;;) {</span>
+<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">          19 :     struct ::archive_entry* entry = nullptr;</span></span>
+<span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">          19 :     const int status = ::archive_read_next_header(reader, &amp;entry);</span></span>
+<span id="L167"><span class="lineNum">     167</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 12 times"> + </span>]:<span class="tlaGNC">          19 :     if (status == ARCHIVE_EOF) {</span></span>
+<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">           7 :       return absl::OkStatus();</span></span>
+<span id="L169"><span class="lineNum">     169</span>                 :             :     }</span>
+<span id="L170"><span class="lineNum">     170</span>                 :<span class="tlaGNC">          12 :     if (status &lt; ARCHIVE_WARN) {  // LCOV_EXCL_BR_LINE: libarchive header failure injection.</span></span>
+<span id="L171"><span class="lineNum">     171</span>                 :<span class="tlaUNC">           0 :       return absl::DataLossError(LastError(reader));</span></span>
+<span id="L172"><span class="lineNum">     172</span>                 :             :     }</span>
+<span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">          12 :     const char* stored = ::archive_entry_pathname(entry);</span></span>
+<span id="L174"><span class="lineNum">     174</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 12 times"> + </span>]:<span class="tlaGNC">          12 :     const std::string_view name = NormalizeMemberName(stored == nullptr ? std::string_view() : stored);</span></span>
+<span id="L175"><span class="lineNum">     175</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 10 times"> + </span>]:<span class="tlaGNC">          12 :     if (removals.ShouldRemove(name)) {</span></span>
+<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">           2 :       ::archive_read_data_skip(reader);</span></span>
+<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">           2 :       continue;</span></span>
+<span id="L178"><span class="lineNum">     178</span>                 :             :     }</span>
+<span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">          10 :     if (::archive_write_header(writer, entry) &lt; ARCHIVE_WARN) {  // LCOV_EXCL_BR_LINE</span></span>
+<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaUNC">           0 :       return absl::UnavailableError(LastError(writer));</span></span>
+<span id="L181"><span class="lineNum">     181</span>                 :             :     }</span>
+<span id="L182"><span class="lineNum">     182</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">          10 :     if (::archive_entry_size(entry) &gt; 0) {</span></span>
+<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">           8 :       const absl::Status copied = CopyData(reader_ref, writer_ref);</span></span>
+<span id="L184"><span class="lineNum">     184</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">           8 :       if (!copied.ok()) {</span></span>
+<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaUNC">           0 :         return copied;</span></span>
+<span id="L186"><span class="lineNum">     186</span>                 :             :       }</span>
+<span id="L187"><span class="lineNum">     187</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">           8 :     }</span></span>
+<span id="L188"><span class="lineNum">     188</span>                 :<span class="tlaGNC">          12 :   }</span></span>
+<span id="L189"><span class="lineNum">     189</span>                 :             : }</span>
+<span id="L190"><span class="lineNum">     190</span>                 :             : </span>
+<span id="L191"><span class="lineNum">     191</span>                 :             : // Points `writer` at `temporary` with the same format and compression the reader found, which is what</span>
+<span id="L192"><span class="lineNum">     192</span>                 :             : // keeps a rewrite from quietly changing the container. Split out of RemoveMembersOfFile: it is the one</span>
+<span id="L193"><span class="lineNum">     193</span>                 :             : // cohesive step in it that answers a different question (&quot;can this be written back at all?&quot;), and</span>
+<span id="L194"><span class="lineNum">     194</span>                 :             : // leaving it inline put that function past the complexity the style guide allows.</span>
+<span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">           8 : absl::Status MatchWriterToReader(</span></span>
+<span id="L196"><span class="lineNum">     196</span>                 :             :     struct ::archive&amp; reader_ref,</span>
+<span id="L197"><span class="lineNum">     197</span>                 :             :     struct ::archive&amp; writer_ref,</span>
+<span id="L198"><span class="lineNum">     198</span>                 :             :     const stdfs::path&amp; temporary,</span>
+<span id="L199"><span class="lineNum">     199</span>                 :             :     std::string_view path) {</span>
+<span id="L200"><span class="lineNum">     200</span>                 :<span class="tlaGNC">           8 :   struct ::archive* const reader = &amp;reader_ref;</span></span>
+<span id="L201"><span class="lineNum">     201</span>                 :<span class="tlaGNC">           8 :   struct ::archive* const writer = &amp;writer_ref;</span></span>
+<span id="L202"><span class="lineNum">     202</span>                 :             :   // Reading a format does not imply writing it: libarchive reads 7-Zip, RAR, ISO and cab, and writes</span>
+<span id="L203"><span class="lineNum">     203</span>                 :             :   // only some of those. Refusing here (rather than producing a tar named `.7z`) is the point.</span>
+<span id="L204"><span class="lineNum">     204</span>                 :<span class="tlaGNC">           8 :   if (::archive_write_set_format(writer, ::archive_format(reader)) != ARCHIVE_OK) {  // LCOV_EXCL_BR_LINE</span></span>
+<span id="L205"><span class="lineNum">     205</span>                 :             :     return absl::UnimplementedError(</span>
+<span id="L206"><span class="lineNum">     206</span>                 :<span class="tlaUNC">           0 :         absl::StrCat(</span></span>
+<span id="L207"><span class="lineNum">     207</span>                 :             :             &quot;this build cannot write the &quot;, ::archive_format_name(reader),</span>
+<span id="L208"><span class="lineNum">     208</span>                 :<span class="tlaUNC">           0 :             &quot; format back, so a member cannot be removed from &quot;, path));</span></span>
+<span id="L209"><span class="lineNum">     209</span>                 :             :   }</span>
+<span id="L210"><span class="lineNum">     210</span>                 :             :   // Filter 0 is the outermost compression the reader applied, and the innermost is always `none`.</span>
+<span id="L211"><span class="lineNum">     211</span>                 :             :   // Carrying it over is what keeps a `.tar.gz` gzipped rather than silently expanding it.</span>
+<span id="L212"><span class="lineNum">     212</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">           9 :   for (int i = ::archive_filter_count(reader) - 2; i &gt;= 0; --i) {</span></span>
+<span id="L213"><span class="lineNum">     213</span>                 :<span class="tlaGNC">           1 :     if (::archive_write_add_filter(writer, ::archive_filter_code(reader, i)) != ARCHIVE_OK) {  // LCOV_EXCL_BR_LINE</span></span>
+<span id="L214"><span class="lineNum">     214</span>                 :             :       return absl::UnimplementedError(</span>
+<span id="L215"><span class="lineNum">     215</span>                 :<span class="tlaUNC">           0 :           absl::StrCat(</span></span>
+<span id="L216"><span class="lineNum">     216</span>                 :             :               &quot;this build cannot write the &quot;, ::archive_filter_name(reader, i),</span>
+<span id="L217"><span class="lineNum">     217</span>                 :<span class="tlaUNC">           0 :               &quot; compression back, so a member cannot be removed from &quot;, path));</span></span>
+<span id="L218"><span class="lineNum">     218</span>                 :             :     }</span>
+<span id="L219"><span class="lineNum">     219</span>                 :             :   }</span>
+<span id="L220"><span class="lineNum">     220</span>                 :<span class="tlaGNC">           8 :   if (::archive_write_open_filename(writer, temporary.string().c_str()) != ARCHIVE_OK) {  // LCOV_EXCL_BR_LINE</span></span>
+<span id="L221"><span class="lineNum">     221</span>                 :<span class="tlaGNC">           1 :     return absl::UnavailableError(absl::StrCat(&quot;cannot write &quot;, temporary.string(), &quot;: &quot;, LastError(writer)));</span></span>
+<span id="L222"><span class="lineNum">     222</span>                 :             :   }</span>
+<span id="L223"><span class="lineNum">     223</span>                 :<span class="tlaGNC">           7 :   return absl::OkStatus();</span></span>
+<span id="L224"><span class="lineNum">     224</span>                 :             : }</span>
+<span id="L225"><span class="lineNum">     225</span>                 :             : </span>
+<span id="L226"><span class="lineNum">     226</span>                 :             : // The peeked first member: dropped when listed (marking it in `removed`), copied through otherwise.</span>
+<span id="L227"><span class="lineNum">     227</span>                 :             : // Split out of RemoveMembersOfFile so the peek-then-loop shape stays readable there.</span>
+<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">           7 : absl::Status TransferFirstMember(</span></span>
+<span id="L229"><span class="lineNum">     229</span>                 :             :     struct ::archive&amp; reader_ref,</span>
+<span id="L230"><span class="lineNum">     230</span>                 :             :     struct ::archive&amp; writer_ref,</span>
+<span id="L231"><span class="lineNum">     231</span>                 :             :     struct ::archive_entry&amp; first_ref,</span>
+<span id="L232"><span class="lineNum">     232</span>                 :             :     RemovalTracker&amp; removals) {</span>
+<span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">           7 :   struct ::archive* const reader = &amp;reader_ref;</span></span>
+<span id="L234"><span class="lineNum">     234</span>                 :<span class="tlaGNC">           7 :   struct ::archive* const writer = &amp;writer_ref;</span></span>
+<span id="L235"><span class="lineNum">     235</span>                 :<span class="tlaGNC">           7 :   struct ::archive_entry* const first = &amp;first_ref;</span></span>
+<span id="L236"><span class="lineNum">     236</span>                 :<span class="tlaGNC">           7 :   const char* stored = ::archive_entry_pathname(first);</span></span>
+<span id="L237"><span class="lineNum">     237</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>]:<span class="tlaGNC">           7 :   const std::string_view name = NormalizeMemberName(stored == nullptr ? std::string_view() : stored);</span></span>
+<span id="L238"><span class="lineNum">     238</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           7 :   if (removals.ShouldRemove(name)) {</span></span>
+<span id="L239"><span class="lineNum">     239</span>                 :<span class="tlaGNC">           6 :     ::archive_read_data_skip(reader);</span></span>
+<span id="L240"><span class="lineNum">     240</span>                 :<span class="tlaGNC">           6 :     return absl::OkStatus();</span></span>
+<span id="L241"><span class="lineNum">     241</span>                 :             :   }</span>
+<span id="L242"><span class="lineNum">     242</span>                 :<span class="tlaGNC">           1 :   if (::archive_write_header(writer, first) &lt; ARCHIVE_WARN) {  // LCOV_EXCL_BR_LINE</span></span>
+<span id="L243"><span class="lineNum">     243</span>                 :<span class="tlaUNC">           0 :     return absl::UnavailableError(LastError(writer));</span></span>
+<span id="L244"><span class="lineNum">     244</span>                 :             :   }</span>
+<span id="L245"><span class="lineNum">     245</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">           1 :   if (::archive_entry_size(first) &gt; 0) {</span></span>
+<span id="L246"><span class="lineNum">     246</span>                 :<span class="tlaGNC">           1 :     return CopyData(reader_ref, writer_ref);</span></span>
+<span id="L247"><span class="lineNum">     247</span>                 :             :   }</span>
+<span id="L248"><span class="lineNum">     248</span>                 :<span class="tlaUNC">           0 :   return absl::OkStatus();</span></span>
+<span id="L249"><span class="lineNum">     249</span>                 :             : }</span>
+<span id="L250"><span class="lineNum">     250</span>                 :             : </span>
+<span id="L251"><span class="lineNum">     251</span>                 :             : }  // namespace</span>
+<span id="L252"><span class="lineNum">     252</span>                 :             : </span>
+<span id="L253"><span class="lineNum">     253</span>                 :<span class="tlaGNC">          11 : absl::Status RemoveMembersOfFile(std::string_view path, const std::vector&lt;std::string&gt;&amp; members) {</span></span>
+<span id="L254"><span class="lineNum">     254</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 10 times"> + </span>]:<span class="tlaGNC">          11 :   if (members.empty()) {</span></span>
+<span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">           1 :     return absl::OkStatus();</span></span>
+<span id="L256"><span class="lineNum">     256</span>                 :             :   }</span>
+<span id="L257"><span class="lineNum">     257</span>                 :<span class="tlaGNC">          10 :   const std::string path_string(path);</span></span>
+<span id="L258"><span class="lineNum">     258</span>                 :<span class="tlaGNC">          10 :   const ReadPtr reader = OpenReader(path_string);</span></span>
+<span id="L259"><span class="lineNum">     259</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">          10 :   if (reader == nullptr) {</span></span>
+<span id="L260"><span class="lineNum">     260</span>                 :<span class="tlaGNC">           2 :     return absl::InvalidArgumentError(absl::StrCat(&quot;not an archive this build can open: &quot;, path));</span></span>
+<span id="L261"><span class="lineNum">     261</span>                 :             :   }</span>
+<span id="L262"><span class="lineNum">     262</span>                 :             :   // The format and filter are read off the ORIGINAL, which needs a header, so peek at the first</span>
+<span id="L263"><span class="lineNum">     263</span>                 :             :   // member before the writer is set up. An archive with no members has nothing to remove anyway.</span>
+<span id="L264"><span class="lineNum">     264</span>                 :<span class="tlaGNC">           8 :   struct ::archive_entry* first = nullptr;</span></span>
+<span id="L265"><span class="lineNum">     265</span>                 :<span class="tlaGNC">           8 :   const int peeked = ::archive_read_next_header(reader.get(), &amp;first);</span></span>
+<span id="L266"><span class="lineNum">     266</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">           8 :   if (peeked == ARCHIVE_EOF) {</span></span>
+<span id="L267"><span class="lineNum">     267</span>                 :<span class="tlaUNC">           0 :     return absl::NotFoundError(absl::StrCat(&quot;no such member in &quot;, path, &quot;: &quot;, absl::StrJoin(members, &quot;, &quot;)));</span></span>
+<span id="L268"><span class="lineNum">     268</span>                 :             :   }</span>
+<span id="L269"><span class="lineNum">     269</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">           8 :   if (peeked &lt; ARCHIVE_WARN) {</span></span>
+<span id="L270"><span class="lineNum">     270</span>                 :<span class="tlaUNC">           0 :     return absl::DataLossError(LastError(reader.get()));</span></span>
+<span id="L271"><span class="lineNum">     271</span>                 :             :   }</span>
+<span id="L272"><span class="lineNum">     272</span>                 :<span class="tlaGNC">           8 :   const stdfs::path target(path_string);</span></span>
+<span id="L273"><span class="lineNum">     273</span>                 :<span class="tlaGNC">           8 :   const stdfs::path temporary = stdfs::path(target).replace_filename(target.filename().string() + &quot;.xff-rewrite&quot;);</span></span>
+<span id="L274"><span class="lineNum">     274</span>                 :             :   {</span>
+<span id="L275"><span class="lineNum">     275</span>                 :<span class="tlaGNC">           8 :     const WritePtr writer{::archive_write_new()};</span></span>
+<span id="L276"><span class="lineNum">     276</span>                 :<span class="tlaGNC">           8 :     if (writer == nullptr) {  // LCOV_EXCL_BR_LINE: libarchive allocation failure injection.</span></span>
+<span id="L277"><span class="lineNum">     277</span>                 :<span class="tlaUNC">           0 :       return absl::UnavailableError(&quot;cannot create a libarchive writer&quot;);</span></span>
+<span id="L278"><span class="lineNum">     278</span>                 :             :     }</span>
+<span id="L279"><span class="lineNum">     279</span>   [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span><span class="tlaGBC" title="branch 2 was taken 7 times"> + </span><span class="tlaGBC" title="branch 3 was taken 1 time"> + </span>]:<span class="tlaGNC">           8 :     MBO_RETURN_IF_ERROR(MatchWriterToReader(*reader, *writer, temporary, path));</span></span>
+<span id="L280"><span class="lineNum">     280</span>                 :<span class="tlaGNC">           7 :     RemovalTracker removals(members);</span></span>
+<span id="L281"><span class="lineNum">     281</span>                 :             :     // The peeked header is the first member, so handle it before the loop takes over the rest.</span>
+<span id="L282"><span class="lineNum">     282</span>                 :<span class="tlaGNC">           7 :     absl::Status status = TransferFirstMember(*reader, *writer, *first, removals);</span></span>
+<span id="L283"><span class="lineNum">     283</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">           7 :     if (status.ok()) {</span></span>
+<span id="L284"><span class="lineNum">     284</span>                 :<span class="tlaGNC">           7 :       status = RewriteWithout(*reader, *writer, removals);</span></span>
+<span id="L285"><span class="lineNum">     285</span>                 :             :     }</span>
+<span id="L286"><span class="lineNum">     286</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">           7 :     if (status.ok()) {</span></span>
+<span id="L287"><span class="lineNum">     287</span>                 :<span class="tlaGNC">           7 :       status = removals.CheckAll(path);</span></span>
+<span id="L288"><span class="lineNum">     288</span>                 :             :     }</span>
+<span id="L289"><span class="lineNum">     289</span>                 :<span class="tlaGNC">           7 :     if (status.ok() &amp;&amp; ::archive_write_close(writer.get()) != ARCHIVE_OK) {  // LCOV_EXCL_BR_LINE</span></span>
+<span id="L290"><span class="lineNum">     290</span>                 :             :       // Close is where a zip writes its central directory, so a failure here is a failure to write.</span>
+<span id="L291"><span class="lineNum">     291</span>                 :<span class="tlaUNC">           0 :       status = absl::UnavailableError(LastError(writer.get()));</span></span>
+<span id="L292"><span class="lineNum">     292</span>                 :             :     }</span>
+<span id="L293"><span class="lineNum">     293</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">           7 :     if (!status.ok()) {</span></span>
+<span id="L294"><span class="lineNum">     294</span>                 :<span class="tlaGNC">           1 :       std::error_code ignored;</span></span>
+<span id="L295"><span class="lineNum">     295</span>                 :<span class="tlaGNC">           1 :       stdfs::remove(temporary, ignored);  // nothing half-written survives</span></span>
+<span id="L296"><span class="lineNum">     296</span>                 :<span class="tlaGNC">           1 :       return status;</span></span>
+<span id="L297"><span class="lineNum">     297</span>                 :             :     }</span>
+<span id="L298"><span class="lineNum">     298</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           8 :   }</span></span>
+<span id="L299"><span class="lineNum">     299</span>                 :<span class="tlaGNC">           6 :   std::error_code error;</span></span>
+<span id="L300"><span class="lineNum">     300</span>                 :<span class="tlaGNC">           6 :   const stdfs::perms mode = stdfs::status(target, error).permissions();</span></span>
+<span id="L301"><span class="lineNum">     301</span>                 :<span class="tlaGNC">           6 :   stdfs::rename(temporary, target, error);</span></span>
+<span id="L302"><span class="lineNum">     302</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">           6 :   if (error) {</span></span>
+<span id="L303"><span class="lineNum">     303</span>                 :<span class="tlaUNC">           0 :     std::error_code ignored;</span></span>
+<span id="L304"><span class="lineNum">     304</span>                 :<span class="tlaUNC">           0 :     stdfs::remove(temporary, ignored);</span></span>
+<span id="L305"><span class="lineNum">     305</span>                 :<span class="tlaUNC">           0 :     return absl::UnavailableError(absl::StrCat(&quot;cannot replace &quot;, path, &quot;: &quot;, error.message()));</span></span>
+<span id="L306"><span class="lineNum">     306</span>                 :             :   }</span>
+<span id="L307"><span class="lineNum">     307</span>                 :<span class="tlaGNC">           6 :   stdfs::permissions(target, mode, error);  // the replacement is the same file to its user</span></span>
+<span id="L308"><span class="lineNum">     308</span>                 :<span class="tlaGNC">           6 :   return absl::OkStatus();</span></span>
+<span id="L309"><span class="lineNum">     309</span>                 :<span class="tlaGNC">          10 : }</span></span>
+<span id="L310"><span class="lineNum">     310</span>                 :             : </span>
+<span id="L311"><span class="lineNum">     311</span>                 :             : }  // namespace xff::archive</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table class="xffPolicy">
+            <thead>
+              <tr>
+                <th scope="col">Global coverage policy</th>
+                <th scope="col">Low</th>
+                <th scope="col">Medium</th>
+                <th scope="col">High</th>
+                <th scope="col">Enforced</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <th scope="row">Lines</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 92%</td>
+              <td class="headerValueLegH">&ge; 92%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Branches</th>
+              <td class="headerValueLegL">&lt; 80%</td>
+              <td class="headerValueLegM">&ge; 80% and &lt; 82%</td>
+              <td class="headerValueLegH">&ge; 82%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Functions</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 95%</td>
+              <td class="headerValueLegH">&ge; 95%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            </tbody>
+          </table>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 2.5-0</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

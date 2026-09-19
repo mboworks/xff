@@ -1,0 +1,274 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - xff production coverage - program-command-line/xff/cli/globals.h</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+  <style>
+    .xffNavigation { padding: .35rem 0; text-align: center; }
+    .xffHeaderSummary { margin: 0 auto; width: 80%; }
+    .xffPolicy { border-collapse: collapse; margin: .75rem auto 1rem; width: auto; }
+    .xffPolicy th { padding: .2rem .75rem; text-align: left; }
+    .xffPolicy td { font-size: 100%; padding: .2rem .75rem; text-align: center; }
+  </style>
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="xffNavigation"><a href="../../../../index.html">Report overview</a> &middot; <a href="../../../../../../index.html">All coverage reports</a></td></tr>
+
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table class="xffHeaderSummary" cellpadding=1 border=0>
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../index.html" title="Click to go to top-level">top level</a> - <a href="index.html" title="Click to go to directory program-command-line/xff/cli">program-command-line/xff/cli</a> - globals.h<span style="font-size: 80%;"> (source / <a href="globals.h.func-c.html" title="Click to go to function table">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">xff production coverage</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntry">3</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-09-05 14:52:43</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryLo">50.0&nbsp;%</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">1</td>
+          </tr>
+                  <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">            Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>              : // SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors</span>
+<span id="L2"><span class="lineNum">       2</span>              : // SPDX-License-Identifier: Apache-2.0</span>
+<span id="L3"><span class="lineNum">       3</span>              : //</span>
+<span id="L4"><span class="lineNum">       4</span>              : // Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span id="L5"><span class="lineNum">       5</span>              : // you may not use this file except in compliance with the License.</span>
+<span id="L6"><span class="lineNum">       6</span>              : // You may obtain a copy of the License at</span>
+<span id="L7"><span class="lineNum">       7</span>              : //</span>
+<span id="L8"><span class="lineNum">       8</span>              : //      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span id="L9"><span class="lineNum">       9</span>              : //</span>
+<span id="L10"><span class="lineNum">      10</span>              : // Unless required by applicable law or agreed to in writing, software</span>
+<span id="L11"><span class="lineNum">      11</span>              : // distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span id="L12"><span class="lineNum">      12</span>              : // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span id="L13"><span class="lineNum">      13</span>              : // See the License for the specific language governing permissions and</span>
+<span id="L14"><span class="lineNum">      14</span>              : // limitations under the License.</span>
+<span id="L15"><span class="lineNum">      15</span>              : </span>
+<span id="L16"><span class="lineNum">      16</span>              : #ifndef XFF_CLI_GLOBALS_H_</span>
+<span id="L17"><span class="lineNum">      17</span>              : #define XFF_CLI_GLOBALS_H_</span>
+<span id="L18"><span class="lineNum">      18</span>              : </span>
+<span id="L19"><span class="lineNum">      19</span>              : #include &lt;cstdint&gt;</span>
+<span id="L20"><span class="lineNum">      20</span>              : #include &lt;string_view&gt;</span>
+<span id="L21"><span class="lineNum">      21</span>              : #include &lt;vector&gt;</span>
+<span id="L22"><span class="lineNum">      22</span>              : </span>
+<span id="L23"><span class="lineNum">      23</span>              : #include &quot;absl/status/status.h&quot;</span>
+<span id="L24"><span class="lineNum">      24</span>              : #include &quot;absl/types/span.h&quot;</span>
+<span id="L25"><span class="lineNum">      25</span>              : #include &quot;mbo/types/optional_ref.h&quot;</span>
+<span id="L26"><span class="lineNum">      26</span>              : </span>
+<span id="L27"><span class="lineNum">      27</span>              : namespace xff::cli {</span>
+<span id="L28"><span class="lineNum">      28</span>              : </span>
+<span id="L29"><span class="lineNum">      29</span>              : // One allowed value of a flag that takes a `&lt;PLACEHOLDER&gt;` argument: the literal token</span>
+<span id="L30"><span class="lineNum">      30</span>              : // and a short one-line meaning. A flag whose synopsis collapses a long value grammar to a</span>
+<span id="L31"><span class="lineNum">      31</span>              : // placeholder (e.g. `--summary[=&lt;GROUP&gt;]`) lists its values here; the detail tier renders</span>
+<span id="L32"><span class="lineNum">      32</span>              : // them as an aligned, wrapping `value  meaning` table, so the values stay documented</span>
+<span id="L33"><span class="lineNum">      33</span>              : // without bloating the (never-wrapped) synopsis line.</span>
+<span id="L34"><span class="lineNum">      34</span>              : struct ValueDoc {</span>
+<span id="L35"><span class="lineNum">      35</span>              :   std::string_view value;    // the literal token, e.g. &quot;ext&quot;</span>
+<span id="L36"><span class="lineNum">      36</span>              :   std::string_view meaning;  // one-line explanation, lower-case, no trailing period</span>
+<span id="L37"><span class="lineNum">      37</span>              :   // Accepted but not LISTED: an alias whose canonical spelling is already shown (`md` for</span>
+<span id="L38"><span class="lineNum">      38</span>              :   // `markdown`), or a name reserved for a better error elsewhere (`--regextype=MATCH`). The value</span>
+<span id="L39"><span class="lineNum">      39</span>              :   // check accepts these; the help omits them, so one table stays the single source of truth for</span>
+<span id="L40"><span class="lineNum">      40</span>              :   // both without the listing growing every synonym.</span>
+<span id="L41"><span class="lineNum">      41</span>              :   bool hidden = false;</span>
+<span id="L42"><span class="lineNum">      42</span>              : };</span>
+<span id="L43"><span class="lineNum">      43</span>              : </span>
+<span id="L44"><span class="lineNum">      44</span>              : // One whole-run option (&quot;global&quot;), the flag counterpart of registry::Descriptor.</span>
+<span id="L45"><span class="lineNum">      45</span>              : // Globals are processed by config / main, not by the expression parser, so they</span>
+<span id="L46"><span class="lineNum">      46</span>              : // live here rather than in the registry; the help system and the planned man-page /</span>
+<span id="L47"><span class="lineNum">      47</span>              : // .md generators enumerate them through Globals() the way they enumerate primaries</span>
+<span id="L48"><span class="lineNum">      48</span>              : // through registry::All(), so the documentation cannot drift from the binary.</span>
+<span id="L49"><span class="lineNum">      49</span>              : struct GlobalFlag {</span>
+<span id="L50"><span class="lineNum">      50</span>              :   std::string_view name;     // primary lookup key, e.g. &quot;--sort&quot;, &quot;--jobs&quot;, &quot;-H&quot;</span>
+<span id="L51"><span class="lineNum">      51</span>              :   std::string_view alias;    // alternate lookup key, or &quot;&quot; (e.g. &quot;-j&quot; for --jobs, &quot;--tz&quot;)</span>
+<span id="L52"><span class="lineNum">      52</span>              :   std::string_view display;  // human header, e.g. &quot;-j N, --jobs=N|all&quot; or &quot;--sort[=none|dir|subtree|tree]&quot;</span>
+<span id="L53"><span class="lineNum">      53</span>              :   std::string_view group;    // short group key, e.g. &quot;config&quot;, &quot;traversal&quot;, &quot;filter&quot; (drives grouping)</span>
+<span id="L54"><span class="lineNum">      54</span>              :   std::string_view header;   // display heading for the group, e.g. &quot;Filter &amp; Ignore&quot; (shown at its first flag)</span>
+<span id="L55"><span class="lineNum">      55</span>              :   std::string_view summary;  // one-line synopsis, lower-case, no trailing period</span>
+<span id="L56"><span class="lineNum">      56</span>              :   // Optional multi-sentence explanation shown by `--help=NAME` and `--help=full` (the</span>
+<span id="L57"><span class="lineNum">      57</span>              :   // long tier); empty falls back to the summary. `--help=all` shows the summary only.</span>
+<span id="L58"><span class="lineNum">      58</span>              :   std::string_view details;</span>
+<span id="L59"><span class="lineNum">      59</span>              :   // Optional allowed-value vocabulary for a flag whose synopsis carries a `&lt;PLACEHOLDER&gt;`</span>
+<span id="L60"><span class="lineNum">      60</span>              :   // (e.g. `--summary[=&lt;GROUP&gt;]`). The detail tier renders these as an aligned, wrapping</span>
+<span id="L61"><span class="lineNum">      61</span>              :   // `value  meaning` table above the explanation, so the value grammar stays off the</span>
+<span id="L62"><span class="lineNum">      62</span>              :   // (never-wrapped) synopsis yet is fully documented. Empty = no value list.</span>
+<span id="L63"><span class="lineNum">      63</span>              :   absl::Span&lt;const ValueDoc&gt; values;</span>
+<span id="L64"><span class="lineNum">      64</span>              :   // The single source of truth for cross-references in the help system: a comma-separated</span>
+<span id="L65"><span class="lineNum">      65</span>              :   // list of the expression primaries and other global flags whose behavior this flag changes</span>
+<span id="L66"><span class="lineNum">      66</span>              :   // (e.g. &quot;-diff&quot; for --diff-format, &quot;-grep,-diff&quot; for --context). Detailed help derives an</span>
+<span id="L67"><span class="lineNum">      67</span>              :   // &quot;Affects:&quot; block here and the reverse &quot;Affected by:&quot; block on each named entry, so the two</span>
+<span id="L68"><span class="lineNum">      68</span>              :   // directions cannot drift (globals_test checks every token resolves). Each token is a primary</span>
+<span id="L69"><span class="lineNum">      69</span>              :   // name (&quot;-diff&quot;) or a global name (&quot;--context&quot;); a leading-'@' category token is a planned</span>
+<span id="L70"><span class="lineNum">      70</span>              :   // extension (not yet resolved) for when one flag affects a whole family at once.</span>
+<span id="L71"><span class="lineNum">      71</span>              :   std::string_view affects;</span>
+<span id="L72"><span class="lineNum">      72</span>              :   // Help-topic membership, e.g. &quot;stats&quot;. A `--help=TOPIC` body pulls every flag tagged with its</span>
+<span id="L73"><span class="lineNum">      73</span>              :   // topic straight from this table, so the topic's flag list is the SOT and cannot drift. Empty</span>
+<span id="L74"><span class="lineNum">      74</span>              :   // means the flag belongs to no topic body (it still appears in the grouped `--help` options).</span>
+<span id="L75"><span class="lineNum">      75</span>              :   std::string_view topic;</span>
+<span id="L76"><span class="lineNum">      76</span>              :   // The build-time &quot;composable extra&quot; this flag needs, e.g. &quot;archive&quot; (the `//xff:xff_archive` Bazel</span>
+<span id="L77"><span class="lineNum">      77</span>              :   // flag + its `XFF_WITH_ARCHIVE` define). Empty = a core flag, always available. When set and that</span>
+<span id="L78"><span class="lineNum">      78</span>              :   // extra is NOT compiled in (ExtraEnabled), the flag stays listed but is a hard error if used, and</span>
+<span id="L79"><span class="lineNum">      79</span>              :   // the help system routes it into a separate &quot;Extras (not built in)&quot; group noting what to rebuild</span>
+<span id="L80"><span class="lineNum">      80</span>              :   // with. The key alone is the SOT; the `--//xff:&lt;extra&gt;` hint is derived from it.</span>
+<span id="L81"><span class="lineNum">      81</span>              :   std::string_view extra;</span>
+<span id="L82"><span class="lineNum">      82</span>              :   // The chmod-style suffix signs a SHORT form accepts, as the literal spellings (&quot;-z&quot;, &quot;-z+&quot;,</span>
+<span id="L83"><span class="lineNum">      83</span>              :   // &quot;-z++&quot;). IsKnownGlobal derives the accepted tokens from this, so a new sign-suffixed flag is</span>
+<span id="L84"><span class="lineNum">      84</span>              :   // recognised by DECLARING it rather than by also editing a literal list somewhere else - the</span>
+<span id="L85"><span class="lineNum">      85</span>              :   // drift that made `-Z` an &quot;unknown option&quot; until someone remembered.</span>
+<span id="L86"><span class="lineNum">      86</span>              :   //</span>
+<span id="L87"><span class="lineNum">      87</span>              :   // The suffix carries a LEVEL and nothing else (`-` off, none auto, `+` on, `++` on plus the</span>
+<span id="L88"><span class="lineNum">      88</span>              :   // extra step); what each level MEANS is the flag's own business, and the families differ: `-g`</span>
+<span id="L89"><span class="lineNum">      89</span>              :   // is a tri-state, `-z` is a nested ladder, `-Z` is that ladder with a capability added.</span>
+<span id="L90"><span class="lineNum">      90</span>              :   absl::Span&lt;const std::string_view&gt; sign_forms;</span>
+<span id="L91"><span class="lineNum">      91</span>              :   // How a `name=VALUE` form is CHECKED, so a typo is a usage error rather than a silent default</span>
+<span id="L92"><span class="lineNum">      92</span>              :   // (`--case=insensitve` used to match case-sensitively and look like it worked). Only kNone</span>
+<span id="L93"><span class="lineNum">      93</span>              :   // accepts anything: it is the default because most valued flags take free text (a path, a</span>
+<span id="L94"><span class="lineNum">      94</span>              :   // format, a regex, a comma list they validate themselves).</span>
+<span id="L95"><span class="lineNum">      95</span>              :   //</span>
+<span id="L96"><span class="lineNum">      96</span>              :   // kEnum checks against this flag's own `values` table, which is therefore the SOT for both the</span>
+<span id="L97"><span class="lineNum">      97</span>              :   // help and the check - they cannot disagree. kEnumOrTemplate additionally accepts a value that</span>
+<span id="L98"><span class="lineNum">      98</span>              :   // starts with `{`; the flag's own parser validates that documented template grammar. kBool /</span>
+<span id="L99"><span class="lineNum">      99</span>              :   // kTristate check against the shared vocabulary (values::ParseBool / ParseTristate), which accepts</span>
+<span id="L100"><span class="lineNum">     100</span>              :   // more spellings than the table documents (`yes` / `1` beside `on`), so those must NOT be checked</span>
+<span id="L101"><span class="lineNum">     101</span>              :   // as an enum.</span>
+<span id="L102"><span class="lineNum">     102</span>              :   enum class ValueCheck : std::uint8_t { kNone, kEnum, kEnumOrTemplate, kBool, kTristate };</span>
+<span id="L103"><span class="lineNum">     103</span>              :   ValueCheck value_check = ValueCheck::kNone;</span>
+<span id="L104"><span class="lineNum">     104</span>              :   bool xff = true;  // false for a find-native option (-H/-L/-P); true for an xff extension</span>
+<span id="L105"><span class="lineNum">     105</span>              : };</span>
+<span id="L106"><span class="lineNum">     106</span>              : </span>
+<span id="L107"><span class="lineNum">     107</span>              : template&lt;typename Sink&gt;</span>
+<span id="L108"><span class="lineNum">     108</span> <span class="tlaGNC">           1 : void AbslStringify(Sink&amp; sink, const GlobalFlag&amp; flag) {</span></span>
+<span id="L109"><span class="lineNum">     109</span> <span class="tlaGNC">           1 :   sink.Append(flag.name);</span></span>
+<span id="L110"><span class="lineNum">     110</span> <span class="tlaGNC">           1 : }</span></span>
+<span id="L111"><span class="lineNum">     111</span>              : </span>
+<span id="L112"><span class="lineNum">     112</span>              : // Whether the build-time extra `key` (e.g. &quot;archive&quot;) is compiled into this binary. Reads the</span>
+<span id="L113"><span class="lineNum">     113</span>              : // `XFF_WITH_*` defines the Bazel `//xff:&lt;extra&gt;` flags add via select(); an unknown key is false.</span>
+<span id="L114"><span class="lineNum">     114</span>              : // The single point that maps an extra key to its compile-time availability, shared by main (the</span>
+<span id="L115"><span class="lineNum">     115</span>              : // used-but-unavailable hard error) and the help system (the &quot;Extras (not built in)&quot; grouping).</span>
+<span id="L116"><span class="lineNum">     116</span>              : bool ExtraEnabled(std::string_view key);</span>
+<span id="L117"><span class="lineNum">     117</span>              : </span>
+<span id="L118"><span class="lineNum">     118</span>              : // The Bazel flag label that turns the extra `key` on, e.g. &quot;--//xff:xff_archive&quot; - what an error</span>
+<span id="L119"><span class="lineNum">     119</span>              : // message tells the user to rebuild with. Empty for an unknown extra, so a caller omits the hint</span>
+<span id="L120"><span class="lineNum">     120</span>              : // rather than naming a flag that does not exist. Kept beside ExtraEnabled so the two cannot drift.</span>
+<span id="L121"><span class="lineNum">     121</span>              : std::string_view ExtraBuildFlag(std::string_view key);</span>
+<span id="L122"><span class="lineNum">     122</span>              : </span>
+<span id="L123"><span class="lineNum">     123</span>              : // The extras compiled into THIS binary, by key, in a stable order - what the notice line and any</span>
+<span id="L124"><span class="lineNum">     124</span>              : // &quot;which extras do I have&quot; surface print. Empty for a lean build.</span>
+<span id="L125"><span class="lineNum">     125</span>              : [[nodiscard]] std::vector&lt;std::string&gt; EnabledExtras();</span>
+<span id="L126"><span class="lineNum">     126</span>              : </span>
+<span id="L127"><span class="lineNum">     127</span>              : // All global options, in display order. The single enumeration point for the help</span>
+<span id="L128"><span class="lineNum">     128</span>              : // system and the planned doc generators.</span>
+<span id="L129"><span class="lineNum">     129</span>              : absl::Span&lt;const GlobalFlag&gt; Globals();</span>
+<span id="L130"><span class="lineNum">     130</span>              : </span>
+<span id="L131"><span class="lineNum">     131</span>              : // The global option named `name` (matching the canonical name or an alias), or no reference if</span>
+<span id="L132"><span class="lineNum">     132</span>              : // none. `name` carries its leading dashes (e.g. &quot;--sort&quot;, &quot;-j&quot;).</span>
+<span id="L133"><span class="lineNum">     133</span>              : mbo::types::OptionalRef&lt;const GlobalFlag&gt; LookupGlobal(std::string_view name);</span>
+<span id="L134"><span class="lineNum">     134</span>              : </span>
+<span id="L135"><span class="lineNum">     135</span>              : // Whether `arg` is a recognized whole-run global token, so `main` can reject an</span>
+<span id="L136"><span class="lineNum">     136</span>              : // unknown leading option instead of silently ignoring it. Accepts: an exact name or</span>
+<span id="L137"><span class="lineNum">     137</span>              : // alias; a valued `name=VALUE` / `alias=VALUE` form when the flag advertises a value</span>
+<span id="L138"><span class="lineNum">     138</span>              : // (its `display` contains '='); the `-jN` / `-jall` short jobs form; and the compat</span>
+<span id="L139"><span class="lineNum">     139</span>              : // aliases not in the table (`-0`, `-g+`, `-g-`). The meta flags `--help` / `--version`</span>
+<span id="L140"><span class="lineNum">     140</span>              : // / `--man` / formatted full help are consumed before parsing and are not checked here.</span>
+<span id="L141"><span class="lineNum">     141</span>              : bool IsKnownGlobal(std::string_view arg);</span>
+<span id="L142"><span class="lineNum">     142</span>              : </span>
+<span id="L143"><span class="lineNum">     143</span>              : // Checks the VALUE of one `name=VALUE` global against the flag's declared vocabulary, so a</span>
+<span id="L144"><span class="lineNum">     144</span>              : // mistyped value fails the run instead of silently selecting the default. Returns OK for a flag</span>
+<span id="L145"><span class="lineNum">     145</span>              : // that takes free text (ValueCheck::kNone), for a token with no '=' (a bare or sign-suffixed</span>
+<span id="L146"><span class="lineNum">     146</span>              : // form), and for an unknown flag (IsKnownGlobal reports that, with its own message).</span>
+<span id="L147"><span class="lineNum">     147</span>              : //</span>
+<span id="L148"><span class="lineNum">     148</span>              : // The error message lists the accepted values, generated from the flag's `values` table (or the</span>
+<span id="L149"><span class="lineNum">     149</span>              : // shared vocabulary for a bool / tri-state), so it cannot drift from what the help prints.</span>
+<span id="L150"><span class="lineNum">     150</span>              : absl::Status ValidateGlobalValue(std::string_view arg);</span>
+<span id="L151"><span class="lineNum">     151</span>              : </span>
+<span id="L152"><span class="lineNum">     152</span>              : }  // namespace xff::cli</span>
+<span id="L153"><span class="lineNum">     153</span>              : </span>
+<span id="L154"><span class="lineNum">     154</span>              : #endif  // XFF_CLI_GLOBALS_H_</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table class="xffPolicy">
+            <thead>
+              <tr>
+                <th scope="col">Global coverage policy</th>
+                <th scope="col">Low</th>
+                <th scope="col">Medium</th>
+                <th scope="col">High</th>
+                <th scope="col">Enforced</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <th scope="row">Lines</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 92%</td>
+              <td class="headerValueLegH">&ge; 92%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Branches</th>
+              <td class="headerValueLegL">&lt; 80%</td>
+              <td class="headerValueLegM">&ge; 80% and &lt; 82%</td>
+              <td class="headerValueLegH">&ge; 82%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Functions</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 95%</td>
+              <td class="headerValueLegH">&ge; 95%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            </tbody>
+          </table>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 2.5-0</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

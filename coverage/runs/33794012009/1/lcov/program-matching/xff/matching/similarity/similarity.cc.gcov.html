@@ -1,0 +1,204 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - xff v0.3.0 production coverage - program-matching/xff/matching/similarity/similarity.cc</title>
+  <link rel="stylesheet" type="text/css" href="../../../../gcov.css">
+  <style>
+    .xffNavigation { padding: .35rem 0; text-align: center; }
+    .xffHeaderSummary { margin: 0 auto; width: 80%; }
+    .xffPolicy { border-collapse: collapse; margin: .75rem auto 1rem; width: auto; }
+    .xffPolicy th { padding: .2rem .75rem; text-align: left; }
+    .xffPolicy td { font-size: 100%; padding: .2rem .75rem; text-align: center; }
+  </style>
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="xffNavigation"><a href="../../../../../index.html">Report overview</a> &middot; <a href="../../../../../../../index.html">All coverage reports</a></td></tr>
+
+            <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table class="xffHeaderSummary" cellpadding=1 border=0>
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../../index.html" title="Click to go to top-level">top level</a> - <a href="index.html" title="Click to go to directory program-matching/xff/matching/similarity">program-matching/xff/matching/similarity</a> - similarity.cc<span style="font-size: 80%;"> (source / <a href="similarity.cc.func-c.html" title="Click to go to function table">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">xff v0.3.0 production coverage</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">40</td>
+            <td class="headerCovTableEntry">40</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-09-03 19:19:02</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntry">3</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryHi">93.8&nbsp;%</td>
+            <td class="headerCovTableEntry">32</td>
+            <td class="headerCovTableEntry">30</td>
+          </tr>
+                  <tr><td><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : // SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors</span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : // SPDX-License-Identifier: Apache-2.0</span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : </span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : #include &quot;xff/matching/similarity/similarity.h&quot;</span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : </span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : #include &lt;algorithm&gt;</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : #include &lt;cstddef&gt;</span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : #include &lt;string&gt;</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : #include &lt;string_view&gt;</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             : #include &lt;vector&gt;</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : </span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : #include &quot;absl/container/flat_hash_set.h&quot;</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : #include &quot;absl/strings/ascii.h&quot;</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : #include &quot;absl/strings/str_join.h&quot;</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : </span>
+<span id="L16"><span class="lineNum">      16</span>                 :             : namespace xff::similarity {</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             : namespace {</span>
+<span id="L18"><span class="lineNum">      18</span>                 :             : </span>
+<span id="L19"><span class="lineNum">      19</span>                 :<span class="tlaGNC">          68 : std::vector&lt;std::string&gt; Words(std::string_view text) {</span></span>
+<span id="L20"><span class="lineNum">      20</span>                 :<span class="tlaGNC">          68 :   std::vector&lt;std::string&gt; words;</span></span>
+<span id="L21"><span class="lineNum">      21</span>                 :<span class="tlaGNC">          68 :   std::string word;</span></span>
+<span id="L22"><span class="lineNum">      22</span>         [<span class="tlaGBC" title="branch 0 was taken 3381 times"> + </span><span class="tlaGBC" title="branch 1 was taken 68 times"> + </span>]:<span class="tlaGNC">        3449 :   for (const char value : text) {</span></span>
+<span id="L23"><span class="lineNum">      23</span>                 :<span class="tlaGNC">        3381 :     const auto byte = static_cast&lt;unsigned char&gt;(value);</span></span>
+<span id="L24"><span class="lineNum">      24</span>   [<span class="tlaGBC" title="branch 0 was taken 3381 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span><span class="tlaGBC" title="branch 2 was taken 2837 times"> + </span><span class="tlaGBC" title="branch 3 was taken 544 times"> + </span> :<span class="tlaGNC">        3381 :     if (byte &gt;= 0x80 || absl::ascii_isalnum(value)) {</span></span>
+<span class="lineNum">        </span>          <span class="tlaGBC" title="branch 4 was taken 2837 times"> + </span><span class="tlaGBC" title="branch 5 was taken 544 times"> + </span>]
+<span id="L25"><span class="lineNum">      25</span>                 :<span class="tlaGNC">        2837 :       word.push_back(absl::ascii_tolower(value));</span></span>
+<span id="L26"><span class="lineNum">      26</span>         [<span class="tlaGBC" title="branch 0 was taken 539 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">         544 :     } else if (!word.empty()) {</span></span>
+<span id="L27"><span class="lineNum">      27</span>                 :<span class="tlaGNC">         539 :       words.push_back(std::move(word));</span></span>
+<span id="L28"><span class="lineNum">      28</span>                 :<span class="tlaGNC">         539 :       word.clear();</span></span>
+<span id="L29"><span class="lineNum">      29</span>                 :             :     }</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             :   }</span>
+<span id="L31"><span class="lineNum">      31</span>         [<span class="tlaGBC" title="branch 0 was taken 40 times"> + </span><span class="tlaGBC" title="branch 1 was taken 28 times"> + </span>]:<span class="tlaGNC">          68 :   if (!word.empty()) {</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">          40 :     words.push_back(std::move(word));</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :             :   }</span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">         136 :   return words;</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">          68 : }</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :             : </span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">          68 : absl::flat_hash_set&lt;std::string&gt; Shingles(std::string_view text, std::size_t width) {</span></span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">          68 :   const std::vector&lt;std::string&gt; words = Words(text);</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">          68 :   absl::flat_hash_set&lt;std::string&gt; result;</span></span>
+<span id="L40"><span class="lineNum">      40</span>   [<span class="tlaGBC" title="branch 0 was taken 64 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4 times"> + </span><span class="tlaUNC" title="branch 2 was not taken"> - </span><span class="tlaGBC" title="branch 3 was taken 64 times"> + </span> :<span class="tlaGNC">          68 :   if (words.empty() || width == 0) {</span></span>
+<span class="lineNum">        </span>          <span class="tlaGBC" title="branch 4 was taken 4 times"> + </span><span class="tlaGBC" title="branch 5 was taken 64 times"> + </span>]
+<span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">           4 :     return result;</span></span>
+<span id="L42"><span class="lineNum">      42</span>                 :             :   }</span>
+<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">          64 :   const std::size_t shingle_width = std::min(width, words.size());</span></span>
+<span id="L44"><span class="lineNum">      44</span>         [<span class="tlaGBC" title="branch 0 was taken 387 times"> + </span><span class="tlaGBC" title="branch 1 was taken 64 times"> + </span>]:<span class="tlaGNC">         451 :   for (std::size_t begin = 0; begin + shingle_width &lt;= words.size(); ++begin) {</span></span>
+<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">         387 :     result.insert(</span></span>
+<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">        1161 :         absl::StrJoin(</span></span>
+<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">         387 :             words.begin() + static_cast&lt;std::ptrdiff_t&gt;(begin),</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">         774 :             words.begin() + static_cast&lt;std::ptrdiff_t&gt;(begin + shingle_width), std::string_view(&quot;\0&quot;, 1)));</span></span>
+<span id="L49"><span class="lineNum">      49</span>                 :             :   }</span>
+<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">          64 :   return result;</span></span>
+<span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">          68 : }</span></span>
+<span id="L52"><span class="lineNum">      52</span>                 :             : </span>
+<span id="L53"><span class="lineNum">      53</span>                 :             : }  // namespace</span>
+<span id="L54"><span class="lineNum">      54</span>                 :             : </span>
+<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">          35 : int WordShinglePercent(std::string_view lhs, std::string_view rhs, std::size_t width) {</span></span>
+<span id="L56"><span class="lineNum">      56</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 34 times"> + </span>]:<span class="tlaGNC">          35 :   if (width == 0) {</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">           1 :     return 0;</span></span>
+<span id="L58"><span class="lineNum">      58</span>                 :             :   }</span>
+<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">          34 :   const absl::flat_hash_set&lt;std::string&gt; lhs_shingles = Shingles(lhs, width);</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">          34 :   const absl::flat_hash_set&lt;std::string&gt; rhs_shingles = Shingles(rhs, width);</span></span>
+<span id="L61"><span class="lineNum">      61</span>   [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 32 times"> + </span><span class="tlaGBC" title="branch 2 was taken 1 time"> + </span><span class="tlaGBC" title="branch 3 was taken 1 time"> + </span> :<span class="tlaGNC">          34 :   if (lhs_shingles.empty() &amp;&amp; rhs_shingles.empty()) {</span></span>
+<span class="lineNum">        </span>          <span class="tlaGBC" title="branch 4 was taken 1 time"> + </span><span class="tlaGBC" title="branch 5 was taken 33 times"> + </span>]
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">           1 :     return 100;</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :             :   }</span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">          33 :   std::size_t intersection = 0;</span></span>
+<span id="L65"><span class="lineNum">      65</span>         [<span class="tlaGBC" title="branch 0 was taken 193 times"> + </span><span class="tlaGBC" title="branch 1 was taken 33 times"> + </span>]:<span class="tlaGNC">         226 :   for (const std::string&amp; shingle : lhs_shingles) {</span></span>
+<span id="L66"><span class="lineNum">      66</span>         [<span class="tlaGBC" title="branch 0 was taken 168 times"> + </span><span class="tlaGBC" title="branch 1 was taken 25 times"> + </span>]:<span class="tlaGNC">         193 :     intersection += rhs_shingles.contains(shingle) ? 1 : 0;</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :             :   }</span>
+<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">          33 :   const std::size_t union_size = lhs_shingles.size() + rhs_shingles.size() - intersection;</span></span>
+<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">          33 :   return static_cast&lt;int&gt;(((100 * intersection) + (union_size / 2)) / union_size);</span></span>
+<span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">          34 : }</span></span>
+<span id="L71"><span class="lineNum">      71</span>                 :             : </span>
+<span id="L72"><span class="lineNum">      72</span>                 :             : }  // namespace xff::similarity</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table class="xffPolicy">
+            <thead>
+              <tr>
+                <th scope="col">Global coverage policy</th>
+                <th scope="col">Low</th>
+                <th scope="col">Medium</th>
+                <th scope="col">High</th>
+                <th scope="col">Enforced</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <th scope="row">Lines</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 92%</td>
+              <td class="headerValueLegH">&ge; 92%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Branches</th>
+              <td class="headerValueLegL">&lt; 80%</td>
+              <td class="headerValueLegM">&ge; 80% and &lt; 82%</td>
+              <td class="headerValueLegH">&ge; 82%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Functions</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 95%</td>
+              <td class="headerValueLegH">&ge; 95%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            </tbody>
+          </table>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 2.5-0</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>
