@@ -97,9 +97,12 @@ PR's user-visible outcome or motivation actually changes.
    `Optional(matcher)` for a present `std::optional` or `mbo::types::OptionalRef`, and
    `Eq(std::nullopt)` for absence. `StatusOr` uses `IsOkAndHolds(matcher)` as described above.
 
-Unicode test data belongs in a clearly labeled Unicode-specific test section with a dedicated
-fixture or test function. Keep ordinary functional fixtures ASCII. Explain the property each
-escaped character exercises; do not mix unrelated Unicode into control-escaping or smoke scenarios.
+Unicode is not inherently unwanted; unnecessary mixing of test purposes is. Tests specifically
+about Unicode handling belong in separate Unicode-specific files explicitly excluded from the
+ASCII-source check. Ordinary functional fixtures stay ASCII unless an approved glyph is the
+actual output under test: histogram blocks and tree connectors belong in their functional tests.
+Visible Unicode samples may be literal in dedicated test files; retain escapes for invisible
+combining marks, joiners, or exact byte sequences, and explain the property each sample exercises.
 
 ## Markdown
 

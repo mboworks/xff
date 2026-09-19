@@ -13,24 +13,12 @@ import re
 import subprocess
 import tempfile
 
+from release_smoke_unicode import unicode_smoke
+
 
 def check(condition, message):
     if not condition:
         raise RuntimeError(message)
-
-
-# Unicode-specific smoke checks use their own fixture and never alter general scenarios.
-def unicode_smoke(run, root):
-    directory = root / "unicode"
-    directory.mkdir()
-    name = "caf\u00e9.txt"  # Latin e with acute: multibyte filename round trip.
-    (directory / name).write_text("unicode filename\n", encoding="utf-8")
-    records = [json.loads(line) for line in run(directory, "-type", "f", "--format=jsonl").splitlines()]
-    check(records == [{"path": str(directory / name)}], "Unicode JSONL filename round trip")
-    rows = list(csv.DictReader(io.StringIO(run(directory, "-type", "f", "--format=csv", "--columns=name"))))
-    check(rows == [{"name": name}], "Unicode CSV filename round trip")
-    check(run(directory, "-type", "f", "--format=nul") == str(directory / name) + "\0",
-          "Unicode NUL filename round trip")
 
 
 def smoke(binary, expected_version):
@@ -113,7 +101,7 @@ def smoke(binary, expected_version):
                 re.search(rf"\b{category}\s+1\s+25\.00%", comparison),
                 f"comparison category {category}: {comparison}",
             )
-        unicode_smoke(run, root)
+        unicode_smoke(run, root, check)
     print(f"Release smoke passed: {binary} ({expected_version})")
 
 

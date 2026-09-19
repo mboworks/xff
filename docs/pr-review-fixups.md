@@ -316,6 +316,15 @@ is still needed, record the question explicitly instead of treating a proposed s
 ## F15: Preserve compact README capability markers
 
 - Origin: PR #876 review of the feature comparison matrix.
-- Action: restore checkmarks and use a numbered footnote for partial support, replacing the
-  triangle without widening the rendered table with Yes/Partial labels.
+- Action: restore checkmarks and use a plain superscript marker for partial support, replacing the
+  triangle without widening the rendered table with Yes/Partial labels. Avoid repeated Markdown
+  footnote references, which generate a return-link list for every referencing cell.
+- Implemented in: #876.
+
+## F16: Separate Unicode tests into dedicated files
+
+- Origin: PR #876 review of `tools/release_smoke.py`.
+- Action: move Unicode-handling smoke, rendering, text-width, and CSV cases into separate
+  files. Keep approved histogram/tree glyph expectations in their functional tests. Exempt only
+  the dedicated Unicode files from ASCII-only checking, retaining the em-dash prohibition. Use visible Latin samples literally; keep invisible encoding details escaped.
 - Implemented in: #876.

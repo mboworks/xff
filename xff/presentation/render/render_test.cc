@@ -68,19 +68,6 @@ TEST_F(RenderTest, NulAppendsNulTerminator) {
   EXPECT_THAT(Renderer(Format::kNul).Record("a/b/c"), std::string("a/b/c\0", 6));
 }
 
-TEST_F(RenderTest, JsonValuesPreserveUtf8AndEncodeOtherBytesLosslessly) {
-  EXPECT_THAT(JsonValue("caf\xc3\xa9"), Eq("\"caf\xc3\xa9\""));
-  EXPECT_THAT(JsonValue(std::string("x\xff", 2)), Eq(R"({"encoding":"base64","data":"eP8="})"));
-  const auto malformed =
-      std::to_array<std::string_view>({"\x80", "\xc0\xaf", "\xed\xa0\x80", "\xf4\x90\x80\x80", "\xe2\x82"});
-  for (const auto bytes : malformed) {
-    const auto value = nlohmann::json::parse(JsonValue(bytes));
-    EXPECT_THAT(value.at("encoding").get<std::string>(), Eq("base64"));
-  }
-  const auto path = nlohmann::json::parse(Renderer(Format::kJsonl).Record(std::string("x\xff", 2)));
-  EXPECT_THAT(path.at("path").at("data").get<std::string>(), Eq("eP8="));
-}
-
 TEST_F(RenderTest, JsonlEmitsOneObjectPerLine) {
   EXPECT_THAT(Renderer(Format::kJsonl).Record("a/b/c"), "{\"path\":\"a/b/c\"}\n");
 }
@@ -361,23 +348,7 @@ TEST_F(RenderTest, TreeShowsAncestorsOfADeepMatch) {
                          "    `-- main.cc\n"));
 }
 
-// Unicode-specific rendering tests. Ordinary rendering fixtures remain ASCII.
-struct UnicodeRenderTest : ::testing::Test {};
-
-TEST_F(UnicodeRenderTest, MultibyteLabelsSurviveTableBufferingAndTreeRendering) {
-  // U+00E9 is Latin e with acute; this test exercises UTF-8 preservation only.
-  for (const std::size_t window : std::to_array<std::size_t>({0, 1, TableStream::kAll})) {
-    TableStream stream(Format::kAligned, {"name"}, false, window);
-    std::string out = stream.Add({"caf\u00e9"});
-    out += stream.Flush();
-    EXPECT_THAT(out, EqualsText("caf\u00e9\n"));
-  }
-  Tree tree(false);
-  tree.Add("root/caf\u00e9");
-  EXPECT_THAT(tree.Render(), EqualsText("root\n`-- caf\u00e9\n"));
-}
-
-TEST_F(UnicodeRenderTest, TreeRendersUnicodeConnectorsWithCorrectLastChild) {
+TEST_F(RenderTest, TreeRendersUnicodeConnectorsWithCorrectLastChild) {
   Tree tree(/*unicode=*/true);
   tree.Add("root/src/main.cc");
   tree.Add("root/src/util.cc");
@@ -391,7 +362,7 @@ TEST_F(UnicodeRenderTest, TreeRendersUnicodeConnectorsWithCorrectLastChild) {
                          "    └── util.cc\n"));
 }
 
-TEST_F(UnicodeRenderTest, TreeDrawsAVerticalForNonLastBranches) {
+TEST_F(RenderTest, TreeDrawsAVerticalForNonLastBranches) {
   // `a` is not root's last child, so its subtree is prefixed with the vertical connector.
   Tree tree(/*unicode=*/true);
   tree.Add("root/a/x");

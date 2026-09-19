@@ -90,44 +90,44 @@ For building from source, see [Building & Dependencies](#building--dependencies)
 ## Tool Feature Comparison Matrix
 
 The matrix compares native, built-in capabilities. A checkmark indicates support; a numbered
-footnote marks partial support. A `-` means the workflow normally needs another utility or a shell
+superscript marks partial support. A `-` means the workflow normally needs another utility or a shell
 pipeline. The point is not that every specialist is interchangeable, but that `xff` composes these operations in one
 expression and one traversal.
 
-| Feature / Capability                    | `find` | `fd`  | `rg`  | `fzf` | `tree` | `du`  | `diff` | hash tools | archive tools | `xff`                                    |
-| :-------------------------------------- | :----: | :---: | :---: | :---: | :----: | :---: | :----: | :--------: | :-----------: | :--------------------------------------- |
-| **Filesystem expression language**      |   ✓    | ✓[^1] |   -   |   -   |   -    |   -   |   -    |     -      |       -       | **✓ GNU/BSD `find` vocabulary**          |
-| **Multi-threaded filesystem traversal** |   -    |   ✓   |   ✓   |   -   |   -    |   -   |   -    |     -      |       -       | **✓ Native worker pool (`-j`)**          |
-| **Ignore-file and VCS awareness**       |   -    |   ✓   |   ✓   |   -   |   -    |   -   |   -    |     -      |       -       | **✓ Layered and configurable**           |
-| **Path glob and regex filtering**       |   ✓    |   ✓   |   ✓   | ✓[^1] | ✓[^1]  |   -   |   -    |     -      |     ✓[^1]     | **✓ Multiple selectable grammars**       |
-| **Ranked fuzzy path matching**          |   -    |   -   |   -   |   ✓   |   -    |   -   |   -    |     -      |       -       | **✓ `-fuzzy`, `--sort=score`**           |
-| **Regex content search with context**   |   -    |   -   |   ✓   |   -   |   -    |   -   |   -    |     -      |       -       | **✓ `-grep`, `-rxc`, `--context`**       |
-| **Language and MIME filtering**         |   -    |   -   | ✓[^1] |   -   |   -    |   -   |   -    |     -      |       -       | **✓ `-lang`, `-mime`**                   |
-| **Overrideable MIME metadata**          |   -    |   -   |   -   |   -   |   -    |   -   |   -    |     -      |       -       | **✓ JSON layers + `mime-db` extra**      |
-| **Overrideable language metadata**      |   -    |   -   |   -   |   -   |   -    |   -   |   -    |     -      |       -       | **✓ JSON layers + Linguist extra**       |
-| **Text, binary, and EOL tests**         |   -    |   -   | ✓[^1] |   -   |   -    |   -   |   -    |     -      |       -       | **✓ `-text`, `-binary`, `-eof*`**        |
-| **Structured JSON/CSV/table output**    |   -    |   -   |   ✓   |   -   | ✓[^1]  |   -   |   -    |     -      |     ✓[^1]     | **✓ Eight output formats**               |
-| **Tree rendering**                      |   -    |   -   |   -   |   -   |   ✓    |   -   |   -    |     -      |     ✓[^1]     | **✓ `--format=tree`**                    |
-| **Field templates and rewrites**        |  GNU   |   -   | ✓[^1] | ✓[^1] |   -    |   -   |   -    |     -      |     ✓[^1]     | **✓ Shared `{field}` vocabulary**        |
-| **Grouped size/count summaries**        |   -    |   -   |   -   |   -   |   -    | ✓[^1] |   -    |     -      |     ✓[^1]     | **✓ `--summary`**                        |
-| **Native histograms and statistics**    |   -    |   -   |   -   |   -   |   -    |   -   |   -    |     -      |       -       | **✓ `--histogram`**                      |
-| **Cryptographic hashing**               |   -    |   -   |   -   |   -   |   -    |   -   |   -    |     ✓      |     ✓[^1]     | **✓ `-hash`, `{hash}`, `-hasheq`**       |
-| **Single-pass hash verification tally** |   -    |   -   |   -   |   -   |   -    |   -   |   -    |   ✓[^1]    |       -       | **✓ `--summary=hash-verification`**      |
-| **Duplicate-content grouping**          |   -    |   -   |   -   |   -   |   -    |   -   |   -    |     -      |       -       | **✓ `--summary=hash`**                   |
-| **Reference-file near-duplicate match** |   -    |   -   |   -   |   -   |   -    |   -   |   -    |     -      |       -       | **✓ Exact word-shingle Jaccard**         |
-| **Per-file content comparison/diff**    |   -    |   -   |   -   |   -   |   -    |   -   |   ✓    |   ✓[^1]    |       -       | **✓ `-cmp`, `-diff`**                    |
-| **Gitignore-aware tree comparison**     |   -    |   -   |   -   |   -   |   -    |   -   | ✓[^1]  |   ✓[^1]    |       -       | **✓ status selection or unified patch**  |
-| **Virtual archive traversal**           |   -    |   -   | ✓[^1] |   -   |   -    |   -   |   -    |     -      |     ✓[^1]     | **✓ Members use the full expression**    |
-| **Nested archive content search**       |   -    |   -   | ✓[^1] |   -   |   -    |   -   |   -    |     -      |     ✓[^1]     | **✓ Depth-controlled transparent reads** |
-| **SquashFS/Snap/AppImage search**       |   -    |   -   |   -   |   -   |   -    |   -   |   -    |     -      |     ✓[^1]     | **✓ Indexed virtual filesystem extra**   |
-| **Archive creation from matches**       |   -    |   -   |   -   |   -   |   -    |   -   |   -    |     -      |       ✓       | **✓ `--pack` sink**                      |
-| **Standards-framed Brotli archives**    |   -    |   -   |   -   |   -   |   -    |   -   |   -    |     -      |     ✓[^1]     | **✓ RFC 9841 default; raw optional**     |
-| **Safe delete preview**                 | ✓[^1]  | ✓[^1] |   -   |   -   |   -    |   -   |   -    |     -      |       -       | **✓ `--dry-run`, `--safe`**              |
-| **Parallel/batched per-match exec**     | ✓[^1]  |   ✓   |   -   | ✓[^1] |   -    |   -   |   -    |     -      |       -       | **✓ `-exec ... +`, `-j`**                |
-| **Capture command output as a field**   |   -    |   -   |   -   |   -   |   -    |   -   |   -    |     -      |       -       | **✓ `-capture`, `{capture.NAME}`**       |
-| **Sharded-dataset validation**          |   -    |   -   |   -   |   -   |   -    |   -   |   -    |     -      |       -       | **✓ collapse + status matching**         |
+| Feature / Capability                    | `find` | `fd` | `rg` | `fzf` | `tree` | `du` | `diff` | hash tools | archive tools | `xff`                                    |
+| :-------------------------------------- | :----: | :--: | :--: | :---: | :----: | :--: | :----: | :--------: | :-----------: | :--------------------------------------- |
+| **Filesystem expression language**      |   ✓    |  ✓¹  |  -   |   -   |   -    |  -   |   -    |     -      |       -       | **✓ GNU/BSD `find` vocabulary**          |
+| **Multi-threaded filesystem traversal** |   -    |  ✓   |  ✓   |   -   |   -    |  -   |   -    |     -      |       -       | **✓ Native worker pool (`-j`)**          |
+| **Ignore-file and VCS awareness**       |   -    |  ✓   |  ✓   |   -   |   -    |  -   |   -    |     -      |       -       | **✓ Layered and configurable**           |
+| **Path glob and regex filtering**       |   ✓    |  ✓   |  ✓   |  ✓¹   |   ✓¹   |  -   |   -    |     -      |      ✓¹       | **✓ Multiple selectable grammars**       |
+| **Ranked fuzzy path matching**          |   -    |  -   |  -   |   ✓   |   -    |  -   |   -    |     -      |       -       | **✓ `-fuzzy`, `--sort=score`**           |
+| **Regex content search with context**   |   -    |  -   |  ✓   |   -   |   -    |  -   |   -    |     -      |       -       | **✓ `-grep`, `-rxc`, `--context`**       |
+| **Language and MIME filtering**         |   -    |  -   |  ✓¹  |   -   |   -    |  -   |   -    |     -      |       -       | **✓ `-lang`, `-mime`**                   |
+| **Overrideable MIME metadata**          |   -    |  -   |  -   |   -   |   -    |  -   |   -    |     -      |       -       | **✓ JSON layers + `mime-db` extra**      |
+| **Overrideable language metadata**      |   -    |  -   |  -   |   -   |   -    |  -   |   -    |     -      |       -       | **✓ JSON layers + Linguist extra**       |
+| **Text, binary, and EOL tests**         |   -    |  -   |  ✓¹  |   -   |   -    |  -   |   -    |     -      |       -       | **✓ `-text`, `-binary`, `-eof*`**        |
+| **Structured JSON/CSV/table output**    |   -    |  -   |  ✓   |   -   |   ✓¹   |  -   |   -    |     -      |      ✓¹       | **✓ Eight output formats**               |
+| **Tree rendering**                      |   -    |  -   |  -   |   -   |   ✓    |  -   |   -    |     -      |      ✓¹       | **✓ `--format=tree`**                    |
+| **Field templates and rewrites**        |  GNU   |  -   |  ✓¹  |  ✓¹   |   -    |  -   |   -    |     -      |      ✓¹       | **✓ Shared `{field}` vocabulary**        |
+| **Grouped size/count summaries**        |   -    |  -   |  -   |   -   |   -    |  ✓¹  |   -    |     -      |      ✓¹       | **✓ `--summary`**                        |
+| **Native histograms and statistics**    |   -    |  -   |  -   |   -   |   -    |  -   |   -    |     -      |       -       | **✓ `--histogram`**                      |
+| **Cryptographic hashing**               |   -    |  -   |  -   |   -   |   -    |  -   |   -    |     ✓      |      ✓¹       | **✓ `-hash`, `{hash}`, `-hasheq`**       |
+| **Single-pass hash verification tally** |   -    |  -   |  -   |   -   |   -    |  -   |   -    |     ✓¹     |       -       | **✓ `--summary=hash-verification`**      |
+| **Duplicate-content grouping**          |   -    |  -   |  -   |   -   |   -    |  -   |   -    |     -      |       -       | **✓ `--summary=hash`**                   |
+| **Reference-file near-duplicate match** |   -    |  -   |  -   |   -   |   -    |  -   |   -    |     -      |       -       | **✓ Exact word-shingle Jaccard**         |
+| **Per-file content comparison/diff**    |   -    |  -   |  -   |   -   |   -    |  -   |   ✓    |     ✓¹     |       -       | **✓ `-cmp`, `-diff`**                    |
+| **Gitignore-aware tree comparison**     |   -    |  -   |  -   |   -   |   -    |  -   |   ✓¹   |     ✓¹     |       -       | **✓ status selection or unified patch**  |
+| **Virtual archive traversal**           |   -    |  -   |  ✓¹  |   -   |   -    |  -   |   -    |     -      |      ✓¹       | **✓ Members use the full expression**    |
+| **Nested archive content search**       |   -    |  -   |  ✓¹  |   -   |   -    |  -   |   -    |     -      |      ✓¹       | **✓ Depth-controlled transparent reads** |
+| **SquashFS/Snap/AppImage search**       |   -    |  -   |  -   |   -   |   -    |  -   |   -    |     -      |      ✓¹       | **✓ Indexed virtual filesystem extra**   |
+| **Archive creation from matches**       |   -    |  -   |  -   |   -   |   -    |  -   |   -    |     -      |       ✓       | **✓ `--pack` sink**                      |
+| **Standards-framed Brotli archives**    |   -    |  -   |  -   |   -   |   -    |  -   |   -    |     -      |      ✓¹       | **✓ RFC 9841 default; raw optional**     |
+| **Safe delete preview**                 |   ✓¹   |  ✓¹  |  -   |   -   |   -    |  -   |   -    |     -      |       -       | **✓ `--dry-run`, `--safe`**              |
+| **Parallel/batched per-match exec**     |   ✓¹   |  ✓   |  -   |  ✓¹   |   -    |  -   |   -    |     -      |       -       | **✓ `-exec ... +`, `-j`**                |
+| **Capture command output as a field**   |   -    |  -   |  -   |   -   |   -    |  -   |   -    |     -      |       -       | **✓ `-capture`, `{capture.NAME}`**       |
+| **Sharded-dataset validation**          |   -    |  -   |  -   |   -   |   -    |  -   |   -    |     -      |       -       | **✓ collapse + status matching**         |
 
-[^1]: Covers a narrower form of the feature.
+¹ Partial support: covers a narrower form of the feature.
 
 `find`'s "Field templates and rewrites" entry is marked **GNU** because it is GNU find's `-printf`, a
 GNU extension; POSIX and BSD/macOS `find` have no format primary (only `-print` / `-exec`).

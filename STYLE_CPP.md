@@ -34,11 +34,14 @@ an AI assistant) can follow them without reverse-engineering the tooling.
 Source text uses ASCII except for the explicitly allowed graphical glyphs listed in `RULES.md`.
 Spell other intentional Unicode string/character data with escapes and explain the
 purpose in English. Raw strings do not decode escapes: construct Unicode expectations explicitly
-rather than inserting literal non-ASCII characters in golden text. Keep Unicode behavior and tests.
+when their exact code points matter. Dedicated Unicode test files may use literal visible samples.
 
-Unicode test data belongs in a clearly labeled Unicode-specific test section with a dedicated
-fixture or test function. Keep ordinary functional fixtures ASCII. Explain the property each
-escaped character exercises; do not mix unrelated Unicode into control-escaping or smoke scenarios.
+Unicode is not inherently unwanted; unnecessary mixing of test purposes is. Tests specifically
+about Unicode handling belong in separate Unicode-specific files explicitly excluded from the
+ASCII-source check. Ordinary functional fixtures stay ASCII unless an approved glyph is the
+actual output under test: histogram blocks and tree connectors belong in their functional tests.
+Visible Unicode samples may be literal in dedicated test files; retain escapes for invisible
+combining marks, joiners, or exact byte sequences, and explain the property each sample exercises.
 
 ### Naming (enforced by `.clang-tidy readability-identifier-naming`)
 

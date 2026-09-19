@@ -185,7 +185,6 @@ test::histogram_rejects_unsupported_formats_before_print() {
   done
 }
 
-# Unicode-specific output tests.
 test::histogram_unicode_bars() {
   local dir out
   dir="$(test_tmpdir histuni)"

@@ -54,7 +54,10 @@ cc_library(
 cc_test(
     name = "text_width_test",
     size = "small",
-    srcs = ["text_width_test.cc"],
+    srcs = [
+        "text_width_test.cc",
+        "text_width_unicode_test.cc",
+    ],
     deps = [
         ":text_width_cc",
         "@googletest//:gtest",

@@ -34,7 +34,10 @@ cc_library(
 cc_test(
     name = "render_test",
     size = "small",
-    srcs = ["render_test.cc"],
+    srcs = [
+        "render_test.cc",
+        "render_unicode_test.cc",
+    ],
     deps = [
         ":render_cc",
         "//xff/presentation/format:format_cc",
@@ -60,7 +63,10 @@ cc_library(
 cc_test(
     name = "scoped_table_test",
     size = "small",
-    srcs = ["scoped_table_test.cc"],
+    srcs = [
+        "scoped_table_test.cc",
+        "scoped_table_unicode_test.cc",
+    ],
     deps = [
         ":scoped_table_cc",
         "//xff/presentation/format:text_width_cc",
