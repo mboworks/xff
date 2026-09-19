@@ -1,5 +1,12 @@
 # TODO
 
+## F09: Benchmark history
+
+- [x] Paired immediate-base/head measurement with raw observations and a versioned contract.
+- [x] Publish bounded PR/release history through the shared site queue; test ordering and retention.
+- [ ] Validate the first hosted optimized run and record observed runner noise and workflow cost.
+- Keep competitor benchmarks (F10) deferred until the original review goal is complete.
+
 ## Completed: F08/F11 Python tooling ownership
 
 - Use Aspect Python rules and a pinned Python 3.13 toolchain for tooling tests and benchmarks.

@@ -3,6 +3,8 @@
 
 # 0.7.0
 
+- Add informational paired benchmark history with raw measurements, variability, and explicit baselines.
+
 - Allow serialized coverage backfill from an existing completed CI run without rerunning tests.
 
 - Publish successful coverage despite unrelated CI failures, and show post-merge before

@@ -1,0 +1,83 @@
+# SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
+# SPDX-License-Identifier: Apache-2.0
+name: Benchmarks
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: benchmarks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      # Restore the existing release-build cache; do not add another cache generation or quota.
+      - uses: ./.github/actions/bazel-cache-restore
+        with:
+          namespace: default
+      - name: Build paired optimized revisions
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          head_sha="$(git rev-parse HEAD)"
+          base_sha="${PR_BASE:-$(git rev-parse HEAD^1)}"
+          git worktree add --detach "${RUNNER_TEMP}/benchmark-base" "${base_sha}"
+          bazel build //xff/cli:xff //xff/engine:read_benchmark //tools:benchmark_resources --config=clang_release \
+            --disk_cache="${HOME}/.cache/bazel-disk"
+          cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-head"
+          cp bazel-bin/xff/engine/read_benchmark "${RUNNER_TEMP}/benchmark-head-reads"
+          driver="$(pwd)/$(bazel cquery //tools:benchmark_resources --config=clang_release \
+            --output=starlark --starlark:expr='target.files_to_run.executable.path')"
+          (
+            cd "${RUNNER_TEMP}/benchmark-base"
+            bazel build //xff/cli:xff //xff/engine:read_benchmark --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
+            cp bazel-bin/xff/cli/xff "${RUNNER_TEMP}/benchmark-base-bin"
+            cp bazel-bin/xff/engine/read_benchmark "${RUNNER_TEMP}/benchmark-base-reads"
+          )
+          {
+            echo "BENCHMARK_HEAD=${head_sha}"
+            echo "BENCHMARK_BASE=${base_sha}"
+            echo "BENCHMARK_DRIVER=${driver}"
+          } >>"${GITHUB_ENV}"
+      - name: Measure alternating base and head workloads
+        run: |
+          set -euo pipefail
+          python3 tools/benchmark_history.py measure \
+            --driver="${BENCHMARK_DRIVER}" \
+            --head-read-counter="${RUNNER_TEMP}/benchmark-head-reads" \
+            --base-read-counter="${RUNNER_TEMP}/benchmark-base-reads" \
+            --head-binary="${RUNNER_TEMP}/benchmark-head" \
+            --base-binary="${RUNNER_TEMP}/benchmark-base-bin" \
+            --head="${BENCHMARK_HEAD}" --base="${BENCHMARK_BASE}" \
+            --base-build-identity="$(cat "${RUNNER_TEMP}/benchmark-base/.bazelrc" "${RUNNER_TEMP}/benchmark-base/bazelmod/llvm.MODULE.bazel" | sha256sum | cut -d ' ' -f 1)" \
+            --head-build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | sha256sum | cut -d ' ' -f 1)" \
+            --build='bazel --config=clang_release //xff/cli:xff' \
+            --runner-class='github-hosted ubuntu-latest' \
+            --tools="$(bazel --version); module-lock=$(sha256sum MODULE.bazel.lock); base-module-lock=$(sha256sum "${RUNNER_TEMP}/benchmark-base/MODULE.bazel.lock")" \
+            --output=benchmark-report.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-report
+          path: benchmark-report.json
+          retention-days: 30
+          if-no-files-found: error

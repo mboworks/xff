@@ -1,0 +1,73 @@
+# SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
+# SPDX-License-Identifier: Apache-2.0
+name: Publish benchmarks
+
+on:
+  workflow_run:
+    workflows: [Benchmarks]
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: coverage-pages
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+      pull-requests: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # Only trusted publisher code executes; incoming benchmark artifacts are JSON data.
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          path: source
+      - uses: actions/checkout@v7
+        with:
+          ref: coverage-pages
+          path: site
+      - uses: actions/download-artifact@v8
+        with:
+          github-token: ${{ github.token }}
+          name: benchmark-report
+          path: report
+          run-id: ${{ github.event.workflow_run.id }}
+      - name: Publish benchmark history
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN}" > source-run.json
+          commit="$(jq -r .head_sha source-run.json)"
+          reference="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${commit}" --jq .commit.committer.date)"
+          jq --arg reference "${reference}" '. + {reference_time: $reference}' source-run.json > source-reference.json
+          gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/pulls?state=all&per_page=100" > pulls.json
+          python3 source/tools/benchmark_history.py publish \
+            --root=site/benchmarks --report=report/benchmark-report.json \
+            --source=source-reference.json --pulls=pulls.json --repository="${GITHUB_REPOSITORY}" --keep=100
+          git -C site config user.name 'github-actions[bot]'
+          git -C site config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C site add benchmarks
+          if ! git -C site diff --cached --quiet; then
+            git -C site commit -m 'benchmarks: publish paired measurements'
+            git -C site push
+          fi
+          mkdir -p public
+          rsync --archive --exclude='.git' site/ public/
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: public
+      - uses: actions/deploy-pages@v5
+        id: deployment
