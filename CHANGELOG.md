@@ -3,6 +3,9 @@
 
 # 0.7.0
 
+- Show one coverage result per PR, replacing pre-merge with exact-commit post-merge coverage
+  when available; show both phases separately without repeated main runs or attempts.
+
 - Refresh coverage overview ordering on PR merge, closure, or reopening without waiting for another CI run.
 
 - Run Python tooling tests and resource benchmarks through explicit Aspect Bazel targets and a
@@ -10,7 +13,7 @@
 
 - Suggest similar registered flags, primaries, topics, and aliases for misspelled help selectors.
 
-- Order coverage reports by actual PR merge and tag timestamps, with main pinned first.
+- Order coverage reports by actual PR merge and tag timestamps, without standalone main rows.
   Omit closed, unmerged PRs from the overview while retaining their reports.
 
 - Rank fuzzy flag suggestions and show up to three candidates for misspelled options.
