@@ -81,3 +81,23 @@ bazel test //tools:benchmark_history_test //tools:measure_resources_test
 ```
 
 Comparisons against `find`, `rg`, and `fzf` are deliberately a separate, deferred follow-up (F10).
+
+## Initial hosted observations
+
+The [first post-merge run](https://github.com/mboworks/xff/actions/runs/35470455554)
+compared `0bcb461dbb08a1d3b14d1d73938a8b905aed81ea` with its first parent
+`2bd76d6e682f7ca9c987f364fda485a2eb906d62` on September 19, 2026. The complete
+job took 6 minutes 19 seconds: paired builds took 4 minutes 43 seconds and measurement took
+68 seconds. All twelve workloads completed five repetitions for each revision. The
+[raw report](https://mboworks.github.io/xff/benchmarks/runs/35470455554/1/report.json)
+and [rendered comparison](https://mboworks.github.io/xff/benchmarks/runs/35470455554/1/)
+were verified after publication. These links are subject to the bounded retention above.
+
+Elapsed-time head/base medians ranged from 0.9941 to 1.0092. Across the twelve workloads,
+the median sample-standard-deviation/median ratio was 0.52% for the base and 0.67% for the
+head; maxima were 1.21% and 1.08%. This descriptive ratio uses the median denominator and
+is not the conventional coefficient of variation. The earlier PR run had a 7.34% maximum
+on the base side, demonstrating why one quiet run cannot establish a regression threshold.
+No C++ behavior changed in this benchmark-infrastructure PR. These initial observations
+validate the collection/publication path and support leaving performance checks advisory;
+they are not evidence of a performance improvement.
