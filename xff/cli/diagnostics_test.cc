@@ -44,7 +44,8 @@ TEST_F(DiagnosticsTest, SuggestsHelpFlagsTopicsPrimariesAndAliases) {
 }
 
 TEST_F(DiagnosticsTest, HelpHintsDoNotGuessKnownSelectorsValuesOrUnrelatedInput) {
-  for (const std::string_view selector : {"width", "--width", "recipes", "regex", "zzzzzzzz", "x", "license=wildth"}) {
+  for (const std::string_view selector :
+       std::to_array<std::string_view>({"width", "--width", "recipes", "regex", "zzzzzzzz", "x", "license=wildth"})) {
     EXPECT_THAT(UnknownHelpHint(selector), Eq("")) << selector;
   }
   EXPECT_THAT(UnknownHelpHint(std::string(10'000, 'x')), Eq(""));
