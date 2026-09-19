@@ -94,10 +94,19 @@ TEST_F(ParserTest, NamedRootsRejectDuplicateNamesAndInvalidComponents) {
   EXPECT_THAT(
       Parse({"--root=same=a", "--root=same=b", "--pack-duplicates=first"}),
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("duplicate root name")));
-  for (const auto& arg :
-       {"--root", "--root==a", "--root=name=", "--root=missing", "--root=.=a", "--root=../bad=a", "--root=a/b=c",
-        "--root=a\\b=c", "--root=a\nb=c"}) {
-    EXPECT_THAT(Parse({arg}), StatusIs(absl::StatusCode::kInvalidArgument)) << arg;
+  static constexpr std::array kInvalidNamedRootArguments = std::to_array<std::string_view>({
+      "--root",
+      "--root==a",
+      "--root=name=",
+      "--root=missing",
+      "--root=.=a",
+      "--root=../bad=a",
+      "--root=a/b=c",
+      "--root=a\\b=c",
+      "--root=a\nb=c",
+  });
+  for (const auto& arg : kInvalidNamedRootArguments) {
+    EXPECT_THAT(Parse({std::string(arg)}), StatusIs(absl::StatusCode::kInvalidArgument)) << arg;
   }
 }
 

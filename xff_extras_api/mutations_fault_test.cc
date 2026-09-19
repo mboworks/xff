@@ -209,8 +209,14 @@ TEST_F(MutationFaultTest, RootSetupAndResolutionReportDescriptorFailures) {
 }
 
 TEST_F(MutationFaultTest, TraversalAndEnumerationFailuresLeaveTheTreeIntact) {
-  for (const Operation operation : std::to_array<Operation>(
-           {Operation::kStatAt, Operation::kOpenAt, Operation::kDuplicate, Operation::kStream, Operation::kRead})) {
+  static constexpr std::array kTraversalFailureOperations = std::to_array<Operation>({
+      Operation::kStatAt,
+      Operation::kOpenAt,
+      Operation::kDuplicate,
+      Operation::kStream,
+      Operation::kRead,
+  });
+  for (const Operation operation : kTraversalFailureOperations) {
     EXPECT_THAT(
         Inject({.operation = operation}, [&] { return RemoveHostTree(Path("scope/tree"), {}); }),
         StatusIs(absl::StatusCode::kUnknown));

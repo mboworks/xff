@@ -1522,9 +1522,20 @@ TEST_F(RunTest, InvalidValuedGlobalsAreRejectedBeforeTraversal) {
 }
 
 TEST_F(RunTest, EveryExplicitArchiveModeRequiresAnAvailableBackend) {
-  for (const std::string_view flag : std::to_array<std::string_view>(
-           {"--archive", "--archive=roots", "--archive=all", "--archive=any", "--archive-any", "-z", "-z+", "-z++",
-            "-Z", "-Z+", "-Z++"})) {
+  static constexpr std::array kExplicitArchiveFlags = std::to_array<std::string_view>({
+      "--archive",
+      "--archive=roots",
+      "--archive=all",
+      "--archive=any",
+      "--archive-any",
+      "-z",
+      "-z+",
+      "-z++",
+      "-Z",
+      "-Z+",
+      "-Z++",
+  });
+  for (const std::string_view flag : kExplicitArchiveFlags) {
     SCOPED_TRACE(flag);
     MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({std::string(flag), root_.string()}));
     absl::Status reported;
