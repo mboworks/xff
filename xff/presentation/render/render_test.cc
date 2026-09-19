@@ -24,7 +24,6 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
-#include "nlohmann/json.hpp"
 #include "xff/presentation/format/format.h"
 
 namespace xff::render {

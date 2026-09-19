@@ -42,6 +42,9 @@ target-level `visibility`; never make a whole package public for convenience. Ta
 configurations both keep Bazel's `layering_check` and `parse_headers` features enabled. The
 `check-bazel-policy` pre-commit hook enforces all three invariants, including for new packages.
 
+Each C++ test source has its own `cc_test` target. Do not combine independent test sources
+under one rule; put reusable test support in a library.
+
 ## Pull request descriptions
 
 Every PR description has two layers in this order:

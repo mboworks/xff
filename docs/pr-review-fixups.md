@@ -328,3 +328,10 @@ is still needed, record the question explicitly instead of treating a proposed s
   files. Keep approved histogram/tree glyph expectations in their functional tests. Exempt only
   the dedicated Unicode files from ASCII-only checking, retaining the em-dash prohibition. Use visible Latin samples literally; keep invisible encoding details escaped.
 - Implemented in: #876.
+
+## F17: Give Unicode C++ tests independent Bazel targets
+
+- Origin: PR #876 review of `xff/presentation/render/BUILD.bazel`.
+- Action: one source per test rule for render, scoped-table, and text-width tests, with independent
+  Unicode targets and only their required dependencies. Record the rule in `AGENTS.md`.
+- Implemented in: #876.
