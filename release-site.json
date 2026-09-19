@@ -60,7 +60,7 @@
     },
     {
       "label": "Benchmarks",
-      "href": "/{repo}/benchmarks/"
+      "href": "/{repo}/benchmarks/tag/{version}/"
     }
   ]
 }

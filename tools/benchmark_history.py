@@ -226,6 +226,55 @@ def render_site(root, pulls, repository):
                 '<th>Head</th><th>Baseline</th><th>Workflow</th></tr>' + ''.join(rows) + '</table>')
 
 
+def reference_pages(root, pulls, repository_path):
+    """Resolve stable PR/tag URLs without inventing measurements or rerunning them."""
+    records = []
+    for path in root.glob("runs/*/*/report.json"):
+        record = json.loads(path.read_text())
+        source = record["source"]
+        records.append((record, path.parent.relative_to(root).as_posix()))
+        (path.parent / "index.html").write_text(render_report(record))
+    tags = subprocess.check_output(
+        ["git", "-C", str(repository_path), "tag", "--list", "v*"], text=True).splitlines()
+    references = {}
+    for tag in tags:
+        if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", tag):
+            continue
+        commit = subprocess.check_output(
+            ["git", "-C", str(repository_path), "rev-parse", f"{tag}^{{commit}}"], text=True).strip()
+        references[f"tag/{tag[1:]}"] = (f"Release {tag}", commit, None)
+    for pull in pulls:
+        number = int(pull["number"])
+        if number < 1:
+            raise ValueError("invalid PR number")
+        references[f"pr/{number}"] = (f"PR {number}", pull.get("merge_commit_sha") if pull.get("merged_at") else None, number)
+    for relative, (label, commit, number) in references.items():
+        candidates = []
+        for record, report_path in records:
+            source = record["source"]
+            post = source["event"] == "push" and record["head"] == commit
+            pre = number is not None and source["event"] == "pull_request" and any(
+                pull["number"] == number for pull in source.get("pull_requests", []))
+            if post or pre:
+                rank = (post, source["created_at"], source["id"], source["run_attempt"])
+                candidates.append((rank, report_path))
+        folder = root / relative
+        folder.mkdir(parents=True, exist_ok=True)
+        if candidates:
+            target = "../../" + max(candidates)[1] + "/"
+            body = (f'<meta http-equiv="refresh" content="0; url={html.escape(target)}">'
+                    f'<p><a href="{html.escape(target)}">Open retained benchmark result</a></p>')
+        else:
+            body = ('<p>No retained benchmark measurement is available for this reference. '
+                    'It may not have been measured yet, its run may have failed, or retention may have expired.</p>'
+                    '<p><a href="../../">Benchmark history</a></p>')
+        (folder / "index.html").write_text(page(label + " benchmarks", body))
+    # A removed reference must not keep redirecting to an expired or unrelated report.
+    for path in [*root.glob("tag/*/index.html"), *root.glob("pr/*/index.html")]:
+        if path.parent.relative_to(root).as_posix() not in references:
+            path.write_text(page("Benchmark reference unavailable", '<p><a href="../../">Benchmark history</a></p>'))
+
+
 def positive(value):
     number = int(value)
     if number < 1:
@@ -250,16 +299,24 @@ def main():
         publish.add_argument("--" + name, type=Path, required=True)
     publish.add_argument("--repository", required=True)
     publish.add_argument("--keep", type=positive, default=100)
+    refresh = commands.add_parser("refresh")
+    for name in ("root", "pulls", "checkout"):
+        refresh.add_argument("--" + name, type=Path, required=True)
+    refresh.add_argument("--repository", required=True)
     args = parser.parse_args()
     if args.action == "measure":
         measure_pair(args)
     else:
-        source = json.loads(args.source.read_text())
-        record = json.loads(args.report.read_text())
-        retain(args.root, record, source, args.keep)
+        args.root.mkdir(parents=True, exist_ok=True)
+        if args.action == "publish":
+            source = json.loads(args.source.read_text())
+            record = json.loads(args.report.read_text())
+            retain(args.root, record, source, args.keep)
         pages = json.loads(args.pulls.read_text())
         pulls = [pull for group in pages for pull in group] if pages and isinstance(pages[0], list) else pages
         (args.root / "index.html").write_text(render_site(args.root, pulls, args.repository))
+        if args.action == "refresh":
+            reference_pages(args.root, pulls, args.checkout)
     return 0
 
 
