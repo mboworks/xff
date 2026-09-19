@@ -455,6 +455,7 @@ def update_history(root: Path, repository: Path, pull_requests: list[dict],
         text=True,
     ).splitlines()
     positions = {sha: index for index, sha in enumerate(commits)}
+    pulls_by_target = {f"pr/{pull['number']}": pull for pull in pull_requests}
     merges = {
         f"pr/{pull['number']}": pull
         for pull in pull_requests
@@ -463,6 +464,9 @@ def update_history(root: Path, repository: Path, pull_requests: list[dict],
     for path in _metadata_paths(root):
         metadata = json.loads(path.read_text(encoding="utf-8"))
         target = metadata["target"]
+        current_pull = pulls_by_target.get(target, {})
+        metadata["pull_state"] = ("merged" if current_pull.get("merged_at")
+                                  else current_pull.get("state", "unknown")) if target.startswith("pr/") else None
         pull = merges.get(target)
         metadata["reference_time"] = pull["merged_at"] if pull else None
         sha = pull["merge_commit_sha"] if pull else None
@@ -510,7 +514,10 @@ def render_site(root: Path) -> str:
     metadata = latest_metadata(
         [json.loads(source.read_text(encoding="utf-8")) for source in _metadata_paths(root)]
     )
-    reports = sorted(metadata.values(), key=_report_order, reverse=True)
+    reports = sorted(
+        (report for report in metadata.values() if report.get("pull_state") != "closed"),
+        key=_report_order, reverse=True,
+    )
     rows = "\n".join(_short_row(metadata) for metadata in reports)
     body = (
         "    <h1>xff coverage reports</h1>\n"
@@ -518,7 +525,8 @@ def render_site(root: Path) -> str:
         "    <p>Main first, then PRs by actual merge time and releases by tag creation time, newest first. "
         "Lightweight tags have no creation timestamp, so their tagged commit time is used. "
         "Aggregated PRs retain their own reports and individual merge times. "
-        "Unmerged PRs and reports without a reference timestamp follow, newest CI run first.</p>\n"
+        "Open PRs and reports without a reference timestamp follow, newest CI run first. "
+        "PRs closed without merging are omitted here; their reports remain in run history.</p>\n"
     )
     if rows:
         body += """    <table class="reportsTable"><thead><tr><th>Report</th><th>Data</th><th>Source</th><th>Completed</th><th>Commit</th><th>Workflow</th><th>Lines</th><th>Branches</th><th>Functions</th></tr></thead>

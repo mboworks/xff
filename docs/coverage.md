@@ -58,7 +58,9 @@ Lightweight tags contain no creation timestamp, so their tagged commit's committ
 is the explicit fallback. Neither PR numbers, version numbers, CI completion time, nor a
 commit's position on main controls this order. A nested PR uses its own merge time.
 
-Unmerged PRs and reports without a reference timestamp follow, newest CI run creation first.
+Open PRs and reports without a reference timestamp follow, newest CI run creation first.
+PRs closed without merging are excluded from the overview; their direct report URLs and
+immutable run-history snapshots remain available. Reopening a PR restores its overview row.
 Each publication refreshes these timestamps for all retained reports. The `reference_time`
 metadata controls presentation only; workflow creation, run ID, and attempt still determine
 which report may replace an older report for the same target. Stored `history` ancestry is

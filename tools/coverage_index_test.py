@@ -276,7 +276,7 @@ class CoverageIndexTest(unittest.TestCase):
             pulls = [
                 {"number": 900, "merged_at": "2026-08-20T10:00:00Z", "merge_commit_sha": older},
                 {"number": 1, "merged_at": "2026-08-21T10:00:00Z", "merge_commit_sha": newer},
-                {"number": 2, "merged_at": None, "merge_commit_sha": older},
+                {"number": 2, "state": "closed", "merged_at": None, "merge_commit_sha": older},
             ]
             pages = root / "pulls.json"
             pages.write_text(json.dumps([pulls[:1], pulls[1:]]))
@@ -302,7 +302,11 @@ class CoverageIndexTest(unittest.TestCase):
             order = ["main", "pr/1", "tag/0.10.0", "tag/0.9.0", "pr/900"]
             offsets = [rendered.index(f'href="{target}/"') for target in order]
             self.assertEqual(offsets, sorted(offsets))
-            self.assertLess(offsets[-1], rendered.index('href="pr/2/"'))
+            self.assertNotIn('href="pr/2/"', rendered)
+            self.assertTrue((reports / "pr/2/coverage-meta.json").is_file())
+            pulls[-1]["state"] = "open"
+            coverage_index.update_history(reports, repository, pulls)
+            self.assertIn('href="pr/2/"', coverage_index.render_site(reports))
             # A PR report can be published before the PR is merged. Refreshing must move it
             # into the main chronology without replacing its coverage or workflow identity.
             pulls[-1]["merged_at"] = "2026-08-22T10:00:00Z"
