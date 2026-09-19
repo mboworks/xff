@@ -1152,7 +1152,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .details =
             "`markdown` (alias `md`) also renders ordinary, comparison-result, and paired summary tables "
             "as Markdown, with vertically aligned separators and right-aligned numeric headers and values "
-            "in both source and rendered tables. Summary schemas come from `--summary`; `--columns` selects "
+            "in both source and rendered tables. Aligned and Markdown cells and tree labels C-escape "
+            "control bytes and literal backslashes; Markdown additionally escapes that spelling for "
+            "its renderer. Widths include the escaped text. This does not alter raw plain output or "
+            "CSV, TSV, NUL, and JSONL encoding; `--path-encoding` controls plain listing paths. "
+            "Summary schemas come from `--summary`; `--columns` selects "
             "listing fields and "
             "cannot change summary columns. Markdown summaries have descriptive headings above their scope "
             "and table. `--no-header` omits those headings, table headers, and Markdown separator rows "

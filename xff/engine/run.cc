@@ -3213,7 +3213,7 @@ class SummaryTable final {
   void AddRow(std::vector<std::string> cells) {
     if (markdown_.has_value()) {
       // The full-table window retains every row until Render().
-      static_cast<void>(markdown_->Add(cells));
+      static_cast<void>(markdown_->AddDisplay(cells));
     } else {
       plain_.AddRow(std::move(cells));
     }
@@ -3253,11 +3253,15 @@ std::string_view SummaryTotalJson(bool is_total) {
 
 // Keep the aggregate label distinct without reserving a data key. Quote leading quotes as well
 // so a literal quoted label cannot collide with the display spelling of an ambiguous key.
+bool SummaryKeyNeedsQuotes(std::string_view key, bool is_total) {
+  return !is_total && (key.empty() || key == "total" || key.starts_with('"'));
+}
+
 std::string SummaryDisplayKey(std::string_view key, bool is_total) {
-  if (!is_total && (key.empty() || key == "total" || key.starts_with('"'))) {
+  if (SummaryKeyNeedsQuotes(key, is_total)) {
     return render::JsonQuote(key);
   }
-  return std::string(key);
+  return render::EscapeDisplayText(key);
 }
 
 struct SummaryPopulation {
@@ -3463,11 +3467,12 @@ ComparisonSummaryRow MakeComparisonSummaryRow(
     const ScopeRowContext& context) {
   const std::string key(record.group);
   const std::string label = SummaryDisplayKey(key, record.is_total);
+  const bool quote_label = SummaryKeyNeedsQuotes(key, record.is_total);
   ComparisonSummaryRow result{
       .cells = {label},
       .json = std::move(json),
       .exported = std::move(record),
-      .display = {.label = key, .quote_label = label != key}};
+      .display = {.label = key, .quote_label = quote_label}};
   for (std::size_t column_index = 0; column_index < context.columns.size(); ++column_index) {
     const auto& column = context.columns.at(column_index);
     const auto& source = column.tables.at(context.sink);

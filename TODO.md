@@ -327,11 +327,14 @@ The safety model and directory-scoped permissions are tracked in
 - [x] Update help and pass full-config, before-mutation, summary, and engine regression checks.
 - [x] Verify generated reference and all 24 affected-header consumers; complete local commit hooks.
 
-### Audit S19: field fuzz filesystem isolation
+### Audit S19: fuzz filesystem isolation
 
 - [x] Supply an in-memory VFS for every fuzz-generated path and abort on attempted mutation.
 - [x] Assert that content fields read synthetic bytes, with absolute and traversal-path corpus cases.
 - [x] Verify corpus replay and local lint; audit every mutation entrypoint for fail-fast rejection.
+- [x] Make expression-evaluation fuzzing abort on all write and controlled-mutation entrypoints.
+- [x] Exercise both staged release executables with a cross-feature smoke corpus before upload.
+- [x] Cover NUL, escaped plain, and TSV record boundaries in the release smoke corpus.
 
 ### Audit S05: effective safety explanation
 
@@ -461,3 +464,10 @@ this as intentional accounting.
 - [x] Add renamed-descriptor regressions so shared behavior follows capabilities rather than spelling.
 - [x] Resolve explicit archive mode and presence together instead of maintaining a second alias list.
 - [x] Complete integrated tests and changed-header lint before publication with audit group six.
+
+### Audit B15: filename controls in display output
+
+- [x] Escape controls and backslashes before table width calculation and tree rendering.
+- [x] Preserve raw and machine-output encoding; document the display distinction.
+- [x] Verify buffered/streaming tables, tree labels, and actual filenames.
+- [x] Regenerate and verify the flag reference.

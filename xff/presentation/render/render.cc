@@ -114,22 +114,25 @@ void AppendTsvField(std::string_view field, std::string& out) {
   }
 }
 
-// One Markdown table cell: a cell is single-line and `|`-delimited, so escape `|` as `\|`,
-// turn a newline into a space, and drop CR. Everything else passes through verbatim.
+// Preserve the display spelling through Markdown's own backslash processing.
 std::string MarkdownCell(std::string_view field) {
   std::string out;
   for (const char ch : field) {
-    switch (ch) {
-      case '|': out.append("\\|"); break;
-      case '\n': out.push_back(' '); break;
-      case '\r': break;
-      default: out.push_back(ch);
+    if (ch == '\\' || ch == '|') {
+      out.push_back('\\');
     }
+    out.push_back(ch);
   }
   return out;
 }
 
 }  // namespace
+
+std::string EscapeDisplayText(std::string_view text) {
+  std::string out;
+  AppendCEscaped(text, out);
+  return out;
+}
 
 std::string JsonQuote(std::string_view text) {
   std::string result = "\"";
@@ -263,7 +266,8 @@ TableStream::TableStream(
   alignments_.resize(columns_, format::Align::kLeft);
   header_.reserve(columns_);
   for (std::size_t col = 0; col < columns_; ++col) {
-    header_.push_back(md_ ? MarkdownCell(header[col]) : std::move(header[col]));
+    const std::string display = EscapeDisplayText(header[col]);
+    header_.push_back(md_ ? MarkdownCell(display) : display);
     if (with_header_) {
       widths_[col] = std::max(widths_[col], header_[col].size());
     }
@@ -324,6 +328,14 @@ std::string TableStream::HeaderAndRule() {
 }
 
 std::string TableStream::Add(const std::vector<std::string>& cells) {
+  return AddImpl(cells, false);
+}
+
+std::string TableStream::AddDisplay(const std::vector<std::string>& cells) {
+  return AddImpl(cells, true);
+}
+
+std::string TableStream::AddImpl(const std::vector<std::string>& cells, bool display_text) {
   if (columns_ == 0) {
     return "";  // not a buffered tabular format
   }
@@ -331,7 +343,8 @@ std::string TableStream::Add(const std::vector<std::string>& cells) {
   row.reserve(columns_);
   for (std::size_t col = 0; col < columns_; ++col) {
     const std::string_view cell = col < cells.size() ? std::string_view(cells[col]) : std::string_view();
-    row.push_back(md_ ? MarkdownCell(cell) : std::string(cell));
+    const std::string display = display_text ? std::string(cell) : EscapeDisplayText(cell);
+    row.push_back(md_ ? MarkdownCell(display) : display);
   }
   for (std::size_t col = 0; col < columns_; ++col) {
     widths_[col] = std::max(widths_[col], row[col].size());
@@ -425,7 +438,7 @@ void Tree::RenderChildren(const Node& node, std::string_view prefix, std::string
     const bool last = ++index == count;
     out.append(prefix);
     out.append(last ? elbow : tee);
-    out.append(name);
+    AppendCEscaped(name, out);
     out.push_back('\n');
     RenderChildren(*child, absl::StrCat(prefix, last ? kGap : vertical), out);
   }
@@ -435,7 +448,7 @@ std::string Tree::Render() const {
   // Each top-level node is a bare root line (no connector); its descendants indent under it.
   std::string out;
   for (const auto& [name, child] : root_.children) {
-    out.append(name);
+    AppendCEscaped(name, out);
     out.push_back('\n');
     RenderChildren(*child, "", out);
   }

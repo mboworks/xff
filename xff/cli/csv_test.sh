@@ -161,4 +161,20 @@ test::tree_renders_a_directory_tree_with_ascii_connectors_under_no_unicode() {
   expect_output_contains "format the default listing" "${out}"
 }
 
+test::human_formats_escape_filename_controls() {
+  local dir name out mode
+  dir="$(test_tmpdir display_controls)"
+  mkdir -p "${dir}"
+  name=$'a|b\n\r\t\033\177\\雪.txt'
+  : >"${dir}/${name}"
+  for mode in aligned tree; do
+    out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -type f --format="${mode}" --color=never)"
+    expect_output_contains 'a|b\n\r\t\x1B\x7F\\雪.txt' "${out}"
+    expect_output_not_contains "${name}" "${out}"
+  done
+  out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -type f --format=md --columns=name)"
+  expect_output_contains 'a\|b\\n\\r\\t\\x1B\\x7F\\\\雪.txt' "${out}"
+  expect_output_not_contains "${name}" "${out}"
+}
+
 test_runner

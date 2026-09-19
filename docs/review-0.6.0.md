@@ -255,6 +255,31 @@ occurred anywhere. A later narrower selection therefore does not restore the exp
 re-reading historical spellings. **Acceptance:** real-archive regressions for long and short forms,
 upper-case capability forms, and named configurations selected in both orders.
 
+### B15 - P2: Control characters break human-readable listing layouts
+
+- [x] Implement and verify consistent control-byte rendering for aligned tables, Markdown, and trees.
+
+A filename containing `a|b`, followed by a newline, tab, and an ESC byte, produces extra physical
+lines and terminal control sequences in `--format=aligned` and `--format=tree`. Markdown
+escapes the pipe but replaces the newline with a space, drops CR, and passes tab/ESC through.
+Consequently distinct names can look identical, and a filename can alter the terminal display.
+The behavior was reproduced against the development executable with disposable real files.
+
+Plain output deliberately remains raw by default and offers `--path-encoding=escape`.
+CSV and JSONL encode records losslessly; NUL output retains raw bytes with an unambiguous separator.
+TSV escapes its separators and backslashes but is not a terminal-safe display format.
+These machine-output contracts should be preserved.
+
+**Recommendation:** escape controls in human-readable table cells and tree node labels, preserving
+Unicode and disambiguating literal backslashes. Account for the escaped width before padding.
+Decide Markdown's visible spelling together with its source encoding, so rendered output and raw
+source remain understandable. Display cells are C-escaped before width calculation; Markdown then
+protects that display spelling once. Already-formatted summary labels retain their escapes rather
+than being C-escaped twice. Plain path listings and machine encodings are unchanged.
+**Acceptance:** cover newline, CR, tab, ESC, DEL, literal backslash, pipe, and Unicode in buffered
+and streaming tables, tree roots/children, and actual CLI filenames. Keep intentional generated
+colour separate from filename data. Document the distinction from raw/machine formats.
+
 ## Design and usability improvements
 
 These are observed limitations or deliberate current behaviors, not claims of implementation bugs.
@@ -517,7 +542,7 @@ the roots; the double-dash form is position-independent” where such a form exi
 
 ### S19 - P2: Strengthen cross-feature tests rather than only individual flags
 
-- [ ] Turn this backlog's reproductions into durable tests when their fixes land.
+- [x] Turn this backlog's reproductions into durable tests alongside their fixes.
 
 The repository already has parser, matching, config, archive, safety, help, CLI, fuzz, and platform
 conformance tests. The uncovered failures cluster at boundaries those individual tests do not prove.
@@ -526,6 +551,27 @@ conformance tests. The uncovered failures cluster at boundaries those individual
 summary identity; literal total keys; numeric controls in CLI and complete INIs; multi-root archive
 collisions; and unusual filenames in every renderer. Add a focused release-artifact smoke corpus.
 Keep race/safety adapter tests and platform integration tests distinct from usability probes.
+
+The final audit group adds fail-fast mutation sinks to the expression fuzz filesystem and runs
+`tools/release_smoke.py` against both stripped staged executables before upload. The corpus checks
+version/help, unusual filenames in JSONL/CSV/NUL/TSV/escaped plain output, named INI selection,
+repeated summaries, literal `total` groups, and comparison counts. Both local staged executables
+pass. The acceptance checks are covered by:
+
+- `run_test.cc`: captures in printf/file-printf, exec/execdir, capture/capturedir, grep,
+  columns, and comparison fields; literal/unused capture checks; JSONL producer composition;
+  format rejection before mutation; repeated request and literal-total identity.
+- `summary_test.sh`: captured summary keys, CSV/TSV/JSONL parity across roots/categories,
+  empty and top-limited populations, repeated requests, full INI selection, and incompatible producers.
+- Full `config_validation` fixtures and engine tests: malformed/overflowing buffer and histogram
+  controls, including failure before actions on either comparison side.
+- `archive_pack_test.sh`: duplicate member rejection preserves output, first-wins ordering,
+  INI policy selection, named roots, and duplicate root labels.
+- `render_test.cc`, `csv_test.sh`, and the release corpus: unusual filenames across display and
+  machine formats, buffered/streaming tables, tree labels, and single-escaped summary labels.
+
+The local repository suites and staged smoke checks pass. Platform, sanitizer, and coverage CI
+remain the publication gates; they are separate from the scope of these cross-feature tests.
 
 ## Feature-family coverage and disposition
 

@@ -188,12 +188,8 @@ jobs:
           lean="$(bazel cquery --config=clang_release --output=files //xff/cli:xff 2>/dev/null)"
           full="$(bazel cquery --config=clang_release --config=xff_full --output=files //xff/cli:xff_full 2>/dev/null)"
           tools/stage_release_artifacts.sh "${PLATFORM}" "${arch}" "${lean}" "${full}" dist
-          lean_staged="dist/.xff-${PLATFORM}-${arch}-staging/xff-${PLATFORM}-${arch}/xff"
-          full_staged="dist/.xff_full-${PLATFORM}-${arch}-staging/xff_full-${PLATFORM}-${arch}/xff_full"
-          "${lean_staged}" --version
-          "${lean_staged}" --help >/dev/null
-          "${full_staged}" --version
-          "${full_staged}" --help >/dev/null
+          python3 tools/release_smoke.py "dist/xff-${PLATFORM}-${arch}" --expected-version="${RELEASE_TAG#v}"
+          python3 tools/release_smoke.py "dist/xff_full-${PLATFORM}-${arch}" --expected-version="${RELEASE_TAG#v}"
           ls -lh dist/*
       - uses: actions/upload-artifact@v7
         with:

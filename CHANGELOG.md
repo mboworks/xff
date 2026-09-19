@@ -5,6 +5,8 @@
 
 - Derive shared expression behavior and help relationships from registry capabilities.
   Treat every explicit archive mode consistently when archive support is unavailable.
+- Escape control bytes in human-readable tables and tree labels, keeping unusual filenames
+  on one display line and preserving newline distinctions in Markdown.
 
 - Distinguish aggregate summary rows with `is_total` in JSONL and quote ambiguous data labels
   in text tables, preserving real groups named `total`.
