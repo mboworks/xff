@@ -3,6 +3,9 @@
 
 # 0.7.0
 
+- Publish successful coverage despite unrelated CI failures, and show post-merge before
+  pre-merge within each PR in the two-phase coverage view.
+
 - Show one coverage result per PR, replacing pre-merge with exact-commit post-merge coverage
   when available; show both phases separately without repeated main runs or attempts.
 

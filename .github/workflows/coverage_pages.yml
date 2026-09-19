@@ -20,7 +20,6 @@ permissions: read-all
 
 jobs:
   publish:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -43,15 +42,27 @@ jobs:
         with:
           path: site
           ref: coverage-pages
-      - uses: actions/download-artifact@v8
+      - name: Check coverage job result
+        id: coverage-result
         if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          gh api --paginate --slurp \
+            "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}/jobs?filter=latest&per_page=100" > coverage-jobs.json
+          eligible="$(jq 'any(.[].jobs[]; .name == "coverage" and .conclusion == "success")' coverage-jobs.json)"
+          echo "eligible=${eligible}" >>"${GITHUB_OUTPUT}"
+      - uses: actions/download-artifact@v8
+        if: steps.coverage-result.outputs.eligible == 'true'
         with:
           github-token: ${{ github.token }}
           name: coverage-report
           path: report
           run-id: ${{ github.event.workflow_run.id }}
       - name: Select and stage the report
-        if: github.event_name == 'workflow_run'
+        if: steps.coverage-result.outputs.eligible == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_CREATED_AT: ${{ github.event.workflow_run.created_at }}

@@ -406,7 +406,7 @@ def selected_reports(root: Path, both_phases: bool = False) -> list[tuple[dict, 
         for target, phase in list(selected):
             if phase == "pre-merge" and (target, "post-merge") in selected:
                 del selected[(target, phase)]
-    return sorted(selected.values(), key=lambda item: (_report_order(item[0]), item[0]["phase"]), reverse=True)
+    return sorted(selected.values(), key=lambda item: (_report_order(item[0]), item[0]["phase"] == "post-merge"), reverse=True)
 
 
 def render_run_history(root: Path) -> str:
