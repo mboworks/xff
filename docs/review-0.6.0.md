@@ -542,7 +542,7 @@ the roots; the double-dash form is position-independent” where such a form exi
 
 ### S19 - P2: Strengthen cross-feature tests rather than only individual flags
 
-- [ ] Turn this backlog's reproductions into durable tests when their fixes land.
+- [x] Turn this backlog's reproductions into durable tests alongside their fixes.
 
 The repository already has parser, matching, config, archive, safety, help, CLI, fuzz, and platform
 conformance tests. The uncovered failures cluster at boundaries those individual tests do not prove.
@@ -556,7 +556,22 @@ The final audit group adds fail-fast mutation sinks to the expression fuzz files
 `tools/release_smoke.py` against both stripped staged executables before upload. The corpus checks
 version/help, unusual filenames in JSONL/CSV/NUL/TSV/escaped plain output, named INI selection,
 repeated summaries, literal `total` groups, and comparison counts. Both local staged executables
-pass; the complete cross-feature acceptance list still requires the final audit of the stack.
+pass. The acceptance checks are covered by:
+
+- `run_test.cc`: captures in printf/file-printf, exec/execdir, capture/capturedir, grep,
+  columns, and comparison fields; literal/unused capture checks; JSONL producer composition;
+  format rejection before mutation; repeated request and literal-total identity.
+- `summary_test.sh`: captured summary keys, CSV/TSV/JSONL parity across roots/categories,
+  empty and top-limited populations, repeated requests, full INI selection, and incompatible producers.
+- Full `config_validation` fixtures and engine tests: malformed/overflowing buffer and histogram
+  controls, including failure before actions on either comparison side.
+- `archive_pack_test.sh`: duplicate member rejection preserves output, first-wins ordering,
+  INI policy selection, named roots, and duplicate root labels.
+- `render_test.cc`, `csv_test.sh`, and the release corpus: unusual filenames across display and
+  machine formats, buffered/streaming tables, tree labels, and single-escaped summary labels.
+
+The local repository suites and staged smoke checks pass. Platform, sanitizer, and coverage CI
+remain the publication gates; they are separate from the scope of these cross-feature tests.
 
 ## Feature-family coverage and disposition
 
