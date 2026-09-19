@@ -3,6 +3,8 @@
 
 # 0.7.0
 
+- Order coverage reports by actual PR merge and tag timestamps, with main pinned first.
+
 - Retain detailed coverage reports by CI run and attempt, with a published history index and
   correct ordering for PRs merged through an aggregation branch.
 

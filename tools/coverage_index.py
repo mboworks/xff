@@ -435,6 +435,18 @@ def _squashed_integration_position(repository: Path, pull: dict, merges: dict,
     return None
 
 
+def _tag_reference_time(repository: Path, tag: str) -> str | None:
+    """Tagger time for annotated tags; commit time for lightweight tags."""
+    result = subprocess.run(
+        ["git", "-C", str(repository), "for-each-ref", "--format=%(creatordate:unix)",
+         f"refs/tags/v{tag}"], capture_output=True, text=True, check=False,
+    )
+    value = result.stdout.strip()
+    if result.returncode or not value.isdecimal():
+        return None
+    return datetime.datetime.fromtimestamp(int(value), datetime.timezone.utc).isoformat().replace("+00:00", "Z")
+
+
 def update_history(root: Path, repository: Path, pull_requests: list[dict],
                    fetch_heads: bool = False) -> None:
     """Attach reports to main chronology, including merges through aggregation PRs."""
@@ -452,9 +464,11 @@ def update_history(root: Path, repository: Path, pull_requests: list[dict],
         metadata = json.loads(path.read_text(encoding="utf-8"))
         target = metadata["target"]
         pull = merges.get(target)
+        metadata["reference_time"] = pull["merged_at"] if pull else None
         sha = pull["merge_commit_sha"] if pull else None
         if re.fullmatch(r"tag/\d+\.\d+\.\d+", target):
             tag = target.removeprefix("tag/")
+            metadata["reference_time"] = _tag_reference_time(repository, tag)
             resolved = subprocess.run(
                 ["git", "-C", str(repository), "rev-parse", "--verify", "--quiet", f"refs/tags/v{tag}^{{commit}}"],
                 capture_output=True,
@@ -480,23 +494,19 @@ def update_history(root: Path, repository: Path, pull_requests: list[dict],
 
 def _report_order(metadata: dict) -> tuple:
     target = metadata["target"]
-    history = metadata.get("history")
+    reference_time = metadata.get("reference_time")
     source = metadata["source"]
     return (
         target == "main",
-        history is not None,
-        history["position"] if history is not None else -1,
-        history is not None and target.startswith("tag/"),
-        history is not None and "integration_commit" not in history,
-        history.get("merged_at", "") if history else "",
-        source["created_at"] if history is None else "",
-        source["run_id"] if history is None else 0,
+        reference_time is not None,
+        reference_time or source["created_at"],
+        source["run_id"] if reference_time is None else 0,
         target,
     )
 
 
 def render_site(root: Path) -> str:
-    """Returns the overview, main first then newest merge/tag commit first."""
+    """Returns the overview, main first then newest PR merge/tag timestamp first."""
     metadata = latest_metadata(
         [json.loads(source.read_text(encoding="utf-8")) for source in _metadata_paths(root)]
     )
@@ -505,11 +515,10 @@ def render_site(root: Path) -> str:
     body = (
         "    <h1>xff coverage reports</h1>\n"
         '    <p><a href="runs/">All retained coverage runs and attempts</a></p>\n'
-        "    <p>Main first, then PRs and releases newest-first in main's commit history. "
-        "Releases use their tagged commit; PRs use their merge commit. "
-        "Aggregated PRs retain their own reports under the main commit that first includes them, "
-        "ordered by their individual merge times. "
-        "Reports without a commit on main follow, newest CI run first.</p>\n"
+        "    <p>Main first, then PRs by actual merge time and releases by tag creation time, newest first. "
+        "Lightweight tags have no creation timestamp, so their tagged commit time is used. "
+        "Aggregated PRs retain their own reports and individual merge times. "
+        "Unmerged PRs and reports without a reference timestamp follow, newest CI run first.</p>\n"
     )
     if rows:
         body += """    <table class="reportsTable"><thead><tr><th>Report</th><th>Data</th><th>Source</th><th>Completed</th><th>Commit</th><th>Workflow</th><th>Lines</th><th>Branches</th><th>Functions</th></tr></thead>
