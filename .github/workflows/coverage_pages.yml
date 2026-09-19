@@ -82,6 +82,8 @@ jobs:
             mkdir -p site/coverage/pr
             git -C site mv "coverage/pr${number}" "coverage/pr/${number}"
           done
+          # Preserve both reports, even when an older incoming run cannot replace the latest URL.
+          python3 source/tools/coverage_index.py archive site/coverage --incoming report/coverage-html
           current="site/coverage/${target}/coverage-meta.json"
           if [[ -f "${current}" ]] && ! python3 source/tools/coverage_index.py newer \
             report/coverage-html/coverage-meta.json "${current}"; then
@@ -120,6 +122,7 @@ jobs:
           gh api --paginate --slurp \
             "repos/${GITHUB_REPOSITORY}/pulls?state=closed&per_page=100" > coverage-pulls.json
           python3 source/tools/coverage_index.py history site/coverage source coverage-pulls.json
+          python3 source/tools/coverage_index.py archive site/coverage
           python3 source/tools/coverage_index.py site site/coverage site/coverage/index.html
           git -C site config user.name 'github-actions[bot]'
           git -C site config user.email '41898282+github-actions[bot]@users.noreply.github.com'

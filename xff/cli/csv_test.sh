@@ -170,11 +170,11 @@ test::human_formats_escape_filename_controls() {
   : >"${dir}/${name}"
   for mode in aligned tree; do
     out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -type f --format="${mode}" --color=never)"
-    expect_output_contains 'a|b\n\r\t\x1B\x7F\\'"${unicode}.txt" "${out}"
+    expect_output_contains "a|b\\n\\r\\t\\x1B\\x7F\\\\${unicode}.txt" "${out}"
     expect_output_not_contains "${name}" "${out}"
   done
   out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" "${dir}" -type f --format=md --columns=name)"
-  expect_output_contains 'a\|b\\n\\r\\t\\x1B\\x7F\\\\'"${unicode}.txt" "${out}"
+  expect_output_contains "a\\|b\\\\n\\\\r\\\\t\\\\x1B\\\\x7F\\\\\\\\${unicode}.txt" "${out}"
   expect_output_not_contains "${name}" "${out}"
 }
 

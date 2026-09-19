@@ -83,7 +83,7 @@ repos:
           Project convention: never an em-dash (U+2014) anywhere (prose, docs, comments,
           commit messages). Use a spaced hyphen instead.
         language: pygrep
-        entry: '\u2014'
+        entry: '\xe2\x80\x94'
         exclude: ^\.pre-commit-config\.yaml$|\.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z)$
         types: [text]
       - id: no-libarchive-filter-all

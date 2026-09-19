@@ -3,6 +3,9 @@
 
 # 0.7.0
 
+- Retain detailed coverage reports by CI run and attempt, with a published history index and
+  correct ordering for PRs merged through an aggregation branch.
+
 - Clarify safety provenance names and enforce ASCII source text while preserving Unicode output.
   Standardize multiline struct initializer formatting, including generated license registrations.
 

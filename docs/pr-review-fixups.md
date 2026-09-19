@@ -8,7 +8,8 @@ implementing PR.
 ## Agreed integration and follow-up sequence
 
 1. Merge #869 through #875 into #868's branch with merge commits, preserving individual PR history.
-   Apply F01 and F05-F07 on the integration branch, validate the combined result, then merge #868.
+   Completed: #868 merged before the local integration fixes were published.
+   Carry F01, F05-F07, and F12 in the immediate follow-up PR.
 2. Follow-up PR: F02-F04, fuzzy suggestions and persistent/capped width preferences.
 3. Follow-up PR: F08 and F11, Python testing ownership and proper Bazel Python targets.
 4. Follow-up PR: F09, benchmark history across PRs and releases.
@@ -20,7 +21,7 @@ implementing PR.
 
 - Origin: [PR #868](https://github.com/mboworks/xff/pull/868).
 - Location: `xff/config/safety.cc`, `SafetyResolution`.
-- Status: implemented in the integration worktree; local validation passed; commit/CI pending.
+- Status: implemented in the follow-up branch; local validation passed; CI pending.
 - Finding: `std::optional<std::size_t> dry_run` holds an index into the resolved flag application
   sequence, not the boolean dry-run value. The actual value is `policy.dry_run`. The current name
   makes those two roles easy to confuse.
@@ -30,7 +31,7 @@ implementing PR.
   unchanged; update all consumers.
 - Verification: run the affected safety-policy and explain tests; effective decisions and rendered
   provenance must remain unchanged.
-- Implemented in: #868 integration fixup (pending final commit and CI).
+- Implemented in: immediate follow-up to #868 (CI pending).
 
 ## F02: Broaden and rank flag spelling suggestions
 
@@ -111,7 +112,7 @@ implementing PR.
 - Origin: [PR #870](https://github.com/mboworks/xff/pull/870).
 - Location: `STYLE_CPP.md` and all project-owned C++ sources, headers, tests, and extensions.
   Initial examples are in `xff/engine/run.cc`, in `emit(exporter.Row(...))` calls.
-- Status: implemented in the integration worktree; local validation passed; commit/CI pending.
+- Status: implemented in the follow-up branch; local validation passed; CI pending.
 - Finding: multiple struct initializers omit the trailing comma needed for the expected layout.
   The final `.metrics = ExportMetrics(...)` member in the summary export calls is one example.
   A comma after the closing brace only separates function arguments. The style guide already
@@ -129,13 +130,13 @@ implementing PR.
 - Verification: check all project-owned C++ areas, run formatting and any added policy-check tests,
   and review the diff to confirm this remains a formatting-only change. Record the audited scope
   and any explicit exceptions in the implementing PR.
-- Implemented in: #868 integration fixup (pending final commit and CI).
+- Implemented in: immediate follow-up to #868 (CI pending).
 
 ## F06: Remove literal Chinese text from scoped-table tests
 
 - Origin: [PR #870](https://github.com/mboworks/xff/pull/870).
 - Location: `xff/presentation/render/scoped_table_test.cc`, the two multiline layout goldens.
-- Status: implemented in the integration worktree; local validation passed; commit/CI pending.
+- Status: implemented in the follow-up branch; local validation passed; CI pending.
 - Finding: the layout goldens contain literal Chinese characters. The fixture and other assertions
   already spell the same code points using ASCII `\u` escapes. These characters exercise terminal
   column width; the tests do not need Chinese-language wording.
@@ -146,14 +147,14 @@ implementing PR.
   construct the Unicode expectations explicitly while retaining readable multiline goldens.
 - Verification: scoped-table tests pass, the source contains no literal Chinese characters, and
   dedicated tests still distinguish display-column width from byte or code-point counts.
-- Implemented in: #868 integration fixup (pending final commit and CI).
+- Implemented in: immediate follow-up to #868 (CI pending).
 
 ## F07: Remove unwanted non-ASCII source text across the repository
 
 - Origin: review of [PR #870](https://github.com/mboworks/xff/pull/870), extended to the full tree.
   Additional findings originate in [PR #873](https://github.com/mboworks/xff/pull/873) and
   [PR #874](https://github.com/mboworks/xff/pull/874); most affected lines predate this stack.
-- Status: implemented in the integration worktree; local validation passed; commit/CI pending.
+- Status: implemented in the follow-up branch; local validation passed; CI pending.
 - Evidence: [the non-ASCII audit](non-ascii-audit.md) records every affected line, code point, escaped
   excerpt, and originating PR where applicable. The complete stack has 114 affected lines across
   25 text files; the user's tracked working files independently have 78 lines across 20 files.
@@ -171,7 +172,7 @@ implementing PR.
 - Verification: repeat the complete tracked-text scan after cleanup; verify unchanged Unicode
   rendering, unusual-filename round trips, and column-width behavior in affected tests. Review
   generated documentation and the existing em-dash check as well.
-- Implemented in: #868 integration fixup (pending final commit and CI).
+- Implemented in: immediate follow-up to #868 (CI pending).
 
 ## F08: Define ownership of Python tooling tests and pre-commit checks
 
@@ -272,6 +273,23 @@ implementing PR.
   on a checkout-relative path or ambient `python3`; retain the existing workload, invalid-input,
   traversal-failure, report-provenance, and measurement assertions.
 - Implemented in: not yet assigned.
+
+## F12: Preserve detailed coverage for aggregated PRs and individual runs
+
+- Origin: aggregation of PRs #868-875 into #868.
+- Status: implemented in the follow-up branch; original snapshots published; automation CI pending.
+- Finding: all eight original reports already had retained summaries, run metadata, and detailed
+  LCOV pages. However, the aggregation's next run would replace #868's original per-PR report, and
+  nested PR merge commits were absent from main's first-parent ordering.
+- Action: preserve immutable run/attempt snapshots with a run-history index; archive before replacing
+  per-target reports. Position nested PRs at the first main commit that includes them without
+  changing their measured source commits, run identities, statistics, or detail pages.
+- Backfill: snapshot the eight verified existing report trees before the integration's next coverage
+  publication, reusing existing data rather than rerunning coverage.
+- Verification: tests cover real nested Git merges, pre-integration/unmerged/missing commits,
+  retained source/run identity and detail files, run attempts, immutable snapshots, and interrupted
+  archive-copy recovery. Verify publication after the integration merges.
+- Implemented in: immediate follow-up to #868.
 
 ## Adding review notes
 

@@ -300,6 +300,171 @@ class CoverageIndexTest(unittest.TestCase):
             refreshed = json.loads((reports / "pr/2/coverage-meta.json").read_text())
             self.assertEqual(refreshed["history"]["position"], 0)
 
+    def test_aggregated_prs_keep_individual_reports_at_the_first_main_integration(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repository = root / "source"
+            repository.mkdir()
+
+            def git(*args):
+                return subprocess.check_output(
+                    ["git", "-C", str(repository), "-c", "user.name=Coverage Test",
+                     "-c", "user.email=coverage@example.invalid", "-c", "commit.gpgsign=false",
+                     "-c", "tag.gpgsign=false", "-c", "core.hooksPath=/dev/null", *args],
+                    text=True, stderr=subprocess.DEVNULL,
+                ).strip()
+
+            git("init")
+            git("commit", "--allow-empty", "-m", "initial")
+            main = git("branch", "--show-current")
+            git("tag", "v1.0.0")
+            git("checkout", "-b", "integration")
+            git("checkout", "-b", "first")
+            git("commit", "--allow-empty", "-m", "first feature")
+            git("checkout", "integration")
+            git("merge", "--no-ff", "first", "-m", "merge first PR")
+            first = git("rev-parse", "HEAD")
+            git("checkout", "-b", "second")
+            git("commit", "--allow-empty", "-m", "second feature")
+            git("checkout", "integration")
+            git("merge", "--no-ff", "second", "-m", "merge second PR")
+            second = git("rev-parse", "HEAD")
+            git("checkout", "-b", "unmerged")
+            git("commit", "--allow-empty", "-m", "not integrated")
+            unmerged = git("rev-parse", "HEAD")
+            git("checkout", main)
+            git("commit", "--allow-empty", "-m", "release before integration")
+            git("tag", "v2.0.0")
+            reports = root / "reports"
+            originals = {}
+            targets = ("main", "pr/1", "pr/99", "pr/5", "pr/77", "pr/88", "tag/1.0.0", "tag/2.0.0")
+            for run, target in enumerate(targets, 1):
+                folder = reports / target
+                (folder / "lcov").mkdir(parents=True)
+                metadata = coverage_index.report_metadata(
+                    _summary(90 + run), target, "2026-08-22T10:00:00Z", "2026-08-22T10:00:00Z",
+                    "2026-08-22T10:01:00Z", run, 1, f"measured-head-{run}",
+                )
+                originals[target] = metadata
+                (folder / "coverage-meta.json").write_text(json.dumps(metadata))
+                (folder / "lcov/index.html").write_text(f"details-{run}")
+            pulls = [
+                {"number": 1, "merged_at": "2026-08-20T10:00:00Z", "merge_commit_sha": first},
+                {"number": 99, "merged_at": "2026-08-20T11:00:00Z", "merge_commit_sha": second},
+                {"number": 77, "merged_at": "2026-08-20T12:00:00Z", "merge_commit_sha": unmerged},
+                {"number": 88, "merged_at": "2026-08-20T12:00:00Z", "merge_commit_sha": "f" * 40},
+            ]
+            coverage_index.update_history(reports, repository, pulls)
+            for target in ("pr/1", "pr/99"):
+                metadata = json.loads((reports / target / "coverage-meta.json").read_text())
+                self.assertIsNone(metadata["history"])
+            git("merge", "--no-ff", "integration", "-m", "merge aggregation PR")
+            integration = git("rev-parse", "HEAD")
+            git("commit", "--allow-empty", "-m", "later main commit")
+            pulls.append({"number": 5, "merged_at": "2026-08-21T12:00:00Z", "merge_commit_sha": integration})
+            coverage_index.update_history(reports, repository, pulls)
+            for target, commit in (("pr/1", first), ("pr/99", second)):
+                metadata = json.loads((reports / target / "coverage-meta.json").read_text())
+                self.assertEqual(metadata["history"]["commit"], commit)
+                self.assertEqual(metadata["history"]["integration_commit"], integration)
+                self.assertEqual(metadata["history"]["position"], 2)
+            for target in ("pr/77", "pr/88"):
+                metadata = json.loads((reports / target / "coverage-meta.json").read_text())
+                self.assertIsNone(metadata["history"])
+            for run, target in enumerate(targets, 1):
+                metadata = json.loads((reports / target / "coverage-meta.json").read_text())
+                self.assertEqual(metadata["source"], originals[target]["source"])
+                self.assertEqual(metadata["coverage"], originals[target]["coverage"])
+                self.assertEqual((reports / target / "lcov/index.html").read_text(), f"details-{run}")
+            rendered = coverage_index.render_site(reports)
+            ordered = ["main", "pr/5", "pr/99", "pr/1", "tag/2.0.0", "tag/1.0.0"]
+            offsets = [rendered.index(f'href="{target}/"') for target in ordered]
+            self.assertEqual(offsets, sorted(offsets))
+            self.assertIn("Aggregated PRs retain their own reports", rendered)
+
+    def test_archive_retains_details_and_each_run_attempt_without_replacing_old_data(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            report = root / "pr/868"
+            (report / "lcov/source").mkdir(parents=True)
+            (report / "lcov/source/file.cc.gcov.html").write_text("original detailed source")
+            (report / "index.html").write_text("original report")
+            (report / "coverage-summary.json").write_text(json.dumps(_summary(95)))
+            metadata = coverage_index.report_metadata(
+                _summary(95), "pr/868", "2026-08-22T10:00:00Z", "2026-08-22T10:00:00Z",
+                "2026-08-22T10:01:00Z", 100, 1, "original-tested-head",
+            )
+            (report / "coverage-meta.json").write_text(json.dumps(metadata))
+            with mock.patch.object(sys, "argv", ["coverage_index.py", "archive", str(root)]):
+                self.assertEqual(coverage_index.main(), 0)
+            original = root / "runs/100/1"
+            self.assertEqual((original / "lcov/source/file.cc.gcov.html").read_text(), "original detailed source")
+            self.assertEqual(json.loads((original / "coverage-meta.json").read_text()), metadata)
+            (report / "lcov/source/file.cc.gcov.html").write_text("new detail")
+            coverage_index.archive_reports(root)
+            self.assertEqual((original / "lcov/source/file.cc.gcov.html").read_text(), "original detailed source")
+            metadata["source"]["run_attempt"] = 2
+            (report / "coverage-meta.json").write_text(json.dumps(metadata))
+            coverage_index.archive_reports(root)
+            self.assertEqual((root / "runs/100/2/lcov/source/file.cc.gcov.html").read_text(), "new detail")
+            metadata["source"].update(run_id=101, run_attempt=1, head_sha="integration-tested-head")
+            (report / "coverage-meta.json").write_text(json.dumps(metadata))
+            coverage_index.archive_reports(root)
+            rendered = (root / "runs/index.html").read_text()
+            paths = ["101/1", "100/2", "100/1"]
+            offsets = [rendered.index(f'href="{path}/"') for path in paths]
+            self.assertEqual(offsets, sorted(offsets))
+            for path in paths:
+                self.assertIn(f'href="{path}/coverage-summary.json"', rendered)
+            self.assertIn("original-tested-head"[:7], rendered)
+            self.assertIn("integration-tested-head"[:7], rendered)
+            self.assertIn('href="runs/"', coverage_index.render_site(root))
+
+    def test_archive_retains_late_incoming_run_without_changing_latest_report(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "site"
+            latest = root / "main"
+            incoming = Path(directory) / "incoming"
+            latest.mkdir(parents=True)
+            incoming.mkdir()
+            for report, run in ((latest, 200), (incoming, 100)):
+                metadata = coverage_index.report_metadata(
+                    _summary(95), "main", "2026-08-22T10:00:00Z", "2026-08-22T10:00:00Z",
+                    "2026-08-22T10:01:00Z", run, 1, f"head-{run}",
+                )
+                (report / "coverage-meta.json").write_text(json.dumps(metadata))
+                (report / "index.html").write_text(f"report-{run}")
+            with mock.patch.object(sys, "argv", [
+                "coverage_index.py", "archive", str(root), "--incoming", str(incoming),
+            ]):
+                self.assertEqual(coverage_index.main(), 0)
+            self.assertEqual((latest / "index.html").read_text(), "report-200")
+            for run in (100, 200):
+                self.assertEqual((root / f"runs/{run}/1/index.html").read_text(), f"report-{run}")
+
+    def test_archive_skips_legacy_and_recovers_after_an_interrupted_copy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            report = root / "main"
+            report.mkdir()
+            metadata = coverage_index.report_metadata(
+                _summary(95), "main", "2026-08-22T10:00:00Z", "2026-08-22T10:00:00Z",
+                "2026-08-22T10:01:00Z", 0, 0, "legacy",
+            )
+            (report / "coverage-meta.json").write_text(json.dumps(metadata))
+            coverage_index.archive_reports(root)
+            self.assertFalse((root / "runs/0").exists())
+            self.assertIn("No archived coverage runs", (root / "runs/index.html").read_text())
+            metadata["source"].update(run_id=200, run_attempt=1)
+            (report / "coverage-meta.json").write_text(json.dumps(metadata))
+            with mock.patch.object(coverage_index.shutil, "copytree", side_effect=OSError("copy failed")):
+                with self.assertRaisesRegex(OSError, "copy failed"):
+                    coverage_index.archive_reports(root)
+            self.assertFalse((root / "runs/200/1").exists())
+            self.assertEqual(list((root / "runs/200").glob(".archive-*")), [])
+            coverage_index.archive_reports(root)
+            self.assertTrue((root / "runs/200/1/coverage-meta.json").exists())
+
     def test_unpositioned_reports_use_run_creation_not_completion_time(self):
         reports = [
             coverage_index.report_metadata(

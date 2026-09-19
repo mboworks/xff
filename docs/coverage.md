@@ -53,8 +53,9 @@ so consumers do not need to reimplement inheritance.
 ## Retained report ordering
 
 The coverage index pins `main` first. PRs and releases then share one newest-first list based on
-main's first-parent commit history: a PR uses its merge commit, and a release uses its tagged
-commit (including annotated tags). PRs merged after a release therefore appear above that release,
+main's first-parent commit history: a directly merged PR uses its merge commit, a nested PR uses
+the first main commit containing its merge, and a release uses its tagged commit (including
+annotated tags). PRs merged after a release therefore appear above that release,
 regardless of PR number, version number, tag publication time, or CI completion time. A release
 precedes a PR anchored to the same commit.
 
@@ -63,3 +64,18 @@ newest CI run creation first. Each coverage publication refreshes all retained r
 closed-PR metadata and main's full history, so a PR report produced before its merge is repositioned
 afterward. The stored `history` commit and position control presentation only; workflow creation,
 run ID, and attempt still determine which report may replace an older report for the same target.
+
+## Individual run retention and aggregation
+
+Each published report is retained under `coverage/runs/RUN_ID/ATTEMPT/`, including its LCOV
+source pages, summary JSON, and original source-run metadata. The coverage overview links a
+run-history index. The per-PR/main/release URLs continue to show their latest report; replacing
+one does not replace its archived snapshot. Existing identified reports are archived before
+replacement. Incoming reports are also archived when a newer run already owns the latest URL. Legacy reports without a real run ID
+remain available at their existing URL but are not assigned an invented run identity.
+
+An aggregation PR does not combine or relabel the coverage measurements of its constituent PRs.
+Each retains its original tested commit, workflow run, and detailed report. Once the aggregation
+reaches main, nested PR merges are positioned under the first main commit containing them, ordered
+by their individual merge times. The aggregation PR's own report remains separate. Before that
+merge, the constituent reports remain in the unpositioned section rather than claiming to be on main.
