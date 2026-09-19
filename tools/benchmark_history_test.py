@@ -196,6 +196,54 @@ class BenchmarkHistoryTest(unittest.TestCase):
             pulls[0].update(merged_at=None)
             self.assertNotIn("PR 9", history.render_site(root, pulls, "owner/repo"))
 
+    def test_reference_pages_use_exact_commits_and_survive_expired_measurements(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            pulls = [{"number": 9, "merge_commit_sha": HEAD, "merged_at": "2026-09-19T12:00:00Z"}]
+            history.retain(root, record(), source(1), 100)
+            history.retain(root, record(), source(2, event="push"), 100)
+            history.retain(root, record(), source(3), 100)  # Later pre-merge cannot win.
+
+            def git(command, text):
+                self.assertTrue(text)
+                if command[-3:] == ["tag", "--list", "v*"]:
+                    return "v1.0.0\nv2.0.0\nv-invalid\n"
+                self.assertEqual(command[-2], "rev-parse")
+                return (HEAD if command[-1] == "v1.0.0^{commit}" else BASE) + "\n"
+
+            with mock.patch.object(history.subprocess, "check_output", side_effect=git):
+                history.reference_pages(root, pulls, root)
+            for reference in ("tag/1.0.0", "pr/9"):
+                html = (root / reference / "index.html").read_text()
+                self.assertIn('url=../../runs/2/1/', html)
+                self.assertTrue((root / "runs/2/1/index.html").is_file())
+            self.assertIn("No retained benchmark", (root / "tag/2.0.0/index.html").read_text())
+            self.assertFalse((root / "tag/-invalid").exists())
+            # Retention removes the exact matching measurement; do not keep a dangling redirect
+            # or substitute a newer benchmark from a different commit.
+            changed = record()
+            changed["head"] = BASE
+            history.retain(root, changed, source(4, event="push", sha=BASE), 1)
+            with mock.patch.object(history.subprocess, "check_output", side_effect=git):
+                history.reference_pages(root, pulls, root)
+            self.assertIn("No retained benchmark", (root / "tag/1.0.0/index.html").read_text())
+            self.assertIn("No retained benchmark", (root / "pr/9/index.html").read_text())
+            self.assertIn('url=../../runs/4/1/', (root / "tag/2.0.0/index.html").read_text())
+            with mock.patch.object(history.subprocess, "check_output", return_value=""):
+                history.reference_pages(root, [], root)
+            self.assertNotIn("http-equiv", (root / "tag/2.0.0/index.html").read_text())
+
+    def test_release_refresh_does_not_download_measurement_artifacts(self):
+        publish = repository_file(".github/workflows/benchmark_pages.yml").read_text()
+        self.assertIn("workflows: [Benchmarks, Release]", publish)
+        self.assertIn("workflow_dispatch: {}", publish)
+        self.assertIn("fetch-depth: 0", publish)
+        self.assertIn("uses: actions/download-artifact@v8\n        if: github.event.workflow_run.name == 'Benchmarks'", publish)
+        refresh = publish.split("      - name: Refresh stable benchmark references and deploy", 1)[1]
+        self.assertNotIn("SOURCE_RUN", refresh)
+        self.assertNotIn("download-artifact", refresh)
+        self.assertIn("benchmark_history.py refresh", refresh)
+
     def test_html_escapes_provenance_and_scenario_text(self):
         value = record()
         value["contract"]["build"] = "<script>evil</script>"

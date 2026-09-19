@@ -111,3 +111,21 @@ reusing its build and test execution. It must not introduce a separate required 
 The post-merge workflow remains informational. Tagging a measured commit does not repeat it.
 Historical pre-merge and tag records remain readable, but the current automatic schedule does
 not generate new ones.
+
+## Stable release and PR links
+
+Release navigation links to `benchmarks/tag/VERSION/`, matching coverage's numeric version
+convention (for example `benchmarks/tag/0.7.0/`). PR links use `benchmarks/pr/NUMBER/`. These
+landing pages redirect to retained run/attempt details; they do not copy measurements or start
+benchmark jobs. Annotated and lightweight tags resolve to their exact tagged commit. A PR prefers
+its exact post-merge measurement and can fall back to its own retained pre-merge result.
+
+A release with no retained measurement for its exact commit gets an explanatory page, not a
+redirect to a different commit or a dangling run URL. Retention refreshes these pages when results
+expire. The publisher refreshes references after measurements and completed release workflows;
+manual `Publish benchmarks` dispatch refreshes existing data without downloading an artifact.
+It remains serialized with all other site publishers.
+
+To repair an older release after this change, first dispatch `benchmark_pages.yml` from main.
+Then dispatch `pages.yml` with `tag=v0.7.0` and `config_path=release-site.json` to regenerate its
+navigation using the current tracked configuration. No release tag or measurement is rewritten.

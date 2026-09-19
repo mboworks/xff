@@ -3,6 +3,8 @@
 
 # 0.8.0
 
+- Link release and PR benchmark pages to retained measurements for the exact referenced commit.
+
 - Run and publish informational benchmarks after merge only; keep manual experiments artifact-only.
 
 # 0.7.0

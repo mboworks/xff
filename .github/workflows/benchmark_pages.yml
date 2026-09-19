@@ -4,8 +4,9 @@ name: Publish benchmarks
 
 on:
   workflow_run:
-    workflows: [Benchmarks]
+    workflows: [Benchmarks, Release]
     types: [completed]
+  workflow_dispatch: {}
 
 permissions: {}
 
@@ -16,7 +17,11 @@ concurrency:
 
 jobs:
   publish:
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main'
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      (github.event.workflow_run.name == 'Release' ||
+      (github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main')))
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -33,17 +38,20 @@ jobs:
         with:
           ref: main
           path: source
+          fetch-depth: 0
       - uses: actions/checkout@v7
         with:
           ref: coverage-pages
           path: site
       - uses: actions/download-artifact@v8
+        if: github.event.workflow_run.name == 'Benchmarks'
         with:
           github-token: ${{ github.token }}
           name: benchmark-report
           path: report
           run-id: ${{ github.event.workflow_run.id }}
-      - name: Publish benchmark history
+      - name: Retain incoming benchmark measurements
+        if: github.event.workflow_run.name == 'Benchmarks'
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_RUN: ${{ github.event.workflow_run.id }}
@@ -57,6 +65,14 @@ jobs:
           python3 source/tools/benchmark_history.py publish \
             --root=site/benchmarks --report=report/benchmark-report.json \
             --source=source-reference.json --pulls=pulls.json --repository="${GITHUB_REPOSITORY}" --keep=100
+      - name: Refresh stable benchmark references and deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/pulls?state=all&per_page=100" > pulls.json
+          python3 source/tools/benchmark_history.py refresh \
+            --root=site/benchmarks --pulls=pulls.json --checkout=source --repository="${GITHUB_REPOSITORY}"
           git -C site config user.name 'github-actions[bot]'
           git -C site config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git -C site add benchmarks
