@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-18 21:04:57</td>
+            <td class="headerValue">2026-09-19 11:05:02</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -139,12 +139,12 @@
 <span id="L59"><span class="lineNum">      59</span>                 :             :   std::string link_target;</span>
 <span id="L60"><span class="lineNum">      60</span>                 :             : };</span>
 <span id="L61"><span class="lineNum">      61</span>                 :             : </span>
-<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">           7 : absl::Status ErrorStatus(int error, std::string_view operation) {</span></span>
-<span id="L63"><span class="lineNum">      63</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">           7 :   const int code = error &lt; 0 ? -error : error;</span></span>
-<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">           7 :   const std::string message = absl::StrCat(operation, &quot;: &quot;, sqsh_error_str(error));</span></span>
-<span id="L65"><span class="lineNum">      65</span> [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 5 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2 times"> + </span>]:<span class="tlaGNC">           7 :   if (code == SQSH_ERROR_WRONG_MAGIC || code == SQSH_ERROR_SUPERBLOCK_TOO_SMALL) {</span></span>
-<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">           5 :     return absl::InvalidArgumentError(message);</span></span>
-<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">           5 :   }</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">           8 : absl::Status ErrorStatus(int error, std::string_view operation) {</span></span>
+<span id="L63"><span class="lineNum">      63</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">           8 :   const int code = error &lt; 0 ? -error : error;</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">           8 :   const std::string message = absl::StrCat(operation, &quot;: &quot;, sqsh_error_str(error));</span></span>
+<span id="L65"><span class="lineNum">      65</span> [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 6 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 2 times"> + </span>]:<span class="tlaGNC">           8 :   if (code == SQSH_ERROR_WRONG_MAGIC || code == SQSH_ERROR_SUPERBLOCK_TOO_SMALL) {</span></span>
+<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">           6 :     return absl::InvalidArgumentError(message);</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">           6 :   }</span></span>
 <span id="L68"><span class="lineNum">      68</span> [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>][<span class="tlaUNC" title="branch &quot;2&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">           2 :   if (code == ENOENT || code == SQSH_ERROR_NO_SUCH_FILE) {</span></span>
 <span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">           1 :     return absl::NotFoundError(message);</span></span>
 <span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaGNC">           1 :   }</span></span>
@@ -158,15 +158,15 @@
 <span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaGNC">           1 :   return absl::DataLossError(message);</span></span>
 <span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">           1 : }</span></span>
 <span id="L79"><span class="lineNum">      79</span>                 :             : </span>
-<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">          32 : ArchivePtr OpenAt(const void* source, std::optional&lt;std::size_t&gt; size, std::uint64_t offset, int&amp; error) {</span></span>
-<span id="L81"><span class="lineNum">      81</span>                 :<span class="tlaGNC">          32 :   struct SqshConfig config = {};</span></span>
-<span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">          32 :   config.archive_offset = offset;</span></span>
-<span id="L83"><span class="lineNum">      83</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 22 times"> + </span>]:<span class="tlaGNC">          32 :   if (size.has_value()) {</span></span>
+<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">          33 : ArchivePtr OpenAt(const void* source, std::optional&lt;std::size_t&gt; size, std::uint64_t offset, int&amp; error) {</span></span>
+<span id="L81"><span class="lineNum">      81</span>                 :<span class="tlaGNC">          33 :   struct SqshConfig config = {};</span></span>
+<span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">          33 :   config.archive_offset = offset;</span></span>
+<span id="L83"><span class="lineNum">      83</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 23 times"> + </span>]:<span class="tlaGNC">          33 :   if (size.has_value()) {</span></span>
 <span id="L84"><span class="lineNum">      84</span>                 :<span class="tlaGNC">          10 :     config.source_mapper = sqsh_mapper_impl_static;</span></span>
 <span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaGNC">          10 :     config.source_size = *size;</span></span>
 <span id="L86"><span class="lineNum">      86</span>                 :<span class="tlaGNC">          10 :   }</span></span>
-<span id="L87"><span class="lineNum">      87</span>                 :<span class="tlaGNC">          32 :   return ArchivePtr(sqsh_archive_open(source, &amp;config, &amp;error));</span></span>
-<span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaGNC">          32 : }</span></span>
+<span id="L87"><span class="lineNum">      87</span>                 :<span class="tlaGNC">          33 :   return ArchivePtr(sqsh_archive_open(source, &amp;config, &amp;error));</span></span>
+<span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaGNC">          33 : }</span></span>
 <span id="L89"><span class="lineNum">      89</span>                 :             : </span>
 <span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">           3 : absl::StatusOr&lt;ArchivePtr&gt; OpenAppImageBytes(std::string_view container, std::string_view bytes) {</span></span>
 <span id="L91"><span class="lineNum">      91</span>         [<span class="tlaGBC" title="branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           5 :   for (std::string_view::size_type offset = bytes.find(kMagic); offset != std::string_view::npos;</span></span>
@@ -211,23 +211,23 @@
 <span id="L130"><span class="lineNum">     130</span>                 :             : absl::StatusOr&lt;ArchivePtr&gt; OpenArchive(</span>
 <span id="L131"><span class="lineNum">     131</span>                 :             :     std::string_view container,</span>
 <span id="L132"><span class="lineNum">     132</span>                 :             :     std::optional&lt;std::string_view&gt; bytes,</span>
-<span id="L133"><span class="lineNum">     133</span>                 :<span class="tlaGNC">          32 :     std::string&amp; path_storage) {</span></span>
-<span id="L134"><span class="lineNum">     134</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 22 times"> + </span>]:<span class="tlaGNC">          32 :   if (absl::EndsWithIgnoreCase(container, &quot;.appimage&quot;)) {</span></span>
+<span id="L133"><span class="lineNum">     133</span>                 :<span class="tlaGNC">          33 :     std::string&amp; path_storage) {</span></span>
+<span id="L134"><span class="lineNum">     134</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 23 times"> + </span>]:<span class="tlaGNC">          33 :   if (absl::EndsWithIgnoreCase(container, &quot;.appimage&quot;)) {</span></span>
 <span id="L135"><span class="lineNum">     135</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>]:<span class="tlaGNC">          10 :     return bytes.has_value() ? OpenAppImageBytes(container, *bytes) : OpenAppImagePath(container, path_storage);</span></span>
 <span id="L136"><span class="lineNum">     136</span>                 :<span class="tlaGNC">          10 :   }</span></span>
-<span id="L137"><span class="lineNum">     137</span>                 :<span class="tlaGNC">          22 :   int error = 0;</span></span>
-<span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">          22 :   ArchivePtr archive;</span></span>
-<span id="L139"><span class="lineNum">     139</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 16 times"> + </span>]:<span class="tlaGNC">          22 :   if (bytes.has_value()) {</span></span>
+<span id="L137"><span class="lineNum">     137</span>                 :<span class="tlaGNC">          23 :   int error = 0;</span></span>
+<span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">          23 :   ArchivePtr archive;</span></span>
+<span id="L139"><span class="lineNum">     139</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 17 times"> + </span>]:<span class="tlaGNC">          23 :   if (bytes.has_value()) {</span></span>
 <span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">           6 :     archive = OpenAt(bytes-&gt;data(), bytes-&gt;size(), /*offset=*/0, error);</span></span>
-<span id="L141"><span class="lineNum">     141</span>                 :<span class="tlaGNC">          16 :   } else {</span></span>
-<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">          16 :     path_storage = container;</span></span>
-<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">          16 :     archive = OpenAt(path_storage.c_str(), std::nullopt, /*offset=*/0, error);</span></span>
-<span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">          16 :   }</span></span>
-<span id="L145"><span class="lineNum">     145</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 15 times"> + </span>]:<span class="tlaGNC">          22 :   if (archive == nullptr) {</span></span>
-<span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">           7 :     return ErrorStatus(error, absl::StrCat(&quot;cannot open SquashFS container &quot;, container));</span></span>
-<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">           7 :   }</span></span>
+<span id="L141"><span class="lineNum">     141</span>                 :<span class="tlaGNC">          17 :   } else {</span></span>
+<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">          17 :     path_storage = container;</span></span>
+<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">          17 :     archive = OpenAt(path_storage.c_str(), std::nullopt, /*offset=*/0, error);</span></span>
+<span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">          17 :   }</span></span>
+<span id="L145"><span class="lineNum">     145</span>         [<span class="tlaGBC" title="branch 0 was taken 8 times"> + </span><span class="tlaGBC" title="branch 1 was taken 15 times"> + </span>]:<span class="tlaGNC">          23 :   if (archive == nullptr) {</span></span>
+<span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">           8 :     return ErrorStatus(error, absl::StrCat(&quot;cannot open SquashFS container &quot;, container));</span></span>
+<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">           8 :   }</span></span>
 <span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">          15 :   return archive;</span></span>
-<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">          22 : }</span></span>
+<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">          23 : }</span></span>
 <span id="L150"><span class="lineNum">     150</span>                 :             : </span>
 <span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">          75 : std::string SquashPath(std::string_view member) {</span></span>
 <span id="L152"><span class="lineNum">     152</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 75 times"> + </span>]:<span class="tlaGNC">          75 :   return member.starts_with('/') ? std::string(member) : absl::StrCat(&quot;/&quot;, member);</span></span>
@@ -258,9 +258,9 @@
 <span id="L177"><span class="lineNum">     177</span>                 :             : </span>
 <span id="L178"><span class="lineNum">     178</span>                 :             : absl::StatusOr&lt;std::vector&lt;MemberRecord&gt;&gt; ListMembers(</span>
 <span id="L179"><span class="lineNum">     179</span>                 :             :     std::string_view container,</span>
-<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">          22 :     std::optional&lt;std::string_view&gt; bytes) {</span></span>
-<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">          22 :   std::string path_storage;</span></span>
-<span id="L182"><span class="lineNum">     182</span>         [<span class="tlaGBC" title="branch 0 was taken 11 times"> + </span><span class="tlaGBC" title="branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">          22 :   MBO_ASSIGN_OR_RETURN(const ArchivePtr archive, OpenArchive(container, bytes, path_storage));</span></span>
+<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">          23 :     std::optional&lt;std::string_view&gt; bytes) {</span></span>
+<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">          23 :   std::string path_storage;</span></span>
+<span id="L182"><span class="lineNum">     182</span>         [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">          23 :   MBO_ASSIGN_OR_RETURN(const ArchivePtr archive, OpenArchive(container, bytes, path_storage));</span></span>
 <span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">          11 :   int error = 0;</span></span>
 <span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">          11 :   const std::unique_ptr&lt;char*, decltype(&amp;std::free)&gt; paths(</span></span>
 <span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">          11 :       sqsh_easy_tree_traversal(archive.get(), &quot;/&quot;, &amp;error), &amp;std::free);</span></span>
@@ -338,9 +338,9 @@
 <span id="L257"><span class="lineNum">     257</span>                 :             : </span>
 <span id="L258"><span class="lineNum">     258</span>                 :             : absl::StatusOr&lt;SquashfsFileSystem&gt; SquashfsFileSystem::Open(</span>
 <span id="L259"><span class="lineNum">     259</span>                 :             :     std::string_view container,</span>
-<span id="L260"><span class="lineNum">     260</span>                 :<span class="tlaGNC">          16 :     archive::MemberPathOptions options) {</span></span>
-<span id="L261"><span class="lineNum">     261</span>                 :<span class="tlaGNC">          16 :   return Build(std::string(container), std::string(), /*memory_backed=*/false, options);</span></span>
-<span id="L262"><span class="lineNum">     262</span>                 :<span class="tlaGNC">          16 : }</span></span>
+<span id="L260"><span class="lineNum">     260</span>                 :<span class="tlaGNC">          17 :     archive::MemberPathOptions options) {</span></span>
+<span id="L261"><span class="lineNum">     261</span>                 :<span class="tlaGNC">          17 :   return Build(std::string(container), std::string(), /*memory_backed=*/false, options);</span></span>
+<span id="L262"><span class="lineNum">     262</span>                 :<span class="tlaGNC">          17 : }</span></span>
 <span id="L263"><span class="lineNum">     263</span>                 :             : </span>
 <span id="L264"><span class="lineNum">     264</span>                 :             : absl::StatusOr&lt;SquashfsFileSystem&gt; SquashfsFileSystem::OpenBytes(</span>
 <span id="L265"><span class="lineNum">     265</span>                 :             :     std::string_view container,</span>
@@ -353,9 +353,9 @@
 <span id="L272"><span class="lineNum">     272</span>                 :             :     std::string container,</span>
 <span id="L273"><span class="lineNum">     273</span>                 :             :     std::string bytes,</span>
 <span id="L274"><span class="lineNum">     274</span>                 :             :     bool memory_backed,</span>
-<span id="L275"><span class="lineNum">     275</span>                 :<span class="tlaGNC">          22 :     archive::MemberPathOptions options) {</span></span>
-<span id="L276"><span class="lineNum">     276</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 16 times"> + </span>]:<span class="tlaGNC">          22 :   const std::optional&lt;std::string_view&gt; source = memory_backed ? std::optional&lt;std::string_view&gt;{bytes} : std::nullopt;</span></span>
-<span id="L277"><span class="lineNum">     277</span>         [<span class="tlaGBC" title="branch 0 was taken 11 times"> + </span><span class="tlaGBC" title="branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">          22 :   MBO_ASSIGN_OR_RETURN(const std::vector&lt;MemberRecord&gt; members, ListMembers(container, source));</span></span>
+<span id="L275"><span class="lineNum">     275</span>                 :<span class="tlaGNC">          23 :     archive::MemberPathOptions options) {</span></span>
+<span id="L276"><span class="lineNum">     276</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 17 times"> + </span>]:<span class="tlaGNC">          23 :   const std::optional&lt;std::string_view&gt; source = memory_backed ? std::optional&lt;std::string_view&gt;{bytes} : std::nullopt;</span></span>
+<span id="L277"><span class="lineNum">     277</span>         [<span class="tlaGBC" title="branch 0 was taken 12 times"> + </span><span class="tlaGBC" title="branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">          23 :   MBO_ASSIGN_OR_RETURN(const std::vector&lt;MemberRecord&gt; members, ListMembers(container, source));</span></span>
 <span id="L278"><span class="lineNum">     278</span>                 :<span class="tlaGNC">          11 :   SquashfsFileSystem fs(std::move(container), options);</span></span>
 <span id="L279"><span class="lineNum">     279</span>                 :<span class="tlaGNC">          11 :   fs.bytes_ = std::move(bytes);</span></span>
 <span id="L280"><span class="lineNum">     280</span>                 :<span class="tlaGNC">          11 :   fs.memory_backed_ = memory_backed;</span></span>
@@ -382,7 +382,7 @@
 <span id="L301"><span class="lineNum">     301</span>                 :<span class="tlaGNC">          55 :     fs.nodes_.emplace(member.path, std::move(node));</span></span>
 <span id="L302"><span class="lineNum">     302</span>                 :<span class="tlaGNC">          55 :   }</span></span>
 <span id="L303"><span class="lineNum">     303</span>                 :<span class="tlaGNC">          11 :   return fs;</span></span>
-<span id="L304"><span class="lineNum">     304</span>                 :<span class="tlaGNC">          22 : }</span></span>
+<span id="L304"><span class="lineNum">     304</span>                 :<span class="tlaGNC">          23 : }</span></span>
 <span id="L305"><span class="lineNum">     305</span>                 :             : </span>
 <span id="L306"><span class="lineNum">     306</span>                 :<span class="tlaGNC">          42 : std::optional&lt;std::string&gt; SquashfsFileSystem::MemberKeyOf(std::string_view path) const {</span></span>
 <span id="L307"><span class="lineNum">     307</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 36 times"> + </span>]:<span class="tlaGNC">          42 :   if (path == container_) {</span></span>

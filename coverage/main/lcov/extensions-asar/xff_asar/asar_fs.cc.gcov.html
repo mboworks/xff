@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-18 21:04:57</td>
+            <td class="headerValue">2026-09-19 11:05:02</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -120,21 +120,21 @@
 <span id="L40"><span class="lineNum">      40</span>                 :             : constexpr std::size_t kMaximumTreeDepth = 256;</span>
 <span id="L41"><span class="lineNum">      41</span>                 :             : constexpr std::uint64_t kVirtualDeviceBit = std::uint64_t{1} &lt;&lt; 63U;</span>
 <span id="L42"><span class="lineNum">      42</span>                 :             : </span>
-<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">         254 : std::uint32_t ReadU32(std::string_view data, std::size_t offset) {</span></span>
-<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">         254 :   return static_cast&lt;std::uint32_t&gt;(static_cast&lt;unsigned char&gt;(data[offset]))</span></span>
-<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">         254 :          | (static_cast&lt;std::uint32_t&gt;(static_cast&lt;unsigned char&gt;(data[offset + 1])) &lt;&lt; 8U)</span></span>
-<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">         254 :          | (static_cast&lt;std::uint32_t&gt;(static_cast&lt;unsigned char&gt;(data[offset + 2])) &lt;&lt; 16U)</span></span>
-<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">         254 :          | (static_cast&lt;std::uint32_t&gt;(static_cast&lt;unsigned char&gt;(data[offset + 3])) &lt;&lt; 24U);</span></span>
-<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">         254 : }</span></span>
+<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">         255 : std::uint32_t ReadU32(std::string_view data, std::size_t offset) {</span></span>
+<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">         255 :   return static_cast&lt;std::uint32_t&gt;(static_cast&lt;unsigned char&gt;(data[offset]))</span></span>
+<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">         255 :          | (static_cast&lt;std::uint32_t&gt;(static_cast&lt;unsigned char&gt;(data[offset + 1])) &lt;&lt; 8U)</span></span>
+<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">         255 :          | (static_cast&lt;std::uint32_t&gt;(static_cast&lt;unsigned char&gt;(data[offset + 2])) &lt;&lt; 16U)</span></span>
+<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">         255 :          | (static_cast&lt;std::uint32_t&gt;(static_cast&lt;unsigned char&gt;(data[offset + 3])) &lt;&lt; 24U);</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">         255 : }</span></span>
 <span id="L49"><span class="lineNum">      49</span>                 :             : </span>
-<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">          96 : bool ClaimsAsar(std::string_view container) {</span></span>
-<span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">          96 :   return absl::EndsWithIgnoreCase(container, &quot;.asar&quot;);</span></span>
-<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">          96 : }</span></span>
+<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">          97 : bool ClaimsAsar(std::string_view container) {</span></span>
+<span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">          97 :   return absl::EndsWithIgnoreCase(container, &quot;.asar&quot;);</span></span>
+<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">          97 : }</span></span>
 <span id="L53"><span class="lineNum">      53</span>                 :             : </span>
-<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">          13 : absl::Status HeaderError(std::string_view container, std::string_view message, bool claimed) {</span></span>
-<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">          13 :   const std::string text = absl::StrCat(&quot;invalid ASAR '&quot;, container, &quot;': &quot;, message);</span></span>
-<span id="L56"><span class="lineNum">      56</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">          13 :   return claimed ? absl::DataLossError(text) : absl::InvalidArgumentError(text);</span></span>
-<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">          13 : }</span></span>
+<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">          14 : absl::Status HeaderError(std::string_view container, std::string_view message, bool claimed) {</span></span>
+<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">          14 :   const std::string text = absl::StrCat(&quot;invalid ASAR '&quot;, container, &quot;': &quot;, message);</span></span>
+<span id="L56"><span class="lineNum">      56</span>         [<span class="tlaGBC" title="branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="branch 1 was taken 7 times"> + </span>]:<span class="tlaGNC">          14 :   return claimed ? absl::DataLossError(text) : absl::InvalidArgumentError(text);</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">          14 : }</span></span>
 <span id="L58"><span class="lineNum">      58</span>                 :             : </span>
 <span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">          25 : absl::Status DataError(std::string_view container, std::string_view message) {</span></span>
 <span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">          25 :   return absl::DataLossError(absl::StrCat(&quot;invalid ASAR '&quot;, container, &quot;': &quot;, message));</span></span>
@@ -143,14 +143,14 @@
 <span id="L63"><span class="lineNum">      63</span>                 :             : absl::StatusOr&lt;std::uint64_t&gt; HeaderSize(</span>
 <span id="L64"><span class="lineNum">      64</span>                 :             :     std::string_view first_eight,</span>
 <span id="L65"><span class="lineNum">      65</span>                 :             :     std::uint64_t archive_size,</span>
-<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">          89 :     std::string_view container) {</span></span>
-<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">          89 :   const bool claimed = ClaimsAsar(container);</span></span>
-<span id="L68"><span class="lineNum">      68</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 89 times"> + </span>]:<span class="tlaGNC">          89 :   if (first_eight.size() &lt; 8) {</span></span>
+<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">          90 :     std::string_view container) {</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">          90 :   const bool claimed = ClaimsAsar(container);</span></span>
+<span id="L68"><span class="lineNum">      68</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 90 times"> + </span>]:<span class="tlaGNC">          90 :   if (first_eight.size() &lt; 8) {</span></span>
 <span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaUNC">           0 :     return HeaderError(container, &quot;the size pickle is truncated&quot;, claimed);</span></span>
 <span id="L70"><span class="lineNum">      70</span>                 :<span class="tlaUNC">           0 :   }</span></span>
-<span id="L71"><span class="lineNum">      71</span>         [<span class="tlaGBC" title="branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="branch 1 was taken 84 times"> + </span>]:<span class="tlaGNC">          89 :   if (ReadU32(first_eight, 0) != 4) {</span></span>
-<span id="L72"><span class="lineNum">      72</span>                 :<span class="tlaGNC">           5 :     return HeaderError(container, &quot;the size pickle does not contain one UInt32&quot;, claimed);</span></span>
-<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">           5 :   }</span></span>
+<span id="L71"><span class="lineNum">      71</span>         [<span class="tlaGBC" title="branch 0 was taken 6 times"> + </span><span class="tlaGBC" title="branch 1 was taken 84 times"> + </span>]:<span class="tlaGNC">          90 :   if (ReadU32(first_eight, 0) != 4) {</span></span>
+<span id="L72"><span class="lineNum">      72</span>                 :<span class="tlaGNC">           6 :     return HeaderError(container, &quot;the size pickle does not contain one UInt32&quot;, claimed);</span></span>
+<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">           6 :   }</span></span>
 <span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">          84 :   const std::uint64_t size = ReadU32(first_eight, 4);</span></span>
 <span id="L75"><span class="lineNum">      75</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 83 times"> + </span>]:<span class="tlaGNC">          84 :   if (size &lt; 8) {</span></span>
 <span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">           1 :     return HeaderError(container, &quot;the header pickle is too short&quot;, claimed);</span></span>
@@ -462,33 +462,33 @@
 <span id="L379"><span class="lineNum">     379</span>                 :<span class="tlaGNC">          22 :   content_cache_ = std::move(other.content_cache_);</span></span>
 <span id="L380"><span class="lineNum">     380</span>                 :<span class="tlaGNC">          22 : }</span></span>
 <span id="L381"><span class="lineNum">     381</span>                 :             : </span>
-<span id="L382"><span class="lineNum">     382</span>                 :<span class="tlaGNC">           8 : absl::StatusOr&lt;AsarFileSystem&gt; AsarFileSystem::Open(std::string_view container, archive::MemberPathOptions options) {</span></span>
+<span id="L382"><span class="lineNum">     382</span>                 :<span class="tlaGNC">           9 : absl::StatusOr&lt;AsarFileSystem&gt; AsarFileSystem::Open(std::string_view container, archive::MemberPathOptions options) {</span></span>
 <span id="L383"><span class="lineNum">     383</span>                 :             :   // XFF_HOST_IO: ASAR adapter reads its explicitly selected container file.</span>
-<span id="L384"><span class="lineNum">     384</span>                 :<span class="tlaGNC">           8 :   std::ifstream input(std::string(container), std::ios::binary);</span></span>
-<span id="L385"><span class="lineNum">     385</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">           8 :   if (!input) {</span></span>
+<span id="L384"><span class="lineNum">     384</span>                 :<span class="tlaGNC">           9 :   std::ifstream input(std::string(container), std::ios::binary);</span></span>
+<span id="L385"><span class="lineNum">     385</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">           9 :   if (!input) {</span></span>
 <span id="L386"><span class="lineNum">     386</span>                 :<span class="tlaUNC">           0 :     return absl::NotFoundError(absl::StrCat(&quot;cannot read ASAR '&quot;, container, &quot;'&quot;));</span></span>
 <span id="L387"><span class="lineNum">     387</span>                 :<span class="tlaUNC">           0 :   }</span></span>
-<span id="L388"><span class="lineNum">     388</span>                 :<span class="tlaGNC">           8 :   input.seekg(0, std::ios::end);</span></span>
-<span id="L389"><span class="lineNum">     389</span>                 :<span class="tlaGNC">           8 :   const std::streamoff end = input.tellg();</span></span>
-<span id="L390"><span class="lineNum">     390</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">           8 :   if (end &lt; 0) {</span></span>
+<span id="L388"><span class="lineNum">     388</span>                 :<span class="tlaGNC">           9 :   input.seekg(0, std::ios::end);</span></span>
+<span id="L389"><span class="lineNum">     389</span>                 :<span class="tlaGNC">           9 :   const std::streamoff end = input.tellg();</span></span>
+<span id="L390"><span class="lineNum">     390</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">           9 :   if (end &lt; 0) {</span></span>
 <span id="L391"><span class="lineNum">     391</span>                 :<span class="tlaUNC">           0 :     return absl::DataLossError(absl::StrCat(&quot;cannot determine ASAR size: &quot;, container));</span></span>
 <span id="L392"><span class="lineNum">     392</span>                 :<span class="tlaUNC">           0 :   }</span></span>
-<span id="L393"><span class="lineNum">     393</span>                 :<span class="tlaGNC">           8 :   const auto archive_size = static_cast&lt;std::uint64_t&gt;(end);</span></span>
-<span id="L394"><span class="lineNum">     394</span>                 :<span class="tlaGNC">           8 :   input.seekg(0);</span></span>
-<span id="L395"><span class="lineNum">     395</span>                 :<span class="tlaGNC">           8 :   std::string first_eight(8, '\0');</span></span>
-<span id="L396"><span class="lineNum">     396</span>                 :<span class="tlaGNC">           8 :   input.read(first_eight.data(), static_cast&lt;std::streamsize&gt;(first_eight.size()));</span></span>
-<span id="L397"><span class="lineNum">     397</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 5 times"> + </span>]:<span class="tlaGNC">           8 :   if (input.gcount() != static_cast&lt;std::streamsize&gt;(first_eight.size())) {</span></span>
+<span id="L393"><span class="lineNum">     393</span>                 :<span class="tlaGNC">           9 :   const auto archive_size = static_cast&lt;std::uint64_t&gt;(end);</span></span>
+<span id="L394"><span class="lineNum">     394</span>                 :<span class="tlaGNC">           9 :   input.seekg(0);</span></span>
+<span id="L395"><span class="lineNum">     395</span>                 :<span class="tlaGNC">           9 :   std::string first_eight(8, '\0');</span></span>
+<span id="L396"><span class="lineNum">     396</span>                 :<span class="tlaGNC">           9 :   input.read(first_eight.data(), static_cast&lt;std::streamsize&gt;(first_eight.size()));</span></span>
+<span id="L397"><span class="lineNum">     397</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 6 times"> + </span>]:<span class="tlaGNC">           9 :   if (input.gcount() != static_cast&lt;std::streamsize&gt;(first_eight.size())) {</span></span>
 <span id="L398"><span class="lineNum">     398</span>                 :<span class="tlaGNC">           3 :     return HeaderError(container, &quot;the size pickle is truncated&quot;, ClaimsAsar(container));</span></span>
 <span id="L399"><span class="lineNum">     399</span>                 :<span class="tlaGNC">           3 :   }</span></span>
-<span id="L400"><span class="lineNum">     400</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">          11 :   MBO_ASSIGN_OR_RETURN(const std::uint64_t header_size, HeaderSize(first_eight, archive_size, container));</span></span>
-<span id="L401"><span class="lineNum">     401</span>                 :<span class="tlaGNC">           8 :   std::string prefix = std::move(first_eight);</span></span>
-<span id="L402"><span class="lineNum">     402</span>                 :<span class="tlaGNC">           8 :   prefix.resize(static_cast&lt;std::size_t&gt;(8 + header_size));</span></span>
-<span id="L403"><span class="lineNum">     403</span>                 :<span class="tlaGNC">           8 :   input.read(std::span(prefix).subspan(8).data(), static_cast&lt;std::streamsize&gt;(header_size));</span></span>
-<span id="L404"><span class="lineNum">     404</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">           8 :   if (input.gcount() != static_cast&lt;std::streamsize&gt;(header_size)) {</span></span>
+<span id="L400"><span class="lineNum">     400</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">          12 :   MBO_ASSIGN_OR_RETURN(const std::uint64_t header_size, HeaderSize(first_eight, archive_size, container));</span></span>
+<span id="L401"><span class="lineNum">     401</span>                 :<span class="tlaGNC">           9 :   std::string prefix = std::move(first_eight);</span></span>
+<span id="L402"><span class="lineNum">     402</span>                 :<span class="tlaGNC">           9 :   prefix.resize(static_cast&lt;std::size_t&gt;(8 + header_size));</span></span>
+<span id="L403"><span class="lineNum">     403</span>                 :<span class="tlaGNC">           9 :   input.read(std::span(prefix).subspan(8).data(), static_cast&lt;std::streamsize&gt;(header_size));</span></span>
+<span id="L404"><span class="lineNum">     404</span>         [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">           9 :   if (input.gcount() != static_cast&lt;std::streamsize&gt;(header_size)) {</span></span>
 <span id="L405"><span class="lineNum">     405</span>                 :<span class="tlaUNC">           0 :     return HeaderError(container, &quot;the header pickle is truncated&quot;, ClaimsAsar(container));</span></span>
 <span id="L406"><span class="lineNum">     406</span>                 :<span class="tlaUNC">           0 :   }</span></span>
 <span id="L407"><span class="lineNum">     407</span>                 :<span class="tlaGNC">           3 :   return Parse(std::string(container), std::string(), prefix, archive_size, options);</span></span>
-<span id="L408"><span class="lineNum">     408</span>                 :<span class="tlaGNC">           8 : }</span></span>
+<span id="L408"><span class="lineNum">     408</span>                 :<span class="tlaGNC">           9 : }</span></span>
 <span id="L409"><span class="lineNum">     409</span>                 :             : </span>
 <span id="L410"><span class="lineNum">     410</span>                 :             : absl::StatusOr&lt;AsarFileSystem&gt; AsarFileSystem::OpenBytes(</span>
 <span id="L411"><span class="lineNum">     411</span>                 :             :     std::string_view container,</span>

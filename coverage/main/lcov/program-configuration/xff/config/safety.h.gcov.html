@@ -46,7 +46,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2026-09-18 21:04:57</td>
+            <td class="headerValue">2026-09-19 11:05:02</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -119,11 +119,11 @@
 <span id="L48"><span class="lineNum">      48</span>              : struct SafetyPolicy {</span>
 <span id="L49"><span class="lineNum">      49</span>              :   static constexpr std::size_t kCapabilities = static_cast&lt;std::size_t&gt;(Capability::kCount);</span>
 <span id="L50"><span class="lineNum">      50</span>              :   std::array&lt;bool, kCapabilities&gt; unconditional = {};</span>
-<span id="L51"><span class="lineNum">      51</span> <span class="tlaGNC">        1387 :   std::array&lt;bool, kCapabilities&gt; profile = [] {</span></span>
-<span id="L52"><span class="lineNum">      52</span> <span class="tlaGNC">        1387 :     std::array&lt;bool, kCapabilities&gt; values{};</span></span>
-<span id="L53"><span class="lineNum">      53</span> <span class="tlaGNC">        1387 :     values.fill(true);</span></span>
-<span id="L54"><span class="lineNum">      54</span> <span class="tlaGNC">        1387 :     return values;</span></span>
-<span id="L55"><span class="lineNum">      55</span> <span class="tlaGNC">        1387 :   }();</span></span>
+<span id="L51"><span class="lineNum">      51</span> <span class="tlaGNC">        1749 :   std::array&lt;bool, kCapabilities&gt; profile = [] {</span></span>
+<span id="L52"><span class="lineNum">      52</span> <span class="tlaGNC">        1749 :     std::array&lt;bool, kCapabilities&gt; values{};</span></span>
+<span id="L53"><span class="lineNum">      53</span> <span class="tlaGNC">        1749 :     values.fill(true);</span></span>
+<span id="L54"><span class="lineNum">      54</span> <span class="tlaGNC">        1749 :     return values;</span></span>
+<span id="L55"><span class="lineNum">      55</span> <span class="tlaGNC">        1749 :   }();</span></span>
 <span id="L56"><span class="lineNum">      56</span>              :   bool safe = false;</span>
 <span id="L57"><span class="lineNum">      57</span>              :   bool dry_run = false;</span>
 <span id="L58"><span class="lineNum">      58</span>              :   std::string temp_root;</span>
@@ -141,11 +141,12 @@
 <span id="L70"><span class="lineNum">      70</span>              : // accumulate; activation and individual profile settings are last-value-wins.</span>
 <span id="L71"><span class="lineNum">      71</span>              : // Config resolution expands each file's policy before combining flags. Raw CLI flags use file scope.</span>
 <span id="L72"><span class="lineNum">      72</span>              : SafetyPolicy ResolveSafety(const std::vector&lt;std::string&gt;&amp; globals, bool expanded = false);</span>
-<span id="L73"><span class="lineNum">      73</span>              : std::vector&lt;std::string&gt; ExpandSafetyFlag(std::string_view flag, DetailedPolicy detailed);</span>
-<span id="L74"><span class="lineNum">      74</span>              : std::string_view CapabilityName(Capability capability);</span>
-<span id="L75"><span class="lineNum">      75</span>              : </span>
-<span id="L76"><span class="lineNum">      76</span>              : }  // namespace xff::config</span>
-<span id="L77"><span class="lineNum">      77</span>              : #endif  // XFF_CONFIG_SAFETY_H_</span>
+<span id="L73"><span class="lineNum">      73</span>              : DetailedPolicy ResolveDetailedPolicy(const std::vector&lt;std::string&gt;&amp; globals);</span>
+<span id="L74"><span class="lineNum">      74</span>              : std::vector&lt;std::string&gt; ExpandSafetyFlag(std::string_view flag, DetailedPolicy detailed);</span>
+<span id="L75"><span class="lineNum">      75</span>              : std::string_view CapabilityName(Capability capability);</span>
+<span id="L76"><span class="lineNum">      76</span>              : </span>
+<span id="L77"><span class="lineNum">      77</span>              : }  // namespace xff::config</span>
+<span id="L78"><span class="lineNum">      78</span>              : #endif  // XFF_CONFIG_SAFETY_H_</span>
         </pre>
               </td>
             </tr>
