@@ -40,7 +40,8 @@
     "docs/summary-export.md": "docs/summary-export.html",
     "docs/shard-populations.md": "docs/shard-populations.html",
     "docs/order-and-limits.md": "docs/order-and-limits.html",
-    "docs/archive-safety-recipes.md": "docs/archive-safety-recipes.html"
+    "docs/archive-safety-recipes.md": "docs/archive-safety-recipes.html",
+    "docs/benchmark-history.md": "docs/benchmark-history.html"
   },
   "generated_html": {
     "XFF.md": {
@@ -56,6 +57,10 @@
     {
       "label": "CLI reference",
       "href": "/{repo}/releases/{version}/"
+    },
+    {
+      "label": "Benchmarks",
+      "href": "/{repo}/benchmarks/"
     }
   ]
 }

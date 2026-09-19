@@ -676,6 +676,28 @@ py_binary(
     srcs = ["measure_resources.py"],
 )
 
+py_library(
+    name = "benchmark_history_lib",
+    srcs = ["benchmark_history.py"],
+    imports = ["."],
+)
+
+py_binary(
+    name = "benchmark_history",
+    srcs = ["benchmark_history.py"],
+)
+
+py_test(
+    name = "benchmark_history_test",
+    size = "small",
+    srcs = ["benchmark_history_test.py"],
+    data = ["//:python_workflow_test_data"],
+    deps = [
+        ":benchmark_history_lib",
+        ":test_paths_lib",
+    ],
+)
+
 py_binary(
     name = "benchmark_resources",
     srcs = ["benchmark_resources.py"],
@@ -701,6 +723,7 @@ test_suite(
     tests = [
         ":align_markdown_tables_test",
         ":bazel_cache_test",
+        ":benchmark_history_test",
         ":build_rules_test",
         ":cache_report_test",
         ":cache_size_test",

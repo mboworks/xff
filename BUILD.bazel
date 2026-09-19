@@ -74,6 +74,8 @@ filegroup(
     srcs = [
         ".github/actions/bazel-cache-restore/action.yml",
         ".github/actions/bazel-cache-save/action.yml",
+        ".github/workflows/benchmark_pages.yml",
+        ".github/workflows/benchmarks.yml",
         ".github/workflows/cache_size.yml",
         ".github/workflows/coverage_pages.yml",
         ".github/workflows/fuzz.yml",

@@ -216,3 +216,5 @@ mount. That enables network-fixture measurements; it does not turn logical bytes
 Network measurements still require a supplied mount and an explicit description of its cache and
 server conditions. The observer can wrap another VFS in a benchmark, but this executable does not
 instrument dynamically constructed archive/member backends.
+
+Continuous paired measurements are described in [Benchmark history](benchmark-history.md).

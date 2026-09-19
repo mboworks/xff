@@ -36,7 +36,7 @@ Python 3.13 toolchain supplied by `rules_python`; Bazel execution does not use a
 Declare imported modules as dependencies and non-Python inputs as runfiles, with narrow visibility.
 A filegroup describes data, not an executable Python program.
 
-Run all 33 tooling suites with `bazel test //tools:python_tests`; they also run under `bazel test //...`.
+Run all 34 tooling suites with `bazel test //tools:python_tests`; they also run under `bazel test //...`.
 The benchmark integration is `//xff/engine:read_benchmark_test`. Run the measurement commands with
 `bazel run //tools:measure_resources -- -- COMMAND...` or
 `bazel run //tools:benchmark_resources -- XFF --output=REPORT.json`.

@@ -60,7 +60,9 @@ implementing PR.
 - Verification: cover multi-edit long names, ranking/ties, more than three candidates, unrelated
   inputs, aliases, config-only exclusions, bounded input, `=value` separation, and argument literals.
   Retain CLI tests proving a usage error occurs before actions execute.
-- Implemented in: not yet assigned.
+- Implementation: `tools/benchmark_history.py`, dedicated measurement/publication workflows, and
+  [measurement contract and retention](benchmark-history.md). Hosted-run noise/cost calibration remains
+  observational; no regression threshold is enforced.
 
 ## F03: Support and explain persistent width preferences
 
@@ -195,13 +197,12 @@ implementing PR.
 
 - Origin: [PR #873](https://github.com/mboworks/xff/pull/873).
 - Location: resource benchmark harness, benchmark reports, CI, and the published project site.
-- Status: agreed requirement; pending design and implementation.
+- Status: implemented; PR and hosted-run validation pending.
 - Finding: committed measurement reports provide reproducible snapshots but no continuous history
   or PR-to-baseline comparison like the coverage overview.
 - Action: retain machine-readable benchmark records and publish an indexed history for main, PRs,
   and releases. Link each result to the exact measured commit, baseline commit, workflow run, and
-  raw observations. Mirror coverage's ordering: current main first, then PRs/releases newest first
-  by merge/tagged-commit position. Keep reruns distinguishable and avoid presenting duplicate runs
+  raw observations. Use explicit pre-/post-merge phases, with PR merge times and tagged-commit times newest first. Keep reruns distinguishable and avoid presenting duplicate runs
   as separate source changes. Use the immediate base for stacked PR comparisons and identify any
   additional main/release baseline explicitly.
 - Measurement contract: version the scenarios and fixture generator; record fixture identity,
