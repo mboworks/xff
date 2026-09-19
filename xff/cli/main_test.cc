@@ -39,14 +39,24 @@ TEST_F(MainTest, AccountLookupFailureStopsTheCliEvenWhenConfigSkipsAreRequested)
   EXPECT_THAT(calls, Eq(1));
 }
 
-TEST_F(MainTest, MetaHelpDoesNotRequireAccountLookup) {
+TEST_F(MainTest, ExplicitHelpWidthAvoidsAccountLookup) {
+  int calls = 0;
+  const auto lookup = [&]() -> absl::StatusOr<config::ConfigPaths> {
+    ++calls;
+    return absl::UnavailableError("account service unavailable");
+  };
+  EXPECT_THAT(::xff::cli::Run("xff", {"--help=config", "--width=auto:100"}, lookup), Eq(0));
+  EXPECT_THAT(calls, Eq(0));
+}
+
+TEST_F(MainTest, MetaHelpRemainsAvailableWhenAccountLookupFails) {
   int calls = 0;
   const auto lookup = [&]() -> absl::StatusOr<config::ConfigPaths> {
     ++calls;
     return absl::UnavailableError("account service unavailable");
   };
   EXPECT_THAT(::xff::cli::Run("xff", {"--help=config"}, lookup), Eq(0));
-  EXPECT_THAT(calls, Eq(0));
+  EXPECT_THAT(calls, Eq(1));
 }
 
 }  // namespace

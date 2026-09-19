@@ -10,7 +10,7 @@ implementing PR.
 1. Merge #869 through #875 into #868's branch with merge commits, preserving individual PR history.
    Completed: #868 merged before the local integration fixes were published.
    Carry F01, F05-F07, and F12 in the immediate follow-up PR.
-2. Follow-up PR: F02-F04, fuzzy suggestions and persistent/capped width preferences.
+2. Follow-up PR: F02-F04, fuzzy suggestions, persistent/capped width, and help spacing.
 3. Follow-up PR: F08 and F11, Python testing ownership and proper Bazel Python targets.
 4. Follow-up PR: F09, benchmark history across PRs and releases.
 5. Separate final PR: F10, comparison benchmarks. Explicitly defer this work until the original
@@ -21,7 +21,7 @@ implementing PR.
 
 - Origin: [PR #868](https://github.com/mboworks/xff/pull/868).
 - Location: `xff/config/safety.cc`, `SafetyResolution`.
-- Status: implemented in the follow-up branch; local validation passed; CI pending.
+- Status: merged in PR #876.
 - Finding: `std::optional<std::size_t> dry_run` holds an index into the resolved flag application
   sequence, not the boolean dry-run value. The actual value is `policy.dry_run`. The current name
   makes those two roles easy to confuse.
@@ -37,7 +37,7 @@ implementing PR.
 
 - Origin: [PR #869](https://github.com/mboworks/xff/pull/869).
 - Location: `xff/cli/diagnostics.cc`, `IsNearby`, `RenderSuggestions`, and their callers/tests.
-- Status: agreed; pending implementation.
+- Status: implemented; all 78 CLI test targets and changed-file clang-tidy pass; publication pending.
 - Finding: suggestions exist, but matching accepts only one insertion, deletion, substitution, or
   adjacent transposition. Names shorter than four characters and cross-dash-family matches are
   excluded. Candidates are alphabetized rather than ranked, and more than three candidates suppress
@@ -66,7 +66,7 @@ implementing PR.
 
 - Origin: [PR #870](https://github.com/mboworks/xff/pull/870).
 - Location: `xff/cli/globals.cc` (`--width`), `xff/cli/main.cc`, configuration handling, and width help.
-- Status: agreed requirement; pending implementation.
+- Status: implemented; all 78 CLI test targets and changed-file clang-tidy pass; publication pending.
 - Finding: `--width=auto` explains detection but not how to persist a narrower personal preference.
   More importantly, `--width` is currently marked CLI-only, and help resolves width before loading
   configuration. Adding an INI example alone would therefore give unusable advice.
@@ -91,14 +91,14 @@ implementing PR.
 
 - Origin: [PR #870](https://github.com/mboworks/xff/pull/870).
 - Location: `xff/cli/help_width.cc`, width validation, registry help, and width-controlled renderers.
-- Status: proposed extension; syntax and edge behavior pending agreement.
+- Status: capped CLI/INI width and default implemented; all 78 CLI test targets and changed-file clang-tidy pass; publication pending.
 - Proposal: extend the existing value set with `--width=auto:COLS`, for example `--width=auto:120`.
   Use the automatic width up to the cap; use the cap when width cannot be detected. Preserve the
   existing `$COLUMNS` then terminal detection order. This avoids adding a separate interacting flag
-  and makes a portable personal default possible once F03 is implemented.
-- Action: if agreed, parse and validate the cap, document its behavior with small and unknown
+  and supports a portable personal default through F03.
+- Action: parse and validate the cap, document its behavior with small and unknown
   terminal widths, and support it through the same INI and CLI paths as other width values.
-- Edge behavior to settle: existing widths have a 40-column minimum; reject caps below 40 rather
+- Agreed default: `auto:110`; explicit `auto` remains uncapped. Existing widths have a 40-column minimum; reject caps below 40 rather
   than silently exceeding the requested cap. The cap bounds layout selection/wrapping, not every
   emitted line: numeric cells, unbreakable content, and outputs outside `--width`'s scope retain
   their documented behavior.
@@ -112,7 +112,7 @@ implementing PR.
 - Origin: [PR #870](https://github.com/mboworks/xff/pull/870).
 - Location: `STYLE_CPP.md` and all project-owned C++ sources, headers, tests, and extensions.
   Initial examples are in `xff/engine/run.cc`, in `emit(exporter.Row(...))` calls.
-- Status: implemented in the follow-up branch; local validation passed; CI pending.
+- Status: merged in PR #876.
 - Finding: multiple struct initializers omit the trailing comma needed for the expected layout.
   The final `.metrics = ExportMetrics(...)` member in the summary export calls is one example.
   A comma after the closing brace only separates function arguments. The style guide already
@@ -136,7 +136,7 @@ implementing PR.
 
 - Origin: [PR #870](https://github.com/mboworks/xff/pull/870).
 - Location: `xff/presentation/render/scoped_table_test.cc`, the two multiline layout goldens.
-- Status: implemented in the follow-up branch; local validation passed; CI pending.
+- Status: merged in PR #876.
 - Finding: the layout goldens contain literal Chinese characters. The fixture and other assertions
   already spell the same code points using ASCII `\u` escapes. These characters exercise terminal
   column width; the tests do not need Chinese-language wording.
@@ -154,7 +154,7 @@ implementing PR.
 - Origin: review of [PR #870](https://github.com/mboworks/xff/pull/870), extended to the full tree.
   Additional findings originate in [PR #873](https://github.com/mboworks/xff/pull/873) and
   [PR #874](https://github.com/mboworks/xff/pull/874); most affected lines predate this stack.
-- Status: implemented in the follow-up branch; local validation passed; CI pending.
+- Status: merged in PR #876.
 - Evidence: [the non-ASCII audit](non-ascii-audit.md) records every affected line, code point, escaped
   excerpt, and originating PR where applicable. The complete stack has 114 affected lines across
   25 text files; the user's tracked working files independently have 78 lines across 20 files.
@@ -277,7 +277,7 @@ implementing PR.
 ## F12: Preserve detailed coverage for aggregated PRs and individual runs
 
 - Origin: aggregation of PRs #868-875 into #868.
-- Status: implemented in the follow-up branch; original snapshots published; automation CI pending.
+- Status: merged in PR #876; timestamp ordering and closed-PR filtering merged in PR #877; live publication verified.
 - Finding: all eight original reports already had retained summaries, run metadata, and detailed
   LCOV pages. However, the aggregation's next run would replace #868's original per-PR report, and
   nested PR merge commits were absent from main's first-parent ordering.

@@ -17,6 +17,7 @@
 #include "mbo/status/status_macros.h"
 #include "mbo/types/optional_ref.h"
 #include "xff/cli/globals.h"
+#include "xff/cli/help_width.h"
 #include "xff/config/config.h"
 #include "xff/config/policy.h"
 #include "xff/config/xffrc.h"
@@ -501,6 +502,32 @@ std::vector<std::string> ConfigOverrideNotices(const config::ConfigInputs& input
     FindFileOverrides(file.config, absl::StrCat("--xffrc file ", file.path), notices);
   }
   return notices;
+}
+
+absl::StatusOr<std::size_t> ConfiguredHelpWidth(
+    config::ConfigInputs inputs,
+    const std::vector<std::string>& globals,
+    std::string_view invocation_selector,
+    std::size_t detected_cols) {
+  if (const auto width = WidthFlag(globals)) {
+    return ResolveHelpWidth(width, detected_cols);
+  }
+  auto system = ValidateConfigFile(std::move(inputs.system), {}, "system", config::Source::kSystem);
+  MBO_RETURN_IF_ERROR(system.status);
+  auto user = ValidateConfigFile(std::move(inputs.user), {}, "user", config::Source::kUser);
+  MBO_RETURN_IF_ERROR(user.status);
+  inputs.system = std::move(system.config);
+  inputs.user = std::move(user.config);
+  inputs.xffrc.clear();
+  const auto gated = config::GateConfig(inputs, false, globals, invocation_selector);
+  const auto resolved = config::ResolveConfigInOrder(gated.config, globals, invocation_selector);
+  std::vector<std::string> effective;
+  for (const auto& flag : resolved) {
+    if (!flag.is_argument) {
+      effective.push_back(flag.flag);
+    }
+  }
+  return ResolveHelpWidth(WidthFlag(effective), detected_cols);
 }
 
 }  // namespace xff::cli

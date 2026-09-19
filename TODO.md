@@ -1,5 +1,19 @@
 # TODO
 
+## Completed: MSAN help-rendering timeout
+
+- Give `//xff/cli:help_render_test` a target-specific 300-second timeout in PR #878 after
+  MSAN exceeded its 60-second budget while progressing through the suite.
+- Keep other test budgets unchanged; review the new MSAN runtime before deciding on profiling
+  or splitting the broad help tests.
+
+## Help follow-up: suggestions, width, and spacing
+
+- [x] Rank fuzzy flag suggestions and retain up to three candidates (F02).
+- [x] Add automatic width caps, defaulting to `auto:110`, with a 40-column minimum (F04).
+- [x] Normalize help block spacing while preserving verbatim examples.
+- [x] Support persistent user-INI width preferences, including help and CLI precedence (F03).
+
 ## Completed: Structured-output composition (audit S01)
 
 - Emit typed comparison-status and built-in grep JSONL records.

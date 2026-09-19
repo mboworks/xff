@@ -15,6 +15,7 @@
 
 #include "xff/cli/roff_backend.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -96,6 +97,10 @@ void RoffBackend::BeginEntry(const Entry& entry) {
 }
 
 void RoffBackend::EmitProse(const Prose& prose) {
+  // An empty model block must not emit a paragraph macro or consume paragraph state.
+  if (std::ranges::all_of(prose.runs, [](const Inline& run) { return absl::StripAsciiWhitespace(run.text).empty(); })) {
+    return;
+  }
   if (para_) {
     absl::StrAppend(&out_, ".PP\n");
   }

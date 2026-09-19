@@ -155,6 +155,7 @@ TEST_F(PlainBackendTest, RendersAWholeDocumentInOrder) {
         --summary  (xff)
           group + aggregate
           more detail.
+
         %p  path
         %f  name
         - first
@@ -200,6 +201,45 @@ TEST_F(PlainBackendTest, RelatedCommandsRespectTheHelpWidth) {
   for (const std::string_view line : absl::StrSplit(out, '\n')) {
     EXPECT_THAT(line.size(), Le(32));
   }
+}
+
+TEST_F(PlainBackendTest, EmptyBlocksDoNotAccumulateBlankLines) {
+  PlainTextBackend backend;
+  backend.EmitProse({});
+  backend.EmitProse({.runs = {Text("First block.")}});
+  backend.EmitProse({});
+  backend.EmitProse({});
+  backend.EmitRows({.rows = {{.term = "--control", .description = {Text("a setting")}}}});
+  EXPECT_THAT(backend.Take(), WithDropIndent(EqualsText(R"out(
+      First block.
+
+      --control  a setting
+      )out")));
+}
+
+TEST_F(PlainBackendTest, ExampleBlankLinesArePreservedWithoutExtraBlockSpacing) {
+  PlainTextBackend backend;
+  backend.EmitExample({.text = "first\n\n\nsecond\n\n", .lang = "text"});
+  backend.EmitProse({.runs = {Text("Next block.")}});
+  EXPECT_THAT(backend.Take(), WithDropIndent(EqualsText(R"out(
+      first
+
+
+      second
+
+      Next block.
+      )out")));
+}
+
+TEST_F(PlainBackendTest, SeparatesBulletsFromFlagRows) {
+  PlainTextBackend backend;
+  backend.EmitBullets({.items = {{Text("Only in config files.")}}});
+  backend.EmitRows({.rows = {{.term = "--control", .description = {Text("a setting")}}}});
+  EXPECT_THAT(backend.Take(), WithDropIndent(EqualsText(R"out(
+      - Only in config files.
+
+      --control  a setting
+      )out")));
 }
 
 TEST_F(PlainBackendTest, NarrowPolicyTableRetainsEveryLabeledValue) {

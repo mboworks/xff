@@ -6,6 +6,14 @@
 - Order coverage reports by actual PR merge and tag timestamps, with main pinned first.
   Omit closed, unmerged PRs from the overview while retaining their reports.
 
+- Rank fuzzy flag suggestions and show up to three candidates for misspelled options.
+
+- Avoid redundant help spacing in console, Markdown, and man-page output while preserving
+  intentional blank lines in code examples.
+
+- Default help and width-controlled comparison summaries to `--width=auto:110`. Support custom
+  automatic caps of at least 40 columns and persistent INI preferences, with explicit CLI overrides.
+
 - Retain detailed coverage reports by CI run and attempt, with a published history index and
   correct ordering for PRs merged through an aggregation branch.
 

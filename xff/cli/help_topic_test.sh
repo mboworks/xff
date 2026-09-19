@@ -62,7 +62,7 @@ test::help_time_primary_shows_details() {
   # A per-primary topic (`--help=mtime`) resolves the -mtime descriptor and shows its long
   # description, including the xff-only compound-span form and the find-compat note.
   local out
-  out="$("$(_xff_bin)" --help=mtime 2>&1)"
+  out="$("$(_xff_bin)" --help=mtime --width=none 2>&1)"
   expect_output_contains 'reaches back a full relative duration' "${out}"
   # shellcheck disable=SC2016  # the backticks are the help's inline-code markup, not a subshell
   expect_output_contains 'rejected by `--config=find`' "${out}"
@@ -106,7 +106,7 @@ test::help_action_primaries_show_details() {
 test::help_reference_time_primaries_show_details() {
   # -newer documents the -newerXY matrix convention; -newermt the time-string (t) form.
   local newer newermt
-  newer="$("$(_xff_bin)" --help=newer 2>&1)"
+  newer="$("$(_xff_bin)" --help=newer --width=none 2>&1)"
   expect_output_contains 'where each of X and Y is a=access' "${newer}"
   newermt="$("$(_xff_bin)" --help=newermt 2>&1)"
   expect_output_contains 'a timestamp xff parses' "${newermt}"
@@ -289,7 +289,7 @@ test::help_time_and_size_list_their_vocabularies() {
   expect_output_contains 'TIME FORMATS' "${out}"
   expect_output_contains 'iso8601' "${out}"
   expect_output_contains 'epoch' "${out}"
-  out="$("$(_xff_bin)" --help=size 2>&1)"
+  out="$("$(_xff_bin)" --help=size --width=none 2>&1)"
   expect_output_contains 'SIZE UNITS' "${out}"
   expect_output_contains 'SI units' "${out}"
   expect_output_contains 'IEC units' "${out}"
@@ -559,6 +559,31 @@ test::summary_scope_help_explains_conditional_defaults() {
   expect_output_contains '`all` outside comparison and `compare` when `--compare` is active' "${out}"
   expect_output_contains 'An explicit scope overrides that conditional default' "${out}"
   expect_output_contains 'regardless of option order' "${out}"
+}
+
+test::ini_width_preferences_apply_without_running_configured_actions() {
+  local tmp actual expected
+  tmp="$(test_tmpdir)"
+  printf '%s\n' '--width=auto:100' >"${tmp}/system.ini"
+  printf '%s\n' '--width=auto:60' "-exec touch ${tmp}/must-not-exist \\;" >"${tmp}/user.ini"
+  actual="$(XFF_TEST_SYSTEM_CONFIG="${tmp}/system.ini" XFF_TEST_USER_CONFIG="${tmp}/user.ini" COLUMNS=200 "$(_xff_bin)" --help=width)"
+  expected="$("$(_xff_bin)" --help=width --width=60)"
+  expect_eq "${expected}" "${actual}"
+  expect_eq "absent" "$(if [[ -e "${tmp}/must-not-exist" ]]; then echo present; else echo absent; fi)"
+  actual="$(XFF_TEST_USER_CONFIG="${tmp}/user.ini" "$(_xff_bin)" --help=width --width=90)"
+  expected="$("$(_xff_bin)" --help=width --width=90)"
+  expect_eq "${expected}" "${actual}"
+}
+
+test::ini_width_preferences_apply_to_comparison_summaries() {
+  local tmp actual expected
+  tmp="$(test_tmpdir)"
+  mkdir "${tmp}/left" "${tmp}/right"
+  printf x >"${tmp}/left/item.txt"
+  printf '%s\n' '--width=auto:60' >"${tmp}/user.ini"
+  actual="$(XFF_TEST_USER_CONFIG="${tmp}/user.ini" COLUMNS=200 "$(_xff_bin)" --compare=summary "${tmp}/left" "${tmp}/right" --summary=ext)"
+  expected="$("$(_xff_bin)" --compare=summary "${tmp}/left" "${tmp}/right" --summary=ext --width=60)"
+  expect_eq "${expected}" "${actual}"
 }
 
 test_runner

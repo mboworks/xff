@@ -96,6 +96,29 @@ TEST_F(RenderInlinesMarkdownTest, RefRendersAsALink) {
 
 struct MarkdownBackendTest : ::testing::Test {};
 
+TEST_F(MarkdownBackendTest, CollapsesBlankBlocksAndPreservesFencedExamples) {
+  MarkdownBackend backend;
+  backend.EmitProse({});
+  backend.EmitProse({.runs = {Text("First.")}});
+  backend.EmitProse({.runs = {Text("  \n\n")}});
+  backend.EmitProse({});
+  backend.EmitExample({.text = "one\n\n\ntwo\n", .lang = "text"});
+  backend.EmitProse({});
+  backend.EmitProse({.runs = {Text("Last.")}});
+  EXPECT_THAT(backend.Take(), WithDropIndent(EqualsText(R"out(
+      First.
+
+      ```text
+      one
+
+
+      two
+      ```
+
+      Last.
+      )out")));
+}
+
 TEST_F(MarkdownBackendTest, RendersAWholeDocumentAsMarkdown) {
   const Document doc{
       .name = "xff",

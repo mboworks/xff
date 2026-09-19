@@ -32,6 +32,11 @@ TEST_F(DiagnosticsTest, SuggestsOneEditIncludingTranspositionWithoutGuessingValu
   }
 }
 
+TEST_F(DiagnosticsTest, RanksMultiEditLongNamesAboveWeakerMatches) {
+  EXPECT_THAT(UnknownGlobalHint("--summary-scp=all"), HasSubstr("Did you mean '--summary-scope'"));
+  EXPECT_THAT(UnknownGlobalHint("--summary-scp=all"), Not(HasSubstr("=all")));
+}
+
 TEST_F(DiagnosticsTest, DoesNotGuessUnrelatedShortOrConfigOnlyNames) {
   for (const std::string_view token :
        std::to_array<std::string_view>({"--zzzzzzzz", "-x", "--require-system-globalz", "--summary", "-sumary"})) {
@@ -48,11 +53,11 @@ TEST_F(DiagnosticsTest, PredicateSuggestionUsesParserProvenance) {
   EXPECT_THAT(ParseErrorHint(absl::InvalidArgumentError("unknown predicate: '-naem'")), Eq(""));
 }
 
-TEST_F(DiagnosticsTest, SuppressesOverlyAmbiguousSuggestions) {
+TEST_F(DiagnosticsTest, KeepsTheBestThreeSuggestionsWithDeterministicTies) {
   const auto parsed = parser::Parse({".", "-time"});
   EXPECT_THAT(parsed, StatusIs(absl::StatusCode::kInvalidArgument));
-  EXPECT_THAT(ParseErrorHint(parsed.status()), Eq(""));
-  EXPECT_THAT(UnknownGlobalHint("-time"), Eq(""));
+  EXPECT_THAT(ParseErrorHint(parsed.status()), Eq("Did you mean '-Btime' or '-atime' or '-ctime'?\n"));
+  EXPECT_THAT(UnknownGlobalHint("-time"), Eq(ParseErrorHint(parsed.status())));
 }
 
 TEST_F(DiagnosticsTest, ExplainsShortGlobalPlacementWithoutInventingLongForms) {

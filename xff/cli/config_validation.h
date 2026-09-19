@@ -16,6 +16,14 @@
 
 namespace xff::cli {
 
+// Resolve only display width from automatic configs; no filesystem discovery or actions.
+// CLI width wins. Errors let help fall back to its default without blocking repair.
+absl::StatusOr<std::size_t> ConfiguredHelpWidth(
+    config::ConfigInputs inputs,
+    const std::vector<std::string>& globals,
+    std::string_view invocation_selector,
+    std::size_t detected_cols);
+
 // Reports overriding global settings that occur more than once in one logical config section.
 // Positive/negative forms are one setting; aliases and valued forms use their canonical global
 // identity. Accumulating settings, expression primaries, separate selectors, and separate files

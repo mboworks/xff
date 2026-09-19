@@ -28,6 +28,7 @@ namespace xff::cli {
 namespace {
 
 using ::mbo::testing::IsOk;
+using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
 using ::testing::AllOf;
 using ::testing::ElementsAre;
@@ -41,6 +42,29 @@ using ::testing::SizeIs;
 struct ConfigValidationTest : ::testing::Test {
   void TearDown() override { env::ClearForTesting(); }
 };
+
+TEST_F(ConfigValidationTest, HelpWidthUsesAutomaticIniPreferencesAndCliOverride) {
+  config::ConfigInputs inputs;
+  inputs.system = config::ParseIni("--width=auto:100\n");
+  inputs.user = config::ParseIni(R"ini(
+--width=auto:80
+-exec echo --width=200 \;
+[wide]
+--width=auto:120
+)ini");
+  EXPECT_THAT(ConfiguredHelpWidth(inputs, {}, "xff", 160), IsOkAndHolds(Eq(80U)));
+  EXPECT_THAT(ConfiguredHelpWidth(inputs, {"--config=wide"}, "xff", 160), IsOkAndHolds(Eq(120U)));
+  EXPECT_THAT(ConfiguredHelpWidth(inputs, {"--width=60", "--config=wide"}, "xff", 160), IsOkAndHolds(Eq(60U)));
+  EXPECT_THAT(ConfiguredHelpWidth(inputs, {}, "xff", 70), IsOkAndHolds(Eq(70U)));
+  EXPECT_THAT(ConfiguredHelpWidth(inputs, {}, "xff", 0), IsOkAndHolds(Eq(80U)));
+}
+
+TEST_F(ConfigValidationTest, InvalidIniWidthFailsValidationButCliHelpOverrideRemainsUsable) {
+  config::ConfigInputs inputs;
+  inputs.user = config::ParseIni("--width=auto:39\n");
+  EXPECT_THAT(ConfiguredHelpWidth(inputs, {}, "xff", 0), StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(ConfiguredHelpWidth(inputs, {"--width=none"}, "xff", 0), IsOkAndHolds(Eq(0U)));
+}
 
 TEST_F(ConfigValidationTest, ExplainProfilesRetainsInvalidAndComposedDeclarations) {
   const auto checked = ValidateConfigFile(
