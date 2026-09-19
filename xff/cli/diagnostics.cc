@@ -12,10 +12,12 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/strings/ascii.h"
 #include "absl/strings/cord.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "xff/cli/globals.h"
+#include "xff/cli/help.h"
 #include "xff/fuzzy/fuzzy.h"
 #include "xff/parser/diagnostics.h"
 #include "xff/registry/registry.h"
@@ -68,7 +70,7 @@ std::optional<int> SuggestionScore(std::string_view token, std::string_view cand
   return score >= 75 ? std::optional<int>(score) : std::nullopt;
 }
 
-std::string RenderSuggestions(std::vector<Suggestion> candidates) {
+std::string RenderSuggestions(std::vector<Suggestion> candidates, std::string_view prefix = "") {
   std::ranges::sort(candidates, [](const Suggestion& left, const Suggestion& right) {
     return left.score != right.score ? left.score > right.score : left.name < right.name;
   });
@@ -80,7 +82,11 @@ std::string RenderSuggestions(std::vector<Suggestion> candidates) {
   if (candidates.size() > 3) {
     candidates.resize(3);
   }
-  const auto names = candidates | std::views::transform(&Suggestion::name);
+  std::vector<std::string> names;
+  names.reserve(candidates.size());
+  for (const auto& candidate : candidates) {
+    names.push_back(absl::StrCat(prefix, candidate.name));
+  }
   return absl::StrCat("Did you mean '", absl::StrJoin(names, "' or '"), "'?\n");
 }
 
@@ -129,6 +135,38 @@ std::string UnknownGlobalHint(std::string_view token) {
     }
   }
   return RenderSuggestions(std::move(candidates));
+}
+
+std::string UnknownHelpHint(std::string_view selector) {
+  if (selector.size() < 4 || selector.size() > 80 || selector.contains('=')) {
+    return {};
+  }
+  const std::string token = absl::AsciiStrToLower(selector);
+  std::vector<Suggestion> candidates;
+  bool exact = false;
+  const auto add = [&](std::string_view name) {
+    if (!token.starts_with('-')) {
+      name.remove_prefix(std::min(name.find_first_not_of('-'), name.size()));
+    }
+    exact = exact || token == name;
+    if (const auto score = SuggestionScore(token, name)) {
+      candidates.push_back({.name = name, .score = *score});
+    }
+  };
+  for (const HelpTopic& topic : HelpTopics()) {
+    add(topic.name);
+    for (const std::string_view alias : topic.aliases) {
+      add(alias);
+    }
+  }
+  for (const GlobalFlag& flag : Globals()) {
+    add(flag.name);
+    add(flag.alias);
+  }
+  for (const auto& descriptor : registry::All()) {
+    add(descriptor.name);
+  }
+  return exact ? std::string() : RenderSuggestions(std::move(candidates), "--help=");
 }
 
 std::string ParseErrorHint(const absl::Status& status) {

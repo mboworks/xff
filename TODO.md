@@ -1,5 +1,11 @@
 # TODO
 
+## Completed: Fuzzy help-selector diagnostics
+
+- Share ranked fuzzy matching across unknown CLI flags and unknown help selectors.
+- Include registered flags, primaries, topics, and aliases; retain advisory-only behavior.
+- Test dashless and dashed selectors, config-only help, case folding, bounded input, and action isolation.
+
 ## Completed: MSAN help-rendering timeout
 
 - Give `//xff/cli:help_render_test` a target-specific 300-second timeout in PR #878 after

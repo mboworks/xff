@@ -559,7 +559,8 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
                     << "' in this binary; it has: " << absl::StrJoin(xff::cli::LicenseComponentNames(), ", ") << "\n";
           return 2;
         }
-        std::cerr << "xff: no help topic '" << meta.topic << "'; 'xff --help=topics' lists them\n";
+        std::cerr << "xff: no help topic '" << meta.topic << "'; 'xff --help=topics' lists them\n"
+                  << xff::cli::UnknownHelpHint(meta.topic);
         return 2;
       }
       case Meta::kVersion:
