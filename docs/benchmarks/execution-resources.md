@@ -160,3 +160,35 @@ chain rather than many independent subtrees. Neither is a general parallel-scali
 Content consumers still perform their own work, and comparison summaries still appear after
 the inventories and comparisons complete. A branching-tree workload and controlled optimized
 builds are needed before tuning worker defaults; network/storage measurements remain separate.
+
+## Runtime observations on real fixtures
+
+The read-only engine harness was run over 10,000 regular files of 1,024 bytes each,
+with a broad tree and a 100-level deep tree, three repetitions each at one and eight
+workers. These 72 instrumented invocations accompanied separate shipping-executable
+measurements. Raw reports include both executable fingerprints:
+[one worker](runtime-reads-jobs1.json) and [eight workers](runtime-reads-jobs8.json).
+The build label is a development clang fastbuild on macOS arm64, not a release-performance claim.
+
+Every repetition and both tree shapes produced the following logical counts. Comparison
+uses two roots; the other workloads use one. All observed reads succeeded.
+
+| Workload   | Whole-file calls | Whole-file bytes | Range calls | Range bytes |
+| :--------- | ---------------: | ---------------: | ----------: | ----------: |
+| listing    |                0 |                0 |           0 |           0 |
+| summary    |                0 |                0 |           0 |           0 |
+| hash       |            10000 |         10240000 |           0 |           0 |
+| hash_twice |            20000 |         20480000 |           0 |           0 |
+| hash_lines |            20000 |         20480000 |           0 |           0 |
+| compare    |                0 |                0 |       20000 |    20480000 |
+
+Whole-file and range reads are distinct observer entrypoints. In particular, comparison
+uses ranges through the real backend; the earlier synthetic fixture's fallback implementation
+reported those as whole-file reads. Both count bytes at their documented observation boundary.
+The range observer does not count the backend's internal implementation reads a second time.
+
+The files were just written and reused without controlled cache flushing. These observations
+measure logical content returned to the engine, excluding metadata and physical/network I/O.
+Timing and read-count measurements are separate invocations, labelled accordingly in the JSON;
+they must not be treated as one instrumented execution or used to infer instrumentation overhead.
+Network-storage measurements and archive/member backend instrumentation remain outstanding.

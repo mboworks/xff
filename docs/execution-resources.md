@@ -175,3 +175,44 @@ parents, pruning, type mismatches, archive members, and injected traversal/read 
 first-record latency and peak RSS separately from final summary latency. Network measurements remain outstanding. The isolated logical VFS read counts in the
 [measurement report](benchmarks/execution-resources.md) complement local timings; neither
 measures network or physical storage traffic. This investigation proposes a bounded prototype, not an enabled execution mode.
+
+## Runtime logical-read benchmark
+
+Build `//xff/engine:read_benchmark` to observe real filesystem reads in the benchmark
+workloads. This test-only executable runs the same engine behind a read-only VFS observer;
+it is not installed as an xff command and adds no public CLI option.
+
+```sh
+bazel build --config=clang //xff/engine:read_benchmark
+bazel-bin/xff/engine/read_benchmark hash_lines 8 /absolute/root
+bazel-bin/xff/engine/read_benchmark compare 8 /absolute/left /absolute/right
+python3 tools/benchmark_resources.py ./xff \
+  --read-counter=bazel-bin/xff/engine/read_benchmark \
+  --output=resources.json --jobs=8
+```
+
+Workloads are `listing`, `summary`, `hash`, `hash_twice`, `hash_lines`, and `compare`.
+The executable takes a positive worker count and absolute roots, one root except for comparison.
+It constructs these read-only expressions itself; arbitrary expressions, subprocesses, configuration
+loading, and archive backends are outside this harness. Its VFS observer also rejects every mutation
+entrypoint. The xff style and explicit worker count are used for execution.
+
+Each JSON result separates whole-file and range-read attempts, successful calls, and returned bytes.
+Empty successful reads count as successful calls with zero bytes; failed reads count as attempts
+without successful bytes. A range implemented internally by reading a whole file is counted once
+at the observed boundary, using only the returned range. This is **logical content delivered to the
+engine**, not bytes fetched by a backend, physical disk I/O, metadata traffic, or network traffic.
+Concurrent counters are sampled after the traversal has joined.
+
+The harness also reports discarded output bytes, elapsed engine time, first nonempty-output latency
+(or null when there is no output), and the engine error count. It excludes the shipping CLI's startup
+and configuration processing. `--read-counter` makes the Python driver run an additional invocation
+for each workload, recorded as `logical_read_run` with `separate_invocation: true`. Both executable
+fingerprints are recorded. Do not attribute that invocation's read counters to the separately timed
+shipping executable, or infer timing overhead by subtracting the two invocations.
+
+The driver accepts `--directory` for disposable fixtures on a chosen filesystem, including a network
+mount. That enables network-fixture measurements; it does not turn logical bytes into network traffic.
+Network measurements still require a supplied mount and an explicit description of its cache and
+server conditions. The observer can wrap another VFS in a benchmark, but this executable does not
+instrument dynamically constructed archive/member backends.

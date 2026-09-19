@@ -1,0 +1,1824 @@
+{
+  "binary": "/private/tmp/xff-group7-dist/xff-macos-arm64",
+  "read_counter": "/Users/marcus/Library/Caches/bazel/_bazel_marcus/2b474fae00c7ffc8f846d8abe2cad809/execroot/_main/bazel-out/darwin_arm64-fastbuild/bin/xff/engine/read_benchmark",
+  "binary_sha256": "bf8638b12c5a7e8e268318b825822b87851ac4e77b15ed3a4b12409c0b237aec",
+  "read_counter_sha256": "058079a8c968ea39552575cbc19bb04e9d93e8456d240ed9f06b36ac033a4839",
+  "build_label": "7a694f42a staged xff; draft read-accounting engine; clang fastbuild macos arm64",
+  "fixture": {
+    "files_per_root": 10000,
+    "bytes_per_file": 1024,
+    "deep_levels": 100,
+    "cache_preparation": "just-written files; no cache flushing; reuse not controlled",
+    "jobs": 8,
+    "repetitions": 3,
+    "directory": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1"
+  },
+  "measurements": [
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "-type",
+        "f"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.11899608292151242,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.1008966249646619,
+      "peak_child_rss_bytes": 20398080,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 1010000,
+      "system_cpu_seconds": 0.027007999999999997,
+      "user_cpu_seconds": 0.0832,
+      "shape": "broad",
+      "scenario": "listing",
+      "repetition": 0,
+      "logical_read_run": {
+        "elapsed_seconds": 0.077327125,
+        "errors": 0,
+        "first_output_seconds": 0.06015075,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 1010000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "listing",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "-type",
+        "f",
+        "--summary=ext"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.11343562498223037,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.1124637919710949,
+      "peak_child_rss_bytes": 20463616,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 147,
+      "system_cpu_seconds": 0.025684,
+      "user_cpu_seconds": 0.083784,
+      "shape": "broad",
+      "scenario": "summary",
+      "repetition": 0,
+      "logical_read_run": {
+        "elapsed_seconds": 0.078313916,
+        "errors": 0,
+        "first_output_seconds": 0.07823525,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 147,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "summary",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "-type",
+        "f",
+        "--template={hash}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.6960898329271004,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.1077974169747904,
+      "peak_child_rss_bytes": 20774912,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 650000,
+      "system_cpu_seconds": 0.227133,
+      "user_cpu_seconds": 0.463692,
+      "shape": "broad",
+      "scenario": "hash",
+      "repetition": 0,
+      "logical_read_run": {
+        "elapsed_seconds": 0.65187525,
+        "errors": 0,
+        "first_output_seconds": 0.060801792,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 650000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left"
+        ],
+        "whole": {
+          "attempts": 10000,
+          "bytes": 10240000,
+          "successes": 10000
+        },
+        "workload": "hash",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "-type",
+        "f",
+        "--template={hash} {hash}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 1.1988967079669237,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.10916654102038592,
+      "peak_child_rss_bytes": 21233664,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 1300000,
+      "system_cpu_seconds": 0.34947,
+      "user_cpu_seconds": 0.8426049999999999,
+      "shape": "broad",
+      "scenario": "hash_twice",
+      "repetition": 0,
+      "logical_read_run": {
+        "elapsed_seconds": 1.190141375,
+        "errors": 0,
+        "first_output_seconds": 0.061603042,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 1300000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left"
+        ],
+        "whole": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "workload": "hash_twice",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "-type",
+        "f",
+        "--template={hash} {lines}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.9166209169197828,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.11605104198679328,
+      "peak_child_rss_bytes": 21446656,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 690000,
+      "system_cpu_seconds": 0.338368,
+      "user_cpu_seconds": 0.57199,
+      "shape": "broad",
+      "scenario": "hash_lines",
+      "repetition": 0,
+      "logical_read_run": {
+        "elapsed_seconds": 0.966893542,
+        "errors": 0,
+        "first_output_seconds": 0.06176625,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 690000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left"
+        ],
+        "whole": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "workload": "hash_lines",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "--compare=summary",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/right",
+        "-type",
+        "f"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.5548169579124078,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.5534607080044225,
+      "peak_child_rss_bytes": 33161216,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 481,
+      "system_cpu_seconds": 0.463978,
+      "user_cpu_seconds": 0.178957,
+      "shape": "broad",
+      "scenario": "compare",
+      "repetition": 0,
+      "logical_read_run": {
+        "elapsed_seconds": 0.496598625,
+        "errors": 0,
+        "first_output_seconds": 0.495196792,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 481,
+        "range": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/right"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "compare",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "-type",
+        "f"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.1119453749852255,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.09391933295410126,
+      "peak_child_rss_bytes": 20168704,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 1010000,
+      "system_cpu_seconds": 0.025502,
+      "user_cpu_seconds": 0.082684,
+      "shape": "broad",
+      "scenario": "listing",
+      "repetition": 1,
+      "logical_read_run": {
+        "elapsed_seconds": 0.076254833,
+        "errors": 0,
+        "first_output_seconds": 0.05960825,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 1010000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "listing",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "-type",
+        "f",
+        "--summary=ext"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.11391087505035102,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.11298637499567121,
+      "peak_child_rss_bytes": 20692992,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 147,
+      "system_cpu_seconds": 0.026137999999999998,
+      "user_cpu_seconds": 0.084074,
+      "shape": "broad",
+      "scenario": "summary",
+      "repetition": 1,
+      "logical_read_run": {
+        "elapsed_seconds": 0.077956916,
+        "errors": 0,
+        "first_output_seconds": 0.077878,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 147,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "summary",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "-type",
+        "f",
+        "--template={hash}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.688852124963887,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.10950862499885261,
+      "peak_child_rss_bytes": 20873216,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 650000,
+      "system_cpu_seconds": 0.215951,
+      "user_cpu_seconds": 0.467902,
+      "shape": "broad",
+      "scenario": "hash",
+      "repetition": 1,
+      "logical_read_run": {
+        "elapsed_seconds": 0.647291542,
+        "errors": 0,
+        "first_output_seconds": 0.060922584,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 650000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left"
+        ],
+        "whole": {
+          "attempts": 10000,
+          "bytes": 10240000,
+          "successes": 10000
+        },
+        "workload": "hash",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "-type",
+        "f",
+        "--template={hash} {hash}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 1.174187875003554,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.10657258296851069,
+      "peak_child_rss_bytes": 20987904,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 1300000,
+      "system_cpu_seconds": 0.327982,
+      "user_cpu_seconds": 0.841464,
+      "shape": "broad",
+      "scenario": "hash_twice",
+      "repetition": 1,
+      "logical_read_run": {
+        "elapsed_seconds": 1.164882584,
+        "errors": 0,
+        "first_output_seconds": 0.058560084,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 1300000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left"
+        ],
+        "whole": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "workload": "hash_twice",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "-type",
+        "f",
+        "--template={hash} {lines}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.9020294160582125,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.11364620795939118,
+      "peak_child_rss_bytes": 20922368,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 690000,
+      "system_cpu_seconds": 0.32770499999999997,
+      "user_cpu_seconds": 0.568117,
+      "shape": "broad",
+      "scenario": "hash_lines",
+      "repetition": 1,
+      "logical_read_run": {
+        "elapsed_seconds": 0.881278291,
+        "errors": 0,
+        "first_output_seconds": 0.059936458,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 690000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left"
+        ],
+        "whole": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "workload": "hash_lines",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "--compare=summary",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/right",
+        "-type",
+        "f"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.5956147080287337,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.5942356250016019,
+      "peak_child_rss_bytes": 33308672,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 481,
+      "system_cpu_seconds": 0.501089,
+      "user_cpu_seconds": 0.18500799999999998,
+      "shape": "broad",
+      "scenario": "compare",
+      "repetition": 1,
+      "logical_read_run": {
+        "elapsed_seconds": 0.557828709,
+        "errors": 0,
+        "first_output_seconds": 0.556553459,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 481,
+        "range": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/right"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "compare",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "-type",
+        "f"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.1114129580091685,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.093432915979065,
+      "peak_child_rss_bytes": 20365312,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 1010000,
+      "system_cpu_seconds": 0.025231,
+      "user_cpu_seconds": 0.082317,
+      "shape": "broad",
+      "scenario": "listing",
+      "repetition": 2,
+      "logical_read_run": {
+        "elapsed_seconds": 0.078052375,
+        "errors": 0,
+        "first_output_seconds": 0.061039709,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 1010000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "listing",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "-type",
+        "f",
+        "--summary=ext"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.11348229192662984,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.11251229199115187,
+      "peak_child_rss_bytes": 20611072,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 147,
+      "system_cpu_seconds": 0.025861,
+      "user_cpu_seconds": 0.083979,
+      "shape": "broad",
+      "scenario": "summary",
+      "repetition": 2,
+      "logical_read_run": {
+        "elapsed_seconds": 0.078448333,
+        "errors": 0,
+        "first_output_seconds": 0.078364458,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 147,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "summary",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "-type",
+        "f",
+        "--template={hash}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.6880885830614716,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.10854837507940829,
+      "peak_child_rss_bytes": 20873216,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 650000,
+      "system_cpu_seconds": 0.21907,
+      "user_cpu_seconds": 0.464319,
+      "shape": "broad",
+      "scenario": "hash",
+      "repetition": 2,
+      "logical_read_run": {
+        "elapsed_seconds": 0.657244083,
+        "errors": 0,
+        "first_output_seconds": 0.05991675,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 650000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left"
+        ],
+        "whole": {
+          "attempts": 10000,
+          "bytes": 10240000,
+          "successes": 10000
+        },
+        "workload": "hash",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "-type",
+        "f",
+        "--template={hash} {hash}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 1.1873787919757888,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.10523049999028444,
+      "peak_child_rss_bytes": 20758528,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 1300000,
+      "system_cpu_seconds": 0.33258299999999996,
+      "user_cpu_seconds": 0.848409,
+      "shape": "broad",
+      "scenario": "hash_twice",
+      "repetition": 2,
+      "logical_read_run": {
+        "elapsed_seconds": 1.24427375,
+        "errors": 0,
+        "first_output_seconds": 0.060980208,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 1300000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left"
+        ],
+        "whole": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "workload": "hash_twice",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "-type",
+        "f",
+        "--template={hash} {lines}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.9024552080081776,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.11135420796927065,
+      "peak_child_rss_bytes": 20774912,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 690000,
+      "system_cpu_seconds": 0.331285,
+      "user_cpu_seconds": 0.566443,
+      "shape": "broad",
+      "scenario": "hash_lines",
+      "repetition": 2,
+      "logical_read_run": {
+        "elapsed_seconds": 0.875429541,
+        "errors": 0,
+        "first_output_seconds": 0.059258416,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 690000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left"
+        ],
+        "whole": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "workload": "hash_lines",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "--compare=summary",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/right",
+        "-type",
+        "f"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.5538012500619516,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.5525573750492185,
+      "peak_child_rss_bytes": 33472512,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 481,
+      "system_cpu_seconds": 0.46085099999999996,
+      "user_cpu_seconds": 0.18376499999999998,
+      "shape": "broad",
+      "scenario": "compare",
+      "repetition": 2,
+      "logical_read_run": {
+        "elapsed_seconds": 0.482523209,
+        "errors": 0,
+        "first_output_seconds": 0.4812595,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 481,
+        "range": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/left",
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/broad/right"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "compare",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "-type",
+        "f"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.12434929190203547,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.03909879189450294,
+      "peak_child_rss_bytes": 19578880,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 2010000,
+      "system_cpu_seconds": 0.044175,
+      "user_cpu_seconds": 0.07654699999999999,
+      "shape": "deep",
+      "scenario": "listing",
+      "repetition": 0,
+      "logical_read_run": {
+        "elapsed_seconds": 0.087490583,
+        "errors": 0,
+        "first_output_seconds": 0.003359625,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 2010000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "listing",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "-type",
+        "f",
+        "--summary=ext"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.12379924999549985,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.12289466604124755,
+      "peak_child_rss_bytes": 19595264,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 147,
+      "system_cpu_seconds": 0.04288,
+      "user_cpu_seconds": 0.077387,
+      "shape": "deep",
+      "scenario": "summary",
+      "repetition": 0,
+      "logical_read_run": {
+        "elapsed_seconds": 0.087559041,
+        "errors": 0,
+        "first_output_seconds": 0.087481875,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 147,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "summary",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "-type",
+        "f",
+        "--template={hash}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.8223538750316948,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.05355866707395762,
+      "peak_child_rss_bytes": 19824640,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 650000,
+      "system_cpu_seconds": 0.35607,
+      "user_cpu_seconds": 0.46156899999999995,
+      "shape": "deep",
+      "scenario": "hash",
+      "repetition": 0,
+      "logical_read_run": {
+        "elapsed_seconds": 0.774053042,
+        "errors": 0,
+        "first_output_seconds": 0.003275084,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 650000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left"
+        ],
+        "whole": {
+          "attempts": 10000,
+          "bytes": 10240000,
+          "successes": 10000
+        },
+        "workload": "hash",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "-type",
+        "f",
+        "--template={hash} {hash}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 1.4326691250316799,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.052236667019315064,
+      "peak_child_rss_bytes": 19955712,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 1300000,
+      "system_cpu_seconds": 0.587146,
+      "user_cpu_seconds": 0.840152,
+      "shape": "deep",
+      "scenario": "hash_twice",
+      "repetition": 0,
+      "logical_read_run": {
+        "elapsed_seconds": 1.417235667,
+        "errors": 0,
+        "first_output_seconds": 0.003451959,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 1300000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left"
+        ],
+        "whole": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "workload": "hash_twice",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "-type",
+        "f",
+        "--template={hash} {lines}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 1.1458429580088705,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.05648608296178281,
+      "peak_child_rss_bytes": 19955712,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 690000,
+      "system_cpu_seconds": 0.580361,
+      "user_cpu_seconds": 0.560499,
+      "shape": "deep",
+      "scenario": "hash_lines",
+      "repetition": 0,
+      "logical_read_run": {
+        "elapsed_seconds": 1.133029417,
+        "errors": 0,
+        "first_output_seconds": 0.003495542,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 690000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left"
+        ],
+        "whole": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "workload": "hash_lines",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "--compare=summary",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/right",
+        "-type",
+        "f"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.7718579160282388,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.7706110409926623,
+      "peak_child_rss_bytes": 34979840,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 481,
+      "system_cpu_seconds": 0.697869,
+      "user_cpu_seconds": 0.173037,
+      "shape": "deep",
+      "scenario": "compare",
+      "repetition": 0,
+      "logical_read_run": {
+        "elapsed_seconds": 0.747655208,
+        "errors": 0,
+        "first_output_seconds": 0.745406041,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 481,
+        "range": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/right"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "compare",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "-type",
+        "f"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.12367145798634738,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.0385357920313254,
+      "peak_child_rss_bytes": 19529728,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 2010000,
+      "system_cpu_seconds": 0.043911,
+      "user_cpu_seconds": 0.075926,
+      "shape": "deep",
+      "scenario": "listing",
+      "repetition": 1,
+      "logical_read_run": {
+        "elapsed_seconds": 0.08667425,
+        "errors": 0,
+        "first_output_seconds": 0.003305041,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 2010000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "listing",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "-type",
+        "f",
+        "--summary=ext"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.12477295892313123,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.12383287493139505,
+      "peak_child_rss_bytes": 19791872,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 147,
+      "system_cpu_seconds": 0.043040999999999996,
+      "user_cpu_seconds": 0.078081,
+      "shape": "deep",
+      "scenario": "summary",
+      "repetition": 1,
+      "logical_read_run": {
+        "elapsed_seconds": 0.088391541,
+        "errors": 0,
+        "first_output_seconds": 0.08831275,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 147,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "summary",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "-type",
+        "f",
+        "--template={hash}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.8197374589508399,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.0546286249300465,
+      "peak_child_rss_bytes": 19955712,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 650000,
+      "system_cpu_seconds": 0.35206899999999997,
+      "user_cpu_seconds": 0.462701,
+      "shape": "deep",
+      "scenario": "hash",
+      "repetition": 1,
+      "logical_read_run": {
+        "elapsed_seconds": 0.774067708,
+        "errors": 0,
+        "first_output_seconds": 0.003478833,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 650000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left"
+        ],
+        "whole": {
+          "attempts": 10000,
+          "bytes": 10240000,
+          "successes": 10000
+        },
+        "workload": "hash",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "-type",
+        "f",
+        "--template={hash} {hash}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 1.427326124976389,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.05180116696283221,
+      "peak_child_rss_bytes": 19808256,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 1300000,
+      "system_cpu_seconds": 0.5839719999999999,
+      "user_cpu_seconds": 0.838282,
+      "shape": "deep",
+      "scenario": "hash_twice",
+      "repetition": 1,
+      "logical_read_run": {
+        "elapsed_seconds": 1.416651208,
+        "errors": 0,
+        "first_output_seconds": 0.003589583,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 1300000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left"
+        ],
+        "whole": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "workload": "hash_twice",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "-type",
+        "f",
+        "--template={hash} {lines}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 1.150680874940008,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.056046374957077205,
+      "peak_child_rss_bytes": 20004864,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 690000,
+      "system_cpu_seconds": 0.583187,
+      "user_cpu_seconds": 0.5623239999999999,
+      "shape": "deep",
+      "scenario": "hash_lines",
+      "repetition": 1,
+      "logical_read_run": {
+        "elapsed_seconds": 1.127176,
+        "errors": 0,
+        "first_output_seconds": 0.003406792,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 690000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left"
+        ],
+        "whole": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "workload": "hash_lines",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "--compare=summary",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/right",
+        "-type",
+        "f"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.7705999589525163,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.769450334017165,
+      "peak_child_rss_bytes": 34734080,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 481,
+      "system_cpu_seconds": 0.695051,
+      "user_cpu_seconds": 0.172259,
+      "shape": "deep",
+      "scenario": "compare",
+      "repetition": 1,
+      "logical_read_run": {
+        "elapsed_seconds": 0.746783,
+        "errors": 0,
+        "first_output_seconds": 0.744646459,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 481,
+        "range": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/right"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "compare",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "-type",
+        "f"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.12902899994514883,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.04024449991993606,
+      "peak_child_rss_bytes": 19939328,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 2010000,
+      "system_cpu_seconds": 0.047466,
+      "user_cpu_seconds": 0.077724,
+      "shape": "deep",
+      "scenario": "listing",
+      "repetition": 2,
+      "logical_read_run": {
+        "elapsed_seconds": 0.099906291,
+        "errors": 0,
+        "first_output_seconds": 0.003971083,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 2010000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "listing",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "-type",
+        "f",
+        "--summary=ext"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.12278616696130484,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.12183754204306751,
+      "peak_child_rss_bytes": 19808256,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 147,
+      "system_cpu_seconds": 0.041954,
+      "user_cpu_seconds": 0.077065,
+      "shape": "deep",
+      "scenario": "summary",
+      "repetition": 2,
+      "logical_read_run": {
+        "elapsed_seconds": 0.089628166,
+        "errors": 0,
+        "first_output_seconds": 0.089550875,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 147,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "summary",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "-type",
+        "f",
+        "--template={hash}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.8146159580210224,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.05426329199690372,
+      "peak_child_rss_bytes": 19939328,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 650000,
+      "system_cpu_seconds": 0.3497,
+      "user_cpu_seconds": 0.45961599999999997,
+      "shape": "deep",
+      "scenario": "hash",
+      "repetition": 2,
+      "logical_read_run": {
+        "elapsed_seconds": 0.778960125,
+        "errors": 0,
+        "first_output_seconds": 0.003503209,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 650000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left"
+        ],
+        "whole": {
+          "attempts": 10000,
+          "bytes": 10240000,
+          "successes": 10000
+        },
+        "workload": "hash",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "-type",
+        "f",
+        "--template={hash} {hash}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 1.4312107079895213,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.05207187496125698,
+      "peak_child_rss_bytes": 19808256,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 1300000,
+      "system_cpu_seconds": 0.582631,
+      "user_cpu_seconds": 0.843193,
+      "shape": "deep",
+      "scenario": "hash_twice",
+      "repetition": 2,
+      "logical_read_run": {
+        "elapsed_seconds": 1.415906,
+        "errors": 0,
+        "first_output_seconds": 0.00344275,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 1300000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left"
+        ],
+        "whole": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "workload": "hash_twice",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "-type",
+        "f",
+        "--template={hash} {lines}"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 1.1466228748904541,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.05795066594146192,
+      "peak_child_rss_bytes": 19955712,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 690000,
+      "system_cpu_seconds": 0.577371,
+      "user_cpu_seconds": 0.5642159999999999,
+      "shape": "deep",
+      "scenario": "hash_lines",
+      "repetition": 2,
+      "logical_read_run": {
+        "elapsed_seconds": 1.117942583,
+        "errors": 0,
+        "first_output_seconds": 0.00344425,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 690000,
+        "range": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left"
+        ],
+        "whole": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "workload": "hash_lines",
+        "separate_invocation": true
+      }
+    },
+    {
+      "cache_state": "just-written;reuse-not-controlled",
+      "command": [
+        "/private/tmp/xff-group7-dist/xff-macos-arm64",
+        "--no-config",
+        "--no-pager",
+        "--jobs=8",
+        "--compare=summary",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+        "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/right",
+        "-type",
+        "f"
+      ],
+      "cwd": "/private/tmp/xff-runtime-accounting",
+      "elapsed_seconds": 0.7603015830973163,
+      "exit_code": 0,
+      "first_stdout_seconds": 0.7590312500251457,
+      "peak_child_rss_bytes": 34783232,
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 481,
+      "system_cpu_seconds": 0.684365,
+      "user_cpu_seconds": 0.17185799999999998,
+      "shape": "deep",
+      "scenario": "compare",
+      "repetition": 2,
+      "logical_read_run": {
+        "elapsed_seconds": 0.747086625,
+        "errors": 0,
+        "first_output_seconds": 0.744917583,
+        "jobs": 8,
+        "measurement": "engine logical VFS bytes; not storage traffic",
+        "output_bytes": 481,
+        "range": {
+          "attempts": 20000,
+          "bytes": 20480000,
+          "successes": 20000
+        },
+        "roots": [
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/left",
+          "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T/xff-resources-6mq8yuw1/deep/right"
+        ],
+        "whole": {
+          "attempts": 0,
+          "bytes": 0,
+          "successes": 0
+        },
+        "workload": "compare",
+        "separate_invocation": true
+      }
+    }
+  ]
+}
