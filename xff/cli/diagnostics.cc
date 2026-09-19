@@ -4,6 +4,7 @@
 #include "xff/cli/diagnostics.h"
 
 #include <algorithm>
+#include <optional>
 #include <ranges>
 #include <string>
 #include <string_view>
@@ -15,14 +16,15 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "xff/cli/globals.h"
+#include "xff/fuzzy/fuzzy.h"
 #include "xff/parser/diagnostics.h"
 #include "xff/registry/registry.h"
 
 namespace xff::cli {
 namespace {
 
-// One insertion, deletion, substitution, or adjacent transposition. Linear time,
-// bounded input, and no fuzzy acceptance of commands.
+// Recognize a single edit, including adjacent transposition. This boosts the
+// shared Levenshtein score, whose transpositions otherwise cost two edits.
 bool IsNearby(std::string_view token, std::string_view candidate) {
   if (token.size() < 4 || token.size() > 80 || candidate.size() < 4
       || token.starts_with("--") != candidate.starts_with("--")) {
@@ -49,14 +51,37 @@ bool IsNearby(std::string_view token, std::string_view candidate) {
          && token.at(offset + 1) == candidate.at(offset) && token.substr(offset + 2) == candidate.substr(offset + 2);
 }
 
-std::string RenderSuggestions(std::vector<std::string_view> candidates) {
-  std::ranges::sort(candidates);
-  const auto duplicates = std::ranges::unique(candidates);
+struct Suggestion {
+  std::string_view name;
+  int score;
+};
+
+std::optional<int> SuggestionScore(std::string_view token, std::string_view candidate) {
+  if (token.size() < 4 || token.size() > 80 || candidate.size() < 4 || candidate.size() > 80 || token == candidate
+      || token.starts_with("--") != candidate.starts_with("--")) {
+    return std::nullopt;
+  }
+  const auto length = std::max(token.size(), candidate.size());
+  const int score = IsNearby(token, candidate) ? 100 - static_cast<int>((100 + (length / 2)) / length)
+                                               : fuzzy::LevenshteinPercent(token, candidate, false);
+  // Require most of the spelling to match, while retaining one-edit short names.
+  return score >= 75 ? std::optional<int>(score) : std::nullopt;
+}
+
+std::string RenderSuggestions(std::vector<Suggestion> candidates) {
+  std::ranges::sort(candidates, [](const Suggestion& left, const Suggestion& right) {
+    return left.score != right.score ? left.score > right.score : left.name < right.name;
+  });
+  const auto duplicates = std::ranges::unique(candidates, {}, &Suggestion::name);
   candidates.erase(duplicates.begin(), duplicates.end());
-  if (candidates.empty() || candidates.size() > 3) {
+  if (candidates.empty()) {
     return {};
   }
-  return absl::StrCat("Did you mean '", absl::StrJoin(candidates, "' or '"), "'?\n");
+  if (candidates.size() > 3) {
+    candidates.resize(3);
+  }
+  const auto names = candidates | std::views::transform(&Suggestion::name);
+  return absl::StrCat("Did you mean '", absl::StrJoin(names, "' or '"), "'?\n");
 }
 
 std::string PredicateHint(std::string_view token) {
@@ -69,10 +94,10 @@ std::string PredicateHint(std::string_view token) {
     }
     return hint;
   }
-  std::vector<std::string_view> candidates;
+  std::vector<Suggestion> candidates;
   for (const auto& descriptor : registry::All()) {
-    if (IsNearby(token, descriptor.name)) {
-      candidates.push_back(descriptor.name);
+    if (const auto score = SuggestionScore(token, descriptor.name)) {
+      candidates.push_back({.name = descriptor.name, .score = *score});
     }
   }
   return RenderSuggestions(std::move(candidates));
@@ -82,18 +107,25 @@ std::string PredicateHint(std::string_view token) {
 
 std::string UnknownGlobalHint(std::string_view token) {
   token = token.substr(0, token.find('='));
-  std::vector<std::string_view> candidates;
+  if (IsKnownGlobal(token)
+      || std::ranges::any_of(registry::All(), [token](const auto& entry) { return entry.name == token; })) {
+    return {};
+  }
+  std::vector<Suggestion> candidates;
   for (const GlobalFlag& flag : Globals()) {
-    if (!flag.config_only && IsNearby(token, flag.name)) {
-      candidates.push_back(flag.name);
+    if (flag.config_only) {
+      continue;
     }
-    if (!flag.config_only && !flag.alias.empty() && IsNearby(token, flag.alias)) {
-      candidates.push_back(flag.alias);
+    if (const auto score = SuggestionScore(token, flag.name)) {
+      candidates.push_back({.name = flag.name, .score = *score});
+    }
+    if (const auto score = SuggestionScore(token, flag.alias)) {
+      candidates.push_back({.name = flag.alias, .score = *score});
     }
   }
   for (const auto& descriptor : registry::All()) {
-    if (IsNearby(token, descriptor.name)) {
-      candidates.push_back(descriptor.name);
+    if (const auto score = SuggestionScore(token, descriptor.name)) {
+      candidates.push_back({.name = descriptor.name, .score = *score});
     }
   }
   return RenderSuggestions(std::move(candidates));

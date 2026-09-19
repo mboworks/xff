@@ -17,6 +17,7 @@
 #define XFF_CLI_PLAIN_BACKEND_H_
 
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "xff/cli/help_backend.h"
@@ -64,7 +65,10 @@ class PlainTextBackend final : public HelpBackend {
   [[nodiscard]] std::string Take() override;
 
  private:
-  // Separates blocks: emits a blank line before the next block unless at the start.
+  // All text passes through this sink; verbatim examples explicitly preserve blank lines.
+  void Append(std::string_view text, bool allow_repeated_blank_lines = false);
+
+  // Ensures a blank line between blocks without adding another when one already exists.
   void StartBlock();
 
   // The body indent for content at the current nesting depth (2 spaces per level), so
@@ -72,6 +76,9 @@ class PlainTextBackend final : public HelpBackend {
   [[nodiscard]] std::string BodyIndent() const;
 
   std::string out_;
+  std::string pending_spaces_;
+  bool line_has_content_ = false;
+  bool last_line_blank_ = true;
   bool in_entry_ = false;  // an entry's detail prose renders under its (deeper) term indent
   int depth_ = 0;          // nesting depth: each Begin* heading/term increments, each End* decrements
 };

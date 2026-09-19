@@ -18,6 +18,7 @@
 #include <sys/ioctl.h>  // ioctl, TIOCGWINSZ, struct winsize
 #include <unistd.h>     // isatty, STDOUT_FILENO
 
+#include <algorithm>
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -32,21 +33,39 @@
 
 namespace xff::cli {
 
+std::optional<std::string_view> WidthFlag(std::span<const std::string> globals) {
+  std::optional<std::string_view> width;
+  for (const std::string& arg : globals) {
+    if (arg == "--width") {
+      width = "auto";
+    } else if (arg.starts_with("--width=")) {
+      width = std::string_view(arg).substr(8);
+    }
+  }
+  return width;
+}
+
 absl::StatusOr<std::size_t> ResolveHelpWidth(std::optional<std::string_view> flag, std::size_t detected_cols) {
   // A positive width narrower than the minimum wraps at the minimum instead; 0 (no
   // wrap) is exempt.
   const auto clamp = [](std::size_t cols) -> std::size_t {
     return (cols != 0 && cols < kMinHelpWidth) ? kMinHelpWidth : cols;
   };
-  // auto: wrap to the terminal width when it is known, else do not wrap (0). Piped /
-  // redirected output stays full-width and byte-stable; a real terminal still wraps.
+  // Explicit auto retains uncapped detection, including unknown width (0).
   const auto automatic = [&clamp, detected_cols] { return clamp(detected_cols); };
   if (!flag.has_value()) {
-    return automatic();
+    return detected_cols == 0 ? kDefaultHelpWidth : std::min(automatic(), kDefaultHelpWidth);
   }
   const std::string value = absl::AsciiStrToLower(*flag);
   if (value == "auto") {
     return automatic();
+  }
+  if (value.starts_with("auto:")) {
+    std::size_t cap = 0;
+    if (!absl::SimpleAtoi(std::string_view(value).substr(5), &cap) || cap < kMinHelpWidth) {
+      return absl::InvalidArgumentError("--width: auto:COLS requires an integer cap of at least 40");
+    }
+    return detected_cols == 0 ? cap : std::min(automatic(), cap);
   }
   if (value == "none") {
     return std::size_t{0};
@@ -54,7 +73,7 @@ absl::StatusOr<std::size_t> ResolveHelpWidth(std::optional<std::string_view> fla
   std::size_t cols = 0;
   if (!absl::SimpleAtoi(value, &cols)) {
     return absl::InvalidArgumentError(
-        absl::StrCat("--width: expected 'auto', 'none', or a column count, got '", *flag, "'"));
+        absl::StrCat("--width: expected 'auto', 'auto:COLS', 'none', or a column count, got '", *flag, "'"));
   }
   return clamp(cols);  // an explicit --width=0 means no wrapping, same as "none"
 }

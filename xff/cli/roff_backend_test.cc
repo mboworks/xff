@@ -19,12 +19,15 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/testing/matchers.h"
 #include "xff/cli/help_backend.h"
 #include "xff/cli/help_model.h"
 
 namespace xff::cli {
 namespace {
 
+using ::mbo::testing::EqualsText;
+using ::mbo::testing::WithDropIndent;
 using ::testing::AllOf;
 using ::testing::Eq;
 using ::testing::HasSubstr;
@@ -52,6 +55,34 @@ TEST_F(RoffEscapeTest, EscapesHyphensBackslashesAndLeadingControls) {
 }
 
 struct RoffBackendTest : ::testing::Test {};
+
+TEST_F(RoffBackendTest, EmptyProseDoesNotAddParagraphSpacing) {
+  RoffBackend backend;
+  backend.EmitProse({});
+  backend.EmitProse({.runs = {Text("First.")}});
+  backend.EmitProse({.runs = {Text("  \n\n")}});
+  backend.EmitProse({});
+  backend.EmitProse({.runs = {Text("Last.")}});
+  EXPECT_THAT(backend.Take(), WithDropIndent(EqualsText(R"out(
+      First.
+      .PP
+      Last.
+      )out")));
+}
+
+TEST_F(RoffBackendTest, VerbatimExamplesPreserveRepeatedBlankLines) {
+  RoffBackend backend;
+  backend.EmitExample({.text = "one\n\n\ntwo\n"});
+  EXPECT_THAT(backend.Take(), WithDropIndent(EqualsText(R"out(
+      .PP
+      .nf
+      one
+
+
+      two
+      .fi
+      )out")));
+}
 
 TEST_F(RoffBackendTest, RendersManPageStructure) {
   const Document doc{

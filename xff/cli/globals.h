@@ -121,6 +121,7 @@ struct GlobalFlag {
     kBool,
     kTristate,
     kBuffer,
+    kWidth,
     kPositiveInteger
   };
   ValueCheck value_check = ValueCheck::kNone;

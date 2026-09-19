@@ -60,7 +60,7 @@ test::find_style_rejects_similarity_and_help_documents_the_full_boundary() {
   root="$(_make_tree)"
   "$(_xff_bin)" --config=find "${root}" -similar "${root}/reference.txt" >/dev/null 2>&1 && rc=0 || rc=$?
   expect_eq '2' "${rc}"
-  help="$("$(_xff_bin)" --help=-similar 2>&1)"
+  help="$("$(_xff_bin)" --help=-similar --width=none 2>&1)"
   expect_output_contains 'five-word' "${help}"
   expect_output_contains '80%' "${help}"
   expect_output_contains 'whole-tree clustering is deferred' "${help}"

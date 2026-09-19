@@ -563,7 +563,7 @@ Section EnvironmentSection() {
       {"PAGER", "the final automatic environment fallback when no known or xff-specific pager is available"},
       {"XFF_MANPAGER",
        "the pager / formatter for `--man`; overrides the built-in `mandoc` pipeline; set empty to disable"},
-      {"COLUMNS", "terminal width used to wrap plain `--help` text for `--width=auto` when the tty size is unknown"},
+      {"COLUMNS", "positive terminal-width override, ahead of tty detection; automatic `--width` caps still apply"},
       {"XDG_CONFIG_HOME", "Git global-ignore discovery root; does not change the xff config location"},
       {"HOME", "Git configuration and global-ignore discovery; does not change the xff config location"},
       {"LC_ALL, LC_CTYPE, LANG",

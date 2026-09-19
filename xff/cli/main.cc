@@ -461,16 +461,26 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   }
   // Help and plain comparison summaries share --width. Inspect only parsed globals:
   // a --width token inside a child command remains that child's argument.
-  std::optional<std::string_view> width_flag;
-  for (const std::string& arg : parsed->globals) {
-    if (arg == "--width") {
-      width_flag = "auto";
-    } else if (arg.starts_with("--width=")) {
-      width_flag = std::string_view(arg).substr(std::string_view("--width=").size());
+  const auto parsed_width = xff::cli::WidthFlag(parsed->globals);
+  const std::optional<std::string> cli_width = parsed_width ? std::optional<std::string>(*parsed_width) : std::nullopt;
+  const std::optional<std::string_view> width_flag = cli_width;
+  const MetaSelection meta = SelectMeta(parsed->meta_flags);
+  const std::size_t detected_width = xff::cli::DetectTerminalWidth();
+  auto help_width = xff::cli::ResolveHelpWidth(width_flag, detected_width);
+  if (!width_flag && (meta.kind == Meta::kUsage || meta.kind == Meta::kTopic)) {
+    // Reading display preferences must never discover project files or execute actions.
+    if (const auto config_paths = paths(); config_paths.ok()) {
+      auto options = xff::config::SelectorsFromGlobals(parsed->globals);
+      options.paths = *config_paths;
+      if (auto inputs = xff::config::DiscoverAutomatic(options, ReadFile); inputs.ok()) {
+        auto preferred = xff::cli::ConfiguredHelpWidth(
+            *std::move(inputs), parsed->globals, xff::config::DefaultStyleForProgram(program), detected_width);
+        if (preferred.ok()) {
+          help_width = std::move(preferred);
+        }
+      }
     }
   }
-  const absl::StatusOr<std::size_t> help_width =
-      xff::cli::ResolveHelpWidth(width_flag, xff::cli::DetectTerminalWidth());
   if (!help_width.ok()) {
     std::cerr << "xff: " << help_width.status().message() << "\n";
     return 2;
@@ -505,8 +515,6 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   // `xff --help=archive --bogus` is a broken command line, and the
   // one-line unknown-option error serves better than pages of help hiding the typo.
   // The parser has already separated these tokens from the command proper.
-  const MetaSelection meta = SelectMeta(parsed->meta_flags);
-
   if (meta.kind != Meta::kNone) {
     // Bad flags are hard errors even when help was asked for. Ignoring them because
     // help "wins" is how a typo silently vanishes behind 200 lines of output.
@@ -803,6 +811,12 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     return 2;
   }
   command = *std::move(configured);
+  help_width =
+      xff::cli::ResolveHelpWidth(width_flag ? width_flag : xff::cli::WidthFlag(command.globals), detected_width);
+  if (!help_width.ok()) {
+    std::cerr << "xff: " << help_width.status().message() << "\n";
+    return 2;
+  }
 
   if (explain) {
     if (const absl::Status status = xff::engine::ValidateCommandFields(command); !status.ok()) {

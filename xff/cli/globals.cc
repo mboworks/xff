@@ -30,6 +30,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/types/span.h"
 #include "xff/archive/archive_backend.h"
+#include "xff/cli/help_width.h"
 #include "xff/fuse/fuse_backend.h"
 #include "xff/matching/language/language_database_api.h"
 #include "xff/matching/mime/database.h"
@@ -1878,21 +1879,30 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     },
     {
         .name = "--width",
-        .display = "--width[=auto|none|COLS]",
+        .display = "--width[=auto|auto:COLS|none|COLS]",
         .group = "display",
         .header = "Terminal display",
-        .summary = "width for plain help and comparison summaries: auto, none, or a column count",
+        .summary = "width for plain help and comparison summaries: capped auto, auto, none, or a column count",
         .details = "Wraps the flowing text of `--help` and `--help=TOPIC` to a column width. "
                    "Also bounds plain/aligned comparison-summary tables: scopes use grouped column headers "
                    "when they fit, or labelled rows in one table when they do not. Numeric cells are never "
-                   "truncated; a width below one metric row may overflow. `auto` uses `$COLUMNS` when set, "
+                   "truncated; a width below one metric row may overflow. The default is `auto:110`. "
+                   "`auto:COLS` caps automatic width at `COLS`, using the cap when detection is unavailable; "
+                   "caps below 40 are errors. Explicit `auto` (also bare `--width`) is uncapped and uses "
+                   "`$COLUMNS` when set, "
                    "otherwise the terminal width when stdout is a terminal, otherwise unlimited width. "
                    "`none` (or `0`) disables wrapping; a positive integer sets a fixed width (at least "
-                   "40 columns). Aligned help vocabulary tables and example blocks keep their own layout. "
+                   "40 columns); 60 or more is recommended for readability. Aligned help vocabulary tables "
+                   "and example blocks keep their own layout. "
                    "Does not affect the file listing, comparison-results table, summary legends or path "
-                   "headings, `--man`, or formatted full help.",
+                   "headings, `--man`, or formatted full help. Save a personal preference such as "
+                   "`--width=auto:100` in the unsectioned user INI at "
+                   "`<OS account home>/.config/xff/config`. Explicit CLI width overrides the preference. "
+                   "Help reads only automatic system/user preferences, including selected named sections; "
+                   "it never loads `.xffrc` files or executes configured actions. Unavailable or invalid "
+                   "automatic preferences are ignored for help so configuration remains repairable.",
         .see_also = "output,environment",
-        .cli_only = true,
+        .value_check = GlobalFlag::ValueCheck::kWidth,
     },
     {
         .name = "--pager",
@@ -2774,6 +2784,7 @@ absl::Status ValidateGlobalValue(std::string_view arg) {
   }
   switch (flag->value_check) {
     case GlobalFlag::ValueCheck::kNone: return absl::OkStatus();
+    case GlobalFlag::ValueCheck::kWidth: return ResolveHelpWidth(value, 0).status();
     case GlobalFlag::ValueCheck::kBuffer:
       if (format::ParseBufferWindow(value).has_value() || format::ParseByteBudget(value).has_value()) {
         return absl::OkStatus();

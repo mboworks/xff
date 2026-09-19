@@ -1,5 +1,12 @@
 # TODO
 
+## Help follow-up: suggestions, width, and spacing
+
+- [x] Rank fuzzy flag suggestions and retain up to three candidates (F02).
+- [x] Add automatic width caps, defaulting to `auto:110`, with a 40-column minimum (F04).
+- [x] Normalize help block spacing while preserving verbatim examples.
+- [x] Support persistent user-INI width preferences, including help and CLI precedence (F03).
+
 ## Completed: Structured-output composition (audit S01)
 
 - Emit typed comparison-status and built-in grep JSONL records.

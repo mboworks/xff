@@ -50,7 +50,13 @@ class MarkdownBackend final : public HelpBackend {
   [[nodiscard]] std::string Take() override;
 
  private:
+  // Suppress repeated blank lines except inside verbatim fenced examples.
+  void Append(std::string_view text, bool allow_repeated_blank_lines = false);
+
   std::string out_;
+  std::string pending_spaces_;
+  bool line_has_content_ = false;
+  bool last_line_blank_ = true;
   std::size_t preamble_end_ = 0;
   std::vector<std::pair<std::string, std::string>> section_links_;
   bool emit_contents_ = false;

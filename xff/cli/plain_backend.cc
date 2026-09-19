@@ -110,10 +110,33 @@ std::string RenderInlinesPlain(const Inlines& runs) {
   return out;
 }
 
-void PlainTextBackend::StartBlock() {
-  if (!out_.empty()) {
-    absl::StrAppend(&out_, "\n");
+void PlainTextBackend::Append(std::string_view text, bool allow_repeated_blank_lines) {
+  for (const char ch : text) {
+    if (ch == ' ' || ch == '\t') {
+      pending_spaces_.push_back(ch);
+      continue;
+    }
+    if (ch == '\n') {
+      if (line_has_content_ || allow_repeated_blank_lines || (!out_.empty() && !last_line_blank_)) {
+        if (line_has_content_ || allow_repeated_blank_lines) {
+          out_ += pending_spaces_;
+        }
+        out_.push_back(ch);
+        last_line_blank_ = !line_has_content_;
+      }
+      pending_spaces_.clear();
+      line_has_content_ = false;
+      continue;
+    }
+    out_ += pending_spaces_;
+    pending_spaces_.clear();
+    out_.push_back(ch);
+    line_has_content_ = true;
   }
+}
+
+void PlainTextBackend::StartBlock() {
+  Append("\n\n");
 }
 
 void PlainTextBackend::Preamble(const Document& doc) {
@@ -123,10 +146,10 @@ void PlainTextBackend::Preamble(const Document& doc) {
   StartBlock();
   // The identity line: the program name reads as a name (bold cyan), the tagline plain.
   const bool color = Context().color;
-  absl::StrAppend(
-      &out_, WrapText(absl::StrCat(Sgr(doc.name, kName, color), " - ", doc.tagline), Context().width, "", ""));
+  Append(
+      absl::StrCat(WrapText(absl::StrCat(Sgr(doc.name, kName, color), " - ", doc.tagline), Context().width, "", "")));
   // The usage synopsis is a command template, so the whole `name synopsis` reads as code.
-  absl::StrAppend(&out_, "\nUsage: ", Sgr(absl::StrCat(doc.name, " ", doc.usage), kExample, color), "\n");
+  Append(absl::StrCat("\nUsage: ", Sgr(absl::StrCat(doc.name, " ", doc.usage), kExample, color), "\n"));
 }
 
 void PlainTextBackend::BeginSection(const Section& section) {
@@ -135,7 +158,7 @@ void PlainTextBackend::BeginSection(const Section& section) {
   }
   // House style: top-level headings are upper-cased (PRINTF DIRECTIVES / TIME FORMATS).
   StartBlock();
-  absl::StrAppend(&out_, BodyIndent(), Sgr(absl::AsciiStrToUpper(section.title), kHeading, Context().color), "\n");
+  Append(absl::StrCat(BodyIndent(), Sgr(absl::AsciiStrToUpper(section.title), kHeading, Context().color), "\n"));
   ++depth_;  // the section body indents under its heading
 }
 
@@ -160,7 +183,7 @@ void PlainTextBackend::BeginSubsection(const Subsection& subsection) {
     return;
   }
   StartBlock();
-  absl::StrAppend(&out_, BodyIndent(), Sgr(absl::StrCat(subsection.title, ":"), kHeading, Context().color), "\n");
+  Append(absl::StrCat(BodyIndent(), Sgr(absl::StrCat(subsection.title, ":"), kHeading, Context().color), "\n"));
   ++depth_;  // the subsection body indents under its heading
 }
 
@@ -178,10 +201,10 @@ void PlainTextBackend::BeginEntry(const Entry& entry) {
   } else if (entry.xff) {
     tag = "  (xff)";
   }
-  absl::StrAppend(&out_, BodyIndent(), Sgr(entry.term, kName, Context().color), tag, "\n");
+  Append(absl::StrCat(BodyIndent(), Sgr(entry.term, kName, Context().color), tag, "\n"));
   ++depth_;  // the summary + detail indent under the term
   const std::string indent = BodyIndent();
-  absl::StrAppend(&out_, WrapText(RenderInlinesRaw(entry.summary), Context().width, indent, indent));
+  Append(absl::StrCat(WrapText(RenderInlinesRaw(entry.summary), Context().width, indent, indent)));
   in_entry_ = true;
 }
 
@@ -194,11 +217,11 @@ void PlainTextBackend::EmitProse(const Prose& prose) {
   const std::string indent = BodyIndent();
   if (in_entry_) {
     // An entry's detail line, under its term indent (keeps `code` markup, no blank line).
-    absl::StrAppend(&out_, WrapText(RenderInlinesRaw(prose.runs), Context().width, indent, indent));
+    Append(absl::StrCat(WrapText(RenderInlinesRaw(prose.runs), Context().width, indent, indent)));
     return;
   }
   StartBlock();
-  absl::StrAppend(&out_, WrapText(RenderInlinesPlain(prose.runs), Context().width, indent, indent));
+  Append(absl::StrCat(WrapText(RenderInlinesPlain(prose.runs), Context().width, indent, indent)));
 }
 
 void PlainTextBackend::EmitExample(const Example& example) {
@@ -211,7 +234,7 @@ void PlainTextBackend::EmitExample(const Example& example) {
     text.remove_suffix(1);  // avoid a trailing indent-only line from a final newline
   }
   for (const std::string_view line : absl::StrSplit(text, '\n')) {
-    absl::StrAppend(&out_, indent, Sgr(line, kExample, Context().color), "\n");
+    Append(absl::StrCat(indent, Sgr(line, kExample, Context().color), "\n"), true);
   }
 }
 
@@ -219,11 +242,14 @@ void PlainTextBackend::EmitBullets(const Bullets& bullets) {
   // Glued directly under its heading (no leading blank line), at the body indent.
   const std::string indent = BodyIndent();
   for (const Inlines& item : bullets.items) {
-    absl::StrAppend(&out_, WrapText(RenderInlinesPlain(item), Context().width, indent + "- ", indent + "  "));
+    Append(absl::StrCat(WrapText(RenderInlinesPlain(item), Context().width, indent + "- ", indent + "  ")));
   }
 }
 
 void PlainTextBackend::EmitRows(const Rows& rows) {
+  if (!rows.rows.empty()) {
+    StartBlock();
+  }
   // The shared {term, description} layout: the body indent, then the description column
   // two spaces past the widest term - so this table aligns like the --help=printf /
   // time / size ones.
@@ -249,7 +275,7 @@ void PlainTextBackend::EmitRows(const Rows& rows) {
     const std::string_view term = rows.rows[i].term;
     const std::string prefix =
         absl::StrCat(indent, Sgr(term, kValue, Context().color), std::string(term_width - term.size(), ' '));
-    absl::StrAppend(&out_, WrapText(descriptions[i], Context().width, prefix, hang));
+    Append(absl::StrCat(WrapText(descriptions[i], Context().width, prefix, hang)));
   }
 }
 
@@ -281,7 +307,7 @@ void PlainTextBackend::EmitTable(const Table& table) {
     }
   }
   if (Context().width != 0 && hang.size() + last_minimum > Context().width) {
-    absl::StrAppend(&out_, StackedTable(table, Context().width, indent, Context().color));
+    Append(absl::StrCat(StackedTable(table, Context().width, indent, Context().color)));
     return;
   }
   const auto emit_row = [&](const std::vector<std::string>& row, bool colored) {
@@ -292,7 +318,7 @@ void PlainTextBackend::EmitTable(const Table& table) {
           &prefix, colored ? Sgr(cell, kValue, Context().color) : std::string(cell),
           std::string(widths[i] + 2 - cell.size(), ' '));
     }
-    absl::StrAppend(&out_, WrapText(row.back(), Context().width, prefix, hang));
+    Append(absl::StrCat(WrapText(row.back(), Context().width, prefix, hang)));
   };
   emit_row(table.header, /*colored=*/true);
   std::vector<std::string> rule;
@@ -321,14 +347,16 @@ void PlainTextBackend::EmitSeeAlso(const SeeAlso& see_also) {
     absl::StrAppend(&text, sep, HelpReferenceLabel(ref));
     sep = ", ";
   }
-  absl::StrAppend(&out_, WrapText(text, Context().width, indent, indent));
+  Append(absl::StrCat(WrapText(text, Context().width, indent, indent)));
   if (!see_also.note.empty()) {
     StartBlock();
-    absl::StrAppend(&out_, WrapText(RenderInlinesPlain(see_also.note), Context().width, indent, indent));
+    Append(absl::StrCat(WrapText(RenderInlinesPlain(see_also.note), Context().width, indent, indent)));
   }
 }
 
 std::string PlainTextBackend::Take() {
+  out_ += pending_spaces_;
+  pending_spaces_.clear();
   return std::move(out_);
 }
 

@@ -85,6 +85,7 @@ cc_library(
     hdrs = ["config_validation.h"],
     deps = [
         ":globals_cc",
+        ":help_width_cc",
         "//xff/config:config_cc",
         "//xff/config:policy_cc",
         "//xff/config:xffrc_cc",
@@ -383,6 +384,7 @@ cc_test(
         ":roff_backend_cc",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
     ],
 )
 
@@ -568,6 +570,7 @@ cc_library(
     hdrs = ["diagnostics.h"],
     deps = [
         ":globals_cc",
+        "//xff/fuzzy:fuzzy_cc",
         "//xff/parser:parser_cc",
         "//xff/registry:registry_cc",
         "@abseil-cpp//absl/status",
@@ -635,6 +638,7 @@ cc_library(
     srcs = ["globals.cc"],
     hdrs = ["globals.h"],
     deps = [
+        ":help_width_cc",
         "//xff/presentation/format:format_cc",
         "//xff/registry:registry_cc",
         "//xff/values:values_cc",

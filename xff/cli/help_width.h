@@ -18,6 +18,8 @@
 
 #include <cstddef>
 #include <optional>
+#include <span>
+#include <string>
 #include <string_view>
 
 #include "absl/status/statusor.h"
@@ -32,15 +34,19 @@ namespace xff::cli {
 // or an explicit --width narrower than this wraps here instead). 0 (no wrap) is
 // exempt.
 inline constexpr std::size_t kMinHelpWidth = 40;
+inline constexpr std::size_t kDefaultHelpWidth = 110;
+
+// Last width among parser-identified globals; child-command arguments must be excluded.
+std::optional<std::string_view> WidthFlag(std::span<const std::string> globals);
 
 // Resolves the plain-help wrap width from the `--width` flag and the terminal.
 //   `flag`          the raw --width value, or nullopt when the flag is absent.
 //   `detected_cols` the known terminal width, or 0 when unknown (DetectTerminalWidth).
-// Values (case-insensitive): "auto" or absent -> `detected_cols` (so a real terminal
-// wraps to its width, but piped / redirected output stays full-width and unwrapped);
-// "none" or "0" -> 0 (no wrapping); a positive integer -> that many columns. Any other
-// value is an error. A returned 0 means "do not wrap". This is the pure, tested seam
-// (DetectTerminalWidth reads the environment for it).
+// Values (case-insensitive): absent -> auto:110; "auto:COLS" caps detected width at
+// COLS, or uses COLS when detection is unavailable. Caps below 40 are errors.
+// Explicit "auto" -> detected_cols, including 0 for unknown/unlimited width.
+// "none" or "0" -> 0 (no wrapping); positive integers -> fixed width, at least 40.
+// Other values are errors. This pure seam is shared by help and comparison summaries.
 [[nodiscard]] absl::StatusOr<std::size_t> ResolveHelpWidth(
     std::optional<std::string_view> flag,
     std::size_t detected_cols);

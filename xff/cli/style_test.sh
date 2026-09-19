@@ -197,7 +197,7 @@ test::case_smart_and_overrides() {
 
 test::help_styles_shows_the_flavor_comparison() {
   local out
-  out="$("$(_xff_bin)" --help=styles 2>&1)"
+  out="$("$(_xff_bin)" --help=styles --width=none 2>&1)"
   # The three style columns (find/xff/rg) and the key behavior rows are present; xfd was dropped.
   expect_output_contains "rg" "${out}"
   expect_output_not_contains "xfd" "${out}"

@@ -238,9 +238,12 @@ producer/format compatibility, and authored-output exceptions.
 ## Console width and scope headers
 
 Plain and aligned comparison-summary tables print each scope name once above its four numeric
-columns. `--width=auto` uses the detected terminal width (including a valid `COLUMNS` override);
-without a known width the table stays wide. `--width=none` keeps the wide layout, and a positive
-width has the same minimum of 40 columns as help text.
+columns. The default `--width=auto:110` caps the detected terminal width (including a valid
+`COLUMNS` override) at 110 columns and uses 110 when detection is unavailable. Explicit
+`--width=auto` is uncapped and stays wide without a known width. `--width=none` keeps the wide
+layout; fixed widths have a minimum of 40, and automatic caps below 40 are rejected. Persist
+a preference with `--width=auto:100` in the user INI; explicit CLI width takes precedence.
+See `--help=width` for detection, configuration, and readability guidance.
 
 When the scope columns do not fit, the renderer uses one table with each grouping label followed
 by its selected scope rows. Every scope row shares the same numeric column widths. Long group

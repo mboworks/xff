@@ -76,17 +76,34 @@ struct ResolveHelpWidthTest : ::testing::Test {
   int pty_master_ = -1;
 };
 
-TEST_F(ResolveHelpWidthTest, AbsentFlagUsesTheDetectedTerminalWidth) {
-  EXPECT_THAT(ResolveHelpWidth(std::nullopt, 120), IsOkAndHolds(Eq(120U)));
+TEST_F(ResolveHelpWidthTest, AbsentFlagCapsTheDetectedTerminalWidth) {
+  EXPECT_THAT(ResolveHelpWidth(std::nullopt, 120), IsOkAndHolds(Eq(110U)));
 }
 
-TEST_F(ResolveHelpWidthTest, AbsentFlagDoesNotWrapWhenTerminalUnknown) {
-  EXPECT_THAT(ResolveHelpWidth(std::nullopt, 0), IsOkAndHolds(Eq(0U)));
+TEST_F(ResolveHelpWidthTest, AbsentFlagUsesDefaultCapWhenTerminalUnknown) {
+  EXPECT_THAT(ResolveHelpWidth(std::nullopt, 0), IsOkAndHolds(Eq(110U)));
 }
 
-TEST_F(ResolveHelpWidthTest, AutoMatchesTheAbsentBehaviorAndIsCaseInsensitive) {
+TEST_F(ResolveHelpWidthTest, ExplicitAutoIsUncappedAndCaseInsensitive) {
   EXPECT_THAT(ResolveHelpWidth("auto", 100), IsOkAndHolds(Eq(100U)));
   EXPECT_THAT(ResolveHelpWidth("AUTO", 0), IsOkAndHolds(Eq(0U)));
+}
+
+TEST_F(ResolveHelpWidthTest, CappedAutoHandlesKnownAndUnknownWidths) {
+  EXPECT_THAT(ResolveHelpWidth("auto:120", 80), IsOkAndHolds(Eq(80U)));
+  EXPECT_THAT(ResolveHelpWidth("auto:120", 120), IsOkAndHolds(Eq(120U)));
+  EXPECT_THAT(ResolveHelpWidth("auto:120", 200), IsOkAndHolds(Eq(120U)));
+  EXPECT_THAT(ResolveHelpWidth("AUTO:120", 0), IsOkAndHolds(Eq(120U)));
+  EXPECT_THAT(ResolveHelpWidth("auto:40", 20), IsOkAndHolds(Eq(40U)));
+  EXPECT_THAT(ResolveHelpWidth(std::nullopt, 80), IsOkAndHolds(Eq(80U)));
+  EXPECT_THAT(ResolveHelpWidth("auto", 200), IsOkAndHolds(Eq(200U)));
+}
+
+TEST_F(ResolveHelpWidthTest, RejectsInvalidCaps) {
+  for (const std::string_view value :
+       {"auto:", "auto:wide", "auto:-1", "auto:0", "auto:39", "auto:999999999999999999999999999999999999"}) {
+    EXPECT_THAT(ResolveHelpWidth(value, 80), StatusIs(absl::StatusCode::kInvalidArgument)) << value;
+  }
 }
 
 TEST_F(ResolveHelpWidthTest, NoneAndZeroDisableWrapping) {

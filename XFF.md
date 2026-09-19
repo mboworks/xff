@@ -266,7 +266,6 @@ Each file's directives are translated before composition. Selecting `archive` in
 | Extract to new ordinary file   | file-writing                                | file-writing                                                                           |
 | Extract over existing file     | file-writing, file-overwrite                | file-writing, file-overwrite                                                           |
 
-
 `--temp-root=PATH` and `--output-root=PATH` are config-only, once per unsectioned system or user INI. The system declaration wins. Roots must be existing absolute directories without symlink components; use physical paths (for example `/private/tmp` on macOS). Permissions cover all descendants, including subdirectories, but never deletion or replacement of the root itself. Root declarations do not redirect output filenames. The temp root also selects extraction and mount scratch placement. Environment variables alone grant no directory exception. INI `${NAME}` substitution in a root declaration explicitly trusts the caller to choose that path; use literal roots for fixed administrator boundaries. See `--help=config` for defaults, quoting, and validation.
 
 | Operation                         | Ordinary path                | temp selected                          | output selected                            |
@@ -278,7 +277,6 @@ Each file's directives are translated before composition. Selecting `archive` in
 | Delete empty directory            | directory-deletion           | temp-directory-deletion                | output-directory-deletion                  |
 | Recursive deletion                | Check every entry            | Check every entry                      | Check every entry                          |
 | Delete or replace a declared root | Prohibited                   | Prohibited                             | Prohibited                                 |
-
 
 Unselected directory categories inherit ordinary controls through per-INI expansion. Overlapping temp/output scopes require both sets of permissions. Explicit archive restrictions also apply to archives within directory scopes. With declared roots, archive output outside all roots also needs ordinary file writing/overwrite permission. Select `archive` alongside directory categories to allow archives inside them while blocking ordinary writes elsewhere. Scoped paths reject parent traversal (`..`) and symlink traversal. Scoped overwrite replaces the directory entry rather than modifying a shared hard-link inode. Ordinary extraction and mount scratch require writing and directory-creation permission. Archive-owned staging is part of an authorized archive write, remains on the destination filesystem for archive publication, and is cleaned through retained handles. It does not grant access to other pre-existing temporary files. User-directed directory creation and deletion have separate controls.
 
@@ -1196,9 +1194,8 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 <a id="flag-width"></a>
 
-- `--width[=auto|none|COLS]` - width for plain help and comparison summaries: auto, none, or a column count _(global, xff, command-line-only)_
-  Command-line only; rejected in configuration files.
-  Wraps the flowing text of `--help` and `--help=TOPIC` to a column width. Also bounds plain/aligned comparison-summary tables: scopes use grouped column headers when they fit, or labelled rows in one table when they do not. Numeric cells are never truncated; a width below one metric row may overflow. `auto` uses `$COLUMNS` when set, otherwise the terminal width when stdout is a terminal, otherwise unlimited width. `none` (or `0`) disables wrapping; a positive integer sets a fixed width (at least 40 columns). Aligned help vocabulary tables and example blocks keep their own layout. Does not affect the file listing, comparison-results table, summary legends or path headings, `--man`, or formatted full help.
+- `--width[=auto|auto:COLS|none|COLS]` - width for plain help and comparison summaries: capped auto, auto, none, or a column count _(global, xff)_
+  Wraps the flowing text of `--help` and `--help=TOPIC` to a column width. Also bounds plain/aligned comparison-summary tables: scopes use grouped column headers when they fit, or labelled rows in one table when they do not. Numeric cells are never truncated; a width below one metric row may overflow. The default is `auto:110`. `auto:COLS` caps automatic width at `COLS`, using the cap when detection is unavailable; caps below 40 are errors. Explicit `auto` (also bare `--width`) is uncapped and uses `$COLUMNS` when set, otherwise the terminal width when stdout is a terminal, otherwise unlimited width. `none` (or `0`) disables wrapping; a positive integer sets a fixed width (at least 40 columns); 60 or more is recommended for readability. Aligned help vocabulary tables and example blocks keep their own layout. Does not affect the file listing, comparison-results table, summary legends or path headings, `--man`, or formatted full help. Save a personal preference such as `--width=auto:100` in the unsectioned user INI at `<OS account home>/.config/xff/config`. Explicit CLI width overrides the preference. Help reads only automatic system/user preferences, including selected named sections; it never loads `.xffrc` files or executes configured actions. Unavailable or invalid automatic preferences are ignored for help so configuration remains repairable.
   See also: [Output](#topic-output), [Environment](#topic-environment)
 
 <a id="flag-pager"></a>
@@ -2967,7 +2964,6 @@ Reading is decided by CONTENT (the reader sniffs the bytes), so the extensions a
 | asar     | yes  | no    | .asar                                                                                                                                                                 |
 | squashfs | yes  | no    | .sfs, .sqfs, .sqsh, .squashfs, .snap, .appimage                                                                                                                       |
 
-
 ### Creating one
 
 `--pack=FILE` turns the walk around: every match is written into a NEW archive instead of being listed, so the member list is an expression rather than a pipeline into `tar`. The output name picks the format, each member keeps the path it had relative to its search root, and `--sort` decides the order inside. It is a sink like `--summary`, the archive appears only when the walk finished, and a member of another container is refused - harvesting files out of one archive to re-pack them into another is a separate feature, which is also what `-Z++ -z-` is reserved for.
@@ -3089,7 +3085,7 @@ Environment variables xff reads. An explicit command-line flag generally overrid
 - `XFF_PAGER` - the first automatic environment fallback when neither `less` nor `more` is available
 - `PAGER` - the final automatic environment fallback when no known or xff-specific pager is available
 - `XFF_MANPAGER` - the pager / formatter for `--man`; overrides the built-in `mandoc` pipeline; set empty to disable
-- `COLUMNS` - terminal width used to wrap plain `--help` text for `--width=auto` when the tty size is unknown
+- `COLUMNS` - positive terminal-width override, ahead of tty detection; automatic `--width` caps still apply
 - `XDG_CONFIG_HOME` - Git global-ignore discovery root; does not change the xff config location
 - `HOME` - Git configuration and global-ignore discovery; does not change the xff config location
 - `LC_ALL, LC_CTYPE, LANG` - locale for `--unicode=auto`: a UTF-8 locale selects the Unicode `--format=tree` connectors, else ASCII

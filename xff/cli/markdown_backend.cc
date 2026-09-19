@@ -83,8 +83,33 @@ std::string RenderInlinesMarkdown(const Inlines& runs) {
   return out;
 }
 
+void MarkdownBackend::Append(std::string_view text, bool allow_repeated_blank_lines) {
+  for (const char ch : text) {
+    if (ch == ' ' || ch == '\t') {
+      pending_spaces_.push_back(ch);
+      continue;
+    }
+    if (ch == '\n') {
+      if (line_has_content_ || allow_repeated_blank_lines || (!out_.empty() && !last_line_blank_)) {
+        if (line_has_content_ || allow_repeated_blank_lines) {
+          out_ += pending_spaces_;
+        }
+        out_.push_back(ch);
+        last_line_blank_ = !line_has_content_;
+      }
+      pending_spaces_.clear();
+      line_has_content_ = false;
+      continue;
+    }
+    out_ += pending_spaces_;
+    pending_spaces_.clear();
+    out_.push_back(ch);
+    line_has_content_ = true;
+  }
+}
+
 void MarkdownBackend::Preamble(const Document& doc) {
-  absl::StrAppendFormat(&out_, "# %s\n\n%s.\n\n**Usage:** `%s %s`\n", doc.name, doc.tagline, doc.name, doc.usage);
+  Append(absl::StrFormat("# %s\n\n%s.\n\n**Usage:** `%s %s`\n", doc.name, doc.tagline, doc.name, doc.usage));
   preamble_end_ = out_.size();
   emit_contents_ = doc.sections.size() >= 4;
 }
@@ -97,22 +122,21 @@ void MarkdownBackend::BeginSection(const Section& section) {
       section.anchor.empty() ? SlugFor({.kind = RefTarget::Kind::kAnchor, .id = section.title}) : section.anchor;
   section_links_.emplace_back(section.title, anchor);
   if (!section.anchor.empty()) {
-    absl::StrAppend(&out_, "\n<a id=\"", anchor, "\"></a>\n");
+    Append(absl::StrCat("\n<a id=\"", anchor, "\"></a>\n"));
   }
-  absl::StrAppendFormat(&out_, "\n## %s\n", section.title);
+  Append(absl::StrFormat("\n## %s\n", section.title));
 }
 
 void MarkdownBackend::BeginSubsection(const Subsection& subsection) {
   if (subsection.title.empty()) {
     return;  // a title-less subsection only groups/indents in plain text; no heading here
   }
-  absl::StrAppendFormat(&out_, "\n### %s\n", subsection.title);
+  Append(absl::StrFormat("\n### %s\n", subsection.title));
 }
 
 void MarkdownBackend::BeginEntry(const Entry& entry) {
   if (!entry.anchor.empty()) {
-    absl::StrAppend(
-        &out_, "\n<a id=\"", SlugFor({.kind = RefTarget::Kind::kAnchor, .id = entry.anchor}), "\"></a>\n\n");
+    Append(absl::StrCat("\n<a id=\"", SlugFor({.kind = RefTarget::Kind::kAnchor, .id = entry.anchor}), "\"></a>\n\n"));
   }
   // A term is backtick-wrapped so its `=NAME` / `[..]` / `|` stay literal.
   std::string tag;
@@ -121,7 +145,7 @@ void MarkdownBackend::BeginEntry(const Entry& entry) {
   } else if (entry.xff) {
     tag = " _(xff)_";
   }
-  absl::StrAppend(&out_, "- `", entry.term, "` - ", RenderInlinesMarkdown(entry.summary), tag, "\n");
+  Append(absl::StrCat("- `", entry.term, "` - ", RenderInlinesMarkdown(entry.summary), tag, "\n"));
   in_entry_ = true;
 }
 
@@ -131,20 +155,25 @@ void MarkdownBackend::EndEntry(const Entry& /*entry*/) {
 
 void MarkdownBackend::EmitProse(const Prose& prose) {
   if (in_entry_) {
-    absl::StrAppend(&out_, "  ", RenderInlinesMarkdown(prose.runs), "\n");  // indented bullet continuation
+    Append(absl::StrCat("  ", RenderInlinesMarkdown(prose.runs), "\n"));  // indented bullet continuation
   } else {
-    absl::StrAppend(&out_, "\n", RenderInlinesMarkdown(prose.runs), "\n");
+    Append(absl::StrCat("\n", RenderInlinesMarkdown(prose.runs), "\n"));
   }
 }
 
 void MarkdownBackend::EmitExample(const Example& example) {
-  absl::StrAppend(&out_, "\n```", example.lang, "\n", example.text, "\n```\n");
+  Append(absl::StrCat("\n```", example.lang, "\n"));
+  Append(example.text, true);
+  if (!example.text.empty() && example.text.back() != '\n') {
+    Append("\n", true);
+  }
+  Append("```\n");
 }
 
 void MarkdownBackend::EmitBullets(const Bullets& bullets) {
-  absl::StrAppend(&out_, "\n");
+  Append(absl::StrCat("\n"));
   for (const Inlines& item : bullets.items) {
-    absl::StrAppend(&out_, "- ", RenderInlinesMarkdown(item), "\n");
+    Append(absl::StrCat("- ", RenderInlinesMarkdown(item), "\n"));
   }
 }
 
@@ -153,12 +182,12 @@ void MarkdownBackend::EmitRows(const Rows& rows) {
   // them to match the entry's 2-space continuation prose, and close with a blank line so
   // the following prose is not absorbed as a lazy continuation of the last list item.
   const std::string prefix = in_entry_ ? "  - `" : "- `";
-  absl::StrAppend(&out_, "\n");
+  Append(absl::StrCat("\n"));
   for (const Row& row : rows.rows) {
-    absl::StrAppend(&out_, prefix, row.term, "` - ", RenderInlinesMarkdown(row.description), "\n");
+    Append(absl::StrCat(prefix, row.term, "` - ", RenderInlinesMarkdown(row.description), "\n"));
   }
   if (in_entry_) {
-    absl::StrAppend(&out_, "\n");
+    Append(absl::StrCat("\n"));
   }
 }
 
@@ -194,23 +223,23 @@ void MarkdownBackend::EmitTable(const Table& table) {
     }
   }
   const auto emit_row = [&](const std::vector<std::string>& row) {
-    absl::StrAppend(&out_, "|");
+    Append(absl::StrCat("|"));
     for (std::size_t i = 0; i < row.size(); ++i) {
-      absl::StrAppend(&out_, " ", row[i], std::string(widths[i] - row[i].size(), ' '), " |");
+      Append(absl::StrCat(" ", row[i], std::string(widths[i] - row[i].size(), ' '), " |"));
     }
-    absl::StrAppend(&out_, "\n");
+    Append(absl::StrCat("\n"));
   };
-  absl::StrAppend(&out_, "\n");
+  Append(absl::StrCat("\n"));
   emit_row(header);
-  absl::StrAppend(&out_, "|");
+  Append(absl::StrCat("|"));
   for (const std::size_t width : widths) {
-    absl::StrAppend(&out_, " ", std::string(width, '-'), " |");
+    Append(absl::StrCat(" ", std::string(width, '-'), " |"));
   }
-  absl::StrAppend(&out_, "\n");
+  Append(absl::StrCat("\n"));
   for (const std::vector<std::string>& row : rows) {
     emit_row(row);
   }
-  absl::StrAppend(&out_, "\n");
+  Append(absl::StrCat("\n"));
 }
 
 void MarkdownBackend::EmitSeeAlso(const SeeAlso& see_also) {
