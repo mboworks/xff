@@ -565,8 +565,12 @@ py_test(
     name = "coverage_index_test",
     size = "small",
     srcs = ["coverage_index_test.py"],
+    data = ["//:python_workflow_test_data"],
     tags = ["requires-host-tools"],
-    deps = [":coverage_index_lib"],
+    deps = [
+        ":coverage_index_lib",
+        ":test_paths_lib",
+    ],
 )
 
 py_test(
