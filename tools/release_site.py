@@ -344,7 +344,7 @@ def build(source, retained, repository, tag, renderer=render, config_path=None,
                     f'<meta name="viewport" content="width=device-width, initial-scale=1">'
                     f'<title>{html.escape(title)} - {repo} {tag}</title><style>{STYLE}</style>'
                     f'<body><nav>{navigation}</nav><p>{repo} {tag}</p><main>{body}</main>'
-                    f'<footer>Release snapshot · {sha}</footer></body></html>\n')
+                    f'<footer>Release snapshot &middot; {sha}</footer></body></html>\n')
 
         for document in sorted(documents):
             parser = Links(source, output, document, {

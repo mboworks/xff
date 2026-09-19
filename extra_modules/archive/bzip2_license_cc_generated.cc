@@ -3,10 +3,10 @@
 
 namespace xff::license {
 namespace {
-const LicenseBodyRegistrar kBody{
-    {.spdx = "bzip2-1.0.6",
-     .text =
-         R"xff_license(This program, "bzip2", the associated library "libbzip2", and all
+const LicenseBodyRegistrar kBody{{
+    .spdx = "bzip2-1.0.6",
+    .text =
+        R"xff_license(This program, "bzip2", the associated library "libbzip2", and all
 documentation, are copyright (C) 1996-2019 Julian R Seward.  All
 rights reserved.
 
@@ -43,6 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Julian Seward, jseward@acm.org
 bzip2/libbzip2 version 1.0.8 of 13 July 2019
-)xff_license"}};
+)xff_license",
+}};
 }  // namespace
 }  // namespace xff::license

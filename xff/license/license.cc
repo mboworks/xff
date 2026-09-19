@@ -25,28 +25,33 @@ namespace {
 // The always-linked core dependencies. Kept in this TU (the one that defines NoticeText) so the
 // linker never drops them: NoticeText is referenced, so this TU -- and its registrars -- are pulled
 // in. A build-extra registers from its own TU instead, so it appears exactly when it is linked.
-const Registrar kAbseil{
-    {.component = "Abseil (C++)",
-     .spdx = "Apache-2.0",
-     .text = "Copyright The Abseil Authors. Licensed under the Apache License, Version 2.0."}};
-const Registrar kRe2{
-    {.component = "RE2",
-     .spdx = "BSD-3-Clause",
-     .text = "Copyright (c) 2009 The RE2 Authors. Redistribution permitted under the BSD-3-Clause license."}};
-const Registrar kUtf8proc{
-    {.component = "utf8proc",
-     .spdx = "LicenseRef-utf8proc",
-     .text = "Copyright (c) 2014-2021 Steven G. Johnson, Jiahao Chen, Tony Kelman, Jonas Fonseca, and contributors. "
-             "Copyright (c) 2009, 2013 Public Software Group e. V. Unicode data: Copyright (c) 1991-2007 Unicode, Inc. "
-             "MIT library license and Unicode data terms; see the complete bundled upstream license."}};
-const Registrar kMbo{
-    {.component = "mboworks/mbo",
-     .spdx = "Apache-2.0",
-     .text = "Copyright MBO Works. Licensed under the Apache License, Version 2.0."}};
-const Registrar kNlohmannJson{
-    {.component = "JSON for Modern C++ (nlohmann/json)",
-     .spdx = "MIT",
-     .text = "Copyright (c) 2013-2025 Niels Lohmann"}};
+const Registrar kAbseil{{
+    .component = "Abseil (C++)",
+    .spdx = "Apache-2.0",
+    .text = "Copyright The Abseil Authors. Licensed under the Apache License, Version 2.0.",
+}};
+const Registrar kRe2{{
+    .component = "RE2",
+    .spdx = "BSD-3-Clause",
+    .text = "Copyright (c) 2009 The RE2 Authors. Redistribution permitted under the BSD-3-Clause license.",
+}};
+const Registrar kUtf8proc{{
+    .component = "utf8proc",
+    .spdx = "LicenseRef-utf8proc",
+    .text = "Copyright (c) 2014-2021 Steven G. Johnson, Jiahao Chen, Tony Kelman, Jonas Fonseca, and contributors. "
+            "Copyright (c) 2009, 2013 Public Software Group e. V. Unicode data: Copyright (c) 1991-2007 Unicode, Inc. "
+            "MIT library license and Unicode data terms; see the complete bundled upstream license.",
+}};
+const Registrar kMbo{{
+    .component = "mboworks/mbo",
+    .spdx = "Apache-2.0",
+    .text = "Copyright MBO Works. Licensed under the Apache License, Version 2.0.",
+}};
+const Registrar kNlohmannJson{{
+    .component = "JSON for Modern C++ (nlohmann/json)",
+    .spdx = "MIT",
+    .text = "Copyright (c) 2013-2025 Niels Lohmann",
+}};
 
 // xff's own license file IS the Apache-2.0 text, so the same bytes answer for every Apache-2.0
 // component above. Registered here rather than in the generated TU so the generated file stays a

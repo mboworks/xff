@@ -123,7 +123,8 @@ struct EvaluateTest : ::testing::Test {
               return confirm_reply_;
             },
         .exec_batches = provide_exec_batches_ ? mbo::types::OptionalRef{exec_batches_}
-                                              : mbo::types::OptionalRef<decltype(exec_batches_)>{}};
+                                              : mbo::types::OptionalRef<decltype(exec_batches_)>{},
+    };
     return Evaluate(expression, context);
   }
 

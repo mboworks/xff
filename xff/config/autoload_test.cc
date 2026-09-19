@@ -54,10 +54,11 @@ struct DiscoveryFs final : vfs::FileSystem {
     // Deliberately reverse the input order; discovery must impose its own ordering.
     for (const auto& [path_name, metadata] : std::views::reverse(entries)) {
       if (path_name.starts_with(prefix) && !std::string_view(path_name).substr(prefix.size()).contains('/')) {
-        result.push_back(
-            {.path = path_name,
-             .name = path_name.substr(prefix.size()),
-             .type = unknown_types ? vfs::FileType::kUnknown : metadata.type});
+        result.push_back({
+            .path = path_name,
+            .name = path_name.substr(prefix.size()),
+            .type = unknown_types ? vfs::FileType::kUnknown : metadata.type,
+        });
       }
     }
     return result;

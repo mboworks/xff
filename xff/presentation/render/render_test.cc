@@ -21,6 +21,7 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/strings/str_replace.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
@@ -237,23 +238,31 @@ TEST_F(RenderTest, MarkdownMeasuresEscapedCellsWithoutLosingLineBreaks) {
 TEST_F(RenderTest, DisplayControlsStayInsideCellsBeforeAndAfterBufferFlush) {
   for (const std::size_t window : std::to_array<std::size_t>({0, 1, TableStream::kAll})) {
     TableStream stream(Format::kAligned, {"name"}, false, window);
-    std::string out = stream.Add({"a\n\r\t\x1b\x7f\\雪"});
+    std::string out = stream.Add({"a\n\r\t\x1b\x7f\\\u96ea"});
     out += stream.Add({R"(literal\n)"});
     out += stream.Flush();
-    EXPECT_THAT(out, WithDropIndent(EqualsText(R"out(
-        a\n\r\t\x1B\x7F\\雪
+    EXPECT_THAT(
+        out, WithDropIndent(EqualsText(
+                 absl::StrReplaceAll(
+                     R"out(
+        a\n\r\t\x1B\x7F\\@unicode@
         literal\\n
-        )out")));
+        )out",
+                     {{"@unicode@", "\u96ea"}}))));
   }
 }
 
 TEST_F(RenderTest, TreeEscapesRootAndChildControls) {
   Tree tree(false);
-  tree.Add("root\n/child\t\x1b\\雪");
-  EXPECT_THAT(tree.Render(), WithDropIndent(EqualsText(R"out(
+  tree.Add("root\n/child\t\x1b\\\u96ea");
+  EXPECT_THAT(
+      tree.Render(), WithDropIndent(EqualsText(
+                         absl::StrReplaceAll(
+                             R"out(
       root\n
-      `-- child\t\x1B\\雪
-      )out")));
+      `-- child\t\x1B\\@unicode@
+      )out",
+                             {{"@unicode@", "\u96ea"}}))));
 }
 
 TEST_F(RenderTest, RenderTableNoHeaderDropsTheHeaderAndRule) {
@@ -344,10 +353,10 @@ TEST_F(RenderTest, TreeRendersUnicodeConnectorsWithCorrectLastChild) {
   EXPECT_THAT(
       tree.Render(), EqualsText(
                          "root\n"
-                         "├── README.md\n"
-                         "└── src\n"
-                         "    ├── main.cc\n"
-                         "    └── util.cc\n"));
+                         "\u251c\u2500\u2500 README.md\n"
+                         "\u2514\u2500\u2500 src\n"
+                         "    \u251c\u2500\u2500 main.cc\n"
+                         "    \u2514\u2500\u2500 util.cc\n"));
 }
 
 TEST_F(RenderTest, TreeRendersAsciiConnectorsWhenNotUnicode) {
@@ -383,9 +392,9 @@ TEST_F(RenderTest, TreeDrawsAVerticalForNonLastBranches) {
   EXPECT_THAT(
       tree.Render(), EqualsText(
                          "root\n"
-                         "├── a\n"
-                         "│   └── x\n"
-                         "└── b\n"));
+                         "\u251c\u2500\u2500 a\n"
+                         "\u2502   \u2514\u2500\u2500 x\n"
+                         "\u2514\u2500\u2500 b\n"));
 }
 
 }  // namespace

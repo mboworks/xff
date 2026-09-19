@@ -70,13 +70,20 @@ repos:
         entry: DO([ _]?NOT|N'T)[ _]?(SUBMIT|MERGE)
         exclude: ^\.pre-commit-config\.yaml$|\.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z)$
         types: [text]
+      - id: ascii-source-text
+        name: ASCII source text (escape intentional Unicode)
+        description: Keep tracked text readable as ASCII; use escapes for Unicode behavior.
+        language: pygrep
+        entry: '[^\x00-\x7f]'
+        exclude: \.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z|sqfs|png|ico)$
+        types: [text]
       - id: no-em-dashes
         name: No em-dashes
         description: |
           Project convention: never an em-dash (U+2014) anywhere (prose, docs, comments,
           commit messages). Use a spaced hyphen instead.
         language: pygrep
-        entry: "—"
+        entry: '\u2014'
         exclude: ^\.pre-commit-config\.yaml$|\.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z)$
         types: [text]
       - id: no-libarchive-filter-all

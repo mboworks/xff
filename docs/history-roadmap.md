@@ -219,7 +219,7 @@ std::string_view>` over named constexpr arrays instead of comma-joined strings r
   1. **Generated compile DB fixed (PR #405, then #414/#420/#459).**
      The abort ("too many errors" / `'concepts'` / `'time.h' file not found`) was NOT the
      `<version>`-shadowing theory. `compile_commands-update.sh` runs
-     `bazel run @…//:refresh_all --config=clang`, but `--config=clang` only configures the build
+     `bazel run @...//:refresh_all --config=clang`, but `--config=clang` only configures the build
      of the _extractor tool_ and never reaches the internal `aquery`, so every recorded command
      named the autodetected **Apple clang**, not the hermetic toolchain clang-tidy uses. The fix
      bumped the extractor pin `75ba4c3` -> `6eb3ff1` (`bazelmod/dev.MODULE.bazel`; adding
@@ -470,7 +470,7 @@ remains below is the design-forked / larger work.
 - **Hash-verification workflow (#109) - DONE (single-pass tally deferred).** The hashing primitives
   (#105) and now the `-hasheq EXPECTED` matcher are in: `-hasheq` computes the file's digest and is
   true when it equals EXPECTED, a `{field}` template rendered per entry (so `-hasheq {def.SUMS}`
-  checks a sidecar value and `! -hasheq …` selects drift); `-hasheq:ALGO[/ENCODING]` shares the
+  checks a sidecar value and `! -hasheq ...` selects drift); `-hasheq:ALGO[/ENCODING]` shares the
   `-hash` spec grammar, and hex comparison folds case. **Dedup grouping shipped** as the first-class
   `--summary=hash` mode (identical files collapse into one bucket; also spellable `--summary={hash}`).
   **Deferred refinement (single-pass tally):** a one-pass verified-vs-failed count. Both viable
@@ -671,7 +671,7 @@ remains below is the design-forked / larger work.
   ignore family (`.gitignore` / `.xffignore`) - that is ignore, not config, and is unaffected.
   Removes: the `.xffrc` cascade discovery (`loader.cc`), `ProjectConfigMode` + `--project-config`,
   and the project branch of the policy gate; simplifies the system layer (its old job of capping
-  the untrusted project layer is gone). Reverses the `design.md` §149 / `design-config.md`
+  the untrusted project layer is gone). Reverses the `design.md` section149 / `design-config.md`
   subtree-scoped-project intent (docs rewritten in the build).
   - **`--xffrc` arming restriction (no self-authorization).** A named `--xffrc=FILE` can no
     longer arm its own dangerous directives (reverses `loader.cc:98` "arm into the user layer").
@@ -1125,7 +1125,7 @@ remains below is the design-forked / larger work.
     and custom bucket edges are deferred to the Featured-ideas list below.
   - **Console-adaptive bars, via the existing `--unicode` flag.** Bars reuse the SAME
     `--unicode=auto|always|never` resolver (`engine::ResolveUnicode`) that `--format=tree` uses for
-    its box-drawing: Unicode block bars (`█` plus the partials `▏▎▍▌▋▊▉` for sub-cell precision) when
+    its box-drawing: Unicode block bars (`U+2588` plus the partials `U+258FU+258EU+258DU+258CU+258BU+258AU+2589` for sub-cell precision) when
     unicode, plain ASCII (`#`) otherwise - no new style flag. Each row is `label  value  bar`, value
     through the shared number formatter (#86), sorted by value descending. Default bar width ~40 with
     a `--histogram-width=N` override; terminal-width auto-fit (COLUMNS / `winsize` on a tty) is a

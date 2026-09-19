@@ -114,8 +114,10 @@ constexpr std::array kSummaryScopeValues = std::to_array<ValueDoc>({
 
 constexpr std::array kSummaryValues = std::to_array<ValueDoc>({
     {.value = "none", .meaning = "clear all previously requested summaries"},
-    {.value = "compare",
-     .meaning = "comparison counts, combined sizes, and percentages by type and status; requires `--compare`"},
+    {
+        .value = "compare",
+        .meaning = "comparison counts, combined sizes, and percentages by type and status; requires `--compare`",
+    },
     {.value = "overall", .meaning = "one row aggregated over all matches"},
     {.value = "type", .meaning = "by file type"},
     {.value = "ext", .meaning = "by extension"},
@@ -143,12 +145,16 @@ constexpr std::array kArchiveValues = std::to_array<ValueDoc>({
     {.value = "any", .meaning = "`all`, plus offer EVERY file to the reader, not only container-looking names"},
 });
 constexpr std::array kColorSchemeValues = std::to_array<ValueDoc>({
-    {.value = "auto",
-     .meaning = "ls OR xff: the theme when $LS_COLORS / $LSCOLORS is set, else xff's scheme (the "
-                "default; also spelled `ls+xff`, `ls-or-xff` or `default`)"},
+    {
+        .value = "auto",
+        .meaning = "ls OR xff: the theme when $LS_COLORS / $LSCOLORS is set, else xff's scheme (the "
+                   "default; also spelled `ls+xff`, `ls-or-xff` or `default`)",
+    },
     {.value = "ls", .meaning = "the theme alone ($LS_COLORS, else $LSCOLORS): what it omits prints plain, as in ls"},
-    {.value = "merged",
-     .meaning = "the theme where it speaks, xff's type/language colour where it does not (also `ls-and-xff`)"},
+    {
+        .value = "merged",
+        .meaning = "the theme where it speaks, xff's type/language colour where it does not (also `ls-and-xff`)",
+    },
     {.value = "xff", .meaning = "xff's built-in type and language scheme, ignoring $LS_COLORS"},
     {.value = "default", .meaning = "", .hidden = true},     // spelled out in `auto`'s meaning
     {.value = "ls+xff", .meaning = "", .hidden = true},      // ditto

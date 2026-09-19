@@ -253,7 +253,7 @@ TEST_F(RegexTest, FnmatchGrammarIsAWholeStringWildcard) {
 }
 
 TEST_F(RegexTest, FnmatchPartialMatchWrapsInStars) {
-  // PartialMatch wraps the pattern in `*…*` so it matches anywhere; FindFirst reports the whole text
+  // PartialMatch wraps the pattern in `*...*` so it matches anywhere; FindFirst reports the whole text
   // as the span (fnmatch is a whole-string test, not a sub-span search).
   ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("f?o", /*case_insensitive=*/false, Grammar::kFnmatch));
   EXPECT_THAT(matcher.PartialMatch("a foo b"), IsTrue());  // contains an f-any-o triple

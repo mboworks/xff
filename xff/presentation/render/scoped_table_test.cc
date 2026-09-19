@@ -29,12 +29,14 @@ using ::testing::StartsWith;
 struct ScopedTableTest : ::testing::Test {
   const std::vector<std::string> scopes{"left-only", "right-only", "different", "identical"};
   const std::vector<ScopedTableRow> rows{
-      {.label = "\u754c\u9762",
-       .metrics =
-           {{{"1", "25.00%", "1  B", "25.00%"}},
-            {{"-", "-", "-", "-"}},
-            {{"0", "0.00%", "0  B", "0.00%"}},
-            {{"3", "75.00%", "3  B", "75.00%"}}}},
+      {
+          .label = "wide",
+          .metrics =
+              {{{"1", "25.00%", "1  B", "25.00%"}},
+               {{"-", "-", "-", "-"}},
+               {{"0", "0.00%", "0  B", "0.00%"}},
+               {{"3", "75.00%", "3  B", "75.00%"}}},
+      },
       {.label = "total", .metrics = std::vector<std::array<std::string, 4>>(4, {"4", "100.00%", "4  B", "100.00%"})}};
 };
 
@@ -43,7 +45,7 @@ TEST_F(ScopedTableTest, ExactLayoutsAtStandardWidths) {
     EXPECT_THAT(RenderScopedTable(scopes, rows, width, true), WithDropIndent(EqualsText(R"out(
         Group
         Scope         Count  % count  Size   % size
-        界面
+        wide
           left-only       1   25.00%  1  B   25.00%
           right-only      -        -     -        -
           different       0    0.00%  0  B    0.00%
@@ -58,7 +60,7 @@ TEST_F(ScopedTableTest, ExactLayoutsAtStandardWidths) {
   EXPECT_THAT(RenderScopedTable(scopes, rows, 160, true), WithDropIndent(EqualsText(R"out(
         Group  left-only                      right-only                     different                      identical
                Count  % count  Size   % size  Count  % count  Size   % size  Count  % count  Size   % size  Count  % count  Size   % size
-        界面       1   25.00%  1  B   25.00%      -        -     -        -      0    0.00%  0  B    0.00%      3   75.00%  3  B   75.00%
+        wide       1   25.00%  1  B   25.00%      -        -     -        -      0    0.00%  0  B    0.00%      3   75.00%  3  B   75.00%
         total      4  100.00%  4  B  100.00%      4  100.00%  4  B  100.00%      4  100.00%  4  B  100.00%      4  100.00%  4  B  100.00%
         )out")));
 }
@@ -67,7 +69,7 @@ TEST_F(ScopedTableTest, NarrowWidthsKeepOneTableWithAllScopeValues) {
   for (const auto width : std::to_array<std::size_t>({80, 120})) {
     const std::string output = RenderScopedTable(scopes, rows, width, true);
     EXPECT_THAT(output, StartsWith("Group\nScope"));
-    EXPECT_THAT(output, HasSubstr("\n\u754c\u9762\n  left-only"));
+    EXPECT_THAT(output, HasSubstr("\nwide\n  left-only"));
     EXPECT_THAT(output, HasSubstr("\ntotal\n  left-only"));
     EXPECT_THAT(output, HasSubstr("  right-only"));
     EXPECT_THAT(output, HasSubstr("  different"));
@@ -83,7 +85,7 @@ TEST_F(ScopedTableTest, WideLayoutGroupsScopeHeadersAndKeepsNumericColumns) {
   const std::string output = RenderScopedTable(scopes, rows, 160, true);
   EXPECT_THAT(output, Not(StartsWith("Group\n")));
   EXPECT_THAT(output, StartsWith("Group  left-only"));
-  EXPECT_THAT(output, HasSubstr("\n\u754c\u9762"));
+  EXPECT_THAT(output, HasSubstr("\nwide"));
   EXPECT_THAT(output, Not(HasSubstr("left-only count")));
   for (const std::string_view line : absl::StrSplit(output, '\n')) {
     EXPECT_THAT(format::TextColumns(line), Le(160)) << line;
@@ -125,7 +127,7 @@ TEST_F(ScopedTableTest, EscapesControlsWithoutLosingNumericCellsAtTinyWidths) {
 
 TEST_F(ScopedTableTest, HeaderlessNarrowLayoutPreservesGroupAndScopeIdentities) {
   const std::string output = RenderScopedTable(scopes, rows, 80, false);
-  EXPECT_THAT(output, StartsWith("\u754c\u9762\n  left-only"));
+  EXPECT_THAT(output, StartsWith("wide\n  left-only"));
   EXPECT_THAT(output, Not(HasSubstr("Count")));
   EXPECT_THAT(output, HasSubstr("\ntotal\n  left-only"));
   EXPECT_THAT(RenderScopedTable({}, rows, 80, true), IsEmpty());

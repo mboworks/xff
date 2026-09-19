@@ -3,6 +3,9 @@
 
 # 0.7.0
 
+- Clarify safety provenance names and enforce ASCII source text while preserving Unicode output.
+  Standardize multiline struct initializer formatting, including generated license registrations.
+
 - Add a read-only benchmark harness for runtime logical content-read accounting on real files.
 
 - Derive shared expression behavior and help relationships from registry capabilities.
@@ -148,10 +151,10 @@
 - Add MBO Works artwork to the README and favicons to documentation and coverage Pages.
 
 - Keep `main` first in the coverage index, then interleave PRs and releases newest-first by
-  their merge or tagged commit in main’s history.
+  their merge or tagged commit in main's history.
 
 - Give Markdown summaries descriptive headings and bullet lists for labels and notes, separate
-  each table’s note from the next summary,
+  each table's note from the next summary,
   and align exact byte values with scaled sizes in console and Markdown tables.
 
 - Render ordinary and comparison summary tables as Markdown with `--format=md` or `markdown`.
@@ -167,7 +170,7 @@
   compile time. Full HTML/Markdown references retain clickable related pointers, man pages name
   their targets, and console long help stays compact; none expands navigation.
 
-- Add copyable “See also” help commands across focused option, expression, and topic pages.
+- Add copyable "See also" help commands across focused option, expression, and topic pages.
   Related controls follow the registry relationships, and HTML/Markdown links use stable targets.
   Full/long help keeps one copy of each detailed entry and topic without expanding navigation.
 

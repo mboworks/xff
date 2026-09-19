@@ -238,9 +238,9 @@ def render_report(summary: dict, target: str) -> str:
             f'<td class="{status_class}">{patch_status}</td>{"".join(values)}</tr></tbody></table>\n'
         )
     body += (
-        '    <p><a href="lcov/">Browse detailed LCOV source coverage</a> · '
-        '<a href="coverage-summary.json">Coverage data (JSON)</a> · '
-        '<a href="coverage-meta.json">Report metadata (JSON)</a> · '
+        '    <p><a href="lcov/">Browse detailed LCOV source coverage</a> &middot; '
+        '<a href="coverage-summary.json">Coverage data (JSON)</a> &middot; '
+        '<a href="coverage-meta.json">Report metadata (JSON)</a> &middot; '
         f'<a href="{overview}">All reports</a></p>'
     )
     return _page(f"xff coverage: {target}", body)

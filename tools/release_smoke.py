@@ -42,7 +42,7 @@ def smoke(binary, expected_version):
         left, right = root / "left", root / "right"
         left.mkdir()
         right.mkdir()
-        left_files = {"same.txt": "same\n", "changed.txt": "before\n", 'left,\"雪\n\t\\.total': "left\n"}
+        left_files = {"same.txt": "same\n", "changed.txt": "before\n", 'left,\"\u96ea\n\t\\.total': "left\n"}
         right_files = {"same.txt": "same\n", "changed.txt": "after\n", "right.txt": "right\n"}
         for folder, files in ((left, left_files), (right, right_files)):
             for name, content in files.items():

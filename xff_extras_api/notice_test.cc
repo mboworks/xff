@@ -37,12 +37,13 @@ const Registrar kZulu{{.component = "zulu-codec", .spdx = "MIT", .text = "Copyri
 const Registrar kAlpha{{.component = "alpha-codec", .spdx = "BSD-2-Clause", .text = "Copyright (c) Alpha."}};
 const Registrar kExtraLibrary{
     {.section = "example extra", .component = "extra-library", .spdx = "Zlib", .text = "Library."}};
-const Registrar kExtraLead{
-    {.section = "example extra",
-     .section_lead = true,
-     .component = "example extra",
-     .spdx = "Apache-2.0",
-     .text = "Extension."}};
+const Registrar kExtraLead{{
+    .section = "example extra",
+    .section_lead = true,
+    .component = "example extra",
+    .spdx = "Apache-2.0",
+    .text = "Extension.",
+}};
 
 struct NoticeTest : ::testing::Test {};
 

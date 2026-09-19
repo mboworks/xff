@@ -36,7 +36,11 @@ class MemorySource final : public vfs::FileSystem {
       return vfs::Metadata{.type = vfs::FileType::kDirectory};
     }
     return vfs::Metadata{
-        .type = vfs::FileType::kRegular, .size = 3, .ino = path.starts_with("/right") ? 2U : 1U, .dev = 1};
+        .type = vfs::FileType::kRegular,
+        .size = 3,
+        .ino = path.starts_with("/right") ? 2U : 1U,
+        .dev = 1,
+    };
   }
 
   absl::Status Remove(std::string_view) const override {

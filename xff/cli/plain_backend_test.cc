@@ -99,7 +99,9 @@ TEST_F(PlainBackendTest, RendersAWholeDocumentInOrder) {
                                   Prose{
                                       .runs =
                                           {Text("Find files; see "),
-                                           Ref("", {.kind = RefTarget::Kind::kTopic, .id = "fields"}), Text(".")}}},
+                                           Ref("", {.kind = RefTarget::Kind::kTopic, .id = "fields"}), Text(".")},
+                                  },
+                          },
                       },
               },
               Section{
@@ -112,20 +114,26 @@ TEST_F(PlainBackendTest, RendersAWholeDocumentInOrder) {
                                       .term = "--summary",
                                       .summary = {Text("group + aggregate")},
                                       .details = {Content{.node = Prose{.runs = {Text("more detail.")}}}},
-                                      .xff = true}},
+                                      .xff = true,
+                                  },
+                          },
                           Content{
                               .node =
                                   Rows{
                                       .rows =
                                           {{.term = "%p", .description = {Text("path")}},
-                                           {.term = "%f", .description = {Text("name")}}}}},
+                                           {.term = "%f", .description = {Text("name")}}},
+                                  },
+                          },
                           Content{.node = Bullets{.items = {{Text("first")}, {Text("second")}}}},
                           Content{.node = Example{.text = "xff . -type f", .lang = "sh"}},
                           Content{
                               .node =
                                   SeeAlso{
                                       .refs = {{.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"}},
-                                      .note = {Text("the classic.")}}},
+                                      .note = {Text("the classic.")},
+                                  },
+                          },
                       },
               },
           },
@@ -162,26 +170,30 @@ TEST_F(PlainBackendTest, RendersAWholeDocumentInOrder) {
 
 TEST_F(PlainBackendTest, SeeAlsoUsesCopyableHelpCommands) {
   PlainTextBackend backend;
-  backend.EmitSeeAlso(
-      {.refs = {
-           {.kind = RefTarget::Kind::kTopic, .id = "regex"},
-           {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
-           {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
-           {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"},
-           {.kind = RefTarget::Kind::kUrl, .id = "https://example.org/reference"},
-           {.kind = RefTarget::Kind::kAnchor, .id = "section"},
-       }});
+  backend.EmitSeeAlso({
+      .refs =
+          {
+              {.kind = RefTarget::Kind::kTopic, .id = "regex"},
+              {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
+              {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
+              {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"},
+              {.kind = RefTarget::Kind::kUrl, .id = "https://example.org/reference"},
+              {.kind = RefTarget::Kind::kAnchor, .id = "section"},
+          },
+  });
   EXPECT_THAT(backend.Take(), HasSubstr("See also: --help=regex, --help=--summary, --help=-printf, find(1)"));
 }
 
 TEST_F(PlainBackendTest, RelatedCommandsRespectTheHelpWidth) {
   PlainTextBackend backend(HelpRenderContext{.width = 32});
-  backend.EmitSeeAlso(
-      {.refs = {
-           {.kind = RefTarget::Kind::kTopic, .id = "regex"},
-           {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
-           {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
-       }});
+  backend.EmitSeeAlso({
+      .refs =
+          {
+              {.kind = RefTarget::Kind::kTopic, .id = "regex"},
+              {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
+              {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
+          },
+  });
   const std::string out = backend.Take();
   EXPECT_THAT(out, HasSubstr("See also:"));
   EXPECT_THAT(out, HasSubstr("--help=--summary"));

@@ -1,9 +1,9 @@
 # xff - Parallel Traversal Design
 
 > Detailed spec for parallel directory traversal and `--sort` (issue #43).
-> **Refines** `design.md` §"Cross-cutting concerns" (Determinism). Where the two
+> **Refines** `design.md` section"Cross-cutting concerns" (Determinism). Where the two
 > differ, this document is authoritative for traversal/ordering specifically.
-> Status: **Implemented** · 2026-06-27 · Org: MBO Works
+> Status: **Implemented** / 2026-06-27 / Org: MBO Works
 
 ## Purpose
 

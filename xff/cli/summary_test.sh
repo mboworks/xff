@@ -746,7 +746,7 @@ left.mkdir()
 right.mkdir()
 for name, content in [("same.txt", "same"), ("changed.cc", "left"), ('only,\"left\t\\\n.total', "L")]:
     (left / name).write_text(content)
-for name, content in [("same.txt", "same"), ("changed.cc", "right!!"), ("right.é", "R")]:
+for name, content in [("same.txt", "same"), ("changed.cc", "right!!"), ("right.\u00e9", "R")]:
     (right / name).write_text(content)
 (left / "empty-dir").mkdir()
 

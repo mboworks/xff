@@ -16,7 +16,8 @@ ReadObservation ReadObserver::Counters::Snapshot() const {
   return {
       .attempts = attempts.load(std::memory_order_relaxed),
       .successes = successes.load(std::memory_order_relaxed),
-      .bytes = bytes.load(std::memory_order_relaxed)};
+      .bytes = bytes.load(std::memory_order_relaxed),
+  };
 }
 
 absl::StatusOr<std::string> ReadObserver::Counters::Complete(absl::StatusOr<std::string> result) {

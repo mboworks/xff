@@ -465,13 +465,17 @@ TEST_F(ConfigTest, ExplainConfigTagsEachFlagWithProvenance) {
 
 TEST_F(ConfigTest, ExplainConfigShowsPhysicalOriginWithoutChangingApplicationOrder) {
   const std::vector<ResolvedFlag> application = {
-      {.flag = "--color=never",
-       .source = Source::kUser,
-       .origin = {.path = "/user.ini", .line = 4, .section = "first"}},
+      {
+          .flag = "--color=never",
+          .source = Source::kUser,
+          .origin = {.path = "/user.ini", .line = 4, .section = "first"},
+      },
       {.flag = "--color=auto", .source = Source::kCli},
-      {.flag = "--color=always",
-       .source = Source::kUser,
-       .origin = {.path = "/user.ini", .line = 7, .section = "last"}},
+      {
+          .flag = "--color=always",
+          .source = Source::kUser,
+          .origin = {.path = "/user.ini", .line = 7, .section = "last"},
+      },
   };
   EXPECT_THAT(ExplainConfig(application), WithDropIndent(EqualsText(R"out(
     # xff effective configuration (application order; overrides follow each flag's rules)
@@ -580,10 +584,13 @@ TEST_F(ConfigTest, OrderedResolutionRetainsOriginsAcrossExpansionAndComposition)
 --config=locked
 --no-safe-block-file-writing
 )ini");
-  inputs.xffrc = {{.path = "/task.rc", .config = ParseIni(R"ini([profile]
+  inputs.xffrc = {{
+      .path = "/task.rc",
+      .config = ParseIni(R"ini([profile]
 --safe
 -name '--safe'
-)ini")}};
+)ini"),
+  }};
   inputs.sources = {
       {.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true},
       {.path = "/home/user/xff.ini", .layer = Source::kUser, .found = true}};

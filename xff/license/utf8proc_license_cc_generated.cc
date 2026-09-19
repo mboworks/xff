@@ -3,10 +3,10 @@
 
 namespace xff::license {
 namespace {
-const LicenseBodyRegistrar kBody{
-    {.spdx = "LicenseRef-utf8proc",
-     .text =
-         R"xff_license(## utf8proc license ##
+const LicenseBodyRegistrar kBody{{
+    .spdx = "LicenseRef-utf8proc",
+    .text =
+        R"xff_license(## utf8proc license ##
 
 **utf8proc** is a software package originally developed
 by Jan Behrens and the rest of the Public Software Group, who
@@ -99,6 +99,7 @@ authorization of the copyright holder.
 Unicode and the Unicode logo are trademarks of Unicode, Inc., and may be
 registered in some jurisdictions. All other trademarks and registered
 trademarks mentioned herein are the property of their respective owners.
-)xff_license"}};
+)xff_license",
+}};
 }  // namespace
 }  // namespace xff::license

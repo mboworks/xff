@@ -3,16 +3,17 @@
 
 namespace xff::license {
 namespace {
-const LicenseBodyRegistrar kBody{
-    {.spdx = "LicenseRef-Public-Domain",
-     .text =
-         R"xff_license(liblzma is in the public domain.
+const LicenseBodyRegistrar kBody{{
+    .spdx = "LicenseRef-Public-Domain",
+    .text =
+        R"xff_license(liblzma is in the public domain.
 
 You can do whatever you want with the files that have been put into the public
 domain. If you find public domain legally problematic, take the previous
 sentence as a license grant.
 
 This software is provided "as is", without any warranty.
-)xff_license"}};
+)xff_license",
+}};
 }  // namespace
 }  // namespace xff::license

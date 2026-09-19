@@ -38,6 +38,7 @@ cc_test(
     deps = [
         ":render_cc",
         "//xff/presentation/format:format_cc",
+        "@abseil-cpp//absl/strings",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:matchers_cc",

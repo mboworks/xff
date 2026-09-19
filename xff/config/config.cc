@@ -157,10 +157,11 @@ void AppendMatching(
     for (std::size_t index = 0; index < entry.tokens.size(); ++index) {
       const auto& flag = entry.tokens.at(index);
       if (!IsSkipPermission(flag)) {
-        out.push_back(
-            {.flag = flag,
-             .source = source,
-             .origin = {.path = std::string(path), .line = entry.line_numbers.at(index), .section = entry.name}});
+        out.push_back({
+            .flag = flag,
+            .source = source,
+            .origin = {.path = std::string(path), .line = entry.line_numbers.at(index), .section = entry.name},
+        });
       }
     }
   }
@@ -257,7 +258,8 @@ class OrderedResolver {
       return FlagOrigin{
           .path = std::string(FilePath(source, file_index)),
           .line = line_numbers.at(index),
-          .section = std::string(section)};
+          .section = std::string(section),
+      };
     };
     // Expand references in place, but defer later-file refinements until this body finishes.
     const auto previous_file = std::exchange(active_file_, file_index);

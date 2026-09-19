@@ -5,7 +5,7 @@
 > and unresolved choices live in [TODO.md](../TODO.md); completed investigations
 > move to [history.md](history.md).
 >
-> Status: implemented system map · 2026-09-10
+> Status: implemented system map / 2026-09-10
 
 This document describes the repository that exists now and the order in which a
 change should cross its boundaries. It is not a feature roadmap.

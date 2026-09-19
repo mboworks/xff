@@ -80,9 +80,11 @@ TEST_F(HtmlRefLinkTest, RendersEveryInlineStyleAndAnUnresolvedReferenceAsText) {
           Code("code"),
           {.style = Inline::Style::kEmphasis, .text = " emphasis"},
           {.style = Inline::Style::kStrong, .text = " strong"},
-          {.style = Inline::Style::kRef,
-           .text = " fields",
-           .target = RefTarget{.kind = RefTarget::Kind::kTopic, .id = "fields"}},
+          {
+              .style = Inline::Style::kRef,
+              .text = " fields",
+              .target = RefTarget{.kind = RefTarget::Kind::kTopic, .id = "fields"},
+          },
           {.style = Inline::Style::kRef, .text = " unresolved"},
       }),
       Eq("plain <code>code</code><em> emphasis</em><strong> strong</strong>"
@@ -109,8 +111,8 @@ TEST_F(HtmlBackendTest, RendersAStandaloneSemanticDocument) {
                                   .summary = {Text("render "), Code("HTML")},
                                   .details = {Content{.node = Example{.text = "x&f --help=full:html", .lang = "sh"}}},
                                   .tags = {"global", "xff"},
-                              }}},
-                  }}},
+                              },}},
+                  },}},
       }},
   };
 
@@ -201,15 +203,17 @@ TEST_F(HtmlBackendTest, RendersFallbackTagsAndSeeAlsoNotes) {
 
 TEST_F(HtmlBackendTest, SeeAlsoUsesCopyableHelpCommands) {
   HtmlBackend backend;
-  backend.EmitSeeAlso(
-      {.refs = {
-           {.kind = RefTarget::Kind::kTopic, .id = "regex"},
-           {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
-           {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
-           {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"},
-           {.kind = RefTarget::Kind::kUrl, .id = "https://example.org/reference"},
-           {.kind = RefTarget::Kind::kAnchor, .id = "section"},
-       }});
+  backend.EmitSeeAlso({
+      .refs =
+          {
+              {.kind = RefTarget::Kind::kTopic, .id = "regex"},
+              {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
+              {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
+              {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"},
+              {.kind = RefTarget::Kind::kUrl, .id = "https://example.org/reference"},
+              {.kind = RefTarget::Kind::kAnchor, .id = "section"},
+          },
+  });
   EXPECT_THAT(
       backend.Take(),
       AllOf(

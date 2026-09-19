@@ -60,7 +60,7 @@ test::histogram_unicode_bars() {
   _make_tree "${dir}"
   out="$(XFF_TEST_USER_CONFIG="${TEST_TMPDIR}/none" "$(_xff_bin)" --histogram=ext --unicode=always "${dir}" -type f 2>&1)"
   # Unicode block bars use the full-block character.
-  expect_output_contains "█" "${out}"
+  expect_output_contains $'\342\226\210' "${out}"
 }
 
 test::histogram_combines_with_summary() {

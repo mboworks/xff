@@ -3,10 +3,10 @@
 
 namespace xff::license {
 namespace {
-const LicenseBodyRegistrar kBody{
-    {.spdx = "Zlib",
-     .text =
-         R"xff_license(Copyright notice:
+const LicenseBodyRegistrar kBody{{
+    .spdx = "Zlib",
+    .text =
+        R"xff_license(Copyright notice:
 
  (C) 1995-2022 Jean-loup Gailly and Mark Adler
 
@@ -28,6 +28,7 @@ const LicenseBodyRegistrar kBody{
 
   Jean-loup Gailly        Mark Adler
   jloup@gzip.org          madler@alumni.caltech.edu
-)xff_license"}};
+)xff_license",
+}};
 }  // namespace
 }  // namespace xff::license

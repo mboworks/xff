@@ -6,6 +6,8 @@ Some rules for the code layout and its development.
 > [`STYLE_SH.md`](STYLE_SH.md). This file keeps the project-level rules that are not language style.
 
 - Everything is under Apache 2 license, see file `LICENSE`.
+- Project-owned text files use ASCII source spelling. Use escapes for intentional Unicode runtime
+  data, and ASCII prose/comments. Binary assets and fixtures are not text; preserve their bytes.
 - All sources must be unix-text files: https://en.wikipedia.org/wiki/Text_file
   - Lines end in {LF}.
   - The files are either empty or end in {LF}.
