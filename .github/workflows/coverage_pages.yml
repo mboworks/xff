@@ -4,7 +4,7 @@ on:
   # Use trusted default-branch code; never check out or execute a PR head.
   pull_request_target:
     types: [closed, reopened]
-  workflow_dispatch:
+  workflow_dispatch: {}
   workflow_run:
     workflows: [Release, Test]
     types: [completed]

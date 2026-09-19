@@ -32,7 +32,7 @@ class CoverageIndexTest(unittest.TestCase):
         for text in (workflow, pages):
             self.assertIn("  group: coverage-pages\n  queue: max\n  cancel-in-progress: false", text)
         self.assertIn("pull_request_target:\n    types: [closed, reopened]", workflow)
-        self.assertIn("  workflow_dispatch:", workflow)
+        self.assertIn("  workflow_dispatch: {}", workflow)
         self.assertIn("if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'", workflow)
         self.assertIn("path: source\n          ref: main", workflow)
         for step in ("uses: actions/download-artifact@v8", "name: Select and stage the report"):
