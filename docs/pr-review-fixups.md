@@ -316,9 +316,9 @@ is still needed, record the question explicitly instead of treating a proposed s
 ## F15: Preserve compact README capability markers
 
 - Origin: PR #876 review of the feature comparison matrix.
-- Action: restore checkmarks and use a plain superscript marker for partial support, replacing the
-  triangle without widening the rendered table with Yes/Partial labels. Avoid repeated Markdown
-  footnote references, which generate a return-link list for every referencing cell.
+- Action: use full/half-filled circles for supported/partial and blank cells for unsupported,
+  with a short legend. Keep columns compact and avoid repeated Markdown footnote references,
+  which generate a return-link list for every referencing cell.
 - Implemented in: #876.
 
 ## F16: Separate Unicode tests into dedicated files

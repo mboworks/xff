@@ -92,11 +92,11 @@ repos:
         entry: '^(?!(?:[\x00-\x7f]|\xe2\x94[\x80\x82\x94\x9c])*$)'
         files: ^xff/presentation/render/render(_test)?\.cc$
         types: [text]
-      - id: readme-checkmarks
+      - id: readme-capability-markers
         name: README permits approved capability markers
-        description: Allow U+2713 checkmarks and U+00B9 superscript one in the feature table.
+        description: Allow U+25CF full circles and U+25D0 half-filled circles in the feature table.
         language: pygrep
-        entry: '^(?!(?:[\x00-\x7f]|\xe2\x9c\x93|\xc2\xb9)*$)'
+        entry: '^(?!(?:[\x00-\x7f]|\xe2\x97[\x8f\x90])*$)'
         files: ^README\.md$
         types: [text]
       - id: no-em-dashes

@@ -21,8 +21,8 @@ PR in the current stack containing that commit; older lines are marked `Before #
 - Replace literal Chinese test text with English/ASCII general examples and named escaped Unicode
   data where a dedicated Unicode regression needs it. This extends F06 beyond scoped-table tests.
 - Replace decorative typographic punctuation in prose/comments with plain ASCII equivalents.
-- Keep README checkmarks for compact table columns; replace partial-support triangles with
-  checkmarks carrying a numbered footnote.
+- Use full/half-filled circles for compact README support markers, with blank unsupported cells
+  and a short legend. These are intentional documentation symbols.
 - Preserve intentional Unicode output. Histogram blocks may appear literally in the documented
   code, test, and prose locations, with code-point explanations. Tree connector glyphs likewise
   remain literal in their renderer and Unicode-specific tests. Isolate Unicode filename and
