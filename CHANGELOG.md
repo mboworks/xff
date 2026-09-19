@@ -1,6 +1,10 @@
 <!-- SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
+# 0.8.0
+
+- Run and publish informational benchmarks after merge only; keep manual experiments artifact-only.
+
 # 0.7.0
 
 - Add informational paired benchmark history with raw measurements, variability, and explicit baselines.

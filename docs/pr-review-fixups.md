@@ -197,7 +197,7 @@ implementing PR.
 
 - Origin: [PR #873](https://github.com/mboworks/xff/pull/873).
 - Location: resource benchmark harness, benchmark reports, CI, and the published project site.
-- Status: implemented; PR and hosted-run validation pending.
+- Status: completed in PR #887; optimized hosted runs and live publication verified.
 - Finding: committed measurement reports provide reproducible snapshots but no continuous history
   or PR-to-baseline comparison like the coverage overview.
 - Action: retain machine-readable benchmark records and publish an indexed history for main, PRs,

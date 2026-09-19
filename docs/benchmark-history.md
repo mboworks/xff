@@ -1,15 +1,16 @@
 # Benchmark history
 
 The [published benchmark history](https://mboworks.github.io/xff/benchmarks/) retains paired
-measurements for PRs, main merges, and releases. This is performance evidence, not a merge gate.
+measurements for main merges, attributed to their PRs. This is performance evidence, not a merge gate.
 A failed measurement fails its own workflow and publishes no successful result; it does not change
 xff's required test checks. There is no percentage threshold for a regression yet.
 
 ## What is compared
 
-The independent `Benchmarks` workflow builds the PR head and its immediate base branch SHA,
-including for stacked PRs. Main and release runs use the measured commit's first parent as the
-baseline. Both revisions use `--config=clang_release`, the production optimization configuration,
+The informational `Benchmarks` workflow runs automatically only on pushes to main after merge.
+It compares the merged commit with its first parent. PR pushes and release tags do not start
+separate measurements. Manual dispatch can select a branch for an experiment against its first parent. Manual results remain Actions artifacts;
+only successful main-push measurements are published. Both revisions use `--config=clang_release`, the production optimization configuration,
 on the same hosted Linux runner. The head revision's measurement driver runs both binaries.
 The report links both exact commits and records each executable's SHA-256 digest.
 
@@ -62,8 +63,8 @@ therefore an old PR or release eventually leaves this bounded history. Replaying
 is idempotent; changing its measurements is rejected. No generated measurements are committed to
 the source branch. Missing, cancelled, or failed runs do not create fabricated measurements.
 
-The new workflow can be dispatched manually from its Actions page. It starts collecting automatic
-PR/main/tag history when merged. There is no historical backfill of measurements that were never
+The workflow can be dispatched manually from its Actions page. Automatic collection and
+publication occur after merge only. There is no historical backfill of measurements that were never
 made. Initial runs should establish total build/measurement cost and runner noise before changing
 fixture sizes or proposing any performance gate.
 
@@ -81,3 +82,32 @@ bazel test //tools:benchmark_history_test //tools:measure_resources_test
 ```
 
 Comparisons against `find`, `rg`, and `fzf` are deliberately a separate, deferred follow-up (F10).
+
+## Initial hosted observations
+
+The [first post-merge run](https://github.com/mboworks/xff/actions/runs/35470455554)
+compared `0bcb461dbb08a1d3b14d1d73938a8b905aed81ea` with its first parent
+`2bd76d6e682f7ca9c987f364fda485a2eb906d62` on September 19, 2026. The complete
+job took 6 minutes 19 seconds: paired builds took 4 minutes 43 seconds and measurement took
+68 seconds. All twelve workloads completed five repetitions for each revision. The
+[raw report](https://mboworks.github.io/xff/benchmarks/runs/35470455554/1/report.json)
+and [rendered comparison](https://mboworks.github.io/xff/benchmarks/runs/35470455554/1/)
+were verified after publication. These links are subject to the bounded retention above.
+
+Elapsed-time head/base medians ranged from 0.9941 to 1.0092. Across the twelve workloads,
+the median sample-standard-deviation/median ratio was 0.52% for the base and 0.67% for the
+head; maxima were 1.21% and 1.08%. This descriptive ratio uses the median denominator and
+is not the conventional coefficient of variation. The earlier PR run had a 7.34% maximum
+on the base side, demonstrating why one quiet run cannot establish a regression threshold.
+No C++ behavior changed in this benchmark-infrastructure PR. These initial observations
+validate the collection/publication path and support leaving performance checks advisory;
+they are not evidence of a performance improvement.
+
+## Required checks versus informational experiments
+
+Harness correctness tests already run in the normal PR workflow through `bazel test //...`.
+Any future required performance check must be integrated into that same PR test workflow,
+reusing its build and test execution. It must not introduce a separate required benchmark run.
+The post-merge workflow remains informational. Tagging a measured commit does not repeat it.
+Historical pre-merge and tag records remain readable, but the current automatic schedule does
+not generate new ones.
