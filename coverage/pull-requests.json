@@ -1,15 +1,15 @@
 [
   {
     "number": 889,
-    "state": "open",
-    "merged_at": null,
-    "merge_commit_sha": "6d80beddba07a52cd36a7db954be5e0ae37e600b"
+    "state": "closed",
+    "merged_at": "2026-09-19T22:23:47Z",
+    "merge_commit_sha": "1945c9ec032f0563d6f537da6a86f6bdbbfcf173"
   },
   {
     "number": 888,
     "state": "open",
     "merged_at": null,
-    "merge_commit_sha": "2747ad78b53496870dd5f2ea612d5fd625ec058a"
+    "merge_commit_sha": "594a2eb9bdf4b07e16037dc6f637edf585392df6"
   },
   {
     "number": 887,
