@@ -1,0 +1,139 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/ci-performance.md - xff v0.7.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.7.0/">Home</a><a href="/xff/site/tag/v0.7.0/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.7.0">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/0bcb461dbb08a1d3b14d1d73938a8b905aed81ea">Source</a><a href="/xff/coverage/tag/0.7.0/">Coverage</a><a href="/xff/releases/0.7.0/">CLI reference</a><a href="/xff/benchmarks/">Benchmarks</a></nav><p>xff v0.7.0</p><main><h1 dir="auto" id="ci-performance-measurements">CI performance measurements</h1>
+<h2 dir="auto" id="main-after-pr-847">Main after PR 847</h2>
+<p dir="auto">Run <a href="https://github.com/mboworks/xff/actions/runs/35152024018">35152024018</a>,<br>
+commit <code class="notranslate">2db077917</code>, completed successfully. Times below come from job timestamps, Bazel logs,<br>
+and the uploaded cache/fuzz measurements, not estimates from cache-restore messages.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Measurement</th>
+<th align="right">Main after PR 846</th>
+<th align="right">Main after PR 847</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">First job start through done completion</td>
+<td align="right">562 s</td>
+<td align="right">499 s</td>
+</tr>
+<tr>
+<td align="left">Coverage start delay</td>
+<td align="right">51 s</td>
+<td align="right">0 s</td>
+</tr>
+<tr>
+<td align="left">Fuzz start delay</td>
+<td align="right">51 s</td>
+<td align="right">2 s</td>
+</tr>
+<tr>
+<td align="left">Coverage job duration</td>
+<td align="right">356 s</td>
+<td align="right">330 s</td>
+</tr>
+<tr>
+<td align="left">Fuzz job duration</td>
+<td align="right">467 s</td>
+<td align="right">485 s</td>
+</tr>
+<tr>
+<td align="left">Parallel campaign phase, four workers</td>
+<td align="right">184.751 s</td>
+<td align="right">184.661 s</td>
+</tr>
+<tr>
+<td align="left">Total fuzz executions</td>
+<td align="right">7,393,740</td>
+<td align="right">7,909,468</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">The previous run is <a href="https://github.com/mboworks/xff/actions/runs/35150612313">35150612313</a>.<br>
+The campaign phase is about 69% shorter than the former 600-second sequential minimum.<br>
+These are uncontrolled runs with evolving fuzz inputs: the execution-count difference is not a<br>
+controlled throughput benchmark. Per-target rates vary; neither run shows a campaign failure.</p>
+<h3 dir="auto" id="cache-retention">Cache retention</h3>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Configuration</th>
+<th align="right">Retained uncompressed bytes</th>
+<th align="right">Uploaded compressed bytes</th>
+<th align="right">Evictions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">ASan</td>
+<td align="right">2,340,962,152</td>
+<td align="right">460,474,445</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="left">TSan</td>
+<td align="right">1,346,498,087</td>
+<td align="right">303,415,664</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="left">MSan</td>
+<td align="right">3,024,846,401</td>
+<td align="right">611,739,168</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="left">Coverage</td>
+<td align="right">1,272,653,247</td>
+<td align="right">266,658,005</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="left">Fuzz</td>
+<td align="right">301,692,108</td>
+<td align="right">76,742,237</td>
+<td align="right">0</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">All ten build-cache measurements report zero evictions. Repository cache inventory during this<br>
+analysis totaled 2,687,676,819 bytes, about 26.9% of the decimal 10 GB budget. It includes other<br>
+caches and is a snapshot rather than peak storage.</p>
+<p dir="auto">ASan, TSan, and MSan each had 3,055 disk hits and no executed build actions. Normal Clang, GCC,<br>
+minimal, documentation, and fuzz builds also had no executed build actions. Coverage had 3,065<br>
+disk hits and two executed actions. Internal Bazel actions are excluded from those execution counts.</p>
+<h3 dir="auto" id="remaining-preparation-delay">Remaining preparation delay</h3>
+<p dir="auto">The initial fuzz build took 265.402 seconds despite a 1.23-second action critical path and no<br>
+executed build actions. Ten cached launcher preparations then took about six seconds; actual<br>
+campaigns took 184.661 seconds. Coverage's Bazel invocation took 276.800 seconds with a<br>
+3.57-second action critical path. GCC's cached build took only 32.009 seconds.</p>
+<p dir="auto">This points to shared Clang preparation, not compilation or fuzz scheduling, as the next target.<br>
+Toolchain download/extraction is a candidate, but job logs alone do not identify the responsible<br>
+repository operation. Do not infer that the entire gap is network time or extraction time.</p>
+<p dir="auto">Coverage and the initial fuzz build retain JSON traces with repository-fetch, repository-function,<br>
+Starlark builtin, and fetch events. Their seven-day artifacts are named<br>
+<code class="notranslate">coverage-preparation-profile</code> and <code class="notranslate">fuzz-preparation-profile</code>. Only the initial fuzz build receives<br>
+its profile path, so later launcher preparation cannot overwrite the trace. Failed builds upload<br>
+whatever trace is available. These are diagnostic artifacts, not persistent module/compiler caches.</p>
+<p dir="auto">Use the traces to identify long repository operations and nested download/extraction work before<br>
+changing toolchain packaging, fetching, or caching. Keep compiler/module downloads out of the<br>
+compiled-output cache.</p>
+<h2 dir="auto" id="default-cache-budget">Default cache budget</h2>
+<p dir="auto">The shared uncompressed compiled-output budget is 1 GB. The cleanup ceiling for ordinary<br>
+compressed uploads remains 700 MB; instrumented jobs retain their explicit larger allowances.<br>
+ASan has a 3 GB uncompressed allowance and a 1 GB compressed ceiling.<br>
+Main run <code class="notranslate">35159334794</code> measured 729 MB before trimming for clang-tidy, and 674-692 MB for<br>
+Linux, macOS, and GCC builds. These fit the default without evicting outputs. The previous<br>
+clang-tidy PR run had no restorable cache at all; trimming and complete cache misses are distinct<br>
+problems. This main run created a 96 MB compressed clang-tidy cache. ASan reached 2.80 GB before<br>
+trimming, so its explicit 3 GB allowance also avoids eviction for this workload.</p></main><footer>Release snapshot &middot; 0bcb461dbb08a1d3b14d1d73938a8b905aed81ea</footer></body></html>

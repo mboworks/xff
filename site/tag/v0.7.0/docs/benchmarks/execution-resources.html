@@ -1,0 +1,545 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/benchmarks/execution-resources.md - xff v0.7.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.7.0/">Home</a><a href="/xff/site/tag/v0.7.0/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.7.0">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/0bcb461dbb08a1d3b14d1d73938a8b905aed81ea">Source</a><a href="/xff/coverage/tag/0.7.0/">Coverage</a><a href="/xff/releases/0.7.0/">CLI reference</a><a href="/xff/benchmarks/">Benchmarks</a></nav><p>xff v0.7.0</p><main><h1 dir="auto" id="execution-resource-measurements">Execution resource measurements</h1>
+<p dir="auto">These development-build measurements illustrate the resource guide's method. They are<br>
+not release-performance promises or cold-cache results. All 36 invocations completed<br>
+successfully without stderr output.</p>
+<h2 dir="auto" id="reproduce-the-workloads">Reproduce the workloads</h2>
+<p dir="auto">The <a href="https://github.com/mboworks/xff/blob/0bcb461dbb08a1d3b14d1d73938a8b905aed81ea/tools/benchmark_resources.py">fixture runner</a> creates matching broad/deep trees,<br>
+measures every workload in a fresh child process, writes the full invocation records after<br>
+each run, and removes the disposable fixture tree even when a command fails. It stops on the<br>
+first failed invocation and preserves that invocation in the report. The output report path<br>
+is overwritten; its parent directory must already exist.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">python3 tools/benchmark_resources.py ./bazel-bin/xff/cli/xff \
+  --output /tmp/xff-resources.json --build-label=<span class="pl-s"><span class="pl-pds">'</span>REVISION; fastbuild clang<span class="pl-pds">'</span></span></pre></div>
+<p dir="auto">Defaults reproduce the fixture sizes, workload order, job count, and repetition count below.<br>
+Use <code class="notranslate">--files=100 --depth=10 --repetitions=1</code> for a smoke run. <code class="notranslate">--directory=PATH</code> places the<br>
+owned temporary tree under a chosen filesystem, allowing the same workload on a network<br>
+mount; it does not alter existing files there. <code class="notranslate">--jobs=N</code> permits separate concurrency runs.<br>
+Record mount/backend and cache conditions when interpreting those results. These controls<br>
+do not turn the measurements into logical VFS bytes or storage-traffic measurements.</p>
+<p dir="auto">The <a href="https://github.com/mboworks/xff/blob/0bcb461dbb08a1d3b14d1d73938a8b905aed81ea/docs/benchmarks/execution-resources.json">original raw records</a> include commands, per-run timings,<br>
+platform, output byte counts, statuses, and binary identity for the table below. Temporary<br>
+fixture paths in those records describe the measured runs; those directories were removed.</p>
+<h2 dir="auto" id="method">Method</h2>
+<ul dir="auto">
+<li>macOS 26.6, arm64; local temporary filesystem; <code class="notranslate">--jobs=1</code>, <code class="notranslate">--no-config</code>, <code class="notranslate">--no-pager</code>.</li>
+<li>Hermetic Clang, Bazel <code class="notranslate">fastbuild</code>; source base <code class="notranslate">79716e9f9</code> with the locally verified B14<br>
+hash-summary context fix. This is not an optimized release binary.</li>
+<li>Binary SHA-256: <code class="notranslate">00d20c98027aea7884d18a93f319b862531283928cc2504582d72d8ef9f3eba2</code>.</li>
+<li>Each root has 10,000 ordinary files of 1,024 bytes (<code class="notranslate">abc</code> plus newline, repeated 256 times).<br>
+Left and right roots contain identical entries and contents.</li>
+<li>The broad shape places all files directly under each root. The deep shape has 100 nested<br>
+directories named <code class="notranslate">d</code>, with 100 files at each level. Files have zero-padded numeric <code class="notranslate">.txt</code> names.</li>
+<li>Files were just written. No caches were flushed; later invocations reuse operating-system<br>
+state. Workloads ran in the table order, three repetitions per shape, with a fresh process<br>
+for each invocation. This is not randomized experimental ordering.</li>
+<li><code class="notranslate">tools/measure_resources.py</code> drains stdout through a pipe. The table reports medians across<br>
+the three repetitions. Its time to first byte includes output buffering, and its RSS is the<br>
+child high-water measurement rather than a process-tree sum.</li>
+</ul>
+<p dir="auto">The listing uses <code class="notranslate">ROOT -type f</code>. Other workloads add <code class="notranslate">--summary=ext</code>, <code class="notranslate">--template={hash}</code>,<br>
+<code class="notranslate">--template='{hash} {hash}'</code>, or <code class="notranslate">--template='{hash} {lines}'</code> respectively. Comparison uses<br>
+<code class="notranslate">--compare=summary LEFT RIGHT -type f</code>, so it visits two roots rather than one.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Shape</th>
+<th align="left">Workload</th>
+<th align="right">Elapsed seconds</th>
+<th align="right">First stdout seconds</th>
+<th align="right">Peak RSS MiB</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">broad</td>
+<td align="left">listing</td>
+<td align="right">0.122</td>
+<td align="right">0.096</td>
+<td align="right">18.81</td>
+</tr>
+<tr>
+<td align="left">broad</td>
+<td align="left">summary</td>
+<td align="right">0.116</td>
+<td align="right">0.115</td>
+<td align="right">19.02</td>
+</tr>
+<tr>
+<td align="left">broad</td>
+<td align="left">hash</td>
+<td align="right">0.721</td>
+<td align="right">0.112</td>
+<td align="right">19.06</td>
+</tr>
+<tr>
+<td align="left">broad</td>
+<td align="left">hash_twice</td>
+<td align="right">1.240</td>
+<td align="right">0.109</td>
+<td align="right">19.14</td>
+</tr>
+<tr>
+<td align="left">broad</td>
+<td align="left">hash_lines</td>
+<td align="right">0.956</td>
+<td align="right">0.117</td>
+<td align="right">19.09</td>
+</tr>
+<tr>
+<td align="left">broad</td>
+<td align="left">compare</td>
+<td align="right">0.554</td>
+<td align="right">0.553</td>
+<td align="right">31.00</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">listing</td>
+<td align="right">0.122</td>
+<td align="right">0.034</td>
+<td align="right">17.88</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">summary</td>
+<td align="right">0.125</td>
+<td align="right">0.124</td>
+<td align="right">18.11</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">hash</td>
+<td align="right">0.896</td>
+<td align="right">0.052</td>
+<td align="right">18.45</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">hash_twice</td>
+<td align="right">1.567</td>
+<td align="right">0.050</td>
+<td align="right">18.47</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">hash_lines</td>
+<td align="right">1.203</td>
+<td align="right">0.055</td>
+<td align="right">18.34</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">compare</td>
+<td align="right">0.855</td>
+<td align="right">0.854</td>
+<td align="right">33.38</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<h2 dir="auto" id="what-these-results-establish">What these results establish</h2>
+<p dir="auto">The second hash field and the line-count field add measurable work on these fixtures.<br>
+Summary output arrives near completion, while an ordinary listing can emit earlier.<br>
+These observations do not establish the number of content reads, prove deduplication or<br>
+its absence, or predict network-filesystem performance. The comparison rows also process<br>
+twice the ordinary listing's input population, so their elapsed times are not per-entry<br>
+speed comparisons.</p>
+<h2 dir="auto" id="logical-read-accounting">Logical read accounting</h2>
+<p dir="auto">The <a href="https://github.com/mboworks/xff/blob/0bcb461dbb08a1d3b14d1d73938a8b905aed81ea/xff/engine/read_accounting_test.cc">isolated read-accounting workloads</a> measure<br>
+logical reads directly, independently of the elapsed-time experiment above:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">bazel <span class="pl-c1">test</span> //xff/engine:read_accounting_test</pre></div>
+<p dir="auto">Each root has 256 synthetic regular files, each containing 1,024 <code class="notranslate">x</code> bytes. The broad shape<br>
+places them directly in the root; the deep shape distributes them over 16 nested directories.<br>
+The workload uses one directory worker and safe mode, does not load INI files, and runs only<br>
+fixed read-only expressions. All content comes from memory; mutation requests fail the test.</p>
+<p dir="auto">With engine source base <code class="notranslate">cb146bdac</code>, both shapes produced these per-invocation measurements:</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Workload</th>
+<th align="right">Roots</th>
+<th align="right">Successful whole-file reads</th>
+<th align="right">Logical bytes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Listing</td>
+<td align="right">1</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="left">Extension summary</td>
+<td align="right">1</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="left">Hash field</td>
+<td align="right">1</td>
+<td align="right">256</td>
+<td align="right">262144</td>
+</tr>
+<tr>
+<td align="left">Two hash fields</td>
+<td align="right">1</td>
+<td align="right">512</td>
+<td align="right">524288</td>
+</tr>
+<tr>
+<td align="left">Hash and line-count fields</td>
+<td align="right">1</td>
+<td align="right">512</td>
+<td align="right">524288</td>
+</tr>
+<tr>
+<td align="left">Identical-root comparison</td>
+<td align="right">2</td>
+<td align="right">512</td>
+<td align="right">524288</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">This establishes that those repeated consumers currently request file content separately in<br>
+these workloads. Comparison reads both files of each pair; its two reads represent two input<br>
+files, unlike the repeated-field cases. No read attempt failed in these measurements.</p>
+<p dir="auto">The test XML at <code class="notranslate">bazel-testlogs/xff/engine/read_accounting_test/test.xml</code> records fixture<br>
+parameters, attempted and successful reads, and logical bytes for each shape. Read counts are<br>
+observations, not performance assertions, so reducing duplicate reads will not break a test<br>
+that requires the current inefficiency. Traversal errors, missing output, or mutation attempts<br>
+do fail the measurement.</p>
+<p dir="auto">Counters observe successful <code class="notranslate">ReadContent</code> results. The fixture inherits the whole-file<br>
+<code class="notranslate">ReadContentRange</code> fallback. These counts do not measure unique file bytes, storage traffic,<br>
+or an optimized range backend; they also exclude archive decompression and host filesystem<br>
+metadata I/O. General runtime accounting, storage/network measurements, optimized-build<br>
+results, concurrency scaling, and an execution-cost explain view remain outstanding S13 work.</p>
+<h2 dir="auto" id="worker-count-observations">Worker-count observations</h2>
+<p dir="auto">The <a href="https://github.com/mboworks/xff/blob/0bcb461dbb08a1d3b14d1d73938a8b905aed81ea/docs/benchmarks/execution-concurrency.json">raw worker-count records</a> contain 72 additional invocations<br>
+of one development binary, with the same 10,000-file/100-level fixture definitions above.<br>
+Each worker count used a fresh disposable fixture. The entire one-worker series ran before<br>
+eight workers; caches were not flushed, run order was not randomized, and other machine load<br>
+was not controlled. These observations do not isolate a causal worker-count speedup.</p>
+<p dir="auto">Source: <code class="notranslate">f24a2b0f5</code> (resource inspection plus static field validation), hermetic Clang fastbuild;<br>
+binary SHA-256 <code class="notranslate">f48715a651b3198ab575c5d6bcb1a21a708012ac39b2406543c3cd302cc347ac</code>. All invocations exited successfully<br>
+without stderr. The platform is recorded per invocation. Each cell summarizes three runs;<br>
+elapsed range is included to expose variability. First output and RSS are medians.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Shape</th>
+<th align="left">Workload</th>
+<th align="right">Jobs</th>
+<th align="right">Elapsed median (s)</th>
+<th align="left">Elapsed range (s)</th>
+<th align="right">First stdout (s)</th>
+<th align="right">Peak RSS (MiB)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">broad</td>
+<td align="left">listing</td>
+<td align="right">1</td>
+<td align="right">0.266</td>
+<td align="left">0.196-1.593</td>
+<td align="right">0.216</td>
+<td align="right">19.53</td>
+</tr>
+<tr>
+<td align="left">broad</td>
+<td align="left">listing</td>
+<td align="right">8</td>
+<td align="right">0.156</td>
+<td align="left">0.143-0.250</td>
+<td align="right">0.130</td>
+<td align="right">19.27</td>
+</tr>
+<tr>
+<td align="left">broad</td>
+<td align="left">summary</td>
+<td align="right">1</td>
+<td align="right">0.234</td>
+<td align="left">0.222-0.276</td>
+<td align="right">0.234</td>
+<td align="right">19.45</td>
+</tr>
+<tr>
+<td align="left">broad</td>
+<td align="left">summary</td>
+<td align="right">8</td>
+<td align="right">0.158</td>
+<td align="left">0.157-0.234</td>
+<td align="right">0.156</td>
+<td align="right">19.42</td>
+</tr>
+<tr>
+<td align="left">broad</td>
+<td align="left">hash</td>
+<td align="right">1</td>
+<td align="right">1.529</td>
+<td align="left">1.330-2.466</td>
+<td align="right">0.219</td>
+<td align="right">19.91</td>
+</tr>
+<tr>
+<td align="left">broad</td>
+<td align="left">hash</td>
+<td align="right">8</td>
+<td align="right">1.111</td>
+<td align="left">1.058-1.824</td>
+<td align="right">0.162</td>
+<td align="right">19.69</td>
+</tr>
+<tr>
+<td align="left">broad</td>
+<td align="left">hash_twice</td>
+<td align="right">1</td>
+<td align="right">2.735</td>
+<td align="left">2.166-4.129</td>
+<td align="right">0.193</td>
+<td align="right">19.88</td>
+</tr>
+<tr>
+<td align="left">broad</td>
+<td align="left">hash_twice</td>
+<td align="right">8</td>
+<td align="right">1.873</td>
+<td align="left">1.833-2.358</td>
+<td align="right">0.164</td>
+<td align="right">20.22</td>
+</tr>
+<tr>
+<td align="left">broad</td>
+<td align="left">hash_lines</td>
+<td align="right">1</td>
+<td align="right">1.899</td>
+<td align="left">1.565-2.900</td>
+<td align="right">0.206</td>
+<td align="right">19.80</td>
+</tr>
+<tr>
+<td align="left">broad</td>
+<td align="left">hash_lines</td>
+<td align="right">8</td>
+<td align="right">1.366</td>
+<td align="left">1.362-1.520</td>
+<td align="right">0.167</td>
+<td align="right">19.83</td>
+</tr>
+<tr>
+<td align="left">broad</td>
+<td align="left">compare</td>
+<td align="right">1</td>
+<td align="right">1.308</td>
+<td align="left">1.046-2.700</td>
+<td align="right">1.305</td>
+<td align="right">30.48</td>
+</tr>
+<tr>
+<td align="left">broad</td>
+<td align="left">compare</td>
+<td align="right">8</td>
+<td align="right">0.889</td>
+<td align="left">0.858-0.897</td>
+<td align="right">0.888</td>
+<td align="right">30.95</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">listing</td>
+<td align="right">1</td>
+<td align="right">0.206</td>
+<td align="left">0.175-0.208</td>
+<td align="right">0.053</td>
+<td align="right">19.81</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">listing</td>
+<td align="right">8</td>
+<td align="right">0.158</td>
+<td align="left">0.129-0.158</td>
+<td align="right">0.042</td>
+<td align="right">19.41</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">summary</td>
+<td align="right">1</td>
+<td align="right">0.192</td>
+<td align="left">0.163-0.226</td>
+<td align="right">0.190</td>
+<td align="right">19.67</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">summary</td>
+<td align="right">8</td>
+<td align="right">0.159</td>
+<td align="left">0.130-0.165</td>
+<td align="right">0.158</td>
+<td align="right">19.56</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">hash</td>
+<td align="right">1</td>
+<td align="right">1.446</td>
+<td align="left">1.288-1.588</td>
+<td align="right">0.080</td>
+<td align="right">20.95</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">hash</td>
+<td align="right">8</td>
+<td align="right">1.092</td>
+<td align="left">0.917-1.280</td>
+<td align="right">0.067</td>
+<td align="right">20.09</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">hash_twice</td>
+<td align="right">1</td>
+<td align="right">2.555</td>
+<td align="left">2.554-2.640</td>
+<td align="right">0.075</td>
+<td align="right">21.41</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">hash_twice</td>
+<td align="right">8</td>
+<td align="right">1.907</td>
+<td align="left">1.513-2.087</td>
+<td align="right">0.069</td>
+<td align="right">20.42</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">hash_lines</td>
+<td align="right">1</td>
+<td align="right">2.142</td>
+<td align="left">2.134-2.204</td>
+<td align="right">0.091</td>
+<td align="right">21.19</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">hash_lines</td>
+<td align="right">8</td>
+<td align="right">1.476</td>
+<td align="left">1.261-1.720</td>
+<td align="right">0.070</td>
+<td align="right">19.91</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">compare</td>
+<td align="right">1</td>
+<td align="right">1.721</td>
+<td align="left">1.567-1.726</td>
+<td align="right">1.718</td>
+<td align="right">34.77</td>
+</tr>
+<tr>
+<td align="left">deep</td>
+<td align="left">compare</td>
+<td align="right">8</td>
+<td align="right">0.953</td>
+<td align="left">0.918-1.271</td>
+<td align="right">0.951</td>
+<td align="right">33.06</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Eight workers change directory scheduling, not the coordinated expression evaluator.<br>
+The broad fixture has only one listing per root, and the deep fixture is a single directory<br>
+chain rather than many independent subtrees. Neither is a general parallel-scaling benchmark.<br>
+Content consumers still perform their own work, and comparison summaries still appear after<br>
+the inventories and comparisons complete. A branching-tree workload and controlled optimized<br>
+builds are needed before tuning worker defaults; network/storage measurements remain separate.</p>
+<h2 dir="auto" id="runtime-observations-on-real-fixtures">Runtime observations on real fixtures</h2>
+<p dir="auto">The read-only engine harness was run over 10,000 regular files of 1,024 bytes each,<br>
+with a broad tree and a 100-level deep tree, three repetitions each at one and eight<br>
+workers. These 72 instrumented invocations accompanied separate shipping-executable<br>
+measurements. Raw reports include both executable fingerprints:<br>
+<a href="https://github.com/mboworks/xff/blob/0bcb461dbb08a1d3b14d1d73938a8b905aed81ea/docs/benchmarks/runtime-reads-jobs1.json">one worker</a> and <a href="https://github.com/mboworks/xff/blob/0bcb461dbb08a1d3b14d1d73938a8b905aed81ea/docs/benchmarks/runtime-reads-jobs8.json">eight workers</a>.<br>
+The build label is a development clang fastbuild on macOS arm64, not a release-performance claim.</p>
+<p dir="auto">Every repetition and both tree shapes produced the following logical counts. Comparison<br>
+uses two roots; the other workloads use one. All observed reads succeeded.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Workload</th>
+<th align="right">Whole-file calls</th>
+<th align="right">Whole-file bytes</th>
+<th align="right">Range calls</th>
+<th align="right">Range bytes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">listing</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="left">summary</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="left">hash</td>
+<td align="right">10000</td>
+<td align="right">10240000</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="left">hash_twice</td>
+<td align="right">20000</td>
+<td align="right">20480000</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="left">hash_lines</td>
+<td align="right">20000</td>
+<td align="right">20480000</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="left">compare</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">20000</td>
+<td align="right">20480000</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Whole-file and range reads are distinct observer entrypoints. In particular, comparison<br>
+uses ranges through the real backend; the earlier synthetic fixture's fallback implementation<br>
+reported those as whole-file reads. Both count bytes at their documented observation boundary.<br>
+The range observer does not count the backend's internal implementation reads a second time.</p>
+<p dir="auto">The files were just written and reused without controlled cache flushing. These observations<br>
+measure logical content returned to the engine, excluding metadata and physical/network I/O.<br>
+Timing and read-count measurements are separate invocations, labelled accordingly in the JSON;<br>
+they must not be treated as one instrumented execution or used to infer instrumentation overhead.<br>
+Network-storage measurements and archive/member backend instrumentation remain outstanding.</p></main><footer>Release snapshot &middot; 0bcb461dbb08a1d3b14d1d73938a8b905aed81ea</footer></body></html>

@@ -1,0 +1,76 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/config-inspection.md - xff v0.7.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.7.0/">Home</a><a href="/xff/site/tag/v0.7.0/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.7.0">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/0bcb461dbb08a1d3b14d1d73938a8b905aed81ea">Source</a><a href="/xff/coverage/tag/0.7.0/">Coverage</a><a href="/xff/releases/0.7.0/">CLI reference</a><a href="/xff/benchmarks/">Benchmarks</a></nav><p>xff v0.7.0</p><main>
+
+<h1 dir="auto" id="inspecting-configuration">Inspecting configuration</h1>
+<p dir="auto">Run the intended command with <code class="notranslate">--explain</code> before relying on a profile. It discovers enabled config<br>
+files, validates them, resolves selectors, and prints the resulting configuration without evaluating<br>
+the expression. Invalid selected profiles, unreadable existing files, and missing explicit files<br>
+remain errors; explain mode does not bypass them.</p>
+<p dir="auto">Read the output in this order:</p>
+<ol dir="auto">
+<li><strong>Sources:</strong> which files were consulted and whether they existed. This is discovery order;<br>
+the application trace below determines when their flags take effect.</li>
+<li><strong>Profile declarations:</strong> each file's named sections, their source line, selection, availability,<br>
+and declared contribution kinds (<code class="notranslate">globals</code>, <code class="notranslate">predicates</code>, <code class="notranslate">actions</code>, or <code class="notranslate">empty</code>). Refinements<br>
+of one name appear separately for each file. <code class="notranslate">skipped</code> means a config skip request excluded its<br>
+named sections. <code class="notranslate">disabled</code> means validation rejected that name; the original diagnostic and<br>
+composition failures are retained. A disabled declaration also prevents selecting that name's<br>
+refinements from other files. <code class="notranslate">reserved-preset</code> identifies an attempted built-in style override.</li>
+<li><strong>Application trace:</strong> flags in the actual resolution order, with file/line/section markers.<br>
+CLI selectors compose at their requested positions. Repeated selections remain visible here.</li>
+<li><strong>Safety decisions and dropped directives:</strong> the effective blocks, safe profile, scope roots,<br>
+and rejected directives explain what the configuration can authorize. A profile being<br>
+available or selected does not arm its actions. Mandatory blocks cannot be undone by a later<br>
+permissive setting.</li>
+</ol>
+<p dir="auto">Unselected invalid sections can be inspected with <code class="notranslate">xff --explain</code>. Selecting one remains a hard<br>
+error. The declaration list describes available configuration, not proof that every declared action<br>
+will execute or that arbitrary child processes are sandboxed.</p>
+<h2 dir="auto" id="personal-defaults">Personal defaults</h2>
+<p dir="auto">Place these lines in the fixed user config at the OS account home directory's <code class="notranslate">.config/xff/config</code>:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--<span class="pl-k">color</span>=auto
+<span class="pl-en">[reports]</span>
+--<span class="pl-k">summary</span>=ext</pre></div>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff <span class="pl-c1">.</span> --config=reports --explain</pre></div>
+<p dir="auto"><code class="notranslate">reports</code> is available and selected, declaring globals. The unsectioned color setting applies without<br>
+a selector. <code class="notranslate">--no-user-config</code> excludes named sections; existing user globals still apply unless the<br>
+trusted require-globals policy permits skipping them.</p>
+<h2 dir="auto" id="an-explicit-project-profile">An explicit project profile</h2>
+<p dir="auto">Save this as <code class="notranslate">project.xffrc</code>:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate"><span class="pl-en">[sources]</span>
+-type f -name <span class="pl-s"><span class="pl-pds">'</span>*.cc<span class="pl-pds">'</span></span></pre></div>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff <span class="pl-c1">.</span> --xffrc=project.xffrc --config=sources --explain</pre></div>
+<p dir="auto">The named section declares predicates. Loading this file does not select all its sections. A profile<br>
+containing execution or deletion actions would still require trusted authorization; an rc file cannot<br>
+arm itself. Automatic <code class="notranslate">.xffrc</code> discovery is separately opt-in through <code class="notranslate">--rc</code> or <code class="notranslate">--rc+</code>.</p>
+<h2 dir="auto" id="mandatory-system-policy">Mandatory system policy</h2>
+<p dir="auto">In <code class="notranslate">/etc/xff.ini</code>:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--require-system-globals
+--block-execution
+--block-file-deletion</pre></div>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff <span class="pl-c1">.</span> --no-system-config --no-safe --explain</pre></div>
+<p dir="auto">The globals remain required and both unconditional blocks remain effective. The skip request excludes<br>
+named system sections; disabling the safe profile does not remove unconditional blocks. Requiring<br>
+system globals is also the default when the directive is omitted.</p>
+<h2 dir="auto" id="an-environment-derived-output-root">An environment-derived output root</h2>
+<p dir="auto">In the user config's unsectioned part:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--<span class="pl-k">block-policy-categories</span>=output
+--<span class="pl-k">output-root</span>=<span class="pl-s"><span class="pl-pds">"</span>${HOME:?HOME must be set}/xff-results<span class="pl-pds">"</span></span></pre></div>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff <span class="pl-c1">.</span> --explain</pre></div>
+<p dir="auto">The safety section shows the expanded output root and its source. <code class="notranslate">${NAME:-DEFAULT}</code> supplies a<br>
+fallback for an unset or empty variable; <code class="notranslate">${NAME:?MESSAGE}</code> fails the config line instead. The<br>
+replacement stays within one argument and is not executed or parsed as extra flags. This does not<br>
+make an environment-controlled path trustworthy: an administrator who needs a fixed protection<br>
+boundary should use a fixed path under their control. Declaring a root categorizes operations;<br>
+it does not create the directory or grant a capability by itself.</p>
+<p dir="auto">See <a href="design-config.html">the configuration model</a> for composition and trust rules, and<br>
+<a href="design-safety.html">the safety model</a> for capability enforcement.</p></main><footer>Release snapshot &middot; 0bcb461dbb08a1d3b14d1d73938a8b905aed81ea</footer></body></html>

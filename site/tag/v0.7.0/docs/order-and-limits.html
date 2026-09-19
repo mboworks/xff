@@ -1,0 +1,134 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/order-and-limits.md - xff v0.7.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.7.0/">Home</a><a href="/xff/site/tag/v0.7.0/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.7.0">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/0bcb461dbb08a1d3b14d1d73938a8b905aed81ea">Source</a><a href="/xff/coverage/tag/0.7.0/">Coverage</a><a href="/xff/releases/0.7.0/">CLI reference</a><a href="/xff/benchmarks/">Benchmarks</a></nav><p>xff v0.7.0</p><main>
+
+<h1 dir="auto" id="choosing-order-and-limits">Choosing order and limits</h1>
+<p dir="auto">Choose the stage you want to limit. An expression filter, a display limit, and stopping the<br>
+walk produce different inputs for actions and statistics.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Control</th>
+<th align="left">Stage</th>
+<th align="left">What it limits or orders</th>
+<th align="left">What it leaves intact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code class="notranslate">-first N</code></td>
+<td align="left">Expression evaluation</td>
+<td align="left">First N entries reaching this particular use; later entries evaluate false here</td>
+<td align="left">Traversal, earlier actions, and other branches</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-top N</code></td>
+<td align="left">Deferred expression evaluation</td>
+<td align="left">Best N fuzzy candidates reaching this use; resumes the expression after selection</td>
+<td align="left">Earlier actions; rejected candidates can still take an OR alternative</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">--top=N</code></td>
+<td align="left">Reduction rendering</td>
+<td align="left">Displayed ordinary summary groups and histogram buckets</td>
+<td align="left">Matched entries, actions, full totals, percentage denominators, comparison-result rows</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">--max-results=N</code></td>
+<td align="left">Implicit listing</td>
+<td align="left">At most N listed entries after expression evaluation</td>
+<td align="left">Traversal, explicit actions, summaries, histograms, collections, packing, comparison records</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">-quit</code></td>
+<td align="left">Traversal control</td>
+<td align="left">Stops the remaining walk when reached</td>
+<td align="left">Actions already performed and entries already collected</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">--sort=MODE</code></td>
+<td align="left">Traversal order</td>
+<td align="left">Root and directory-entry order, depending on the mode</td>
+<td align="left">Which entries match, absent order-dependent tests or actions</td>
+</tr>
+<tr>
+<td align="left"><code class="notranslate">--sort=score</code></td>
+<td align="left">Implicit listing order</td>
+<td align="left">Buffered listing ranked by fuzzy score</td>
+<td align="left">The order in which expression actions already ran</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto"><code class="notranslate">-first 0</code>, <code class="notranslate">-top 0</code>, and <code class="notranslate">--max-results=0</code> select or list nothing at their respective stages.<br>
+<code class="notranslate">--top=0</code> instead removes the reduction display limit. A limit on displayed rows is not a limit<br>
+on memory retained during traversal or deferred selection.</p>
+<h2 dir="auto" id="expression-position-controls-actions">Expression position controls actions</h2>
+<p dir="auto">These examples use a directory <code class="notranslate">DIR</code> containing four one-byte regular files: <code class="notranslate">a.cc</code>, <code class="notranslate">ab.cc</code>,<br>
+<code class="notranslate">ac.h</code>, and <code class="notranslate">ad.h</code>. <code class="notranslate">--sort=tree</code> makes the selection reproducible within the root.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff --sort=tree DIR -type f -first 2 -print --summary</pre></div>
+<p dir="auto">Only the first two files reach <code class="notranslate">-print</code>, and the summary counts two. Reaching the <code class="notranslate">-first</code><br>
+budget does not stop the walk. Each separate <code class="notranslate">-first</code> has its own counter, so an OR branch<br>
+can select another population with its own budget.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff --sort=tree DIR -type f -collect -first 2 -print --summary</pre></div>
+<p dir="auto">All four files reach <code class="notranslate">-collect</code>; two reach <code class="notranslate">-print</code>. The summary reads the collection and counts<br>
+four. Move <code class="notranslate">-collect</code> after <code class="notranslate">-first 2</code> to collect and summarize only two. The presence of a<br>
+collection action selects collection-backed reductions even if that action's branch never runs;<br>
+an unfilled collection therefore yields an empty reduction.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff --sort=tree DIR -type f -fuzzy a -top 2 -print</pre></div>
+<p dir="auto">This defers at <code class="notranslate">-top</code>, retains its candidates, and later runs <code class="notranslate">-print</code> for the best two.<br>
+A compatible fuzzy matcher must precede <code class="notranslate">-top</code> on every path reaching it. Ties keep traversal<br>
+order. Actions before <code class="notranslate">-top</code> have already happened for candidates that may later be rejected;<br>
+<code class="notranslate">-top</code> cannot undo them.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff --sort=tree DIR -type f -print -quit</pre></div>
+<p dir="auto">This prints the first file and stops traversal. Subsequent summaries describe the visited<br>
+population, not the complete tree.</p>
+<h2 dir="auto" id="display-limits-preserve-the-matched-population">Display limits preserve the matched population</h2>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff DIR -type f --max-results=2
+xff DIR -type f --max-results=2 -print
+xff DIR -type f --max-results=2 --summary</pre></div>
+<p dir="auto">The first command lists two files. The second prints all four because <code class="notranslate">-print</code> is an explicit<br>
+action. The third summarizes all four; a summary replaces the implicit listing, so its output<br>
+is unaffected by <code class="notranslate">--max-results</code>.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff DIR -type f --summary=ext --top=1</pre></div>
+<p dir="auto">This shows one extension group plus the total. The total and percentages still use all matched<br>
+files, including hidden groups. With two equally populated extension groups, the displayed<br>
+group is 50% of the count, not 100%. <code class="notranslate">--top</code> does not truncate comparison-result statistics.</p>
+<h2 dir="auto" id="packing-follows-matches-not-the-listing-or-collections">Packing follows matches, not the listing or collections</h2>
+<p dir="auto">Put the output archive outside <code class="notranslate">DIR</code> in these examples:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff DIR -type f --max-results=1 --pack=all.tar
+xff --sort=tree DIR -type f -first 2 --pack=two.tar
+xff --sort=tree DIR -type f -collect -first 2 --pack=two-collected.tar --summary</pre></div>
+<p dir="auto">The first archive contains all four files. The second contains two. The third also contains two,<br>
+while its collection-backed summary counts four. Collection placement changes the reduction's<br>
+source; it does not replace the final matched set used by packing. Normal archive capability,<br>
+collision, and safety rules still apply.</p>
+<h2 dir="auto" id="ordering-parallelism-and-retained-state">Ordering, parallelism, and retained state</h2>
+<p dir="auto">Ordinary expression evaluation and implicit streaming output follow the traversal coordinator's<br>
+order. <code class="notranslate">-j</code> permits parallel directory reads and eligible child commands; it does not make<br>
+matching callbacks race to emit entries. Child process output can interleave. Use <code class="notranslate">-j 1</code> when<br>
+an execution action's exit status must gate the next expression node.</p>
+<p dir="auto"><code class="notranslate">--sort=dir</code>, <code class="notranslate">subtree</code>, and <code class="notranslate">tree</code> differ in how they arrange directories and their descendants;<br>
+<code class="notranslate">roots</code> and <code class="notranslate">global</code> additionally sort root operands. These traversal sorts organize directory<br>
+listings rather than collecting every match. See <a href="design-parallel.html">parallel traversal</a> for<br>
+the precise modes and style defaults.</p>
+<p dir="auto"><code class="notranslate">-top</code>, <code class="notranslate">--sort=score</code>, collections, summary groups, and tree-format output retain different<br>
+kinds of state. <code class="notranslate">--buffer</code> controls the documented output and collection budgets; neither a<br>
+small printed limit nor a small <code class="notranslate">-top</code> result count promises a bounded scan or candidate set.</p>
+<h2 dir="auto" id="comparison-is-a-separate-population">Comparison is a separate population</h2>
+<p dir="auto">Both roots use the same expression, evaluated independently. <code class="notranslate">-first</code> and <code class="notranslate">-quit</code> can therefore<br>
+select different partial populations on each side. A path omitted by one side's expression can<br>
+appear one-sided even when it exists physically in both trees. These controls are not a<br>
+completed-directory comparison scan limit.</p>
+<p dir="auto">Comparison status and patch records have a fixed relative-path order. <code class="notranslate">--sort</code> still affects<br>
+evaluation within each root, including actions and order-dependent filters, but does not reorder<br>
+the final comparison records. <code class="notranslate">--max-results</code> does not cap those records. Use<br>
+<code class="notranslate">--compare-select</code> to choose categories or <code class="notranslate">--compare=summary</code> for statistics without a per-path<br>
+listing. <a href="design-summary-scopes.html">Summary scopes</a> explain comparison populations and denominators.</p></main><footer>Release snapshot &middot; 0bcb461dbb08a1d3b14d1d73938a8b905aed81ea</footer></body></html>

@@ -1,0 +1,624 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/review-0.6.0.md - xff v0.7.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.7.0/">Home</a><a href="/xff/site/tag/v0.7.0/documents.html">Documentation</a><a href="https://github.com/mboworks/xff/releases/tag/v0.7.0">Release &amp; downloads</a><a href="https://github.com/mboworks/xff/tree/0bcb461dbb08a1d3b14d1d73938a8b905aed81ea">Source</a><a href="/xff/coverage/tag/0.7.0/">Coverage</a><a href="/xff/releases/0.7.0/">CLI reference</a><a href="/xff/benchmarks/">Benchmarks</a></nav><p>xff v0.7.0</p><main>
+
+<h1 dir="auto" id="xff-060-utility-and-usability-work-list">xff 0.6.0 utility and usability work list</h1>
+<p dir="auto">Reviewed 2026-09-17 against the published lean and full macOS binaries and the 0.6.0<br>
+implementation/reference. This covers the complete feature inventory at the feature-family level,<br>
+not only the recent summary work. It is a usability and consistency review, not a proof that every<br>
+combination is correct or that the safety boundary has no vulnerabilities.</p>
+<p dir="auto">Evidence includes 81 broad executable probes plus targeted reproductions, registry/help inspection,<br>
+and examination of implementation and existing test boundaries. All probe writes used disposable<br>
+fixtures under <code class="notranslate">/private/tmp</code>. Linux-specific behavior, FUSE mounting, every archive format, hostile<br>
+filesystem races, and large-scale performance were not independently exercised in this review.<br>
+Existing tests are useful evidence of intended coverage, not a substitute for those experiments.</p>
+<p dir="auto">Priority: <strong>P1</strong> = incorrect results, misleading automation, or an ineffective requested constraint;<br>
+<strong>P2</strong> = important workflow or clarity improvement; <strong>P3</strong> = polish. An unchecked item is proposed<br>
+work, not an authorization to settle a design decision without discussion. The top-level claim<br>
+checkboxes track merged resolutions; local implementation and validation do not by themselves<br>
+close a claim. Keep detailed preparation checklists distinct from integration status.</p>
+<p dir="auto">B01-B09 have merged resolutions (B07 was a corrected diagnosis with regression coverage).<br>
+S01 merged in PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5496989449" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/864" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/864/hovercard" href="https://github.com/mboworks/xff/pull/864">#864</a>. The remaining suggestions and subsequently discovered defects<br>
+remain separate claims; none is complete merely because another claim's tests cover part of it.</p>
+<h2 dir="auto" id="overall-assessment">Overall assessment</h2>
+<p dir="auto">The core utility is strong: one expression can filter paths and content, derive fields, execute<br>
+selected actions, aggregate results, and operate on archive members. Configuration and safety are<br>
+substantially more explicit than an informal collection of shell wrappers. The largest remaining<br>
+weakness is composition: separately understandable features do not always preserve their contracts<br>
+when combined. Output-format selection, field consumers, resource limits, and repeated reductions<br>
+need the most attention.</p>
+<p dir="auto">Keep the current dash-count distinction, explicit archive capabilities, separate block/profile/preview<br>
+model, canonical comparison scope names, and shared configuration grammar. The recommendations below<br>
+improve their implementation and discoverability rather than replacing them with another vocabulary.</p>
+<h2 dir="auto" id="confirmed-defects-and-documentation-errors">Confirmed defects and documentation errors</h2>
+<h3 dir="auto" id="b01---p1-capture-use-is-rejected-in-valid-field-consumers">B01 - P1: Capture use is rejected in valid field consumers</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Fix capture-reference discovery across all actual field-consuming expression nodes.</li>
+</ul>
+<p dir="auto">Reproduction with any ordinary <code class="notranslate">FILE</code>:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff FILE -capture:answer /usr/bin/printf answer <span class="pl-cce">\;</span> -printf <span class="pl-s"><span class="pl-pds">'</span>%{capture.answer}\n<span class="pl-pds">'</span></span>
+xff FILE -capture:answer /usr/bin/printf answer <span class="pl-cce">\;</span> --exec-fields \
+  -execdir /usr/bin/printf <span class="pl-s"><span class="pl-pds">'</span>%s\n<span class="pl-pds">'</span></span> <span class="pl-s"><span class="pl-pds">'</span>{capture.answer}<span class="pl-pds">'</span></span> <span class="pl-cce">\;</span></pre></div>
+<p dir="auto">Both exit 2 claiming the capture is never referenced. A summary key or <code class="notranslate">--template</code> referencing<br>
+the same capture succeeds. <code class="notranslate">AppendCaptureRefs</code> only scans <code class="notranslate">-exec</code> and <code class="notranslate">-capture</code> arguments, so its<br>
+validation does not represent the shared field vocabulary.</p>
+<p dir="auto"><strong>Acceptance:</strong> cover printf/file-printf variants, exec/execdir and capture/capturedir, grep templates,<br>
+and other supported consumers. Derive references from parsed templates where possible; escaped<br>
+literal braces must not falsely count as use. Retain a real unused-capture diagnostic.<br>
+<strong>Start:</strong> <code class="notranslate">xff/engine/run.cc</code>, <code class="notranslate">xff/engine/run_test.cc</code>, CLI capture/format integration tests.</p>
+<p dir="auto">Merged resolution: <a href="https://github.com/mboworks/xff/pull/854" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/854/hovercard">PR #854</a>.</p>
+<h3 dir="auto" id="b02---p1-invalid-buffer-limits-silently-leave-collections-unbounded">B02 - P1: Invalid buffer limits silently leave collections unbounded</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Reject malformed <code class="notranslate">--buffer</code> values before traversal or actions.</li>
+</ul>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff DIR -type f -collect --summary --buffer=garbage</pre></div>
+<p dir="auto">This succeeds and collects everything. With <code class="notranslate">--buffer=1</code> on a directory containing several files,<br>
+the collection correctly errors when its bound is exceeded. <code class="notranslate">ResolveBufferBound</code> silently preserves<br>
+the preceding/default bound for an unrecognized value. A typo in a requested resource limit therefore<br>
+has materially different consequences from a typo in <code class="notranslate">--top</code> or <code class="notranslate">--max-results</code>.</p>
+<p dir="auto"><strong>Acceptance:</strong> valid row/byte limits and <code class="notranslate">auto/off/all</code> retain their documented meanings; malformed,<br>
+negative, overflowing, and unsupported-unit values fail on CLI and through config validation.<br>
+No expression action runs before that failure. Test both collections and tabular buffering.<br>
+<strong>Start:</strong> <code class="notranslate">xff/engine/run.cc</code>, shared option-value validation, collection/CLI tests.</p>
+<p dir="auto">Merged resolution: <a href="https://github.com/mboworks/xff/pull/857" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/857/hovercard">PR #857</a>.</p>
+<h3 dir="auto" id="b03---p2-histogram-width-silently-accepts-invalid-values">B03 - P2: Histogram width silently accepts invalid values</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Validate <code class="notranslate">--histogram-width</code> with the same discipline as summary precision.</li>
+</ul>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff DIR --histogram=ext --histogram-width=garbage
+xff DIR --histogram=ext --histogram-width=-1</pre></div>
+<p dir="auto">Both succeed using the default width. The implementation also silently ignores zero. This is<br>
+inconsistent with other numeric output controls.</p>
+<p dir="auto"><strong>Acceptance:</strong> document the valid range and whether zero has any explicit meaning; otherwise reject<br>
+it. Test invalid and overflowing values and repeated occurrences in CLI and INI files.<br>
+<strong>Start:</strong> <code class="notranslate">ResolveHistogramWidth</code> and histogram CLI tests.</p>
+<p dir="auto">Merged resolution: <a href="https://github.com/mboworks/xff/pull/859" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/859/hovercard">PR #859</a>.</p>
+<h3 dir="auto" id="b04---p2-histogram-exports-ignore-unsupported-format-requests">B04 - P2: Histogram exports ignore unsupported format requests</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Define and enforce a histogram format-support matrix.</li>
+</ul>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff DIR --histogram=ext --format=csv
+xff DIR --summary=ext --histogram=ext --format=md</pre></div>
+<p dir="auto">The first succeeds but emits terminal bars, not CSV. The second mixes a Markdown summary table<br>
+with unstructured terminal bars. Summary tables already reject unsupported formats, while<br>
+histograms bypass that validation.</p>
+<p dir="auto"><strong>Acceptance:</strong> render the requested format or reject the combination before traversal. Decide<br>
+whether Markdown histograms should be tables or explicitly fenced text; test combinations with<br>
+summaries, not just histogram-only output.<br>
+<strong>Start:</strong> <code class="notranslate">ValidateSummaryOptions</code>, histogram rendering, <code class="notranslate">xff/cli/histogram_test.sh</code>.</p>
+<p dir="auto">Merged resolution: <a href="https://github.com/mboworks/xff/pull/860" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/860/hovercard">PR #860</a>.</p>
+<h3 dir="auto" id="b05---p1-summary-jsonl-does-not-identify-its-originating-summary">B05 - P1: Summary JSONL does not identify its originating summary</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add an explicit summary identity to every summary record.</li>
+</ul>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff DIR -type f --summary=ext --summary=type --format=jsonl
+xff --compare=summary LEFT RIGHT --summary=ext --summary=type --format=jsonl</pre></div>
+<p dir="auto">Ordinary rows lack a grouping/table discriminator; comparison-scope rows identify their scope but<br>
+not whether they belong to the extension or type summary. Consumers must infer table boundaries<br>
+from row values and order. Histograms already include a <code class="notranslate">histogram</code> identity, demonstrating the<br>
+inconsistency. Multiple template summaries make inference even less reliable.</p>
+<p dir="auto"><strong>Acceptance:</strong> every row identifies its record kind, grouping/request, and scope. Preserve original<br>
+request identity when distinct templates or repeated groupings coexist. Document root attribution<br>
+for standalone comparison JSONL. Add tests that demultiplex records without interpreting group names.<br>
+<strong>Start:</strong> summary JSON emitters in <code class="notranslate">xff/engine/run.cc</code>; summary schema documentation.</p>
+<p dir="auto">Merged resolution: <a href="https://github.com/mboworks/xff/pull/862" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/862/hovercard">PR #862</a>.</p>
+<h3 dir="auto" id="b06---p1-a-real-group-named-total-collides-with-the-total-row">B06 - P1: A real group named <code class="notranslate">total</code> collides with the total row</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Distinguish aggregate-total rows structurally from ordinary group keys.</li>
+</ul>
+<p dir="auto">Create a file named <code class="notranslate">total</code>, then run:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff DIR -type f <span class="pl-s"><span class="pl-pds">'</span>--summary={name}<span class="pl-pds">'</span></span> --format=jsonl</pre></div>
+<p dir="auto">The file's bucket and the aggregate row both have <code class="notranslate">"group":"total"</code>. The same occurs in<br>
+comparison-scope JSONL. A consumer indexing records by group can overwrite a real bucket or<br>
+mistake it for the aggregate.</p>
+<p dir="auto"><strong>Acceptance:</strong> add a dedicated row kind or total marker; literal keys remain unchanged. Cover<br>
+<code class="notranslate">total</code>, <code class="notranslate">(none)</code>, empty template values, and multiple summary requests. Coordinate with B05 rather<br>
+than making two incompatible schema revisions. Text tables should also distinguish data from totals.<br>
+<strong>Start:</strong> summary emitters and CLI JSONL regressions.</p>
+<p dir="auto">Merged resolution: <a href="https://github.com/mboworks/xff/pull/863" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/863/hovercard">PR #863</a>.</p>
+<h3 dir="auto" id="b07---closed-markdown-newline-padding-diagnosis-was-incorrect">B07 - Closed: Markdown newline-padding diagnosis was incorrect</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Recheck the published output and add a regression for cell normalization.</li>
+</ul>
+<p dir="auto">The original visual inspection reported mismatched final pipes for newline-containing filenames.<br>
+Direct measurement of the published binary's output disproves that claim: every header and data<br>
+row has the same final-pipe offset. <code class="notranslate">TableStream::Add</code> already normalizes Markdown cells before<br>
+measuring their widths. A regression now covers LF, CRLF, and escaped pipes alongside ordinary cells.<br>
+No production padding change is needed for this report.</p>
+<p dir="auto">The existing renderer measures byte lengths, not Unicode display cells, and passes tabs through.<br>
+Those separate source-readability limitations need their own evidence and design; this result does<br>
+not claim universal visual alignment for Unicode or control characters.</p>
+<p dir="auto">Merged resolution: <a href="https://github.com/mboworks/xff/pull/856" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/856/hovercard">PR #856</a>.</p>
+<h3 dir="auto" id="b08---p2-readme-describes-the-wrong-release-archive-layout">B08 - P2: README describes the wrong release archive layout</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Correct the installation/distribution description (PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5491960396" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/855" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/855/hovercard" href="https://github.com/mboworks/xff/pull/855">#855</a>).</li>
+</ul>
+<p dir="auto">README says each platform has one <code class="notranslate">xff-PLATFORM-ARCH.tar.zst</code> containing both executables. The<br>
+release script and published 0.6.0 assets instead provide separate lean and full archives, each<br>
+containing its executable and corresponding symbols. The sentence about release optimization also<br>
+reads "combines the hermetic Clang toolchain with size".</p>
+<p dir="auto"><strong>Acceptance:</strong> document the actual artifact names and contents, link installation instructions,<br>
+and check the description against <code class="notranslate">stage_release_artifacts.sh</code> and the published manifest.<br>
+<strong>Start:</strong> <code class="notranslate">README.md</code>.</p>
+<h3 dir="auto" id="b09---p3-binary-content-documentation-gives-conflicting-sniff-lengths">B09 - P3: Binary-content documentation gives conflicting sniff lengths</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Use the exact shared 8,000-byte threshold throughout help and comments.</li>
+</ul>
+<p dir="auto"><code class="notranslate">-text</code> documents 8,000 bytes; <code class="notranslate">-binary</code> and content help say 8 KiB. The implementation uses<br>
+<code class="notranslate">kBinaryNulSniffBytes = 8'000</code>. A file with its first NUL at offset 8,050 is classified as text,<br>
+consistent with the implementation but inconsistent with an 8,192-byte reading of the help.</p>
+<p dir="auto"><strong>Acceptance:</strong> update registry prose and generated documentation together. Keep boundary cases<br>
+at 7,999/8,000/8,050/8,191 explicit in tests; do not change the classification policy accidentally.<br>
+<strong>Start:</strong> <code class="notranslate">xff/content/line_match.h</code>, <code class="notranslate">xff/registry/registry.cc</code>.</p>
+<h3 dir="auto" id="b12---p1-explain-current-style-values-from-the-resolved-configuration">B12 - P1: Explain current style values from the resolved configuration</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Reproduce a disagreement between the applied-flag trace and the current flavor column.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Use the same effective command for inspection and execution; test all configuration tiers and selector order.</li>
+</ul>
+<p dir="auto">A user INI containing <code class="notranslate">--no-hidden</code> and <code class="notranslate">--case=insensitive</code> appears correctly in the applied flags,<br>
+but <code class="notranslate">xff --explain</code> reports current hidden files as <code class="notranslate">show</code> and case as <code class="notranslate">sensitive</code>. The table receives<br>
+only CLI globals because configuration is composed after the explain early return. Inspection must<br>
+compose configuration before rendering, without evaluating expressions or running actions.</p>
+<h3 dir="auto" id="b10---p1-keep-comparison-shard-populations-physical">B10 - P1: Keep comparison shard populations physical</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Correct scoped summary populations and suppress extra collapsed listings in comparison mode.</li>
+</ul>
+<p dir="auto">A follow-up to S14 reproduced a mixed two-shard set being assigned wholly to its representative's<br>
+comparison category. One identical pair and one different pair produced correct physical result<br>
+counts, but an ordinary scoped summary placed all eight bytes under <code class="notranslate">identical</code> and none under<br>
+<code class="notranslate">different</code>. Side totals counted one logical set instead of two physical files. Comparison without<br>
+ordinary summaries could also print stray collapsed paths.</p>
+<p dir="auto"><strong>Acceptance:</strong> comparison results and reductions use physical entries consistently; ordinary scans<br>
+still collapse logical sets. Preserve status-predicate scheme selection, validate malformed custom<br>
+patterns, and test identical/different categories, side totals, combined totals, and status output.<br>
+Whole-set comparison requires separate semantics and is not inferred from a representative.</p>
+<h3 dir="auto" id="b11---p1-reduce-collected-shard-populations-once">B11 - P1: Reduce collected shard populations once</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Apply logical grouping to the selected collections without also feeding matched sets.</li>
+</ul>
+<p dir="auto">Two two-byte shard files produce one logical set and four bytes with <code class="notranslate">--shards --summary</code>.<br>
+Adding <code class="notranslate">-collect</code> produced a count of three and eight bytes: the post-walk shard pass fed one<br>
+logical set, then the collection pass fed its two physical members again. Histograms used the<br>
+same mixed populations. A limiting predicate after collection can make the two source populations<br>
+differ, so removing one feed without preserving collection semantics is insufficient.</p>
+<p dir="auto"><strong>Acceptance:</strong> group each named collection independently, feed both reductions once, preserve<br>
+collection placement and named-population multiplicity, retain deduplication/custom schemes and<br>
+root provenance, keep comparison physical, and reject overflow without partial tables.</p>
+<h3 dir="auto" id="b13---p1-earlier-archive-sniffing-survives-a-later-mode-selection">B13 - P1: Earlier archive sniffing survives a later mode selection</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Resolve filename sniffing from the final archive mode and verify CLI/config ordering.</li>
+</ul>
+<p dir="auto">With a tar file named <code class="notranslate">blob</code> inside a directory, <code class="notranslate">--archive=all</code> leaves it closed, but<br>
+<code class="notranslate">--archive=any --archive=all</code> still enters it. The same failure occurs with <code class="notranslate">-z++ -z+</code>.<br>
+Traversal depth uses the final mode, while filename sniffing checks whether an any-mode spelling<br>
+occurred anywhere. A later narrower selection therefore does not restore the expected filename gate.</p>
+<p dir="auto"><strong>Fix:</strong> carry sniffing in the resolved archive options, alongside traversal and depth, rather than<br>
+re-reading historical spellings. <strong>Acceptance:</strong> real-archive regressions for long and short forms,<br>
+upper-case capability forms, and named configurations selected in both orders.</p>
+<h3 dir="auto" id="b15---p2-control-characters-break-human-readable-listing-layouts">B15 - P2: Control characters break human-readable listing layouts</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Implement and verify consistent control-byte rendering for aligned tables, Markdown, and trees.</li>
+</ul>
+<p dir="auto">A filename containing <code class="notranslate">a|b</code>, followed by a newline, tab, and an ESC byte, produces extra physical<br>
+lines and terminal control sequences in <code class="notranslate">--format=aligned</code> and <code class="notranslate">--format=tree</code>. Markdown<br>
+escapes the pipe but replaces the newline with a space, drops CR, and passes tab/ESC through.<br>
+Consequently distinct names can look identical, and a filename can alter the terminal display.<br>
+The behavior was reproduced against the development executable with disposable real files.</p>
+<p dir="auto">Plain output deliberately remains raw by default and offers <code class="notranslate">--path-encoding=escape</code>.<br>
+CSV and JSONL encode records losslessly; NUL output retains raw bytes with an unambiguous separator.<br>
+TSV escapes its separators and backslashes but is not a terminal-safe display format.<br>
+These machine-output contracts should be preserved.</p>
+<p dir="auto"><strong>Recommendation:</strong> escape controls in human-readable table cells and tree node labels, preserving<br>
+Unicode and disambiguating literal backslashes. Account for the escaped width before padding.<br>
+Decide Markdown's visible spelling together with its source encoding, so rendered output and raw<br>
+source remain understandable. Display cells are C-escaped before width calculation; Markdown then<br>
+protects that display spelling once. Already-formatted summary labels retain their escapes rather<br>
+than being C-escaped twice. Plain path listings and machine encodings are unchanged.<br>
+<strong>Acceptance:</strong> cover newline, CR, tab, ESC, DEL, literal backslash, pipe, and Unicode in buffered<br>
+and streaming tables, tree roots/children, and actual CLI filenames. Keep intentional generated<br>
+colour separate from filename data. Document the distinction from raw/machine formats.</p>
+<h2 dir="auto" id="design-and-usability-improvements">Design and usability improvements</h2>
+<p dir="auto">These are observed limitations or deliberate current behaviors, not claims of implementation bugs.</p>
+<h3 dir="auto" id="s01---p1-make-machine-output-composition-predictable">S01 - P1: Make machine-output composition predictable</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Define comparison/grep JSONL records, authored-output exceptions, producer format rules, and lossless byte values.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Verify integrated stream regressions and generated help on current main; enforce affected-header checks before commit.</li>
+</ul>
+<p dir="auto"><code class="notranslate">xff --compare LEFT RIGHT --format=jsonl</code> emits TSV status records. Adding <code class="notranslate">--summary=ext</code> produces<br>
+TSV followed by JSONL. Likewise <code class="notranslate">-grep PATTERN --format=jsonl</code> retains its normal text output.<br>
+The action exception is documented, but the spelling of a whole-run output format still leads users<br>
+to expect a consumable machine stream.</p>
+<p dir="auto"><strong>Recommendation:</strong> support structured comparison status records. For content search, offer an<br>
+explicit supported structured path or a diagnostic when the request has no effect. Preserve<br>
+intentional explicit-action output semantics; do not casually reinterpret <code class="notranslate">-printf</code> or child stdout.<br>
+<strong>Acceptance:</strong> publish and test a producer x format matrix covering listing, status, patch, grep,<br>
+summary, histogram, explicit actions, and combinations. Machine-format success must have a clear<br>
+contract about which records can appear.</p>
+<h3 dir="auto" id="s02---p1-decide-archive-member-name-collision-policy">S02 - P1: Decide archive member-name collision policy</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Define behavior when multiple inputs map to the same packed member name (PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5503365399" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/865" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/865/hovercard" href="https://github.com/mboworks/xff/pull/865">#865</a>).</li>
+</ul>
+<p dir="auto">With <code class="notranslate">LEFT/same.txt</code> containing <code class="notranslate">left</code> and <code class="notranslate">RIGHT/same.txt</code> containing <code class="notranslate">right</code>,<br>
+<code class="notranslate">xff LEFT RIGHT -type f --pack=out.tar</code> succeeds and writes two members both named <code class="notranslate">same.txt</code>.<br>
+Both payloads exist in the tar, but normal extraction cannot preserve both at that path.<br>
+This is an observed ambiguity, not evidence that packing itself discarded a payload.</p>
+<p dir="auto"><strong>Recommendation:</strong> reject duplicate normalized member names by default before publication; permit<br>
+an explicit alternative only after deciding its meaning. Do not silently invent root prefixes.<br>
+<strong>Acceptance:</strong> test overlapping roots, duplicate roots, distinct roots with equal relative names,<br>
+and relevant writer formats. Failure must preserve an existing destination.</p>
+<p dir="auto">Prepared implementation: <code class="notranslate">--pack-duplicates=error|first</code> defaults to rejecting normalized<br>
+collisions and file/directory prefix conflicts before output creation. <code class="notranslate">first</code> retains the first<br>
+collected source in traversal order. Distinct <code class="notranslate">--root=NAME=PATH</code> names anchor packed members<br>
+under separate archive directories; duplicate names are rejected. Named roots are CLI operands,<br>
+not INI directives. Tar/zip writer tests cover destination preservation and retained payloads;<br>
+CLI tests cover complete configuration files, dry-run, overlapping roots, and traversal order.</p>
+<h3 dir="auto" id="s03---p2-remove-duplicate-comparison-tables-from-the-obvious-summary-workflow">S03 - P2: Remove duplicate comparison tables from the obvious summary workflow</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Reconcile the shorthand, bare summary, and scope-driver rules (PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5504200405" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/866" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/866/hovercard" href="https://github.com/mboworks/xff/pull/866">#866</a>).</li>
+</ul>
+<p dir="auto"><code class="notranslate">--compare=summary --summary-scope=compare</code> errors and recommends adding <code class="notranslate">--summary</code>.<br>
+Doing so works but prints the comparison-result table twice before the ordinary table.<br>
+Repeatable summaries explain the implementation, but not a useful user intention here.</p>
+<p dir="auto"><strong>Resolution:</strong> the shorthand and bare summary reuse an existing comparison-results request.<br>
+With an explicit scope, bare summary still adds ordinary scoped totals. Explicit groupings such as<br>
+<code class="notranslate">--summary=ext</code> remain additional tables, so the reported Markdown extension command correctly<br>
+produces two tables. Deliberately repeated explicit <code class="notranslate">--summary=compare</code> requests remain supported.<br>
+<code class="notranslate">--summary=none</code> clears the active list before later requests are resolved.<br>
+<strong>Acceptance:</strong> a small truth table covers ordinary traversal, status/diff/summary comparison, bare<br>
+summary, explicit groupings, explicit scopes, repeated flags, and <code class="notranslate">--summary=none</code>.</p>
+<h3 dir="auto" id="s04---p1-offer-consistent-validation-of-static-field-names">S04 - P1: Offer consistent validation of static field names</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Reject static field mistakes before actions; preserve valid absent runtime values.<br>
+See <a href="design-field-validation.html">field validation</a>.</li>
+</ul>
+<p dir="auto"><code class="notranslate">--template='{nmae}'</code> succeeds with empty output, whereas <code class="notranslate">--format=csv --columns=nmae</code> rejects the<br>
+unknown field. The empty-template behavior is documented, but a typo can silently erase an important<br>
+report column or collapse a summary into one bucket.</p>
+<p dir="auto"><strong>Recommendation:</strong> reject unknown static fields during template compilation, or provide an explicit<br>
+strict mode if literal/permissive templating must remain. Distinguish unknown fields from valid fields<br>
+whose value is absent, such as an unset environment value or a capture not reached by the expression.<br>
+<strong>Acceptance:</strong> define behavior for unknown qualifiers/algorithms, escaped braces, optional dynamic<br>
+namespaces, and malformed syntax. Validate before an action consumes a mistaken template.</p>
+<h3 dir="auto" id="s05---p1-add-an-effective-safety-policy-view-to---explain">S05 - P1: Add an effective safety-policy view to <code class="notranslate">--explain</code></h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Show final capability decisions, their cause, and their provenance.</li>
+</ul>
+<p dir="auto">Current explain output lists applied arguments and style defaults. For example, one ordinary<br>
+safe-profile write setting expands into temp/output/archive settings, but the user must mentally<br>
+combine those with active safe mode and unconditional blocks.</p>
+<p dir="auto"><strong>Recommendation:</strong> append a table of effective allow/block decisions, unconditional versus profile<br>
+cause, source file/line or CLI origin, category interpretation, and effective directory roots.<br>
+Show shadowed decisions where useful. This is an inspection feature, not a new policy language.<br>
+<strong>Acceptance:</strong> examples cover an administrator block, user profile override, skipped named sections,<br>
+category expansion, overlapping directory roots, and environment-expanded roots.</p>
+<h3 dir="auto" id="s06---p2-shorten-entry-help-without-losing-complete-reference-coverage">S06 - P2: Shorten entry help without losing complete reference coverage</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Improve the overview and the largest focused help pages.</li>
+</ul>
+<p dir="auto">The published lean binary's default help is 1,029 lines. Focused <code class="notranslate">--help=summary</code> with <code class="notranslate">--width=80</code><br>
+is 288 lines; <code class="notranslate">--help=safe</code> is 571. An expanded topic can dominate the requested flag's explanation.<br>
+Compare help includes a roughly 2,600-character paragraph in unwrapped output.</p>
+<p dir="auto"><strong>Recommendation:</strong> start default help with a compact task-oriented guide and clear routes to the full<br>
+inventory. Keep focused entries structured as syntax, values/defaults, interaction notes, examples,<br>
+then context. Preserve helpful grammar expansion and the no-recursive-expansion rule for long help.<br>
+<strong>Acceptance:</strong> readability checks at realistic terminal widths; examples stay copyable; long help<br>
+contains each topic once. Review prose/table width independently of verbatim examples.</p>
+<h3 dir="auto" id="s07---p2-bring-the-readme-to-the-users-first-successful-command-sooner">S07 - P2: Bring the README to the user's first successful command sooner</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Put release installation and a small task guide before the large feature matrices.</li>
+</ul>
+<p dir="auto">The Quick Start currently begins with Bazel despite published binaries. The capability matrices<br>
+precede installation and can obscure the most useful everyday workflows.</p>
+<p dir="auto"><strong>Recommendation:</strong> lead with lean versus full downloads, a few commands for find/search/compare/report,<br>
+then advanced capabilities. Clarify that "disk use" summary examples report apparent entry sizes,<br>
+not allocated blocks or recursive directory size. Retain detailed feature comparisons farther down.<br>
+<strong>Acceptance:</strong> a user without Bazel can install and run a useful query directly from the README.</p>
+<h3 dir="auto" id="s08---p2-make-paired-console-tables-readable-at-normal-widths">S08 - P2: Make paired console tables readable at normal widths</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Reduce repeated scope text in comparison-summary headers.</li>
+</ul>
+<p dir="auto">The two-total table already has eight numeric columns; <code class="notranslate">diff</code> has twelve, each repeating the scope<br>
+name. The reproduced two-total example is roughly 150 columns and the three-category example exceeds<br>
+200, before long group names.</p>
+<p dir="auto"><strong>Recommendation:</strong> use grouped headers on the console, concise count/size subheadings, and explicit<br>
+behavior when the terminal is narrow. Keep canonical identities in JSON and retain numeric alignment.<br>
+Do not change accounting to solve a presentation problem.<br>
+<strong>Acceptance:</strong> golden outputs at 80/120/160 columns, long Unicode group labels, and four-plus scopes.</p>
+<h3 dir="auto" id="s09---p2-explain-denominators-omitted-groups-and-grouping-identity-at-the-table">S09 - P2: Explain denominators, omitted groups, and grouping identity at the table</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Make ordinary console tables identify their grouping, and make top-limited output self-explanatory.</li>
+</ul>
+<p dir="auto">Repeated plain summaries use a generic <code class="notranslate">Group</code> header, without the grouping-specific heading available<br>
+in Markdown. Totals and percentages intentionally include rows hidden by <code class="notranslate">--top</code>, which is useful<br>
+but can look like an arithmetic error.</p>
+<p dir="auto"><strong>Recommendation:</strong> label each table with its grouping; when truncated, state how many groups were<br>
+shown out of the complete set. Do not silently switch percentage denominators to visible rows.<br>
+<strong>Acceptance:</strong> multiple summaries, zero groups, zero-byte files, top limits, and overlapping scopes<br>
+remain distinguishable in plain, Markdown, and JSONL.</p>
+<h3 dir="auto" id="s10---p2-extend-summaries-to-csvtsv-deliberately">S10 - P2: Extend summaries to CSV/TSV deliberately</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Decide and document a flat export schema for ordinary and comparison summaries.</li>
+</ul>
+<p dir="auto">These formats are currently rejected for summaries. That is preferable to silent fallback, but it<br>
+leaves a common spreadsheet/reporting workflow unsupported.</p>
+<p dir="auto"><strong>Recommendation:</strong> fixed scalar columns for ordinary summaries; canonical prefixed columns for<br>
+comparison scopes. Include grouping/scope/row identity and correct quoting of group values.<br>
+<strong>Acceptance:</strong> parse exported CSV with a real CSV reader and reconstruct the corresponding JSONL<br>
+statistics; test multiple tables and control characters before choosing a concatenation convention.</p>
+<h3 dir="auto" id="s11---p2-clarify-comparison-exit-status-for-automation">S11 - P2: Clarify comparison exit status for automation</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add a comparison-specific exit-status example and focused-help explanation.</li>
+</ul>
+<p dir="auto">Observed behavior is useful: with <code class="notranslate">--exit-match</code> or <code class="notranslate">--quiet</code>, identical trees return 1 and trees<br>
+with discrepancies return 0; operational errors return 2. <code class="notranslate">--compare-select=all</code> or <code class="notranslate">none</code> does not<br>
+change that result. This is search-style success, not the usual <code class="notranslate">diff</code> convention, and the generic<br>
+"something matched" explanation does not convey it.</p>
+<p dir="auto"><strong>Recommendation:</strong> document the existing behavior first. Do not add another exit flag unless a<br>
+specific workflow cannot be expressed. Include empty trees, filtered populations, and summary mode.</p>
+<h3 dir="auto" id="s12---p2-make-potentially-ineffective-modifiers-visible">S12 - P2: Make potentially ineffective modifiers visible</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Define a consistent policy for modifiers whose consuming feature is absent.</li>
+</ul>
+<p dir="auto">Examples that currently succeed without effect include <code class="notranslate">--count</code> without <code class="notranslate">-grep</code>,<br>
+<code class="notranslate">--shards-show=count</code> without <code class="notranslate">--shards</code>, and <code class="notranslate">--diff-format=y</code> in tree-diff mode (which remains unified).<br>
+Defaults in reusable profiles can justify dormant modifiers; typos and mistaken CLI requests do not.</p>
+<p dir="auto"><strong>Recommendation:</strong> distinguish a dormant configured default from an explicitly ineffective CLI<br>
+request. At minimum expose the latter in <code class="notranslate">--explain</code>; use errors only where the contract is unambiguous.<br>
+<strong>Acceptance:</strong> dependency metadata and tests cover modifiers, cleared consumers, and config reuse.</p>
+<h3 dir="auto" id="s13---p2-make-expensive-operations-and-retained-state-inspectable">S13 - P2: Make expensive operations and retained state inspectable</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Describe buffering, file reads, and concurrency as separate resources.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Inspect effective resource controls and potential consumers through <code class="notranslate">--explain</code>.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Publish broad/deep timing measurements and isolated logical-read counts.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Incomplete task"> Complete network-storage and general runtime read-accounting measurements.</li>
+</ul>
+<p dir="auto">Directory reads and eligible child commands are parallel; expression evaluation is coordinated.<br>
+Tree comparison retains matched inventories until both walks finish. <code class="notranslate">--buffer</code> is not a global<br>
+memory cap and does not bound those inventories. Fields such as hash/lines and content predicates<br>
+also cause reads, unlike filename/metadata predicates.</p>
+<p dir="auto"><strong>Recommendation:</strong> add execution-cost notes to help and an explain view of buffering/reads. Measure<br>
+before optimizing. Investigate the previously intended directory-at-a-time comparison separately,<br>
+including ordering, filtered populations, archives, and error handling.<br>
+<strong>Acceptance:</strong> benchmarks report time to first output, peak memory, bytes read, and behavior with<br>
+large directories, deep trees, network filesystems, and repeated content consumers.</p>
+<h3 dir="auto" id="s14---p2-make-logical-shards-versus-physical-entries-explicit">S14 - P2: Make logical shards versus physical entries explicit</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Document a small matrix for shard collapsing, status predicates, actions, and reductions.<br>
+See <a href="shard-populations.html">the shard population guide</a> and its executable CLI examples.</li>
+</ul>
+<p dir="auto"><code class="notranslate">--shards</code> changes logical presentation, while <code class="notranslate">-shard-status</code> selects physical files and classifies<br>
+only entries reaching that node. This is powerful but easy to misuse with a filter before the status<br>
+predicate or an action before deferred classification.</p>
+<p dir="auto"><strong>Acceptance:</strong> examples cover complete/incomplete/duplicate sets, <code class="notranslate">-size</code>/fields, summaries, actions,<br>
+comparison, and custom schemes. Label whether a count describes physical files or logical sets.<br>
+Follow-up probes reproduced B10: mixed shard sets were assigned wholly to the representative's comparison category. The physical-versus-logical guide follows that correction.</p>
+<p dir="auto">Follow-up probes reproduced B11's collection double counting. The guide follows the accounting corrections.</p>
+<h3 dir="auto" id="s15---p2-publish-a-concise-order-and-limits-guide">S15 - P2: Publish a concise order-and-limits guide</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Put <code class="notranslate">-first</code>, <code class="notranslate">-top</code>, <code class="notranslate">--top</code>, <code class="notranslate">--max-results</code>, <code class="notranslate">-quit</code>, and <code class="notranslate">--sort</code> in one comparison table.</li>
+</ul>
+<p dir="auto">These controls intentionally act at different stages: expression filtering, deferred fuzzy selection,<br>
+reduction-row selection, implicit listing limits, traversal termination, and ordering. The probe<br>
+confirmed that <code class="notranslate">--max-results=1 -print</code> does not limit the explicit action, as documented.</p>
+<p dir="auto"><strong>Acceptance:</strong> examples show what reaches actions, summaries, collections, and packing. Explain<br>
+which operations stream, which defer, and what <code class="notranslate">-j</code> does not reorder. Retain existing distinctions.</p>
+<h3 dir="auto" id="s16---p2-make-archive-capability-and-safety-explanations-easier-to-apply">S16 - P2: Make archive capability and safety explanations easier to apply</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Provide task-based recipes alongside the full operation tables.</li>
+</ul>
+<p dir="auto">The full binary exposes many readers and fewer writers/rewriters. Reading, extraction/mounting,<br>
+member deletion, container creation, category controls, and scoped destinations are different axes.<br>
+The present tables are accurate in structure but demand substantial study.</p>
+<p dir="auto"><strong>Recommendation:</strong> recipes for read-only inspection, new archive creation, member deletion, and<br>
+writing only under a declared output root; show the minimum capabilities each needs. Keep explicit<br>
+limitations for unsupported mutation formats and source/archive-member repacking.<br>
+<strong>Acceptance:</strong> execute the recipes against isolated fixtures, including blocked variants. Do not<br>
+claim a policy sandboxes arbitrary child programs; pager policy remains a separate deferred discussion.</p>
+<h3 dir="auto" id="s17---p2-improve-configuration-inspection-and-failure-navigation">S17 - P2: Improve configuration inspection and failure navigation</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Show named-profile availability and disabled-profile reasons clearly in explain output.<br>
+See <a href="config-inspection.html">configuration inspection</a> for tested recipes and interpretation.</li>
+</ul>
+<p dir="auto">The shared grammar, fixed user-config location, ordered composition, global policy, and opt-in rc<br>
+discovery form a coherent design. Invalid selected sections and unsanctioned rc globals produced<br>
+clear failures in the probes. Their interaction remains hard to predict from a long precedence list.</p>
+<p dir="auto"><strong>Recommendation:</strong> show a short source/application timeline, why a profile is available or disabled,<br>
+and whether it contributes globals, predicates, or actions. Add one tiny recipe for each common<br>
+case: personal defaults, project profile, mandatory system policy, and environment-derived output root.<br>
+<strong>Acceptance:</strong> preserve selector order, atomic disablement, system authority, and non-arming rc files.<br>
+Never describe environment substitution as validating trust in the caller's chosen path.</p>
+<h3 dir="auto" id="s18---p3-add-useful-spelling-suggestions-and-position-hints">S18 - P3: Add useful spelling suggestions and position hints</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Improve unknown-option/predicate diagnostics without accepting approximate spellings.</li>
+</ul>
+<p dir="auto"><code class="notranslate">--sumary=ext</code> receives generic help; <code class="notranslate">-naem</code> is an unknown predicate. A trailing <code class="notranslate">-L</code> or <code class="notranslate">-g+</code><br>
+is also reported as an unknown predicate even though it is a recognized leading-only global.<br>
+Leading placement works, so this is not a parsing defect.</p>
+<p dir="auto"><strong>Recommendation:</strong> suggest close registered names, or explicitly say "place this short global before<br>
+the roots; the double-dash form is position-independent" where such a form exists. Do not invent<br>
+<code class="notranslate">--L</code> or another unsupported alias. Keep <code class="notranslate">--</code> and primary argument runs protected from hoisting.</p>
+<h3 dir="auto" id="s19---p2-strengthen-cross-feature-tests-rather-than-only-individual-flags">S19 - P2: Strengthen cross-feature tests rather than only individual flags</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Turn this backlog's reproductions into durable tests alongside their fixes.</li>
+</ul>
+<p dir="auto">The repository already has parser, matching, config, archive, safety, help, CLI, fuzz, and platform<br>
+conformance tests. The uncovered failures cluster at boundaries those individual tests do not prove.</p>
+<p dir="auto"><strong>Acceptance:</strong> cover every field consumer with captures; producer x format combinations; repeated<br>
+summary identity; literal total keys; numeric controls in CLI and complete INIs; multi-root archive<br>
+collisions; and unusual filenames in every renderer. Add a focused release-artifact smoke corpus.<br>
+Keep race/safety adapter tests and platform integration tests distinct from usability probes.</p>
+<p dir="auto">The final audit group adds fail-fast mutation sinks to the expression fuzz filesystem and runs<br>
+<code class="notranslate">tools/release_smoke.py</code> against both stripped staged executables before upload. The corpus checks<br>
+version/help, unusual filenames in JSONL/CSV/NUL/TSV/escaped plain output, named INI selection,<br>
+repeated summaries, literal <code class="notranslate">total</code> groups, and comparison counts. Both local staged executables<br>
+pass. The acceptance checks are covered by:</p>
+<ul dir="auto">
+<li><code class="notranslate">run_test.cc</code>: captures in printf/file-printf, exec/execdir, capture/capturedir, grep,<br>
+columns, and comparison fields; literal/unused capture checks; JSONL producer composition;<br>
+format rejection before mutation; repeated request and literal-total identity.</li>
+<li><code class="notranslate">summary_test.sh</code>: captured summary keys, CSV/TSV/JSONL parity across roots/categories,<br>
+empty and top-limited populations, repeated requests, full INI selection, and incompatible producers.</li>
+<li>Full <code class="notranslate">config_validation</code> fixtures and engine tests: malformed/overflowing buffer and histogram<br>
+controls, including failure before actions on either comparison side.</li>
+<li><code class="notranslate">archive_pack_test.sh</code>: duplicate member rejection preserves output, first-wins ordering,<br>
+INI policy selection, named roots, and duplicate root labels.</li>
+<li><code class="notranslate">render_test.cc</code>, <code class="notranslate">csv_test.sh</code>, and the release corpus: unusual filenames across display and<br>
+machine formats, buffered/streaming tables, tree labels, and single-escaped summary labels.</li>
+</ul>
+<p dir="auto">The local repository suites and staged smoke checks pass. Platform, sanitizer, and coverage CI<br>
+remain the publication gates; they are separate from the scope of these cross-feature tests.</p>
+<h2 dir="auto" id="feature-family-coverage-and-disposition">Feature-family coverage and disposition</h2>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th align="left">Family</th>
+<th align="left">Assessment / evidence</th>
+<th align="left">Follow-up</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Expression grammar and styles</td>
+<td align="left">Inventory and docs reviewed; predicates, operators, leading short globals, hoisted long globals, and rg-style behavior sampled. Keep compatibility distinctions explicit.</td>
+<td align="left">S15, S18, S19</td>
+</tr>
+<tr>
+<td align="left">Name/path/regex matching</td>
+<td align="left">Glob, case, RE2, exact, and full-build PCRE2 probes behaved coherently; invalid enum values rejected.</td>
+<td align="left">S06, S18</td>
+</tr>
+<tr>
+<td align="left">Fuzzy and similarity matching</td>
+<td align="left">Subsequence/fzf ranking and reference similarity sampled. Models and thresholds answer different questions; do not imply universal score comparability.</td>
+<td align="left">S13, S15</td>
+</tr>
+<tr>
+<td align="left">Metadata, ownership, permissions, size, time</td>
+<td align="left">Representative predicates and invalid timezone tested; vocabulary/docs inspected. No general defect established.</td>
+<td align="left">S07, S19</td>
+</tr>
+<tr>
+<td align="left">Traversal, depth, links, pruning</td>
+<td align="left">Representative depth, empty, symlink and prune cases passed. Do not confuse entry equality with subtree equality.</td>
+<td align="left">S13, S15</td>
+</tr>
+<tr>
+<td align="left">Ignore rules, hidden files, VCS</td>
+<td align="left">Gitignore, ignore-file, include/exclude, and rg defaults sampled. Independent axes are useful but need task examples.</td>
+<td align="left">S07, S17</td>
+</tr>
+<tr>
+<td align="left">Content search and text classification</td>
+<td align="left">Grep/context/count, content/rxc, text/binary and line endings sampled. Structured search output and exact binary threshold need attention.</td>
+<td align="left">B09, S01</td>
+</tr>
+<tr>
+<td align="left">Language and MIME classification</td>
+<td align="left">Full-binary matching sampled; overlay/conflict metadata and integration-test boundaries inspected. Extension inference must not be presented as content verification.</td>
+<td align="left">S06, S19</td>
+</tr>
+<tr>
+<td align="left">Hashing, equality, verification</td>
+<td align="left">Hash, cmp, hasheq tally and similarity sampled. Failed hash predicates obey expression/exit conventions rather than automatically making the run an operational error.</td>
+<td align="left">S11, S19</td>
+</tr>
+<tr>
+<td align="left">Fields, templates, printf, defines</td>
+<td align="left">Scalar and rewrite probes passed; unknown-field and capture-consumer inconsistencies reproduced.</td>
+<td align="left">B01, S04</td>
+</tr>
+<tr>
+<td align="left">Execution, capture, prompting</td>
+<td align="left">Benign exec and capture consumers sampled; dry-run behavior inspected. Interactive prompting and concurrent-child stress were not exercised.</td>
+<td align="left">B01, S05, S15</td>
+</tr>
+<tr>
+<td align="left">File writes, deletion, safety</td>
+<td align="left">Disposable output creation and overwrite blocking tested; dry-run/block precedence and scoped-policy design/tests inspected. No broad safety-certification claim.</td>
+<td align="left">B02, S05, S16, S19</td>
+</tr>
+<tr>
+<td align="left">Configuration, environment, rc</td>
+<td align="left">Explicit composition, invalid section, environment default, root rc discovery and rejection of unsanctioned globals tested.</td>
+<td align="left">S05, S17</td>
+</tr>
+<tr>
+<td align="left">Listing formats and path handling</td>
+<td align="left">All eight listing formats sampled with unusual filenames; structured escaping is generally sound.</td>
+<td align="left">B07, S01</td>
+</tr>
+<tr>
+<td align="left">Tree comparison and diff</td>
+<td align="left">Status, patch, scopes, accounting, formats, filtering and exit behavior sampled.</td>
+<td align="left">B05, B06, S01, S03, S08-S13</td>
+</tr>
+<tr>
+<td align="left">Summaries, histograms, collections</td>
+<td align="left">Broad reductions sampled; invalid control handling and multi-table schemas need work.</td>
+<td align="left">B02-B06, S03, S08-S10</td>
+</tr>
+<tr>
+<td align="left">Sharded data</td>
+<td align="left">Incomplete-set collapsing and status selection sampled; physical/logical distinction reviewed.</td>
+<td align="left">S14</td>
+</tr>
+<tr>
+<td align="left">Archive read/write and extras</td>
+<td align="left">Full-build tar.gz packing, virtual walk, content search, dry-run and multi-root collision tested; other formats/mounting reviewed from capability docs/tests.</td>
+<td align="left">S02, S16</td>
+</tr>
+<tr>
+<td align="left">Ordering, concurrency, memory</td>
+<td align="left">Sort/ranking/limits sampled; concurrency architecture and inventory retention inspected, not benchmarked.</td>
+<td align="left">B02, S13, S15</td>
+</tr>
+<tr>
+<td align="left">Terminal display, pager, help</td>
+<td align="left">Explicit width and help navigation sampled; color/pager semantics inspected. Interactive rendering not comprehensively exercised.</td>
+<td align="left">S06, S08</td>
+</tr>
+<tr>
+<td align="left">Diagnostics and exit status</td>
+<td align="left">Invalid values, missing dependencies, config errors, quiet and compare exit behavior sampled.</td>
+<td align="left">B02, B03, S11, S12, S18</td>
+</tr>
+<tr>
+<td align="left">Installation, releases, documentation</td>
+<td align="left">Published artifact layout and version checked; README contradiction confirmed.</td>
+<td align="left">B08, S07</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<h2 dir="auto" id="suggested-work-sequence">Suggested work sequence</h2>
+<ol dir="auto">
+<li><strong>Correctness fixes:</strong> B01, B02, B03, B07, B08, B09. Keep code fixes and documentation in the same<br>
+respective change; no new flag-design decisions are needed beyond valid numeric ranges.</li>
+<li><strong>Machine-output contract:</strong> design B05/B06 with S01; implement each claim in a separate PR, coordinating shared renderer/validation boundaries. Decide CSV/TSV support (S10) separately if larger.</li>
+<li><strong>Archive collision policy:</strong> decide S02, then implement publication-safe validation and tests.</li>
+<li><strong>Everyday usability:</strong> S03, S06-S09, S11, S12, S15, S18, with executable examples.</li>
+<li><strong>Policy and operational insight:</strong> S04, S05, S13, S14, S16, S17. Discuss policy choices first;<br>
+benchmark resource changes before adopting an optimization.</li>
+<li><strong>Regression discipline:</strong> S19 accompanies every implementation batch rather than waiting until<br>
+the end.</li>
+</ol>
+<p dir="auto">There is no recommendation to expand the feature vocabulary broadly. Making existing combinations<br>
+predictable and inspectable will produce more immediate value than adding unrelated flags.</p>
+<h3 dir="auto" id="b14---p1-hash-summary-drops-the-active-filesystem-and-hash-defaults">B14 - P1: Hash summary drops the active filesystem and hash defaults</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Reproduce: two distinct archive members collapse into one empty digest bucket with<br>
+<code class="notranslate">--summary=hash</code>, while <code class="notranslate">--summary={hash}</code> produces their actual digests.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Route hash shorthand through the compiled field-template path, preserving the visit's<br>
+filesystem and configured hash algorithm/encoding. Keep the summary identity <code class="notranslate">hash</code>.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Verify archive and ordinary-file regression coverage, reference help, and changed-source lint.</li>
+</ul>
+<p dir="auto">The shorthand previously used a convenience renderer without the visit's filesystem or active<br>
+hash defaults. Tests must independently verify digest values, not merely compare two renderers<br>
+that could share a defect. Existing read-error behavior is outside this change.</p></main><footer>Release snapshot &middot; 0bcb461dbb08a1d3b14d1d73938a8b905aed81ea</footer></body></html>
