@@ -108,14 +108,17 @@ TEST_F(MarkdownBackendTest, RendersAWholeDocumentAsMarkdown) {
                   .children =
                       {
                           Content{
-                              .node = Entry{.term = "--summary", .summary = {Text("group + aggregate")}, .xff = true}},
+                              .node = Entry{.term = "--summary", .summary = {Text("group + aggregate")}, .xff = true},
+                          },
                           Content{.node = Rows{.rows = {{.term = "%p", .description = {Text("path")}}}}},
                           Content{.node = Example{.text = "xff . -type f", .lang = "sh"}},
                           Content{
                               .node =
                                   SeeAlso{
                                       .refs = {{.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"}},
-                                      .note = {Text("the classic.")}}},
+                                      .note = {Text("the classic.")},
+                                  },
+                          },
                       },
               },
           },
@@ -171,15 +174,17 @@ TEST_F(MarkdownBackendTest, LongDocumentGetsLinkedSectionContents) {
 
 TEST_F(MarkdownBackendTest, SeeAlsoUsesCopyableHelpCommands) {
   MarkdownBackend backend;
-  backend.EmitSeeAlso(
-      {.refs = {
-           {.kind = RefTarget::Kind::kTopic, .id = "regex"},
-           {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
-           {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
-           {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"},
-           {.kind = RefTarget::Kind::kUrl, .id = "https://example.org/reference"},
-           {.kind = RefTarget::Kind::kAnchor, .id = "section"},
-       }});
+  backend.EmitSeeAlso({
+      .refs =
+          {
+              {.kind = RefTarget::Kind::kTopic, .id = "regex"},
+              {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
+              {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
+              {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"},
+              {.kind = RefTarget::Kind::kUrl, .id = "https://example.org/reference"},
+              {.kind = RefTarget::Kind::kAnchor, .id = "section"},
+          },
+  });
   EXPECT_THAT(
       backend.Take(), AllOf(
                           HasSubstr("[--help=regex](#topic-regex)"), HasSubstr("[--help=--summary](#flag-summary)"),

@@ -3,10 +3,10 @@
 
 namespace xff::license {
 namespace {
-const LicenseBodyRegistrar kBody{
-    {.spdx = "MIT",
-     .text =
-         R"xff_license(MIT License
+const LicenseBodyRegistrar kBody{{
+    .spdx = "MIT",
+    .text =
+        R"xff_license(MIT License
 
 Copyright (c) 2014 Jonathan Ong <me@jongleberry.com>
 Copyright (c) 2015-2022 Douglas Christopher Wilson <doug@somethingdoug.com>
@@ -28,6 +28,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-)xff_license"}};
+)xff_license",
+}};
 }  // namespace
 }  // namespace xff::license

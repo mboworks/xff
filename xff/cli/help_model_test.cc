@@ -82,16 +82,23 @@ Section MakeFieldsSection() {
                       Prose{
                           .runs =
                               {{.style = Inline::Style::kText, .text = "See "},
-                               {.style = Inline::Style::kRef,
-                                .text = "the printf directives",
-                                .target = RefTarget{.kind = RefTarget::Kind::kTopic, .id = "printf"}},
-                               {.style = Inline::Style::kCode, .text = "-printf"}}}},
+                               {
+                                   .style = Inline::Style::kRef,
+                                   .text = "the printf directives",
+                                   .target = RefTarget{.kind = RefTarget::Kind::kTopic, .id = "printf"},
+                               },
+                               {.style = Inline::Style::kCode, .text = "-printf"}},
+                      },
+              },
               Content{
                   .node =
                       Rows{
-                          .rows =
-                              {{.term = "{path}",
-                                .description = {{.style = Inline::Style::kText, .text = "full path"}}}}}},
+                          .rows = {{
+                              .term = "{path}",
+                              .description = {{.style = Inline::Style::kText, .text = "full path"}},
+                          }},
+                      },
+              },
               Content{.node = Bullets{.items = {{{.style = Inline::Style::kText, .text = "a bullet"}}}}},
               Content{.node = Example{.text = "xff . -type f", .lang = "sh"}},
               Content{
@@ -101,7 +108,9 @@ Section MakeFieldsSection() {
                           .summary = {{.style = Inline::Style::kText, .text = "aggregate"}},
                           .details = {Content{.node = Prose{.runs = {{.text = "more detail"}}}}},
                           .xff = true,
-                          .anchor = "summary"}},
+                          .anchor = "summary",
+                      },
+              },
               Content{
                   .node =
                       Subsection{
@@ -114,13 +123,19 @@ Section MakeFieldsSection() {
                                       .node =
                                           Subsection{
                                               .title = "Deep",
-                                              .children = {Content{.node = Prose{.runs = {{.text = "deep"}}}}}}},
-                              }}},
+                                              .children = {Content{.node = Prose{.runs = {{.text = "deep"}}}}},
+                                          },
+                                  },
+                              },
+                      },
+              },
               Content{
                   .node =
                       SeeAlso{
                           .refs = {RefTarget{.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"}},
-                          .note = {{.text = "related"}}}},
+                          .note = {{.text = "related"}},
+                      },
+              },
           },
   };
 }

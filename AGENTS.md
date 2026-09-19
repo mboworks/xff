@@ -7,7 +7,7 @@ The full **C++ coding style** is [`STYLE_CPP.md`](STYLE_CPP.md); project-level r
 [`RULES.md`](RULES.md); the contribution flow is [`CONTRIBUTING.md`](CONTRIBUTING.md). The
 GoogleTest section below is the quick reference; `STYLE_CPP.md` is canonical.
 
-Build & test: `bazel test //...` · sanitizers: `bazel test //... --config=clang --config=asan`
+Build & test: `bazel test //...` / sanitizers: `bazel test //... --config=clang --config=asan`
 (also `--config=tsan`, and `--config=msan` on Linux).
 Toolchain: clang-22 minimum (hermetic LLVM under `--config=clang`).
 
@@ -41,6 +41,9 @@ Every `BUILD` / `BUILD.bazel` file declares
 target-level `visibility`; never make a whole package public for convenience. Target and exec C++
 configurations both keep Bazel's `layering_check` and `parse_headers` features enabled. The
 `check-bazel-policy` pre-commit hook enforces all three invariants, including for new packages.
+
+Each C++ test source has its own `cc_test` target. Do not combine independent test sources
+under one rule; put reusable test support in a library.
 
 ## Pull request descriptions
 
@@ -84,7 +87,7 @@ PR's user-visible outcome or motivation actually changes.
    code and message on failure. Use `mbo::testing`
    (`@mboworks_mbo//mbo/testing:status_cc`):
    - `EXPECT_THAT(s, IsOk())`
-   - `EXPECT_THAT(s, StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("…")))`
+   - `EXPECT_THAT(s, StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("...")))`
    - `EXPECT_THAT(so, IsOkAndHolds(Eq(42)))`
    - `ASSERT_OK_AND_ASSIGN(const auto value, MakeThing());` to unwrap a `StatusOr`.
 
@@ -96,6 +99,13 @@ PR's user-visible outcome or motivation actually changes.
 7. **Match optional-like values directly; never assert `.has_value()`.** Use
    `Optional(matcher)` for a present `std::optional` or `mbo::types::OptionalRef`, and
    `Eq(std::nullopt)` for absence. `StatusOr` uses `IsOkAndHolds(matcher)` as described above.
+
+Unicode is not inherently unwanted; unnecessary mixing of test purposes is. Tests specifically
+about Unicode handling belong in separate Unicode-specific files explicitly excluded from the
+ASCII-source check. Ordinary functional fixtures stay ASCII unless an approved glyph is the
+actual output under test: histogram blocks and tree connectors belong in their functional tests.
+Visible Unicode samples may be literal in dedicated test files; retain escapes for invisible
+combining marks, joiners, or exact byte sequences, and explain the property each sample exercises.
 
 ## Markdown
 

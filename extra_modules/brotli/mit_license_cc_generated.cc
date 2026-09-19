@@ -3,10 +3,10 @@
 
 namespace xff::license {
 namespace {
-const LicenseBodyRegistrar kBody{
-    {.spdx = "MIT",
-     .text =
-         R"xff_license(Copyright (c) 2009, 2010, 2013-2016 by the Brotli Authors.
+const LicenseBodyRegistrar kBody{{
+    .spdx = "MIT",
+    .text =
+        R"xff_license(Copyright (c) 2009, 2010, 2013-2016 by the Brotli Authors.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-)xff_license"}};
+)xff_license",
+}};
 }  // namespace
 }  // namespace xff::license

@@ -313,7 +313,7 @@ choose a later built-in style. Styles set baseline traversal and presentation
 defaults; the find style restricts expression primaries, operators, and values,
 but explicitly supplied xff global controls remain available.
 
-Boolean capabilities use their own flag families or an existing option’s value set.
+Boolean capabilities use their own flag families or an existing option's value set.
 Proposed spelling gates remain roadmap work in [TODO.md](../TODO.md).
 
 ## Safety and arming

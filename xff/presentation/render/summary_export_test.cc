@@ -24,8 +24,13 @@ TEST_F(SummaryExportTest, ScalarRowsRetainIdentityRawNumbersAndFullDenominators)
       .summary = "ext",
       .scope = "all",
       .group = "total",
-      .metrics = SummaryExportMetrics{
-          .count = 2'500, .total_count = 10'000, .bytes = SummaryExportBytes{.value = 1'024, .total = 4'096}}};
+      .metrics =
+          SummaryExportMetrics{
+              .count = 2'500,
+              .total_count = 10'000,
+              .bytes = SummaryExportBytes{.value = 1'024, .total = 4'096},
+          },
+  };
   EXPECT_THAT(renderer.Header(Format::kCsv), WithDropIndent(EqualsText(R"out(
       record,request,summary,template,scope,root,left_root,right_root,type,group,is_total,count,count_percent,bytes,size_percent
   )out")));
@@ -42,8 +47,9 @@ TEST_F(SummaryExportTest, ScopeColumnsKeepSelectorOrderAndDistinguishMissingFrom
       .left_root = "a",
       .right_root = "b",
       .group = "cc",
-      .scoped_metrics = {
-          {"left-total", {.count = 0, .total_count = 0, .bytes = SummaryExportBytes{.value = 0, .total = 0}}}}};
+      .scoped_metrics =
+          {{"left-total", {.count = 0, .total_count = 0, .bytes = SummaryExportBytes{.value = 0, .total = 0}}}},
+  };
   EXPECT_THAT(
       renderer.Header(Format::kCsv),
       HasSubstr(
@@ -62,7 +68,8 @@ TEST_F(SummaryExportTest, ExtractionHasNoByteDimensionAndTotalsHaveExplicitIdent
       .scope = "all",
       .group = "total",
       .is_total = true,
-      .metrics = SummaryExportMetrics{.count = 2, .total_count = 2}};
+      .metrics = SummaryExportMetrics{.count = 2, .total_count = 2},
+  };
   EXPECT_THAT(renderer.Row(row, Format::kCsv, 0), WithDropIndent(EqualsText(R"out(
       summary,1,template,"{capture.words:m/,/x/}",all,,,,,total,true,2,100,,
   )out")));

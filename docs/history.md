@@ -708,7 +708,7 @@ work around; it is why `-collect` exists.
   Truth is immediate, so it streams and its early stop is trivially safe.
 - **`-top N`** - a TEST that keeps the N best by the expression's normalized fuzzy score. Quality
   thresholds belong to the matchers (`-fuzzy:PCT% PATTERN`), so `-fuzzy:80% foo -top 10` reads as
-  “the ten best good matches” without coupling selection and ranking in one argument. Multiple fuzzy
+  "the ten best good matches" without coupling selection and ranking in one argument. Multiple fuzzy
   tests compose through the boolean AST: AND takes the minimum (the weakest required match), OR the
   maximum (the best successful alternative), and normalized 0..100 percentages make different
   patterns comparable when their thresholds are equal. A ranking operation rejects mixed thresholds: absolute

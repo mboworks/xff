@@ -41,6 +41,12 @@ class AlignMarkdownTablesTest(unittest.TestCase):
         self.assertEqual(lines[1], "| :-- | --: | :-: |")
         self.assertEqual(lines[2], "| a   |   b |  c  |")
 
+    def test_centered_odd_padding_matches_prettier(self):
+        src = "| `find` | `fd` |\n| :-: | :-: |\n| Partial | Partial |\n"
+        want = "| `find`  |  `fd`   |\n| :-----: | :-----: |\n| Partial | Partial |\n"
+        self.assertEqual(mdt.align_text(src), want)
+        self.assertEqual(mdt.align_text(want), want)
+
     def test_leaves_code_fences_untouched(self):
         src = "```\n| not | a |\n|-|-|\n| real | table |\n```\n"
         self.assertEqual(mdt.align_text(src), src)

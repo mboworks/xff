@@ -13,6 +13,8 @@ import re
 import subprocess
 import tempfile
 
+from release_smoke_unicode import unicode_smoke
+
 
 def check(condition, message):
     if not condition:
@@ -42,7 +44,7 @@ def smoke(binary, expected_version):
         left, right = root / "left", root / "right"
         left.mkdir()
         right.mkdir()
-        left_files = {"same.txt": "same\n", "changed.txt": "before\n", 'left,\"雪\n\t\\.total': "left\n"}
+        left_files = {"same.txt": "same\n", "changed.txt": "before\n", 'left,\"\n\t\\.total': "left\n"}
         right_files = {"same.txt": "same\n", "changed.txt": "after\n", "right.txt": "right\n"}
         for folder, files in ((left, left_files), (right, right_files)):
             for name, content in files.items():
@@ -99,6 +101,7 @@ def smoke(binary, expected_version):
                 re.search(rf"\b{category}\s+1\s+25\.00%", comparison),
                 f"comparison category {category}: {comparison}",
             )
+        unicode_smoke(run, root, check)
     print(f"Release smoke passed: {binary} ({expected_version})")
 
 

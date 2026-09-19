@@ -32,12 +32,12 @@ def license_body(name, spdx, src):
           echo
           echo 'namespace xff::license {'
           echo 'namespace {'
-          echo 'const LicenseBodyRegistrar kBody{'
-          printf '    {.spdx = "%s",\n' '""" + spdx + """'
-          echo '     .text ='
-          printf '         R"xff_license('
+          echo 'const LicenseBodyRegistrar kBody{{'
+          printf '    .spdx = "%s",\n' '""" + spdx + """'
+          echo '    .text ='
+          printf '        R"xff_license('
           cat $(location """ + src + """)
-          printf ')xff_license"}};\n'
+          printf ')xff_license",\n}};\n'
           echo '}  // namespace'
           echo '}  // namespace xff::license'
         ) > $@""",

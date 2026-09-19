@@ -70,13 +70,42 @@ repos:
         entry: DO([ _]?NOT|N'T)[ _]?(SUBMIT|MERGE)
         exclude: ^\.pre-commit-config\.yaml$|\.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z)$
         types: [text]
+      - id: ascii-source-text
+        name: ASCII source text (escape intentional Unicode)
+        description: Use ASCII outside explicitly listed Unicode test files and graphical output locations.
+        language: pygrep
+        entry: '[^\x00-\x7f]'
+        exclude: ^tools/release_smoke_unicode\.py$|^xff/cli/csv_unicode_test\.sh$|^xff/presentation/render/(render|scoped_table)_unicode_test\.cc$|^xff/presentation/format/text_width_unicode_test\.cc$|^README\.md$|^(docs/history-roadmap\.md|xff/cli/histogram_test\.sh|xff/engine/run\.cc|xff/presentation/render/render(_test)?\.cc)$|\.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z|sqfs|png|ico)$
+        types: [text]
+      - id: histogram-doc-glyphs
+        name: Histogram text uses only approved Unicode block glyphs
+        description: Allow U+2588 through U+258F in histogram code, docs, and tests; reject other non-ASCII text.
+        language: pygrep
+        # pygrep matches bytes; the allowed glyphs encode as E2 96 88 through E2 96 8F.
+        entry: '^(?!(?:[\x00-\x7f]|\xe2\x96[\x88-\x8f])*$)'
+        files: ^(docs/history-roadmap\.md|xff/cli/histogram_test\.sh|xff/engine/run\.cc)$
+        types: [text]
+      - id: tree-output-glyphs
+        name: Tree output uses only approved Unicode connector glyphs
+        description: Allow U+2500, U+2502, U+2514, and U+251C; reject other non-ASCII text.
+        language: pygrep
+        entry: '^(?!(?:[\x00-\x7f]|\xe2\x94[\x80\x82\x94\x9c])*$)'
+        files: ^xff/presentation/render/render(_test)?\.cc$
+        types: [text]
+      - id: readme-capability-markers
+        name: README permits approved capability markers
+        description: Allow U+25CF full circles and U+25D0 half-filled circles in the feature table.
+        language: pygrep
+        entry: '^(?!(?:[\x00-\x7f]|\xe2\x97[\x8f\x90])*$)'
+        files: ^README\.md$
+        types: [text]
       - id: no-em-dashes
         name: No em-dashes
         description: |
           Project convention: never an em-dash (U+2014) anywhere (prose, docs, comments,
           commit messages). Use a spaced hyphen instead.
         language: pygrep
-        entry: "—"
+        entry: '\xe2\x80\x94'
         exclude: ^\.pre-commit-config\.yaml$|\.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z)$
         types: [text]
       - id: no-libarchive-filter-all

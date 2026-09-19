@@ -4,7 +4,7 @@
 > tests at every changed boundary; a one-off manual check is evidence for an
 > investigation, not a durable regression guard.
 >
-> Status: implemented verification map · 2026-09-10
+> Status: implemented verification map / 2026-09-10
 
 ## Test layers
 

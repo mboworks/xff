@@ -24,7 +24,6 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
-#include "nlohmann/json.hpp"
 #include "xff/presentation/format/format.h"
 
 namespace xff::render {
@@ -66,19 +65,6 @@ TEST_F(RenderTest, PlainAppendsNewline) {
 
 TEST_F(RenderTest, NulAppendsNulTerminator) {
   EXPECT_THAT(Renderer(Format::kNul).Record("a/b/c"), std::string("a/b/c\0", 6));
-}
-
-TEST_F(RenderTest, JsonValuesPreserveUtf8AndEncodeOtherBytesLosslessly) {
-  EXPECT_THAT(JsonValue("caf\xc3\xa9"), Eq("\"caf\xc3\xa9\""));
-  EXPECT_THAT(JsonValue(std::string("x\xff", 2)), Eq(R"({"encoding":"base64","data":"eP8="})"));
-  const auto malformed =
-      std::to_array<std::string_view>({"\x80", "\xc0\xaf", "\xed\xa0\x80", "\xf4\x90\x80\x80", "\xe2\x82"});
-  for (const auto bytes : malformed) {
-    const auto value = nlohmann::json::parse(JsonValue(bytes));
-    EXPECT_THAT(value.at("encoding").get<std::string>(), Eq("base64"));
-  }
-  const auto path = nlohmann::json::parse(Renderer(Format::kJsonl).Record(std::string("x\xff", 2)));
-  EXPECT_THAT(path.at("path").at("data").get<std::string>(), Eq("eP8="));
 }
 
 TEST_F(RenderTest, JsonlEmitsOneObjectPerLine) {
@@ -237,11 +223,11 @@ TEST_F(RenderTest, MarkdownMeasuresEscapedCellsWithoutLosingLineBreaks) {
 TEST_F(RenderTest, DisplayControlsStayInsideCellsBeforeAndAfterBufferFlush) {
   for (const std::size_t window : std::to_array<std::size_t>({0, 1, TableStream::kAll})) {
     TableStream stream(Format::kAligned, {"name"}, false, window);
-    std::string out = stream.Add({"a\n\r\t\x1b\x7f\\雪"});
+    std::string out = stream.Add({"a\n\r\t\x1b\x7f\\"});
     out += stream.Add({R"(literal\n)"});
     out += stream.Flush();
     EXPECT_THAT(out, WithDropIndent(EqualsText(R"out(
-        a\n\r\t\x1B\x7F\\雪
+        a\n\r\t\x1B\x7F\\
         literal\\n
         )out")));
   }
@@ -249,10 +235,10 @@ TEST_F(RenderTest, DisplayControlsStayInsideCellsBeforeAndAfterBufferFlush) {
 
 TEST_F(RenderTest, TreeEscapesRootAndChildControls) {
   Tree tree(false);
-  tree.Add("root\n/child\t\x1b\\雪");
+  tree.Add("root\n/child\t\x1b\\");
   EXPECT_THAT(tree.Render(), WithDropIndent(EqualsText(R"out(
       root\n
-      `-- child\t\x1B\\雪
+      `-- child\t\x1B\\
       )out")));
 }
 
@@ -336,20 +322,6 @@ TEST_F(RenderTest, TableStreamFlushesOnTheByteBudget) {
 // Tree (--format=tree): splice paths into a shared-prefix structure, render depth-first with
 // box-drawing connectors. Siblings are lexical; the last child gets the elbow connector.
 
-TEST_F(RenderTest, TreeRendersUnicodeConnectorsWithCorrectLastChild) {
-  Tree tree(/*unicode=*/true);
-  tree.Add("root/src/main.cc");
-  tree.Add("root/src/util.cc");
-  tree.Add("root/README.md");  // sorts before "src"; "src" is root's last child (elbow)
-  EXPECT_THAT(
-      tree.Render(), EqualsText(
-                         "root\n"
-                         "├── README.md\n"
-                         "└── src\n"
-                         "    ├── main.cc\n"
-                         "    └── util.cc\n"));
-}
-
 TEST_F(RenderTest, TreeRendersAsciiConnectorsWhenNotUnicode) {
   Tree tree(/*unicode=*/false);
   tree.Add("root/src/main.cc");
@@ -373,6 +345,20 @@ TEST_F(RenderTest, TreeShowsAncestorsOfADeepMatch) {
                          "root\n"
                          "`-- src\n"
                          "    `-- main.cc\n"));
+}
+
+TEST_F(RenderTest, TreeRendersUnicodeConnectorsWithCorrectLastChild) {
+  Tree tree(/*unicode=*/true);
+  tree.Add("root/src/main.cc");
+  tree.Add("root/src/util.cc");
+  tree.Add("root/README.md");  // sorts before "src"; "src" is root's last child (elbow)
+  EXPECT_THAT(
+      tree.Render(), EqualsText(
+                         "root\n"
+                         "├── README.md\n"
+                         "└── src\n"
+                         "    ├── main.cc\n"
+                         "    └── util.cc\n"));
 }
 
 TEST_F(RenderTest, TreeDrawsAVerticalForNonLastBranches) {

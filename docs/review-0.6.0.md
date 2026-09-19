@@ -20,7 +20,7 @@ work, not an authorization to settle a design decision without discussion. The t
 checkboxes track merged resolutions; local implementation and validation do not by themselves
 close a claim. Keep detailed preparation checklists distinct from integration status.
 
-B01–B09 have merged resolutions (B07 was a corrected diagnosis with regression coverage).
+B01-B09 have merged resolutions (B07 was a corrected diagnosis with regression coverage).
 S01 merged in PR #864. The remaining suggestions and subsequently discovered defects
 remain separate claims; none is complete merely because another claim's tests cover part of it.
 
@@ -185,7 +185,7 @@ Merged resolution: [PR #856](https://github.com/mboworks/xff/pull/856).
 README says each platform has one `xff-PLATFORM-ARCH.tar.zst` containing both executables. The
 release script and published 0.6.0 assets instead provide separate lean and full archives, each
 containing its executable and corresponding symbols. The sentence about release optimization also
-reads “combines the hermetic Clang toolchain with size”.
+reads "combines the hermetic Clang toolchain with size".
 
 **Acceptance:** document the actual artifact names and contents, link installation instructions,
 and check the description against `stage_release_artifacts.sh` and the published manifest.
@@ -297,7 +297,7 @@ to expect a consumable machine stream.
 **Recommendation:** support structured comparison status records. For content search, offer an
 explicit supported structured path or a diagnostic when the request has no effect. Preserve
 intentional explicit-action output semantics; do not casually reinterpret `-printf` or child stdout.
-**Acceptance:** publish and test a producer × format matrix covering listing, status, patch, grep,
+**Acceptance:** publish and test a producer x format matrix covering listing, status, patch, grep,
 summary, histogram, explicit actions, and combinations. Machine-format success must have a clear
 contract about which records can appear.
 
@@ -389,7 +389,7 @@ The Quick Start currently begins with Bazel despite published binaries. The capa
 precede installation and can obscure the most useful everyday workflows.
 
 **Recommendation:** lead with lean versus full downloads, a few commands for find/search/compare/report,
-then advanced capabilities. Clarify that “disk use” summary examples report apparent entry sizes,
+then advanced capabilities. Clarify that "disk use" summary examples report apparent entry sizes,
 not allocated blocks or recursive directory size. Retain detailed feature comparisons farther down.
 **Acceptance:** a user without Bazel can install and run a useful query directly from the README.
 
@@ -438,7 +438,7 @@ statistics; test multiple tables and control characters before choosing a concat
 Observed behavior is useful: with `--exit-match` or `--quiet`, identical trees return 1 and trees
 with discrepancies return 0; operational errors return 2. `--compare-select=all` or `none` does not
 change that result. This is search-style success, not the usual `diff` convention, and the generic
-“something matched” explanation does not convey it.
+"something matched" explanation does not convey it.
 
 **Recommendation:** document the existing behavior first. Do not add another exit flag unless a
 specific workflow cannot be expressed. Include empty trees, filtered populations, and summary mode.
@@ -536,8 +536,8 @@ Never describe environment substitution as validating trust in the caller's chos
 is also reported as an unknown predicate even though it is a recognized leading-only global.
 Leading placement works, so this is not a parsing defect.
 
-**Recommendation:** suggest close registered names, or explicitly say “place this short global before
-the roots; the double-dash form is position-independent” where such a form exists. Do not invent
+**Recommendation:** suggest close registered names, or explicitly say "place this short global before
+the roots; the double-dash form is position-independent" where such a form exists. Do not invent
 `--L` or another unsupported alias. Keep `--` and primary argument runs protected from hoisting.
 
 ### S19 - P2: Strengthen cross-feature tests rather than only individual flags
@@ -547,7 +547,7 @@ the roots; the double-dash form is position-independent” where such a form exi
 The repository already has parser, matching, config, archive, safety, help, CLI, fuzz, and platform
 conformance tests. The uncovered failures cluster at boundaries those individual tests do not prove.
 
-**Acceptance:** cover every field consumer with captures; producer × format combinations; repeated
+**Acceptance:** cover every field consumer with captures; producer x format combinations; repeated
 summary identity; literal total keys; numeric controls in CLI and complete INIs; multi-root archive
 collisions; and unusual filenames in every renderer. Add a focused release-artifact smoke corpus.
 Keep race/safety adapter tests and platform integration tests distinct from usability probes.
@@ -591,8 +591,8 @@ remain the publication gates; they are separate from the scope of these cross-fe
 | File writes, deletion, safety                | Disposable output creation and overwrite blocking tested; dry-run/block precedence and scoped-policy design/tests inspected. No broad safety-certification claim.         | B02, S05, S16, S19          |
 | Configuration, environment, rc               | Explicit composition, invalid section, environment default, root rc discovery and rejection of unsanctioned globals tested.                                               | S05, S17                    |
 | Listing formats and path handling            | All eight listing formats sampled with unusual filenames; structured escaping is generally sound.                                                                         | B07, S01                    |
-| Tree comparison and diff                     | Status, patch, scopes, accounting, formats, filtering and exit behavior sampled.                                                                                          | B05, B06, S01, S03, S08–S13 |
-| Summaries, histograms, collections           | Broad reductions sampled; invalid control handling and multi-table schemas need work.                                                                                     | B02–B06, S03, S08–S10       |
+| Tree comparison and diff                     | Status, patch, scopes, accounting, formats, filtering and exit behavior sampled.                                                                                          | B05, B06, S01, S03, S08-S13 |
+| Summaries, histograms, collections           | Broad reductions sampled; invalid control handling and multi-table schemas need work.                                                                                     | B02-B06, S03, S08-S10       |
 | Sharded data                                 | Incomplete-set collapsing and status selection sampled; physical/logical distinction reviewed.                                                                            | S14                         |
 | Archive read/write and extras                | Full-build tar.gz packing, virtual walk, content search, dry-run and multi-root collision tested; other formats/mounting reviewed from capability docs/tests.             | S02, S16                    |
 | Ordering, concurrency, memory                | Sort/ranking/limits sampled; concurrency architecture and inventory retention inspected, not benchmarked.                                                                 | B02, S13, S15               |
@@ -606,7 +606,7 @@ remain the publication gates; they are separate from the scope of these cross-fe
    respective change; no new flag-design decisions are needed beyond valid numeric ranges.
 2. **Machine-output contract:** design B05/B06 with S01; implement each claim in a separate PR, coordinating shared renderer/validation boundaries. Decide CSV/TSV support (S10) separately if larger.
 3. **Archive collision policy:** decide S02, then implement publication-safe validation and tests.
-4. **Everyday usability:** S03, S06–S09, S11, S12, S15, S18, with executable examples.
+4. **Everyday usability:** S03, S06-S09, S11, S12, S15, S18, with executable examples.
 5. **Policy and operational insight:** S04, S05, S13, S14, S16, S17. Discuss policy choices first;
    benchmark resource changes before adopting an optimization.
 6. **Regression discipline:** S19 accompanies every implementation batch rather than waiting until

@@ -428,6 +428,7 @@ void Tree::Add(std::string_view path) {
 void Tree::RenderChildren(const Node& node, std::string_view prefix, std::string& out) const {
   // Box-drawing connectors when unicode_: tee (U+251C), elbow (U+2514), and vertical (U+2502)
   // with horizontals (U+2500), as literal UTF-8; else the ASCII forms.
+  // U+251C/U+2514 branches, U+2500 horizontal strokes, and U+2502 vertical strokes.
   const std::string_view tee = unicode_ ? "├── " : "|-- ";
   const std::string_view elbow = unicode_ ? "└── " : "`-- ";
   const std::string_view vertical = unicode_ ? "│   " : "|   ";

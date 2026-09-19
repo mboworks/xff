@@ -3,10 +3,10 @@
 
 namespace xff::license {
 namespace {
-const LicenseBodyRegistrar kBody{
-    {.spdx = "BSD-2-Clause",
-     .text =
-         R"xff_license(Redistribution and use in source and binary forms, with or without
+const LicenseBodyRegistrar kBody{{
+    .spdx = "BSD-2-Clause",
+    .text =
+        R"xff_license(Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
 
 1. Redistributions of source code must retain the above copyright notice,
@@ -27,6 +27,7 @@ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
-)xff_license"}};
+)xff_license",
+}};
 }  // namespace
 }  // namespace xff::license

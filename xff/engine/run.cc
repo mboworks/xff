@@ -664,11 +664,12 @@ std::string HistogramBar(double fraction, std::size_t width, bool unicode) {
     // NOLINTNEXTLINE(modernize-return-braced-init-list): braces would narrow
     return std::string(static_cast<std::size_t>(std::llround(fraction * static_cast<double>(width))), '#');
   }
+  // Empty, then U+258F through U+2589: one through seven eighths of a cell.
   constexpr std::array<std::string_view, 8> kPartials = {"", "▏", "▎", "▍", "▌", "▋", "▊", "▉"};
   const auto eighths = static_cast<std::size_t>(std::llround(fraction * static_cast<double>(width) * 8.0));
   std::string bar;
   for (std::size_t full = eighths / 8; full > 0; --full) {
-    bar += "█";  // full block
+    bar += "█";  // U+2588 FULL BLOCK.
   }
   bar += kPartials.at(eighths % 8);
   return bar;
@@ -1553,11 +1554,12 @@ ShardStatusCohort MakeShardStatusCohort(
     }
     CandidateIndexes& visits = cohort.by_name[candidate.entry.name];
     if (visits.empty()) {
-      cohort.files.push_back(
-          {.name = candidate.entry.name,
-           .size = candidate.entry.metadata.size,
-           .mode = candidate.entry.metadata.mode,
-           .mtime = absl::ToUnixNanos(candidate.entry.metadata.mtime)});
+      cohort.files.push_back({
+          .name = candidate.entry.name,
+          .size = candidate.entry.metadata.size,
+          .mode = candidate.entry.metadata.mode,
+          .mtime = absl::ToUnixNanos(candidate.entry.metadata.mtime),
+      });
     }
     visits.push_back(index);
   }
@@ -3189,8 +3191,9 @@ render::SummaryExportMetrics ExportMetrics(const SummaryRow& row, const SummaryR
   return {
       .count = row.count,
       .total_count = total.count,
-      .bytes = has_size ? std::optional<render::SummaryExportBytes>({.value = row.size, .total = total.size})
-                        : std::nullopt};
+      .bytes =
+          has_size ? std::optional<render::SummaryExportBytes>({.value = row.size, .total = total.size}) : std::nullopt,
+  };
 }
 
 // Summary schemas are fixed by their grouping; reuse the listing Markdown encoder for cells.
@@ -3310,14 +3313,16 @@ void EmitSummaryRows(
     for (std::size_t index = 0; index < rows.size(); ++index) {
       const auto& row = rows.at(index);
       emit(exporter.Row(
-          {.request = summary.request_index,
-           .summary = SummaryGrouping(summary.mode),
-           .key_template = summary.key_template,
-           .scope = scope.empty() ? "all" : scope,
-           .root = root,
-           .group = row.key,
-           .is_total = index + 1 == rows.size(),
-           .metrics = ExportMetrics(row, total, has_size)},
+          {
+              .request = summary.request_index,
+              .summary = SummaryGrouping(summary.mode),
+              .key_template = summary.key_template,
+              .scope = scope.empty() ? "all" : scope,
+              .root = root,
+              .group = row.key,
+              .is_total = index + 1 == rows.size(),
+              .metrics = ExportMetrics(row, total, has_size),
+          },
           output_format, precision));
     }
     return;
@@ -3472,7 +3477,8 @@ ComparisonSummaryRow MakeComparisonSummaryRow(
       .cells = {label},
       .json = std::move(json),
       .exported = std::move(record),
-      .display = {.label = key, .quote_label = quote_label}};
+      .display = {.label = key, .quote_label = quote_label},
+  };
   for (std::size_t column_index = 0; column_index < context.columns.size(); ++column_index) {
     const auto& column = context.columns.at(column_index);
     const auto& source = column.tables.at(context.sink);
@@ -3554,20 +3560,23 @@ void EmitComparisonScopeSummary(
           .left_root = command.roots.at(0),
           .right_root = command.roots.at(1),
           .group = key,
-          .is_total = total_row};
+          .is_total = total_row,
+      };
       std::string object = absl::StrCat(
           "{", SummaryIdentityJson(summaries.at(sink)), ",\"scope\":", render::JsonValue(scope),
           ",\"left_root\":", render::JsonValue(command.roots.at(0)),
           ",\"right_root\":", render::JsonValue(command.roots.at(1)), ",\"group\":", render::JsonValue(key));
       auto rendered = MakeComparisonSummaryRow(
           std::move(exported), std::move(object),
-          {.columns = columns,
-           .totals = totals,
-           .sink = sink,
-           .human = human,
-           .precision = precision,
-           .has_size = has_size,
-           .population = population.Json()});
+          {
+              .columns = columns,
+              .totals = totals,
+              .sink = sink,
+              .human = human,
+              .precision = precision,
+              .has_size = has_size,
+              .population = population.Json(),
+          });
       if (delimited) {
         emit(exporter.Row(rendered.exported, output_format, precision));
       } else if (json) {
@@ -4138,15 +4147,17 @@ void EmitTreeCompareSummary(
     const auto add_row = [&](std::string_view type, const SummaryRow& row, bool is_total) {
       if (IsDelimitedSummary(output_format)) {
         emit(exporter.Row(
-            {.request = summary.request_index,
-             .summary = SummaryGrouping(summary.mode),
-             .scope = "compare",
-             .left_root = command.roots.at(0),
-             .right_root = command.roots.at(1),
-             .type = type,
-             .group = row.key,
-             .is_total = is_total,
-             .metrics = ExportMetrics(row, counts.total, true)},
+            {
+                .request = summary.request_index,
+                .summary = SummaryGrouping(summary.mode),
+                .scope = "compare",
+                .left_root = command.roots.at(0),
+                .right_root = command.roots.at(1),
+                .type = type,
+                .group = row.key,
+                .is_total = is_total,
+                .metrics = ExportMetrics(row, counts.total, true),
+            },
             output_format, precision));
       } else if (output_format == render::Format::kJsonl) {
         emit(
@@ -4260,7 +4271,8 @@ RunResult RunTreeCompare(
               .path = std::string(visit.path),
               .metadata = visit.metadata,
               .fs = visit.fs_owner ? visit.fs : mbo::types::OptionalRef<const vfs::FileSystem>(fs),
-              .fs_owner = visit.fs_owner});
+              .fs_owner = visit.fs_owner,
+          });
     };
     const auto emit_callback = [&](std::string_view text) {
       const std::scoped_lock lock(callback_mutex);
@@ -5311,14 +5323,15 @@ RunResult RunFindCore(
         const std::string_view::size_type slash = path.rfind('/');
         const std::string_view dir = slash == std::string_view::npos ? std::string_view() : path.substr(0, slash);
         const std::string_view base = slash == std::string_view::npos ? path : path.substr(slash + 1);
-        shard_buckets[std::string(dir)].push_back(
-            {.name = std::string(base),
-             .size = visit.metadata.size,
-             .mode = visit.metadata.mode,
-             .mtime = absl::ToUnixNanos(visit.metadata.mtime),
-             .root = std::string(visit.root),
-             .depth = visit.depth,
-             .metadata = visit.metadata});
+        shard_buckets[std::string(dir)].push_back({
+            .name = std::string(base),
+            .size = visit.metadata.size,
+            .mode = visit.metadata.mode,
+            .mtime = absl::ToUnixNanos(visit.metadata.mtime),
+            .root = std::string(visit.root),
+            .depth = visit.depth,
+            .metadata = visit.metadata,
+        });
       }
       if (!shards.enabled && counted && !collections.Active()) {
         const std::string link;
@@ -5336,7 +5349,8 @@ RunResult RunFindCore(
             .hash_encoding = hash_encoding,
             .defines = defines,
             .outputs = outputs,
-            .fuzzy_score = fuzzy_score};
+            .fuzzy_score = fuzzy_score,
+        };
         FeedSummaries(summaries, summary_templates, summary_cells, key_ctx, visit);
         FeedHistograms(histograms, histogram_cells, visit, *visit.fs);
       }
@@ -5371,7 +5385,8 @@ RunResult RunFindCore(
             .hash_encoding = hash_encoding,
             .defines = defines,
             .outputs = outputs,
-            .fuzzy_score = fuzzy_score};
+            .fuzzy_score = fuzzy_score,
+        };
         if (!column_templates.empty()) {
           std::vector<std::string> cells;
           cells.reserve(column_templates.size());
@@ -5527,16 +5542,17 @@ RunResult RunFindCore(
         const EvaluationResult evaluated =
             !expression.has_value() ? EvaluationResult{.matched = true} : EvaluateDeferred(*expression, eval_context);
         if (evaluated.deferred) {
-          deferred_candidates.push_back(
-              {.entry = OwnVisit(visit),
-               .captures = std::move(captures),
-               .outputs = std::move(outputs),
-               .memo = std::move(evaluation_memo),
-               .decisions = {},
-               .hash_verification = hash_verification,
-               .waiting_at = evaluated.waiting_at.value(),
-               .score = evaluated.fuzzy.value_or(0),
-               .order = deferred_order++});
+          deferred_candidates.push_back({
+              .entry = OwnVisit(visit),
+              .captures = std::move(captures),
+              .outputs = std::move(outputs),
+              .memo = std::move(evaluation_memo),
+              .decisions = {},
+              .hash_verification = hash_verification,
+              .waiting_at = evaluated.waiting_at.value(),
+              .score = evaluated.fuzzy.value_or(0),
+              .order = deferred_order++,
+          });
         } else {
           if (evaluated.unknown) {
             ++errors;
@@ -5772,7 +5788,10 @@ RunResult RunFindCore(
       const absl::Status packed = PackOrPreview(
           *pack_target, pack_files,
           archive::PackOptions{
-              .options = *pack_options, .duplicates = *pack_duplicates, .mutations = safety.ArchiveMutations()},
+              .options = *pack_options,
+              .duplicates = *pack_duplicates,
+              .mutations = safety.ArchiveMutations(),
+          },
           dry_run, emit);
       if (!packed.ok()) {
         ++errors;
@@ -5823,7 +5842,8 @@ RunResult RunFindCore(
           .hash_algorithm = hash_algorithm,
           .hash_encoding = hash_encoding,
           .defines = defines,
-          .shard_count = shard_count};
+          .shard_count = shard_count,
+      };
       feed_summaries(key_ctx, visit);
       feed_histograms(visit);
     };
@@ -5845,7 +5865,13 @@ RunResult RunFindCore(
       group.sets = shard::GroupShards(shard_files, *shard_matcher, shard_dedup);
       const auto synth = [&walk_fs](const ShardBufFile& rec, std::string_view path, const vfs::Metadata& md) {
         return Visit{
-            .path = path, .name = rec.name, .root = rec.root, .depth = rec.depth, .metadata = md, .fs = walk_fs};
+            .path = path,
+            .name = rec.name,
+            .root = rec.root,
+            .depth = rec.depth,
+            .metadata = md,
+            .fs = walk_fs,
+        };
       };
       for (const shard::ShardSet& set : group.sets) {
         // --shards-dedup=error: a same-index duplicate is ambiguous, so report it and fail the run.
@@ -6570,7 +6596,8 @@ absl::StatusOr<std::string> ExplainResources(const parser::Command& command, std
                        .has_summaries = !summaries.empty(),
                        .has_histograms = !histograms.empty(),
                        .scopes = scopes,
-                       .deferred = !deferred.empty()},
+                       .deferred = !deferred.empty(),
+                   },
                    resources));
   absl::StrAppend(
       &output, "limits\t--buffer is not a process-memory cap or a comparison-inventory bound\n",
@@ -6678,26 +6705,36 @@ std::string CaseName(parser::CaseMode mode) {
 }
 
 constexpr auto kFlavorFacets = std::to_array<FlavorFacet>({
-    {.behavior = "ignore files (.gitignore/.ignore)",
-     .flag = "-g / --gitignore, --no-ignore",
-     .value = [](const std::vector<std::string>& globals,
-                 registry::Style style) { return GitignoreName(ResolveGitignoreMode(globals, style)); }},
-    {.behavior = "hidden dotfiles",
-     .flag = "--hidden / --no-hidden",
-     .value = [](const std::vector<std::string>& globals,
-                 registry::Style style) { return HiddenName(ResolveSkipHidden(globals, style)); }},
-    {.behavior = "sizes",
-     .flag = "--human",
-     .value = [](const std::vector<std::string>& globals,
-                 registry::Style style) { return HumanName(ResolveHuman(globals, style)); }},
-    {.behavior = "traversal order",
-     .flag = "--sort",
-     .value = [](const std::vector<std::string>& globals,
-                 registry::Style style) { return SortName(ResolveSort(globals, style)); }},
-    {.behavior = "letter case",
-     .flag = "--case, -i, -s[+|-]",
-     .value = [](const std::vector<std::string>& globals,
-                 registry::Style style) { return CaseName(parser::ResolveCaseMode(globals, style)); }},
+    {
+        .behavior = "ignore files (.gitignore/.ignore)",
+        .flag = "-g / --gitignore, --no-ignore",
+        .value = [](const std::vector<std::string>& globals,
+                    registry::Style style) { return GitignoreName(ResolveGitignoreMode(globals, style)); },
+    },
+    {
+        .behavior = "hidden dotfiles",
+        .flag = "--hidden / --no-hidden",
+        .value = [](const std::vector<std::string>& globals,
+                    registry::Style style) { return HiddenName(ResolveSkipHidden(globals, style)); },
+    },
+    {
+        .behavior = "sizes",
+        .flag = "--human",
+        .value = [](const std::vector<std::string>& globals,
+                    registry::Style style) { return HumanName(ResolveHuman(globals, style)); },
+    },
+    {
+        .behavior = "traversal order",
+        .flag = "--sort",
+        .value = [](const std::vector<std::string>& globals,
+                    registry::Style style) { return SortName(ResolveSort(globals, style)); },
+    },
+    {
+        .behavior = "letter case",
+        .flag = "--case, -i, -s[+|-]",
+        .value = [](const std::vector<std::string>& globals,
+                    registry::Style style) { return CaseName(parser::ResolveCaseMode(globals, style)); },
+    },
 });
 
 }  // namespace

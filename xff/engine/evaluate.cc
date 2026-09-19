@@ -318,7 +318,8 @@ std::string FormatPrintf(std::string_view format, const EvalContext& ctx) {
       .hash_encoding = ctx.hash_encoding,
       .captures = AsConstOptionalRef(ctx.captures),
       .defines = ctx.defines,
-      .outputs = AsConstOptionalRef(ctx.outputs)};
+      .outputs = AsConstOptionalRef(ctx.outputs),
+  };
   std::string out;
   for (std::string_view::size_type i = 0; i < format.size(); ++i) {
     const char ch = format[i];
@@ -1178,7 +1179,8 @@ std::string RenderTarget(const parser::Expr& expr, EvalContext& ctx) {
               .hash_encoding = ctx.hash_encoding,
               .captures = AsConstOptionalRef(ctx.captures),
               .defines = ctx.defines,
-              .outputs = AsConstOptionalRef(ctx.outputs)});
+              .outputs = AsConstOptionalRef(ctx.outputs),
+          });
 }
 
 bool EvalCmp(const parser::Expr& expr, EvalContext& ctx) {
@@ -1330,7 +1332,8 @@ bool EvalDiff(const parser::Expr& expr, EvalContext& ctx) {
                                          .hash_encoding = ctx.hash_encoding,
                                          .captures = AsConstOptionalRef(ctx.captures),
                                          .defines = ctx.defines,
-                                         .outputs = AsConstOptionalRef(ctx.outputs)});
+                                         .outputs = AsConstOptionalRef(ctx.outputs),
+                                     });
   if (target.empty()) {
     return false;  // no target resolved -> treat as differing
   }
@@ -1445,7 +1448,8 @@ bool EvalHasheq(const parser::Expr& expr, EvalContext& ctx) {
                                            .hash_encoding = ctx.hash_encoding,
                                            .captures = AsConstOptionalRef(ctx.captures),
                                            .defines = ctx.defines,
-                                           .outputs = AsConstOptionalRef(ctx.outputs)});
+                                           .outputs = AsConstOptionalRef(ctx.outputs),
+                                       });
   if (expected.empty()) {
     return verdict(false);  // no expected hash resolved (e.g. an unset {def.X}) -> mismatch
   }
@@ -1578,7 +1582,8 @@ bool EvalGrep(const parser::Expr& expr, EvalContext& ctx) {
                 .line_number = line.number,
                 .line_text = line.text,
                 .match_text = match_text,
-                .match_column = match_column})
+                .match_column = match_column,
+            })
         + "\n");
   }
   return any_match;
@@ -2089,7 +2094,8 @@ std::vector<std::string> RenderExecArgv(const parser::Expr& expr, const EvalCont
       .hash_encoding = ctx.hash_encoding,
       .captures = AsConstOptionalRef(ctx.captures),
       .defines = ctx.defines,
-      .outputs = AsConstOptionalRef(ctx.outputs)};
+      .outputs = AsConstOptionalRef(ctx.outputs),
+  };
   std::vector<std::string> argv;
   argv.reserve(expr.args.size());
   for (const std::string& token : expr.args) {
@@ -2151,7 +2157,8 @@ ExecDir SplitExecDir(std::string_view path) {
   }
   return {
       .dir = (slash == 0) ? "/" : std::string(path.substr(0, slash)),
-      .brace = absl::StrCat("./", path.substr(slash + 1))};
+      .brace = absl::StrCat("./", path.substr(slash + 1)),
+  };
 }
 
 // Builds the -ok/-okdir confirmation prompt: each command token with "{}" replaced
@@ -2264,7 +2271,8 @@ bool RunCapture(const parser::Expr& expr, EvalContext& ctx, std::string_view dir
       .hash_encoding = ctx.hash_encoding,
       .captures = AsConstOptionalRef(ctx.captures),
       .defines = ctx.defines,
-      .outputs = AsConstOptionalRef(ctx.outputs)};
+      .outputs = AsConstOptionalRef(ctx.outputs),
+  };
   std::vector<std::string> command;
   command.reserve(expr.args.size() - 2);
   for (std::size_t i = 2; i < expr.args.size(); ++i) {

@@ -378,11 +378,12 @@ TEST_F(PharReaderTest, ARealDeflatedMemberDecompresses) {
   const std::string content = "findable-needle in a compressed phar member\n";
   const std::string deflated = RawDeflate(content);
   ASSERT_THAT(deflated.empty(), IsFalse());
-  const std::string phar = MakePhar(
-      {{.name = "z.txt",
-        .content = deflated,
-        .flags = std::uint32_t{0644} | kCompressedGz,
-        .uncompressed_size = content.size()}});
+  const std::string phar = MakePhar({{
+      .name = "z.txt",
+      .content = deflated,
+      .flags = std::uint32_t{0644} | kCompressedGz,
+      .uncompressed_size = content.size(),
+  }});
   EXPECT_THAT(ReadPharMember(phar, "z.txt"), IsOkAndHolds(content));
 }
 
@@ -394,19 +395,22 @@ TEST_F(PharReaderTest, EnforcesTheByteLimit) {
 }
 
 TEST_F(PharReaderTest, EnforcesTheByteLimitBeforeAllocatingDeclaredDecompressedSize) {
-  const std::string phar = MakePhar(
-      {{.name = "z.txt",
-        .content = RawDeflate("x"),
-        .flags = std::uint32_t{0644} | kCompressedGz,
-        .uncompressed_size = std::numeric_limits<std::uint32_t>::max()}});
+  const std::string phar = MakePhar({{
+      .name = "z.txt",
+      .content = RawDeflate("x"),
+      .flags = std::uint32_t{0644} | kCompressedGz,
+      .uncompressed_size = std::numeric_limits<std::uint32_t>::max(),
+  }});
   EXPECT_THAT(
       ReadPharMember(phar, "z.txt", /*max_bytes=*/1UZ * 1'024 * 1'024),
       StatusIs(absl::StatusCode::kResourceExhausted, HasSubstr("byte limit")));
   const std::string path = WritePhar(
-      {{.name = "z.txt",
-        .content = RawDeflate("x"),
-        .flags = std::uint32_t{0644} | kCompressedGz,
-        .uncompressed_size = std::numeric_limits<std::uint32_t>::max()}},
+      {{
+          .name = "z.txt",
+          .content = RawDeflate("x"),
+          .flags = std::uint32_t{0644} | kCompressedGz,
+          .uncompressed_size = std::numeric_limits<std::uint32_t>::max(),
+      }},
       "declared-size.phar");
   EXPECT_THAT(
       ReadPharMemberOfFile(path, "z.txt", /*max_bytes=*/1UZ * 1'024 * 1'024),

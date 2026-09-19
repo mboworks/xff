@@ -147,9 +147,10 @@ SeeAlso EntryLinks(const Descriptor& entry) {
   SeeAlso links = TopicLinks(entry.topic, entry.see_also);
   const auto add_flag = [&](std::string_view name) {
     if (!absl::c_any_of(links.refs, [&](const RefTarget& ref) { return ref.id == name; })) {
-      links.refs.push_back(
-          {.kind = LookupGlobal(name).has_value() ? RefTarget::Kind::kFlag : RefTarget::Kind::kPrimary,
-           .id = std::string(name)});
+      links.refs.push_back({
+          .kind = LookupGlobal(name).has_value() ? RefTarget::Kind::kFlag : RefTarget::Kind::kPrimary,
+          .id = std::string(name),
+      });
     }
   };
   for (const std::string_view name : AffectedByFlags(entry.name)) {
@@ -231,14 +232,16 @@ Content FlagEntry(const GlobalFlag& flag, bool with_details = true, Audience aud
     AppendInfluence(details, "Affected by:", AffectedByFlags(flag.name));
   }
   return Content{
-      .node = Entry{
-          .term = std::string(flag.display),
-          .summary = ParseInline(flag.summary),
-          .details = std::move(details),
-          .xff = flag.xff,
-          .tags = FlagTags(flag),
-          .anchor = absl::StrCat("flag-", flag.name),
-      }};
+      .node =
+          Entry{
+              .term = std::string(flag.display),
+              .summary = ParseInline(flag.summary),
+              .details = std::move(details),
+              .xff = flag.xff,
+              .tags = FlagTags(flag),
+              .anchor = absl::StrCat("flag-", flag.name),
+          },
+  };
 }
 
 // A definition entry for an expression primary: its synopsis, summary, and (when
@@ -256,14 +259,16 @@ Content PrimaryEntry(const registry::Descriptor& descriptor, bool with_details =
     absl::StrAppend(&term, ", ", descriptor.alias, hint);
   }
   return Content{
-      .node = Entry{
-          .term = std::move(term),
-          .summary = ParseInline(descriptor.summary),
-          .details = std::move(details),
-          .xff = descriptor.style == registry::Style::kXff,
-          .tags = PrimaryTags(descriptor),
-          .anchor = absl::StrCat("primary-", descriptor.name),
-      }};
+      .node =
+          Entry{
+              .term = std::move(term),
+              .summary = ParseInline(descriptor.summary),
+              .details = std::move(details),
+              .xff = descriptor.style == registry::Style::kXff,
+              .tags = PrimaryTags(descriptor),
+              .anchor = absl::StrCat("primary-", descriptor.name),
+          },
+  };
 }
 
 // Complete references retain relationships as pointers to existing targets only.
@@ -740,13 +745,16 @@ Section ArchiveSection(bool in_full) {
       "an earlier flag or a config file asked for. A lower-case form never disarms; only `-Z-` does."));
   modes.children.push_back(
       Content{
-          .node = Example{
-              .text = "                   read only    + write (--archive-write)\n"
-                      "  none              -z-          -Z-  (also disarms writing)\n"
-                      "  roots (default)   -z           -Z\n"
-                      "  all               -z+          -Z+\n"
-                      "  any               -z++         -Z++",
-              .lang = "text"}});
+          .node =
+              Example{
+                  .text = "                   read only    + write (--archive-write)\n"
+                          "  none              -z-          -Z-  (also disarms writing)\n"
+                          "  roots (default)   -z           -Z\n"
+                          "  all               -z+          -Z+\n"
+                          "  any               -z++         -Z++",
+                  .lang = "text",
+              },
+      });
   modes.children.push_back(ProseOf(
       "Under `all` a file is only opened when its NAME looks like a container, so walking a source "
       "tree does not read every file in it; `any` (also spelled `--archive-any`) drops that gate. "
@@ -874,9 +882,11 @@ Section ArchiveSection(bool in_full) {
     rows.rows.reserve(pack_options.size());
     for (const archive::PackOptionInfo& option : pack_options) {
       rows.rows.push_back(
-          Row{.term = absl::StrCat(option.name, "=", option.value_syntax),
+          Row{
+              .term = absl::StrCat(option.name, "=", option.value_syntax),
               .description =
-                  ParseInline(absl::StrCat(option.detail, " (`", absl::StrJoin(option.formats, "`, `"), "`)"))});
+                  ParseInline(absl::StrCat(option.detail, " (`", absl::StrJoin(option.formats, "`, `"), "`)")),
+          });
     }
     creating.children.push_back(Content{.node = std::move(rows)});
   }
@@ -1185,23 +1195,25 @@ Section SafetySection(bool in_full) {
       "actions."));
   Table operations{
       .header = {"Operation", "archive not selected (default)", "archive selected"},
-      .cells = {
-          {"What switches", "Archives and members use file controls",
-           "Archive output and member edits use archive controls"},
-          {"Create ordinary file", "file-writing", "file-writing"},
-          {"Overwrite ordinary file", "file-writing, file-overwrite", "file-writing, file-overwrite"},
-          {"Delete file or entire archive", "file-deletion", "file-deletion"},
-          {"Pack new archive and members", "file-writing", "archive-writing"},
-          {"Pack replacement archive", "file-writing, file-overwrite", "archive-writing, archive-overwrite"},
-          {"Add member to existing archive", "file-writing, file-overwrite",
-           "archive-writing, archive-overwrite, archive-content-writing"},
-          {"Replace existing member", "file-writing, file-overwrite",
-           "archive-writing, archive-overwrite, archive-content-writing, archive-content-overwrite"},
-          {"Delete existing member", "file-writing, file-overwrite, file-deletion",
-           "archive-writing, archive-overwrite, archive-content-deletion"},
-          {"Extract to new ordinary file", "file-writing", "file-writing"},
-          {"Extract over existing file", "file-writing, file-overwrite", "file-writing, file-overwrite"},
-      }};
+      .cells =
+          {
+              {"What switches", "Archives and members use file controls",
+               "Archive output and member edits use archive controls"},
+              {"Create ordinary file", "file-writing", "file-writing"},
+              {"Overwrite ordinary file", "file-writing, file-overwrite", "file-writing, file-overwrite"},
+              {"Delete file or entire archive", "file-deletion", "file-deletion"},
+              {"Pack new archive and members", "file-writing", "archive-writing"},
+              {"Pack replacement archive", "file-writing, file-overwrite", "archive-writing, archive-overwrite"},
+              {"Add member to existing archive", "file-writing, file-overwrite",
+               "archive-writing, archive-overwrite, archive-content-writing"},
+              {"Replace existing member", "file-writing, file-overwrite",
+               "archive-writing, archive-overwrite, archive-content-writing, archive-content-overwrite"},
+              {"Delete existing member", "file-writing, file-overwrite, file-deletion",
+               "archive-writing, archive-overwrite, archive-content-deletion"},
+              {"Extract to new ordinary file", "file-writing", "file-writing"},
+              {"Extract over existing file", "file-writing, file-overwrite", "file-writing, file-overwrite"},
+          },
+  };
   section.children.push_back(Content{.node = std::move(operations)});
   section.children.push_back(ProseOf(
       "`--temp-root=PATH` and `--output-root=PATH` are config-only, once per unsectioned system or user INI. "
@@ -1214,16 +1226,18 @@ Section SafetySection(bool in_full) {
       "administrator boundaries. See `--help=config` for defaults, quoting, and validation."));
   Table directory_operations{
       .header = {"Operation", "Ordinary path", "temp selected", "output selected"},
-      .cells = {
-          {"Create file", "file-writing", "temp-file-writing", "output-file-writing"},
-          {"Overwrite file", "file-writing, file-overwrite", "temp-file-writing, temp-file-overwrite",
-           "output-file-writing, output-file-overwrite"},
-          {"Delete file or symlink", "file-deletion", "temp-file-deletion", "output-file-deletion"},
-          {"Create directory", "directory-creation", "temp-directory-creation", "output-directory-creation"},
-          {"Delete empty directory", "directory-deletion", "temp-directory-deletion", "output-directory-deletion"},
-          {"Recursive deletion", "Check every entry", "Check every entry", "Check every entry"},
-          {"Delete or replace a declared root", "Prohibited", "Prohibited", "Prohibited"},
-      }};
+      .cells =
+          {
+              {"Create file", "file-writing", "temp-file-writing", "output-file-writing"},
+              {"Overwrite file", "file-writing, file-overwrite", "temp-file-writing, temp-file-overwrite",
+               "output-file-writing, output-file-overwrite"},
+              {"Delete file or symlink", "file-deletion", "temp-file-deletion", "output-file-deletion"},
+              {"Create directory", "directory-creation", "temp-directory-creation", "output-directory-creation"},
+              {"Delete empty directory", "directory-deletion", "temp-directory-deletion", "output-directory-deletion"},
+              {"Recursive deletion", "Check every entry", "Check every entry", "Check every entry"},
+              {"Delete or replace a declared root", "Prohibited", "Prohibited", "Prohibited"},
+          },
+  };
   section.children.push_back(Content{.node = std::move(directory_operations)});
   section.children.push_back(ProseOf(
       "Unselected directory categories inherit ordinary controls through per-INI expansion. Overlapping "
@@ -1589,10 +1603,12 @@ Section ConfigSection(bool in_full) {
 
 Content NoticeEntry(const license::Notice& notice) {
   return Content{
-      .node = Entry{
-          .term = absl::StrCat(notice.component, "  [", notice.spdx, "]"),
-          .summary = ParseInline(notice.text),
-      }};
+      .node =
+          Entry{
+              .term = absl::StrCat(notice.component, "  [", notice.spdx, "]"),
+              .summary = ParseInline(notice.text),
+          },
+  };
 }
 
 // The `--help=notice` topic (alias notices): the one build-dependent line (which extras THIS

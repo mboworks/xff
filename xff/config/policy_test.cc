@@ -371,7 +371,8 @@ TEST_F(PolicyTest, XffrcDangerousLineIsInertUnlessArmed) {
 TEST_F(PolicyTest, ArmingGatesOnlyTheXffrcTierNotTheUserLayer) {
   ConfigInputs inputs;
   inputs.user = {
-      .global_lines = {Line({"-exec", "rm", ";"})}};  // a dangerous USER line is honored regardless of the arm
+      .global_lines = {Line({"-exec", "rm", ";"})},
+  };  // a dangerous USER line is honored regardless of the arm
   EXPECT_THAT(GateConfig(inputs, /*xffrc_armed=*/false).config.user.global_lines, SizeIs(1));
 }
 

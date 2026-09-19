@@ -319,10 +319,10 @@ class ExactBackend final : public RegexBackend {
   std::string needle_;  // == pattern_, ASCII-lowered when case_insensitive_
 };
 
-// The kFnmatch grammar: a flat shell wildcard via POSIX fnmatch (`*`/`?`/`[…]`, `*` matching any
+// The kFnmatch grammar: a flat shell wildcard via POSIX fnmatch (`*`/`?`/`[...]`, `*` matching any
 // character including `/` - no FNM_PATHNAME, matching find's -name/-path). A core engine (no
 // dependency). fnmatch is a whole-string test: FullMatch runs it directly (anchored), PartialMatch
-// wraps the pattern in `*…*` so it matches anywhere (`**` collapses to `*` in POSIX fnmatch, so the
+// wraps the pattern in `*...*` so it matches anywhere (`**` collapses to `*` in POSIX fnmatch, so the
 // always-wrap is safe - see #85). fnmatch yields no span or groups, so FindFirst reports the whole
 // text as the match, FullMatchCaptures is the whole match only, and Rewrite is a no-op.
 // `case_insensitive` sets FNM_CASEFOLD. There is no pattern to compile, so Compile never fails.

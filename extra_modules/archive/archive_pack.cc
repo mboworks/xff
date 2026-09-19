@@ -560,11 +560,12 @@ std::vector<PackOptionDoc> PackOptionDocs() {
       case PackValue::kEnum: syntax = absl::StrJoin(spec.values, "|"); break;
       case PackValue::kInt: syntax = "N"; break;
     }
-    docs.push_back(
-        {.name = std::string(spec.name),
-         .value_syntax = std::move(syntax),
-         .formats = spec.formats,
-         .detail = std::string(spec.detail)});
+    docs.push_back({
+        .name = std::string(spec.name),
+        .value_syntax = std::move(syntax),
+        .formats = spec.formats,
+        .detail = std::string(spec.detail),
+    });
   }
   return docs;
 }

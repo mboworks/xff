@@ -31,6 +31,18 @@ an AI assistant) can follow them without reverse-engineering the tooling.
   never-bin-pack). That is the lever behind the trailing-comma rule below: a _manual_
   trailing comma opts a _single_ aggregate into one-element-per-line.
 
+Source text uses ASCII except for the explicitly allowed graphical glyphs listed in `RULES.md`.
+Spell other intentional Unicode string/character data with escapes and explain the
+purpose in English. Raw strings do not decode escapes: construct Unicode expectations explicitly
+when their exact code points matter. Dedicated Unicode test files may use literal visible samples.
+
+Unicode is not inherently unwanted; unnecessary mixing of test purposes is. Tests specifically
+about Unicode handling belong in separate Unicode-specific files explicitly excluded from the
+ASCII-source check. Ordinary functional fixtures stay ASCII unless an approved glyph is the
+actual output under test: histogram blocks and tree connectors belong in their functional tests.
+Visible Unicode samples may be literal in dedicated test files; retain escapes for invisible
+combining marks, joiners, or exact byte sequences, and explain the property each sample exercises.
+
 ### Naming (enforced by `.clang-tidy readability-identifier-naming`)
 
 - Types / classes / structs / enums / aliases / functions: `CamelCase` (`LimitedMap`).
@@ -119,6 +131,22 @@ clang-format picks a layout per line; these habits steer it toward the readable 
 2. **Trailing comma on the last field of a complex aggregate** breaks it one field per
    line. Because `InsertTrailingCommas` is off, the comma is your per-aggregate opt-in.
    Use it for long/complex initializers; a short one that reads on a single line stays.
+   This applies to named variables, return values, and structs passed directly as call arguments.
+   Each multiline designated initializer needs its own trailing comma **inside** its closing brace.
+   Review nested initializers independently: a comma after an inner closing brace separates outer
+   elements or arguments and does not replace the inner trailing comma.
+
+   ```cpp
+   Emit(Render(
+       {
+           .name = name,
+           .options = {
+               .width = width,
+               .enabled = enabled,
+           },
+       },
+       format));
+   ```
 
    ```cpp
    const Drop drop{

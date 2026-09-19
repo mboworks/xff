@@ -368,12 +368,13 @@ class ConfigGate {
     if (!reason.has_value()) {
       return true;
     }
-    result_.drops.push_back(
-        {.line = line,
-         .config_name = std::string(name),
-         .layer = layer,
-         .safety = LineSafety(line),
-         .reason = *reason});
+    result_.drops.push_back({
+        .line = line,
+        .config_name = std::string(name),
+        .layer = layer,
+        .safety = LineSafety(line),
+        .reason = *reason,
+    });
     return false;
   }
 

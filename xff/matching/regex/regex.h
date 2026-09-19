@@ -34,7 +34,7 @@ namespace xff::regex {
 // The grammar a Matcher compiles with - the engine behind `--regextype`. kRe2 is RE2 (linear-time,
 // no catastrophic backtracking) - the default and find's historic behavior. kExact is a literal
 // string match (no metacharacters), a core engine: FullMatch is equality, PartialMatch a substring
-// test. kFnmatch is a flat shell wildcard (POSIX fnmatch: `*`/`?`/`[…]`, where `*` matches any
+// test. kFnmatch is a flat shell wildcard (POSIX fnmatch: `*`/`?`/`[...]`, where `*` matches any
 // character including `/`), a core engine - the `-name`/`-path` matching offered as a grammar.
 // kGlob is a path-segment-aware shell glob (`*`/`?` stop at `/`, `**` crosses directories - the
 // shell / gitignore semantics), a core engine translated to RE2 (via mbo::file). kShglob is kGlob

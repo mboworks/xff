@@ -54,7 +54,8 @@ vfs::MutationPolicy SafetyPolicy::FileMutations() const {
       .block_directory_creation = Blocks(Capability::kDirectoryCreation),
       .block_directory_deletion = Blocks(Capability::kDirectoryDeletion),
       .directories = directories,
-      .temporary_root = temp_root};
+      .temporary_root = temp_root,
+  };
 }
 
 vfs::MutationPolicy SafetyPolicy::ArchiveMutations() const {
@@ -70,27 +71,30 @@ vfs::MutationPolicy SafetyPolicy::ArchiveMutations() const {
                                                     std::array{
                                                         Blocks(Capability::kFileWriting),
                                                         Blocks(Capability::kFileOverwrite), false, false, false})
-                                              : std::nullopt};
+                                              : std::nullopt,
+  };
 }
 
 absl::StatusOr<SafetyPolicy> SafetyPolicy::PrepareDirectories() const {
   SafetyPolicy result = *this;
   std::vector<vfs::DirectoryRule> rules;
   if (!temp_root.empty()) {
-    rules.push_back(
-        {.root = temp_root,
-         .blocks = {
-             Blocks(Capability::kTempFileWriting), Blocks(Capability::kTempFileOverwrite),
+    rules.push_back({
+        .root = temp_root,
+        .blocks =
+            {Blocks(Capability::kTempFileWriting), Blocks(Capability::kTempFileOverwrite),
              Blocks(Capability::kTempFileDeletion), Blocks(Capability::kTempDirectoryCreation),
-             Blocks(Capability::kTempDirectoryDeletion)}});
+             Blocks(Capability::kTempDirectoryDeletion)},
+    });
   }
   if (!output_root.empty()) {
-    rules.push_back(
-        {.root = output_root,
-         .blocks = {
-             Blocks(Capability::kOutputFileWriting), Blocks(Capability::kOutputFileOverwrite),
+    rules.push_back({
+        .root = output_root,
+        .blocks =
+            {Blocks(Capability::kOutputFileWriting), Blocks(Capability::kOutputFileOverwrite),
              Blocks(Capability::kOutputFileDeletion), Blocks(Capability::kOutputDirectoryCreation),
-             Blocks(Capability::kOutputDirectoryDeletion)}});
+             Blocks(Capability::kOutputDirectoryDeletion)},
+    });
   }
   if (!rules.empty()) {
     MBO_ASSIGN_OR_RETURN(result.directories, vfs::DirectoryPolicy::Create(std::move(rules)));
@@ -142,26 +146,26 @@ namespace {
 // explanation's application stream; execution leaves them unset.
 struct SafetyResolution {
   SafetyPolicy policy;
-  std::array<std::optional<std::size_t>, SafetyPolicy::kCapabilities> mandatory = {};
-  std::array<std::optional<std::size_t>, SafetyPolicy::kCapabilities> profile = {};
-  std::optional<std::size_t> activation;
-  std::optional<std::size_t> dry_run;
-  std::optional<std::size_t> temp_root;
-  std::optional<std::size_t> output_root;
+  std::array<std::optional<std::size_t>, SafetyPolicy::kCapabilities> mandatory_source_indices = {};
+  std::array<std::optional<std::size_t>, SafetyPolicy::kCapabilities> profile_source_indices = {};
+  std::optional<std::size_t> activation_source_index;
+  std::optional<std::size_t> dry_run_source_index;
+  std::optional<std::size_t> temp_root_source_index;
+  std::optional<std::size_t> output_root_source_index;
 
   void ApplyCapability(std::string_view flag, std::optional<std::size_t> source) {
     for (std::size_t index = 0; index < kNames.size(); ++index) {
       if (flag.starts_with("--block-") && flag.substr(8) == kNames.at(index)) {
         if (!policy.unconditional.at(index)) {
-          mandatory.at(index) = source;
+          mandatory_source_indices.at(index) = source;
         }
         policy.unconditional.at(index) = true;
       } else if (flag.starts_with("--safe-block-") && flag.substr(13) == kNames.at(index)) {
         policy.profile.at(index) = true;
-        profile.at(index) = source;
+        profile_source_indices.at(index) = source;
       } else if (flag.starts_with("--no-safe-block-") && flag.substr(16) == kNames.at(index)) {
         policy.profile.at(index) = false;
-        profile.at(index) = source;
+        profile_source_indices.at(index) = source;
       }
     }
   }
@@ -169,16 +173,16 @@ struct SafetyResolution {
   void Apply(std::string_view flag, std::optional<std::size_t> source = std::nullopt) {
     if (flag == "--safe" || flag == "--no-safe") {
       policy.safe = flag == "--safe";
-      activation = source;
+      activation_source_index = source;
     } else if (flag.starts_with("--temp-root=") && policy.temp_root.empty()) {
       policy.temp_root = flag.substr(12);
-      temp_root = source;
+      temp_root_source_index = source;
     } else if (flag.starts_with("--output-root=") && policy.output_root.empty()) {
       policy.output_root = flag.substr(14);
-      output_root = source;
+      output_root_source_index = source;
     } else if (flag == "--dry-run") {
       policy.dry_run = true;
-      dry_run = source;
+      dry_run_source_index = source;
     } else {
       ApplyCapability(flag, source);
     }
@@ -224,19 +228,19 @@ std::string ExplainCapability(
     std::size_t index) {
   const auto& policy = resolved.policy;
   std::string_view reason = "inactive profile";
-  auto source = resolved.activation;
+  auto source = resolved.activation_source_index;
   if (policy.unconditional.at(index)) {
     reason = "unconditional block";
-    source = resolved.mandatory.at(index);
+    source = resolved.mandatory_source_indices.at(index);
   } else if (policy.safe) {
     reason = policy.profile.at(index) ? "active profile block" : "profile permits";
-    source = resolved.profile.at(index);
+    source = resolved.profile_source_indices.at(index);
   }
   return absl::StrCat(
       "safety\t", kNames.at(index), "\t", policy.Blocks(static_cast<Capability>(index)) ? "block" : "allow", "\t",
       policy.unconditional.at(index) ? "block" : "none", "\t", policy.profile.at(index) ? "block" : "allow", "\t",
-      reason, "\t", ExplainOrigin(application, source), "\t", ExplainOrigin(application, resolved.profile.at(index)),
-      "\n");
+      reason, "\t", ExplainOrigin(application, source), "\t",
+      ExplainOrigin(application, resolved.profile_source_indices.at(index)), "\n");
 }
 
 }  // namespace
@@ -279,8 +283,9 @@ std::string ExplainSafety(const std::vector<ResolvedFlag>& application, const Co
   std::string out =
       "\n# effective safety policy (operation blocks; config arming and filesystem permissions also apply)\n";
   absl::StrAppend(
-      &out, "safe-mode\t", policy.safe ? "on" : "off", "\t", ExplainOrigin(application, resolved.activation), "\n",
-      "dry-run\t", policy.dry_run ? "on" : "off", "\t", ExplainOrigin(application, resolved.dry_run), "\n",
+      &out, "safe-mode\t", policy.safe ? "on" : "off", "\t",
+      ExplainOrigin(application, resolved.activation_source_index), "\n", "dry-run\t", policy.dry_run ? "on" : "off",
+      "\t", ExplainOrigin(application, resolved.dry_run_source_index), "\n",
       "# selected detailed categories per file; other categories inherit that file's ordinary controls\n",
       "policy\tsystem\t", DetailedPolicyNames(ResolveDetailedPolicy(active_inputs.system.globals)), "\n",
       "policy\tuser\t", DetailedPolicyNames(ResolveDetailedPolicy(active_inputs.user.globals)), "\n",
@@ -292,9 +297,9 @@ std::string ExplainSafety(const std::vector<ResolvedFlag>& application, const Co
   absl::StrAppend(
       &out, "# directory scopes apply recursively; overlapping scope restrictions combine\n", "root\ttemp\t",
       policy.temp_root.empty() ? "(unset)" : absl::CEscape(policy.temp_root), "\t",
-      ExplainOrigin(application, resolved.temp_root), "\n", "root\toutput\t",
+      ExplainOrigin(application, resolved.temp_root_source_index), "\n", "root\toutput\t",
       policy.output_root.empty() ? "(unset)" : absl::CEscape(policy.output_root), "\t",
-      ExplainOrigin(application, resolved.output_root), "\n",
+      ExplainOrigin(application, resolved.output_root_source_index), "\n",
       "# temp/output capabilities apply beneath configured roots; root validity is checked before actions\n",
       "# an operation must satisfy every applicable capability; see --help=safety\n");
   return out;

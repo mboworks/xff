@@ -332,7 +332,8 @@ class Walker {
         .dived = dived,
         .fs = fs_,
         .fs_owner = fs_owner_,
-        .root_index = current_root_index_};
+        .root_index = current_root_index_,
+    };
     const WalkAction action = visit_(visit);
     if (action == WalkAction::kStop) {
       stopped_ = true;

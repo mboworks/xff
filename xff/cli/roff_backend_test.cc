@@ -69,7 +69,9 @@ TEST_F(RoffBackendTest, RendersManPageStructure) {
                                   Entry{
                                       .term = "--summary",
                                       .summary = {Text("group + "), Code("aggregate")},
-                                      .xff = true}},
+                                      .xff = true,
+                                  },
+                          },
                       },
               },
               Section{
@@ -78,7 +80,8 @@ TEST_F(RoffBackendTest, RendersManPageStructure) {
                       {
                           Content{
                               .node =
-                                  SeeAlso{.refs = {{.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"}}}},
+                                  SeeAlso{.refs = {{.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"}}},
+                          },
                       },
               },
           },
@@ -145,15 +148,17 @@ TEST_F(RoffBackendTest, RendersEveryBlockAndInlineBoundary) {
 
 TEST_F(RoffBackendTest, SeeAlsoUsesCopyableHelpCommands) {
   RoffBackend backend;
-  backend.EmitSeeAlso(
-      {.refs = {
-           {.kind = RefTarget::Kind::kTopic, .id = "regex"},
-           {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
-           {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
-           {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"},
-           {.kind = RefTarget::Kind::kUrl, .id = "https://example.org/reference"},
-           {.kind = RefTarget::Kind::kAnchor, .id = "section"},
-       }});
+  backend.EmitSeeAlso({
+      .refs =
+          {
+              {.kind = RefTarget::Kind::kTopic, .id = "regex"},
+              {.kind = RefTarget::Kind::kFlag, .id = "--summary"},
+              {.kind = RefTarget::Kind::kPrimary, .id = "-printf"},
+              {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"},
+              {.kind = RefTarget::Kind::kUrl, .id = "https://example.org/reference"},
+              {.kind = RefTarget::Kind::kAnchor, .id = "section"},
+          },
+  });
   EXPECT_THAT(
       backend.Take(),
       AllOf(HasSubstr("See also:"), HasSubstr("help=regex"), HasSubstr("help="), HasSubstr(".BR find (1)")));

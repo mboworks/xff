@@ -130,7 +130,9 @@ def _format_table(rows):
         if align == "right":
             return text.rjust(width)
         if align == "center":
-            return text.center(width)
+            # Match Prettier: put an odd padding space on the right.
+            padding = width - len(text)
+            return " " * (padding // 2) + text + " " * ((padding + 1) // 2)
         return text.ljust(width)
 
     out = []

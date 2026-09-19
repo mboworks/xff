@@ -987,6 +987,13 @@ bashtest(
     data = ["//xff/cli/testing:xff"],
 )
 
+bashtest(
+    name = "csv_unicode_test",
+    size = "small",
+    srcs = ["csv_unicode_test.sh"],
+    data = ["//xff/cli/testing:xff"],
+)
+
 # End-to-end test of -diff (mbo::diff backend): a unified diff by default, the -diff:STYLE
 # output formats, TRUE = same polarity, a binary side noted on stderr, and the usage errors.
 bashtest(

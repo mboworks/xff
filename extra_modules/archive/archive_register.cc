@@ -112,18 +112,24 @@ constexpr std::array kNativeReadFormats = std::to_array<ReadFormatSpec>({
     {.name = "iso9660", .suffixes = kIsoSuffixes, .detail = "ISO 9660 disc images"},
     {.name = "lha", .suffixes = kLhaSuffixes, .detail = "LHA/LZH archives"},
     {.name = "rar", .suffixes = kRarSuffixes, .detail = "RAR 4 and RAR 5 archives"},
-    {.name = "tar",
-     .suffixes = kTarSuffixes,
-     .detail = "tar archives, plain or through any compression filter; `.crate` and `.gem` are tars"},
+    {
+        .name = "tar",
+        .suffixes = kTarSuffixes,
+        .detail = "tar archives, plain or through any compression filter; `.crate` and `.gem` are tars",
+    },
     {.name = "warc", .suffixes = kWarcSuffixes, .detail = "web archives"},
     {.name = "xar", .suffixes = kXarSuffixes, .detail = "xar archives"},
-    {.name = "zip",
-     .suffixes = kZipSuffixes,
-     .detail = "zip archives and the package formats that are zips underneath"},
+    {
+        .name = "zip",
+        .suffixes = kZipSuffixes,
+        .detail = "zip archives and the package formats that are zips underneath",
+    },
     {.name = "phar", .suffixes = kPharSuffixes, .detail = "PHP phar archives (xff's own reader)"},
-    {.name = "file",
-     .suffixes = kSingleFileSuffixes,
-     .detail = "a compressed SINGLE file (`notes.txt.gz`): one member, decompressed at open"},
+    {
+        .name = "file",
+        .suffixes = kSingleFileSuffixes,
+        .detail = "a compressed SINGLE file (`notes.txt.gz`): one member, decompressed at open",
+    },
 });
 
 // The formats this reader understands, for the --help=archive table and the seam's name gate.

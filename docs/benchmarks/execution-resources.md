@@ -129,30 +129,30 @@ elapsed range is included to expose variability. First output and RSS are median
 
 | Shape | Workload   | Jobs | Elapsed median (s) | Elapsed range (s) | First stdout (s) | Peak RSS (MiB) |
 | :---- | :--------- | ---: | -----------------: | :---------------- | ---------------: | -------------: |
-| broad | listing    |    1 |              0.266 | 0.196–1.593       |            0.216 |          19.53 |
-| broad | listing    |    8 |              0.156 | 0.143–0.250       |            0.130 |          19.27 |
-| broad | summary    |    1 |              0.234 | 0.222–0.276       |            0.234 |          19.45 |
-| broad | summary    |    8 |              0.158 | 0.157–0.234       |            0.156 |          19.42 |
-| broad | hash       |    1 |              1.529 | 1.330–2.466       |            0.219 |          19.91 |
-| broad | hash       |    8 |              1.111 | 1.058–1.824       |            0.162 |          19.69 |
-| broad | hash_twice |    1 |              2.735 | 2.166–4.129       |            0.193 |          19.88 |
-| broad | hash_twice |    8 |              1.873 | 1.833–2.358       |            0.164 |          20.22 |
-| broad | hash_lines |    1 |              1.899 | 1.565–2.900       |            0.206 |          19.80 |
-| broad | hash_lines |    8 |              1.366 | 1.362–1.520       |            0.167 |          19.83 |
-| broad | compare    |    1 |              1.308 | 1.046–2.700       |            1.305 |          30.48 |
-| broad | compare    |    8 |              0.889 | 0.858–0.897       |            0.888 |          30.95 |
-| deep  | listing    |    1 |              0.206 | 0.175–0.208       |            0.053 |          19.81 |
-| deep  | listing    |    8 |              0.158 | 0.129–0.158       |            0.042 |          19.41 |
-| deep  | summary    |    1 |              0.192 | 0.163–0.226       |            0.190 |          19.67 |
-| deep  | summary    |    8 |              0.159 | 0.130–0.165       |            0.158 |          19.56 |
-| deep  | hash       |    1 |              1.446 | 1.288–1.588       |            0.080 |          20.95 |
-| deep  | hash       |    8 |              1.092 | 0.917–1.280       |            0.067 |          20.09 |
-| deep  | hash_twice |    1 |              2.555 | 2.554–2.640       |            0.075 |          21.41 |
-| deep  | hash_twice |    8 |              1.907 | 1.513–2.087       |            0.069 |          20.42 |
-| deep  | hash_lines |    1 |              2.142 | 2.134–2.204       |            0.091 |          21.19 |
-| deep  | hash_lines |    8 |              1.476 | 1.261–1.720       |            0.070 |          19.91 |
-| deep  | compare    |    1 |              1.721 | 1.567–1.726       |            1.718 |          34.77 |
-| deep  | compare    |    8 |              0.953 | 0.918–1.271       |            0.951 |          33.06 |
+| broad | listing    |    1 |              0.266 | 0.196-1.593       |            0.216 |          19.53 |
+| broad | listing    |    8 |              0.156 | 0.143-0.250       |            0.130 |          19.27 |
+| broad | summary    |    1 |              0.234 | 0.222-0.276       |            0.234 |          19.45 |
+| broad | summary    |    8 |              0.158 | 0.157-0.234       |            0.156 |          19.42 |
+| broad | hash       |    1 |              1.529 | 1.330-2.466       |            0.219 |          19.91 |
+| broad | hash       |    8 |              1.111 | 1.058-1.824       |            0.162 |          19.69 |
+| broad | hash_twice |    1 |              2.735 | 2.166-4.129       |            0.193 |          19.88 |
+| broad | hash_twice |    8 |              1.873 | 1.833-2.358       |            0.164 |          20.22 |
+| broad | hash_lines |    1 |              1.899 | 1.565-2.900       |            0.206 |          19.80 |
+| broad | hash_lines |    8 |              1.366 | 1.362-1.520       |            0.167 |          19.83 |
+| broad | compare    |    1 |              1.308 | 1.046-2.700       |            1.305 |          30.48 |
+| broad | compare    |    8 |              0.889 | 0.858-0.897       |            0.888 |          30.95 |
+| deep  | listing    |    1 |              0.206 | 0.175-0.208       |            0.053 |          19.81 |
+| deep  | listing    |    8 |              0.158 | 0.129-0.158       |            0.042 |          19.41 |
+| deep  | summary    |    1 |              0.192 | 0.163-0.226       |            0.190 |          19.67 |
+| deep  | summary    |    8 |              0.159 | 0.130-0.165       |            0.158 |          19.56 |
+| deep  | hash       |    1 |              1.446 | 1.288-1.588       |            0.080 |          20.95 |
+| deep  | hash       |    8 |              1.092 | 0.917-1.280       |            0.067 |          20.09 |
+| deep  | hash_twice |    1 |              2.555 | 2.554-2.640       |            0.075 |          21.41 |
+| deep  | hash_twice |    8 |              1.907 | 1.513-2.087       |            0.069 |          20.42 |
+| deep  | hash_lines |    1 |              2.142 | 2.134-2.204       |            0.091 |          21.19 |
+| deep  | hash_lines |    8 |              1.476 | 1.261-1.720       |            0.070 |          19.91 |
+| deep  | compare    |    1 |              1.721 | 1.567-1.726       |            1.718 |          34.77 |
+| deep  | compare    |    8 |              0.953 | 0.918-1.271       |            0.951 |          33.06 |
 
 Eight workers change directory scheduling, not the coordinated expression evaluator.
 The broad fixture has only one listing per root, and the deep fixture is a single directory
