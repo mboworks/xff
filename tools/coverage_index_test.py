@@ -33,10 +33,12 @@ class CoverageIndexTest(unittest.TestCase):
             self.assertIn("  group: coverage-pages\n  queue: max\n  cancel-in-progress: false", text)
         self.assertIn("pull_request_target:\n    types: [closed, reopened]", workflow)
         self.assertIn("  workflow_dispatch: {}", workflow)
-        self.assertIn("if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'", workflow)
+        self.assertNotIn("github.event.workflow_run.conclusion == 'success'", workflow)
+        self.assertIn('.name == "coverage" and .conclusion == "success"', workflow)
+        self.assertIn('jobs?filter=latest&per_page=100', workflow)
         self.assertIn("path: source\n          ref: main", workflow)
         for step in ("uses: actions/download-artifact@v8", "name: Select and stage the report"):
-            self.assertIn(step + "\n        if: github.event_name == 'workflow_run'", workflow)
+            self.assertIn(step + "\n        if: steps.coverage-result.outputs.eligible == 'true'", workflow)
         refresh = workflow.split("      - name: Refresh metadata and publish retained reports", 1)[1]
         self.assertNotIn("workflow_run", refresh)
         self.assertNotIn("report/coverage-html", refresh)
@@ -121,6 +123,7 @@ class CoverageIndexTest(unittest.TestCase):
             history = coverage_index.render_run_history(root)
             self.assertEqual(history.count("PR 1 (pre-merge)"), 1)
             self.assertEqual(history.count("PR 1 (post-merge)"), 1)
+            self.assertLess(history.index("PR 1 (post-merge)"), history.index("PR 1 (pre-merge)"))
             self.assertIn('href="../runs/45/2/"', history)
             self.assertNotIn('href="../runs/45/1/"', history)
             self.assertNotIn("main branch", history)

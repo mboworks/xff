@@ -102,3 +102,9 @@ both current reports and retained snapshots, so out-of-order main publications a
 correctly. Existing snapshots are not rewritten or deleted. Aggregated constituent PRs keep
 pre-merge results unless a main run actually tested their own exact merge commit; the aggregate's
 post-merge result belongs to the aggregation PR alone.
+
+Coverage publication requires the source workflow's `coverage` job to succeed, not every job
+in that workflow. An unrelated sanitizer or lint failure does not suppress a valid coverage
+report. A failed, cancelled, or skipped coverage job leaves the previous report intact while
+PR metadata still refreshes. In the two-phase view, post-merge precedes pre-merge within each PR;
+PR groups retain their merge-time ordering even when a pre-merge retry finishes later.
