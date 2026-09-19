@@ -1125,8 +1125,10 @@ remains below is the design-forked / larger work.
     and custom bucket edges are deferred to the Featured-ideas list below.
   - **Console-adaptive bars, via the existing `--unicode` flag.** Bars reuse the SAME
     `--unicode=auto|always|never` resolver (`engine::ResolveUnicode`) that `--format=tree` uses for
-    its box-drawing: Unicode block bars (`U+2588` plus the partials `U+258FU+258EU+258DU+258CU+258BU+258AU+2589` for sub-cell precision) when
-    unicode, plain ASCII (`#`) otherwise - no new style flag. Each row is `label  value  bar`, value
+    its box-drawing: Unicode block bars (`█`, `U+2588`) plus the partials
+    `▏` (`U+258F`), `▎` (`U+258E`), `▍` (`U+258D`), `▌` (`U+258C`),
+    `▋` (`U+258B`), `▊` (`U+258A`), and `▉` (`U+2589`) for sub-cell precision
+    when unicode, plain ASCII (`#`) otherwise - no new style flag. Each row is `label  value  bar`, value
     through the shared number formatter (#86), sorted by value descending. Default bar width ~40 with
     a `--histogram-width=N` override; terminal-width auto-fit (COLUMNS / `winsize` on a tty) is a
     later nicety.

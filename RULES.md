@@ -7,7 +7,9 @@ Some rules for the code layout and its development.
 
 - Everything is under Apache 2 license, see file `LICENSE`.
 - Project-owned text files use ASCII source spelling. Use escapes for intentional Unicode runtime
-  data, and ASCII prose/comments. Binary assets and fixtures are not text; preserve their bytes.
+  data, and ASCII prose/comments. Histogram documentation in `docs/history-roadmap.md` may show
+  the block glyphs U+2588 through U+258F beside their code points so readers can see their shapes.
+  Binary assets and fixtures are not text; preserve their bytes.
 - All sources must be unix-text files: https://en.wikipedia.org/wiki/Text_file
   - Lines end in {LF}.
   - The files are either empty or end in {LF}.

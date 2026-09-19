@@ -296,3 +296,11 @@ implementing PR.
 Use a new `Fnn` identifier for each independently actionable finding, with its origin PR, code or
 document location, finding, action, verification, status, and eventual implementing PR. If a decision
 is still needed, record the question explicitly instead of treating a proposed solution as agreed.
+
+## F13: Show histogram block glyphs alongside their code points
+
+- Origin: PR #876 review of `docs/history-roadmap.md`.
+- Action: show the full and fractional Unicode blocks beside their code points; preserve the
+  ASCII `#` fallback. Permit only these eight glyphs in this documentation file, with a scoped
+  pre-commit check; C++ source continues to use escapes.
+- Implemented in: #876.
