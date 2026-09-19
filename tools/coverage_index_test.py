@@ -12,6 +12,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).parent))
 import coverage_index  # noqa: E402
+from test_paths import repository_file
 
 
 def _summary(percent: float) -> dict:
@@ -25,6 +26,59 @@ def _summary(percent: float) -> dict:
 
 
 class CoverageIndexTest(unittest.TestCase):
+    def test_metadata_refresh_shares_the_report_publication_queue(self):
+        workflow = repository_file(".github/workflows/coverage_pages.yml").read_text()
+        pages = repository_file(".github/workflows/pages.yml").read_text()
+        for text in (workflow, pages):
+            self.assertIn("  group: coverage-pages\n  queue: max\n  cancel-in-progress: false", text)
+        self.assertIn("pull_request_target:\n    types: [closed, reopened]", workflow)
+        self.assertIn("  workflow_dispatch:", workflow)
+        self.assertIn("if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'", workflow)
+        self.assertIn("path: source\n          ref: main", workflow)
+        for step in ("uses: actions/download-artifact@v8", "name: Select and stage the report"):
+            self.assertIn(step + "\n        if: github.event_name == 'workflow_run'", workflow)
+        refresh = workflow.split("      - name: Refresh metadata and publish retained reports", 1)[1]
+        self.assertNotIn("workflow_run", refresh)
+        self.assertNotIn("report/coverage-html", refresh)
+        self.assertIn("pulls?state=all&per_page=100", refresh)
+        self.assertLess(refresh.index("coverage_index.py history"), refresh.index("coverage_index.py site"))
+        self.assertLess(refresh.index("coverage_index.py site"), refresh.index("git -C site push"))
+
+    def test_merge_refresh_reorders_existing_report_without_replacing_measurements(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repository = root / "repository"
+            repository.mkdir()
+            subprocess.run(["git", "init", "-q", str(repository)], check=True)
+            subprocess.run(["git", "-C", str(repository), "-c", "user.name=Test",
+                            "-c", "user.email=test@example.com", "commit", "--allow-empty", "-qm", "merge"], check=True)
+            sha = subprocess.check_output(["git", "-C", str(repository), "rev-parse", "HEAD"], text=True).strip()
+            reports = root / "reports"
+            original = {}
+            for number in (881, 882):
+                target = f"pr/{number}"
+                folder = reports / target
+                folder.mkdir(parents=True)
+                metadata = coverage_index.report_metadata(
+                    _summary(95), target, "2026-09-19T17:00:00Z", "2026-09-19T17:00:00Z",
+                    "2026-09-19T17:01:00Z", number, 1, "tested-head")
+                original[number] = metadata
+                (folder / "coverage-meta.json").write_text(json.dumps(metadata))
+                (folder / "details.html").write_text("retained detailed coverage")
+            pulls = [{"number": 881, "state": "closed", "merged_at": "2026-09-18T12:00:00Z", "merge_commit_sha": sha},
+                     {"number": 882, "state": "open", "merged_at": None, "merge_commit_sha": None}]
+            coverage_index.update_history(reports, repository, pulls)
+            before = coverage_index.render_site(reports)
+            self.assertLess(before.index("PR #881"), before.index("PR #882"))
+            pulls[1].update(state="closed", merged_at="2026-09-19T18:12:50Z", merge_commit_sha=sha)
+            coverage_index.update_history(reports, repository, pulls)
+            after = coverage_index.render_site(reports)
+            self.assertLess(after.index("PR #882"), after.index("PR #881"))
+            refreshed = json.loads((reports / "pr/882/coverage-meta.json").read_text())
+            self.assertEqual(refreshed["source"], original[882]["source"])
+            self.assertEqual(refreshed["coverage"], original[882]["coverage"])
+            self.assertEqual((reports / "pr/882/details.html").read_text(), "retained detailed coverage")
+
     def test_report_contains_policy_table_and_lcov_link(self):
         rendered = coverage_index.render_report(_summary(95.0), "pr/42")
         self.assertIn("xff coverage: pr/42", rendered)

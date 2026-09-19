@@ -3,6 +3,8 @@
 
 # 0.7.0
 
+- Refresh coverage overview ordering on PR merge, closure, or reopening without waiting for another CI run.
+
 - Run Python tooling tests and resource benchmarks through explicit Aspect Bazel targets and a
   hermetic Python 3.13 interpreter; keep pre-commit focused on fast checks.
 
