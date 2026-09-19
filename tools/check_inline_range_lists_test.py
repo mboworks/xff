@@ -46,11 +46,8 @@ for (const auto x : {"a)b", "c:d"}) {
 '''
         self.assertEqual(checker.violations(source), [])
 
-    def test_reports_source_line_and_fingerprints_complete_header(self):
-        first = checker.violations("\nfor (auto x : {1,\n2}) {}")
-        second = checker.violations("\nfor (auto x : {1,\n3}) {}")
-        self.assertEqual(first[0][0], 2)
-        self.assertNotEqual(first[0][1], second[0][1])
+    def test_reports_source_line(self):
+        self.assertEqual(checker.violations("\nfor (auto x : {1,\n2}) {}"), [2])
 
 
 if __name__ == "__main__":

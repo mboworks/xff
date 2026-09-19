@@ -43,13 +43,35 @@ using ::testing::SizeIs;
 struct RegistryTest : ::testing::Test {};
 
 TEST_F(RegistryTest, OutputCapabilitiesDistinguishStdoutFromCapturedAndFileSinks) {
-  for (const std::string_view name : std::to_array<std::string_view>(
-           {"-diff", "-hash", "-ls", "-print", "-print0", "-printf", "-println", "-printfln", "-grep", "-exec",
-            "-execdir", "-ok", "-okdir"})) {
+  static constexpr std::array kStdoutPrimaries = std::to_array<std::string_view>({
+      "-diff",
+      "-hash",
+      "-ls",
+      "-print",
+      "-print0",
+      "-printf",
+      "-println",
+      "-printfln",
+      "-grep",
+      "-exec",
+      "-execdir",
+      "-ok",
+      "-okdir",
+  });
+  for (const std::string_view name : kStdoutPrimaries) {
     EXPECT_THAT(Lookup(name), Optional(Field(&Descriptor::stdout_output, Eq(true)))) << name;
   }
-  for (const std::string_view name : std::to_array<std::string_view>(
-           {"-capture", "-capturedir", "-collect", "-delete", "-prune", "-quit", "-fprint", "-fprintf"})) {
+  static constexpr std::array kNonStdoutPrimaries = std::to_array<std::string_view>({
+      "-capture",
+      "-capturedir",
+      "-collect",
+      "-delete",
+      "-prune",
+      "-quit",
+      "-fprint",
+      "-fprintf",
+  });
+  for (const std::string_view name : kNonStdoutPrimaries) {
     EXPECT_THAT(Lookup(name), Optional(Field(&Descriptor::stdout_output, Eq(false)))) << name;
   }
 }

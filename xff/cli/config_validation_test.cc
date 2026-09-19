@@ -239,8 +239,12 @@ TEST_F(ConfigValidationTest, DirectoryRootsRejectDuplicateAndExplicitFileDeclara
   config::ConfigInputs explicit_file;
   explicit_file.xffrc = {{.path = "task.rc", .config = config::ParseIni("--temp-root=/scratch")}};
   EXPECT_THAT(config::ValidateConfigSkips(explicit_file), StatusIs(absl::StatusCode::kInvalidArgument));
-  for (const std::string_view value :
-       std::to_array<std::string_view>({"--output-root", "--temp-root=relative", "--output-root=/"})) {
+  static constexpr std::array kInvalidDirectoryPolicies = std::to_array<std::string_view>({
+      "--output-root",
+      "--temp-root=relative",
+      "--output-root=/",
+  });
+  for (const std::string_view value : kInvalidDirectoryPolicies) {
     const auto invalid = ValidateConfigFile(config::ParseIni(value), {}, "user.ini", config::Source::kUser);
     EXPECT_THAT(invalid.diagnostics, SizeIs(1));
     EXPECT_THAT(invalid.config.globals, IsEmpty());

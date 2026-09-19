@@ -29,6 +29,12 @@
 namespace xff::render {
 namespace {
 
+constexpr std::array kTableBufferWindows = std::to_array<std::size_t>({
+    0,
+    1,
+    TableStream::kAll,
+});
+
 using ::mbo::testing::EqualsText;
 using ::mbo::testing::WithDropIndent;
 using ::testing::Eq;
@@ -38,7 +44,7 @@ struct RenderTest : ::testing::Test {};
 
 TEST_F(RenderTest, RawAndPreparedDisplayCellsHaveEquivalentVisibleEscapes) {
   for (const Format output : std::to_array<Format>({Format::kAligned, Format::kMarkdown})) {
-    for (const std::size_t window : std::to_array<std::size_t>({0, 1, TableStream::kAll})) {
+    for (const std::size_t window : kTableBufferWindows) {
       SCOPED_TRACE(window);
       const auto render = [&](std::string_view text, bool prepared) {
         TableStream table(output, {"value"}, false, window);
@@ -221,7 +227,7 @@ TEST_F(RenderTest, MarkdownMeasuresEscapedCellsWithoutLosingLineBreaks) {
 }
 
 TEST_F(RenderTest, DisplayControlsStayInsideCellsBeforeAndAfterBufferFlush) {
-  for (const std::size_t window : std::to_array<std::size_t>({0, 1, TableStream::kAll})) {
+  for (const std::size_t window : kTableBufferWindows) {
     TableStream stream(Format::kAligned, {"name"}, false, window);
     std::string out = stream.Add({"a\n\r\t\x1b\x7f\\"});
     out += stream.Add({R"(literal\n)"});

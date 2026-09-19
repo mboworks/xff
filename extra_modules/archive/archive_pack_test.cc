@@ -31,6 +31,11 @@
 namespace xff::archive {
 namespace {
 
+constexpr std::array kPackFormats = std::to_array<std::string_view>({
+    "tar",
+    "zip",
+});
+
 using ::testing::IsFalse;
 namespace stdfs = ::std::filesystem;
 using ::mbo::testing::IsOk;
@@ -102,7 +107,7 @@ TEST_F(ArchivePackTest, PackedFilesReadBackWithTheirNamesAndContent) {
 }
 
 TEST_F(ArchivePackTest, DuplicateMembersPreserveExistingOutput) {
-  for (const auto suffix : std::to_array<std::string_view>({"tar", "zip"})) {
+  for (const auto suffix : kPackFormats) {
     const std::string out = Output(std::string("existing.").append(suffix));
     Write(out, "keep existing output");
     EXPECT_THAT(
@@ -115,7 +120,7 @@ TEST_F(ArchivePackTest, DuplicateMembersPreserveExistingOutput) {
 }
 
 TEST_F(ArchivePackTest, FirstWinsWritesOnlyTheEarliestPayload) {
-  for (const auto suffix : std::to_array<std::string_view>({"tar", "zip"})) {
+  for (const auto suffix : kPackFormats) {
     const std::string out = Output(std::string("first.").append(suffix));
     ASSERT_THAT(
         PackFiles(
@@ -154,8 +159,12 @@ TEST_F(ArchivePackTest, FirstWinsIgnoresUnreadableDiscardedSources) {
 TEST_F(ArchivePackTest, PrefixConflictsPreserveOutputAndFirstWinsInEitherOrder) {
   const PackEntry parent{.source = (root_ / "one.txt").string(), .name = "a"};
   const PackEntry child{.source = (root_ / "dir/two.txt").string(), .name = "a/b"};
-  for (const auto suffix : std::to_array<std::string_view>({"tar", "zip"})) {
-    for (const auto& entries : std::to_array<std::vector<PackEntry>>({{parent, child}, {child, parent}})) {
+  for (const auto suffix : kPackFormats) {
+    const auto entry_orders = std::to_array<std::vector<PackEntry>>({
+        {parent, child},
+        {child, parent},
+    });
+    for (const auto& entries : entry_orders) {
       const std::string out = Output(std::string("conflict.").append(suffix));
       Write(out, "preserve");
       EXPECT_THAT(PackFiles(out, entries), StatusIs(absl::StatusCode::kAlreadyExists));
@@ -169,7 +178,11 @@ TEST_F(ArchivePackTest, PrefixConflictsPreserveOutputAndFirstWinsInEitherOrder) 
 TEST_F(ArchivePackTest, DirectoryAndChildDestinationsRemainCompatibleInEitherOrder) {
   const PackEntry parent{.source = (root_ / "dir").string(), .name = "a"};
   const PackEntry child{.source = (root_ / "dir/two.txt").string(), .name = "a/b"};
-  for (const auto& entries : std::to_array<std::vector<PackEntry>>({{parent, child}, {child, parent}})) {
+  const auto entry_orders = std::to_array<std::vector<PackEntry>>({
+      {parent, child},
+      {child, parent},
+  });
+  for (const auto& entries : entry_orders) {
     const std::string out = Output("directory.tar");
     ASSERT_THAT(PackFiles(out, entries), IsOk());
     EXPECT_THAT(ReadMemberOfFile(out, "a/b"), IsOkAndHolds(Eq("second\n")));

@@ -17,6 +17,11 @@
 namespace xff::render {
 namespace {
 
+constexpr std::array kStandardTestWidths = std::to_array<std::size_t>({
+    80,
+    120,
+});
+
 using ::mbo::testing::EqualsText;
 using ::mbo::testing::WithDropIndent;
 using ::testing::Eq;
@@ -41,7 +46,7 @@ struct ScopedTableTest : ::testing::Test {
 };
 
 TEST_F(ScopedTableTest, ExactLayoutsAtStandardWidths) {
-  for (const auto width : std::to_array<std::size_t>({80, 120})) {
+  for (const auto width : kStandardTestWidths) {
     EXPECT_THAT(RenderScopedTable(scopes, rows, width, true), WithDropIndent(EqualsText(R"out(
         Group
         Scope         Count  % count  Size   % size
@@ -66,7 +71,7 @@ TEST_F(ScopedTableTest, ExactLayoutsAtStandardWidths) {
 }
 
 TEST_F(ScopedTableTest, NarrowWidthsKeepOneTableWithAllScopeValues) {
-  for (const auto width : std::to_array<std::size_t>({80, 120})) {
+  for (const auto width : kStandardTestWidths) {
     const std::string output = RenderScopedTable(scopes, rows, width, true);
     EXPECT_THAT(output, StartsWith("Group\nScope"));
     EXPECT_THAT(output, HasSubstr("\nwide\n  left-only"));

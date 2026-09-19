@@ -231,8 +231,6 @@ clang-format picks a layout per line; these habits steer it toward the readable 
   The `check-inline-range-lists` hook checks multiline/overlong literal range headers, including
   common typed wrappers. Semantic reasons to name a short list (meaning or reuse) remain a review
   decision. Other braced arguments, aggregates, and ordinary computed ranges are unaffected.
-  Existing violations are temporarily fingerprinted in `tools/inline_range_lists_baseline.json`
-  so the separate codebase-review PR can remove them without mixing that cleanup into this policy.
 
 - **Prefer container algorithms** from `absl/algorithm/container.h` (`absl::c_contains`,
   `c_any_of`, `c_find`, `c_equal`, `c_sort`, ...) or C++23 `std::ranges` over hand-rolled
