@@ -71,6 +71,13 @@ class ArchiveFileSystem : public vfs::FileSystem {
       std::string bytes,
       MemberPathOptions options = {});
 
+  static absl::StatusOr<ArchiveFileSystem> OpenSource(
+      std::string_view container,
+      vfs::SharedReadSource source,
+      MemberPathOptions options = {});
+  absl::StatusOr<vfs::SharedReadSource> ContentSource(std::string_view path) const override;
+  bool ContainerCandidate(std::string_view path) const override;
+
   [[nodiscard]] absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view dir) const override;
   [[nodiscard]] absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool follow_symlinks) const override;
   [[nodiscard]] absl::Status Remove(std::string_view path) const override;
@@ -121,6 +128,8 @@ class ArchiveFileSystem : public vfs::FileSystem {
   // root), nullopt means the path does not belong to this filesystem at all.
   [[nodiscard]] std::optional<std::string> MemberKeyOf(std::string_view path) const;
 
+  vfs::SharedReadSource source_;
+  bool package_ = false;
   std::string container_;
   // The container's own bytes, for a nested container; empty when `container_` is a real path and
   // reads stream from the file instead.

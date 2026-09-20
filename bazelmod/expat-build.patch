@@ -1,0 +1,46 @@
+diff --git a/MODULE.bazel b/MODULE.bazel
+new file mode 100644
+--- /dev/null
++++ b/MODULE.bazel
+@@ -0,0 +1,2 @@
++module(name = "libexpat", version = "2.8.4")
++bazel_dep(name = "rules_cc", version = "0.2.22")
+diff --git a/BUILD.bazel b/BUILD.bazel
+new file mode 100644
+--- /dev/null
++++ b/BUILD.bazel
+@@ -0,0 +1,9 @@
++load("@rules_cc//cc:defs.bzl", "cc_library")
++package(default_visibility = ["//visibility:private"])
++cc_library(
++    name = "libexpat",
++    srcs = ["expat/lib/xmlparse.c", "expat/lib/xmlrole.c", "expat/lib/xmltok.c", "expat/lib/random_dev_urandom.c"],
++    hdrs = glob(["expat/lib/*.h", "expat/lib/*.c"]) + ["expat_config.h"],
++    includes = [".", "expat/lib"],
++    visibility = ["//visibility:public"],
++)
+diff --git a/expat_config.h b/expat_config.h
+new file mode 100644
+--- /dev/null
++++ b/expat_config.h
+@@ -0,0 +1,20 @@
++/* xff's Linux/macOS Expat configuration: no DTD or general entity expansion. */
++#ifndef EXPAT_CONFIG_H
++#define EXPAT_CONFIG_H
++#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
++#define BYTEORDER 4321
++#else
++#define BYTEORDER 1234
++#endif
++#define HAVE_FCNTL_H 1
++#define HAVE_STDINT_H 1
++#define HAVE_STDLIB_H 1
++#define HAVE_STRING_H 1
++#define HAVE_SYS_STAT_H 1
++#define HAVE_SYS_TYPES_H 1
++#define HAVE_UNISTD_H 1
++#define XML_DEV_URANDOM 1
++#define XML_CONTEXT_BYTES 1024
++#define XML_GE 0
++#define XML_NS 1
++#endif

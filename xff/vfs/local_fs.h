@@ -56,6 +56,11 @@ class LocalFs final : public FileSystem {
   absl::StatusOr<std::string> FsType(std::string_view path) const override;
   absl::StatusOr<bool> IsCaseSensitive(std::string_view path) const override;
   absl::StatusOr<std::string> ReadContent(std::string_view path) const override;
+
+  absl::StatusOr<SharedReadSource> ContentSource(std::string_view path) const override {
+    return HostReadSource(std::string(path));
+  }
+
   absl::StatusOr<std::string> ReadContentRange(std::string_view path, std::uint64_t offset, std::size_t length)
       const override;
 };

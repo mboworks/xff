@@ -291,6 +291,10 @@ absl::Status RemoveMembersOfFile(
   // member before the writer is set up. An archive with no members has nothing to remove anyway.
   struct ::archive_entry* first = nullptr;
   const int peeked = ::archive_read_next_header(reader.get(), &first);
+  if ((static_cast<unsigned>(::archive_format(reader.get())) & static_cast<unsigned>(ARCHIVE_FORMAT_BASE_MASK))
+      == ARCHIVE_FORMAT_XAR) {
+    return absl::UnimplementedError("XAR/PKG/XIP containers are read-only; rewriting can invalidate signatures");
+  }
   if (peeked == ARCHIVE_EOF) {
     return absl::NotFoundError(absl::StrCat("no such member in ", path, ": ", absl::StrJoin(members, ", ")));
   }

@@ -86,10 +86,10 @@ constexpr std::array kTarSuffixes = std::to_array<std::string_view>({
     ".tar.xz", ".txz",    ".tlz", ".tar.lz", ".tar.lzma", ".tar.lz4", ".tar.Z",   ".taZ", ".tar.zst", ".tzst",
 });
 constexpr std::array kWarcSuffixes = std::to_array<std::string_view>({".warc"});
-constexpr std::array kXarSuffixes = std::to_array<std::string_view>({".xar"});
+constexpr std::array kXarSuffixes = std::to_array<std::string_view>({".xar", ".pkg", ".mpkg", ".xip"});
 constexpr std::array kZipSuffixes = std::to_array<std::string_view>({
-    ".zip",  ".jar",  ".war",   ".ear", ".whl", ".egg", ".apk",  ".aab",  ".cbz",  ".crx", ".docx",
-    ".epub", ".jmod", ".nupkg", ".odp", ".ods", ".odt", ".pptx", ".vsix", ".xlsx", ".xpi",
+    ".zip",  ".jar",  ".war",  ".ear",   ".whl", ".egg", ".apk", ".aab",  ".cbz",  ".crx",  ".docx", ".ipa",
+    ".ipsw", ".epub", ".jmod", ".nupkg", ".odp", ".ods", ".odt", ".pptx", ".vsix", ".xlsx", ".xpi",
 });
 constexpr std::array kPharSuffixes = std::to_array<std::string_view>({".phar"});
 constexpr std::array kSingleFileSuffixes = std::to_array<std::string_view>({
@@ -118,7 +118,9 @@ constexpr std::array kNativeReadFormats = std::to_array<ReadFormatSpec>({
         .detail = "tar archives, plain or through any compression filter; `.crate` and `.gem` are tars",
     },
     {.name = "warc", .suffixes = kWarcSuffixes, .detail = "web archives"},
-    {.name = "xar", .suffixes = kXarSuffixes, .detail = "xar archives"},
+    {.name = "xar",
+     .suffixes = kXarSuffixes,
+     .detail = "XAR archives and flat PKG/XIP envelopes; payload codecs depend on linked extensions"},
     {
         .name = "zip",
         .suffixes = kZipSuffixes,
@@ -270,7 +272,13 @@ std::vector<std::string> AggregatePackFormats() {
 }  // namespace
 
 void RegisterArchiveBackend() {
-  RegisterContainerReader("archive", &OpenArchiveContainer, ReadFormats());
+  RegisterContainerReader(
+      "archive", &OpenArchiveContainer, ReadFormats(),
+      [](std::string_view container, vfs::SharedReadSource source,
+         MemberPathOptions options) -> absl::StatusOr<std::unique_ptr<vfs::FileSystem>> {
+        MBO_ASSIGN_OR_RETURN(auto fs, ArchiveFileSystem::OpenSource(container, std::move(source), options));
+        return std::make_unique<ArchiveFileSystem>(std::move(fs));
+      });
   RegisterContainerMemberRemover(&RemoveArchiveMembers);
   RegisterContainerPacker(&PackArchiveContainer, AggregatePackFormats(), PackVocabulary());
 }

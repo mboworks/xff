@@ -3,6 +3,8 @@
 
 # 0.8.0
 
+- Read XAR packages and streamed PBZX/CPIO payloads on Linux and macOS in the existing full binary.
+
 - Upgrade toolchains_llvm to 1.9.1 and use Apple ld for macOS SDK 27 compatibility.
 
 - Order release navigation by common tasks, with Documentation last.

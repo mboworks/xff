@@ -2361,20 +2361,24 @@ auto MakeContainerMounter(
     // like a container by NAME first; a file the user NAMED (depth 0) is always opened, because
     // pointing xff at it is the request. `--archive-any` drops the gate, which is how an archive whose
     // name says nothing is still found.
-    if (depth > 0 && !sniff_any && !archive::LooksLikeContainerName(BasenameOf(container))) {
+    const bool package_payload = source.ContainerCandidate(container) || archive::ContextualContainerName(container);
+    if (depth > 0 && !sniff_any && !archive::LooksLikeContainerName(BasenameOf(container)) && !package_payload) {
       return absl::InvalidArgumentError(absl::StrCat("not a container by name: ", container));
     }
-    if (&source != &walk_fs) {
-      // A container inside a container: it has no path of its own, so its bytes come out of its
-      // parent first and the mounted filesystem keeps them. How deep this goes is --archive-depth.
-      MBO_ASSIGN_OR_RETURN(const std::string bytes, source.ReadContent(container));
-      MBO_ASSIGN_OR_RETURN(
-          std::unique_ptr<vfs::FileSystem> nested, archive::OpenContainerBytes(container, bytes, member_path_options));
-      return nested;
+    const auto open = [&]() -> absl::StatusOr<std::unique_ptr<vfs::FileSystem>> {
+      if (&source == &walk_fs) {
+        return archive::OpenContainer(container, member_path_options);
+      }
+      // Nested containers own restartable parent sources; no whole-payload copy is required.
+      MBO_ASSIGN_OR_RETURN(const vfs::SharedReadSource bytes, source.ContentSource(container));
+      return archive::OpenContainerSource(container, bytes, member_path_options);
+    };
+    auto mounted = open();
+    if (package_payload && absl::IsInvalidArgument(mounted.status())) {
+      return absl::UnimplementedError(absl::StrCat("unsupported package payload: ", container));
     }
-    MBO_ASSIGN_OR_RETURN(
-        std::unique_ptr<vfs::FileSystem> mounted, archive::OpenContainer(container, member_path_options));
-    return mounted;
+    MBO_RETURN_IF_ERROR(mounted.status());
+    return std::move(*mounted);
   };
 }
 

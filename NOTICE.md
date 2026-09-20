@@ -2,7 +2,7 @@
 
 Components included in this xff binary.
 
-Build extras compiled into this binary: archive, asar, brotli, fuse, language-db, mime-db, pcre2, squashfs
+Build extras compiled into this binary: apple, archive, asar, brotli, fuse, language-db, mime-db, pcre2, squashfs
 
 xff - eXtended File Find
 Copyright M. Boerger, the MBO Works authors
@@ -18,11 +18,20 @@ name, SPDX license identifier, and copyright line.
 - `mboworks/mbo  [Apache-2.0]` - Copyright MBO Works. Licensed under the Apache License, Version 2.0.
 - `utf8proc  [LicenseRef-utf8proc]` - Copyright (c) 2014-2021 Steven G. Johnson, Jiahao Chen, Tony Kelman, Jonas Fonseca, and contributors. Copyright (c) 2009, 2013 Public Software Group e. V. Unicode data: Copyright (c) 1991-2007 Unicode, Inc. MIT library license and Unicode data terms; see the complete bundled upstream license.
 
+### Build extension: Apple packages (@xff_apple)
+- `xff Apple package reader  [Apache-2.0]` - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.
+
+  Cross-platform PBZX package payload support using the archive extension's liblzma codec.
+
 ### Build extension: Archive (@xff_archive)
 - `xff archive extra (@xff_archive)  [Apache-2.0]` - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.
 
   Provides container diving, extraction and packing, including xff's own phar reader and writer, by linking the libraries whose notices follow.
+- `Expat  [MIT]` - Copyright (c) 1998-2000 Thai Open Source Software Center Ltd and Clark Cooper.
+Copyright (c) 2001-2025 Expat maintainers.
 - `LZ4 library  [BSD-2-Clause]` - Copyright (c) 2011-2020 Yann Collet. All rights reserved.
+- `Mbed TLS digest algorithms  [Apache-2.0]` - Copyright The Mbed TLS Contributors. Distributed under the Apache-2.0 option.
+Used for XAR integrity checks, not signature or publisher verification.
 - `Zstandard  [BSD-3-Clause]` - Copyright (c) Meta Platforms, Inc. and affiliates. All rights reserved.
 - `bzip2  [bzip2-1.0.6]` - Copyright (c) 1996-2019 Julian R Seward. All rights reserved.
 - `libarchive  [BSD-2-Clause]` - Copyright (c) 2003-2018 libarchive contributors. All rights reserved.

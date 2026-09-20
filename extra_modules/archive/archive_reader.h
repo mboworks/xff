@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "absl/status/statusor.h"
+#include "xff/vfs/read_source.h"
 
 namespace xff::archive {
 
@@ -95,6 +96,10 @@ absl::StatusOr<std::string> ReadMemberOfFile(
 // a container INSIDE a container needs: its own bytes come out of its parent, so there is no path to
 // open. Empty input is not an archive, as in ListMembers.
 absl::StatusOr<std::string> ReadMember(std::string_view bytes, std::string_view member, std::uint64_t max_bytes = 0);
+
+// Streaming sources retain their parent chain and do not materialize nested containers.
+absl::StatusOr<std::vector<Member>> ListMembersOfSource(const vfs::SharedReadSource& source);
+vfs::SharedReadSource MemberReadSource(vfs::SharedReadSource source, std::string member);
 
 }  // namespace xff::archive
 

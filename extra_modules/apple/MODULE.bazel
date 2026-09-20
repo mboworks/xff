@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
+# SPDX-License-Identifier: Apache-2.0
+module(
+    name = "xff_apple",
+    version = "0.0.0",
+)
+
+bazel_dep(name = "rules_cc", version = "0.2.22")
+bazel_dep(name = "rules_fuzzing", version = "0.8.0")
+bazel_dep(name = "abseil-cpp", version = "20260817.0")
+bazel_dep(name = "xff_archive", version = "0.0.0")
+bazel_dep(name = "xff_extras_api", version = "0.0.0")
+bazel_dep(name = "xz", version = "5.4.5.bcr.7")
+bazel_dep(name = "mboworks_mbo", version = "0.15.0")
+bazel_dep(name = "googletest", version = "1.18.0.bcr.1")

@@ -1225,3 +1225,19 @@ cc_test(
         "@googletest//:gtest_main",
     ],
 )
+
+bashtest(
+    name = "apple_packages_test",
+    size = "small",
+    srcs = ["apple_packages_test.sh"],
+    data = [
+        "//xff/cli/testing:xff_full",
+        "@xff_apple//:fixture_anchor",
+        "@xff_apple//:fixtures",
+    ],
+    env = {"XFF_APPLE_FIXTURE": "$(rootpath @xff_apple//:fixture_anchor)"},
+    target_compatible_with = select({
+        "//xff:xff_apple_on": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+)

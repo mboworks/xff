@@ -15,6 +15,7 @@
 
 #include "xff/archive/archive_fs.h"
 
+#include <limits>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -24,6 +25,7 @@
 #include "absl/hash/hash.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/time/time.h"
 #include "mbo/status/status_macros.h"
@@ -83,6 +85,62 @@ std::uint64_t SyntheticDevice(std::string_view container) {
 
 }  // namespace
 
+absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenSource(
+    std::string_view container,
+    vfs::SharedReadSource source,
+    MemberPathOptions options) {
+  MBO_ASSIGN_OR_RETURN(auto probe, source->Open());
+  std::string prefix;
+  while (prefix.size() < 4) {
+    MBO_ASSIGN_OR_RETURN(const std::string bytes, probe->Read(4 - prefix.size()));
+    if (bytes.empty()) {
+      break;
+    }
+    prefix += bytes;
+  }
+  MBO_ASSIGN_OR_RETURN(auto decoded, DecodeSource(source));
+  if (prefix == "pbzx" && decoded == source) {
+    return absl::UnimplementedError("PBZX package payload requires the apple extension");
+  }
+  auto members = ListMembersOfSource(decoded);
+  if (absl::IsInvalidArgument(members.status()) && decoded != source) {
+    return absl::DataLossError("decoded package payload is not a supported archive");
+  }
+  MBO_RETURN_IF_ERROR(members.status());
+  MBO_ASSIGN_OR_RETURN(auto fs, Index(std::string(container), {}, *members, options));
+  source = std::move(decoded);
+  fs.source_ = std::move(source);
+  fs.package_ = prefix == "xar!"
+                && (absl::EndsWithIgnoreCase(container, ".pkg") || absl::EndsWithIgnoreCase(container, ".mpkg")
+                    || absl::EndsWithIgnoreCase(container, ".xip"));
+  return fs;
+}
+
+absl::StatusOr<vfs::SharedReadSource> ArchiveFileSystem::ContentSource(std::string_view path) const {
+  if (!source_) {
+    return FileSystem::ContentSource(path);
+  }
+  MBO_ASSIGN_OR_RETURN(const auto metadata, Stat(path, false));
+  if (metadata.type != vfs::FileType::kRegular) {
+    return absl::FailedPreconditionError("archive member is not a regular file");
+  }
+  const auto key = MemberKeyOf(path);
+  if (!key) {
+    return absl::NotFoundError("not an archive member");
+  }
+  return MemberReadSource(source_, *key);
+}
+
+bool ArchiveFileSystem::ContainerCandidate(std::string_view path) const {
+  const auto key = MemberKeyOf(path);
+  if (!key) {
+    return false;
+  }
+  const std::string_view name = NameOf(*key);
+  const bool payload = name == "Payload" || name == "Scripts" || name == "Content";
+  return payload && package_;
+}
+
 absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::Open(std::string_view container, MemberPathOptions options) {
   // The reader's status passes through unchanged: "not a readable archive" and "corrupt archive" are
   // different answers and the caller decides what to do with each.
@@ -92,6 +150,10 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::Open(std::string_view conta
   // happened: every native fixture listed zero members while the tar/zip-based ones worked. Only
   // InvalidArgument falls through: a corrupt archive (DataLoss) is an answer, not a reason to guess
   // again with a different parser.
+  auto streamed = OpenSource(container, vfs::HostReadSource(std::string(container)), options);
+  if (streamed.ok() || !absl::IsInvalidArgument(streamed.status())) {
+    return streamed;
+  }
   absl::StatusOr<std::vector<Member>> members = ListMembersOfFile(container);
   bool phar = false;
   if (absl::IsInvalidArgument(members.status())) {
@@ -168,6 +230,10 @@ absl::StatusOr<ArchiveFileSystem> ArchiveFileSystem::OpenBytes(
     std::string_view container,
     std::string bytes,
     MemberPathOptions options) {
+  auto streamed = OpenSource(container, vfs::MemoryReadSource(bytes), options);
+  if (streamed.ok() || !absl::IsInvalidArgument(streamed.status())) {
+    return streamed;
+  }
   return OpenBytesImpl(container, std::move(bytes), options, /*allow_extensions=*/true);
 }
 
@@ -401,7 +467,9 @@ absl::StatusOr<std::string> ArchiveFileSystem::ReadContent(std::string_view path
     return *std::move(cached);
   }
   absl::StatusOr<std::string> content;
-  if (phar_) {
+  if (source_) {
+    content = vfs::ReadSourceBytes(*MemberReadSource(source_, *key), std::numeric_limits<std::size_t>::max());
+  } else if (phar_) {
     content = bytes_.empty() ? ReadPharMemberOfFile(container_, *key) : ReadPharMember(bytes_, *key);
   } else {
     content = bytes_.empty() ? ReadMemberOfFile(container_, *key) : ReadMember(bytes_, *key);

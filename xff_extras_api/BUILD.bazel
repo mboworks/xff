@@ -230,6 +230,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":host_descriptors_interface_cc",
+        ":read_source_cc",
         ":vfs_implementation_cc",
     ],
     # GNU ld sees this adapter before its consumers in vfs_implementation_cc.
@@ -252,6 +253,7 @@ cc_library(
     include_prefix = "xff/vfs",
     deps = [
         ":host_descriptors_interface_cc",
+        ":read_source_cc",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
@@ -351,6 +353,33 @@ cc_test(
         ":host_descriptors_interface_cc",
         ":vfs_implementation_cc",
         "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+cc_library(
+    name = "read_source_cc",
+    srcs = ["read_source.cc"],
+    hdrs = ["read_source.h"],
+    include_prefix = "xff/vfs",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+    ],
+)
+
+cc_test(
+    name = "read_source_test",
+    size = "small",
+    srcs = ["read_source_test.cc"],
+    deps = [
+        ":read_source_cc",
+        "@abseil-cpp//absl/status",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )

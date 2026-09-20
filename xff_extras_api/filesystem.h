@@ -26,6 +26,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "xff/vfs/entry.h"
+#include "xff/vfs/read_source.h"
 
 namespace xff::vfs {
 
@@ -128,6 +129,12 @@ class FileSystem {
   // predicates Cost::kExpensive. Only meaningful for regular files; the caller is
   // expected to gate on the entry type.
   virtual absl::StatusOr<std::string> ReadContent(std::string_view path) const = 0;
+
+  // Restartable owned content. Legacy backends may materialize; archive/host backends stream.
+  virtual absl::StatusOr<SharedReadSource> ContentSource(std::string_view path) const;
+
+  // Contextual supplement to the suffix gate, e.g. an extensionless package Payload.
+  virtual bool ContainerCandidate(std::string_view /*path*/) const { return false; }
 
   // Reads at most `length` bytes of the regular file at `path`, starting at
   // `offset`. A range extending beyond EOF is shortened; an offset at or beyond

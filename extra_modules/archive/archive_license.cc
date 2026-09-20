@@ -26,6 +26,20 @@ const license::Registrar kLibarchive{{
     .spdx = "BSD-2-Clause",
     .text = "Copyright (c) 2003-2018 libarchive contributors. All rights reserved.",
 }};
+const license::Registrar kExpat{{
+    .section = kSection,
+    .component = "Expat",
+    .spdx = "MIT",
+    .text = "Copyright (c) 1998-2000 Thai Open Source Software Center Ltd and Clark Cooper.\n"
+            "Copyright (c) 2001-2025 Expat maintainers.",
+}};
+const license::Registrar kMbedDigests{{
+    .section = kSection,
+    .component = "Mbed TLS digest algorithms",
+    .spdx = "Apache-2.0",
+    .text = "Copyright The Mbed TLS Contributors. Distributed under the Apache-2.0 option.\n"
+            "Used for XAR integrity checks, not signature or publisher verification.",
+}};
 const license::Registrar kBzip2{{
     .section = kSection,
     .component = "bzip2",

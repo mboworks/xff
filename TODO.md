@@ -527,3 +527,14 @@ this as intentional accounting.
 - [x] Preserve raw and machine-output encoding; document the display distinction.
 - [x] Verify buffered/streaming tables, tree labels, and actual filenames.
 - [x] Regenerate and verify the flag reference.
+
+## Apple application distribution readers
+
+- [ ] Delivery 1: validate and publish XAR/PKG/XIP, owned streaming sources, contextual payload
+      discovery and the removable PBZX extension in the existing full binary on Linux and macOS.
+- [ ] Verify production package variants with redistributable provenance; extend PBZX framing only
+      with explicit fixtures. Add isolated PBZX fuzzing and large-payload resource measurements.
+- [ ] Add shared decoder/cache budgets and bounded range access before disk-reader integration;
+      current cursors are sequential and reopen/rescan their parents.
+- [ ] Delivery 2: evaluate a separate permissively licensed UDIF/HFS+/APFS extension. No GPL/LGPL,
+      installer execution, implicit host mounts, or new Apple-specific binary.

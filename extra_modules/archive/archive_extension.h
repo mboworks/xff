@@ -35,6 +35,11 @@ struct CompressionExtension {
   ContainerPacker packer;
 };
 
+// Streaming decoders inspect a bounded prefix and return InvalidArgument for other formats.
+using SourceDecoder = absl::AnyInvocable<absl::StatusOr<vfs::SharedReadSource>(vfs::SharedReadSource) const>;
+void RegisterSourceDecoder(std::string name, SourceDecoder decoder);
+absl::StatusOr<vfs::SharedReadSource> DecodeSource(vfs::SharedReadSource source);
+
 template<typename Sink>
 void AbslStringify(Sink& sink, const CompressionExtension& extension) {
   sink.Append(extension.name);
