@@ -100,9 +100,12 @@ local_path_override(
     path = "extra_modules/apple",
 )
 
-# liblzma callbacks must retain their declared function type under UBSan.
+# Keep liblzma callback types exact and CRC64 vector reads within the supplied buffer.
 single_version_override(
     module_name = "xz",
     patch_strip = 1,
-    patches = ["//bazelmod:xz-callback-types.patch"],
+    patches = [
+        "//bazelmod:xz-callback-types.patch",
+        "//bazelmod:xz-crc64-bounds.patch",
+    ],
 )

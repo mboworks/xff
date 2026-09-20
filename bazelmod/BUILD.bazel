@@ -24,4 +24,5 @@ exports_files([
     "llvm-linker-msan.patch",
     "utf8proc-bazel9.patch",
     "xz-callback-types.patch",
+    "xz-crc64-bounds.patch",
 ])

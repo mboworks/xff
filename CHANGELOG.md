@@ -3,6 +3,8 @@
 
 # 0.8.0
 
+- Keep accelerated XZ CRC64 reads within their input buffers, including short and unaligned tails.
+
 - Support native `productbuild` XAR seek layouts, bounded source ranges, and shared decoder/range-buffer budgets.
 - Read XAR packages and streamed PBZX/CPIO payloads on Linux and macOS in the existing full binary.
 
