@@ -1,0 +1,257 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/execution-resources.md - xff v0.8.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.8.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.8.0">Release &amp; downloads</a><a href="/xff/releases/0.8.0/">CLI reference</a><a href="/xff/coverage/tag/0.8.0/">Coverage</a><a href="/xff/benchmarks/tag/0.8.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5">Source</a><a href="/xff/site/tag/v0.8.0/documents.html">Documentation</a></nav><p>xff v0.8.0</p><main><h1 dir="auto" id="execution-resources">Execution resources</h1>
+<p dir="auto">Treat retained state, file-content reads, and concurrency as separate costs. <code class="notranslate">--buffer</code> controls<br>
+particular output buffers; it is not a process memory limit. <code class="notranslate">--jobs</code> controls directory workers<br>
+and eligible child commands; it is not a limit on bytes read or retained results.</p>
+<h2 dir="auto" id="what-a-command-retains-and-reads">What a command retains and reads</h2>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Operation</th>
+<th>Retained state</th>
+<th>Content reads</th>
+<th>First relevant output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Filename and metadata filtering</td>
+<td>Directory listings and traversal state</td>
+<td>No file-content read required by the predicate itself</td>
+<td>During traversal</td>
+</tr>
+<tr>
+<td>Aligned listing</td>
+<td>Rows used to determine column widths</td>
+<td>Depends on requested fields</td>
+<td>After the selected buffer window</td>
+</tr>
+<tr>
+<td>Fuzzy score ordering</td>
+<td>Matching results for ranking</td>
+<td>Depends on the expression and fields</td>
+<td>After traversal</td>
+</tr>
+<tr>
+<td>Summary or histogram</td>
+<td>Aggregation keys and values; some scopes retain per-entry data</td>
+<td>Hash keys and line measures require content</td>
+<td>After aggregation</td>
+</tr>
+<tr>
+<td>Tree comparison</td>
+<td>Both complete matched-entry inventories, plus comparison and reduction state</td>
+<td>Paired regular files may require content comparison</td>
+<td>Comparison records follow both walks</td>
+</tr>
+<tr>
+<td>Content predicates, grep, hashes, and line fields</td>
+<td>Operation-specific file content or working state</td>
+<td>Can require full file reads</td>
+<td>Depends on the consumer</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">The table describes ordinary execution, not every backend's implementation. Archive access can<br>
+add decompression and retained container state. Configuration discovery, ignore handling, and<br>
+archive probing can also read data even when the expression only tests names.</p>
+<p dir="auto">In comparison mode the two walks run concurrently. Their inventories are merged after both walks<br>
+finish; this is not a directory-at-a-time comparison. Actions inside the expression can run during<br>
+the walks, so their output can precede comparison records and interleave between sides. A small<br>
+<code class="notranslate">--buffer</code> value does not bound either inventory.</p>
+<p dir="auto">Repeated content consumers need separate attention. Do not assume <code class="notranslate">-grep</code>, <code class="notranslate">{hash}</code>, <code class="notranslate">{lines}</code>, and<br>
+summary measures share one read. For example, the hash and line fields each request file content.<br>
+A warm operating-system cache can hide storage latency while the program still reads and processes<br>
+the bytes repeatedly. Network filesystems and archive members can make this distinction especially<br>
+important.</p>
+<h2 dir="auto" id="choosing-controls">Choosing controls</h2>
+<ul dir="auto">
+<li>Use filename and metadata predicates before expensive predicates when their logical meaning<br>
+permits short-circuiting. Do not reorder actions or predicates that produce values consumed later.</li>
+<li>Use <code class="notranslate">--buffer=off</code> to avoid column-sizing buffering when alignment is unnecessary. This does not<br>
+disable ranking, aggregation, comparison inventories, or directory read-ahead.</li>
+<li>Lower <code class="notranslate">--jobs</code> when directory read-ahead or concurrent children put pressure on resources.<br>
+Directory workers and eligible semicolon-form execution have independent concurrency budgets;<br>
+the setting is not one shared pool. Comparison has a walk on each side.</li>
+<li>Select only needed fields and reductions. Displaying a hash or line count adds work even when<br>
+the matching expression itself is cheap.</li>
+</ul>
+<h2 dir="auto" id="inspecting-an-effective-command">Inspecting an effective command</h2>
+<p dir="auto"><code class="notranslate">--explain</code> includes an execution-resource view after configuration composition. It does not<br>
+run the search or evaluate actions. Configuration discovery still reads config files and,<br>
+with recursive <code class="notranslate">.xffrc</code> autoload enabled, may traverse directories. This is not a promise of<br>
+zero configuration I/O.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff LEFT RIGHT --compare=summary --summary=ext --buffer=off --jobs=2 --explain
+xff ROOT --format=aligned --columns=hash,lines --buffer=1MiB --explain</pre></div>
+<p dir="auto">The first command reports two walks, two directory workers per walk, both complete comparison<br>
+inventories, and per-entry summary contributions. Turning alignment buffering off does not bound<br>
+those inventories. Eligible semicolon-form child commands have an independent per-walk worker<br>
+limit; this is not one shared limit across all worker pools.</p>
+<p dir="auto">The second reports two compiled content-reading field occurrences and a cell-byte alignment<br>
+buffer. The occurrence count describes active <code class="notranslate">hash</code> and <code class="notranslate">lines</code> field segments, not predicted<br>
+read calls: branch selection, matched entries, grep lines, and field evaluation determine actual<br>
+calls. Escaped literals do not count. Suppressed listing templates, templates replaced by columns,<br>
+and grep templates disabled by count mode do not count either. Config selections and CLI overrides<br>
+use the same resolved command as execution.</p>
+<p dir="auto">Other rows identify aggregation, collections, deferred selection, ranking, tree output, command<br>
+batches, shard grouping, and archive packing when applicable. Collection row/byte caps describe<br>
+stored entries and path/name/root text, not a process-memory ceiling. In particular, <code class="notranslate">--buffer=off</code><br>
+disables column buffering but leaves an active collection without a row or byte cap.</p>
+<p dir="auto">The expensive-primary list comes from the registry's advisory cost tier. It is not a classification<br>
+of file reads: matching, computation, and process work can be expensive for different reasons.<br>
+The view gives no byte, peak-memory, or latency estimate; backends, archive probing, ignore/config<br>
+discovery, and runtime conditions contribute work that static inspection cannot measure.</p>
+<h2 dir="auto" id="measuring-changes">Measuring changes</h2>
+<p dir="auto">A useful benchmark records the exact binary, command, dataset, backend, job count, and cache state.<br>
+Measure these separately:</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Measurement</th>
+<th>Meaning</th>
+<th>Caution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Time to first output</td>
+<td>Invocation to the first byte read from stdout</td>
+<td>Disable paging and identify whether that byte is an action or a comparison record</td>
+</tr>
+<tr>
+<td>Total elapsed time</td>
+<td>Invocation to process completion</td>
+<td>Include exit status and reported errors</td>
+</tr>
+<tr>
+<td>Peak resident memory</td>
+<td>Maximum resident memory of the measured process</td>
+<td>Child-process memory is a separate measurement</td>
+</tr>
+<tr>
+<td>Logical content bytes</td>
+<td>Bytes delivered by instrumented VFS reads</td>
+<td>Distinguish repeated reads from unique file bytes</td>
+</tr>
+<tr>
+<td>Storage or network bytes</td>
+<td>Backend traffic observed by the operating system</td>
+<td>Page caches, compression, and read-ahead prevent equivalence with logical bytes</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Use both broad directories and deep trees, local and network storage, and a repeated-content-consumer<br>
+case. Report warm-cache and cold-cache conditions honestly; do not label a run cold merely because<br>
+xff was restarted. Compare identical selected populations and output sinks. A slow consumer of<br>
+stdout can dominate elapsed time.</p>
+<p dir="auto"><code class="notranslate">python3 tools/measure_resources.py -- COMMAND...</code> measures one invocation in a fresh process<br>
+and emits a JSON record. It drains stdout without retaining the output, records its byte count<br>
+and first-byte latency, and retains the last 32 KiB of stderr for diagnosis. An invocation without<br>
+stdout has a null first-byte latency. The wrapper exits nonzero when the measured command fails,<br>
+while preserving its actual exit status in the record.</p>
+<p dir="auto">For example, use the same binary and roots for these workloads:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">python3 tools/measure_resources.py -- ./xff --no-pager ROOT -type f
+python3 tools/measure_resources.py -- ./xff --no-pager ROOT -type f --summary=ext
+python3 tools/measure_resources.py -- ./xff --no-pager ROOT -type f --template=<span class="pl-s"><span class="pl-pds">'</span>{hash} {lines}<span class="pl-pds">'</span></span>
+python3 tools/measure_resources.py -- ./xff --no-pager --compare=summary LEFT RIGHT</pre></div>
+<p dir="auto">Run each invocation separately and repeat it across broad/deep fixture trees. The JSON records<br>
+include the exact argument vector, working directory, platform, elapsed/CPU time, and peak child<br>
+RSS in bytes. Peak RSS is the operating system's child high-water measurement, not a summed<br>
+process-tree peak or retained bytes attributable to a particular feature. The wrapper supports<br>
+macOS and Linux and normalizes their different RSS units. Its stderr spool and stdout draining<br>
+add measurement overhead; use the same sink and harness when comparing runs.</p>
+<p dir="auto"><code class="notranslate">--cache-state=warm</code> labels a run; it does not warm or flush caches. Record binary version/build,<br>
+fixture generation parameters, filesystem/backend, and cache preparation alongside the JSON.<br>
+The harness does not yet measure logical VFS bytes or storage traffic; runtime read accounting<br>
+remains audit work. Directory-at-a-time comparison is a separate design<br>
+question because ordering, filtering, virtual filesystems, and error handling affect correctness.</p>
+<p dir="auto">A <a href="benchmarks/execution-resources.html">10,000-file broad/deep measurement example</a> records<br>
+repeated content consumers, time to first output, and peak RSS with those limitations.</p>
+<h2 dir="auto" id="directory-at-a-time-comparison-investigation">Directory-at-a-time comparison investigation</h2>
+<p dir="auto">The current implementation has two explicit barriers in <code class="notranslate">RunTreeCompare</code>: both <code class="notranslate">RunFindCore</code><br>
+invocations finish, then the ordered maps of matched entries are merged. <code class="notranslate">Walk</code> exposes entry<br>
+visits and traversal errors, but no callback saying that a directory's complete child listing<br>
+has been evaluated. A directory entry being visited is therefore not a completion signal.</p>
+<p dir="auto">A future streaming implementation needs a paired-directory coordinator. Each side may read ahead,<br>
+but the coordinator must know when both corresponding listings are complete before deciding<br>
+that an entry is present on only one side. An empty listing, an excluded or pruned subtree, an<br>
+unreadable listing, and a listing still in progress are different states. A failure must never<br>
+be interpreted as an empty directory. Matching remains based on each side's selected population;<br>
+unmatched parent directories can still contain matching descendants.</p>
+<p dir="auto">A bounded prototype should start with pure filters and status output, without changing existing<br>
+behavior for other commands. It would retain complete sibling listings and a bounded traversal<br>
+frontier, compare corresponding entries, and release completed entries and archive owners once<br>
+no pending comparison needs them. This reduces whole-tree retention, but does not establish a<br>
+fixed memory bound: one huge directory, deep traversal, content buffers, and backend state still<br>
+matter. Read-ahead needs backpressure so that a faster side cannot accumulate the entire tree<br>
+while waiting for the slower side.</p>
+<p dir="auto">Several contracts need separate decisions before replacing the current path:</p>
+<ul dir="auto">
+<li><strong>Ordering:</strong> current comparison records follow relative-path map order. Emitting all siblings<br>
+before descending can change that order. For example, a path-ordered sequence can put <code class="notranslate">a/x</code><br>
+before sibling <code class="notranslate">b</code>; a directory-listing sequence puts <code class="notranslate">b</code> before <code class="notranslate">a/x</code>. Reducing memory must<br>
+not silently change the chosen output contract.</li>
+<li><strong>Errors:</strong> the current walk barrier suppresses comparison records if either walk reports an<br>
+error, although expression actions may already have emitted output. Streaming records before<br>
+a later traversal failure changes that behavior. Preserving the barrier requires deferred<br>
+output, potentially with a separate spool; allowing partial output needs an explicit contract.</li>
+<li><strong>Actions and termination:</strong> expressions can mutate entries, emit their own output, prune, or<br>
+stop traversal. Reading paired content earlier can observe a different state from today's<br>
+post-walk comparison. The first implementation should retain the existing path for commands<br>
+whose semantics have not been proved equivalent.</li>
+<li><strong>Collected operations:</strong> ranking, shard classification, and category-dependent reductions<br>
+can retain data independently of traversal. Streaming the directory inventory alone does not<br>
+remove those costs. Category reduction inputs must be attributed exactly once after the pair's<br>
+status is known, preserving physical-entry and logical-result accounting.</li>
+<li><strong>Virtual filesystems:</strong> archive members must keep their owning filesystem alive through content<br>
+comparison and any deferred field reads. Paired paths may have different types or archive<br>
+structures; comparison cannot assume identical traversal shapes.</li>
+</ul>
+<p dir="auto">Acceptance should compare records, ordering, counts, sizes, errors, and exit status against the<br>
+existing implementation on broad/deep trees, empty directories, one-sided subtrees, filtered<br>
+parents, pruning, type mismatches, archive members, and injected traversal/read failures. Measure<br>
+first-record latency and peak RSS separately from final summary latency. Network measurements remain outstanding. The isolated logical VFS read counts in the<br>
+<a href="benchmarks/execution-resources.html">measurement report</a> complement local timings; neither<br>
+measures network or physical storage traffic. This investigation proposes a bounded prototype, not an enabled execution mode.</p>
+<h2 dir="auto" id="runtime-logical-read-benchmark">Runtime logical-read benchmark</h2>
+<p dir="auto">Build <code class="notranslate">//xff/engine:read_benchmark</code> to observe real filesystem reads in the benchmark<br>
+workloads. This test-only executable runs the same engine behind a read-only VFS observer;<br>
+it is not installed as an xff command and adds no public CLI option.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">bazel build --config=clang //xff/engine:read_benchmark
+bazel-bin/xff/engine/read_benchmark hash_lines 8 /absolute/root
+bazel-bin/xff/engine/read_benchmark compare 8 /absolute/left /absolute/right
+python3 tools/benchmark_resources.py ./xff \
+  --read-counter=bazel-bin/xff/engine/read_benchmark \
+  --output=resources.json --jobs=8</pre></div>
+<p dir="auto">Workloads are <code class="notranslate">listing</code>, <code class="notranslate">summary</code>, <code class="notranslate">hash</code>, <code class="notranslate">hash_twice</code>, <code class="notranslate">hash_lines</code>, and <code class="notranslate">compare</code>.<br>
+The executable takes a positive worker count and absolute roots, one root except for comparison.<br>
+It constructs these read-only expressions itself; arbitrary expressions, subprocesses, configuration<br>
+loading, and archive backends are outside this harness. Its VFS observer also rejects every mutation<br>
+entrypoint. The xff style and explicit worker count are used for execution.</p>
+<p dir="auto">Each JSON result separates whole-file and range-read attempts, successful calls, and returned bytes.<br>
+Empty successful reads count as successful calls with zero bytes; failed reads count as attempts<br>
+without successful bytes. A range implemented internally by reading a whole file is counted once<br>
+at the observed boundary, using only the returned range. This is <strong>logical content delivered to the<br>
+engine</strong>, not bytes fetched by a backend, physical disk I/O, metadata traffic, or network traffic.<br>
+Concurrent counters are sampled after the traversal has joined.</p>
+<p dir="auto">The harness also reports discarded output bytes, elapsed engine time, first nonempty-output latency<br>
+(or null when there is no output), and the engine error count. It excludes the shipping CLI's startup<br>
+and configuration processing. <code class="notranslate">--read-counter</code> makes the Python driver run an additional invocation<br>
+for each workload, recorded as <code class="notranslate">logical_read_run</code> with <code class="notranslate">separate_invocation: true</code>. Both executable<br>
+fingerprints are recorded. Do not attribute that invocation's read counters to the separately timed<br>
+shipping executable, or infer timing overhead by subtracting the two invocations.</p>
+<p dir="auto">The driver accepts <code class="notranslate">--directory</code> for disposable fixtures on a chosen filesystem, including a network<br>
+mount. That enables network-fixture measurements; it does not turn logical bytes into network traffic.<br>
+Network measurements still require a supplied mount and an explicit description of its cache and<br>
+server conditions. The observer can wrap another VFS in a benchmark, but this executable does not<br>
+instrument dynamically constructed archive/member backends.</p>
+<p dir="auto">Continuous paired measurements are described in <a href="benchmark-history.html">Benchmark history</a>.</p></main><footer>Release snapshot &middot; c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5</footer></body></html>

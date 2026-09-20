@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/summary-export.md - xff v0.8.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.8.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.8.0">Release &amp; downloads</a><a href="/xff/releases/0.8.0/">CLI reference</a><a href="/xff/coverage/tag/0.8.0/">Coverage</a><a href="/xff/benchmarks/tag/0.8.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5">Source</a><a href="/xff/site/tag/v0.8.0/documents.html">Documentation</a></nav><p>xff v0.8.0</p><main>
+
+<h1 dir="auto" id="csv-and-tsv-summary-exports">CSV and TSV summary exports</h1>
+<p dir="auto">Use <code class="notranslate">--summary=ext --format=csv</code> for a spreadsheet-ready extension summary, or select <code class="notranslate">tsv</code> for<br>
+xff's tab-separated, backslash-escaped format. Both contain one header for the entire export.<br>
+Repeated summary requests and multiple scopes append data rows under that same header.<br>
+<code class="notranslate">--no-header</code> removes that header once. There are no headings, legends, blank separators, human<br>
+size suffixes, or thousands separators in the export.</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff project-a project-b --summary=ext --summary=type --summary-scope=root --format=csv
+xff --compare=summary LEFT RIGHT --summary=ext --summary-scope=diff --format=csv</pre></div>
+<p dir="auto">The second command includes comparison-result rows followed by extension rows with <code class="notranslate">left-only</code>,<br>
+<code class="notranslate">right-only</code>, and <code class="notranslate">different</code> column groups. Their counts and byte denominators retain the normal<br>
+<a href="design-summary-scopes.html">summary scope semantics</a>. Each category counts pairs once; its bytes<br>
+include both sides. Side-total scopes count and size only their own side.</p>
+<h2 dir="auto" id="columns">Columns</h2>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Columns</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">record</code></td>
+<td>Always <code class="notranslate">summary</code></td>
+</tr>
+<tr>
+<td><code class="notranslate">request</code></td>
+<td>Zero-based summary request identity, preserving repeated requests</td>
+</tr>
+<tr>
+<td><code class="notranslate">summary</code>, <code class="notranslate">template</code></td>
+<td>Canonical grouping and its field template, when applicable</td>
+</tr>
+<tr>
+<td><code class="notranslate">scope</code></td>
+<td><code class="notranslate">all</code>, <code class="notranslate">root</code>, <code class="notranslate">compare</code>, or the canonical selected comparison scopes</td>
+</tr>
+<tr>
+<td><code class="notranslate">root</code>, <code class="notranslate">left_root</code>, <code class="notranslate">right_root</code></td>
+<td>Root identities where applicable; otherwise empty</td>
+</tr>
+<tr>
+<td><code class="notranslate">type</code></td>
+<td>Entry type for comparison-result rows; otherwise empty</td>
+</tr>
+<tr>
+<td><code class="notranslate">group</code>, <code class="notranslate">is_total</code></td>
+<td>Actual grouping key and explicit boolean total-row marker</td>
+</tr>
+<tr>
+<td><code class="notranslate">count</code>, <code class="notranslate">count_percent</code>, <code class="notranslate">bytes</code>, <code class="notranslate">size_percent</code></td>
+<td>Metrics for ordinary or comparison-result rows</td>
+</tr>
+<tr>
+<td><code class="notranslate">SCOPE.count</code>, <code class="notranslate">SCOPE.count_percent</code>, <code class="notranslate">SCOPE.bytes</code>, <code class="notranslate">SCOPE.size_percent</code></td>
+<td>Metrics for each selected comparison column group</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Scope-prefixed columns follow the resolved selector order and appear when ordinary comparison<br>
+summaries need them. Every row has the same columns; inapplicable cells are empty. A missing<br>
+comparison cell is empty, distinct from a present metric of <code class="notranslate">0</code>. A summary without a byte dimension,<br>
+such as a value-stream extraction, leaves byte cells empty. <code class="notranslate">is_total=true</code> distinguishes the<br>
+synthetic total from a real group whose name is <code class="notranslate">total</code> or empty.</p>
+<p dir="auto">Counts and bytes are exact base-ten integers. Percentages use <code class="notranslate">--summary-precision</code>; <code class="notranslate">--human</code> does<br>
+not change these numeric columns. <code class="notranslate">--top</code> limits group rows but leaves totals and denominators<br>
+covering the complete population.</p>
+<h2 dir="auto" id="escaping-and-composition">Escaping and composition</h2>
+<p dir="auto">CSV uses the existing listing encoder: commas, quotes, CR, and LF trigger quoting, and embedded<br>
+quotes are doubled. Use a CSV parser rather than splitting lines or commas: a quoted cell can<br>
+contain a newline.</p>
+<p dir="auto">TSV uses the existing listing convention, not CSV quoting: backslashes, tabs, CR, and LF are<br>
+encoded as <code class="notranslate">\\</code>, <code class="notranslate">\t</code>, <code class="notranslate">\r</code>, and <code class="notranslate">\n</code>. Split tab-separated records, then decode those escapes<br>
+once in each cell. Quotes are ordinary characters. UTF-8 content remains UTF-8.</p>
+<p dir="auto">CSV/TSV summary exports cannot include histograms or action output. Select comparison summaries<br>
+with <code class="notranslate">--compare=summary</code>, or suppress per-path records using <code class="notranslate">--compare-select=none</code>. Conflicting<br>
+output producers and applicable dry-run previews are rejected before traversal or actions.<br>
+Non-output predicates, collections, and captured command results can still feed summaries.<br>
+<code class="notranslate">--columns</code> remains a listing control and cannot replace this schema.</p></main><footer>Release snapshot &middot; c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5</footer></body></html>

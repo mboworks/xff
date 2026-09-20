@@ -1,0 +1,34 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/design-field-validation.md - xff v0.8.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.8.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.8.0">Release &amp; downloads</a><a href="/xff/releases/0.8.0/">CLI reference</a><a href="/xff/coverage/tag/0.8.0/">Coverage</a><a href="/xff/benchmarks/tag/0.8.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5">Source</a><a href="/xff/site/tag/v0.8.0/documents.html">Documentation</a></nav><p>xff v0.8.0</p><main>
+
+<h1 dir="auto" id="field-validation">Field validation</h1>
+<p dir="auto">Static field mistakes are usage errors before traversal or actions. The same check applies to<br>
+<code class="notranslate">--explain</code> after system, user, and explicit configuration files have been composed. It checks<br>
+active listing templates, selected summary keys (including collected entries), columns, attached<br>
+grep templates, and expression arguments identified by descriptor metadata. <code class="notranslate">-exec</code> arguments<br>
+are templates only with <code class="notranslate">--exec-fields</code>; ordinary predicate arguments and <code class="notranslate">--define</code> values<br>
+remain literal. Superseded listing templates and cleared summary requests do not participate.</p>
+<p dir="auto">Unknown names such as <code class="notranslate">{nmae}</code>, empty namespaces such as <code class="notranslate">{env.}</code>, overflowing numeric capture<br>
+indices, and malformed placeholders fail. Valid fields with absent runtime values remain empty:<br>
+an unset <code class="notranslate">{env.NAME}</code>, an undefined <code class="notranslate">{def.NAME}</code>, or a capture absent for an entry is not a typo.<br>
+An unused command capture still has its separate validation rule.</p>
+<p dir="auto">Use <code class="notranslate">{{</code> and <code class="notranslate">}}</code> for literal braces in templates. Printf interprets only <code class="notranslate">%{field}</code> as a field<br>
+escape; ordinary braces and escaped percent signs stay literal. Quoted field qualifiers can<br>
+contain <code class="notranslate">}</code>, and both renderers use the same placeholder parser to locate the closing brace.</p>
+<p dir="auto">Native qualifiers belong to their field renderer: size and block fields accept <code class="notranslate">h</code>, hash fields<br>
+use the shared algorithm/encoding vocabulary, and time fields accept presets or arbitrary custom<br>
+time patterns, including literal text. Generic path-component qualifiers and <code class="notranslate">s</code>/<code class="notranslate">m</code> transforms<br>
+work across fields. Rewrite validation checks RE2 patterns, replacement backreferences, the <code class="notranslate">g</code><br>
+and <code class="notranslate">i</code> flags, command delimiters, and <code class="notranslate">join</code> reducer syntax without reading any file contents.</p>
+<p dir="auto">Compilation retains diagnostics on the compiled template. Low-level rendering remains usable by<br>
+isolated parser/render tests, but command preflight must inspect the diagnostics before evaluating<br>
+any expression. Both comparison roots pass this single preflight before either walk begins.</p></main><footer>Release snapshot &middot; c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5</footer></body></html>

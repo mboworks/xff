@@ -1,0 +1,139 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/design-structured-output.md - xff v0.8.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.8.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.8.0">Release &amp; downloads</a><a href="/xff/releases/0.8.0/">CLI reference</a><a href="/xff/coverage/tag/0.8.0/">Coverage</a><a href="/xff/benchmarks/tag/0.8.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5">Source</a><a href="/xff/site/tag/v0.8.0/documents.html">Documentation</a></nav><p>xff v0.8.0</p><main><h1 dir="auto" id="structured-output">Structured output</h1>
+<p dir="auto">A format selects the representation of built-in records. It does not rewrite explicit printf<br>
+or grep templates, or reinterpret child-process stdout. Authored output remains responsible for<br>
+its own syntax, including when combined with JSONL summaries.</p>
+<h2 dir="auto" id="producer-contracts">Producer contracts</h2>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Producer</th>
+<th>Plain</th>
+<th>JSONL</th>
+<th>Other formats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Default listing</td>
+<td>Path records</td>
+<td>Objects with a path</td>
+<td>NUL, CSV, TSV, aligned, Markdown, tree</td>
+</tr>
+<tr>
+<td>Comparison status</td>
+<td>Tab-separated status/path</td>
+<td>Comparison objects</td>
+<td>Rejected when per-path statuses are selected</td>
+</tr>
+<tr>
+<td>Comparison patch</td>
+<td>Unified patch</td>
+<td>Rejected when patches are selected</td>
+<td>Rejected when patches are selected</td>
+</tr>
+<tr>
+<td>Built-in grep</td>
+<td>Match/context lines or counts</td>
+<td>Grep objects</td>
+<td>Rejected before actions run</td>
+</tr>
+<tr>
+<td>Summary</td>
+<td>Tables</td>
+<td>Grouping and metric objects</td>
+<td>Aligned, Markdown, and CSV/TSV summary exports</td>
+</tr>
+<tr>
+<td>Histogram</td>
+<td>Bars</td>
+<td>Bucket/value objects</td>
+<td>Aligned bars and Markdown tables; CSV/TSV/NUL/tree rejected</td>
+</tr>
+<tr>
+<td>Explicit printf/grep template</td>
+<td>Authored output</td>
+<td>Authored output</td>
+<td>Existing action/format validation applies</td>
+</tr>
+<tr>
+<td>Child process</td>
+<td>Child stdout</td>
+<td>Child stdout</td>
+<td>Existing action/format validation applies</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Comparison restrictions concern selected per-path output. With <code class="notranslate">--compare-select=none</code>, the<br>
+requested reductions' format rules apply. <code class="notranslate">--compare=summary --summary=ext --format=md</code> can<br>
+therefore render tables without per-path records.</p>
+<p dir="auto">CSV and TSV use the listing schema for ordinary listings. With summaries, they use a single<br>
+<a href="summary-export.html">summary export schema</a> across requests, with explicit grouping, scope, and<br>
+aggregate-row identity. Summary exports reject action output and per-path comparison records;<br>
+histograms reject CSV and TSV.</p>
+<p dir="auto">To consume a whole command as JSONL, use producers with JSONL representations and ensure any<br>
+authored output is valid JSONL too. Escaped newlines inside strings do not split records.</p>
+<p dir="auto">Listing records contain <code class="notranslate">path</code>; comparison, grep, and summary records carry their documented<br>
+<code class="notranslate">record</code> tag. Histogram rows contain <code class="notranslate">histogram</code>, <code class="notranslate">bucket</code>, and <code class="notranslate">value</code>; they retain that existing<br>
+schema. Summary rows retain <code class="notranslate">request</code>, grouping/scope/root identity, and <code class="notranslate">is_total</code>.<br>
+A built-in grep action can emit records followed by summary and histogram rows in one JSONL<br>
+stream. An ordinary summary suppresses the default listing rather than duplicating it.</p>
+<h2 dir="auto" id="string-and-byte-values">String and byte values</h2>
+<p dir="auto">Text values remain JSON strings when their original bytes are valid UTF-8. Otherwise the<br>
+value is a lossless object such as <code class="notranslate">{"encoding":"base64","data":"eP8="}</code> (the bytes <code class="notranslate">x</code><br>
+and <code class="notranslate">0xff</code>). Base64 uses the standard alphabet with padding and encodes the entire original<br>
+value. Consumers should handle this union for paths, roots, group labels, templates, patterns,<br>
+and grep text. No replacement characters or invalid UTF-8 are silently inserted.</p>
+<p dir="auto">This rule applies to built-in JSONL producers. Explicit templates and child stdout retain<br>
+their authored-output contract. <code class="notranslate">is_total</code> remains the authority for summary aggregates,<br>
+regardless of whether a group value is text or bytes.</p>
+<h2 dir="auto" id="comparison-status">Comparison status</h2>
+<div class="highlight highlight-source-json" dir="auto"><pre class="notranslate">{
+  <span class="pl-ent">"record"</span>: <span class="pl-s"><span class="pl-pds">"</span>comparison<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"status"</span>: <span class="pl-s"><span class="pl-pds">"</span>different<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"path"</span>: <span class="pl-s"><span class="pl-pds">"</span>src/main.cc<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"left_root"</span>: <span class="pl-s"><span class="pl-pds">"</span>LEFT<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"right_root"</span>: <span class="pl-s"><span class="pl-pds">"</span>RIGHT<span class="pl-pds">"</span></span>
+}</pre></div>
+<p dir="auto"><code class="notranslate">status</code> is <code class="notranslate">left-only</code>, <code class="notranslate">right-only</code>, <code class="notranslate">different</code>, or <code class="notranslate">identical</code>. <code class="notranslate">path</code> is relative to the<br>
+root operands; the root entry uses <code class="notranslate">.</code>. Records retain relative-path order. Selection filters<br>
+per-path records, not summary populations.</p>
+<h2 dir="auto" id="grep">Grep</h2>
+<div class="highlight highlight-source-json" dir="auto"><pre class="notranslate">{
+  <span class="pl-ent">"record"</span>: <span class="pl-s"><span class="pl-pds">"</span>grep<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"kind"</span>: <span class="pl-s"><span class="pl-pds">"</span>match<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"path"</span>: <span class="pl-s"><span class="pl-pds">"</span>src/main.cc<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"root"</span>: <span class="pl-s"><span class="pl-pds">"</span>.<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"pattern"</span>: <span class="pl-s"><span class="pl-pds">"</span>TODO<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"line"</span>: <span class="pl-c1">12</span>,
+  <span class="pl-ent">"group"</span>: <span class="pl-c1">0</span>,
+  <span class="pl-ent">"text"</span>: <span class="pl-s"><span class="pl-pds">"</span>// TODO: document this<span class="pl-pds">"</span></span>
+}</pre></div>
+<p dir="auto"><code class="notranslate">kind</code> is <code class="notranslate">match</code> or <code class="notranslate">context</code>. <code class="notranslate">line</code> is one-based. <code class="notranslate">group</code> is zero-based within the file and<br>
+grep evaluation, incrementing at gaps between emitted lines. JSONL never emits raw <code class="notranslate">--</code> group<br>
+separators. <code class="notranslate">text</code> excludes the line terminator. Quotes, backslashes, and controls are escaped.</p>
+<p dir="auto">With <code class="notranslate">--count</code>, each file with matching lines produces:</p>
+<div class="highlight highlight-source-json" dir="auto"><pre class="notranslate">{
+  <span class="pl-ent">"record"</span>: <span class="pl-s"><span class="pl-pds">"</span>grep<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"kind"</span>: <span class="pl-s"><span class="pl-pds">"</span>count<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"path"</span>: <span class="pl-s"><span class="pl-pds">"</span>src/main.cc<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"root"</span>: <span class="pl-s"><span class="pl-pds">"</span>.<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"pattern"</span>: <span class="pl-s"><span class="pl-pds">"</span>TODO<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"count"</span>: <span class="pl-c1">2</span>
+}</pre></div>
+<p dir="auto">Count mode ignores context and supersedes an attached template. Files without matching lines<br>
+produce no count record. Repeating a grep action repeats its output, retaining its pattern.<br>
+An explicit <code class="notranslate">-grep:FORMAT</code> without <code class="notranslate">--count</code> retains authored output even with <code class="notranslate">--format=jsonl</code>.</p>
+<h2 dir="auto" id="validation">Validation</h2>
+<p dir="auto">Unsupported built-in comparison and grep formats fail before traversal or expression actions,<br>
+including actions appearing earlier in the expression. Validation does not wait until a match<br>
+reaches the output action, so a format error cannot leave earlier deletions or commands executed.</p></main><footer>Release snapshot &middot; c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5</footer></body></html>

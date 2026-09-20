@@ -1,0 +1,654 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/design-config.md - xff v0.8.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.8.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.8.0">Release &amp; downloads</a><a href="/xff/releases/0.8.0/">CLI reference</a><a href="/xff/coverage/tag/0.8.0/">Coverage</a><a href="/xff/benchmarks/tag/0.8.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5">Source</a><a href="/xff/site/tag/v0.8.0/documents.html">Documentation</a></nav><p>xff v0.8.0</p><main><h1 dir="auto" id="xff-configuration-system-design">xff configuration system design</h1>
+<p dir="auto">Status: design of record for the shipped configuration system. This document<br>
+refines the configuration and safety decisions in <a href="design.html"><code class="notranslate">design.md</code></a>.</p>
+<p dir="auto"><a href="config-inspection.html">Inspecting configuration</a> explains the <code class="notranslate">--explain</code> source, profile,<br>
+application, and safety views with small complete examples.</p>
+<h2 dir="auto" id="goals">Goals</h2>
+<p dir="auto">Configuration should make repeatable command lines convenient without allowing a<br>
+file found in a searched repository to execute commands. Resolution must be<br>
+inspectable, command-line choices must win, and an explicitly loaded file must<br>
+not be able to grant itself permission to run a dangerous directive.</p>
+<h2 dir="auto" id="sources-and-precedence">Sources and precedence</h2>
+<p dir="auto">xff applies trusted defaults, opt-in project files, and the command line:</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Precedence</th>
+<th>Source</th>
+<th>Grammar</th>
+<th>Trust and purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>lowest</td>
+<td><code class="notranslate">/etc/xff.ini</code></td>
+<td>INI</td>
+<td>root-owned defaults and authoritative controls</td>
+</tr>
+<tr>
+<td></td>
+<td>user config</td>
+<td>INI</td>
+<td>trusted personal defaults and named configurations</td>
+</tr>
+<tr>
+<td></td>
+<td>autoloaded <code class="notranslate">.xffrc</code></td>
+<td>INI</td>
+<td>opt-in, non-arming project files before CLI processing</td>
+</tr>
+<tr>
+<td></td>
+<td><code class="notranslate">--xffrc=FILE</code></td>
+<td>INI</td>
+<td>explicitly loaded, repeatable, non-arming files</td>
+</tr>
+<tr>
+<td>highest</td>
+<td>command line</td>
+<td>CLI</td>
+<td>explicit flags and selectors; later conflicting values usually win</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Autoloading is off by default (<code class="notranslate">--rc-</code>). <code class="notranslate">--rc</code> loads <code class="notranslate">.xffrc</code> in directory search roots;<br>
+<code class="notranslate">--rc+</code> includes descendants. No ancestor search occurs. Per-directory <code class="notranslate">.gitignore</code>, <code class="notranslate">.ignore</code>,<br>
+and <code class="notranslate">.xffignore</code> files remain traversal inputs rather than configuration sources.</p>
+<p dir="auto">The user config is always <code class="notranslate">&lt;OS account home&gt;/.config/xff/config</code>. The effective OS<br>
+account record supplies the home directory; environment variables cannot redirect this policy<br>
+file. There is no system directive for relocating it.</p>
+<p dir="auto">Missing automatic system or user config files are normal. An explicit <code class="notranslate">--xffrc=FILE</code><br>
+must exist. Automatic and explicit config paths must resolve to regular files; directory and FIFO inputs are errors.<br>
+Symlinks to regular files are permitted for trusted/explicit paths, while autoloaded entries must<br>
+themselves be regular files to avoid discovering configurations through links. Every existing config must be readable; permission failures and dangling symlinks<br>
+are errors, including when a skip flag is requested. <code class="notranslate">--explain</code> reports consulted sources.</p>
+<p dir="auto">The position-independent <code class="notranslate">--no-system-config</code> and <code class="notranslate">--no-user-config</code> exclude the named<br>
+sections in their respective files. <code class="notranslate">--no-config</code> excludes both sets and disables <code class="notranslate">.xffrc</code><br>
+autoloading regardless of flag order. Explicit <code class="notranslate">--xffrc=FILE</code> inputs and ignore files remain active.</p>
+<p dir="auto"><strong>Existing unsectioned globals remain active by default.</strong> A corresponding<br>
+<code class="notranslate">--no-require-system-globals</code> or <code class="notranslate">--no-require-user-globals</code> permits excluding those globals too<br>
+when a skip is requested. The permission alone does not skip anything. Missing automatic files<br>
+remain normal; neither requirement makes a missing file mandatory. Every existing file is still<br>
+read and validated, including when all of its ordinary settings are skipped.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Policy</th>
+<th>No skip requested</th>
+<th>Corresponding skip requested</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Omitted or <code class="notranslate">--require-*-globals</code></td>
+<td>Globals apply</td>
+<td>Globals apply; named sections are excluded</td>
+</tr>
+<tr>
+<td><code class="notranslate">--no-require-*-globals</code></td>
+<td>Globals apply</td>
+<td>Globals and named sections are excluded</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<ul dir="auto">
+<li>System pair: <code class="notranslate">--require-system-globals</code> / <code class="notranslate">--no-require-system-globals</code>, unsectioned system config only.</li>
+<li>User pair: <code class="notranslate">--require-user-globals</code> / <code class="notranslate">--no-require-user-globals</code>, unsectioned system or user config; the system decision wins, even if its own ordinary globals are skipped.</li>
+<li>Each pair may appear once per permitted file.</li>
+<li>Neither pair is allowed in named sections, explicit <code class="notranslate">.xffrc</code> files, or on the CLI.</li>
+<li><code class="notranslate">--no-config</code> applies both decisions independently. Required globals are retained; the skip itself is not an error.</li>
+<li>A named section excluded from one tier may still be selected from another tier. A name absent<br>
+from every active file is an error, including a composition reference from a retained global.</li>
+</ul>
+<p dir="auto">For example, this system file keeps its deletion block active under <code class="notranslate">--no-system-config</code> or<br>
+<code class="notranslate">--no-config</code>, while the named section is excluded:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--require-system-globals
+--block-file-deletion
+
+<span class="pl-en">[listing]</span>
+--<span class="pl-k">color</span>=never</pre></div>
+<p dir="auto">A duplicate require directive is a hard error, even if both occurrences have the same value.</p>
+<p dir="auto"><code class="notranslate">--allow-xffrc</code> / <code class="notranslate">--no-allow-xffrc</code> control admission of both explicit files and automatic discovery. They may occur in system<br>
+unsectioned globals or user blocks. A system global denial cannot be overridden by the user file,<br>
+a named section, an explicit file, or suppression of system defaults. User decisions follow the<br>
+same application order as ordinary settings, including in-place <code class="notranslate">--config=NAME</code> composition.<br>
+Section declaration order does not override explicit selector order. Each section applies once.<br>
+For example, with this user INI:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate"><span class="pl-en">[deny]</span>
+--no-allow-xffrc
+<span class="pl-en">[allow]</span>
+--allow-xffrc</pre></div>
+<p dir="auto"><code class="notranslate">xff . --config=allow --config=deny --xffrc=task.rc</code> rejects loading before opening <code class="notranslate">task.rc</code>;<br>
+reversing the two selectors permits loading. The same admission decision governs <code class="notranslate">--rc</code> and<br>
+<code class="notranslate">--rc+</code>. Admission is resolved from trusted configuration before loading any <code class="notranslate">.xffrc</code>, so a file<br>
+cannot select a section to authorize its own loading.</p>
+<p dir="auto">Explicit <code class="notranslate">.xffrc</code> files cannot contain the require/no-require pairs or<br>
+<code class="notranslate">--allow-xffrc</code> / <code class="notranslate">--no-allow-xffrc</code>; these controls govern automatic files or permission<br>
+to load an explicit file, so that file cannot grant itself permission. <code class="notranslate">--block-policy-categories</code><br>
+is also restricted to automatic config files. In contrast, <code class="notranslate">--allow-exec</code> is a<br>
+separate runtime flag accepted on the CLI and in config files, but an explicit file's<br>
+own <code class="notranslate">--allow-exec</code> never arms its dangerous directives.</p>
+<p dir="auto">A skip request never discards required globals. An unavailable selected name or an invalid existing<br>
+file remains an error.</p>
+<h2 dir="auto" id="shared-file-grammar">Shared file grammar</h2>
+<p dir="auto">System, user, and all <code class="notranslate">.xffrc</code> files accept the same INI grammar: unconditional<br>
+options before the first section, then plain named configuration sections. Every section name, including <code class="notranslate">[global]</code>, <code class="notranslate">[defaults]</code>, and <code class="notranslate">[policy]</code>, is an ordinary<br>
+named configuration:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--no-require-system-globals
+--no-require-user-globals
+--<span class="pl-k">color</span>=auto
+
+<span class="pl-en">[dev]</span>
+--<span class="pl-k">color</span>=always
+-E
+
+<span class="pl-en">[prod]</span>
+--<span class="pl-k">color</span>=never
+
+<span class="pl-en">[policy]</span>
+--hidden</pre></div>
+<p dir="auto">The option spelling is exactly the command-line spelling: write <code class="notranslate">--color</code>, not <code class="notranslate">color</code>, and <code class="notranslate">-E</code>,<br>
+not a derived configuration key. Use <code class="notranslate">--color=auto</code>: whitespace separates arguments, so<br>
+<code class="notranslate">--color = auto</code> is not an alternate assignment syntax. The resulting arguments are validated<br>
+by the same flag parser as command-line arguments.</p>
+<p dir="auto">One line may contain multiple directives: <code class="notranslate">--hidden --color=never</code> or <code class="notranslate">-name foo -name bar</code>.<br>
+Each primary consumes only its own arguments. Adjacent predicates mean AND, so the latter matches<br>
+nothing; use <code class="notranslate">-name foo -o -name bar</code> for either name. Parentheses group expressions. Config<br>
+predicates and actions are parsed as an expression, then ANDed as a group with the command-line<br>
+expression; global options retain their application order. <code class="notranslate">-type</code> and <code class="notranslate">-xtype</code> accept only the<br>
+registered letters <code class="notranslate">b,c,d,f,l,p,s</code>, individually or as non-empty comma lists. <code class="notranslate">-type garbage</code> is<br>
+a usage error on the CLI and in config globals; in a named section it disables that section.</p>
+<p dir="auto">Every unconditional line is validated. An invalid line is a hard error with its file,<br>
+line number, source text, and command-line validation error. Execution never continues with only<br>
+part of the globals applied: a malformed option must not discard a restriction on the same line.<br>
+This also applies when skipping a trusted file, which must still be inspected for mandatory policy. A named section is atomic: one invalid line disables the complete section,<br>
+so a partially applied configuration is impossible. A section that selects a disabled section with<br>
+<code class="notranslate">--config=NAME</code> is disabled transitively. Loading continues so independent sections remain usable,<br>
+but explicitly selecting any directly or transitively disabled section is a usage error. For<br>
+example, <code class="notranslate">-E development</code> is invalid because <code class="notranslate">-E</code> takes no value; <code class="notranslate">development</code> is an unexpected<br>
+token, and the containing section is disabled.</p>
+<p dir="auto">There is no special policy rule language. System-only controls belong before the first section;<br>
+placing one in a named section disables that section atomically. <code class="notranslate">--block-policy-categories</code> selects how this file interprets its safety blocks, including in named sections.<br>
+Its value never changes the interpretation of another file. See <a href="design-safety.html">Safety</a>.</p>
+<p dir="auto">Bootstrap flags <code class="notranslate">--no-config</code>, <code class="notranslate">--no-system-config</code>, <code class="notranslate">--no-user-config</code>, <code class="notranslate">--xffrc</code>,<br>
+<code class="notranslate">--explain</code>, and help-only <code class="notranslate">--width</code> are command-line only. Using one in config globals<br>
+fails; using one in a named section disables that section. Metadata requests such as<br>
+<code class="notranslate">--help</code>, <code class="notranslate">--man</code>, and <code class="notranslate">--version</code> likewise belong on the CLI.<br>
+Listing <code class="notranslate">--pager</code> / <code class="notranslate">--no-pager</code> settings follow normal configuration order. Metadata output<br>
+is resolved before config loading, so its pager comes from CLI/environment settings.<br>
+Pager command restrictions are separate from safety blocks and remain a deferred design topic.</p>
+<h3 dir="auto" id="names-refinements-and-composition">Names, refinements, and composition</h3>
+<p dir="auto">An explicit or composed <code class="notranslate">--config=NAME</code> must match a declaration in an active, admitted<br>
+file. Validation happens after all files are available, allowing forward and cross-file references.<br>
+Only the plain built-in styles <code class="notranslate">find</code>, <code class="notranslate">xff</code>, and <code class="notranslate">rg</code> need no declaration. An implicit<br>
+invocation-name selector may have no matching section. A name such as <code class="notranslate">xff:2</code> still needs a<br>
+declaration; its prefix selects a style, not a bundled version snapshot.</p>
+<p dir="auto">Declare each <code class="notranslate">[NAME]</code> at most once in a file, including empty sections. Repeating a name disables<br>
+all its declarations in that file; selecting it directly or through composition is a usage error.<br>
+A different file may declare the same name to refine it. Values apply in resolution order, so<br>
+later overrides win. Composition expands referenced sections in place, while refinements from<br>
+later files wait for the earlier file's section to finish. For example:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate"><span class="pl-c"><span class="pl-c">#</span> /etc/xff.ini</span>
+<span class="pl-en">[dev]</span>
+--<span class="pl-k">color</span>=auto</pre></div>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate"><span class="pl-c"><span class="pl-c">#</span> user config</span>
+<span class="pl-en">[dev]</span>
+--<span class="pl-k">color</span>=always
+--<span class="pl-k">config</span>=checks
+
+<span class="pl-en">[checks]</span>
+-type f</pre></div>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate"><span class="pl-c"><span class="pl-c">#</span> task.xffrc</span>
+<span class="pl-en">[dev]</span>
+--<span class="pl-k">color</span>=never</pre></div>
+<p dir="auto"><code class="notranslate">xff . --config=dev --xffrc=task.xffrc</code> applies all three <code class="notranslate">[dev]</code> contributions, selects<br>
+<code class="notranslate">[checks]</code>, and ends with <code class="notranslate">--color=never</code>. References such as <code class="notranslate">--config=checks</code> may repeat;<br>
+they compose configurations rather than declaring them. Each contributing line is applied at<br>
+most once, so repeated references and cycles do not repeatedly apply a configuration.</p>
+<p dir="auto">Names are literal, including colons: <code class="notranslate">[xff:debug]</code> requires <code class="notranslate">--config=xff:debug</code>; it does not<br>
+mean that both <code class="notranslate">xff</code> and <code class="notranslate">debug</code> must be active. <code class="notranslate">[common]</code> is an ordinary named config.<br>
+Unconditional flags belong before the first section.</p>
+<p dir="auto">The config reader emulates the shell's quoting and escaping to produce arguments for the same<br>
+CLI parser. It removes comments before passing those arguments to the parser. System, user, and<br>
+explicit <code class="notranslate">.xffrc</code> files all use this rule. Single quotes preserve<br>
+literal content; double quotes group content and allow backslash escapes for <code class="notranslate">"</code>, <code class="notranslate">\</code>, <code class="notranslate">$</code>, and<br>
+backtick. Outside quotes, a backslash escapes the next character. Adjacent quoted and unquoted<br>
+pieces form one argument; empty quotes produce an empty argument. Braced environment substitutions described below are supported outside single quotes. There is no<br>
+command, pathname, or tilde expansion, and config text is never executed as a shell script.</p>
+<p dir="auto">An unquoted <code class="notranslate">#</code> at the beginning of a word starts a comment through the end of that physical<br>
+line. Thus <code class="notranslate">foo#bar</code>, <code class="notranslate">\#</code>, and <code class="notranslate">"#"</code> are literal arguments. An unquoted, unescaped <code class="notranslate">;</code> starts<br>
+a comment anywhere outside quotes. Either marker may follow any amount of whitespace. Blank<br>
+lines are ignored. Quote or escape a literal semicolon: <code class="notranslate">\;</code> or <code class="notranslate">";"</code> supplies the <code class="notranslate">-exec</code><br>
+terminator, just as on the command line. Comment text never reaches the CLI argument parser.</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--<span class="pl-k">color</span>=never <span class="pl-c"><span class="pl-c">#</span> Applies without a selector</span>
+
+<span class="pl-en">[hash]</span> <span class="pl-c"><span class="pl-c">#</span> Activated with --config=hash</span>
+-name <span class="pl-s"><span class="pl-pds">'</span>#*<span class="pl-pds">'</span></span> -o -name space\ name
+
+<span class="pl-en">[command]</span>
+-exec printf <span class="pl-s"><span class="pl-pds">'</span>%s<span class="pl-cce">\n</span><span class="pl-pds">'</span></span> <span class="pl-s"><span class="pl-pds">'</span>#literal<span class="pl-pds">'</span></span> \<span class="pl-c"><span class="pl-c">;</span> ; Exec terminator before the comment</span></pre></div>
+<p dir="auto">Quotes may span physical lines. A backslash followed by a newline continues the logical line<br>
+without adding a character, except inside single quotes. Diagnostics identify the logical<br>
+line's starting line number. An unmatched quote or a trailing backslash is a syntax error;<br>
+no partial arguments from that line are applied. Invalid global lines fail the invocation with a<br>
+diagnostic, while an invalid named-section line disables its entire section.</p>
+<p dir="auto">User and explicit config files may not redefine the exact built-in preset names <code class="notranslate">[find]</code>, <code class="notranslate">[xff]</code>,<br>
+or <code class="notranslate">[rg]</code>. Those lines are dropped with a warning. Use a custom named configuration and compose<br>
+the desired preset explicitly with <code class="notranslate">--config=find</code>, <code class="notranslate">--config=xff</code>, or <code class="notranslate">--config=rg</code>.</p>
+<h2 dir="auto" id="environment-substitutions">Environment substitutions</h2>
+<p dir="auto">System INI, user INI, and explicit or autoloaded <code class="notranslate">.xffrc</code> files share these forms:</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Form</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">${NAME}</code></td>
+<td>Substitute the value; unset is an error, empty is allowed.</td>
+</tr>
+<tr>
+<td><code class="notranslate">${NAME:-DEFAULT}</code></td>
+<td>Use literal DEFAULT when NAME is unset or empty.</td>
+</tr>
+<tr>
+<td><code class="notranslate">${NAME:?MESSAGE}</code></td>
+<td>Fail when NAME is unset or empty, with NAME and MESSAGE.</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Names use ASCII letters, digits, and underscores, starting with a letter or underscore.<br>
+Substitution happens while reading the file, before flag validation and named-section selection.<br>
+An error in globals fails the invocation; an error in a named section disables that whole section,<br>
+including when it is not selected. Selecting that section then fails, as for other invalid lines.<br>
+Diagnostics retain the source file and starting line number. Values use xff's shared, read-once<br>
+process-environment cache.</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--<span class="pl-k">temp-root</span>=<span class="pl-s"><span class="pl-pds">"</span>${TMPDIR:-/private/tmp}<span class="pl-pds">"</span></span>
+--<span class="pl-k">output-root</span>=<span class="pl-s"><span class="pl-pds">"</span>${HOME:?HOME must be set}/xff-results<span class="pl-pds">"</span></span>
+
+<span class="pl-en">[report]</span>
+-name <span class="pl-s"><span class="pl-pds">"</span>${REPORT_PATTERN:-*.cc}<span class="pl-pds">"</span></span>
+-printf <span class="pl-s"><span class="pl-pds">'</span>%{env.HOME} %p<span class="pl-cce">\n</span><span class="pl-pds">'</span></span></pre></div>
+<p dir="auto">The root directories must already exist and pass the normal root validation, including no symlink<br>
+components. These declarations remain restricted to unsectioned system/user INI. This example uses<br>
+<code class="notranslate">/private/tmp</code> for macOS; choose an appropriate physical directory on other systems.</p>
+<p dir="auto">Single quotes or an escaped dollar preserve literal text: <code class="notranslate">'${HOME}'</code>, <code class="notranslate">\${HOME}</code>, and<br>
+<code class="notranslate">"\${HOME}"</code> do not expand. Bare <code class="notranslate">$HOME</code> remains literal too. Double quotes permit substitution.<br>
+Adjacent literal and substituted pieces form one argument; even an empty substitution preserves<br>
+its argument. Values are never split into words or parsed again: whitespace, quotes, <code class="notranslate">#</code>, <code class="notranslate">;</code>,<br>
+backslashes, and further <code class="notranslate">${...}</code> inside a value remain content. There is no command substitution.</p>
+<p dir="auto">DEFAULT and MESSAGE are literal text ending at the next <code class="notranslate">}</code>; they may contain spaces but not<br>
+newlines or nested <code class="notranslate">${...}</code>. Quotes and backslashes inside them are literal, not a second quoting<br>
+language. Other operators, assignment, and recursive substitution are unsupported. A missing<br>
+closing brace is an error.</p>
+<p dir="auto"><code class="notranslate">%{...}</code> is not an INI substitution. It passes unchanged to the consuming flag. For example,<br>
+<code class="notranslate">-printf '%{env.HOME}'</code> uses the existing field renderer; <code class="notranslate">--output-root=%{env.HOME}</code> does not.<br>
+The CLI itself does not interpret <code class="notranslate">${...}</code>: any command-line substitution is performed by the<br>
+calling shell before xff receives its arguments.</p>
+<p dir="auto">Environment variables are caller-controlled. Using <code class="notranslate">${HOME}</code> or <code class="notranslate">${TMPDIR}</code> in a safety root<br>
+explicitly delegates that path choice to the caller; requiring a nonempty value or providing a<br>
+fallback does not make it trusted. Use literal roots and literal mandatory safety flags when the<br>
+administrator needs fixed boundaries. Substitution cannot change config discovery locations or<br>
+bypass the normal source restrictions and validation on directives.</p>
+<h2 dir="auto" id="selectors-and-invocation-names">Selectors and invocation names</h2>
+<p dir="auto"><code class="notranslate">--config=NAME</code> is repeatable. Every selector remains active for named-block<br>
+matching. Among selectors whose prefix is <code class="notranslate">find</code>, <code class="notranslate">xff</code>, or <code class="notranslate">rg</code>, the last one<br>
+chooses the built-in style baseline; custom names do not change the style.</p>
+<p dir="auto">The executable basename supplies the first selector:</p>
+<ul dir="auto">
+<li><code class="notranslate">find</code> selects the find expression vocabulary and find defaults;</li>
+<li><code class="notranslate">xff</code> selects the xff style;</li>
+<li><code class="notranslate">rg</code> selects the rg style;</li>
+<li>another basename such as <code class="notranslate">mytool</code> activates a same-named config block while<br>
+retaining the xff style;</li>
+<li><code class="notranslate">_full</code> is removed first, so <code class="notranslate">xff_full</code>, <code class="notranslate">find_full</code>, and <code class="notranslate">rg_full</code> behave as<br>
+their base names.</li>
+</ul>
+<p dir="auto">Explicit <code class="notranslate">--config</code> selectors follow the invocation selector and can therefore<br>
+choose a later built-in style. Styles set baseline traversal and presentation<br>
+defaults; the find style restricts expression primaries, operators, and values,<br>
+but explicitly supplied xff global controls remain available.</p>
+<p dir="auto">Boolean capabilities use their own flag families or an existing option's value set.<br>
+Proposed spelling gates remain roadmap work in <a href="../TODO.html">TODO.md</a>.</p>
+<h2 dir="auto" id="safety-and-arming">Safety and arming</h2>
+<p dir="auto">Registry descriptors classify expression directives as safe, sensitive, or<br>
+destructive. A config line receives the most restrictive class of any directive<br>
+on that line; that aggregate class drives arming and diagnostics. Unconditional <code class="notranslate">--block-*</code> restrictions apply to actions from every source, including the CLI.<br>
+Use <code class="notranslate">--require-system-globals</code> to prevent omission of a mandatory system policy.</p>
+<p dir="auto">System and user configuration are trusted tiers. An explicit <code class="notranslate">--xffrc</code> file is a<br>
+non-arming tier: naming it authorizes loading it, not executing dangerous content<br>
+from it. Sensitive or destructive directives in that tier are dropped unless<br>
+<code class="notranslate">--allow-exec</code> is active from one of these sources:</p>
+<ul dir="auto">
+<li>the command line;</li>
+<li><code class="notranslate">/etc/xff.ini</code> defaults;</li>
+<li>an applying user-config line.</li>
+</ul>
+<p dir="auto">An explicit <code class="notranslate">--xffrc</code> file is deliberately excluded from that check, so it<br>
+cannot authorize itself. Unconditional safety blocks take precedence over arming. <code class="notranslate">--allow-exec</code> only controls config provenance; runtime protections such<br>
+as <code class="notranslate">--safe</code>, <code class="notranslate">--dry-run</code>, and action-specific confirmation remain independent.</p>
+<h2 dir="auto" id="tiny-configuration-examples">Tiny configuration examples</h2>
+<h3 dir="auto" id="defaults-and-a-named-override">Defaults and a named override</h3>
+<p dir="auto"><code class="notranslate">/etc/xff.ini</code>:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--<span class="pl-k">color</span>=auto
+<span class="pl-en">[dev]</span>
+--<span class="pl-k">color</span>=never</pre></div>
+<p dir="auto"><code class="notranslate">xff . --config=dev</code> applies <code class="notranslate">auto</code>, then <code class="notranslate">never</code>. <code class="notranslate">xff . --config=dev --color=always</code><br>
+ends with <code class="notranslate">always</code>. <code class="notranslate">[dev]</code> is optional configuration; the unsectioned line applies on every run.<br>
+<code class="notranslate">[global]</code> would simply define another optional named configuration.</p>
+<h3 dir="auto" id="which-globals-survive-a-skip">Which globals survive a skip</h3>
+<p dir="auto"><code class="notranslate">/etc/xff.ini</code>:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--require-system-globals
+--no-require-user-globals
+--block-execution</pre></div>
+<p dir="auto"><code class="notranslate">xff . --no-config</code> retains the system execution block, excludes user globals and both sets<br>
+of named sections, and disables <code class="notranslate">.xffrc</code> autoloading. <code class="notranslate">--no-system-config</code> also retains the system<br>
+block while leaving user configuration active. A user <code class="notranslate">--require-user-globals</code> cannot override the<br>
+system grant. If the system omits its user pair, the user file decides for itself:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--no-require-user-globals
+--<span class="pl-k">color</span>=never</pre></div>
+<p dir="auto">The color applies normally and is omitted with <code class="notranslate">--no-user-config</code> or <code class="notranslate">--no-config</code>.<br>
+To permit excluding globals from both files, put these in the system file:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--no-require-system-globals
+--no-require-user-globals</pre></div>
+<p dir="auto">All requirement controls precede sections. Each pair may occur only once per permitted file.</p>
+<h3 dir="auto" id="require-restrictions-from-system-configuration">Require restrictions from system configuration</h3>
+<p dir="auto">Keep <code class="notranslate">/etc/xff.ini</code> administrator-owned and unwritable by users whose configs it constrains:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--require-system-globals
+--block-execution
+--block-file-deletion</pre></div>
+<p dir="auto">These restrictions apply to every source, including CLI expressions. Neither <code class="notranslate">--allow-exec</code><br>
+nor <code class="notranslate">--no-safe</code> clears them. Add <code class="notranslate">--no-allow-xffrc</code> to reject explicit files before opening them.<br>
+This is an application policy, not an operating-system sandbox: someone able to replace the<br>
+executable or its mandatory configuration can replace the policy too.</p>
+<h3 dir="auto" id="choose-archive-controls-independently-in-each-file">Choose archive controls independently in each file</h3>
+<p dir="auto"><code class="notranslate">--block-policy-categories=LIST</code> may occur once before sections in a system or user INI.<br>
+It applies to that file's globals and named sections. Each file is translated independently;<br>
+a user selecting <code class="notranslate">archive</code> cannot remove restrictions contributed by a system file using the default empty list.<br>
+Select <code class="notranslate">archive</code>, <code class="notranslate">temp</code>, and/or <code class="notranslate">output</code> for dedicated controls. The default empty category list<br>
+applies ordinary file and directory blocks to every corresponding category. <code class="notranslate">--temp-root=PATH</code><br>
+and <code class="notranslate">--output-root=PATH</code> are each permitted once in unsectioned system/user INI; system declarations<br>
+win. Named sections, explicit files, and CLI flags cannot declare these roots.<br>
+See <code class="notranslate">--help=safety</code> for the full operation table, including the distinction between packing a<br>
+replacement archive and editing its members.</p>
+<h3 dir="auto" id="deliberately-arm-one-explicit-file">Deliberately arm one explicit file</h3>
+<p dir="auto">With no system prohibition, <code class="notranslate">task.rc</code> may contain:</p>
+<pre lang="text" class="notranslate"><code class="notranslate">-exec echo {} \;
+</code></pre>
+<p dir="auto"><code class="notranslate">xff . --xffrc=task.rc</code> leaves that dangerous line inert. Supplying <code class="notranslate">--allow-exec</code> from the<br>
+command line or an applying automatic config permits it through the config gate. Putting<br>
+<code class="notranslate">--allow-exec</code> in <code class="notranslate">task.rc</code> itself never grants that permission. Arming does not bypass the<br>
+runtime guards on destructive actions.</p>
+<h2 dir="auto" id="explicit-xffrc-files">Explicit <code class="notranslate">.xffrc</code> files</h2>
+<p dir="auto">An <code class="notranslate">.xffrc</code> file uses exactly the same INI format as the system and user files. Loading<br>
+it applies its unsectioned flags; each <code class="notranslate">[NAME]</code> section applies only when that name is<br>
+selected. For example, <code class="notranslate">task.xffrc</code> can contain both:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--hidden
+
+<span class="pl-en">[quiet]</span>
+--<span class="pl-k">color</span>=never</pre></div>
+<p dir="auto"><code class="notranslate">xff . --xffrc=task.xffrc</code> applies <code class="notranslate">--hidden</code>. Adding <code class="notranslate">--config=quiet</code> also applies<br>
+<code class="notranslate">--color=never</code>. A name can also be selected by the invocation name or by another<br>
+config's <code class="notranslate">--config=NAME</code> directive; it need not be repeated on the command line.<br>
+Selecting a name does not discover files: <code class="notranslate">--config=quiet</code> alone does not load <code class="notranslate">task.xffrc</code>.<br>
+Unsectioned flags can themselves include <code class="notranslate">--config=NAME</code> to select a section when the<br>
+file loads. Config-only authority controls retain their source restrictions.</p>
+<p dir="auto">Each explicit file requires <code class="notranslate">--xffrc=FILE</code> and passes the admission and safety checks above.<br>
+Explicit loading is independent of the autoload mode and the globals permission described below.</p>
+<h2 dir="auto" id="autoloaded-xffrc-files">Autoloaded <code class="notranslate">.xffrc</code> files</h2>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Mode</th>
+<th>Discovery</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">--rc-</code></td>
+<td>Off (default); explicit <code class="notranslate">--xffrc=FILE</code> remains active.</td>
+</tr>
+<tr>
+<td><code class="notranslate">--rc</code></td>
+<td>Only <code class="notranslate">.xffrc</code> directly in each directory search root.</td>
+</tr>
+<tr>
+<td><code class="notranslate">--rc+</code></td>
+<td>Root files and <code class="notranslate">.xffrc</code> in descendant directories.</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Modes may appear on the CLI or in applying system/user globals and named sections; the last<br>
+setting wins. Discovery uses these trusted inputs before loading any <code class="notranslate">.xffrc</code>. An <code class="notranslate">.xffrc</code><br>
+cannot set discovery flags, nor trigger another discovery pass by selecting a trusted section.<br>
+<code class="notranslate">--no-config</code> disables autoloading regardless of mode order. With no root argument, the root<br>
+is <code class="notranslate">.</code>. File and symlink roots do not load a parent's configuration. There is no ancestor<br>
+search, directory-symlink following, or discovery inside archives.</p>
+<p dir="auto">Discovery completes before actions execute. It visits physical directories independently of<br>
+ignore files, hidden-file settings, search predicates, depth limits, and pruning. Thus <code class="notranslate">--rc+</code><br>
+can inspect a large tree even when the search itself is narrow. This also applies to <code class="notranslate">--explain</code>.<br>
+Missing <code class="notranslate">.xffrc</code> files are normal; unreadable files or directories and non-regular <code class="notranslate">.xffrc</code><br>
+files (including symlinks) abort loading. No actions run with a partially discovered configuration.</p>
+<p dir="auto">Files affect the <strong>whole invocation</strong>, including other roots. Root arguments are processed in<br>
+order; each tree uses parent-before-child depth-first order with lexically sorted siblings.<br>
+Repeated or overlapping directories are discovered once. Discovered files follow trusted defaults<br>
+and precede CLI processing. Explicit files keep their CLI positions; explicitly naming an<br>
+autoloaded file applies it again at that position. Relative flag values are relative to the<br>
+working directory, just as in other INI files.</p>
+<h3 dir="auto" id="permission-for-unsectioned-content">Permission for unsectioned content</h3>
+<p dir="auto">By default, autoloaded files may contain only named sections. They use the same INI grammar as<br>
+all other configs. Named sections apply when selected by <code class="notranslate">--config=NAME</code>, the invocation name,<br>
+or composition from another applying section; loading alone does not select every section.</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate"><span class="pl-c"><span class="pl-c">#</span> project/.xffrc</span>
+<span class="pl-en">[checks]</span>
+-type f</pre></div>
+<p dir="auto"><code class="notranslate">xff project --rc --config=checks</code> applies this file-only filter. Without the selector,<br>
+<code class="notranslate">[checks]</code> remains inactive.</p>
+<p dir="auto">The config-only pair <code class="notranslate">--allow-rc-globals</code> / <code class="notranslate">--no-allow-rc-globals</code> controls whether discovered<br>
+files may contain unsectioned content:</p>
+<ul dir="auto">
+<li>Each permitted system or user INI file may contain one member of the pair once, before sections.</li>
+<li>A system denial is authoritative, including when system defaults are skipped.</li>
+<li>Otherwise an applying user choice overrides the system setting; without any grant, globals are forbidden.</li>
+<li>Named sections, explicit or autoloaded <code class="notranslate">.xffrc</code> files, and the CLI cannot set this permission.</li>
+<li>Explicit <code class="notranslate">--xffrc=FILE</code> keeps its unsectioned-content behavior and does not need this grant.</li>
+</ul>
+<p dir="auto">For example, a user INI can enable root discovery and permit globals:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--rc
+--allow-rc-globals</pre></div>
+<p dir="auto">The discovered project file can then contain both unconditional options and a selected profile:</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate"><span class="pl-c"><span class="pl-c">#</span> project/.xffrc</span>
+--hidden
+<span class="pl-en">[quiet]</span>
+--<span class="pl-k">color</span>=never</pre></div>
+<p dir="auto"><code class="notranslate">xff project</code> applies <code class="notranslate">--hidden</code>; adding <code class="notranslate">--config=quiet</code> also applies <code class="notranslate">--color=never</code>.<br>
+Without the grant, this file <strong>fails loading before actions run</strong>. Rejection covers all unsectioned<br>
+directives, including expression primaries and <code class="notranslate">--config=NAME</code>, not just double-dash options.<br>
+Blank lines and comments are allowed. Forbidden content is never silently ignored: dropping an<br>
+intended filter or restriction could change the operation's meaning. The error identifies the<br>
+file and the missing permission.</p>
+<p dir="auto">Admission (<code class="notranslate">--allow-xffrc</code>), permission for globals (<code class="notranslate">--allow-rc-globals</code>), and action arming<br>
+(<code class="notranslate">--allow-exec</code>) are separate decisions. Admission is checked before probing roots. Neither<br>
+autoloading nor the globals grant arms dangerous directives. The non-arming gate, active safe<br>
+profile, and unconditional <code class="notranslate">--block-*</code> controls apply to both explicit and autoloaded files.<br>
+Trusted <code class="notranslate">--allow-exec</code> still permits dangerous directives through that gate, so combine it with<br>
+mandatory blocks when execution or deletion must remain prohibited. Even ordinary options can<br>
+change results across all roots: grant globals only when those configuration files are trusted.</p>
+<h2 dir="auto" id="resolution-and-inspection">Resolution and inspection</h2>
+<p dir="auto">After discovery, skip authorization, and policy gating, surviving flags are<br>
+applied in this order:</p>
+<ol dir="auto">
+<li>system defaults;</li>
+<li>unconditional user-config lines and lines selected by the invocation name;</li>
+<li>autoloaded files in discovery order, including their currently selected sections;</li>
+<li>original command-line globals, in their original order;</li>
+<li>immediately after each <code class="notranslate">--config=NAME</code>, system named sections, user and already-loaded <code class="notranslate">.xffrc</code><br>
+config lines newly activated by that selector;</li>
+<li>immediately after each <code class="notranslate">--xffrc=FILE</code>, currently applicable lines from that<br>
+file. Later selectors may activate its remaining lines.</li>
+</ol>
+<p dir="auto">Each config line is applied at most once. Consequently, selector placement is<br>
+observable when options conflict: in <code class="notranslate">--color=always --config=plain</code>, a<br>
+<code class="notranslate">[plain]</code> section containing <code class="notranslate">--color=never</code> wins, while reversing those two CLI<br>
+arguments makes <code class="notranslate">--color=always</code> win. Multiple explicit files retain their own<br>
+positions rather than collapsing into a single tier.</p>
+<p dir="auto">The ordinary option resolvers then apply their documented conflict behavior,<br>
+usually last value wins. This preserves provenance, command-line order, and one<br>
+set of option semantics.</p>
+<p dir="auto"><code class="notranslate">--explain</code> performs enabled rc discovery but does not evaluate the search expression or actions. It prints:</p>
+<ul dir="auto">
+<li>
+<p dir="auto">the autoload mode (<code class="notranslate">off</code>, <code class="notranslate">roots</code>, or <code class="notranslate">recursive</code>);</p>
+</li>
+<li>
+<p dir="auto">the active style;</p>
+</li>
+<li>
+<p dir="auto">every consulted path and whether it was found;</p>
+</li>
+<li>
+<p dir="auto">resolved config flags and command-line globals in application order with<br>
+provenance;</p>
+</li>
+<li>
+<p dir="auto">every dropped config line and its reason;</p>
+</li>
+<li>
+<p dir="auto">the style-default table and the effective value for the run;</p>
+</li>
+<li>
+<p dir="auto">the effective safety policy: active safe/dry-run modes, capability decisions and their<br>
+causes, physical source paths/lines and named sections, per-file category interpretation,<br>
+and expanded temp/output roots.</p>
+</li>
+</ul>
+<p dir="auto">The safety view preserves profile-setting origins even when an unconditional block wins.<br>
+See <a href="design-safety.html#inspecting-effective-policy">Inspecting effective policy</a> for interpretation.</p>
+<h2 dir="auto" id="known-limits">Known limits</h2>
+<ul dir="auto">
+<li>Config argument quoting supports only the documented braced environment substitutions; it never executes shell syntax.</li>
+</ul>
+<p dir="auto">Directory-scoped temp/output permissions and root-declaration precedence are specified in<br>
+<a href="design-directory-safety.html">Directory-scoped safety controls</a>.</p>
+<h2 dir="auto" id="inactive-modifiers-in-explain-output">Inactive modifiers in explain output</h2>
+<p dir="auto"><code class="notranslate">--explain</code> reports <code class="notranslate">inactive-modifier</code> notes when a modifier's winning setting came from the CLI<br>
+and the effective command has no registered consumer for it. These notes are advisory: reusable<br>
+configuration defaults remain valid and quiet, and normal execution is unchanged. A configured<br>
+predicate or action counts as a consumer after selector expansion and safety gating. Literal primary<br>
+arguments never become modifier requests. A setting superseded later by configuration is no longer<br>
+the effective CLI request.</p>
+<p dir="auto">The initial registered dependencies cover:</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Modifier</th>
+<th>Consumer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">--count</code> / <code class="notranslate">-c</code></td>
+<td>A <code class="notranslate">-grep</code> action</td>
+</tr>
+<tr>
+<td><code class="notranslate">--context</code>, <code class="notranslate">--before-context</code>, <code class="notranslate">--after-context</code></td>
+<td><code class="notranslate">-grep</code> line output, or symmetric default context for <code class="notranslate">-diff</code>; explicit diff context takes precedence</td>
+</tr>
+<tr>
+<td><code class="notranslate">--diff-context</code></td>
+<td>Contextual <code class="notranslate">-diff</code> output without a per-action count, or tree diff output</td>
+</tr>
+<tr>
+<td><code class="notranslate">--diff-format</code></td>
+<td><code class="notranslate">-diff</code> without an attached style; tree diffs use unified output</td>
+</tr>
+<tr>
+<td><code class="notranslate">--diff-ignore</code>, <code class="notranslate">--diff-ignore-matching</code></td>
+<td>A <code class="notranslate">-diff</code> action</td>
+</tr>
+<tr>
+<td><code class="notranslate">--diff-algorithm</code></td>
+<td>A <code class="notranslate">-diff</code> action or tree diff output</td>
+</tr>
+<tr>
+<td><code class="notranslate">--shards-show</code></td>
+<td>Ordinary shard listing, without active summaries or histograms</td>
+</tr>
+<tr>
+<td><code class="notranslate">--shards-dedup</code>, <code class="notranslate">--shard-pattern</code></td>
+<td>Ordinary shard grouping or a <code class="notranslate">-shard-status</code> predicate</td>
+</tr>
+<tr>
+<td><code class="notranslate">--histogram-width</code></td>
+<td>Plain or aligned histogram bars</td>
+</tr>
+<tr>
+<td><code class="notranslate">--top</code></td>
+<td>An ordinary summary or categorical histogram; comparison-result tables and numeric ranges stay complete</td>
+</tr>
+<tr>
+<td><code class="notranslate">--summary-precision</code></td>
+<td>An active summary or histogram mean</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">Hash dependencies inspect the parsed action specs and field templates. <code class="notranslate">--hash-algorithm</code><br>
+requires a hash consumer without an explicit algorithm, while <code class="notranslate">--hash-encoding</code> requires one<br>
+without an explicit encoding. Thus <code class="notranslate">-hash:sha256</code> consumes only the encoding default, and<br>
+<code class="notranslate">-hash:/hex</code> consumes only the algorithm default. The same rules apply to <code class="notranslate">{hash}</code> fields.<br>
+Post-processing runs after the unqualified hash field and therefore consumes both defaults.</p>
+<p dir="auto"><code class="notranslate">--summary=hash</code> consumes both defaults. Cleared summaries, suppressed implicit listings,<br>
+grep line templates suppressed by <code class="notranslate">--count</code>, literal braces in predicates, escaped printf directives,<br>
+and exec arguments without<br>
+<code class="notranslate">--exec-fields</code> do not provide consumers. Definitions contain literal values, not recursively<br>
+parsed templates. Inspection never reads file content.</p>
+<p dir="auto">Archive dependencies also use the effective flavor and linked archive support:</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Modifier</th>
+<th>Consumer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="notranslate">--archive-depth</code></td>
+<td>Available <code class="notranslate">all</code> or <code class="notranslate">any</code> traversal; roots do not nest</td>
+</tr>
+<tr>
+<td><code class="notranslate">--archive-separator</code>, <code class="notranslate">--archive-prefix</code></td>
+<td>Available archive traversal, including roots</td>
+</tr>
+<tr>
+<td><code class="notranslate">--archive-aggregate</code></td>
+<td>Archive traversal plus an ordinary summary, histogram, shard group, or packing operation</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">A comparison-result table alone is not an ordinary reduction. Aggregation can also change when<br>
+containers are opened before visiting them, so packing and shard grouping count as consumers even<br>
+without a summary. The inspection does not open archives. Explicit traversal in a binary without<br>
+archive support retains the runtime unsupported-feature error; the xff flavor's implicit roots<br>
+mode degrades to no archive traversal in that binary.</p>
+<p dir="auto"><code class="notranslate">--archive-any</code> is a mode selector equivalent to <code class="notranslate">--archive=any</code>, not a dormant modifier.<br>
+Archive write permissions remain policy choices and do not require an immediate action consumer.</p>
+<p dir="auto">The checks use final resolved settings, so <code class="notranslate">--summary=ext --summary=none</code> removes that summary's<br>
+consumer. For example, <code class="notranslate">--shards --shards-show=count --summary=ext</code> has an inactive listing modifier;<br>
+adding <code class="notranslate">--summary=none</code> restores the shard listing. <code class="notranslate">--compare=diff --diff-format=y</code> reports that<br>
+<code class="notranslate">--diff-format</code> belongs to the per-file action rather than changing the tree-diff renderer.</p>
+<p dir="auto">These are structural dependency checks, not an execution forecast. A consumer behind a predicate<br>
+that never matches is still present. Absence of a note does not prove every setting has an effect:<br>
+only registered dependencies are checked, and per-value interactions can need more specific rules.</p></main><footer>Release snapshot &middot; c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5</footer></body></html>

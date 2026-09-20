@@ -1,0 +1,118 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/archive-safety-recipes.md - xff v0.8.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.8.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.8.0">Release &amp; downloads</a><a href="/xff/releases/0.8.0/">CLI reference</a><a href="/xff/coverage/tag/0.8.0/">Coverage</a><a href="/xff/benchmarks/tag/0.8.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5">Source</a><a href="/xff/site/tag/v0.8.0/documents.html">Documentation</a></nav><p>xff v0.8.0</p><main><h1 dir="auto" id="archive-tasks-with-explicit-safety-profiles">Archive tasks with explicit safety profiles</h1>
+<p dir="auto">Use a full build with archive support. Reading an archive, creating its container, changing a<br>
+member, and writing an extracted file are separate operations. The profiles below keep safe mode<br>
+active and permit only the capabilities each example needs. They do not sandbox child programs;<br>
+pager commands remain a separate policy concern.</p>
+<h2 dir="auto" id="example-user-configuration">Example user configuration</h2>
+<p dir="auto">Add these settings to the user INI at <code class="notranslate">&lt;OS account home&gt;/.config/xff/config</code>, adapting them to<br>
+existing policy. Category selection belongs once in the unsectioned system or user INI, never in<br>
+an explicit <code class="notranslate">.xffrc</code> or on the command line. These profiles cannot remove an administrator's<br>
+unconditional blocks. Select one profile per invocation; composing profiles combines their<br>
+settings in normal application order.</p>
+<div class="highlight highlight-source-ini" dir="auto"><pre class="notranslate">--<span class="pl-k">block-policy-categories</span>=archive,output
+--<span class="pl-k">output-root</span>=${HOME}/xff-output
+--safe
+
+<span class="pl-en">[pack-new]</span>
+--no-safe-block-archive-writing
+--no-safe-block-output-file-writing
+
+<span class="pl-en">[delete-member]</span>
+--no-safe-block-archive-writing
+--no-safe-block-archive-overwrite
+--no-safe-block-archive-content-deletion
+--no-safe-block-output-file-writing
+--no-safe-block-output-file-overwrite
+
+<span class="pl-en">[write-output]</span>
+--no-safe-block-output-file-writing</pre></div>
+<p dir="auto">Create <code class="notranslate">$HOME/xff-output</code> before using these examples; xff does not create the declared root for<br>
+you. <code class="notranslate">--output-root</code> authorizes a scope, not a filename rewrite. The INI expands <code class="notranslate">${HOME}</code>, while<br>
+the shell expands <code class="notranslate">$HOME</code> in the commands. An authoritative system policy should use an appropriate<br>
+fixed absolute root: environment substitution does not establish trust in a caller-chosen path.<br>
+The user-config location itself comes from the OS account, independently of <code class="notranslate">HOME</code>.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Task</th>
+<th>Profile</th>
+<th>Capabilities permitted</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Inspect archive members</td>
+<td>none</td>
+<td>No mutation or execution capabilities</td>
+</tr>
+<tr>
+<td>Create a new archive</td>
+<td><code class="notranslate">pack-new</code></td>
+<td>archive-writing, output-file-writing</td>
+</tr>
+<tr>
+<td>Delete a member by rewriting</td>
+<td><code class="notranslate">delete-member</code></td>
+<td>archive-writing, archive-overwrite, archive-content-deletion, output-file-writing, output-file-overwrite</td>
+</tr>
+<tr>
+<td>Create an ordinary report</td>
+<td><code class="notranslate">write-output</code></td>
+<td>output-file-writing</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">The destination controls in this table apply because the example archive is inside the output<br>
+root. A rewrite outside declared roots additionally needs ordinary file-writing and file-overwrite.<br>
+With these profiles, those operations stay blocked. Overlapping temp/output roots require both<br>
+scopes to permit the operation. Directory creation and deletion remain blocked, so create any<br>
+needed output subdirectories before running xff.</p>
+<h2 dir="auto" id="inspect-without-mutation">Inspect without mutation</h2>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$HOME</span>/xff-output/source.tar<span class="pl-pds">"</span></span> --archive=roots -type f -print</pre></div>
+<p dir="auto">Safe mode permits reading and listing. An attempted <code class="notranslate">-delete</code>, <code class="notranslate">--pack</code>, or <code class="notranslate">-exec</code> remains blocked<br>
+without a suitable profile. A dry run can preview supported actions, but it does not override<br>
+blocks. Inspection does not require <code class="notranslate">--archive-extract</code>; that flag materializes members for child<br>
+commands and therefore involves additional writing and execution capabilities.</p>
+<h2 dir="auto" id="create-a-new-archive">Create a new archive</h2>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff <span class="pl-c1">source</span> -type f --config=pack-new --pack=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$HOME</span>/xff-output/new.tar<span class="pl-pds">"</span></span></pre></div>
+<p dir="auto">This packs ordinary source files under relative member names. New archive creation needs archive<br>
+writing; it does not need archive-content-writing or overwrite permission. The output scope also<br>
+requires output-file-writing. Repeating this command with an existing <code class="notranslate">new.tar</code> fails, preserving<br>
+that archive. An output path outside the declared scope fails too. An ordinary <code class="notranslate">-fprint</code> outside<br>
+the scope is still blocked.</p>
+<p dir="auto">This recipe uses one source root to avoid member-name collisions. Packing source members directly<br>
+from another archive is unsupported; extract or materialize an ordinary source tree first under a<br>
+separately reviewed policy. Reader support does not imply writer support: choose a supported pack<br>
+format, such as tar, rather than assuming every readable format can be produced.</p>
+<h2 dir="auto" id="delete-one-member-preserving-its-container-and-other-members">Delete one member, preserving its container and other members</h2>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$HOME</span>/xff-output/new.tar<span class="pl-pds">"</span></span> --archive=roots --config=delete-member \
+  --archive-delete -type f -name obsolete.txt -delete</pre></div>
+<p dir="auto">Member deletion rewrites the existing container. It needs archive-writing, archive-overwrite,<br>
+archive-content-deletion, and the destination's write/overwrite permissions. It does not require<br>
+ordinary file-deletion. <code class="notranslate">--archive-delete</code> explicitly enables member rewriting; without it, member<br>
+deletion is rejected. An unconditional <code class="notranslate">--block-archive-content-deletion</code> still rejects the command,<br>
+even with this profile or <code class="notranslate">--skip-unsupported</code>.</p>
+<p dir="auto">Selecting the archive container itself is ordinary file deletion and remains blocked. Rewriting is<br>
+format-dependent; unsupported containers fail rather than becoming editable merely because the<br>
+profile permits deletion. Use a disposable tar fixture to validate a new workflow, then inspect<br>
+the surviving members and content.</p>
+<h2 dir="auto" id="write-only-beneath-the-output-root">Write only beneath the output root</h2>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff <span class="pl-c1">source</span> -type f --config=write-output -fprint <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$HOME</span>/xff-output/files.txt<span class="pl-pds">"</span></span></pre></div>
+<p dir="auto">The report may be created only as a new file under the output root or its existing subdirectories.<br>
+An existing report cannot be overwritten; a path outside the root is blocked. This profile does<br>
+not permit archive creation, member deletion, execution, or creating missing parent directories.<br>
+The root itself remains protected from replacement or deletion.</p>
+<p dir="auto">For policy composition and mandatory enforcement, see <a href="design-safety.html">Safety policy</a>.<br>
+For directory and archive destination interactions, see<br>
+<a href="design-directory-safety.html">Directory-scoped controls</a>. Inspect resolved settings with <code class="notranslate">--explain</code><br>
+before evaluating an unfamiliar configuration.</p></main><footer>Release snapshot &middot; c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5</footer></body></html>

@@ -1,0 +1,566 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>TODO.md - xff v0.8.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.8.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.8.0">Release &amp; downloads</a><a href="/xff/releases/0.8.0/">CLI reference</a><a href="/xff/coverage/tag/0.8.0/">Coverage</a><a href="/xff/benchmarks/tag/0.8.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5">Source</a><a href="/xff/site/tag/v0.8.0/documents.html">Documentation</a></nav><p>xff v0.8.0</p><main><h1 dir="auto" id="todo">TODO</h1>
+<h2 dir="auto" id="release-publication-repair">Release publication repair</h2>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Publish stable benchmark references (PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5514062257" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/890" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/890/hovercard" href="https://github.com/mboworks/xff/pull/890">#890</a>); both repair workflows completed successfully.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Verified v0.7.0 navigation links to its versioned benchmark page and retained run<br>
+35471800839/1 matches tagged commit <code class="notranslate">0bcb461dbb08a1d3b14d1d73938a8b905aed81ea</code>.</li>
+</ul>
+<h2 dir="auto" id="original-audit-and-review-completion">Original audit and review completion</h2>
+<ul dir="auto">
+<li>Original audit implementation and review fixups are merged, including F09 in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5513627966" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/887" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/887/hovercard" href="https://github.com/mboworks/xff/pull/887">#887</a>.</li>
+<li>v0.7.0 is released. F10 competitor comparisons remain explicitly deferred until requested.</li>
+</ul>
+<h2 dir="auto" id="completed-f09-benchmark-history">Completed: F09 benchmark history</h2>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Paired immediate-base/head measurement with raw observations and a versioned contract.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Publish bounded PR/release history through the shared site queue; test ordering and retention.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Validate the first hosted optimized run and record observed runner noise and workflow cost.<br>
+PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5513627966" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/887" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/887/hovercard" href="https://github.com/mboworks/xff/pull/887">#887</a> post-merge results are live; see <code class="notranslate">docs/benchmark-history.md</code> for the initial observations.</li>
+<li>Keep competitor benchmarks (F10) deferred until explicitly resumed by the user.</li>
+</ul>
+<h2 dir="auto" id="completed-f08f11-python-tooling-ownership">Completed: F08/F11 Python tooling ownership</h2>
+<ul dir="auto">
+<li>Use Aspect Python rules and a pinned Python 3.13 toolchain for tooling tests and benchmarks.</li>
+<li>Declare Python libraries, executables, tests, and fixture inputs; retain direct script usage.</li>
+<li>Keep fast checker tests in pre-commit and run repository-wide ownership/discovery checks through <code class="notranslate">bazel run</code>.</li>
+</ul>
+<h2 dir="auto" id="completed-fuzzy-help-selector-diagnostics">Completed: Fuzzy help-selector diagnostics</h2>
+<ul dir="auto">
+<li>Share ranked fuzzy matching across unknown CLI flags and unknown help selectors.</li>
+<li>Include registered flags, primaries, topics, and aliases; retain advisory-only behavior.</li>
+<li>Test dashless and dashed selectors, config-only help, case folding, bounded input, and action isolation.</li>
+</ul>
+<h2 dir="auto" id="range-list-style-review">Range-list style review</h2>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Permit short inline literal ranges when the complete formatted loop header fits one line.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Separate naming/readability from explicit element typing; check typed wrappers as well.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Review all C++ sources and headers, name long/reused/unclear collections,<br>
+remove the temporary baseline, and verify the whole codebase against the clarified rule.</li>
+</ul>
+<h2 dir="auto" id="completed-msan-help-rendering-timeout">Completed: MSAN help-rendering timeout</h2>
+<ul dir="auto">
+<li>Give <code class="notranslate">//xff/cli:help_render_test</code> a target-specific 300-second timeout in PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5511055884" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/878" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/878/hovercard" href="https://github.com/mboworks/xff/pull/878">#878</a> after<br>
+MSAN exceeded its 60-second budget while progressing through the suite.</li>
+<li>Keep other test budgets unchanged; review the new MSAN runtime before deciding on profiling<br>
+or splitting the broad help tests.</li>
+</ul>
+<h2 dir="auto" id="help-follow-up-suggestions-width-and-spacing">Help follow-up: suggestions, width, and spacing</h2>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Rank fuzzy flag suggestions and retain up to three candidates (F02).</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add automatic width caps, defaulting to <code class="notranslate">auto:110</code>, with a 40-column minimum (F04).</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Normalize help block spacing while preserving verbatim examples.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Support persistent user-INI width preferences, including help and CLI precedence (F03).</li>
+</ul>
+<h2 dir="auto" id="completed-structured-output-composition-audit-s01">Completed: Structured-output composition (audit S01)</h2>
+<ul dir="auto">
+<li>Emit typed comparison-status and built-in grep JSONL records.</li>
+<li>Reject unsupported comparison formats before either side can execute actions.</li>
+<li>Preserve authored templates and child stdout; document their output contract.</li>
+<li>Test complete mixed producer streams and publish the producer/format matrix.</li>
+<li>Preserve B05/B06 summary identities and the documented histogram schema.</li>
+<li>Preserve non-UTF-8 values losslessly with tagged base64 objects; verify portable virtual-path fixtures.</li>
+</ul>
+<h2 dir="auto" id="completed-archive-destination-collisions-audit-s02-pr-865">Completed: Archive destination collisions (audit S02, PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5503365399" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/865" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/865/hovercard" href="https://github.com/mboworks/xff/pull/865">#865</a>)</h2>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Share a pure destination planner between the public API and direct writer.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Reject normalized duplicates before output creation; retain input order for first-wins.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Test existing-output preservation and first-wins payloads in tar and zip.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Connect duplicate policy to CLI, full config files, and dry-run validation.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Carry named root identity through parsing/traversal and enforce distinct root names.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Keep named roots command-line-only like positional operands; reject them in every INI source.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Validate file/directory prefix conflicts and deterministic root/traversal ordering.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Complete registry help, generated reference, integration tests, and affected-file lint.</li>
+</ul>
+<h2 dir="auto" id="completed-compact-help-overview-audit-s06">Completed: Compact help overview (audit S06)</h2>
+<ul dir="auto">
+<li>Replace the exhaustive default catalogue with command structure and task-oriented help routes.</li>
+<li>Preserve complete inventory and detailed reference under <code class="notranslate">--help=all</code> and <code class="notranslate">--help=long</code>.</li>
+<li>Validate terminal widths and executable examples; structure comparison help and stack narrow policy tables.</li>
+</ul>
+<h2 dir="auto" id="completed-comparison-exit-status-audit-s11">Completed: Comparison exit status (audit S11)</h2>
+<ul dir="auto">
+<li>Explain search-style comparison exit codes in focused help and exit flags.</li>
+<li>Test output selection, summaries, filtered populations, and operational errors.</li>
+<li>Regenerate the reference and validate focused help, registry documentation, and changed-file checks.</li>
+</ul>
+<h2 dir="auto" id="completed-order-and-limits-guide-audit-s15">Completed: Order and limits guide (audit S15)</h2>
+<ul dir="auto">
+<li>Compare expression, listing, reduction, traversal, and sorting controls in one table.</li>
+<li>Verify collection placement, explicit actions, full denominators, fuzzy selection, and archive populations.</li>
+<li>Explain parallel ordering, retained state, and partial comparison populations.</li>
+</ul>
+<p dir="auto">Actionable roadmap and deliberately deferred ideas. Completed implementation records live in<br>
+<a href="docs/history-roadmap.html"><code class="notranslate">docs/history-roadmap.md</code></a>; other resolved design records and investigations<br>
+live in <a href="docs/history.html"><code class="notranslate">docs/history.md</code></a>.</p>
+<h2 dir="auto" id="completed-unambiguous-summary-totals-audit-b06">Completed: Unambiguous summary totals (audit B06)</h2>
+<ul dir="auto">
+<li>Add <code class="notranslate">is_total</code> to ordinary, scoped, and comparison-result JSONL rows.</li>
+<li>Preserve literal group keys, including total, empty strings, and (none).</li>
+<li>Quote ambiguous data labels in human-readable tables without adding a column.</li>
+<li>Validate multiple requests and comparison scopes before publication.</li>
+</ul>
+<h2 dir="auto" id="completed-jsonl-summary-identity-audit-b05">Completed: JSONL summary identity (audit B05)</h2>
+<ul dir="auto">
+<li>Identify all ordinary, scoped, and comparison summary rows by request, grouping, and scope.</li>
+<li>Preserve exact template strings and request indices across filtering and output reordering.</li>
+<li>Include root identity and verify demultiplexing with a JSON parser.</li>
+<li>Update output expectations, generated help, and schema documentation; verify against merged main.</li>
+</ul>
+<h2 dir="auto" id="completed-histogram-output-formats-audit-b04">Completed: Histogram output formats (audit B04)</h2>
+<ul dir="auto">
+<li>Render Markdown histograms as named bucket/value tables, with numeric alignment and shared escaping.</li>
+<li>Reject unsupported histogram formats before traversal or actions, including comparison mode.</li>
+<li>Cover repeated histograms, empty results, header suppression, and composition with summaries.</li>
+</ul>
+<h2 dir="auto" id="completed-comparison-summary-request-deduplication-audit-s03">Completed: Comparison summary request deduplication (audit S03)</h2>
+<ul dir="auto">
+<li>Preserve scoped totals while coalescing the comparison table requested by the shorthand and bare summary.</li>
+<li>Test both argument orders and retain the extension-summary composition regression.</li>
+</ul>
+<h2 dir="auto" id="completed-install-first-readme-audit-s07">Completed: Install-first README (audit S07)</h2>
+<ul dir="auto">
+<li>Put published binaries and a four-command task guide before feature matrices.</li>
+<li>Keep Bazel instructions under building from source.</li>
+<li>Describe summary bytes as apparent sizes, not allocated disk usage.</li>
+</ul>
+<h2 dir="auto" id="completed-release-archive-documentation-audit-b08">Completed: Release archive documentation (audit B08)</h2>
+<ul dir="auto">
+<li>Describe the separate lean/full archives and their matching debug symbols.</li>
+<li>Link release installation instructions and clarify size optimization plus ThinLTO.</li>
+</ul>
+<h2 dir="auto" id="planned-revisit-duplicate-destination-detection-with-mbos-string-interner">Planned: Revisit duplicate destination detection with MBO's string interner</h2>
+<ul dir="auto">
+<li>Once MBO's string interner is available, evaluate sharing normalized pack/output destination<br>
+paths between planned entries and the collision index instead of storing separate string copies.</li>
+<li>Preserve exact-duplicate and file/directory ancestor/descendant conflict detection, normalization,<br>
+first-wins ordering, source-path diagnostics, and validation before opening output. Interned IDs<br>
+alone do not replace the ordered or prefix-aware index needed for hierarchical conflicts.</li>
+<li>Verify string-view lifetime guarantees and benchmark memory and runtime on large, mostly unique<br>
+path sets, deeply nested paths, and duplicate-heavy inputs before choosing an implementation.</li>
+<li>Reuse the archive collision regression tests from PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5503365399" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/865" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/865/hovercard" href="https://github.com/mboworks/xff/pull/865">#865</a> to verify unchanged behavior.</li>
+</ul>
+<h2 dir="auto" id="utility-and-usability-audit">Utility and usability audit</h2>
+<p dir="auto">Work through the claims in <a href="docs/review-0.6.0.html">the 0.6.0 review</a>, one claim per PR.<br>
+The review separates reproduced defects from design proposals and records their acceptance criteria.</p>
+<h2 dir="auto" id="completed-markdown-cell-normalization-verification-audit-b07">Completed: Markdown cell normalization verification (audit B07)</h2>
+<ul dir="auto">
+<li>Disprove the reported newline-padding defect by measuring rendered pipe positions.</li>
+<li>Guard normalization-before-measurement with LF, CRLF, and escaped-pipe regression cases.</li>
+</ul>
+<h2 dir="auto" id="completed-histogram-width-audit-b03">Completed: Histogram width (audit B03)</h2>
+<ul dir="auto">
+<li>Require positive integer widths consistently on the CLI and in complete INI files.</li>
+<li>Reject invalid widths before expression actions, including comparison walks.</li>
+</ul>
+<h2 dir="auto" id="completed-buffer-limits-audit-b02">Completed: Buffer limits (audit B02)</h2>
+<ul dir="auto">
+<li>Validate row windows and byte budgets on the CLI and in complete INI files.</li>
+<li>Reject scaled-count overflow and invalid limits before actions execute.</li>
+</ul>
+<h2 dir="auto" id="completed-capture-consumers-audit-b01">Completed: Capture consumers (audit B01)</h2>
+<ul dir="auto">
+<li>Declare capture binding, argument field expansion, and implicit-output behavior in registry metadata.</li>
+<li>Discover capture references through parsed templates in the actual consuming fields and actions.</li>
+<li>Apply duplicate/unused binding checks and implicit-output behavior consistently to directory captures.</li>
+<li>Cover printf/file-printf, grep templates, execution, chaining, comparison targets, and columns.</li>
+</ul>
+<h2 dir="auto" id="completed-binary-sniff-documentation-audit-b09">Completed: Binary sniff documentation (audit B09)</h2>
+<ul dir="auto">
+<li>Document the binary sniff window as exactly 8,000 bytes in content and type help.</li>
+<li>Test NUL bytes immediately before and at the boundary, and beyond it up to 8 KiB.</li>
+</ul>
+<h2 dir="auto" id="completed-ci-cache-capacity-after-ini-changes">Completed: CI cache capacity after INI changes</h2>
+<ul dir="auto">
+<li>Raise the shared uncompressed cache limit to 1 GB and ASan to 3 GB using main-run measurements.</li>
+<li>Retain the compressed cleanup ceilings and test the independent budget settings.</li>
+</ul>
+<h2 dir="auto" id="completed-comparison-summary-scope-columns">Completed: Comparison summary scope columns</h2>
+<ul dir="auto">
+<li>Make scopes collect ordered column groups; add side totals with <code class="notranslate">left</code>/<code class="notranslate">right</code> aliases and canonical output labels.</li>
+<li>Count category pairs once with combined sizes; preserve side totals, ordering, overlap, and percentages.</li>
+<li>Update plain/Markdown/JSONL output, help, design examples, and regression coverage.</li>
+</ul>
+<h2 dir="auto" id="completed-ini-environment-substitutions">Completed: INI environment substitutions</h2>
+<ul dir="auto">
+<li>Add braced environment values, literal defaults, and required-value diagnostics to the shared INI lexer.</li>
+<li>Preserve quoting, argument boundaries, section names, and field-renderer <code class="notranslate">%{...}</code> syntax.</li>
+<li>Test complete configuration files, invalid values, and scoped mutation enforcement after root expansion.</li>
+<li>Document caller-controlled environment trust and literal roots for fixed administrator boundaries.</li>
+</ul>
+<h2 dir="auto" id="completed-summary-and-comparison-audit">Completed: summary and comparison audit</h2>
+<ul dir="auto">
+<li>Reject invalid reduction controls before traversal/actions; make top-limit reset deterministic.</li>
+<li>Refuse silently ignored summary formats and support aligned comparison summaries consistently.</li>
+<li>Document default scopes, category aliases, independent output selection, ordering, formats, and<br>
+count/byte reconciliation; add the summary design guide to the published documentation.</li>
+<li>Add end-to-end reconciliation and invalid-control coverage alongside focused engine regressions.</li>
+<li>Measure the follow-up PR's action-cache reuse against the main caches seeded after <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5476971557" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/840" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/840/hovercard" href="https://github.com/mboworks/xff/pull/840">#840</a>.</li>
+</ul>
+<h2 dir="auto" id="ci-preparation-profiling">CI preparation profiling</h2>
+<ul dir="auto">
+<li>Verified <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5479995300" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/847" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/847/hovercard" href="https://github.com/mboworks/xff/pull/847">#847</a> main: zero cache evictions, 184.7-second fuzz campaign phase, 2.69 GB cache inventory.</li>
+<li>Capture coverage and initial fuzz build traces to attribute the remaining four-minute preparation<br>
+delay before changing toolchain fetching or packaging. See <code class="notranslate">docs/ci-performance.md</code>.</li>
+</ul>
+<h2 dir="auto" id="completed-start-long-ci-jobs-immediately">Completed: Start long CI jobs immediately</h2>
+<ul dir="auto">
+<li>Remove pre-commit/Trunk scheduling dependencies from coverage and fuzz; keep every check in <code class="notranslate">done</code>.</li>
+</ul>
+<h2 dir="auto" id="completed-parallel-fuzz-campaigns">Completed: Parallel fuzz campaigns</h2>
+<ul dir="auto">
+<li>Build all campaigns together, prepare launch scripts sequentially, and run with CPU/RAM bounds.</li>
+<li>Preserve time per target, isolated corpora/crashes/logs, throughput statistics, and failure cleanup.</li>
+<li>Compare CI wall time and mutation throughput after main runs the parallel scheduler.</li>
+</ul>
+<h2 dir="auto" id="completed-coverage-cache-capacity">Completed: Coverage cache capacity</h2>
+<ul dir="auto">
+<li>Raise coverage's cache allowance to 1.5 GB uncompressed and 1 GB compressed.</li>
+<li>Check the next main report for retained outputs and upload size.</li>
+</ul>
+<h2 dir="auto" id="completed-cache-storage-reporting-and-msan-allowance">Completed: Cache storage reporting and MSan allowance</h2>
+<ul dir="auto">
+<li>Retain up to 4 GB uncompressed / 1.2 GB compressed for MSan.</li>
+<li>Record per-upload measurements and report compressed/uncompressed sizes, eviction counts,<br>
+and repository-wide usage against 10 GB in main's final job.</li>
+</ul>
+<h2 dir="auto" id="completed-immediate-main-cache-retirement">Completed: Immediate main cache retirement</h2>
+<ul dir="auto">
+<li>After upload, verify the exact replacement and compressed size before deleting older main<br>
+generations in the same OS/architecture/configuration. Keep concurrent newer generations.</li>
+<li>Retain workflow-completion and scheduled cleanup as fallbacks; monitor <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5478366429" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/842" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/842/hovercard" href="https://github.com/mboworks/xff/pull/842">#842</a> main uploads for<br>
+actual compressed sanitizer sizes and total repository storage.</li>
+</ul>
+<h2 dir="auto" id="completed-ci-compiled-output-cache-lifecycle">Completed: CI compiled-output cache lifecycle</h2>
+<ul dir="auto">
+<li>Replace frozen cache keys with fresh main-run generations and configuration-specific restoration.</li>
+<li>Preserve the cache budget: bound uploads, retain the newest usable generation, and remove<br>
+closed-PR and tag-scoped entries. PR and tag runs are restore-only.</li>
+<li>Add GCC output caching, share release/main build caches, and test retention and upload behavior.</li>
+<li>Measured PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5477831708" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/841" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/841/hovercard" href="https://github.com/mboworks/xff/pull/841">#841</a>: normal Linux Clang had 3,768 disk hits, GCC 2,724, and documentation 718.<br>
+Sanitizers restored the correct namespaces but age-based eviction discarded most early outputs.</li>
+<li>Follow-up: evict largest blobs first, allow 2.6 GB uncompressed for sanitizer jobs, and cover deep-fuzz and release<br>
+reference-generation cache routing. Verify sanitizer reuse after main seeds the revised caches;<br>
+consider per-configuration budgets using compressed upload sizes if retention remains inadequate.</li>
+</ul>
+<h2 dir="auto" id="project-constraints">Project constraints</h2>
+<h3 dir="auto" id="minimum-bazel-version">Minimum Bazel version</h3>
+<p dir="auto">The supported minimum is <strong>Bazel 9.1.1</strong>. Development and CI use the newer release pinned in<br>
+<code class="notranslate">.bazelversion</code>; the minimum is a support floor, not a second CI configuration. Bazel 7 is no longer<br>
+supported, and no Bazel 8 patch release is part of the support contract. Lowering the minimum requires<br>
+an explicit decision.</p>
+<h3 dir="auto" id="coverage-policy">Coverage policy</h3>
+<p dir="auto">Every current coverage group meets the shared high boundaries. Category overrides may make enforcement<br>
+stricter; there are no lowered onboarding overrides. The JSON policy remains the single source of truth<br>
+for enforcement and presentation.</p>
+<h2 dir="auto" id="safety-follow-up-sequence">Safety follow-up sequence</h2>
+<ol dir="auto">
+<li>Discuss whether pager-command allowlisting is useful and define its trust and configuration<br>
+model before implementing it. Pager commands remain separate from execution blocks and dry-run.</li>
+</ol>
+<p dir="auto">The configuration audit findings and verification map are recorded in<br>
+<a href="docs/history.html#configuration-validation-and-documentation-audit">the audit implementation record</a>.<br>
+PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5443421444" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/821" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/821/hovercard" href="https://github.com/mboworks/xff/pull/821">#821</a> carries the fixes; final CI and release-artifact verification gate release readiness.</p>
+<p dir="auto">The safety model and directory-scoped permissions are tracked in<br>
+<a href="docs/history.html#directory-scoped-safety-controls">the implementation record</a>.</p>
+<h2 dir="auto" id="active-engineering-priorities">Active engineering priorities</h2>
+<ol dir="auto">
+<li><strong>Fuzzing.</strong> The parser-through-evaluator, matcher, template, PHAR, and ASAR targets now have<br>
+committed seed corpora, semantic invariants, ordinary-CI replay, and automatically discovered<br>
+bounded CI campaigns. Continue with shard, stronger matcher/template, and regex targets; every<br>
+new target is picked up by the campaign driver. Configuration coverage<br>
+includes the shared INI/xffrc argument grammar, quoting and comments, policy gating, precedence<br>
+resolution, and arming invariants.<br>
+Expression-evaluation harnesses must exclude safety-classified descriptors and use a mutation-<br>
+refusing in-memory filesystem; <code class="notranslate">--safe</code> text alone is not an isolation boundary.</li>
+<li><strong>Performance evidence.</strong> The parser now has a reproducible manual benchmark alongside the existing<br>
+similarity and near-duplicate measurements. Extend the evidence with traversal and memory<br>
+measurements before optimizing. Keep fuzz time/resource guards separate from stable performance<br>
+measurements.</li>
+<li><strong>Near-duplicate grouping design.</strong> The benchmark/design spike now measures exact Jaccard<br>
+verification behind scalable candidate generation; settle the grouping architecture, configuration,<br>
+and core-versus-extra boundary before shipping a user-facing operation. False positives may reach<br>
+exact verification but must never reach emitted clusters.</li>
+<li><strong>Coverage overview ordering.</strong> Keep <code class="notranslate">overall</code> first, then render the program categories<br>
+alphabetically, followed by the extension categories alphabetically. Preserve this ordering in<br>
+generated and published reports.</li>
+<li><strong>Detailed coverage gaps.</strong> Raise line and function coverage for<br>
+<code class="notranslate">program-command-grammar/xff/registry/</code> and branch coverage for <code class="notranslate">program-execution/xff/exec/</code><br>
+until every range is green in the detailed LCOV report.</li>
+<li><strong>Libarchive malformed-input boundary.</strong> The archive fuzz campaign must keep malformed records<br>
+from reaching known unsafe third-party parser paths. Revisit the pinned libarchive version and<br>
+format-specific validation before broadening beyond structurally valid tar inputs; report any<br>
+confirmed dependency defect through its private security channel when appropriate.</li>
+<li><strong>VFS host-adapter split.</strong> Extend the capability-oriented <code class="notranslate">vfs::FileSystem</code> seam for every file<br>
+operation xff needs, then move POSIX and standard-library file primitives behind a minimal local<br>
+host adapter. Consumers must not open or mutate host paths directly; retain annotations only at<br>
+the immediate adapter boundary.</li>
+</ol>
+<h2 dir="auto" id="coverage-report-ordering">Coverage report ordering</h2>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Pin <code class="notranslate">main</code>, then interleave PRs and releases newest-first by merge/tag position on main.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Refresh retained PR metadata after merges, preserve report replacement identity, and test<br>
+non-numeric ordering, annotated/lightweight tags, unmerged reports, and delayed CI runs.</li>
+</ul>
+<h2 dir="auto" id="summary-accounting-follow-up">Summary accounting follow-up</h2>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add count and byte percentages to summary tables, using full pre-<code class="notranslate">--top</code> totals.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Include directories, symlinks, special files, and type changes in comparison accounting;<br>
+distinguish entry equality from subtree equality and test empty-directory differences.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add comparison combined sizes and size percentages: each result counts once, while bytes<br>
+include both sides. Use entry metadata sizes, never recursive directory sizes.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Combine selected categories into one table with left/right column groups, including missing sides<br>
+and zero sizes;<br>
+use each side's selected population as the denominator and preserve JSONL attribution.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Default ordinary summaries to paired comparison scope under <code class="notranslate">--compare</code>; retain <code class="notranslate">all</code> otherwise<br>
+and document explicit overrides, option-order independence, and summary-driver requirements.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Render ordinary and comparison summaries as Markdown for <code class="notranslate">--format=md|markdown</code>, reusing<br>
+listing cell escaping and testing validation, fixed schemas, and table boundaries.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add count/size reconciliation tests, update registry/topic/generated help, and prepare a PR.</li>
+</ul>
+<h2 dir="auto" id="summary-presentation-follow-up">Summary presentation follow-up</h2>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Separate each summary note from the following scope in console and Markdown output.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add grouping-specific Markdown headings and bullet lists for scope/root labels and notes;<br>
+preserve headerless fragments.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Align exact byte values with scaled integer digits using fixed SI/IEC unit widths.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Test mixed/repeated/scoped summaries and size alignment at zero and nonzero precision;<br>
+update help, generated reference, and changelog, then prepare a PR.</li>
+</ul>
+<h2 dir="auto" id="design-required-before-implementation">Design required before implementation</h2>
+<ol dir="auto">
+<li><strong>Reassembled shard contents (shards v2).</strong> Decide whether the logical whole replaces or accompanies<br>
+physical shards for matching and actions, how incomplete and duplicate sets read, and which path and<br>
+metadata the synthetic entry owns. The shipped v1 already covers display, statistics, completeness,<br>
+duplicates, and <code class="notranslate">-shard-status</code> matching; do not infer v2 semantics from it.</li>
+<li><strong>Near-duplicate grouping.</strong> The candidate-generation spike in<br>
+<a href="docs/design-near-duplicates.html"><code class="notranslate">docs/design-near-duplicates.md</code></a> selects hashed-shingle postings<br>
+followed by exact Jaccard verification as the first implementation. Decide the user-visible<br>
+clustering rule for non-transitive matches and measure a memory-bounded production representation.</li>
+<li><strong>PHAR structural exposure.</strong> A format-defined file such as <code class="notranslate">.phar/stub.php</code> remains file-like, with a<br>
+stored member winning name conflicts. Decide whether a presentation option may hide such parts.<br>
+Aliases, serialized metadata, and signatures are not files and remain unexported unless a coherent<br>
+separate metadata model is designed.</li>
+</ol>
+<h2 dir="auto" id="deferred-refinements">Deferred refinements</h2>
+<ul dir="auto">
+<li>Filesystem-name behavior: Unicode normalization and Linux per-directory case-fold detection.</li>
+<li>Per-summary-sink modifiers.</li>
+<li>Histogram time buckets, explicit bucket edges/counts, and per-line template measures.</li>
+<li>Text-flavor mixed-line-ending policies.</li>
+<li>Post-1.0 behavior migration through <code class="notranslate">--unstable=NAME</code> if a concrete unstable spelling needs it;<br>
+do not build the rejected general <code class="notranslate">--feature</code> registry speculatively.</li>
+<li>C++ header modules after the hermetic toolchain supplies real compile/use actions.</li>
+</ul>
+<h3 dir="auto" id="audit-b12-effective-explain-flavor-values">Audit B12: effective explain flavor values</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Reproduce config flags absent from the current flavor table.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Share the fully composed command between explain and execution; verify defaults, selectors,<br>
+explicit files, skip policy, literal operands, and no action execution.</li>
+</ul>
+<h3 dir="auto" id="audit-s04-static-template-validation">Audit S04: static template validation</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Reject overflowing numeric capture indices without signed arithmetic overflow.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Preserve parsed syntax/name diagnostics on compiled templates, distinguishing absent values.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Validate native qualifiers through field renderers and the shared hash vocabulary.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Validate rewrite/extraction patterns, replacements, flags, and reducer syntax.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Share placeholder parsing with printf consumers, including quoted closing braces.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Check active template consumers before traversal or actions, including comparison mode and explain.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Update help and pass full-config, before-mutation, summary, and engine regression checks.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Verify generated reference and all 24 affected-header consumers; complete local commit hooks.</li>
+</ul>
+<h3 dir="auto" id="audit-s19-fuzz-filesystem-isolation">Audit S19: fuzz filesystem isolation</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Supply an in-memory VFS for every fuzz-generated path and abort on attempted mutation.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Assert that content fields read synthetic bytes, with absolute and traversal-path corpus cases.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Verify corpus replay and local lint; audit every mutation entrypoint for fail-fast rejection.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Make expression-evaluation fuzzing abort on all write and controlled-mutation entrypoints.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Exercise both staged release executables with a cross-feature smoke corpus before upload.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Cover NUL, escaped plain, and TSV record boundaries in the release smoke corpus.</li>
+</ul>
+<h3 dir="auto" id="audit-s05-effective-safety-explanation">Audit S05: effective safety explanation</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Share safety resolution between execution and inspection; retain file/line/section origins.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Show final capabilities, mandatory and profile causes, modes, categories, and directory roots.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Exercise system blocks, user overrides, skipped sections, expansions, and nested roots with full INI fixtures.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Complete changed-file lint, affected-header-consumer checks, and generated-reference verification.</li>
+</ul>
+<h3 dir="auto" id="audit-s17-configuration-inspection">Audit S17: configuration inspection</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Preserve named declarations and structured validation reasons for explain output.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Show skip/selection state, declared behavior, and physical application origins.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add personal, project, mandatory-policy, and environment-root recipes.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Verify complete CLI configurations, generated reference, and changed-header consumers.</li>
+</ul>
+<h3 dir="auto" id="audit-s18-spelling-and-placement-diagnostics">Audit S18: spelling and placement diagnostics</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Derive conservative spelling hints and short-global placement hints from registries.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Verify parser boundaries, CLI errors before actions, normal hooks, and changed-file clang-tidy.</li>
+</ul>
+<h3 dir="auto" id="audit-s08-compact-comparison-summaries">Audit S08: compact comparison summaries</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Group console scope headings and retain one table at narrow widths.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Inject width from parsed CLI globals and preserve JSON accounting.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Test exact 80/120/160-column layouts, Unicode wrapping, controls, missing values, and headers.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Complete generated reference/notices and Linux Unicode-width portability checks.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Complete normal commit hooks and affected-source lint.</li>
+</ul>
+<h3 dir="auto" id="audit-s09-summary-grouping-and-population-labels">Audit S09: summary grouping and population labels</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Label console summary groupings and explain full-population denominators when top-limited.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add truncated JSONL group counts and count comparison union keys once.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Verify empty, zero-size, repeated, scoped, and top-limited summaries; complete docs and lint.</li>
+</ul>
+<h3 dir="auto" id="audit-s10-delimited-summary-exports">Audit S10: delimited summary exports</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Define a wide schema with request, scope, root, and total identity; reuse listing encoders.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Parse CSV/TSV exports and compare metrics with JSONL across repeated requests and scopes.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Verify output-producer metadata, full-config composition, generated help, and changed-header consumers.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Reconcile B06 total-row identity and S09 truncation metadata before publication.</li>
+</ul>
+<h3 dir="auto" id="audit-b10-physical-comparison-populations-with-shard-flags">Audit B10: physical comparison populations with shard flags</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Reproduce a mixed identical/different set being assigned wholly to its representative's category.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Keep comparison results and reductions physical; preserve scheme selection for <code class="notranslate">-shard-status</code>.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add regressions for category accounting, side/combined totals, extra listings, and ordinary logical summaries.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Complete generated documentation, targeted tests, and changed-file checks before publication.</li>
+</ul>
+<p dir="auto">A two-shard set with one identical pair and one different pair produced two physical comparison<br>
+results, but <code class="notranslate">--shards --summary=ext --summary-scope=identical,different</code> placed all eight bytes under<br>
+<code class="notranslate">identical</code> and none under <code class="notranslate">different</code>. Comparison without ordinary summaries could also emit extra<br>
+collapsed paths. Whole-set comparison semantics remain a separate design question; this fix keeps<br>
+all comparison accounting at the existing physical-entry level.</p>
+<h3 dir="auto" id="audit-b11-collect-and-shard-reductions-must-use-one-population">Audit B11: collect and shard reductions must use one population</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Reproduce double counting when <code class="notranslate">-collect</code> and <code class="notranslate">--shards</code> feed a summary together.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Feed reductions from the collected population once, with logical shard grouping applied consistently.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Test collection placement before/after truncation, named collections, duplicate/incomplete/custom sets,<br>
+histograms, summaries, root/category scopes, zero-byte files, and ordinary behavior without collections.</li>
+</ul>
+<p dir="auto">Two 2-byte files <code class="notranslate">data-00000-of-00002</code> and <code class="notranslate">data-00001-of-00002</code> produce count 1 / bytes 4 with<br>
+<code class="notranslate">xff ROOT -type f --shards --summary --format=jsonl</code>. Adding <code class="notranslate">-collect</code> before <code class="notranslate">--shards</code> produces<br>
+count 3 / bytes 8. The post-walk shard pass feeds one logical set, then <code class="notranslate">FinishCollections</code> feeds<br>
+the two physical members again. Merely suppressing one feed is insufficient unless the selected<br>
+collection population and logical grouping semantics remain correct. S14's guide must not present<br>
+this as intentional accounting.</p>
+<h3 dir="auto" id="audit-s14-shard-population-guide">Audit S14: shard population guide</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Explain physical predicates/actions, logical reductions, status-cohort order, collections,<br>
+missing members, duplicate selection, custom schemes, and physical comparison with executable examples.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Publish with the B10 comparison and B11 collection-accounting corrections in PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5505872360" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/871" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/871/hovercard" href="https://github.com/mboworks/xff/pull/871">#871</a>.</li>
+</ul>
+<h3 dir="auto" id="audit-b13-archive-mode-ordering">Audit B13: archive mode ordering</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Reproduce stale filename sniffing after a later all-mode selection.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Resolve traversal and sniffing together; test CLI aliases and full INI selection order.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Verify generated help, archive regression tests, and changed-source lint.</li>
+</ul>
+<h3 dir="auto" id="audit-s16-task-based-archive-safety-recipes">Audit S16: task-based archive safety recipes</h3>
+<ul class="contains-task-list">
+<li class="task-list-item">
+<p dir="auto"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Document minimal capability profiles and format/destination limitations.</p>
+</li>
+<li class="task-list-item">
+<p dir="auto"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Execute permitted and blocked recipe variants against isolated fixtures.</p>
+</li>
+<li class="task-list-item">
+<p dir="auto"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> <strong>B14: Preserve hash-summary context.</strong> Fix archive member grouping in <code class="notranslate">--summary=hash</code><br>
+and honor configured digest/encoding like <code class="notranslate">{hash}</code>; verify real archive and ordinary-file<br>
+regressions. See <code class="notranslate">docs/review-0.6.0.md</code>.</p>
+</li>
+</ul>
+<h3 dir="auto" id="audit-s12-inactive-modifier-inspection">Audit S12: inactive modifier inspection</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add typed consumer metadata and reuse runtime resolvers for effective output state.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Diagnose effective CLI requests while preserving dormant config defaults and operand literals.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Verify full configs, cleared consumers, generated help, and every changed-header consumer.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add archive depth, member-path, and aggregate dependencies using resolved flavor and backend availability.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Verify archive diagnostics and all affected header consumers.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Track algorithm/encoding defaults through parsed hash actions and field templates, including<br>
+printf/exec syntax, suppressed listings, grep counts, summaries, and configured consumers.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Verify hash diagnostics, integrated prerequisites, generated reference, and every affected header consumer.</li>
+</ul>
+<h3 dir="auto" id="audit-s13-execution-resource-inspection">Audit S13: execution resource inspection</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Document retained state, content reads, concurrency, and measurement definitions separately.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add an effective-command resource view without presenting static estimates as measured usage.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Incomplete task"> Measure first output, elapsed time, peak memory, and logical/backend bytes across broad and deep<br>
+trees, network storage, and repeated content consumers.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Investigate directory-at-a-time comparison barriers, ordering, errors, actions, and VFS lifetimes; record the prototype and acceptance criteria in <code class="notranslate">docs/execution-resources.md</code>.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Incomplete task"> Prototype and measure paired-directory comparison after settling its output-order and partial-error contracts.</li>
+</ul>
+<h3 dir="auto" id="audit-s13-resource-measurement-harness">Audit S13: resource measurement harness</h3>
+<ul class="contains-task-list">
+<li class="task-list-item">
+<p dir="auto"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Measure first stdout, elapsed/CPU time, byte counts, and normalized peak child RSS.</p>
+</li>
+<li class="task-list-item">
+<p dir="auto"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Preserve failure status and bounded stderr diagnostics without pipe deadlocks.</p>
+</li>
+<li class="task-list-item">
+<p dir="auto"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Exercise eight real xff workloads on generated broad/deep trees.</p>
+</li>
+<li class="task-list-item">
+<p dir="auto"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Measure logical whole-file reads for broad/deep synthetic trees, including repeated content consumers and paired comparison.</p>
+</li>
+<li class="task-list-item">
+<p dir="auto"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Inspect effective worker limits, active content fields, and retained-state consumers without traversal.</p>
+</li>
+<li class="task-list-item">
+<p dir="auto"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Incomplete task"> Integrate general runtime read accounting.</p>
+</li>
+<li class="task-list-item">
+<p dir="auto"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add a read-only benchmark observer for whole-file/range calls on real broad/deep fixtures,<br>
+with failed/empty/concurrent-read tests and separate invocation provenance.</p>
+</li>
+<li class="task-list-item">
+<p dir="auto"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Incomplete task"> Extend measurement coverage to archive/member backends and supplied network fixtures.</p>
+</li>
+<li class="task-list-item">
+<p dir="auto"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Record S13 one/eight-worker observations on broad/deep fixtures, with raw runs and timing<br>
+ranges; keep optimized branching/network scaling and storage-traffic claims unproven.</p>
+</li>
+</ul>
+<h3 dir="auto" id="registry-capability-audit">Registry capability audit</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Derive primary operand grammar, smart case, traversal effects, deferred controls,<br>
+execution behavior, and help relationships from descriptor metadata.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Preserve literal token lookup, evaluator dispatch, and config-layer directive parsing.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add renamed-descriptor regressions so shared behavior follows capabilities rather than spelling.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Resolve explicit archive mode and presence together instead of maintaining a second alias list.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Complete integrated tests and changed-header lint before publication with audit group six.</li>
+</ul>
+<h3 dir="auto" id="audit-b15-filename-controls-in-display-output">Audit B15: filename controls in display output</h3>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Escape controls and backslashes before table width calculation and tree rendering.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Preserve raw and machine-output encoding; document the display distinction.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Verify buffered/streaming tables, tree labels, and actual filenames.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Regenerate and verify the flag reference.</li>
+</ul>
+<h2 dir="auto" id="apple-application-distribution-readers">Apple application distribution readers</h2>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Delivery 1 (PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5518888802" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/896" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/896/hovercard" href="https://github.com/mboworks/xff/pull/896">#896</a>): XAR/PKG/XIP, owned streaming sources, contextual payload discovery,<br>
+and the removable PBZX extension in the existing full binary on Linux and macOS.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Verify <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="5518888802" data-permission-text="Title is private" data-url="https://github.com/mboworks/xff/issues/896" data-hovercard-type="pull_request" data-hovercard-url="/mboworks/xff/pull/896/hovercard" href="https://github.com/mboworks/xff/pull/896">#896</a> post-merge main CI and coverage publication (run 35529346705, published<br>
+as the PR 896 post-merge row for <code class="notranslate">ced00ac</code>; benchmark publication also succeeded).</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add native <code class="notranslate">pkgbuild</code>/<code class="notranslate">productbuild</code> fixtures from original payload text, including XAR seeks.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Keep isolated PBZX fuzzing enabled; add XZ and decoder-limit corpus seeds.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add reproducible 16/64/256 MiB package resource measurements.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Completed task" checked=""> Add shared buffer/decoder reservations and bounded range reads; native sources seek directly,<br>
+while sequential source replay is bounded across related cursors.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Incomplete task"> Verify production package variants with redistributable provenance; extend PBZX framing only<br>
+with explicit fixtures. Third-party application data and signature validation are not covered.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Incomplete task"> Before disk-reader integration, add format-aware block indexes and cache eviction; source ranges<br>
+are bounded, but reopening sequential archive members can still rescan parent streams.</li>
+<li class="task-list-item"><input type="checkbox" id="" disabled="" class="task-list-item-checkbox" aria-label="Incomplete task"> Delivery 2: evaluate a separate permissively licensed UDIF/HFS+/APFS extension. No GPL/LGPL,<br>
+installer execution, implicit host mounts, or new Apple-specific binary.</li>
+</ul></main><footer>Release snapshot &middot; c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5</footer></body></html>

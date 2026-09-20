@@ -1,0 +1,127 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/coverage.md - xff v0.8.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.8.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.8.0">Release &amp; downloads</a><a href="/xff/releases/0.8.0/">CLI reference</a><a href="/xff/coverage/tag/0.8.0/">Coverage</a><a href="/xff/benchmarks/tag/0.8.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5">Source</a><a href="/xff/site/tag/v0.8.0/documents.html">Documentation</a></nav><p>xff v0.8.0</p><main><h1 dir="auto" id="coverage-policy">Coverage policy</h1>
+<p dir="auto"><a href="https://github.com/mboworks/xff/blob/c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5/coverage_policy.json"><code class="notranslate">coverage_policy.json</code></a> is the single source of truth for coverage scope,<br>
+ratings, and CI enforcement. The short report, retained report page, generated LCOV colours and<br>
+legend, and the coverage job all consume it. A presentation-only threshold is not permitted.</p>
+<h2 dir="auto" id="ratings-and-enforcement">Ratings and enforcement</h2>
+<p dir="auto">Every metric has two boundaries:</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Rating</th>
+<th>Range</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>low</td>
+<td>Below <code class="notranslate">minimum</code></td>
+</tr>
+<tr>
+<td>medium</td>
+<td>At least <code class="notranslate">minimum</code>, but below <code class="notranslate">target</code></td>
+</tr>
+<tr>
+<td>high</td>
+<td>At least <code class="notranslate">target</code></td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<p dir="auto">The <code class="notranslate">enforce</code> value is either <code class="notranslate">medium</code> or <code class="notranslate">high</code>. CI fails when a measurement is below its enforced<br>
+rating. Thus medium enforcement accepts medium and high; high enforcement accepts only high. The<br>
+overview reports <code class="notranslate">GOOD</code> when every metric is high, <code class="notranslate">OK</code> when enforcement passes but at least one<br>
+metric remains medium, and <code class="notranslate">BAD: L/F/B</code> when the named metrics do not meet their enforcement rating.<br>
+Percentage cells retain their low, medium, or high colour, so a medium cell explains either an <code class="notranslate">OK</code><br>
+category or a failure when that metric enforces high. Only <code class="notranslate">BAD</code> fails CI.</p>
+<p dir="auto">Start a metric at medium enforcement while improving it toward its target. After it reliably reaches<br>
+high, changing <code class="notranslate">enforce</code> to <code class="notranslate">high</code> prevents a regression into medium. Do not collapse <code class="notranslate">minimum</code> and<br>
+<code class="notranslate">target</code> merely to strengthen enforcement; the two boundaries continue to describe the useful<br>
+three-band rating.</p>
+<h2 dir="auto" id="category-overrides">Category overrides</h2>
+<p dir="auto">The top-level policy applies to <code class="notranslate">overall</code> and is inherited by every overview category. A category<br>
+may override any subset of <code class="notranslate">minimum</code>, <code class="notranslate">target</code>, and <code class="notranslate">enforce</code>, independently per metric. This allows<br>
+both stricter enforcement for mature modules and lower initial limits for new or unusually<br>
+constrained modules. An override that lowers either boundary or relaxes enforcement must include a<br>
+non-empty <code class="notranslate">reason</code>; policy validation rejects an unexplained weakening.</p>
+<p dir="auto">Category policies affect the overview rating and the CI result. The detailed LCOV source report can<br>
+represent only one policy, so its colours and policy matrix deliberately use the global boundaries<br>
+and enforcement. Every overview rate cell includes a compact low/medium/high policy strip; its<br>
+outlined band is the enforced rating. Category exceptions therefore remain visible in the table as<br>
+well as its downloadable JSON data.</p>
+<p dir="auto">The <code class="notranslate">patch</code> object uses the same <code class="notranslate">minimum</code>, <code class="notranslate">target</code>, and <code class="notranslate">enforce</code> vocabulary for changed coverable<br>
+lines and branches. Functions are not attributed to changed lines and are therefore not patch-gated.</p>
+<h2 dir="auto" id="published-data">Published data</h2>
+<p dir="auto">Each retained report links its detailed LCOV source view, full <code class="notranslate">coverage-summary.json</code>, and workflow<br>
+<code class="notranslate">coverage-meta.json</code>. The coverage index also links the summary JSON directly. The summary records<br>
+measurements and the fully resolved minimum, target, and enforcement values for every overview row,<br>
+so consumers do not need to reimplement inheritance.</p>
+<h2 dir="auto" id="retained-report-ordering">Retained report ordering</h2>
+<p dir="auto">The coverage index shows one row per PR or release, with no standalone <code class="notranslate">main</code> rows.<br>
+PRs and releases share one newest-first list:<br>
+PRs use GitHub's actual <code class="notranslate">merged_at</code> timestamp, and annotated tags use their tagger timestamp.<br>
+Lightweight tags contain no creation timestamp, so their tagged commit's committer timestamp<br>
+is the explicit fallback. Neither PR numbers, version numbers, CI completion time, nor a<br>
+commit's position on main controls this order. A nested PR uses its own merge time.</p>
+<p dir="auto">Open PRs and reports without a reference timestamp follow, newest CI run creation first.<br>
+PRs closed without merging are excluded from the overview; their direct report URLs and<br>
+immutable run-history snapshots remain available. Reopening a PR restores its overview row.<br>
+Every Test or Release completion and manual publication refreshes GitHub PR state and regenerates<br>
+the indexes. Closing or reopening a PR does not trigger a separate publication: row visibility and<br>
+merge ordering may remain stale until the next publication. Reopened PRs normally get a new CI run,<br>
+and merges trigger main CI. A PR closed without merging may remain visible longer; its measurements<br>
+are retained. Dispatch the publisher without <code class="notranslate">source_run_id</code> for an immediate metadata-only refresh<br>
+that does not download or replace coverage reports. No <code class="notranslate">pull_request_target</code> policy exception is needed.<br>
+Report ingestion, metadata refresh, and release-site publishing share the serialized<br>
+<code class="notranslate">coverage-pages</code> concurrency queue. Each run reads the retained branch and current PR state only<br>
+after acquiring that queue; they cannot overwrite each other's updates concurrently.<br>
+Only trusted main-branch code executes for PR lifecycle events.</p>
+<p dir="auto">Each publication refreshes these timestamps for all retained reports. The <code class="notranslate">reference_time</code><br>
+metadata controls presentation only; workflow creation, run ID, and attempt still determine<br>
+which report may replace an older report for the same target. Stored <code class="notranslate">history</code> ancestry is<br>
+provenance, not a sorting key.</p>
+<h2 dir="auto" id="individual-run-retention-and-aggregation">Individual run retention and aggregation</h2>
+<p dir="auto">Each published report is retained under <code class="notranslate">coverage/runs/RUN_ID/ATTEMPT/</code>, including its LCOV<br>
+source pages, summary JSON, and original source-run metadata. The coverage overview links a<br>
+pre-merge and post-merge results index, with at most one result per phase per PR and one per release.<br>
+Repeated runs and attempts are not listed. The per-PR/main/release URLs continue to show their latest report; replacing<br>
+one does not replace its archived snapshot. Existing identified reports are archived before<br>
+replacement. Incoming reports are also archived when a newer run already owns the latest URL. Legacy reports without a real run ID<br>
+remain available at their existing URL but are not assigned an invented run identity.</p>
+<p dir="auto">An aggregation PR does not combine or relabel the coverage measurements of its constituent PRs.<br>
+Each retains its original tested commit, workflow run, and detailed report. Each constituent<br>
+PR is ordered by its own actual merge time, even when merged into an aggregation branch.<br>
+The recorded main-integration ancestry remains available as provenance, including verified<br>
+membership in squashed aggregations, but does not affect the overview's timestamp order.</p>
+<p dir="auto">The overview initially labels a PR result <strong>pre-merge</strong>. A published main report replaces that<br>
+row as <strong>post-merge</strong> only when its tested commit exactly equals the PR's merge commit.<br>
+A later main commit does not stand in for that result. If the merge build fails or never publishes,<br>
+the pre-merge result stays visible. PRs without a pre-merge report can still acquire a post-merge row.<br>
+The separate results index shows both phases when available; retries select the latest report<br>
+within each phase. A late pre-merge publication never replaces an available post-merge result.<br>
+The publisher stores the PR-to-merge-commit mapping in <code class="notranslate">coverage/pull-requests.json</code> and resolves<br>
+both current reports and retained snapshots, so out-of-order main publications are attributed<br>
+correctly. Existing snapshots are not rewritten or deleted. Aggregated constituent PRs keep<br>
+pre-merge results unless a main run actually tested their own exact merge commit; the aggregate's<br>
+post-merge result belongs to the aggregation PR alone.</p>
+<p dir="auto">Coverage publication requires the source workflow's <code class="notranslate">coverage</code> job to succeed, not every job<br>
+in that workflow. An unrelated sanitizer or lint failure does not suppress a valid coverage<br>
+report. A failed, cancelled, or skipped coverage job leaves the previous report intact while<br>
+PR metadata still refreshes. In the two-phase view, post-merge precedes pre-merge within each PR;<br>
+PR groups retain their merge-time ordering even when a pre-merge retry finishes later.</p>
+<p dir="auto">To recover an unpublished report without rerunning tests, dispatch <code class="notranslate">Publish coverage</code> with<br>
+<code class="notranslate">source_run_id</code> set to the original completed Test or Release workflow run ID. For example:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">gh workflow run coverage_pages.yml -f source_run_id=35460479026</pre></div>
+<p dir="auto">The source run's coverage job must have succeeded and its report artifact must still be available.<br>
+The publisher uses the source run's original commit, timestamps, run ID, and attempt; it does not<br>
+assign the recovery dispatch's identity to the measurements. Older reports are archived without<br>
+replacing newer target reports. Recovery shares the normal publication queue. Omitting the input<br>
+continues to refresh metadata only. Expired artifacts cannot be recovered by this command.</p></main><footer>Release snapshot &middot; c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5</footer></body></html>

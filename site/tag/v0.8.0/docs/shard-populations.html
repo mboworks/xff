@@ -1,0 +1,121 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/shard-populations.md - xff v0.8.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.8.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.8.0">Release &amp; downloads</a><a href="/xff/releases/0.8.0/">CLI reference</a><a href="/xff/coverage/tag/0.8.0/">Coverage</a><a href="/xff/benchmarks/tag/0.8.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5">Source</a><a href="/xff/site/tag/v0.8.0/documents.html">Documentation</a></nav><p>xff v0.8.0</p><main>
+
+<h1 dir="auto" id="physical-files-and-logical-shard-sets">Physical files and logical shard sets</h1>
+<p dir="auto"><code class="notranslate">--shards</code> groups sharded filenames within each directory for listing and ordinary reductions.<br>
+It does not concatenate their contents or turn a logical set into a filesystem entry. Without it,<br>
+counts describe physical entries. Files outside the selected naming schemes remain individual entries.</p>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>Operation</th>
+<th>Population</th>
+<th>Size or content used</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Predicates such as <code class="notranslate">-name</code>, <code class="notranslate">-size</code>, and content tests</td>
+<td>Physical entries reaching the predicate</td>
+<td>Each physical file</td>
+</tr>
+<tr>
+<td>Explicit actions such as <code class="notranslate">-print</code>, <code class="notranslate">-printf</code>, and <code class="notranslate">-exec</code></td>
+<td>Physical entries reaching the action</td>
+<td>Each physical file</td>
+</tr>
+<tr>
+<td><code class="notranslate">-shard-status</code></td>
+<td>Physical files reaching this particular node, grouped per directory for classification</td>
+<td>Names and declared indices; it does not verify payload integrity</td>
+</tr>
+<tr>
+<td>Ordinary listing with <code class="notranslate">--shards</code></td>
+<td>One representative per logical set, plus ungrouped entries</td>
+<td>The representative path; incomplete sets are annotated</td>
+</tr>
+<tr>
+<td>Ordinary summaries and histograms with <code class="notranslate">--shards</code></td>
+<td>One logical set, plus ungrouped entries</td>
+<td>Size sums selected members; content-derived fields read the representative</td>
+</tr>
+<tr>
+<td>Reductions with <code class="notranslate">-collect</code> and <code class="notranslate">--shards</code></td>
+<td>Each named collection grouped independently</td>
+<td>Each collection is counted once; collecting into two names is additive</td>
+</tr>
+<tr>
+<td>Comparison and its summaries</td>
+<td>Physical relative-path entries and pairs</td>
+<td>Each side's actual file; shard collapsing does not change comparison units</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<h2 dir="auto" id="two-files-one-logical-set">Two files, one logical set</h2>
+<p dir="auto">Create a small fixture:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">mkdir data
+<span class="pl-c1">printf</span> aa <span class="pl-k">&gt;</span> data/data-00000-of-00002
+<span class="pl-c1">printf</span> bb <span class="pl-k">&gt;</span> data/data-00001-of-00002</pre></div>
+<p dir="auto">These commands each report four bytes, but their counts differ:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff data -type f --summary                         <span class="pl-c"><span class="pl-c">#</span> 2 physical files</span>
+xff data -type f --shards --summary                <span class="pl-c"><span class="pl-c">#</span> 1 logical set</span>
+xff data -type f -collect --shards --summary        <span class="pl-c"><span class="pl-c">#</span> 1 logical set, counted once</span>
+xff data -type f -shard-status <span class="pl-c1">complete</span> --summary   <span class="pl-c"><span class="pl-c">#</span> 2 physical representatives</span></pre></div>
+<p dir="auto"><code class="notranslate">-size 2c</code> matches both physical files. Combining it with <code class="notranslate">--shards --summary</code> still yields one<br>
+logical set and four bytes. <code class="notranslate">-size 4c</code> matches neither: the predicate runs before logical grouping.<br>
+In a grouped summary, <code class="notranslate">{size}</code> is four and <code class="notranslate">{shard}</code> is two. Content-dependent fields such as a<br>
+hash or line count read the representative file, not a concatenation of both members.</p>
+<p dir="auto">Explicit actions remain physical even with <code class="notranslate">--shards</code>:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff data -type f -printf <span class="pl-s"><span class="pl-pds">'</span>%f:%s\n<span class="pl-pds">'</span></span> --shards</pre></div>
+<p dir="auto">This prints two action lines, each with size two, followed by the collapsed listing line. Omit<br>
+<code class="notranslate">--shards</code> when only the physical action output is wanted. Place destructive actions after status<br>
+selection if they should act only on the selected files; shard grouping is not a safety control.</p>
+<h2 dir="auto" id="completeness-depends-on-expression-order">Completeness depends on expression order</h2>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff data -type f -name <span class="pl-s"><span class="pl-pds">'</span>*00000*<span class="pl-pds">'</span></span> -shard-status incomplete -print
+xff data -type f -shard-status <span class="pl-c1">complete</span> -name <span class="pl-s"><span class="pl-pds">'</span>*00000*<span class="pl-pds">'</span></span> -print</pre></div>
+<p dir="auto">Both print the first file. The first command supplies only that file to classification, so the set<br>
+appears incomplete. The second classifies both members as complete before selecting one for output.<br>
+Actions before <code class="notranslate">-shard-status</code> have already run and cannot be undone by later classification.</p>
+<p dir="auto">Likewise, <code class="notranslate">-collect</code> records entries where it appears. With sorted traversal, collecting before<br>
+<code class="notranslate">-first 1</code> retains both members for reduction; collecting after it retains only one:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff data --sort=name -type f -collect -first 1 --shards --summary  <span class="pl-c"><span class="pl-c">#</span> 1 set, 4 bytes</span>
+xff data --sort=name -type f -first 1 -collect --shards --summary  <span class="pl-c"><span class="pl-c">#</span> 1 set, 2 bytes</span></pre></div>
+<h2 dir="auto" id="missing-members-and-duplicate-copies">Missing members and duplicate copies</h2>
+<p dir="auto">For an <code class="notranslate">of</code> set, the declared total defines the expected indices. A missing index makes the set<br>
+incomplete; it remains one logical summary unit, with only present selected members contributing<br>
+bytes. <code class="notranslate">--shards-show=count</code> makes the listing's member count visible. Schemes without a declared<br>
+total cannot establish that an unknown final member is missing.</p>
+<p dir="auto">An opaque tail can identify multiple copies of the same index, for example:</p>
+<pre lang="text" class="notranslate"><code class="notranslate">data-00000-of-00002.aaaaaaaa
+data-00000-of-00002.bbbbbbbb
+data-00001-of-00002
+</code></pre>
+<p dir="auto"><code class="notranslate">--shards-dedup=first</code> chooses the lexicographically first copy; <code class="notranslate">mtime</code> chooses the newest;<br>
+<code class="notranslate">error</code> fails instead of accepting duplicates. Only the chosen copy contributes to a logical<br>
+summary. <code class="notranslate">-shard-status superfluous</code> selects duplicate copies not chosen as representatives and<br>
+indices outside a declared total. Inspect these physical files before deciding what to remove.</p>
+<h2 dir="auto" id="naming-schemes-and-comparison">Naming schemes and comparison</h2>
+<p dir="auto">The built-in schemes are <code class="notranslate">of</code>, <code class="notranslate">dotnum</code>, and <code class="notranslate">underscore</code>. Restrict them with <code class="notranslate">--shards=of</code>, or<br>
+supply a custom RE2 pattern with required <code class="notranslate">stem</code> and <code class="notranslate">index</code> captures and optional <code class="notranslate">total</code> and<br>
+<code class="notranslate">dup</code> captures:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff data -type f --shards \
+  <span class="pl-s"><span class="pl-pds">'</span>--shard-pattern=(?P&lt;stem&gt;img)_(?P&lt;index&gt;[0-9]+)_v(?P&lt;dup&gt;[0-9]+)\.raw<span class="pl-pds">'</span></span> --summary</pre></div>
+<p dir="auto">Custom patterns are tried before built-ins and also apply to <code class="notranslate">-shard-status</code>. Grouping never merges<br>
+members across different directories.</p>
+<p dir="auto">Comparison keeps physical units so that one changed member cannot disappear behind a representative:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">xff LEFT RIGHT --compare=summary -type f --shards --summary=ext --summary-scope=compare</pre></div>
+<p dir="auto">If each side has two members and only one differs, the comparison has one identical pair and one<br>
+different pair; each side's ordinary summary counts two files. Category counts count a paired result<br>
+once; category bytes include both sides. See <a href="design-summary-scopes.html">summary scopes</a> for side totals<br>
+and category accounting.</p>
+<p dir="auto">The examples are exercised by <code class="notranslate">//xff/cli:shard_populations_test</code>; collection and comparison edge<br>
+cases also have focused regression suites.</p></main><footer>Release snapshot &middot; c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5</footer></body></html>

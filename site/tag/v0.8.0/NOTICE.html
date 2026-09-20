@@ -1,0 +1,141 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>NOTICE.md - xff v0.8.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.8.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.8.0">Release &amp; downloads</a><a href="/xff/releases/0.8.0/">CLI reference</a><a href="/xff/coverage/tag/0.8.0/">Coverage</a><a href="/xff/benchmarks/tag/0.8.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5">Source</a><a href="/xff/site/tag/v0.8.0/documents.html">Documentation</a></nav><p>xff v0.8.0</p><main><h1 dir="auto" id="notices">Notices</h1>
+<p dir="auto">Components included in this xff binary.</p>
+<p dir="auto">Build extras compiled into this binary: apple, archive, asar, brotli, fuse, language-db, mime-db, pcre2, squashfs</p>
+<p dir="auto">xff - eXtended File Find<br>
+Copyright M. Boerger, the MBO Works authors<br>
+Licensed under the Apache License, Version 2.0.</p>
+<p dir="auto">The main program and each linked build extension list their components below; all are under<br>
+permissive licenses (no copyleft). The notice-retention obligation is met by reproducing each<br>
+name, SPDX license identifier, and copyright line.</p>
+<ul dir="auto">
+<li><code class="notranslate">Abseil (C++)  [Apache-2.0]</code> - Copyright The Abseil Authors. Licensed under the Apache License, Version 2.0.</li>
+<li><code class="notranslate">JSON for Modern C++ (nlohmann/json)  [MIT]</code> - Copyright (c) 2013-2025 Niels Lohmann</li>
+<li><code class="notranslate">RE2  [BSD-3-Clause]</code> - Copyright (c) 2009 The RE2 Authors. Redistribution permitted under the BSD-3-Clause license.</li>
+<li><code class="notranslate">mboworks/mbo  [Apache-2.0]</code> - Copyright MBO Works. Licensed under the Apache License, Version 2.0.</li>
+<li><code class="notranslate">utf8proc  [LicenseRef-utf8proc]</code> - Copyright (c) 2014-2021 Steven G. Johnson, Jiahao Chen, Tony Kelman, Jonas Fonseca, and contributors. Copyright (c) 2009, 2013 Public Software Group e. V. Unicode data: Copyright (c) 1991-2007 Unicode, Inc. MIT library license and Unicode data terms; see the complete bundled upstream license.</li>
+</ul>
+<h3 dir="auto" id="build-extension-apple-packages-xff_apple">Build extension: Apple packages (@xff_apple)</h3>
+<ul dir="auto">
+<li>
+<p dir="auto"><code class="notranslate">xff Apple package reader  [Apache-2.0]</code> - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.</p>
+<p dir="auto">Cross-platform PBZX package payload support using the archive extension's liblzma codec.</p>
+</li>
+</ul>
+<h3 dir="auto" id="build-extension-archive-xff_archive">Build extension: Archive (@xff_archive)</h3>
+<ul dir="auto">
+<li>
+<p dir="auto"><code class="notranslate">xff archive extra (@xff_archive)  [Apache-2.0]</code> - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.</p>
+<p dir="auto">Provides container diving, extraction and packing, including xff's own phar reader and writer, by linking the libraries whose notices follow.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">Expat  [MIT]</code> - Copyright (c) 1998-2000 Thai Open Source Software Center Ltd and Clark Cooper.<br>
+Copyright (c) 2001-2025 Expat maintainers.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">LZ4 library  [BSD-2-Clause]</code> - Copyright (c) 2011-2020 Yann Collet. All rights reserved.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">Mbed TLS digest algorithms  [Apache-2.0]</code> - Copyright The Mbed TLS Contributors. Distributed under the Apache-2.0 option.<br>
+Used for XAR integrity checks, not signature or publisher verification.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">Zstandard  [BSD-3-Clause]</code> - Copyright (c) Meta Platforms, Inc. and affiliates. All rights reserved.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">bzip2  [bzip2-1.0.6]</code> - Copyright (c) 1996-2019 Julian R Seward. All rights reserved.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">libarchive  [BSD-2-Clause]</code> - Copyright (c) 2003-2018 libarchive contributors. All rights reserved.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">liblzma (XZ Utils)  [LicenseRef-Public-Domain]</code> - The liblzma source in XZ Utils 5.4.5 has been put into the public domain.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">zlib  [Zlib]</code> - Copyright (c) 1995-2022 Jean-loup Gailly and Mark Adler.</p>
+</li>
+</ul>
+<h3 dir="auto" id="build-extension-brotli-archive-compression-xff_brotli">Build extension: Brotli archive compression (@xff_brotli)</h3>
+<ul dir="auto">
+<li>
+<p dir="auto"><code class="notranslate">xff Brotli extra (@xff_brotli)  [Apache-2.0]</code> - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.</p>
+<p dir="auto">Adds raw Brotli streams and Brotli-compressed tar archives to the archive extra.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">Brotli  [MIT]</code> - Copyright (c) 2009, 2010, 2013-2016 by the Brotli Authors.</p>
+</li>
+</ul>
+<h3 dir="auto" id="build-extension-electron-asar-xff_asar">Build extension: Electron ASAR (@xff_asar)</h3>
+<ul dir="auto">
+<li><code class="notranslate">xff Electron ASAR extra (@xff_asar)  [Apache-2.0]</code> - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.</li>
+</ul>
+<h3 dir="auto" id="build-extension-fuse-xff_fuse">Build extension: FUSE (@xff_fuse)</h3>
+<ul dir="auto">
+<li>
+<p dir="auto"><code class="notranslate">xff FUSE extra (@xff_fuse)  [Apache-2.0]</code> - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.</p>
+<p dir="auto">Mounting is implemented against the FUSE 3 lowlevel interface using this extra's own declarations (xff/fuse/fuse_abi.h); no libfuse code is compiled, linked, or shipped. At runtime the host's FUSE implementation is loaded dynamically - libfuse3 on Linux and BSD, macFUSE on macOS - each under its own terms. That is how it interoperates, not a license this binary carries.</p>
+</li>
+</ul>
+<h3 dir="auto" id="build-extension-language-database-xff_language_db">Build extension: Language database (@xff_language_db)</h3>
+<ul dir="auto">
+<li><code class="notranslate">xff language database extra (@xff_language_db)  [Apache-2.0]</code> - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.</li>
+</ul>
+<h3 dir="auto" id="build-extension-language-database-extension">Build extension: Language database extension</h3>
+<ul dir="auto">
+<li><code class="notranslate">github-linguist 9.6.0  [MIT]</code> - Copyright (c) 2017 GitHub, Inc.</li>
+</ul>
+<h3 dir="auto" id="build-extension-mime-database-xff_mime_db">Build extension: MIME database (@xff_mime_db)</h3>
+<ul dir="auto">
+<li><code class="notranslate">xff MIME database extra (@xff_mime_db)  [Apache-2.0]</code> - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.</li>
+</ul>
+<h3 dir="auto" id="build-extension-mime-database-extension">Build extension: MIME database extension</h3>
+<ul dir="auto">
+<li><code class="notranslate">mime-db 1.54.0  [MIT]</code> - Copyright (c) 2014 Jonathan Ong; Copyright (c) 2015-2022 Douglas Christopher Wilson</li>
+</ul>
+<h3 dir="auto" id="build-extension-pcre2-xff_pcre2">Build extension: PCRE2 (@xff_pcre2)</h3>
+<ul dir="auto">
+<li>
+<p dir="auto"><code class="notranslate">xff PCRE2 extra (@xff_pcre2)  [Apache-2.0]</code> - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.</p>
+<p dir="auto">Provides the -regextype=pcre2 backend by linking PCRE2 and SLJIT, whose notices follow.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">PCRE2  [BSD-3-Clause WITH PCRE2-exception]</code> - Copyright (c) 1997-2007 University of Cambridge; 2007-2024 Philip Hazel; 2010-2024 Zoltan Herczeg; and contributors. All rights reserved.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">SLJIT  [BSD-2-Clause]</code> - Copyright (c) 2009-2024 Zoltan Herczeg. All rights reserved.</p>
+</li>
+</ul>
+<h3 dir="auto" id="build-extension-squashfs-archive-format-xff_squashfs">Build extension: SquashFS archive format (@xff_squashfs)</h3>
+<ul dir="auto">
+<li>
+<p dir="auto"><code class="notranslate">xff SquashFS extra (@xff_squashfs)  [Apache-2.0]</code> - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.</p>
+<p dir="auto">Adds independent SquashFS, Snap, and AppImage container reading to xff.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">LZ4 library  [BSD-2-Clause]</code> - Copyright (c) 2011-2020 Yann Collet. All rights reserved.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">Zstandard  [BSD-3-Clause]</code> - Copyright (c) Meta Platforms, Inc. and affiliates. All rights reserved.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">cextras  [BSD-2-Clause]</code> - Copyright (c) 2023 Enno Boland. All rights reserved.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">liblzma (XZ Utils)  [LicenseRef-Public-Domain]</code> - The liblzma source in XZ Utils 5.4.5 has been put into the public domain.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">libsqsh  [BSD-2-Clause]</code> - Copyright (c) 2023-2024 Enno Boland. All rights reserved.</p>
+</li>
+<li>
+<p dir="auto"><code class="notranslate">zlib  [Zlib]</code> - Copyright (c) 1995-2022 Jean-loup Gailly and Mark Adler.</p>
+</li>
+</ul></main><footer>Release snapshot &middot; c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5</footer></body></html>

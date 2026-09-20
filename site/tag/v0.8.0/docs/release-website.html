@@ -1,0 +1,113 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>docs/release-website.md - xff v0.8.0</title><style>
+:root { color-scheme: light dark; font: 17px/1.6 system-ui, sans-serif; }
+body { max-width: 76rem; margin: auto; padding: 2rem; }
+a { color: light-dark(#075da8, #8cc8ff); }
+nav { display: flex; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid #888; }
+pre { padding: 1rem; overflow: auto; background: light-dark(#f3f5f7, #20252b); }
+code { font-size: .9em; } img { max-width: 100%; }
+table { display: block; overflow: auto; border-collapse: collapse; }
+th, td { border: 1px solid #888; padding: .4rem .7rem; }
+blockquote { border-left: 4px solid #888; margin-left: 0; padding-left: 1rem; }
+</style><body><nav><a href="/xff/site/tag/v0.8.0/">Home</a><a href="https://github.com/mboworks/xff/releases/tag/v0.8.0">Release &amp; downloads</a><a href="/xff/releases/0.8.0/">CLI reference</a><a href="/xff/coverage/tag/0.8.0/">Coverage</a><a href="/xff/benchmarks/tag/0.8.0/">Benchmarks</a><a href="https://github.com/mboworks/xff/tree/c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5">Source</a><a href="/xff/site/tag/v0.8.0/documents.html">Documentation</a></nav><p>xff v0.8.0</p><main>
+
+<h1 dir="auto" id="release-website">Release website</h1>
+<p dir="auto">Release notes use <a href="https://github.com/mboworks/xff/blob/c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5/.github/release-notes.md.template"><code class="notranslate">.github/release-notes.md.template</code></a>,<br>
+rendered by <a href="https://github.com/mboworks/xff/blob/c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5/tools/release_notes.sh"><code class="notranslate">tools/release_notes.sh TAG</code></a>, to link to that tag's<br>
+versioned website and related release resources. The existing changelog and installation notes<br>
+remain included.</p>
+<p dir="auto">The <a href="https://mboworks.github.io/xff/" rel="nofollow">website</a> forwards to the latest published stable release at<br>
+<code class="notranslate">site/tag/&lt;tag&gt;/</code>, preserving the exact Git tag name. Each release keeps its converted HTML,<br>
+images, and configured files. Retrying publication leaves an existing snapshot unchanged; a<br>
+different commit cannot replace it. Older versions remain directly accessible.</p>
+<p dir="auto"><a href="https://github.com/mboworks/xff/blob/c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5/release-site.json"><code class="notranslate">release-site.json</code></a> defines the layout. Source names are relative to the<br>
+repository root; destinations are relative to that release's site directory. For example:</p>
+<div class="highlight highlight-source-json" dir="auto"><pre class="notranslate">{
+  <span class="pl-ent">"pages"</span>: {
+    <span class="pl-ent">"README.md"</span>: <span class="pl-s"><span class="pl-pds">"</span>index.html<span class="pl-pds">"</span></span>,
+    <span class="pl-ent">"docs/guide.md"</span>: <span class="pl-s"><span class="pl-pds">"</span>guide/index.html<span class="pl-pds">"</span></span>
+  },
+  <span class="pl-ent">"files"</span>: {
+    <span class="pl-ent">"schema/example.json"</span>: <span class="pl-s"><span class="pl-pds">"</span>schema/v1.json<span class="pl-pds">"</span></span>
+  },
+  <span class="pl-ent">"links"</span>: [
+    {
+      <span class="pl-ent">"label"</span>: <span class="pl-s"><span class="pl-pds">"</span>Release<span class="pl-pds">"</span></span>,
+      <span class="pl-ent">"href"</span>: <span class="pl-s"><span class="pl-pds">"</span>https://github.com/{owner}/{repo}/releases/tag/{tag}<span class="pl-pds">"</span></span>
+    }
+  ]
+}</pre></div>
+<p dir="auto">Use existing source files in the actual configuration. <code class="notranslate">pages</code> converts Markdown; optional <code class="notranslate">files</code><br>
+copies other files unchanged. <code class="notranslate">generated_html</code> maps a tracked Markdown source name to a generated<br>
+standalone HTML source and its destination. This lets repository links to <code class="notranslate">XFF.md</code> resolve to the<br>
+native <code class="notranslate">XFF.html</code> emitted by the released binary instead of a second rendering of the Markdown.<br>
+<code class="notranslate">README.md</code> must map to <code class="notranslate">index.html</code>. The generated<br>
+<code class="notranslate">documents.html</code>, <code class="notranslate">release.json</code>, <code class="notranslate">release-site.json</code>, and <code class="notranslate">assets/</code> paths are reserved.<br>
+Destination paths cannot have hidden components (names starting with a dot), because the Pages<br>
+artifact uploader excludes them. Hidden source paths remain valid; for example,<br>
+<code class="notranslate">.github/workflows/README.md</code> maps to <code class="notranslate">workflows/index.html</code>.</p>
+<p dir="auto">Navigation links support <code class="notranslate">{owner}</code>, <code class="notranslate">{repo}</code>, <code class="notranslate">{tag}</code>, <code class="notranslate">{version}</code>, and <code class="notranslate">{commit}</code>. <code class="notranslate">{version}</code><br>
+omits a leading <code class="notranslate">v</code> for compatibility with coverage report paths. By default, the configuration<br>
+and content come from the release tag. Every linked local Markdown page, including directory<br>
+README links, must have a <code class="notranslate">pages</code> mapping. Publication fails for an omitted mapping, a missing<br>
+generated file, or a broken anchor within the snapshot. Links to configured pages follow their<br>
+destination mappings; other local source links use the exact release commit. Embedded images are<br>
+copied, including remote badges. Markdown conversion uses the<br>
+<a href="https://docs.github.com/en/rest/markdown/markdown">GitHub Markdown API</a> at publication time;<br>
+browsing the result requires no Markdown renderer or CDN.</p>
+<p dir="auto">After the Release workflow succeeds, <code class="notranslate">Publish release site</code> retains the snapshot on<br>
+<code class="notranslate">coverage-pages</code> and deploys the complete Pages tree. Coverage and site publication share a<br>
+concurrency group to preserve both trees. GitHub's latest stable release selects the root redirect;<br>
+backfilling an older release does not make it latest. The workflow can also be dispatched with a<br>
+published tag to retry publication. Enable GitHub Pages with <strong>GitHub Actions</strong> as its source, and<br>
+set the repository's About website to <code class="notranslate">https://mboworks.github.io/xff/</code>.</p>
+<p dir="auto">The release site renders <code class="notranslate">NOTICE.md</code> as <code class="notranslate">NOTICE.html</code>, with the same navigation as other pages.<br>
+The Markdown notice is generated from the all-extras binary via <code class="notranslate">--help=notice --help-format=markdown</code>. <code class="notranslate">LICENSE</code> links remain pinned to the tagged commit on<br>
+GitHub, where readers can use GitHub's license analysis.</p>
+<p dir="auto">Navigation starts with Home and Release &amp; downloads, followed by configured links in their<br>
+authored order, then Source and Documentation. The xff configuration orders those links as<br>
+CLI reference, Coverage, and Benchmarks.</p>
+<h2 dir="auto" id="backfill-a-historical-release">Backfill a historical release</h2>
+<p dir="auto">No new release or tag change is needed. Manually dispatch <code class="notranslate">Publish release site</code> with <code class="notranslate">tag</code> set to<br>
+the historical release and <code class="notranslate">config_path</code> set to a tracked JSON file on <code class="notranslate">main</code>. Leave <code class="notranslate">config_path</code><br>
+empty to use a configuration already in the tag. For example, after selecting a compatible<br>
+configuration and an existing tag:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">gh workflow run pages.yml --repo mboworks/xff --ref main \
+  -f tag=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">${RELEASE_TAG}</span><span class="pl-pds">"</span></span> -f config_path=release-site.json</pre></div>
+<p dir="auto">The override controls only publication layout; all Markdown and copied files come from the selected<br>
+tag. Each new snapshot retains the exact configuration as <code class="notranslate">release-site.json</code>, with its SHA-256,<br>
+origin, and source commit in <code class="notranslate">release.json</code>. A configuration can serve several historical tags when<br>
+its sources exist in each. For another layout, commit another configuration and select its path.<br>
+Missing sources or links fail publication instead of using newer content. Retrying a published tag<br>
+without an override preserves its original HTML and configuration. An explicit <code class="notranslate">config_path</code><br>
+rebuilds an existing site for the same tagged commit, including its navigation. Rendering and link<br>
+validation finish before replacing the retained site; a failed rebuild preserves the previous<br>
+files. An override cannot replace a release with a different source commit.</p>
+<p dir="auto">Local regression tests:</p>
+<div class="highlight highlight-source-shell" dir="auto"><pre class="notranslate">python3 -m unittest discover -s tools -p release_site_test.py</pre></div>
+<p dir="auto">CI also converts the configured documentation and checks the generated links in a disposable<br>
+runner directory. It never commits, retains, or deploys that preview.</p>
+<p dir="auto">Publication downloads the immutable, attested <code class="notranslate">xff_full-linux-x86_64</code> release executable and runs<br>
+the reference generator from the same trusted release tag, whose arguments match the released<br>
+binary. Current generators use <code class="notranslate">--help=full --help-format=html</code>. The resulting standalone document is copied byte-for-byte into the snapshot and<br>
+participates in the same link and anchor validation as Markdown-rendered pages. <code class="notranslate">release.json</code><br>
+records its SHA-256 alongside the release commit and configuration hash.</p>
+<p dir="auto">Release coverage links select <code class="notranslate">https://mboworks.github.io/xff/coverage/tag/&lt;version&gt;/</code>, matching the<br>
+coverage publisher rather than the moving main-branch report.</p>
+<h2 dir="auto" id="site-artwork">Site artwork</h2>
+<p dir="auto">The README uses the original transparent MBO Works logo in<br>
+<code class="notranslate">docs/assets/mboworks-logo.png</code>. Release-site rendering copies this image with the README.<br>
+The favicon assets are derived from that same artwork: a 32-pixel PNG, a 180-pixel Apple<br>
+Touch icon, and an ICO containing 16-, 32-, 48-, and 256-pixel PNG images.</p>
+<p dir="auto">Both Pages publishers run <code class="notranslate">tools/site_artwork.py</code> on the final deployment directory.<br>
+This supplies favicons to documentation, native HTML references, redirects, and coverage<br>
+reports, including existing releases. Relative links work at every nesting depth and under<br>
+xff's project URL. Only the deployment copy receives these links; retained release files and<br>
+their recorded hashes stay unchanged. The standalone CLI HTML output remains self-contained.</p>
+<p dir="auto">To regenerate the images on macOS, resize the original square PNG with <code class="notranslate">sips -z SIZE SIZE</code><br>
+for each size, preserving transparency. The ICO stores those four PNG images in a standard<br>
+ICO directory. Keep the existing artwork unchanged when generating icon sizes.</p>
+<p dir="auto">The release site publishes <a href="../NOTICE.lean.html">Lean build notices</a> for <code class="notranslate">xff-*</code> downloads<br>
+and <a href="../NOTICE.html">Full build notices</a> for <code class="notranslate">xff_full-*</code> downloads. Release notes link<br>
+to both inventories. <code class="notranslate">./notice-update.sh</code> regenerates both from their corresponding<br>
+binaries; Bazel drift tests verify each. Custom builds report their own inventory with<br>
+<code class="notranslate">--help=notice</code>, exportable with <code class="notranslate">--help-format=markdown</code>.</p></main><footer>Release snapshot &middot; c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5</footer></body></html>
