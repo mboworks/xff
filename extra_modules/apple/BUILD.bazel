@@ -100,3 +100,13 @@ cc_fuzz_test(
         "@xff_extras_api//:read_source_cc",
     ],
 )
+
+cc_test(
+    name = "xz_crc64_test",
+    size = "small",
+    srcs = ["xz_crc64_test.cc"],
+    deps = [
+        "@googletest//:gtest_main",
+        "@xz//:lzma",
+    ],
+)

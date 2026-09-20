@@ -3,9 +3,8 @@
 ## Release publication repair
 
 - [x] Publish stable benchmark references (PR #890); both repair workflows completed successfully.
-- [ ] Refresh v0.7.0 navigation after fixing the builder's existing-release early return, then
-      verify the live Benchmarks link and exact tagged-commit result. The earlier workflow success
-      did not change the retained HTML.
+- [x] Verified v0.7.0 navigation links to its versioned benchmark page and retained run
+      35471800839/1 matches tagged commit `0bcb461dbb08a1d3b14d1d73938a8b905aed81ea`.
 
 ## Original audit and review completion
 

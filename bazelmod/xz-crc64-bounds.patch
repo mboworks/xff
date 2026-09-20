@@ -1,0 +1,70 @@
+--- a/src/liblzma/check/crc64_fast.c
++++ b/src/liblzma/check/crc64_fast.c
+@@ -206,16 +206,9 @@
+ #if (defined(__GNUC__) || defined(__clang__)) && !defined(__EDG__)
+ __attribute__((__target__("ssse3,sse4.1,pclmul")))
+ #endif
+-// The intrinsics use 16-byte-aligned reads from buf, thus they may read
+-// up to 15 bytes before or after the buffer (depending on the alignment
+-// of the buf argument). The values of the extra bytes are ignored.
+-// This unavoidably trips -fsanitize=address so address sanitizier has
+-// to be disabled for this function.
+-#if lzma_has_attribute(__no_sanitize_address__)
+-__attribute__((__no_sanitize_address__))
+-#endif
+-static uint64_t
+-crc64_clmul(const uint8_t *buf, size_t size, uint64_t crc)
++// Called only with a 16-byte-aligned buffer and a nonzero multiple of 16 bytes.
++static uint64_t
++crc64_clmul_aligned(const uint8_t *buf, size_t size, uint64_t crc)
+ {
+ 	// The prototypes of the intrinsics use signed types while most of
+ 	// the values are treated as unsigned here. These warnings in this
+@@ -400,6 +393,47 @@
+ #endif
+
+
++#ifdef CRC_CLMUL
++// Process at most 15 bytes at either edge without reading outside the caller's
++// buffer. Keep the vectorized implementation for the aligned interior, and keep
++// sanitizer instrumentation enabled for every path.
++static uint64_t
++crc64_edge(const uint8_t *buf, size_t size, uint64_t crc)
++{
++	crc = ~crc;
++	while (size-- != 0) {
++		crc ^= *buf++;
++		for (unsigned i = 0; i < 8; ++i)
++			crc = (crc >> 1) ^ ((UINT64_C(0) - (crc & 1))
++					& UINT64_C(0xC96C5795D7870F42));
++	}
++	return ~crc;
++}
++
++static uint64_t
++crc64_clmul(const uint8_t *buf, size_t size, uint64_t crc)
++{
++	if (size == 0)
++		return crc;
++
++	size_t prefix = (0U - (uintptr_t)buf) & 15;
++	if (prefix > size)
++		prefix = size;
++	crc = crc64_edge(buf, prefix, crc);
++	buf += prefix;
++	size -= prefix;
++
++	const size_t aligned_size = size & ~(size_t)15;
++	if (aligned_size != 0) {
++		crc = crc64_clmul_aligned(buf, aligned_size, crc);
++		buf += aligned_size;
++		size -= aligned_size;
++	}
++	return crc64_edge(buf, size, crc);
++}
++#endif
++
++
+ ////////////////////////
+ // Detect CPU support //
+ ////////////////////////
