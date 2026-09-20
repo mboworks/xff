@@ -62,9 +62,12 @@ commit's position on main controls this order. A nested PR uses its own merge ti
 Open PRs and reports without a reference timestamp follow, newest CI run creation first.
 PRs closed without merging are excluded from the overview; their direct report URLs and
 immutable run-history snapshots remain available. Reopening a PR restores its overview row.
-The existing coverage publisher also runs when a PR closes or reopens, and can be dispatched
-manually to refresh retained metadata. These runs do not download or replace coverage reports.
-They refresh GitHub PR state, regenerate the indexes, and deploy without waiting for main CI.
+Every Test or Release completion and manual publication refreshes GitHub PR state and regenerates
+the indexes. Closing or reopening a PR does not trigger a separate publication: row visibility and
+merge ordering may remain stale until the next publication. Reopened PRs normally get a new CI run,
+and merges trigger main CI. A PR closed without merging may remain visible longer; its measurements
+are retained. Dispatch the publisher without `source_run_id` for an immediate metadata-only refresh
+that does not download or replace coverage reports. No `pull_request_target` policy exception is needed.
 Report ingestion, metadata refresh, and release-site publishing share the serialized
 `coverage-pages` concurrency queue. Each run reads the retained branch and current PR state only
 after acquiring that queue; they cannot overwrite each other's updates concurrently.

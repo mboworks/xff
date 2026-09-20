@@ -31,7 +31,9 @@ class CoverageIndexTest(unittest.TestCase):
         pages = repository_file(".github/workflows/pages.yml").read_text()
         for text in (workflow, pages):
             self.assertIn("  group: coverage-pages\n  queue: max\n  cancel-in-progress: false", text)
-        self.assertIn("pull_request_target:\n    types: [closed, reopened]", workflow)
+        self.assertNotIn("pull_request_target:", workflow)
+        self.assertIn("  workflow_run:\n    workflows: [Release, Test]\n    types: [completed]", workflow)
+        self.assertIn("  workflow_dispatch:", workflow)
         self.assertIn("      source_run_id:", workflow)
         self.assertIn("github.event.workflow_run.id || inputs.source_run_id", workflow)
         self.assertIn('[[ "${SOURCE_RUN_ID}" =~ ^[1-9][0-9]*$ ]]', workflow)

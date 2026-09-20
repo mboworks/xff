@@ -5,6 +5,8 @@
 
 - Double weekly/manual deep-fuzz campaigns to 600 seconds per target.
 
+- Refresh coverage PR state during normal publication instead of privileged close/reopen events.
+
 - Honor explicit configuration overrides when refreshing an already-published release site.
 
 - Link release and PR benchmark pages to retained measurements for the exact referenced commit.
