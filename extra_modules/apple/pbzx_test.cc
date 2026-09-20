@@ -30,6 +30,7 @@ using ::mbo::testing::StatusIs;
 using ::testing::ElementsAre;
 using ::testing::Field;
 using ::testing::IsEmpty;
+using ::testing::IsFalse;
 using ::testing::IsTrue;
 
 std::string Number(std::uint64_t number) {
@@ -162,7 +163,7 @@ TEST_F(PbzxTest, XarEnvelopeAndNestedPayloadStreamWithoutHostExtraction) {
 TEST_F(PbzxTest, GenericXarNamesDoNotCreatePackageContext) {
   MBO_ASSERT_OK_AND_ASSIGN(
       auto source, archive::ArchiveFileSystem::OpenSource("ordinary.xar", vfs::HostReadSource(Fixture("plain.pkg"))));
-  EXPECT_THAT(source.ContainerCandidate("ordinary.xar!Payload"), ::testing::IsFalse());
+  EXPECT_THAT(source.ContainerCandidate("ordinary.xar!Payload"), IsFalse());
   MBO_ASSERT_OK_AND_ASSIGN(
       auto package,
       archive::ArchiveFileSystem::OpenSource("APPLICATION.PKG", vfs::HostReadSource(Fixture("plain.pkg"))));
