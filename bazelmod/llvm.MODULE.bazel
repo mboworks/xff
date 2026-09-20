@@ -20,6 +20,13 @@
 # macOS + clang-22 + asan works straight from the release.
 bazel_dep(name = "toolchains_llvm", version = "1.9.1")
 
+# Fix 1.9.1's linker sandbox inputs and instrument C as well as C++ under MSan.
+single_version_override(
+    module_name = "toolchains_llvm",
+    patch_strip = 1,
+    patches = ["//bazelmod:llvm-linker-msan.patch"],
+)
+
 # The MemorySanitizer-instrumented libc++ (`--config=msan`, Linux only). MSan reports a
 # false positive for every read of memory written by code it did not instrument, and the
 # C++ standard library ships PREBUILT (uninstrumented) inside the LLVM distribution - so
@@ -52,15 +59,15 @@ LLVM_VERSION = "22.1.8"
 llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
 llvm.toolchain(
     name = "llvm_toolchain_llvm",
-    libcxx_sha256 = "fd1ac49eeda4edc6deeda2037998e558718a63a5054fff4fdace7751b270217a",
-    libcxx_url = MSAN_LIBCXX_URL.format(v = LLVM_VERSION),
-    llvm_version = LLVM_VERSION,
     extra_llvm_distributions = {
         "LLVM-22.1.8-Linux-ARM64.tar.xz": "805efad2bb91cb4967fa569e0881d10c0f69c04461cf671cccbae19f547acc34",
         "LLVM-22.1.8-Linux-X64.tar.xz": "df0e1ecf16caf3489a272a5eea4eec9b0d82878f6477fa309504f918a0006384",
         "LLVM-22.1.8-macOS-ARM64.tar.xz": "f260f4f7c0d430828a81ae8a3826a1d63fc0963ec2459489308cc23b1f7eab4f",
         "clang+llvm-22.1.8-aarch64-pc-windows-msvc.tar.xz": "de718c58ebbc5f61d58c17b90457fcf42983bc2c4a4aba3e010d108713bfd7f1",
     },
+    libcxx_sha256 = "fd1ac49eeda4edc6deeda2037998e558718a63a5054fff4fdace7751b270217a",
+    libcxx_url = MSAN_LIBCXX_URL.format(v = LLVM_VERSION),
+    llvm_version = LLVM_VERSION,
 )
 use_repo(llvm, "llvm_toolchain_llvm")
 
