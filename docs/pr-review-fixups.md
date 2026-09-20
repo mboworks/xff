@@ -8,14 +8,14 @@ implementing PR.
 ## Agreed integration and follow-up sequence
 
 1. Merge #869 through #875 into #868's branch with merge commits, preserving individual PR history.
-   Completed: #868 merged before the local integration fixes were published.
+   Completed: #868 merged; follow-up fixes merged in #876.
    Carry F01, F05-F07, and F12 in the immediate follow-up PR.
-2. Follow-up PR: F02-F04, fuzzy suggestions, persistent/capped width, and help spacing.
-3. Follow-up PR: F08 and F11, Python testing ownership and proper Bazel Python targets.
-4. Follow-up PR: F09, benchmark history across PRs and releases.
-5. Separate final PR: F10, comparison benchmarks. Explicitly defer this work until the original
-   goal has been resumed and actually completed. It must not hold up the preceding PRs or expand
-   that goal's completion requirements.
+2. Completed: F02-F04 merged in #878, with help-selector diagnostics in #879.
+3. Completed: F08 and F11 merged in #882.
+4. Completed: F09 merged in #887; publication policy and reference links followed in #888-#890.
+5. Deferred: F10, comparison benchmarks, remains separate and awaits an explicit restart.
+   The original audit implementation and review fixups are complete; v0.7.0 is released.
+   Release-site navigation repair is tracked separately in TODO.md.
 
 ## F01: Make safety provenance field names explicit
 
@@ -31,13 +31,13 @@ implementing PR.
   unchanged; update all consumers.
 - Verification: run the affected safety-policy and explain tests; effective decisions and rendered
   provenance must remain unchanged.
-- Implemented in: immediate follow-up to #868 (CI pending).
+- Implemented in: PR #876.
 
 ## F02: Broaden and rank flag spelling suggestions
 
 - Origin: [PR #869](https://github.com/mboworks/xff/pull/869).
 - Location: `xff/cli/diagnostics.cc`, `IsNearby`, `RenderSuggestions`, and their callers/tests.
-- Status: implemented; all 78 CLI test targets and changed-file clang-tidy pass; publication pending.
+- Status: merged in PR #878; affected CLI tests and changed-file clang-tidy passed.
 - Finding: suggestions exist, but matching accepts only one insertion, deletion, substitution, or
   adjacent transposition. Names shorter than four characters and cross-dash-family matches are
   excluded. Candidates are alphabetized rather than ranked, and more than three candidates suppress
@@ -60,15 +60,13 @@ implementing PR.
 - Verification: cover multi-edit long names, ranking/ties, more than three candidates, unrelated
   inputs, aliases, config-only exclusions, bounded input, `=value` separation, and argument literals.
   Retain CLI tests proving a usage error occurs before actions execute.
-- Implementation: `tools/benchmark_history.py`, dedicated measurement/publication workflows, and
-  [measurement contract and retention](benchmark-history.md). Hosted-run noise/cost calibration remains
-  observational; no regression threshold is enforced.
+- Implemented in: PR #878; help-selector suggestions followed in PR #879.
 
 ## F03: Support and explain persistent width preferences
 
 - Origin: [PR #870](https://github.com/mboworks/xff/pull/870).
 - Location: `xff/cli/globals.cc` (`--width`), `xff/cli/main.cc`, configuration handling, and width help.
-- Status: implemented; all 78 CLI test targets and changed-file clang-tidy pass; publication pending.
+- Status: merged in PR #878; affected CLI tests and changed-file clang-tidy passed.
 - Finding: `--width=auto` explains detection but not how to persist a narrower personal preference.
   More importantly, `--width` is currently marked CLI-only, and help resolves width before loading
   configuration. Adding an INI example alone would therefore give unusable advice.
@@ -87,13 +85,13 @@ implementing PR.
 
 - Verification: full INI tests for the preference, CLI override, help and comparison summaries;
   ensure child-command width arguments remain literals and help never executes configured actions.
-- Implemented in: not yet assigned.
+- Implemented in: PR #878.
 
 ## F04: Offer capped automatic width
 
 - Origin: [PR #870](https://github.com/mboworks/xff/pull/870).
 - Location: `xff/cli/help_width.cc`, width validation, registry help, and width-controlled renderers.
-- Status: capped CLI/INI width and default implemented; all 78 CLI test targets and changed-file clang-tidy pass; publication pending.
+- Status: capped CLI/INI width and default merged in PR #878; affected CLI tests and changed-file clang-tidy passed.
 - Proposal: extend the existing value set with `--width=auto:COLS`, for example `--width=auto:120`.
   Use the automatic width up to the cap; use the cap when width cannot be detected. Preserve the
   existing `$COLUMNS` then terminal detection order. This avoids adding a separate interacting flag
@@ -107,7 +105,7 @@ implementing PR.
 - Verification: detected widths below/at/above the cap, unavailable detection, `$COLUMNS`, malformed
   and overflowing caps, zero/subminimum caps, INI defaults and CLI overrides, plus unchanged `auto`,
   `none`, `0`, and fixed-width behavior.
-- Implemented in: not yet assigned.
+- Implemented in: PR #878.
 
 ## F05: Clarify and enforce struct-initializer formatting across the codebase
 
@@ -132,7 +130,7 @@ implementing PR.
 - Verification: check all project-owned C++ areas, run formatting and any added policy-check tests,
   and review the diff to confirm this remains a formatting-only change. Record the audited scope
   and any explicit exceptions in the implementing PR.
-- Implemented in: immediate follow-up to #868 (CI pending).
+- Implemented in: PR #876.
 
 ## F06: Remove literal Chinese text from scoped-table tests
 
@@ -149,7 +147,7 @@ implementing PR.
   construct the Unicode expectations explicitly while retaining readable multiline goldens.
 - Verification: scoped-table tests pass, the source contains no literal Chinese characters, and
   dedicated tests still distinguish display-column width from byte or code-point counts.
-- Implemented in: immediate follow-up to #868 (CI pending).
+- Implemented in: PR #876.
 
 ## F07: Remove unwanted non-ASCII source text across the repository
 
@@ -174,12 +172,12 @@ implementing PR.
 - Verification: repeat the complete tracked-text scan after cleanup; verify unchanged Unicode
   rendering, unusual-filename round trips, and column-width behavior in affected tests. Review
   generated documentation and the existing em-dash check as well.
-- Implemented in: immediate follow-up to #868 (CI pending).
+- Implemented in: PR #876.
 
 ## F08: Define ownership of Python tooling tests and pre-commit checks
 
 - Origin: [PR #873](https://github.com/mboworks/xff/pull/873).
-- Status: implemented with F11 in the Python tooling follow-up.
+- Status: merged with F11 in PR #882.
 - Bazel owns 33 tooling suites under `//tools:python_tests`; `//...` runs them too.
   All Python hooks use managed Python 3.13, matching the explicit standalone Bazel toolchain.
 - Pre-commit retains narrowly triggered checker tests. Process-measurement and fuzz scheduler
@@ -191,7 +189,7 @@ implementing PR.
   shell integration suites use temporary repositories and are marked `requires-host-tools`.
 - Validation: all 33 tooling targets and the benchmark integration passed through Bazel; the three
   live repository checks and changed-file pre-commit checks passed directly.
-- Implemented in: `tooling/python-bazel-targets` follow-up.
+- Implemented in: PR #882.
 
 ## F09: Publish benchmark history across PRs and releases
 
@@ -216,14 +214,14 @@ implementing PR.
   Define artifact retention and index cleanup without storing every raw run in the source tree.
 - Verification: index ordering, commit/baseline association, schema compatibility, missing/failed
   runs, reruns, retention, and rendering all have tests; published summaries reconcile with raw data.
-- Implemented in: not yet assigned.
+- Implemented in: PR #887.
 
 ## F10: Add task-specific comparisons with find, rg, and fzf
 
 - Origin: [PR #873](https://github.com/mboworks/xff/pull/873).
 - Location: benchmark scenario definitions, fixtures, correctness checks, and published reports.
-- Status: agreed requirement; deferred to a separate final PR after the original goal is resumed
-  and completed. Do not include comparison benchmark implementation in F09's history PR.
+- Status: deferred by explicit user decision. The original review implementation is complete;
+  comparison benchmarks will begin only when the user resumes F10.
 - Action: extend the benchmark suite with explicit comparison tasks for `find`, `rg`, and `fzf`.
   Start with traversal/name/type selection for `find`, file enumeration and content search for
   `rg`, and noninteractive fuzzy selection over the same input list for `fzf`. Record exact
@@ -248,7 +246,7 @@ implementing PR.
 ## F11: Model benchmark Python programs as Python targets
 
 - Origin: [PR #875](https://github.com/mboworks/xff/pull/875).
-- Status: implemented with F08 in the Python tooling follow-up.
+- Status: merged with F08 in PR #882.
 - Use stable `aspect_rules_py` rules and an explicit standalone Python 3.13 toolchain. MBO has no
   current first-party Python target convention to copy.
 - Replace `resource_benchmark_scripts` with `py_binary` executables and imported Python libraries.
@@ -257,7 +255,7 @@ implementing PR.
 - Replace the shell-embedded benchmark test with a `py_test` and declared xff, counter, and driver
   executables. Retain workload, invalid-input, traversal-failure, provenance, and measurement checks.
 - Validation: the benchmark integration passed under the Aspect launcher and hermetic interpreter.
-- Implemented in: `tooling/python-bazel-targets` follow-up.
+- Implemented in: PR #882.
 
 ## F12: Preserve detailed coverage for aggregated PRs and individual runs
 
@@ -274,7 +272,7 @@ implementing PR.
 - Verification: tests cover real nested Git merges, pre-integration/unmerged/missing commits,
   retained source/run identity and detail files, run attempts, immutable snapshots, and interrupted
   archive-copy recovery. Verify publication after the integration merges.
-- Implemented in: immediate follow-up to #868.
+- Implemented in: PRs #876 and #877; publication corrections in #883-#886.
 
 ## Adding review notes
 

@@ -78,7 +78,10 @@ tag. Each new snapshot retains the exact configuration as `release-site.json`, w
 origin, and source commit in `release.json`. A configuration can serve several historical tags when
 its sources exist in each. For another layout, commit another configuration and select its path.
 Missing sources or links fail publication instead of using newer content. Retrying a published tag
-preserves its original HTML and configuration.
+without an override preserves its original HTML and configuration. An explicit `config_path`
+rebuilds an existing site for the same tagged commit, including its navigation. Rendering and link
+validation finish before replacing the retained site; a failed rebuild preserves the previous
+files. An override cannot replace a release with a different source commit.
 
 Local regression tests:
 

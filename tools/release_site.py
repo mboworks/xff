@@ -299,7 +299,8 @@ def build(source, retained, repository, tag, renderer=render, config_path=None,
         metadata = json.loads((destination / "release.json").read_text())
         if metadata["commit"] != sha or metadata["tag"] != tag:
             raise ValueError("A retained release cannot be replaced by a different commit or tag")
-        return
+        if config_path is None:
+            return
     config, config_data = configuration(source, config_path)
     documents = config["pages"]
     files = config.get("files", {})
@@ -381,7 +382,17 @@ def build(source, retained, repository, tag, renderer=render, config_path=None,
         }) + "\n")
         validate_site(output, repository, tag)
         # Rename only after every document and image has been converted successfully.
-        output.rename(destination)
+        if destination.exists():
+            with tempfile.TemporaryDirectory(dir=destination.parent) as backup_dir:
+                backup = Path(backup_dir) / "previous"
+                destination.rename(backup)
+                try:
+                    output.rename(destination)
+                except OSError:
+                    backup.rename(destination)
+                    raise
+        else:
+            output.rename(destination)
 
 
 def redirect(retained, tag):

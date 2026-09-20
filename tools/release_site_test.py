@@ -234,10 +234,53 @@ class ReleaseSiteTest(unittest.TestCase):
         self.assertFalse((self.source / "release-site.json").exists())
         before = (output / "index.html").read_bytes()
         override.write_text("invalid replacement config")
-        site.build(self.source, self.retained, "mboworks/mbo", "v1.2.3",
-                   mock.Mock(side_effect=AssertionError("must not render")), config_path=override)
+        with self.assertRaises(json.JSONDecodeError):
+            site.build(self.source, self.retained, "mboworks/mbo", "v1.2.3",
+                       mock.Mock(side_effect=AssertionError("must not render")), config_path=override)
         self.assertEqual((output / "index.html").read_bytes(), before)
         self.assertEqual((output / "release-site.json").read_bytes(), data)
+
+    def test_explicit_override_refreshes_existing_release_navigation(self):
+        output = self.build()
+        original = json.loads((output / "release.json").read_text())
+        self.config["links"].append({"label": "Benchmarks",
+                                     "href": "/{repo}/benchmarks/tag/{version}/"})
+        override = self.root / "refresh.json"
+        override.write_text(json.dumps(self.config))
+        site.build(self.source, self.retained, "mboworks/mbo", "v1.2.3",
+                   self.render, config_path=override)
+        self.assertIn('href="/mbo/benchmarks/tag/1.2.3/"', (output / "index.html").read_text())
+        refreshed = json.loads((output / "release.json").read_text())
+        self.assertEqual(refreshed["commit"], original["commit"])
+        self.assertEqual(refreshed["configuration"]["origin"], "override")
+        self.assertEqual((output / "release-site.json").read_bytes(), override.read_bytes())
+
+    def test_failed_refresh_preserves_every_retained_file(self):
+        output = self.build()
+        before = {p.relative_to(output): p.read_bytes() for p in output.rglob("*") if p.is_file()}
+        override = self.source / "release-site.json"
+        with self.assertRaisesRegex(RuntimeError, "render failed"):
+            site.build(self.source, self.retained, "mboworks/mbo", "v1.2.3",
+                       mock.Mock(side_effect=RuntimeError("render failed")), config_path=override)
+        self.assertEqual(before, {p.relative_to(output): p.read_bytes()
+                                  for p in output.rglob("*") if p.is_file()})
+        rename = Path.rename
+
+        def fail_install(path, target):
+            if path.name.startswith("tmp") and target == output:
+                raise OSError("install failed")
+            return rename(path, target)
+
+        with mock.patch.object(Path, "rename", fail_install):
+            with self.assertRaisesRegex(OSError, "install failed"):
+                site.build(self.source, self.retained, "mboworks/mbo", "v1.2.3",
+                           self.render, config_path=override)
+        self.assertEqual(before, {p.relative_to(output): p.read_bytes()
+                                  for p in output.rglob("*") if p.is_file()})
+        with mock.patch.object(site, "git", return_value="different commit"):
+            with self.assertRaisesRegex(ValueError, "cannot be replaced"):
+                site.build(self.source, self.retained, "mboworks/mbo", "v1.2.3",
+                           self.render, config_path=override)
 
     def test_override_never_reads_missing_content_from_publisher_checkout(self):
         override = self.root / "backfill.json"
