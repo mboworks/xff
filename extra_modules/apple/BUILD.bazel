@@ -37,8 +37,11 @@ cc_test(
     name = "pbzx_test",
     size = "small",
     srcs = ["pbzx_test.cc"],
-    data = [":fixtures"],
-    env = {"XFF_APPLE_FIXTURE": "$(rootpath test_data/sample.xip)"},
+    data = [
+        ":fixture_anchor",
+        ":fixtures",
+    ],
+    env = {"XFF_APPLE_FIXTURE": "$(rootpath :fixture_anchor)"},
     deps = [
         ":apple_register_cc",
         ":pbzx_cc",
