@@ -11,10 +11,12 @@
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
+#include "xff/vfs/mutations.h"
 
 namespace xff::vfs {
 namespace {
 using ::mbo::testing::EqualsText;
+using ::mbo::testing::IsOk;
 using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
 using ::testing::IsEmpty;
@@ -59,5 +61,25 @@ TEST_F(ReadSourceTest, MissingHostSourcePreservesNotFound) {
   EXPECT_THAT(HostReadSource("")->Open(), StatusIs(absl::StatusCode::kNotFound));
   EXPECT_THAT(ReadSourceBytes(*HostReadSource(""), 100), StatusIs(absl::StatusCode::kNotFound));
 }
+
+TEST_F(ReadSourceTest, HostCursorsReadIndependentlyAndReportDirectoryReadErrors) {
+  MBO_ASSERT_OK_AND_ASSIGN(auto directory, TemporaryDirectory::Create(::testing::TempDir() + "read-source", {}));
+  MBO_ASSERT_OK_AND_ASSIGN(auto output, TemporaryOutput::Create(directory->Path() + "/file", {}));
+  EXPECT_THAT(output->Write("abcdef"), IsOk());
+  auto source = HostReadSource(output->Path());
+  MBO_ASSERT_OK_AND_ASSIGN(auto first, source->Open());
+  MBO_ASSERT_OK_AND_ASSIGN(auto second, source->Open());
+  source.reset();
+  EXPECT_THAT(first->Read(0), IsOkAndHolds(IsEmpty()));
+  EXPECT_THAT(first->Read(2), IsOkAndHolds(EqualsText("ab")));
+  EXPECT_THAT(second->Read(20), IsOkAndHolds(EqualsText("abcdef")));
+  EXPECT_THAT(first->Read(20), IsOkAndHolds(EqualsText("cdef")));
+  EXPECT_THAT(first->Read(1), IsOkAndHolds(IsEmpty()));
+#if defined(__linux__)
+  // Linux opens directories for input but rejects the subsequent read with EISDIR.
+  EXPECT_THAT(ReadSourceBytes(*HostReadSource(directory->Path()), 100), StatusIs(absl::StatusCode::kDataLoss));
+#endif
+}
+
 }  // namespace
 }  // namespace xff::vfs

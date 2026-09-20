@@ -40,3 +40,7 @@ installer code. The generator independently writes XAR and CPIO headers, SHA-1 c
 length framing, and raw/XZ chunks. ZIP fixtures carry the same small `.app` tree. XAR member lists
 were independently checked with macOS `xar`. These are unsigned structural samples, not production
 Apple-signed distributions. Source and fixtures use the repository Apache-2.0 license.
+
+`xz.pbzx` contains one independently compressed chunk. `memory-limit.pbzx` changes its XZ
+block header to request a 256 MiB dictionary and recomputes the header CRC, testing rejection
+by the 128 MiB decoder budget without constructing a large payload.

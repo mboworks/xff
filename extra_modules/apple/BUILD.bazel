@@ -52,6 +52,7 @@ cc_test(
         "@mboworks_mbo//mbo/testing:status_cc",
         "@xff_archive//:archive_fs_cc",
         "@xff_archive//:archive_reader_cc",
+        "@xff_extras_api//:archive_backend_cc",
         "@xff_extras_api//:read_source_cc",
     ],
 )
@@ -62,6 +63,7 @@ filegroup(
         "test_data/application.ipa",
         "test_data/application.ipsw",
         "test_data/application.zip",
+        "test_data/memory-limit.pbzx",
         "test_data/nested.pkg",
         "test_data/payload.cpio",
         "test_data/payload.pbzx",
@@ -70,6 +72,7 @@ filegroup(
         "test_data/raw.pbzx",
         "test_data/sample.xar",
         "test_data/sample.xip",
+        "test_data/xz.pbzx",
     ],
     visibility = ["//visibility:public"],
 )

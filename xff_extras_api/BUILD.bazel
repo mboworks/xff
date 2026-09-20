@@ -377,6 +377,7 @@ cc_test(
     srcs = ["read_source_test.cc"],
     deps = [
         ":read_source_cc",
+        ":vfs_cc",
         "@abseil-cpp//absl/status",
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:matchers_cc",

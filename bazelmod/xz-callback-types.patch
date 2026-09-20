@@ -1,0 +1,51 @@
+diff --git a/src/liblzma/common/filter_decoder.c b/src/liblzma/common/filter_decoder.c
+--- a/src/liblzma/common/filter_decoder.c
++++ b/src/liblzma/common/filter_decoder.c
+@@ -145,2 +145,9 @@
+
++// Keep the callback type exact; casting function pointers is undefined behavior.
++static const lzma_filter_coder *
++decoder_find_coder(lzma_vli id)
++{
++	return (const lzma_filter_coder *)decoder_find(id);
++}
++
+ extern LZMA_API(lzma_bool)
+@@ -157,3 +164,3 @@
+ 	return lzma_raw_coder_init(next, allocator,
+-			options, (lzma_filter_find)(&decoder_find), false);
++			options, &decoder_find_coder, false);
+ }
+@@ -177,3 +184,3 @@
+ 	return lzma_raw_coder_memusage(
+-			(lzma_filter_find)(&decoder_find), filters);
++			&decoder_find_coder, filters);
+ }
+diff --git a/src/liblzma/common/filter_encoder.c b/src/liblzma/common/filter_encoder.c
+--- a/src/liblzma/common/filter_encoder.c
++++ b/src/liblzma/common/filter_encoder.c
+@@ -185,2 +185,9 @@
+
++// Keep the callback type exact; casting function pointers is undefined behavior.
++static const lzma_filter_coder *
++encoder_find_coder(lzma_vli id)
++{
++	return (const lzma_filter_coder *)encoder_find(id);
++}
++
+ extern LZMA_API(lzma_bool)
+@@ -224,3 +231,3 @@
+ 	return lzma_raw_coder_init(next, allocator,
+-			options, (lzma_filter_find)(&encoder_find), true);
++			options, &encoder_find_coder, true);
+ }
+@@ -232,3 +239,3 @@
+ 	lzma_next_strm_init(lzma_raw_coder_init, strm, options,
+-			(lzma_filter_find)(&encoder_find), true);
++			&encoder_find_coder, true);
+
+@@ -246,3 +253,3 @@
+ 	return lzma_raw_coder_memusage(
+-			(lzma_filter_find)(&encoder_find), filters);
++			&encoder_find_coder, filters);
+ }

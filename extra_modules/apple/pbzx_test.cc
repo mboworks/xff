@@ -18,6 +18,7 @@
 #include "mbo/status/status_macros.h"
 #include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
+#include "xff/archive/archive_backend.h"
 #include "xff/archive/archive_fs.h"
 #include "xff/archive/archive_reader.h"
 #include "xff/vfs/read_source.h"
@@ -178,5 +179,59 @@ TEST_F(PbzxTest, ReadsRealXarAndChecksContentDigest) {
   bytes.back() = bytes.back() == 'X' ? 'Y' : 'X';
   EXPECT_THAT(archive::ReadMember(bytes, "hello.txt"), StatusIs(absl::StatusCode::kDataLoss));
 }
+
+class ChangingSource final : public vfs::ReadSource {
+ public:
+  absl::StatusOr<std::unique_ptr<vfs::ReadStream>> Open() const override {
+    return vfs::MemoryReadSource(opens_++ == 0 ? "pbzx" : "changed-data")->Open();
+  }
+
+ private:
+  mutable int opens_ = 0;
+};
+
+TEST_F(PbzxTest, RejectsChangedSourcesAndBothLengthLimits) {
+  EXPECT_THAT(DecodePbzx(std::make_shared<ChangingSource>()), StatusIs(absl::StatusCode::kDataLoss));
+  EXPECT_THAT(DecodePbzx(vfs::HostReadSource("")), StatusIs(absl::StatusCode::kNotFound));
+  EXPECT_THAT(Decode("pbzx" + Number(1ULL << 40U)), StatusIs(absl::StatusCode::kUnimplemented));
+  EXPECT_THAT(
+      Decode("pbzx" + Number(16) + Number(1) + Number(1ULL << 40U)), StatusIs(absl::StatusCode::kResourceExhausted));
+  EXPECT_THAT(Decode("pbzx" + Number(16) + Number(0) + Number(1)), StatusIs(absl::StatusCode::kDataLoss));
+  EXPECT_THAT(Decode("pbzx" + Number(16)), IsOkAndHolds(IsEmpty()));
+  EXPECT_THAT(Decode(Frame("first") + Number(6) + Number(6) + "second"), IsOkAndHolds(EqualsText("firstsecond")));
+}
+
+TEST_F(PbzxTest, RejectsDecodedNonArchives) {
+  EXPECT_THAT(
+      archive::ArchiveFileSystem::OpenSource("bad.pkg", vfs::MemoryReadSource(Frame("plain text"))),
+      StatusIs(absl::StatusCode::kDataLoss));
+}
+
+TEST_F(PbzxTest, ContextualNamesRequireAPackageAncestor) {
+  EXPECT_THAT(archive::ContextualContainerName("Payload"), IsFalse());
+  EXPECT_THAT(archive::ContextualContainerName("ordinary/Payload"), IsFalse());
+  EXPECT_THAT(archive::ContextualContainerName("/Payload"), IsFalse());
+  EXPECT_THAT(archive::ContextualContainerName("app.pkg/readme"), IsFalse());
+  EXPECT_THAT(archive::ContextualContainerName("app.pkg/sub/Scripts"), IsTrue());
+  EXPECT_THAT(archive::ContextualContainerName("app.mpkg/sub/Archive.pax.gz"), IsTrue());
+  EXPECT_THAT(archive::ContextualContainerName("app.pkg/Content"), IsTrue());
+}
+
+TEST_F(PbzxTest, XzEnforcesMemoryBudgetDecodedSizeAndCompleteConsumption) {
+  MBO_ASSERT_OK_AND_ASSIGN(
+      const auto excessive, vfs::ReadSourceBytes(*vfs::HostReadSource(Fixture("memory-limit.pbzx")), 4'096));
+  EXPECT_THAT(Decode(excessive), StatusIs(absl::StatusCode::kResourceExhausted));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto bytes, vfs::ReadSourceBytes(*vfs::HostReadSource(Fixture("xz.pbzx")), 4'096));
+  EXPECT_THAT(Decode(bytes), IsOkAndHolds(EqualsText("hello")));
+  auto wrong_size = bytes;
+  wrong_size.replace(12, 8, Number(6));
+  EXPECT_THAT(Decode(wrong_size), StatusIs(absl::StatusCode::kDataLoss));
+  wrong_size.replace(12, 8, Number(4));
+  EXPECT_THAT(Decode(wrong_size), StatusIs(absl::StatusCode::kDataLoss));
+  auto trailing = bytes + "junk";
+  trailing.replace(20, 8, Number(bytes.size() - 28 + 4));
+  EXPECT_THAT(Decode(trailing), StatusIs(absl::StatusCode::kDataLoss));
+}
+
 }  // namespace
 }  // namespace xff::apple

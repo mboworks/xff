@@ -185,5 +185,12 @@ TEST_F(VfsSeamTest, ReadDirReportsVirtualEntriesAsReadOnly) {
   EXPECT_THAT(fs.ReadDir("/box"), IsOkAndHolds(ElementsAre(Field("read_only", &Entry::read_only, IsTrue()))));
 }
 
+TEST_F(VfsSeamTest, DefaultContentSourceOwnsBytesAndPreservesErrors) {
+  const ReadOnlyFakeFs fs;
+  MBO_ASSERT_OK_AND_ASSIGN(auto source, fs.ContentSource("/box/member.txt"));
+  EXPECT_THAT(ReadSourceBytes(*source, 100), IsOkAndHolds(Eq("content")));
+  EXPECT_THAT(fs.ContentSource("missing"), StatusIs(absl::StatusCode::kNotFound));
+}
+
 }  // namespace
 }  // namespace xff::vfs

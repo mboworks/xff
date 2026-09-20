@@ -57,6 +57,14 @@ def main():
         "sample.xip": xar("Content", pbzx(payload)),
         "sample.xar": xar("hello.txt", b"hello\n"),
     }
+    compressed = lzma.compress(b"hello")
+    files["xz.pbzx"] = b"pbzx" + struct.pack(">QQQ", 16, 5, len(compressed)) + compressed
+    # LZMA2 dictionary property 32 requests 256 MiB. Recompute the XZ block-header CRC;
+    # no large dictionary is allocated when constructing this memory-limit fixture.
+    oversized = bytearray(compressed)
+    oversized[16] = 32
+    oversized[20:24] = struct.pack("<I", zlib.crc32(oversized[12:20]))
+    files["memory-limit.pbzx"] = b"pbzx" + struct.pack(">QQQ", 16, 5, len(oversized)) + oversized
     zip_bytes = io.BytesIO()
     with zipfile.ZipFile(zip_bytes, "w", zipfile.ZIP_DEFLATED) as archive:
         entry = zipfile.ZipInfo("Applications/Example.app/Contents/info.txt", (2020, 1, 1, 0, 0, 0))
