@@ -1,12 +1,24 @@
 # TODO
 
+## Release publication repair
+
+- [x] Publish stable benchmark references (PR #890); both repair workflows completed successfully.
+- [ ] Refresh v0.7.0 navigation after fixing the builder's existing-release early return, then
+      verify the live Benchmarks link and exact tagged-commit result. The earlier workflow success
+      did not change the retained HTML.
+
+## Original audit and review completion
+
+- Original audit implementation and review fixups are merged, including F09 in #887.
+- v0.7.0 is released. F10 competitor comparisons remain explicitly deferred until requested.
+
 ## Completed: F09 benchmark history
 
 - [x] Paired immediate-base/head measurement with raw observations and a versioned contract.
 - [x] Publish bounded PR/release history through the shared site queue; test ordering and retention.
 - [x] Validate the first hosted optimized run and record observed runner noise and workflow cost.
       PR #887 post-merge results are live; see `docs/benchmark-history.md` for the initial observations.
-- Keep competitor benchmarks (F10) deferred until the original review goal is complete.
+- Keep competitor benchmarks (F10) deferred until explicitly resumed by the user.
 
 ## Completed: F08/F11 Python tooling ownership
 

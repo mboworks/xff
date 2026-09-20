@@ -3,6 +3,8 @@
 
 # 0.8.0
 
+- Honor explicit configuration overrides when refreshing an already-published release site.
+
 - Link release and PR benchmark pages to retained measurements for the exact referenced commit.
 
 - Run and publish informational benchmarks after merge only; keep manual experiments artifact-only.
