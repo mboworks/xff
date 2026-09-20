@@ -33,6 +33,7 @@ struct Notice {
   bool section_lead = false;
   std::string_view component;
   std::string_view spdx;
+  // Blank lines separate attribution from optional per-component explanation paragraphs.
   std::string_view text;
 };
 

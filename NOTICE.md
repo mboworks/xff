@@ -20,8 +20,8 @@ name, SPDX license identifier, and copyright line.
 
 ### Build extension: Archive (@xff_archive)
 - `xff archive extra (@xff_archive)  [Apache-2.0]` - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.
-Provides container diving, extraction and packing, including xff's own phar reader and
-writer, by linking the libraries whose notices follow.
+
+  Provides container diving, extraction and packing, including xff's own phar reader and writer, by linking the libraries whose notices follow.
 - `LZ4 library  [BSD-2-Clause]` - Copyright (c) 2011-2020 Yann Collet. All rights reserved.
 - `Zstandard  [BSD-3-Clause]` - Copyright (c) Meta Platforms, Inc. and affiliates. All rights reserved.
 - `bzip2  [bzip2-1.0.6]` - Copyright (c) 1996-2019 Julian R Seward. All rights reserved.
@@ -31,7 +31,8 @@ writer, by linking the libraries whose notices follow.
 
 ### Build extension: Brotli archive compression (@xff_brotli)
 - `xff Brotli extra (@xff_brotli)  [Apache-2.0]` - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.
-Adds raw Brotli streams and Brotli-compressed tar archives to the archive extra.
+
+  Adds raw Brotli streams and Brotli-compressed tar archives to the archive extra.
 - `Brotli  [MIT]` - Copyright (c) 2009, 2010, 2013-2016 by the Brotli Authors.
 
 ### Build extension: Electron ASAR (@xff_asar)
@@ -39,11 +40,8 @@ Adds raw Brotli streams and Brotli-compressed tar archives to the archive extra.
 
 ### Build extension: FUSE (@xff_fuse)
 - `xff FUSE extra (@xff_fuse)  [Apache-2.0]` - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.
-Mounting is implemented against the FUSE 3 lowlevel interface using this extra's own
-declarations (xff/fuse/fuse_abi.h); no libfuse code is compiled, linked, or shipped. At
-runtime the host's FUSE implementation is loaded dynamically - libfuse3 on Linux and BSD,
-macFUSE on macOS - each under its own terms. That is how it interoperates, not a license
-this binary carries.
+
+  Mounting is implemented against the FUSE 3 lowlevel interface using this extra's own declarations (xff/fuse/fuse_abi.h); no libfuse code is compiled, linked, or shipped. At runtime the host's FUSE implementation is loaded dynamically - libfuse3 on Linux and BSD, macFUSE on macOS - each under its own terms. That is how it interoperates, not a license this binary carries.
 
 ### Build extension: Language database (@xff_language_db)
 - `xff language database extra (@xff_language_db)  [Apache-2.0]` - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.
@@ -59,12 +57,15 @@ this binary carries.
 
 ### Build extension: PCRE2 (@xff_pcre2)
 - `xff PCRE2 extra (@xff_pcre2)  [Apache-2.0]` - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.
-Provides the -regextype=pcre2 backend by linking PCRE2 and SLJIT, whose notices follow.
+
+  Provides the -regextype=pcre2 backend by linking PCRE2 and SLJIT, whose notices follow.
 - `PCRE2  [BSD-3-Clause WITH PCRE2-exception]` - Copyright (c) 1997-2007 University of Cambridge; 2007-2024 Philip Hazel; 2010-2024 Zoltan Herczeg; and contributors. All rights reserved.
 - `SLJIT  [BSD-2-Clause]` - Copyright (c) 2009-2024 Zoltan Herczeg. All rights reserved.
 
 ### Build extension: SquashFS archive format (@xff_squashfs)
-- `xff SquashFS extra (@xff_squashfs)  [Apache-2.0]` - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0. Adds independent SquashFS, Snap, and AppImage container reading to xff.
+- `xff SquashFS extra (@xff_squashfs)  [Apache-2.0]` - Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.
+
+  Adds independent SquashFS, Snap, and AppImage container reading to xff.
 - `LZ4 library  [BSD-2-Clause]` - Copyright (c) 2011-2020 Yann Collet. All rights reserved.
 - `Zstandard  [BSD-3-Clause]` - Copyright (c) Meta Platforms, Inc. and affiliates. All rights reserved.
 - `cextras  [BSD-2-Clause]` - Copyright (c) 2023 Enno Boland. All rights reserved.

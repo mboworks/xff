@@ -1602,13 +1602,20 @@ Section ConfigSection(bool in_full) {
 }
 
 Content NoticeEntry(const license::Notice& notice) {
-  return Content{
-      .node =
-          Entry{
-              .term = absl::StrCat(notice.component, "  [", notice.spdx, "]"),
-              .summary = ParseInline(notice.text),
-          },
+  const std::size_t paragraph = notice.text.find("\n\n");
+  Entry entry{
+      .term = absl::StrCat(notice.component, "  [", notice.spdx, "]"),
+      .summary = ParseInline(notice.text.substr(0, paragraph)),
   };
+  if (paragraph != std::string_view::npos) {
+    entry.details = ParseBlocks(notice.text.substr(paragraph + 2));
+    for (Content& detail : entry.details) {
+      if (std::holds_alternative<Prose>(detail.node)) {
+        std::get<Prose>(detail.node).paragraph_break_before = true;
+      }
+    }
+  }
+  return Content{.node = std::move(entry)};
 }
 
 // The `--help=notice` topic (alias notices): the one build-dependent line (which extras THIS

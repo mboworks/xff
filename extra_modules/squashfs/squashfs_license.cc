@@ -15,7 +15,7 @@ const license::Registrar kSquashfsExtra{{
     .section_lead = true,
     .component = "xff SquashFS extra (@xff_squashfs)",
     .spdx = "Apache-2.0",
-    .text = "Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0. "
+    .text = "Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.\n\n"
             "Adds independent SquashFS, Snap, and AppImage container reading to xff.",
 }};
 

@@ -22,5 +22,5 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 bazel run --config=xff_docs //xff/cli:xff_full -- --help=notice --help-format=markdown >NOTICE.md
-bazel run --config=xff_docs //xff/cli:xff -- --help=notice --help-format=markdown >NOTICE-lean.md
-echo "Wrote NOTICE.md and NOTICE-lean.md"
+bazel run --config=xff_docs //xff/cli:xff -- --help=notice --help-format=markdown >NOTICE.lean.md
+echo "Wrote NOTICE.md and NOTICE.lean.md"

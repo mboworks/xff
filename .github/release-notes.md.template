@@ -7,5 +7,5 @@
 
 ### Component notices by download
 
-- `xff-*`: [Lean build notices](https://mboworks.github.io/xff/site/tag/@TAG@/NOTICE-lean.html)
+- `xff-*`: [Lean build notices](https://mboworks.github.io/xff/site/tag/@TAG@/NOTICE.lean.html)
 - `xff_full-*`: [Full build notices](https://mboworks.github.io/xff/site/tag/@TAG@/NOTICE.html)

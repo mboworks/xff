@@ -22,12 +22,20 @@
 #include "absl/status/statusor.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "xff/license/notice.h"
 
 namespace xff::cli {
 namespace {
 using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
+
+// This component exists only in the test binary and exercises per-component explanation paragraphs.
+const license::Registrar kExplainedComponent{{
+    .component = "Explained test component",
+    .spdx = "MIT",
+    .text = "Copyright test authors.\n\nExplanation kept with its component.",
+}};
 
 struct MainTest : ::testing::Test {};
 
@@ -59,6 +67,14 @@ TEST_F(MainTest, MetaHelpRemainsAvailableWhenAccountLookupFails) {
   };
   EXPECT_THAT(::xff::cli::Run("xff", {"--help=config"}, lookup), Eq(0));
   EXPECT_THAT(calls, Eq(1));
+}
+
+TEST_F(MainTest, NoticeExplanationStartsASeparatePlainParagraph) {
+  ::testing::internal::CaptureStdout();
+  const int result = ::xff::cli::Run("xff", {"--help=notice", "--width=110", "--no-pager"});
+  const std::string output = ::testing::internal::GetCapturedStdout();
+  EXPECT_THAT(result, Eq(0));
+  EXPECT_THAT(output, HasSubstr("Copyright test authors.\n\n  Explanation kept with its component."));
 }
 
 struct HelpFormatCase {
@@ -100,6 +116,21 @@ INSTANTIATE_TEST_SUITE_P(
         HelpFormatCase{.name = "Styles", .args = {"--help=styles", "--help-format=html"}, .marker = "<pre>"},
         HelpFormatCase{.name = "Extras", .args = {"--help=extras", "--help-format=markdown"}, .marker = "```"},
         HelpFormatCase{.name = "Notices", .args = {"--help=notices", "--help-format=md"}, .marker = "# Notices"},
+        HelpFormatCase{
+            .name = "NoticeMarkdownParagraph",
+            .args = {"--help=notice", "--help-format=md"},
+            .marker = "Copyright test authors.\n\n  Explanation kept with its component.",
+        },
+        HelpFormatCase{
+            .name = "NoticeHtmlParagraph",
+            .args = {"--help=notice", "--help-format=html"},
+            .marker = "Copyright test authors.</p>\n<p>Explanation kept with its component.</p>",
+        },
+        HelpFormatCase{
+            .name = "NoticeRoffParagraph",
+            .args = {"--help=notice", "--help-format=roff"},
+            .marker = "Copyright test authors.\n.PP\nExplanation kept with its component.",
+        },
         HelpFormatCase{.name = "Full", .args = {"--help=full", "--help-format=markdown"}, .marker = "**Usage:**"},
         HelpFormatCase{.name = "Long", .args = {"--help=long", "--help-format=html"}, .marker = "<!doctype html>"},
         HelpFormatCase{.name = "Roff", .args = {"--help=regex", "--help-format=roff"}, .marker = ".TH"},

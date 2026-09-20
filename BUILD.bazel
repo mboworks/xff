@@ -52,7 +52,7 @@ exports_files(
     [
         "LICENSE",
         "NOTICE.md",
-        "NOTICE-lean.md",
+        "NOTICE.lean.md",
     ],
     visibility = ["//visibility:public"],
 )

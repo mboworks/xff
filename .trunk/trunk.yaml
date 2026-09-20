@@ -67,7 +67,7 @@ lint:
       paths:
         - XFF.md
         - NOTICE.md
-        - NOTICE-lean.md
+        - NOTICE.lean.md
 actions:
   definitions:
     - id: xff-clang-tidy-pre-commit

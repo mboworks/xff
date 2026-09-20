@@ -130,7 +130,7 @@ For v0.7.0, use `config_path=docs/release-site-plain-notice.json`: that tag cont
 plain-text `NOTICE`, which the compatible override publishes as `NOTICE.txt`. The current
 configuration requires `NOTICE.md` and therefore cannot be used with that older source tree.
 
-The release site publishes [Lean build notices](../NOTICE-lean.md) for `xff-*` downloads
+The release site publishes [Lean build notices](../NOTICE.lean.md) for `xff-*` downloads
 and [Full build notices](../NOTICE.md) for `xff_full-*` downloads. Release notes link
 to both inventories. `./notice-update.sh` regenerates both from their corresponding
 binaries; Bazel drift tests verify each. Custom builds report their own inventory with

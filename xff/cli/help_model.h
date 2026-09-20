@@ -76,6 +76,8 @@ using Blocks = std::vector<Content>;
 // A prose paragraph: inline runs, free-flowed to the width by the text backends.
 struct Prose {
   Inlines runs;
+  // Start a distinct paragraph even inside a compact entry detail list.
+  bool paragraph_break_before = false;
 };
 
 // A verbatim, preformatted block (a command, or a multi-line example such as the

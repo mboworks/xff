@@ -157,6 +157,9 @@ void MarkdownBackend::EndEntry(const Entry& /*entry*/) {
 }
 
 void MarkdownBackend::EmitProse(const Prose& prose) {
+  if (prose.paragraph_break_before) {
+    Append("\n");
+  }
   if (in_entry_) {
     Append(absl::StrCat("  ", RenderInlinesMarkdown(prose.runs), "\n"));  // indented bullet continuation
   } else {

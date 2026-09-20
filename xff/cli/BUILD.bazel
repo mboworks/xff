@@ -572,15 +572,15 @@ genrule(
         "//xff:xff_msan_enabled": ["//tools:msan_suppressions"],
         "//conditions:default": [],
     }),
-    outs = ["NOTICE-lean.md.actual"],
+    outs = ["NOTICE.lean.md.actual"],
     cmd = "$(location :xff) --help=notice --help-format=markdown > $@",
     tools = [":xff"],
 )
 
 diff_test(
     name = "xff_notice_lean_test",
-    file_new = ":NOTICE-lean.md.actual",
-    file_old = "//:NOTICE-lean.md",
+    file_new = ":NOTICE.lean.md.actual",
+    file_old = "//:NOTICE.lean.md",
 )
 
 cc_library(
@@ -1219,6 +1219,7 @@ cc_test(
     deps = [
         ":main_cc",
         "//xff/config:loader_cc",
+        "//xff_extras_api:license_notice_cc",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@googletest//:gtest_main",

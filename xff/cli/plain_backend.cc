@@ -214,6 +214,9 @@ void PlainTextBackend::EndEntry(const Entry& /*entry*/) {
 }
 
 void PlainTextBackend::EmitProse(const Prose& prose) {
+  if (prose.paragraph_break_before) {
+    StartBlock();
+  }
   const std::string indent = BodyIndent();
   if (in_entry_) {
     // An entry's detail line, under its term indent (keeps `code` markup, no blank line).

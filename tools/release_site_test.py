@@ -95,8 +95,8 @@ class ReleaseSiteTest(unittest.TestCase):
 
     def test_notice_markdown_is_rendered_and_license_stays_on_github(self):
         self.write("NOTICE.md", "# Notices\n\nCopyright example authors.\n")
-        self.write("NOTICE-lean.md", "# Notices\n\nLean component inventory.\n")
-        self.config["pages"]["NOTICE-lean.md"] = "NOTICE-lean.html"
+        self.write("NOTICE.lean.md", "# Notices\n\nLean component inventory.\n")
+        self.config["pages"]["NOTICE.lean.md"] = "NOTICE.lean.html"
         self.write("LICENSE", "license text")
         self.config["pages"]["NOTICE.md"] = "NOTICE.html"
         self.write("release-site.json", json.dumps(self.config))
@@ -107,13 +107,13 @@ class ReleaseSiteTest(unittest.TestCase):
                 return '<h1>Notices</h1><p>Copyright example authors.</p>'
             if markdown == "release readme":
                 return ('<h1>A title</h1><a href="NOTICE.md">Full build notices</a>'
-                        '<a href="NOTICE-lean.md">Lean build notices</a><a href="LICENSE">LICENSE</a>')
+                        '<a href="NOTICE.lean.md">Lean build notices</a><a href="LICENSE">LICENSE</a>')
             return self.render(markdown, repository)
 
         output = self.build(renderer=renderer)
         self.assertIn('href="NOTICE.html"', (output / "index.html").read_text())
-        self.assertIn('href="NOTICE-lean.html"', (output / "index.html").read_text())
-        self.assertIn('NOTICE-lean.html', (output / "documents.html").read_text())
+        self.assertIn('href="NOTICE.lean.html"', (output / "index.html").read_text())
+        self.assertIn('NOTICE.lean.html', (output / "documents.html").read_text())
         sha = site.git(self.source, "rev-parse", "HEAD")
         self.assertIn(f'/blob/{sha}/LICENSE', (output / "index.html").read_text())
         notice = (output / "NOTICE.html").read_text()

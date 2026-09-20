@@ -15,7 +15,7 @@ const license::Registrar kArchiveExtra{{
     .section_lead = true,
     .component = "xff archive extra (@xff_archive)",
     .spdx = "Apache-2.0",
-    .text = "Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.\n"
+    .text = "Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.\n\n"
             "Provides container diving, extraction and packing, including xff's own phar reader and\n"
             "writer, by linking the libraries whose notices follow.",
 }};

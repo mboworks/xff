@@ -103,7 +103,7 @@ void RoffBackend::EmitProse(const Prose& prose) {
   if (std::ranges::all_of(prose.runs, [](const Inline& run) { return absl::StripAsciiWhitespace(run.text).empty(); })) {
     return;
   }
-  if (para_) {
+  if (para_ || prose.paragraph_break_before) {
     absl::StrAppend(&out_, ".PP\n");
   }
   EmitInline(prose.runs);
