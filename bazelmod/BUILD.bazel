@@ -19,5 +19,6 @@ exports_files([
     "dev.MODULE.bazel",
     "extras.MODULE.bazel",
     "llvm.MODULE.bazel",
+    "llvm-linker-msan.patch",
     "utf8proc-bazel9.patch",
 ])
