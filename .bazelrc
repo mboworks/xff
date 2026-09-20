@@ -20,6 +20,8 @@ common:macos --linkopt=-mmacosx-version-min=11.0 --host_linkopt=-mmacosx-version
 # Darwin-only: Linux should continue to use the hermetic LLD toolchain.
 common:macos --features=-supports_start_end_lib --host_features=-supports_start_end_lib
 common:macos --linkopt=--ld-path=/usr/bin/ld --host_linkopt=--ld-path=/usr/bin/ld
+# Also identify the linker to Clang so it passes the matching LLVM libLTO plugin.
+common:macos --linkopt=-fuse-ld=/usr/bin/ld --host_linkopt=-fuse-ld=/usr/bin/ld
 
 try-import %workspace%/.bazelrc.user
 
@@ -105,7 +107,7 @@ common:xff_fuse_tests_required --@xff_extras_api//:fuse_tests_must_mount=true
 # the autodetected local toolchain) keeps gcc/native builds on the local compiler.
 common:clang --extra_toolchains=@llvm_toolchain_llvm//:all
 common:clang --cxxopt=-gmlt --host_cxxopt=-gmlt
-common:clang --linkopt=-fuse-ld=lld --host_linkopt=-fuse-ld=lld
+# Linker selection comes from the toolchain and the macOS override above.
 common:clang --define is_clang=true
 
 # --config=release supplies the production optimization and link settings without selecting a
