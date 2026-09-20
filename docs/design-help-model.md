@@ -8,8 +8,8 @@ Status: adopted 2026-08-05. Implemented in slices (see the #154 epic in
 
 The HTML backend shipped after the original plain, Markdown, and roff slices. It emits a
 self-contained HTML5 document directly from the model; Pages does not convert Markdown or run a
-client-side renderer. Non-console renderers are formats of the full help document rather than
-standalone operations: `--help=full:markdown`, `--help=full:html`, and `--help=full:roff`; `long`
+client-side renderer. Non-console renderers apply to any help target rather than
+using separate document operations. For the full reference: `--help=full --help-format=markdown`, `--help=full --help-format=html`, and `--help=full --help-format=roff`; `long`
 aliases `full`, and `--man` remains the conventional roff shortcut.
 
 ## Problem
@@ -128,7 +128,7 @@ entries and omits relationships whose targets are absent from that complete docu
 
 `--help=TARGET` selects content; `--help-format=plain|markdown|html|roff` selects its
 renderer. The format applies to usage, indexes, topics, individual flags and primaries, and
-full references. `md` aliases `markdown`. `--help=TARGET:FORMAT` remains equivalent shorthand.
+full references. `md` aliases `markdown`. `--help=TARGET --help-format=format` remains equivalent shorthand.
 Matching explicit selections are accepted; conflicting selections are usage errors. `--man`
 selects the full reference in roff, so an incompatible format is also an error. A format without
 help output is rejected, including with `--version`. These are command-line controls.

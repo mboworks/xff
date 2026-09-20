@@ -23,7 +23,7 @@ namespace xff::cli {
 // Renders a Markdown reference of the whole vocabulary from the same single sources
 // of truth the parser and `--help` use -- cli::Globals() for options and
 // registry::All() for the expression vocabulary -- so it cannot drift from the
-// binary. Emitted by `xff --help=full:markdown`; the GitHub-renderable counterpart of the
+// binary. Emitted by `xff --help=full --help-format=markdown`; the GitHub-renderable counterpart of the
 // `--man` roff page.
 std::string MarkdownReference();
 

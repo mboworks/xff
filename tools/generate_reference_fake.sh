@@ -4,9 +4,11 @@
 
 set -euo pipefail
 
-case "${1:-}" in
-  --help=full:markdown) printf '# xff reference\n' ;;
-  --help=full:html)
+[[ "${1:-}" == --help=full && "$#" -eq 2 ]] || exit 2
+
+case "${2:-}" in
+  --help-format=markdown) printf '# xff reference\n' ;;
+  --help-format=html)
     if [[ -n "${XFF_FAKE_BAD_HTML:-}" ]]; then
       printf 'broken html\n'
     else

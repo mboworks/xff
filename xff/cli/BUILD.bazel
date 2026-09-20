@@ -455,7 +455,7 @@ cc_test(
     ],
 )
 
-# `xff --help=full:markdown`: a GitHub-renderable reference, the MarkdownBackend driven over the
+# `xff --help=full --help-format=markdown`: a GitHub-renderable reference, the MarkdownBackend driven over the
 # BuildReference() model (the Markdown counterpart of --man), so it carries the complete
 # reference and cannot drift from --man / --help=full.
 cc_library(
@@ -483,7 +483,7 @@ cc_test(
     ],
 )
 
-# `xff --help=full:html`: a standalone HTML5 reference driven over the same complete model.
+# `xff --help=full --help-format=html`: a standalone HTML5 reference driven over the same complete model.
 cc_library(
     name = "html_cc",
     srcs = ["html.cc"],

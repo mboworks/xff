@@ -29,7 +29,7 @@
 // bullet whose term is backtick-wrapped (so its `=NAME` / `[..]` / `|` stay
 // literal) with an _(xff)_ tag for extensions, and its detail prose an indented
 // continuation of that bullet. Driving it over BuildReference() produces
-// `xff --help=full:markdown` and the committed XFF.md reference.
+// `xff --help=full --help-format=markdown` and the committed XFF.md reference.
 namespace xff::cli {
 
 // A HelpBackend that accumulates Markdown. Construct, RenderDocument() into it, Take().

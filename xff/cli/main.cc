@@ -255,7 +255,7 @@ std::string RenderExtras() {
 //
 // Deliberately NOT on: the usage page (which already explains all of this and lists the topics),
 // `--help=help` itself, the `list` / `all` / `full` aggregates (they ARE the map), and never in
-// `--man` / `--help=full:FORMAT`, where a tip would be embedded in a document people install or publish.
+// `--man` / `--help=full --help-format=FORMAT`, where a tip would be embedded in a document people install or publish.
 // A trailer on every surface is a trailer nobody reads.
 std::string HelpTip(const xff::cli::HelpRenderContext& context) {
   static constexpr std::string_view kTip =
@@ -297,7 +297,6 @@ enum class Meta : std::uint8_t { kNone, kUsage, kTopic, kVersion, kMan };
 struct MetaSelection {
   Meta kind = Meta::kNone;
   std::string topic;
-  std::optional<std::string> format;
 };
 
 std::string NormalizeHelpTopic(std::string_view topic) {
@@ -305,19 +304,6 @@ std::string NormalizeHelpTopic(std::string_view topic) {
   return value == std::string_view::npos
              ? absl::AsciiStrToLower(topic)
              : absl::StrCat(absl::AsciiStrToLower(topic.substr(0, value)), topic.substr(value));
-}
-
-MetaSelection ParseHelpSelector(std::string_view selector) {
-  const std::size_t separator = selector.rfind(':');
-  if (separator == std::string_view::npos) {
-    return {.kind = Meta::kTopic, .topic = NormalizeHelpTopic(selector)};
-  }
-  const std::string format = absl::AsciiStrToLower(selector.substr(separator + 1));
-  return {
-      .kind = Meta::kTopic,
-      .topic = NormalizeHelpTopic(selector.substr(0, separator)),
-      .format = format == "md" ? "markdown" : format,
-  };
 }
 
 MetaSelection SelectMeta(const std::vector<std::string>& flags) {
@@ -335,7 +321,7 @@ MetaSelection SelectMeta(const std::vector<std::string>& flags) {
     return {.kind = Meta::kTopic, .topic = "full"};
   }
   if (arg.starts_with("--help=")) {
-    return ParseHelpSelector(std::string_view(arg).substr(7));
+    return {.kind = Meta::kTopic, .topic = NormalizeHelpTopic(std::string_view(arg).substr(7))};
   }
   if (arg == "--version" || arg == "-version") {
     return {.kind = Meta::kVersion};
@@ -344,7 +330,7 @@ MetaSelection SelectMeta(const std::vector<std::string>& flags) {
 }
 
 absl::StatusOr<std::string> ResolveHelpFormat(const MetaSelection& meta, const std::vector<std::string>& globals) {
-  std::optional<std::string> requested = meta.kind == Meta::kMan ? std::optional<std::string>("roff") : meta.format;
+  std::optional<std::string> requested = meta.kind == Meta::kMan ? std::optional<std::string>("roff") : std::nullopt;
   for (const std::string& global : globals) {
     if (global == "--help-format") {
       return absl::InvalidArgumentError("--help-format requires a value");
@@ -379,7 +365,7 @@ std::string_view ProgramBasename(std::string_view program) {
 // option and primary with explanations, then each sub-vocabulary topic marked in_full --
 // so adding a topic auto-includes it here, no hand-maintained list.
 std::string FullReference(xff::cli::HelpRenderContext context) {
-  // The complete reference is the whole help model (the same Document --man / --help=full:FORMAT
+  // The complete reference is the whole help model (the same Document --man / --help=full --help-format=FORMAT
   // render), in plain text and wrapped to the context width.
   xff::cli::PlainTextBackend backend(context);
   xff::cli::RenderDocument(xff::cli::BuildReference(), backend);
@@ -643,7 +629,7 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
       case Meta::kVersion:
         std::cout << "xff 0.0.0\n";  // short and machine-scraped: never paged
         return 0;
-      case Meta::kMan:  // roff output is dispatched above
+      case Meta::kMan:          // roff output is dispatched above
       case Meta::kNone: break;  // unreachable; keeps the switch exhaustive
     }
   }

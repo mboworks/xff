@@ -1896,7 +1896,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "Markup output ignores terminal `--width` and `--color`; Markdown and HTML disable "
                    "automatic paging, while explicit `--pager=always` or a pager command still applies. "
                    "Roff uses the same terminal formatting and paging as `--man`. "
-                   "The `--help=TARGET:FORMAT` shorthand remains available; conflicting format selections "
+                   "Conflicting format selections "
                    "are errors, including conflicts with `--man` (which selects `roff`).",
         .values = kHelpFormatValues,
         .see_also = "output,environment",

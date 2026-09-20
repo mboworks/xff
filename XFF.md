@@ -1204,7 +1204,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `roff` - man-page source; terminal formatting and paging follow `--man`
 
   Command-line only; rejected in configuration files.
-  Requires help output, including a topic, flag, index, or the full reference. For example, `--help=notice --help-format=markdown`. Markup output ignores terminal `--width` and `--color`; Markdown and HTML disable automatic paging, while explicit `--pager=always` or a pager command still applies. Roff uses the same terminal formatting and paging as `--man`. The `--help=TARGET:FORMAT` shorthand remains available; conflicting format selections are errors, including conflicts with `--man` (which selects `roff`).
+  Requires help output, including a topic, flag, index, or the full reference. For example, `--help=notice --help-format=markdown`. Markup output ignores terminal `--width` and `--color`; Markdown and HTML disable automatic paging, while explicit `--pager=always` or a pager command still applies. Roff uses the same terminal formatting and paging as `--man`. Conflicting format selections are errors, including conflicts with `--man` (which selects `roff`).
   See also: [Output](#topic-output), [Environment](#topic-environment)
 
 <a id="flag-width"></a>

@@ -40,7 +40,7 @@ namespace xff::cli {
 // all functionality and let each such flag's own text say it is a build extra.
 enum class Audience : std::uint8_t {
   kThisBinary,  // --help / --man: what YOUR build can do
-  kPublished,   // --help=full:markdown/html / published references: what xff can do
+  kPublished,   // --help=full --help-format=markdown/html / published references: what xff can do
 };
 
 [[nodiscard]] Document BuildReference(Audience audience = Audience::kThisBinary);

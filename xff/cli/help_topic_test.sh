@@ -435,9 +435,11 @@ test::the_maps_and_the_documents_carry_no_pointer() {
   bin="$(_xff_bin)"
   tip="xff --help=help"
   for page in --help --help=help --help=list --help=all --help=full --help=expressions \
-    --help=notice --help=notices --help=license --help=licenses --help=license=Apache-2.0 \
-    --help=full:markdown --help=full:html; do
+    --help=notice --help=notices --help=license --help=licenses --help=license=Apache-2.0; do
     expect_output_not_contains "${tip}" "$("${bin}" "${page}" 2>&1)"
+  done
+  for page in markdown html; do
+    expect_output_not_contains "${tip}" "$("${bin}" --help=full "--help-format=${page}" 2>&1)"
   done
 }
 
@@ -543,11 +545,11 @@ test::focused_vocabulary_help_appends_the_shared_reference() {
 
 test::long_reference_pointers_follow_the_output_format() {
   local out
-  out="$("$(_xff_bin)" --help=long:markdown)"
+  out="$("$(_xff_bin)" --help=long --help-format=markdown)"
   expect_output_contains '[Regex matching](#topic-regex)' "${out}"
-  out="$("$(_xff_bin)" --help=long:html)"
+  out="$("$(_xff_bin)" --help=long --help-format=html)"
   expect_output_contains 'href="#topic-regex">Regex matching</a>' "${out}"
-  out="$("$(_xff_bin)" --help=long:roff)"
+  out="$("$(_xff_bin)" --help=long --help-format=roff)"
   expect_output_contains '.B Regex matching' "${out}"
 }
 

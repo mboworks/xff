@@ -9,7 +9,7 @@
 namespace xff::cli {
 
 // Renders the complete published reference as a standalone HTML5 document from
-// the same semantic model as `--help`, `--man`, and `--help=full:markdown`.
+// the same semantic model as `--help`, `--man`, and `--help=full --help-format=markdown`.
 [[nodiscard]] std::string HtmlReference();
 
 }  // namespace xff::cli

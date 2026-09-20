@@ -101,7 +101,8 @@ CI also converts the configured documentation and checks the generated links in 
 runner directory. It never commits, retains, or deploys that preview.
 
 Publication downloads the immutable, attested `xff_full-linux-x86_64` release executable and runs
-`--help=full:html`. The resulting standalone document is copied byte-for-byte into the snapshot and
+the reference generator from the same trusted release tag, whose arguments match the released
+binary. Current generators use `--help=full --help-format=html`. The resulting standalone document is copied byte-for-byte into the snapshot and
 participates in the same link and anchor validation as Markdown-rendered pages. `release.json`
 records its SHA-256 alongside the release commit and configuration hash.
 
