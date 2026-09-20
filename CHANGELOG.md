@@ -3,6 +3,7 @@
 
 # 0.8.0
 
+- Support native `productbuild` XAR seek layouts, bounded source ranges, and shared decoder/range-buffer budgets.
 - Read XAR packages and streamed PBZX/CPIO payloads on Linux and macOS in the existing full binary.
 
 - Upgrade toolchains_llvm to 1.9.1 and use Apple ld for macOS SDK 27 compatibility.

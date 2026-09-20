@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <limits>
 #include <memory>
 #include <ranges>
 #include <string>
@@ -26,9 +27,11 @@
 namespace xff::apple {
 namespace {
 using ::mbo::testing::EqualsText;
+using ::mbo::testing::IsOk;
 using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
 using ::testing::ElementsAre;
+using ::testing::Eq;
 using ::testing::Field;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
@@ -231,6 +234,82 @@ TEST_F(PbzxTest, XzEnforcesMemoryBudgetDecodedSizeAndCompleteConsumption) {
   auto trailing = bytes + "junk";
   trailing.replace(20, 8, Number(bytes.size() - 28 + 4));
   EXPECT_THAT(Decode(trailing), StatusIs(absl::StatusCode::kDataLoss));
+}
+
+TEST_F(PbzxTest, SharedChunkCacheBudgetCoversIndependentAndNestedCursors) {
+  auto budget = std::make_shared<vfs::ReadBudget>(12);
+  MBO_ASSERT_OK_AND_ASSIGN(auto source, DecodePbzx(vfs::MemoryReadSource(Frame("abcdef"), budget)));
+  EXPECT_THAT(source->Budget(), Eq(budget));
+  MBO_ASSERT_OK_AND_ASSIGN(auto first, source->Open());
+  MBO_ASSERT_OK_AND_ASSIGN(auto second, source->Open());
+  EXPECT_THAT(first->Read(1), IsOkAndHolds(EqualsText("a")));
+  EXPECT_THAT(budget->MemoryUsed(), Eq(6));
+  EXPECT_THAT(second->Read(1), StatusIs(absl::StatusCode::kResourceExhausted));
+  EXPECT_THAT(budget->MemoryUsed(), Eq(6));
+  first.reset();
+  EXPECT_THAT(budget->MemoryUsed(), Eq(0));
+  // A failed cursor need not be recoverable; fresh cursors can use the released budget.
+  MBO_ASSERT_OK_AND_ASSIGN(auto third, source->Open());
+  EXPECT_THAT(third->Read(6), IsOkAndHolds(EqualsText("abcdef")));
+  EXPECT_THAT(third->Read(1), IsOkAndHolds(IsEmpty()));
+  EXPECT_THAT(budget->MemoryUsed(), Eq(0));
+  MBO_ASSERT_OK_AND_ASSIGN(auto nested, DecodePbzx(vfs::MemoryReadSource(Frame(Frame("data")), budget)));
+  EXPECT_THAT(vfs::ReadSourceBytes(*nested, 100), StatusIs(absl::StatusCode::kResourceExhausted));
+  EXPECT_THAT(budget->MemoryUsed(), Eq(0));
+}
+
+TEST_F(PbzxTest, CompressedDecoderWorkspaceIsReservedBeforeDecoding) {
+  auto budget = std::make_shared<vfs::ReadBudget>(128);
+  MBO_ASSERT_OK_AND_ASSIGN(auto source, DecodePbzx(vfs::HostReadSource(Fixture("xz.pbzx"), budget)));
+  EXPECT_THAT(vfs::ReadSourceBytes(*source, 10), StatusIs(absl::StatusCode::kResourceExhausted));
+  EXPECT_THAT(budget->MemoryUsed(), Eq(0));
+}
+
+class SeekFailureSource final : public vfs::ReadSource {
+ public:
+  enum class Failure { kSize, kOversized, kSeek };
+
+  SeekFailureSource(vfs::SharedReadSource source, Failure failure)
+      : ReadSource(source->Budget()), source_(std::move(source)), failure_(failure) {}
+
+  absl::StatusOr<std::unique_ptr<vfs::ReadStream>> Open() const override { return source_->Open(); }
+
+  absl::StatusOr<std::unique_ptr<vfs::ReadStream>> OpenAt(std::uint64_t offset) const override {
+    if (offset == 0) {
+      return source_->Open();
+    }
+    return absl::DataLossError("injected seek failure");
+  }
+
+  absl::StatusOr<std::uint64_t> Size() const override {
+    if (failure_ == Failure::kSize) {
+      return absl::DataLossError("injected size failure");
+    }
+    if (failure_ == Failure::kOversized) {
+      return std::numeric_limits<std::uint64_t>::max();
+    }
+    return source_->Size();
+  }
+
+ private:
+  vfs::SharedReadSource source_;
+  Failure failure_;
+};
+
+TEST_F(PbzxTest, NativeProductPackageNeedsSeeksAndPreservesSourceErrors) {
+  auto source = vfs::HostReadSource(Fixture("native-product.pkg"));
+  EXPECT_THAT(archive::ListMembersOfSource(source), IsOk());
+  EXPECT_THAT(
+      archive::ListMembersOfSource(std::make_shared<SeekFailureSource>(source, SeekFailureSource::Failure::kSize)),
+      StatusIs(absl::StatusCode::kDataLoss));
+  EXPECT_THAT(
+      archive::ListMembersOfSource(std::make_shared<SeekFailureSource>(source, SeekFailureSource::Failure::kOversized)),
+      StatusIs(absl::StatusCode::kOutOfRange));
+  EXPECT_THAT(
+      archive::ListMembersOfSource(std::make_shared<SeekFailureSource>(source, SeekFailureSource::Failure::kSeek)),
+      StatusIs(absl::StatusCode::kDataLoss));
+  auto small = vfs::HostReadSource(Fixture("native-product.pkg"), std::make_shared<vfs::ReadBudget>(1));
+  EXPECT_THAT(archive::ListMembersOfSource(small), StatusIs(absl::StatusCode::kResourceExhausted));
 }
 
 }  // namespace

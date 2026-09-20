@@ -771,7 +771,10 @@ Section ArchiveSection(bool in_full) {
       "and `--archive-depth=2` (increase the depth for component packages). Extensionless "
       "`Payload`, `Scripts`, and `Content` members are probed in package context. "
       "Payload decoding streams through bounded chunks (64 MiB maximum per PBZX chunk; "
-      "128 MiB XZ decoder memory). Legacy non-streaming nested readers have a 256 MiB input cap. "
+      "128 MiB XZ decoder memory). Related cursors share a 512 MiB decoder/range-buffer budget; "
+      "this is not a whole-process memory cap. Native sources seek directly; sequential range "
+      "reads share a 256 MiB replay budget and fail explicitly on exhaustion. "
+      "Legacy non-streaming nested readers have a 256 MiB input cap. "
       "Scripts are never executed; signatures are not verified; XAR packages cannot be rewritten. "
       "DMG/HFS+/APFS contents and other Apple payload codecs are not supported."));
 

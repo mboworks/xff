@@ -22,6 +22,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -199,12 +200,46 @@ absl::StatusOr<std::string> ReadMemberOfOpened(
 
 // The libarchive callbacks borrow this session; the session owns the cursor and callback buffer.
 struct SourceSession {
+  vfs::SharedReadSource source;
+  vfs::ReadBudget::Reservation reservation;
   std::unique_ptr<vfs::ReadStream> stream;
   std::string buffer;
   std::string prefix;
   absl::Status error;
+  std::optional<std::uint64_t> size;
   // Declared last so the reader is released before its callback state.
   ArchivePtr handle;
+
+  // XFF_ABI_POINTER: XAR requests absolute heap positions through libarchive's C callback.
+  static la_int64_t Seek(struct ::archive*, void* data, la_int64_t offset, int whence) {
+    auto& self = *static_cast<SourceSession*>(data);
+    if (whence == SEEK_END && offset == 0) {
+      if (!self.size) {
+        auto size = self.source->Size();
+        if (!size.ok()) {
+          self.error = size.status();
+          return ARCHIVE_FAILED;
+        }
+        self.size = *size;
+      }
+      if (*self.size > static_cast<std::uint64_t>(std::numeric_limits<la_int64_t>::max())) {
+        self.error = absl::OutOfRangeError("XAR source exceeds signed offset range");
+        return ARCHIVE_FAILED;
+      }
+      offset = static_cast<la_int64_t>(*self.size);
+      whence = SEEK_SET;
+    }
+    if (whence != SEEK_SET || offset < 0) {
+      return ARCHIVE_FAILED;
+    }
+    auto stream = self.source->OpenAt(static_cast<std::uint64_t>(offset));
+    if (!stream.ok()) {
+      self.error = stream.status();
+      return ARCHIVE_FATAL;
+    }
+    self.stream = std::move(*stream);
+    return offset;
+  }
 
   // XFF_ABI_POINTER: libarchive's input callback uses opaque state and a borrowed byte buffer.
   static la_ssize_t Read(struct ::archive*, void* data, const void** buffer) {
@@ -223,12 +258,19 @@ struct SourceSession {
   }
 };
 
-absl::StatusOr<std::unique_ptr<SourceSession>> OpenSourceSession(const vfs::ReadSource& source) {
+absl::StatusOr<std::unique_ptr<SourceSession>> OpenSourceSession(const vfs::SharedReadSource& source) {
   auto session = std::make_unique<SourceSession>();
-  MBO_ASSIGN_OR_RETURN(session->stream, source.Open());
+  session->source = source;
+  MBO_ASSIGN_OR_RETURN(session->reservation, source->Budget()->Reserve(kBlockSize));
+  MBO_ASSIGN_OR_RETURN(session->stream, source->Open());
   session->handle = NewReader();
   if (!session->handle) {
     return absl::UnavailableError("cannot enable archive readers");
+  }
+  MBO_ASSIGN_OR_RETURN(const auto prefix, vfs::ReadSourceRange(*source, 0, 4));
+  session->prefix = prefix.bytes;
+  if (prefix.bytes == "xar!") {
+    ::archive_read_set_seek_callback(session->handle.get(), &SourceSession::Seek);
   }
   if (::archive_read_open(session->handle.get(), session.get(), nullptr, &SourceSession::Read, nullptr) != ARCHIVE_OK) {
     MBO_RETURN_IF_ERROR(session->error);
@@ -265,10 +307,10 @@ class MemberStream final : public vfs::ReadStream {
 class MemberSource final : public vfs::ReadSource {
  public:
   MemberSource(vfs::SharedReadSource source, std::string member)
-      : source_(std::move(source)), member_(std::move(member)) {}
+      : ReadSource(source->Budget()), source_(std::move(source)), member_(std::move(member)) {}
 
   absl::StatusOr<std::unique_ptr<vfs::ReadStream>> Open() const override {
-    MBO_ASSIGN_OR_RETURN(auto session, OpenSourceSession(*source_));
+    MBO_ASSIGN_OR_RETURN(auto session, OpenSourceSession(source_));
     // XFF_ABI_POINTER: archive_read_next_header returns a borrowed C entry.
     struct ::archive_entry* entry = nullptr;
     while (true) {
@@ -428,7 +470,7 @@ absl::StatusOr<std::string> ReadMember(std::string_view bytes, std::string_view 
 }
 
 absl::StatusOr<std::vector<Member>> ListMembersOfSource(const vfs::SharedReadSource& source) {
-  MBO_ASSIGN_OR_RETURN(auto session, OpenSourceSession(*source));
+  MBO_ASSIGN_OR_RETURN(auto session, OpenSourceSession(source));
   auto members = ReadMembers(*session->handle);
   MBO_RETURN_IF_ERROR(session->error);
   return members;

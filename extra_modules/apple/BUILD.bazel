@@ -64,6 +64,8 @@ filegroup(
         "test_data/application.ipsw",
         "test_data/application.zip",
         "test_data/memory-limit.pbzx",
+        "test_data/native-component.pkg",
+        "test_data/native-product.pkg",
         "test_data/nested.pkg",
         "test_data/payload.cpio",
         "test_data/payload.pbzx",
@@ -90,6 +92,8 @@ cc_fuzz_test(
     corpus = [
         "test_data/payload.pbzx",
         "test_data/raw.pbzx",
+        "test_data/xz.pbzx",
+        "test_data/memory-limit.pbzx",
     ],
     deps = [
         ":pbzx_cc",
