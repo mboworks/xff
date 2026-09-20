@@ -27,6 +27,8 @@ class ReleaseNotesTest(unittest.TestCase):
                 notes = result.stdout
                 base = f"https://mboworks.github.io/{REPO}"
                 self.assertIn(f"{base}/site/tag/{tag}/", notes)
+                self.assertIn(f"{base}/site/tag/{tag}/NOTICE-lean.html", notes)
+                self.assertIn(f"{base}/site/tag/{tag}/NOTICE.html", notes)
                 self.assertNotIn("@TAG@", notes)
                 self.assertNotIn("@VERSION@", notes)
                 version = tag.removeprefix("v")

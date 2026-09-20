@@ -251,4 +251,6 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md), the LLM agent and contributor guidelin
 ## License
 
 Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License 2.0; see
-[LICENSE](./LICENSE) and [NOTICE.md](./NOTICE.md) for details.
+[LICENSE](./LICENSE), [Lean build notices](./NOTICE-lean.md), and
+[Full build notices](./NOTICE.md) for details. For custom builds, `--help=notice` lists
+exactly the components included in the running binary.

@@ -26,6 +26,8 @@
 namespace xff::cli {
 namespace {
 using ::testing::Eq;
+using ::testing::HasSubstr;
+using ::testing::IsEmpty;
 
 struct MainTest : ::testing::Test {};
 
@@ -58,6 +60,106 @@ TEST_F(MainTest, MetaHelpRemainsAvailableWhenAccountLookupFails) {
   EXPECT_THAT(::xff::cli::Run("xff", {"--help=config"}, lookup), Eq(0));
   EXPECT_THAT(calls, Eq(1));
 }
+
+struct HelpFormatCase {
+  std::string name;
+  std::vector<std::string> args;
+  std::string marker;
+};
+
+struct FormattedHelpTest : ::testing::TestWithParam<HelpFormatCase> {};
+
+TEST_P(FormattedHelpTest, RendersSelectedTargetWithoutLoadingConfiguration) {
+  const auto& param = GetParam();
+  int calls = 0;
+  const auto lookup = [&]() -> absl::StatusOr<config::ConfigPaths> {
+    ++calls;
+    return absl::UnavailableError("configuration must not be read for formatted help");
+  };
+  auto args = param.args;
+  args.emplace_back("--no-pager");
+  ::testing::internal::CaptureStdout();
+  ::testing::internal::CaptureStderr();
+  const int result = ::xff::cli::Run("/bin/xff", args, lookup);
+  const std::string output = ::testing::internal::GetCapturedStdout();
+  const std::string error = ::testing::internal::GetCapturedStderr();
+  EXPECT_THAT(result, Eq(0));
+  EXPECT_THAT(calls, Eq(0));
+  EXPECT_THAT(output, HasSubstr(param.marker));
+  EXPECT_THAT(error, IsEmpty());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Targets,
+    FormattedHelpTest,
+    ::testing::Values(
+        HelpFormatCase{.name = "Usage", .args = {"--help", "--help-format=markdown"}, .marker = "**Usage:**"},
+        HelpFormatCase{.name = "Topic", .args = {"--help=regex", "--help-format=html"}, .marker = "Regex grammars"},
+        HelpFormatCase{.name = "Index", .args = {"--help=list", "--help-format=md"}, .marker = "## Help topics"},
+        HelpFormatCase{.name = "Flag", .args = {"--help=width", "--help-format=markdown"}, .marker = "auto:110"},
+        HelpFormatCase{.name = "Styles", .args = {"--help=styles", "--help-format=html"}, .marker = "<pre>"},
+        HelpFormatCase{.name = "Extras", .args = {"--help=extras", "--help-format=markdown"}, .marker = "```"},
+        HelpFormatCase{.name = "Notices", .args = {"--help=notices", "--help-format=md"}, .marker = "# Notices"},
+        HelpFormatCase{.name = "Full", .args = {"--help=full", "--help-format=markdown"}, .marker = "**Usage:**"},
+        HelpFormatCase{.name = "Long", .args = {"--help=long", "--help-format=html"}, .marker = "<!doctype html>"},
+        HelpFormatCase{.name = "Roff", .args = {"--help=regex", "--help-format=roff"}, .marker = ".TH"},
+        HelpFormatCase{.name = "Man", .args = {"--man", "--help-format=roff"}, .marker = ".TH"},
+        HelpFormatCase{
+            .name = "RepeatedFormat",
+            .args = {"--help=width", "--help-format=md", "--help-format=markdown"},
+            .marker = "auto:110",
+        }),
+    [](const ::testing::TestParamInfo<HelpFormatCase>& info) { return info.param.name; });
+
+struct HelpFormatErrorTest : ::testing::TestWithParam<HelpFormatCase> {};
+
+TEST_P(HelpFormatErrorTest, RejectsInvalidSelectionWithoutPrintingHelp) {
+  const auto& param = GetParam();
+  ::testing::internal::CaptureStdout();
+  ::testing::internal::CaptureStderr();
+  const int result = ::xff::cli::Run("xff", param.args);
+  const std::string output = ::testing::internal::GetCapturedStdout();
+  const std::string error = ::testing::internal::GetCapturedStderr();
+  EXPECT_THAT(result, Eq(2));
+  EXPECT_THAT(output, IsEmpty());
+  EXPECT_THAT(error, HasSubstr(param.marker));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    InvalidSelections,
+    HelpFormatErrorTest,
+    ::testing::Values(
+        HelpFormatCase{.name = "MissingValue", .args = {"--help", "--help-format"}, .marker = "requires a value"},
+        HelpFormatCase{.name = "WithoutHelp", .args = {"--help-format=md"}, .marker = "requires help output"},
+        HelpFormatCase{
+            .name = "WithVersion",
+            .args = {"--version", "--help-format=md"},
+            .marker = "requires help output",
+        },
+        HelpFormatCase{
+            .name = "Conflict",
+            .args = {"--help", "--help-format=html", "--help-format=markdown"},
+            .marker = "conflicting help formats",
+        },
+        HelpFormatCase{
+            .name = "ManConflict",
+            .args = {"--man", "--help-format=md"},
+            .marker = "conflicting help formats"},
+        HelpFormatCase{
+            .name = "UnknownFormat",
+            .args = {"--help", "--help-format=json"},
+            .marker = "unknown help format"},
+        HelpFormatCase{
+            .name = "UnknownTopic",
+            .args = {"--help=wildth", "--help-format=html"},
+            .marker = "--help=width",
+        },
+        HelpFormatCase{
+            .name = "RemovedShorthand",
+            .args = {"--help=full:markdown", "--help-format=html"},
+            .marker = "no help topic 'full:markdown'",
+        }),
+    [](const ::testing::TestParamInfo<HelpFormatCase>& info) { return info.param.name; });
 
 }  // namespace
 }  // namespace xff::cli

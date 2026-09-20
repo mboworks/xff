@@ -6,7 +6,7 @@
 - Order release navigation by common tasks, with Documentation last.
 - Add --help-format for all help targets, with format-aware width, color, and paging; remove
   the selector format shorthand.
-- Generate NOTICE.md as Markdown and publish it as a release documentation page.
+- Publish generated Markdown notices for both lean and full builds, linked from release downloads.
 
 - Double weekly/manual deep-fuzz campaigns to 600 seconds per target.
 

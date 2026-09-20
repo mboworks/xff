@@ -565,6 +565,24 @@ diff_test(
     target_compatible_with = XFF_FULL_ONLY,
 )
 
+# The stock binary remains lean even when optional extras are enabled for xff_full.
+genrule(
+    name = "xff_notice_lean_gen",
+    srcs = select({
+        "//xff:xff_msan_enabled": ["//tools:msan_suppressions"],
+        "//conditions:default": [],
+    }),
+    outs = ["NOTICE-lean.md.actual"],
+    cmd = "$(location :xff) --help=notice --help-format=markdown > $@",
+    tools = [":xff"],
+)
+
+diff_test(
+    name = "xff_notice_lean_test",
+    file_new = ":NOTICE-lean.md.actual",
+    file_old = "//:NOTICE-lean.md",
+)
+
 cc_library(
     name = "diagnostics_cc",
     srcs = ["diagnostics.cc"],

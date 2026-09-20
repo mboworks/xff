@@ -555,11 +555,12 @@ jobs:
         with:
           namespace: xff-md
           legacy-prefix: bazel-disk-xff-md-
-      - name: Verify XFF.md and NOTICE.md match the all-extras binary
+      - name: Verify generated reference and both build notice inventories
         # --config=xff_docs (every extra on), matching both update scripts: the committed artifacts
         # document the whole tool, not just what one build links.
         run: >
-          bazel test //xff/cli:xff_markdown_test //xff/cli:xff_notice_test --config=clang
+          bazel test //xff/cli:xff_markdown_test //xff/cli:xff_notice_test
+          //xff/cli:xff_notice_lean_test --config=clang
           --config=xff_docs --disk_cache=$HOME/.cache/bazel-disk
       - name: Save refreshed Bazel compiled outputs
         if: ${{ !cancelled() && github.ref == 'refs/heads/main' && steps.bazel-cache.outcome == 'success' }}
