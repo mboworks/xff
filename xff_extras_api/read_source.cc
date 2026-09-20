@@ -3,10 +3,11 @@
 
 #include "xff/vfs/read_source.h"
 
+#include <fcntl.h>
+#include <unistd.h>
+
 #include <algorithm>
 #include <cerrno>
-#include <fstream>
-#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -45,23 +46,29 @@ class MemorySource final : public ReadSource {
 
 class HostStream final : public ReadStream {
  public:
-  // XFF_HOST_IO: owns an input-only stream; cannot create or modify a file.
-  explicit HostStream(std::ifstream file) : file_(std::move(file)) {}
+  explicit HostStream(int fd) : fd_(fd) {}
 
+  // XFF_HOST_IO: releases the exclusively owned read-only descriptor.
+  ~HostStream() override { ::close(fd_); }
+
+  HostStream(const HostStream&) = delete;
+  HostStream& operator=(const HostStream&) = delete;
+  HostStream(HostStream&&) = delete;
+  HostStream& operator=(HostStream&&) = delete;
+
+  // XFF_HOST_IO: reads the owned descriptor; OS errors must not become successful EOF.
   absl::StatusOr<std::string> Read(std::size_t max_bytes) override {
-    const auto count = std::min(max_bytes, static_cast<std::size_t>(std::numeric_limits<std::streamsize>::max()));
-    std::string result(count, '\0');
-    file_.read(result.data(), static_cast<std::streamsize>(count));
-    if (file_.bad()) {
-      return absl::DataLossError("reading container source failed");
+    std::string result(std::min(max_bytes, 64UZ * 1'024), '\0');
+    const auto count = ::read(fd_, result.data(), result.size());
+    if (count < 0) {
+      return absl::DataLossError(absl::ErrnoToStatus(errno, "reading container source failed").message());
     }
-    result.resize(static_cast<std::size_t>(file_.gcount()));
+    result.resize(static_cast<std::size_t>(count));
     return result;
   }
 
  private:
-  // XFF_HOST_IO: owned read-only host cursor for container input.
-  std::ifstream file_;
+  int fd_;
 };
 
 class HostSource final : public ReadSource {
@@ -70,12 +77,13 @@ class HostSource final : public ReadSource {
 
   // XFF_HOST_IO: opens a read-only host handle; never creates or modifies files.
   absl::StatusOr<std::unique_ptr<ReadStream>> Open() const override {
-    // XFF_HOST_IO: input-only open; never creates or truncates a file.
-    std::ifstream file(path_, std::ios::binary);
-    if (!file) {
+    // XFF_HOST_IO: input-only open; never creates or truncates a file. O_CLOEXEC protects child processes.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
+    const int fd = ::open(path_.c_str(), O_RDONLY | O_CLOEXEC);
+    if (fd < 0) {
       return absl::ErrnoToStatus(errno, absl::StrCat("cannot open container source: ", path_));
     }
-    return std::make_unique<HostStream>(std::move(file));
+    return std::make_unique<HostStream>(fd);
   }
 
  private:

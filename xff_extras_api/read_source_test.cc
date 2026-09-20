@@ -75,10 +75,8 @@ TEST_F(ReadSourceTest, HostCursorsReadIndependentlyAndReportDirectoryReadErrors)
   EXPECT_THAT(second->Read(20), IsOkAndHolds(EqualsText("abcdef")));
   EXPECT_THAT(first->Read(20), IsOkAndHolds(EqualsText("cdef")));
   EXPECT_THAT(first->Read(1), IsOkAndHolds(IsEmpty()));
-#if defined(__linux__)
-  // Linux opens directories for input but rejects the subsequent read with EISDIR.
+  // A directory read is an OS error, not a successful empty file.
   EXPECT_THAT(ReadSourceBytes(*HostReadSource(directory->Path()), 100), StatusIs(absl::StatusCode::kDataLoss));
-#endif
 }
 
 }  // namespace

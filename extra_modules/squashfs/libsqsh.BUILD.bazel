@@ -5,14 +5,32 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:private"])
 
+# Apple's archive tool records basenames. Give the easy-layer sources distinct names
+# from the core file.c/traversal.c without changing their contents.
+genrule(
+    name = "easy_sources",
+    srcs = [
+        "libsqsh/src/easy/file.c",
+        "libsqsh/src/easy/traversal.c",
+    ],
+    outs = [
+        "sqsh_easy_file.c",
+        "sqsh_easy_traversal.c",
+    ],
+    cmd = "cp $(location libsqsh/src/easy/file.c) $(location sqsh_easy_file.c) && " +
+          "cp $(location libsqsh/src/easy/traversal.c) $(location sqsh_easy_traversal.c)",
+)
+
 cc_library(
     name = "sqsh",
-    srcs = glob(
+    srcs = [":easy_sources"] + glob(
         [
             "common/src/**/*.c",
             "libsqsh/src/**/*.c",
         ],
         exclude = [
+            "libsqsh/src/easy/file.c",
+            "libsqsh/src/easy/traversal.c",
             # xff opens paths or retained byte buffers itself. Remote curl mapping is deliberately not
             # part of the container reader, and omitting it avoids an unrelated network dependency.
             "libsqsh/src/mapper/curl_mapper.c",
