@@ -166,7 +166,8 @@ change does not alter local Bazel settings.
 `tools/fuzz_targets.py --campaign-seconds=60` discovers every first-party campaign, builds all
 launchers together, and prepares Bazel run scripts sequentially. It then executes those scripts
 concurrently, avoiding competing Bazel invocations. CI retains 60 seconds per target; weekly/manual
-Deep fuzz retains 300 seconds. `--max-total-seconds` still limits the sum of all target budgets,
+Deep fuzz uses 600 seconds per target with a 7,200-second aggregate budget.
+`--max-total-seconds` still limits the sum of all target budgets,
 not parallel wall time.
 
 Local concurrency defaults to CPU count minus one. `--jobs=N` selects a maximum; both CPU capacity
