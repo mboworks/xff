@@ -85,8 +85,9 @@ jobs:
             --pattern xff_full-linux-x86_64 --dir generated
           gh attestation verify generated/xff_full-linux-x86_64 --repo "${GITHUB_REPOSITORY}"
           chmod +x generated/xff_full-linux-x86_64
-          XFF_CONFIG=/nonexistent generated/xff_full-linux-x86_64 --help=full:html \
-            >generated/XFF.html
+          # Use the generator from the trusted release tag: its flags match that immutable binary.
+          bash release/tools/generate_reference.sh generated/xff_full-linux-x86_64 \
+            generated/XFF.md generated/XFF.html
           test "$(head -n 1 generated/XFF.html)" = '<!doctype html>'
       - name: Restore retained Pages tree
         working-directory: source

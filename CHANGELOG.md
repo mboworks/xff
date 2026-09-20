@@ -3,6 +3,11 @@
 
 # 0.8.0
 
+- Order release navigation by common tasks, with Documentation last.
+- Add --help-format for all help targets, with format-aware width, color, and paging; remove
+  the selector format shorthand.
+- Publish generated Markdown notices for both lean and full builds, linked from release downloads.
+
 - Double weekly/manual deep-fuzz campaigns to 600 seconds per target.
 
 - Refresh coverage PR state during normal publication instead of privileged close/reopen events.

@@ -109,7 +109,10 @@ void MarkdownBackend::Append(std::string_view text, bool allow_repeated_blank_li
 }
 
 void MarkdownBackend::Preamble(const Document& doc) {
-  Append(absl::StrFormat("# %s\n\n%s.\n\n**Usage:** `%s %s`\n", doc.name, doc.tagline, doc.name, doc.usage));
+  Append(absl::StrFormat("# %s\n\n%s.\n", doc.name, doc.tagline));
+  if (!doc.usage.empty()) {
+    Append(absl::StrFormat("\n**Usage:** `%s %s`\n", doc.name, doc.usage));
+  }
   preamble_end_ = out_.size();
   emit_contents_ = doc.sections.size() >= 4;
 }
@@ -154,6 +157,9 @@ void MarkdownBackend::EndEntry(const Entry& /*entry*/) {
 }
 
 void MarkdownBackend::EmitProse(const Prose& prose) {
+  if (prose.paragraph_break_before) {
+    Append("\n");
+  }
   if (in_entry_) {
     Append(absl::StrCat("  ", RenderInlinesMarkdown(prose.runs), "\n"));  // indented bullet continuation
   } else {

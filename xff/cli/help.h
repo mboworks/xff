@@ -58,7 +58,7 @@ struct HelpTopic {
 [[nodiscard]] absl::Span<const HelpTopic> HelpTopics();
 
 // One meta / doc flag for the usage page's Help section (-h/--help, --help=NAME,
-// --help=TOPIC, --help=full:FORMAT, --help-full, --man, --version). These are consumed before
+// --help=TOPIC, --help=full --help-format=FORMAT, --help-full, --man, --version). These are consumed before
 // parsing (not in Globals(), never looked up), so they carry their own doc SOT here
 // instead of being hand-written; the model's BuildHelpSection() renders them + the topics.
 struct HelpFlag {

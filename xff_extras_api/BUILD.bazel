@@ -280,9 +280,9 @@ cc_test(
 )
 
 # The license-notice seam's contract: notices sort by component regardless of the static-init order
-# they were registered in (otherwise the generated NOTICE file would reorder itself between builds and
+# they were registered in (otherwise the generated NOTICE.md file would reorder itself between builds and
 # the committed copy would drift), a Registrar contributes the whole notice (name + SPDX id + text,
-# since a NOTICE must reproduce all of it), and Notices() hands back a copy so a caller assembling
+# since a NOTICE.md must reproduce all of it), and Notices() hands back a copy so a caller assembling
 # text cannot corrupt the registry.
 cc_test(
     name = "notice_test",

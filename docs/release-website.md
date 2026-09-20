@@ -61,6 +61,14 @@ backfilling an older release does not make it latest. The workflow can also be d
 published tag to retry publication. Enable GitHub Pages with **GitHub Actions** as its source, and
 set the repository's About website to `https://mboworks.github.io/xff/`.
 
+The release site renders `NOTICE.md` as `NOTICE.html`, with the same navigation as other pages.
+The Markdown notice is generated from the all-extras binary via `--help=notice --help-format=markdown`. `LICENSE` links remain pinned to the tagged commit on
+GitHub, where readers can use GitHub's license analysis.
+
+Navigation starts with Home and Release & downloads, followed by configured links in their
+authored order, then Source and Documentation. The xff configuration orders those links as
+CLI reference, Coverage, and Benchmarks.
+
 ## Backfill a historical release
 
 No new release or tag change is needed. Manually dispatch `Publish release site` with `tag` set to
@@ -93,7 +101,8 @@ CI also converts the configured documentation and checks the generated links in 
 runner directory. It never commits, retains, or deploys that preview.
 
 Publication downloads the immutable, attested `xff_full-linux-x86_64` release executable and runs
-`--help=full:html`. The resulting standalone document is copied byte-for-byte into the snapshot and
+the reference generator from the same trusted release tag, whose arguments match the released
+binary. Current generators use `--help=full --help-format=html`. The resulting standalone document is copied byte-for-byte into the snapshot and
 participates in the same link and anchor validation as Markdown-rendered pages. `release.json`
 records its SHA-256 alongside the release commit and configuration hash.
 
@@ -116,3 +125,9 @@ their recorded hashes stay unchanged. The standalone CLI HTML output remains sel
 To regenerate the images on macOS, resize the original square PNG with `sips -z SIZE SIZE`
 for each size, preserving transparency. The ICO stores those four PNG images in a standard
 ICO directory. Keep the existing artwork unchanged when generating icon sizes.
+
+The release site publishes [Lean build notices](../NOTICE.lean.md) for `xff-*` downloads
+and [Full build notices](../NOTICE.md) for `xff_full-*` downloads. Release notes link
+to both inventories. `./notice-update.sh` regenerates both from their corresponding
+binaries; Bazel drift tests verify each. Custom builds report their own inventory with
+`--help=notice`, exportable with `--help-format=markdown`.

@@ -47,13 +47,14 @@ cc_library(
         ":help_backend_cc",
         ":help_build_cc",
         ":help_cc",
+        ":help_model_cc",
         ":help_width_cc",
-        ":html_cc",
-        ":manpage_cc",
-        ":markdown_cc",
+        ":html_backend_cc",
+        ":markdown_backend_cc",
         ":modifier_diagnostics_cc",
         ":pager_cc",
         ":plain_backend_cc",
+        ":roff_backend_cc",
         ":wrap_cc",
         "//xff/config:config_cc",
         "//xff/config:loader_cc",
@@ -454,7 +455,7 @@ cc_test(
     ],
 )
 
-# `xff --help=full:markdown`: a GitHub-renderable reference, the MarkdownBackend driven over the
+# `xff --help=full --help-format=markdown`: a GitHub-renderable reference, the MarkdownBackend driven over the
 # BuildReference() model (the Markdown counterpart of --man), so it carries the complete
 # reference and cannot drift from --man / --help=full.
 cc_library(
@@ -482,7 +483,7 @@ cc_test(
     ],
 )
 
-# `xff --help=full:html`: a standalone HTML5 reference driven over the same complete model.
+# `xff --help=full --help-format=html`: a standalone HTML5 reference driven over the same complete model.
 cc_library(
     name = "html_cc",
     srcs = ["html.cc"],
@@ -541,7 +542,7 @@ diff_test(
     target_compatible_with = XFF_FULL_ONLY,
 )
 
-# The committed //:NOTICE is verbatim `xff_full --help=notice`. Unlike the runtime notice of a lean
+# The committed //:NOTICE.md is verbatim `xff_full --help=notice --help-format=markdown`. Unlike the runtime notice of a lean
 # binary, the repository artifact deliberately inventories every supported extension. Generating it
 # from the same all-extras binary as XFF.md prevents legal metadata from drifting independently of
 # the self-registering component registry. To refresh: ./notice-update.sh.
@@ -551,17 +552,35 @@ genrule(
         "//xff:xff_msan_enabled": ["//tools:msan_suppressions"],
         "//conditions:default": [],
     }),
-    outs = ["NOTICE.actual"],
-    cmd = "$(location :xff_full) --help=notice > $@",
+    outs = ["NOTICE.md.actual"],
+    cmd = "$(location :xff_full) --help=notice --help-format=markdown > $@",
     target_compatible_with = XFF_FULL_ONLY,
     tools = [":xff_full"],
 )
 
 diff_test(
     name = "xff_notice_test",
-    file_new = ":NOTICE.actual",
-    file_old = "//:NOTICE",
+    file_new = ":NOTICE.md.actual",
+    file_old = "//:NOTICE.md",
     target_compatible_with = XFF_FULL_ONLY,
+)
+
+# The stock binary remains lean even when optional extras are enabled for xff_full.
+genrule(
+    name = "xff_notice_lean_gen",
+    srcs = select({
+        "//xff:xff_msan_enabled": ["//tools:msan_suppressions"],
+        "//conditions:default": [],
+    }),
+    outs = ["NOTICE.lean.md.actual"],
+    cmd = "$(location :xff) --help=notice --help-format=markdown > $@",
+    tools = [":xff"],
+)
+
+diff_test(
+    name = "xff_notice_lean_test",
+    file_new = ":NOTICE.lean.md.actual",
+    file_old = "//:NOTICE.lean.md",
 )
 
 cc_library(
@@ -1200,6 +1219,7 @@ cc_test(
     deps = [
         ":main_cc",
         "//xff/config:loader_cc",
+        "//xff_extras_api:license_notice_cc",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@googletest//:gtest_main",

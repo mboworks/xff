@@ -43,12 +43,12 @@
 #include "xff/cli/help_backend.h"
 #include "xff/cli/help_build.h"
 #include "xff/cli/help_width.h"
-#include "xff/cli/html.h"
-#include "xff/cli/manpage.h"
-#include "xff/cli/markdown.h"
+#include "xff/cli/html_backend.h"
+#include "xff/cli/markdown_backend.h"
 #include "xff/cli/modifier_diagnostics.h"
 #include "xff/cli/pager.h"
 #include "xff/cli/plain_backend.h"
+#include "xff/cli/roff_backend.h"
 #include "xff/cli/wrap.h"
 #include "xff/config/config.h"
 #include "xff/config/loader.h"
@@ -255,7 +255,7 @@ std::string RenderExtras() {
 //
 // Deliberately NOT on: the usage page (which already explains all of this and lists the topics),
 // `--help=help` itself, the `list` / `all` / `full` aggregates (they ARE the map), and never in
-// `--man` / `--help=full:FORMAT`, where a tip would be embedded in a document people install or publish.
+// `--man` / `--help=full --help-format=FORMAT`, where a tip would be embedded in a document people install or publish.
 // A trailer on every surface is a trailer nobody reads.
 std::string HelpTip(const xff::cli::HelpRenderContext& context) {
   static constexpr std::string_view kTip =
@@ -292,7 +292,7 @@ bool TopicTakesTip(std::string_view topic) {
 // (wrap width, ...) every model-rendered topic applies.
 absl::StatusOr<std::string> RenderTopic(std::string_view topic, xff::cli::HelpRenderContext context);
 
-enum class Meta : std::uint8_t { kNone, kUsage, kTopic, kVersion, kMan, kMarkdown, kHtml, kInvalid };
+enum class Meta : std::uint8_t { kNone, kUsage, kTopic, kVersion, kMan };
 
 struct MetaSelection {
   Meta kind = Meta::kNone;
@@ -304,38 +304,6 @@ std::string NormalizeHelpTopic(std::string_view topic) {
   return value == std::string_view::npos
              ? absl::AsciiStrToLower(topic)
              : absl::StrCat(absl::AsciiStrToLower(topic.substr(0, value)), topic.substr(value));
-}
-
-MetaSelection ParseHelpSelector(std::string_view selector) {
-  const std::size_t separator = selector.rfind(':');
-  if (separator == std::string_view::npos) {
-    return {.kind = Meta::kTopic, .topic = NormalizeHelpTopic(selector)};
-  }
-  const std::string_view topic = selector.substr(0, separator);
-  const std::string format = absl::AsciiStrToLower(selector.substr(separator + 1));
-  const std::string normalized_topic = absl::AsciiStrToLower(topic);
-  if (normalized_topic != "full" && normalized_topic != "long") {
-    return {
-        .kind = Meta::kInvalid,
-        .topic = absl::StrCat("formatted help is supported only for 'full' or 'long', not '", topic, "'"),
-    };
-  }
-  if (format == "plain") {
-    return {.kind = Meta::kTopic, .topic = normalized_topic};
-  }
-  if (format == "markdown" || format == "md") {
-    return {.kind = Meta::kMarkdown};
-  }
-  if (format == "html") {
-    return {.kind = Meta::kHtml};
-  }
-  if (format == "roff") {
-    return {.kind = Meta::kMan};
-  }
-  return {
-      .kind = Meta::kInvalid,
-      .topic = absl::StrCat("unknown help format '", format, "'; use plain, markdown, html, or roff"),
-  };
 }
 
 MetaSelection SelectMeta(const std::vector<std::string>& flags) {
@@ -353,12 +321,38 @@ MetaSelection SelectMeta(const std::vector<std::string>& flags) {
     return {.kind = Meta::kTopic, .topic = "full"};
   }
   if (arg.starts_with("--help=")) {
-    return ParseHelpSelector(std::string_view(arg).substr(7));
+    return {.kind = Meta::kTopic, .topic = NormalizeHelpTopic(std::string_view(arg).substr(7))};
   }
   if (arg == "--version" || arg == "-version") {
     return {.kind = Meta::kVersion};
   }
   return {.kind = Meta::kMan};  // --man is the only remaining parser-classified meta flag
+}
+
+absl::StatusOr<std::string> ResolveHelpFormat(const MetaSelection& meta, const std::vector<std::string>& globals) {
+  std::optional<std::string> requested = meta.kind == Meta::kMan ? std::optional<std::string>("roff") : std::nullopt;
+  for (const std::string& global : globals) {
+    if (global == "--help-format") {
+      return absl::InvalidArgumentError("--help-format requires a value");
+    }
+    if (!global.starts_with("--help-format=")) {
+      continue;
+    }
+    if (meta.kind == Meta::kNone || meta.kind == Meta::kVersion) {
+      return absl::InvalidArgumentError("--help-format requires help output");
+    }
+    const std::string_view value = std::string_view(global).substr(14);
+    const std::string format(value == "md" ? "markdown" : value);
+    if (requested && *requested != format) {
+      return absl::InvalidArgumentError("conflicting help formats");
+    }
+    requested = format;
+  }
+  std::string format = requested.value_or("plain");
+  if (format != "plain" && format != "markdown" && format != "html" && format != "roff") {
+    return absl::InvalidArgumentError("unknown help format; use plain, markdown, html, or roff");
+  }
+  return format;
 }
 
 std::string_view ProgramBasename(std::string_view program) {
@@ -371,7 +365,7 @@ std::string_view ProgramBasename(std::string_view program) {
 // option and primary with explanations, then each sub-vocabulary topic marked in_full --
 // so adding a topic auto-includes it here, no hand-maintained list.
 std::string FullReference(xff::cli::HelpRenderContext context) {
-  // The complete reference is the whole help model (the same Document --man / --help=full:FORMAT
+  // The complete reference is the whole help model (the same Document --man / --help=full --help-format=FORMAT
   // render), in plain text and wrapped to the context width.
   xff::cli::PlainTextBackend backend(context);
   xff::cli::RenderDocument(xff::cli::BuildReference(), backend);
@@ -424,6 +418,55 @@ absl::StatusOr<std::string> RenderTopic(std::string_view topic, xff::cli::HelpRe
   return absl::NotFoundError("");  // unknown topic; the caller composes the user-facing message
 }
 
+absl::StatusOr<xff::cli::Document> FormattedHelpDocument(const MetaSelection& meta, std::string_view format) {
+  if (meta.kind == Meta::kUsage) {
+    return xff::cli::BuildUsage();
+  }
+  if (meta.kind == Meta::kMan || meta.topic == "full" || meta.topic == "long") {
+    return xff::cli::BuildReference(
+        format == "roff" ? xff::cli::Audience::kThisBinary : xff::cli::Audience::kPublished);
+  }
+  if (meta.topic == "notice" || meta.topic == "notices") {
+    return xff::cli::NoticeReference();
+  }
+  auto doc = xff::cli::TopicReference(meta.topic);
+  if (!doc) {
+    doc = xff::cli::IndexReference(meta.topic);
+  }
+  if (!doc) {
+    doc = xff::cli::EntryReference(meta.topic);
+  }
+  if (!doc) {
+    // Legacy tabular topics retain their layout inside a verbatim block.
+    MBO_ASSIGN_OR_RETURN(const std::string text, RenderTopic(meta.topic, {}));
+    doc = xff::cli::Document{.sections = {{.children = {{.node = xff::cli::Example{.text = text}}}}}};
+  }
+  doc->name = "xff";
+  doc->tagline = absl::StrCat("Help for ", meta.topic.empty() ? "topics" : meta.topic);
+  return *std::move(doc);
+}
+
+absl::StatusOr<std::string> RenderFormattedHelp(
+    const MetaSelection& meta,
+    std::string_view format,
+    std::string_view program) {
+  MBO_ASSIGN_OR_RETURN(auto doc, FormattedHelpDocument(meta, format));
+  if (format == "markdown") {
+    xff::cli::MarkdownBackend backend;
+    xff::cli::RenderDocument(doc, backend);
+    return backend.Take();
+  }
+  if (format == "html") {
+    xff::cli::HtmlBackend backend;
+    xff::cli::RenderDocument(doc, backend);
+    return backend.Take();
+  }
+  doc.name = ProgramBasename(program);
+  xff::cli::RoffBackend backend;
+  xff::cli::RenderDocument(doc, backend);
+  return backend.Take();
+}
+
 // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive dispatch
 // resolve config, dispatch meta flags, build + run the expression) is one cohesive sequence.
 // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive dispatch
@@ -465,9 +508,14 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   const std::optional<std::string> cli_width = parsed_width ? std::optional<std::string>(*parsed_width) : std::nullopt;
   const std::optional<std::string_view> width_flag = cli_width;
   const MetaSelection meta = SelectMeta(parsed->meta_flags);
+  const auto help_format = ResolveHelpFormat(meta, parsed->globals);
+  if (!help_format.ok()) {
+    std::cerr << "xff: " << help_format.status().message() << "\n";
+    return 2;
+  }
   const std::size_t detected_width = xff::cli::DetectTerminalWidth();
   auto help_width = xff::cli::ResolveHelpWidth(width_flag, detected_width);
-  if (!width_flag && (meta.kind == Meta::kUsage || meta.kind == Meta::kTopic)) {
+  if (*help_format == "plain" && !width_flag && (meta.kind == Meta::kUsage || meta.kind == Meta::kTopic)) {
     // Reading display preferences must never discover project files or execute actions.
     if (const auto config_paths = paths(); config_paths.ok()) {
       auto options = xff::config::SelectorsFromGlobals(parsed->globals);
@@ -498,7 +546,12 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     std::cerr << "xff: " << pager.status().message() << "\n";
     return 2;
   }
-  const xff::cli::PagerDecision meta_pager = xff::cli::DecidePager(*pager, xff::cli::PagerOutput::kMeta, stdout_is_tty);
+  auto effective_pager = *pager;
+  if ((*help_format == "markdown" || *help_format == "html") && effective_pager.when != xff::cli::PagerWhen::kAlways) {
+    effective_pager.when = xff::cli::PagerWhen::kNever;
+  }
+  const xff::cli::PagerDecision meta_pager =
+      xff::cli::DecidePager(effective_pager, xff::cli::PagerOutput::kMeta, stdout_is_tty);
 
   // Help and version are accepted anywhere globals may appear (find prints usage
   // on a bare --help wherever it lands). xff stays flag-only -- no `help` subcommand --
@@ -536,6 +589,16 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
         return 2;
       }
     }
+    if (*help_format != "plain") {
+      const auto rendered = RenderFormattedHelp(meta, *help_format, program);
+      if (!rendered.ok()) {
+        std::cerr << "xff: no help topic '" << meta.topic << "'\n" << xff::cli::UnknownHelpHint(meta.topic);
+        return 2;
+      }
+      xff::cli::EmitPaged(
+          *rendered, meta_pager, *help_format == "roff" ? xff::cli::PagerKind::kMan : xff::cli::PagerKind::kText);
+      return 0;
+    }
     switch (meta.kind) {
       case Meta::kUsage: {
         xff::cli::PlainTextBackend backend(help_context);
@@ -566,20 +629,7 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
       case Meta::kVersion:
         std::cout << "xff 0.0.0\n";  // short and machine-scraped: never paged
         return 0;
-      case Meta::kMan:
-        // roff(1); on a tty the man kind formats it (mandoc) so it reads like `man xff`,
-        // while a redirect stays raw roff for `mandoc` / `man -l -` / installing as xff.1.
-        xff::cli::EmitPaged(xff::cli::ManPage(ProgramBasename(program)), meta_pager, xff::cli::PagerKind::kMan);
-        return 0;
-      case Meta::kMarkdown:
-        // GitHub-renderable vocabulary reference
-        xff::cli::EmitPaged(xff::cli::MarkdownReference(), meta_pager);
-        return 0;
-      case Meta::kHtml:
-        // Standalone semantic HTML5 vocabulary reference.
-        xff::cli::EmitPaged(xff::cli::HtmlReference(), meta_pager);
-        return 0;
-      case Meta::kInvalid: std::cerr << "xff: " << meta.topic << "\n"; return 2;
+      case Meta::kMan:          // roff output is dispatched above
       case Meta::kNone: break;  // unreachable; keeps the switch exhaustive
     }
   }

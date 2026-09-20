@@ -40,7 +40,7 @@ namespace xff::cli {
 // all functionality and let each such flag's own text say it is a build extra.
 enum class Audience : std::uint8_t {
   kThisBinary,  // --help / --man: what YOUR build can do
-  kPublished,   // --help=full:markdown/html / published references: what xff can do
+  kPublished,   // --help=full --help-format=markdown/html / published references: what xff can do
 };
 
 [[nodiscard]] Document BuildReference(Audience audience = Audience::kThisBinary);
@@ -62,6 +62,9 @@ enum class Audience : std::uint8_t {
 [[nodiscard]] std::vector<std::string_view> LicenseComponentNames();
 
 [[nodiscard]] Document FieldsReference();
+
+// The compiled component manifest for standalone publication.
+[[nodiscard]] Document NoticeReference();
 
 // Navigation for a standalone topic (including aliases), omitted from full reference sections.
 [[nodiscard]] Document TopicNavigation(std::string_view name);

@@ -321,13 +321,13 @@ absl::Span<const HelpFlag> HelpFlags() {
       {.display = "--help=NAME", .summary = "full help for one option or primary (e.g. --help=-regex, --help=--sort)"},
       {.display = "--help=TOPIC", .summary = "detailed help for a topic:"},
       {
-          .display = "--help=full[:FORMAT]",
-          .summary = "full reference as plain, markdown (md), html, or roff; also --help=long",
+          .display = "--help=full",
+          .summary = "full reference; also --help=long; select its renderer with --help-format",
       },
-      {.display = "--help-full", .summary = "plain full reference (also --help-long); --help-all = --help=all"},
+      {.display = "--help-full", .summary = "full reference (also --help-long); --help-all = --help=all"},
       {
           .display = "--man",
-          .summary = "conventional alias for --help=full:roff; formatted on a terminal, else raw roff",
+          .summary = "conventional alias for --help=full --help-format=roff; formatted on a terminal, else raw roff",
       },
       {.display = "--version, -version", .summary = "print the version and exit"},
   });

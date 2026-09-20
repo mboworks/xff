@@ -41,7 +41,9 @@
     "docs/shard-populations.md": "docs/shard-populations.html",
     "docs/order-and-limits.md": "docs/order-and-limits.html",
     "docs/archive-safety-recipes.md": "docs/archive-safety-recipes.html",
-    "docs/benchmark-history.md": "docs/benchmark-history.html"
+    "docs/benchmark-history.md": "docs/benchmark-history.html",
+    "NOTICE.md": "NOTICE.html",
+    "NOTICE.lean.md": "NOTICE.lean.html"
   },
   "generated_html": {
     "XFF.md": {
@@ -51,12 +53,12 @@
   },
   "links": [
     {
-      "label": "Coverage",
-      "href": "/{repo}/coverage/tag/{version}/"
-    },
-    {
       "label": "CLI reference",
       "href": "/{repo}/releases/{version}/"
+    },
+    {
+      "label": "Coverage",
+      "href": "/{repo}/coverage/tag/{version}/"
     },
     {
       "label": "Benchmarks",

@@ -240,8 +240,13 @@ void HtmlBackend::Preamble(const Document& doc) {
       "@media(max-width:42rem){.contents ul{columns:1}dl.rows{display:block}dd{margin:.15rem 0 .5rem}"
       ".tags{display:block;margin:.2rem 0 0}}\n",
       "</style>\n</head>\n<body>\n<header>\n<h1>", HtmlEscape(doc.name), "</h1>\n<p class=\"tagline\">",
-      HtmlEscape(doc.tagline), ".</p>\n<p class=\"usage\"><strong>Usage:</strong> <code>", HtmlEscape(doc.name), " ",
-      HtmlEscape(doc.usage), "</code></p>\n", kNavigationMarker, "\n</header>\n<main>\n");
+      HtmlEscape(doc.tagline), ".</p>\n");
+  if (!doc.usage.empty()) {
+    absl::StrAppend(
+        &out_, "<p class=\"usage\"><strong>Usage:</strong> <code>", HtmlEscape(doc.name), " ", HtmlEscape(doc.usage),
+        "</code></p>\n");
+  }
+  absl::StrAppend(&out_, kNavigationMarker, "\n</header>\n<main>\n");
 }
 
 void HtmlBackend::BeginSection(const Section& section) {

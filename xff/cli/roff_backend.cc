@@ -65,7 +65,9 @@ void RoffBackend::EmitInline(const Inlines& runs) {
 void RoffBackend::Preamble(const Document& doc) {
   absl::StrAppendFormat(&out_, ".TH %s 1 \"\" \"%s\" \"User Commands\"\n", RoffEscape(doc.name), RoffEscape(doc.name));
   absl::StrAppend(&out_, ".SH NAME\n", RoffEscape(doc.name), " \\- ", RoffEscape(doc.tagline), "\n");
-  absl::StrAppend(&out_, ".SH SYNOPSIS\n.B ", RoffEscape(doc.name), "\n", RoffEscape(doc.usage), "\n");
+  if (!doc.usage.empty()) {
+    absl::StrAppend(&out_, ".SH SYNOPSIS\n.B ", RoffEscape(doc.name), "\n", RoffEscape(doc.usage), "\n");
+  }
   para_ = false;
 }
 
@@ -101,7 +103,7 @@ void RoffBackend::EmitProse(const Prose& prose) {
   if (std::ranges::all_of(prose.runs, [](const Inline& run) { return absl::StripAsciiWhitespace(run.text).empty(); })) {
     return;
   }
-  if (para_) {
+  if (para_ || prose.paragraph_break_before) {
     absl::StrAppend(&out_, ".PP\n");
   }
   EmitInline(prose.runs);

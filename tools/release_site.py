@@ -332,12 +332,13 @@ def build(source, retained, repository, tag, renderer=render, config_path=None,
             target.write_bytes((generated_root / mapping["source"]).read_bytes())
         owner, repo = repository.split("/")
         base = f"/{repo}/site/tag/{tag}/"
-        links = [("Home", base), ("Documentation", base + "documents.html"),
-                 ("Release & downloads", f"https://github.com/{repository}/releases/tag/{tag}"),
-                 ("Source", f"https://github.com/{repository}/tree/{sha}")]
+        links = [("Home", base),
+                 ("Release & downloads", f"https://github.com/{repository}/releases/tag/{tag}")]
         for link in config.get("links", []):
             links.append((link["label"], link["href"].format(
                 repo=repo, owner=owner, tag=tag, version=release_version, commit=sha)))
+        links.extend([("Source", f"https://github.com/{repository}/tree/{sha}"),
+                      ("Documentation", base + "documents.html")])
         navigation = "".join(f'<a href="{html.escape(url)}">{html.escape(label)}</a>' for label, url in links)
 
         def page(title, body):

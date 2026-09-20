@@ -1602,13 +1602,20 @@ Section ConfigSection(bool in_full) {
 }
 
 Content NoticeEntry(const license::Notice& notice) {
-  return Content{
-      .node =
-          Entry{
-              .term = absl::StrCat(notice.component, "  [", notice.spdx, "]"),
-              .summary = ParseInline(notice.text),
-          },
+  const std::size_t paragraph = notice.text.find("\n\n");
+  Entry entry{
+      .term = absl::StrCat(notice.component, "  [", notice.spdx, "]"),
+      .summary = ParseInline(notice.text.substr(0, paragraph)),
   };
+  if (paragraph != std::string_view::npos) {
+    entry.details = ParseBlocks(notice.text.substr(paragraph + 2));
+    for (Content& detail : entry.details) {
+      if (std::holds_alternative<Prose>(detail.node)) {
+        std::get<Prose>(detail.node).paragraph_break_before = true;
+      }
+    }
+  }
+  return Content{.node = std::move(entry)};
 }
 
 // The `--help=notice` topic (alias notices): the one build-dependent line (which extras THIS
@@ -1911,8 +1918,11 @@ Section GuideSection() {
           "suggestions never select a page or run actions automatically. "
           "Option and primary pages append at most one related topic for context. "
           "`--help=TOPIC` opens one of the topics below; `--help=full` is the complete detailed reference. "
-          "Append `:markdown` (or `:md`), `:html`, or `:roff` to select a non-console renderer, for example "
-          "`--help=full:html`; `--man` is the conventional alias for `--help=full:roff`. On a terminal this help "
+          "Use `--help-format=plain|markdown|html|roff` with any help target to select its renderer. "
+          "For example, `--help=full --help-format=html` produces the full HTML reference. "
+          "`--help=notice --help-format=markdown` publishes this binary's component notices as "
+          "Markdown; "
+          "`--man` is the conventional alias for `--help=full --help-format=roff`. On a terminal this help "
           "(and `--man`) is paged per `--pager`, and `--man` is formatted like a man page, so long output "
           "scrolls instead of scrolling off; through a pipe or redirect it stays unpaged (and `--man` stays "
           "raw roff for `mandoc` / installing). `--color` and `--width` control its coloring and wrap width; "
@@ -1974,6 +1984,14 @@ Document TopicNavigation(std::string_view name) {
     }
   }
   return {};
+}
+
+Document NoticeReference() {
+  return {
+      .name = "Notices",
+      .tagline = "Components included in this xff binary",
+      .sections = {NoticeSection()},
+  };
 }
 
 Document FieldsReference() {

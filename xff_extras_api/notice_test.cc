@@ -49,7 +49,7 @@ struct NoticeTest : ::testing::Test {};
 
 TEST_F(NoticeTest, NoticesAreSortedByComponentRegardlessOfRegistrationOrder) {
   // The whole point of sorting: static-init order across translation units is unspecified, so
-  // without this the generated NOTICE file would reorder itself between builds and the committed
+  // without this the generated NOTICE.md file would reorder itself between builds and the committed
   // copy would drift for no reason.
   std::vector<std::string_view> components;
   for (const Notice& notice : Notices()) {
@@ -67,7 +67,7 @@ TEST_F(NoticeTest, AnExtensionNoticeLeadsItsLibraries) {
 }
 
 TEST_F(NoticeTest, ARegistrarContributesTheWholeNotice) {
-  // Not just the name: the SPDX id and the notice text are what a NOTICE file must reproduce, so a
+  // Not just the name: the SPDX id and the notice text are what a NOTICE.md file must reproduce, so a
   // component registering only half of it would be a compliance bug.
   EXPECT_THAT(
       Notices(),

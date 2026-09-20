@@ -118,7 +118,7 @@ const license::Registrar kFuseExtraNotice{{
     .section_lead = true,
     .component = "xff FUSE extra (@xff_fuse)",
     .spdx = "Apache-2.0",
-    .text = "Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.\n"
+    .text = "Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License, Version 2.0.\n\n"
             "Mounting is implemented against the FUSE 3 lowlevel interface using this extra's own\n"
             "declarations (xff/fuse/fuse_abi.h); no libfuse code is compiled, linked, or shipped. At\n"
             "runtime the host's FUSE implementation is loaded dynamically - libfuse3 on Linux and BSD,\n"

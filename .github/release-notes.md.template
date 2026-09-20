@@ -4,3 +4,8 @@
 - [Coverage report](https://mboworks.github.io/xff/coverage/tag/@VERSION@/)
 - [Full HTML reference](https://mboworks.github.io/xff/releases/@VERSION@/)
 - [Raw reference (XFF.md)](https://mboworks.github.io/xff/releases/@VERSION@/XFF.md)
+
+### Component notices by download
+
+- `xff-*`: [Lean build notices](https://mboworks.github.io/xff/site/tag/@TAG@/NOTICE.lean.html)
+- `xff_full-*`: [Full build notices](https://mboworks.github.io/xff/site/tag/@TAG@/NOTICE.html)
