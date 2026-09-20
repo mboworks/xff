@@ -530,11 +530,17 @@ this as intentional accounting.
 
 ## Apple application distribution readers
 
-- [ ] Delivery 1: validate and publish XAR/PKG/XIP, owned streaming sources, contextual payload
-      discovery and the removable PBZX extension in the existing full binary on Linux and macOS.
+- [x] Delivery 1 (PR #896): XAR/PKG/XIP, owned streaming sources, contextual payload discovery,
+      and the removable PBZX extension in the existing full binary on Linux and macOS.
+- [ ] Verify #896 post-merge main CI and coverage publication.
+- [x] Add native `pkgbuild`/`productbuild` fixtures from original payload text, including XAR seeks.
+- [x] Keep isolated PBZX fuzzing enabled; add XZ and decoder-limit corpus seeds.
+- [x] Add reproducible 16/64/256 MiB package resource measurements.
+- [x] Add shared buffer/decoder reservations and bounded range reads; native sources seek directly,
+      while sequential source replay is bounded across related cursors.
 - [ ] Verify production package variants with redistributable provenance; extend PBZX framing only
-      with explicit fixtures. Add isolated PBZX fuzzing and large-payload resource measurements.
-- [ ] Add shared decoder/cache budgets and bounded range access before disk-reader integration;
-      current cursors are sequential and reopen/rescan their parents.
+      with explicit fixtures. Third-party application data and signature validation are not covered.
+- [ ] Before disk-reader integration, add format-aware block indexes and cache eviction; source ranges
+      are bounded, but reopening sequential archive members can still rescan parent streams.
 - [ ] Delivery 2: evaluate a separate permissively licensed UDIF/HFS+/APFS extension. No GPL/LGPL,
       installer execution, implicit host mounts, or new Apple-specific binary.

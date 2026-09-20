@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
 # SPDX-License-Identifier: Apache-2.0
 """Generate tiny, independently encoded package fixtures using only Python's standard library."""
+import argparse
 import io
 import zipfile
 import gzip
@@ -45,7 +46,24 @@ def xar(name, data):
 
 
 def main():
-    target = Path(__file__).with_name("test_data")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--large-payload-mib", type=int, choices=(16, 64, 256))
+    args = parser.parse_args()
+    if args.large_payload_mib:
+        if args.output is None:
+            parser.error("large fixtures require --output outside the fixture directory")
+        args.output.mkdir(parents=True, exist_ok=True)
+        payload = cpio("Applications/Example.app/Contents/large.bin", b"x" * (args.large_payload_mib * 1024 * 1024))
+        # Fixed 1 MiB XZ chunks make decoded size vary independently of chunk memory.
+        parts = [b"pbzx" + struct.pack(">Q", 1024 * 1024)]
+        for offset in range(0, len(payload), 1024 * 1024):
+            chunk = payload[offset:offset + 1024 * 1024]
+            stored = lzma.compress(chunk)
+            parts.append(struct.pack(">QQ", len(chunk), len(stored)) + stored)
+        (args.output / f"large-{args.large_payload_mib}.xip").write_bytes(xar("Content", b"".join(parts)))
+        return
+    target = args.output or Path(__file__).with_name("test_data")
     target.mkdir(exist_ok=True)
     payload = cpio("Applications/Example.app/Contents/info.txt", b"portable package\n")
     files = {

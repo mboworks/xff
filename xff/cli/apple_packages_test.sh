@@ -15,7 +15,7 @@ _fixture_dir() {
 test::packages_expose_payload_files_on_every_host() {
   local file out tree
   tree="$(test_tmpdir fixtures)"
-  for file in plain.pkg pbzx.pkg sample.xip nested.pkg payload.pbzx raw.pbzx application.zip application.ipa application.ipsw; do
+  for file in plain.pkg pbzx.pkg sample.xip nested.pkg native-component.pkg native-product.pkg payload.pbzx raw.pbzx application.zip application.ipa application.ipsw; do
     cp "$(_fixture_dir)/${file}" "${tree}/${file}"
     out="$("$(_xff_bin)" --archive=all --archive-depth=4 "${tree}/${file}" -type f -name info.txt -grep portable -print)"
     expect_output_contains "Applications/Example.app/Contents/info.txt" "${out}"

@@ -358,12 +358,36 @@ cc_test(
 )
 
 cc_library(
+    name = "read_budget_cc",
+    srcs = ["read_budget.cc"],
+    hdrs = ["read_budget.h"],
+    include_prefix = "xff/vfs",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+cc_test(
+    name = "read_budget_test",
+    size = "small",
+    srcs = ["read_budget_test.cc"],
+    deps = [
+        ":read_budget_cc",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+cc_library(
     name = "read_source_cc",
     srcs = ["read_source.cc"],
     hdrs = ["read_source.h"],
     include_prefix = "xff/vfs",
     visibility = ["//visibility:public"],
     deps = [
+        ":read_budget_cc",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
