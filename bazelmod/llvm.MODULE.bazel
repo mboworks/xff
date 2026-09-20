@@ -18,7 +18,7 @@
 # toolchains_llvm 1.8.0 includes PR bazel-contrib/toolchains_llvm#769 (macOS
 # sanitizer runtime via `dynamic_runtime_lib` + `@loader_path` rpath), so
 # macOS + clang-22 + asan works straight from the release.
-bazel_dep(name = "toolchains_llvm", version = "1.9.0")
+bazel_dep(name = "toolchains_llvm", version = "1.9.1")
 
 # The MemorySanitizer-instrumented libc++ (`--config=msan`, Linux only). MSan reports a
 # false positive for every read of memory written by code it did not instrument, and the

@@ -15,6 +15,12 @@ common:macos --linkopt=-Wl,-undefined,dynamic_lookup --host_linkopt=-Wl,-undefin
 common:macos --copt=-mmacosx-version-min=11.0 --host_copt=-mmacosx-version-min=11.0
 common:macos --linkopt=-mmacosx-version-min=11.0 --host_linkopt=-mmacosx-version-min=11.0
 
+# TODO: Drop these Apple linker overrides as soon as the pinned LLVM linker accepts
+# SDK 27's arm64e.x1 target (LLVM PR 222721, after LLVM 23.1.1). Keep this
+# Darwin-only: Linux should continue to use the hermetic LLD toolchain.
+common:macos --features=-supports_start_end_lib --host_features=-supports_start_end_lib
+common:macos --linkopt=--ld-path=/usr/bin/ld --host_linkopt=--ld-path=/usr/bin/ld
+
 try-import %workspace%/.bazelrc.user
 
 common --consistent_labels
