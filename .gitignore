@@ -21,3 +21,4 @@ __pycache__/
 # still passed, because the files were present on disk. A repo-level negation outranks the global
 # file, so these are always trackable.
 !extra_modules/archive/test_data/**
+!extra_modules/apple/test_data/**

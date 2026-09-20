@@ -37,7 +37,7 @@ cc_test(
     name = "pbzx_test",
     size = "small",
     srcs = ["pbzx_test.cc"],
-    data = glob(["test_data/*"]),
+    data = [":fixtures"],
     env = {"XFF_APPLE_FIXTURE": "$(rootpath test_data/sample.xip)"},
     deps = [
         ":apple_register_cc",
@@ -55,7 +55,19 @@ cc_test(
 
 filegroup(
     name = "fixtures",
-    srcs = glob(["test_data/*"]),
+    srcs = [
+        "test_data/application.ipa",
+        "test_data/application.ipsw",
+        "test_data/application.zip",
+        "test_data/nested.pkg",
+        "test_data/payload.cpio",
+        "test_data/payload.pbzx",
+        "test_data/pbzx.pkg",
+        "test_data/plain.pkg",
+        "test_data/raw.pbzx",
+        "test_data/sample.xar",
+        "test_data/sample.xip",
+    ],
     visibility = ["//visibility:public"],
 )
 

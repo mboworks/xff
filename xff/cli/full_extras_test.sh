@@ -160,7 +160,7 @@ test::the_notice_lists_every_linked_extra_and_the_direct_codecs() {
   # with pcre2 linked under-reported itself), and zlib/bzip2 are components in their OWN right:
   # the phar reader inflates members with them directly, not through libarchive.
   local out
-  out="$("$(_xff_full_bin)" --help=notice 2>&1)"
+  out="$("$(_xff_full_bin)" --help=notice --width=none 2>&1)"
   local extras_line enabled_extras extra
   local -a extras
   extras_line="${out%%$'\n'*}"
