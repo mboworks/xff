@@ -61,6 +61,10 @@ backfilling an older release does not make it latest. The workflow can also be d
 published tag to retry publication. Enable GitHub Pages with **GitHub Actions** as its source, and
 set the repository's About website to `https://mboworks.github.io/xff/`.
 
+Navigation starts with Home and Release & downloads, followed by configured links in their
+authored order, then Source and Documentation. The xff configuration orders those links as
+CLI reference, Coverage, and Benchmarks.
+
 ## Backfill a historical release
 
 No new release or tag change is needed. Manually dispatch `Publish release site` with `tag` set to

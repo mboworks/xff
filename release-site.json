@@ -51,12 +51,12 @@
   },
   "links": [
     {
-      "label": "Coverage",
-      "href": "/{repo}/coverage/tag/{version}/"
-    },
-    {
       "label": "CLI reference",
       "href": "/{repo}/releases/{version}/"
+    },
+    {
+      "label": "Coverage",
+      "href": "/{repo}/coverage/tag/{version}/"
     },
     {
       "label": "Benchmarks",

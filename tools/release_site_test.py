@@ -71,6 +71,28 @@ class ReleaseSiteTest(unittest.TestCase):
         self.assertEqual(len(list((output / "assets").iterdir())), 1)
         self.assertIn('guide/start.html', (output / "documents.html").read_text())
 
+    def test_navigation_order_keeps_documentation_last(self):
+        self.config["links"] = [
+            {"label": "CLI reference", "href": "/{repo}/releases/{version}/"},
+            {"label": "Coverage", "href": "/{repo}/coverage/tag/{version}/"},
+            {"label": "Benchmarks", "href": "/{repo}/benchmarks/tag/{version}/"},
+        ]
+        self.write("release-site.json", json.dumps(self.config))
+        output = self.build()
+        sha = site.git(self.source, "rev-parse", "HEAD")
+        expected = (
+            '<nav><a href="/mbo/site/tag/v1.2.3/">Home</a>'
+            '<a href="https://github.com/mboworks/mbo/releases/tag/v1.2.3">Release &amp; downloads</a>'
+            '<a href="/mbo/releases/1.2.3/">CLI reference</a>'
+            '<a href="/mbo/coverage/tag/1.2.3/">Coverage</a>'
+            '<a href="/mbo/benchmarks/tag/1.2.3/">Benchmarks</a>'
+            f'<a href="https://github.com/mboworks/mbo/tree/{sha}">Source</a>'
+            '<a href="/mbo/site/tag/v1.2.3/documents.html">Documentation</a></nav>'
+        )
+        for document in ("index.html", "guide/start.html", "documents.html"):
+            with self.subTest(document=document):
+                self.assertIn(expected, (output / document).read_text())
+
     def test_rerun_retains_original_bytes_without_rendering(self):
         output = self.build()
         before = {p.relative_to(output): p.read_bytes() for p in output.rglob("*") if p.is_file()}
