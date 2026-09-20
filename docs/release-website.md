@@ -61,6 +61,10 @@ backfilling an older release does not make it latest. The workflow can also be d
 published tag to retry publication. Enable GitHub Pages with **GitHub Actions** as its source, and
 set the repository's About website to `https://mboworks.github.io/xff/`.
 
+The release site publishes `NOTICE` as `NOTICE.txt`, preserving the tagged file verbatim and
+rewriting README links to that local copy. `LICENSE` links remain pinned to the tagged commit on
+GitHub, where readers can use GitHub's license analysis.
+
 Navigation starts with Home and Release & downloads, followed by configured links in their
 authored order, then Source and Documentation. The xff configuration orders those links as
 CLI reference, Coverage, and Benchmarks.
