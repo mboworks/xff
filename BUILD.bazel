@@ -46,17 +46,17 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-# LICENSE is compiled into the binary and NOTICE is generated from the all-extras binary, so a
+# LICENSE is compiled into the binary and NOTICE.md is generated from the all-extras binary, so a
 # single-file release reproduces its own terms and the repository inventories the complete build.
 exports_files(
     [
         "LICENSE",
-        "NOTICE",
+        "NOTICE.md",
     ],
     visibility = ["//visibility:public"],
 )
 
-# XFF.md and NOTICE are generated, committed references. The //xff/cli drift tests regenerate them
+# XFF.md and NOTICE.md are generated, committed references. The //xff/cli drift tests regenerate them
 # from the all-extras binary; xff-md-update.sh and notice-update.sh rewrite them.
 exports_files(
     ["XFF.md"],

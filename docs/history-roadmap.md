@@ -1010,7 +1010,7 @@ remains below is the design-forked / larger work.
     component's notice through `xff_extras_api`; authoritative license bodies are embedded by SPDX
     identifier through the shared `license_body` rule. Thus `xff_full --help=notice` inventories the
     composed binary and `--help=license=COMPONENT` reproduces the selected terms. The committed root
-    the committed NOTICE is generated from that full binary and drift-tested alongside XFF.md.
+    the committed NOTICE.md is generated from that full binary and drift-tested alongside XFF.md.
   - **No remaining v2 staging.** Layout, local modules, clean stripping, per-extra notices, and the
     explicit full build are shipped; the only proposed replacement for the explicit wiring failed
     the required discovery/deletion experiment.
@@ -1043,7 +1043,7 @@ remains below is the design-forked / larger work.
     core deps (Abseil/RE2/mbo) self-register from `license.cc`; `NoticeText()`/`LicenseText()` (the
     latter genrule'd byte-exact from `//:LICENSE`, which stays canonical); `--help=notice` /
     `--help=license` (plural aliases) reproduce the compiled-in set; `license_test` drift-guards the
-    committed `NOTICE`/`LICENSE` against the code. No external dep. Author name is `Boerger`.
+    committed `NOTICE.md`/`LICENSE` against the code. No external dep. Author name is `Boerger`.
     **Under self-registration a MINIMAL binary's runtime NOTICE is core-only, which is CORRECT** - the
     libarchive/PCRE2 notices and license bodies belong to the FULL binary and land with the extras'
     real modules (below).
@@ -1072,7 +1072,7 @@ remains below is the design-forked / larger work.
   - **Archive extra SHIPPED:** `@xff_archive` is a removable local module backed by libarchive plus
     the native PHAR reader/writer, self-registers its backend and notices, and links into `xff_full`
     through the archive build flag. Full-config CI exercises real archive diving and packing; the
-    committed root `NOTICE` is the generated all-extras inventory while each binary's
+    committed root `NOTICE.md` is the generated all-extras inventory while each binary's
     `--help=notice` reports precisely its linked set.
 
 - **PCRE2 backend (#85, `-regextype`): SHIPPED as a composable extra - decided 2026-07-06.**

@@ -17,7 +17,7 @@
 - Help backend tests cover console, Markdown, standalone HTML, and roff output,
   including stable anchors, escaping, tables, links, terminal width, dark mode,
   and accessibility structure where applicable.
-- `XFF.md`, release HTML, and NOTICE content are generated from the all-extras
+- `XFF.md`, release HTML, and NOTICE.md content are generated from the all-extras
   binary. Drift tests rebuild them rather than trusting hand-edited output;
   separately, every rendered cookbook recipe has an executable integration case.
 
@@ -130,7 +130,7 @@ build as sufficient:
 | `msan`                 | Linux MemorySanitizer with the instrumented libc++ toolchain.                                                                           |
 | `coverage`             | LLVM source coverage, category thresholds, and changed-line/branch enforcement.                                                         |
 | `fuzz`                 | Bounded campaigns for every discovered fuzz target plus committed-corpus replay in ordinary tests.                                      |
-| `xff-md`               | The checked-in reference and NOTICE match the all-extras generator.                                                                     |
+| `xff-md`               | The checked-in reference and NOTICE.md match the all-extras generator.                                                                  |
 | `clang-tidy`           | Changed C/C++ translation units checked against the generated hermetic compile database.                                                |
 | `Release site tests`   | Release notes, install snippets, links, and configured documentation generation.                                                        |
 | `done`                 | Aggregate gate proving every required dependency completed successfully.                                                                |

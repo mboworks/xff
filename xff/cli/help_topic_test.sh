@@ -309,12 +309,12 @@ test::help_time_and_size_list_their_vocabularies() {
 
 test::help_notice_and_license_reproduce_the_texts() {
   # For single-file binary releases the program must REPRODUCE its notices, not point at files.
-  # `--help=notice` (alias notices) embeds the verbatim NOTICE (third-party manifest) + the build
+  # `--help=notice` (alias notices) renders the third-party manifest also published in NOTICE.md + the build
   # extras this binary has; `--help=license` (alias licenses) embeds the verbatim LICENSE (Apache-2.0).
   local notice license
   notice="$("$(_xff_bin)" --help=notice 2>&1)"
   expect_output_contains 'none (lean build)' "${notice}" # the build-dependent extras line (lean here)
-  expect_output_contains 'RE2' "${notice}"               # a core component (from the reproduced NOTICE)
+  expect_output_contains 'RE2' "${notice}"               # a core component (from the reproduced NOTICE.md)
   expect_output_contains 'BSD-3-Clause' "${notice}"      # a component's SPDX id in the manifest
   license="$("$(_xff_bin)" --help=license 2>&1)"
   # A complete licensing statement leads with the copyright + grant (Apache's APPENDIX), THEN the
@@ -328,7 +328,7 @@ test::help_notice_and_license_reproduce_the_texts() {
   expect_output_contains 'Apache License' "$("$(_xff_bin)" --help=licenses 2>&1)"
 
   # The manifest and the generic topic footer are both flowing help text. Neither may bypass the
-  # explicit width merely because the canonical NOTICE file itself has stable physical lines.
+  # explicit width merely because the canonical NOTICE.md file itself has stable physical lines.
   notice="$("$(_xff_bin)" --width=50 --help=notice 2>&1)"
   while IFS= read -r line; do
     ((${#line} <= 50)) || fail "--help=notice exceeded --width=50: ${line}"

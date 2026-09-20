@@ -30,7 +30,7 @@ namespace xff::license {
 // the two can never state a different owner.
 std::string_view CopyrightNotice();
 
-// The prose introducing the component manifest. Shared by the canonical NOTICE renderer and the
+// The prose introducing the component manifest. Shared by the plain-text notice renderer and the
 // structured, width-aware help topic so the two surfaces cannot describe the manifest differently.
 std::string_view NoticeIntroduction();
 
@@ -40,8 +40,8 @@ std::string_view NoticeIntroduction();
 // only; CopyrightNotice() carries the copyright that completes it.
 std::string_view LicenseText();
 
-// The assembled third-party NOTICE: an xff attribution header followed by each registered component
-// (sorted). Reproduced by `--help=notice`; the repo NOTICE file is kept equal to it. Full license
+// The assembled third-party notice: an xff attribution header followed by each registered component
+// (sorted). The help model also renders these notices; NOTICE.md uses its Markdown output. Full license
 // bodies are registered separately by SPDX id and rendered by `--help=license=COMPONENT`.
 std::string NoticeText();
 

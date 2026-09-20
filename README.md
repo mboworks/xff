@@ -251,4 +251,4 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md), the LLM agent and contributor guidelin
 ## License
 
 Copyright M. Boerger, the MBO Works authors. Licensed under the Apache License 2.0; see
-[LICENSE](./LICENSE) and [NOTICE](./NOTICE) for details.
+[LICENSE](./LICENSE) and [NOTICE.md](./NOTICE.md) for details.

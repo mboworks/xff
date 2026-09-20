@@ -15,11 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Regenerate the committed all-extras NOTICE. Component notices self-register in the binary;
-# //xff/cli:xff_notice_test fails until NOTICE matches this output.
+# Regenerate the committed all-extras NOTICE.md. Component notices self-register in the binary;
+# //xff/cli:xff_notice_test fails until NOTICE.md matches this output.
 
 set -euo pipefail
 
 cd "$(dirname "$0")"
-bazel run --config=xff_docs //xff/cli:xff_full -- --help=notice >NOTICE
-echo "Wrote NOTICE"
+bazel run --config=xff_docs //xff/cli:xff_full -- --help=notice --help-format=markdown >NOTICE.md
+echo "Wrote NOTICE.md"

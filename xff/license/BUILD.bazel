@@ -22,7 +22,7 @@ package(default_visibility = ["//visibility:private"])
 
 # xff's own license (Apache-2.0) is compiled into the binary from the canonical repo LICENSE file so
 # a single-file release reproduces it (--help=license). LICENSE stays canonical; this only embeds
-# it. The `xff_license` delimiter cannot appear in the license text. (The third-party NOTICE is NOT
+# it. The `xff_license` delimiter cannot appear in the license text. (The third-party NOTICE.md is NOT
 # generated here -- it is assembled in code from self-registered components; see license.cc.)
 genrule(
     name = "license_text_gen",

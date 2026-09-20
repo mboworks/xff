@@ -61,8 +61,8 @@ backfilling an older release does not make it latest. The workflow can also be d
 published tag to retry publication. Enable GitHub Pages with **GitHub Actions** as its source, and
 set the repository's About website to `https://mboworks.github.io/xff/`.
 
-The release site publishes `NOTICE` as `NOTICE.txt`, preserving the tagged file verbatim and
-rewriting README links to that local copy. `LICENSE` links remain pinned to the tagged commit on
+The release site renders `NOTICE.md` as `NOTICE.html`, with the same navigation as other pages.
+The Markdown notice is generated from the all-extras binary via `--help=notice --help-format=markdown`. `LICENSE` links remain pinned to the tagged commit on
 GitHub, where readers can use GitHub's license analysis.
 
 Navigation starts with Home and Release & downloads, followed by configured links in their
@@ -124,3 +124,7 @@ their recorded hashes stay unchanged. The standalone CLI HTML output remains sel
 To regenerate the images on macOS, resize the original square PNG with `sips -z SIZE SIZE`
 for each size, preserving transparency. The ICO stores those four PNG images in a standard
 ICO directory. Keep the existing artwork unchanged when generating icon sizes.
+
+For v0.7.0, use `config_path=docs/release-site-v0.7.0.json`: that tag contains the earlier
+plain-text `NOTICE`, which the compatible override publishes as `NOTICE.txt`. The current
+configuration requires `NOTICE.md` and therefore cannot be used with that older source tree.

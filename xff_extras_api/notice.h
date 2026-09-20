@@ -24,7 +24,7 @@ namespace xff::license {
 // One linked component's notice: the name, its SPDX license id, and the copyright / notice line to
 // reproduce. A component may be xff's own extension code or a third-party library. `text` points at
 // a static string literal (lives for the process). This is the SOT for the notice content; the repo
-// NOTICE file is generated from / checked against it.
+// NOTICE.md file is generated from / checked against it.
 struct Notice {
   // Empty for the main binary; a stable label for a build extension otherwise. Notices sort by
   // section first, keeping an extension and the libraries it brings into the binary together.

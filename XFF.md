@@ -1192,6 +1192,21 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   Row windows use a bare count or decimal `k`/`M`/`G`/`T` multiplier. Byte budgets require an explicit trailing `B`: `B`/`kB`/`MB`/.../`EB` are SI, while `KiB`/`MiB`/.../`EiB` are IEC. The distinct suffixes keep rows and bytes unambiguous. Malformed, negative, and overflowing limits are errors before traversal. `off` or `0` disables column buffering; `all` requests the complete row set.
   See also: [Output](#topic-output), [Environment](#topic-environment)
 
+<a id="flag-help-format"></a>
+
+- `--help-format=plain|markdown|html|roff` - renderer for any help target: plain (default), markdown (md), html, or roff _(global, xff, command-line-only)_
+  One of:
+
+  - `plain` - terminal text; respects width, color, and paging
+  - `markdown` - Markdown document; no terminal wrapping or colors
+  - `md` - alias for `markdown`
+  - `html` - standalone HTML document; no terminal wrapping or colors
+  - `roff` - man-page source; terminal formatting and paging follow `--man`
+
+  Command-line only; rejected in configuration files.
+  Requires help output, including a topic, flag, index, or the full reference. For example, `--help=notice --help-format=markdown`. Markup output ignores terminal `--width` and `--color`; Markdown and HTML disable automatic paging, while explicit `--pager=always` or a pager command still applies. Roff uses the same terminal formatting and paging as `--man`. The `--help=TARGET:FORMAT` shorthand remains available; conflicting format selections are errors, including conflicts with `--man` (which selects `roff`).
+  See also: [Output](#topic-output), [Environment](#topic-environment)
+
 <a id="flag-width"></a>
 
 - `--width[=auto|auto:COLS|none|COLS]` - width for plain help and comparison summaries: capped auto, auto, none, or a column count _(global, xff)_

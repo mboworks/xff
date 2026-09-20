@@ -21,7 +21,7 @@ change should cross its boundaries. It is not a feature roadmap.
 - `//xff` is the configuration-sensitive convenience alias: lean normally and
   full under `--config=xff_full`.
 - `--config=xff_docs` enables every composable extra. Generated `XFF.md`, HTML,
-  NOTICE content, and their drift tests use that complete surface.
+  NOTICE.md content, and their drift tests use that complete surface.
 - `--config=clang_release` composes hermetic Clang with the production `-Oz`,
   ThinLTO, debug-information, and platform-appropriate linker settings. Artifact
   staging strips the executables and splits their symbols; it does not rebuild

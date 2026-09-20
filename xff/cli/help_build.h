@@ -63,6 +63,9 @@ enum class Audience : std::uint8_t {
 
 [[nodiscard]] Document FieldsReference();
 
+// The compiled component manifest for standalone publication.
+[[nodiscard]] Document NoticeReference();
+
 // Navigation for a standalone topic (including aliases), omitted from full reference sections.
 [[nodiscard]] Document TopicNavigation(std::string_view name);
 

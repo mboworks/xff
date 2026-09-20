@@ -111,15 +111,27 @@ test::formatted_full_help_prints_each_structured_reference() {
   expect_eq "$("$(_xff_bin)" --man 2>&1)" "$("$(_xff_bin)" --help=full:roff 2>&1)"
 }
 
-test::formatted_help_rejects_unknown_formats_and_partial_topics() {
+test::notice_markdown_publishes_the_component_manifest() {
+  local out
+  out="$("$(_xff_bin)" --help=notice --help-format=markdown)"
+  expect_output_contains 'RE2' "${out}"
+  expect_output_contains 'BSD-3-Clause' "${out}"
+  expect_output_contains 'Copyright The Abseil Authors' "${out}"
+  expect_output_contains '# Notices' "${out}"
+  expect_output_not_contains '**Usage:**' "${out}"
+  expect_output_not_contains '## Options' "${out}"
+  expect_eq "${out}" "$("$(_xff_bin)" --help=NOTICES:MD)"
+}
+
+test::formatted_help_rejects_unknown_formats() {
   local out rc
   out="$("$(_xff_bin)" --help=full:jsonl 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
   expect_output_contains "unknown help format" "${out}"
 
-  out="$("$(_xff_bin)" --help=fields:html 2>&1)" && rc=0 || rc=$?
+  out="$("$(_xff_bin)" --help=fields:garbage 2>&1)" && rc=0 || rc=$?
   expect_eq "2" "${rc}"
-  expect_output_contains "only for" "${out}"
+  expect_output_contains "unknown help format" "${out}"
 }
 
 test::removed_standalone_document_flags_are_unknown() {
@@ -149,3 +161,46 @@ test::overview_examples_run_as_shown() {
 }
 
 test_runner
+
+test::help_format_applies_to_topics_flags_indexes_and_shortcuts() {
+  local target format out
+  for target in notice compare --width all list styles extras license=Apache-2.0; do
+    for format in markdown html roff; do
+      out="$("$(_xff_bin)" "--help=${target}" "--help-format=${format}")"
+      expect_output_not_contains '**Usage:** ` `' "${out}"
+      expect_output_not_contains 'no help topic' "${out}"
+    done
+  done
+  expect_eq "$("$(_xff_bin)" --help=compare:html)" "$("$(_xff_bin)" --help-format=html --help=compare)"
+  expect_eq "$("$(_xff_bin)" --help=full:markdown)" "$("$(_xff_bin)" --help=full --help-format=md)"
+  expect_eq "$("$(_xff_bin)" --man)" "$("$(_xff_bin)" --help=long --help-format=roff)"
+  expect_output_contains '<!doctype html>' "$("$(_xff_bin)" --help --help-format=html)"
+}
+
+test::help_format_rejects_missing_help_and_conflicts() {
+  local out rc
+  out="$("$(_xff_bin)" --help-format=html 2>&1)" && rc=0 || rc=$?
+  expect_eq '2' "${rc}"
+  expect_output_contains 'requires help' "${out}"
+  out="$("$(_xff_bin)" --version --help-format=html 2>&1)" && rc=0 || rc=$?
+  expect_eq '2' "${rc}"
+  out="$("$(_xff_bin)" --help --help-format 2>&1)" && rc=0 || rc=$?
+  expect_eq '2' "${rc}"
+  expect_output_contains 'requires a value' "${out}"
+  out="$("$(_xff_bin)" --help=notice:html --help-format=markdown 2>&1)" && rc=0 || rc=$?
+  expect_eq '2' "${rc}"
+  expect_output_contains 'conflicting help formats' "${out}"
+  out="$("$(_xff_bin)" --man --help-format=plain 2>&1)" && rc=0 || rc=$?
+  expect_eq '2' "${rc}"
+  out="$("$(_xff_bin)" --help=wildth --help-format=html 2>&1)" && rc=0 || rc=$?
+  expect_eq '2' "${rc}"
+  expect_output_contains 'width' "${out}"
+}
+
+test::help_markup_ignores_terminal_width_and_color() {
+  local format
+  for format in markdown html roff; do
+    expect_eq "$("$(_xff_bin)" --help=compare "--help-format=${format}" --width=40 --color=always)" \
+      "$("$(_xff_bin)" --help=compare "--help-format=${format}" --width=120 --color=never)"
+  done
+}

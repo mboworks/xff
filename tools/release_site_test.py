@@ -93,6 +93,29 @@ class ReleaseSiteTest(unittest.TestCase):
             with self.subTest(document=document):
                 self.assertIn(expected, (output / document).read_text())
 
+    def test_notice_markdown_is_rendered_and_license_stays_on_github(self):
+        self.write("NOTICE.md", "# Notices\n\nCopyright example authors.\n")
+        self.write("LICENSE", "license text")
+        self.config["pages"]["NOTICE.md"] = "NOTICE.html"
+        self.write("release-site.json", json.dumps(self.config))
+        subprocess.run(["git", "-C", str(self.source), "add", "."], check=True)
+
+        def renderer(markdown, repository):
+            if markdown.startswith("# Notices"):
+                return '<h1>Notices</h1><p>Copyright example authors.</p>'
+            if markdown == "release readme":
+                return '<h1>A title</h1><a href="NOTICE.md">NOTICE</a><a href="LICENSE">LICENSE</a>'
+            return self.render(markdown, repository)
+
+        output = self.build(renderer=renderer)
+        self.assertIn('href="NOTICE.html"', (output / "index.html").read_text())
+        sha = site.git(self.source, "rev-parse", "HEAD")
+        self.assertIn(f'/blob/{sha}/LICENSE', (output / "index.html").read_text())
+        notice = (output / "NOTICE.html").read_text()
+        self.assertIn('<nav>', notice)
+        self.assertIn('Copyright example authors.', notice)
+        self.assertIn('NOTICE.html', (output / "documents.html").read_text())
+
     def test_rerun_retains_original_bytes_without_rendering(self):
         output = self.build()
         before = {p.relative_to(output): p.read_bytes() for p in output.rglob("*") if p.is_file()}

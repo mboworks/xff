@@ -45,6 +45,14 @@ namespace {
 // Allowed-value tables for the flags whose synopsis collapses a long value grammar to a
 // `<PLACEHOLDER>` (e.g. `--summary[=<GROUP>]`). Rendered by the detail tier as an aligned,
 // wrapping `value  meaning` table, so the values stay documented off the synopsis line.
+constexpr std::array kHelpFormatValues = std::to_array<ValueDoc>({
+    {.value = "plain", .meaning = "terminal text; respects width, color, and paging"},
+    {.value = "markdown", .meaning = "Markdown document; no terminal wrapping or colors"},
+    {.value = "md", .meaning = "alias for `markdown`"},
+    {.value = "html", .meaning = "standalone HTML document; no terminal wrapping or colors"},
+    {.value = "roff", .meaning = "man-page source; terminal formatting and paging follow `--man`"},
+});
+
 constexpr std::array kCaseValues = std::to_array<ValueDoc>({
     {.value = "sensitive", .meaning = "match exactly (-s-)"},
     {.value = "insensitive", .meaning = "fold case (-i)"},
@@ -1876,6 +1884,24 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "`off` or `0` disables column buffering; `all` requests the complete row set.",
         .see_also = "output,environment",
         .value_check = GlobalFlag::ValueCheck::kBuffer,
+    },
+    {
+        .name = "--help-format",
+        .display = "--help-format=plain|markdown|html|roff",
+        .group = "display",
+        .header = "Terminal display",
+        .summary = "renderer for any help target: plain (default), markdown (md), html, or roff",
+        .details = "Requires help output, including a topic, flag, index, or the full reference. "
+                   "For example, `--help=notice --help-format=markdown`. "
+                   "Markup output ignores terminal `--width` and `--color`; Markdown and HTML disable "
+                   "automatic paging, while explicit `--pager=always` or a pager command still applies. "
+                   "Roff uses the same terminal formatting and paging as `--man`. "
+                   "The `--help=TARGET:FORMAT` shorthand remains available; conflicting format selections "
+                   "are errors, including conflicts with `--man` (which selects `roff`).",
+        .values = kHelpFormatValues,
+        .see_also = "output,environment",
+        .value_check = GlobalFlag::ValueCheck::kEnum,
+        .cli_only = true,
     },
     {
         .name = "--width",

@@ -430,7 +430,7 @@ full configuration audit. Current behavior is documented in
     (`MountSupportAvailable`) feeds `ExtraEnabled("fuse")`/`kKnownExtras`/`ExtraBuildFlag`,
     the `--help=extras` row, and the xff FUSE extra NOTICE component (Apache-2.0; the host's
     libfuse/macFUSE implementation is loaded at runtime and is not a binary component; each binary's notice
-    renders its linked set, while the committed NOTICE is generated from the all-extras binary). - **4b-0. Path vocabulary (SHIPPED)**: the server resolved a lookup by joining parent and
+    renders its linked set, while the committed NOTICE.md is generated from the all-extras binary). - **4b-0. Path vocabulary (SHIPPED)**: the server resolved a lookup by joining parent and
     name with `/`, which only a local filesystem understands - the archive VFS spells a member
     `container!member`. Lookup now asks the FILESYSTEM (`ReadDir` reports each child's full
     path in its own vocabulary) instead of assembling one, and the fake in the test uses the

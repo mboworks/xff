@@ -185,3 +185,15 @@ INI
 }
 
 test_runner
+
+test::formatted_help_honors_explicit_pagers() {
+  local bin format out
+  bin="$(_xff_bin)"
+  for format in markdown html roff; do
+    out="$("${bin}" --help=notice "--help-format=${format}" --pager='printf PAGER_USED; cat')"
+    expect_output_contains 'PAGER_USED' "${out}"
+    expect_output_contains 'RE2' "${out}"
+  done
+  out="$(XFF_PAGER='printf PAGER_ALWAYS; cat' "${bin}" --help=notice --help-format=markdown --pager=always)"
+  expect_output_contains 'PAGER_ALWAYS' "${out}"
+}
