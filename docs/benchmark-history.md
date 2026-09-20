@@ -125,7 +125,3 @@ redirect to a different commit or a dangling run URL. Retention refreshes these 
 expire. The publisher refreshes references after measurements and completed release workflows;
 manual `Publish benchmarks` dispatch refreshes existing data without downloading an artifact.
 It remains serialized with all other site publishers.
-
-To repair an older release after this change, first dispatch `benchmark_pages.yml` from main.
-Then dispatch `pages.yml` with `tag=v0.7.0` and `config_path=docs/release-site-plain-notice.json` to regenerate its
-navigation using the current tracked configuration. No release tag or measurement is rewritten.
