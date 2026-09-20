@@ -30,7 +30,7 @@ jobs:
           legacy-prefix: bazel-disk-fuzz-
       - name: Run deep fuzz campaigns
         env:
-          SECONDS_PER_TARGET: 300
+          SECONDS_PER_TARGET: 600
         run: |
           set -euo pipefail
           target_count="$(tools/fuzz_targets.py --list | wc -l)"
@@ -41,7 +41,7 @@ jobs:
           } >>"${GITHUB_STEP_SUMMARY}"
           tools/fuzz_targets.py \
             --campaign-seconds="${SECONDS_PER_TARGET}" \
-            --max-total-seconds=3600 \
+            --max-total-seconds=7200 \
             --disk-cache="${HOME}/.cache/bazel-disk" \
             --jobs="$(getconf _NPROCESSORS_ONLN)" \
             --output-dir="${RUNNER_TEMP}/fuzz-campaigns"
