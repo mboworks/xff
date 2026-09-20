@@ -1,9 +1,7 @@
 name: Publish coverage
 
 on:
-  # Use trusted default-branch code; never check out or execute a PR head.
-  pull_request_target:
-    types: [closed, reopened]
+  # PR state is reconciled during every publication, without a privileged PR event trigger.
   workflow_dispatch:
     inputs:
       source_run_id:
