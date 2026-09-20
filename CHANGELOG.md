@@ -1,6 +1,8 @@
 <!-- SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
+# 0.9.0
+
 # 0.8.0
 
 - Keep accelerated XZ CRC64 reads within their input buffers, including short and unaligned tails.
