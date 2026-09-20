@@ -466,5 +466,15 @@ TEST_F(ManyMembersTest, TheDirectoriesListTheirOwnHundred) {
   EXPECT_THAT(one, SizeIs(100));
 }
 
+TEST_F(ArchiveFsTest, ContentSourcesRejectDirectoriesAndMissingMembers) {
+  const auto fs = Fs();
+  EXPECT_THAT(fs.ContentSource(Tar() + "!dir"), StatusIs(absl::StatusCode::kFailedPrecondition));
+  EXPECT_THAT(fs.ContentSource(Tar() + "!missing"), StatusIs(absl::StatusCode::kNotFound));
+  EXPECT_THAT(fs.ContainerCandidate("outside"), IsFalse());
+  EXPECT_THAT(
+      ArchiveFileSystem::OpenSource("app.pkg", vfs::MemoryReadSource("pbzx")),
+      StatusIs(absl::StatusCode::kUnimplemented));
+}
+
 }  // namespace
 }  // namespace xff::archive

@@ -49,6 +49,12 @@ license_body(
     spdx = "Zlib",
 )
 
+license_body(
+    name = "mit_license_cc",
+    src = "licenses/MIT.txt",
+    spdx = "MIT",
+)
+
 cc_library(
     name = "archive_license_cc",
     srcs = ["archive_license.cc"],
@@ -56,6 +62,7 @@ cc_library(
         ":bsd_2_clause_license_cc",
         ":bsd_3_clause_license_cc",
         ":bzip2_license_cc",
+        ":mit_license_cc",
         ":public_domain_license_cc",
         ":zlib_license_cc",
         "@xff_extras_api//:license_notice_cc",
@@ -165,7 +172,9 @@ cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@libarchive//libarchive",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
         "@xff_extras_api//:member_path_cc",
+        "@xff_extras_api//:read_source_cc",
     ],
     alwayslink = True,
 )

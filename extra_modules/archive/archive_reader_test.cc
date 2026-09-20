@@ -22,9 +22,11 @@
 #include <cstddef>
 #include <cstdlib>
 #include <fstream>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "absl/status/status.h"
@@ -70,7 +72,7 @@ struct ArchiveReaderTest : ::testing::Test {
     if (gzip) {
       ::archive_write_add_filter_gzip(out);
     }
-    std::string buffer(std::size_t{64} * 1'024, '\0');
+    std::string buffer(std::size_t{256} * 1'024, '\0');
     std::size_t used = 0;
     ::archive_write_open_memory(out, buffer.data(), buffer.size(), &used);
     for (const FileSpec& file : files) {
@@ -313,6 +315,70 @@ TEST_F(ArchiveReaderTest, ReadMemberOfFileEnforcesTheByteLimit) {
   EXPECT_THAT(ReadMemberOfFile(tar, "hello.txt", /*max_bytes=*/2), StatusIs(absl::StatusCode::kResourceExhausted));
   // The limit is inclusive: content exactly at the limit is fine.
   EXPECT_THAT(ReadMemberOfFile(tar, "hello.txt", /*max_bytes=*/6), IsOkAndHolds("hello\n"));
+}
+
+class FailingReadStream final : public vfs::ReadStream {
+ public:
+  explicit FailingReadStream(std::string prefix) : prefix_(std::move(prefix)) {}
+
+  absl::StatusOr<std::string> Read(std::size_t max_bytes) override {
+    if (prefix_.empty()) {
+      return absl::DataLossError("injected source failure");
+    }
+    auto result = prefix_.substr(0, max_bytes);
+    prefix_.erase(0, result.size());
+    return result;
+  }
+
+ private:
+  std::string prefix_;
+};
+
+class FailingReadSource final : public vfs::ReadSource {
+ public:
+  explicit FailingReadSource(std::string prefix = {}) : prefix_(std::move(prefix)) {}
+
+  absl::StatusOr<std::unique_ptr<vfs::ReadStream>> Open() const override {
+    return std::make_unique<FailingReadStream>(prefix_);
+  }
+
+ private:
+  std::string prefix_;
+};
+
+TEST_F(ArchiveReaderTest, SourceSessionsPreserveOpenAndCallbackErrors) {
+  EXPECT_THAT(ListMembersOfSource(vfs::HostReadSource("")), StatusIs(absl::StatusCode::kNotFound));
+  EXPECT_THAT(
+      ListMembersOfSource(std::make_shared<FailingReadSource>()),
+      StatusIs(absl::StatusCode::kDataLoss, HasSubstr("injected source failure")));
+  EXPECT_THAT(ListMembersOfSource(vfs::MemoryReadSource("xar!bad")), StatusIs(absl::StatusCode::kDataLoss));
+  EXPECT_THAT(ListMembersOfSource(vfs::MemoryReadSource("")), StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(MemberReadSource(vfs::HostReadSource(""), "member")->Open(), StatusIs(absl::StatusCode::kNotFound));
+}
+
+TEST_F(ArchiveReaderTest, MemberStreamsValidateNamesTypesAndOwnIndependentCursors) {
+  const auto source =
+      vfs::MemoryReadSource(MakeArchive({{.path = "first", .content = "abc"}, {.path = "second", .content = "def"}}));
+  EXPECT_THAT(MemberReadSource(source, "missing")->Open(), StatusIs(absl::StatusCode::kNotFound));
+  MBO_ASSERT_OK_AND_ASSIGN(auto stream, MemberReadSource(source, "second")->Open());
+  EXPECT_THAT(stream->Read(0), IsOkAndHolds(IsEmpty()));
+  EXPECT_THAT(stream->Read(2), IsOkAndHolds(Eq("de")));
+  EXPECT_THAT(stream->Read(100), IsOkAndHolds(Eq("f")));
+  EXPECT_THAT(stream->Read(1), IsOkAndHolds(IsEmpty()));
+  const auto directory = vfs::HostReadSource(WriteArchiveWithDirectory("stream-dir.tar"));
+  EXPECT_THAT(MemberReadSource(directory, "dir")->Open(), StatusIs(absl::StatusCode::kFailedPrecondition));
+}
+
+TEST_F(ArchiveReaderTest, MemberStreamsReportTruncationAndReadErrorsAfterOpen) {
+  const auto tar = MakeArchive({{.path = "large", .content = std::string(128UZ * 1'024, 'a')}});
+  const auto broken = std::make_shared<FailingReadSource>(tar.substr(0, 64UZ * 1'024));
+  MBO_ASSERT_OK_AND_ASSIGN(auto stream, MemberReadSource(broken, "large")->Open());
+  EXPECT_THAT(stream->Read(64UZ * 1'024), StatusIs(absl::StatusCode::kDataLoss));
+  EXPECT_THAT(MemberReadSource(broken, "missing")->Open(), StatusIs(absl::StatusCode::kDataLoss));
+  const auto truncated = vfs::MemoryReadSource(tar.substr(0, 64UZ * 1'024));
+  MBO_ASSERT_OK_AND_ASSIGN(auto short_stream, MemberReadSource(truncated, "large")->Open());
+  EXPECT_THAT(short_stream->Read(64UZ * 1'024), StatusIs(absl::StatusCode::kDataLoss));
+  EXPECT_THAT(MemberReadSource(truncated, "missing")->Open(), StatusIs(absl::StatusCode::kDataLoss));
 }
 
 }  // namespace

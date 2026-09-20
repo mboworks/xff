@@ -32,6 +32,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "mbo/status/status_macros.h"
 #include "xff/archive/archive_filters.h"
 #include "xff/archive/archive_reader_internal.h"
 #include "xff/archive/member_path.h"
@@ -81,7 +82,9 @@ ArchivePtr NewReader(const internal::FilterEnabler enable_filters = EnableNative
   ::archive_read_support_format_rar5(handle.get());
   ::archive_read_support_format_tar(handle.get());
   ::archive_read_support_format_warc(handle.get());
-  ::archive_read_support_format_xar(handle.get());
+  if (::archive_read_support_format_xar(handle.get()) != ARCHIVE_OK) {
+    return nullptr;
+  }
   ::archive_read_support_format_zip(handle.get());
   return handle;
 }
@@ -193,6 +196,106 @@ absl::StatusOr<std::string> ReadMemberOfOpened(
     return ReadPositionedEntry(handle_ref, *entry, member, max_bytes);
   }
 }
+
+// The libarchive callbacks borrow this session; the session owns the cursor and callback buffer.
+struct SourceSession {
+  std::unique_ptr<vfs::ReadStream> stream;
+  std::string buffer;
+  std::string prefix;
+  absl::Status error;
+  // Declared last so the reader is released before its callback state.
+  ArchivePtr handle;
+
+  // XFF_ABI_POINTER: libarchive's input callback uses opaque state and a borrowed byte buffer.
+  static la_ssize_t Read(struct ::archive*, void* data, const void** buffer) {
+    auto& self = *static_cast<SourceSession*>(data);
+    auto result = self.stream->Read(kBlockSize);
+    if (!result.ok()) {
+      self.error = result.status();
+      return -1;
+    }
+    self.buffer = std::move(*result);
+    if (self.prefix.size() < 4) {
+      self.prefix.append(self.buffer, 0, 4 - self.prefix.size());
+    }
+    *buffer = self.buffer.data();
+    return static_cast<la_ssize_t>(self.buffer.size());
+  }
+};
+
+absl::StatusOr<std::unique_ptr<SourceSession>> OpenSourceSession(const vfs::ReadSource& source) {
+  auto session = std::make_unique<SourceSession>();
+  MBO_ASSIGN_OR_RETURN(session->stream, source.Open());
+  session->handle = NewReader();
+  if (!session->handle) {
+    return absl::UnavailableError("cannot enable archive readers");
+  }
+  if (::archive_read_open(session->handle.get(), session.get(), nullptr, &SourceSession::Read, nullptr) != ARCHIVE_OK) {
+    MBO_RETURN_IF_ERROR(session->error);
+    if (session->prefix == "xar!") {
+      return absl::DataLossError(LastError(session->handle.get()));
+    }
+    return absl::InvalidArgumentError(absl::StrCat("not a readable archive: ", LastError(session->handle.get())));
+  }
+  if (session->prefix.empty()) {
+    return absl::InvalidArgumentError("empty container source");
+  }
+  return session;
+}
+
+class MemberStream final : public vfs::ReadStream {
+ public:
+  explicit MemberStream(std::unique_ptr<SourceSession> session) : session_(std::move(session)) {}
+
+  absl::StatusOr<std::string> Read(std::size_t max_bytes) override {
+    std::string result(std::min(max_bytes, kBlockSize), '\0');
+    const auto count = ::archive_read_data(session_->handle.get(), result.data(), result.size());
+    if (count < 0) {
+      MBO_RETURN_IF_ERROR(session_->error);
+      return absl::DataLossError(LastError(session_->handle.get()));
+    }
+    result.resize(static_cast<std::size_t>(count));
+    return result;
+  }
+
+ private:
+  std::unique_ptr<SourceSession> session_;
+};
+
+class MemberSource final : public vfs::ReadSource {
+ public:
+  MemberSource(vfs::SharedReadSource source, std::string member)
+      : source_(std::move(source)), member_(std::move(member)) {}
+
+  absl::StatusOr<std::unique_ptr<vfs::ReadStream>> Open() const override {
+    MBO_ASSIGN_OR_RETURN(auto session, OpenSourceSession(*source_));
+    // XFF_ABI_POINTER: archive_read_next_header returns a borrowed C entry.
+    struct ::archive_entry* entry = nullptr;
+    while (true) {
+      const int status = ::archive_read_next_header(session->handle.get(), &entry);
+      if (status == ARCHIVE_EOF) {
+        return absl::NotFoundError(absl::StrCat("no such archive member: ", member_));
+      }
+      if (status < ARCHIVE_WARN) {
+        MBO_RETURN_IF_ERROR(session->error);
+        return absl::DataLossError(LastError(session->handle.get()));
+      }
+      // XFF_ABI_POINTER: archive_entry_pathname returns a borrowed NUL-terminated name.
+      const char* stored = ::archive_entry_pathname(entry);
+      if (stored == nullptr || NormalizeMemberName(stored) != NormalizeMemberName(member_)) {
+        continue;
+      }
+      if (::archive_entry_filetype(entry) != AE_IFREG) {
+        return absl::FailedPreconditionError("archive member is not a regular file");
+      }
+      return std::make_unique<MemberStream>(std::move(session));
+    }
+  }
+
+ private:
+  vfs::SharedReadSource source_;
+  std::string member_;
+};
 
 }  // namespace
 
@@ -322,6 +425,17 @@ absl::StatusOr<std::string> ReadMember(std::string_view bytes, std::string_view 
     return absl::InvalidArgumentError(absl::StrCat("not a readable archive: ", LastError(handle.get())));
   }
   return ReadMemberOfOpened(*handle, "<memory>", member, max_bytes);
+}
+
+absl::StatusOr<std::vector<Member>> ListMembersOfSource(const vfs::SharedReadSource& source) {
+  MBO_ASSIGN_OR_RETURN(auto session, OpenSourceSession(*source));
+  auto members = ReadMembers(*session->handle);
+  MBO_RETURN_IF_ERROR(session->error);
+  return members;
+}
+
+vfs::SharedReadSource MemberReadSource(vfs::SharedReadSource source, std::string member) {
+  return std::make_shared<MemberSource>(std::move(source), std::move(member));
 }
 
 }  // namespace xff::archive

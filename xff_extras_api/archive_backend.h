@@ -58,6 +58,10 @@ namespace xff::archive {
 using ContainerOpener = absl::AnyInvocable<absl::StatusOr<
     std::unique_ptr<vfs::FileSystem>>(std::string_view, std::optional<std::string_view>, MemberPathOptions) const>;
 
+// Streaming counterpart; the source owns its parent chain and supports independent cursors.
+using ContainerSourceOpener = absl::AnyInvocable<
+    absl::StatusOr<std::unique_ptr<vfs::FileSystem>>(std::string_view, vfs::SharedReadSource, MemberPathOptions) const>;
+
 // One format a reader understands, for the `--help=archive` formats table and the cheap name gate.
 // The reader still validates content; suffixes only decide which ordinary names are worth offering.
 struct ReadFormatInfo {
@@ -71,7 +75,16 @@ struct ReadFormatInfo {
 // first. InvalidArgument means "not my format" and falls through; every other status is the reader's
 // definitive answer. Passing an empty opener removes that name, which keeps tests able to restore the
 // process-wide registry.
-void RegisterContainerReader(std::string name, ContainerOpener opener, std::vector<ReadFormatInfo> formats);
+void RegisterContainerReader(
+    std::string name,
+    ContainerOpener opener,
+    std::vector<ReadFormatInfo> formats,
+    ContainerSourceOpener source_opener = {});
+
+[[nodiscard]] absl::StatusOr<std::unique_ptr<vfs::FileSystem>> OpenContainerSource(
+    std::string_view container,
+    const vfs::SharedReadSource& source,
+    MemberPathOptions options = {});
 
 // Installs a process-wide override opener. This is the narrow test seam retained for callers that
 // need to replace the composed registry temporarily; production extras use RegisterContainerReader.
@@ -100,6 +113,10 @@ struct ContainerRegistrar {
 // Lives here rather than in the extra because the CORE decides whom to offer, and the answer must be
 // the same in a lean build (where it simply never matters).
 [[nodiscard]] bool LooksLikeContainerName(std::string_view name);
+
+using ContainerNameProbe = absl::AnyInvocable<bool(std::string_view) const>;
+void RegisterContainerNameProbe(std::string name, ContainerNameProbe probe);
+bool ContextualContainerName(std::string_view path);
 
 // Whether this binary has an archive backend linked at all. False in the lean build, where the
 // `--archive` surface still exists (it is always documented) but cannot do anything.

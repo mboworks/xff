@@ -4,6 +4,9 @@
 """Extras linked by the full production and test CLIs."""
 
 FULL_DEPS = select({
+    "//xff:xff_apple_on": ["@xff_apple//:apple_register_cc"],
+    "//conditions:default": [],
+}) + select({
     "//xff:xff_archive_on": ["@xff_archive//:archive_register_cc"],
     "//conditions:default": [],
 }) + select({

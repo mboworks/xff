@@ -488,5 +488,64 @@ TEST_F(ArchiveBackendTest, TheFormatProbeTakesTheLongestRegisteredNameAndFoldsCa
   EXPECT_THAT(ContainerPackFormatFor("zip"), IsEmpty());  // the dot is required: a bare `zip` is a name
 }
 
+TEST_F(ArchiveBackendTest, ContextualNameProbesCanBeReplacedAndRemoved) {
+  RegisterContainerNameProbe("test-context", [](std::string_view path) { return path == "payload"; });
+  EXPECT_THAT(ContextualContainerName("payload"), IsTrue());
+  EXPECT_THAT(ContextualContainerName("other"), IsFalse());
+  RegisterContainerNameProbe("test-context", [](std::string_view path) { return path == "other"; });
+  EXPECT_THAT(ContextualContainerName("payload"), IsFalse());
+  EXPECT_THAT(ContextualContainerName("other"), IsTrue());
+  RegisterContainerNameProbe("test-context", {});
+  RegisterContainerNameProbe("absent-context", {});
+  EXPECT_THAT(ContextualContainerName("other"), IsFalse());
+}
+
+TEST_F(ArchiveBackendTest, StreamSourceHonorsOverrideOpener) {
+  RegisterContainerOpener(
+      [](std::string_view, std::optional<std::string_view> bytes,
+         MemberPathOptions) -> absl::StatusOr<std::unique_ptr<vfs::FileSystem>> {
+        if (bytes != "payload") {
+          return absl::DataLossError("wrong source bytes");
+        }
+        return std::make_unique<StubFileSystem>();
+      });
+  EXPECT_THAT(OpenContainerSource("sample", vfs::MemoryReadSource("payload")), IsOk());
+}
+
+TEST_F(ArchiveBackendTest, StreamReadersStopOnSuccessOrErrorsAndFallbackOnlyOnFormatMismatch) {
+  const auto source = vfs::MemoryReadSource("payload");
+  EXPECT_THAT(OpenContainerSource("none", source), StatusIs(absl::StatusCode::kUnimplemented));
+  RegisterContainerReader(
+      "legacy",
+      [](std::string_view, std::optional<std::string_view>, MemberPathOptions) {
+        return std::make_unique<StubFileSystem>();
+      },
+      {});
+  EXPECT_THAT(OpenContainerSource("legacy", source), IsOk());
+  EXPECT_THAT(OpenContainerSource("missing", vfs::HostReadSource("")), StatusIs(absl::StatusCode::kNotFound));
+  RegisterContainerReader(
+      "first",
+      [](std::string_view, std::optional<std::string_view>, MemberPathOptions)
+          -> absl::StatusOr<std::unique_ptr<vfs::FileSystem>> { return absl::InvalidArgumentError("not this format"); },
+      {},
+      [](std::string_view name, const vfs::SharedReadSource&,
+         MemberPathOptions) -> absl::StatusOr<std::unique_ptr<vfs::FileSystem>> {
+        if (name == "broken") {
+          return absl::DataLossError("broken source");
+        }
+        if (name == "native") {
+          return std::make_unique<StubFileSystem>();
+        }
+        return absl::InvalidArgumentError("not this format");
+      });
+  EXPECT_THAT(OpenContainerSource("native", source), IsOk());
+  EXPECT_THAT(OpenContainerSource("broken", source), StatusIs(absl::StatusCode::kDataLoss));
+  EXPECT_THAT(OpenContainerSource("fallback", source), IsOk());
+  RegisterContainerOpener([](std::string_view, std::optional<std::string_view>, MemberPathOptions) {
+    return std::make_unique<StubFileSystem>();
+  });
+  EXPECT_THAT(OpenContainerSource("missing", vfs::HostReadSource("")), StatusIs(absl::StatusCode::kNotFound));
+}
+
 }  // namespace
 }  // namespace xff::archive

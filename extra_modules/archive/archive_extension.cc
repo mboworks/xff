@@ -3,6 +3,7 @@
 
 #include "xff/archive/archive_extension.h"
 
+#include <algorithm>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -16,6 +17,15 @@
 
 namespace xff::archive {
 namespace {
+struct NamedSourceDecoder {
+  std::string name;
+  SourceDecoder decoder;
+};
+
+std::vector<NamedSourceDecoder>& SourceDecoders() {
+  static std::vector<NamedSourceDecoder> decoders;
+  return decoders;
+}
 
 std::vector<CompressionExtension>& Extensions() {
   static std::vector<CompressionExtension> extensions;
@@ -117,6 +127,9 @@ absl::StatusOr<std::string> DecodeCompressionExtension(
   if (!extension.has_value()) {
     return absl::InvalidArgumentError(absl::StrCat("no compression extension owns '", container, "'"));
   }
+  if (!extension->decoder) {
+    return absl::InvalidArgumentError("not a supported streaming container");
+  }
   return extension->decoder(container, bytes, max_bytes);
 }
 
@@ -131,6 +144,27 @@ absl::Status PackCompressionExtension(
     }
   }
   return absl::InvalidArgumentError(absl::StrCat("no compression extension can pack '", path, "'"));
+}
+
+void RegisterSourceDecoder(std::string name, SourceDecoder decoder) {
+  auto& decoders = SourceDecoders();
+  const auto found = std::ranges::find(decoders, name, &NamedSourceDecoder::name);
+  if (found != decoders.end()) {
+    found->decoder = std::move(decoder);
+  } else {
+    decoders.push_back({.name = std::move(name), .decoder = std::move(decoder)});
+  }
+  std::ranges::sort(decoders, {}, &NamedSourceDecoder::name);
+}
+
+absl::StatusOr<vfs::SharedReadSource> DecodeSource(vfs::SharedReadSource source) {
+  for (const auto& decoder : SourceDecoders()) {
+    auto result = decoder.decoder(source);
+    if (result.ok() || !absl::IsInvalidArgument(result.status())) {
+      return result;
+    }
+  }
+  return source;
 }
 
 }  // namespace xff::archive

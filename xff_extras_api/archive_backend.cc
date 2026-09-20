@@ -41,6 +41,16 @@
 namespace xff::archive {
 namespace {
 
+struct NamedProbe {
+  std::string name;
+  ContainerNameProbe probe;
+};
+
+std::vector<NamedProbe>& NameProbes() {
+  static std::vector<NamedProbe> probes;
+  return probes;
+}
+
 // A temporary override used by focused tests. Production extras compose in ContainerReadersSlot.
 ContainerOpener& ContainerOpenerSlot() {
   static ContainerOpener slot;
@@ -50,6 +60,7 @@ ContainerOpener& ContainerOpenerSlot() {
 struct ContainerReader {
   std::string name;
   ContainerOpener opener;
+  ContainerSourceOpener source_opener;
   std::vector<ReadFormatInfo> formats;
 };
 
@@ -118,7 +129,11 @@ void RegisterContainerOpener(ContainerOpener opener) {
   ContainerOpenerSlot() = std::move(opener);
 }
 
-void RegisterContainerReader(std::string name, ContainerOpener opener, std::vector<ReadFormatInfo> formats) {
+void RegisterContainerReader(
+    std::string name,
+    ContainerOpener opener,
+    std::vector<ReadFormatInfo> formats,
+    ContainerSourceOpener source_opener) {
   std::vector<ContainerReader>& readers = ContainerReadersSlot();
   const auto found = std::ranges::find(readers, name, &ContainerReader::name);
   if (!opener) {
@@ -126,9 +141,14 @@ void RegisterContainerReader(std::string name, ContainerOpener opener, std::vect
       readers.erase(found);
     }
   } else if (found == readers.end()) {
-    readers.push_back({.name = std::move(name), .opener = std::move(opener), .formats = std::move(formats)});
+    readers.push_back(
+        {.name = std::move(name),
+         .opener = std::move(opener),
+         .source_opener = std::move(source_opener),
+         .formats = std::move(formats)});
   } else {
     found->opener = std::move(opener);
+    found->source_opener = std::move(source_opener);
     found->formats = std::move(formats);
   }
   std::ranges::sort(readers, {}, &ContainerReader::name);
@@ -341,6 +361,52 @@ absl::StatusOr<std::unique_ptr<vfs::FileSystem>> OpenContainerBytes(
     not_a_container = opened.status();
   }
   return not_a_container;
+}
+
+absl::StatusOr<std::unique_ptr<vfs::FileSystem>> OpenContainerSource(
+    std::string_view container,
+    const vfs::SharedReadSource& source,
+    MemberPathOptions options) {
+  if (!ContainerSupportAvailable()) {
+    return absl::UnimplementedError("this binary was built without archive support");
+  }
+  constexpr std::size_t kLegacyLimit = 256UZ * 1'024 * 1'024;
+  if (ContainerOpenerSlot()) {
+    MBO_ASSIGN_OR_RETURN(const std::string bytes, vfs::ReadSourceBytes(*source, kLegacyLimit));
+    return OpenContainerBytes(container, bytes, options);
+  }
+  // Legacy readers are a bounded fallback. Native streaming readers run first without a copy.
+  for (const ContainerReader& reader : ContainerReadersSlot()) {
+    if (!reader.source_opener) {
+      continue;
+    }
+    auto opened = reader.source_opener(container, source, options);
+    if (opened.ok() || !absl::IsInvalidArgument(opened.status())) {
+      return opened;
+    }
+  }
+  MBO_ASSIGN_OR_RETURN(const std::string bytes, vfs::ReadSourceBytes(*source, kLegacyLimit));
+  return OpenContainerBytes(container, bytes, options);
+}
+
+void RegisterContainerNameProbe(std::string name, ContainerNameProbe probe) {
+  auto& probes = NameProbes();
+  const auto found = std::ranges::find(probes, name, &NamedProbe::name);
+  if (!probe) {
+    if (found != probes.end()) {
+      probes.erase(found);
+    }
+    return;
+  }
+  if (found != probes.end()) {
+    found->probe = std::move(probe);
+  } else {
+    probes.push_back({.name = std::move(name), .probe = std::move(probe)});
+  }
+}
+
+bool ContextualContainerName(std::string_view path) {
+  return std::ranges::any_of(NameProbes(), [path](const NamedProbe& entry) { return entry.probe(path); });
 }
 
 }  // namespace xff::archive

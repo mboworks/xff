@@ -2945,6 +2945,8 @@ Later wins, per axis, which is what makes the two useful together: `-Z++ -z-` ar
 
 Under `all` a file is only opened when its NAME looks like a container, so walking a source tree does not read every file in it; `any` (also spelled `--archive-any`) drops that gate. Nesting has its own cap (`--archive-depth`, default 1) because a container inside a container is where a decompression bomb lives - and it is deliberately NOT part of any rung, since raising the bomb cap is a different decision from looking in more places. `-maxdepth` keeps counting member levels as ordinary depth.
 
+Apple distribution files are readable on Linux and macOS through the same binary. The archive extra reads XAR/PKG/XIP envelopes and ZIP-based IPA/IPSW files; the apple extra adds raw/XZ PBZX payloads. To reach files inside a package payload, use `--archive=all` and `--archive-depth=2` (increase the depth for component packages). Extensionless `Payload`, `Scripts`, and `Content` members are probed in package context. Payload decoding streams through bounded chunks (64 MiB maximum per PBZX chunk; 128 MiB XZ decoder memory). Legacy non-streaming nested readers have a 256 MiB input cap. Scripts are never executed; signatures are not verified; XAR packages cannot be rewritten. DMG/HFS+/APFS contents and other Apple payload codecs are not supported.
+
 ### A member is an entry, a container is still a file
 
 A member's path is the container's, the separator, then the member: `a.tar!dir/two.txt` (`--archive-separator` / `--archive-prefix` spell it differently). The container keeps its own identity at the same time - it is a real `-type f` you can match and delete - so a dive shows you both, which is also why `--archive-aggregate` exists: a reduction that counted the container AND its members would describe no filesystem that exists.
@@ -2972,10 +2974,11 @@ Reading is decided by CONTENT (the reader sniffs the bytes), so the extensions a
 | rar      | yes  | no    | .rar                                                                                                                                                                  |
 | tar      | yes  | yes   | .tar, .tar.gz, .tgz, .taz, .crate, .gem, .tar.bz2, .tbz, .tbz2, .tz2, .tar.xz, .txz, .tlz, .tar.lz, .tar.lzma, .tar.lz4, .tar.Z, .taZ, .tar.zst, .tzst, .tar.br, .tbr |
 | warc     | yes  | no    | .warc                                                                                                                                                                 |
-| xar      | yes  | no    | .xar                                                                                                                                                                  |
-| zip      | yes  | yes   | .zip, .jar, .war, .ear, .whl, .egg, .apk, .aab, .cbz, .crx, .docx, .epub, .jmod, .nupkg, .odp, .ods, .odt, .pptx, .vsix, .xlsx, .xpi                                  |
+| xar      | yes  | no    | .xar, .pkg, .mpkg, .xip                                                                                                                                               |
+| zip      | yes  | yes   | .zip, .jar, .war, .ear, .whl, .egg, .apk, .aab, .cbz, .crx, .docx, .ipa, .ipsw, .epub, .jmod, .nupkg, .odp, .ods, .odt, .pptx, .vsix, .xlsx, .xpi                     |
 | phar     | yes  | no    | .phar                                                                                                                                                                 |
 | file     | yes  | no    | .gz, .bz2, .xz, .zst, .zstd, .lz, .lz4, .lzma, .Z, .br                                                                                                                |
+| pbzx     | yes  | no    | .pbzx                                                                                                                                                                 |
 | asar     | yes  | no    | .asar                                                                                                                                                                 |
 | squashfs | yes  | no    | .sfs, .sqfs, .sqsh, .squashfs, .snap, .appimage                                                                                                                       |
 

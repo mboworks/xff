@@ -74,3 +74,35 @@ local_path_override(
     module_name = "xff_language_db",
     path = "extra_modules/language_db",
 )
+
+bazel_dep(name = "libexpat", version = "2.8.4")
+
+# XAR is always available in the archive extra. Select only Mbed TLS's Apache-2.0 arm;
+# XML parsing uses current Expat with entities disabled. These overrides disappear with extras.
+single_version_override(
+    module_name = "libarchive",
+    patch_strip = 1,
+    patches = ["//bazelmod:libarchive-xar.patch"],
+)
+
+archive_override(
+    module_name = "libexpat",
+    integrity = "sha256-qKnFy7qREAALE8yZQ/UPzX5VKly61JyxkRQsUAoKEbc=",
+    patch_strip = 1,
+    patches = ["//bazelmod:expat-build.patch"],
+    strip_prefix = "libexpat-R_2_8_4",
+    urls = ["https://github.com/libexpat/libexpat/archive/refs/tags/R_2_8_4.tar.gz"],
+)
+
+bazel_dep(name = "xff_apple", version = "0.0.0")
+local_path_override(
+    module_name = "xff_apple",
+    path = "extra_modules/apple",
+)
+
+# liblzma callbacks must retain their declared function type under UBSan.
+single_version_override(
+    module_name = "xz",
+    patch_strip = 1,
+    patches = ["//bazelmod:xz-callback-types.patch"],
+)

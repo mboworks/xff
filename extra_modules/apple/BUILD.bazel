@@ -1,0 +1,98 @@
+# SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
+# SPDX-License-Identifier: Apache-2.0
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
+
+package(default_visibility = ["//visibility:private"])
+
+cc_library(
+    name = "pbzx_cc",
+    srcs = ["pbzx.cc"],
+    hdrs = ["pbzx.h"],
+    include_prefix = "xff/apple",
+    deps = [
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@xff_extras_api//:read_source_cc",
+        "@xz//:lzma",
+    ],
+)
+
+cc_library(
+    name = "apple_register_cc",
+    srcs = ["apple_register.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pbzx_cc",
+        "@abseil-cpp//absl/strings",
+        "@xff_archive//:archive_extension_cc",
+        "@xff_archive//:archive_register_cc",
+        "@xff_extras_api//:license_notice_cc",
+    ],
+    alwayslink = True,
+)
+
+cc_test(
+    name = "pbzx_test",
+    size = "small",
+    srcs = ["pbzx_test.cc"],
+    data = [
+        ":fixture_anchor",
+        ":fixtures",
+    ],
+    env = {"XFF_APPLE_FIXTURE": "$(rootpath :fixture_anchor)"},
+    deps = [
+        ":apple_register_cc",
+        ":pbzx_cc",
+        "@abseil-cpp//absl/status",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+        "@xff_archive//:archive_fs_cc",
+        "@xff_archive//:archive_reader_cc",
+        "@xff_extras_api//:archive_backend_cc",
+        "@xff_extras_api//:read_source_cc",
+    ],
+)
+
+filegroup(
+    name = "fixtures",
+    srcs = [
+        "test_data/application.ipa",
+        "test_data/application.ipsw",
+        "test_data/application.zip",
+        "test_data/memory-limit.pbzx",
+        "test_data/nested.pkg",
+        "test_data/payload.cpio",
+        "test_data/payload.pbzx",
+        "test_data/pbzx.pkg",
+        "test_data/plain.pkg",
+        "test_data/raw.pbzx",
+        "test_data/sample.xar",
+        "test_data/sample.xip",
+        "test_data/xz.pbzx",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "fixture_anchor",
+    srcs = ["test_data/sample.xip"],
+    visibility = ["//visibility:public"],
+)
+
+cc_fuzz_test(
+    name = "pbzx_fuzz_test",
+    size = "small",
+    srcs = ["pbzx_fuzz_test.cc"],
+    corpus = [
+        "test_data/payload.pbzx",
+        "test_data/raw.pbzx",
+    ],
+    deps = [
+        ":pbzx_cc",
+        "@xff_extras_api//:read_source_cc",
+    ],
+)

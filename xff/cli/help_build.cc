@@ -764,6 +764,17 @@ Section ArchiveSection(bool in_full) {
       "counting member levels as ordinary depth."));
   section.children.push_back(Content{.node = std::move(modes)});
 
+  section.children.push_back(ProseOf(
+      "Apple distribution files are readable on Linux and macOS through the same binary. "
+      "The archive extra reads XAR/PKG/XIP envelopes and ZIP-based IPA/IPSW files; the apple extra "
+      "adds raw/XZ PBZX payloads. To reach files inside a package payload, use `--archive=all` "
+      "and `--archive-depth=2` (increase the depth for component packages). Extensionless "
+      "`Payload`, `Scripts`, and `Content` members are probed in package context. "
+      "Payload decoding streams through bounded chunks (64 MiB maximum per PBZX chunk; "
+      "128 MiB XZ decoder memory). Legacy non-streaming nested readers have a 256 MiB input cap. "
+      "Scripts are never executed; signatures are not verified; XAR packages cannot be rewritten. "
+      "DMG/HFS+/APFS contents and other Apple payload codecs are not supported."));
+
   Subsection identity{.title = "A member is an entry, a container is still a file"};
   identity.children.push_back(ProseOf(
       "A member's path is the container's, the separator, then the member: `a.tar!dir/two.txt` "

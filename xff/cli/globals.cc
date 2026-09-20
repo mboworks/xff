@@ -2864,6 +2864,10 @@ bool ExtraEnabled(std::string_view key) {
   // at static init, so asking the slot cannot drift from what the binary actually contains (the same
   // question `Pcre2Available()` answers for the regex slot). In the lean default build nothing
   // registers and every extra reads as off. New extras add a branch here and in ExtraBuildFlag.
+  if (key == "apple") {
+    return absl::c_any_of(
+        archive::ContainerReadFormats(), [](const archive::ReadFormatInfo& format) { return format.name == "pbzx"; });
+  }
   if (key == "archive") {
     return archive::ContainerSupportAvailable();
   }
@@ -2899,6 +2903,7 @@ std::vector<std::string> EnabledExtras() {
   // extra adds its key to both (and a branch in ExtraEnabled), and the notice line, the extras
   // topic, and the rebuild hints all read from these three rather than keeping private copies.
   static constexpr std::array kKnownExtras = std::to_array<std::string_view>({
+      "apple",
       "archive",
       "asar",
       "brotli",
@@ -2922,6 +2927,9 @@ std::string_view ExtraBuildFlag(std::string_view key) {
   // than derived from the key: the Bazel flags carry an `xff_` prefix that the human-facing key
   // does not (`archive` -> `//xff:xff_archive`), and pcre2's flag is `xff_pcre`, so any derivation
   // rule would print a flag that does not exist - which is worse than useless in an error message.
+  if (key == "apple") {
+    return "--//xff:xff_apple";
+  }
   if (key == "archive") {
     return "--//xff:xff_archive";
   }

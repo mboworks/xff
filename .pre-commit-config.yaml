@@ -32,9 +32,9 @@ repos:
       # trailing newline INSIDE the container, corrupting it silently. It happened to the phar
       # fixtures. Excluded by TYPE, not by location, so it holds wherever such a file is added.
       - id: end-of-file-fixer
-        exclude: \.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z)$
+        exclude: \.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z|xar|pkg|xip|pbzx|cpio|ipa|ipsw)$
       - id: trailing-whitespace
-        exclude: \.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z)$
+        exclude: \.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z|xar|pkg|xip|pbzx|cpio|ipa|ipsw)$
 
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.7
@@ -68,7 +68,7 @@ repos:
         language: pygrep
         args: [-i]
         entry: DO([ _]?NOT|N'T)[ _]?(SUBMIT|MERGE)
-        exclude: ^\.pre-commit-config\.yaml$|\.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z)$
+        exclude: ^\.pre-commit-config\.yaml$|\.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z|xar|pkg|xip|pbzx|cpio|ipa|ipsw)$
         types: [text]
       - id: ascii-source-text
         name: ASCII source text (escape intentional Unicode)
@@ -106,7 +106,7 @@ repos:
           commit messages). Use a spaced hyphen instead.
         language: pygrep
         entry: '\xe2\x80\x94'
-        exclude: ^\.pre-commit-config\.yaml$|\.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z)$
+        exclude: ^\.pre-commit-config\.yaml$|\.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z|xar|pkg|xip|pbzx|cpio|ipa|ipsw)$
         types: [text]
       - id: no-libarchive-filter-all
         name: Libarchive read filters use the explicit allowlist
@@ -164,7 +164,7 @@ repos:
           `SKIP="no-todos-without-context" pre-commit`.
         language: pygrep
         args: [-i]
-        exclude: ^[.]pre-commit-config\.yaml$|\.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z)$
+        exclude: ^[.]pre-commit-config\.yaml$|\.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z|xar|pkg|xip|pbzx|cpio|ipa|ipsw)$
         entry: (#|//|/[*]).*(FIXME|TODO)[(](?!(((\w|\w[.-]\w)+@(\w|-)+([.](\w|-)+)*)|(https?://[^)]+))(,[^)]+)?)[)]
         types: [text]
       - id: no-hand-rolled-status-propagation

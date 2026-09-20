@@ -55,4 +55,9 @@ absl::Status FileSystem::WriteContent(std::string_view /*path*/, std::string_vie
   return absl::UnimplementedError("filesystem backend does not support writing");
 }
 
+absl::StatusOr<SharedReadSource> FileSystem::ContentSource(std::string_view path) const {
+  MBO_ASSIGN_OR_RETURN(std::string bytes, ReadContent(path));
+  return MemoryReadSource(std::move(bytes));
+}
+
 }  // namespace xff::vfs

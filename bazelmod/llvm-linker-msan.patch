@@ -22,11 +22,13 @@ diff --git a/toolchain/BUILD.llvm_repo.tpl b/toolchain/BUILD.llvm_repo.tpl
 diff --git a/toolchain/cc_toolchain_config.bzl b/toolchain/cc_toolchain_config.bzl
 --- a/toolchain/cc_toolchain_config.bzl
 +++ b/toolchain/cc_toolchain_config.bzl
-@@ -811,6 +811,7 @@
-         cc_args(
-             name = name + "_msan_compile_args",
+@@ -348,3 +348,4 @@
+     stdlib = compiler_configuration["stdlib"]
+-    if stdlib != "none":
++    # Darwin supplies math through libSystem; avoid duplicating dependency -lm flags.
++    if stdlib != "none" and target_os != "darwin":
+         link_flags.extend([
+@@ -813,2 +814,3 @@
              actions = [
 +                "@rules_cc//cc/toolchains/actions:c_compile",
                  "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
-             ] + CPP_MODULE_ACTIONS,
-             args = msan_compile_include_flags + msan_sanitizer_flags,

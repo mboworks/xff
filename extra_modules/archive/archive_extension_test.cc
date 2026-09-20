@@ -113,5 +113,22 @@ TEST_F(ArchiveExtensionTest, LongestCaseInsensitiveSuffixAndFormatWin) {
           Field("suffixes", &ReadFormatInfo::suffixes, UnorderedElementsAre(".fake", ".tar.fake")))));
 }
 
+TEST_F(ArchiveExtensionTest, SourceDecoderReplacementRetainsFallbackAndErrors) {
+  const auto input = vfs::MemoryReadSource("input");
+  RegisterSourceDecoder("test-source", [](const vfs::SharedReadSource&) -> absl::StatusOr<vfs::SharedReadSource> {
+    return absl::InvalidArgumentError("not mine");
+  });
+  EXPECT_THAT(DecodeSource(input), IsOkAndHolds(Eq(input)));
+  RegisterSourceDecoder("test-source", [](const vfs::SharedReadSource&) -> absl::StatusOr<vfs::SharedReadSource> {
+    return absl::DataLossError("broken source");
+  });
+  EXPECT_THAT(DecodeSource(input), StatusIs(absl::StatusCode::kDataLoss));
+  RegisterSourceDecoder("test-source", [](vfs::SharedReadSource source) { return source; });
+  EXPECT_THAT(DecodeSource(input), IsOkAndHolds(Eq(input)));
+  RegisterCompressionExtension({.name = "stream-only", .suffixes = {".stream-only"}});
+  EXPECT_THAT(
+      DecodeCompressionExtension("input.stream-only", std::nullopt), StatusIs(absl::StatusCode::kInvalidArgument));
+}
+
 }  // namespace
 }  // namespace xff::archive

@@ -1,0 +1,36 @@
+diff --git a/MODULE.bazel b/MODULE.bazel
+--- a/MODULE.bazel
++++ b/MODULE.bazel
+@@ -14,3 +14,5 @@
+ bazel_dep(name = "rules_cc", version = "0.0.9")
+ bazel_dep(name = "bazel_skylib", version = "1.6.1")
+ bazel_dep(name = "mbedtls", version = "3.6.0.bcr.1")
++
++bazel_dep(name = "libexpat", version = "2.8.4")
+diff --git a/libarchive/BUILD.bazel b/libarchive/BUILD.bazel
+--- a/libarchive/BUILD.bazel
++++ b/libarchive/BUILD.bazel
+@@ -198,12 +198,22 @@
+         ],
+         "//conditions:default": [],
+     }),
+-    local_defines = PLATFORM_LOCAL_DEFINES,
++    local_defines = PLATFORM_LOCAL_DEFINES + [
++        "HAVE_EXPAT_H=1",
++        "HAVE_MBEDTLS_VERSION_H=1",
++        "ARCHIVE_CRYPTO_MD5_MBEDTLS=1",
++        "ARCHIVE_CRYPTO_SHA1_MBEDTLS=1",
++        "ARCHIVE_CRYPTO_SHA256_MBEDTLS=1",
++        "ARCHIVE_CRYPTO_SHA384_MBEDTLS=1",
++        "ARCHIVE_CRYPTO_SHA512_MBEDTLS=1",
++    ],
+     strip_include_prefix = ".",
+     deps = [
+         ":internal_hdrs",
+         "//:config",
+         "@bzip2//:bz2",
++        "@libexpat",
++        "@mbedtls",
+         "@lz4",
+         "@lz4//:lz4_hc",
+         "@xz//:lzma",

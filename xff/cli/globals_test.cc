@@ -355,5 +355,9 @@ TEST_F(GlobalsTest, AnUndeclaredSignFormStaysUnknown) {
   EXPECT_THAT(IsKnownGlobal("-s++"), IsFalse());
 }
 
+TEST_F(GlobalsTest, AppleExtraHasAnExplicitRebuildFlag) {
+  EXPECT_THAT(ExtraBuildFlag("apple"), Eq("--//xff:xff_apple"));
+}
+
 }  // namespace
 }  // namespace xff::cli

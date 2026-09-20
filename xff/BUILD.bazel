@@ -92,6 +92,28 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
+# Portable Apple package payload reader; extends the ordinary archive backend.
+bool_flag(
+    name = "xff_apple",
+    build_setting_default = False,
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "xff_apple_enabled",
+    flag_values = {":xff_apple": "True"},
+    visibility = ["//visibility:public"],
+)
+
+selects.config_setting_group(
+    name = "xff_apple_on",
+    match_any = [
+        ":xff_apple_enabled",
+        ":xff_all_enabled",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 # --//xff:xff_asar -- link the standalone Electron ASAR reader. It composes with other container
 # readers through @xff_extras_api and therefore does not pull in libarchive merely to host it.
 bool_flag(
@@ -199,6 +221,7 @@ selects.config_setting_group(
     name = "xff_archive_on",
     match_any = [
         ":xff_archive_enabled",
+        ":xff_apple_enabled",
         ":xff_brotli_enabled",
         ":xff_all_enabled",
     ],
@@ -292,6 +315,7 @@ selects.config_setting_group(
     name = "full_build",
     match_any = [
         ":xff_archive_on",
+        ":xff_apple_on",
         ":xff_asar_on",
         ":xff_brotli_on",
         ":xff_fuse_on",
