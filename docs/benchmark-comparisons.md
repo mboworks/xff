@@ -192,5 +192,14 @@ HTML uses two numeric subcolumns per file count: elapsed milliseconds and the si
 time difference from main (with percentage change below), or ratio and percentage difference. Each numeric cell is right-aligned; task/tool names are
 left-aligned. A ratio change versus main stays on its own line below the difference.
 
-Broad and deep HTML sections share one table per metric family. Centered topic rows span
-all columns so both datasets use identical numeric column widths.
+Broad and deep HTML sections share one table per metric family. Shaded `FS tree` rows identify
+`Broad` and `Deep`, with slightly larger, left-aligned titles. Each section repeats column headers;
+both datasets retain identical numeric column widths. Row labels use `task: xff / reference`.
+
+Post-merge measurement runs on both Linux and macOS through the existing benchmark workflow.
+Each platform retains its own HTML report and raw JSON under the workflow run and attempt;
+release reference pages link to the exact tagged commit's retained results for each platform.
+Missing platform results are stated explicitly. PR measurements remain previews.
+Linux uses verified tmpfs and CPU affinity. macOS uses ordinary temporary storage and requested
+worker counts without CPU affinity; the report records this distinction. Platform histories remain
+separate and must not be compared as if their hardware or storage were equivalent.

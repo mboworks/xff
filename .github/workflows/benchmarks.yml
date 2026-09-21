@@ -16,7 +16,15 @@ concurrency:
 
 jobs:
   measure:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: macos
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
@@ -33,7 +41,12 @@ jobs:
         with:
           namespace: default
       - name: Install comparison tools
-        run: sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf
+        run: |
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf
+          else
+            brew install findutils ripgrep fzf
+          fi
       - name: Build paired optimized revisions
         run: |
           set -euo pipefail
@@ -67,23 +80,29 @@ jobs:
             --head-binary="${RUNNER_TEMP}/benchmark-head" \
             --base-binary="${RUNNER_TEMP}/benchmark-base-bin" \
             --head="${BENCHMARK_HEAD}" --base="${BENCHMARK_BASE}" \
-            --base-build-identity="$(cat "${RUNNER_TEMP}/benchmark-base/.bazelrc" "${RUNNER_TEMP}/benchmark-base/bazelmod/llvm.MODULE.bazel" | sha256sum | cut -d ' ' -f 1)" \
-            --head-build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | sha256sum | cut -d ' ' -f 1)" \
+            --base-build-identity="$(cat "${RUNNER_TEMP}/benchmark-base/.bazelrc" "${RUNNER_TEMP}/benchmark-base/bazelmod/llvm.MODULE.bazel" | shasum -a 256 | cut -d ' ' -f 1)" \
+            --head-build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | shasum -a 256 | cut -d ' ' -f 1)" \
             --build='bazel --config=clang_release //xff/cli:xff' \
-            --runner-class='github-hosted ubuntu-latest' \
-            --tools="$(bazel --version); module-lock=$(sha256sum MODULE.bazel.lock); base-module-lock=$(sha256sum "${RUNNER_TEMP}/benchmark-base/MODULE.bazel.lock")" \
-            --output=benchmark-report.json
+            --runner-class='github-hosted ${{ matrix.os }}' \
+            --tools="$(bazel --version); module-lock=$(shasum -a 256 MODULE.bazel.lock); base-module-lock=$(shasum -a 256 "${RUNNER_TEMP}/benchmark-base/MODULE.bazel.lock")" \
+            --platform=${{ matrix.platform }} --output=benchmark-report.json
       - name: Compare equivalent tasks with find, ripgrep, and fzf
         run: |
+          storage=(--fixture-parent="${RUNNER_TEMP}")
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            storage=(--fixture-parent=/dev/shm --require-memory --require-cpu-affinity)
+          fi
           python3 tools/benchmark_compare.py --binary="${RUNNER_TEMP}/benchmark-head" \
-            --report=benchmark-report.json --require-tools --fixture-parent=/dev/shm --require-memory --require-cpu-affinity \
-            --repetitions=9 --keep=7 --runner-class='github-hosted ubuntu-latest' \
-            --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | sha256sum | cut -d ' ' -f 1)" \
-            --summary=benchmark-main.md
+            --report=benchmark-report.json --require-tools "${storage[@]}" \
+            --repetitions=9 --keep=7 --runner-class='github-hosted ${{ matrix.os }}' \
+            --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | shasum -a 256 | cut -d ' ' -f 1)" \
+            --summary=benchmark-main.md --html=benchmark-report.html
           cat benchmark-main.md >>"${GITHUB_STEP_SUMMARY}"
       - uses: actions/upload-artifact@v7
         with:
-          name: benchmark-report
-          path: benchmark-report.json
+          name: benchmark-report-${{ matrix.platform }}
+          path: |
+            benchmark-report.json
+            benchmark-report.html
           retention-days: 30
           if-no-files-found: error

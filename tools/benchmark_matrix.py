@@ -67,7 +67,7 @@ def attach_baseline(report, root):
     """Retained reports come from the trusted main publisher; never execute their data."""
     candidates = []
     current_tasks = {task_key(task): task for task in report['tasks']}
-    for path in root.glob('runs/*/*/report.json'):
+    for path in root.glob('runs/*/*/**/report.json'):
         record = json.loads(path.read_text())
         source = record.get('source', {})
         other = record.get('tool_comparisons')

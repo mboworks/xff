@@ -93,6 +93,8 @@ def measure_pair(args):
                            "tools": args.tools, "base_build_identity": args.base_build_identity,
                            "head_build_identity": args.head_build_identity, "order": "alternate base/head, then head/base"},
               "samples": {"base": [], "head": []}}
+    if getattr(args, "platform", ""):
+        record["platform"] = args.platform
     with tempfile.TemporaryDirectory(prefix="xff-benchmark-pair-") as temporary:
         for repetition in range(args.repetitions):
             order = ("base", "head") if repetition % 2 == 0 else ("head", "base")
@@ -135,7 +137,12 @@ def retain(root, record, source, keep):
         "id", "run_attempt", "created_at", "head_sha", "head_branch", "event", "pull_requests")}
     if "reference_time" in source:
         record["source"]["reference_time"] = source["reference_time"]
+    platform_key = record.get("platform", "")
+    if platform_key not in ("", "linux", "macos"):
+        raise ValueError("invalid benchmark platform")
     folder = root / "runs" / str(run) / str(attempt)
+    if platform_key:
+        folder /= platform_key
     folder.mkdir(parents=True, exist_ok=True)
     destination = folder / "report.json"
     if destination.exists():
@@ -143,14 +150,17 @@ def retain(root, record, source, keep):
             raise ValueError("an existing run attempt cannot change")
     else:
         destination.write_text(json.dumps(record, indent=2) + "\n")
-    paths = sorted(root.glob("runs/*/*/report.json"), key=lambda path: (
-        json.loads(path.read_text())["source"]["created_at"], int(path.parent.parent.name), int(path.parent.name)), reverse=True)
+    paths = sorted(root.glob("runs/*/*/**/report.json"), key=lambda path: (
+        json.loads(path.read_text())["source"]["created_at"],
+        int(json.loads(path.read_text())["source"]["id"]),
+        int(json.loads(path.read_text())["source"]["run_attempt"])), reverse=True)
     for path in paths[keep:]:
         path.unlink()
         (path.parent / "index.html").unlink(missing_ok=True)
-        path.parent.rmdir()
-        if not list(path.parent.parent.iterdir()):
-            path.parent.parent.rmdir()
+        folder = path.parent
+        while folder != root / "runs" and not any(folder.iterdir()):
+            folder.rmdir()
+            folder = folder.parent
 
 
 def page(title, body):
@@ -160,7 +170,7 @@ def page(title, body):
             '</style><h1>' + html.escape(title) + '</h1>' + body + '</html>\n')
 
 
-def render_report(record):
+def render_report(record, history_href="../../../"):
     rows = []
     for result in summarize(record):
         for metric, values in result["metrics"].items():
@@ -172,7 +182,7 @@ def render_report(record):
             ratio = values["head_over_base"]
             cells.append("n/a" if ratio is None else f"{ratio:.3f}")
             rows.append("<tr>" + "".join(f"<td>{html.escape(cell)}</td>" for cell in cells) + "</tr>")
-    body = ('<p><a href="../../../">Benchmark history</a> | <a href="report.json">Raw observations and provenance</a></p>'
+    body = (f'<p><a href="{html.escape(history_href)}">Benchmark history</a> | <a href="report.json">Raw observations and provenance</a></p>'
             '<p>Paired on the same runner; medians [min, max], sample standard deviation, and sample count. '
             'Ratios are head/base, not significance tests. Time is seconds; memory/output are bytes. '
             'Peak memory is per measured invocation, not cumulative across repetitions. '
@@ -191,7 +201,7 @@ def render_site(root, pulls, repository):
     by_sha = {pull["merge_commit_sha"]: pull for pull in pulls if pull.get("merged_at")}
     by_number = {pull["number"]: pull for pull in pulls}
     selected = {}
-    for path in root.glob("runs/*/*/report.json"):
+    for path in root.glob("runs/*/*/**/report.json"):
         record = json.loads(path.read_text())
         source = record["source"]
         phase = ""
@@ -212,19 +222,19 @@ def render_site(root, pulls, repository):
             label, phase, reference = f'PR {pull["number"]}', "post-merge", pull["merged_at"]
         else:
             label, reference = "main", source["created_at"]
-        key = (label, phase)
+        key = (label, phase, record.get("platform", ""))
         rank = (source["created_at"], source["id"], source["run_attempt"])
         if key not in selected or rank > selected[key][0]:
             selected[key] = (rank, reference, path, record)
     rows = []
-    for (label, phase), (_, reference, path, record) in sorted(selected.items(), key=lambda item: (
+    for (label, phase, platform_key), (_, reference, path, record) in sorted(selected.items(), key=lambda item: (
             item[1][1], item[0][0], item[0][1] == "post-merge"), reverse=True):
         source = record["source"]
         relative = path.parent.relative_to(root).as_posix()
-        (path.parent / "index.html").write_text(render_report(record))
+        (path.parent / "index.html").write_text(render_report(record, "../" * len(path.parent.relative_to(root).parts)))
         commit = record["head"]
         base = record["base"]
-        rows.append(f'<tr><td><a href="{relative}/">{html.escape(label)} {phase}</a></td>'
+        rows.append(f'<tr><td><a href="{relative}/">{html.escape(label)} {phase} {html.escape(platform_key)}</a></td>'
                     f'<td>{html.escape(reference)}</td><td><a href="https://github.com/{repository}/commit/{commit}">{commit[:7]}</a></td>'
                     f'<td><a href="https://github.com/{repository}/commit/{base}">{base[:7]}</a></td>'
                     f'<td><a href="https://github.com/{repository}/actions/runs/{int(source["id"])}">{int(source["id"])}, attempt {int(source["run_attempt"])}</a></td></tr>')
@@ -237,11 +247,11 @@ def render_site(root, pulls, repository):
 def reference_pages(root, pulls, repository_path):
     """Resolve stable PR/tag URLs without inventing measurements or rerunning them."""
     records = []
-    for path in root.glob("runs/*/*/report.json"):
+    for path in root.glob("runs/*/*/**/report.json"):
         record = json.loads(path.read_text())
         source = record["source"]
         records.append((record, path.parent.relative_to(root).as_posix()))
-        (path.parent / "index.html").write_text(render_report(record))
+        (path.parent / "index.html").write_text(render_report(record, "../" * len(path.parent.relative_to(root).parts)))
     tags = subprocess.check_output(
         ["git", "-C", str(repository_path), "tag", "--list", "v*"], text=True).splitlines()
     references = {}
@@ -257,7 +267,7 @@ def reference_pages(root, pulls, repository_path):
             raise ValueError("invalid PR number")
         references[f"pr/{number}"] = (f"PR {number}", pull.get("merge_commit_sha") if pull.get("merged_at") else None, number)
     for relative, (label, commit, number) in references.items():
-        candidates = []
+        candidates = {}
         for record, report_path in records:
             source = record["source"]
             post = source["event"] == "push" and record["head"] == commit
@@ -265,11 +275,24 @@ def reference_pages(root, pulls, repository_path):
                 pull["number"] == number for pull in source.get("pull_requests", []))
             if post or pre:
                 rank = (post, source["created_at"], source["id"], source["run_attempt"])
-                candidates.append((rank, report_path))
+                platform_key = record.get("platform", "")
+                if platform_key not in candidates or rank > candidates[platform_key][0]:
+                    candidates[platform_key] = (rank, report_path)
         folder = root / relative
         folder.mkdir(parents=True, exist_ok=True)
-        if candidates:
-            target = "../../" + max(candidates)[1] + "/"
+        if candidates and set(candidates) != {""}:
+            links = []
+            for platform_key, platform_label in (("linux", "Linux"), ("macos", "macOS")):
+                if platform_key in candidates:
+                    rank, report_path = candidates[platform_key]
+                    phase = "post-merge" if rank[0] else "pre-merge preview"
+                    target = "../../" + report_path + "/"
+                    links.append(f'<li><a href="{html.escape(target)}">{platform_label}</a> ({phase})</li>')
+                else:
+                    links.append(f'<li>{platform_label}: no retained result yet</li>')
+            body = '<ul>' + ''.join(links) + '</ul><p><a href="../../">Benchmark history</a></p>'
+        elif candidates:
+            target = "../../" + candidates[""][1] + "/"
             body = (f'<meta http-equiv="refresh" content="0; url={html.escape(target)}">'
                     f'<p><a href="{html.escape(target)}">Open retained benchmark result</a></p>')
         else:
@@ -302,6 +325,7 @@ def main():
         measure.add_argument("--" + name, required=True)
     for name, default in (("files", 2000), ("depth", 40), ("repetitions", 5), ("jobs", 1)):
         measure.add_argument("--" + name, type=positive, default=default)
+    measure.add_argument("--platform", choices=("linux", "macos"), default="")
     publish = commands.add_parser("publish")
     for name in ("root", "report", "source", "pulls"):
         publish.add_argument("--" + name, type=Path, required=True)

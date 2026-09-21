@@ -248,6 +248,26 @@ class BenchmarkHistoryTest(unittest.TestCase):
                 history.reference_pages(root, [], root)
             self.assertNotIn("http-equiv", (root / "tag/2.0.0/index.html").read_text())
 
+    def test_platform_reports_coexist_and_release_lists_both(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for platform_key in ('linux', 'macos'):
+                value = dict(record(), platform=platform_key)
+                history.retain(root, value, source(2, event='push'), 100)
+                self.assertTrue((root / 'runs/2/1' / platform_key / 'report.json').is_file())
+            rendered = history.render_site(root, [], 'owner/repo')
+            self.assertIn('runs/2/1/linux/', rendered)
+            self.assertIn('runs/2/1/macos/', rendered)
+            with mock.patch.object(history.subprocess, 'check_output', side_effect=['v1.0.0\n', HEAD + '\n']):
+                history.reference_pages(root, [], root)
+            page = (root / 'tag/1.0.0/index.html').read_text()
+            self.assertIn('../../runs/2/1/linux/', page)
+            self.assertIn('../../runs/2/1/macos/', page)
+            self.assertNotIn('http-equiv', page)
+            self.assertIn('href="../../../../"', (root / 'runs/2/1/macos/index.html').read_text())
+            with self.assertRaisesRegex(ValueError, 'platform'):
+                history.retain(root, dict(record(), platform='../bad'), source(3), 100)
+
     def test_release_refresh_does_not_download_measurement_artifacts(self):
         publish = repository_file(".github/workflows/benchmark_pages.yml").read_text()
         self.assertIn("workflows: [Benchmarks, Release]", publish)

@@ -25,6 +25,14 @@
 - [ ] Record before/after timing, throughput, memory, and correctness for each optimization; add
       representative larger-content and realistic directory-fanout workloads before broad claims.
 
+## Benchmark publication follow-up
+
+- [ ] Retain separate macOS and Linux HTML reports plus raw JSON, with commit, build,
+      hardware/runner and measurement-contract identities. Local temporary previews are not release assets.
+- [ ] Publish post-merge reports as official results and pre-merge reports as labeled PR previews.
+      Release pages should link results for the exact tagged commit per platform; reuse compatible
+      post-merge results, otherwise measure the tag and show pending until publication completes.
+
 ## Completed: F09 benchmark history
 
 - [x] Paired immediate-base/head measurement with raw observations and a versioned contract.
