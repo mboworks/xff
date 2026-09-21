@@ -165,7 +165,7 @@ def relative_matrices(report):
     for row in relative_results(report):
         values = groups.setdefault(row['dataset'] + ' - xff/reference ratios', {}).setdefault(
             (row['task'], 'xff / ' + row['reference']), {})
-        value = f"{row['xff_over_reference']:.3f}x ({row['difference_percent']:+.1f}%)"
+        value = f"{row['xff_over_reference']:.2f}x ({row['difference_percent']:+.1f}%)"
         if row['normalized_change_percent'] is not None:
             value += f"; vs main {row['normalized_change_percent']:+.1f}%"
         values[row['cpus'], row['files']] = value
@@ -217,7 +217,7 @@ def render_html(report):
                (row['cpus'], row['files'])): row['xff_over_reference'] for row in (relative_results(report) if absolute else [])}
     for group, columns, rows in absolute + (relative_matrices(report) if absolute else []):
         relative = group.endswith(' - xff/reference ratios')
-        labels = ('Ratio', 'Difference') if relative else ('Elapsed ms', 'Main ms / change')
+        labels = ('Ratio', '\u0394 %') if relative else ('Elapsed ms', 'Main ms / change')
         result.append('<h3>' + html.escape(group) + '</h3><table><thead><tr>'
                       '<th rowspan="3" style="text-align:left">Task / tool</th>')
         for cpu in report['contract']['cpu_counts']:
