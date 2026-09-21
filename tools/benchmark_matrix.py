@@ -224,17 +224,17 @@ def render_html(report):
         result.append('<h3>' + title + '</h3><table><tbody>')
         for group, _, rows in sections:
             dataset = group.removesuffix(' - xff/reference ratios')
-            result.append('<tr><th style="text-align:left">FS tree</th>' +
-                          f'<th colspan="{2 * len(columns)}" style="text-align:left">' +
-                          html.escape(dataset) + '</th></tr>')
-            result.append('<tr><th rowspan="3" style="text-align:left">Task / tool</th>')
+            result.append('<tr style="background:#e0e4e8;font-size:1.08em"><th style="text-align:left;background:inherit">FS tree</th>' +
+                          f'<th colspan="{2 * len(columns)}" style="text-align:left;background:inherit">' +
+                          html.escape(dataset[:1].upper() + dataset[1:]) + '</th></tr>')
+            result.append('<tr><th rowspan="3" style="text-align:left">Task: tool</th>')
             for cpu in report['contract']['cpu_counts']:
                 result.append(f'<th colspan="{2 * len(report["contract"]["file_counts"])}">{cpu} CPU{"s" if cpu != 1 else ""}</th>')
             result.append('</tr><tr>' + ''.join(f'<th colspan="2">{count:,}</th>' for _, count in columns) + '</tr><tr>')
             result.append(''.join('<th style="text-align:right">' + label + '</th>' for _ in columns for label in labels))
             result.append('</tr>')
             for (name, tool), values in rows:
-                result.append('<tr><th scope="row" style="text-align:left">' + html.escape(name + ' / ' + tool) + '</th>')
+                result.append('<tr><th scope="row" style="text-align:left">' + html.escape(name + ': ' + tool) + '</th>')
                 for column in columns:
                     value = values.get(column, 'n/a')
                     ratio = ratios.get((group, name, tool, column))
