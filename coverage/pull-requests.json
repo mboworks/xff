@@ -15,7 +15,7 @@
     "number": 904,
     "state": "open",
     "merged_at": null,
-    "merge_commit_sha": "3b89fac0a87e77e28a347e5de0aa460960de3f1e"
+    "merge_commit_sha": "79c5f2d80ded6ae423ca1c4cd0e9e43a32314be6"
   },
   {
     "number": 903,
@@ -27,7 +27,7 @@
     "number": 902,
     "state": "open",
     "merged_at": null,
-    "merge_commit_sha": "3d87ccaeb95fe8bb67fa315bc2872989ff654af6"
+    "merge_commit_sha": "67f172b2b989bfaff1588d8e3dbede53dd24eef7"
   },
   {
     "number": 901,
@@ -39,7 +39,7 @@
     "number": 900,
     "state": "open",
     "merged_at": null,
-    "merge_commit_sha": null
+    "merge_commit_sha": "e084b9a5fd497c4151224aa8ecbc6a57050c14ea"
   },
   {
     "number": 899,
