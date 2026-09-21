@@ -29,7 +29,7 @@ The report stores invocation settings (file counts, CPU counts, depth, fixture m
 source hashes, result hashes, tool versions, executable hashes, build identity, platform, runner
 class, CPU affinity, and filesystem type. Compatibility checks exclude sampling count and temporary
 paths, but require the same measurement semantics, build configuration, environment contract, and
-competitor identities. Each compared cell must also have the same CPU/file allocation, fixture tree,
+per-participant commands and competitor identities. Each compared cell must also have the same CPU/file allocation, fixture tree,
 and expected results. Adding a new size or fixture preserves comparisons for overlapping unchanged
 cells; changed/new cells show `n/a`. If no compatible main report exists, the table says so explicitly.
 The first run of a changed contract may therefore establish a new baseline.
@@ -45,8 +45,8 @@ When a compatible main cell exists, the ratio table also shows normalized change
 `(PR xff/reference ratio / main xff/reference ratio - 1) * 100%`. Historical reports retain the
 same ratios and all tool versions, so both xff and competitor developments can be inspected.
 Relative measurements reduce some shared runner effects; they do not eliminate all machine noise,
-workload effects, or changes in the reference tool. Changed competitor identities suppress baseline
-comparisons rather than silently attributing a tool upgrade to xff.
+workload effects, or changes in the reference tool. Changed competitor identities suppress baseline comparisons for that participant while retaining
+unaffected cells, rather than silently attributing a tool upgrade to xff.
 
 `--alarm-percent=15` is the initial advisory policy. A comparable cell whose xff/reference ratio
 worsens by more than 15% versus main is recorded in the report and produces a CI warning. It does

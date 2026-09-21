@@ -47,16 +47,20 @@ def compatibility(report):
     key = {name: value for name, value in contract.items() if name not in excluded}
     key['storage'] = {name: value for name, value in contract['storage'].items() if name != 'parent'}
     key['affinity_enforced'] = all(value is not None for value in contract['affinity_by_cpu_count'].values())
-    key['competitors'] = {name: {field: tool.get(field) for field in ('status', 'sha256', 'version')}
-                          for name, tool in report['tools'].items() if name != 'xff'}
     return key
 
 
 def cell_contract(task):
     return (task['fixture_identity'], task['expected_sha256'], task['input_files'],
-            task.get('cpus'), task.get('files'),
-            tuple((tool, tuple(tuple(command[1:]) for command in entry.get('pipeline', [])))
-                  for tool, entry in sorted(task['participants'].items())))
+            task.get('cpus'), task.get('files'))
+
+
+def participant_contract(report, label, entry):
+    identities = tuple((name, tuple(report['tools'].get(name, {}).get(field)
+                                   for field in ('status', 'sha256', 'version')))
+                       for name in label.split('+') if name != 'xff')
+    arguments = tuple(tuple(command[1:]) for command in entry.get('pipeline', []))
+    return identities, arguments
 
 
 def attach_baseline(report, root):
@@ -73,18 +77,24 @@ def attach_baseline(report, root):
             continue
         if compatibility(other) != compatibility(report):
             continue
-        shared = [task for task in other['tasks'] if task_key(task) in current_tasks
-                  and cell_contract(task) == cell_contract(current_tasks[task_key(task)])]
-        if shared:
-            candidates.append((source['created_at'], int(source['id']), int(source['run_attempt']), record, shared))
+        averages = {}
+        for task in other['tasks']:
+            current = current_tasks.get(task_key(task))
+            if current is None or cell_contract(task) != cell_contract(current):
+                continue
+            shared = {tool: elapsed_mean(other, entry) for tool, entry in task['participants'].items()
+                      if tool in current['participants'] and participant_contract(other, tool, entry) ==
+                      participant_contract(report, tool, current['participants'][tool])}
+            if shared:
+                averages[task_key(task)] = shared
+        if averages:
+            candidates.append((source['created_at'], int(source['id']), int(source['run_attempt']), record, averages))
     if not candidates:
         report['baseline'] = {'status': 'unavailable', 'reason': 'No compatible successful main benchmark is retained.'}
         return
     selected = max(candidates, key=lambda row: row[:3])
-    record, shared = selected[3:]
+    record, averages = selected[3:]
     other = record['tool_comparisons']
-    averages = {task_key(task): {tool: elapsed_mean(other, entry) for tool, entry in task['participants'].items()}
-                for task in shared}
     report['baseline'] = {'status': 'available', 'head': record['head'], 'run': record['source']['id'],
                           'attempt': record['source']['run_attempt'], 'policy': policy(other), 'averages': averages}
 
@@ -131,7 +141,8 @@ def relative_results(report):
                 continue
             reference = elapsed_mean(report, entry)
             ratio = current / reference
-            previous = baseline.get('xff', 0) / baseline[tool] if baseline.get(tool, 0) > 0 else None
+            previous = (baseline['xff'] / baseline[tool]
+                        if baseline.get('xff', 0) > 0 and baseline.get(tool, 0) > 0 else None)
             rows.append({'dataset': task['dataset'], 'task': task['name'], 'files': task['files'],
                          'cpus': task['cpus'], 'reference': tool, 'xff_seconds': current,
                          'reference_seconds': reference, 'xff_over_reference': ratio,

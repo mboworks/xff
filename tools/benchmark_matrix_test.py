@@ -97,14 +97,12 @@ class BenchmarkMatrixTest(unittest.TestCase):
         self.assertIn('2222222222222222222222222222222222222222', rendered)
 
     def test_changed_contract_and_absent_baseline_are_explicit(self):
-        for change in ('storage', 'tool', 'fixture'):
+        for change in ('storage', 'fixture'):
             with self.subTest(change=change), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 data, other = report(), report()
                 if change == 'storage':
                     other['contract']['storage']['filesystem'] = 'ext4'
-                elif change == 'tool':
-                    other['tools']['find']['sha256'] = 'another-version'
                 else:
                     for task in other['tasks']:
                         task['fixture_identity'] = 'changed'
@@ -112,6 +110,22 @@ class BenchmarkMatrixTest(unittest.TestCase):
                 matrix.attach_baseline(data, root)
                 self.assertEqual(data['baseline']['status'], 'unavailable')
                 self.assertIn('No compatible', matrix.render_html(data))
+
+    def test_reference_upgrade_and_argument_changes_preserve_other_cells(self):
+        current, other = report(), report()
+        for data in (current, other):
+            for task in data['tasks']:
+                task['participants']['find'] = {'samples': [{'elapsed_seconds': 1} for _ in range(9)]}
+        other['tools']['find']['sha256'] = 'older-version'
+        other['tasks'][0]['participants']['xff']['pipeline'] = [['xff', '--changed-setting']]
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.retain(root, other)
+            matrix.attach_baseline(current, root)
+        values = current['baseline']['averages']
+        self.assertNotIn('broad/files/1/10', values)
+        self.assertEqual(values['broad/files/1/100'], {'xff': 4})
+        self.assertTrue(all(row['main_ratio'] is None for row in matrix.relative_results(current)))
 
     def test_cpu_grouping_alignment_and_html_escaping(self):
         data = report()
