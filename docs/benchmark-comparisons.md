@@ -230,3 +230,9 @@ tool or changes the input JSON. Historical platform identity comes from that JSO
 Linux observations on macOS does not relabel them. The same option can regenerate `--summary`
 Markdown. CI artifacts are retained for 30 days; published post-merge history retains the raw JSON
 alongside each platform's page for later rendering.
+
+Measurement progress is flushed to stderr at most once every five seconds, with immediate
+start/completion lines per scale. Updates identify scale X/Y, fixture preparation, or run X/Y
+within the current task, including the tool and warm-up/sample index. Small scales therefore
+produce little output. Progress output and correctness checks happen outside the timed child
+commands; scale completion confirms all its output validation finished.

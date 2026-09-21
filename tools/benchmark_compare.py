@@ -195,8 +195,22 @@ def fixture_storage(parent, require_memory=False):
             "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"}
 
 
+class MeasurementProgress:
+    """Bound log volume while keeping long-running measurements visibly active."""
+
+    def __init__(self):
+        self.last = None
+
+    def __call__(self, message, *, force=False):
+        now = time.monotonic()
+        if force or self.last is None or now - self.last >= 5:
+            print(message, file=sys.stderr, flush=True)
+            self.last = now
+
+
 def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_tools=False,
-            fixture_parent=None, require_memory=False, cpus=1, require_cpu_affinity=False, keep=None, fixtures=None):
+            fixture_parent=None, require_memory=False, cpus=1, require_cpu_affinity=False, keep=None, fixtures=None, progress=None):
+    progress = progress or MeasurementProgress()
     keep = min(7, repetitions) if keep is None else keep
     if not 1 <= keep <= repetitions:
         raise ValueError("retained samples must be between one and repetitions")
@@ -236,7 +250,9 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
                                 for shape, levels in (("broad", 0), ("deep", depth))}
         for shape, (entries, source_hash) in datasets.items():
             root = base / shape
+            progress(f'Preparing {shape}: {files:,} files, {cpus} requested workers')
             rows = benchmark_fixture.materialize(root, entries)
+            progress(f'Fixture ready: {shape}, {len(rows):,} files')
             candidates = base / (shape + ".paths")
             candidates.write_bytes(b"".join(os.fsencode("./" + path.relative_to(root).as_posix()) + b"\0" for path, _ in rows))
             for name, expected, commands in scenarios(root, rows, tools, cpus):
@@ -258,15 +274,22 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
                             "stdin": str(candidates if name.startswith("fuzzy-list-") else empty)}
                     task["participants"][label] = {"pipeline": pipeline, "stdin": spec["stdin"], "cwd": str(root), "samples": []}
                 labels = list(task["participants"])
+                completed = 0
+                total = len(labels) * (repetitions + 1)
                 for repetition in range(repetitions + 1):
                     offset = (len(report['tasks']) - 1 + repetition) % len(labels) if labels else 0
                     order = labels[offset:] + labels[:offset]
                     for label in order:
                         entry = task["participants"][label]
+                        phase = 'warm-up' if repetition == 0 else f'sample {repetition}/{repetitions}'
+                        progress(f'Run {completed + 1}/{total}: {shape}/{name}; {files:,} files; '
+                              f'{cpus} requested workers; {label}; {phase}')
                         sample = invoke({"pipeline": entry["pipeline"], "stdin": entry["stdin"], "cwd": entry["cwd"], "environment": environment, "cpu_affinity": affinity}, worker)
                         validate_output(sample, expected, entry["pipeline"])
+                        completed += 1
                         if repetition:
                             entry["samples"].append(sample)
+                progress(f'Completed {completed}/{total}: {shape}/{name}')
     for tool in tools.values():
         if tool["status"] == "available" and digest(tool["path"]) != tool["sha256"]:
             raise ValueError("tool binary changed during measurement")
@@ -285,13 +308,19 @@ def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=F
                   "fixtures": [{"dataset": shape, "files": count, "source_sha256": value[1],
                                 "tree_sha256": benchmark_fixture.identity(value[0])}
                                for (shape, count), value in sorted((fixtures or {}).items())]}
+    progress = MeasurementProgress()
+    total_scales = len(cpu_counts) * len(file_counts)
+    completed_scales = 0
     for cpus in cpu_counts:
         for files in file_counts:
+            progress(f'Scale {completed_scales + 1}/{total_scales}: {files:,} files, {cpus} requested workers', force=True)
             report = collect(binary, files, min(files, depth), repetitions, require_tools=require_tools,
                              fixture_parent=fixture_parent, require_memory=require_memory, cpus=cpus,
-                             require_cpu_affinity=require_cpu_affinity, keep=keep,
+                             require_cpu_affinity=require_cpu_affinity, keep=keep, progress=progress,
                              fixtures={shape: value for (shape, count), value in fixtures.items() if count == files}
                              if fixtures is not None else None)
+            completed_scales += 1
+            progress(f'Completed scale {completed_scales}/{total_scales}', force=True)
             for task in report["tasks"]:
                 task["shape"] = f"{cpus}cpu/{files}/{task['shape']}"
             if combined is None:

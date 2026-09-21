@@ -185,23 +185,40 @@ class BenchmarkCompareTest(unittest.TestCase):
         self.assertEqual(record['tool_comparisons']['alarm']['threshold_percent'], 15)
         self.assertEqual(len(record['tool_comparisons']['alarm']['cells']), 1)
 
+    def test_progress_throttles_fast_runs_but_keeps_scale_boundaries(self):
+        output = io.StringIO()
+        with contextlib.redirect_stderr(output), mock.patch.object(compare.time, 'monotonic',
+                                                                  side_effect=[0, 1, 4.9, 5, 5.1]):
+            progress = compare.MeasurementProgress()
+            progress('Scale 1/10', force=True)
+            progress('fast run 1')
+            progress('fast run 2')
+            progress('Run 9/12')
+            progress('Completed scale 1/10', force=True)
+        self.assertEqual(output.getvalue().splitlines(), ['Scale 1/10', 'Run 9/12', 'Completed scale 1/10'])
+
     def test_warmup_is_discarded_and_tools_are_interleaved(self):
         calls = []
         def invoke(spec, worker):
             calls.append(spec['pipeline'][0][0])
             return {'sequence': len(calls)}
         commands = {'xff': [['xff']], 'find': [['find']], 'rg': [['rg']]}
+        progress = io.StringIO()
         with mock.patch.object(compare, 'tool_info', side_effect=lambda name, path: {
                 'status': 'available', 'path': name, 'sha256': 'fixed'}), \
                 mock.patch.object(compare, 'digest', return_value='fixed'), \
                 mock.patch.object(compare, 'scenarios', return_value=[('files', set(), commands)]), \
                 mock.patch.object(compare, 'invoke', side_effect=invoke), \
-                mock.patch.object(compare, 'validate_output') as validate:
-            result = compare.collect(Path('/xff'), files=1, depth=1, repetitions=3, keep=2)
+                mock.patch.object(compare, 'validate_output') as validate, contextlib.redirect_stderr(progress):
+            result = compare.collect(Path('/xff'), files=1, depth=1, repetitions=3, keep=2,
+                                     progress=lambda message: print(message, file=sys.stderr))
         self.assertEqual(calls[:12], ['xff', 'find', 'rg', 'find', 'rg', 'xff',
                                      'rg', 'xff', 'find', 'xff', 'find', 'rg'])
         self.assertEqual(calls[12:15], ['find', 'rg', 'xff'])
         self.assertEqual(validate.call_count, 24)
+        self.assertIn('Run 1/12: broad/files; 1 files; 1 requested workers; xff; warm-up', progress.getvalue())
+        self.assertIn('Run 12/12:', progress.getvalue())
+        self.assertIn('Completed 12/12: deep/files', progress.getvalue())
         self.assertEqual(result['contract']['warmup_rounds'], 1)
         first = result['tasks'][0]['participants']
         self.assertEqual([s['sequence'] for s in first['xff']['samples']], [6, 8, 10])
