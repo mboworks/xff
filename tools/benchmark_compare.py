@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
 # SPDX-License-Identifier: Apache-2.0
-"""Correctness-checked comparisons, collected only by the informational benchmark job."""
+"""Correctness-checked benchmark comparisons and informational main baselines."""
 
 import argparse
 import base64
@@ -20,6 +20,9 @@ import subprocess
 import sys
 import tempfile
 import time
+
+import benchmark_fixture
+import benchmark_matrix
 
 METRICS = ("elapsed_seconds", "first_stdout_seconds", "user_cpu_seconds", "system_cpu_seconds",
            "peak_child_rss_bytes", "sum_child_peak_rss_bytes", "stdout_bytes")
@@ -127,23 +130,21 @@ def tool_info(name, executable):
     return {"status": "available", "path": path, "version": identity, "sha256": digest(path)}
 
 
-def fixture(root, files, depth):
-    """Manifest is the oracle: no tool's traversal or matching defines expected output."""
-    rows = []
-    for index in range(files):
-        parent = root.joinpath(*(["d"] * (index % (depth + 1))))
-        parent.mkdir(parents=True, exist_ok=True)
+def fixture_entries(files, depth):
+    entries = []
+    for index in range(files - 1):
+        parent = 'd/' * (index % (depth + 1))
         name = (".hidden_" if index % 11 == 0 else "item_") + f"{index:05}." + ("txt" if index % 2 else "log")
-        path = parent / name
         content = (b"needle beta\n" if index % 3 == 0 else b"plain alpha\n") * 96
-        path.write_bytes(content)
-        rows.append((path, content))
-    # Include ignored paths and file/directory symlinks, but never follow symlinks.
-    (root / ".gitignore").write_text("*.txt\n")
-    rows.append((root / ".gitignore", b"*.txt\n"))
-    (root / "file-link").symlink_to(rows[0][0])
-    (root / "dir-link").symlink_to(root, target_is_directory=True)
-    return rows
+        entries.append(benchmark_fixture.Entry(parent + name, 'file', content))
+    entries.extend([benchmark_fixture.Entry('.gitignore', 'file', b'*.txt\n'),
+                    benchmark_fixture.Entry('file-link', 'link', entries[0].name if entries else '.gitignore'),
+                    benchmark_fixture.Entry('dir-link', 'link', '.')])
+    return entries
+
+
+def fixture(root, files, depth):
+    return benchmark_fixture.materialize(root, fixture_entries(files, depth))
 
 
 def scenarios(root, rows, tools, cpus=1):
@@ -194,8 +195,11 @@ def fixture_storage(parent, require_memory=False):
             "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"}
 
 
-def collect(binary, files=2000, depth=40, repetitions=5, worker=None, require_tools=False,
-            fixture_parent=None, require_memory=False, cpus=1, require_cpu_affinity=False):
+def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_tools=False,
+            fixture_parent=None, require_memory=False, cpus=1, require_cpu_affinity=False, keep=None, fixtures=None):
+    keep = min(7, repetitions) if keep is None else keep
+    if not 1 <= keep <= repetitions:
+        raise ValueError("retained samples must be between one and repetitions")
     if cpus < 1:
         raise ValueError("CPU count must be positive")
     affinity = None
@@ -213,7 +217,7 @@ def collect(binary, files=2000, depth=40, repetitions=5, worker=None, require_to
         raise ValueError("comparison tools are required: " + json.dumps(tools))
     worker = worker or [sys.executable, str(Path(__file__).resolve())]
     report = {"schema": 1, "tools": tools, "contract": {
-        "files": files, "depth": depth, "storage": storage, "repetitions": repetitions, "fixture_version": 1,
+        "files": files, "file_counts": [files], "cpu_counts": [cpus], "depth": depth, "storage": storage, "repetitions": repetitions, "fixture_version": 2, "retained": keep, "estimator": "mean-fastest",
         "platform": platform.platform(), "cpu_count": os.cpu_count(), "requested_cpus": cpus, "cpu_affinity": affinity,
         "order": "rotate participants each repetition", "cache": "just written, then reused; no flush; correctness run first",
         "output": "NUL paths, unordered multiset; drained pipe; validation after timing",
@@ -227,17 +231,23 @@ def collect(binary, files=2000, depth=40, repetitions=5, worker=None, require_to
         environment.update(HOME=str(base), LC_ALL="C", GOMAXPROCS=str(cpus))
         empty = base / "empty"
         empty.write_bytes(b"")
-        for shape, levels in (("broad", 0), ("deep", depth)):
+        datasets = fixtures or {shape: (fixture_entries(files, levels), None)
+                                for shape, levels in (("broad", 0), ("deep", depth))}
+        for shape, (entries, source_hash) in datasets.items():
             root = base / shape
-            rows = fixture(root, files, levels)
+            rows = benchmark_fixture.materialize(root, entries)
             candidates = base / (shape + ".paths")
             candidates.write_bytes(b"".join(os.fsencode("./" + path.relative_to(root).as_posix()) + b"\0" for path, _ in rows))
             for name, expected, commands in scenarios(root, rows, tools, cpus):
                 task = {"shape": shape, "name": name, "expected_count": len(expected),
-                        "input_files": len(rows),
+                        "input_files": len(rows), "files": files, "cpus": cpus, "dataset": shape,
+                        "fixture_identity": benchmark_fixture.identity(entries), "fixture_source_sha256": source_hash,
                         "expected_sha256": hashlib.sha256(b"\0".join(sorted(expected))).hexdigest(),
                         "participants": {}, "skips": {}}
                 report["tasks"].append(task)
+                if name.startswith("content-") and any(b"\0" in data for _, data in rows):
+                    task["skips"] = {label: "binary fixture: xff/rg binary-skip semantics differ" for label in commands}
+                    continue
                 for label, pipeline in commands.items():
                     missing = [tool for tool in label.split("+") if tools[tool]["status"] != "available"]
                     if missing:
@@ -261,19 +271,25 @@ def collect(binary, files=2000, depth=40, repetitions=5, worker=None, require_to
     return report
 
 
-def collect_scales(binary, file_counts, depth=40, repetitions=5, require_tools=False,
-                   fixture_parent=None, require_memory=False, cpu_counts=(1, 4), require_cpu_affinity=False):
+def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=False,
+                   fixture_parent=None, require_memory=False, cpu_counts=(1, 4), require_cpu_affinity=False, keep=None, fixtures=None):
     """Retain independent scales without mixing sample populations or tool identities."""
     if not file_counts or len(set(file_counts)) != len(file_counts) or min(file_counts) < 1 or depth < 1:
         raise ValueError("file counts must be unique and positive; depth must be positive")
     if not cpu_counts or len(set(cpu_counts)) != len(cpu_counts) or min(cpu_counts) < 1:
         raise ValueError("CPU counts must be unique and positive")
     combined = None
+    invocation = {"files": list(file_counts), "cpus": list(cpu_counts), "depth": depth,
+                  "fixtures": [{"dataset": shape, "files": count, "source_sha256": value[1],
+                                "tree_sha256": benchmark_fixture.identity(value[0])}
+                               for (shape, count), value in sorted((fixtures or {}).items())]}
     for cpus in cpu_counts:
         for files in file_counts:
             report = collect(binary, files, min(files, depth), repetitions, require_tools=require_tools,
                              fixture_parent=fixture_parent, require_memory=require_memory, cpus=cpus,
-                             require_cpu_affinity=require_cpu_affinity)
+                             require_cpu_affinity=require_cpu_affinity, keep=keep,
+                             fixtures={shape: value for (shape, count), value in fixtures.items() if count == files}
+                             if fixtures is not None else None)
             for task in report["tasks"]:
                 task["shape"] = f"{cpus}cpu/{files}/{task['shape']}"
             if combined is None:
@@ -284,6 +300,7 @@ def collect_scales(binary, file_counts, depth=40, repetitions=5, require_tools=F
                 combined["contract"]["cpu_counts"] = list(cpu_counts)
                 combined["contract"]["affinity_by_cpu_count"] = {str(cpus): affinity}
                 combined["contract"]["file_counts"] = list(file_counts)
+                combined["contract"]["invocation"] = invocation
                 combined["contract"]["depth"] = depth
                 combined["contract"]["depth_rule"] = "deep levels = min(files, depth); broad levels = 0"
             else:
@@ -316,15 +333,17 @@ def render(report):
                 if any(value is not None and (not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0)
                        for value in (sample[metric] for metric in METRICS)):
                     raise ValueError("invalid comparison metric")
-            def median_cell(metric, scale):
-                values = [sample[metric] for sample in entry["samples"] if sample[metric] is not None]
-                return f"{statistics.median(values) * scale:.2f}" if values else "n/a"
-            elapsed = statistics.median(sample["elapsed_seconds"] for sample in entry["samples"])
+            selected = benchmark_matrix.selected_samples(report, entry)
+            def average_cell(metric, scale):
+                values = [sample[metric] for sample in selected if sample[metric] is not None]
+                mean = statistics.fmean if report["contract"].get("estimator") == "mean-fastest" else statistics.median
+                return f"{mean(values) * scale:.2f}" if values else "n/a"
+            elapsed = benchmark_matrix.elapsed_mean(report, entry)
             throughput = f"{task['input_files'] / elapsed:.0f}" if task.get("input_files") and elapsed > 0 else "n/a"
             cells = [task["shape"] + "/" + task["name"], label, str(task["expected_count"]),
-                     median_cell("elapsed_seconds", 1000), throughput, median_cell("first_stdout_seconds", 1000),
-                     median_cell("peak_child_rss_bytes", 1 / 1048576),
-                     median_cell("sum_child_peak_rss_bytes", 1 / 1048576) if len(entry["pipeline"]) > 1 else "n/a",
+                     average_cell("elapsed_seconds", 1000), throughput, average_cell("first_stdout_seconds", 1000),
+                     average_cell("peak_child_rss_bytes", 1 / 1048576),
+                     average_cell("sum_child_peak_rss_bytes", 1 / 1048576) if len(entry["pipeline"]) > 1 else "n/a",
                      str(len(entry["samples"]))]
             overview.append('<tr>' + ''.join('<td>' + html.escape(cell) + '</td>' for cell in cells) + '</tr>')
             for metric in METRICS:
@@ -340,12 +359,12 @@ def render(report):
             rows.append(skipped)
             overview.append(skipped.replace('colspan="6"', 'colspan="7"'))
     return ('<h2>Tool comparisons</h2><p>Correctness-checked batch tasks; no ranking or interactive comparison. '
-            'Overview: medians in ms and MiB; details: seconds and bytes. Pipeline memory is a sum of process high-water marks, '
+            'Overview: selected averages in ms and MiB (legacy reports use medians); raw-sample details: seconds and bytes. Pipeline memory is a sum of process high-water marks, '
             'not simultaneous peak memory. No cross-scope ratios.</p><details><summary>Tools and contract</summary><pre>' +
             html.escape(json.dumps({"tools": report["tools"], "contract": report["contract"]}, indent=2)) +
-            '</pre></details><table><tr><th>Task</th><th>Tool</th><th>Matches</th><th>Elapsed ms</th>'
+            '</pre></details>' + benchmark_matrix.render_html(report) + '<details><summary>Per-task metrics</summary><table><tr><th>Task</th><th>Tool</th><th>Matches</th><th>Elapsed ms</th>'
             '<th>Input files/s</th><th>First output ms</th><th>Peak RSS MiB</th><th>Pipeline sum RSS MiB</th><th>N</th></tr>' +
-            ''.join(overview) + '</table><details><summary>All metrics and variability</summary><table><tr>'
+            ''.join(overview) + '</table></details><details><summary>All metrics and variability</summary><table><tr>'
             '<th>Task</th><th>Tool</th><th>Metric</th><th>Median</th><th>Min</th>'
             '<th>Max</th><th>Stddev</th><th>N</th></tr>' + ''.join(rows) + '</table></details>')
 
@@ -359,7 +378,16 @@ def main():
     parser.add_argument('--depth', type=int, default=40)
     parser.add_argument('--cpus', type=int, action='append', help='Repeat for CPU allocations; default: 1, 4')
     parser.add_argument('--require-cpu-affinity', action='store_true')
-    parser.add_argument('--repetitions', type=int, default=5)
+    parser.add_argument('--repetitions', type=int, default=9)
+    parser.add_argument('--keep', type=int, default=7)
+    parser.add_argument('--fixture', action='append', default=[], help='SHAPE:COUNT=MANIFEST_OR_TAR')
+    parser.add_argument('--baseline-root', type=Path, help='Retained main benchmark directory')
+    parser.add_argument('--head', default='', help='Measured commit')
+    parser.add_argument('--build-identity', default='', help='Comparable compiler/build configuration')
+    parser.add_argument('--runner-class', default='local')
+    parser.add_argument('--summary', type=Path, help='Write Markdown matrix')
+    parser.add_argument('--html', type=Path, help='Write standalone HTML report')
+    parser.add_argument('--alarm-percent', type=float, default=15, help='Advisory normalized slowdown threshold; never blocks')
     parser.add_argument('--require-tools', action='store_true')
     parser.add_argument('--fixture-parent', type=Path, help='Existing directory for generated fixtures')
     parser.add_argument('--require-memory', action='store_true', help='Require verified Linux tmpfs fixture storage')
@@ -373,11 +401,31 @@ def main():
             or len(set(file_counts)) != len(file_counts) or min(cpu_counts) < 1
             or len(set(cpu_counts)) != len(cpu_counts)):
         parser.error('binary/report required; unique positive sizes and positive depth')
-    record = json.loads(args.report.read_text())
+    fixtures = benchmark_fixture.mapping(args.fixture) if args.fixture else None
+    if fixtures is not None:
+        file_counts = sorted({count for _, count in fixtures})
+        if args.files and sorted(args.files) != file_counts:
+            parser.error('--files must match the custom fixture counts')
+    record = json.loads(args.report.read_text()) if args.report.exists() else {"head": args.head}
     record['tool_comparisons'] = collect_scales(
         args.binary, file_counts, args.depth, args.repetitions, require_tools=args.require_tools,
         fixture_parent=args.fixture_parent, require_memory=args.require_memory,
-        cpu_counts=cpu_counts, require_cpu_affinity=args.require_cpu_affinity)
+        cpu_counts=cpu_counts, require_cpu_affinity=args.require_cpu_affinity, keep=args.keep, fixtures=fixtures)
+    report = record["tool_comparisons"]
+    report["contract"].update(build_identity=args.build_identity, runner_class=args.runner_class)
+    if args.baseline_root:
+        benchmark_matrix.attach_baseline(report, args.baseline_root)
+    alarms = benchmark_matrix.regressions(report, args.alarm_percent, minimum_files=1)
+    report['alarm'] = {'threshold_percent': args.alarm_percent, 'blocking': False, 'cells': alarms}
+    for alarm in alarms:
+        print(f"::warning title=Benchmark performance::{alarm['dataset']}/{alarm['task']} "
+              f"({alarm['files']} files, {alarm['cpus']} CPUs): xff/{alarm['reference']} "
+              f"ratio worsened {alarm['normalized_change_percent']:.1f}% versus main; informational only")
+    report['relative_results'] = benchmark_matrix.relative_results(report)
+    if args.summary:
+        args.summary.write_text(benchmark_matrix.render_markdown(report))
+    if args.html:
+        args.html.write_text(render(report))
     args.report.write_text(json.dumps(record, indent=2) + '\n')
 
 

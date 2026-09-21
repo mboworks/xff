@@ -18,7 +18,9 @@
       four-CPU allocations on verified tmpfs storage.
 - [ ] Measure default and representative configured safety policies without bypassing the VFS or
       weakening protections. Read-only `--safe` enumeration is included in competitor benchmarks.
-- [ ] Investigate eager metadata collection for name/type-only queries; preserve symlink, error,
+- [ ] Derive metadata demand (NEVER / ONDEMAND / ALWAYS) from descriptor requirements and expression
+      control flow; cache on-demand values/errors and retain eager prefetch where metadata is always needed.
+      Investigate eager metadata collection for name/type-only queries; preserve symlink, error,
       safety, archive, and ordering semantics in any metadata-laziness optimization.
 - [ ] Record before/after timing, throughput, memory, and correctness for each optimization; add
       representative larger-content and realistic directory-fanout workloads before broad claims.

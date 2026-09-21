@@ -4,6 +4,9 @@
 
 import base64
 import copy
+import contextlib
+import io
+import json
 import os
 from pathlib import Path
 import sys
@@ -85,10 +88,10 @@ class BenchmarkCompareTest(unittest.TestCase):
             rows = compare.fixture(root, 12, 3)
             tasks = {name: (expected, commands) for name, expected, commands in
                      compare.scenarios(root, rows, {name: {'path': name} for name in ('xff', 'find', 'rg', 'fzf')})}
-            self.assertEqual(len(tasks['files'][0]), 13)
+            self.assertEqual(len(tasks['files'][0]), 12)
             self.assertEqual(tasks['files-safe'][0], tasks['files'][0])
             self.assertIn('--safe', tasks['files-safe'][1]['xff'][0])
-            self.assertEqual(len(tasks['name-txt'][0]), 6)
+            self.assertEqual(len(tasks['name-txt'][0]), 5)
             self.assertEqual(len(tasks['content-needle'][0]), 4)
             self.assertEqual(tasks['content-absent_marker'][0], [])
             self.assertEqual(tasks['fuzzy-discovery-itm'][0], tasks['fuzzy-list-itm'][0])
@@ -159,6 +162,46 @@ class BenchmarkCompareTest(unittest.TestCase):
         for counts in ([], [0], [10, 10]):
             with self.subTest(counts=counts), self.assertRaises(ValueError):
                 compare.collect_scales(Path('/xff'), counts, depth=2)
+
+    def test_cli_alarm_records_warning_without_failure(self):
+        data = {'contract': {'repetitions': 3, 'retained': 2, 'estimator': 'mean-fastest'},
+                'tasks': [{'dataset': 'broad', 'name': 'files', 'files': 10, 'cpus': 1,
+                           'participants': {'xff': {'samples': [{'elapsed_seconds': value} for value in (2, 3, 100)]},
+                                            'find': {'samples': [{'elapsed_seconds': 1} for _ in range(3)]}}}]}
+        def attach(report, root):
+            report['baseline'] = {'status': 'available', 'averages': {'broad/files/1/10': {'xff': 1, 'find': 1}}}
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / 'report.json'
+            argv = ['compare', '--binary=/xff', f'--report={output}', f'--baseline-root={temporary}',
+                    '--files=10', '--cpus=1', '--repetitions=3', '--keep=2']
+            console = io.StringIO()
+            with mock.patch.object(sys, 'argv', argv), mock.patch.object(compare, 'collect_scales', return_value=data), \
+                    mock.patch.object(compare.benchmark_matrix, 'attach_baseline', side_effect=attach), \
+                    contextlib.redirect_stdout(console):
+                compare.main()
+            record = json.loads(output.read_text())
+        self.assertIn('::warning title=Benchmark performance::', console.getvalue())
+        self.assertFalse(record['tool_comparisons']['alarm']['blocking'])
+        self.assertEqual(record['tool_comparisons']['alarm']['threshold_percent'], 15)
+        self.assertEqual(len(record['tool_comparisons']['alarm']['cells']), 1)
+
+    def test_custom_manifest_with_binary_and_links_matches_real_xff(self):
+        if BINARY is None:
+            self.skipTest("Bazel supplies xff executable")
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'fixture.manifest'
+            path.write_text('a.txt=:needle beta\nb.bin=b:AG5lZWRsZQD/\nempty-dir/\nlink=l:a.txt\nloop=l:loop\n')
+            fixtures = compare.benchmark_fixture.mapping([f'custom:2={path}'])
+            with mock.patch.object(compare.shutil, 'which', return_value=None):
+                result = compare.collect_scales(BINARY, [2], depth=1, repetitions=1, keep=1,
+                                                cpu_counts=(1,), fixtures=fixtures)
+        self.assertEqual(len(result['tasks']), 11)
+        self.assertTrue(all('binary fixture' in task['skips']['xff'] for task in result['tasks']
+                            if task['name'].startswith('content-')))
+        self.assertTrue(all(task['input_files'] == 2 for task in result['tasks']))
+        self.assertEqual(result['contract']['invocation']['fixtures'][0]['dataset'], 'custom')
+        self.assertIn('1cpu/2/custom', result['tasks'][0]['shape'])
+        self.assertIn('mean of fastest 1/1', compare.render(result))
 
     def test_actual_xff_matches_independent_oracle(self):
         if BINARY is None:

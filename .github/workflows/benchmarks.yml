@@ -76,7 +76,11 @@ jobs:
       - name: Compare equivalent tasks with find, ripgrep, and fzf
         run: |
           python3 tools/benchmark_compare.py --binary="${RUNNER_TEMP}/benchmark-head" \
-            --report=benchmark-report.json --require-tools --fixture-parent=/dev/shm --require-memory --require-cpu-affinity
+            --report=benchmark-report.json --require-tools --fixture-parent=/dev/shm --require-memory --require-cpu-affinity \
+            --repetitions=9 --keep=7 --runner-class='github-hosted ubuntu-latest' \
+            --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | sha256sum | cut -d ' ' -f 1)" \
+            --summary=benchmark-main.md
+          cat benchmark-main.md >>"${GITHUB_STEP_SUMMARY}"
       - uses: actions/upload-artifact@v7
         with:
           name: benchmark-report

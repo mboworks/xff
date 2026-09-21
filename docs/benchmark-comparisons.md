@@ -1,121 +1,185 @@
 # Comparisons with other tools
 
-The post-merge benchmark report includes task-specific comparisons with `find`, `rg`, and `fzf`.
-These are informational measurements, not a speed ranking or a merge gate. Each task checks its
-output against an independently generated manifest before measurement and after every timed run.
-A mismatch, unexpected exit status, diagnostic, or timeout fails collection rather than publishing
-an apparently successful empty result.
+Benchmark tables compare xff, find, ripgrep, and fzf on explicitly equivalent tasks. Every warm-up
+and measured run is checked against an independent fixture oracle. Wrong output, duplicate rows,
+unexpected exit status, diagnostics, and timeouts fail collection. Performance differences are
+informational. A 15% advisory alarm identifies normalized slowdowns without blocking merges.
+
+## Matrix and sampling
+
+Each tree shape has one table. Rows identify the task and tool. The eight standard columns are
+grouped by CPU allocation: **1 CPU** with 10, 100, 1,000, and 10,000 files, then **4 CPUs** with the
+same sizes. HTML uses spanning CPU headers; Markdown repeats CPU/count labels and aligns numeric
+cells and their source text to the right.
+
+- Normal PR CI runs three measured repetitions and averages the fastest two.
+- Main's post-merge benchmark workflow runs nine and averages the fastest seven.
+- One correctness/warm-up run precedes measurement. Participant order rotates between repetitions.
+- Selection is by elapsed time. Associated CPU, latency, memory, and output metrics use that same
+  selected subset. All raw samples are retained, including the discarded slower observations.
+- Tables explicitly say `mean of fastest 2/3 runs` or `mean of fastest 7/9 runs`. Raw-sample
+  variability remains available separately. Historical median-based reports remain readable.
+
+PR tables compare against the newest successful retained main measurement with compatible cells,
+even though main uses a different sampling policy. Cells show `current ms / main ms (change)`;
+change is `(current / main - 1) * 100%`, so positive means slower. The baseline commit, run, attempt,
+and policy are explicit. The larger main sample may favor its timing; this is not a significance test.
+
+The report stores invocation settings (file counts, CPU counts, depth, fixture mappings), tree and
+source hashes, result hashes, tool versions, executable hashes, build identity, platform, runner
+class, CPU affinity, and filesystem type. Compatibility checks exclude sampling count and temporary
+paths, but require the same measurement semantics, build configuration, environment contract, and
+competitor identities. Each compared cell must also have the same CPU/file allocation, fixture tree,
+and expected results. Adding a new size or fixture preserves comparisons for overlapping unchanged
+cells; changed/new cells show `n/a`. If no compatible main report exists, the table says so explicitly.
+The first run of a changed contract may therefore establish a new baseline.
+
+## Relative performance and advisory alarm
+
+Each shape also has a CPU-grouped ratio table for participants doing the same task. It shows
+`xff elapsed / reference elapsed` and the percentage difference; a ratio above one means xff is
+slower. Exact selected averages and absolute differences are retained in `relative_results` in JSON.
+Standalone fzf list filtering is never compared with xff discovery.
+
+When a compatible main cell exists, the ratio table also shows normalized change:
+`(PR xff/reference ratio / main xff/reference ratio - 1) * 100%`. Historical reports retain the
+same ratios and all tool versions, so both xff and competitor developments can be inspected.
+Relative measurements reduce some shared runner effects; they do not eliminate all machine noise,
+workload effects, or changes in the reference tool. Changed competitor identities suppress baseline
+comparisons rather than silently attributing a tool upgrade to xff.
+
+`--alarm-percent=15` is the initial advisory policy. A comparable cell whose xff/reference ratio
+worsens by more than 15% versus main is recorded in the report and produces a CI warning. It does
+not change the command's exit status or block merging. All scales are shown, including startup-heavy
+small cases; the differing 2/3 and 7/9 policies remain explicit. New or incompatible cells cannot
+trigger an alarm without a baseline. Correctness failures still fail CI. A future blocking policy
+can use the same evidence with a confirmation run; no performance block is enabled now.
+
+## Fixture inputs
+
+A manifest is self-contained UTF-8 text, one entry per line. Paths are relative to an isolated root;
+parent directories are created automatically. Blank lines are ignored. There are no comments,
+escape sequences, shell expansion, or sidecar files. Split at the first `=`; subsequent `=` bytes
+belong to the content. Text forms preserve whitespace and add no newline. LF or CRLF terminates a
+manifest line; encode embedded newlines or literal carriage returns with base64.
+
+```text
+empty.txt
+empty-dir/
+src/main.cc=:int main() {}
+docs/note.txt=t:Hello world!
+data/bytes.bin=b:AAECAwQ=
+main.cc=l:src/main.cc
+src/current.cc=l:main.cc
+dangling=l:missing.txt
+loop=l:loop
+```
+
+| Form            | Meaning                                                  |
+| --------------- | -------------------------------------------------------- |
+| `path`          | Empty regular file                                       |
+| `path/`         | Explicit directory, including an empty directory         |
+| `path=:text`    | Literal UTF-8 content                                    |
+| `path=t:text`   | Explicit equivalent of `=:`                              |
+| `path=b:BASE64` | Strict base64 decoding into exact bytes                  |
+| `path=l:target` | Symlink; relative target resolves from the link's parent |
+
+Unknown forms, including `=f:`, are errors. Duplicate entries and file/directory conflicts are
+errors. Links are created after regular files and directories; fixture creation never follows them.
+Absolute paths, parent traversal in entry names, and link chains escaping the root are rejected.
+Internal dangling links and cycles are allowed. Excessively complex link expansion is rejected.
+
+A tar archive, optionally compressed (`.tgz`, `.tar.gz`, etc.), is an alternative for larger content
+or an existing tree. Extraction happens before timing through the same validated entry model;
+files, directories, and symlinks are supported. Hard links, devices, FIFOs, duplicate names, and
+escaping paths/links are rejected. Archive ownership, timestamps, and permissions are not restored:
+these are normalized search fixtures, not metadata-preservation tests. Imports are bounded to
+200,000 entries and 1 GiB of file content. Both the input checksum and canonical tree hash are stored.
+
+Supply repeatable shape/count mappings to replace generated fixtures:
+
+```sh
+python3 tools/benchmark_compare.py --binary=/path/to/optimized/xff --report=report.json \
+  --fixture broad:10=fixtures/broad-10.manifest \
+  --fixture broad:100=fixtures/broad-100.tgz
+```
+
+The count is the exact number of regular files in that input. Directories and symlinks do not count;
+inputs are never silently truncated or replicated. Missing shape/count combinations appear as `n/a`.
+Without custom inputs, deterministic broad/deep trees are generated: the requested number of regular
+files (including `.gitignore`), plus a file symlink and a directory symlink. Broad is flat; deep distributes files
+across up to 40 nested levels, capped by the requested count. The `.gitignore` is included in
+reported input counts and throughput. No third-party corpus is downloaded.
 
 ## Tasks and equivalence
 
-| Task                   | Participants           | Contract                                                           |
-| ---------------------- | ---------------------- | ------------------------------------------------------------------ |
-| File enumeration       | xff, find, rg          | All regular files, including hidden and ignored names              |
-| Basename `*.txt`       | xff, find, rg          | Case-sensitive suffix selection                                    |
-| Content selection      | xff, rg                | Literal, case-sensitive `needle` and no-match `absent_marker`      |
-| Discovery plus fuzzy   | xff, find piped to fzf | Case-sensitive path subsequences `itm`, `hdn`, and no-match `zzzz` |
-| Precomputed-list fuzzy | fzf                    | Same candidate paths and queries; excludes discovery               |
+| Task                   | Participants           | Contract                                              |
+| ---------------------- | ---------------------- | ----------------------------------------------------- |
+| File enumeration       | xff, find, rg          | All regular files, including hidden and ignored names |
+| Safe enumeration       | xff                    | Same population with `--safe`                         |
+| Basename `*.txt`       | xff, find, rg          | Case-sensitive suffix selection                       |
+| Content selection      | xff, rg                | Literal `needle` and no-match `absent_marker`         |
+| Discovery plus fuzzy   | xff, find piped to fzf | Case-sensitive subsequences `itm`, `hdn`, and `zzzz`  |
+| Precomputed-list fuzzy | fzf                    | Same candidate paths and queries; excludes discovery  |
 
-All results are unordered multisets of NUL-delimited relative paths. Verification checks duplicates
-as well as membership. Roots are traversed without following file or directory symlinks. There are
-no result limits, archive containers, binary contents, or excluded hidden/ignored files. xff and rg
-request one or four workers in separate CPU series; find is naturally sequential. Sorting, color, pagers, rg configuration, and fzf
-default options are disabled. xff requests `--no-config`; a mandatory host configuration that changes
-the result causes validation to fail rather than silently changing the benchmark population.
+Results are unordered NUL-delimited path multisets. No symlinks are followed. Sorting, color,
+pagers, rg configuration, and fzf defaults are disabled. xff requests `--no-config`; mandatory host
+policy that changes results causes correctness validation to fail. The production VFS and safety
+checks remain active. Safe enumeration measures read-only safe-mode overhead, not mutation-policy
+costs. Content tasks are explicitly skipped for fixtures containing NUL bytes: xff and rg do not
+have equivalent binary-skipping semantics. Other tasks still measure those binary fixtures.
 
-Each shape runs at 10, 100, 1,000, and 10,000 generated files, each plus a `.gitignore`, one file
-symlink and one directory symlink. Scales retain separate samples and appear in each task label. The broad fixture has one directory; the deep fixture distributes files over up to 40 nested
-levels (capped at the generated file count for small sets). Generated contents use a fixed ASCII pattern with different extensions and match densities.
-No third-party corpus is downloaded. The exact commands, tool versions, executable hashes, host,
-fixture parameters, expected counts, expected-result hashes, and raw observations are retained in
-`report.json`. Relative paths keep queries and expected-result hashes independent of temporary paths.
+Fuzzy tasks compare plain ASCII subsequence acceptance, not scoring, ranking, extended-query syntax,
+or interactive responsiveness. Standalone fzf list filtering has no xff counterpart and must not be
+compared with discovery time. The end-to-end pipeline includes both find and fzf. No cross-scope
+speed ratios are generated.
 
-The fuzzy queries exercise plain ASCII subsequence acceptance in xff's `fzf` model and fzf's
-noninteractive `--filter` mode. They do not claim equivalent scoring, ranking, extended-query syntax,
-or interactive responsiveness. The standalone list task intentionally has no xff counterpart:
-xff's CLI performs discovery, whereas fzf accepts an already generated list. Its time must not be
-compared directly with xff's discovery time. The end-to-end comparison includes both `find` and `fzf`.
-See [fzf's own option definitions](https://github.com/junegunn/fzf/blob/master/man/man1/fzf.1) for
-filtering, NUL framing, and sorting controls.
+## Storage, CPUs, and accounting
 
-The separate `files-safe` task repeats xff enumeration with `--safe`. It checks the same expected
-population through the production VFS and safety configuration; it does not bypass either layer.
-This measures read-only safe-mode overhead, not the cost of authorizing mutations or every possible
-administrator policy. Small harness fixtures validate correctness only, not tool performance.
+Hosted fixtures use verified Linux `/dev/shm` tmpfs; there is no silent disk fallback. This excludes
+ordinary backing-device I/O from fixture reads while retaining filesystem calls, metadata, VFS
+routing, and safety checks. Tmpfs can swap under memory pressure. Executables and system config
+remain outside the fixture-storage contract. Fixtures are prepared before timing, warmed up, then
+reused without cache flushes. These are not cold-storage benchmarks.
 
-## CPU allocations
+Linux workers bind to one/four CPUs from the runner's allowed affinity set before timing, and child
+processes inherit that allocation. The entire find/fzf pipeline shares it. xff receives matching
+`--jobs`, rg matching `--threads`, and fzf matching `GOMAXPROCS`. Find remains single-threaded.
+Affinity does not reserve physical cores or eliminate hosted-runner contention. Insufficient CPUs
+or unavailable affinity enforcement fail the hosted run.
 
-Each size and shape runs with one and four CPUs, with samples and task labels kept separate.
-Linux workers bind themselves to the first one/four CPUs in the runner's allowed affinity set before
-starting the timer; their children inherit that allocation. The complete `find`/`fzf` pipeline shares
-the allocation. xff receives `--jobs=1`/`--jobs=4`, rg receives `--threads=1`/`--threads=4`, and fzf
-receives `GOMAXPROCS=1`/`GOMAXPROCS=4`. These are allowances, not a promise that every task or tool
-uses every CPU. Find remains single-threaded. CPU affinity does not reserve exclusive physical cores
-or remove runner contention.
+Each invocation uses a fresh measurement worker. Commands run without a shell; stdout is drained
+through a pipe and stderr captured. Validation is outside timing. Both pipeline processes contribute
+CPU and exit status. Single-process RSS is its high-water mark; pipeline memory is the sum of
+individual high-water marks, an upper bound rather than simultaneous peak memory. Missing stdout
+latency is unavailable, not zero. Throughput divides input files by the selected mean elapsed time.
+A 60-second deadline terminates the worker process group. These are leaf commands; arbitrary child
+process trees are outside this accounting contract.
 
-The hosted job requires affinity enforcement and fails if four CPUs are unavailable. macOS local
-runs configure worker counts but record null affinity; they are not CPU-constrained comparisons.
-Repeat `--cpus` to override the series. `--require-cpu-affinity` rejects unsupported hosts.
+## Running and publication
 
-## Measurement and interpretation
-
-Hosted fixtures live on Linux `/dev/shm`; the collector verifies the mount is `tmpfs` and fails if
-it is not. There is no silent fallback to disk. All competitors read the same RAM-backed tree.
-This removes ordinary backing-device I/O from fixture reads, but retains filesystem calls, metadata,
-VFS dispatch, and safety checks. Under memory pressure tmpfs may swap, so these results must not be
-interpreted as a guarantee of zero physical I/O. Executables and system configuration are outside the
-fixture-storage contract. Reports record the fixture parent and detected filesystem.
-
-Use `--fixture-parent=/dev/shm --require-memory` to enforce this locally on Linux. Without those
-options, local runs use the normal temporary directory and explicitly record that storage; macOS
-local results must not be presented as verified tmpfs measurements. Xff-only in-memory VFS microbenchmarks
-can isolate engine costs further, but external tools cannot access that private VFS.
-
-Five repetitions rotate the participant order within each task. A separate correctness run precedes
-those samples. Fixtures are freshly written, then reused without flushing OS caches; these are
-cache-reuse measurements, not cold-storage results. Process startup is included. The report shows
-elapsed time, input files per second, first stdout latency, user/system CPU time, RSS, and output bytes, with median, range,
-sample standard deviation, and sample count. No output means first-output latency is unavailable.
-Input files per second divides the regular-file population (including `.gitignore`) by median elapsed
-time, not the number of matches; list filtering uses that same input population. There are no
-automatic cross-tool or cross-scope speed ratios.
-
-Each invocation gets a fresh measurement worker. Commands run directly without a shell, with stdout
-drained through a pipe and stderr directed to a temporary file. Output validation happens after the
-measured interval. For the `find`/`fzf` pipeline, both child exit codes and both CPU usages are recorded.
-Single-process RSS is its high-water mark. Pipeline memory is the **sum of individual high-water
-marks**, an upper bound on their simultaneous peak, and is labelled separately. It must not be
-presented as a measured process-tree peak. These commands are leaf processes; arbitrary subprocess
-spawning is outside this harness's accounting contract. Each worker has a 60-second deadline, and a
-timeout terminates its process group.
-
-The hosted job installs GNU findutils, ripgrep, and fzf and records their actual installed versions.
-Local macOS runs identify BSD find by the OS version and executable hash. Missing tools are explicit
-skips locally; the hosted job requires all tools. Changes in tool versions, build configuration,
-fixture size, hardware, or OS require interpreting a new measurement contract, not claiming a
-regression from unlike runs.
-
-## Running and testing
-
-Build xff with `--config=clang_release`. Add comparisons to a history report with:
+Build with `--config=clang_release`. The driver is also available as `//tools:benchmark_compare`.
 
 ```sh
-python3 tools/benchmark_compare.py --binary=/path/to/optimized/xff \
-  --report=benchmark-report.json --require-tools
+python3 tools/benchmark_compare.py --binary=/path/to/optimized/xff --report=report.json \
+  --repetitions=9 --keep=7 --require-tools \
+  --fixture-parent=/dev/shm --require-memory --require-cpu-affinity \
+  --summary=report.md --html=report.html
 ```
 
-Repeat `--files` to select explicit scales, for example `--files=10000 --files=100000`.
-The default covers all four scales above.
+Repeat `--files` or `--cpus` to choose other scales. Use `--baseline-root=PATH` for a retained
+benchmark directory. `--build-identity` and `--runner-class` establish comparable invocation settings.
+For a small local correctness check, use `--files=12 --depth=3 --cpus=1 --repetitions=1 --keep=1`.
+Without required-memory/affinity options, macOS records ordinary temporary storage and null affinity;
+such results are not comparable with the hosted tmpfs/affinity measurements. Missing competitors
+are explicit skips unless `--require-tools` is set.
 
-For a small local harness check, use `--files=12 --depth=3 --repetitions=1`; this is not performance
-evidence. Without `--require-tools`, unavailable competitors are reported as skips. The driver also
-has a Bazel `py_binary` target, `//tools:benchmark_compare`.
+PR measurement is a job in the existing test workflow. Its Markdown table appears in the job summary;
+JSON, HTML, and Markdown are artifacts. Correctness/measurement failures fail CI; timing deltas do
+not. Main's 7/9 measurements join the existing post-merge history and publication workflow. No extra
+cache generation is created. Historical reports and exact-commit release links remain supported.
 
 ```sh
-bazel test //tools:benchmark_compare_test //tools:benchmark_history_test
+bazel test //tools:benchmark_fixture_test //tools:benchmark_matrix_test \
+  //tools:benchmark_compare_test //tools:benchmark_history_test
 ```
-
-Correctness tests belong to normal PR testing. The informational measurements are added to the
-existing main-only benchmark workflow and its existing publication/retention system; no separate
-PR benchmark workflow or additional cache generation is introduced. Historical reports without
-comparisons remain readable. Release links resolve to the exact tagged commit's retained report.

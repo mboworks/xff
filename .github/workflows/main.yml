@@ -673,6 +673,55 @@ jobs:
         with:
           key: ${{ steps.bazel-cache.outputs.key }}
 
+  benchmark-compare:
+    name: Benchmark comparison (best 2 of 3)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          ref: coverage-pages
+          path: benchmark-baseline
+          sparse-checkout: benchmarks/runs
+          persist-credentials: false
+      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: ./.github/actions/bazel-cache-restore
+        with:
+          namespace: default
+      - name: Install comparison tools
+        run: sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf
+      - name: Build optimized benchmark binary
+        run: bazel build //xff/cli:xff --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
+      - name: Compare with compatible main measurements
+        env:
+          BENCHMARK_HEAD: ${{ github.sha }}
+        run: |
+          python3 tools/benchmark_compare.py --binary=bazel-bin/xff/cli/xff \
+            --report=benchmark-pr.json --head="${BENCHMARK_HEAD}" \
+            --repetitions=3 --keep=2 --require-tools --fixture-parent=/dev/shm --require-memory --require-cpu-affinity \
+            --runner-class='github-hosted ubuntu-latest' \
+            --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | sha256sum | cut -d ' ' -f 1)" \
+            --baseline-root=benchmark-baseline/benchmarks --summary=benchmark-pr.md --html=benchmark-pr.html
+          cat benchmark-pr.md >>"${GITHUB_STEP_SUMMARY}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-pr
+          path: |
+            benchmark-pr.json
+            benchmark-pr.md
+            benchmark-pr.html
+          retention-days: 30
+          if-no-files-found: error
+
   # Single required status check: one job that gates merge on the whole matrix,
   # so branch protection needs only `done`. A yq/jq step self-checks that every
   # workflow job is wired into `needs`, so a newly added job cannot silently
@@ -682,6 +731,7 @@ jobs:
     needs:
       [
         release-site-tests,
+        benchmark-compare,
         test,
         pre-commit,
         trunk,
