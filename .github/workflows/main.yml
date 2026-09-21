@@ -682,10 +682,12 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
+            timeout: 30
           - os: macos-latest
             platform: macos
+            timeout: 60
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: ${{ matrix.timeout }}
     permissions:
       contents: read
     steps:

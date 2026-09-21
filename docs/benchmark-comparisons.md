@@ -236,3 +236,8 @@ start/completion lines per scale. Updates identify scale X/Y, fixture preparatio
 within the current task, including the tool and warm-up/sample index. Small scales therefore
 produce little output. Progress output and correctness checks happen outside the timed child
 commands; scale completion confirms all its output validation finished.
+
+The macOS job has a 60-minute pre-merge budget and a 90-minute post-merge budget, including
+compilation and fixture creation. Its first 100,000-file CI matrix exceeded the old 30-minute job
+budget after an eight-minute build. Linux keeps its 30/45-minute budgets. These are job ceilings,
+not requested measurement durations; individual benchmark invocations retain their timeout.

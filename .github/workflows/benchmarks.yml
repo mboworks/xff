@@ -22,10 +22,12 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
+            timeout: 45
           - os: macos-latest
             platform: macos
+            timeout: 90
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
+    timeout-minutes: ${{ matrix.timeout }}
     steps:
       - uses: actions/checkout@v7
         with:
