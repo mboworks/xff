@@ -33,6 +33,10 @@ namespace xff::fields {
 class Template;  // forward-declared; Expr holds a shared_ptr to -grep:FORMAT's compiled template
 }  // namespace xff::fields
 
+namespace xff::fuzzy {
+class FzfQuery;
+}  // namespace xff::fuzzy
+
 namespace xff::parser {
 
 enum class FuzzyModel { kFzf, kSequence, kLevenshtein, kShingles };
@@ -89,6 +93,7 @@ struct Expr {
   // The score/match model selected by an attached `:MODEL:PCT%`; the short `:PCT%` form and a bare
   // primary use fzf-style subsequence matching.
   FuzzyModel fuzzy_model = FuzzyModel::kFzf;
+  std::shared_ptr<const fuzzy::FzfQuery> fuzzy_query;  // compile extended-query syntax once
   // -similar[:WIDTH[:PCT%]]: contiguous word-shingle width and minimum Jaccard similarity.
   // Defaults are the v1 design-of-record: five words and 80 percent.
   std::size_t similarity_width = kDefaultSimilarityShingleWidth;

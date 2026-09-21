@@ -901,13 +901,21 @@ bool EvalFuzzyOn(const parser::Expr& expr, EvalContext& ctx, std::string_view su
   if (expr.args.empty()) {
     return false;
   }
-  if (!ctx.fuzzy_score.has_value() && !expr.fuzzy_threshold.has_value()
-      && expr.fuzzy_model == parser::FuzzyModel::kSequence) {
-    return fuzzy::Matches(expr.args.front(), subject, fold);  // truth only: the cheap scan
+  if (!ctx.fuzzy_score.has_value() && !expr.fuzzy_threshold.has_value()) {
+    if (expr.fuzzy_model == parser::FuzzyModel::kSequence) {
+      return fuzzy::Matches(expr.args.front(), subject, fold);
+    }
+    if (expr.fuzzy_model == parser::FuzzyModel::kFzf) {
+      return expr.fuzzy_query ? expr.fuzzy_query->Matches(subject, fold)
+                              : fuzzy::FzfQuery(expr.args.front()).Matches(subject, fold);
+    }
   }
   std::optional<int> percent;
   switch (expr.fuzzy_model) {
-    case parser::FuzzyModel::kFzf: percent = fuzzy::FzfPercent(expr.args.front(), subject, fold); break;
+    case parser::FuzzyModel::kFzf:
+      percent = expr.fuzzy_query ? expr.fuzzy_query->Percent(subject, fold)
+                                 : fuzzy::FzfPercent(expr.args.front(), subject, fold);
+      break;
     case parser::FuzzyModel::kSequence: percent = fuzzy::SequencePercent(expr.args.front(), subject, fold); break;
     case parser::FuzzyModel::kLevenshtein: percent = fuzzy::LevenshteinPercent(expr.args.front(), subject, fold); break;
     case parser::FuzzyModel::kShingles: percent = fuzzy::ShinglePercent(expr.args.front(), subject, fold); break;
@@ -2680,6 +2688,12 @@ void PreviewExecution(const parser::Expr& expr, EvalContext& context) {
 EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) {
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate: {
+      if (expr.descriptor->needs_metadata) {
+        context.control.metadata_error = context.visit.EnsureMetadata();
+        if (!context.control.metadata_error.ok()) {
+          return {.unknown = true};
+        }
+      }
       if (context.dry_run && expr.descriptor->safety == registry::Safety::kSecurity) {
         PreviewExecution(expr, context);
         return {.unknown = true};

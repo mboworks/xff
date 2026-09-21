@@ -68,6 +68,7 @@
 #include "xff/engine/evaluate.h"
 #include "xff/engine/extract.h"
 #include "xff/engine/mount.h"
+#include "xff/engine/parallel_match.h"
 #include "xff/engine/walk.h"
 #include "xff/env/env.h"
 #include "xff/exec/exec.h"
@@ -1121,6 +1122,28 @@ std::optional<std::string> BlockedAction(const parser::Expr& expr, const config:
     return blocked;
   }
   return expr.rhs ? BlockedAction(*expr.rhs, policy) : std::nullopt;
+}
+
+// Resolve once from capabilities. Only an unconditional metadata consumer allows eager
+// prefetch: a name test to the left of a size test keeps that stat behind short-circuiting.
+MetadataDemand ExpressionMetadata(const parser::Expr& expr) {
+  if (expr.kind == parser::Expr::Kind::kPredicate) {
+    return expr.descriptor->needs_metadata ? MetadataDemand::kAlways : MetadataDemand::kNever;
+  }
+  const MetadataDemand lhs = expr.lhs ? ExpressionMetadata(*expr.lhs) : MetadataDemand::kNever;
+  const MetadataDemand rhs = expr.rhs ? ExpressionMetadata(*expr.rhs) : MetadataDemand::kNever;
+  if (lhs == MetadataDemand::kAlways) {
+    return lhs;
+  }
+  return lhs == MetadataDemand::kNever && rhs == MetadataDemand::kNever ? MetadataDemand::kNever
+                                                                        : MetadataDemand::kOnDemand;
+}
+
+bool NeedsNativeCase(const parser::Expr& expr) {
+  if (expr.kind == parser::Expr::Kind::kPredicate) {
+    return expr.descriptor->native_case;
+  }
+  return (expr.lhs && NeedsNativeCase(*expr.lhs)) || (expr.rhs && NeedsNativeCase(*expr.rhs));
 }
 
 // True if the expression requires the control anywhere. Used for the
@@ -5222,7 +5245,8 @@ RunResult RunFindCore(
   // style is always byte-exact (drop-in faithful). When active, each entry's volume
   // is probed once (cached by device id; the visitor is single-threaded, so the
   // cache needs no synchronisation), and a case-folding volume sets fold_name_case.
-  const bool fs_native_case = style == registry::Style::kXff && !HasGlobal(command.globals, "--exact");
+  const bool fs_native_case = style == registry::Style::kXff && !HasGlobal(command.globals, "--exact")
+                              && expression.has_value() && NeedsNativeCase(*expression);
   absl::flat_hash_map<std::uint64_t, bool> case_sensitive_by_dev;
   // --hidden / --no-hidden (style-scoped default): whether to drop hidden dotfiles.
   const bool skip_hidden = ResolveSkipHidden(command.globals, style);
@@ -5421,6 +5445,62 @@ RunResult RunFindCore(
   for (std::size_t index = 0; index < deferred_nodes.size(); ++index) {
     deferred_node_order.emplace(deferred_nodes[index], index);
   }
+  const bool full_metadata = fs_native_case || colorize || any_reduction || matched_entry.has_value()
+                             || !column_templates.empty() || compiled_tmpl.has_value() || collections.Active()
+                             || !deferred_nodes.empty();
+  options.metadata = full_metadata            ? MetadataDemand::kAlways
+                     : expression.has_value() ? ExpressionMetadata(*expression)
+                                              : MetadataDemand::kNever;
+  // Only independent audited predicates enter the matcher pool. Keep traversal controls,
+  // side effects and every unclassified feature in the ordinary coordinator evaluator.
+  mbo::types::OptionalRef<const parser::Expr> parallel_expression;
+  mbo::types::OptionalRef<const parser::Expr> parallel_output;
+  if (options.workers > 1 && !full_metadata && expression.has_value() && options.archive == ArchiveDive::kNone) {
+    if (CanParallelMatch(*expression)) {
+      parallel_expression.set_ref(*expression);
+    } else if (
+        expression->kind == parser::Expr::Kind::kAnd && CanParallelMatch(*expression->lhs)
+        && expression->rhs->kind == parser::Expr::Kind::kPredicate && expression->rhs->descriptor->path_output) {
+      parallel_expression.set_ref(*expression->lhs);
+      parallel_output.set_ref(*expression->rhs);
+    }
+  }
+  // Cheap names/types do not justify synchronization. Content reads do; independent
+  // chunks distribute even a single broad directory across the requested workers.
+  if (parallel_expression.has_value() && !HasContentMatch(*parallel_expression)) {
+    parallel_expression.reset();
+  }
+  std::optional<ParallelMatch> parallel_match;
+  if (parallel_expression.has_value()) {
+    parallel_match.emplace(*parallel_expression, options.workers, rank_by_score);
+  }
+  std::vector<CollectedEntry> pending_matches;
+  const auto flush_matches = [&] {
+    if (pending_matches.empty()) {
+      return;
+    }
+    const auto& results = parallel_match->Match(std::move(pending_matches));
+    pending_matches.clear();
+    for (std::size_t index = 0; index < results.size(); ++index) {
+      const auto& evaluated = results.at(index);
+      const Visit visit = parallel_match->Entries().at(index).AsVisit();
+      fuzzy_score = evaluated.fuzzy;
+      if (evaluated.matched && parallel_output.has_value()) {
+        Control control;
+        EvalContext context{
+            .visit = visit,
+            .emit = emit,
+            .fs = *visit.fs,
+            .now = now,
+            .tz = tz,
+            .control = control,
+        };
+        Evaluate(*parallel_output, context);
+      }
+      std::map<std::string, std::string> outputs;
+      finish_entry(visit, outputs, evaluated.matched, std::nullopt);
+    }
+  };
   const absl::Status status = Walk(
       walk_fs, roots, options,
       // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive dispatch
@@ -5465,6 +5545,13 @@ RunResult RunFindCore(
             }
           }
         }
+        if (parallel_match.has_value()) {
+          pending_matches.push_back(OwnVisit(visit));
+          if (pending_matches.size() >= 256) {
+            flush_matches();
+          }
+          return WalkAction::kContinue;
+        }
         Control control;
         std::vector<std::string> captures;           // -regex groups for this entry; consumed by gated -exec {0}..{N}
         std::map<std::string, std::string> outputs;  // -capture results for this entry; read by {capture.NAME}
@@ -5495,10 +5582,10 @@ RunResult RunFindCore(
         EvalContext eval_context{
             .visit = visit,
             .emit = emit,
-            .emit_file = emit_file,
+            .emit_file = std::cref(emit_file),
             .dry_run = safety.dry_run,
             .archive_mutations = safety.ArchiveMutations(),
-            .emit_ls_row = emit_ls_row,
+            .emit_ls_row = std::cref(emit_ls_row),
             .ls_color = entry_color,
             .ls_size_units = human,
             // The entry's OWN filesystem, so a predicate that reads a member reads it out of the
@@ -5510,10 +5597,12 @@ RunResult RunFindCore(
             .zone_suffix = zone_suffix,
             .block_size = block_size,
             .fold_name_case = fold_name_case,
-            .fuzzy_score = fuzzy_score,
+            .fuzzy_score = full_metadata || rank_by_score ? mbo::types::OptionalRef{fuzzy_score}
+                                                          : mbo::types::OptionalRef<std::optional<int>>{},
             .hash_verification = hash_verification_summary ? mbo::types::OptionalRef{hash_verification}
                                                            : mbo::types::OptionalRef<std::optional<bool>>{},
-            .deferred = deferred,
+            .deferred = deferred_nodes.empty() ? mbo::types::OptionalRef<DeferredEvaluation>{}
+                                               : mbo::types::OptionalRef{deferred},
             .grep_count = grep_count,
             .grep_json = format == render::Format::kJsonl,
             .grep_before = grep_before,
@@ -5545,6 +5634,13 @@ RunResult RunFindCore(
         };
         const EvaluationResult evaluated =
             !expression.has_value() ? EvaluationResult{.matched = true} : EvaluateDeferred(*expression, eval_context);
+        if (!control.metadata_error.ok()) {
+          if (!(options.ignore_readdir_race && absl::IsNotFound(control.metadata_error))) {
+            ++errors;
+            on_error(visit.path, control.metadata_error);
+          }
+          return WalkAction::kContinue;
+        }
         if (evaluated.deferred) {
           deferred_candidates.push_back({
               .entry = OwnVisit(visit),
@@ -5599,6 +5695,8 @@ RunResult RunFindCore(
     ++errors;  // Fatal traversal error (none today; per-path errors handled above).
   }
 
+  flush_matches();
+
   // Resolve one deferred frontier at a time. A decision may expose another result-set predicate
   // farther right; replay stops there and the next round resolves that node's independent cohort.
   // Completed-prefix memo entries keep stateful tests and actions before each frontier single-shot.
@@ -5632,10 +5730,10 @@ RunResult RunFindCore(
       EvalContext eval_context{
           .visit = visit,
           .emit = emit,
-          .emit_file = emit_file,
+          .emit_file = std::cref(emit_file),
           .dry_run = safety.dry_run,
           .archive_mutations = safety.ArchiveMutations(),
-          .emit_ls_row = emit_ls_row,
+          .emit_ls_row = std::cref(emit_ls_row),
           .ls_color = entry_color,
           .ls_size_units = human,
           .fs = visit.fs.has_value() ? *visit.fs : walk_fs,

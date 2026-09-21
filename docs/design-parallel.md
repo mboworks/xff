@@ -44,10 +44,20 @@ A bounded directory-read worker pool with a single coordinator:
 
 - Workers perform only `ReadDir` plus metadata lookup and return complete listings.
   The coordinator submits sibling-directory reads ahead, then consumes their
-  futures in the order required by `--sort`.
-- The coordinator evaluates expressions, applies traversal controls, and writes
-  the output sink. Consequently matching and emission are ordered and single-threaded;
-  only directory I/O and eligible `-exec` children run concurrently.
+  futures in the order required by `--sort`. Directory workers start only when at least
+  two sibling directories provide independent work; a flat directory or single-child
+  chain does not pay for idle directory threads.
+- The coordinator applies traversal controls and writes the output sink in traversal order.
+  Independent content predicates can evaluate in a separate bounded worker pool; all stateful
+  expressions, mutations and execution actions retain the coordinator evaluator.
+- Content matching batches at most 256 owned entries and schedules chunks of 16, so one broad
+  directory can use several workers. Fewer than 64 entries run inline without starting matcher
+  threads. Completed results return to the coordinator in input order, including a trailing
+  path-only print action. Cheap name/type matching stays inline to avoid scheduling overhead.
+- Eligibility comes from audited descriptor capabilities, not names: only independent tests
+  without full metadata, mutable run state or safety effects qualify. Reductions, templates,
+  colored output, filesystem-native case probing and archive diving currently use the general
+  evaluator. Both paths keep the same VFS and safety preflight.
 - A listing future may retain a completed directory read until the coordinator
   reaches it. No worker emits a match and no traversal sort collects all matches.
 
@@ -90,7 +100,7 @@ Six modes, separating root order from order below each root. `name` stays an ali
   within that root second. Duplicate and overlapping roots remain separate walks
   and may repeat paths.
 
-All modes materialize the current directory's stat'd listing. With `-j > 1`, the
+All modes materialize the current directory's listing with the metadata its consumers need. With `-j > 1`, the
 walker may additionally hold listings read ahead for its child directories. That
 is traversal read-ahead, not matched-result buffering, and it does not change the
 coordinator's visit order. Result formats have a separate buffering policy:
@@ -101,10 +111,11 @@ actions still occur in traversal order.
 
 ## Parallelism control
 
-A single knob, `-j N` (long form `--jobs`), configures two independent limits:
-`N` directory-read workers and at most `N` outstanding semicolon-form
-`-exec`/`-execdir` children. Directory reads and child processes can overlap, so
-this is not one shared `N`-operation budget. `-j 1` makes both parts synchronous.
+A single knob, `-j N` (long form `--jobs`), configures independent limits: up to
+`N` directory-read workers, up to `N` eligible content-matcher workers, and at most
+`N` outstanding semicolon-form `-exec`/`-execdir` children. These are separate
+limits, not one shared `N`-operation budget. Content matching does not run alongside
+execution actions in the same expression. `-j 1` makes each part synchronous.
 `-j all` (`--jobs=all`) uses every detected core (`hardware_concurrency()`) for
 each limit, regardless of the active mode's default.
 
@@ -184,3 +195,28 @@ The traversal was delivered incrementally:
    worker-count and default-`--sort` wiring.
 6. **`--sort=roots|global`** - stable root ordering, either alone or combined
    with tree ordering below each root.
+
+## Metadata demand
+
+The engine derives metadata demand once from descriptor capabilities and active output consumers:
+
+- **Never:** names, known entry types and content predicates do not fetch full per-file metadata.
+- **On demand:** a cheap predicate before a metadata predicate (for example `-name '*.cc' -size +1k`)
+  fetches metadata only if evaluation reaches that predicate. Success or failure is cached per entry.
+- **Always:** unconditional metadata predicates or consumers such as summaries, metadata templates,
+  comparison and colored listings retain eager metadata, including parallel directory prefetch.
+
+Roots, directories, unknown directory-entry types and followed symlinks still fetch metadata for
+correct traversal, mount boundaries and loop detection. Metadata failures stop evaluation of that
+entry; an OR branch cannot turn the failure into a match or execute an action. Missing entries honor
+`-ignore_readdir_race`. A metadata-free listing can report an entry observed by directory enumeration
+without an additional existence check, just as a name-only directory listing can race with removal.
+New descriptors conservatively require complete metadata until explicitly audited.
+
+Fuzzy predicates compile the extended query once. A truth-only lookup skips ranking work;
+quality thresholds, `{fuzzy}`, result-set selection and score ordering retain scored evaluation.
+Deferred-expression memoization is allocated only when the expression contains a deferred consumer.
+
+Lazy metadata is exclusively owned by the coordinator after a directory-read future hands
+off its listing. Its cached value and status need neither locks nor atomics. Matcher workers
+receive owned entries without lazy loaders, and their eligibility excludes metadata consumers.

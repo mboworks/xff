@@ -15,6 +15,7 @@
 
 #include "xff/engine/walk.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -52,19 +53,20 @@ std::string_view Basename(std::string_view path) {
   return slash == std::string_view::npos ? path : path.substr(slash + 1);
 }
 
-// One child of a directory, already stat'd by a read job.
+// One directory child, with either complete or lazily loaded metadata.
 struct Stated {
   std::string path;
   // The entry's own final component, as the LISTING reported it. Not derivable from `path` in
   // general: an archive member's path is `a.tar!one.txt`, whose name is `one.txt`, not the whole
   // string a slash-based basename would yield. Empty only for a root operand, which has no listing.
   std::string name;
-  vfs::Metadata metadata;
+  mutable vfs::Metadata metadata;
   bool ok = false;
-  absl::Status status;
+  mutable absl::Status status;
+  mutable bool metadata_loaded = true;
 };
 
-// The result of reading one directory: its children stat'd, or a ReadDir error.
+// The result of reading one directory: its children, or a ReadDir error.
 using Listing = absl::StatusOr<std::vector<Stated>>;
 
 // A fixed pool of worker threads running leaf read jobs (`readdir` + `lstat`).
@@ -74,9 +76,14 @@ using Listing = absl::StatusOr<std::vector<Stated>>;
 // else on one thread). With zero workers, `Submit` runs the job inline.
 class ReadPool {
  public:
-  explicit ReadPool(std::size_t workers) {
-    threads_.reserve(workers);
-    for (std::size_t i = 0; i < workers; ++i) {
+  explicit ReadPool(std::size_t workers) : max_workers_(workers) {}
+
+  // Start only when sibling directories provide actual read-ahead opportunities. A
+  // single directory or a one-child chain has no independent directory jobs to overlap.
+  void Start(std::size_t directories) {
+    const std::size_t count = std::min(max_workers_, directories);
+    threads_.reserve(count);
+    while (threads_.size() < count) {
       threads_.emplace_back([this] { Run(); });
     }
   }
@@ -132,10 +139,11 @@ class ReadPool {
     }
   }
 
+  const std::size_t max_workers_;
   mutable absl::Mutex mutex_;
   std::queue<std::function<void()>> queue_ ABSL_GUARDED_BY(mutex_);
   bool stop_ ABSL_GUARDED_BY(mutex_) = false;
-  std::vector<std::thread> threads_;  // created in the ctor, joined in the dtor; not shared otherwise
+  std::vector<std::thread> threads_;  // started on demand, joined in the dtor; not shared otherwise
 };
 
 class Walker {
@@ -272,27 +280,38 @@ class Walker {
  private:
   // lstat (or stat, when following) a single path into a Stated, with the
   // dangling-symlink fallback to the link itself.
-  Stated StatNode(const std::string& path, bool follow, std::string_view name = {}) const {
+  Stated StatNode(std::string path, bool follow, std::string name = {}) const {
     // A path with no listing behind it (a root operand) falls back to the slash-based basename,
     // which is right for every real filesystem path.
-    std::string entry_name = name.empty() ? std::string(Basename(path)) : std::string(name);
+    std::string entry_name = name.empty() ? std::string(Basename(path)) : std::move(name);
     absl::StatusOr<vfs::Metadata> metadata = fs_.Stat(path, follow);
     if (!metadata.ok() && follow) {
       metadata = fs_.Stat(path, /*follow_symlinks=*/false);
     }
     if (!metadata.ok()) {
-      return Stated{.path = path, .name = std::move(entry_name), .ok = false, .status = metadata.status()};
+      return Stated{.path = std::move(path), .name = std::move(entry_name), .ok = false, .status = metadata.status()};
     }
-    return Stated{.path = path, .name = std::move(entry_name), .metadata = *metadata, .ok = true};
+    return Stated{.path = std::move(path), .name = std::move(entry_name), .metadata = *metadata, .ok = true};
   }
 
-  // A read job: list `dir` and stat every child. Pure - safe to run on a worker.
+  // A read job: list `dir` and fetch the metadata required eagerly. Safe on a worker.
   Listing ReadDir(const std::string& dir) const {
-    MBO_ASSIGN_OR_RETURN(const std::vector<vfs::Entry> entries, fs_.ReadDir(dir));
+    MBO_ASSIGN_OR_RETURN(std::vector<vfs::Entry> entries, fs_.ReadDir(dir));
     std::vector<Stated> children;
     children.reserve(entries.size());
-    for (const vfs::Entry& entry : entries) {
-      children.push_back(StatNode(entry.path, follow_children_, entry.name));
+    for (vfs::Entry& entry : entries) {
+      if (options_.metadata != MetadataDemand::kAlways && entry.type != vfs::FileType::kUnknown
+          && entry.type != vfs::FileType::kDirectory && (!follow_children_ || entry.type != vfs::FileType::kSymlink)) {
+        children.push_back({
+            .path = std::move(entry.path),
+            .name = std::move(entry.name),
+            .metadata = {.type = entry.type, .source = entry.source},
+            .ok = true,
+            .metadata_loaded = false,
+        });
+      } else {
+        children.push_back(StatNode(std::move(entry.path), follow_children_, std::move(entry.name)));
+      }
     }
     return children;
   }
@@ -306,6 +325,20 @@ class Walker {
     const bool within_depth = options_.max_depth < 0 || depth < options_.max_depth;
     const bool on_root_fs = !options_.single_filesystem || stated.metadata.dev == root_dev_;
     return is_dir && within_depth && on_root_fs;
+  }
+
+  // Only the coordinator accesses this record after its listing future completes. Exclusive
+  // ownership makes the lazy cache lock-free; it is never shared with matcher workers.
+  absl::Status LoadMetadata(const Stated& stated) const {
+    if (!stated.metadata_loaded) {
+      auto metadata = fs_.Stat(stated.path, follow_children_);
+      stated.metadata_loaded = true;
+      stated.status = metadata.status();
+      if (metadata.ok()) {
+        stated.metadata = *metadata;
+      }
+    }
+    return stated.status;
   }
 
   // Reports `stated` to the visitor (pre/post order handled by the caller).
@@ -323,6 +356,7 @@ class Walker {
     if (depth < options_.min_depth) {
       return WalkAction::kContinue;
     }
+    const auto load_metadata = [&] { return LoadMetadata(stated); };
     const Visit visit{
         .path = stated.path,
         .name = stated.name,
@@ -333,6 +367,7 @@ class Walker {
         .fs = fs_,
         .fs_owner = fs_owner_,
         .root_index = current_root_index_,
+        .load_metadata = load_metadata,
     };
     const WalkAction action = visit_(visit);
     if (action == WalkAction::kStop) {
@@ -471,7 +506,7 @@ class Walker {
       dived[i] = WillDive(children[i], depth);
       pruned[i] = VisitOne(children[i], depth, options_.mount_before_visit && dived[i]) == WalkAction::kPrune;
     }
-    std::vector<std::future<Listing>> reads = SubmitSubdirReads(children, depth);
+    std::vector<std::future<Listing>> reads = SubmitSubdirReads(children, depth, pruned);
     for (std::size_t i = 0; i < children.size(); ++i) {
       if (stopped_) {
         return;
@@ -496,15 +531,26 @@ class Walker {
   // vector aligned with `children` (an invalid future where there is no read), so
   // the pool overlaps their IO. The sequential walk (no workers) reads lazily at
   // descend time instead, so it never pre-reads siblings it might not reach.
-  std::vector<std::future<Listing>> SubmitSubdirReads(const std::vector<Stated>& children, int depth) {
+  std::vector<std::future<Listing>> SubmitSubdirReads(
+      const std::vector<Stated>& children,
+      int depth,
+      const std::vector<bool>& pruned = {}) {
     std::vector<std::future<Listing>> reads(children.size());
     if (options_.workers <= 1) {
       return reads;
     }
-    for (std::size_t i = 0; i < children.size(); ++i) {
-      if (Descendable(children[i], depth)) {
-        reads[i] = SubmitRead(children[i].path);
+    std::vector<std::size_t> directories;
+    for (std::size_t index = 0; index < children.size(); ++index) {
+      if ((pruned.empty() || !pruned[index]) && Descendable(children[index], depth)) {
+        directories.push_back(index);
       }
+    }
+    if (directories.size() < 2) {
+      return reads;
+    }
+    pool_.Start(directories.size());
+    for (const std::size_t index : directories) {
+      reads[index] = SubmitRead(children[index].path);
     }
     return reads;
   }
@@ -517,7 +563,6 @@ class Walker {
   // --archive-depth's business, not something to fall into by recursion.
   mbo::types::OptionalRef<const ContainerMounter> mount_container_;
   const bool follow_children_;
-  ReadPool pool_;
   bool stopped_ = false;
   std::uint64_t root_dev_ = 0;
   // How many containers this walker is already inside; 0 for the walk over the real filesystem.
@@ -527,6 +572,8 @@ class Walker {
   std::string_view current_root_;
   std::size_t current_root_index_ = 0;
   std::set<std::pair<std::uint64_t, std::uint64_t>> ancestors_;
+  // Join pending reads before destroying the mounted filesystem or other walker state.
+  ReadPool pool_;
 };
 
 }  // namespace

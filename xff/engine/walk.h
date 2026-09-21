@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -54,6 +55,10 @@ enum class SortOrder { kNone, kDir, kSubtree, kTree, kRoots, kGlobal };
 // separately wanted (design.md, ratified 2026-08-05).
 enum class ArchiveDive : std::uint8_t { kNone, kRoots, kAll };
 
+// Full entry metadata demand from the evaluator and output consumers. Traversal itself
+// still resolves roots, directories, unknown entry types and followed links in every mode.
+enum class MetadataDemand { kNever, kOnDemand, kAlways };
+
 struct WalkOptions {
   // Entries shallower than `min_depth` are traversed but not visited (find
   // `-mindepth`). A root operand is depth 0.
@@ -78,9 +83,13 @@ struct WalkOptions {
   // Sibling ordering within each directory (xff `--sort`); kNone is readdir order.
   SortOrder sort = SortOrder::kNone;
   // Worker threads for the parallel directory read-ahead; `1` is the sequential
-  // walk. The visitor always runs on a single coordinator thread, so evaluation
-  // and emission stay single-threaded; only `readdir`+`lstat` run in parallel.
+  // walk. The visitor always runs on a single coordinator thread. A caller may
+  // offload independent matching, but traversal controls and visitor ordering stay serial.
   std::size_t workers = 1;
+  // Keep complete metadata by default for arbitrary visitors. A metadata-free visitor may
+  // use directory-entry type/source instead; roots, directories, unknown types and followed
+  // symlinks still stat for traversal correctness. No fabricated size/owner/time is consumed.
+  MetadataDemand metadata = MetadataDemand::kAlways;
   // How far to descend INTO containers (xff `--archive` / `-z`), given a mounter to open one with.
   // `kNone` is find's behaviour, where an archive is one plain file. See `ContainerMounter`.
   ArchiveDive archive = ArchiveDive::kNone;
@@ -106,7 +115,7 @@ struct Visit {
   std::string_view name;          // final path component
   std::string_view root;          // command-line search root this entry was reached from (find %H)
   int depth;                      // 0 for a root operand, +1 per directory level
-  const vfs::Metadata& metadata;  // lstat of `path`
+  const vfs::Metadata& metadata;  // type/source are ready; call EnsureMetadata for other fields
   // True when this entry is a container the walk OPENED, so its members follow as entries of their
   // own and its bytes are already represented by them. Always false unless
   // `WalkOptions::mount_before_visit` is set, because otherwise the container is opened after this
@@ -125,6 +134,13 @@ struct Visit {
   std::shared_ptr<const vfs::FileSystem> fs_owner;
   // Original operand position, preserved when traversal sorts roots or enters an archive.
   std::size_t root_index = 0;
+  // Valid only during this coordinator-owned visit; never share the loader with workers.
+  // The walk caches success and failure without locks or atomics after directory-read handoff.
+  // An absent loader provides no deferred lookup: consumers must already have the metadata
+  // they need. Owned matcher entries omit it and accept only metadata-free predicates.
+  std::optional<absl::FunctionRef<absl::Status()>> load_metadata;
+
+  absl::Status EnsureMetadata() const { return load_metadata.has_value() ? (*load_metadata)() : absl::OkStatus(); }
 };
 
 // Visitor control flow, mirroring find: keep traversing, do not descend into

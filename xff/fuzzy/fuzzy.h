@@ -16,6 +16,7 @@
 #ifndef XFF_FUZZY_FUZZY_H_
 #define XFF_FUZZY_FUZZY_H_
 
+#include <memory>
 #include <optional>
 #include <string_view>
 
@@ -66,6 +67,19 @@ namespace xff::fuzzy {
 // the score. This preserves a useful normalized [0, 100] ranking while giving `-fuzzy:fzf` the
 // expression semantics users of fzf expect.
 [[nodiscard]] std::optional<int> FzfPercent(std::string_view query, std::string_view text, bool fold_case);
+
+// Immutable compiled extended-search query, shared safely by matching workers. Matches
+// preserves the complete query grammar without computing ranking scores.
+class FzfQuery final {
+ public:
+  explicit FzfQuery(std::string_view query);
+  [[nodiscard]] bool Matches(std::string_view text, bool fold_case) const;
+  [[nodiscard]] std::optional<int> Percent(std::string_view text, bool fold_case) const;
+
+ private:
+  struct Impl;
+  std::shared_ptr<const Impl> impl_;
+};
 
 // Plain ordered-subsequence quality: nullopt when `pattern` is not a subsequence, otherwise the
 // matched-character share of `text` in [0, 100]. Unlike Percent, placement and boundaries carry no

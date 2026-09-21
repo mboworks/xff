@@ -48,7 +48,12 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
     const std::optional<int> sequence = xff::fuzzy::SequencePercent(pattern, text, fold_case);
     RequirePercent(percent);
     RequirePercent(sequence);
-    RequirePercent(xff::fuzzy::FzfPercent(pattern, text, fold_case));
+    const xff::fuzzy::FzfQuery query(pattern);
+    const auto ranked = query.Percent(text, fold_case);
+    RequirePercent(ranked);
+    if (query.Matches(text, fold_case) != ranked.has_value()) {
+      std::abort();
+    }
     RequirePercent(xff::fuzzy::LevenshteinPercent(pattern, text, fold_case));
     RequirePercent(xff::fuzzy::ShinglePercent(pattern, text, fold_case));
     if (matches != percent.has_value() || matches != sequence.has_value()) {

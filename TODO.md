@@ -544,3 +544,13 @@ this as intentional accounting.
       are bounded, but reopening sequential archive members can still rescan parent streams.
 - [ ] Delivery 2: evaluate a separate permissively licensed UDIF/HFS+/APFS extension. No GPL/LGPL,
       installer execution, implicit host mounts, or new Apple-specific binary.
+
+### Traversal and matcher performance follow-up to PR 900
+
+- [x] Derive never/on-demand/always metadata demand from descriptors and consumers.
+- [x] Preserve metadata required for traversal, unknown entry types, symlinks and safety.
+- [x] Remove deferred-expression memoization when no deferred consumer exists.
+- [x] Avoid fuzzy score computation when no output or ranking consumer requires it.
+- [x] Add bounded parallel matching for audited independent content predicates with ordered output.
+- [ ] Complete sanitizer, coverage and changed-file lint validation and compare the standard scaling matrix.
+- [ ] Land performance changes on main before rebasing and merging measurement PR 900.
