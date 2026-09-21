@@ -204,7 +204,7 @@ def ratio_html(value, ratio):
 
 
 def render_html(report):
-    result = ['<p>' + html.escape(policy(report)) + '; absolute tables: elapsed milliseconds. '
+    result = ['<p>' + html.escape(policy(report)) + '; absolute tables: elapsed milliseconds; delta T is current minus main, also in milliseconds. '
               'Ratio tables: xff/reference, greater than 1 means xff is slower. '
               'Dark red ratios mean xff is slower; dark green means faster; equal ratios stay neutral. '
               'Vs main is the change in that ratio, not the raw elapsed-time change.</p>']
@@ -217,7 +217,7 @@ def render_html(report):
                (row['cpus'], row['files'])): row['xff_over_reference'] for row in (relative_results(report) if absolute else [])}
     for group, columns, rows in absolute + (relative_matrices(report) if absolute else []):
         relative = group.endswith(' - xff/reference ratios')
-        labels = ('Ratio', '\u0394 %') if relative else ('Elapsed ms', 'Main ms / change')
+        labels = ('Ratio', '\u0394 %') if relative else ('T [ms]', '\u0394T')
         result.append('<h3>' + html.escape(group) + '</h3><table><thead><tr>'
                       '<th rowspan="3" style="text-align:left">Task / tool</th>')
         for cpu in report['contract']['cpu_counts']:
@@ -241,8 +241,9 @@ def render_html(report):
                     current, separator, baseline = value.partition(' / ')
                     first = html.escape(current)
                     previous, change_separator, change = baseline.partition(' (')
-                    second = html.escape(previous) if separator else 'n/a'
-                    if change_separator:
+                    second = 'n/a'
+                    if separator and change_separator:
+                        second = f'{float(current) - float(previous):+.2f}'
                         second += '<br><small>' + html.escape(change.removesuffix(')')) + '</small>'
                 result.append('<td style="text-align:right">' + first + '</td>'
                               '<td style="text-align:right">' + second + '</td>')

@@ -188,6 +188,6 @@ Rendered HTML ratios use dark red when xff is slower than the reference and dark
 when faster; equal results stay neutral. The numeric ratios remain visible in every
 format, and the separate change versus main retains neutral styling.
 
-HTML uses two numeric subcolumns per file count: elapsed time and main comparison, or
-ratio and percentage difference. Each numeric cell is right-aligned; task/tool names are
+HTML uses two numeric subcolumns per file count: elapsed milliseconds and the signed
+time difference from main (with percentage change below), or ratio and percentage difference. Each numeric cell is right-aligned; task/tool names are
 left-aligned. A ratio change versus main stays on its own line below the difference.

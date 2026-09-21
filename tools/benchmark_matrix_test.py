@@ -111,7 +111,7 @@ class BenchmarkMatrixTest(unittest.TestCase):
         self.assertIn('2500.00 / 4000.00 (-37.5%)', rendered)
         self.assertIn('2500.00 / n/a', rendered)
         page = matrix.render_html(data)
-        self.assertIn('2500.00</td><td style="text-align:right">4000.00<br><small>-37.5%</small>', page)
+        self.assertIn('2500.00</td><td style="text-align:right">-1500.00<br><small>-37.5%</small>', page)
         self.assertNotIn('(-37.5%)', page)
         self.assertIn('2222222222222222222222222222222222222222', rendered)
 
@@ -156,6 +156,7 @@ class BenchmarkMatrixTest(unittest.TestCase):
         page = matrix.render_html(data)
         self.assertIn('<th colspan="4">1 CPU</th>', page)
         self.assertIn('<th colspan="2">10</th>', page)
+        self.assertIn('>T [ms]</th>', page)
         self.assertIn('<th scope="row" style="text-align:left">files / xff</th>', page)
         self.assertIn('<td style="text-align:right">4000.00</td><td style="text-align:right">n/a</td>', page)
         self.assertIn('text-align:right', page)
