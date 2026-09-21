@@ -6,7 +6,7 @@ module(
     version = "0.0.0",
 )
 
-bazel_dep(name = "rules_cc", version = "0.2.22")
+bazel_dep(name = "rules_cc", version = "0.2.25")
 bazel_dep(name = "xff_extras_api", version = "0.0.0")
 bazel_dep(name = "platforms", version = "1.1.0")
 

@@ -22,7 +22,7 @@ module(
     version = "0.0.0",
 )
 
-bazel_dep(name = "rules_cc", version = "0.2.22")
+bazel_dep(name = "rules_cc", version = "0.2.25")
 
 # NO libfuse dependency AT ALL, by design (settled with the user 2026-08-18). xff declares the fuse3
 # ABI itself in fuse_abi.h, so no libfuse file is fetched, read, compiled, linked or shipped, and the
