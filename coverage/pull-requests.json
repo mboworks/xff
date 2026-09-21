@@ -9,19 +9,19 @@
     "number": 905,
     "state": "open",
     "merged_at": null,
-    "merge_commit_sha": "c8295d2d679afd99a4c509b550ed8ae3859e3e8a"
+    "merge_commit_sha": "3fec51ee29ce1ca53381d893a808fef0aeca35ad"
   },
   {
     "number": 904,
     "state": "open",
     "merged_at": null,
-    "merge_commit_sha": "b122fdd7fe39fce3efe5e8551df8e30b67374d12"
+    "merge_commit_sha": "3b89fac0a87e77e28a347e5de0aa460960de3f1e"
   },
   {
     "number": 903,
-    "state": "open",
-    "merged_at": null,
-    "merge_commit_sha": "42208c17853f2eded5508015f10dbb39f6ff1b17"
+    "state": "closed",
+    "merged_at": "2026-09-21T22:46:55Z",
+    "merge_commit_sha": "9b04999acb798057582a1358b5fd484dd710d596"
   },
   {
     "number": 902,
