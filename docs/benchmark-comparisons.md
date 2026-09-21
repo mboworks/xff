@@ -195,7 +195,8 @@ left-aligned. A ratio change versus main stays on its own line below the differe
 
 Broad and deep HTML sections share one table per metric family. Shaded `FS tree` rows identify
 `Broad` and `Deep`, with slightly larger, left-aligned titles. Each section repeats column headers;
-both datasets retain identical numeric column widths. Row labels use `task: xff / reference`.
+both datasets retain identical numeric column widths. Task names and `xff / reference` labels occupy
+separate left-aligned columns.
 
 Post-merge measurement runs on both Linux and macOS through the existing benchmark workflow.
 Each platform retains its own HTML report and raw JSON under the workflow run and attempt;
