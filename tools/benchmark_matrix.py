@@ -193,22 +193,36 @@ def baseline_text(report):
             'comparisons are informational, not regression gates.')
 
 
+def ratio_html(value, ratio):
+    text, separator, baseline = value.partition('; vs main ')
+    if ratio is not None and ratio != 1:
+        color = '#a12622' if ratio > 1 else '#176b36'
+        text = f'<span style="color:{color}">' + html.escape(text) + '</span>'
+    else:
+        text = html.escape(text)
+    return text + html.escape(separator + baseline)
+
+
 def render_html(report):
     result = ['<p>' + html.escape(policy(report)) + '; absolute tables: elapsed milliseconds. '
               'Ratio tables: xff/reference, greater than 1 means xff is slower. '
+              'Dark red ratios mean xff is slower; dark green means faster; equal ratios stay neutral. '
               'Vs main is the change in that ratio, not the raw elapsed-time change.</p>']
     if alarm_text(report):
         result.append('<p>' + html.escape(alarm_text(report)) + '</p>')
     if baseline_text(report):
         result.append('<p>' + html.escape(baseline_text(report)) + '</p>')
-    for group, columns, rows in matrices(report) + (relative_matrices(report) if matrices(report) else []):
+    absolute = matrices(report)
+    ratios = {(row['dataset'] + ' - xff/reference ratios', row['task'], 'xff / ' + row['reference'],
+               (row['cpus'], row['files'])): row['xff_over_reference'] for row in (relative_results(report) if absolute else [])}
+    for group, columns, rows in absolute + (relative_matrices(report) if absolute else []):
         result.append('<h3>' + html.escape(group) + '</h3><table><thead><tr><th rowspan="2">Task / tool</th>')
         for cpu in report['contract']['cpu_counts']:
             result.append(f'<th colspan="{len(report["contract"]["file_counts"])}">{cpu} CPU{"s" if cpu != 1 else ""}</th>')
         result.append('</tr><tr>' + ''.join(f'<th>{count:,}</th>' for _, count in columns) + '</tr></thead><tbody>')
         for (name, tool), values in rows:
             result.append('<tr><th>' + html.escape(name + ' / ' + tool) + '</th>' +
-                          ''.join('<td style="text-align:right">' + html.escape(values.get(column, 'n/a')) + '</td>'
+                          ''.join('<td style="text-align:right">' + ratio_html(values.get(column, 'n/a'), ratios.get((group, name, tool, column))) + '</td>'
                                   for column in columns) + '</tr>')
         result.append('</tbody></table>')
     return ''.join(result)

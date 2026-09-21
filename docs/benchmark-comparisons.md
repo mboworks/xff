@@ -183,3 +183,7 @@ cache generation is created. Historical reports and exact-commit release links r
 bazel test //tools:benchmark_fixture_test //tools:benchmark_matrix_test \
   //tools:benchmark_compare_test //tools:benchmark_history_test
 ```
+
+Rendered HTML ratios use dark red when xff is slower than the reference and dark green
+when faster; equal results stay neutral. The numeric ratios remain visible in every
+format, and the separate change versus main retains neutral styling.

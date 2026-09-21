@@ -62,10 +62,25 @@ class BenchmarkMatrixTest(unittest.TestCase):
         self.assertIn('does not block merging', matrix.render_markdown(current))
         self.assertEqual(matrix.regressions(current, 30, minimum_files=10), [])
         self.assertEqual(matrix.regressions(current, 20), [])
-        self.assertIn('2.000x (+100.0%); vs main +25.0%', matrix.render_html(current))
+        self.assertIn('2.000x (+100.0%)</span>; vs main +25.0%', matrix.render_html(current))
         for value in (0, -1, float('nan')):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 matrix.regressions(current, value)
+
+    def test_ratio_colors_and_neutral_baseline_delta(self):
+        for ratio, color in ((2, '#a12622'), (0.5, '#176b36'), (1, None)):
+            with self.subTest(ratio=ratio):
+                data = report((ratio,), 1)
+                for task in data['tasks']:
+                    task['participants']['find'] = {'samples': [{'elapsed_seconds': 1}]}
+                page = matrix.render_html(data)
+                if color:
+                    self.assertIn(f'<span style="color:{color}">{ratio:.3f}x', page)
+                else:
+                    self.assertNotIn('<span style="color:', page)
+        self.assertEqual(matrix.ratio_html('0.500x (-50.0%); vs main +25.0%', 0.5),
+                         '<span style="color:#176b36">0.500x (-50.0%)</span>; vs main +25.0%')
+        self.assertEqual(matrix.ratio_html('n/a', None), 'n/a')
 
     def test_invalid_sampling_and_nonfinite_times(self):
         for data in (report(keep=0), report(keep=10), report((1, float('nan')), 1), report((0, 1), 1)):
