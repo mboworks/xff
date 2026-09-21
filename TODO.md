@@ -11,6 +11,18 @@
 - Original audit implementation and review fixups are merged, including F09 in #887.
 - v0.7.0 is released. F10 competitor comparisons resumed; see `docs/benchmark-comparisons.md`.
 
+## Performance optimization follow-up
+
+- [ ] Profile optimized production binaries across 10/100/1,000/10,000-file broad and deep trees;
+      separate startup/configuration, traversal/metadata, matching, and output costs. Run both one- and
+      four-CPU allocations on verified tmpfs storage.
+- [ ] Measure default and representative configured safety policies without bypassing the VFS or
+      weakening protections. Read-only `--safe` enumeration is included in competitor benchmarks.
+- [ ] Investigate eager metadata collection for name/type-only queries; preserve symlink, error,
+      safety, archive, and ordering semantics in any metadata-laziness optimization.
+- [ ] Record before/after timing, throughput, memory, and correctness for each optimization; add
+      representative larger-content and realistic directory-fanout workloads before broad claims.
+
 ## Completed: F09 benchmark history
 
 - [x] Paired immediate-base/head measurement with raw observations and a versioned contract.

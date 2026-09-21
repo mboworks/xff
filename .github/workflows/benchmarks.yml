@@ -76,7 +76,7 @@ jobs:
       - name: Compare equivalent tasks with find, ripgrep, and fzf
         run: |
           python3 tools/benchmark_compare.py --binary="${RUNNER_TEMP}/benchmark-head" \
-            --report=benchmark-report.json --require-tools
+            --report=benchmark-report.json --require-tools --fixture-parent=/dev/shm --require-memory --require-cpu-affinity
       - uses: actions/upload-artifact@v7
         with:
           name: benchmark-report

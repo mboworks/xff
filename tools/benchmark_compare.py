@@ -33,6 +33,8 @@ def measure(spec):
     """Fresh worker; account for each direct pipeline process, without a shell."""
     if sys.platform not in {"darwin", "linux"}:
         raise ValueError("resource accounting supports macOS and Linux only")
+    if spec.get("cpu_affinity") is not None:
+        os.sched_setaffinity(0, spec["cpu_affinity"])
     children = []
     chunks = []
     first = None
@@ -144,16 +146,17 @@ def fixture(root, files, depth):
     return rows
 
 
-def scenarios(root, rows, tools):
+def scenarios(root, rows, tools, cpus=1):
     def relative(path):
         return os.fsencode("./" + path.relative_to(root).as_posix())
     paths = [relative(path) for path, _ in rows]
-    xff = [tools["xff"]["path"], "--no-config", "--no-pager", "--color=never", "--jobs=1",
+    xff = [tools["xff"]["path"], "--no-config", "--no-pager", "--color=never", f"--jobs={cpus}",
            "--sort=none", "--exact", "--case=sensitive", "--gitignore=off", "--hidden", ".", "-type", "f"]
     find = [tools["find"].get("path", "find"), "-P", ".", "-type", "f"]
-    rg = [tools["rg"].get("path", "rg"), "--no-config", "--hidden", "--no-ignore", "--threads=1", "--color=never"]
+    rg = [tools["rg"].get("path", "rg"), "--no-config", "--hidden", "--no-ignore", f"--threads={cpus}", "--color=never"]
     yield "files", paths, {"xff": [xff + ["-print0"]], "find": [find + ["-print0"]],
                            "rg": [rg + ["--files", "-0", "."]]}
+    yield "files-safe", paths, {"xff": [[xff[0], "--safe", *xff[1:], "-print0"]]}
     yield "name-txt", [relative(p) for p, _ in rows if p.name.endswith('.txt')], {
         "xff": [xff + ["-name", "*.txt", "-print0"]], "find": [find + ["-name", "*.txt", "-print0"]],
         "rg": [rg + ["--files", "-g", "*.txt", "-0", "."]]}
@@ -174,25 +177,54 @@ def scenarios(root, rows, tools):
         yield "fuzzy-list-" + query, expected, {"fzf": [fzf]}
 
 
-def collect(binary, files=2000, depth=40, repetitions=5, worker=None, require_tools=False):
+def fixture_storage(parent, require_memory=False):
+    parent = Path(parent or tempfile.gettempdir()).resolve()
+    if not parent.is_dir():
+        raise ValueError("fixture parent must be an existing directory")
+    kind = "unverified host filesystem"
+    if sys.platform == "linux":
+        result = subprocess.run(["findmnt", "--noheadings", "--output", "FSTYPE", "--target", str(parent)],
+                                capture_output=True, text=True, check=False)
+        if result.returncode == 0:
+            kind = result.stdout.strip()
+    if require_memory and kind != "tmpfs":
+        raise ValueError("memory-backed fixtures require a verified Linux tmpfs mount")
+    return {"parent": str(parent), "filesystem": kind,
+            "memory_required": require_memory,
+            "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"}
+
+
+def collect(binary, files=2000, depth=40, repetitions=5, worker=None, require_tools=False,
+            fixture_parent=None, require_memory=False, cpus=1, require_cpu_affinity=False):
+    if cpus < 1:
+        raise ValueError("CPU count must be positive")
+    affinity = None
+    if hasattr(os, "sched_getaffinity"):
+        available = sorted(os.sched_getaffinity(0))
+        if len(available) < cpus:
+            raise ValueError(f"requested {cpus} CPUs, only {len(available)} available")
+        affinity = available[:cpus]
+    elif require_cpu_affinity:
+        raise ValueError("CPU affinity enforcement requires Linux")
+    storage = fixture_storage(fixture_parent, require_memory)
     tools = {name: tool_info(name, str(binary) if name == "xff" else shutil.which(name))
              for name in ("xff", "find", "rg", "fzf")}
     if require_tools and any(tool["status"] != "available" for tool in tools.values()):
         raise ValueError("comparison tools are required: " + json.dumps(tools))
     worker = worker or [sys.executable, str(Path(__file__).resolve())]
     report = {"schema": 1, "tools": tools, "contract": {
-        "files": files, "depth": depth, "repetitions": repetitions, "fixture_version": 1,
-        "platform": platform.platform(), "cpu_count": os.cpu_count(),
+        "files": files, "depth": depth, "storage": storage, "repetitions": repetitions, "fixture_version": 1,
+        "platform": platform.platform(), "cpu_count": os.cpu_count(), "requested_cpus": cpus, "cpu_affinity": affinity,
         "order": "rotate participants each repetition", "cache": "just written, then reused; no flush; correctness run first",
         "output": "NUL paths, unordered multiset; drained pipe; validation after timing",
         "memory": "single-process peak RSS; pipeline sum of individual peaks is an upper bound, not simultaneous peak",
         "scope": "batch discovery versus separate precomputed-list filtering; no interactive/ranking equivalence",
         "environment": "inherited platform environment; isolated HOME; LC_ALL=C; FZF defaults removed; rg config disabled",
         "children": "direct leaf commands only; no shell or unaccounted subprocess trees"}, "tasks": []}
-    with tempfile.TemporaryDirectory(prefix="xff-tool-comparison-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="xff-tool-comparison-", dir=storage["parent"]) as temporary:
         base = Path(temporary)
         environment = {k: v for k, v in os.environ.items() if not k.startswith("FZF_")}
-        environment.update(HOME=str(base), LC_ALL="C")
+        environment.update(HOME=str(base), LC_ALL="C", GOMAXPROCS=str(cpus))
         empty = base / "empty"
         empty.write_bytes(b"")
         for shape, levels in (("broad", 0), ("deep", depth)):
@@ -200,8 +232,9 @@ def collect(binary, files=2000, depth=40, repetitions=5, worker=None, require_to
             rows = fixture(root, files, levels)
             candidates = base / (shape + ".paths")
             candidates.write_bytes(b"".join(os.fsencode("./" + path.relative_to(root).as_posix()) + b"\0" for path, _ in rows))
-            for name, expected, commands in scenarios(root, rows, tools):
+            for name, expected, commands in scenarios(root, rows, tools, cpus):
                 task = {"shape": shape, "name": name, "expected_count": len(expected),
+                        "input_files": len(rows),
                         "expected_sha256": hashlib.sha256(b"\0".join(sorted(expected))).hexdigest(),
                         "participants": {}, "skips": {}}
                 report["tasks"].append(task)
@@ -210,7 +243,7 @@ def collect(binary, files=2000, depth=40, repetitions=5, worker=None, require_to
                     if missing:
                         task["skips"][label] = "unavailable: " + ", ".join(missing)
                         continue
-                    spec = {"pipeline": pipeline, "environment": environment, "cwd": str(root),
+                    spec = {"pipeline": pipeline, "environment": environment, "cwd": str(root), "cpu_affinity": affinity,
                             "stdin": str(candidates if name.startswith("fuzzy-list-") else empty)}
                     validate_output(invoke(spec, worker), expected, pipeline)
                     task["participants"][label] = {"pipeline": pipeline, "stdin": spec["stdin"], "cwd": str(root), "samples": []}
@@ -219,13 +252,46 @@ def collect(binary, files=2000, depth=40, repetitions=5, worker=None, require_to
                     order = labels[repetition % len(labels):] + labels[:repetition % len(labels)] if labels else []
                     for label in order:
                         entry = task["participants"][label]
-                        sample = invoke({"pipeline": entry["pipeline"], "stdin": entry["stdin"], "cwd": entry["cwd"], "environment": environment}, worker)
+                        sample = invoke({"pipeline": entry["pipeline"], "stdin": entry["stdin"], "cwd": entry["cwd"], "environment": environment, "cpu_affinity": affinity}, worker)
                         validate_output(sample, expected, entry["pipeline"])
                         entry["samples"].append(sample)
     for tool in tools.values():
         if tool["status"] == "available" and digest(tool["path"]) != tool["sha256"]:
             raise ValueError("tool binary changed during measurement")
     return report
+
+
+def collect_scales(binary, file_counts, depth=40, repetitions=5, require_tools=False,
+                   fixture_parent=None, require_memory=False, cpu_counts=(1, 4), require_cpu_affinity=False):
+    """Retain independent scales without mixing sample populations or tool identities."""
+    if not file_counts or len(set(file_counts)) != len(file_counts) or min(file_counts) < 1 or depth < 1:
+        raise ValueError("file counts must be unique and positive; depth must be positive")
+    if not cpu_counts or len(set(cpu_counts)) != len(cpu_counts) or min(cpu_counts) < 1:
+        raise ValueError("CPU counts must be unique and positive")
+    combined = None
+    for cpus in cpu_counts:
+        for files in file_counts:
+            report = collect(binary, files, min(files, depth), repetitions, require_tools=require_tools,
+                             fixture_parent=fixture_parent, require_memory=require_memory, cpus=cpus,
+                             require_cpu_affinity=require_cpu_affinity)
+            for task in report["tasks"]:
+                task["shape"] = f"{cpus}cpu/{files}/{task['shape']}"
+            if combined is None:
+                combined = report
+                combined["contract"].pop("files")
+                combined["contract"].pop("requested_cpus", None)
+                affinity = combined["contract"].pop("cpu_affinity", None)
+                combined["contract"]["cpu_counts"] = list(cpu_counts)
+                combined["contract"]["affinity_by_cpu_count"] = {str(cpus): affinity}
+                combined["contract"]["file_counts"] = list(file_counts)
+                combined["contract"]["depth"] = depth
+                combined["contract"]["depth_rule"] = "deep levels = min(files, depth); broad levels = 0"
+            else:
+                if report["tools"] != combined["tools"]:
+                    raise ValueError("tool identity changed between fixture scales")
+                combined["contract"]["affinity_by_cpu_count"][str(cpus)] = report["contract"].get("cpu_affinity")
+                combined["tasks"].extend(report["tasks"])
+    return combined
 
 
 def render(report):
@@ -253,8 +319,10 @@ def render(report):
             def median_cell(metric, scale):
                 values = [sample[metric] for sample in entry["samples"] if sample[metric] is not None]
                 return f"{statistics.median(values) * scale:.2f}" if values else "n/a"
+            elapsed = statistics.median(sample["elapsed_seconds"] for sample in entry["samples"])
+            throughput = f"{task['input_files'] / elapsed:.0f}" if task.get("input_files") and elapsed > 0 else "n/a"
             cells = [task["shape"] + "/" + task["name"], label, str(task["expected_count"]),
-                     median_cell("elapsed_seconds", 1000), median_cell("first_stdout_seconds", 1000),
+                     median_cell("elapsed_seconds", 1000), throughput, median_cell("first_stdout_seconds", 1000),
                      median_cell("peak_child_rss_bytes", 1 / 1048576),
                      median_cell("sum_child_peak_rss_bytes", 1 / 1048576) if len(entry["pipeline"]) > 1 else "n/a",
                      str(len(entry["samples"]))]
@@ -270,13 +338,13 @@ def render(report):
             skipped = ('<tr><td>' + html.escape(task["shape"] + '/' + task["name"]) + '</td><td>' +
                        html.escape(label) + '</td><td colspan="6">Skipped: ' + html.escape(reason) + '</td></tr>')
             rows.append(skipped)
-            overview.append(skipped)
+            overview.append(skipped.replace('colspan="6"', 'colspan="7"'))
     return ('<h2>Tool comparisons</h2><p>Correctness-checked batch tasks; no ranking or interactive comparison. '
             'Overview: medians in ms and MiB; details: seconds and bytes. Pipeline memory is a sum of process high-water marks, '
             'not simultaneous peak memory. No cross-scope ratios.</p><details><summary>Tools and contract</summary><pre>' +
             html.escape(json.dumps({"tools": report["tools"], "contract": report["contract"]}, indent=2)) +
             '</pre></details><table><tr><th>Task</th><th>Tool</th><th>Matches</th><th>Elapsed ms</th>'
-            '<th>First output ms</th><th>Peak RSS MiB</th><th>Pipeline sum RSS MiB</th><th>N</th></tr>' +
+            '<th>Input files/s</th><th>First output ms</th><th>Peak RSS MiB</th><th>Pipeline sum RSS MiB</th><th>N</th></tr>' +
             ''.join(overview) + '</table><details><summary>All metrics and variability</summary><table><tr>'
             '<th>Task</th><th>Tool</th><th>Metric</th><th>Median</th><th>Min</th>'
             '<th>Max</th><th>Stddev</th><th>N</th></tr>' + ''.join(rows) + '</table></details>')
@@ -287,18 +355,29 @@ def main():
     parser.add_argument('--worker', type=Path)
     parser.add_argument('--binary', type=Path)
     parser.add_argument('--report', type=Path, help='Existing history report to extend')
-    parser.add_argument('--files', type=int, default=2000)
+    parser.add_argument('--files', type=int, action='append', help='Repeat for each scale; default: 10, 100, 1000, 10000')
     parser.add_argument('--depth', type=int, default=40)
+    parser.add_argument('--cpus', type=int, action='append', help='Repeat for CPU allocations; default: 1, 4')
+    parser.add_argument('--require-cpu-affinity', action='store_true')
     parser.add_argument('--repetitions', type=int, default=5)
     parser.add_argument('--require-tools', action='store_true')
+    parser.add_argument('--fixture-parent', type=Path, help='Existing directory for generated fixtures')
+    parser.add_argument('--require-memory', action='store_true', help='Require verified Linux tmpfs fixture storage')
     args = parser.parse_args()
     if args.worker:
         print(json.dumps(measure(json.loads(args.worker.read_text()))))
         return
-    if not args.binary or not args.report or min(args.files, args.depth, args.repetitions) < 1 or args.depth > args.files:
-        parser.error('binary/report required; positive sizes, depth <= files')
+    file_counts = args.files or [10, 100, 1000, 10000]
+    cpu_counts = args.cpus or [1, 4]
+    if (not args.binary or not args.report or min(*file_counts, args.depth, args.repetitions) < 1
+            or len(set(file_counts)) != len(file_counts) or min(cpu_counts) < 1
+            or len(set(cpu_counts)) != len(cpu_counts)):
+        parser.error('binary/report required; unique positive sizes and positive depth')
     record = json.loads(args.report.read_text())
-    record['tool_comparisons'] = collect(args.binary, args.files, args.depth, args.repetitions, require_tools=args.require_tools)
+    record['tool_comparisons'] = collect_scales(
+        args.binary, file_counts, args.depth, args.repetitions, require_tools=args.require_tools,
+        fixture_parent=args.fixture_parent, require_memory=args.require_memory,
+        cpu_counts=cpu_counts, require_cpu_affinity=args.require_cpu_affinity)
     args.report.write_text(json.dumps(record, indent=2) + '\n')
 
 

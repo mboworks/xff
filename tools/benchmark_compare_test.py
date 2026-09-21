@@ -86,6 +86,8 @@ class BenchmarkCompareTest(unittest.TestCase):
             tasks = {name: (expected, commands) for name, expected, commands in
                      compare.scenarios(root, rows, {name: {'path': name} for name in ('xff', 'find', 'rg', 'fzf')})}
             self.assertEqual(len(tasks['files'][0]), 13)
+            self.assertEqual(tasks['files-safe'][0], tasks['files'][0])
+            self.assertIn('--safe', tasks['files-safe'][1]['xff'][0])
             self.assertEqual(len(tasks['name-txt'][0]), 6)
             self.assertEqual(len(tasks['content-needle'][0]), 4)
             self.assertEqual(tasks['content-absent_marker'][0], [])
@@ -93,16 +95,83 @@ class BenchmarkCompareTest(unittest.TestCase):
             self.assertEqual(tasks['fuzzy-list-zzzz'][0], [])
             self.assertNotIn(b'./file-link', tasks['files'][0])
 
+    @unittest.skipUnless(hasattr(os, 'sched_getaffinity'), 'Linux affinity required')
+    def test_worker_children_inherit_cpu_affinity(self):
+        cpus = sorted(os.sched_getaffinity(0))[:1]
+        command = [[sys.executable, '-c',
+                    'import os,sys; sys.stdout.buffer.write(str(sorted(os.sched_getaffinity(0))).encode()+b"\\0")']]
+        with tempfile.NamedTemporaryFile() as source:
+            sample = compare.invoke({'pipeline': command, 'stdin': source.name, 'environment': dict(os.environ),
+                                     'cpu_affinity': cpus}, [sys.executable, compare.__file__])
+        compare.validate_output(sample, [str(cpus).encode()], command)
+
+    def test_cpu_allocations_and_worker_settings(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / 'root'
+            rows = compare.fixture(root, 4, 2)
+            tasks = {name: commands for name, _, commands in
+                     compare.scenarios(root, rows, {name: {'path': name} for name in ('xff', 'find', 'rg', 'fzf')}, cpus=4)}
+            self.assertIn('--jobs=4', tasks['files']['xff'][0])
+            self.assertIn('--threads=4', tasks['files']['rg'][0])
+        with mock.patch.object(compare.os, 'sched_getaffinity', return_value={2, 3}, create=True):
+            with self.assertRaisesRegex(ValueError, 'only 2 available'):
+                compare.collect(Path('/xff'), cpus=4)
+        def report(binary, files, depth, repetitions, **kwargs):
+            return {"tools": {}, "contract": {"files": files, "cpu_affinity": list(range(kwargs['cpus']))},
+                    "tasks": [{"shape": "broad", "name": "files"}]}
+        with mock.patch.object(compare, 'collect', side_effect=report):
+            result = compare.collect_scales(Path('/xff'), [10])
+        self.assertEqual([task['shape'] for task in result['tasks']], ['1cpu/10/broad', '4cpu/10/broad'])
+        self.assertEqual(result['contract']['affinity_by_cpu_count'], {'1': [0], '4': [0, 1, 2, 3]})
+
+    def test_memory_storage_requires_verified_tmpfs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with mock.patch.object(compare.sys, 'platform', 'linux'), mock.patch.object(compare.subprocess, 'run') as run:
+                run.return_value = subprocess.CompletedProcess([], 0, 'tmpfs\n', '')
+                self.assertEqual(compare.fixture_storage(temporary, True)['filesystem'], 'tmpfs')
+                run.return_value = subprocess.CompletedProcess([], 0, 'ext4\n', '')
+                with self.assertRaisesRegex(ValueError, 'verified Linux tmpfs'):
+                    compare.fixture_storage(temporary, True)
+                self.assertEqual(compare.fixture_storage(temporary)['filesystem'], 'ext4')
+            with mock.patch.object(compare.sys, 'platform', 'darwin'):
+                with self.assertRaisesRegex(ValueError, 'verified Linux tmpfs'):
+                    compare.fixture_storage(temporary, True)
+            with self.assertRaisesRegex(ValueError, 'existing directory'):
+                compare.fixture_storage(Path(temporary) / 'missing')
+
+    def test_scales_keep_populations_separate_and_detect_changed_tools(self):
+        def report(binary, files, depth, repetitions, **kwargs):
+            return {"tools": {"xff": {"sha256": "same"}}, "contract": {"files": files},
+                    "tasks": [{"shape": "broad", "name": "files", "input_files": files + 1}]}
+        with mock.patch.object(compare, 'collect', side_effect=report):
+            result = compare.collect_scales(Path('/xff'), [10, 100], depth=2, cpu_counts=(1,))
+        self.assertEqual(result['contract']['file_counts'], [10, 100])
+        with mock.patch.object(compare, 'collect', side_effect=report) as collector:
+            compare.collect_scales(Path('/xff'), [10, 100], cpu_counts=(1,))
+        self.assertEqual([call.args[2] for call in collector.call_args_list], [10, 40])
+        self.assertEqual([task['shape'] for task in result['tasks']], ['1cpu/10/broad', '1cpu/100/broad'])
+        self.assertEqual([task['input_files'] for task in result['tasks']], [11, 101])
+        first, second = report(None, 10, 2, 1), report(None, 100, 2, 1)
+        second['tools']['xff']['sha256'] = 'changed'
+        with mock.patch.object(compare, 'collect', side_effect=[first, second]):
+            with self.assertRaisesRegex(ValueError, 'identity changed'):
+                compare.collect_scales(Path('/xff'), [10, 100], depth=2, cpu_counts=(1,))
+        for counts in ([], [0], [10, 10]):
+            with self.subTest(counts=counts), self.assertRaises(ValueError):
+                compare.collect_scales(Path('/xff'), counts, depth=2)
+
     def test_actual_xff_matches_independent_oracle(self):
         if BINARY is None:
             self.skipTest("Bazel supplies xff executable")
         # Other tools are host-dependent; always verify xff, and explicitly report their skips.
         with mock.patch.object(compare.shutil, 'which', return_value=None):
             result = compare.collect(BINARY, files=4, depth=2, repetitions=1)
-        self.assertEqual(len(result['tasks']), 20)
-        self.assertTrue(all(task['skips'] for task in result['tasks']))
+        self.assertEqual(len(result['tasks']), 22)
+        self.assertTrue(all(task['skips'] for task in result['tasks'] if task['name'] != 'files-safe'))
+        self.assertTrue(all(not task['skips'] for task in result['tasks'] if task['name'] == 'files-safe'))
         page = compare.render(result)
         self.assertIn('Tool comparisons', page)
+        self.assertIn('Input files/s', page)
         self.assertIn('Skipped:', page)
         broken = copy.deepcopy(result)
         broken['tasks'][0]['participants']['xff']['samples'] = []

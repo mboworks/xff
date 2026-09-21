@@ -19,13 +19,13 @@ an apparently successful empty result.
 All results are unordered multisets of NUL-delimited relative paths. Verification checks duplicates
 as well as membership. Roots are traversed without following file or directory symlinks. There are
 no result limits, archive containers, binary contents, or excluded hidden/ignored files. xff and rg
-request one worker; find is naturally sequential. Sorting, color, pagers, rg configuration, and fzf
+request one or four workers in separate CPU series; find is naturally sequential. Sorting, color, pagers, rg configuration, and fzf
 default options are disabled. xff requests `--no-config`; a mandatory host configuration that changes
 the result causes validation to fail rather than silently changing the benchmark population.
 
-Each shape contains 2,000 generated files plus a `.gitignore`, one file symlink and one directory
-symlink. The broad fixture has one directory; the deep fixture distributes files over up to 40 nested
-levels. Generated contents use a fixed ASCII pattern with different extensions and match densities.
+Each shape runs at 10, 100, 1,000, and 10,000 generated files, each plus a `.gitignore`, one file
+symlink and one directory symlink. Scales retain separate samples and appear in each task label. The broad fixture has one directory; the deep fixture distributes files over up to 40 nested
+levels (capped at the generated file count for small sets). Generated contents use a fixed ASCII pattern with different extensions and match densities.
 No third-party corpus is downloaded. The exact commands, tool versions, executable hashes, host,
 fixture parameters, expected counts, expected-result hashes, and raw observations are retained in
 `report.json`. Relative paths keep queries and expected-result hashes independent of temporary paths.
@@ -38,14 +38,47 @@ compared directly with xff's discovery time. The end-to-end comparison includes 
 See [fzf's own option definitions](https://github.com/junegunn/fzf/blob/master/man/man1/fzf.1) for
 filtering, NUL framing, and sorting controls.
 
+The separate `files-safe` task repeats xff enumeration with `--safe`. It checks the same expected
+population through the production VFS and safety configuration; it does not bypass either layer.
+This measures read-only safe-mode overhead, not the cost of authorizing mutations or every possible
+administrator policy. Small harness fixtures validate correctness only, not tool performance.
+
+## CPU allocations
+
+Each size and shape runs with one and four CPUs, with samples and task labels kept separate.
+Linux workers bind themselves to the first one/four CPUs in the runner's allowed affinity set before
+starting the timer; their children inherit that allocation. The complete `find`/`fzf` pipeline shares
+the allocation. xff receives `--jobs=1`/`--jobs=4`, rg receives `--threads=1`/`--threads=4`, and fzf
+receives `GOMAXPROCS=1`/`GOMAXPROCS=4`. These are allowances, not a promise that every task or tool
+uses every CPU. Find remains single-threaded. CPU affinity does not reserve exclusive physical cores
+or remove runner contention.
+
+The hosted job requires affinity enforcement and fails if four CPUs are unavailable. macOS local
+runs configure worker counts but record null affinity; they are not CPU-constrained comparisons.
+Repeat `--cpus` to override the series. `--require-cpu-affinity` rejects unsupported hosts.
+
 ## Measurement and interpretation
+
+Hosted fixtures live on Linux `/dev/shm`; the collector verifies the mount is `tmpfs` and fails if
+it is not. There is no silent fallback to disk. All competitors read the same RAM-backed tree.
+This removes ordinary backing-device I/O from fixture reads, but retains filesystem calls, metadata,
+VFS dispatch, and safety checks. Under memory pressure tmpfs may swap, so these results must not be
+interpreted as a guarantee of zero physical I/O. Executables and system configuration are outside the
+fixture-storage contract. Reports record the fixture parent and detected filesystem.
+
+Use `--fixture-parent=/dev/shm --require-memory` to enforce this locally on Linux. Without those
+options, local runs use the normal temporary directory and explicitly record that storage; macOS
+local results must not be presented as verified tmpfs measurements. Xff-only in-memory VFS microbenchmarks
+can isolate engine costs further, but external tools cannot access that private VFS.
 
 Five repetitions rotate the participant order within each task. A separate correctness run precedes
 those samples. Fixtures are freshly written, then reused without flushing OS caches; these are
 cache-reuse measurements, not cold-storage results. Process startup is included. The report shows
-elapsed time, first stdout latency, user/system CPU time, RSS, and output bytes, with median, range,
+elapsed time, input files per second, first stdout latency, user/system CPU time, RSS, and output bytes, with median, range,
 sample standard deviation, and sample count. No output means first-output latency is unavailable.
-There are no automatic cross-tool or cross-scope speed ratios.
+Input files per second divides the regular-file population (including `.gitignore`) by median elapsed
+time, not the number of matches; list filtering uses that same input population. There are no
+automatic cross-tool or cross-scope speed ratios.
 
 Each invocation gets a fresh measurement worker. Commands run directly without a shell, with stdout
 drained through a pipe and stderr directed to a temporary file. Output validation happens after the
@@ -70,6 +103,9 @@ Build xff with `--config=clang_release`. Add comparisons to a history report wit
 python3 tools/benchmark_compare.py --binary=/path/to/optimized/xff \
   --report=benchmark-report.json --require-tools
 ```
+
+Repeat `--files` to select explicit scales, for example `--files=10000 --files=100000`.
+The default covers all four scales above.
 
 For a small local harness check, use `--files=12 --depth=3 --repetitions=1`; this is not performance
 evidence. Without `--require-tools`, unavailable competitors are reported as skips. The driver also
