@@ -188,7 +188,7 @@ def baseline_text(report):
     if baseline['status'] != 'available':
         return baseline['reason']
     return (f"Main baseline: {baseline['head']}, run {baseline['run']}, attempt {baseline['attempt']}; "
-            f"{baseline['policy']}. Cells: current ms / main ms (change); positive is slower. "
+            f"{baseline['policy']}. Positive changes are slower. "
             'n/a means no compatible baseline cell. Different sampling policies are labelled; '
             'comparisons are informational, not regression gates.')
 
@@ -215,39 +215,45 @@ def render_html(report):
     absolute = matrices(report)
     ratios = {(row['dataset'] + ' - xff/reference ratios', row['task'], 'xff / ' + row['reference'],
                (row['cpus'], row['files'])): row['xff_over_reference'] for row in (relative_results(report) if absolute else [])}
-    for group, columns, rows in absolute + (relative_matrices(report) if absolute else []):
-        relative = group.endswith(' - xff/reference ratios')
+    for sections, relative in ((absolute, False), (relative_matrices(report) if absolute else [], True)):
+        if not sections:
+            continue
+        columns = sections[0][1]
+        title = 'xff/reference ratios' if relative else 'Elapsed time'
         labels = ('Ratio', '\u0394 %') if relative else ('T [ms]', '\u0394T')
-        result.append('<h3>' + html.escape(group) + '</h3><table><thead><tr>'
+        result.append('<h3>' + title + '</h3><table><thead><tr>'
                       '<th rowspan="3" style="text-align:left">Task / tool</th>')
         for cpu in report['contract']['cpu_counts']:
             result.append(f'<th colspan="{2 * len(report["contract"]["file_counts"])}">{cpu} CPU{"s" if cpu != 1 else ""}</th>')
         result.append('</tr><tr>' + ''.join(f'<th colspan="2">{count:,}</th>' for _, count in columns) + '</tr><tr>')
         result.append(''.join('<th style="text-align:right">' + label + '</th>' for _ in columns for label in labels))
         result.append('</tr></thead><tbody>')
-        for (name, tool), values in rows:
-            result.append('<tr><th scope="row" style="text-align:left">' + html.escape(name + ' / ' + tool) + '</th>')
-            for column in columns:
-                value = values.get(column, 'n/a')
-                ratio = ratios.get((group, name, tool, column))
-                if relative and ratio is not None:
-                    current, _, remainder = value.partition(' (')
-                    difference, _, baseline = remainder.partition(')')
-                    first = ratio_html(current.removesuffix('x'), ratio)
-                    second = ratio_html(difference, ratio)
-                    if baseline:
-                        second += '<br><small>' + html.escape(baseline.removeprefix('; ')) + '</small>'
-                else:
-                    current, separator, baseline = value.partition(' / ')
-                    first = html.escape(current)
-                    previous, change_separator, change = baseline.partition(' (')
-                    second = 'n/a'
-                    if separator and change_separator:
-                        second = f'{float(current) - float(previous):+.2f}'
-                        second += '<br><small>' + html.escape(change.removesuffix(')')) + '</small>'
-                result.append('<td style="text-align:right">' + first + '</td>'
-                              '<td style="text-align:right">' + second + '</td>')
-            result.append('</tr>')
+        for group, _, rows in sections:
+            result.append(f'<tr><th colspan="{1 + 2 * len(columns)}" style="text-align:center">' +
+                          html.escape(group) + '</th></tr>')
+            for (name, tool), values in rows:
+                result.append('<tr><th scope="row" style="text-align:left">' + html.escape(name + ' / ' + tool) + '</th>')
+                for column in columns:
+                    value = values.get(column, 'n/a')
+                    ratio = ratios.get((group, name, tool, column))
+                    if relative and ratio is not None:
+                        current, _, remainder = value.partition(' (')
+                        difference, _, baseline = remainder.partition(')')
+                        first = ratio_html(current.removesuffix('x'), ratio)
+                        second = ratio_html(difference, ratio)
+                        if baseline:
+                            second += '<br><small>' + html.escape(baseline.removeprefix('; ')) + '</small>'
+                    else:
+                        current, separator, baseline = value.partition(' / ')
+                        first = html.escape(current)
+                        previous, change_separator, change = baseline.partition(' (')
+                        second = 'n/a'
+                        if separator and change_separator:
+                            second = f'{float(current) - float(previous):+.2f}'
+                            second += '<br><small>' + html.escape(change.removesuffix(')')) + '</small>'
+                    result.append('<td style="text-align:right">' + first + '</td>'
+                                  '<td style="text-align:right">' + second + '</td>')
+                result.append('</tr>')
         result.append('</tbody></table>')
     return ''.join(result)
 

@@ -191,3 +191,6 @@ format, and the separate change versus main retains neutral styling.
 HTML uses two numeric subcolumns per file count: elapsed milliseconds and the signed
 time difference from main (with percentage change below), or ratio and percentage difference. Each numeric cell is right-aligned; task/tool names are
 left-aligned. A ratio change versus main stays on its own line below the difference.
+
+Broad and deep HTML sections share one table per metric family. Centered topic rows span
+all columns so both datasets use identical numeric column widths.

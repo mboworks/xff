@@ -83,6 +83,17 @@ class BenchmarkMatrixTest(unittest.TestCase):
                          '<span style="color:#176b36">0.500x (-50.0%)</span>; vs main +25.0%')
         self.assertEqual(matrix.ratio_html('n/a', None), 'n/a')
 
+    def test_dataset_sections_share_table_columns(self):
+        data = report((1,), 1)
+        for task in data['tasks']:
+            task['participants']['find'] = {'samples': [{'elapsed_seconds': 2}]}
+        data['tasks'] += [dict(task, dataset='deep') for task in data['tasks']]
+        page = matrix.render_html(data)
+        self.assertEqual(page.count('<table>'), 2)
+        for title in ('broad', 'deep', 'broad - xff/reference ratios', 'deep - xff/reference ratios'):
+            self.assertIn(f'<th colspan="9" style="text-align:center">{title}</th>', page)
+        self.assertEqual(page.count('<th colspan="4">1 CPU</th>'), 2)
+
     def test_invalid_sampling_and_nonfinite_times(self):
         for data in (report(keep=0), report(keep=10), report((1, float('nan')), 1), report((0, 1), 1)):
             with self.subTest(data=data), self.assertRaises(ValueError):
