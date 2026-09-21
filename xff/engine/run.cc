@@ -1045,6 +1045,11 @@ class ControlledFileSystem : public vfs::FileSystem {
     return fs_.Stat(path, follow);
   }
 
+  absl::StatusOr<vfs::Metadata> StatFields(std::string_view path, bool follow, vfs::MetadataFields fields)
+      const override {
+    return fs_.StatFields(path, follow, fields);
+  }
+
   bool Access(std::string_view path, vfs::AccessMode mode) const override { return fs_.Access(path, mode); }
 
   absl::StatusOr<std::string> ReadLink(std::string_view path) const override { return fs_.ReadLink(path); }
@@ -1128,7 +1133,9 @@ std::optional<std::string> BlockedAction(const parser::Expr& expr, const config:
 // prefetch: a name test to the left of a size test keeps that stat behind short-circuiting.
 MetadataDemand ExpressionMetadata(const parser::Expr& expr) {
   if (expr.kind == parser::Expr::Kind::kPredicate) {
-    return expr.descriptor->needs_metadata ? MetadataDemand::kAlways : MetadataDemand::kNever;
+    const bool needs_metadata =
+        expr.descriptor->needs_metadata || (expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime());
+    return needs_metadata ? MetadataDemand::kAlways : MetadataDemand::kNever;
   }
   const MetadataDemand lhs = expr.lhs ? ExpressionMetadata(*expr.lhs) : MetadataDemand::kNever;
   const MetadataDemand rhs = expr.rhs ? ExpressionMetadata(*expr.rhs) : MetadataDemand::kNever;
@@ -1137,6 +1144,39 @@ MetadataDemand ExpressionMetadata(const parser::Expr& expr) {
   }
   return lhs == MetadataDemand::kNever && rhs == MetadataDemand::kNever ? MetadataDemand::kNever
                                                                         : MetadataDemand::kOnDemand;
+}
+
+bool PredicateNeedsBirthTime(const parser::Expr& expr, bool exec_fields, bool grep_count) {
+  if (expr.descriptor->needs_birth_time
+      || (!grep_count && expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
+    return true;
+  }
+  const auto& expansion = expr.descriptor->argument_fields;
+  if (expansion.syntax == registry::ArgumentFields::Syntax::kNone || (expansion.requires_exec_fields && !exec_fields)
+      || expansion.first >= expr.args.size()) {
+    return false;
+  }
+  const absl::Span<const std::string> args = expr.args;
+  for (const std::string& arg :
+       args.subspan(expansion.first, expansion.remaining ? args.size() - expansion.first : 1)) {
+    if (expansion.syntax == registry::ArgumentFields::Syntax::kPrintf) {
+      if (absl::c_any_of(
+              fields::PrintfTemplates(arg), [](const fields::Template& field) { return field.NeedsBirthTime(); })) {
+        return true;
+      }
+    } else if (fields::Template::Compile(arg).NeedsBirthTime()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ExpressionNeedsBirthTime(const parser::Expr& expr, bool exec_fields, bool grep_count) {
+  if (expr.kind == parser::Expr::Kind::kPredicate) {
+    return PredicateNeedsBirthTime(expr, exec_fields, grep_count);
+  }
+  return (expr.lhs && ExpressionNeedsBirthTime(*expr.lhs, exec_fields, grep_count))
+         || (expr.rhs && ExpressionNeedsBirthTime(*expr.rhs, exec_fields, grep_count));
 }
 
 bool NeedsNativeCase(const parser::Expr& expr) {
@@ -5451,6 +5491,13 @@ RunResult RunFindCore(
   options.metadata = full_metadata            ? MetadataDemand::kAlways
                      : expression.has_value() ? ExpressionMetadata(*expression)
                                               : MetadataDemand::kNever;
+  const bool birth_time =
+      matched_entry.has_value()
+      || (expression.has_value() && ExpressionNeedsBirthTime(*expression, exec_fields, grep_count))
+      || (compiled_tmpl.has_value() && compiled_tmpl->NeedsBirthTime())
+      || absl::c_any_of(column_templates, [](const fields::Template& field) { return field.NeedsBirthTime(); })
+      || absl::c_any_of(summary_templates, [](const auto& item) { return item.has_value() && item->NeedsBirthTime(); });
+  options.metadata_fields = birth_time ? vfs::MetadataFields::kBirthTime : vfs::MetadataFields::kBasic;
   // Only independent audited predicates enter the matcher pool. Keep traversal controls,
   // side effects and every unclassified feature in the ordinary coordinator evaluator.
   mbo::types::OptionalRef<const parser::Expr> parallel_expression;

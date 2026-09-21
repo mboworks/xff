@@ -211,7 +211,16 @@ correct traversal, mount boundaries and loop detection. Metadata failures stop e
 entry; an OR branch cannot turn the failure into a match or execute an action. Missing entries honor
 `-ignore_readdir_race`. A metadata-free listing can report an entry observed by directory enumeration
 without an additional existence check, just as a name-only directory listing can race with removal.
-New descriptors conservatively require complete metadata until explicitly audited.
+New descriptors conservatively require basic metadata until explicitly audited; birth-time consumers
+also declare `needs_birth_time`.
+
+Field selection is independent of eager versus lazy demand. Ordinary traversal and size, owner,
+mode and modification-time consumers request portable stat fields. Birth-time predicates and compiled
+`{btime}` fields request creation time too; arbitrary entry callbacks retain complete metadata.
+Linux basic requests use `stat`/`lstat`. Creation-time requests use one `statx` lookup for basic fields
+and birth time, with a portable fallback when unavailable or incomplete. macOS already supplies birth
+time in ordinary stat results, so it needs no extra call. The request is resolved once per walk;
+a walk containing a birth-time consumer requests that field whenever its metadata is loaded.
 
 Fuzzy predicates compile the extended query once. A truth-only lookup skips ranking work;
 quality thresholds, `{fuzzy}`, result-set selection and score ordering retain scored evaluation.

@@ -90,6 +90,8 @@ struct WalkOptions {
   // use directory-entry type/source instead; roots, directories, unknown types and followed
   // symlinks still stat for traversal correctness. No fabricated size/owner/time is consumed.
   MetadataDemand metadata = MetadataDemand::kAlways;
+  // Independent of eager/lazy demand: arbitrary visitors retain all fields by default.
+  vfs::MetadataFields metadata_fields = vfs::MetadataFields::kBirthTime;
   // How far to descend INTO containers (xff `--archive` / `-z`), given a mounter to open one with.
   // `kNone` is find's behaviour, where an archive is one plain file. See `ContainerMounter`.
   ArchiveDive archive = ArchiveDive::kNone;

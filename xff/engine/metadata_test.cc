@@ -11,6 +11,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/time/time.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/status.h"
@@ -30,6 +31,19 @@ class MetadataFs final : public vfs::FileSystem {
   std::vector<vfs::Entry> entries;
   mutable std::atomic<std::size_t> stats = 0;
   bool fail_stats = false;
+  mutable std::atomic<std::size_t> birth_requests = 0;
+
+  absl::StatusOr<vfs::Metadata> StatFields(std::string_view path, bool follow, vfs::MetadataFields fields)
+      const override {
+    if (fields == vfs::MetadataFields::kBirthTime) {
+      ++birth_requests;
+    }
+    auto result = Stat(path, follow);
+    if (result.ok() && fields == vfs::MetadataFields::kBirthTime) {
+      result->btime = absl::UnixEpoch();
+    }
+    return result;
+  }
 
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view) const override { return entries; }
 
@@ -84,6 +98,41 @@ struct MetadataTest : ::testing::Test {
     EXPECT_THAT(fs.stats.load(), Eq(expected_stats));
   }
 };
+
+TEST_F(MetadataTest, BasicConsumersDoNotRequestBirthTime) {
+  Populate(10);
+  Check({"-size", "7c"}, 1, 11);
+  Check({"--summary=ext"}, 1, 11);
+  Check({"--template={mtime:epoch}"}, 1, 11);
+  EXPECT_THAT(fs.birth_requests.load(), Eq(0));
+}
+
+TEST_F(MetadataTest, ReferenceMetadataRequestsOnlyTheComparedFields) {
+  Populate(10);
+  Check({"-newer", "reference"}, 1, 22);
+  Check({"-samefile", "reference"}, 1, 22);
+  EXPECT_THAT(fs.birth_requests.load(), Eq(0));
+  Check({"-newermB", "reference"}, 1, 22);
+  EXPECT_THAT(fs.birth_requests.load(), Eq(11));
+}
+
+TEST_F(MetadataTest, BirthTimeConsumersRequestExtendedFields) {
+  Populate(10);
+  Check({"-newerBt", "@1"}, 1, 11);
+  EXPECT_THAT(fs.birth_requests.load(), Eq(11));
+  fs.birth_requests = 0;
+  Check({"--template={btime:epoch}"}, 1, 11);
+  EXPECT_THAT(fs.birth_requests.load(), Eq(11));
+  fs.birth_requests = 0;
+  Check({"--summary={btime:epoch}"}, 1, 11);
+  EXPECT_THAT(fs.birth_requests.load(), Eq(11));
+  fs.birth_requests = 0;
+  Check({"-name", "absent", "-newerBt", "@1"}, 1, 1);
+  EXPECT_THAT(fs.birth_requests.load(), Eq(1));
+  fs.birth_requests = 0;
+  Check({"-type", "f", "-grep:{btime:epoch}", "needle"}, 1, 11);
+  EXPECT_THAT(fs.birth_requests.load(), Eq(11));
+}
 
 TEST_F(MetadataTest, KnownTypesAvoidPerFileStatsAtEveryScaleAndWorkerCount) {
   for (const std::size_t count : {10, 100, 1'000, 10'000}) {

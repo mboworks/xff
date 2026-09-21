@@ -913,6 +913,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_birth_time = true,
     },
     {
         .name = "-newerBc",
@@ -920,6 +921,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_birth_time = true,
     },
     {
         .name = "-newerBm",
@@ -927,6 +929,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_birth_time = true,
     },
     {
         .name = "-newerBB",
@@ -934,6 +937,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_birth_time = true,
     },
     {
         .name = "-newerBt",
@@ -941,6 +945,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_birth_time = true,
     },
     {
         .name = "-neweraB",
@@ -1036,6 +1041,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_birth_time = true,
     },
     {
         .name = "-Bmin",
@@ -1045,6 +1051,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_birth_time = true,
     },
     {
         .name = "-used",

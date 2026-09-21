@@ -15,6 +15,11 @@
 
 namespace xff::vfs {
 
+absl::StatusOr<Metadata> FileSystem::StatFields(std::string_view path, bool follow_symlinks, MetadataFields /*fields*/)
+    const {
+  return Stat(path, follow_symlinks);
+}
+
 absl::Status FileSystem::RemoveControlled(std::string_view path, const MutationPolicy& policy) const {
   if (policy.directories) {
     return absl::PermissionDeniedError("filesystem does not support directory-scoped mutations");

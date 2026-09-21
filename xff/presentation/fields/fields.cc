@@ -1164,6 +1164,10 @@ bool Template::ReferencesCapture(std::string_view name) const {
   });
 }
 
+bool Template::NeedsBirthTime() const {
+  return absl::c_any_of(segments_, [](const Segment& segment) { return segment.fn == &BtimeField; });
+}
+
 hash::DefaultUsage Template::HashDefaultsUsed() const {
   hash::DefaultUsage usage;
   for (const Segment& segment : segments_) {

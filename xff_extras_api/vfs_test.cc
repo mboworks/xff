@@ -140,6 +140,14 @@ TEST_F(VfsSeamTest, ControlledOperationsRetainBackendRestrictionsAndRejectHostSc
       StatusIs(absl::StatusCode::kPermissionDenied));
 }
 
+TEST_F(VfsSeamTest, FieldRequestsPreserveExistingBackendMetadataAndErrors) {
+  const ReadOnlyFakeFs fs;
+  for (const auto fields : {MetadataFields::kBasic, MetadataFields::kBirthTime}) {
+    EXPECT_THAT(fs.StatFields("/box/member.txt", false, fields), IsOkAndHolds(Field(&Metadata::size, Eq(7))));
+    EXPECT_THAT(fs.StatFields("/missing", false, fields), StatusIs(absl::StatusCode::kNotFound));
+  }
+}
+
 TEST_F(VfsSeamTest, PerPathFailuresAreStatusesSoTheWalkCanContinue) {
   // The contract is that a per-path failure is REPORTED, not thrown or fatal: the engine keeps
   // traversing and folds it into the exit code.

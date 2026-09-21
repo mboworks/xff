@@ -140,10 +140,11 @@ struct Descriptor {
   // False only when evaluation uses names, entry type/source, or content, never stat fields.
   // Conservative by default: new predicates retain complete metadata until audited.
   bool needs_metadata = true;
-  bool native_case = false;     // name matching consumes filesystem-native case sensitivity
-  bool parallel_match = false;  // audited independent matcher with no per-run mutable state
-  bool path_output = false;     // unconditional path-only stdout action, safe to emit after matching
-  bool size_argument = false;   // first operand uses the shared size specification grammar
+  bool needs_birth_time = false;  // requires fields beyond portable stat metadata
+  bool native_case = false;       // name matching consumes filesystem-native case sensitivity
+  bool parallel_match = false;    // audited independent matcher with no per-run mutable state
+  bool path_output = false;       // unconditional path-only stdout action, safe to emit after matching
+  bool size_argument = false;     // first operand uses the shared size specification grammar
 };
 
 template<typename Sink>

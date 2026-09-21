@@ -21,6 +21,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <limits>
@@ -182,6 +183,51 @@ TEST_F(LocalFsTest, StatRegularFile) {
   EXPECT_THAT(md.nlink, Gt(0U));
   // mtime is populated (well after 2020-01-01, not a zero/epoch default).
   EXPECT_THAT(md.mtime, Gt(absl::FromUnixSeconds(1'577'836'800)));
+}
+
+TEST_F(LocalFsTest, MetadataMatchesNativeStatForFilesDirectoriesAndLinks) {
+  for (const std::string_view name : {"file.txt", "sub", "link"}) {
+    for (const bool follow : {false, true}) {
+      const std::string path = Path(name);
+      struct stat expected{};
+      // XFF_HOST_IO: Compare the VFS metadata adapter with the native stat contract.
+      ASSERT_THAT(follow ? ::stat(path.c_str(), &expected) : ::lstat(path.c_str(), &expected), Eq(0));
+      MBO_ASSERT_OK_AND_ASSIGN(const auto actual, local_fs_.Stat(path, follow));
+      EXPECT_THAT(actual.size, Eq(static_cast<std::uint64_t>(expected.st_size)));
+      EXPECT_THAT(actual.blocks, Eq(static_cast<std::uint64_t>(expected.st_blocks)));
+      EXPECT_THAT(actual.mode, Eq(static_cast<std::uint32_t>(expected.st_mode)));
+      EXPECT_THAT(actual.nlink, Eq(static_cast<std::uint64_t>(expected.st_nlink)));
+      EXPECT_THAT(actual.uid, Eq(static_cast<std::uint32_t>(expected.st_uid)));
+      EXPECT_THAT(actual.gid, Eq(static_cast<std::uint32_t>(expected.st_gid)));
+      EXPECT_THAT(actual.ino, Eq(static_cast<std::uint64_t>(expected.st_ino)));
+      EXPECT_THAT(actual.dev, Eq(static_cast<std::uint64_t>(expected.st_dev)));
+#if defined(__APPLE__)
+      EXPECT_THAT(actual.atime, Eq(absl::TimeFromTimespec(expected.st_atimespec)));
+      EXPECT_THAT(actual.mtime, Eq(absl::TimeFromTimespec(expected.st_mtimespec)));
+      EXPECT_THAT(actual.ctime, Eq(absl::TimeFromTimespec(expected.st_ctimespec)));
+#else
+      EXPECT_THAT(actual.atime, Eq(absl::TimeFromTimespec(expected.st_atim)));
+      EXPECT_THAT(actual.mtime, Eq(absl::TimeFromTimespec(expected.st_mtim)));
+      EXPECT_THAT(actual.ctime, Eq(absl::TimeFromTimespec(expected.st_ctim)));
+#endif
+    }
+  }
+}
+
+TEST_F(LocalFsTest, BasicMetadataPreservesPortableFieldsAndErrors) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto basic, local_fs_.StatFields(Path("file.txt"), false, MetadataFields::kBasic));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto complete, local_fs_.Stat(Path("file.txt"), false));
+  EXPECT_THAT(basic.type, Eq(complete.type));
+  EXPECT_THAT(basic.size, Eq(complete.size));
+  EXPECT_THAT(basic.mode, Eq(complete.mode));
+  EXPECT_THAT(basic.ino, Eq(complete.ino));
+  EXPECT_THAT(basic.dev, Eq(complete.dev));
+  EXPECT_THAT(basic.mtime, Eq(complete.mtime));
+  EXPECT_THAT(
+      local_fs_.StatFields(Path("absent"), false, MetadataFields::kBasic), StatusIs(absl::StatusCode::kNotFound));
+#if defined(__linux__)
+  EXPECT_THAT(basic.btime, Eq(std::nullopt));
+#endif
 }
 
 TEST_F(LocalFsTest, StatDirectory) {

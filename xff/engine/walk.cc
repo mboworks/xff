@@ -284,9 +284,9 @@ class Walker {
     // A path with no listing behind it (a root operand) falls back to the slash-based basename,
     // which is right for every real filesystem path.
     std::string entry_name = name.empty() ? std::string(Basename(path)) : std::move(name);
-    absl::StatusOr<vfs::Metadata> metadata = fs_.Stat(path, follow);
+    absl::StatusOr<vfs::Metadata> metadata = fs_.StatFields(path, follow, options_.metadata_fields);
     if (!metadata.ok() && follow) {
-      metadata = fs_.Stat(path, /*follow_symlinks=*/false);
+      metadata = fs_.StatFields(path, /*follow_symlinks=*/false, options_.metadata_fields);
     }
     if (!metadata.ok()) {
       return Stated{.path = std::move(path), .name = std::move(entry_name), .ok = false, .status = metadata.status()};
@@ -331,7 +331,7 @@ class Walker {
   // ownership makes the lazy cache lock-free; it is never shared with matcher workers.
   absl::Status LoadMetadata(const Stated& stated) const {
     if (!stated.metadata_loaded) {
-      auto metadata = fs_.Stat(stated.path, follow_children_);
+      auto metadata = fs_.StatFields(stated.path, follow_children_, options_.metadata_fields);
       stated.metadata_loaded = true;
       stated.status = metadata.status();
       if (metadata.ok()) {
