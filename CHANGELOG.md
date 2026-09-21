@@ -3,6 +3,9 @@
 
 # 0.9.0
 
+- Upgrade rules_cc to 0.2.25 and express the macOS deployment target through Bazel's
+  native settings for consistent Apple and hermetic LLVM toolchains.
+
 # 0.8.0
 
 - Keep accelerated XZ CRC64 reads within their input buffers, including short and unaligned tails.
