@@ -187,3 +187,7 @@ bazel test //tools:benchmark_fixture_test //tools:benchmark_matrix_test \
 Rendered HTML ratios use dark red when xff is slower than the reference and dark green
 when faster; equal results stay neutral. The numeric ratios remain visible in every
 format, and the separate change versus main retains neutral styling.
+
+HTML uses two numeric subcolumns per file count: elapsed time and main comparison, or
+ratio and percentage difference. Each numeric cell is right-aligned; task/tool names are
+left-aligned. A ratio change versus main stays on its own line below the difference.

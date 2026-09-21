@@ -62,7 +62,7 @@ class BenchmarkMatrixTest(unittest.TestCase):
         self.assertIn('does not block merging', matrix.render_markdown(current))
         self.assertEqual(matrix.regressions(current, 30, minimum_files=10), [])
         self.assertEqual(matrix.regressions(current, 20), [])
-        self.assertIn('2.000x (+100.0%)</span>; vs main +25.0%', matrix.render_html(current))
+        self.assertIn('2.000x</span></td><td style="text-align:right"><span style="color:#a12622">+100.0%</span><br><small>vs main +25.0%</small>', matrix.render_html(current))
         for value in (0, -1, float('nan')):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 matrix.regressions(current, value)
@@ -109,6 +109,9 @@ class BenchmarkMatrixTest(unittest.TestCase):
         rendered = matrix.render_markdown(data)
         self.assertIn('2500.00 / 4000.00 (-37.5%)', rendered)
         self.assertIn('2500.00 / n/a', rendered)
+        page = matrix.render_html(data)
+        self.assertIn('2500.00</td><td style="text-align:right">4000.00<br><small>-37.5%</small>', page)
+        self.assertNotIn('(-37.5%)', page)
         self.assertIn('2222222222222222222222222222222222222222', rendered)
 
     def test_changed_contract_and_absent_baseline_are_explicit(self):
@@ -150,7 +153,10 @@ class BenchmarkMatrixTest(unittest.TestCase):
         self.assertTrue(all([index for index, char in enumerate(line) if char == '|'] ==
                             [index for index, char in enumerate(lines[0]) if char == '|'] for line in lines))
         page = matrix.render_html(data)
-        self.assertIn('<th colspan="2">1 CPU</th>', page)
+        self.assertIn('<th colspan="4">1 CPU</th>', page)
+        self.assertIn('<th colspan="2">10</th>', page)
+        self.assertIn('<th scope="row" style="text-align:left">files / xff</th>', page)
+        self.assertIn('<td style="text-align:right">4000.00</td><td style="text-align:right">n/a</td>', page)
         self.assertIn('text-align:right', page)
         data['tasks'][0]['dataset'] = '<script>alert(1)</script>'
         self.assertNotIn('<script>', matrix.render_html(data))
