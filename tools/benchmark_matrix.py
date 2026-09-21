@@ -233,7 +233,7 @@ def render_html(report):
                 if relative and ratio is not None:
                     current, _, remainder = value.partition(' (')
                     difference, _, baseline = remainder.partition(')')
-                    first = ratio_html(current, ratio)
+                    first = ratio_html(current.removesuffix('x'), ratio)
                     second = ratio_html(difference, ratio)
                     if baseline:
                         second += '<br><small>' + html.escape(baseline.removeprefix('; ')) + '</small>'

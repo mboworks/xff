@@ -62,7 +62,7 @@ class BenchmarkMatrixTest(unittest.TestCase):
         self.assertIn('does not block merging', matrix.render_markdown(current))
         self.assertEqual(matrix.regressions(current, 30, minimum_files=10), [])
         self.assertEqual(matrix.regressions(current, 20), [])
-        self.assertIn('2.00x</span></td><td style="text-align:right"><span style="color:#a12622">+100.0%</span><br><small>vs main +25.0%</small>', matrix.render_html(current))
+        self.assertIn('2.00</span></td><td style="text-align:right"><span style="color:#a12622">+100.0%</span><br><small>vs main +25.0%</small>', matrix.render_html(current))
         for value in (0, -1, float('nan')):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 matrix.regressions(current, value)
@@ -76,7 +76,7 @@ class BenchmarkMatrixTest(unittest.TestCase):
                 page = matrix.render_html(data)
                 self.assertIn('>\u0394 %</th>', page)
                 if color:
-                    self.assertIn(f'<span style="color:{color}">{ratio:.2f}x', page)
+                    self.assertIn(f'<span style="color:{color}">{ratio:.2f}</span>', page)
                 else:
                     self.assertNotIn('<span style="color:', page)
         self.assertEqual(matrix.ratio_html('0.500x (-50.0%); vs main +25.0%', 0.5),
