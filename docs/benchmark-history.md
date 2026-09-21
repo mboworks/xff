@@ -81,7 +81,8 @@ in pre-commit:
 bazel test //tools:benchmark_history_test //tools:measure_resources_test
 ```
 
-Comparisons against `find`, `rg`, and `fzf` are deliberately a separate, deferred follow-up (F10).
+Task-specific comparisons against `find`, `rg`, and `fzf` are collected in the same post-merge job
+and retained in the same report. See [comparison contracts and interpretation](benchmark-comparisons.md).
 
 ## Initial hosted observations
 

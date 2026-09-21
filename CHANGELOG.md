@@ -12,6 +12,7 @@
 
 - Upgrade rules_cc to 0.2.25 and express the macOS deployment target through Bazel's
   native settings for consistent Apple and hermetic LLVM toolchains.
+- Publish correctness-checked task comparisons with find, ripgrep, and fzf in benchmark history.
 
 # 0.8.0
 

@@ -32,6 +32,8 @@ jobs:
       - uses: ./.github/actions/bazel-cache-restore
         with:
           namespace: default
+      - name: Install comparison tools
+        run: sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf
       - name: Build paired optimized revisions
         run: |
           set -euo pipefail
@@ -71,6 +73,10 @@ jobs:
             --runner-class='github-hosted ubuntu-latest' \
             --tools="$(bazel --version); module-lock=$(sha256sum MODULE.bazel.lock); base-module-lock=$(sha256sum "${RUNNER_TEMP}/benchmark-base/MODULE.bazel.lock")" \
             --output=benchmark-report.json
+      - name: Compare equivalent tasks with find, ripgrep, and fzf
+        run: |
+          python3 tools/benchmark_compare.py --binary="${RUNNER_TEMP}/benchmark-head" \
+            --report=benchmark-report.json --require-tools
       - uses: actions/upload-artifact@v7
         with:
           name: benchmark-report

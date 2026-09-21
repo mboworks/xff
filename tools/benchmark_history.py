@@ -16,6 +16,8 @@ import statistics
 import subprocess
 import tempfile
 
+import benchmark_compare
+
 SCHEMA = 1
 METRICS = ("elapsed_seconds", "first_stdout_seconds", "user_cpu_seconds",
            "system_cpu_seconds", "peak_child_rss_bytes", "stdout_bytes")
@@ -119,6 +121,10 @@ def retain(root, record, source, keep):
     """Attach trusted run provenance; keep latest attempts with bounded raw storage."""
     record = dict(record)
     record["summary"] = summarize(record)
+    if "tool_comparisons" in record:
+        benchmark_compare.render(record["tool_comparisons"])
+        if record["tool_comparisons"]["tools"]["xff"]["sha256"] != record["samples"]["head"][0]["binary_sha256"]:
+            raise ValueError("tool comparison does not use measured head binary")
     checked_sha(record["base"])
     if checked_sha(record["head"]) != source["head_sha"]:
         raise ValueError("report commit does not match source workflow")
@@ -174,6 +180,8 @@ def render_report(record):
             f'<p>Base: <code>{html.escape(record["base"])}</code>; head: <code>{html.escape(record["head"])}</code>.</p>'
             '<details><summary>Measurement contract</summary><pre>' + html.escape(json.dumps(record["contract"], indent=2)) + '</pre></details>'
             '<table><tr><th>Scenario</th><th>Metric</th><th>Base</th><th>Head</th><th>Ratio</th></tr>' + ''.join(rows) + '</table>')
+    if "tool_comparisons" in record:
+        body += benchmark_compare.render(record["tool_comparisons"])
     return page("Benchmark comparison", body)
 
 

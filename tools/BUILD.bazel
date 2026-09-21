@@ -680,11 +680,13 @@ py_library(
     name = "benchmark_history_lib",
     srcs = ["benchmark_history.py"],
     imports = ["."],
+    deps = [":benchmark_compare_lib"],
 )
 
 py_binary(
     name = "benchmark_history",
     srcs = ["benchmark_history.py"],
+    deps = [":benchmark_compare_lib"],
 )
 
 py_test(
@@ -723,6 +725,7 @@ test_suite(
     tests = [
         ":align_markdown_tables_test",
         ":bazel_cache_test",
+        ":benchmark_compare_test",
         ":benchmark_history_test",
         ":build_rules_test",
         ":cache_report_test",
@@ -756,4 +759,24 @@ test_suite(
         ":release_site_test",
         ":site_artwork_test",
     ],
+)
+
+py_library(
+    name = "benchmark_compare_lib",
+    srcs = ["benchmark_compare.py"],
+    imports = ["."],
+)
+
+py_binary(
+    name = "benchmark_compare",
+    srcs = ["benchmark_compare.py"],
+)
+
+py_test(
+    name = "benchmark_compare_test",
+    size = "small",
+    srcs = ["benchmark_compare_test.py"],
+    args = ["$(rootpath //xff/cli:xff)"],
+    data = ["//xff/cli:xff"],
+    deps = [":benchmark_compare_lib"],
 )

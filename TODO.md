@@ -9,7 +9,7 @@
 ## Original audit and review completion
 
 - Original audit implementation and review fixups are merged, including F09 in #887.
-- v0.7.0 is released. F10 competitor comparisons remain explicitly deferred until requested.
+- v0.7.0 is released. F10 competitor comparisons resumed; see `docs/benchmark-comparisons.md`.
 
 ## Completed: F09 benchmark history
 
@@ -17,7 +17,7 @@
 - [x] Publish bounded PR/release history through the shared site queue; test ordering and retention.
 - [x] Validate the first hosted optimized run and record observed runner noise and workflow cost.
       PR #887 post-merge results are live; see `docs/benchmark-history.md` for the initial observations.
-- Keep competitor benchmarks (F10) deferred until explicitly resumed by the user.
+- [x] Add correctness-checked competitor tasks, pipeline accounting, and retained reports (F10).
 
 ## Completed: F08/F11 Python tooling ownership
 

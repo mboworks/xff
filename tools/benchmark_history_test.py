@@ -35,6 +35,21 @@ def source(run=1, attempt=1, event="pull_request", sha=HEAD):
 
 
 class BenchmarkHistoryTest(unittest.TestCase):
+    def test_comparisons_are_rendered_and_bound_to_head_binary(self):
+        value = record()
+        comparison = {"schema": 1, "tools": {"xff": {"sha256": "binary"}},
+                      "contract": {"repetitions": 1},
+                      "tasks": [{"shape": "broad", "name": "files", "expected_count": 0,
+                                 "participants": {}, "skips": {"<fzf>": "not installed"}}]}
+        value["tool_comparisons"] = comparison
+        self.assertIn("Tool comparisons", history.render_report(value))
+        self.assertIn("&lt;fzf&gt;", history.render_report(value))
+        with tempfile.TemporaryDirectory() as directory:
+            history.retain(Path(directory), value, source(), 2)
+            comparison["tools"]["xff"]["sha256"] = "different"
+            with self.assertRaisesRegex(ValueError, "head binary"):
+                history.retain(Path(directory), value, source(2), 2)
+
     def test_workflow_keeps_measurement_unprivileged_and_publication_serialized(self):
         measure = repository_file(".github/workflows/benchmarks.yml").read_text()
         publish = repository_file(".github/workflows/benchmark_pages.yml").read_text()

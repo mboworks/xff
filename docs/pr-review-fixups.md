@@ -13,7 +13,7 @@ implementing PR.
 2. Completed: F02-F04 merged in #878, with help-selector diagnostics in #879.
 3. Completed: F08 and F11 merged in #882.
 4. Completed: F09 merged in #887; publication policy and reference links followed in #888-#890.
-5. Deferred: F10, comparison benchmarks, remains separate and awaits an explicit restart.
+5. F10 comparison benchmarks resumed: correctness-checked tasks join the existing post-merge reports.
    The original audit implementation and review fixups are complete; v0.7.0 is released.
    Release-site navigation repair is tracked separately in TODO.md.
 
@@ -220,8 +220,8 @@ implementing PR.
 
 - Origin: [PR #873](https://github.com/mboworks/xff/pull/873).
 - Location: benchmark scenario definitions, fixtures, correctness checks, and published reports.
-- Status: deferred by explicit user decision. The original review implementation is complete;
-  comparison benchmarks will begin only when the user resumes F10.
+- Status: implemented; compare enumeration, basename selection, content selection, and batch fuzzy
+  selection with explicit task contracts. Validation and PR publication in progress.
 - Action: extend the benchmark suite with explicit comparison tasks for `find`, `rg`, and `fzf`.
   Start with traversal/name/type selection for `find`, file enumeration and content search for
   `rg`, and noninteractive fuzzy selection over the same input list for `fzf`. Record exact
@@ -241,7 +241,7 @@ implementing PR.
 - Verification: scenario equivalence, version capture, exit-status interpretation, unavailable-tool
   reporting, pipeline accounting, and per-task report generation. Missing tools must be explicit
   skips or errors, never successful empty measurements.
-- Implemented in: not yet assigned.
+- Implementation: `tools/benchmark_compare.py`; contracts in `docs/benchmark-comparisons.md`.
 
 ## F11: Model benchmark Python programs as Python targets
 
