@@ -228,6 +228,18 @@ class BenchmarkCompareTest(unittest.TestCase):
         self.assertIn('<!doctype html>', document)
         self.assertIn('<title>xff benchmarks - ', document)
         self.assertIn('<h1>xff benchmarks - ', document)
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / 'measurements.json'
+            output = Path(directory) / 'measurements.html'
+            source.write_text(json.dumps({'tool_comparisons': result}))
+            original = source.read_bytes()
+            with mock.patch.object(sys, 'argv', ['benchmark_compare', '--render-only',
+                                                '--report', str(source), '--html', str(output)]), \
+                    mock.patch.object(compare, 'collect_scales', side_effect=AssertionError('must not measure')):
+                compare.main()
+            self.assertEqual(output.read_text(), document)
+            self.assertEqual(source.read_bytes(), original)
+
 
     def test_actual_xff_matches_independent_oracle(self):
         if BINARY is None:

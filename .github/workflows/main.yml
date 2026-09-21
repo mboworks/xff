@@ -674,9 +674,17 @@ jobs:
           key: ${{ steps.bazel-cache.outputs.key }}
 
   benchmark-compare:
-    name: Benchmark comparison (best 2 of 3)
+    name: Benchmark comparison (${{ matrix.platform }}, best 2 of 3)
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: macos
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     permissions:
       contents: read
@@ -697,28 +705,39 @@ jobs:
       - uses: ./.github/actions/bazel-cache-restore
         with:
           namespace: default
+      - name: Identify measurement platform
+        run: echo "BENCHMARK_PLATFORM=${{ matrix.platform }}-$(uname -m)" >>"${GITHUB_ENV}"
       - name: Install comparison tools
-        run: sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf
+        run: |
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf
+          else
+            brew install findutils ripgrep fzf
+          fi
       - name: Build optimized benchmark binary
         run: bazel build //xff/cli:xff --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
       - name: Compare with compatible main measurements
         env:
           BENCHMARK_HEAD: ${{ github.sha }}
         run: |
+          storage=(--fixture-parent="${RUNNER_TEMP}")
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            storage=(--fixture-parent=/dev/shm --require-memory --require-cpu-affinity)
+          fi
           python3 tools/benchmark_compare.py --binary=bazel-bin/xff/cli/xff \
-            --report=benchmark-pr.json --head="${BENCHMARK_HEAD}" \
-            --repetitions=3 --keep=2 --require-tools --fixture-parent=/dev/shm --require-memory --require-cpu-affinity \
-            --runner-class='github-hosted ubuntu-latest' \
-            --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | sha256sum | cut -d ' ' -f 1)" \
-            --baseline-root=benchmark-baseline/benchmarks --summary=benchmark-pr.md --html=benchmark-pr.html
+            --report=benchmark-pr-${BENCHMARK_PLATFORM}.json --head="${BENCHMARK_HEAD}" \
+            --repetitions=3 --keep=2 --require-tools "${storage[@]}" \
+            --runner-class='github-hosted ${{ matrix.os }}' \
+            --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | shasum -a 256 | cut -d ' ' -f 1)" \
+            --baseline-root=benchmark-baseline/benchmarks --summary=benchmark-pr.md --html=benchmark-pr-${BENCHMARK_PLATFORM}.html
           cat benchmark-pr.md >>"${GITHUB_STEP_SUMMARY}"
       - uses: actions/upload-artifact@v7
         with:
-          name: benchmark-pr
+          name: benchmark-pr-${{ env.BENCHMARK_PLATFORM }}
           path: |
-            benchmark-pr.json
+            benchmark-pr-${{ env.BENCHMARK_PLATFORM }}.json
             benchmark-pr.md
-            benchmark-pr.html
+            benchmark-pr-${{ env.BENCHMARK_PLATFORM }}.html
           retention-days: 30
           if-no-files-found: error
 

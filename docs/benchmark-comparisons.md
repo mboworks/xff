@@ -209,3 +209,23 @@ HTML page titles and headings identify the recorded OS and architecture. Platfor
 separate to keep the scaling tables readable; release reference pages link to each platform.
 Allocation headers say CPUs when affinity is enforced and workers otherwise. Rendering historical
 results uses their recorded provenance, never the rendering host's identity.
+
+Both PR and post-merge workflows retain separate macOS and Linux artifacts. Data and rendered
+pages share a basename, for example `benchmark-pr-macos-arm64.json` and
+`benchmark-pr-macos-arm64.html` (or `benchmark-report-linux-x86_64.json` and `.html` post-merge).
+The task and tool/comparison occupy separate left-aligned columns; all measurements stay right-aligned.
+
+Download a run's artifacts and render the saved observations with the current renderer:
+
+```sh
+gh run download RUN_ID --pattern 'benchmark-pr-*' --dir benchmark-artifacts
+python3 tools/benchmark_compare.py --render-only \
+  --report=benchmark-artifacts/benchmark-pr-macos-arm64/benchmark-pr-macos-arm64.json \
+  --html=benchmark-artifacts/benchmark-pr-macos-arm64/benchmark-pr-macos-arm64.html
+```
+
+Repeat with the Linux artifact's basename for its page. `--render-only` never invokes a measured
+tool or changes the input JSON. Historical platform identity comes from that JSON, so rendering
+Linux observations on macOS does not relabel them. The same option can regenerate `--summary`
+Markdown. CI artifacts are retained for 30 days; published post-merge history retains the raw JSON
+alongside each platform's page for later rendering.

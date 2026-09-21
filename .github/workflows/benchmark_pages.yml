@@ -62,7 +62,7 @@ jobs:
           reference="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${commit}" --jq .commit.committer.date)"
           jq --arg reference "${reference}" '. + {reference_time: $reference}' source-run.json > source-reference.json
           gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/pulls?state=all&per_page=100" > pulls.json
-          for report in report/*/benchmark-report.json; do
+          for report in report/*/benchmark-report*.json; do
             python3 source/tools/benchmark_history.py publish \
               --root=site/benchmarks --report="${report}" \
               --source=source-reference.json --pulls=pulls.json --repository="${GITHUB_REPOSITORY}" --keep=100

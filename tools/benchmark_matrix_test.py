@@ -104,6 +104,8 @@ class BenchmarkMatrixTest(unittest.TestCase):
         data['tasks'] += [dict(task, dataset='deep') for task in data['tasks']]
         page = matrix.render_html(data)
         self.assertEqual(page.count('<table>'), 2)
+        self.assertIn('<td style="text-align:left">xff / find</td>', page)
+        self.assertIn('>Tool comparison</th>', page)
         for title in ('Broad', 'Deep'):
             self.assertEqual(page.count(f'<th colspan="8" style="text-align:left;background:inherit">{title}</th>'), 2)
         self.assertEqual(page.count('<th colspan="4">1 CPU</th>'), 4)
@@ -184,7 +186,7 @@ class BenchmarkMatrixTest(unittest.TestCase):
         self.assertIn('<th colspan="4">1 CPU</th>', page)
         self.assertIn('<th colspan="2">10</th>', page)
         self.assertIn('>T [ms]</th>', page)
-        self.assertIn('<th scope="row" style="text-align:left">files: xff</th>', page)
+        self.assertIn('<th scope="row" style="text-align:left">files</th><td style="text-align:left">xff</td>', page)
         self.assertIn('<td style="text-align:right">4000.00</td><td style="text-align:right">n/a</td>', page)
         self.assertIn('text-align:right', page)
         data['tasks'][0]['dataset'] = '<script>alert(1)</script>'

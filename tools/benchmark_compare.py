@@ -218,7 +218,7 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
     worker = worker or [sys.executable, str(Path(__file__).resolve())]
     report = {"schema": 1, "tools": tools, "contract": {
         "files": files, "file_counts": [files], "cpu_counts": [cpus], "depth": depth, "storage": storage, "repetitions": repetitions, "fixture_version": 2, "retained": keep, "estimator": "mean-fastest",
-        "platform": platform.platform(), "cpu_count": os.cpu_count(), "requested_cpus": cpus, "cpu_affinity": affinity,
+        "platform": platform.platform(), "machine": platform.machine(), "cpu_count": os.cpu_count(), "requested_cpus": cpus, "cpu_affinity": affinity,
         "order": "rotate starting participant by task and round", "warmup_rounds": 1,
         "cache": "just written, then reused; no flush; discarded correctness-checked warmup round",
         "output": "NUL paths, unordered multiset; drained pipe; validation after timing",
@@ -382,6 +382,8 @@ def render_document(report):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--render-only', action='store_true',
+                        help='Render an existing --report JSON without running measurements; requires --html or --summary')
     parser.add_argument('--worker', type=Path)
     parser.add_argument('--binary', type=Path)
     parser.add_argument('--report', type=Path, help='Existing history report to extend')
@@ -403,6 +405,16 @@ def main():
     parser.add_argument('--fixture-parent', type=Path, help='Existing directory for generated fixtures')
     parser.add_argument('--require-memory', action='store_true', help='Require verified Linux tmpfs fixture storage')
     args = parser.parse_args()
+    if args.render_only:
+        if not args.report or not (args.html or args.summary):
+            parser.error('--render-only requires --report and --html or --summary')
+        report = json.loads(args.report.read_text())['tool_comparisons']
+        if args.html:
+            args.html.write_text(render_document(report))
+        if args.summary:
+            args.summary.write_text(benchmark_matrix.render_markdown(report))
+        return
+
     if args.worker:
         print(json.dumps(measure(json.loads(args.worker.read_text()))))
         return

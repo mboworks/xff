@@ -40,6 +40,8 @@ jobs:
       - uses: ./.github/actions/bazel-cache-restore
         with:
           namespace: default
+      - name: Identify measurement platform
+        run: echo "BENCHMARK_PLATFORM=${{ matrix.platform }}-$(uname -m)" >>"${GITHUB_ENV}"
       - name: Install comparison tools
         run: |
           if [[ "${RUNNER_OS}" == Linux ]]; then
@@ -85,7 +87,7 @@ jobs:
             --build='bazel --config=clang_release //xff/cli:xff' \
             --runner-class='github-hosted ${{ matrix.os }}' \
             --tools="$(bazel --version); module-lock=$(shasum -a 256 MODULE.bazel.lock); base-module-lock=$(shasum -a 256 "${RUNNER_TEMP}/benchmark-base/MODULE.bazel.lock")" \
-            --platform=${{ matrix.platform }} --output=benchmark-report.json
+            --platform=${{ matrix.platform }} --output=benchmark-report-${BENCHMARK_PLATFORM}.json
       - name: Compare equivalent tasks with find, ripgrep, and fzf
         run: |
           storage=(--fixture-parent="${RUNNER_TEMP}")
@@ -93,16 +95,16 @@ jobs:
             storage=(--fixture-parent=/dev/shm --require-memory --require-cpu-affinity)
           fi
           python3 tools/benchmark_compare.py --binary="${RUNNER_TEMP}/benchmark-head" \
-            --report=benchmark-report.json --require-tools "${storage[@]}" \
+            --report=benchmark-report-${BENCHMARK_PLATFORM}.json --require-tools "${storage[@]}" \
             --repetitions=9 --keep=7 --runner-class='github-hosted ${{ matrix.os }}' \
             --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | shasum -a 256 | cut -d ' ' -f 1)" \
-            --summary=benchmark-main.md --html=benchmark-report.html
+            --summary=benchmark-main.md --html=benchmark-report-${BENCHMARK_PLATFORM}.html
           cat benchmark-main.md >>"${GITHUB_STEP_SUMMARY}"
       - uses: actions/upload-artifact@v7
         with:
-          name: benchmark-report-${{ matrix.platform }}
+          name: benchmark-report-${{ env.BENCHMARK_PLATFORM }}
           path: |
-            benchmark-report.json
-            benchmark-report.html
+            benchmark-report-${{ env.BENCHMARK_PLATFORM }}.json
+            benchmark-report-${{ env.BENCHMARK_PLATFORM }}.html
           retention-days: 30
           if-no-files-found: error
