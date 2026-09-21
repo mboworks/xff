@@ -90,9 +90,10 @@ class BenchmarkMatrixTest(unittest.TestCase):
         data['tasks'] += [dict(task, dataset='deep') for task in data['tasks']]
         page = matrix.render_html(data)
         self.assertEqual(page.count('<table>'), 2)
-        for title in ('broad', 'deep', 'broad - xff/reference ratios', 'deep - xff/reference ratios'):
-            self.assertIn(f'<th colspan="9" style="text-align:center">{title}</th>', page)
-        self.assertEqual(page.count('<th colspan="4">1 CPU</th>'), 2)
+        for title in ('broad', 'deep'):
+            self.assertEqual(page.count(f'<th colspan="8" style="text-align:left">{title}</th>'), 2)
+        self.assertEqual(page.count('<th colspan="4">1 CPU</th>'), 4)
+        self.assertEqual(page.count('>FS tree</th>'), 4)
 
     def test_invalid_sampling_and_nonfinite_times(self):
         for data in (report(keep=0), report(keep=10), report((1, float('nan')), 1), report((0, 1), 1)):
