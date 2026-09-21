@@ -7,9 +7,9 @@
   },
   {
     "number": 905,
-    "state": "open",
-    "merged_at": null,
-    "merge_commit_sha": "3fec51ee29ce1ca53381d893a808fef0aeca35ad"
+    "state": "closed",
+    "merged_at": "2026-09-21T23:08:22Z",
+    "merge_commit_sha": "77c00ec8cbea253b296c4f792397e99da412fe55"
   },
   {
     "number": 904,
