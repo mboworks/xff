@@ -1,5 +1,35 @@
 [
   {
+    "number": 906,
+    "state": "open",
+    "merged_at": null,
+    "merge_commit_sha": "de6791920d00484ef1c54558489b44a8fdad1d18"
+  },
+  {
+    "number": 905,
+    "state": "open",
+    "merged_at": null,
+    "merge_commit_sha": "9d47430bf63d4ae15d95d7e60037b5415049871c"
+  },
+  {
+    "number": 904,
+    "state": "open",
+    "merged_at": null,
+    "merge_commit_sha": "869f65049ba40b9ae838565517d5be46833a3614"
+  },
+  {
+    "number": 903,
+    "state": "open",
+    "merged_at": null,
+    "merge_commit_sha": "6ca053e1d78ef331f1dfd1af039d3128e1e2fcb8"
+  },
+  {
+    "number": 902,
+    "state": "open",
+    "merged_at": null,
+    "merge_commit_sha": "3d87ccaeb95fe8bb67fa315bc2872989ff654af6"
+  },
+  {
     "number": 901,
     "state": "closed",
     "merged_at": "2026-09-21T20:50:36Z",
