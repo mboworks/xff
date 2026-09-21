@@ -2,12 +2,12 @@
   "schema": 1,
   "target": "main",
   "source": {
-    "created_at": "2026-09-20T21:21:00Z",
-    "started_at": "2026-09-20T21:31:07Z",
-    "completed_at": "2026-09-20T21:44:09Z",
-    "run_id": 35538423389,
-    "run_attempt": 2,
-    "head_sha": "c0c0b6d39e261c8b7f1e36a5ff0687f3cde2d4e5"
+    "created_at": "2026-09-21T05:27:58Z",
+    "started_at": "2026-09-21T05:27:58Z",
+    "completed_at": "2026-09-21T05:46:26Z",
+    "run_id": 35564630303,
+    "run_attempt": 1,
+    "head_sha": "98d31e1616a7584c0188aa811c31580bb0e97638"
   },
   "coverage": {
     "lines": {
