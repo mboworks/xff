@@ -192,7 +192,18 @@ def render_report(record, history_href="../../../"):
             '<table><tr><th>Scenario</th><th>Metric</th><th>Base</th><th>Head</th><th>Ratio</th></tr>' + ''.join(rows) + '</table>')
     if "tool_comparisons" in record:
         body += benchmark_compare.render(record["tool_comparisons"])
-    return page("Benchmark comparison", body)
+    return page(benchmark_compare.benchmark_matrix.platform_title(record), body)
+
+
+def recorded_platform(record):
+    if record.get('platform'):
+        return record['platform']
+    identity = record.get('contract', {}).get('platform', '').lower()
+    if identity.startswith('linux'):
+        return 'linux'
+    if identity.startswith(('macos', 'darwin')):
+        return 'macos'
+    return ''
 
 
 def render_site(root, pulls, repository):
@@ -222,7 +233,7 @@ def render_site(root, pulls, repository):
             label, phase, reference = f'PR {pull["number"]}', "post-merge", pull["merged_at"]
         else:
             label, reference = "main", source["created_at"]
-        key = (label, phase, record.get("platform", ""))
+        key = (label, phase, recorded_platform(record))
         rank = (source["created_at"], source["id"], source["run_attempt"])
         if key not in selected or rank > selected[key][0]:
             selected[key] = (rank, reference, path, record)
@@ -275,7 +286,7 @@ def reference_pages(root, pulls, repository_path):
                 pull["number"] == number for pull in source.get("pull_requests", []))
             if post or pre:
                 rank = (post, source["created_at"], source["id"], source["run_attempt"])
-                platform_key = record.get("platform", "")
+                platform_key = recorded_platform(record)
                 if platform_key not in candidates or rank > candidates[platform_key][0]:
                     candidates[platform_key] = (rank, report_path)
         folder = root / relative

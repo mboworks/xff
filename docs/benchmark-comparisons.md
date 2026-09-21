@@ -8,13 +8,14 @@ informational. A 15% advisory alarm identifies normalized slowdowns without bloc
 ## Matrix and sampling
 
 Each tree shape has one table. Rows identify the task and tool. The eight standard columns are
-grouped by CPU allocation: **1 CPU** with 10, 100, 1,000, and 10,000 files, then **4 CPUs** with the
+grouped by CPU allocation: **1 CPU** with 10, 100, 1,000, 10,000, and 100,000 files, then **4 CPUs** with the
 same sizes. HTML uses spanning CPU headers; Markdown repeats CPU/count labels and aligns numeric
 cells and their source text to the right.
 
 - Normal PR CI runs three measured repetitions and averages the fastest two.
 - Main's post-merge benchmark workflow runs nine and averages the fastest seven.
-- One correctness/warm-up run precedes measurement. Participant order rotates between repetitions.
+- One correctness-checked warm-up round runs every participant and is discarded. The starting
+  participant rotates across tasks and rounds; measured samples are interleaved by round.
 - Selection is by elapsed time. Associated CPU, latency, memory, and output metrics use that same
   selected subset. All raw samples are retained, including the discarded slower observations.
 - Tables explicitly say `mean of fastest 2/3 runs` or `mean of fastest 7/9 runs`. Raw-sample
@@ -203,3 +204,8 @@ Missing platform results are stated explicitly. PR measurements remain previews.
 Linux uses verified tmpfs and CPU affinity. macOS uses ordinary temporary storage and requested
 worker counts without CPU affinity; the report records this distinction. Platform histories remain
 separate and must not be compared as if their hardware or storage were equivalent.
+
+HTML page titles and headings identify the recorded OS and architecture. Platform reports stay
+separate to keep the scaling tables readable; release reference pages link to each platform.
+Allocation headers say CPUs when affinity is enforced and workers otherwise. Rendering historical
+results uses their recorded provenance, never the rendering host's identity.

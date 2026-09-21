@@ -8,6 +8,22 @@ import math
 import statistics
 
 
+def platform_title(report):
+    """Use recorded provenance, never the host that happens to render a report."""
+    contract = report.get('contract', {})
+    identity = contract.get('platform', 'platform not recorded')
+    machine = contract.get('machine', '')
+    if machine and machine.lower() not in identity.lower():
+        identity += ' / ' + machine
+    return 'xff benchmarks - ' + identity
+
+
+def allocation_label(report, count):
+    affinity = report['contract'].get('affinity_by_cpu_count', {}).get(str(count))
+    noun = 'CPU' if affinity is not None else 'worker'
+    return f'{count} {noun}' + ('s' if count != 1 else '')
+
+
 def selected_samples(report, entry):
     samples = entry['samples']
     contract = report['contract']
@@ -229,7 +245,7 @@ def render_html(report):
                           html.escape(dataset[:1].upper() + dataset[1:]) + '</th></tr>')
             result.append('<tr><th rowspan="3" style="text-align:left">Task: tool</th>')
             for cpu in report['contract']['cpu_counts']:
-                result.append(f'<th colspan="{2 * len(report["contract"]["file_counts"])}">{cpu} CPU{"s" if cpu != 1 else ""}</th>')
+                result.append(f'<th colspan="{2 * len(report["contract"]["file_counts"])}">{allocation_label(report, cpu)}</th>')
             result.append('</tr><tr>' + ''.join(f'<th colspan="2">{count:,}</th>' for _, count in columns) + '</tr><tr>')
             result.append(''.join('<th style="text-align:right">' + label + '</th>' for _ in columns for label in labels))
             result.append('</tr>')
@@ -271,7 +287,7 @@ def render_markdown(report):
         return value.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('|', '&#124;').replace('\n', ' ')
     for group, columns, rows in matrices(report) + (relative_matrices(report) if matrices(report) else []):
         output.extend(['## ' + escape(group), ''])
-        table = [['Task / tool', *[f'{cpu} CPU / {count:,} files' for cpu, count in columns]]]
+        table = [['Task / tool', *[f'{allocation_label(report, cpu)} / {count:,} files' for cpu, count in columns]]]
         for (name, tool), values in rows:
             table.append([escape(name + ' / ' + tool), *[escape(values.get(column, 'n/a')) for column in columns]])
         widths = [max(3, *(len(row[index]) for row in table)) for index in range(len(table[0]))]

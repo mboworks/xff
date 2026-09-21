@@ -24,6 +24,20 @@ def report(times=(1, 2, 3, 4, 5, 6, 7, 80, 100), keep=7):
 
 
 class BenchmarkMatrixTest(unittest.TestCase):
+    def test_platform_title_uses_recorded_identity(self):
+        data = report()
+        data['contract'].update(platform='macOS-26.6-arm64', machine='arm64')
+        self.assertEqual(matrix.platform_title(data), 'xff benchmarks - macOS-26.6-arm64')
+        data['contract'].update(platform='Linux-6.8', machine='x86_64')
+        self.assertEqual(matrix.platform_title(data), 'xff benchmarks - Linux-6.8 / x86_64')
+        self.assertIn('platform not recorded', matrix.platform_title({}))
+
+    def test_unpinned_allocations_are_workers(self):
+        data = report()
+        data['contract']['affinity_by_cpu_count'] = {'1': None, '4': None}
+        self.assertIn('>1 worker</th>', matrix.render_html(data))
+        self.assertIn('>4 workers</th>', matrix.render_html(data))
+
     def retain(self, root, data, run=1, event='push', branch='main'):
         path = root / 'runs' / str(run) / '1' / 'report.json'
         path.parent.mkdir(parents=True)
@@ -162,7 +176,7 @@ class BenchmarkMatrixTest(unittest.TestCase):
     def test_cpu_grouping_alignment_and_html_escaping(self):
         data = report()
         text = matrix.render_markdown(data)
-        self.assertLess(text.index('1 CPU / 100 files'), text.index('4 CPU / 10 files'))
+        self.assertLess(text.index('1 CPU / 100 files'), text.index('4 CPUs / 10 files'))
         lines = [line for line in text.splitlines() if line.startswith('|')]
         self.assertTrue(all([index for index, char in enumerate(line) if char == '|'] ==
                             [index for index, char in enumerate(lines[0]) if char == '|'] for line in lines))

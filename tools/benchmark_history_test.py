@@ -248,6 +248,11 @@ class BenchmarkHistoryTest(unittest.TestCase):
                 history.reference_pages(root, [], root)
             self.assertNotIn("http-equiv", (root / "tag/2.0.0/index.html").read_text())
 
+    def test_legacy_platform_comes_from_recorded_contract(self):
+        self.assertEqual(history.recorded_platform({'contract': {'platform': 'Linux-6.8-x86_64'}}), 'linux')
+        self.assertEqual(history.recorded_platform({'contract': {'platform': 'macOS-26.6-arm64'}}), 'macos')
+        self.assertEqual(history.recorded_platform({'contract': {}}), '')
+
     def test_platform_reports_coexist_and_release_lists_both(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -219,7 +219,8 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
     report = {"schema": 1, "tools": tools, "contract": {
         "files": files, "file_counts": [files], "cpu_counts": [cpus], "depth": depth, "storage": storage, "repetitions": repetitions, "fixture_version": 2, "retained": keep, "estimator": "mean-fastest",
         "platform": platform.platform(), "cpu_count": os.cpu_count(), "requested_cpus": cpus, "cpu_affinity": affinity,
-        "order": "rotate participants each repetition", "cache": "just written, then reused; no flush; correctness run first",
+        "order": "rotate starting participant by task and round", "warmup_rounds": 1,
+        "cache": "just written, then reused; no flush; discarded correctness-checked warmup round",
         "output": "NUL paths, unordered multiset; drained pipe; validation after timing",
         "memory": "single-process peak RSS; pipeline sum of individual peaks is an upper bound, not simultaneous peak",
         "scope": "batch discovery versus separate precomputed-list filtering; no interactive/ranking equivalence",
@@ -255,16 +256,17 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
                         continue
                     spec = {"pipeline": pipeline, "environment": environment, "cwd": str(root), "cpu_affinity": affinity,
                             "stdin": str(candidates if name.startswith("fuzzy-list-") else empty)}
-                    validate_output(invoke(spec, worker), expected, pipeline)
                     task["participants"][label] = {"pipeline": pipeline, "stdin": spec["stdin"], "cwd": str(root), "samples": []}
                 labels = list(task["participants"])
-                for repetition in range(repetitions):
-                    order = labels[repetition % len(labels):] + labels[:repetition % len(labels)] if labels else []
+                for repetition in range(repetitions + 1):
+                    offset = (len(report['tasks']) - 1 + repetition) % len(labels) if labels else 0
+                    order = labels[offset:] + labels[:offset]
                     for label in order:
                         entry = task["participants"][label]
                         sample = invoke({"pipeline": entry["pipeline"], "stdin": entry["stdin"], "cwd": entry["cwd"], "environment": environment, "cpu_affinity": affinity}, worker)
                         validate_output(sample, expected, entry["pipeline"])
-                        entry["samples"].append(sample)
+                        if repetition:
+                            entry["samples"].append(sample)
     for tool in tools.values():
         if tool["status"] == "available" and digest(tool["path"]) != tool["sha256"]:
             raise ValueError("tool binary changed during measurement")
@@ -369,12 +371,21 @@ def render(report):
             '<th>Max</th><th>Stddev</th><th>N</th></tr>' + ''.join(rows) + '</table></details>')
 
 
+def render_document(report):
+    title = html.escape(benchmark_matrix.platform_title(report))
+    return ('<!doctype html><html lang="en"><meta charset="utf-8"><title>' + title + '</title>'
+            '<style>body{font:16px system-ui;margin:2rem}table{border-collapse:collapse}'
+            'td,th{border:1px solid #aaa;padding:.4rem;text-align:right}'
+            'td:first-child,th:first-child{text-align:left}</style><h1>' + title + '</h1>' +
+            render(report) + '</html>\n')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--worker', type=Path)
     parser.add_argument('--binary', type=Path)
     parser.add_argument('--report', type=Path, help='Existing history report to extend')
-    parser.add_argument('--files', type=int, action='append', help='Repeat for each scale; default: 10, 100, 1000, 10000')
+    parser.add_argument('--files', type=int, action='append', help='Repeat for each scale; default: 10, 100, 1000, 10000, 100000')
     parser.add_argument('--depth', type=int, default=40)
     parser.add_argument('--cpus', type=int, action='append', help='Repeat for CPU allocations; default: 1, 4')
     parser.add_argument('--require-cpu-affinity', action='store_true')
@@ -395,7 +406,7 @@ def main():
     if args.worker:
         print(json.dumps(measure(json.loads(args.worker.read_text()))))
         return
-    file_counts = args.files or [10, 100, 1000, 10000]
+    file_counts = args.files or [10, 100, 1000, 10000, 100000]
     cpu_counts = args.cpus or [1, 4]
     if (not args.binary or not args.report or min(*file_counts, args.depth, args.repetitions) < 1
             or len(set(file_counts)) != len(file_counts) or min(cpu_counts) < 1
@@ -425,7 +436,7 @@ def main():
     if args.summary:
         args.summary.write_text(benchmark_matrix.render_markdown(report))
     if args.html:
-        args.html.write_text(render(report))
+        args.html.write_text(render_document(report))
     args.report.write_text(json.dumps(record, indent=2) + '\n')
 
 
