@@ -42,6 +42,7 @@
     "docs/order-and-limits.md": "docs/order-and-limits.html",
     "docs/archive-safety-recipes.md": "docs/archive-safety-recipes.html",
     "docs/benchmark-history.md": "docs/benchmark-history.html",
+    "docs/benchmark-comparisons.md": "docs/benchmark-comparisons.html",
     "NOTICE.md": "NOTICE.html",
     "NOTICE.lean.md": "NOTICE.lean.html"
   },

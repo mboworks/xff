@@ -4,6 +4,7 @@
 """Regression checks for disk eviction and immutable GitHub cache lifecycle."""
 
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -87,11 +88,26 @@ class BazelCacheTest(unittest.TestCase):
     def test_workflows_refresh_only_main_and_release_only_restores(self):
         root = repository_file("")
         workflow = (root / ".github/workflows/main.yml").read_text()
-        restores = workflow.count("uses: ./.github/actions/bazel-cache-restore")
-        saves = workflow.count("uses: ./.github/actions/bazel-cache-save")
-        self.assertEqual(restores, 9)
-        self.assertEqual(saves, restores)
-        self.assertEqual(workflow.count("!cancelled() && github.ref == 'refs/heads/main'"), saves)
+        sections = re.split(r"^  ([a-z][a-z0-9-]*):$", workflow, flags=re.MULTILINE)
+        jobs = dict(zip(sections[1::2], sections[2::2], strict=True))
+        self.assertIn("benchmark-compare", jobs)
+        cached_jobs = []
+        for name, section in jobs.items():
+            restores = section.count("uses: ./.github/actions/bazel-cache-restore")
+            saves = section.count("uses: ./.github/actions/bazel-cache-save")
+            if not restores:
+                self.assertEqual(saves, 0, name)
+                continue
+            cached_jobs.append(name)
+            with self.subTest(job=name):
+                if name == "benchmark-compare":
+                    self.assertIn("if: github.event_name == 'pull_request'", section)
+                    self.assertEqual(restores, 1)
+                    self.assertEqual(saves, 0)
+                else:
+                    self.assertEqual(saves, restores)
+                    self.assertEqual(section.count("!cancelled() && github.ref == 'refs/heads/main'"), saves)
+        self.assertIn("test", cached_jobs)
         release = (root / ".github/workflows/release.yml").read_text()
         self.assertEqual(release.count("uses: ./.github/actions/bazel-cache-restore"), 2)
         self.assertNotIn("actions/cache/save", release)

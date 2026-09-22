@@ -673,6 +673,76 @@ jobs:
         with:
           key: ${{ steps.bazel-cache.outputs.key }}
 
+  benchmark-compare:
+    name: Benchmark comparison (${{ matrix.platform }}, best 2 of 3)
+    if: github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            timeout: 30
+          - os: macos-latest
+            platform: macos
+            timeout: 60
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ matrix.timeout }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          ref: coverage-pages
+          path: benchmark-baseline
+          sparse-checkout: benchmarks/runs
+          persist-credentials: false
+      - uses: bazel-contrib/setup-bazel@0.19.0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: ./.github/actions/bazel-cache-restore
+        with:
+          namespace: default
+      - name: Identify measurement platform
+        run: echo "BENCHMARK_PLATFORM=${{ matrix.platform }}-$(uname -m)" >>"${GITHUB_ENV}"
+      - name: Install comparison tools
+        run: |
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf
+          else
+            brew install findutils ripgrep fzf
+          fi
+      - name: Build optimized benchmark binary
+        run: bazel build //xff/cli:xff --config=clang_release --disk_cache="${HOME}/.cache/bazel-disk"
+      - name: Compare with compatible main measurements
+        env:
+          BENCHMARK_HEAD: ${{ github.sha }}
+        run: |
+          storage=(--fixture-parent="${RUNNER_TEMP}")
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            storage=(--fixture-parent=/dev/shm --require-memory --require-cpu-affinity)
+          fi
+          python3 tools/benchmark_compare.py --binary=bazel-bin/xff/cli/xff \
+            --report=benchmark-pr-${BENCHMARK_PLATFORM}.json --head="${BENCHMARK_HEAD}" \
+            --repetitions=3 --keep=2 --require-tools "${storage[@]}" \
+            --runner-class='github-hosted ${{ matrix.os }}' \
+            --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | shasum -a 256 | cut -d ' ' -f 1)" \
+            --baseline-root=benchmark-baseline/benchmarks --summary=benchmark-pr.md --html=benchmark-pr-${BENCHMARK_PLATFORM}.html
+          cat benchmark-pr.md >>"${GITHUB_STEP_SUMMARY}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-pr-${{ env.BENCHMARK_PLATFORM }}
+          path: |
+            benchmark-pr-${{ env.BENCHMARK_PLATFORM }}.json
+            benchmark-pr.md
+            benchmark-pr-${{ env.BENCHMARK_PLATFORM }}.html
+          retention-days: 30
+          if-no-files-found: error
+
   # Single required status check: one job that gates merge on the whole matrix,
   # so branch protection needs only `done`. A yq/jq step self-checks that every
   # workflow job is wired into `needs`, so a newly added job cannot silently
@@ -682,6 +752,7 @@ jobs:
     needs:
       [
         release-site-tests,
+        benchmark-compare,
         test,
         pre-commit,
         trunk,

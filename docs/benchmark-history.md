@@ -3,15 +3,17 @@
 The [published benchmark history](https://mboworks.github.io/xff/benchmarks/) retains paired
 measurements for main merges, attributed to their PRs. This is performance evidence, not a merge gate.
 A failed measurement fails its own workflow and publishes no successful result; it does not change
-xff's required test checks. There is no percentage threshold for a regression yet.
+xff's required test checks. The separate cross-tool comparison job in normal PR CI checks correctness
+and produces an informational comparison against retained main measurements; see
+[comparison fixtures and sampling](benchmark-comparisons.md). No performance threshold is enabled by default.
 
 ## What is compared
 
 The informational `Benchmarks` workflow runs automatically only on pushes to main after merge.
-It compares the merged commit with its first parent. PR pushes and release tags do not start
-separate measurements. Manual dispatch can select a branch for an experiment against its first parent. Manual results remain Actions artifacts;
+It compares the merged commit with its first parent. Release tags do not start separate measurements. PR pushes run the shorter cross-tool
+comparison inside the normal test workflow, without launching the paired benchmark workflow. Manual dispatch can select a branch for an experiment against its first parent. Manual results remain Actions artifacts;
 only successful main-push measurements are published. Both revisions use `--config=clang_release`, the production optimization configuration,
-on the same hosted Linux runner. The head revision's measurement driver runs both binaries.
+on the same hosted runner for each platform (Linux and macOS). The head revision's measurement driver runs both binaries.
 The report links both exact commits and records each executable's SHA-256 digest.
 
 Five repetitions alternate base/head and head/base. Each repetition uses deterministic broad and
@@ -39,8 +41,8 @@ The versioned contract records fixture/scenario versions, fixture identity, buil
 build-setting/toolchain identities, Python/Bazel information, runner class, platform, CPU count,
 worker count, repetition policy, and cache treatment. Different build identities omit ratios and
 retain the two measured distributions. The identity conservatively hashes `.bazelrc` and the LLVM
-module configuration; even a nonfunctional edit can therefore suppress a ratio. No ratios are
-calculated between separate workflow runs or different hosts. Raw observations remain downloadable
+module configuration; even a nonfunctional edit can therefore suppress a ratio. These paired-workload ratios do not compare separate workflow runs. Cross-tool matrices separately
+compare compatible cells with retained main results and label their baseline and sampling policies. Raw observations remain downloadable
 as JSON so summaries can be reproduced.
 
 ## Publication and retention
@@ -81,7 +83,8 @@ in pre-commit:
 bazel test //tools:benchmark_history_test //tools:measure_resources_test
 ```
 
-Comparisons against `find`, `rg`, and `fzf` are deliberately a separate, deferred follow-up (F10).
+Task-specific comparisons against `find`, `rg`, and `fzf` are collected in the same post-merge job
+and retained in the same report. See [comparison contracts and interpretation](benchmark-comparisons.md).
 
 ## Initial hosted observations
 

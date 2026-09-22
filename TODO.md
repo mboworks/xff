@@ -9,7 +9,29 @@
 ## Original audit and review completion
 
 - Original audit implementation and review fixups are merged, including F09 in #887.
-- v0.7.0 is released. F10 competitor comparisons remain explicitly deferred until requested.
+- v0.7.0 is released. F10 competitor comparisons resumed; see `docs/benchmark-comparisons.md`.
+
+## Performance optimization follow-up
+
+- [ ] Profile optimized production binaries across 10/100/1,000/10,000-file broad and deep trees;
+      separate startup/configuration, traversal/metadata, matching, and output costs. Run both one- and
+      four-CPU allocations on verified tmpfs storage.
+- [ ] Measure default and representative configured safety policies without bypassing the VFS or
+      weakening protections. Read-only `--safe` enumeration is included in competitor benchmarks.
+- [x] Derive metadata demand (NEVER / ONDEMAND / ALWAYS) from descriptor requirements and expression
+      control flow; cache on-demand values/errors and retain eager prefetch where metadata is always needed.
+      Investigate eager metadata collection for name/type-only queries; preserve symlink, error,
+      safety, archive, and ordering semantics in any metadata-laziness optimization.
+- [ ] Record before/after timing, throughput, memory, and correctness for each optimization; add
+      representative larger-content and realistic directory-fanout workloads before broad claims.
+
+## Benchmark publication follow-up
+
+- [ ] Retain separate macOS and Linux HTML reports plus raw JSON, with commit, build,
+      hardware/runner and measurement-contract identities. Local temporary previews are not release assets.
+- [ ] Publish post-merge reports as official results and pre-merge reports as labeled PR previews.
+      Release pages should link results for the exact tagged commit per platform; reuse compatible
+      post-merge results, otherwise measure the tag and show pending until publication completes.
 
 ## Completed: F09 benchmark history
 
@@ -17,7 +39,7 @@
 - [x] Publish bounded PR/release history through the shared site queue; test ordering and retention.
 - [x] Validate the first hosted optimized run and record observed runner noise and workflow cost.
       PR #887 post-merge results are live; see `docs/benchmark-history.md` for the initial observations.
-- Keep competitor benchmarks (F10) deferred until explicitly resumed by the user.
+- [x] Add correctness-checked competitor tasks, pipeline accounting, and retained reports (F10).
 
 ## Completed: F08/F11 Python tooling ownership
 
@@ -557,5 +579,5 @@ this as intentional accounting.
 - [x] Audit traversal, content reads, metadata demand, output and safety costs; retain unproven
       directory scheduling changes locally and document bulk-metadata/ISA follow-ups.
 - [x] Remove unnecessary content read-buffer initialization with empty/full/partial chunk tests.
-- [ ] Complete sanitizer, coverage and changed-file lint validation and compare the standard scaling matrix.
-- [ ] Land performance changes on main before rebasing and merging measurement PR 900.
+- [x] Complete sanitizer, coverage and changed-file lint validation and compare the standard scaling matrix.
+- [x] Land performance changes in PR #902 and rebase measurement PR #900 onto main.

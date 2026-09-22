@@ -5,6 +5,7 @@
 import argparse
 import json
 from pathlib import Path
+import re
 import tempfile
 import unittest
 from unittest import mock
@@ -35,6 +36,21 @@ def source(run=1, attempt=1, event="pull_request", sha=HEAD):
 
 
 class BenchmarkHistoryTest(unittest.TestCase):
+    def test_comparisons_are_rendered_and_bound_to_head_binary(self):
+        value = record()
+        comparison = {"schema": 1, "tools": {"xff": {"sha256": "binary"}},
+                      "contract": {"repetitions": 1},
+                      "tasks": [{"shape": "broad", "name": "files", "expected_count": 0,
+                                 "participants": {}, "skips": {"<fzf>": "not installed"}}]}
+        value["tool_comparisons"] = comparison
+        self.assertIn("Tool comparisons", history.render_report(value))
+        self.assertIn("&lt;fzf&gt;", history.render_report(value))
+        with tempfile.TemporaryDirectory() as directory:
+            history.retain(Path(directory), value, source(), 2)
+            comparison["tools"]["xff"]["sha256"] = "different"
+            with self.assertRaisesRegex(ValueError, "head binary"):
+                history.retain(Path(directory), value, source(2), 2)
+
     def test_workflow_keeps_measurement_unprivileged_and_publication_serialized(self):
         measure = repository_file(".github/workflows/benchmarks.yml").read_text()
         publish = repository_file(".github/workflows/benchmark_pages.yml").read_text()
@@ -55,7 +71,22 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn("ref: main\n          path: source", publish)
         self.assertIn("--keep=100", publish)
         self.assertIn("retention-days: 30", measure)
+        self.assertIn("shard: [0, 1, 2]", measure)
+        self.assertIn("--shard-plan=benchmark-plan.json", measure)
+        self.assertIn("--reference-root=benchmark-history/benchmarks", measure)
+        self.assertIn("--merge shards/*/*.json", measure)
+        self.assertIn("--repetitions=9 --keep=7", measure)
         self.assertIn("git -C site add benchmarks", publish)
+
+    def test_pr_and_main_measurements_use_the_same_runner_identity(self):
+        pattern = r"--runner-class=['\"]([^'\"]+)['\"]"
+        main = repository_file(".github/workflows/benchmarks.yml").read_text()
+        pr = repository_file(".github/workflows/main.yml").read_text()
+        labels = set(re.findall(pattern, main))
+        self.assertTrue(labels)
+        self.assertEqual(labels, set(re.findall(pattern, pr)))
+        self.assertIn("platform: linux\n            os: ubuntu-latest", main)
+        self.assertIn("platform: macos\n            os: macos-latest", main)
 
     def test_tag_on_a_merge_commit_remains_a_release_and_uses_commit_time(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -232,6 +263,31 @@ class BenchmarkHistoryTest(unittest.TestCase):
             with mock.patch.object(history.subprocess, "check_output", return_value=""):
                 history.reference_pages(root, [], root)
             self.assertNotIn("http-equiv", (root / "tag/2.0.0/index.html").read_text())
+
+    def test_legacy_platform_comes_from_recorded_contract(self):
+        self.assertEqual(history.recorded_platform({'contract': {'platform': 'Linux-6.8-x86_64'}}), 'linux')
+        self.assertEqual(history.recorded_platform({'contract': {'platform': 'macOS-26.6-arm64'}}), 'macos')
+        self.assertEqual(history.recorded_platform({'contract': {}}), '')
+
+    def test_platform_reports_coexist_and_release_lists_both(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for platform_key in ('linux', 'macos'):
+                value = dict(record(), platform=platform_key)
+                history.retain(root, value, source(2, event='push'), 100)
+                self.assertTrue((root / 'runs/2/1' / platform_key / 'report.json').is_file())
+            rendered = history.render_site(root, [], 'owner/repo')
+            self.assertIn('runs/2/1/linux/', rendered)
+            self.assertIn('runs/2/1/macos/', rendered)
+            with mock.patch.object(history.subprocess, 'check_output', side_effect=['v1.0.0\n', HEAD + '\n']):
+                history.reference_pages(root, [], root)
+            page = (root / 'tag/1.0.0/index.html').read_text()
+            self.assertIn('../../runs/2/1/linux/', page)
+            self.assertIn('../../runs/2/1/macos/', page)
+            self.assertNotIn('http-equiv', page)
+            self.assertIn('href="../../../../"', (root / 'runs/2/1/macos/index.html').read_text())
+            with self.assertRaisesRegex(ValueError, 'platform'):
+                history.retain(root, dict(record(), platform='../bad'), source(3), 100)
 
     def test_release_refresh_does_not_download_measurement_artifacts(self):
         publish = repository_file(".github/workflows/benchmark_pages.yml").read_text()

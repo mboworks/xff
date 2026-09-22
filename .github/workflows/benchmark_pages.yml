@@ -47,7 +47,7 @@ jobs:
         if: github.event.workflow_run.name == 'Benchmarks'
         with:
           github-token: ${{ github.token }}
-          name: benchmark-report
+          pattern: benchmark-report*
           path: report
           run-id: ${{ github.event.workflow_run.id }}
       - name: Retain incoming benchmark measurements
@@ -62,9 +62,11 @@ jobs:
           reference="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${commit}" --jq .commit.committer.date)"
           jq --arg reference "${reference}" '. + {reference_time: $reference}' source-run.json > source-reference.json
           gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/pulls?state=all&per_page=100" > pulls.json
-          python3 source/tools/benchmark_history.py publish \
-            --root=site/benchmarks --report=report/benchmark-report.json \
-            --source=source-reference.json --pulls=pulls.json --repository="${GITHUB_REPOSITORY}" --keep=100
+          for report in report/*/benchmark-report*.json; do
+            python3 source/tools/benchmark_history.py publish \
+              --root=site/benchmarks --report="${report}" \
+              --source=source-reference.json --pulls=pulls.json --repository="${GITHUB_REPOSITORY}" --keep=100
+          done
       - name: Refresh stable benchmark references and deploy
         env:
           GH_TOKEN: ${{ github.token }}
