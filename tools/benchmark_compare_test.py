@@ -163,6 +163,17 @@ class BenchmarkCompareTest(unittest.TestCase):
             with self.subTest(counts=counts), self.assertRaises(ValueError):
                 compare.collect_scales(Path('/xff'), counts, depth=2)
 
+    def test_default_grid_stops_at_ten_thousand(self):
+        data = {'tasks': [], 'contract': {}}
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / 'report.json'
+            with mock.patch.object(sys, 'argv', ['compare', '--binary=/xff', f'--report={output}']), \
+                    mock.patch.object(compare, 'collect_scales', return_value=data) as collect, \
+                    mock.patch.object(compare.benchmark_matrix, 'regressions', return_value=[]), \
+                    mock.patch.object(compare.benchmark_matrix, 'relative_results', return_value=[]):
+                compare.main()
+            self.assertEqual(collect.call_args.args[1], [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000])
+
     def test_cli_alarm_records_warning_without_failure(self):
         data = {'contract': {'repetitions': 3, 'retained': 2, 'estimator': 'mean-fastest'},
                 'tasks': [{'dataset': 'broad', 'name': 'files', 'files': 10, 'cpus': 1,

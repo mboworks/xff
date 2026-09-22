@@ -96,8 +96,12 @@ jobs:
           if [[ "${RUNNER_OS}" == Linux ]]; then
             storage=(--fixture-parent=/dev/shm --require-memory --require-cpu-affinity)
           fi
+          scales=()
+          for count in 10 20 50 100 200 500 1000 2000 5000 10000 20000 50000 100000; do
+            scales+=(--files="${count}")
+          done
           python3 tools/benchmark_compare.py --binary="${RUNNER_TEMP}/benchmark-head" \
-            --report=benchmark-report-${BENCHMARK_PLATFORM}.json --require-tools "${storage[@]}" \
+            --report=benchmark-report-${BENCHMARK_PLATFORM}.json --require-tools "${storage[@]}" "${scales[@]}" \
             --repetitions=9 --keep=7 --runner-class='github-hosted ${{ matrix.os }}' \
             --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | shasum -a 256 | cut -d ' ' -f 1)" \
             --summary=benchmark-main.md --html=benchmark-report-${BENCHMARK_PLATFORM}.html

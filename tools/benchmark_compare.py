@@ -24,6 +24,8 @@ import time
 import benchmark_fixture
 import benchmark_matrix
 
+DEFAULT_FILE_COUNTS = (10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000)
+
 METRICS = ("elapsed_seconds", "first_stdout_seconds", "user_cpu_seconds", "system_cpu_seconds",
            "peak_child_rss_bytes", "sum_child_peak_rss_bytes", "stdout_bytes")
 
@@ -416,7 +418,7 @@ def main():
     parser.add_argument('--worker', type=Path)
     parser.add_argument('--binary', type=Path)
     parser.add_argument('--report', type=Path, help='Existing history report to extend')
-    parser.add_argument('--files', type=int, action='append', help='Repeat for each scale; default: 10, 100, 1000, 10000, 100000')
+    parser.add_argument('--files', type=int, action='append', help='Repeat for each scale; default: 1-2-5 progression from 10 through 10000')
     parser.add_argument('--depth', type=int, default=40)
     parser.add_argument('--cpus', type=int, action='append', help='Repeat for CPU allocations; default: 1, 4')
     parser.add_argument('--require-cpu-affinity', action='store_true')
@@ -447,7 +449,7 @@ def main():
     if args.worker:
         print(json.dumps(measure(json.loads(args.worker.read_text()))))
         return
-    file_counts = args.files or [10, 100, 1000, 10000, 100000]
+    file_counts = args.files or list(DEFAULT_FILE_COUNTS)
     cpu_counts = args.cpus or [1, 4]
     if (not args.binary or not args.report or min(*file_counts, args.depth, args.repetitions) < 1
             or len(set(file_counts)) != len(file_counts) or min(cpu_counts) < 1

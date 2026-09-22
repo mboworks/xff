@@ -8,7 +8,7 @@ informational. A 15% advisory alarm identifies normalized slowdowns without bloc
 ## Matrix and sampling
 
 Each tree shape has one table. Rows identify the task and tool. The eight standard columns are
-grouped by CPU allocation: **1 CPU** with 10, 100, 1,000, 10,000, and 100,000 files, then **4 CPUs** with the
+grouped by CPU allocation: **1 CPU** with a 1-2-5 progression from 10 through 10,000 files, then **4 CPUs** with the
 same sizes. HTML uses spanning CPU headers; Markdown repeats CPU/count labels and aligns numeric
 cells and their source text to the right.
 
@@ -241,3 +241,9 @@ The macOS job has a 60-minute pre-merge budget and a 90-minute post-merge budget
 compilation and fixture creation. Its first 100,000-file CI matrix exceeded the old 30-minute job
 budget after an eight-minute build. Linux keeps its 30/45-minute budgets. These are job ceilings,
 not requested measurement durations; individual benchmark invocations retain their timeout.
+
+PR measurements use 10, 20, 50, 100, 200, 500, 1,000, 2,000, 5,000, and 10,000 files, retaining
+the fastest 2 of 3 samples. Post-merge adds 20,000, 50,000, and 100,000 files and retains the
+fastest 7 of 9. Baseline comparisons use matching cells at shared sizes; extra main-only scales
+do not invalidate comparisons at the smaller sizes. Explicit repeated `--files` values override
+the default grid for local experiments.
