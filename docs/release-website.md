@@ -116,9 +116,9 @@ The README uses the original transparent MBO Works logo in
 The favicon assets are derived from that same artwork: a 32-pixel PNG, a 180-pixel Apple
 Touch icon, and an ICO containing 16-, 32-, 48-, and 256-pixel PNG images.
 
-Both Pages publishers run `tools/site_artwork.py` on the final deployment directory.
-This supplies favicons to documentation, native HTML references, redirects, and coverage
-reports, including existing releases. Relative links work at every nesting depth and under
+All three Pages publishers (release, coverage, and benchmarks) run `tools/site_artwork.py` on the final deployment directory.
+This supplies favicons to documentation, native HTML references, redirects, coverage
+reports, and benchmark reports, including existing releases. Relative links work at every nesting depth and under
 xff's project URL. Only the deployment copy receives these links; retained release files and
 their recorded hashes stay unchanged. The standalone CLI HTML output remains self-contained.
 

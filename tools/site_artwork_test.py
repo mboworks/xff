@@ -11,6 +11,16 @@ from test_paths import repository_file
 
 
 class SiteArtworkTest(unittest.TestCase):
+    def test_every_pages_publisher_decorates_staged_site_before_upload(self):
+        for name in ("pages.yml", "coverage_pages.yml", "benchmark_pages.yml"):
+            with self.subTest(workflow=name):
+                workflow = repository_file(f".github/workflows/{name}").read_text()
+                stage = workflow.index("rsync --archive --exclude='.git' site/ public/")
+                decorate = workflow.index("python3 source/tools/site_artwork.py source/docs/assets public")
+                upload = workflow.index("uses: actions/upload-pages-artifact@")
+                self.assertLess(stage, decorate)
+                self.assertLess(decorate, upload)
+
     def test_nested_pages_and_idempotence(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -19,6 +29,7 @@ class SiteArtworkTest(unittest.TestCase):
                 "index.html": '<!doctype html><html lang="en"><meta charset="utf-8"><body>Home</body></html>',
                 "site/tag/v0.5.0/XFF.html": '<!doctype html><html><head><title>Help</title></head><body>Help</body></html>',
                 "coverage/pr/835/index.html": '<HTML><HEAD><TITLE>Coverage</TITLE></HEAD><BODY>Report</BODY></HTML>',
+                "benchmarks/runs/35474269925/1/index.html": '<!doctype html><html><head><title>Benchmark</title></head></html>',
                 "fragment.html": '<p>A fragment</p>',
             }
             for name, text in documents.items():
@@ -32,7 +43,7 @@ class SiteArtworkTest(unittest.TestCase):
                 if name == "fragment.html":
                     self.assertEqual(decorated, original)
                     continue
-                prefix = "." if name == "index.html" else "../../.."
+                prefix = "." if name == "index.html" else "/".join(".." for _ in path.parent.relative_to(root).parts)
                 for icon in site_artwork.ICONS:
                     self.assertIn(f'href="{prefix}/{icon}"', decorated)
                     self.assertEqual((path.parent / prefix / icon).read_bytes(),

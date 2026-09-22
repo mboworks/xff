@@ -664,7 +664,10 @@ py_test(
     name = "site_artwork_test",
     size = "small",
     srcs = ["site_artwork_test.py"],
-    data = ["//:python_artwork_test_data"],
+    data = [
+        "//:python_artwork_test_data",
+        "//:python_workflow_test_data",
+    ],
     deps = [
         ":site_artwork_lib",
         ":test_paths_lib",
