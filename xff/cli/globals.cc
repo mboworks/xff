@@ -845,11 +845,13 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "-j N, -j=N, --jobs=N|all",
         .group = "scheduling",
         .header = "Concurrency and ordering",
-        .summary = "directory-read and concurrent -exec workers (all = every detected core)",
+        .summary = "directory-read, eligible content-match and -exec workers",
         .details = "`N` is a positive integer; use `-j 4`, `-j=4`, or `--jobs=4`. The conventional attached "
                    "short form `-j4` is also accepted. Every form accepts `all` in place of `N`. `-j 1` makes "
                    "directory reads and `-exec ... ;` synchronous. At larger values, xff reads directories "
-                   "on `N` worker threads and may independently keep up to `N` semicolon-form `-exec` / "
+                   "on `N` worker threads. Independent content predicates also match in bounded parallel batches, "
+                   "with output kept in traversal order; stateful expressions remain on the coordinator. "
+                   "Xff may independently keep up to `N` semicolon-form `-exec` / "
                    "`-execdir` children outstanding. Reads and children can overlap; `N` is not one shared "
                    "operation budget. The children's truth value is therefore success on launch. The "
                    "`... +` batch forms still run once after the walk and propagate a failing exit status. With "

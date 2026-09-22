@@ -3,6 +3,13 @@
 
 # 0.9.0
 
+- Avoid clearing unused read-buffer capacity for each content search.
+- Optimize release builds for execution speed with `-O2` and ThinLTO.
+
+- Compile fuzzy queries once and skip unused ranking work.
+- Avoid unnecessary per-file metadata reads and evaluate eligible content predicates in ordered parallel batches.
+- Request extended birth-time metadata only when a matcher or output consumer needs it.
+
 - Upgrade rules_cc to 0.2.25 and express the macOS deployment target through Bazel's
   native settings for consistent Apple and hermetic LLVM toolchains.
 

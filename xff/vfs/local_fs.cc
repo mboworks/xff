@@ -34,7 +34,8 @@
 # include <sys/mount.h>  // statfs + f_fstypename (BSD/macOS report the name directly)
 # include <sys/param.h>
 #else
-# include <sys/vfs.h>  // statfs + f_type magic (Linux reports a number, not a name)
+# include <sys/sysmacros.h>  // makedev for statx device identity
+# include <sys/vfs.h>        // statfs + f_type magic (Linux reports a number, not a name)
 #endif
 
 #include <algorithm>
@@ -111,32 +112,29 @@ std::string JoinPath(std::string_view dir, std::string_view name) {
   return absl::StrCat(dir, "/", name);
 }
 
-// Birth/creation time, where the platform + filesystem record it.
-std::optional<absl::Time> BirthTime(
-    [[maybe_unused]] const struct stat& st,
-    [[maybe_unused]] const std::string& path,
-    [[maybe_unused]] bool follow_symlinks) {
-#if defined(__APPLE__)
-  return absl::TimeFromTimespec(st.st_birthtimespec);
-#elif defined(__linux__) && defined(STATX_BTIME)
-  // Zero-initialized on purpose, for MemorySanitizer. `statx` has no MSan interceptor (unlike
-  // `stat` / `lstat` / `fstat`), so the sanitizer never learns that the kernel filled `stx` in
-  // and every read below - starting with `stx.stx_mask` - is reported as use-of-uninitialized.
-  // Pre-initializing gives the shadow a defined state; the kernel then overwrites the bytes with
-  // the real values, so the result is unchanged and only the false report goes away.
-  struct statx stx = {};
-  const int flags = follow_symlinks ? 0 : AT_SYMLINK_NOFOLLOW;
-  if (::statx(AT_FDCWD, path.c_str(), flags, STATX_BTIME, &stx) == 0 && (stx.stx_mask & STATX_BTIME) != 0U) {
-    struct timespec ts;
-    ts.tv_sec = static_cast<time_t>(stx.stx_btime.tv_sec);
-    ts.tv_nsec = static_cast<long>(stx.stx_btime.tv_nsec);  // NOLINT(google-runtime-int)
-    return absl::TimeFromTimespec(ts);
-  }
-  return std::nullopt;
-#else
-  return std::nullopt;
-#endif
+#if defined(__linux__) && defined(STATX_BTIME)
+absl::Time StatxTime(const struct statx_timestamp& value) {
+  return absl::FromUnixSeconds(value.tv_sec) + absl::Nanoseconds(value.tv_nsec);
 }
+
+Metadata MetadataFromStatx(const struct statx& st, std::optional<absl::Time> btime) {
+  return {
+      .type = TypeFromMode(st.stx_mode),
+      .size = st.stx_size,
+      .blocks = st.stx_blocks,
+      .mode = st.stx_mode,
+      .nlink = st.stx_nlink,
+      .uid = st.stx_uid,
+      .gid = st.stx_gid,
+      .ino = st.stx_ino,
+      .dev = static_cast<std::uint64_t>(makedev(st.stx_dev_major, st.stx_dev_minor)),
+      .atime = StatxTime(st.stx_atime),
+      .mtime = StatxTime(st.stx_mtime),
+      .ctime = StatxTime(st.stx_ctime),
+      .btime = btime,
+  };
+}
+#endif
 
 Metadata MetadataFromStat(const struct stat& st, std::optional<absl::Time> btime) {
   Metadata md;
@@ -229,14 +227,43 @@ absl::StatusOr<std::vector<Entry>> LocalFs::ReadDir(std::string_view dir) const 
 }
 
 absl::StatusOr<Metadata> LocalFs::Stat(std::string_view path, bool follow_symlinks) const {
+  return StatFields(path, follow_symlinks, MetadataFields::kBirthTime);
+}
+
+absl::StatusOr<Metadata> LocalFs::StatFields(std::string_view path, bool follow_symlinks, MetadataFields fields) const {
   const std::string path_str(path);
+  std::optional<absl::Time> btime;
+#if defined(__linux__) && defined(STATX_BTIME)
+  if (fields == MetadataFields::kBirthTime) {
+    // One lookup supplies ordinary fields and birth time. Zero-initialize for MSan,
+    // whose interceptors do not yet mark the kernel-written statx fields initialized.
+    struct statx extended{};
+    const int flags = follow_symlinks ? 0 : AT_SYMLINK_NOFOLLOW;
+    // XFF_HOST_IO: LocalFs retrieves metadata at the Linux syscall boundary.
+    if (::statx(AT_FDCWD, path_str.c_str(), flags, STATX_BASIC_STATS | STATX_BTIME, &extended) == 0) {
+      if ((extended.stx_mask & STATX_BTIME) != 0U) {
+        btime = StatxTime(extended.stx_btime);
+      }
+      if ((extended.stx_mask & STATX_BASIC_STATS) == STATX_BASIC_STATS) {
+        return MetadataFromStatx(extended, btime);
+      }
+    }
+  }
+  // Older kernels, restricted syscalls and incomplete attribute sets retain the
+  // portable stat fallback. Preserve any birth time already supplied above.
+#else
+  static_cast<void>(fields);
+#endif
   struct stat st{};
   // XFF_HOST_IO: LocalFs implements the VFS metadata operation at the POSIX boundary.
   const int rc = follow_symlinks ? ::stat(path_str.c_str(), &st) : ::lstat(path_str.c_str(), &st);
   if (rc != 0) {
     return absl::ErrnoToStatus(errno, absl::StrCat(follow_symlinks ? "stat('" : "lstat('", path, "')"));
   }
-  return MetadataFromStat(st, BirthTime(st, path_str, follow_symlinks));
+#if defined(__APPLE__)
+  btime = absl::TimeFromTimespec(st.st_birthtimespec);
+#endif
+  return MetadataFromStat(st, btime);
 }
 
 absl::Status LocalFs::RemoveControlled(std::string_view path, const MutationPolicy& policy) const {
@@ -342,7 +369,8 @@ absl::StatusOr<std::string> LocalFs::ReadContent(std::string_view path) const {
     return absl::ErrnoToStatus(errno, absl::StrCat("open('", path, "')"));
   }
   std::string content;
-  std::array<char, std::size_t{64} * 1'024> buffer{};
+  // read() initializes the returned byte range; unused capacity is never inspected.
+  std::array<char, std::size_t{64} * 1'024> buffer;
   for (;;) {
     const ssize_t count = ::read(fd, buffer.data(), buffer.size());
     if (count < 0) {

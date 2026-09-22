@@ -32,6 +32,10 @@ namespace xff::vfs {
 
 struct MutationPolicy;
 
+// Basic stat fields suffice unless a consumer explicitly needs creation time.
+// Backends may supply additional fields when they are available at no extra cost.
+enum class MetadataFields { kBasic, kBirthTime };
+
 // Permission to probe with `FileSystem::Access` (find's -readable/-writable/
 // -executable). Platform-neutral; LocalFs maps these to R_OK/W_OK/X_OK.
 enum class AccessMode { kRead, kWrite, kExecute };
@@ -75,6 +79,9 @@ class FileSystem {
   // selects `stat` (follow the link, like `-L`) vs `lstat` (the link itself,
   // like the default `-P`).
   virtual absl::StatusOr<Metadata> Stat(std::string_view path, bool follow_symlinks) const = 0;
+
+  // Field-aware lookup. The default preserves complete metadata for existing backends.
+  virtual absl::StatusOr<Metadata> StatFields(std::string_view path, bool follow_symlinks, MetadataFields fields) const;
 
   // Removes `path` (a file, symlink, or empty directory; find's -delete relies
   // on -depth to empty directories first). Read-only backends (archive/remote)

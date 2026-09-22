@@ -59,6 +59,7 @@ using EmitFn = absl::FunctionRef<void(std::string_view)>;
 // fire as a side effect of reaching the action node, so short-circuit governs
 // whether they are set.
 struct Control {
+  absl::Status metadata_error;  // Failed lazy stat; stop this entry, never treat it as a false predicate.
   absl::Status mutation_error;  // Never downgraded by --skip-unsupported.
   bool prune = false;
   bool quit = false;

@@ -204,9 +204,12 @@ std::string_view TrimAnchorWhitespace(std::string_view pattern, std::string_view
   return text;
 }
 
-std::optional<int> PositiveTermPercent(const QueryTerm& term, std::string_view text, bool fold_case) {
+std::optional<int> PositiveTermPercent(const QueryTerm& term, std::string_view text, bool fold_case, bool score) {
   if (term.kind == TermKind::kFuzzy) {
-    return Percent(term.text, text, fold_case);
+    if (score) {
+      return Percent(term.text, text, fold_case);
+    }
+    return Matches(term.text, text, fold_case) ? std::optional(100) : std::nullopt;
   }
   const std::optional<std::size_t> found = FindText(term.text, text, fold_case);
   bool matched = found.has_value();
@@ -241,7 +244,7 @@ std::optional<int> PositiveTermPercent(const QueryTerm& term, std::string_view t
   if (!matched) {
     return std::nullopt;
   }
-  return Percent(term.text, text, fold_case).value_or(100);
+  return score ? Percent(term.text, text, fold_case).value_or(100) : 100;
 }
 
 // One row of the search: the best score for the pattern prefix whose LAST character is `want`, with
@@ -318,14 +321,31 @@ std::optional<int> Percent(std::string_view pattern, std::string_view text, bool
   return static_cast<int>(std::clamp<std::int64_t>(scaled, 0, 100));
 }
 
+struct FzfQuery::Impl {
+  std::vector<OrGroup> groups;
+};
+
+FzfQuery::FzfQuery(std::string_view query) : impl_(std::make_shared<const Impl>(Impl{.groups = ParseQuery(query)})) {}
+
+bool FzfQuery::Matches(std::string_view text, bool fold_case) const {
+  return absl::c_all_of(impl_->groups, [&](const OrGroup& group) {
+    return absl::c_any_of(group, [&](const QueryTerm& term) {
+      return term.inverse != PositiveTermPercent(term, text, fold_case, /*score=*/false).has_value();
+    });
+  });
+}
+
 std::optional<int> FzfPercent(std::string_view query, std::string_view text, bool fold_case) {
-  const std::vector<OrGroup> groups = ParseQuery(query);
+  return FzfQuery(query).Percent(text, fold_case);
+}
+
+std::optional<int> FzfQuery::Percent(std::string_view text, bool fold_case) const {
   int query_score = 100;
-  for (const OrGroup& group : groups) {
+  for (const OrGroup& group : impl_->groups) {
     std::optional<int> group_score;
     bool matched = false;
     for (const QueryTerm& term : group) {
-      const std::optional<int> positive = PositiveTermPercent(term, text, fold_case);
+      const std::optional<int> positive = PositiveTermPercent(term, text, fold_case, /*score=*/true);
       const bool term_matches = term.inverse ? !positive.has_value() : positive.has_value();
       if (!term_matches) {
         continue;

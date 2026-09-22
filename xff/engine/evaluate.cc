@@ -668,7 +668,8 @@ bool IsEmpty(const Visit& visit, const vfs::FileSystem& fs) {
 // stat'd (following symlinks); a missing/unreadable reference makes it false.
 // (FILE is re-stat'd per entry for now; resolving it once is a later optimization.)
 bool IsNewerThan(const Visit& visit, std::string_view reference, const vfs::FileSystem& fs) {
-  const absl::StatusOr<vfs::Metadata> ref = fs.Stat(reference, /*follow_symlinks=*/true);
+  const absl::StatusOr<vfs::Metadata> ref =
+      fs.StatFields(reference, /*follow_symlinks=*/true, vfs::MetadataFields::kBasic);
   return ref.ok() && visit.metadata.mtime > ref->mtime;
 }
 
@@ -677,7 +678,8 @@ bool IsNewerThan(const Visit& visit, std::string_view reference, const vfs::File
 // missing/unreadable reference makes it false. FILE is re-stat'd per entry for
 // now, like IsNewerThan; resolving it once is a later optimization.
 bool IsSameFile(const Visit& visit, std::string_view reference, const vfs::FileSystem& fs) {
-  const absl::StatusOr<vfs::Metadata> ref = fs.Stat(reference, /*follow_symlinks=*/true);
+  const absl::StatusOr<vfs::Metadata> ref =
+      fs.StatFields(reference, /*follow_symlinks=*/true, vfs::MetadataFields::kBasic);
   return ref.ok() && visit.metadata.ino == ref->ino && visit.metadata.dev == ref->dev;
 }
 
@@ -698,7 +700,8 @@ std::optional<absl::Time> TimeField(const vfs::Metadata& metadata, char field) {
 // reference makes it false, as does an unrecorded birth time on either side (X=B
 // or Y=B). (The Y=t time-string form is handled in EvalNewerXY.)
 bool IsNewerXY(const Visit& visit, char x, char y, std::string_view reference, const vfs::FileSystem& fs) {
-  const absl::StatusOr<vfs::Metadata> ref = fs.Stat(reference, /*follow_symlinks=*/true);
+  const absl::StatusOr<vfs::Metadata> ref = fs.StatFields(
+      reference, /*follow_symlinks=*/true, y == 'B' ? vfs::MetadataFields::kBirthTime : vfs::MetadataFields::kBasic);
   if (!ref.ok()) {
     return false;
   }
@@ -901,13 +904,21 @@ bool EvalFuzzyOn(const parser::Expr& expr, EvalContext& ctx, std::string_view su
   if (expr.args.empty()) {
     return false;
   }
-  if (!ctx.fuzzy_score.has_value() && !expr.fuzzy_threshold.has_value()
-      && expr.fuzzy_model == parser::FuzzyModel::kSequence) {
-    return fuzzy::Matches(expr.args.front(), subject, fold);  // truth only: the cheap scan
+  if (!ctx.fuzzy_score.has_value() && !expr.fuzzy_threshold.has_value()) {
+    if (expr.fuzzy_model == parser::FuzzyModel::kSequence) {
+      return fuzzy::Matches(expr.args.front(), subject, fold);
+    }
+    if (expr.fuzzy_model == parser::FuzzyModel::kFzf) {
+      return expr.fuzzy_query ? expr.fuzzy_query->Matches(subject, fold)
+                              : fuzzy::FzfQuery(expr.args.front()).Matches(subject, fold);
+    }
   }
   std::optional<int> percent;
   switch (expr.fuzzy_model) {
-    case parser::FuzzyModel::kFzf: percent = fuzzy::FzfPercent(expr.args.front(), subject, fold); break;
+    case parser::FuzzyModel::kFzf:
+      percent = expr.fuzzy_query ? expr.fuzzy_query->Percent(subject, fold)
+                                 : fuzzy::FzfPercent(expr.args.front(), subject, fold);
+      break;
     case parser::FuzzyModel::kSequence: percent = fuzzy::SequencePercent(expr.args.front(), subject, fold); break;
     case parser::FuzzyModel::kLevenshtein: percent = fuzzy::LevenshteinPercent(expr.args.front(), subject, fold); break;
     case parser::FuzzyModel::kShingles: percent = fuzzy::ShinglePercent(expr.args.front(), subject, fold); break;
@@ -1635,7 +1646,8 @@ bool EvalXtype(const parser::Expr& expr, EvalContext& ctx) {
   if (ctx.visit.metadata.type != vfs::FileType::kSymlink) {
     return MatchesType(expr.args.front(), ctx.visit.metadata.type);
   }
-  const absl::StatusOr<vfs::Metadata> target = ctx.fs.Stat(ctx.visit.path, /*follow_symlinks=*/true);
+  const absl::StatusOr<vfs::Metadata> target =
+      ctx.fs.StatFields(ctx.visit.path, /*follow_symlinks=*/true, vfs::MetadataFields::kBasic);
   const vfs::FileType type = target.ok() ? target->type : vfs::FileType::kSymlink;
   return MatchesType(expr.args.front(), type);
 }
@@ -2680,6 +2692,12 @@ void PreviewExecution(const parser::Expr& expr, EvalContext& context) {
 EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) {
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate: {
+      if (expr.descriptor->needs_metadata || (expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
+        context.control.metadata_error = context.visit.EnsureMetadata();
+        if (!context.control.metadata_error.ok()) {
+          return {.unknown = true};
+        }
+      }
       if (context.dry_run && expr.descriptor->safety == registry::Safety::kSecurity) {
         PreviewExecution(expr, context);
         return {.unknown = true};

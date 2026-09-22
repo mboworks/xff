@@ -40,6 +40,8 @@ class LocalFs final : public FileSystem {
  public:
   absl::StatusOr<std::vector<Entry>> ReadDir(std::string_view dir) const override;
   absl::StatusOr<Metadata> Stat(std::string_view path, bool follow_symlinks) const override;
+  absl::StatusOr<Metadata> StatFields(std::string_view path, bool follow_symlinks, MetadataFields fields)
+      const override;
   absl::Status Remove(std::string_view path) const override;
   absl::Status WriteContent(std::string_view path, std::string_view content) const override;
   absl::StatusOr<std::unique_ptr<OutputFile>> OpenOutput(std::string_view path, bool exclusive) const override;

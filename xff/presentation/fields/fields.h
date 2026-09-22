@@ -128,6 +128,9 @@ class Template {
   // Inspect parsed hash fields, including post-processing, without reading any entry content.
   hash::DefaultUsage HashDefaultsUsed() const;
 
+  // Whether a compiled field consumes birth time, including transformed fields.
+  bool NeedsBirthTime() const;
+
   // Number of compiled hash/line-count fields that can read content when rendered.
   // This describes template structure, not observed reads or bytes.
   std::size_t ContentFieldCount() const;

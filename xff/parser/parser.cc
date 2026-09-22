@@ -35,6 +35,7 @@
 #include "absl/strings/str_split.h"
 #include "mbo/container/limited_set.h"
 #include "mbo/status/status_macros.h"
+#include "xff/fuzzy/fuzzy.h"
 #include "xff/matching/regex/regex.h"
 #include "xff/parser/ast.h"
 #include "xff/parser/diagnostics.h"
@@ -170,6 +171,9 @@ ExprPtr MakePredicate(const registry::Descriptor& descriptor, std::vector<std::s
   expr->kind = Expr::Kind::kPredicate;
   expr->descriptor.set_ref(descriptor);
   expr->args = std::move(args);
+  if (descriptor.binding == registry::Binding::kFuzzy && !expr->args.empty()) {
+    expr->fuzzy_query = std::make_shared<const fuzzy::FzfQuery>(expr->args.front());
+  }
   return expr;
 }
 

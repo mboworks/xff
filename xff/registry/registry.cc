@@ -44,6 +44,9 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .see_also = "expressions,cookbook",
         .case_pattern = true,
+        .needs_metadata = false,
+        .native_case = true,
+        .parallel_match = true,
     },
     {
         .name = "-iname",
@@ -53,6 +56,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .fold_case = true,
         .see_also = "expressions,cookbook",
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     {
         .name = "-path",
@@ -65,6 +70,9 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .see_also = "expressions,cookbook",
         .case_pattern = true,
+        .needs_metadata = false,
+        .native_case = true,
+        .parallel_match = true,
     },
     {
         .name = "-ipath",
@@ -74,6 +82,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .fold_case = true,
         .see_also = "expressions,cookbook",
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     {
         .name = "-wholename",
@@ -81,6 +91,9 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "expressions,cookbook",
+        .needs_metadata = false,
+        .native_case = true,
+        .parallel_match = true,
     },
     {
         .name = "-iwholename",
@@ -89,6 +102,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .fold_case = true,
         .see_also = "expressions,cookbook",
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     {
         .name = "-lname",
@@ -122,6 +137,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .see_also = "regex,grammars",
         .regex_argument = true,
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     {
         .name = "-iregex",
@@ -133,6 +150,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .fold_case = true,
         .see_also = "regex,grammars",
         .regex_argument = true,
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     {
         .name = "-regextype",
@@ -158,6 +177,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .cost = Cost::kExpensive,
         .topic = "content",
         .case_pattern = true,
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     {
         .name = "-icontent",
@@ -169,6 +190,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .cost = Cost::kExpensive,
         .topic = "content",
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     {
         .name = "-rxc",
@@ -184,6 +207,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .cost = Cost::kExpensive,
         .topic = "content",
         .regex_argument = true,
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     {
         .name = "-irxc",
@@ -196,6 +221,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .cost = Cost::kExpensive,
         .topic = "content",
         .regex_argument = true,
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     // xff content-type predicates: is the file's CONTENT text or binary? Both read the file and use
     // the same NUL-in-first-8,000-bytes heuristic as the content search above, so they classify a file the
@@ -220,6 +247,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .cost = Cost::kExpensive,
         .topic = "content",
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     {
         .name = "-binary",
@@ -234,6 +263,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .cost = Cost::kExpensive,
         .see_also = "content,fields",
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     {
         .name = "-eofnl",
@@ -249,6 +280,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .cost = Cost::kExpensive,
         .see_also = "content,fields",
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     {
         .name = "-eofcr",
@@ -263,6 +296,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .cost = Cost::kExpensive,
         .topic = "content",
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     {
         .name = "-eofcrlf",
@@ -277,6 +312,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .cost = Cost::kExpensive,
         .topic = "content",
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     // xff -collect: the other half of result-set shaping - an ACTION that holds entries back for a
     // post-walk sink, so a truncating test can narrow what is SHOWN without also narrowing what is
@@ -425,6 +462,9 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .see_also = "expressions,cookbook",
         .case_pattern = true,
+        .needs_metadata = false,
+        .native_case = true,
+        .parallel_match = true,
     },
     {
         .name = "-fuzzypath",
@@ -442,6 +482,9 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .style = Style::kXff,
         .see_also = "expressions,cookbook",
         .case_pattern = true,
+        .needs_metadata = false,
+        .native_case = true,
+        .parallel_match = true,
     },
     {
         .name = "-ifuzzy",
@@ -454,6 +497,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .fold_case = true,
         .style = Style::kXff,
         .see_also = "expressions,cookbook",
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     {
         .name = "-ifuzzypath",
@@ -466,6 +511,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .fold_case = true,
         .style = Style::kXff,
         .see_also = "expressions,cookbook",
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     // xff -cmp: content comparison. TRUE when the file is byte-for-byte identical to
     // TARGET (a field template rendered per entry, e.g. '{def.B}/{relpath}'); byte-exact
@@ -570,6 +617,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .argument_choices = "b,c,d,f,l,p,s",
         .argument_choice_list = true,
         .see_also = "expressions,cookbook",
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     {
         .name = "-xtype",
@@ -864,6 +913,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_birth_time = true,
     },
     {
         .name = "-newerBc",
@@ -871,6 +921,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_birth_time = true,
     },
     {
         .name = "-newerBm",
@@ -878,6 +929,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_birth_time = true,
     },
     {
         .name = "-newerBB",
@@ -885,6 +937,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_birth_time = true,
     },
     {
         .name = "-newerBt",
@@ -892,6 +945,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_birth_time = true,
     },
     {
         .name = "-neweraB",
@@ -987,6 +1041,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_birth_time = true,
     },
     {
         .name = "-Bmin",
@@ -996,6 +1051,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_birth_time = true,
     },
     {
         .name = "-used",
@@ -1031,6 +1087,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .see_also = "ignore,archive",
         .traversal_effect = TraversalEffect::kMaxDepth,
+        .needs_metadata = false,
     },
     {
         .name = "-mindepth",
@@ -1041,6 +1098,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .see_also = "ignore,archive",
         .traversal_effect = TraversalEffect::kMinDepth,
+        .needs_metadata = false,
     },
     {
         .name = "-depth",
@@ -1052,6 +1110,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 0,
         .see_also = "ignore,archive",
         .traversal_effect = TraversalEffect::kPostOrder,
+        .needs_metadata = false,
     },
     {
         .name = "-d",
@@ -1060,6 +1119,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 0,
         .see_also = "ignore,archive",
         .traversal_effect = TraversalEffect::kPostOrder,
+        .needs_metadata = false,
     },
     {
         .name = "-xdev",
@@ -1071,6 +1131,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 0,
         .see_also = "ignore,archive",
         .traversal_effect = TraversalEffect::kSingleFilesystem,
+        .needs_metadata = false,
     },
     {
         .name = "-mount",
@@ -1079,6 +1140,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 0,
         .see_also = "ignore,archive",
         .traversal_effect = TraversalEffect::kSingleFilesystem,
+        .needs_metadata = false,
     },
     {
         .name = "-x",
@@ -1087,6 +1149,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 0,
         .see_also = "ignore,archive",
         .traversal_effect = TraversalEffect::kSingleFilesystem,
+        .needs_metadata = false,
     },
     {
         .name = "-daystart",
@@ -1107,6 +1170,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 0,
         .see_also = "expressions,cookbook",
         .traversal_effect = TraversalEffect::kIgnoreRace,
+        .needs_metadata = false,
     },
     {
         .name = "-noignore_readdir_race",
@@ -1115,6 +1179,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 0,
         .see_also = "expressions,cookbook",
         .traversal_effect = TraversalEffect::kReportRace,
+        .needs_metadata = false,
     },
     {
         .name = "-empty",
@@ -1168,6 +1233,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 0,
         .see_also = "expressions,cookbook",
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     {
         .name = "-false",
@@ -1175,6 +1242,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 0,
         .see_also = "expressions,cookbook",
+        .needs_metadata = false,
+        .parallel_match = true,
     },
     {
         .name = "-ls",
@@ -1199,6 +1268,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .stdout_output = true,
         .arity = 0,
         .see_also = "output,fields",
+        .needs_metadata = false,
+        .path_output = true,
     },
     {
         .name = "-print0",
@@ -1210,6 +1281,8 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .stdout_output = true,
         .arity = 0,
         .see_also = "output,fields",
+        .needs_metadata = false,
+        .path_output = true,
     },
     {
         .name = "-printf",
@@ -1361,6 +1434,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .safety = Safety::kSafety,
         .see_also = "safety,archive",
         .traversal_effect = TraversalEffect::kPostOrder,
+        .needs_metadata = false,
     },
     {
         .name = "-prune",
@@ -1372,6 +1446,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 0,
         .see_also = "ignore,archive",
         .preserves_implicit_output = true,
+        .needs_metadata = false,
     },
     {
         .name = "-quit",
@@ -1381,6 +1456,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kAction,
         .arity = 0,
         .see_also = "expressions,cookbook",
+        .needs_metadata = false,
     },
     {
         .name = "-exec",

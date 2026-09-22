@@ -17,8 +17,10 @@
 
 #include <array>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -38,6 +40,46 @@ using ::testing::Lt;
 using ::testing::Optional;
 
 struct FuzzyTest : ::testing::Test {};
+
+TEST_F(FuzzyTest, CompiledExtendedQueryTruthAgreesWithRankedResults) {
+  static constexpr auto kQueries = std::to_array<std::string_view>({
+      "",           "itm",
+      "hdn",        "zzzz",
+      "'item",      "'item'",
+      "^item",      ".txt$",
+      "^item.txt$", "!item",
+      "!'itm",      "item | hidden",
+      "item !log",  "^item | ^hidden .txt$",
+      "a\\ b",      "|",
+      "$",          "^",
+      "'",
+  });
+  static constexpr auto kCandidates = std::to_array<std::string_view>({
+      "",
+      "item.txt",
+      "ITEM.TXT",
+      "a/long/path/item.txt",
+      ".hidden_item.log",
+      "hidden.txt",
+      "a b",
+      " item.txt ",
+  });
+  for (const auto query : kQueries) {
+    const FzfQuery compiled(query);
+    for (const auto candidate : kCandidates) {
+      for (const bool fold : {false, true}) {
+        SCOPED_TRACE(std::string(query) + " / " + std::string(candidate));
+        const auto ranked = compiled.Percent(candidate, fold);
+        EXPECT_THAT(ranked, Eq(FzfPercent(query, candidate, fold)));
+        if (compiled.Matches(candidate, fold)) {
+          EXPECT_THAT(ranked, Optional(::testing::_));
+        } else {
+          EXPECT_THAT(ranked, Eq(std::nullopt));
+        }
+      }
+    }
+  }
+}
 
 TEST_F(FuzzyTest, TheCharactersMustAppearInOrder) {
   // The rule in one line: a subsequence, so the gaps are free but the ORDER is not.

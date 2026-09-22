@@ -360,6 +360,13 @@ TEST_F(FieldsTest, LinesFieldIsEmptyForBinaryUnreadableOrNonRegular) {
   (void)std::remove(path.c_str());
 }
 
+TEST_F(FieldsTest, BirthTimeDemandUsesParsedFields) {
+  EXPECT_THAT(Template::Compile("{btime:epoch}").NeedsBirthTime(), Eq(true));
+  EXPECT_THAT(Template::Compile("{btime:s/a/b/}").NeedsBirthTime(), Eq(true));
+  EXPECT_THAT(Template::Compile("{mtime}|{size}").NeedsBirthTime(), Eq(false));
+  EXPECT_THAT(Template::Compile("{{btime}}").NeedsBirthTime(), Eq(false));
+}
+
 TEST_F(FieldsTest, TimeFieldQualifiers) {
   vfs::Metadata md = Meta(vfs::FileType::kRegular, 0);
   md.mtime = absl::FromUnixSeconds(1'700'000'000);  // 2023-11-14, mid-month: the year is timezone-stable

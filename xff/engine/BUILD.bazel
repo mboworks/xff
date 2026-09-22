@@ -232,6 +232,34 @@ cc_fuzz_test(
 
 # Drives one find run: walk the roots, evaluate the expression, (implicit) print.
 cc_library(
+    name = "parallel_match_cc",
+    srcs = ["parallel_match.cc"],
+    hdrs = ["parallel_match.h"],
+    deps = [
+        ":collect_cc",
+        ":evaluate_cc",
+        "//xff/parser:parser_cc",
+        "//xff/registry:registry_cc",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+cc_test(
+    name = "parallel_match_test",
+    size = "small",
+    srcs = ["parallel_match_test.cc"],
+    deps = [
+        ":parallel_match_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:local_fs_cc",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+cc_library(
     name = "run_cc",
     srcs = ["run.cc"],
     hdrs = [
@@ -243,6 +271,7 @@ cc_library(
         ":evaluate_cc",
         ":extract_cc",
         ":mount_cc",
+        ":parallel_match_cc",
         ":walk_cc",
         "//xff/config:config_cc",
         "//xff/content:line_match_cc",
@@ -293,6 +322,22 @@ cc_test(
         "@mboworks_mbo//mbo/testing:matchers_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
         "@nlohmann_json//:json",
+    ],
+)
+
+cc_test(
+    name = "metadata_test",
+    size = "small",
+    srcs = ["metadata_test.cc"],
+    deps = [
+        ":run_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )
 
