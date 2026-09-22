@@ -208,6 +208,18 @@ class BenchmarkCompareTest(unittest.TestCase):
             progress('Completed scale 1/10', force=True)
         self.assertEqual(output.getvalue().splitlines(), ['Scale 1/10', 'Run 9/12', 'Completed scale 1/10'])
 
+    def test_fixture_identity_is_reused_across_tasks(self):
+        with mock.patch.object(compare, 'tool_info', return_value={'status': 'unavailable', 'path': '/unused'}), \
+                mock.patch.object(compare.benchmark_fixture, 'identity',
+                                  wraps=compare.benchmark_fixture.identity) as identity:
+            result = compare.collect(Path('/unused'), files=2, depth=1, repetitions=1)
+        self.assertEqual(identity.call_count, 2)
+        for shape in ('broad', 'deep'):
+            tasks = [task for task in result['tasks'] if task['dataset'] == shape]
+            self.assertGreater(len(tasks), 1)
+            expected = compare.benchmark_fixture.identity(compare.fixture_entries(2, 0 if shape == 'broad' else 1))
+            self.assertEqual({task['fixture_identity'] for task in tasks}, {expected})
+
     def test_warmup_is_discarded_and_tools_are_interleaved(self):
         calls = []
         def invoke(spec, worker):
@@ -234,6 +246,21 @@ class BenchmarkCompareTest(unittest.TestCase):
         first = result['tasks'][0]['participants']
         self.assertEqual([s['sequence'] for s in first['xff']['samples']], [6, 8, 10])
         self.assertTrue(all(len(entry['samples']) == 3 for entry in first.values()))
+
+    def test_sharded_collection_preserves_complete_fixture_results(self):
+        if BINARY is None:
+            self.skipTest('Bazel supplies xff executable')
+        tool_names = {'xff': {'path': str(BINARY)}, 'find': {}, 'rg': {}, 'fzf': {}}
+        names = [name for name, _, _ in compare.scenarios(Path('.'), [], tool_names)]
+        plan = compare.benchmark_shards.make_plan([2, 4], [1], 3, task_names=names)
+        with mock.patch.object(compare.shutil, 'which', return_value=None):
+            records = [{'head': 'same-source', 'tool_comparisons': compare.collect_scales(
+                BINARY, [2, 4], depth=2, repetitions=1, keep=1, cpu_counts=[1],
+                shard_plan=plan, shard_index=index)} for index in range(3)]
+        combined = compare.benchmark_shards.merge_reports(records)['tool_comparisons']
+        self.assertEqual(len(combined['tasks']), 4 * len(names))
+        self.assertEqual({task['shard_index'] for task in combined['tasks']}, {0, 1, 2})
+        self.assertIn('Tool comparisons', compare.render(combined))
 
     def test_custom_manifest_with_binary_and_links_matches_real_xff(self):
         if BINARY is None:

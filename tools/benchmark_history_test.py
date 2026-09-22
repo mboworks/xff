@@ -70,6 +70,11 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn("ref: main\n          path: source", publish)
         self.assertIn("--keep=100", publish)
         self.assertIn("retention-days: 30", measure)
+        self.assertIn("shard: [0, 1, 2]", measure)
+        self.assertIn("--shard-plan=benchmark-plan.json", measure)
+        self.assertIn("--reference-root=benchmark-history/benchmarks", measure)
+        self.assertIn("--merge shards/*/*.json", measure)
+        self.assertIn("--repetitions=9 --keep=7", measure)
         self.assertIn("git -C site add benchmarks", publish)
 
     def test_tag_on_a_merge_commit_remains_a_release_and_uses_commit_time(self):

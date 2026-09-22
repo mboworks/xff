@@ -13,7 +13,7 @@ The informational `Benchmarks` workflow runs automatically only on pushes to mai
 It compares the merged commit with its first parent. Release tags do not start separate measurements. PR pushes run the shorter cross-tool
 comparison inside the normal test workflow, without launching the paired benchmark workflow. Manual dispatch can select a branch for an experiment against its first parent. Manual results remain Actions artifacts;
 only successful main-push measurements are published. Both revisions use `--config=clang_release`, the production optimization configuration,
-on the same hosted Linux runner. The head revision's measurement driver runs both binaries.
+on the same hosted runner for each platform (Linux and macOS). The head revision's measurement driver runs both binaries.
 The report links both exact commits and records each executable's SHA-256 digest.
 
 Five repetitions alternate base/head and head/base. Each repetition uses deterministic broad and

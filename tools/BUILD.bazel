@@ -729,6 +729,7 @@ test_suite(
         ":benchmark_fixture_test",
         ":benchmark_history_test",
         ":benchmark_matrix_test",
+        ":benchmark_shards_test",
         ":build_rules_test",
         ":cache_report_test",
         ":cache_size_test",
@@ -770,6 +771,7 @@ py_library(
     deps = [
         ":benchmark_fixture_lib",
         ":benchmark_matrix_lib",
+        ":benchmark_shards_lib",
     ],
 )
 
@@ -779,6 +781,7 @@ py_binary(
     deps = [
         ":benchmark_fixture_lib",
         ":benchmark_matrix_lib",
+        ":benchmark_shards_lib",
     ],
 )
 
@@ -815,4 +818,27 @@ py_test(
     size = "small",
     srcs = ["benchmark_matrix_test.py"],
     deps = [":benchmark_matrix_lib"],
+)
+
+py_library(
+    name = "benchmark_shards_lib",
+    srcs = ["benchmark_shards.py"],
+    imports = ["."],
+    deps = [":benchmark_matrix_lib"],
+)
+
+py_binary(
+    name = "benchmark_shards",
+    srcs = ["benchmark_shards.py"],
+    deps = [
+        ":benchmark_compare_lib",
+        ":benchmark_matrix_lib",
+    ],
+)
+
+py_test(
+    name = "benchmark_shards_test",
+    size = "small",
+    srcs = ["benchmark_shards_test.py"],
+    deps = [":benchmark_shards_lib"],
 )

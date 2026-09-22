@@ -23,6 +23,7 @@ import time
 
 import benchmark_fixture
 import benchmark_matrix
+import benchmark_shards
 
 DEFAULT_FILE_COUNTS = (10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000)
 
@@ -211,7 +212,7 @@ class MeasurementProgress:
 
 
 def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_tools=False,
-            fixture_parent=None, require_memory=False, cpus=1, require_cpu_affinity=False, keep=None, fixtures=None, progress=None):
+            fixture_parent=None, require_memory=False, cpus=1, require_cpu_affinity=False, keep=None, fixtures=None, progress=None, shapes=("broad", "deep")):
     progress = progress or MeasurementProgress()
     keep = min(7, repetitions) if keep is None else keep
     if not 1 <= keep <= repetitions:
@@ -249,18 +250,19 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
         empty = base / "empty"
         empty.write_bytes(b"")
         datasets = fixtures or {shape: (fixture_entries(files, levels), None)
-                                for shape, levels in (("broad", 0), ("deep", depth))}
+                                for shape, levels in (("broad", 0), ("deep", depth)) if shape in shapes}
         for shape, (entries, source_hash) in datasets.items():
             root = base / shape
             progress(f'Preparing {shape}: {files:,} files, {cpus} requested workers')
             rows = benchmark_fixture.materialize(root, entries)
+            fixture_identity = benchmark_fixture.identity(entries)
             progress(f'Fixture ready: {shape}, {len(rows):,} files')
             candidates = base / (shape + ".paths")
             candidates.write_bytes(b"".join(os.fsencode("./" + path.relative_to(root).as_posix()) + b"\0" for path, _ in rows))
             for name, expected, commands in scenarios(root, rows, tools, cpus):
                 task = {"shape": shape, "name": name, "expected_count": len(expected),
                         "input_files": len(rows), "files": files, "cpus": cpus, "dataset": shape,
-                        "fixture_identity": benchmark_fixture.identity(entries), "fixture_source_sha256": source_hash,
+                        "fixture_identity": fixture_identity, "fixture_source_sha256": source_hash,
                         "expected_sha256": hashlib.sha256(b"\0".join(sorted(expected))).hexdigest(),
                         "participants": {}, "skips": {}}
                 report["tasks"].append(task)
@@ -299,26 +301,33 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
 
 
 def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=False,
-                   fixture_parent=None, require_memory=False, cpu_counts=(1, 4), require_cpu_affinity=False, keep=None, fixtures=None):
+                   fixture_parent=None, require_memory=False, cpu_counts=(1, 4), require_cpu_affinity=False, keep=None, fixtures=None,
+                   shard_plan=None, shard_index=0):
     """Retain independent scales without mixing sample populations or tool identities."""
     if not file_counts or len(set(file_counts)) != len(file_counts) or min(file_counts) < 1 or depth < 1:
         raise ValueError("file counts must be unique and positive; depth must be positive")
     if not cpu_counts or len(set(cpu_counts)) != len(cpu_counts) or min(cpu_counts) < 1:
         raise ValueError("CPU counts must be unique and positive")
+    selected = benchmark_shards.assigned_fixtures(shard_plan, shard_index) if shard_plan else None
+    if shard_plan and (list(file_counts) != shard_plan['file_counts'] or list(cpu_counts) != shard_plan['cpu_counts'] or fixtures):
+        raise ValueError('shard plan requires its exact standard fixture grid')
     combined = None
     invocation = {"files": list(file_counts), "cpus": list(cpu_counts), "depth": depth,
                   "fixtures": [{"dataset": shape, "files": count, "source_sha256": value[1],
                                 "tree_sha256": benchmark_fixture.identity(value[0])}
                                for (shape, count), value in sorted((fixtures or {}).items())]}
     progress = MeasurementProgress()
-    total_scales = len(cpu_counts) * len(file_counts)
+    total_scales = len({(files, cpus) for files, cpus, _ in selected}) if selected is not None else len(cpu_counts) * len(file_counts)
     completed_scales = 0
     for cpus in cpu_counts:
         for files in file_counts:
+            shapes = [shape for shape in ('broad', 'deep') if selected is None or (files, cpus, shape) in selected]
+            if not shapes:
+                continue
             progress(f'Scale {completed_scales + 1}/{total_scales}: {files:,} files, {cpus} requested workers', force=True)
             report = collect(binary, files, min(files, depth), repetitions, require_tools=require_tools,
                              fixture_parent=fixture_parent, require_memory=require_memory, cpus=cpus,
-                             require_cpu_affinity=require_cpu_affinity, keep=keep, progress=progress,
+                             require_cpu_affinity=require_cpu_affinity, keep=keep, progress=progress, shapes=shapes,
                              fixtures={shape: value for (shape, count), value in fixtures.items() if count == files}
                              if fixtures is not None else None)
             completed_scales += 1
@@ -341,6 +350,10 @@ def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=F
                     raise ValueError("tool identity changed between fixture scales")
                 combined["contract"]["affinity_by_cpu_count"][str(cpus)] = report["contract"].get("cpu_affinity")
                 combined["tasks"].extend(report["tasks"])
+    if combined is None:
+        raise ValueError('shard contains no measurements')
+    if shard_plan:
+        combined['contract']['shard'] = {'index': shard_index, 'plan': shard_plan}
     return combined
 
 
@@ -415,6 +428,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--render-only', action='store_true',
                         help='Render an existing --report JSON without running measurements; requires --html or --summary')
+    parser.add_argument('--shard-plan', type=Path, help='Use a shared complete-fixture shard plan')
+    parser.add_argument('--shard-index', type=int, help='Zero-based shard index; requires --shard-plan')
     parser.add_argument('--worker', type=Path)
     parser.add_argument('--binary', type=Path)
     parser.add_argument('--report', type=Path, help='Existing history report to extend')
@@ -449,8 +464,11 @@ def main():
     if args.worker:
         print(json.dumps(measure(json.loads(args.worker.read_text()))))
         return
-    file_counts = args.files or list(DEFAULT_FILE_COUNTS)
-    cpu_counts = args.cpus or [1, 4]
+    if bool(args.shard_plan) != (args.shard_index is not None):
+        parser.error('--shard-plan and --shard-index must be provided together')
+    shard_plan = json.loads(args.shard_plan.read_text()) if args.shard_plan else None
+    file_counts = args.files or (shard_plan['file_counts'] if shard_plan else list(DEFAULT_FILE_COUNTS))
+    cpu_counts = args.cpus or (shard_plan['cpu_counts'] if shard_plan else [1, 4])
     if (not args.binary or not args.report or min(*file_counts, args.depth, args.repetitions) < 1
             or len(set(file_counts)) != len(file_counts) or min(cpu_counts) < 1
             or len(set(cpu_counts)) != len(cpu_counts)):
@@ -464,7 +482,8 @@ def main():
     record['tool_comparisons'] = collect_scales(
         args.binary, file_counts, args.depth, args.repetitions, require_tools=args.require_tools,
         fixture_parent=args.fixture_parent, require_memory=args.require_memory,
-        cpu_counts=cpu_counts, require_cpu_affinity=args.require_cpu_affinity, keep=args.keep, fixtures=fixtures)
+        cpu_counts=cpu_counts, require_cpu_affinity=args.require_cpu_affinity, keep=args.keep, fixtures=fixtures,
+        shard_plan=shard_plan, shard_index=args.shard_index or 0)
     report = record["tool_comparisons"]
     report["contract"].update(build_identity=args.build_identity, runner_class=args.runner_class)
     if args.baseline_root:

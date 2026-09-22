@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  measure:
+  build:
     strategy:
       fail-fast: false
       matrix:
@@ -44,13 +44,6 @@ jobs:
           namespace: default
       - name: Identify measurement platform
         run: echo "BENCHMARK_PLATFORM=${{ matrix.platform }}-$(uname -m)" >>"${GITHUB_ENV}"
-      - name: Install comparison tools
-        run: |
-          if [[ "${RUNNER_OS}" == Linux ]]; then
-            sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf
-          else
-            brew install findutils ripgrep fzf
-          fi
       - name: Build paired optimized revisions
         run: |
           set -euo pipefail
@@ -90,27 +83,115 @@ jobs:
             --runner-class='github-hosted ${{ matrix.os }}' \
             --tools="$(bazel --version); module-lock=$(shasum -a 256 MODULE.bazel.lock); base-module-lock=$(shasum -a 256 "${RUNNER_TEMP}/benchmark-base/MODULE.bazel.lock")" \
             --platform=${{ matrix.platform }} --output=benchmark-report-${BENCHMARK_PLATFORM}.json
-      - name: Compare equivalent tasks with find, ripgrep, and fzf
+      - uses: actions/checkout@v7
+        with:
+          ref: coverage-pages
+          path: benchmark-history
+          persist-credentials: false
+          sparse-checkout: benchmarks
+      - name: Plan complete-fixture shards and stage shared binaries
         run: |
-          storage=(--fixture-parent="${RUNNER_TEMP}")
-          if [[ "${RUNNER_OS}" == Linux ]]; then
-            storage=(--fixture-parent=/dev/shm --require-memory --require-cpu-affinity)
-          fi
           scales=()
           for count in 10 20 50 100 200 500 1000 2000 5000 10000 20000 50000 100000; do
             scales+=(--files="${count}")
           done
-          python3 tools/benchmark_compare.py --binary="${RUNNER_TEMP}/benchmark-head" \
-            --report=benchmark-report-${BENCHMARK_PLATFORM}.json --require-tools "${storage[@]}" "${scales[@]}" \
-            --repetitions=9 --keep=7 --runner-class='github-hosted ${{ matrix.os }}' \
-            --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | shasum -a 256 | cut -d ' ' -f 1)" \
-            --summary=benchmark-main.md --html=benchmark-report-${BENCHMARK_PLATFORM}.html
-          cat benchmark-main.md >>"${GITHUB_STEP_SUMMARY}"
+          python3 tools/benchmark_shards.py --plan --count=3 "${scales[@]}" \
+            --reference-root=benchmark-history/benchmarks --output=benchmark-plan.json
+          tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" benchmark-head
       - uses: actions/upload-artifact@v7
         with:
-          name: benchmark-report-${{ env.BENCHMARK_PLATFORM }}
+          name: benchmark-build-${{ matrix.platform }}
           path: |
+            benchmark-build.tar
+            benchmark-plan.json
             benchmark-report-${{ env.BENCHMARK_PLATFORM }}.json
-            benchmark-report-${{ env.BENCHMARK_PLATFORM }}.html
+          retention-days: 3
+          if-no-files-found: error
+
+  measure:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]
+        platform: [linux, macos]
+    runs-on: ${{ matrix.platform == 'linux' && 'ubuntu-latest' || 'macos-latest' }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: actions/download-artifact@v8
+        with:
+          name: benchmark-build-${{ matrix.platform }}
+      - name: Install comparison tools
+        run: |
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf
+          else
+            brew install findutils ripgrep fzf
+          fi
+      - name: Measure assigned complete fixtures
+        run: |
+          set -euo pipefail
+          tar -xf benchmark-build.tar -C "${RUNNER_TEMP}"
+          storage=(--fixture-parent="${RUNNER_TEMP}")
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            storage=(--fixture-parent=/dev/shm --require-memory --require-cpu-affinity)
+          fi
+          platform="${{ matrix.platform }}-$(uname -m)"
+          if [[ "${{ matrix.shard }}" == 0 ]]; then
+            cp "benchmark-report-${platform}.json" benchmark-shard.json
+          fi
+          python3 tools/benchmark_compare.py --binary="${RUNNER_TEMP}/benchmark-head" \
+            --head="${{ github.sha }}" --report=benchmark-shard.json --require-tools "${storage[@]}" \
+            --shard-plan=benchmark-plan.json --shard-index=${{ matrix.shard }} \
+            --repetitions=9 --keep=7 --runner-class="github-hosted ${RUNNER_OS}" \
+            --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | shasum -a 256 | cut -d ' ' -f 1)"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-shard-${{ matrix.platform }}-${{ matrix.shard }}
+          path: benchmark-shard.json
+          retention-days: 30
+          if-no-files-found: error
+
+  aggregate:
+    needs: measure
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [linux, macos]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: benchmark-shard-${{ matrix.platform }}-*
+          path: shards
+      - name: Validate, merge and render platform results
+        run: |
+          set -euo pipefail
+          arch="$(python3 -c 'import glob,json; print(json.load(open(glob.glob("shards/*/*.json")[0]))["tool_comparisons"]["contract"]["machine"])')"
+          report="benchmark-report-${{ matrix.platform }}-${arch}"
+          python3 tools/benchmark_shards.py --merge shards/*/*.json --output="${report}.json"
+          python3 tools/benchmark_compare.py --render-only --report="${report}.json" \
+            --html="${report}.html" --summary=benchmark-main.md
+          cat benchmark-main.md >>"${GITHUB_STEP_SUMMARY}"
+          echo "BENCHMARK_REPORT=${report}" >>"${GITHUB_ENV}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.BENCHMARK_REPORT }}
+          path: |
+            ${{ env.BENCHMARK_REPORT }}.json
+            ${{ env.BENCHMARK_REPORT }}.html
           retention-days: 30
           if-no-files-found: error

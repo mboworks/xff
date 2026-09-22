@@ -247,3 +247,23 @@ the fastest 2 of 3 samples. Post-merge adds 20,000, 50,000, and 100,000 files an
 fastest 7 of 9. Baseline comparisons use matching cells at shared sizes; extra main-only scales
 do not invalidate comparisons at the smaller sizes. Explicit repeated `--files` values override
 the default grid for local experiments.
+
+## Post-merge measurement shards
+
+Main runs build the paired binaries once per platform, then distribute the exact head binary to
+three measurement runners. A fixture consists of its file count, CPU allocation and broad/deep
+shape. All tools, tasks, warmups and repetitions for that fixture stay on one runner; samples for
+one cell are never pooled across runners. The post-merge estimator remains the fastest seven of
+nine observations, while PR runs retain the fastest two of three.
+
+A shared plan balances estimated fixture costs from the latest retained main report for the
+architecture. Unmeasured sizes extrapolate from the nearest measured size. Without retained data,
+file counts provide the initial weights. These estimates exclude build and fixture setup time, so
+three shards do not guarantee a threefold wall-time improvement.
+
+Aggregation requires every planned fixture and task exactly once, matching source and executable
+identities, compatible CPU affinity, and identical sampling contracts. Missing or incompatible
+shards fail the workflow rather than publishing a partial matrix. Each merged report retains
+per-shard provenance. Historical baselines belong on the complete merged report, not individual
+shards. JSON and HTML share the platform-specific basename; only final merged artifacts are
+selected by the publisher.
