@@ -18,7 +18,7 @@
       four-CPU allocations on verified tmpfs storage.
 - [ ] Measure default and representative configured safety policies without bypassing the VFS or
       weakening protections. Read-only `--safe` enumeration is included in competitor benchmarks.
-- [ ] Derive metadata demand (NEVER / ONDEMAND / ALWAYS) from descriptor requirements and expression
+- [x] Derive metadata demand (NEVER / ONDEMAND / ALWAYS) from descriptor requirements and expression
       control flow; cache on-demand values/errors and retain eager prefetch where metadata is always needed.
       Investigate eager metadata collection for name/type-only queries; preserve symlink, error,
       safety, archive, and ordering semantics in any metadata-laziness optimization.
@@ -579,5 +579,5 @@ this as intentional accounting.
 - [x] Audit traversal, content reads, metadata demand, output and safety costs; retain unproven
       directory scheduling changes locally and document bulk-metadata/ISA follow-ups.
 - [x] Remove unnecessary content read-buffer initialization with empty/full/partial chunk tests.
-- [ ] Complete sanitizer, coverage and changed-file lint validation and compare the standard scaling matrix.
-- [ ] Land performance changes on main before rebasing and merging measurement PR 900.
+- [x] Complete sanitizer, coverage and changed-file lint validation and compare the standard scaling matrix.
+- [x] Land performance changes in PR #902 and rebase measurement PR #900 onto main.
