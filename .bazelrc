@@ -116,7 +116,7 @@ common:clang --define is_clang=true
 # silently do nothing.
 common:release --compilation_mode=opt
 common:release --strip=never
-common:release --copt=-Oz
+common:release --copt=-O2
 common:release --copt=-flto=thin
 common:release --linkopt=-flto=thin
 # Enable the ELF-only linkopts selected by the two shipped binary targets. Keeping these behind a

@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Optimize release builds for execution speed with `-O2` and ThinLTO.
+
 - Compile fuzzy queries once and skip unused ranking work.
 - Avoid unnecessary per-file metadata reads and evaluate eligible content predicates in ordered parallel batches.
 - Request extended birth-time metadata only when a matcher or output consumer needs it.
