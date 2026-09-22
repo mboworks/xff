@@ -3,6 +3,7 @@
 
 # 0.9.0
 
+- Avoid clearing unused read-buffer capacity for each content search.
 - Optimize release builds for execution speed with `-O2` and ThinLTO.
 
 - Compile fuzzy queries once and skip unused ranking work.

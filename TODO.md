@@ -552,5 +552,10 @@ this as intentional accounting.
 - [x] Remove deferred-expression memoization when no deferred consumer exists.
 - [x] Avoid fuzzy score computation when no output or ranking consumer requires it.
 - [x] Add bounded parallel matching for audited independent content predicates with ordered output.
+- [x] Compare release optimization levels and system/TCMalloc/mimalloc allocators on available hosts;
+      select measured winners and document size/startup tradeoffs in `docs/performance-analysis.md`.
+- [x] Audit traversal, content reads, metadata demand, output and safety costs; retain unproven
+      directory scheduling changes locally and document bulk-metadata/ISA follow-ups.
+- [x] Remove unnecessary content read-buffer initialization with empty/full/partial chunk tests.
 - [ ] Complete sanitizer, coverage and changed-file lint validation and compare the standard scaling matrix.
 - [ ] Land performance changes on main before rebasing and merging measurement PR 900.

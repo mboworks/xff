@@ -369,7 +369,8 @@ absl::StatusOr<std::string> LocalFs::ReadContent(std::string_view path) const {
     return absl::ErrnoToStatus(errno, absl::StrCat("open('", path, "')"));
   }
   std::string content;
-  std::array<char, std::size_t{64} * 1'024> buffer{};
+  // read() initializes the returned byte range; unused capacity is never inspected.
+  std::array<char, std::size_t{64} * 1'024> buffer;
   for (;;) {
     const ssize_t count = ::read(fd, buffer.data(), buffer.size());
     if (count < 0) {

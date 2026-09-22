@@ -21,6 +21,8 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -261,6 +263,19 @@ TEST_F(LocalFsTest, RemoveMissingPathErrors) {
 
 TEST_F(LocalFsTest, ReadContentReturnsFileBytes) {
   EXPECT_THAT(local_fs_.ReadContent(Path("file.txt")), IsOkAndHolds(Eq("hello")));
+}
+
+TEST_F(LocalFsTest, ReadContentPreservesEmptyAndPartialFinalChunks) {
+  constexpr auto kSizes = std::to_array<std::size_t>({0, 1, 65'536, 65'553, 131'073});
+  for (const std::size_t size : kSizes) {
+    SCOPED_TRACE(size);
+    std::string content(size, 'x');
+    if (!content.empty()) {
+      content.back() = 'z';
+    }
+    ASSERT_THAT(local_fs_.WriteContent(Path("chunks.bin"), content), IsOk());
+    EXPECT_THAT(local_fs_.ReadContent(Path("chunks.bin")), IsOkAndHolds(Eq(content)));
+  }
 }
 
 TEST_F(LocalFsTest, ReadContentMissingPathErrors) {
