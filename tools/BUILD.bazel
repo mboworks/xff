@@ -787,7 +787,8 @@ py_binary(
 
 py_test(
     name = "benchmark_compare_test",
-    size = "small",
+    # Real-process fixture and shard integration can exceed 60s on busy macOS runners.
+    size = "medium",
     srcs = ["benchmark_compare_test.py"],
     args = ["$(rootpath //xff/cli:xff)"],
     data = ["//xff/cli:xff"],
