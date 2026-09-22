@@ -5,6 +5,7 @@
 import argparse
 import json
 from pathlib import Path
+import re
 import tempfile
 import unittest
 from unittest import mock
@@ -76,6 +77,16 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn("--merge shards/*/*.json", measure)
         self.assertIn("--repetitions=9 --keep=7", measure)
         self.assertIn("git -C site add benchmarks", publish)
+
+    def test_pr_and_main_measurements_use_the_same_runner_identity(self):
+        pattern = r"--runner-class=['\"]([^'\"]+)['\"]"
+        main = repository_file(".github/workflows/benchmarks.yml").read_text()
+        pr = repository_file(".github/workflows/main.yml").read_text()
+        labels = set(re.findall(pattern, main))
+        self.assertTrue(labels)
+        self.assertEqual(labels, set(re.findall(pattern, pr)))
+        self.assertIn("platform: linux\n            os: ubuntu-latest", main)
+        self.assertIn("platform: macos\n            os: macos-latest", main)
 
     def test_tag_on_a_merge_commit_remains_a_release_and_uses_commit_time(self):
         with tempfile.TemporaryDirectory() as directory:

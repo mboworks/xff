@@ -115,7 +115,12 @@ jobs:
       matrix:
         shard: [0, 1, 2]
         platform: [linux, macos]
-    runs-on: ${{ matrix.platform == 'linux' && 'ubuntu-latest' || 'macos-latest' }}
+        include:
+          - platform: linux
+            os: ubuntu-latest
+          - platform: macos
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
@@ -150,7 +155,7 @@ jobs:
           python3 tools/benchmark_compare.py --binary="${RUNNER_TEMP}/benchmark-head" \
             --head="${{ github.sha }}" --report=benchmark-shard.json --require-tools "${storage[@]}" \
             --shard-plan=benchmark-plan.json --shard-index=${{ matrix.shard }} \
-            --repetitions=9 --keep=7 --runner-class="github-hosted ${RUNNER_OS}" \
+            --repetitions=9 --keep=7 --runner-class='github-hosted ${{ matrix.os }}' \
             --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | shasum -a 256 | cut -d ' ' -f 1)"
       - uses: actions/upload-artifact@v7
         with:
