@@ -69,7 +69,9 @@ select the affected translation units. A single coordinator defaults to the dete
 that count, or leave it unset (`auto`) to use CPU detection. GitHub CI explicitly supplies its
 runner CPU count; there is no fixed two-worker local limit.
 
-When Trunk manages Git hooks, the repository's Trunk actions invoke this same pre-commit hook.
+When Trunk manages Git hooks, its commit and push actions invoke the entire configured pre-commit
+suite, including formatting, repository policy and clang-tidy. Invoking only the clang-tidy hook
+would omit clang-format and the policy checks because Trunk does not own those checks.
 Both Trunk actions explicitly forward `CLANG_TIDY_JOBS`, so a per-command worker override reaches
 the coordinator (for example `CLANG_TIDY_JOBS=8 git push`).
 The push action combines changed paths from the pushed refs into one invocation. Existing Trunk

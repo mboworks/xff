@@ -10,6 +10,23 @@ from tools import clang_tidy_pre_push
 
 
 class ClangTidyPrePushTest(unittest.TestCase):
+    def test_push_runs_entire_suite_once_and_propagates_failure(self):
+        with patch.object(clang_tidy_pre_push.sys, "argv", ["hook", "updates"]), \
+                patch.object(clang_tidy_pre_push.Path, "read_text", return_value="updates"), \
+                patch.object(clang_tidy_pre_push, "pushed_files", return_value=["a.cc", "docs.md"]), \
+                patch.object(clang_tidy_pre_push.subprocess, "call", return_value=1) as call:
+            self.assertEqual(clang_tidy_pre_push.main(), 1)
+            call.assert_called_once_with(
+                ["pre-commit", "run", "--hook-stage", "pre-push", "--files", "a.cc", "docs.md"])
+
+    def test_empty_push_does_not_run_hooks(self):
+        with patch.object(clang_tidy_pre_push.sys, "argv", ["hook", "updates"]), \
+                patch.object(clang_tidy_pre_push.Path, "read_text", return_value="updates"), \
+                patch.object(clang_tidy_pre_push, "pushed_files", return_value=[]), \
+                patch.object(clang_tidy_pre_push.subprocess, "call") as call:
+            self.assertEqual(clang_tidy_pre_push.main(), 0)
+            call.assert_not_called()
+
     def test_multiple_refs_are_combined_once_and_deleted_branches_are_ignored(self):
         updates = "refs/heads/a new-a refs/heads/a old-a\nrefs/heads/b new-b refs/heads/b old-b\n"
         updates += f"refs/heads/gone {'0' * 40} refs/heads/gone old-c\n"

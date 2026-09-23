@@ -1085,11 +1085,10 @@ class ControlledFileSystem : public vfs::FileSystem {
     const auto metadata = fs_.StatFields(path, false, vfs::MetadataFields::kBasic);
     const absl::Status removed = fs_.RemoveControlled(path, mutations);
     if (!removed.ok()) {
-      return mbo::status::StatusBuilder(removed)
-             << absl::StrCat("; deleted earlier in this run: ", deleted_files_, " regular files, ",
-                             deleted_directories_, " directories, ", deleted_other_, " other entries, ",
-                             deleted_unknown_, " entries of unknown type; ", deleted_bytes_,
-                             " known file bytes removed (logical size, not disk space reclaimed)");
+      return mbo::status::StatusBuilder(removed) << absl::StrCat(
+                 "; deleted earlier in this run: ", deleted_files_, " regular files, ", deleted_directories_,
+                 " directories, ", deleted_other_, " other entries, ", deleted_unknown_, " entries of unknown type; ",
+                 deleted_bytes_, " known file bytes removed (logical size, not disk space reclaimed)");
     }
     if (!metadata.ok()) {
       ++deleted_unknown_;
