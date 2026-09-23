@@ -63,7 +63,9 @@ std::vector<std::string> ExpandSafetyTokens(const std::vector<std::string>& toke
         }
       }
     } else {
-      for (int remaining = primary->arity; remaining > 0 && pos + 1 < tokens.size(); --remaining) {
+      for (int remaining =
+               primary->ArgumentCount(pos + 1 < tokens.size() ? std::string_view(tokens[pos + 1]) : std::string_view{});
+           remaining > 0 && pos + 1 < tokens.size(); --remaining) {
         result.push_back(tokens[++pos]);
       }
     }
@@ -280,7 +282,9 @@ class OrderedResolver {
           }
         }
       } else {
-        for (int remaining = primary->arity; remaining > 0 && pos + 1 < tokens.size(); --remaining) {
+        for (int remaining = primary->ArgumentCount(
+                 pos + 1 < tokens.size() ? std::string_view(tokens[pos + 1]) : std::string_view{});
+             remaining > 0 && pos + 1 < tokens.size(); --remaining) {
           ++pos;
           application_.push_back({.flag = tokens[pos], .source = source, .is_argument = true, .origin = origin(pos)});
         }
@@ -341,7 +345,8 @@ std::vector<std::string_view> DirectiveTokens(const std::vector<std::string>& to
     if (primary->arity < 0) {
       while (++pos < tokens.size() && tokens[pos] != ";" && tokens[pos] != "+") {}
     } else {
-      pos += static_cast<std::size_t>(primary->arity);
+      pos += static_cast<std::size_t>(
+          primary->ArgumentCount(pos + 1 < tokens.size() ? std::string_view(tokens[pos + 1]) : std::string_view{}));
     }
   }
   return result;

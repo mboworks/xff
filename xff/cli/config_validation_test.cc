@@ -43,6 +43,13 @@ struct ConfigValidationTest : ::testing::Test {
   void TearDown() override { env::ClearForTesting(); }
 };
 
+TEST_F(ConfigValidationTest, DiffOptionalTargetKeepsFollowingConfigControlsVisible) {
+  const auto checked = ValidateConfigFile(
+      config::ParseIni("[patch]\n-diff --safe -o -print\n"), {"patch"}, "/user.ini", config::Source::kUser);
+  EXPECT_THAT(checked.status, IsOk());
+  EXPECT_THAT(checked.disabled_configs, IsEmpty());
+}
+
 TEST_F(ConfigValidationTest, HelpWidthUsesAutomaticIniPreferencesAndCliOverride) {
   config::ConfigInputs inputs;
   inputs.system = config::ParseIni("--width=auto:100\n");

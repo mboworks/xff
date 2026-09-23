@@ -56,6 +56,7 @@
 #include "mbo/diff/diff.h"
 #include "mbo/diff/diff_options.h"
 #include "mbo/file/artefact.h"
+#include "mbo/status/status_builder.h"
 #include "mbo/status/status_macros.h"
 #include "nlohmann/json.hpp"
 #include "xff/archive/archive_backend.h"
@@ -1079,7 +1080,27 @@ class ControlledFileSystem : public vfs::FileSystem {
       preview_(absl::StrCat(path, "\n"));
       return absl::OkStatus();
     }
-    return fs_.RemoveControlled(path, mutations);
+    // Actions run on the coordinator. Observe without following links: deleting a link
+    // never removes its target's bytes. Metadata failure must not prevent removal.
+    const auto metadata = fs_.StatFields(path, false, vfs::MetadataFields::kBasic);
+    const absl::Status removed = fs_.RemoveControlled(path, mutations);
+    if (!removed.ok()) {
+      return mbo::status::StatusBuilder(removed) << absl::StrCat(
+                 "; deleted earlier in this run: ", deleted_files_, " regular files, ", deleted_directories_,
+                 " directories, ", deleted_other_, " other entries, ", deleted_unknown_, " entries of unknown type; ",
+                 deleted_bytes_, " known file bytes removed (logical size, not disk space reclaimed)");
+    }
+    if (!metadata.ok()) {
+      ++deleted_unknown_;
+    } else if (metadata->type == vfs::FileType::kRegular) {
+      ++deleted_files_;
+      deleted_bytes_ += metadata->size;
+    } else if (metadata->type == vfs::FileType::kDirectory) {
+      ++deleted_directories_;
+    } else {
+      ++deleted_other_;
+    }
+    return absl::OkStatus();
   }
 
   absl::StatusOr<std::unique_ptr<vfs::OutputFile>> OpenOutput(std::string_view path, bool exclusive) const override {
@@ -1095,6 +1116,12 @@ class ControlledFileSystem : public vfs::FileSystem {
   const vfs::FileSystem& fs_;
   const config::SafetyPolicy& policy_;
   EmitFn preview_;
+  // Only successful host removals count; previews and queued archive rewrites do not.
+  mutable std::uint64_t deleted_files_ = 0;
+  mutable std::uint64_t deleted_directories_ = 0;
+  mutable std::uint64_t deleted_other_ = 0;
+  mutable std::uint64_t deleted_unknown_ = 0;
+  mutable std::uint64_t deleted_bytes_ = 0;
 };
 
 // Classify through registry metadata so aliases and every execution-family member agree.

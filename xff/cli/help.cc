@@ -113,7 +113,7 @@ std::string ArgHint(const registry::Descriptor& descriptor) {
     return "[:FORMAT] PATTERN";
   }
   if (descriptor.binding == registry::Binding::kStyle) {
-    return "[:STYLE] TARGET";
+    return descriptor.default_argument.empty() ? "[:STYLE] TARGET" : "[:STYLE] [TARGET]";
   }
   if (descriptor.binding == registry::Binding::kHash) {
     return descriptor.arity == 0 ? "[:ALGO[/ENCODING]]" : "[:ALGO[/ENCODING]] EXPECTED";

@@ -70,17 +70,17 @@ lint:
         - NOTICE.lean.md
 actions:
   definitions:
-    - id: xff-clang-tidy-pre-commit
-      description: Run the changed-file clang-tidy pre-commit hook
-      run: pre-commit run clang-tidy --hook-stage pre-commit
+    - id: xff-pre-commit
+      description: Run all configured pre-commit hooks on staged files
+      run: pre-commit run --hook-stage pre-commit
       environment:
         - name: CLANG_TIDY_JOBS
           value: ${env.CLANG_TIDY_JOBS:-auto}
       interactive: optional
       triggers:
         - git_hooks: [pre-commit]
-    - id: xff-clang-tidy-pre-push
-      description: Run clang-tidy once for files changed by the pushed refs
+    - id: xff-pre-push
+      description: Run all configured pre-commit hooks once for files changed by the pushed refs
       run: python3 tools/clang_tidy_pre_push.py '${hook_stdin_path}'
       environment:
         - name: CLANG_TIDY_JOBS
@@ -89,8 +89,8 @@ actions:
       triggers:
         - git_hooks: [pre-push]
   enabled:
-    - xff-clang-tidy-pre-commit
-    - xff-clang-tidy-pre-push
+    - xff-pre-commit
+    - xff-pre-push
     - trunk-announce
     - trunk-check-pre-push
     - trunk-fmt-pre-commit

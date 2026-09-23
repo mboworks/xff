@@ -167,6 +167,9 @@ std::optional<std::string_view> NodeRegexPattern(
 }
 
 ExprPtr MakePredicate(const registry::Descriptor& descriptor, std::vector<std::string> args) {
+  if (args.empty() && !descriptor.default_argument.empty()) {
+    args.emplace_back(descriptor.default_argument);
+  }
   auto expr = std::make_unique<Expr>();
   expr->kind = Expr::Kind::kPredicate;
   expr->descriptor.set_ref(descriptor);
@@ -437,7 +440,7 @@ class ExprParser {
         const std::string format = token.substr(colon + 1);
         ++pos_;  // consume the `<name>:FORMAT` token
         std::vector<std::string> args;
-        for (int i = 0; i < descriptor->arity; ++i) {
+        for (int i = 0, count = descriptor->ArgumentCount(AtEnd() ? std::string_view{} : Peek()); i < count; ++i) {
           if (AtEnd()) {
             Fail(absl::StrCat("predicate '", base, "' is missing an argument"));
             return nullptr;
@@ -474,7 +477,7 @@ class ExprParser {
         }
         ++pos_;  // consume the `<name>:STYLE` token
         std::vector<std::string> args;
-        for (int i = 0; i < descriptor->arity; ++i) {
+        for (int i = 0, count = descriptor->ArgumentCount(AtEnd() ? std::string_view{} : Peek()); i < count; ++i) {
           if (AtEnd()) {
             Fail(absl::StrCat("predicate '", base, "' is missing an argument"));
             return nullptr;
@@ -496,7 +499,7 @@ class ExprParser {
         const std::string spec = token.substr(colon + 1);
         ++pos_;  // consume the `<name>:SPEC` token
         std::vector<std::string> args;
-        for (int i = 0; i < descriptor->arity; ++i) {
+        for (int i = 0, count = descriptor->ArgumentCount(AtEnd() ? std::string_view{} : Peek()); i < count; ++i) {
           if (AtEnd()) {
             Fail(absl::StrCat("predicate '", base, "' is missing an argument"));
             return nullptr;
@@ -700,7 +703,7 @@ class ExprParser {
       return node;
     }
     std::vector<std::string> args;
-    for (int i = 0; i < descriptor->arity; ++i) {
+    for (int i = 0, count = descriptor->ArgumentCount(AtEnd() ? std::string_view{} : Peek()); i < count; ++i) {
       if (AtEnd()) {
         Fail(absl::StrCat("predicate '", token, "' is missing an argument"));
         return nullptr;

@@ -3,6 +3,11 @@
 
 # 0.9.0
 
+- Report completed deletion counts and known logical file bytes when a local deletion fails.
+
+- Let `-diff [TARGET]` default to Git creation patches against `/dev/null`, including binary files, empty files, executable modes and symlinks.
+- Clarify and test that `-delete` removes only empty directories and makes `-prune` ineffective.
+
 - Add percentage tick units and a logarithmic speedup-factor view to benchmark landscapes.
 
 - Show interactive comparison landscapes above benchmark tables and collapse absolute measurements.

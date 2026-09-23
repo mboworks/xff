@@ -581,3 +581,11 @@ this as intentional accounting.
 - [x] Remove unnecessary content read-buffer initialization with empty/full/partial chunk tests.
 - [x] Complete sanitizer, coverage and changed-file lint validation and compare the standard scaling matrix.
 - [x] Land performance changes in PR #902 and rebase measurement PR #900 onto main.
+
+## Git creation patches and directory deletion
+
+- [x] Verify empty/nonempty directory deletion and child-before-parent order against find semantics.
+- [x] Document why `-prune` cannot prevent descent with `-delete`.
+- [x] Default `-diff [TARGET]` to `/dev/null` using registry-driven optional argument parsing in CLI and INI.
+- [x] Emit Git creation patches for text, binary, empty, executable and symlink entries through VFS reads.
+- [x] Validate generated patches with Git (text, empty files, modes, symlinks, quoted names and multi-block binary literals).

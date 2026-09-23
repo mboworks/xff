@@ -876,6 +876,62 @@ TEST_F(EvaluateTest, ContentMatchesLiteralSubstring) {
   EXPECT_THAT(Match({"-content", "q.ick"}, visit), IsFalse());
 }
 
+TEST_F(EvaluateTest, CreationDiffReportsUnreadableAndUnsupportedEntries) {
+  vfs::Metadata md;
+  const Visit missing = MakeVisit("missing-source", "missing-source", vfs::FileType::kRegular, md);
+  EXPECT_THAT(Match({"-diff"}, missing), IsFalse());
+  EXPECT_THAT(control_.unsupported, HasSubstr("cannot read source"));
+  EXPECT_THAT(emitted_, IsEmpty());
+  const Visit special = MakeVisit("pipe", "pipe", vfs::FileType::kFifo, md);
+  EXPECT_THAT(Match({"-diff"}, special), IsFalse());
+  EXPECT_THAT(control_.unsupported, HasSubstr("regular files or symlinks"));
+}
+
+TEST_F(EvaluateTest, CreationDiffRejectsUnsafePatchNames) {
+  const std::string path = WriteContentFile("unsafe.txt", "text");
+  vfs::Metadata md;
+  const Visit visit{.path = path, .name = "../unsafe", .root = path, .depth = 0, .metadata = md};
+  md.type = vfs::FileType::kRegular;
+  EXPECT_THAT(Match({"-diff"}, visit), IsFalse());
+  EXPECT_THAT(control_.unsupported, HasSubstr("unsafe output path"));
+  EXPECT_THAT(emitted_, IsEmpty());
+}
+
+TEST_F(EvaluateTest, CreationDiffEmitsRelativePathsAndExecutableMode) {
+  const std::string path = WriteContentFile("creation.txt", "text\n");
+  const std::string root = std::filesystem::path(path).parent_path().string();
+  vfs::Metadata md;
+  md.type = vfs::FileType::kRegular;
+  md.mode = 0755;
+  const Visit visit{.path = path, .name = "creation.txt", .root = root, .depth = 1, .metadata = md};
+  EXPECT_THAT(Match({"-diff"}, visit), IsFalse());
+  EXPECT_THAT(control_.unsupported, IsEmpty());
+  EXPECT_THAT(emitted_, HasSubstr("new file mode 100755"));
+  EXPECT_THAT(emitted_, HasSubstr("+text\n"));
+  EXPECT_THAT(emitted_, Not(HasSubstr(root)));
+  const Visit file_root{.path = path, .name = "./creation.txt", .root = path, .depth = 0, .metadata = md};
+  EXPECT_THAT(Match({"-diff", "/dev/null"}, file_root), IsFalse());
+  EXPECT_THAT(emitted_, HasSubstr("b/creation.txt"));
+  EXPECT_THAT(Match({"-diff:none"}, file_root), IsFalse());
+  EXPECT_THAT(emitted_, IsEmpty());
+  md.type = vfs::FileType::kDirectory;
+  EXPECT_THAT(Match({"-diff"}, file_root), IsFalse());
+  EXPECT_THAT(emitted_, IsEmpty());
+}
+
+TEST_F(EvaluateTest, CreationDiffEmitsSymlinkTarget) {
+  const std::string path = WriteContentFile("creation-link", "");
+  std::filesystem::remove(path);
+  std::filesystem::create_symlink("target", path);
+  vfs::Metadata md;
+  md.type = vfs::FileType::kSymlink;
+  const Visit visit{.path = path, .name = "link", .root = path, .depth = 0, .metadata = md};
+  EXPECT_THAT(Match({"-diff"}, visit), IsFalse());
+  EXPECT_THAT(control_.unsupported, IsEmpty());
+  EXPECT_THAT(emitted_, HasSubstr("new file mode 120000"));
+  EXPECT_THAT(emitted_, HasSubstr("+target\n"));
+}
+
 TEST_F(EvaluateTest, DiffTreatsUnreadableSourceAsDifferent) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("missing-source", "missing-source", vfs::FileType::kRegular, md);

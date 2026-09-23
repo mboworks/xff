@@ -97,6 +97,17 @@ struct Descriptor {
   bool stdout_output = false;  // may emit ordinary action output or inherit stdout in a child
   Region region = Region::kExpression;
   int arity = 0;  // trailing tokens consumed as arguments (-1 = variadic until ';')
+  // A single optional operand defaults when followed by an expression/global token or end of input.
+  std::string_view default_argument;
+
+  [[nodiscard]] constexpr int ArgumentCount(std::string_view next) const {
+    if (!default_argument.empty()
+        && (next.empty() || next.starts_with('-') || next == "!" || next == "(" || next == ")" || next == ",")) {
+      return 0;
+    }
+    return arity;
+  }
+
   // Optional closed vocabulary for each operand, comma-delimited. Empty means unrestricted.
   std::string_view argument_choices;
   bool argument_choice_list = false;  // an operand may be a non-empty comma list of choices

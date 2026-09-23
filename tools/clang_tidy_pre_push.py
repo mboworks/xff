@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
 # SPDX-License-Identifier: Apache-2.0
 
-"""Forward one combined changed-file list from Trunk's push hook to pre-commit."""
+"""Run the full pre-commit suite once on the combined pushed-file list."""
 
 import subprocess
 import sys
@@ -37,7 +37,7 @@ def main() -> int:
     files = pushed_files(Path(sys.argv[1]).read_text(encoding="utf-8"))
     if not files:
         return 0
-    return subprocess.call(["pre-commit", "run", "clang-tidy", "--hook-stage", "pre-push", "--files", *files])
+    return subprocess.call(["pre-commit", "run", "--hook-stage", "pre-push", "--files", *files])
 
 
 if __name__ == "__main__":

@@ -1711,6 +1711,26 @@ TEST_F(RunTest, DeleteRemovesMatchedFiles) {
   EXPECT_THAT(fs::exists(root_ / "b.md"), IsTrue());  // not matched
 }
 
+TEST_F(RunTest, PruneDeleteRemovesMatchedEmptyDirectory) {
+  ASSERT_THAT(fs::create_directory(root_ / "foo"), IsTrue());
+  EXPECT_THAT(RunExpr({"-type", "d", "-name", "foo", "-prune", "-delete"}), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(fs::exists(root_ / "foo"), IsFalse());
+  EXPECT_THAT(fs::exists(root_ / "sub" / "c.txt"), IsTrue());
+}
+
+TEST_F(RunTest, PruneDeleteRefusesNonemptyDirectory) {
+  EXPECT_THAT(RunExpr({"-type", "d", "-name", "sub", "-prune", "-delete"}), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(1));
+  EXPECT_THAT(fs::exists(root_ / "sub" / "c.txt"), IsTrue());
+}
+
+TEST_F(RunTest, DeleteVisitsChildrenBeforeRemovingDirectories) {
+  EXPECT_THAT(RunExpr({"-delete"}), IsEmpty());
+  EXPECT_THAT(last_errors_, Eq(0));
+  EXPECT_THAT(fs::exists(root_), IsFalse());
+}
+
 TEST_F(RunTest, DeleteDryRunPreviewsWithoutDeleting) {
   MBO_ASSERT_OK_AND_ASSIGN(
       const auto command, parser::Parse({"--dry-run", root_.string(), "-name", "a.txt", "-delete"}));
