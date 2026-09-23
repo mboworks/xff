@@ -1,0 +1,30 @@
+# SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
+# SPDX-License-Identifier: Apache-2.0
+load("//xff:cc.bzl", "cc_library", "cc_test")
+
+package(default_visibility = ["//visibility:private"])
+
+cc_library(
+    name = "patch_cc",
+    srcs = ["patch.cc"],
+    hdrs = ["patch.h"],
+    visibility = ["//xff/engine:__pkg__"],
+    deps = [
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@mboworks_mbo//mbo/digest:digest_cc",
+    ],
+)
+
+cc_test(
+    name = "patch_test",
+    srcs = ["patch_test.cc"],
+    deps = [
+        ":patch_cc",
+        "@abseil-cpp//absl/status",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)

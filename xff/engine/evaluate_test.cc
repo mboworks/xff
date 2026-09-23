@@ -876,6 +876,27 @@ TEST_F(EvaluateTest, ContentMatchesLiteralSubstring) {
   EXPECT_THAT(Match({"-content", "q.ick"}, visit), IsFalse());
 }
 
+TEST_F(EvaluateTest, CreationDiffReportsUnreadableAndUnsupportedEntries) {
+  vfs::Metadata md;
+  const Visit missing = MakeVisit("missing-source", "missing-source", vfs::FileType::kRegular, md);
+  EXPECT_THAT(Match({"-diff"}, missing), IsFalse());
+  EXPECT_THAT(control_.unsupported, HasSubstr("cannot read source"));
+  EXPECT_THAT(emitted_, IsEmpty());
+  const Visit special = MakeVisit("pipe", "pipe", vfs::FileType::kFifo, md);
+  EXPECT_THAT(Match({"-diff"}, special), IsFalse());
+  EXPECT_THAT(control_.unsupported, HasSubstr("regular files or symlinks"));
+}
+
+TEST_F(EvaluateTest, CreationDiffRejectsUnsafePatchNames) {
+  const std::string path = WriteContentFile("unsafe.txt", "text");
+  vfs::Metadata md;
+  const Visit visit{.path = path, .name = "../unsafe", .root = path, .depth = 0, .metadata = md};
+  md.type = vfs::FileType::kRegular;
+  EXPECT_THAT(Match({"-diff"}, visit), IsFalse());
+  EXPECT_THAT(control_.unsupported, HasSubstr("unsafe output path"));
+  EXPECT_THAT(emitted_, IsEmpty());
+}
+
 TEST_F(EvaluateTest, DiffTreatsUnreadableSourceAsDifferent) {
   vfs::Metadata md;
   const Visit visit = MakeVisit("missing-source", "missing-source", vfs::FileType::kRegular, md);

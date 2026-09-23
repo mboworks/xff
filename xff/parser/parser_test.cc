@@ -81,6 +81,18 @@ TEST_F(OptionalExprTest, EmptyOwnersProduceEmptyReferences) {
   EXPECT_THAT(AsConstOptionalExpr(const_expr) == std::nullopt, IsTrue());
 }
 
+TEST_F(ParserTest, DiffTargetDefaultsWithoutConsumingOperatorsOrGlobals) {
+  ASSERT_OK_AND_ASSIGN(const auto bare, Parse({".", "-diff"}));
+  EXPECT_THAT(bare.expression->args, ElementsAre("/dev/null"));
+  ASSERT_OK_AND_ASSIGN(const auto styled, Parse({".", "-diff:u3", "--safe"}));
+  EXPECT_THAT(styled.expression->args, ElementsAre("/dev/null"));
+  EXPECT_THAT(styled.globals, ElementsAre("--safe"));
+  ASSERT_OK_AND_ASSIGN(const auto explicit_target, Parse({".", "-diff", "./-other"}));
+  EXPECT_THAT(explicit_target.expression->args, ElementsAre("./-other"));
+  EXPECT_THAT(Parse({".", "(", "-diff", ")", "-o", "-print"}), IsOk());
+  EXPECT_THAT(Parse({".", "-diff", ",", "-print"}), IsOk());
+}
+
 TEST_F(ParserTest, NamedRootsPreserveOperandOrderAndDistinctIdentities) {
   ASSERT_OK_AND_ASSIGN(
       const Command command,

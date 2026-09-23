@@ -550,17 +550,26 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
     // and is false on a difference. STYLE (u3 default / c / n / y / none) picks the output.
     {
         .name = "-diff",
-        .summary = "diff the file against TARGET (a field template); true when equal (xff)",
-        .details = "Compares the matched file against TARGET - a {field} template evaluated per entry, so it can name "
-                   "a mirror path like `../b/{relpath}` - and is true when they are equal, false on a difference. The "
-                   "optional :STYLE picks the output: unified `u3` (default; 3 lines of context), context `c`, "
-                   "normal `n`, side-by-side `y`, or `none` for just the boolean. This is a one-sided expression "
-                   "action: it visits only the search roots, so it cannot report paths that exist only under TARGET. "
-                   "Use `--compare[=status|diff] LEFT RIGHT` to walk two roots with the same options and expression, "
-                   "then compare their matches symmetrically. Text files only; expensive.",
+        .summary = "diff against optional TARGET; defaults to a Git creation patch (xff)",
+        .details =
+            "Compares the matched file against TARGET - a {field} template evaluated per entry, so it can name "
+            "a mirror path like `../b/{relpath}` - and is true when they are equal, false on a difference. The "
+            "optional :STYLE picks the output: unified `u3` (default; 3 lines of context), context `c`, "
+            "normal `n`, side-by-side `y`, or `none` for just the boolean. This is a one-sided expression "
+            "action: it visits only the search roots, so it cannot report paths that exist only under TARGET. "
+            "Use `--compare[=status|diff] LEFT RIGHT` to walk two roots with the same options and expression, "
+            "then compare their matches symmetrically. An omitted TARGET defaults to `/dev/null`: emit a Git "
+            "creation patch with root-relative paths (a file root uses its basename), including empty files, "
+            "executable bits, symlinks and binary literals. Directories emit nothing; other special types "
+            "are unsupported. Explicit `/dev/null` does the same. Creation patches are false (different), "
+            "including empty files, and use Git format regardless of :STYLE except `none` (silent). "
+            "Use `./-name` for targets starting with a dash. Avoid duplicate root-relative paths across roots. "
+            "Reads each file into memory. Binary patches use uncompressed zlib blocks. Example: "
+            "`xff src -type f -diff > additions.patch`; apply in an empty directory with `git apply additions.patch`.",
         .kind = Kind::kAction,
         .stdout_output = true,
         .arity = 1,
+        .default_argument = "/dev/null",
         .binding = Binding::kStyle,
         .style = Style::kXff,
         .cost = Cost::kExpensive,
@@ -1426,7 +1435,9 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .name = "-delete",
         .summary = "delete the matched entry",
         .details = "Deletes the matched file or (empty) directory, and implies `-depth` so a directory's contents "
-                   "are removed before the directory itself. Destructive, so it is guarded: `--dry-run` previews "
+                   "are visited before the directory itself. Only matched entries are removed; nonempty directories "
+                   "fail with an error. `-prune` cannot prevent descent when `-delete` implies `-depth`. "
+                   "Destructive, so it is guarded: `--dry-run` previews "
                    "(prints what would be deleted, removes nothing) and `--safe` refuses risky targets. Example: "
                    "`xff . -name '*.tmp' -delete`.",
         .kind = Kind::kAction,
@@ -1441,7 +1452,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .summary = "do not descend into the matched directory",
         .details = "When the matched entry is a directory, do not descend into it (evaluates true). Usually paired "
                    "with `-o` to skip a subtree while still processing everything else: `xff . -name .git -prune -o "
-                   "-print`.",
+                   "-print`. Has no effect with `-depth`, including the depth-first traversal implied by `-delete`.",
         .kind = Kind::kAction,
         .arity = 0,
         .see_also = "ignore,archive",

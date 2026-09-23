@@ -50,7 +50,8 @@ absl::StatusOr<std::size_t> PrimaryArgumentCount(
     }
     return absl::InvalidArgumentError(absl::StrCat("'", tokens[pos], "' requires a terminating ';' or '+'"));
   }
-  const auto arity = static_cast<std::size_t>(primary.arity);
+  const auto arity = static_cast<std::size_t>(
+      primary.ArgumentCount(pos + 1 < tokens.size() ? std::string_view(tokens[pos + 1]) : std::string_view{}));
   if (arity > tokens.size() - pos - 1) {
     return absl::InvalidArgumentError(absl::StrCat("'", tokens[pos], "' requires ", arity, " argument(s)"));
   }
@@ -205,7 +206,8 @@ void FindOverrides(
     if (primary->arity < 0) {
       while (++pos < tokens.size() && tokens[pos] != ";" && tokens[pos] != "+") {}
     } else {
-      pos += static_cast<std::size_t>(primary->arity);
+      pos += static_cast<std::size_t>(
+          primary->ArgumentCount(pos + 1 < tokens.size() ? std::string_view(tokens[pos + 1]) : std::string_view{}));
     }
   }
 }

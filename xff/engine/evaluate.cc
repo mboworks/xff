@@ -68,6 +68,7 @@
 #include "xff/matching/similarity/similarity.h"
 #include "xff/parser/ast.h"
 #include "xff/presentation/fields/fields.h"
+#include "xff/presentation/patch/patch.h"
 #include "xff/presentation/render/render.h"
 #include "xff/registry/descriptor.h"
 #include "xff/values/values.h"
@@ -1317,14 +1318,58 @@ absl::Status ApplyDiffIgnore(std::string_view tokens, std::string_view matching,
 
 }  // namespace
 
+namespace {
+bool EmitCreationPatch(const parser::Expr& expr, EvalContext& ctx) {
+  const auto type = ctx.visit.metadata.type;
+  if (type == vfs::FileType::kDirectory || expr.diff_style == "none") {
+    return false;
+  }
+  if (type != vfs::FileType::kRegular && type != vfs::FileType::kSymlink) {
+    ctx.control.SetUnsupported("-diff creation patches require regular files or symlinks");
+    return false;
+  }
+  const auto content =
+      type == vfs::FileType::kSymlink ? ctx.fs.ReadLink(ctx.visit.path) : ctx.fs.ReadContent(ctx.visit.path);
+  if (!content.ok()) {
+    ctx.control.SetUnsupported(absl::StrCat("-diff cannot read source: ", content.status().message()));
+    return false;
+  }
+  std::string_view path = ctx.visit.path;
+  if (path == ctx.visit.root) {
+    path = ctx.visit.name;
+  } else if (path.starts_with(ctx.visit.root)) {
+    path.remove_prefix(ctx.visit.root.size());
+    if (path.starts_with('/')) {
+      path.remove_prefix(1);
+    }
+  }
+  while (path.starts_with("./")) {
+    path.remove_prefix(2);
+  }
+  std::string_view mode = "100644";
+  if (type == vfs::FileType::kSymlink) {
+    mode = "120000";
+  } else if ((ctx.visit.metadata.mode & 0111U) != 0) {
+    mode = "100755";
+  }
+  const auto rendered = patch::Creation(path, *content, mode);
+  if (!rendered.ok()) {
+    ctx.control.SetUnsupported(std::string(rendered.status().message()));
+    return false;
+  }
+  ctx.emit(*rendered);
+  return false;  // An added file differs from a nonexistent file, even when empty.
+}
+}  // namespace
+
 // xff -diff[:STYLE] TARGET: an ACTION that diffs the entry against TARGET (a field template,
 // like -cmp) via mbo::diff and returns TRUE = same (silent when equal; prints the diff and is
 // false on a difference). STYLE picks the output (u3 default / c / n / y / none = silent). A
 // binary side is byte-compared with a `Binary files A and B differ` note on stderr, never a
 // text diff. Missing/unreadable target -> differs (false). Cost::kExpensive (two reads).
 bool EvalDiff(const parser::Expr& expr, EvalContext& ctx) {
-  if (expr.args.empty()) {
-    return false;
+  if (expr.args.empty() || expr.args.front() == "/dev/null") {
+    return EmitCreationPatch(expr, ctx);
   }
   const std::string link = LinkTarget(ctx);  // owns the {target} text for the render below
   const std::string target = fields::Template::Compile(expr.args.front())

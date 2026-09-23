@@ -135,3 +135,38 @@ complete current vocabulary.
 [test planning](test-plan.md), and [coverage policy](coverage.md) describe their boundaries and gates.
 macOS and Linux are tested in CI. Other platforms, additional backends, and proposed options remain
 roadmap work until implemented and self-documented.
+
+## Git creation patches
+
+`-diff [TARGET]` defaults to `/dev/null`. This form emits a Git creation patch for each
+matched regular file or symlink. Explicit `-diff /dev/null` is equivalent. Existing
+`-diff TARGET` comparisons retain their behavior. Both forms return false on a difference;
+creation of an empty file is still a difference. Directories emit nothing. Unsupported
+special entries and unreadable sources are reported through the existing unsupported-action
+policy (`--skip-unsupported` can skip them).
+
+Patch names are relative to each traversal root; a file operand uses its basename. Use
+noncolliding root-relative paths when combining roots. Unsafe path components are rejected.
+A target starting with `-` must use a path such as `./-target`, since a flag or expression
+operator after `-diff` starts the next expression component instead of supplying TARGET.
+This grammar is shared by command lines and INI expressions.
+
+Text patches preserve final-newline state. Git modes preserve executability and symlink
+identity; empty files have a creation header without a hunk. Binary patches contain a full
+Git literal with a SHA-1 blob identifier, zlib stored blocks and Git base85 encoding. Stored
+blocks avoid adding a compression dependency to the lean core, at the cost of larger patches.
+The action reads one complete entry and builds one patch in memory. It invokes no subprocess,
+performs no writes, and uses the visited filesystem for archive members as well as local files.
+The Git-format output does not use text comparison ignore/context settings; `:none` suppresses
+it. Other explicit styles do not change the creation format.
+
+For example, `xff src -type f -diff > additions.patch` can be applied in an empty destination
+with `git apply additions.patch`. Git is required to apply patches, not to generate them.
+The integration test applies patches and checks content, empty files, modes, symlinks, unusual
+filenames and binary data crossing the stored-block boundary.
+
+Directory deletion follows [find's documented behavior](https://www.gnu.org/software/findutils/manual/html_node/find_html/Delete-Files.html):
+`-delete` implies `-depth`, removes only selected entries, and fails for a nonempty directory.
+`-prune` has no effect during this depth-first traversal. Thus
+`xff . -type d -name foo -prune -delete` removes empty matched directories, but never
+recursively deletes unmatched contents.
