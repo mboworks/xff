@@ -41,11 +41,16 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                     for value, height in zip(old, new):
                         self.assertAlmostEqual(height, math.log10(2 if value > 0 else 0.5))
             axis = factor['layout']['scene']['yaxis']
-            self.assertEqual(axis['ticktext'], ['0.5x', '1x', '2x'])
-            self.assertEqual(axis['tickvals'], [math.log10(0.5), 0, math.log10(2)])
+            expected = [index * 0.1 for index in range(-4, 5)]
+            self.assertEqual(axis['tickvals'], expected)
+            self.assertEqual(axis['ticktext'], ['-0.4', '-0.3', '-0.2', '-0.1', '0',
+                                                '+0.1', '+0.2', '+0.3', '+0.4'])
+            self.assertEqual(axis['range'], [-0.4, 0.4])
+            for left, right in zip(axis['tickvals'], axis['tickvals'][1:]):
+                self.assertAlmostEqual(right - left, 0.1)
             bar = factor['layout']['coloraxis']['colorbar']
-            self.assertEqual(bar['tickvals'], [-100, 0, 50])
-            self.assertEqual(bar['ticktext'], ['0.5x', '1x', '2x'])
+            for value, label in zip(bar['tickvals'], bar['ticktext']):
+                self.assertAlmostEqual(value, 100 * (1 - 10 ** -float(label)))
 
     def test_factor_missing_measurements_stay_missing(self):
         data = report()
@@ -195,7 +200,7 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                             self.assertIn(f'{task} / xff vs {reference}', text)
                             count = files[surface['x'][row][column]].strip()
                             self.assertIn(f'{count} files', text)
-                            self.assertIn(f'Time saved: {surface["y"][row][column]:+.2f}%', text)
+                            self.assertIn(f'Relative performance: {surface["y"][row][column]:+.2f}%', text)
                             self.assertTrue(text.startswith('Deep' if z > 0 else 'Broad'))
 
     def test_missing_observations_remain_holes(self):
@@ -219,6 +224,10 @@ class BenchmarkLandscapeTest(unittest.TestCase):
         self.assertIn('<details id="landscape-panel" open>', text)
         self.assertIn('</details><h2>Measurements</h2>', text)
         self.assertIn('Plotly.Plots.resize', text)
+        self.assertIn('Scale: <select', text)
+        self.assertIn('>Percentage</option>', text)
+        self.assertIn('>Logarithmic</option>', text)
+        self.assertNotIn('Time saved', text)
         self.assertIn('100 &times; (1 - xff time / reference time)', text)
 
 

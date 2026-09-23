@@ -146,8 +146,8 @@ def figure(report, order='similarity', metric='percent'):
                     texts.append('Missing measurement' if row is None else
                                  f'{dataset.title()} / {html.escape(task)} / xff vs {html.escape(reference)}'
                                  f'<br>{matrix.allocation_label(report, cpu)} / {count:,} files'
-                                 f'<br>Time saved: {values[-1]:+.2f}%'
-                                 f'<br>Speedup: {1 / row["xff_over_reference"]:.2f}x (reference/xff)'
+                                 f'<br>Relative performance: {values[-1]:+.2f}%'
+                                 f'<br>Performance factor: {1 / row["xff_over_reference"]:.2f}x (reference/xff)'
                                  f'<br>xff/reference: {row["xff_over_reference"]:.2f}'
                                  f'<br>xff: {row["xff_seconds"] * 1000:.3f} ms'
                                  f'<br>reference: {row["reference_seconds"] * 1000:.3f} ms')
@@ -171,10 +171,10 @@ def figure(report, order='similarity', metric='percent'):
         margin=dict(l=10, r=10, t=70, b=10),
         coloraxis=dict(cmin=-extent, cmax=extent,
                        colorscale=colorscale,
-                       colorbar=dict(title=dict(text='Time saved %'), ticksuffix='%')),
+                       colorbar=dict(title=dict(text='Relative performance %'), ticksuffix='%')),
         scene=dict(xaxis=dict(title=dict(text=f'{matrix.allocation_label(report, 1)} \u2190 File count \u2192 {matrix.allocation_label(report, 4)}'),
                               ticks='outside', tickfont=tick_font, tickvals=ticks, ticktext=labels),
-                   yaxis=dict(title=dict(text='Time saved vs reference (%)'), zeroline=True,
+                   yaxis=dict(title=dict(text='Relative performance (%)'), zeroline=True,
                               zerolinecolor='#3269b5', ticksuffix='%'),
                    zaxis=dict(title=dict(text='Broad FS \u2190 Task \u2192 Deep FS'),
                               ticks='outside', tickfont=tick_font, tickvals=task_ticks, ticktext=task_labels),
@@ -183,22 +183,25 @@ def figure(report, order='similarity', metric='percent'):
         template='plotly_white'))
     if metric == 'factor':
         # Transform heights; keep the percentage-based colors identical in both views.
-        limit = max(1, math.ceil(max(abs(math.log2(r['xff_over_reference'])) for r in rows)))
-        step = max(1, math.ceil(limit / 4))
-        powers = sorted(set(list(range(-limit, limit + 1, step)) + [0, limit]))
-        factors = [2 ** power for power in powers]
-        labels = [f'{factor:.4g}x' for factor in factors]
+        maximum = max(0.01, max(abs(math.log10(r['xff_over_reference'])) for r in rows))
+        target_step = maximum / 4
+        decade = math.floor(math.log10(target_step))
+        step = next(multiple * 10 ** decade for multiple in (1, 2, 5, 10)
+                    if multiple * 10 ** decade >= target_step)
+        count = math.ceil(maximum / step)
+        limit = count * step
+        powers = [index * step for index in range(-count, count + 1)]
+        labels = [f'{value:+g}' if value else '0' for value in powers]
         for surface in traces:
             surface['y'] = [[None if value is None else -math.log10(1 - value / 100)
                              for value in row] for row in surface['y']]
         result['layout']['scene']['yaxis'] = dict(
-            title=dict(text='Speedup reference / xff (log scale)'), zeroline=True,
-            zerolinecolor='#3269b5', tickvals=[math.log10(factor) for factor in factors],
-            ticktext=labels)
-        color_ticks = [(100 * (1 - 1 / factor), label) for factor, label in zip(factors, labels)
-                       if -extent <= 100 * (1 - 1 / factor) <= extent]
+            title=dict(text='Relative performance (log10 ratio)'), zeroline=True,
+            zerolinecolor='#3269b5', tickvals=powers, ticktext=labels, range=[-limit, limit])
+        color_ticks = [(100 * (1 - 10 ** -power), label) for power, label in zip(powers, labels)
+                       if -extent <= 100 * (1 - 10 ** -power) <= extent]
         result['layout']['coloraxis']['colorbar'] = dict(
-            title=dict(text='Speedup'), tickvals=[value for value, _ in color_ticks],
+            title=dict(text='log10 ratio'), tickvals=[value for value, _ in color_ticks],
             ticktext=[label for _, label in color_ticks])
     return result
 
@@ -218,18 +221,18 @@ def render(report, javascript):
             '<p>Drag to rotate; scroll to zoom. Y is vertical. Left: 1 allocation, large to small; '
             'right: 4 allocations, small to large. The mirrored X axis uses log10 spacing. '
             'Broad and Deep tasks extend in opposite Z directions.</p>'
-            '<p>Time saved = 100 &times; (1 - xff time / reference time). Green is faster, '
+            '<p>Relative performance (%) = 100 &times; (1 - xff time / reference time). Green is faster, '
             'blue is equal, red is slower; this reverses the sign of the table difference. '
             'Blue spans +/-10 percentage points; dark red/green at -/+20 points brightens toward the extremes. Hover for timings and ratios. '
             'Surfaces interpolate neighboring measured points, including between categorical tasks; '
             'they are visual guides, not predictions. Gaps between CPU/tree groups are intentional.</p>'
             '<p>Better profiles face the center on both tree halves. Similarity order minimizes '
             'neighbor differences; it is not necessarily monotonic. Average order descends by mean '
-            'time saved. All file counts, CPU groups and tree shapes receive equal weight.</p>'
-            '<p>Speedup = reference time / xff time: 2x is twice as fast; 0.5x is half as fast. '
-            'Factor heights use log10 spacing. Colors and task order keep the same meaning in both views.</p>'
-            '<label>Metric: <select id="metric"><option value="percent">Time saved (%)</option>'
-            '<option value="factor">Speedup factor (log scale)</option></select></label> '
+            'relative performance. All file counts, CPU groups and tree shapes receive equal weight.</p>'
+            '<p>Performance factor = reference time / xff time: 2x is twice as fast; 0.5x is half as fast. '
+            'Factor heights and tick labels use log10: 0 is parity, +1 means 10x, -1 means 0.1x. Colors and task order keep the same meaning in both views.</p>'
+            '<label>Scale: <select id="metric"><option value="percent">Percentage</option>'
+            '<option value="factor">Logarithmic</option></select></label> '
             '<label>Task order: <select id="task-order">' +
             ''.join('<option value="' + key + '">' + label + '</option>'
                     for key, label in ORDER_LABELS.items()) + '</select></label>'
