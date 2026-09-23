@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Show interactive comparison landscapes above benchmark tables and collapse absolute measurements.
+
 - Preserve site favicons when publishing benchmark results.
 
 - Avoid clearing unused read-buffer capacity for each content search.

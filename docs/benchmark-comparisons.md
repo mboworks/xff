@@ -267,3 +267,79 @@ shards fail the workflow rather than publishing a partial matrix. Each merged re
 per-shard provenance. Historical baselines belong on the complete merged report, not individual
 shards. JSON and HTML share the platform-specific basename; only final merged artifacts are
 selected by the publisher.
+
+## Comparison landscape
+
+`tools/benchmark_landscape.py` renders existing comparison JSON as a standalone interactive
+HTML landscape. It requires no remeasurement. The 3D chart is open by default; its
+show/hide disclosure collapses the chart, controls and explanation without hiding the tables.
+Reopening resizes the chart to the available width. Absolute measurements are collapsed by default;
+the comparison table stays visible below the plot. Benchmark publication inserts the landscape above all tables on retained reports with the
+1/4 allocation matrix. Older reports without that matrix retain their existing presentation.
+One shared, pinned Plotly bundle is published alongside the reports; no external CDN is used.
+Standalone previews embed the same bundle for offline use.
+
+The X coordinate mirrors log10 file counts: the 1-CPU group runs from large to small on the
+left, and the 4-CPU group runs from small to large on the right. Reports without affinity use
+worker labels instead. Y is the vertical percentage axis; Broad and Deep task/reference pairs
+extend in opposite directions on Z. Each quadrant forms a separate surface, with missing cells
+left empty. Connections between categorical tasks are visual interpolation, not a predictive
+model. Colors use a shared symmetric scale. The near-neutral blue band spans -10 to +10 percentage
+points, transitioning to dark red/green at -20/+20 points and bright red/green at the extremes.
+The color scale extends to at least +/-20 points even for nearly neutral reports.
+
+The plotted percentage is `100 * (1 - xff_time / reference_time)`: positive means time saved by
+xff, negative means xff took longer. It reverses the sign of the existing table difference.
+Hover text includes the original ratio and both absolute timings. Native surface hover text
+keeps row/column indexing consistent with the plotted vertex; the generic `%{text}` template
+is avoided because Plotly transposes its lookup for surface pick indices. The estimator comes from the
+report's recorded sampling policy; no new averaging across tasks or reference tools is performed.
+
+Use an isolated environment to obtain Plotly's MIT-licensed JavaScript bundle. The renderer
+itself uses only the Python standard library and the existing benchmark matrix module:
+
+```sh
+python3 -m venv /tmp/xff-landscape-env
+/tmp/xff-landscape-env/bin/pip install plotly==7.1.0
+/tmp/xff-landscape-env/bin/python -c \
+  'from plotly.offline import get_plotlyjs; from pathlib import Path; Path("/tmp/plotly.js").write_text(get_plotlyjs())'
+python3 tools/benchmark_landscape.py /path/to/benchmark-report-linux-x86_64.json \
+  --plotly-js=/tmp/plotly.js --output=/path/to/benchmark-landscape-linux-x86_64.html
+```
+
+The supplied trusted JavaScript bundle is embedded, including its license header; opening the
+result requires no CDN or network access. The Plotly surface format is documented at
+<https://plotly.com/python/3d-surface-plots/>. Drag to rotate and scroll to zoom.
+
+The task-order selector defaults to **Similarity, better toward center**. Each task/reference
+pair has a profile of percentage values across matching file counts, CPU groups and tree shapes.
+Distance is the mean absolute percentage-point difference over shared observations. The renderer
+finds the minimum-total-distance neighbor chain exactly for up to 16 pairs, with deterministic
+ties, and reverses it when necessary so the better endpoint faces the center. Broad and Deep use
+the same mirrored order. This reduces surface jumps without claiming monotonic improvement.
+For larger reports, a bounded multistart nearest-neighbor heuristic replaces the exact search.
+If no complete chain with shared observations exists, the renderer falls back to average order.
+Missing observations are never replaced with zero.
+
+**Average performance, best at center** sorts descending by equally weighted mean time saved;
+**Alphabetical** restores the task/reference name order. Changing order preserves the camera
+and measurements. Every recorded cell has equal weight; file counts are not weighted by the
+number of files or elapsed time. The average is descriptive, not aggregate throughput.
+
+Axis titles and tick labels retain Plotly's native automatic layout and tick angles. Monospaced
+labels use non-breaking spaces to equalize widths: file counts align right, task names left,
+with three extra spaces for separation. No marker glyphs or text annotations are used.
+
+The preview applies a narrowly checked adapter to the bundled Plotly vectorizer. Upstream
+centers text using visible glyph bounds, which discards blank padding. For NBSP-padded labels
+only, the adapter instead uses the canvas-measured advance width for horizontal alignment;
+vertical bounds and the actual glyph triangles are unchanged. Ordinary labels keep upstream
+behavior. The adapter checks two exact snippets from the Plotly.py 7.1.0 bundle and rejects
+unknown or already-modified bundles rather than silently applying a partial patch. The original
+license header remains in the embedded bundle, preceded by a modification notice. This local
+preview adapter needs an upstream implementation before generalizing to other bundle versions.
+
+Transparent-dot inspection found that 3D tick text uses one shader color uniform for an entire
+axis's ticks. Supported style tags do not include per-span color or opacity; transparent dots
+cannot preserve geometry while hiding only the markers. The approved automatic-layout version
+remains in the saved stash.
