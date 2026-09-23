@@ -271,7 +271,9 @@ selected by the publisher.
 ## Comparison landscape
 
 `tools/benchmark_landscape.py` renders existing comparison JSON as a standalone interactive
-HTML landscape. It requires no remeasurement. Absolute measurements are collapsed by default;
+HTML landscape. It requires no remeasurement. The 3D chart is open by default; its
+show/hide disclosure collapses the chart, controls and explanation without hiding the tables.
+Reopening resizes the chart to the available width. Absolute measurements are collapsed by default;
 the comparison table stays visible below the plot. Benchmark publication inserts the landscape above all tables on retained reports with the
 1/4 allocation matrix. Older reports without that matrix retain their existing presentation.
 One shared, pinned Plotly bundle is published alongside the reports; no external CDN is used.
@@ -288,7 +290,9 @@ The color scale extends to at least +/-20 points even for nearly neutral reports
 
 The plotted percentage is `100 * (1 - xff_time / reference_time)`: positive means time saved by
 xff, negative means xff took longer. It reverses the sign of the existing table difference.
-Hover text includes the original ratio and both absolute timings. The estimator comes from the
+Hover text includes the original ratio and both absolute timings. Native surface hover text
+keeps row/column indexing consistent with the plotted vertex; the generic `%{text}` template
+is avoided because Plotly transposes its lookup for surface pick indices. The estimator comes from the
 report's recorded sampling policy; no new averaging across tasks or reference tools is performed.
 
 Use an isolated environment to obtain Plotly's MIT-licensed JavaScript bundle. The renderer

@@ -135,11 +135,34 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                 self.assertLess(first.index('Comparison landscape'), first.index('<table>'))
                 self.assertIn('src="../../../../assets/plotly-landscape.js"', first)
                 self.assertIn('<table>Original</table>', first)
+                self.assertIn('<details id="landscape-panel" open>', first)
+                self.assertLess(first.index('</details>'), first.index('<table>'))
                 self.assertEqual(landscape.publish(root, 'bundle'), 1)
                 self.assertEqual(first, page.read_text())
             self.assertEqual(data.read_bytes(), original)
             self.assertEqual((legacy / 'index.html').read_text(), 'Legacy untouched')
             self.assertEqual((root / 'assets/plotly-landscape.js').read_text(), '/* plotting asset */')
+
+    def test_hover_cells_match_ticks_after_every_reordering(self):
+        for mode in landscape.ORDER_LABELS:
+            with self.subTest(order=mode):
+                chart = landscape.figure(report(), mode)
+                scene = chart['layout']['scene']
+                tasks = dict(zip(scene['zaxis']['tickvals'], scene['zaxis']['ticktext']))
+                files = dict(zip(scene['xaxis']['tickvals'], scene['xaxis']['ticktext']))
+                for surface in chart['data']:
+                    # Plotly's surface pick uses [column,row]; template text lookup transposes it.
+                    self.assertEqual(surface['hoverinfo'], 'text')
+                    self.assertNotIn('hovertemplate', surface)
+                    for row, values in enumerate(surface['text']):
+                        for column, text in enumerate(values):
+                            z = surface['z'][row][column]
+                            task, reference = tasks[z].strip().rsplit(' / ', 1)
+                            self.assertIn(f'{task} / xff vs {reference}', text)
+                            count = files[surface['x'][row][column]].strip()
+                            self.assertIn(f'{count} files', text)
+                            self.assertIn(f'Time saved: {surface["y"][row][column]:+.2f}%', text)
+                            self.assertTrue(text.startswith('Deep' if z > 0 else 'Broad'))
 
     def test_missing_observations_remain_holes(self):
         data = report()
@@ -159,7 +182,9 @@ class BenchmarkLandscapeTest(unittest.TestCase):
         start = text.index('<details><summary>Absolute measurements')
         end = text.index('</details>', start)
         self.assertGreater(text.index('<h3>xff/reference ratios'), end)
-        self.assertNotIn('<details open', text)
+        self.assertIn('<details id="landscape-panel" open>', text)
+        self.assertIn('</details><h2>Measurements</h2>', text)
+        self.assertIn('Plotly.Plots.resize', text)
         self.assertIn('100 &times; (1 - xff time / reference time)', text)
 
 

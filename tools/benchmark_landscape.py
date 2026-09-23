@@ -154,7 +154,7 @@ def figure(report, order='similarity'):
                 hover.append(texts)
             traces.append(dict(type='surface', x=xgrid, y=ygrid, z=zgrid,
                                surfacecolor=ygrid, coloraxis='coloraxis', connectgaps=False,
-                               text=hover, hovertemplate='%{text}<extra></extra>',
+                               text=hover, hoverinfo='text',
                                name=f'{dataset.title()} / {matrix.allocation_label(report, cpu)}',
                                lighting=dict(ambient=1, diffuse=0, specular=0),
                                showscale=False))
@@ -190,6 +190,7 @@ def render(report, javascript):
             'td,th{padding:.35rem;border:1px solid #ccd}details{margin:1rem 0;overflow:auto}'
             'summary{cursor:pointer;font-weight:bold}</style></head><body>'
             '<h1>Benchmark comparison landscape</h1>'
+            '<details id="landscape-panel" open><summary>3D comparison chart (show/hide)</summary>'
             '<p>Drag to rotate; scroll to zoom. Y is vertical. Left: 1 allocation, large to small; '
             'right: 4 allocations, small to large. The mirrored X axis uses log10 spacing. '
             'Broad and Deep tasks extend in opposite Z directions.</p>'
@@ -207,11 +208,13 @@ def render(report, javascript):
             '<div id="landscape"></div><script>' + javascript + '</script><script>'
             'const figures=' + plot + ';const first=figures.similarity;'
             'Plotly.newPlot("landscape",first.data,first.layout,{responsive:true,displaylogo:false});'
+            'document.getElementById("landscape-panel").addEventListener("toggle",event=>{'
+            'if(event.target.open)requestAnimationFrame(()=>Plotly.Plots.resize("landscape"));});'
             'document.getElementById("task-order").addEventListener("change",event=>{'
             'const next=figures[event.target.value];'
             'const camera=document.getElementById("landscape").layout.scene.camera;'
             'next.layout.scene.camera=camera;'
-            'Plotly.react("landscape",next.data,next.layout,{responsive:true,displaylogo:false});});</script>'
+            'Plotly.react("landscape",next.data,next.layout,{responsive:true,displaylogo:false});});</script></details>'
             '<h2>Measurements</h2>' + matrix.render_html(report) + '</body></html>')
 
 
