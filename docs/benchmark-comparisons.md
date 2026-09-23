@@ -288,8 +288,15 @@ model. Colors use a shared symmetric scale. The near-neutral blue band spans -10
 points, transitioning to dark red/green at -20/+20 points and bright red/green at the extremes.
 The color scale extends to at least +/-20 points even for nearly neutral reports.
 
-The plotted percentage is `100 * (1 - xff_time / reference_time)`: positive means time saved by
-xff, negative means xff took longer. It reverses the sign of the existing table difference.
+The plotted percentage is `100 * (1 - xff_time / reference_time)`: positive means xff is faster, negative means xff took longer. It reverses the sign of the existing table difference.
+The Scale selector defaults to Percentage, with `%` on axis and color legend ticks.
+The performance factor uses `reference_time / xff_time`: `2x` means twice as fast, `0.5x` means
+half as fast, and `1x` is parity. Heights use log10 spacing, so reciprocal factors have
+equal distances from parity. Logarithmic uses uniformly spaced signed log10 tick labels; a 1-2-5 sequence selects
+the interval, not individual tick positions:
+zero is parity, +1 means 10x, and -1 means 0.1x. Bounds are symmetric around zero. The color
+mapping remains based on time saved in both views, with signed log10 labels on the factor legend. Hover cards retain actual factors.
+Switching metrics preserves the camera and selected task order.
 Hover text includes the original ratio and both absolute timings. Native surface hover text
 keeps row/column indexing consistent with the plotted vertex; the generic `%{text}` template
 is avoided because Plotly transposes its lookup for surface pick indices. The estimator comes from the

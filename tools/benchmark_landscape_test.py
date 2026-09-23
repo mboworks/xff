@@ -4,6 +4,7 @@
 
 import itertools
 import json
+import math
 from pathlib import Path
 import tempfile
 from unittest import mock
@@ -24,6 +25,44 @@ def report():
 
 
 class BenchmarkLandscapeTest(unittest.TestCase):
+    def test_percent_ticks_and_colorbar_show_units(self):
+        layout = landscape.figure(report())['layout']
+        self.assertEqual(layout['scene']['yaxis']['ticksuffix'], '%')
+        self.assertEqual(layout['coloraxis']['colorbar']['ticksuffix'], '%')
+
+    def test_factor_view_preserves_order_colors_and_hover(self):
+        for order in landscape.ORDER_LABELS:
+            percent = landscape.figure(report(), order)
+            factor = landscape.figure(report(), order, 'factor')
+            for original, converted in zip(percent['data'], factor['data']):
+                for key in ('x', 'z', 'text', 'surfacecolor'):
+                    self.assertEqual(original[key], converted[key])
+                for old, new in zip(original['y'], converted['y']):
+                    for value, height in zip(old, new):
+                        self.assertAlmostEqual(height, math.log10(2 if value > 0 else 0.5))
+            axis = factor['layout']['scene']['yaxis']
+            expected = [index * 0.1 for index in range(-4, 5)]
+            self.assertEqual(axis['tickvals'], expected)
+            self.assertEqual(axis['ticktext'], ['-0.4', '-0.3', '-0.2', '-0.1', '0',
+                                                '+0.1', '+0.2', '+0.3', '+0.4'])
+            self.assertEqual(axis['range'], [-0.4, 0.4])
+            for left, right in zip(axis['tickvals'], axis['tickvals'][1:]):
+                self.assertAlmostEqual(right - left, 0.1)
+            bar = factor['layout']['coloraxis']['colorbar']
+            for value, label in zip(bar['tickvals'], bar['ticktext']):
+                self.assertAlmostEqual(value, 100 * (1 - 10 ** -float(label)))
+
+    def test_factor_missing_measurements_stay_missing(self):
+        data = report()
+        data['tasks'].pop(0)
+        surface = landscape.figure(data, metric='factor')['data'][0]
+        self.assertIsNone(surface['y'][0][-1])
+        self.assertIsNone(surface['surfacecolor'][0][-1])
+
+    def test_rejects_unknown_metric(self):
+        with self.assertRaisesRegex(ValueError, 'unknown comparison metric'):
+            landscape.figure(report(), metric='invalid')
+
     def test_mirrored_axes_sign_and_neutral_color(self):
         chart = landscape.figure(report())
         self.assertEqual(len(chart['data']), 4)
@@ -161,7 +200,7 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                             self.assertIn(f'{task} / xff vs {reference}', text)
                             count = files[surface['x'][row][column]].strip()
                             self.assertIn(f'{count} files', text)
-                            self.assertIn(f'Time saved: {surface["y"][row][column]:+.2f}%', text)
+                            self.assertIn(f'Relative performance: {surface["y"][row][column]:+.2f}%', text)
                             self.assertTrue(text.startswith('Deep' if z > 0 else 'Broad'))
 
     def test_missing_observations_remain_holes(self):
@@ -185,6 +224,10 @@ class BenchmarkLandscapeTest(unittest.TestCase):
         self.assertIn('<details id="landscape-panel" open>', text)
         self.assertIn('</details><h2>Measurements</h2>', text)
         self.assertIn('Plotly.Plots.resize', text)
+        self.assertIn('Scale: <select', text)
+        self.assertIn('>Percentage</option>', text)
+        self.assertIn('>Logarithmic</option>', text)
+        self.assertNotIn('Time saved', text)
         self.assertIn('100 &times; (1 - xff time / reference time)', text)
 
 

@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Add percentage tick units and a logarithmic speedup-factor view to benchmark landscapes.
+
 - Show interactive comparison landscapes above benchmark tables and collapse absolute measurements.
 
 - Preserve site favicons when publishing benchmark results.
