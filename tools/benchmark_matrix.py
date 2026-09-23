@@ -237,6 +237,8 @@ def render_html(report):
         columns = sections[0][1]
         title = 'xff/reference ratios' if relative else 'Elapsed time'
         labels = ('Ratio', '\u0394 %') if relative else ('T [ms]', '\u0394T')
+        if not relative:
+            result.append('<details><summary>Absolute measurements (elapsed time)</summary>')
         result.append('<h3>' + title + '</h3><table><tbody>')
         for group, _, rows in sections:
             dataset = group.removesuffix(' - xff/reference ratios')
@@ -276,6 +278,8 @@ def render_html(report):
                                   '<td style="text-align:right">' + second + '</td>')
                 result.append('</tr>')
         result.append('</tbody></table>')
+        if not relative:
+            result.append('</details>')
     return ''.join(result)
 
 

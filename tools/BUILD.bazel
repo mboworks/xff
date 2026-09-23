@@ -731,6 +731,7 @@ test_suite(
         ":benchmark_compare_test",
         ":benchmark_fixture_test",
         ":benchmark_history_test",
+        ":benchmark_landscape_test",
         ":benchmark_matrix_test",
         ":benchmark_shards_test",
         ":build_rules_test",
@@ -845,4 +846,24 @@ py_test(
     size = "small",
     srcs = ["benchmark_shards_test.py"],
     deps = [":benchmark_shards_lib"],
+)
+
+py_library(
+    name = "benchmark_landscape_lib",
+    srcs = ["benchmark_landscape.py"],
+    imports = ["."],
+    deps = [":benchmark_matrix_lib"],
+)
+
+py_binary(
+    name = "benchmark_landscape",
+    srcs = ["benchmark_landscape.py"],
+    deps = [":benchmark_matrix_lib"],
+)
+
+py_test(
+    name = "benchmark_landscape_test",
+    size = "small",
+    srcs = ["benchmark_landscape_test.py"],
+    deps = [":benchmark_landscape_lib"],
 )

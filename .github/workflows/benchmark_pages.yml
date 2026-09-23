@@ -67,6 +67,12 @@ jobs:
               --root=site/benchmarks --report="${report}" \
               --source=source-reference.json --pulls=pulls.json --repository="${GITHUB_REPOSITORY}" --keep=100
           done
+      - name: Prepare pinned benchmark plotting bundle
+        run: |
+          set -euo pipefail
+          python3 -m venv "${RUNNER_TEMP}/benchmark-plotly"
+          "${RUNNER_TEMP}/benchmark-plotly/bin/pip" install 'plotly==7.1.0'
+          "${RUNNER_TEMP}/benchmark-plotly/bin/python" -c 'from plotly.offline import get_plotlyjs; import os; from pathlib import Path; Path(os.environ["RUNNER_TEMP"], "benchmark-plotly.js").write_text(get_plotlyjs())'
       - name: Refresh stable benchmark references and deploy
         env:
           GH_TOKEN: ${{ github.token }}
@@ -75,6 +81,8 @@ jobs:
           gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/pulls?state=all&per_page=100" > pulls.json
           python3 source/tools/benchmark_history.py refresh \
             --root=site/benchmarks --pulls=pulls.json --checkout=source --repository="${GITHUB_REPOSITORY}"
+          python3 source/tools/benchmark_landscape.py --site-root=site/benchmarks \
+            --plotly-js="${RUNNER_TEMP}/benchmark-plotly.js"
           git -C site config user.name 'github-actions[bot]'
           git -C site config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git -C site add benchmarks
