@@ -107,8 +107,10 @@ def padded_ticks(labels, align='left'):
     return [label + '\u00a0' * (width - len(label) + 3) for label in labels]
 
 
-def figure(report, order='similarity'):
+def figure(report, order='similarity', metric='percent'):
     """Keep CPU/tree quadrants disconnected; never fill missing observations."""
+    if metric not in ('percent', 'factor'):
+        raise ValueError('unknown comparison metric')
     rows = matrix.relative_results(report)
     counts = sorted(report['contract']['file_counts'])
     if not counts or any(n <= 0 for n in counts):
@@ -145,6 +147,7 @@ def figure(report, order='similarity'):
                                  f'{dataset.title()} / {html.escape(task)} / xff vs {html.escape(reference)}'
                                  f'<br>{matrix.allocation_label(report, cpu)} / {count:,} files'
                                  f'<br>Time saved: {values[-1]:+.2f}%'
+                                 f'<br>Speedup: {1 / row["xff_over_reference"]:.2f}x (reference/xff)'
                                  f'<br>xff/reference: {row["xff_over_reference"]:.2f}'
                                  f'<br>xff: {row["xff_seconds"] * 1000:.3f} ms'
                                  f'<br>reference: {row["reference_seconds"] * 1000:.3f} ms')
@@ -163,25 +166,46 @@ def figure(report, order='similarity'):
     labels = padded_ticks(labels, 'right')
     task_labels = padded_ticks(task_labels)
     tick_font = dict(family='DejaVu Sans Mono, Menlo, Consolas, monospace', size=12)
-    return dict(data=traces, layout=dict(
+    result = dict(data=traces, layout=dict(
         title=dict(text=html.escape(matrix.platform_title(report))), height=1000,
         margin=dict(l=10, r=10, t=70, b=10),
         coloraxis=dict(cmin=-extent, cmax=extent,
                        colorscale=colorscale,
-                       colorbar=dict(title=dict(text='Time saved %'))),
+                       colorbar=dict(title=dict(text='Time saved %'), ticksuffix='%')),
         scene=dict(xaxis=dict(title=dict(text=f'{matrix.allocation_label(report, 1)} \u2190 File count \u2192 {matrix.allocation_label(report, 4)}'),
                               ticks='outside', tickfont=tick_font, tickvals=ticks, ticktext=labels),
                    yaxis=dict(title=dict(text='Time saved vs reference (%)'), zeroline=True,
-                              zerolinecolor='#3269b5'),
+                              zerolinecolor='#3269b5', ticksuffix='%'),
                    zaxis=dict(title=dict(text='Broad FS \u2190 Task \u2192 Deep FS'),
                               ticks='outside', tickfont=tick_font, tickvals=task_ticks, ticktext=task_labels),
                    aspectmode='manual', aspectratio=dict(x=1.4, y=0.8, z=1.5),
                    camera=dict(up=dict(x=0, y=1, z=0), eye=dict(x=1.5, y=1.5, z=1.8))),
         template='plotly_white'))
+    if metric == 'factor':
+        # Transform heights; keep the percentage-based colors identical in both views.
+        limit = max(1, math.ceil(max(abs(math.log2(r['xff_over_reference'])) for r in rows)))
+        step = max(1, math.ceil(limit / 4))
+        powers = sorted(set(list(range(-limit, limit + 1, step)) + [0, limit]))
+        factors = [2 ** power for power in powers]
+        labels = [f'{factor:.4g}x' for factor in factors]
+        for surface in traces:
+            surface['y'] = [[None if value is None else -math.log10(1 - value / 100)
+                             for value in row] for row in surface['y']]
+        result['layout']['scene']['yaxis'] = dict(
+            title=dict(text='Speedup reference / xff (log scale)'), zeroline=True,
+            zerolinecolor='#3269b5', tickvals=[math.log10(factor) for factor in factors],
+            ticktext=labels)
+        color_ticks = [(100 * (1 - 1 / factor), label) for factor, label in zip(factors, labels)
+                       if -extent <= 100 * (1 - 1 / factor) <= extent]
+        result['layout']['coloraxis']['colorbar'] = dict(
+            title=dict(text='Speedup'), tickvals=[value for value, _ in color_ticks],
+            ticktext=[label for _, label in color_ticks])
+    return result
 
 
 def render(report, javascript):
-    plots = {mode: figure(report, mode) for mode in ORDER_LABELS}
+    plots = {mode: {metric: figure(report, mode, metric) for metric in ('percent', 'factor')}
+             for mode in ORDER_LABELS}
     plot = json.dumps(plots, allow_nan=False, ensure_ascii=False).replace('<', '\\u003c')
     return ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -202,19 +226,24 @@ def render(report, javascript):
             '<p>Better profiles face the center on both tree halves. Similarity order minimizes '
             'neighbor differences; it is not necessarily monotonic. Average order descends by mean '
             'time saved. All file counts, CPU groups and tree shapes receive equal weight.</p>'
+            '<p>Speedup = reference time / xff time: 2x is twice as fast; 0.5x is half as fast. '
+            'Factor heights use log10 spacing. Colors and task order keep the same meaning in both views.</p>'
+            '<label>Metric: <select id="metric"><option value="percent">Time saved (%)</option>'
+            '<option value="factor">Speedup factor (log scale)</option></select></label> '
             '<label>Task order: <select id="task-order">' +
             ''.join('<option value="' + key + '">' + label + '</option>'
                     for key, label in ORDER_LABELS.items()) + '</select></label>'
             '<div id="landscape"></div><script>' + javascript + '</script><script>'
-            'const figures=' + plot + ';const first=figures.similarity;'
+            'const figures=' + plot + ';const first=figures.similarity.percent;'
             'Plotly.newPlot("landscape",first.data,first.layout,{responsive:true,displaylogo:false});'
             'document.getElementById("landscape-panel").addEventListener("toggle",event=>{'
             'if(event.target.open)requestAnimationFrame(()=>Plotly.Plots.resize("landscape"));});'
-            'document.getElementById("task-order").addEventListener("change",event=>{'
-            'const next=figures[event.target.value];'
+            'function updateLandscape(){'
+            'const next=figures[document.getElementById("task-order").value][document.getElementById("metric").value];'
             'const camera=document.getElementById("landscape").layout.scene.camera;'
             'next.layout.scene.camera=camera;'
-            'Plotly.react("landscape",next.data,next.layout,{responsive:true,displaylogo:false});});</script></details>'
+            'Plotly.react("landscape",next.data,next.layout,{responsive:true,displaylogo:false});}'
+            'for(const id of ["task-order","metric"])document.getElementById(id).addEventListener("change",updateLandscape);</script></details>'
             '<h2>Measurements</h2>' + matrix.render_html(report) + '</body></html>')
 
 

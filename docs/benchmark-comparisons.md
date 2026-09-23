@@ -290,6 +290,12 @@ The color scale extends to at least +/-20 points even for nearly neutral reports
 
 The plotted percentage is `100 * (1 - xff_time / reference_time)`: positive means time saved by
 xff, negative means xff took longer. It reverses the sign of the existing table difference.
+The Metric selector defaults to time saved, with `%` on axis and color legend ticks.
+Speedup factor uses `reference_time / xff_time`: `2x` means twice as fast, `0.5x` means
+half as fast, and `1x` is parity. Heights use log10 spacing, so reciprocal factors have
+equal distances from parity; tick labels show factors rather than logarithms. The color
+mapping remains based on time saved in both views, with factor labels on the factor legend.
+Switching metrics preserves the camera and selected task order.
 Hover text includes the original ratio and both absolute timings. Native surface hover text
 keeps row/column indexing consistent with the plotted vertex; the generic `%{text}` template
 is avoided because Plotly transposes its lookup for surface pick indices. The estimator comes from the

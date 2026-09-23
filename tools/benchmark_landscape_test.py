@@ -4,6 +4,7 @@
 
 import itertools
 import json
+import math
 from pathlib import Path
 import tempfile
 from unittest import mock
@@ -24,6 +25,39 @@ def report():
 
 
 class BenchmarkLandscapeTest(unittest.TestCase):
+    def test_percent_ticks_and_colorbar_show_units(self):
+        layout = landscape.figure(report())['layout']
+        self.assertEqual(layout['scene']['yaxis']['ticksuffix'], '%')
+        self.assertEqual(layout['coloraxis']['colorbar']['ticksuffix'], '%')
+
+    def test_factor_view_preserves_order_colors_and_hover(self):
+        for order in landscape.ORDER_LABELS:
+            percent = landscape.figure(report(), order)
+            factor = landscape.figure(report(), order, 'factor')
+            for original, converted in zip(percent['data'], factor['data']):
+                for key in ('x', 'z', 'text', 'surfacecolor'):
+                    self.assertEqual(original[key], converted[key])
+                for old, new in zip(original['y'], converted['y']):
+                    for value, height in zip(old, new):
+                        self.assertAlmostEqual(height, math.log10(2 if value > 0 else 0.5))
+            axis = factor['layout']['scene']['yaxis']
+            self.assertEqual(axis['ticktext'], ['0.5x', '1x', '2x'])
+            self.assertEqual(axis['tickvals'], [math.log10(0.5), 0, math.log10(2)])
+            bar = factor['layout']['coloraxis']['colorbar']
+            self.assertEqual(bar['tickvals'], [-100, 0, 50])
+            self.assertEqual(bar['ticktext'], ['0.5x', '1x', '2x'])
+
+    def test_factor_missing_measurements_stay_missing(self):
+        data = report()
+        data['tasks'].pop(0)
+        surface = landscape.figure(data, metric='factor')['data'][0]
+        self.assertIsNone(surface['y'][0][-1])
+        self.assertIsNone(surface['surfacecolor'][0][-1])
+
+    def test_rejects_unknown_metric(self):
+        with self.assertRaisesRegex(ValueError, 'unknown comparison metric'):
+            landscape.figure(report(), metric='invalid')
+
     def test_mirrored_axes_sign_and_neutral_color(self):
         chart = landscape.figure(report())
         self.assertEqual(len(chart['data']), 4)
