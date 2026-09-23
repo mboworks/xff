@@ -303,6 +303,7 @@ cc_library(
         "@abseil-cpp//absl/time",
         "@mboworks_mbo//mbo/diff:diff_cc",
         "@mboworks_mbo//mbo/file:artefact_cc",
+        "@mboworks_mbo//mbo/status:status_builder_cc",
         "@nlohmann_json//:json",
         "@xff_extras_api//:archive_backend_cc",
         "@xff_extras_api//:member_path_cc",
@@ -492,6 +493,15 @@ py_test(
     name = "creation_patch_test",
     size = "small",
     srcs = ["creation_patch_test.py"],
+    args = ["$(rlocationpath //xff/cli/testing:xff)"],
+    data = ["//xff/cli/testing:xff"],
+    deps = ["@rules_python//python/runfiles"],
+)
+
+py_test(
+    name = "deletion_diagnostics_test",
+    size = "small",
+    srcs = ["deletion_diagnostics_test.py"],
     args = ["$(rlocationpath //xff/cli/testing:xff)"],
     data = ["//xff/cli/testing:xff"],
     deps = ["@rules_python//python/runfiles"],

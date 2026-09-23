@@ -172,3 +172,12 @@ Directory deletion follows [find's documented behavior](https://www.gnu.org/soft
 `-prune` has no effect during this depth-first traversal. Thus
 `xff . -type d -name foo -prune -delete` removes empty matched directories, but never
 recursively deletes unmatched contents.
+
+Local deletion failures include run-wide progress before that failure: successful regular-file,
+directory, other-entry and unknown-type deletion counts, plus the sum of known regular-file
+logical sizes observed immediately before deletion. Failed attempts, dry-run previews and
+queued archive rewrites do not count. Missing metadata leaves the successful deletion in the
+unknown-type count. These are path removals and observed logical bytes, not unique inode counts
+or reclaimed disk space: hard links, open handles, sparse files, snapshots, and concurrent
+changes can make actual disk-space recovery differ. The diagnostic retains the failing path
+and the original failure reason. Counts span all roots and do not imply rollback of earlier work.

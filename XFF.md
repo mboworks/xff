@@ -2375,7 +2375,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 <a id="primary-delete"></a>
 
 - `-delete` - delete the matched entry _(action, find, modifies the filesystem)_
-  Deletes the matched file or (empty) directory, and implies `-depth` so a directory's contents are visited before the directory itself. Only matched entries are removed; nonempty directories fail with an error. `-prune` cannot prevent descent when `-delete` implies `-depth`. Destructive, so it is guarded: `--dry-run` previews (prints what would be deleted, removes nothing) and `--safe` refuses risky targets. Example: `xff . -name '*.tmp' -delete`.
+  Deletes the matched file or (empty) directory, and implies `-depth` so a directory's contents are visited before the directory itself. Only matched entries are removed; nonempty directories fail with an error. Local deletion failures name the path and report earlier successful deletions and their known regular-file logical bytes, not disk space reclaimed. `-prune` cannot prevent descent when `-delete` implies `-depth`. Destructive, so it is guarded: `--dry-run` previews (prints what would be deleted, removes nothing) and `--safe` refuses risky targets. Example: `xff . -name '*.tmp' -delete`.
   See also: [Safety](#topic-safety), [Archives](#topic-archive)
 
 <a id="primary-prune"></a>
