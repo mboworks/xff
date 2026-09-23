@@ -147,6 +147,8 @@ policy (`--skip-unsupported` can skip them).
 
 Patch names are relative to each traversal root; a file operand uses its basename. Use
 noncolliding root-relative paths when combining roots. Unsafe path components are rejected.
+Archive members retain their virtual path spelling relative to the root (including the
+archive separator); applying such a patch creates ordinary files with those names, not a rebuilt archive.
 A target starting with `-` must use a path such as `./-target`, since a flag or expression
 operator after `-diff` starts the next expression component instead of supplying TARGET.
 This grammar is shared by command lines and INI expressions.
