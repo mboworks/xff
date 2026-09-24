@@ -1,0 +1,35 @@
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -45,6 +45,8 @@
+         "src/pcre2_compile.h",
+         "src/pcre2_internal.h",
+         "src/pcre2_intmodedep.h",
++        "src/pcre2_jit_char_inc.h",
++        "src/pcre2_jit_simd_inc.h",
+         "src/pcre2_jit_match_inc.h",
+         "src/pcre2_jit_misc_inc.h",
+         "src/pcre2_printint_inc.h",
+@@ -93,6 +95,10 @@
+         "src/pcre2_xclass.c",
+         ":pcre2_chartables_c",
+     ],
++    textual_hdrs = glob([
++        "deps/sljit/sljit_src/**/*.c",
++        "deps/sljit/sljit_src/**/*.h",
++    ]),
+     hdrs = [":pcre2_h_generic"],
+     implementation_deps = [":pcre2_internal_headers"],
+     defines = [
+@@ -100,7 +106,11 @@
+     ],
+     local_defines = LOCAL_DEFINES + [
+         "PCRE2_CODE_UNIT_WIDTH=8",
+-    ],
++    ] + select({
++        "@platforms//cpu:aarch64": ["SUPPORT_JIT"],
++        "@platforms//cpu:x86_64": ["SUPPORT_JIT"],
++        "//conditions:default": [],
++    }),
+     strip_include_prefix = "src",
+     linkstatic = True,
+     visibility = ["//visibility:public"],

@@ -111,8 +111,9 @@ without changing the measured child processes or relaxing correctness checks.
 
 ## PCRE2 JIT/SIMD verification and RE2 comparison
 
-Source baseline: `cb882b639a` (PR #910). This investigation measures existing production behavior;
-no regex engine, safety limit or release compiler option is changed.
+Source baseline: `cb882b639a` (PR #910). The baseline investigation below describes that revision.
+The JIT follow-up at the end records the implementation and measurements that supersede its
+capability findings; release compiler options and the default RE2 grammar remain unchanged.
 
 ### Verified capability and dispatch
 
@@ -247,3 +248,85 @@ these are informational samples rather than confidence-bounded throughput claims
    behavior explicitly before enabling it in production.
 4. Cover full matches, captures and rewrites as well as unanchored content matches. Treat
    match-data allocation reuse as a separate measured optimization, not part of a claimed JIT gain.
+
+### JIT implementation follow-up
+
+The PCRE2 extension enables upstream JIT for ARM64 and x86-64. Other architectures retain the
+interpreter. SLJIT is bundled in the pinned PCRE2 source; no additional module or shared library
+is introduced. The 33 SLJIT C/header files used by the build carry the BSD-2-Clause notice, already
+included in xff's full notices. PCRE2 remains BSD-3-Clause WITH PCRE2-exception. Neither GPL nor
+LGPL code is added. The ARM64 JIT includes upstream NEON scanning; x86 uses upstream SIMD support,
+without enabling its deliberately disabled AVX2 path or changing the portable compiler target.
+
+Eligible patterns compile JIT code eagerly. Full matching uses a second pattern compiled with
+both anchors, because match-time anchoring bypasses JIT. This preserves alternatives, directives,
+and capture numbering without textual pattern rewriting. The compiled patterns and context are
+immutable during matching; match data is invocation-local and the default 32 KiB JIT stack is
+thread-local machine-stack storage. No matching lock is added.
+
+Unsupported patterns, unsupported targets, and executable-memory allocation failures retain the
+interpreter. Explicit `(*LIMIT_DEPTH=...)` or `(*LIMIT_HEAP=...)` patterns stay interpreted because
+JIT does not enforce those limits. Both engines retain the configured match-work limit, though
+PCRE2 accounts work differently in JIT and interpreter execution. JIT stack exhaustion retries
+with the bounded interpreter, including substitutions. Other match errors retain existing
+no-match/unchanged-replacement behavior. RE2 remains the default and offers its existing
+linear-time guarantee; JIT does not make backtracking linear-time.
+
+Tests observe PCRE2's match-time JIT callback for partial matching, full matching, spans, captures,
+and rewriting. They also exercise `(*NO_JIT)`, explicit interpreter limits, match limits,
+backtracking alternatives, a large backtracking stack, and concurrent use of one backend.
+Production registration installs no callback. Direct LLVM coverage reports 164/164 backend lines
+and 55/58 branches covered. Local LLVM coverage confirms stack-limit retries
+for matching and rewriting. Coverage builds use atomic profile counters in this backend so the
+concurrent test does not corrupt counts. PCRE2 already carries MSan annotations; span lookup
+allocates the full capture vector to avoid its unannotated `rc == 0` case, and capture extraction
+does not read trailing nonparticipating offsets beyond the reported capture count.
+
+#### macOS ARM64 JIT measurements
+
+Measured on the same Apple M5 Pro / 64 GiB host with `clang_release` (O2 + ThinLTO), against
+`aebd53b799` plus this JIT implementation. Each result is the fastest seven of nine samples after
+one discarded warmup. Binary identity, fixture hashes, commands, and raw samples are retained in
+[the end-to-end report](measurements/pcre2-jit-macos-arm64.json). These are warm host-filesystem
+measurements, not verified tmpfs; workers on macOS are requested concurrency, not CPU affinity.
+
+| Engine            | Compile per pattern (us) | Match 1,000 subjects (ms) |
+| :---------------- | -----------------------: | ------------------------: |
+| PCRE2 interpreter |                     2.43 |                     38.30 |
+| PCRE2 JIT         |                    14.37 |                      5.25 |
+| RE2 control       |                    26.84 |                     28.74 |
+
+The JIT compile cost includes both search and anchored patterns. The in-memory fixture is one
+complex pattern over 1,000 reused 16 KiB subjects, half late matches and half near misses.
+[Interpreter raw samples](measurements/pcre2-jit-baseline-inmemory-macos-arm64.csv) and
+[JIT/control raw samples](measurements/pcre2-jit-inmemory-macos-arm64.csv) retain all rounds.
+
+| Files | Workers | Population | xff RE2 ms | xff PCRE2 ms | rg PCRE2 ms | PCRE2 / RE2 |
+| ----: | ------: | :--------- | ---------: | -----------: | ----------: | ----------: |
+|    10 |       1 | mixed      |      10.02 |         9.73 |        5.86 |        0.97 |
+|    10 |       4 | mixed      |      10.03 |         9.66 |        6.71 |        0.96 |
+|    10 |       1 | absent     |      10.01 |         9.72 |        5.71 |        0.97 |
+|    10 |       4 | absent     |      10.05 |         9.74 |        6.88 |        0.97 |
+|   100 |       1 | mixed      |      14.31 |        11.84 |        8.77 |        0.83 |
+|   100 |       4 | mixed      |      14.12 |        11.82 |        9.11 |        0.84 |
+|   100 |       1 | absent     |      14.17 |        11.82 |        8.22 |        0.83 |
+|   100 |       4 | absent     |      14.16 |        11.81 |        8.78 |        0.83 |
+|  1000 |       1 | mixed      |      54.67 |        31.00 |       37.17 |        0.57 |
+|  1000 |       4 | mixed      |      54.70 |        31.06 |       21.02 |        0.57 |
+|  1000 |       1 | absent     |      54.71 |        31.02 |       32.18 |        0.57 |
+|  1000 |       4 | absent     |      54.64 |        30.83 |       18.74 |        0.56 |
+| 10000 |       1 | mixed      |     482.34 |       242.55 |      342.48 |        0.50 |
+| 10000 |       4 | mixed      |     480.14 |       243.70 |      151.40 |        0.51 |
+| 10000 |       1 | absent     |     482.60 |       243.85 |      294.26 |        0.51 |
+| 10000 |       4 | absent     |     484.20 |       244.74 |      124.08 |        0.51 |
+
+At 10,000 files JIT roughly halves xff's elapsed time compared with RE2 for this pattern. It does
+not fix traversal/scheduling scaling: four requested workers provide little benefit here, while
+ripgrep benefits substantially. These results do not justify changing the default grammar or
+claiming PCRE2 is faster for every pattern.
+
+The stripped full macOS ARM64 binary grows from 6,251,328 to 6,648,288 bytes: **396,960 bytes
+(6.35%)**. Both builds use `strip -S -x`, the same compiler, optimization, and extension selection.
+Their dynamic-library dependency sets are identical. This size is measured before generated help
+updates and may change slightly with documentation-only edits. Linux/x86 performance and size
+remain to be measured independently.

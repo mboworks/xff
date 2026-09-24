@@ -22,6 +22,7 @@ exports_files([
     "extras.MODULE.bazel",
     "llvm.MODULE.bazel",
     "llvm-linker-msan.patch",
+    "pcre2-jit.patch",
     "utf8proc-bazel9.patch",
     "xz-callback-types.patch",
     "xz-crc64-bounds.patch",

@@ -20,13 +20,18 @@
 // Matcher-level routing (Grammar::kPcre2 -> this backend) is covered by //xff/cli:full_binary_test.
 // `manual` (it pulls @pcre2); run in the full CI cell.
 
+#include <array>
+#include <atomic>
 #include <memory>
 #include <optional>
+#include <string>
+#include <thread>
 
 #include "absl/status/status.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/status.h"
+#include "pcre2_backend_internal.h"
 #include "xff/license/notice.h"
 #include "xff/matching/regex/backend.h"
 
@@ -118,6 +123,17 @@ TEST_F(Pcre2BackendTest, FullMatchCapturesRepresentsANonParticipatingGroupAsEmpt
   EXPECT_THAT(backend->FullMatchCaptures("b"), Optional(ElementsAre("b", "")));
 }
 
+TEST_F(Pcre2BackendTest, InteriorNonParticipatingCapturesAreEmpty) {
+  ASSERT_OK_AND_ASSIGN(const auto backend, MakePcre2Backend("(a)?(b)", false));
+  EXPECT_THAT(backend->FullMatchCaptures("b"), Optional(ElementsAre("b", "", "b")));
+}
+
+TEST_F(Pcre2BackendTest, TrailingNonParticipatingCapturesAreEmpty) {
+  ASSERT_OK_AND_ASSIGN(const auto backend, MakePcre2Backend("(a)(b)?(c)?", false));
+  EXPECT_THAT(backend->FullMatchCaptures("a"), Optional(ElementsAre("a", "a", "", "")));
+  EXPECT_THAT(backend->FindFirst("xa"), Optional(Pair(Eq(1U), Eq(1U))));
+}
+
 TEST_F(Pcre2BackendTest, RewriteUsesRe2StyleBackrefs) {
   // The Rewrite contract is RE2 syntax (\1); the backend translates to PCRE2's $1 internally.
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<const RegexBackend> backend, MakePcre2Backend("(\\w+)@(\\w+)", false));
@@ -149,6 +165,108 @@ TEST_F(Pcre2BackendTest, CaseInsensitiveFolds) {
   EXPECT_THAT(folded->FullMatch("README"), IsTrue());
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<const RegexBackend> exact, MakePcre2Backend("readme", false));
   EXPECT_THAT(exact->FullMatch("README"), IsFalse());
+}
+
+TEST_F(Pcre2BackendTest, JitDispatchesAllBackendOperations) {
+#if !defined(__aarch64__) && !defined(__x86_64__)
+  GTEST_SKIP() << "This build uses the interpreter on architectures without enabled JIT.";
+#endif
+  std::size_t calls = 0;
+  ASSERT_OK_AND_ASSIGN(const auto backend, internal::CompilePcre2("(a+)", false, [&] { ++calls; }));
+  EXPECT_THAT(backend->PartialMatch("baaac"), IsTrue());
+  EXPECT_THAT(calls, Eq(1));
+  EXPECT_THAT(backend->FindFirst("baaac"), Optional(Pair(Eq(1U), Eq(3U))));
+  EXPECT_THAT(calls, Eq(2));
+  EXPECT_THAT(backend->FullMatch("aaa"), IsTrue());
+  EXPECT_THAT(calls, Eq(3));
+  EXPECT_THAT(backend->FullMatchCaptures("aaa"), Optional(ElementsAre("aaa", "aaa")));
+  EXPECT_THAT(calls, Eq(4));
+  EXPECT_THAT(backend->Rewrite("baaac", "<\\1>", false), Eq("b<aaa>c"));
+  EXPECT_THAT(calls, Eq(5));
+}
+
+TEST_F(Pcre2BackendTest, ExplicitInterpreterLimitsDoNotDispatchJit) {
+  constexpr auto kPatterns = std::to_array<std::string_view>({
+      "(*LIMIT_DEPTH=1000)(a+)",
+      "(*LIMIT_HEAP=1000)(a+)",
+      "(*NO_JIT)(a+)",
+  });
+  for (const auto pattern : kPatterns) {
+    SCOPED_TRACE(pattern);
+    std::size_t calls = 0;
+    ASSERT_OK_AND_ASSIGN(const auto backend, internal::CompilePcre2(pattern, false, [&] { ++calls; }));
+    EXPECT_THAT(backend->PartialMatch("baaac"), IsTrue());
+    EXPECT_THAT(backend->FullMatch("aaa"), IsTrue());
+    EXPECT_THAT(backend->FullMatchCaptures("aaa"), Optional(ElementsAre("aaa", "aaa")));
+    EXPECT_THAT(backend->Rewrite("aaa", "b", false), Eq("b"));
+    EXPECT_THAT(calls, Eq(0));
+  }
+}
+
+TEST_F(Pcre2BackendTest, LargeBacktrackingStackRetainsInterpreterMatches) {
+#if !defined(__aarch64__) && !defined(__x86_64__)
+  GTEST_SKIP() << "This build uses the interpreter on architectures without enabled JIT.";
+#endif
+  std::size_t calls = 0;
+  ASSERT_OK_AND_ASSIGN(const auto backend, internal::CompilePcre2("(a|b)+", false, [&] { ++calls; }));
+  const std::string subject(2'000, 'a');
+  EXPECT_THAT(backend->PartialMatch(subject), IsTrue());
+  EXPECT_THAT(backend->FullMatch(subject), IsTrue());
+  EXPECT_THAT(backend->FullMatchCaptures(subject), Optional(ElementsAre(subject, "a")));
+  EXPECT_THAT(backend->Rewrite(subject, "b", false), Eq("b"));
+  EXPECT_THAT(calls, Eq(4));
+}
+
+TEST_F(Pcre2BackendTest, ExplicitDepthLimitIsEnforced) {
+  ASSERT_OK_AND_ASSIGN(const auto backend, MakePcre2Backend("(*LIMIT_DEPTH=1)(a|b)+", false));
+  EXPECT_THAT(backend->PartialMatch("aaaa"), IsFalse());
+  EXPECT_THAT(backend->FullMatch("aaaa"), IsFalse());
+  EXPECT_THAT(backend->Rewrite("aaaa", "b", false), Eq("aaaa"));
+}
+
+TEST_F(Pcre2BackendTest, NoJitDirectiveKeepsAllOperationsAvailable) {
+  ASSERT_OK_AND_ASSIGN(const auto backend, MakePcre2Backend("(*NO_JIT)(a+)", false));
+  EXPECT_THAT(backend->PartialMatch("baaac"), IsTrue());
+  EXPECT_THAT(backend->FindFirst("baaac"), Optional(Pair(Eq(1U), Eq(3U))));
+  EXPECT_THAT(backend->FullMatch("aaa"), IsTrue());
+  EXPECT_THAT(backend->FullMatch("baaac"), IsFalse());
+  EXPECT_THAT(backend->FullMatchCaptures("aaa"), Optional(ElementsAre("aaa", "aaa")));
+  EXPECT_THAT(backend->Rewrite("baaac", "<\\1>", true), Eq("b<aaa>c"));
+}
+
+TEST_F(Pcre2BackendTest, FullMatchBacktracksAcrossAlternatives) {
+  ASSERT_OK_AND_ASSIGN(const auto backend, MakePcre2Backend("(a|ab)", false));
+  EXPECT_THAT(backend->FullMatch("ab"), IsTrue());
+  EXPECT_THAT(backend->FullMatchCaptures("ab"), Optional(ElementsAre("ab", "ab")));
+  EXPECT_THAT(backend->FindFirst("ab"), Optional(Pair(Eq(0U), Eq(1U))));
+}
+
+TEST_F(Pcre2BackendTest, PatternMatchLimitBoundsBacktracking) {
+  ASSERT_OK_AND_ASSIGN(const auto backend, MakePcre2Backend("(*LIMIT_MATCH=1)(a+)+$", false));
+  const std::string subject = std::string(100, 'a') + "!";
+  EXPECT_THAT(backend->PartialMatch(subject), IsFalse());
+  EXPECT_THAT(backend->FindFirst(subject), Eq(std::nullopt));
+  EXPECT_THAT(backend->FullMatchCaptures(subject), Eq(std::nullopt));
+  EXPECT_THAT(backend->Rewrite(subject, "replacement", true), Eq(subject));
+}
+
+TEST_F(Pcre2BackendTest, SharedPatternSupportsConcurrentMatching) {
+  ASSERT_OK_AND_ASSIGN(const auto backend, MakePcre2Backend("(a+)(b+)", false));
+  std::atomic<bool> correct{true};
+  {
+    std::array<std::jthread, 4> workers;
+    for (auto& worker : workers) {
+      worker = std::jthread([&] {
+        for (int iteration = 0; iteration < 100; ++iteration) {
+          if (!backend->PartialMatch("xaabby") || !backend->FullMatch("aabb") || backend->FullMatch("xaabby")
+              || backend->Rewrite("xaabby", "\\2\\1", false) != "xbbaay") {
+            correct.store(false);
+          }
+        }
+      });
+    }
+  }
+  EXPECT_THAT(correct.load(), IsTrue());
 }
 
 TEST_F(Pcre2BackendTest, InvalidPatternReturnsInvalidArgument) {
