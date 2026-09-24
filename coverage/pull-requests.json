@@ -3,13 +3,13 @@
     "number": 914,
     "state": "open",
     "merged_at": null,
-    "merge_commit_sha": "191de15a26fde6bc0a92efa8f43ed6d7a2e31679"
+    "merge_commit_sha": null
   },
   {
     "number": 913,
-    "state": "open",
-    "merged_at": null,
-    "merge_commit_sha": "a53123f220955caa68e52f21c339f18a5781f872"
+    "state": "closed",
+    "merged_at": "2026-09-24T22:06:37Z",
+    "merge_commit_sha": "709d085b833e7ee3f9fdeabec4939969b39cb560"
   },
   {
     "number": 912,
