@@ -60,6 +60,17 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
       for (const metric of ["percent", "factor"]) {
         await page.selectOption("#task-order", order);
         await page.selectOption("#metric", metric);
+        if (metric === "factor") {
+          assert.deepEqual(
+            await page
+              .locator(".landscape-legend-ticks span")
+              .allTextContents(),
+            await page.evaluate(
+              (order) => figures[order].factor.layout.scene.yaxis.ticktext,
+              order,
+            ),
+          );
+        }
         const point = await page.evaluate(() => {
           const root = document.getElementById("landscape");
           for (let y = 100; y < root.clientHeight - 100; y += 12) {

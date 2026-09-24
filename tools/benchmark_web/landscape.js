@@ -357,20 +357,38 @@ window.XffLandscape = function createLandscape(root, figures) {
     const title = document.createElement("div");
     title.textContent = axes.yaxis.title.text;
     const bar = document.createElement("div");
-    bar.style.cssText = `width:260px;max-width:100%;height:12px;margin:4px 0;background:linear-gradient(to right,${colors.colorscale.map(([value, color]) => `${color} ${value * 100}%`).join(",")})`;
+    // Sample the same percentage palette along the displayed vertical coordinate.
+    // Logarithmic heights are uniformly spaced here, just as on the vertical axis.
+    const gradient = Array.from({ length: 101 }, (_, index) => {
+      const height = -ymax + (index / 100) * 2 * ymax;
+      const percent = metric === "factor" ? 100 * (1 - 10 ** -height) : height;
+      const u = Math.max(
+        0,
+        Math.min(1, (percent - colors.cmin) / (colors.cmax - colors.cmin)),
+      );
+      const stops = colors.colorscale;
+      const upper = stops.findIndex((stop) => stop[0] >= u);
+      let color = new THREE.Color(stops[0][1]);
+      if (upper > 0) {
+        const [start, from] = stops[upper - 1],
+          [end, to] = stops[upper];
+        color = new THREE.Color(from).lerp(
+          new THREE.Color(to),
+          (u - start) / (end - start),
+        );
+      }
+      return `#${color.getHexString()} ${index}%`;
+    });
+    bar.style.cssText = `width:320px;max-width:100%;height:12px;margin:4px 0;background:linear-gradient(to right,${gradient.join(",")})`;
     const scale = document.createElement("div");
-    const colorTicks = colors.colorbar.tickvals || [
-      colors.cmin,
-      0,
-      colors.cmax,
-    ];
+    scale.className = "landscape-legend-ticks";
     scale.style.cssText =
-      "position:relative;height:18px;width:260px;max-width:100%";
-    colorTicks.forEach((value, index) => {
+      "position:relative;height:18px;width:320px;max-width:100%";
+    ticks.forEach((value, index) => {
       const tick = document.createElement("span");
       tick.textContent =
-        colors.colorbar.ticktext?.[index] ?? `${Number(value.toFixed(1))}%`;
-      tick.style.cssText = `position:absolute;left:${((value - colors.cmin) / (colors.cmax - colors.cmin)) * 100}%;transform:translateX(-50%)`;
+        axes.yaxis.ticktext?.[index] ?? `${Number(value.toFixed(1))}%`;
+      tick.style.cssText = `position:absolute;left:${((value + ymax) / (2 * ymax)) * 100}%;transform:translateX(-50%)`;
       scale.append(tick);
     });
     legend.append(title, bar, scale);
