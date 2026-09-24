@@ -1,0 +1,79 @@
+{
+  "status": "exploratory prototype, not feature-complete",
+  "platform": "macOS ARM64; Apple M5 Pro; Chrome ANGLE Metal",
+  "report_run": 35794381777,
+  "report_attempt": 1,
+  "points": 468,
+  "viewport": [1200, 900],
+  "device_pixel_ratio": 1,
+  "versions": {
+    "three": "0.186.1",
+    "playwright": "1.63.0",
+    "esbuild": "0.28.2"
+  },
+  "method": "Four alternating-order rounds; new browser context per page; localhost assets with no-store; shared browser/GPU process. Round zero is first use, subsequent rounds may reuse driver caches. Three.js explicitly waits for GPU completion; Plotly awaits its update promise and another animation frame.",
+  "samples": [
+    {
+      "round": 0,
+      "tool": "plotly",
+      "startup_ms": 1125.8999998569489,
+      "changes_ms": [
+        260.59999990463257, 125.59999990463257, 116.60000014305115
+      ],
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+    },
+    {
+      "round": 0,
+      "tool": "three",
+      "startup_ms": 173.29999995231628,
+      "changes_ms": [18.299999952316284, 32.5, 32.5],
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+    },
+    {
+      "round": 1,
+      "tool": "three",
+      "startup_ms": 67.10000014305115,
+      "changes_ms": [28.700000047683716, 32.700000047683716, 32.5],
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+    },
+    {
+      "round": 1,
+      "tool": "plotly",
+      "startup_ms": 1062.5,
+      "changes_ms": [
+        231.19999980926514, 117.29999995231628, 111.20000004768372
+      ],
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+    },
+    {
+      "round": 2,
+      "tool": "plotly",
+      "startup_ms": 1054.5,
+      "changes_ms": [231.90000009536743, 112, 108.70000004768372],
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+    },
+    {
+      "round": 2,
+      "tool": "three",
+      "startup_ms": 65.09999990463257,
+      "changes_ms": [18.799999952316284, 32.59999990463257, 31.799999952316284],
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+    },
+    {
+      "round": 3,
+      "tool": "three",
+      "startup_ms": 63.10000014305115,
+      "changes_ms": [23.100000143051147, 33.200000047683716, 32.5],
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+    },
+    {
+      "round": 3,
+      "tool": "plotly",
+      "startup_ms": 1065.2999999523163,
+      "changes_ms": [
+        231.40000009536743, 111.69999980926514, 111.29999995231628
+      ],
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)"
+    }
+  ]
+}

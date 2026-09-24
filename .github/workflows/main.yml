@@ -33,6 +33,16 @@ jobs:
       - uses: bazel-contrib/setup-bazel@0.19.0
       - name: Check live repository tooling
         run: bazel run //tools:repository_tooling_test
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - name: Test benchmark renderer in Chromium
+        working-directory: tools/benchmark_web
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build
+          npx playwright install --with-deps chromium
+          npm test
       - name: Verify configured documentation and generated links
         env:
           GH_TOKEN: ${{ github.token }}

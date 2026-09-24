@@ -7,7 +7,6 @@ import json
 import math
 from pathlib import Path
 import tempfile
-from unittest import mock
 import unittest
 
 import benchmark_landscape as landscape
@@ -143,17 +142,6 @@ class BenchmarkLandscapeTest(unittest.TestCase):
         self.assertTrue(all(text.endswith('\u00a0' * 3) for text in scene['zaxis']['ticktext']))
         self.assertNotIn('annotations', scene)
 
-    def test_renderer_adapter_rejects_unknown_or_already_modified_bundle(self):
-        with self.assertRaisesRegex(ValueError, 'unsupported Plotly bundle'):
-            landscape.padded_plotly('// unknown bundle')
-        original = ('var O=y(F,P,D,L,I,B);return C(O,R,L);'
-                    'var j=0;switch(R){case"center":j=-.5*(I[0]+B[0]);')
-        patched = landscape.padded_plotly(original)
-        self.assertIn('P.measureText(D).width', patched)
-        self.assertIn('I[0]=P;B[0]=P+F.xffAdvanceWidth', patched)
-        with self.assertRaisesRegex(ValueError, 'unsupported Plotly bundle'):
-            landscape.padded_plotly(patched)
-
     def test_publication_precedes_tables_preserves_data_and_is_idempotent(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -168,19 +156,18 @@ class BenchmarkLandscapeTest(unittest.TestCase):
             legacy.mkdir(parents=True)
             (legacy / 'report.json').write_text('{}')
             (legacy / 'index.html').write_text('Legacy untouched')
-            with mock.patch.object(landscape, 'padded_plotly', return_value='/* plotting asset */'):
-                self.assertEqual(landscape.publish(root, 'bundle'), 1)
-                first = page.read_text()
-                self.assertLess(first.index('Comparison landscape'), first.index('<table>'))
-                self.assertIn('src="../../../../assets/plotly-landscape.js"', first)
-                self.assertIn('<table>Original</table>', first)
-                self.assertIn('<details id="landscape-panel" open>', first)
-                self.assertLess(first.index('</details>'), first.index('<table>'))
-                self.assertEqual(landscape.publish(root, 'bundle'), 1)
-                self.assertEqual(first, page.read_text())
+            self.assertEqual(landscape.publish(root, '/* plotting asset */'), 1)
+            first = page.read_text()
+            self.assertLess(first.index('Comparison landscape'), first.index('<table>'))
+            self.assertIn('src="../../../../assets/three-landscape.js"', first)
+            self.assertIn('<table>Original</table>', first)
+            self.assertIn('<details id="landscape-panel" open>', first)
+            self.assertLess(first.index('</details>'), first.index('<table>'))
+            self.assertEqual(landscape.publish(root, '/* plotting asset */'), 1)
+            self.assertEqual(first, page.read_text())
             self.assertEqual(data.read_bytes(), original)
             self.assertEqual((legacy / 'index.html').read_text(), 'Legacy untouched')
-            self.assertEqual((root / 'assets/plotly-landscape.js').read_text(), '/* plotting asset */')
+            self.assertEqual((root / 'assets/three-landscape.js').read_text(), '/* plotting asset */')
 
     def test_hover_cells_match_ticks_after_every_reordering(self):
         for mode in landscape.ORDER_LABELS:
@@ -223,7 +210,7 @@ class BenchmarkLandscapeTest(unittest.TestCase):
         self.assertGreater(text.index('<h3>xff/reference ratios'), end)
         self.assertIn('<details id="landscape-panel" open>', text)
         self.assertIn('</details><h2>Measurements</h2>', text)
-        self.assertIn('Plotly.Plots.resize', text)
+        self.assertIn('chart.resize', text)
         self.assertIn('Scale: <select', text)
         self.assertIn('>Percentage</option>', text)
         self.assertIn('>Logarithmic</option>', text)
