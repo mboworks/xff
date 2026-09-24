@@ -3847,18 +3847,18 @@ struct CollectionShardPolicy {
 
 struct CollectedShardDirectory {
   std::vector<shard::ShardFile> shards;
-  std::map<std::string_view, std::reference_wrapper<const CollectedEntry>> by_name;
-  std::vector<std::reference_wrapper<const CollectedEntry>> passthrough;
+  std::map<std::string_view, std::reference_wrapper<const Collections::Entry>> by_name;
+  std::vector<std::reference_wrapper<const Collections::Entry>> passthrough;
 };
 
 // Views borrow the collection's stable storage until its post-walk reduction finishes.
 std::map<std::string, CollectedShardDirectory> GroupCollectedDirectories(
-    const std::vector<CollectedEntry>& entries,
+    const Collections::EntriesType& entries,
     const CollectionShardPolicy& policy) {
   std::map<std::string, CollectedShardDirectory> groups;
-  for (const CollectedEntry& entry : entries) {
+  for (const Collections::Entry& entry : entries) {
     const auto slash = entry.path.rfind('/');
-    auto& group = groups[slash == std::string::npos ? "" : entry.path.substr(0, slash + 1)];
+    auto& group = groups[std::string(slash == std::string_view::npos ? "" : entry.path.substr(0, slash + 1))];
     const auto match = policy.matcher.Decode(entry.name);
     const bool selected = match.has_value()
                           && (match->scheme == shard::Scheme::kCustom || policy.config.schemes.empty()
@@ -3880,7 +3880,7 @@ std::map<std::string, CollectedShardDirectory> GroupCollectedDirectories(
 
 template<typename Feed>
 int FeedCollectedShards(
-    const std::vector<CollectedEntry>& entries,
+    const Collections::EntriesType& entries,
     const CollectionShardPolicy& policy,
     const Feed& feed) {
   int errors = 0;
@@ -3889,7 +3889,7 @@ int FeedCollectedShards(
       if (policy.dedup == shard::Dedup::kError) {
         errors += ReportShardDuplicateErrors(set, prefix);
       }
-      CollectedEntry unit = group.by_name.at(ShardRepresentativePath(set)).get();
+      Collections::Entry unit = group.by_name.at(ShardRepresentativePath(set)).get();
       unit.metadata.size = set.total_size;
       feed(unit, static_cast<std::int64_t>(set.members.size()));
     }
@@ -3911,7 +3911,7 @@ int FeedCollections(
     const std::vector<HistogramSpec>& histograms,
     std::vector<std::map<std::string, HistCell>>& histogram_cells,
     const CollectionShardPolicy& shards) {
-  const auto feed = [&](const CollectedEntry& collected, std::optional<std::int64_t> shard_count) {
+  const auto feed = [&](const Collections::Entry& collected, std::optional<std::int64_t> shard_count) {
     const Visit visit = collected.AsVisit();
     const vfs::FileSystem& fs = visit.fs.has_value() ? *visit.fs : defaults.fs;
     const std::string link;  // {target} is not resolved for a collected entry
@@ -3939,7 +3939,7 @@ int FeedCollections(
     if (shards.config.enabled) {
       errors += FeedCollectedShards(entries, shards, feed);
     } else {
-      for (const CollectedEntry& entry : entries) {
+      for (const Collections::Entry& entry : entries) {
         feed(entry, std::nullopt);
       }
     }

@@ -15,8 +15,10 @@
 
 #include "xff/engine/collect.h"
 
+#include <cstddef>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -71,7 +73,7 @@ TEST_F(CollectTest, AddStoresUnderTheNamedCollection) {
   }
   EXPECT_THAT(collections.Names(), ElementsAre("keep"));
   ASSERT_THAT(collections.Entries("keep"), SizeIs(1));
-  const CollectedEntry& entry = collections.Entries("keep").front();
+  const Collections::Entry& entry = collections.Entries("keep").front();
   EXPECT_THAT(entry.path, Eq("./a/b.txt"));
   EXPECT_THAT(entry.name, Eq("b.txt"));
   EXPECT_THAT(entry.root, Eq("."));
@@ -165,6 +167,42 @@ TEST_F(CollectTest, OverflowStaysStickyForTheRestOfTheWalk) {
   EXPECT_THAT(collections.Add("all", MakeVisit("./b", "b", ".", md)), IsFalse());
   EXPECT_THAT(collections.Add("all", MakeVisit("./c", "c", ".", md)), IsFalse());
   EXPECT_THAT(collections.Overflowed(), IsTrue());
+}
+
+TEST_F(CollectTest, StoredVisitSurvivesSegmentAndArenaGrowthAndMove) {
+  const vfs::Metadata metadata{.type = vfs::FileType::kRegular, .size = 73};
+  Collections collections;
+  EXPECT_THAT(collections.Add("first", MakeVisit("first/path", "path", "first", metadata)), IsTrue());
+  const Visit retained = collections.Entries("first").front().AsVisit();
+  for (std::size_t index = 0; index < 1'025; ++index) {
+    const std::string path = std::string(150, 'p') + std::to_string(index);
+    EXPECT_THAT(collections.Add("first", MakeVisit(path, "name", "root", metadata)), IsTrue());
+    EXPECT_THAT(collections.Add(std::to_string(index), MakeVisit(path, "name", "root", metadata)), IsTrue());
+  }
+  Collections moved = std::move(collections);
+  EXPECT_THAT(retained.path, Eq("first/path"));
+  EXPECT_THAT(retained.name, Eq("path"));
+  EXPECT_THAT(retained.root, Eq("first"));
+  EXPECT_THAT(retained.metadata.size, Eq(73));
+  EXPECT_THAT(moved.Entries("first"), SizeIs(1'026));
+  EXPECT_THAT(moved.Entries("first").back().path, Eq(std::string(150, 'p') + "1024"));
+  Collections assigned;
+  EXPECT_THAT(assigned.Add("old", MakeVisit("old", "old", "", metadata)), IsTrue());
+  assigned = std::move(moved);
+  EXPECT_THAT(assigned.Entries("old"), IsEmpty());
+  EXPECT_THAT(assigned.Entries("first"), SizeIs(1'026));
+  EXPECT_THAT(retained.metadata.size, Eq(73));
+}
+
+TEST_F(CollectTest, ArenaTextPreservesEmptyAndLengthDelimitedValues) {
+  const vfs::Metadata metadata{.type = vfs::FileType::kRegular};
+  Collections collections;
+  const std::string name("a\0b", 3);
+  EXPECT_THAT(collections.Add("", MakeVisit("", name, "", metadata)), IsTrue());
+  const Visit visit = collections.Entries("").front().AsVisit();
+  EXPECT_THAT(visit.path, IsEmpty());
+  EXPECT_THAT(visit.name, Eq(name));
+  EXPECT_THAT(visit.root, IsEmpty());
 }
 
 testing::Matcher<CollectSite> SiteIs(std::string_view name, bool override_name) {

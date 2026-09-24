@@ -16,6 +16,7 @@
 #include "xff/engine/collect.h"
 
 #include <cstddef>
+#include <cstring>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -48,17 +49,14 @@ void AppendCollectSites(const parser::Expr& expr, std::vector<CollectSite>& site
 
 }  // namespace
 
-Visit CollectedEntry::AsVisit() const {
-  return Visit{
-      .path = path,
-      .name = name,
-      .root = root,
-      .depth = depth,
-      .metadata = metadata,
-      .fs = fs,
-      .fs_owner = fs_owner,
-      .root_index = root_index,
-  };
+// XFF_ABI_POINTER: MBO's byte Arena and memcpy return raw storage; expose only an owned-lifetime view.
+std::string_view Collections::CopyText(std::string_view text) {
+  if (text.empty()) {
+    return {};
+  }
+  return {
+      static_cast<const char*>(std::memcpy(text_.Allocate(text.size(), alignof(char)), text.data(), text.size())),
+      text.size()};
 }
 
 bool Collections::Add(std::string_view name, const Visit& visit) {
@@ -70,10 +68,10 @@ bool Collections::Add(std::string_view name, const Visit& visit) {
   rows_ += 1;
   bytes_ += entry_bytes;
   by_name_[std::string(name)].push_back(
-      CollectedEntry{
-          .path = std::string(visit.path),
-          .name = std::string(visit.name),
-          .root = std::string(visit.root),
+      Entry{
+          .path = CopyText(visit.path),
+          .name = CopyText(visit.name),
+          .root = CopyText(visit.root),
           .depth = visit.depth,
           .metadata = visit.metadata,
           .fs = visit.fs,
@@ -83,8 +81,8 @@ bool Collections::Add(std::string_view name, const Visit& visit) {
   return true;
 }
 
-const std::vector<CollectedEntry>& Collections::Entries(std::string_view name) const {
-  static const std::vector<CollectedEntry> kEmpty;
+const Collections::EntriesType& Collections::Entries(std::string_view name) const {
+  static const EntriesType kEmpty;
   const auto it = by_name_.find(name);
   return it == by_name_.end() ? kEmpty : it->second;
 }

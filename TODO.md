@@ -13,6 +13,11 @@
 
 ## Performance optimization follow-up
 
+- [x] Evaluate MBO SegmentedSequence and Arena at pinned Git head; adopt measured collection storage
+      improvements with lifetime tests and allocation/memory tradeoffs in `docs/performance-analysis.md`.
+- [ ] Confirm collection storage gains on native Linux and in traversal-inclusive workloads; measure
+      deferred result candidates, listing API changes and matcher-buffer reuse before extending adoption.
+
 - [ ] Profile optimized production binaries across 10/100/1,000/10,000-file broad and deep trees;
       separate startup/configuration, traversal/metadata, matching, and output costs. Run both one- and
       four-CPU allocations on verified tmpfs storage.

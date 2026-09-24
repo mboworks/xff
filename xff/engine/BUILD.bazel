@@ -83,6 +83,8 @@ cc_library(
         "//xff/parser:parser_cc",
         "//xff/vfs:vfs_cc",
         "@abseil-cpp//absl/container:btree",
+        "@mboworks_mbo//mbo/container:segmented_sequence_cc",
+        "@mboworks_mbo//mbo/memory:arena_cc",
     ],
 )
 
@@ -505,4 +507,15 @@ py_test(
     args = ["$(rlocationpath //xff/cli/testing:xff)"],
     data = ["//xff/cli/testing:xff"],
     deps = ["@rules_python//python/runfiles"],
+)
+
+cc_binary(
+    name = "collect_benchmark",
+    srcs = ["collect_benchmark.cc"],
+    deps = [
+        ":collect_cc",
+        ":walk_cc",
+        "//xff/vfs:vfs_cc",
+        "@com_github_google_benchmark//:benchmark",
+    ],
 )

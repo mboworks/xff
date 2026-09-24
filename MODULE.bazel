@@ -71,5 +71,11 @@ local_path_override(
 )
 
 bazel_dep(name = "mboworks_mbo", version = "0.15.0")
+# Stable append storage and byte arenas; pin the evaluated MBO implementation.
+git_override(
+    module_name = "mboworks_mbo",
+    commit = "ac4c11113de868b27226c0fe74028f818dc6b4b8",
+    remote = "https://github.com/mboworks/mbo.git",
+)
 bazel_dep(name = "nlohmann_json", version = "3.12.0.bcr.2")
 bazel_dep(name = "mboworks_bashtest", version = "0.6.1")
