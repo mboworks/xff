@@ -27,6 +27,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -39,8 +40,10 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "pcre2_backend_internal.h"
 #include "xff/matching/regex/backend.h"
 
+namespace xff::regex {
 namespace {
 
 // ReDoS guards: PCRE2 (unlike RE2) can backtrack, so cap the match compute and recursion depth so
@@ -103,19 +106,34 @@ using MatchDataPtr = std::unique_ptr<pcre2_match_data, MatchDataDeleter>;
 // so matching is thread-safe as the RegexBackend contract requires.
 class Pcre2Backend final : public xff::regex::RegexBackend {
  public:
-  Pcre2Backend(CodePtr code, MatchContextPtr match_context, std::uint32_t capture_count)
-      : code_(std::move(code)), match_context_(std::move(match_context)), capture_count_(capture_count) {}
+  Pcre2Backend(
+      CodePtr code,
+      CodePtr full_code,
+      MatchContextPtr match_context,
+      std::uint32_t capture_count,
+      std::function<void()> jit_observer)
+      : code_(std::move(code)),
+        full_code_(std::move(full_code)),
+        match_context_(std::move(match_context)),
+        capture_count_(capture_count),
+        jit_observer_(std::move(jit_observer)) {
+    if (jit_observer_) {
+      pcre2_jit_stack_assign(match_context_.get(), &ObserveJit, &jit_observer_);
+    }
+  }
 
   bool FullMatch(std::string_view text) const override {
     // Anchored at both ends: the pattern must match the entire subject (RE2::FullMatch semantics).
-    return Matches(text, PCRE2_ANCHORED | PCRE2_ENDANCHORED);
+    return Matches(text, true);
   }
 
-  bool PartialMatch(std::string_view text) const override { return Matches(text, 0); }
+  bool PartialMatch(std::string_view text) const override { return Matches(text, false); }
 
   std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text) const override {
-    const MatchDataPtr data{pcre2_match_data_create(1, nullptr)};  // one pair: the whole match
-    const int rc = pcre2_match(code_.get(), Sptr(text), text.size(), 0, 0, data.get(), match_context_.get());
+    // Keep the complete capture vector: PCRE2's MSan annotation does not
+    // unpoison offsets when an undersized vector reports success as rc == 0.
+    const MatchDataPtr data{pcre2_match_data_create_from_pattern(code_.get(), nullptr)};
+    const int rc = Match(*code_, text, 0, *data);
     std::optional<std::pair<std::size_t, std::size_t>> result;
     if (rc >= 0) {
       // A span rather than the bare pointer PCRE2 hands back: the offsets are then indexed, which is
@@ -128,14 +146,17 @@ class Pcre2Backend final : public xff::regex::RegexBackend {
 
   std::optional<std::vector<std::string>> FullMatchCaptures(std::string_view text) const override {
     const MatchDataPtr data{pcre2_match_data_create_from_pattern(code_.get(), nullptr)};
-    const int rc = pcre2_match(
-        code_.get(), Sptr(text), text.size(), 0, PCRE2_ANCHORED | PCRE2_ENDANCHORED, data.get(), match_context_.get());
+    const int rc = Match(FullCode(), text, FullOptions(), *data);
     std::optional<std::vector<std::string>> result;
     if (rc >= 0) {
       const absl::Span<const PCRE2_SIZE> ovector = Ovector(*data, capture_count_ + 1);
       std::vector<std::string> captures;
       captures.reserve(capture_count_ + 1);
       for (std::size_t group = 0; group <= capture_count_; ++group) {  // [0] = whole match, [1..] = groups
+        if (std::cmp_greater_equal(group, rc)) {
+          captures.emplace_back();  // Trailing groups did not participate; no offset read is needed.
+          continue;
+        }
         const PCRE2_SIZE start = ovector[2 * group];
         const PCRE2_SIZE end = ovector[(2 * group) + 1];
         if (start == PCRE2_UNSET) {
@@ -172,16 +193,37 @@ class Pcre2Backend final : public xff::regex::RegexBackend {
   }
 
  private:
+  // XFF_ABI_POINTER: PCRE2's JIT stack callback ABI uses an opaque context and nullable stack result.
+  static pcre2_jit_stack* ObserveJit(void* context) {
+    // XFF_ABI_POINTER: recover the observer passed through PCRE2's opaque callback context.
+    const auto* observer = static_cast<const std::function<void()>*>(context);
+    (*observer)();
+    return nullptr;  // Use PCRE2's default per-thread machine-stack storage.
+  }
+
   // PCRE2's ovector as a span of `pairs` start/end offsets, so callers index it instead of walking a
   // raw pointer. `pairs` is what the match data was created for, which is what bounds the array.
   static absl::Span<const PCRE2_SIZE> Ovector(pcre2_match_data& data, std::size_t pairs) {
     return absl::MakeConstSpan(pcre2_get_ovector_pointer(&data), 2 * pairs);
   }
 
-  bool Matches(std::string_view text, std::uint32_t options) const {
+  const pcre2_code& FullCode() const { return full_code_ ? *full_code_ : *code_; }
+
+  std::uint32_t FullOptions() const { return full_code_ ? 0 : PCRE2_ANCHORED | PCRE2_ENDANCHORED; }
+
+  int Match(const pcre2_code& code, std::string_view text, std::uint32_t options, pcre2_match_data& data) const {
+    const int result = pcre2_match(&code, Sptr(text), text.size(), 0, options, &data, match_context_.get());
+    if (result != PCRE2_ERROR_JIT_STACKLIMIT) {
+      return result;
+    }
+    // A pattern may outgrow the default JIT stack while remaining within the
+    // interpreter's limits. Retry with those limits rather than losing a match.
+    return pcre2_match(&code, Sptr(text), text.size(), 0, options | PCRE2_NO_JIT, &data, match_context_.get());
+  }
+
+  bool Matches(std::string_view text, bool full) const {
     const MatchDataPtr data{pcre2_match_data_create(1, nullptr)};
-    const int rc = pcre2_match(code_.get(), Sptr(text), text.size(), 0, options, data.get(), match_context_.get());
-    return rc >= 0;
+    return Match(full ? FullCode() : std::as_const(*code_), text, full ? FullOptions() : 0, *data) >= 0;
   }
 
   int Substitute(
@@ -191,22 +233,34 @@ class Pcre2Backend final : public xff::regex::RegexBackend {
       pcre2_match_data& data,
       std::vector<PCRE2_UCHAR>& out,
       PCRE2_SIZE& out_len) const {
-    return pcre2_substitute(
+    const int result = pcre2_substitute(
         code_.get(), Sptr(text), text.size(), 0, options, &data, match_context_.get(), Sptr(replacement),
+        replacement.size(), out.data(), &out_len);
+    if (result != PCRE2_ERROR_JIT_STACKLIMIT) {
+      return result;
+    }
+    out_len = out.size();
+    return pcre2_substitute(
+        code_.get(), Sptr(text), text.size(), 0, options | PCRE2_NO_JIT, &data, match_context_.get(), Sptr(replacement),
         replacement.size(), out.data(), &out_len);
   }
 
   CodePtr code_;
+  CodePtr full_code_;
   MatchContextPtr match_context_;
   std::uint32_t capture_count_;
+  std::function<void()> jit_observer_;
 };
+
+}  // namespace
 
 // The factory registered with xff/matching/regex: compiles `pattern` into a Pcre2Backend, or an
 // InvalidArgument carrying PCRE2's diagnostic. Byte mode (no PCRE2_UTF) so arbitrary file bytes
 // never trip UTF-8 validation; PCRE2_CASELESS folds case.
-absl::StatusOr<std::unique_ptr<const xff::regex::RegexBackend>> CompilePcre2(
+absl::StatusOr<std::unique_ptr<const RegexBackend>> internal::CompilePcre2(
     std::string_view pattern,
-    bool case_insensitive) {
+    bool case_insensitive,
+    std::function<void()> jit_observer) {
   std::uint32_t options = 0;
   if (case_insensitive) {
     options |= PCRE2_CASELESS;
@@ -223,15 +277,41 @@ absl::StatusOr<std::unique_ptr<const xff::regex::RegexBackend>> CompilePcre2(
         length > 0 ? std::string(buffer.begin(), std::next(buffer.begin(), length)) : std::string("unknown error");
     return absl::InvalidArgumentError(absl::StrCat("invalid PCRE2 pattern at offset ", error_offset, ": ", message));
   }
+  // JIT does not enforce interpreter depth/heap limits. Preserve explicit pattern
+  // limits by leaving those patterns interpreted; normal JIT execution has a
+  // bounded per-thread stack and the same configured match-work limit.
+  CodePtr full_code;
+  std::uint32_t pattern_limit = 0;
+  if (pcre2_pattern_info(code.get(), PCRE2_INFO_DEPTHLIMIT, &pattern_limit) != 0
+      && pcre2_pattern_info(code.get(), PCRE2_INFO_HEAPLIMIT, &pattern_limit) != 0) {
+    // Unsupported patterns/platforms and denied executable memory automatically
+    // retain the interpreter. PCRE2's default JIT stack is per-thread.
+    static_cast<void>(pcre2_jit_compile(code.get(), PCRE2_JIT_COMPLETE));
+    std::size_t jit_size = 0;
+    pcre2_pattern_info(code.get(), PCRE2_INFO_JITSIZE, &jit_size);
+    if (jit_size != 0) {
+      // Match-time anchoring disables JIT. Compile-time anchoring preserves
+      // backtracking and capture numbering without rewriting the pattern.
+      full_code.reset(pcre2_compile(
+          Sptr(pattern), pattern.size(), options | PCRE2_ANCHORED | PCRE2_ENDANCHORED, &error_code, &error_offset,
+          nullptr));
+      if (full_code) {
+        static_cast<void>(pcre2_jit_compile(full_code.get(), PCRE2_JIT_COMPLETE));
+      }
+    }
+  }
   MatchContextPtr match_context{pcre2_match_context_create(nullptr)};
   pcre2_set_match_limit(match_context.get(), kMatchLimit);
   pcre2_set_depth_limit(match_context.get(), kDepthLimit);
   std::uint32_t capture_count = 0;
   pcre2_pattern_info(code.get(), PCRE2_INFO_CAPTURECOUNT, &capture_count);
-  return std::make_unique<Pcre2Backend>(std::move(code), std::move(match_context), capture_count);
+  return std::make_unique<Pcre2Backend>(
+      std::move(code), std::move(full_code), std::move(match_context), capture_count, std::move(jit_observer));
 }
 
 // Self-registration (alwayslink keeps this TU): the factory makes the PCRE2 grammar available.
-const xff::regex::Pcre2Registrar kRegisterPcre2Backend{&CompilePcre2};
-
+namespace {
+const Pcre2Registrar kRegisterPcre2Backend{
+    [](std::string_view pattern, bool case_insensitive) { return internal::CompilePcre2(pattern, case_insensitive); }};
 }  // namespace
+}  // namespace xff::regex

@@ -477,7 +477,9 @@ absl::Span<const std::pair<std::string_view, std::string_view>> GrammarDocs() {
       {"PCRE2",
        "Perl-Compatible Regular Expressions (lookaround, backreferences, ...). A build-time extra: "
        "present only in a full build - run `xff --help=extras` to see whether THIS binary has it. Full "
-       "syntax: pcre2pattern(3)."},
+       "syntax: pcre2pattern(3). Eligible patterns use JIT on ARM64 and x86-64, with interpreter "
+       "fallback when JIT is unavailable. Explicit pattern depth/heap limits keep interpreter "
+       "execution; matching remains resource-bounded. RE2 remains the default grammar."},
       {"RE2",
        "the default. Google RE2 regular expressions - linear-time, no catastrophic backtracking. "
        "Full syntax: https://github.com/google/re2/wiki/Syntax ."},

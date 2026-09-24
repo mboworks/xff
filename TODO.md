@@ -32,8 +32,15 @@
 - [x] Add correctness-checked RE2/PCRE2/rg-PCRE2 end-to-end workloads and a separate in-memory
       production-backend benchmark; retain compile and matching measurements separately.
 - [ ] Repeat on native Linux/x86 with verified tmpfs storage and CPU affinity.
-- [ ] Prototype PCRE2 JIT with explicit dispatch verification, fallback and resource-limit tests;
-      measure gains and startup cost before promoting it. See `docs/performance-analysis.md`.
+- [x] Enable PCRE2 JIT with explicit dispatch verification, fallback and resource-limit tests;
+      retain measured gains, startup cost, and binary size in `docs/performance-analysis.md`.
+
+## Benchmark visualization follow-up
+
+- [ ] Compare a Three.js landscape prototype against the current Plotly renderer using the same
+      benchmark JSON. Measure load/render time, interaction latency, and download size; verify
+      task ordering, tick labels, hover accuracy, colors, metric switching, and accessibility.
+      Complete the PCRE2 JIT follow-up first.
 
 ## Benchmark publication follow-up
 

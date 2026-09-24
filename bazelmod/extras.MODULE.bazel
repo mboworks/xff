@@ -109,3 +109,11 @@ single_version_override(
         "//bazelmod:xz-crc64-bounds.patch",
     ],
 )
+
+# The registry package currently builds only the interpreter. Keep JIT conditional
+# on supported release architectures; other targets retain the interpreter.
+single_version_override(
+    module_name = "pcre2",
+    patch_strip = 1,
+    patches = ["//bazelmod:pcre2-jit.patch"],
+)

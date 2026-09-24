@@ -43,6 +43,12 @@ cc_library(
     alwayslink = True,
 )
 
+# Concurrent backend tests must not race the profiling counters themselves.
+config_setting(
+    name = "coverage_enabled",
+    values = {"collect_code_coverage": "true"},
+)
+
 # The real PCRE2 regex backend: the --regextype=PCRE2 build extra (#85), a target of the standalone
 # @xff_pcre2 module (this directory's MODULE.bazel). It implements @xff_extras_api's RegexBackend and
 # self-registers via Pcre2Registrar; it depends only on that shared API + @pcre2, never on the xff
@@ -52,6 +58,11 @@ cc_library(
 cc_library(
     name = "pcre2_backend_cc",
     srcs = ["pcre2_backend.cc"],
+    hdrs = ["pcre2_backend_internal.h"],
+    copts = select({
+        ":coverage_enabled": ["-fprofile-update=atomic"],
+        "//conditions:default": [],
+    }),
     visibility = ["//visibility:public"],
     deps = [
         ":pcre2_license_cc",

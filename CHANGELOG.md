@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Accelerate eligible PCRE2 patterns with JIT on ARM64 and x86-64, retaining bounded interpreter fallback.
+
 - Report completed deletion counts and known logical file bytes when a local deletion fails.
 
 - Let `-diff [TARGET]` default to Git creation patches against `/dev/null`, including binary files, empty files, executable modes and symlinks.
