@@ -206,9 +206,69 @@ def figure(report, order='similarity', metric='percent'):
     return result
 
 
+def figures(report):
+    return {mode: {metric: figure(report, mode, metric) for metric in ('percent', 'factor')}
+            for mode in ORDER_LABELS}
+
+
+def history_panel(catalog):
+    """A bounded catalog; only the selected report's six views are downloaded."""
+    data = json.dumps(catalog, allow_nan=False).replace('<', '\\u003c')
+    return ('<section id="benchmark-explorer"><h2>Comparison landscape history</h2>'
+            '<p>Select a measured platform and version. Oldest is left; newest is right. '
+            'A platform switch retains the commit when available, otherwise selects its newest report. '
+            'Only retained successful reports with comparison data appear. '
+            'Each chart compares xff with reference tools measured in that run; '
+            'different dates, machines or measurement contracts are not paired performance comparisons. '
+            'Axes and colors rescale for each report.</p>'
+            '<details open><summary>3D comparison chart (show/hide)</summary>'
+            '<p>Drag to rotate; right-drag to pan; scroll to zoom. Focus the chart for arrow-key rotation, '
+            '+/- zoom and Home reset. Percentage = 100 &times; (1 - xff/reference time); '
+            'logarithmic = log10(reference/xff time). Green is faster, red slower. '
+            'Surfaces connect measured neighbors; they are not predictions.</p>'
+            '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:.75rem">'
+            '<label>Scale: <select data-control="metric"><option value="percent">Percentage</option>'
+            '<option value="factor">Logarithmic</option></select></label> '
+            '<label>Order: <select data-control="order">' +
+            ''.join('<option value="' + key + '">' + label + '</option>'
+                    for key, label in ORDER_LABELS.items()) + '</select></label> '
+            '<label>Platform: <select data-control="platform"></select></label> '
+            '<label style="display:flex;align-items:center;gap:.4rem">Version: '
+            '<input data-control="version" type="range" min="0" max="0" step="1" value="0"></label>'
+            '<button type="button" data-reset style="margin-left:auto">Reset view</button></div>'
+            '<p><a data-report>Selected report</a></p><p role="status" aria-live="polite"></p>'
+            '<div data-chart></div></details>'
+            '<script src="assets/three-landscape.js"></script><script>'
+            'window.XffBenchmarkHistory(document.getElementById("benchmark-explorer"),' + data + ');'
+            '</script></section>')
+
+
+def publish_history(root, catalog):
+    page = root / 'index.html'
+    if not page.exists():
+        return
+    text = page.read_text()
+    start, end = '<!-- benchmark-explorer:start -->', '<!-- benchmark-explorer:end -->'
+    if start in text:
+        before, _, rest = text.partition(start)
+        _, separator, after = rest.partition(end)
+        if not separator:
+            raise ValueError('incomplete benchmark explorer section')
+        text = before + after
+    selected = {}
+    for item in catalog:
+        key = (item['platform'], item['commit'])
+        rank = (item['date'], item['run'], item['attempt'])
+        if key not in selected or rank > selected[key][0]:
+            selected[key] = (rank, item)
+    entries = sorted((item for _, item in selected.values()),
+                     key=lambda item: (item['date'], item['run'], item['attempt']))
+    insertion = text.index('</h1>') + len('</h1>')
+    page.write_text(text[:insertion] + start + history_panel(entries) + end + text[insertion:], encoding='utf-8')
+
+
 def render(report, javascript):
-    plots = {mode: {metric: figure(report, mode, metric) for metric in ('percent', 'factor')}
-             for mode in ORDER_LABELS}
+    plots = figures(report)
     plot = json.dumps(plots, allow_nan=False, ensure_ascii=False).replace('<', '\\u003c')
     return ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -256,6 +316,7 @@ def publish(root, javascript):
     start_marker = '<!-- benchmark-landscape:start -->'
     end_marker = '<!-- benchmark-landscape:end -->'
     count = 0
+    catalog = []
     for path in sorted(root.glob('runs/*/*/**/report.json')):
         record = json.loads(path.read_text())
         report = record.get('tool_comparisons')
@@ -263,6 +324,23 @@ def publish(root, javascript):
             continue
         if not matrix.relative_results(report):
             continue
+        source = record.get('source')
+        if source:
+            payload = path.with_name('landscape.json')
+            payload.write_text(json.dumps(figures(report), allow_nan=False), encoding='utf-8')
+            contract = report.get('contract', {})
+            platform = record.get('platform') or contract.get('platform', 'Unknown platform')
+            machine = contract.get('machine', record.get('contract', {}).get('machine', ''))
+            if machine and machine.lower() not in platform.lower():
+                platform += ' / ' + machine
+            commit = source['head_sha']
+            label = source['head_branch'] + ' / ' + commit[:10]
+            if source.get('pull_requests'):
+                label = 'PR ' + str(source['pull_requests'][0]['number']) + ' / ' + commit[:10]
+            catalog.append(dict(platform=platform, commit=commit, label=label,
+                                date=source['created_at'], run=int(source['id']), attempt=int(source['run_attempt']),
+                                report=path.parent.relative_to(root).as_posix() + '/',
+                                figures=payload.relative_to(root).as_posix(), identity=matrix.platform_title(report)))
         page = path.with_name('index.html')
         text = page.read_text()
         if start_marker in text:
@@ -280,6 +358,7 @@ def publish(root, javascript):
         section = start_marker + '<h2>Comparison landscape</h2>' + fragment + end_marker
         page.write_text(text[:insertion] + section + text[insertion:], encoding='utf-8')
         count += 1
+    publish_history(root, catalog)
     return count
 
 

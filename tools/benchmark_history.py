@@ -157,6 +157,7 @@ def retain(root, record, source, keep):
     for path in paths[keep:]:
         path.unlink()
         (path.parent / "index.html").unlink(missing_ok=True)
+        (path.parent / "landscape.json").unlink(missing_ok=True)
         folder = path.parent
         while folder != root / "runs" and not any(folder.iterdir()):
             folder.rmdir()

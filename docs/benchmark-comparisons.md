@@ -276,6 +276,22 @@ show/hide disclosure collapses the chart, controls and explanation without hidin
 Reopening resizes the chart to the available width. Absolute measurements are collapsed by default;
 the comparison table stays visible below the plot. Benchmark publication inserts the landscape above all tables on retained reports with the
 1/4 allocation matrix. Older reports without that matrix retain their existing presentation.
+The benchmark overview also shows the same landscape with a **Platform** selector and **Version**
+slider. Versions are retained measured commits (including branch/PR/tag labels), not only releases.
+The slider runs oldest to newest and initially selects the newest measurement on the first listed
+platform. It includes only reports with the required comparison matrix, and keeps the latest
+run/attempt for each platform and commit. Platform labels include architecture when recorded.
+Switching platforms preserves the selected commit when available; otherwise it selects that
+platform's newest report. A single available version disables the slider.
+
+The selected report link shows branch/PR/tag, commit, time and run/attempt; it opens the full tables
+and raw-data link. Scale, order and camera state survive version changes. Each chart retains its
+own measurement contract and automatically scaled axes/colors: moving the slider is exploration,
+not a paired cross-host or cross-version regression claim. Missing versions are not interpolated.
+The overview downloads only the selected report's generated landscape JSON. Interrupted requests
+cannot overwrite newer selections; failures hide the previous chart and leave its selected report
+link available. Generated payloads expire with their raw reports under existing retention.
+
 One shared, pinned Three.js renderer bundle is published alongside the reports; no external CDN is used.
 Standalone previews embed the same bundle for offline use.
 

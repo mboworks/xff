@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
 // SPDX-License-Identifier: Apache-2.0
+import "./history.js";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
@@ -209,7 +210,12 @@ window.XffLandscape = function createLandscape(root, figures) {
     surfaces = [];
     tooltip.hidden = true;
   }
-  function update(order = "similarity", metric = "percent") {
+  function update(
+    order = "similarity",
+    metric = "percent",
+    nextFigures = figures,
+  ) {
+    figures = nextFigures;
     clear();
     root.dataset.metric = metric;
     const figure = figures[order][metric],

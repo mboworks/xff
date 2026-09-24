@@ -180,7 +180,10 @@ class BenchmarkHistoryTest(unittest.TestCase):
             history.retain(root, record(), source(2), keep=2)
             history.render_site(root, [], "owner/repo")
             history.retain(root, record(), source(1), keep=2)
+            stale_payload = root / "runs/1/1/landscape.json"
+            stale_payload.write_text("{}")
             history.retain(root, record(), source(3), keep=2)
+            self.assertFalse(stale_payload.exists())
             self.assertFalse((root / "runs/1").exists())
             self.assertTrue((root / "runs/2/1/report.json").exists())
             history.retain(root, record(), source(3), keep=2)

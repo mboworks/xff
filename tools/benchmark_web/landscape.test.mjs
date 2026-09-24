@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync } from "node:fs";
+import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -159,6 +160,107 @@ Path(sys.argv[3]).write_text(render(data, Path(sys.argv[2]).read_text()))
     await fallback.selectOption("#metric", "factor");
   } finally {
     await browser.close();
+    rmSync(temporary, { recursive: true, force: true });
+  }
+});
+
+test("history platform/version controls preserve selection and recover from loading errors", async () => {
+  const temporary = mkdtempSync(join(tmpdir(), "xff-explorer-"));
+  execFileSync(process.env.PYTHON || "python3", [
+    "-c",
+    `
+import sys, json
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+from benchmark_landscape import publish
+from benchmark_landscape_test import report
+root = Path(sys.argv[3])
+(root / 'index.html').write_text('<h1>History</h1><table><tr><td>Original</td></tr></table>')
+for run, platform, commit in [(1, 'linux', 'a'), (2, 'linux', 'b'), (3, 'macos', 'a')]:
+    folder = root / 'runs' / str(run) / '1' / platform
+    folder.mkdir(parents=True)
+    source = dict(id=run, run_attempt=1, head_sha=commit * 40, head_branch='main', created_at=f'2026-09-{run:02d}')
+    (folder / 'report.json').write_text(json.dumps(dict(tool_comparisons=report(), platform=platform, source=source)))
+    (folder / 'index.html').write_text('<h1>Report</h1>')
+publish(root, Path(sys.argv[2]).read_text())
+`,
+    tools,
+    bundle,
+    temporary,
+  ]);
+  const server = createServer((request, response) => {
+    try {
+      const file = new URL(request.url, "http://localhost").pathname;
+      response.setHeader(
+        "Content-Type",
+        file.endsWith(".js")
+          ? "text/javascript"
+          : file.endsWith(".json")
+            ? "application/json"
+            : "text/html",
+      );
+      response.end(
+        readFileSync(join(temporary, file === "/" ? "index.html" : file)),
+      );
+    } catch {
+      response.writeHead(404);
+      response.end();
+    }
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const browser = await chromium.launch(options);
+  try {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`http://127.0.0.1:${server.address().port}/`);
+    const waitCommit = (commit) =>
+      page.waitForFunction(
+        (commit) =>
+          document.querySelector("[data-chart]").dataset.commit === commit &&
+          !document.querySelector("[data-chart]").hidden,
+        commit.repeat(40),
+      );
+    await waitCommit("b");
+    const slider = page.locator('[data-control="version"]');
+    await slider.fill("0");
+    await waitCommit("a");
+    await page.selectOption('[data-control="platform"]', "macos");
+    await page.waitForFunction(() =>
+      document
+        .querySelector('[role="status"]')
+        .textContent.startsWith("1 of 1"),
+    );
+    assert.equal(await slider.isDisabled(), true);
+    await page.selectOption('[data-control="platform"]', "linux");
+    await page.waitForFunction(() =>
+      document
+        .querySelector('[role="status"]')
+        .textContent.startsWith("1 of 2"),
+    );
+    assert.equal(await slider.inputValue(), "0");
+    await page.selectOption('[data-control="metric"]', "factor");
+    await page.selectOption('[data-control="order"]', "alphabetical");
+    await page.route("**/runs/2/1/linux/landscape.json", (route) =>
+      route.fulfill({ status: 503, body: "unavailable" }),
+    );
+    await slider.fill("1");
+    await page.waitForFunction(() =>
+      document
+        .querySelector('[role="status"]')
+        .textContent.includes("Unable to load"),
+    );
+    assert.equal(await page.locator("[data-chart]").isVisible(), false);
+    await slider.fill("0");
+    await waitCommit("a");
+    assert.equal(
+      await page.locator("[data-chart]").getAttribute("data-metric"),
+      "factor",
+    );
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    await new Promise((resolve) => server.close(resolve));
     rmSync(temporary, { recursive: true, force: true });
   }
 });
