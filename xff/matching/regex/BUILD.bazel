@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//xff:cc.bzl", "cc_library", "cc_test")
+load("//xff:cc.bzl", "cc_binary", "cc_library", "cc_test")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -50,5 +50,20 @@ cc_test(
         "@googletest//:gtest",
         "@googletest//:gtest_main",
         "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+# Explicit performance experiment, never a timing gate in the unit-test suite.
+cc_binary(
+    name = "regex_benchmark",
+    srcs = ["regex_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        ":regex_cc",
+        "@abseil-cpp//absl/strings:str_format",
+        "@xff_pcre2//:pcre2_backend_cc",
     ],
 )

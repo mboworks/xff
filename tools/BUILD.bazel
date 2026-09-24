@@ -733,6 +733,7 @@ test_suite(
         ":benchmark_history_test",
         ":benchmark_landscape_test",
         ":benchmark_matrix_test",
+        ":benchmark_regex_test",
         ":benchmark_shards_test",
         ":build_rules_test",
         ":cache_report_test",
@@ -866,4 +867,24 @@ py_test(
     size = "small",
     srcs = ["benchmark_landscape_test.py"],
     deps = [":benchmark_landscape_lib"],
+)
+
+py_library(
+    name = "benchmark_regex_lib",
+    srcs = ["benchmark_regex.py"],
+    imports = ["."],
+    deps = [":benchmark_compare_lib"],
+)
+
+py_binary(
+    name = "benchmark_regex",
+    srcs = ["benchmark_regex.py"],
+    deps = [":benchmark_compare_lib"],
+)
+
+py_test(
+    name = "benchmark_regex_test",
+    size = "small",
+    srcs = ["benchmark_regex_test.py"],
+    deps = [":benchmark_regex_lib"],
 )

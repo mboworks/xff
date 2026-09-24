@@ -108,3 +108,142 @@ Post-merge comparison work is split across three complete-fixture shards per pla
 all tools and repetitions on one host per cell. Shards share the same compiled binary and retain
 provenance; mismatched or incomplete reports fail aggregation. These changes shorten orchestration
 without changing the measured child processes or relaxing correctness checks.
+
+## PCRE2 JIT/SIMD verification and RE2 comparison
+
+Source baseline: `cb882b639a` (PR #910). This investigation measures existing production behavior;
+no regex engine, safety limit or release compiler option is changed.
+
+### Verified capability and dispatch
+
+- The pinned PCRE2 10.48 Bazel package copies `config.h.generic`, leaves `SUPPORT_JIT` undefined,
+  and does not add that define in its `LOCAL_DEFINES`. Building and running its own
+  `@@pcre2+//:pcre2test -C` reports **No just-in-time compiler support**. Merely compiling
+  `pcre2_jit_compile.c`, or publishing the SLJIT license, does not establish usable JIT.
+- Independently, `extra_modules/pcre2/pcre2_backend.cc` never calls `pcre2_jit_compile`.
+  `PartialMatch`, `FindFirst`, captures and substitution therefore use interpreted PCRE2 today.
+- `FullMatch` and `FullMatchCaptures` pass `PCRE2_ANCHORED | PCRE2_ENDANCHORED` at match time.
+  Those options force interpreter fallback even for a JIT-compiled pattern. Supporting JIT for
+  these operations needs a semantics-preserving anchored compilation strategy, not merely a
+  new call after compilation. [PCRE2 JIT documentation](https://pcre2project.github.io/pcre2/doc/pcre2jit/).
+- PCRE2's explicit SIMD fast-forward implementation is inside its JIT path. The pinned source
+  includes ARM64 NEON and x86 vector implementations; its AVX2 fast-forward path is explicitly
+  disabled in `pcre2_jit_simd_inc.h`. None of that JIT-generated scanning is active in the current
+  xff build. This does **not** claim that compiler-generated code or libc uses no SIMD.
+- RE2 is pinned to `2025-11-05.bcr.1`. Its source has an AVX2 prefix-search path guarded by
+  `__AVX2__`; this ARM64 measurement does not establish native x86 behavior. JIT and SIMD are
+  separate capabilities, and a library's build support does not prove a particular match used it.
+- This Mac's external ripgrep is 15.2.0, reports compile/runtime NEON and PCRE2 10.45 with JIT
+  available. Its version and execution model differ from xff, so its times are a tool comparison,
+  not an isolated measurement of JIT's benefit. Its availability report alone also does not prove
+  per-match JIT dispatch.
+
+### Reproducible measurement contract
+
+`//tools:benchmark_regex` compares the same xff full binary with `--regextype=RE2` and
+`--regextype=PCRE2`, plus `rg --pcre2`. It uses an ASCII log-record pattern with alternation,
+character classes, bounded repetition, literal punctuation and an optional field. Each 16 KiB
+file contains repeated near misses; the mixed population has one late match in every third file,
+while the absent population has no matches. The pattern cannot match across lines, so xff's
+whole-content search and rg's line-based search have equivalent accepted file sets here.
+An independent Python regex oracle tests the fixture labels. Every measured command, including
+warmups, must return exactly the expected NUL-delimited path multiset and a valid exit status.
+
+The matrix uses 10, 100, 1,000 and 10,000 files with one/four requested workers, a discarded warmup,
+rotating participant order, and the mean of the fastest seven of nine samples. macOS worker counts
+are **not** CPU affinity limits. Storage is an explicitly labeled host filesystem with warm-cache
+reuse, not a claimed in-memory filesystem. Raw JSON records commands, binary hashes, tool versions,
+fixture hashes, sample times, CPU accounting, RSS and the measurement contract. Compilation and
+other benchmark runs are not intentionally run alongside the final measurements.
+
+`//xff/matching/regex:regex_benchmark` separately exercises the production Matcher backends on
+in-memory subjects. It times 100 pattern compilations independently from 1,000 matches against two
+reused 16 KiB subjects (half matching), checks every result, rotates engine order over ten rounds,
+and outputs raw CSV. Round zero is warmup. This isolates repeated matching from filesystem and
+process startup, but does not isolate allocator costs inside each backend: PCRE2 currently
+allocates/frees match data on every call. It is single-threaded and is not a traversal benchmark.
+Timing is informational; neither benchmark adds a CI performance gate or automatic workflow run.
+
+```sh
+bazel build --config=clang_release --config=xff_full //xff/cli:xff_full
+python3.13 tools/benchmark_regex.py --binary "$PWD/bazel-bin/xff/cli/xff_full" \
+  --build-label 'SOURCE_REV; clang_release; xff_full' --output /tmp/regex-macos-arm64.json
+bazel run --config=clang_release //xff/matching/regex:regex_benchmark \
+  > /tmp/regex-inmemory-macos-arm64.csv
+```
+
+The same harness supports Linux affinity and `--fixture-parent=/dev/shm`; verify the JSON storage
+identity says `tmpfs`. Linux was not measured in this investigation: the available local container
+service has no configured kernel. Native Linux/x86 results remain required before generalizing.
+
+### macOS ARM64 results (2026-09-24)
+
+Host: Apple M5 Pro, 64 GiB RAM. Release configuration: `--config=clang_release --config=xff_full`, `-O2` with ThinLTO.
+The in-memory target uses `--config=clang_release` and links the same PCRE2 backend directly.
+Raw [end-to-end samples](measurements/regex-macos-arm64.json),
+[in-memory samples](measurements/regex-inmemory-macos-arm64.csv), and
+[PCRE2 capability output](measurements/pcre2-config-macos-arm64.txt) are retained here.
+The following compile and matching means independently retain the fastest seven post-warmup rounds.
+
+| Engine | Compile per pattern (us) | Match 1,000 subjects (ms) |
+| :----- | -----------------------: | ------------------------: |
+| RE2    |                    28.03 |                     28.58 |
+| PCRE2  |                     2.69 |                     38.04 |
+
+RE2 saves about 25% of repeated matching time in this bounded near-miss workload; interpreted
+PCRE2 compiles substantially faster. These are production-backend costs, including their different
+allocation behavior, not guarantees for every regular expression or input distribution.
+
+| Files | Workers | Population | xff RE2 ms | xff PCRE2 ms | rg PCRE2 ms | PCRE2 / RE2 |
+| ----: | ------: | :--------- | ---------: | -----------: | ----------: | ----------: |
+|    10 |       1 | mixed      |      14.20 |        12.48 |        8.21 |        0.88 |
+|    10 |       4 | mixed      |      21.28 |        23.06 |       18.34 |        1.08 |
+|    10 |       1 | absent     |      30.08 |        25.66 |       13.30 |        0.85 |
+|    10 |       4 | absent     |      28.88 |        31.15 |       21.87 |        1.08 |
+|   100 |       1 | mixed      |      23.40 |        25.47 |       17.34 |        1.09 |
+|   100 |       4 | mixed      |      14.16 |        14.99 |        9.48 |        1.06 |
+|   100 |       1 | absent     |      14.00 |        14.86 |        8.09 |        1.06 |
+|   100 |       4 | absent     |      14.09 |        15.14 |        9.40 |        1.07 |
+|  1000 |       1 | mixed      |      55.26 |        64.28 |       37.19 |        1.16 |
+|  1000 |       4 | mixed      |      55.23 |        64.27 |       21.53 |        1.16 |
+|  1000 |       1 | absent     |      54.38 |        64.10 |       32.23 |        1.18 |
+|  1000 |       4 | absent     |      54.26 |        64.51 |       18.87 |        1.19 |
+| 10000 |       1 | mixed      |     840.95 |      1045.92 |      654.74 |        1.24 |
+| 10000 |       4 | mixed      |    1269.15 |      1649.13 |      451.18 |        1.30 |
+| 10000 |       1 | absent     |    1177.64 |      1488.68 |      876.81 |        1.26 |
+| 10000 |       4 | absent     |     495.79 |       575.45 |      122.91 |        1.16 |
+
+PCRE2 / RE2 above is elapsed time, so values above one favor RE2. The smallest file counts are
+startup-heavy; increasing requested workers does not guarantee more active matcher threads or
+better throughput. The external rg result includes its different read/match scheduling and PCRE2
+version. It cannot be attributed to JIT alone. This matrix covers a flat file tree and one complex
+pattern with two result populations; it does not replace broad/deep or multi-pattern coverage.
+
+A separate [confirmation run](measurements/regex-confirm-macos-arm64.json) repeated the larger
+populations. Both runs are retained because absolute times varied materially on this shared host;
+these are informational samples rather than confidence-bounded throughput claims. Confirmation:
+
+| Files | Workers | Population | xff RE2 ms | xff PCRE2 ms | rg PCRE2 ms | PCRE2 / RE2 |
+| ----: | ------: | :--------- | ---------: | -----------: | ----------: | ----------: |
+|  1000 |       1 | mixed      |      54.01 |        63.90 |       36.80 |        1.18 |
+|  1000 |       4 | mixed      |      54.82 |        64.86 |       21.78 |        1.18 |
+|  1000 |       1 | absent     |      54.32 |        64.06 |       31.92 |        1.18 |
+|  1000 |       4 | absent     |      54.43 |        64.08 |       18.88 |        1.18 |
+| 10000 |       1 | mixed      |     478.03 |       577.43 |      340.18 |        1.21 |
+| 10000 |       4 | mixed      |     477.21 |       574.71 |      151.38 |        1.20 |
+| 10000 |       1 | absent     |     478.23 |       577.13 |      292.86 |        1.21 |
+| 10000 |       4 | absent     |     476.06 |       572.97 |      124.42 |        1.20 |
+
+### Follow-up implementation criteria
+
+1. Enable JIT in the dependency build for supported targets, then explicitly compile eligible
+   patterns. Verify capability, nonzero `PCRE2_INFO_JITSIZE`, and an actual match-time JIT callback;
+   retain interpreter fallback when executable memory or pattern support is unavailable.
+2. Measure startup/compile overhead and repeated matching before choosing eager versus lazy JIT.
+   Do not introduce locks into the shared matching hot path. Preserve concurrent matching and
+   bounded per-thread execution state.
+3. Preserve resource protections: JIT does not enforce the interpreter depth limit, and its match
+   limit accounting differs. Test bounded JIT-stack exhaustion, match limits, fallback and error
+   behavior explicitly before enabling it in production.
+4. Cover full matches, captures and rewrites as well as unanchored content matches. Treat
+   match-data allocation reuse as a separate measured optimization, not part of a claimed JIT gain.

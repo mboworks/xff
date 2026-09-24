@@ -1,0 +1,16 @@
+PCRE2 version 10.48 2026-08-31
+Compiled with
+  8-bit support
+  UTF and UCP support (Unicode version 17.0.0)
+  No just-in-time compiler support
+  Default newline sequence is LF
+  \R matches all Unicode newlines
+  \C is supported
+  Internal link size
+    Requested = 2
+    Effective = 2
+  Parentheses nest limit = 250
+  Default heap limit = 20000000 kibibytes
+  Default match limit = 10000000
+  Default depth limit = 10000000
+  pcre2test has neither libreadline nor libedit support
