@@ -37,10 +37,11 @@
 
 ## Benchmark visualization follow-up
 
-- [ ] Compare a Three.js landscape prototype against the current Plotly renderer using the same
-      benchmark JSON. Measure load/render time, interaction latency, and download size; verify
-      task ordering, tick labels, hover accuracy, colors, metric switching, and accessibility.
-      Complete the PCRE2 JIT follow-up first.
+- [x] Compare Three.js with Plotly using the same benchmark JSON; record startup/update and bundle
+      size measurements in `docs/benchmark-renderer-evaluation.md`. Integrate the approved renderer,
+      plane-mounted titles, unrestricted orbit, outward ticks, hover guides and offline publishing.
+- [ ] Measure production rotation/hover frame times and test Firefox/Safari on native hosts;
+      Chromium browser tests cover rendering and interaction in the normal CI workflow.
 
 ## Benchmark publication follow-up
 

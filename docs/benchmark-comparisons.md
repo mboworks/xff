@@ -276,7 +276,7 @@ show/hide disclosure collapses the chart, controls and explanation without hidin
 Reopening resizes the chart to the available width. Absolute measurements are collapsed by default;
 the comparison table stays visible below the plot. Benchmark publication inserts the landscape above all tables on retained reports with the
 1/4 allocation matrix. Older reports without that matrix retain their existing presentation.
-One shared, pinned Plotly bundle is published alongside the reports; no external CDN is used.
+One shared, pinned Three.js renderer bundle is published alongside the reports; no external CDN is used.
 Standalone previews embed the same bundle for offline use.
 
 The X coordinate mirrors log10 file counts: the 1-CPU group runs from large to small on the
@@ -297,26 +297,39 @@ the interval, not individual tick positions:
 zero is parity, +1 means 10x, and -1 means 0.1x. Bounds are symmetric around zero. The color
 mapping remains based on time saved in both views, with signed log10 labels on the factor legend. Hover cards retain actual factors.
 Switching metrics preserves the camera and selected task order.
-Hover text includes the original ratio and both absolute timings. Native surface hover text
-keeps row/column indexing consistent with the plotted vertex; the generic `%{text}` template
-is avoided because Plotly transposes its lookup for surface pick indices. The estimator comes from the
-report's recorded sampling policy; no new averaging across tasks or reference tools is performed.
+Hover cards show the original ratio and both absolute timings. Picking uses the nearest projected
+corner of the intersected surface triangle, with its original row/column identity. Matching file
+and task ticks are highlighted; dashed guides project the selected measurement to all three axes.
+The exact vertical value is shown at the height guide, including between existing ticks.
+The estimator comes from the report's recorded sampling policy.
 
-Use an isolated environment to obtain Plotly's MIT-licensed JavaScript bundle. The renderer
-itself uses only the Python standard library and the existing benchmark matrix module:
+Build the MIT-licensed Three.js renderer with its pinned npm dependencies. Node is needed only to
+build and test the renderer; generating pages uses Python's standard library and the existing
+benchmark matrix module:
 
 ```sh
-python3 -m venv /tmp/xff-landscape-env
-/tmp/xff-landscape-env/bin/pip install plotly==7.1.0
-/tmp/xff-landscape-env/bin/python -c \
-  'from plotly.offline import get_plotlyjs; from pathlib import Path; Path("/tmp/plotly.js").write_text(get_plotlyjs())'
+npm ci --prefix tools/benchmark_web --ignore-scripts --no-audit --no-fund
+npm run build --prefix tools/benchmark_web
 python3 tools/benchmark_landscape.py /path/to/benchmark-report-linux-x86_64.json \
-  --plotly-js=/tmp/plotly.js --output=/path/to/benchmark-landscape-linux-x86_64.html
+  --renderer-js=tools/benchmark_web/dist/landscape.js \
+  --output=/path/to/benchmark-report-linux-x86_64.html
 ```
 
-The supplied trusted JavaScript bundle is embedded, including its license header; opening the
-result requires no CDN or network access. The Plotly surface format is documented at
-<https://plotly.com/python/3d-surface-plots/>. Drag to rotate and scroll to zoom.
+The trusted bundle is embedded with the complete Three.js MIT license. Offline pages need no CDN
+or network access. Published pages share one bundle under the benchmark assets directory.
+Drag to rotate, scroll to zoom, and right-drag to pan. Axis titles are printed on the base plane;
+rotation remains unrestricted. Tick labels stay horizontal and extend outward from their axes.
+Focus the canvas for arrow-key rotation, +/- zoom and Home reset, or use the Reset view button.
+Missing WebGL2 leaves an explanatory message and the complete measurement tables available.
+The chart resizes when its container changes or its disclosure reopens. Rendering is event-driven;
+there is no idle animation loop. Single observations remain visible as points even when missing
+neighbors prevent a surface quad.
+
+Browser tests run in the normal release-site CI job, using Chromium. Run them locally with
+`npm test --prefix tools/benchmark_web` after `npx playwright install chromium` from that directory.
+`CHROME_PATH` can select an existing Chrome executable for these tests, and `PYTHON` selects the
+Python interpreter. Tests cover offline loading, hover identity for all orders and scales, axis
+highlights, variable color-stop counts, full rotation, resizing and hide/show behavior.
 
 The task-order selector defaults to **Similarity, better toward center**. Each task/reference
 pair has a profile of percentage values across matching file counts, CPU groups and tree shapes.
@@ -332,21 +345,3 @@ Missing observations are never replaced with zero.
 **Alphabetical** restores the task/reference name order. Changing order preserves the camera
 and measurements. Every recorded cell has equal weight; file counts are not weighted by the
 number of files or elapsed time. The average is descriptive, not aggregate throughput.
-
-Axis titles and tick labels retain Plotly's native automatic layout and tick angles. Monospaced
-labels use non-breaking spaces to equalize widths: file counts align right, task names left,
-with three extra spaces for separation. No marker glyphs or text annotations are used.
-
-The preview applies a narrowly checked adapter to the bundled Plotly vectorizer. Upstream
-centers text using visible glyph bounds, which discards blank padding. For NBSP-padded labels
-only, the adapter instead uses the canvas-measured advance width for horizontal alignment;
-vertical bounds and the actual glyph triangles are unchanged. Ordinary labels keep upstream
-behavior. The adapter checks two exact snippets from the Plotly.py 7.1.0 bundle and rejects
-unknown or already-modified bundles rather than silently applying a partial patch. The original
-license header remains in the embedded bundle, preceded by a modification notice. This local
-preview adapter needs an upstream implementation before generalizing to other bundle versions.
-
-Transparent-dot inspection found that 3D tick text uses one shader color uniform for an entire
-axis's ticks. Supported style tags do not include per-span color or opacity; transparent dots
-cannot preserve geometry while hiding only the markers. The approved automatic-layout version
-remains in the saved stash.

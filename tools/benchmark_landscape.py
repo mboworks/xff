@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
 # SPDX-License-Identifier: Apache-2.0
-"""Render benchmark JSON as an offline, interactive Plotly comparison landscape.
+"""Render benchmark JSON as an offline, interactive Three.js comparison landscape.
 
-Supply Plotly's JavaScript bundle with --plotly-js; no network is used by the page.
+Supply the built Three.js renderer with --renderer-js; no network is used by the page.
 """
 
 import argparse
@@ -218,7 +218,7 @@ def render(report, javascript):
             'summary{cursor:pointer;font-weight:bold}</style></head><body>'
             '<h1>Benchmark comparison landscape</h1>'
             '<details id="landscape-panel" open><summary>3D comparison chart (show/hide)</summary>'
-            '<p>Drag to rotate; scroll to zoom. Y is vertical. Left: 1 allocation, large to small; '
+            '<p>Drag to rotate; scroll to zoom; right-drag to pan. Focus the chart for arrow-key rotation, +/- zoom, and Home reset. Y is vertical. Left: 1 allocation, large to small; '
             'right: 4 allocations, small to large. The mirrored X axis uses log10 spacing. '
             'Broad and Deep tasks extend in opposite Z directions.</p>'
             '<p>Relative performance (%) = 100 &times; (1 - xff time / reference time). Green is faster, '
@@ -236,47 +236,23 @@ def render(report, javascript):
             '<label>Task order: <select id="task-order">' +
             ''.join('<option value="' + key + '">' + label + '</option>'
                     for key, label in ORDER_LABELS.items()) + '</select></label>'
-            '<div id="landscape"></div><script>' + javascript + '</script><script>'
-            'const figures=' + plot + ';const first=figures.similarity.percent;'
-            'Plotly.newPlot("landscape",first.data,first.layout,{responsive:true,displaylogo:false});'
+            '<button id="reset-landscape" type="button">Reset view</button><div id="landscape"></div><script>' + javascript + '</script><script>'
+            'const figures=' + plot + ';'
+            'const chart=window.XffLandscape(document.getElementById("landscape"),figures);'
             'document.getElementById("landscape-panel").addEventListener("toggle",event=>{'
-            'if(event.target.open)requestAnimationFrame(()=>Plotly.Plots.resize("landscape"));});'
-            'function updateLandscape(){'
-            'const next=figures[document.getElementById("task-order").value][document.getElementById("metric").value];'
-            'const camera=document.getElementById("landscape").layout.scene.camera;'
-            'next.layout.scene.camera=camera;'
-            'Plotly.react("landscape",next.data,next.layout,{responsive:true,displaylogo:false});}'
-            'for(const id of ["task-order","metric"])document.getElementById(id).addEventListener("change",updateLandscape);</script></details>'
+            'if(event.target.open)requestAnimationFrame(()=>chart.resize());});'
+            'function updateLandscape(){chart.update('
+            'document.getElementById("task-order").value,document.getElementById("metric").value);}'
+            'for(const id of ["task-order","metric"])document.getElementById(id).addEventListener("change",updateLandscape);'
+            'document.getElementById("reset-landscape").addEventListener("click",()=>chart.reset());</script></details>'
             '<h2>Measurements</h2>' + matrix.render_html(report) + '</body></html>')
-
-
-def padded_plotly(javascript):
-    """Patch the pinned vectorizer to align padded ticks by advance, not ink bounds.
-
-    Only NBSP-padded plain labels opt in. Ordinary labels keep upstream behavior.
-    Matching exact snippets makes an incompatible Plotly bundle a hard error.
-    """
-    patches = [
-        ('var O=y(F,P,D,L,I,B);return C(O,R,L)',
-         'var O=y(F,P,D,L,I,B);'
-         'if(D.includes("\\u00a0")){R=Object.assign({},R,{xffAdvanceWidth:P.measureText(D).width});}'
-         'return C(O,R,L)'),
-        ('var j=0;switch(R){case"center":j=-.5*(I[0]+B[0]);',
-         'if(Number.isFinite(F.xffAdvanceWidth)){I[0]=P;B[0]=P+F.xffAdvanceWidth;}'
-         'var j=0;switch(R){case"center":j=-.5*(I[0]+B[0]);'),
-    ]
-    for before, after in patches:
-        if javascript.count(before) != 1:
-            raise ValueError('unsupported Plotly bundle: padded-tick adapter requires Plotly.py 7.1.0 bundle')
-        javascript = javascript.replace(before, after)
-    return '// Xff preview modification: retain NBSP tick-label advance widths.\n' + javascript
 
 
 def publish(root, javascript):
     """Decorate retained report pages, sharing one plotting bundle across all reports."""
-    asset = root / 'assets' / 'plotly-landscape.js'
+    asset = root / 'assets' / 'three-landscape.js'
     asset.parent.mkdir(parents=True, exist_ok=True)
-    asset.write_text(padded_plotly(javascript), encoding='utf-8')
+    asset.write_text(javascript, encoding='utf-8')
     start_marker = '<!-- benchmark-landscape:start -->'
     end_marker = '<!-- benchmark-landscape:end -->'
     count = 0
@@ -311,19 +287,19 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('report', type=Path, nargs='?')
     parser.add_argument('--site-root', type=Path)
-    parser.add_argument('--plotly-js', type=Path, required=True)
+    parser.add_argument('--renderer-js', type=Path, required=True)
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
     if args.site_root:
         if args.report or args.output:
             parser.error('--site-root cannot be combined with report or --output')
-        print(f'Decorated {publish(args.site_root, args.plotly_js.read_text())} benchmark pages')
+        print(f'Decorated {publish(args.site_root, args.renderer_js.read_text())} benchmark pages')
         return
     if args.report is None or args.output is None:
         parser.error('report and --output are required without --site-root')
     data = json.loads(args.report.read_text())
     report = data.get('tool_comparisons', data)
-    args.output.write_text(render(report, padded_plotly(args.plotly_js.read_text())), encoding='utf-8')
+    args.output.write_text(render(report, args.renderer_js.read_text()), encoding='utf-8')
     print(args.output)
 
 
