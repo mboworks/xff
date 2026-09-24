@@ -25,6 +25,8 @@ try-import %workspace%/.bazelrc.user
 
 common --consistent_labels
 common --enable_bzlmod --noenable_workspace
+# Disable dependency ruleset telemetry for repository evaluation.
+common --repo_env=DO_NOT_TRACK=1
 common --incompatible_disallow_empty_glob
 common --nolegacy_external_runfiles
 common --features=layering_check,parse_headers --host_features=layering_check,parse_headers

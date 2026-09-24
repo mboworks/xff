@@ -223,7 +223,7 @@ class Pcre2Backend final : public xff::regex::RegexBackend {
 
   bool Matches(std::string_view text, bool full) const {
     const MatchDataPtr data{pcre2_match_data_create(1, nullptr)};
-    return Match(full ? FullCode() : *code_, text, full ? FullOptions() : 0, *data) >= 0;
+    return Match(full ? FullCode() : std::as_const(*code_), text, full ? FullOptions() : 0, *data) >= 0;
   }
 
   int Substitute(

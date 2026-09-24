@@ -327,6 +327,6 @@ claiming PCRE2 is faster for every pattern.
 
 The stripped full macOS ARM64 binary grows from 6,251,328 to 6,648,288 bytes: **396,960 bytes
 (6.35%)**. Both builds use `strip -S -x`, the same compiler, optimization, and extension selection.
-Their dynamic-library dependency sets are identical. This size is measured before generated help
-updates and may change slightly with documentation-only edits. Linux/x86 performance and size
-remain to be measured independently.
+Their dynamic-library dependency sets are identical. The final release build, including generated
+help and capture-handling refinements, retains this size. Linux/x86 performance and size remain
+to be measured independently.
