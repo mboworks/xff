@@ -169,6 +169,40 @@ class BenchmarkLandscapeTest(unittest.TestCase):
             self.assertEqual((legacy / 'index.html').read_text(), 'Legacy untouched')
             self.assertEqual((root / 'assets/three-landscape.js').read_text(), '/* plotting asset */')
 
+    def test_history_selects_latest_attempt_per_commit_and_platform(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'index.html').write_text('<h1>History</h1><table>Retained history</table>')
+            for run, attempt, platform, sha in [(1, 1, 'linux', 'a'), (1, 2, 'linux', 'a'),
+                                                (2, 1, 'macos', 'a'), (3, 1, 'linux', 'b')]:
+                folder = root / 'runs' / str(run) / str(attempt) / platform
+                folder.mkdir(parents=True)
+                source = dict(id=run, run_attempt=attempt, head_sha=sha * 40,
+                              head_branch='main', created_at=f'2026-09-{run:02d}T12:00:00Z')
+                data = dict(tool_comparisons=report(), platform=platform, source=source)
+                (folder / 'report.json').write_text(json.dumps(data))
+                (folder / 'index.html').write_text('<h1>Report</h1>')
+            self.assertEqual(landscape.publish(root, '/* renderer */'), 4)
+            first = (root / 'index.html').read_text()
+            prefix = 'window.XffBenchmarkHistory(document.getElementById("benchmark-explorer"),'
+            catalog = json.loads(first.split(prefix)[1].split(');</script>')[0])
+            self.assertEqual([(row['platform'], row['run'], row['attempt']) for row in catalog],
+                             [('linux', 1, 2), ('macos', 2, 1), ('linux', 3, 1)])
+            self.assertLess(first.index('benchmark-explorer'), first.index('<table>'))
+            for row in catalog:
+                payload = json.loads((root / row['figures']).read_text())
+                self.assertEqual(set(payload), set(landscape.ORDER_LABELS))
+                self.assertTrue((root / row['report'] / 'index.html').is_file())
+            landscape.publish(root, '/* renderer */')
+            self.assertEqual((root / 'index.html').read_text(), first)
+
+    def test_history_catalog_escapes_script_content_and_handles_empty_data(self):
+        text = landscape.history_panel([dict(label='</script><script>alert(1)</script>')])
+        self.assertNotIn('</script><script>alert', text)
+        self.assertIn('type="range"', text)
+        self.assertIn('aria-live="polite"', text)
+        self.assertIn(',[]);', landscape.history_panel([]))
+
     def test_hover_cells_match_ticks_after_every_reordering(self):
         for mode in landscape.ORDER_LABELS:
             with self.subTest(order=mode):

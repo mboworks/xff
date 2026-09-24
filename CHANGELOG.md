@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Add a platform selector and measured-version slider to the benchmark overview landscape.
+
 - Render benchmark landscapes with Three.js, plane-mounted titles, linked hover guides and a smaller offline bundle.
 
 - Accelerate eligible PCRE2 patterns with JIT on ARM64 and x86-64, retaining bounded interpreter fallback.

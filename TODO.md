@@ -37,6 +37,8 @@
 
 ## Benchmark visualization follow-up
 
+- [x] Add a benchmark overview landscape with platform selection and a slider over retained measured commits.
+
 - [x] Compare Three.js with Plotly using the same benchmark JSON; record startup/update and bundle
       size measurements in `docs/benchmark-renderer-evaluation.md`. Integrate the approved renderer,
       plane-mounted titles, unrestricted orbit, outward ticks, hover guides and offline publishing.
