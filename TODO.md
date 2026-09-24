@@ -25,6 +25,16 @@
 - [ ] Record before/after timing, throughput, memory, and correctness for each optimization; add
       representative larger-content and realistic directory-fanout workloads before broad claims.
 
+## Regex engine performance investigation
+
+- [x] Verify the pinned PCRE2 build and production dispatch: JIT is disabled at both layers;
+      JIT SIMD scanning is unavailable. Document match-time anchoring and resource-limit constraints.
+- [x] Add correctness-checked RE2/PCRE2/rg-PCRE2 end-to-end workloads and a separate in-memory
+      production-backend benchmark; retain compile and matching measurements separately.
+- [ ] Repeat on native Linux/x86 with verified tmpfs storage and CPU affinity.
+- [ ] Prototype PCRE2 JIT with explicit dispatch verification, fallback and resource-limit tests;
+      measure gains and startup cost before promoting it. See `docs/performance-analysis.md`.
+
 ## Benchmark publication follow-up
 
 - [ ] Retain separate macOS and Linux HTML reports plus raw JSON, with commit, build,

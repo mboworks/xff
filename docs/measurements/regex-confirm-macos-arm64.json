@@ -1,0 +1,3054 @@
+{
+  "schema": 1,
+  "tools": {
+    "xff": {
+      "status": "available",
+      "path": "/private/tmp/xff-regex-results/xff-macos-arm64",
+      "version": "xff 0.0.0",
+      "sha256": "59822aba14feaaf24d3bf4bf614cbd2aca79735a0d145328519f518e6122b646"
+    },
+    "rg": {
+      "status": "available",
+      "path": "/opt/homebrew/Cellar/ripgrep/15.2.0/bin/rg",
+      "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+      "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+    }
+  },
+  "contract": {
+    "pattern": "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+    "fixture_version": 1,
+    "file_counts": [1000, 10000],
+    "workers": [1, 4],
+    "bytes_per_file": 16384,
+    "repetitions": 9,
+    "retained": 7,
+    "estimator": "mean-fastest",
+    "warmup_rounds": 1,
+    "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "cpu_count": 18,
+    "storage": {
+      "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+      "filesystem": "unverified host filesystem",
+      "memory_required": false,
+      "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+    },
+    "cpu_model": "affinity-limited on Linux; requested worker counts only elsewhere",
+    "semantics": "case-sensitive ASCII byte substring search; no anchors or newline-spanning matches",
+    "scope": "end-to-end process including startup, compile, production VFS reads and path output",
+    "cache": "freshly written then reused; validated discarded warmup; no cache flush",
+    "order": "rotate first participant every round and task",
+    "environment": "inherited environment except isolated HOME and LC_ALL=C; tool configs disabled",
+    "build_label": "cb882b639a; clang_release; xff_full; O2 ThinLTO; confirmation"
+  },
+  "tasks": [
+    {
+      "files": 1000,
+      "workers": 1,
+      "population": "mixed",
+      "expected_count": 334,
+      "fixture_sha256": "fec402679d19ab42609f31700a6776ba38f690a08de4bec4c3bc6089b3c9a062",
+      "cpu_affinity": null,
+      "participants": {
+        "xff-re2": {
+          "command": [
+            "/private/tmp/xff-regex-results/xff-macos-arm64",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--jobs=1",
+            "--exact",
+            "--case=sensitive",
+            "--gitignore=off",
+            "--hidden",
+            "--regextype=RE2",
+            ".",
+            "-type",
+            "f",
+            "-rxc",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "-print0"
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.05416495795361698,
+              "first_stdout_seconds": 0.05268758302554488,
+              "user_cpu_seconds": 0.033784,
+              "system_cpu_seconds": 0.016933999999999998,
+              "peak_child_rss_bytes": 10436608,
+              "sum_child_peak_rss_bytes": 10436608,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.054031417006626725,
+              "first_stdout_seconds": 0.05253004212863743,
+              "user_cpu_seconds": 0.03385,
+              "system_cpu_seconds": 0.016582,
+              "peak_child_rss_bytes": 10698752,
+              "sum_child_peak_rss_bytes": 10698752,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.053915416123345494,
+              "first_stdout_seconds": 0.052403791109099984,
+              "user_cpu_seconds": 0.03378,
+              "system_cpu_seconds": 0.016628,
+              "peak_child_rss_bytes": 10387456,
+              "sum_child_peak_rss_bytes": 10387456,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05447829212062061,
+              "first_stdout_seconds": 0.0529080000706017,
+              "user_cpu_seconds": 0.033864,
+              "system_cpu_seconds": 0.016892,
+              "peak_child_rss_bytes": 10698752,
+              "sum_child_peak_rss_bytes": 10698752,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05397616699337959,
+              "first_stdout_seconds": 0.05250216694548726,
+              "user_cpu_seconds": 0.033812999999999996,
+              "system_cpu_seconds": 0.016558,
+              "peak_child_rss_bytes": 10387456,
+              "sum_child_peak_rss_bytes": 10387456,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05387850012630224,
+              "first_stdout_seconds": 0.05245112511329353,
+              "user_cpu_seconds": 0.033796,
+              "system_cpu_seconds": 0.016708999999999998,
+              "peak_child_rss_bytes": 10436608,
+              "sum_child_peak_rss_bytes": 10436608,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05399904097430408,
+              "first_stdout_seconds": 0.052619415801018476,
+              "user_cpu_seconds": 0.033804,
+              "system_cpu_seconds": 0.016743,
+              "peak_child_rss_bytes": 10387456,
+              "sum_child_peak_rss_bytes": 10387456,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05477466690354049,
+              "first_stdout_seconds": 0.05312795890495181,
+              "user_cpu_seconds": 0.034051,
+              "system_cpu_seconds": 0.016922,
+              "peak_child_rss_bytes": 10846208,
+              "sum_child_peak_rss_bytes": 10846208,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05407245806418359,
+              "first_stdout_seconds": 0.05249562510289252,
+              "user_cpu_seconds": 0.033625999999999996,
+              "system_cpu_seconds": 0.017138999999999998,
+              "peak_child_rss_bytes": 10452992,
+              "sum_child_peak_rss_bytes": 10452992,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 54.00542246310839
+        },
+        "xff-pcre2": {
+          "command": [
+            "/private/tmp/xff-regex-results/xff-macos-arm64",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--jobs=1",
+            "--exact",
+            "--case=sensitive",
+            "--gitignore=off",
+            "--hidden",
+            "--regextype=PCRE2",
+            ".",
+            "-type",
+            "f",
+            "-rxc",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "-print0"
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.06434020795859396,
+              "first_stdout_seconds": 0.06288020801730454,
+              "user_cpu_seconds": 0.043692999999999996,
+              "system_cpu_seconds": 0.017114,
+              "peak_child_rss_bytes": 10502144,
+              "sum_child_peak_rss_bytes": 10502144,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06222704192623496,
+              "first_stdout_seconds": 0.06066900002770126,
+              "user_cpu_seconds": 0.042551,
+              "system_cpu_seconds": 0.016236,
+              "peak_child_rss_bytes": 10502144,
+              "sum_child_peak_rss_bytes": 10502144,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06443762499839067,
+              "first_stdout_seconds": 0.0629910419229418,
+              "user_cpu_seconds": 0.043866999999999996,
+              "system_cpu_seconds": 0.017388,
+              "peak_child_rss_bytes": 10780672,
+              "sum_child_peak_rss_bytes": 10780672,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06393000017851591,
+              "first_stdout_seconds": 0.06248500011861324,
+              "user_cpu_seconds": 0.043803999999999996,
+              "system_cpu_seconds": 0.016654,
+              "peak_child_rss_bytes": 10502144,
+              "sum_child_peak_rss_bytes": 10502144,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06465433398261666,
+              "first_stdout_seconds": 0.06314666685648263,
+              "user_cpu_seconds": 0.044036,
+              "system_cpu_seconds": 0.016923,
+              "peak_child_rss_bytes": 10518528,
+              "sum_child_peak_rss_bytes": 10518528,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06430420791730285,
+              "first_stdout_seconds": 0.0627533330116421,
+              "user_cpu_seconds": 0.043894999999999997,
+              "system_cpu_seconds": 0.016759,
+              "peak_child_rss_bytes": 10502144,
+              "sum_child_peak_rss_bytes": 10502144,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06388462521135807,
+              "first_stdout_seconds": 0.06232687504962087,
+              "user_cpu_seconds": 0.043731,
+              "system_cpu_seconds": 0.016573,
+              "peak_child_rss_bytes": 10502144,
+              "sum_child_peak_rss_bytes": 10502144,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.0641677500680089,
+              "first_stdout_seconds": 0.06260329205542803,
+              "user_cpu_seconds": 0.043689,
+              "system_cpu_seconds": 0.016949,
+              "peak_child_rss_bytes": 10403840,
+              "sum_child_peak_rss_bytes": 10403840,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06516541610471904,
+              "first_stdout_seconds": 0.06358087505213916,
+              "user_cpu_seconds": 0.044145,
+              "system_cpu_seconds": 0.017311,
+              "peak_child_rss_bytes": 10813440,
+              "sum_child_peak_rss_bytes": 10813440,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 63.898779751200756
+        },
+        "rg-pcre2": {
+          "command": [
+            "/opt/homebrew/Cellar/ripgrep/15.2.0/bin/rg",
+            "--no-config",
+            "--pcre2",
+            "--case-sensitive",
+            "--text",
+            "--hidden",
+            "--no-ignore",
+            "--threads=1",
+            "--color=never",
+            "--files-with-matches",
+            "--null",
+            "-e",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "."
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.03692075004801154,
+              "first_stdout_seconds": 0.03575237514451146,
+              "user_cpu_seconds": 0.014421,
+              "system_cpu_seconds": 0.020294,
+              "peak_child_rss_bytes": 4210688,
+              "sum_child_peak_rss_bytes": 4210688,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.03711987496353686,
+              "first_stdout_seconds": 0.03585645789280534,
+              "user_cpu_seconds": 0.014166,
+              "system_cpu_seconds": 0.020284,
+              "peak_child_rss_bytes": 4194304,
+              "sum_child_peak_rss_bytes": 4194304,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.03719562501646578,
+              "first_stdout_seconds": 0.03601287491619587,
+              "user_cpu_seconds": 0.014296,
+              "system_cpu_seconds": 0.020572999999999998,
+              "peak_child_rss_bytes": 4194304,
+              "sum_child_peak_rss_bytes": 4194304,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.03629037505015731,
+              "first_stdout_seconds": 0.03513387497514486,
+              "user_cpu_seconds": 0.013734999999999999,
+              "system_cpu_seconds": 0.020257,
+              "peak_child_rss_bytes": 4194304,
+              "sum_child_peak_rss_bytes": 4194304,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.036830416880548,
+              "first_stdout_seconds": 0.03557687485590577,
+              "user_cpu_seconds": 0.013992,
+              "system_cpu_seconds": 0.020433,
+              "peak_child_rss_bytes": 4194304,
+              "sum_child_peak_rss_bytes": 4194304,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.03675566683523357,
+              "first_stdout_seconds": 0.035454458789899945,
+              "user_cpu_seconds": 0.013918999999999999,
+              "system_cpu_seconds": 0.020451999999999998,
+              "peak_child_rss_bytes": 4194304,
+              "sum_child_peak_rss_bytes": 4194304,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.036512959050014615,
+              "first_stdout_seconds": 0.03535333392210305,
+              "user_cpu_seconds": 0.014123,
+              "system_cpu_seconds": 0.020177,
+              "peak_child_rss_bytes": 4194304,
+              "sum_child_peak_rss_bytes": 4194304,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.0378624580334872,
+              "first_stdout_seconds": 0.036636041942983866,
+              "user_cpu_seconds": 0.014416,
+              "system_cpu_seconds": 0.020922,
+              "peak_child_rss_bytes": 4194304,
+              "sum_child_peak_rss_bytes": 4194304,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.03761579212732613,
+              "first_stdout_seconds": 0.03641904192045331,
+              "user_cpu_seconds": 0.014404,
+              "system_cpu_seconds": 0.020744,
+              "peak_child_rss_bytes": 4210688,
+              "sum_child_peak_rss_bytes": 4210688,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 36.80366683485253
+        }
+      }
+    },
+    {
+      "files": 1000,
+      "workers": 4,
+      "population": "mixed",
+      "expected_count": 334,
+      "fixture_sha256": "fec402679d19ab42609f31700a6776ba38f690a08de4bec4c3bc6089b3c9a062",
+      "cpu_affinity": null,
+      "participants": {
+        "xff-re2": {
+          "command": [
+            "/private/tmp/xff-regex-results/xff-macos-arm64",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--jobs=4",
+            "--exact",
+            "--case=sensitive",
+            "--gitignore=off",
+            "--hidden",
+            "--regextype=RE2",
+            ".",
+            "-type",
+            "f",
+            "-rxc",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "-print0"
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.0550675829872489,
+              "first_stdout_seconds": 0.05342341703362763,
+              "user_cpu_seconds": 0.033783,
+              "system_cpu_seconds": 0.017412,
+              "peak_child_rss_bytes": 10715136,
+              "sum_child_peak_rss_bytes": 10715136,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.054603249998763204,
+              "first_stdout_seconds": 0.052949291188269854,
+              "user_cpu_seconds": 0.033902,
+              "system_cpu_seconds": 0.017396,
+              "peak_child_rss_bytes": 10862592,
+              "sum_child_peak_rss_bytes": 10862592,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.055071417009457946,
+              "first_stdout_seconds": 0.053471416933462024,
+              "user_cpu_seconds": 0.033881999999999995,
+              "system_cpu_seconds": 0.01729,
+              "peak_child_rss_bytes": 10534912,
+              "sum_child_peak_rss_bytes": 10534912,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05507691716775298,
+              "first_stdout_seconds": 0.053361042169854045,
+              "user_cpu_seconds": 0.03388,
+              "system_cpu_seconds": 0.01728,
+              "peak_child_rss_bytes": 10813440,
+              "sum_child_peak_rss_bytes": 10813440,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.055127999978139997,
+              "first_stdout_seconds": 0.05347787495702505,
+              "user_cpu_seconds": 0.033887,
+              "system_cpu_seconds": 0.017342,
+              "peak_child_rss_bytes": 10452992,
+              "sum_child_peak_rss_bytes": 10452992,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05475962511263788,
+              "first_stdout_seconds": 0.05312783317640424,
+              "user_cpu_seconds": 0.03388,
+              "system_cpu_seconds": 0.017432,
+              "peak_child_rss_bytes": 10174464,
+              "sum_child_peak_rss_bytes": 10174464,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05494308308698237,
+              "first_stdout_seconds": 0.05324979196302593,
+              "user_cpu_seconds": 0.033882999999999996,
+              "system_cpu_seconds": 0.017166,
+              "peak_child_rss_bytes": 10682368,
+              "sum_child_peak_rss_bytes": 10682368,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.054758874932304025,
+              "first_stdout_seconds": 0.053119458025321364,
+              "user_cpu_seconds": 0.033867999999999995,
+              "system_cpu_seconds": 0.017088,
+              "peak_child_rss_bytes": 10207232,
+              "sum_child_peak_rss_bytes": 10207232,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.054546458879485726,
+              "first_stdout_seconds": 0.052854042034596205,
+              "user_cpu_seconds": 0.033819,
+              "system_cpu_seconds": 0.016989,
+              "peak_child_rss_bytes": 10665984,
+              "sum_child_peak_rss_bytes": 10665984,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 54.82147028669715
+        },
+        "xff-pcre2": {
+          "command": [
+            "/private/tmp/xff-regex-results/xff-macos-arm64",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--jobs=4",
+            "--exact",
+            "--case=sensitive",
+            "--gitignore=off",
+            "--hidden",
+            "--regextype=PCRE2",
+            ".",
+            "-type",
+            "f",
+            "-rxc",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "-print0"
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.06614666688255966,
+              "first_stdout_seconds": 0.0643097918946296,
+              "user_cpu_seconds": 0.043919,
+              "system_cpu_seconds": 0.017946,
+              "peak_child_rss_bytes": 10944512,
+              "sum_child_peak_rss_bytes": 10944512,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06562966713681817,
+              "first_stdout_seconds": 0.06401604204438627,
+              "user_cpu_seconds": 0.044514,
+              "system_cpu_seconds": 0.017221999999999998,
+              "peak_child_rss_bytes": 11124736,
+              "sum_child_peak_rss_bytes": 11124736,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06479391595348716,
+              "first_stdout_seconds": 0.06292120809666812,
+              "user_cpu_seconds": 0.043810999999999996,
+              "system_cpu_seconds": 0.017155999999999998,
+              "peak_child_rss_bytes": 11010048,
+              "sum_child_peak_rss_bytes": 11010048,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06430416600778699,
+              "first_stdout_seconds": 0.06257454096339643,
+              "user_cpu_seconds": 0.042703,
+              "system_cpu_seconds": 0.017532,
+              "peak_child_rss_bytes": 10715136,
+              "sum_child_peak_rss_bytes": 10715136,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.0658789579756558,
+              "first_stdout_seconds": 0.06422987510450184,
+              "user_cpu_seconds": 0.044532999999999996,
+              "system_cpu_seconds": 0.017671,
+              "peak_child_rss_bytes": 10649600,
+              "sum_child_peak_rss_bytes": 10649600,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06519604194909334,
+              "first_stdout_seconds": 0.06355316704139113,
+              "user_cpu_seconds": 0.043976999999999995,
+              "system_cpu_seconds": 0.017419999999999998,
+              "peak_child_rss_bytes": 10715136,
+              "sum_child_peak_rss_bytes": 10715136,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06451387493871152,
+              "first_stdout_seconds": 0.06270137499086559,
+              "user_cpu_seconds": 0.043352999999999996,
+              "system_cpu_seconds": 0.017209,
+              "peak_child_rss_bytes": 10289152,
+              "sum_child_peak_rss_bytes": 10289152,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.0647546669933945,
+              "first_stdout_seconds": 0.0631594171281904,
+              "user_cpu_seconds": 0.044232999999999995,
+              "system_cpu_seconds": 0.016822,
+              "peak_child_rss_bytes": 10518528,
+              "sum_child_peak_rss_bytes": 10518528,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06483862502500415,
+              "first_stdout_seconds": 0.06316399993374944,
+              "user_cpu_seconds": 0.043095,
+              "system_cpu_seconds": 0.017863,
+              "peak_child_rss_bytes": 10944512,
+              "sum_child_peak_rss_bytes": 10944512,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 64.86156542918512
+        },
+        "rg-pcre2": {
+          "command": [
+            "/opt/homebrew/Cellar/ripgrep/15.2.0/bin/rg",
+            "--no-config",
+            "--pcre2",
+            "--case-sensitive",
+            "--text",
+            "--hidden",
+            "--no-ignore",
+            "--threads=4",
+            "--color=never",
+            "--files-with-matches",
+            "--null",
+            "-e",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "."
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.021322291810065508,
+              "first_stdout_seconds": 0.007797041907906532,
+              "user_cpu_seconds": 0.014721999999999999,
+              "system_cpu_seconds": 0.040513,
+              "peak_child_rss_bytes": 6307840,
+              "sum_child_peak_rss_bytes": 6307840,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.023238916881382465,
+              "first_stdout_seconds": 0.007901541888713837,
+              "user_cpu_seconds": 0.014946999999999998,
+              "system_cpu_seconds": 0.041318,
+              "peak_child_rss_bytes": 6307840,
+              "sum_child_peak_rss_bytes": 6307840,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.023350375005975366,
+              "first_stdout_seconds": 0.008077124832198024,
+              "user_cpu_seconds": 0.014934999999999999,
+              "system_cpu_seconds": 0.041624999999999995,
+              "peak_child_rss_bytes": 6389760,
+              "sum_child_peak_rss_bytes": 6389760,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.021845957962796092,
+              "first_stdout_seconds": 0.008191541070118546,
+              "user_cpu_seconds": 0.014544,
+              "system_cpu_seconds": 0.041509,
+              "peak_child_rss_bytes": 6291456,
+              "sum_child_peak_rss_bytes": 6291456,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.02315779193304479,
+              "first_stdout_seconds": 0.007846416905522346,
+              "user_cpu_seconds": 0.014861,
+              "system_cpu_seconds": 0.041419,
+              "peak_child_rss_bytes": 6291456,
+              "sum_child_peak_rss_bytes": 6291456,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.0216429999563843,
+              "first_stdout_seconds": 0.008080458035692573,
+              "user_cpu_seconds": 0.014624999999999999,
+              "system_cpu_seconds": 0.041037,
+              "peak_child_rss_bytes": 6307840,
+              "sum_child_peak_rss_bytes": 6307840,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.021023583132773638,
+              "first_stdout_seconds": 0.007389208069071174,
+              "user_cpu_seconds": 0.014587999999999999,
+              "system_cpu_seconds": 0.040676,
+              "peak_child_rss_bytes": 6340608,
+              "sum_child_peak_rss_bytes": 6340608,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.021652041003108025,
+              "first_stdout_seconds": 0.007932125125080347,
+              "user_cpu_seconds": 0.014608,
+              "system_cpu_seconds": 0.041703,
+              "peak_child_rss_bytes": 6340608,
+              "sum_child_peak_rss_bytes": 6340608,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.02183525008149445,
+              "first_stdout_seconds": 0.008222040953114629,
+              "user_cpu_seconds": 0.014808,
+              "system_cpu_seconds": 0.041099,
+              "peak_child_rss_bytes": 6291456,
+              "sum_child_peak_rss_bytes": 6291456,
+              "stdout_bytes": 6012,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 21.782845125666686
+        }
+      }
+    },
+    {
+      "files": 1000,
+      "workers": 1,
+      "population": "absent",
+      "expected_count": 0,
+      "fixture_sha256": "d42a3a1a9b5be611530c63e5f2e34feb90daaf20dfaa44dd2631b3b196c325a8",
+      "cpu_affinity": null,
+      "participants": {
+        "xff-re2": {
+          "command": [
+            "/private/tmp/xff-regex-results/xff-macos-arm64",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--jobs=1",
+            "--exact",
+            "--case=sensitive",
+            "--gitignore=off",
+            "--hidden",
+            "--regextype=RE2",
+            ".",
+            "-type",
+            "f",
+            "-rxc",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "-print0"
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.05406333296559751,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033631,
+              "system_cpu_seconds": 0.01685,
+              "peak_child_rss_bytes": 10780672,
+              "sum_child_peak_rss_bytes": 10780672,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05460820905864239,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033797,
+              "system_cpu_seconds": 0.017072,
+              "peak_child_rss_bytes": 10223616,
+              "sum_child_peak_rss_bytes": 10223616,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05424462491646409,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033755,
+              "system_cpu_seconds": 0.016847,
+              "peak_child_rss_bytes": 10436608,
+              "sum_child_peak_rss_bytes": 10436608,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05467504099942744,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033872,
+              "system_cpu_seconds": 0.017082,
+              "peak_child_rss_bytes": 10747904,
+              "sum_child_peak_rss_bytes": 10747904,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05433050007559359,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033816,
+              "system_cpu_seconds": 0.016992,
+              "peak_child_rss_bytes": 10649600,
+              "sum_child_peak_rss_bytes": 10649600,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05442170798778534,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033852,
+              "system_cpu_seconds": 0.017013,
+              "peak_child_rss_bytes": 10354688,
+              "sum_child_peak_rss_bytes": 10354688,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.054277250077575445,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033775,
+              "system_cpu_seconds": 0.016836,
+              "peak_child_rss_bytes": 10223616,
+              "sum_child_peak_rss_bytes": 10223616,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05431458284147084,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033759,
+              "system_cpu_seconds": 0.01686,
+              "peak_child_rss_bytes": 10436608,
+              "sum_child_peak_rss_bytes": 10436608,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05456837499514222,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033837,
+              "system_cpu_seconds": 0.016947,
+              "peak_child_rss_bytes": 10747904,
+              "sum_child_peak_rss_bytes": 10747904,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 54.31719626566129
+        },
+        "xff-pcre2": {
+          "command": [
+            "/private/tmp/xff-regex-results/xff-macos-arm64",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--jobs=1",
+            "--exact",
+            "--case=sensitive",
+            "--gitignore=off",
+            "--hidden",
+            "--regextype=PCRE2",
+            ".",
+            "-type",
+            "f",
+            "-rxc",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "-print0"
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.06303724995814264,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.042015,
+              "system_cpu_seconds": 0.017214,
+              "peak_child_rss_bytes": 10895360,
+              "sum_child_peak_rss_bytes": 10895360,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06479791598394513,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.043977999999999996,
+              "system_cpu_seconds": 0.017018,
+              "peak_child_rss_bytes": 10305536,
+              "sum_child_peak_rss_bytes": 10305536,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06361533305607736,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.043101,
+              "system_cpu_seconds": 0.016853,
+              "peak_child_rss_bytes": 11042816,
+              "sum_child_peak_rss_bytes": 11042816,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06506816693581641,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.043884,
+              "system_cpu_seconds": 0.017297,
+              "peak_child_rss_bytes": 10649600,
+              "sum_child_peak_rss_bytes": 10649600,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06522325007244945,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.043991999999999996,
+              "system_cpu_seconds": 0.01756,
+              "peak_child_rss_bytes": 10354688,
+              "sum_child_peak_rss_bytes": 10354688,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06435854197479784,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.043807,
+              "system_cpu_seconds": 0.016968,
+              "peak_child_rss_bytes": 10797056,
+              "sum_child_peak_rss_bytes": 10797056,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06393350008875132,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.043037,
+              "system_cpu_seconds": 0.01715,
+              "peak_child_rss_bytes": 10764288,
+              "sum_child_peak_rss_bytes": 10764288,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06418954185210168,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.043207999999999996,
+              "system_cpu_seconds": 0.017284,
+              "peak_child_rss_bytes": 10338304,
+              "sum_child_peak_rss_bytes": 10338304,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06450158287771046,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.043736,
+              "system_cpu_seconds": 0.017166,
+              "peak_child_rss_bytes": 10354688,
+              "sum_child_peak_rss_bytes": 10354688,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 64.06195225593235
+        },
+        "rg-pcre2": {
+          "command": [
+            "/opt/homebrew/Cellar/ripgrep/15.2.0/bin/rg",
+            "--no-config",
+            "--pcre2",
+            "--case-sensitive",
+            "--text",
+            "--hidden",
+            "--no-ignore",
+            "--threads=1",
+            "--color=never",
+            "--files-with-matches",
+            "--null",
+            "-e",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "."
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.03193358308635652,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.013486,
+              "system_cpu_seconds": 0.015944,
+              "peak_child_rss_bytes": 4161536,
+              "sum_child_peak_rss_bytes": 4161536,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.03202579100616276,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.013557,
+              "system_cpu_seconds": 0.015961,
+              "peak_child_rss_bytes": 4177920,
+              "sum_child_peak_rss_bytes": 4177920,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.03201399999670684,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.013613,
+              "system_cpu_seconds": 0.015958,
+              "peak_child_rss_bytes": 4145152,
+              "sum_child_peak_rss_bytes": 4145152,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.03237204207107425,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.013441999999999999,
+              "system_cpu_seconds": 0.016259,
+              "peak_child_rss_bytes": 4145152,
+              "sum_child_peak_rss_bytes": 4145152,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.031830209074541926,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.013346,
+              "system_cpu_seconds": 0.016035999999999998,
+              "peak_child_rss_bytes": 4145152,
+              "sum_child_peak_rss_bytes": 4145152,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.031860999995842576,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.013411999999999999,
+              "system_cpu_seconds": 0.016045,
+              "peak_child_rss_bytes": 4161536,
+              "sum_child_peak_rss_bytes": 4161536,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.032250208081677556,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.013717,
+              "system_cpu_seconds": 0.016059999999999998,
+              "peak_child_rss_bytes": 4145152,
+              "sum_child_peak_rss_bytes": 4145152,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.03204904100857675,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.013574999999999999,
+              "system_cpu_seconds": 0.0159,
+              "peak_child_rss_bytes": 4161536,
+              "sum_child_peak_rss_bytes": 4161536,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.03174983384087682,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.013456,
+              "system_cpu_seconds": 0.015871,
+              "peak_child_rss_bytes": 4145152,
+              "sum_child_peak_rss_bytes": 4145152,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 31.923351144152026
+        }
+      }
+    },
+    {
+      "files": 1000,
+      "workers": 4,
+      "population": "absent",
+      "expected_count": 0,
+      "fixture_sha256": "d42a3a1a9b5be611530c63e5f2e34feb90daaf20dfaa44dd2631b3b196c325a8",
+      "cpu_affinity": null,
+      "participants": {
+        "xff-re2": {
+          "command": [
+            "/private/tmp/xff-regex-results/xff-macos-arm64",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--jobs=4",
+            "--exact",
+            "--case=sensitive",
+            "--gitignore=off",
+            "--hidden",
+            "--regextype=RE2",
+            ".",
+            "-type",
+            "f",
+            "-rxc",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "-print0"
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.05407562502659857,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033749,
+              "system_cpu_seconds": 0.01685,
+              "peak_child_rss_bytes": 10452992,
+              "sum_child_peak_rss_bytes": 10452992,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05452162493020296,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033689,
+              "system_cpu_seconds": 0.017145999999999998,
+              "peak_child_rss_bytes": 10715136,
+              "sum_child_peak_rss_bytes": 10715136,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05443754093721509,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033793,
+              "system_cpu_seconds": 0.017037,
+              "peak_child_rss_bytes": 10076160,
+              "sum_child_peak_rss_bytes": 10076160,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05467320792376995,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033777999999999996,
+              "system_cpu_seconds": 0.016822,
+              "peak_child_rss_bytes": 10174464,
+              "sum_child_peak_rss_bytes": 10174464,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05434516607783735,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.03385,
+              "system_cpu_seconds": 0.016767999999999998,
+              "peak_child_rss_bytes": 10420224,
+              "sum_child_peak_rss_bytes": 10420224,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05421191710047424,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033756999999999995,
+              "system_cpu_seconds": 0.016842,
+              "peak_child_rss_bytes": 10764288,
+              "sum_child_peak_rss_bytes": 10764288,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.0547602919396013,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033721,
+              "system_cpu_seconds": 0.017203,
+              "peak_child_rss_bytes": 10502144,
+              "sum_child_peak_rss_bytes": 10502144,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.05472120805643499,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033783,
+              "system_cpu_seconds": 0.01712,
+              "peak_child_rss_bytes": 10797056,
+              "sum_child_peak_rss_bytes": 10797056,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.056544666877016425,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.033788,
+              "system_cpu_seconds": 0.018942999999999998,
+              "peak_child_rss_bytes": 10436608,
+              "sum_child_peak_rss_bytes": 10436608,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 54.426612864647595
+        },
+        "xff-pcre2": {
+          "command": [
+            "/private/tmp/xff-regex-results/xff-macos-arm64",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--jobs=4",
+            "--exact",
+            "--case=sensitive",
+            "--gitignore=off",
+            "--hidden",
+            "--regextype=PCRE2",
+            ".",
+            "-type",
+            "f",
+            "-rxc",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "-print0"
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.06445087515749037,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.04382,
+              "system_cpu_seconds": 0.017100999999999998,
+              "peak_child_rss_bytes": 10797056,
+              "sum_child_peak_rss_bytes": 10797056,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.0635804170742631,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.04306,
+              "system_cpu_seconds": 0.016929,
+              "peak_child_rss_bytes": 10698752,
+              "sum_child_peak_rss_bytes": 10698752,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06420229189097881,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.043650999999999995,
+              "system_cpu_seconds": 0.016971,
+              "peak_child_rss_bytes": 10567680,
+              "sum_child_peak_rss_bytes": 10567680,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06546454201452434,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.044593999999999995,
+              "system_cpu_seconds": 0.017003,
+              "peak_child_rss_bytes": 10584064,
+              "sum_child_peak_rss_bytes": 10584064,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06320041697472334,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.042752,
+              "system_cpu_seconds": 0.016758,
+              "peak_child_rss_bytes": 10502144,
+              "sum_child_peak_rss_bytes": 10502144,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06414704211056232,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.043239,
+              "system_cpu_seconds": 0.017249,
+              "peak_child_rss_bytes": 10305536,
+              "sum_child_peak_rss_bytes": 10305536,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06432937504723668,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.043829,
+              "system_cpu_seconds": 0.016968999999999998,
+              "peak_child_rss_bytes": 10240000,
+              "sum_child_peak_rss_bytes": 10240000,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06503429193980992,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.043873999999999996,
+              "system_cpu_seconds": 0.017369,
+              "peak_child_rss_bytes": 10665984,
+              "sum_child_peak_rss_bytes": 10665984,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.06462679198011756,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.043959,
+              "system_cpu_seconds": 0.01698,
+              "peak_child_rss_bytes": 10584064,
+              "sum_child_peak_rss_bytes": 10584064,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 64.07674431933889
+        },
+        "rg-pcre2": {
+          "command": [
+            "/opt/homebrew/Cellar/ripgrep/15.2.0/bin/rg",
+            "--no-config",
+            "--pcre2",
+            "--case-sensitive",
+            "--text",
+            "--hidden",
+            "--no-ignore",
+            "--threads=4",
+            "--color=never",
+            "--files-with-matches",
+            "--null",
+            "-e",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "."
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.01838108291849494,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.014020999999999999,
+              "system_cpu_seconds": 0.030272999999999998,
+              "peak_child_rss_bytes": 6193152,
+              "sum_child_peak_rss_bytes": 6193152,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.018919125199317932,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.01401,
+              "system_cpu_seconds": 0.032088,
+              "peak_child_rss_bytes": 6193152,
+              "sum_child_peak_rss_bytes": 6193152,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.01931045879609883,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.014771,
+              "system_cpu_seconds": 0.031289,
+              "peak_child_rss_bytes": 6258688,
+              "sum_child_peak_rss_bytes": 6258688,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.01908041606657207,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.014048,
+              "system_cpu_seconds": 0.032227,
+              "peak_child_rss_bytes": 6193152,
+              "sum_child_peak_rss_bytes": 6193152,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.018878082977607846,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.013838999999999999,
+              "system_cpu_seconds": 0.031056,
+              "peak_child_rss_bytes": 6258688,
+              "sum_child_peak_rss_bytes": 6258688,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.019730124855414033,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.014034999999999999,
+              "system_cpu_seconds": 0.034406,
+              "peak_child_rss_bytes": 6258688,
+              "sum_child_peak_rss_bytes": 6258688,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.01883220812305808,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.014091,
+              "system_cpu_seconds": 0.030928999999999998,
+              "peak_child_rss_bytes": 6193152,
+              "sum_child_peak_rss_bytes": 6193152,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.018788750050589442,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.014776,
+              "system_cpu_seconds": 0.030712999999999997,
+              "peak_child_rss_bytes": 6225920,
+              "sum_child_peak_rss_bytes": 6225920,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.019728791201487184,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.014041,
+              "system_cpu_seconds": 0.035122,
+              "peak_child_rss_bytes": 6176768,
+              "sum_child_peak_rss_bytes": 6176768,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 18.884303447391307
+        }
+      }
+    },
+    {
+      "files": 10000,
+      "workers": 1,
+      "population": "mixed",
+      "expected_count": 3334,
+      "fixture_sha256": "1cb0aec6305632b91a7b0fd9c4852afc716f0164393258313a284163777d2060",
+      "cpu_affinity": null,
+      "participants": {
+        "xff-re2": {
+          "command": [
+            "/private/tmp/xff-regex-results/xff-macos-arm64",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--jobs=1",
+            "--exact",
+            "--case=sensitive",
+            "--gitignore=off",
+            "--hidden",
+            "--regextype=RE2",
+            ".",
+            "-type",
+            "f",
+            "-rxc",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "-print0"
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.47817737492732704,
+              "first_stdout_seconds": 0.14020037511363626,
+              "user_cpu_seconds": 0.304699,
+              "system_cpu_seconds": 0.169317,
+              "peak_child_rss_bytes": 14319616,
+              "sum_child_peak_rss_bytes": 14319616,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4788956658449024,
+              "first_stdout_seconds": 0.1400640408974141,
+              "user_cpu_seconds": 0.3049,
+              "system_cpu_seconds": 0.1707,
+              "peak_child_rss_bytes": 14221312,
+              "sum_child_peak_rss_bytes": 14221312,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4805681670550257,
+              "first_stdout_seconds": 0.14008225011639297,
+              "user_cpu_seconds": 0.304881,
+              "system_cpu_seconds": 0.17152799999999999,
+              "peak_child_rss_bytes": 13926400,
+              "sum_child_peak_rss_bytes": 13926400,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.47916424996219575,
+              "first_stdout_seconds": 0.1395131670869887,
+              "user_cpu_seconds": 0.304724,
+              "system_cpu_seconds": 0.170534,
+              "peak_child_rss_bytes": 13959168,
+              "sum_child_peak_rss_bytes": 13959168,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.47844295809045434,
+              "first_stdout_seconds": 0.139313958119601,
+              "user_cpu_seconds": 0.30466,
+              "system_cpu_seconds": 0.169864,
+              "peak_child_rss_bytes": 13860864,
+              "sum_child_peak_rss_bytes": 13860864,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4766683748457581,
+              "first_stdout_seconds": 0.1399037919472903,
+              "user_cpu_seconds": 0.304751,
+              "system_cpu_seconds": 0.16769099999999998,
+              "peak_child_rss_bytes": 13910016,
+              "sum_child_peak_rss_bytes": 13910016,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.47663362487219274,
+              "first_stdout_seconds": 0.13921520789153874,
+              "user_cpu_seconds": 0.305014,
+              "system_cpu_seconds": 0.167708,
+              "peak_child_rss_bytes": 14237696,
+              "sum_child_peak_rss_bytes": 14237696,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4782135409768671,
+              "first_stdout_seconds": 0.14022304094396532,
+              "user_cpu_seconds": 0.304483,
+              "system_cpu_seconds": 0.169641,
+              "peak_child_rss_bytes": 13877248,
+              "sum_child_peak_rss_bytes": 13877248,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4792628330178559,
+              "first_stdout_seconds": 0.1394800830166787,
+              "user_cpu_seconds": 0.30469799999999997,
+              "system_cpu_seconds": 0.17049999999999998,
+              "peak_child_rss_bytes": 13778944,
+              "sum_child_peak_rss_bytes": 13778944,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 478.02796993138537
+        },
+        "xff-pcre2": {
+          "command": [
+            "/private/tmp/xff-regex-results/xff-macos-arm64",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--jobs=1",
+            "--exact",
+            "--case=sensitive",
+            "--gitignore=off",
+            "--hidden",
+            "--regextype=PCRE2",
+            ".",
+            "-type",
+            "f",
+            "-rxc",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "-print0"
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.5646344588603824,
+              "first_stdout_seconds": 0.16351516684517264,
+              "user_cpu_seconds": 0.39158899999999996,
+              "system_cpu_seconds": 0.16911099999999998,
+              "peak_child_rss_bytes": 14581760,
+              "sum_child_peak_rss_bytes": 14581760,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5749325421638787,
+              "first_stdout_seconds": 0.16645450005307794,
+              "user_cpu_seconds": 0.401713,
+              "system_cpu_seconds": 0.16935999999999998,
+              "peak_child_rss_bytes": 14123008,
+              "sum_child_peak_rss_bytes": 14123008,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5814214160200208,
+              "first_stdout_seconds": 0.16843537497334182,
+              "user_cpu_seconds": 0.40742599999999995,
+              "system_cpu_seconds": 0.169789,
+              "peak_child_rss_bytes": 13910016,
+              "sum_child_peak_rss_bytes": 13910016,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5806128750555217,
+              "first_stdout_seconds": 0.16811379115097225,
+              "user_cpu_seconds": 0.40540299999999996,
+              "system_cpu_seconds": 0.171126,
+              "peak_child_rss_bytes": 13926400,
+              "sum_child_peak_rss_bytes": 13926400,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5827433748636395,
+              "first_stdout_seconds": 0.1680440418422222,
+              "user_cpu_seconds": 0.407694,
+              "system_cpu_seconds": 0.17085,
+              "peak_child_rss_bytes": 14204928,
+              "sum_child_peak_rss_bytes": 14204928,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5854513749945909,
+              "first_stdout_seconds": 0.16889775008894503,
+              "user_cpu_seconds": 0.409639,
+              "system_cpu_seconds": 0.171601,
+              "peak_child_rss_bytes": 14467072,
+              "sum_child_peak_rss_bytes": 14467072,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.578407249879092,
+              "first_stdout_seconds": 0.1666277078911662,
+              "user_cpu_seconds": 0.40372199999999997,
+              "system_cpu_seconds": 0.170729,
+              "peak_child_rss_bytes": 13828096,
+              "sum_child_peak_rss_bytes": 13828096,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5876368330791593,
+              "first_stdout_seconds": 0.1663967079948634,
+              "user_cpu_seconds": 0.40398,
+              "system_cpu_seconds": 0.179771,
+              "peak_child_rss_bytes": 14254080,
+              "sum_child_peak_rss_bytes": 14254080,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5792243329342455,
+              "first_stdout_seconds": 0.16979441582225263,
+              "user_cpu_seconds": 0.40203099999999997,
+              "system_cpu_seconds": 0.172948,
+              "peak_child_rss_bytes": 14139392,
+              "sum_child_peak_rss_bytes": 14139392,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 577.4251785395401
+        },
+        "rg-pcre2": {
+          "command": [
+            "/opt/homebrew/Cellar/ripgrep/15.2.0/bin/rg",
+            "--no-config",
+            "--pcre2",
+            "--case-sensitive",
+            "--text",
+            "--hidden",
+            "--no-ignore",
+            "--threads=1",
+            "--color=never",
+            "--files-with-matches",
+            "--null",
+            "-e",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "."
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.34107516589574516,
+              "first_stdout_seconds": 0.050309249898418784,
+              "user_cpu_seconds": 0.12634599999999999,
+              "system_cpu_seconds": 0.212119,
+              "peak_child_rss_bytes": 4210688,
+              "sum_child_peak_rss_bytes": 4210688,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.3401891659013927,
+              "first_stdout_seconds": 0.050263541052117944,
+              "user_cpu_seconds": 0.126776,
+              "system_cpu_seconds": 0.21082399999999998,
+              "peak_child_rss_bytes": 4210688,
+              "sum_child_peak_rss_bytes": 4210688,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.3439753327984363,
+              "first_stdout_seconds": 0.05018116696737707,
+              "user_cpu_seconds": 0.12599,
+              "system_cpu_seconds": 0.215132,
+              "peak_child_rss_bytes": 4210688,
+              "sum_child_peak_rss_bytes": 4210688,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.3402467919513583,
+              "first_stdout_seconds": 0.05032858299091458,
+              "user_cpu_seconds": 0.125303,
+              "system_cpu_seconds": 0.21211,
+              "peak_child_rss_bytes": 4210688,
+              "sum_child_peak_rss_bytes": 4210688,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.34537254204042256,
+              "first_stdout_seconds": 0.05015858309343457,
+              "user_cpu_seconds": 0.127412,
+              "system_cpu_seconds": 0.215267,
+              "peak_child_rss_bytes": 4194304,
+              "sum_child_peak_rss_bytes": 4194304,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.33849891694262624,
+              "first_stdout_seconds": 0.0502531249076128,
+              "user_cpu_seconds": 0.124122,
+              "system_cpu_seconds": 0.211694,
+              "peak_child_rss_bytes": 4194304,
+              "sum_child_peak_rss_bytes": 4194304,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.3419244580436498,
+              "first_stdout_seconds": 0.050086333183571696,
+              "user_cpu_seconds": 0.12482199999999999,
+              "system_cpu_seconds": 0.214529,
+              "peak_child_rss_bytes": 4210688,
+              "sum_child_peak_rss_bytes": 4210688,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.39756425004452467,
+              "first_stdout_seconds": 0.05977920815348625,
+              "user_cpu_seconds": 0.127747,
+              "system_cpu_seconds": 0.26697,
+              "peak_child_rss_bytes": 4210688,
+              "sum_child_peak_rss_bytes": 4210688,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.3353182498831302,
+              "first_stdout_seconds": 0.04972699983045459,
+              "user_cpu_seconds": 0.12265799999999999,
+              "system_cpu_seconds": 0.21010399999999999,
+              "peak_child_rss_bytes": 4210688,
+              "sum_child_peak_rss_bytes": 4210688,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 340.1754402023341
+        }
+      }
+    },
+    {
+      "files": 10000,
+      "workers": 4,
+      "population": "mixed",
+      "expected_count": 3334,
+      "fixture_sha256": "1cb0aec6305632b91a7b0fd9c4852afc716f0164393258313a284163777d2060",
+      "cpu_affinity": null,
+      "participants": {
+        "xff-re2": {
+          "command": [
+            "/private/tmp/xff-regex-results/xff-macos-arm64",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--jobs=4",
+            "--exact",
+            "--case=sensitive",
+            "--gitignore=off",
+            "--hidden",
+            "--regextype=RE2",
+            ".",
+            "-type",
+            "f",
+            "-rxc",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "-print0"
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.4767968337982893,
+              "first_stdout_seconds": 0.13932499988004565,
+              "user_cpu_seconds": 0.30499,
+              "system_cpu_seconds": 0.167617,
+              "peak_child_rss_bytes": 14204928,
+              "sum_child_peak_rss_bytes": 14204928,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4764727079309523,
+              "first_stdout_seconds": 0.13938324991613626,
+              "user_cpu_seconds": 0.305477,
+              "system_cpu_seconds": 0.16685999999999998,
+              "peak_child_rss_bytes": 14352384,
+              "sum_child_peak_rss_bytes": 14352384,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.47923804190941155,
+              "first_stdout_seconds": 0.1410860000178218,
+              "user_cpu_seconds": 0.304765,
+              "system_cpu_seconds": 0.17077799999999999,
+              "peak_child_rss_bytes": 14319616,
+              "sum_child_peak_rss_bytes": 14319616,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.47568533290177584,
+              "first_stdout_seconds": 0.13980983290821314,
+              "user_cpu_seconds": 0.30477,
+              "system_cpu_seconds": 0.166937,
+              "peak_child_rss_bytes": 14270464,
+              "sum_child_peak_rss_bytes": 14270464,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.47667945781722665,
+              "first_stdout_seconds": 0.14001533295959234,
+              "user_cpu_seconds": 0.304962,
+              "system_cpu_seconds": 0.167838,
+              "peak_child_rss_bytes": 14172160,
+              "sum_child_peak_rss_bytes": 14172160,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.49226274993270636,
+              "first_stdout_seconds": 0.1391374170780182,
+              "user_cpu_seconds": 0.30507999999999996,
+              "system_cpu_seconds": 0.18295899999999998,
+              "peak_child_rss_bytes": 13828096,
+              "sum_child_peak_rss_bytes": 13828096,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4777122079394758,
+              "first_stdout_seconds": 0.14057029085233808,
+              "user_cpu_seconds": 0.305036,
+              "system_cpu_seconds": 0.16858499999999998,
+              "peak_child_rss_bytes": 13778944,
+              "sum_child_peak_rss_bytes": 13778944,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4778576670214534,
+              "first_stdout_seconds": 0.14071862492710352,
+              "user_cpu_seconds": 0.305695,
+              "system_cpu_seconds": 0.16798,
+              "peak_child_rss_bytes": 14467072,
+              "sum_child_peak_rss_bytes": 14467072,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.481380500132218,
+              "first_stdout_seconds": 0.14064308418892324,
+              "user_cpu_seconds": 0.305902,
+              "system_cpu_seconds": 0.171287,
+              "peak_child_rss_bytes": 14237696,
+              "sum_child_peak_rss_bytes": 14237696,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 477.2060356169407
+        },
+        "xff-pcre2": {
+          "command": [
+            "/private/tmp/xff-regex-results/xff-macos-arm64",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--jobs=4",
+            "--exact",
+            "--case=sensitive",
+            "--gitignore=off",
+            "--hidden",
+            "--regextype=PCRE2",
+            ".",
+            "-type",
+            "f",
+            "-rxc",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "-print0"
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.5777857501525432,
+              "first_stdout_seconds": 0.16782708303071558,
+              "user_cpu_seconds": 0.40533199999999997,
+              "system_cpu_seconds": 0.168344,
+              "peak_child_rss_bytes": 14434304,
+              "sum_child_peak_rss_bytes": 14434304,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5646744170226157,
+              "first_stdout_seconds": 0.16204283316619694,
+              "user_cpu_seconds": 0.38941499999999996,
+              "system_cpu_seconds": 0.17119199999999998,
+              "peak_child_rss_bytes": 14336000,
+              "sum_child_peak_rss_bytes": 14336000,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5783663338515908,
+              "first_stdout_seconds": 0.16756395902484655,
+              "user_cpu_seconds": 0.403035,
+              "system_cpu_seconds": 0.171068,
+              "peak_child_rss_bytes": 13713408,
+              "sum_child_peak_rss_bytes": 13713408,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5722192921675742,
+              "first_stdout_seconds": 0.16928391717374325,
+              "user_cpu_seconds": 0.39688199999999996,
+              "system_cpu_seconds": 0.171531,
+              "peak_child_rss_bytes": 14614528,
+              "sum_child_peak_rss_bytes": 14614528,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5816202918067575,
+              "first_stdout_seconds": 0.16881658299826086,
+              "user_cpu_seconds": 0.406688,
+              "system_cpu_seconds": 0.170753,
+              "peak_child_rss_bytes": 13713408,
+              "sum_child_peak_rss_bytes": 13713408,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.64024579199031,
+              "first_stdout_seconds": 0.18698416696861386,
+              "user_cpu_seconds": 0.404843,
+              "system_cpu_seconds": 0.23166199999999998,
+              "peak_child_rss_bytes": 14417920,
+              "sum_child_peak_rss_bytes": 14417920,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5744409579783678,
+              "first_stdout_seconds": 0.16613287501968443,
+              "user_cpu_seconds": 0.403831,
+              "system_cpu_seconds": 0.16658199999999998,
+              "peak_child_rss_bytes": 14204928,
+              "sum_child_peak_rss_bytes": 14204928,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5738460409920663,
+              "first_stdout_seconds": 0.167272332822904,
+              "user_cpu_seconds": 0.396873,
+              "system_cpu_seconds": 0.172734,
+              "peak_child_rss_bytes": 14385152,
+              "sum_child_peak_rss_bytes": 14385152,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.58344458299689,
+              "first_stdout_seconds": 0.16917324997484684,
+              "user_cpu_seconds": 0.407659,
+              "system_cpu_seconds": 0.171751,
+              "peak_child_rss_bytes": 14401536,
+              "sum_child_peak_rss_bytes": 14401536,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 574.7075834245022
+        },
+        "rg-pcre2": {
+          "command": [
+            "/opt/homebrew/Cellar/ripgrep/15.2.0/bin/rg",
+            "--no-config",
+            "--pcre2",
+            "--case-sensitive",
+            "--text",
+            "--hidden",
+            "--no-ignore",
+            "--threads=4",
+            "--color=never",
+            "--files-with-matches",
+            "--null",
+            "-e",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "."
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.15032529085874557,
+              "first_stdout_seconds": 0.013404458062723279,
+              "user_cpu_seconds": 0.132472,
+              "system_cpu_seconds": 0.421031,
+              "peak_child_rss_bytes": 19660800,
+              "sum_child_peak_rss_bytes": 19660800,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.15266154101118445,
+              "first_stdout_seconds": 0.01372783281840384,
+              "user_cpu_seconds": 0.133619,
+              "system_cpu_seconds": 0.427543,
+              "peak_child_rss_bytes": 19677184,
+              "sum_child_peak_rss_bytes": 19677184,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.15165212494321167,
+              "first_stdout_seconds": 0.014759249985218048,
+              "user_cpu_seconds": 0.13101,
+              "system_cpu_seconds": 0.42299699999999996,
+              "peak_child_rss_bytes": 19709952,
+              "sum_child_peak_rss_bytes": 19709952,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.15218566707335413,
+              "first_stdout_seconds": 0.013561666943132877,
+              "user_cpu_seconds": 0.130406,
+              "system_cpu_seconds": 0.425946,
+              "peak_child_rss_bytes": 19726336,
+              "sum_child_peak_rss_bytes": 19726336,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.15089250006712973,
+              "first_stdout_seconds": 0.01300329202786088,
+              "user_cpu_seconds": 0.131962,
+              "system_cpu_seconds": 0.42494699999999996,
+              "peak_child_rss_bytes": 19660800,
+              "sum_child_peak_rss_bytes": 19660800,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.1526086248923093,
+              "first_stdout_seconds": 0.013454166008159518,
+              "user_cpu_seconds": 0.138684,
+              "system_cpu_seconds": 0.42392799999999997,
+              "peak_child_rss_bytes": 19709952,
+              "sum_child_peak_rss_bytes": 19709952,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.15120462491177022,
+              "first_stdout_seconds": 0.013231332879513502,
+              "user_cpu_seconds": 0.13042499999999999,
+              "system_cpu_seconds": 0.428987,
+              "peak_child_rss_bytes": 19660800,
+              "sum_child_peak_rss_bytes": 19660800,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.152043541893363,
+              "first_stdout_seconds": 0.013018541969358921,
+              "user_cpu_seconds": 0.130404,
+              "system_cpu_seconds": 0.429506,
+              "peak_child_rss_bytes": 19677184,
+              "sum_child_peak_rss_bytes": 19677184,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.15137699991464615,
+              "first_stdout_seconds": 0.013302915962412953,
+              "user_cpu_seconds": 0.13039299999999998,
+              "system_cpu_seconds": 0.428718,
+              "peak_child_rss_bytes": 19660800,
+              "sum_child_peak_rss_bytes": 19660800,
+              "stdout_bytes": 60012,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 151.38296423746007
+        }
+      }
+    },
+    {
+      "files": 10000,
+      "workers": 1,
+      "population": "absent",
+      "expected_count": 0,
+      "fixture_sha256": "9462dd1f12dac55bd3a02efed812107f1ff4ff70c3886cb6987cf8c198c51fe9",
+      "cpu_affinity": null,
+      "participants": {
+        "xff-re2": {
+          "command": [
+            "/private/tmp/xff-regex-results/xff-macos-arm64",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--jobs=1",
+            "--exact",
+            "--case=sensitive",
+            "--gitignore=off",
+            "--hidden",
+            "--regextype=RE2",
+            ".",
+            "-type",
+            "f",
+            "-rxc",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "-print0"
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.479806125164032,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.304299,
+              "system_cpu_seconds": 0.171756,
+              "peak_child_rss_bytes": 13975552,
+              "sum_child_peak_rss_bytes": 13975552,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4785247500985861,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.304141,
+              "system_cpu_seconds": 0.169958,
+              "peak_child_rss_bytes": 13926400,
+              "sum_child_peak_rss_bytes": 13926400,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.47861604089848697,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.30410499999999996,
+              "system_cpu_seconds": 0.171179,
+              "peak_child_rss_bytes": 13664256,
+              "sum_child_peak_rss_bytes": 13664256,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4784884580876678,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.30427499999999996,
+              "system_cpu_seconds": 0.17021999999999998,
+              "peak_child_rss_bytes": 14123008,
+              "sum_child_peak_rss_bytes": 14123008,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.47772987512871623,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.30393,
+              "system_cpu_seconds": 0.169599,
+              "peak_child_rss_bytes": 14139392,
+              "sum_child_peak_rss_bytes": 14139392,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5231879579368979,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.305214,
+              "system_cpu_seconds": 0.213862,
+              "peak_child_rss_bytes": 14319616,
+              "sum_child_peak_rss_bytes": 14319616,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4805971251334995,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.304484,
+              "system_cpu_seconds": 0.171905,
+              "peak_child_rss_bytes": 14319616,
+              "sum_child_peak_rss_bytes": 14319616,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4771937078330666,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.303788,
+              "system_cpu_seconds": 0.169392,
+              "peak_child_rss_bytes": 13778944,
+              "sum_child_peak_rss_bytes": 13778944,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.47721725003793836,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.304125,
+              "system_cpu_seconds": 0.16927799999999998,
+              "peak_child_rss_bytes": 14467072,
+              "sum_child_peak_rss_bytes": 14467072,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 478.22517246407057
+        },
+        "xff-pcre2": {
+          "command": [
+            "/private/tmp/xff-regex-results/xff-macos-arm64",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--jobs=1",
+            "--exact",
+            "--case=sensitive",
+            "--gitignore=off",
+            "--hidden",
+            "--regextype=PCRE2",
+            ".",
+            "-type",
+            "f",
+            "-rxc",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "-print0"
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.5783034160267562,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.403567,
+              "system_cpu_seconds": 0.17085899999999998,
+              "peak_child_rss_bytes": 14434304,
+              "sum_child_peak_rss_bytes": 14434304,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5808825001586229,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.40080899999999997,
+              "system_cpu_seconds": 0.175669,
+              "peak_child_rss_bytes": 14516224,
+              "sum_child_peak_rss_bytes": 14516224,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5685027081053704,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.393185,
+              "system_cpu_seconds": 0.171226,
+              "peak_child_rss_bytes": 13910016,
+              "sum_child_peak_rss_bytes": 13910016,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5818530831020325,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.40594399999999997,
+              "system_cpu_seconds": 0.172066,
+              "peak_child_rss_bytes": 13910016,
+              "sum_child_peak_rss_bytes": 13910016,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5730908748228103,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.40025099999999997,
+              "system_cpu_seconds": 0.168796,
+              "peak_child_rss_bytes": 14434304,
+              "sum_child_peak_rss_bytes": 14434304,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5796701249200851,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.40265799999999996,
+              "system_cpu_seconds": 0.172875,
+              "peak_child_rss_bytes": 14204928,
+              "sum_child_peak_rss_bytes": 14204928,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5782075838651508,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.403475,
+              "system_cpu_seconds": 0.170657,
+              "peak_child_rss_bytes": 14188544,
+              "sum_child_peak_rss_bytes": 14188544,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5813405830413103,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.40813699999999997,
+              "system_cpu_seconds": 0.169213,
+              "peak_child_rss_bytes": 14221312,
+              "sum_child_peak_rss_bytes": 14221312,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5812482079491019,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.407134,
+              "system_cpu_seconds": 0.170147,
+              "peak_child_rss_bytes": 14352384,
+              "sum_child_peak_rss_bytes": 14352384,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 577.1293451211283
+        },
+        "rg-pcre2": {
+          "command": [
+            "/opt/homebrew/Cellar/ripgrep/15.2.0/bin/rg",
+            "--no-config",
+            "--pcre2",
+            "--case-sensitive",
+            "--text",
+            "--hidden",
+            "--no-ignore",
+            "--threads=1",
+            "--color=never",
+            "--files-with-matches",
+            "--null",
+            "-e",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "."
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.3025383751373738,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.117058,
+              "system_cpu_seconds": 0.182745,
+              "peak_child_rss_bytes": 4161536,
+              "sum_child_peak_rss_bytes": 4161536,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.29185558296740055,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.12038599999999999,
+              "system_cpu_seconds": 0.168756,
+              "peak_child_rss_bytes": 4177920,
+              "sum_child_peak_rss_bytes": 4177920,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.2932707080617547,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.12025799999999999,
+              "system_cpu_seconds": 0.170198,
+              "peak_child_rss_bytes": 4161536,
+              "sum_child_peak_rss_bytes": 4161536,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.29048395808786154,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.117952,
+              "system_cpu_seconds": 0.169734,
+              "peak_child_rss_bytes": 4161536,
+              "sum_child_peak_rss_bytes": 4161536,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.2943813339807093,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.119944,
+              "system_cpu_seconds": 0.17140999999999998,
+              "peak_child_rss_bytes": 4145152,
+              "sum_child_peak_rss_bytes": 4145152,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.31683329096995294,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.11999599999999999,
+              "system_cpu_seconds": 0.19400299999999998,
+              "peak_child_rss_bytes": 4145152,
+              "sum_child_peak_rss_bytes": 4145152,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.296220958000049,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.124316,
+              "system_cpu_seconds": 0.169208,
+              "peak_child_rss_bytes": 4161536,
+              "sum_child_peak_rss_bytes": 4161536,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.29398904112167656,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.120878,
+              "system_cpu_seconds": 0.170506,
+              "peak_child_rss_bytes": 4145152,
+              "sum_child_peak_rss_bytes": 4145152,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.28981762495823205,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.11904899999999999,
+              "system_cpu_seconds": 0.16783199999999998,
+              "peak_child_rss_bytes": 4161536,
+              "sum_child_peak_rss_bytes": 4161536,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 292.8598867396691
+        }
+      }
+    },
+    {
+      "files": 10000,
+      "workers": 4,
+      "population": "absent",
+      "expected_count": 0,
+      "fixture_sha256": "9462dd1f12dac55bd3a02efed812107f1ff4ff70c3886cb6987cf8c198c51fe9",
+      "cpu_affinity": null,
+      "participants": {
+        "xff-re2": {
+          "command": [
+            "/private/tmp/xff-regex-results/xff-macos-arm64",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--jobs=4",
+            "--exact",
+            "--case=sensitive",
+            "--gitignore=off",
+            "--hidden",
+            "--regextype=RE2",
+            ".",
+            "-type",
+            "f",
+            "-rxc",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "-print0"
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.47651983285322785,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.303908,
+              "system_cpu_seconds": 0.168457,
+              "peak_child_rss_bytes": 13910016,
+              "sum_child_peak_rss_bytes": 13910016,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4754644159693271,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.304581,
+              "system_cpu_seconds": 0.16686099999999998,
+              "peak_child_rss_bytes": 14024704,
+              "sum_child_peak_rss_bytes": 14024704,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4775084580760449,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.304315,
+              "system_cpu_seconds": 0.168977,
+              "peak_child_rss_bytes": 14221312,
+              "sum_child_peak_rss_bytes": 14221312,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4795157080516219,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.30510899999999996,
+              "system_cpu_seconds": 0.17032699999999998,
+              "peak_child_rss_bytes": 14319616,
+              "sum_child_peak_rss_bytes": 14319616,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4786590419244021,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.305162,
+              "system_cpu_seconds": 0.169504,
+              "peak_child_rss_bytes": 14024704,
+              "sum_child_peak_rss_bytes": 14024704,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4776202079374343,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.304859,
+              "system_cpu_seconds": 0.168729,
+              "peak_child_rss_bytes": 14254080,
+              "sum_child_peak_rss_bytes": 14254080,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4823821249883622,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.305693,
+              "system_cpu_seconds": 0.17235699999999998,
+              "peak_child_rss_bytes": 14139392,
+              "sum_child_peak_rss_bytes": 14139392,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.4731782921589911,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.304459,
+              "system_cpu_seconds": 0.164847,
+              "peak_child_rss_bytes": 13926400,
+              "sum_child_peak_rss_bytes": 13926400,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.473481958033517,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.304322,
+              "system_cpu_seconds": 0.165494,
+              "peak_child_rss_bytes": 14319616,
+              "sum_child_peak_rss_bytes": 14319616,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 476.0617438504206
+        },
+        "xff-pcre2": {
+          "command": [
+            "/private/tmp/xff-regex-results/xff-macos-arm64",
+            "--no-config",
+            "--no-pager",
+            "--color=never",
+            "--sort=none",
+            "--jobs=4",
+            "--exact",
+            "--case=sensitive",
+            "--gitignore=off",
+            "--hidden",
+            "--regextype=PCRE2",
+            ".",
+            "-type",
+            "f",
+            "-rxc",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "-print0"
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.571423124987632,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.396517,
+              "system_cpu_seconds": 0.170786,
+              "peak_child_rss_bytes": 14532608,
+              "sum_child_peak_rss_bytes": 14532608,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5785005411598831,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.405827,
+              "system_cpu_seconds": 0.16855799999999999,
+              "peak_child_rss_bytes": 14123008,
+              "sum_child_peak_rss_bytes": 14123008,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5791482501663268,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.40413299999999996,
+              "system_cpu_seconds": 0.171086,
+              "peak_child_rss_bytes": 14204928,
+              "sum_child_peak_rss_bytes": 14204928,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5635640830732882,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.387974,
+              "system_cpu_seconds": 0.17135599999999998,
+              "peak_child_rss_bytes": 14450688,
+              "sum_child_peak_rss_bytes": 14450688,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5733590838499367,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.396594,
+              "system_cpu_seconds": 0.17263399999999998,
+              "peak_child_rss_bytes": 14155776,
+              "sum_child_peak_rss_bytes": 14155776,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5808899579569697,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.40338999999999997,
+              "system_cpu_seconds": 0.173059,
+              "peak_child_rss_bytes": 14598144,
+              "sum_child_peak_rss_bytes": 14598144,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5829539590049535,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.40463899999999997,
+              "system_cpu_seconds": 0.17393899999999998,
+              "peak_child_rss_bytes": 14565376,
+              "sum_child_peak_rss_bytes": 14565376,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5686709589790553,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.389497,
+              "system_cpu_seconds": 0.174926,
+              "peak_child_rss_bytes": 13910016,
+              "sum_child_peak_rss_bytes": 13910016,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.5761285829357803,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.404049,
+              "system_cpu_seconds": 0.168159,
+              "peak_child_rss_bytes": 14401536,
+              "sum_child_peak_rss_bytes": 14401536,
+              "stdout_bytes": 0,
+              "exit_codes": [0],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 572.970660735986
+        },
+        "rg-pcre2": {
+          "command": [
+            "/opt/homebrew/Cellar/ripgrep/15.2.0/bin/rg",
+            "--no-config",
+            "--pcre2",
+            "--case-sensitive",
+            "--text",
+            "--hidden",
+            "--no-ignore",
+            "--threads=4",
+            "--color=never",
+            "--files-with-matches",
+            "--null",
+            "-e",
+            "(?:WARN|ERROR) service=[a-z][a-z0-9_-]{2,15} request=[0-9a-f]{8} status=(?:4[0-9]{2}|5[0-9]{2}) latency=[0-9]{1,5}\\.[0-9]{2}ms(?: retry=[1-9])?",
+            "."
+          ],
+          "samples": [
+            {
+              "elapsed_seconds": 0.12358991685323417,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.12179699999999999,
+              "system_cpu_seconds": 0.32725899999999997,
+              "peak_child_rss_bytes": 19546112,
+              "sum_child_peak_rss_bytes": 19546112,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.12244391604326665,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.122981,
+              "system_cpu_seconds": 0.322324,
+              "peak_child_rss_bytes": 19595264,
+              "sum_child_peak_rss_bytes": 19595264,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.12387224985286593,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.127616,
+              "system_cpu_seconds": 0.32179399999999997,
+              "peak_child_rss_bytes": 19546112,
+              "sum_child_peak_rss_bytes": 19546112,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.130011250032112,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.134561,
+              "system_cpu_seconds": 0.32917399999999997,
+              "peak_child_rss_bytes": 19546112,
+              "sum_child_peak_rss_bytes": 19546112,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.12688250001519918,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.130308,
+              "system_cpu_seconds": 0.323075,
+              "peak_child_rss_bytes": 19611648,
+              "sum_child_peak_rss_bytes": 19611648,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.12654879200272262,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.12335299999999999,
+              "system_cpu_seconds": 0.327397,
+              "peak_child_rss_bytes": 19578880,
+              "sum_child_peak_rss_bytes": 19578880,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.12460520816966891,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.12325699999999999,
+              "system_cpu_seconds": 0.319067,
+              "peak_child_rss_bytes": 19578880,
+              "sum_child_peak_rss_bytes": 19578880,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.12300441693514585,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.12232799999999999,
+              "system_cpu_seconds": 0.318813,
+              "peak_child_rss_bytes": 19578880,
+              "sum_child_peak_rss_bytes": 19578880,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            },
+            {
+              "elapsed_seconds": 0.12855145800858736,
+              "first_stdout_seconds": null,
+              "user_cpu_seconds": 0.123779,
+              "system_cpu_seconds": 0.340089,
+              "peak_child_rss_bytes": 19578880,
+              "sum_child_peak_rss_bytes": 19578880,
+              "stdout_bytes": 0,
+              "exit_codes": [1],
+              "stderr": ""
+            }
+          ],
+          "elapsed_ms": 124.42099998172905
+        }
+      }
+    }
+  ]
+}
