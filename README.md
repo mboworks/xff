@@ -238,7 +238,7 @@ matching man page directly from the installed binary with `xff --pager=never --m
 > **Compile-Time Enforcement:** The CLI options for extras (e.g., `--regextype=PCRE2` or `--archive`) are always exposed on the interface. Attempting to invoke an extra feature in a lean build that did not compile it will yield an immediate, explicit error rather than a silent failure or fallback.
 
 - **Requirements:** Bazel 9.1.1 or newer, accompanied by a modern C++23 toolchain (`clang-22` or
-  newer). A fully hermetic LLVM toolchain is available out-of-the-box via `--config=clang`.
+  newer, or GCC 15 or newer with its matching libstdc++). A fully hermetic LLVM toolchain is available out-of-the-box via `--config=clang`.
 
 ---
 

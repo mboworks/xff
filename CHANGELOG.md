@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Reduce collection growth and text-allocation overhead with segmented records and collection-owned arenas.
+
 - Add a platform selector and measured-version slider to the benchmark overview landscape.
 
 - Render benchmark landscapes with Three.js, plane-mounted titles, linked hover guides and a smaller offline bundle.

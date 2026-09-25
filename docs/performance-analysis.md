@@ -330,3 +330,99 @@ The stripped full macOS ARM64 binary grows from 6,251,328 to 6,648,288 bytes: **
 Their dynamic-library dependency sets are identical. The final release build, including generated
 help and capture-handling refinements, retains this size. Linux/x86 performance and size remain
 to be measured independently.
+
+## MBO segmented collection storage and arenas
+
+The Git module override pins MBO `ac4c11113de868b27226c0fe74028f818dc6b4b8`, the head evaluated
+for this change. Both new APIs work without upstream changes. `SegmentedSequence` supplies stable
+addresses, random-access iterators and explicit empty-directory reservation. `Arena` supplies raw
+aligned bytes and bulk lifetime, with no internal locks. Neither supplies contiguous element spans;
+`Arena` does not construct or destroy arbitrary C++ objects.
+
+The first adoption is `Collections`, the population retained by `-collect` for later summaries,
+histograms and shard grouping. An unknown-size vector previously relocated complete records while
+growing; each record owned three strings. Records now occupy 64-element segments, with zero initial
+directory reservation, and their text views refer to a collection-owned byte arena. The arena grows
+from 4 KiB to 64 KiB normal blocks. These are initial measured policies, not universal optimums.
+Many small named collections can waste tail slots; ordinary runs without collection allocate none
+of these blocks. Metadata and filesystem owners remain real, destructed C++ members. Arena text is
+released only with its owning collection, and moves preserve references. Consumers may not retain
+these views after the collection dies. Row/byte budgets continue to count the same logical text;
+they are not physical allocator-memory caps. VFS routing and safety enforcement are unchanged.
+
+### In-memory storage measurements
+
+The committed `//xff/engine:collect_benchmark` constructs paths outside timing, then measures
+collection append, full iteration and destruction. Cases use 10 through 100,000 records, root
+lengths 1 and 128, and one/four independent benchmark threads. This excludes filesystem I/O and
+engine traversal. Four threads do not represent four CPUs assigned to a single XFF walk; there is
+no affinity on this Mac. Compiler configuration is identical `clang_release` (O2 + ThinLTO), including
+the MBO pin, for the vector baseline, sequence-only variant and sequence-plus-arena variant.
+
+One discarded warmup precedes nine rounds with rotating variant order. Each invocation uses
+`--benchmark_min_time=0.02s`; the table averages the fastest seven CPU-time observations per case.
+The unchanged vector baseline uses the parent collection implementation. The sequence-only variant
+changes collection storage to `SegmentedSequence<CollectedEntry>` with the same segment options,
+retaining owned strings. The final variant is the implementation in this PR.
+[Raw samples, hashes, configuration and memory observations](measurements/collection-storage-macos-arm64.json)
+retain the full measurements. These are local Apple M5 Pro/macOS results, not cross-platform or
+whole-command speedup claims. Linux confirmation and traversal-inclusive measurements remain open.
+
+| Entries | Root bytes | Threads | Vector us | Sequence us | Sequence + arena us | CPU time reduction |
+| ------: | ---------: | ------: | --------: | ----------: | ------------------: | -----------------: |
+|      10 |          1 |       1 |      0.51 |        0.29 |                0.36 |              30.0% |
+|      10 |          1 |       4 |      0.52 |        0.30 |                0.36 |              30.1% |
+|     100 |          1 |       1 |      3.58 |        2.61 |                2.96 |              17.2% |
+|     100 |          1 |       4 |      3.60 |        2.64 |                2.99 |              17.1% |
+|   1,000 |          1 |       1 |     37.14 |       29.30 |               32.61 |              12.2% |
+|   1,000 |          1 |       4 |     36.73 |       29.48 |               32.59 |              11.3% |
+|  10,000 |          1 |       1 |    745.34 |      310.64 |              322.57 |              56.7% |
+|  10,000 |          1 |       4 |    922.45 |      309.06 |              316.34 |              65.7% |
+| 100,000 |          1 |       1 |   5325.74 |     4669.87 |             5049.80 |               5.2% |
+| 100,000 |          1 |       4 |   9735.54 |     6666.86 |             6916.11 |              29.0% |
+|      10 |        128 |       1 |      0.86 |        0.62 |                0.41 |              52.6% |
+|      10 |        128 |       4 |      1.04 |        0.61 |                0.40 |              61.3% |
+|     100 |        128 |       1 |      8.65 |        7.30 |                3.47 |              59.9% |
+|     100 |        128 |       4 |     12.27 |       11.61 |                3.46 |              71.8% |
+|   1,000 |        128 |       1 |    128.69 |       88.48 |               43.39 |              66.3% |
+|   1,000 |        128 |       4 |    183.60 |      150.23 |               44.74 |              75.6% |
+|  10,000 |        128 |       1 |   1413.85 |      924.07 |              465.05 |              67.1% |
+|  10,000 |        128 |       4 |   2619.48 |     1783.85 |              520.21 |              80.1% |
+| 100,000 |        128 |       1 |  17202.86 |    13451.64 |             7858.08 |              54.3% |
+| 100,000 |        128 |       4 |  29769.00 |    26798.29 |            11813.75 |              60.3% |
+
+Sequence-only wins every measured case. Arena text improves long-path cases substantially but is
+slower than sequence-only for short paths, where owned strings often fit their inline buffers.
+The combined implementation still improves every measured case versus the existing vector baseline.
+One-shot peak RSS for 100,000 long-root entries was 120,471,552 bytes (vector), 91,373,568 (sequence),
+and 86,933,504 (sequence plus arena). A repeated 0.05-second campaign instead peaked at 174,047,232,
+121,290,752 and 185,761,792 bytes, respectively. These process-wide samples include fixtures and
+allocator retention; arenas are not a promise of lower long-running RSS, despite lower one-shot
+peak memory here. Neither campaign identifies a leak. An embedded application repeatedly creating
+collections needs its own lifetime/retention measurement.
+
+Run the benchmark with:
+
+```sh
+bazel run --config=clang_release //xff/engine:collect_benchmark -- \
+  --benchmark_min_time=0.02s --benchmark_repetitions=9 --benchmark_out=collection-storage.json
+```
+
+For inter-variant comparisons, rotate separate executable invocations as in the recorded experiment;
+a single executable's consecutive repetitions do not provide that interleaving.
+
+### Other candidates and API boundaries
+
+| Site                                      | Assessment                                                                                              | Next step                                                                                                     |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Deferred `-top` / shard-status candidates | Large records appended without known count; sequence avoids relocating maps and owned state             | Benchmark whole result-set rounds before adoption                                                             |
+| `LocalFs::ReadDir`                        | Unknown count, but the public VFS API currently returns a vector                                        | Measure a shared listing abstraction; do not materialize a sequence only to copy it into a vector             |
+| Walker `Stated` children                  | Exact size is known and already reserved; indexed and sorted traversal benefits from contiguous storage | Keep vector until traversal-level measurements justify a change                                               |
+| Parallel matcher batches                  | Bounded 256-entry batches with indexed worker access and publication boundaries                         | Test buffer reuse first; a shared arena must not mutate while workers read it                                 |
+| Ranked output                             | Appends then sorts; stable addresses are not required                                                   | Measure sorting/cache costs as well as append time                                                            |
+| Parser AST                                | Nontrivial nodes currently have individual ownership/destruction                                        | Raw Arena is not an object-lifetime layer; design explicit destruction/ownership before replacing allocations |
+| Collection text                           | Raw bytes have collection lifetime and are copied once                                                  | Implemented through a narrow adapter to MBO's byte API; no upstream API blocker                               |
+
+No blanket vector replacement is warranted. A known size plus `reserve`, range construction, sorting,
+contiguous spans, or short-lived small batches can favor vector. Segmented storage is most promising
+where unknown-size append growth currently moves large records or invalidates references.

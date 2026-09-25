@@ -23,6 +23,8 @@
 #include <vector>
 
 #include "absl/container/btree_map.h"
+#include "mbo/container/segmented_sequence.h"
+#include "mbo/memory/arena.h"
 #include "mbo/types/optional_ref.h"
 #include "xff/engine/walk.h"
 #include "xff/parser/ast.h"
@@ -34,17 +36,18 @@ namespace xff::engine {
 // unnamed form is the default name, so nothing downstream needs an "anonymous bucket" branch.
 inline constexpr std::string_view kDefaultCollection = "default";
 
-// One entry held back for a post-walk sink, OWNING everything a reduction reads.
+// Common record layout for individually owned entries and collection-owned text views.
 //
 // This is not defensive copying: a `Visit` is borrowed by construction (its path / name / root are
 // views into the walk's own buffers and its metadata is a reference), so storing one and reading it
 // after the walk is a use-after-free. `fs_owner` is the same lesson one level up - inside a mounted
 // container the filesystem dies with the dive, which is exactly how --archive-mount raced
 // ~ArchiveFileSystem (see Visit::fs_owner in walk.h).
-struct CollectedEntry {
-  std::string path;
-  std::string name;
-  std::string root;
+template<typename Text>
+struct BasicCollectedEntry {
+  Text path;
+  Text name;
+  Text root;
   int depth = 0;
   vfs::Metadata metadata;
   mbo::types::OptionalRef<const vfs::FileSystem> fs;
@@ -52,14 +55,31 @@ struct CollectedEntry {
   std::size_t root_index = 0;
 
   // A Visit borrowing THIS entry's storage, for handing to the same sink functions the walk feeds.
-  // Valid only while this entry lives and stays put (the vector must not have reallocated since).
-  [[nodiscard]] Visit AsVisit() const;
+  // Valid while this record stays put and its text owner lives.
+  [[nodiscard]] Visit AsVisit() const {
+    return Visit{
+        .path = path,
+        .name = name,
+        .root = root,
+        .depth = depth,
+        .metadata = metadata,
+        .fs = fs,
+        .fs_owner = fs_owner,
+        .root_index = root_index,
+    };
+  }
 };
+
+using CollectedEntry = BasicCollectedEntry<std::string>;
 
 // The named collections one run gathered. Keyed by name and ordered by it, so a run that reduces
 // several collections reports them in a stable order regardless of walk order or thread timing.
 class Collections {
  public:
+  // Text belongs to this collection's arena, not the traversal or the individual record.
+  using Entry = BasicCollectedEntry<std::string_view>;
+  using EntriesType = mbo::container::SegmentedSequence<Entry, {.segment_size = 64, .segment_reservation = 0}>;
+
   // The row / byte ceiling a collection may occupy, from `--buffer` (0 = no limit, the default).
   // Bytes count the stored path, name and root text, which is what a collection actually holds on to.
   struct Budget {
@@ -89,9 +109,9 @@ class Collections {
   // The budget in force, for the caller's diagnostic.
   [[nodiscard]] Budget CurrentBudget() const { return budget_; }
 
-  // The collected entries for `name`, or an empty span when nothing collected under it (which is
+  // The collected entries for `name`, or an empty sequence when nothing collected under it (which is
   // the honest answer for a `-collect` in a branch that never ran).
-  [[nodiscard]] const std::vector<CollectedEntry>& Entries(std::string_view name) const;
+  [[nodiscard]] const EntriesType& Entries(std::string_view name) const;
 
   // The collection names that actually received an entry, in name order.
   [[nodiscard]] std::vector<std::string_view> Names() const;
@@ -103,7 +123,14 @@ class Collections {
   [[nodiscard]] std::size_t Size() const;
 
  private:
-  absl::btree_map<std::string, std::vector<CollectedEntry>> by_name_;
+  // Only the coordinator appends. The arena outlives all entries and adds no locks.
+  using TextArena = mbo::memory::Arena<
+      mbo::memory::NewDeleteBlockSource,
+      {.initial_block_size = 4'096, .maximum_block_size = 65'536, .growth_numerator = 2, .growth_denominator = 1}>;
+  std::string_view CopyText(std::string_view text);
+
+  TextArena text_;
+  absl::btree_map<std::string, EntriesType> by_name_;
   Budget budget_;
   bool active_ = false;
   std::size_t rows_ = 0;
