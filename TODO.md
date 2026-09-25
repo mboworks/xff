@@ -13,6 +13,10 @@
 
 ## Performance optimization follow-up
 
+- [ ] Benchmark collection arena block policies: 4 KiB -> 64 KiB (current), 64 KiB -> 1 MiB,
+      and 4 KiB -> 1 MiB. Compare allocation counts, CPU time, unused capacity and peak memory
+      for small/large collections on Linux and macOS before choosing new defaults.
+
 - [x] Evaluate MBO SegmentedSequence and Arena at pinned Git head; adopt measured collection storage
       improvements with lifetime tests and allocation/memory tradeoffs in `docs/performance-analysis.md`.
 - [ ] Confirm collection storage gains on native Linux and in traversal-inclusive workloads; measure

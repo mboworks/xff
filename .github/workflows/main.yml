@@ -185,12 +185,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Install GCC 15
+        run: |
+          # MBO requires GCC 15's C++23 language and library support.
+          sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
+          sudo apt-get install --yes gcc-15 g++-15
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-15 100 \
+            --slave /usr/bin/g++ g++ /usr/bin/g++-15 \
+            --slave /usr/bin/gcov gcov /usr/bin/gcov-15
+          sudo update-alternatives --set gcc /usr/bin/gcc-15
+          gcc --version
+          g++ --version
       - uses: bazel-contrib/setup-bazel@0.19.0
       - name: Restore Bazel compiled outputs
         id: bazel-cache
         uses: ./.github/actions/bazel-cache-restore
         with:
-          namespace: gcc
+          namespace: gcc15
       - name: bazel build
         run: |
           # shellcheck disable=SC2046  # deliberate splitting: the tool prints Bazel target patterns
