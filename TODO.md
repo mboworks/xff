@@ -5,6 +5,7 @@
 - [x] Implement and validate the missing grep-style long output options with explicit `-grep`.
 - [x] Add `-M` / `--match-output` for default content-line output, reuse long modifiers, and validate INI selection.
 - [ ] Build rg presets/mode conveniences only after match output is available; keep argument grammar a separate decision.
+- [ ] Consider `+` as the shared OR spelling when adding rg-style short options.
 - [ ] Audit short-option collisions and decide compatibility handling afterward; preserve `-o` as OR meanwhile.
 
 ## Release publication repair

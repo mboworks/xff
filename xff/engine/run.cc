@@ -4841,27 +4841,6 @@ RunResult RunFindCore(
   }
   // --count / -c: -grep emits a per-file matching-line count instead of the lines.
   const GrepOptions grep_options = ResolveGrepOptions(command.globals);
-  std::optional<MatchOutput> match_output;
-  if (grep_options.match_output && implicit_print) {
-    if (!expression.has_value()) {
-      on_error("--match-output", absl::InvalidArgumentError("requires a content predicate such as -rxc or -content"));
-      return RunResult{.errors = 2};
-    }
-    if ((format != render::Format::kPlain && format != render::Format::kJsonl) || !columns.empty()
-        || compiled_tmpl.has_value()) {
-      on_error(
-          "--match-output",
-          absl::InvalidArgumentError("requires plain or jsonl output without listing columns or templates"));
-      return RunResult{.errors = 2};
-    }
-    auto prepared = PrepareMatchOutput(*expression);
-    if (!prepared.ok()) {
-      on_error("--match-output", prepared.status());
-      return RunResult{.errors = 2};
-    }
-    match_output.emplace(*std::move(prepared));
-  }
-
   const bool grep_suppresses_template = grep_options.output != GrepOptions::Output::kLines;
   // --context / --before-context / --after-context (grep -C/-B/-A): -grep context lines. Validated
   // here so a bad value is a usage error (exit 2) before the walk.
@@ -5184,6 +5163,27 @@ RunResult RunFindCore(
                                                     : std::string_view(pack_identity).substr(slash + 1);
   }
   const bool any_reduction = !summaries.empty() || !histograms.empty() || shards.enabled || pack_target.has_value();
+  std::optional<MatchOutput> match_output;
+  if (grep_options.match_output && implicit_print && !any_reduction) {
+    if (!expression.has_value()) {
+      on_error("--match-output", absl::InvalidArgumentError("requires a content predicate such as -rxc or -content"));
+      return RunResult{.errors = 2};
+    }
+    if ((format != render::Format::kPlain && format != render::Format::kJsonl) || !columns.empty()
+        || compiled_tmpl.has_value()) {
+      on_error(
+          "--match-output",
+          absl::InvalidArgumentError("requires plain or jsonl output without listing columns or templates"));
+      return RunResult{.errors = 2};
+    }
+    auto prepared = PrepareMatchOutput(*expression);
+    if (!prepared.ok()) {
+      on_error("--match-output", prepared.status());
+      return RunResult{.errors = 2};
+    }
+    match_output.emplace(*std::move(prepared));
+  }
+
   const absl::StatusOr<std::optional<std::size_t>> max_results = ResolveMaxResults(command.globals);
   if (!max_results.ok()) {
     on_error("--max-results", max_results.status());

@@ -406,4 +406,27 @@ test::match_output_portions_choose_leftmost_longest_across_patterns() {
   expect_eq "${root}/b.txt" "${out}"
 }
 
+test::match_output_config_does_not_change_summary_only_invocations() {
+  local root out
+  root="$(_make_tree)"
+  printf '%s\n' --match-output >"${root}/output.rc"
+  out="$(_run "${root}" --xffrc="${root}/output.rc" --summary=ext)"
+  expect_output_contains total "${out}"
+  out="$(_run "${root}" --xffrc="${root}/output.rc" --summary=ext --format=markdown)"
+  expect_output_contains total "${out}"
+  out="$(_run "${root}" --xffrc="${root}/output.rc" --implicit-print=no)"
+  expect_eq '' "${out}"
+}
+
+test::match_output_empty_spans_are_not_emitted() {
+  local root out rc
+  root="$(_make_tree)"
+  out="$(_run -M "${root}/a.txt" -rxc '^' --only-matching)"
+  expect_eq '' "${out}"
+  out="$(_run -M "${root}/a.txt" -rxc '$' --only-matching)"
+  expect_eq '' "${out}"
+  out="$("$(_xff_bin)" -M "${root}" -rxc TODO '--template={path}' 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+}
+
 test_runner
