@@ -85,6 +85,35 @@ TEST_F(RgTest, ExplicitPatternsMakeEveryPositionalARootRegardlessOfOrder) {
   EXPECT_THAT(command.roots, ElementsAre("root", "other"));
 }
 
+TEST_F(RgTest, NamedAndPositionalRootsKeepTheirOrderAndNativeNames) {
+  ASSERT_OK_AND_ASSIGN(
+      const auto command,
+      Parse({"--rg", "--root=first=one", "hit", "two", "--root=last=three", "four", "--xff", "-type", "f"}));
+  EXPECT_THAT(command.roots, ElementsAre("one", "two", "three", "four"));
+  EXPECT_THAT(command.root_names, ElementsAre("first", "", "last", ""));
+  EXPECT_THAT(command.globals, Contains("--root=first=one"));
+  ASSERT_THAT(command.rg, Optional(_));
+  EXPECT_THAT(command.rg.value_or(RgSearch{}).patterns, ElementsAre(Field(&RgPattern::value, "hit")));
+  ASSERT_OK_AND_ASSIGN(const auto explicit_pattern, Parse({"--rg", "-ehit", "--root", "only=-name"}));
+  EXPECT_THAT(explicit_pattern.roots, ElementsAre("-name"));
+  EXPECT_THAT(explicit_pattern.root_names, ElementsAre("only"));
+}
+
+TEST_F(RgTest, NamedRootsRetainValidationAndDoNotReplaceTheSearchPattern) {
+  EXPECT_THAT(Parse({"--rg", "--root=x=one"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("PATTERN")));
+  EXPECT_THAT(
+      Parse({"--rg", "hit", "--root=bad"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("NAME=PATH")));
+  EXPECT_THAT(
+      Parse({"--rg", "hit", "--root=../bad=one"}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("single directory component")));
+  EXPECT_THAT(
+      Parse({"--rg", "hit", "--root=x=one", "--root=x=two"}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("duplicate root name")));
+  EXPECT_THAT(
+      Parse({"--rg", "hit", "--xff", "--root=x=one"}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("put search paths before")));
+}
+
 TEST_F(RgTest, AttachedValuesBundlesAndConflictingShortOptions) {
   ASSERT_OK_AND_ASSIGN(const auto command, Parse({"--rg", "-nio", "-M120", "-PL", "-H", "-g*.cc", "-j4", "-C2", "x"}));
   ASSERT_THAT(command.rg, Optional(_));

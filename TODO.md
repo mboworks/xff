@@ -18,7 +18,7 @@
 - [x] D05: Preserve regex grammar semantics for whole-line rg matching.
 - [x] D06: Include archive-member identity in automatic filename prefixes.
 - [x] D07: Apply positive rg globs before hidden-entry pruning.
-- [ ] D08: Preserve named roots in rg commands.
+- [x] D08: Preserve named roots in rg commands.
 - [ ] D09: Reject simultaneous stdin pattern and content consumption.
 - [ ] D10: Translate rg automatic worker selection.
 - [ ] D11: Explain active rg selection independently of line rendering.

@@ -947,6 +947,8 @@ Section RgSection(bool in_full) {
       "`xff --rg [OPTIONS] PATTERN [PATH...]` selects `--config=rg` and content-match output. "
       "Repeat `-e PATTERN` or `-f FILE` to supply a union of patterns; then every positional argument is a path. "
       "Pattern files contain one pattern per line; an empty file supplies no patterns. "
+      "Named roots use `--root=NAME=PATH` before `--xff`, retain operand order, and keep their names for archive "
+      "packing. "
       "With no path, search piped standard input, otherwise the current directory. Explicit `-` reads standard input. "
       "`-f -` consumes stdin as patterns, making the no-path default the current directory."));
   section.children.push_back(ProseOf(

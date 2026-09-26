@@ -15,8 +15,10 @@
 
 #include "xff/parser/rg.h"
 
+#include <algorithm>
 #include <array>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -28,7 +30,7 @@
 
 namespace xff::parser {
 namespace {
-enum class Effect { kGlobal, kPattern, kFile, kWord, kLine, kText, kColumns, kGlob };
+enum class Effect { kGlobal, kPattern, kFile, kWord, kLine, kText, kColumns, kGlob, kRoot };
 
 struct Option {
   std::string_view name;
@@ -186,6 +188,11 @@ constexpr auto kOptions = std::to_array<Option>({
         .effect = Effect::kColumns,
     },
     {
+        .name = "root",
+        .value = true,
+        .effect = Effect::kRoot,
+    },
+    {
         .name = "hidden",
         .replacement = "--hidden",
     },
@@ -210,6 +217,11 @@ constexpr auto kOptions = std::to_array<Option>({
     {.name = "version", .short_name = 'V', .replacement = "--version"},
 });
 
+struct RootOperand {
+  std::string path;
+  std::string name;
+};
+
 class RgParser {
  public:
   RgParser(const std::vector<std::string>& args, std::size_t start) : args_(args), index_(start) {}
@@ -231,17 +243,19 @@ class RgParser {
       } else if (options_ && arg.size() > 1 && arg.front() == '-') {
         MBO_RETURN_IF_ERROR(Short(arg.substr(1)));
       } else {
-        positionals_.emplace_back(arg);
+        positionals_.push_back({.path = std::string(arg)});
       }
     }
     if (!explicit_patterns_) {
-      if (positionals_.empty()) {
+      const auto pattern =
+          std::ranges::find_if(positionals_, [](const RootOperand& root) { return root.name.empty(); });
+      if (pattern == positionals_.end()) {
         if (!help_) {
           return absl::InvalidArgumentError("--rg requires PATTERN or -e PATTERN / -f FILE");
         }
       } else {
-        search_.patterns.push_back({.value = positionals_.front()});
-        positionals_.erase(positionals_.begin());
+        search_.patterns.push_back({.value = std::move(pattern->path)});
+        positionals_.erase(pattern);
       }
     }
     // A sentinel separates leading globals from the native filter. The actual roots are
@@ -249,11 +263,17 @@ class RgParser {
     native_.emplace_back(".");
     native_.insert(native_.end(), args_.begin() + static_cast<std::ptrdiff_t>(index_), args_.end());
     MBO_ASSIGN_OR_RETURN(auto command, parser::Parse(native_));
-    if (command.roots.size() != 1) {
+    if (command.roots.size() != named_roots_ + 1) {
       return absl::InvalidArgumentError("--xff starts a filter expression; put search paths before it");
     }
-    command.roots = std::move(positionals_);
-    command.root_names.assign(command.roots.size(), "");
+    command.roots.clear();
+    command.root_names.clear();
+    command.roots.reserve(positionals_.size());
+    command.root_names.reserve(positionals_.size());
+    for (auto& root : positionals_) {
+      command.roots.push_back(std::move(root.path));
+      command.root_names.push_back(std::move(root.name));
+    }
     command.rg.emplace(std::move(search_));
     return command;
   }
@@ -294,6 +314,15 @@ class RgParser {
           return absl::InvalidArgumentError("--max-columns requires a nonnegative integer");
         }
         break;
+      case Effect::kRoot: {
+        const std::string token = absl::StrCat("--root=", value);
+        // Reuse native root validation; the complete native parse below also rejects duplicate names.
+        MBO_ASSIGN_OR_RETURN(auto root, parser::Parse({token}));
+        positionals_.push_back({.path = std::move(root.roots.front()), .name = std::move(root.root_names.front())});
+        native_.push_back(token);
+        ++named_roots_;
+        break;
+      }
       case Effect::kGlob:
         search_.globs.emplace_back(value);
         native_.push_back(
@@ -357,7 +386,8 @@ class RgParser {
   bool explicit_patterns_ = false;
   bool help_ = false;
   RgSearch search_;
-  std::vector<std::string> positionals_;
+  std::vector<RootOperand> positionals_;
+  std::size_t named_roots_ = 0;
   std::vector<std::string> native_{"--config=rg", "--match-output", "--exit-match"};
 };
 }  // namespace

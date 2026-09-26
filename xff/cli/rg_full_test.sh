@@ -57,4 +57,19 @@ test::archive_members_have_automatic_prefixes_with_explicit_overrides() {
     _check 0 $'hit\nhit' --rg hit "${root}/box.tar" --archive=roots
 }
 
+test::named_search_roots_feed_packing_and_summaries() {
+  local root out
+  root="$(test_tmpdir named-roots)"
+  mkdir -p "${root}/left" "${root}/right"
+  printf 'hit left\n' >"${root}/left/same.txt"
+  printf 'hit right\n' >"${root}/right/same.txt"
+  "$(_bin)" --rg hit --root="left=${root}/left" --root="right=${root}/right" --pack="${root}/result.tar"
+  expect_eq 'hit left' "$(tar -xOf "${root}/result.tar" left/same.txt)"
+  expect_eq 'hit right' "$(tar -xOf "${root}/result.tar" right/same.txt)"
+  out="$("$(_bin)" --rg hit --root="left=${root}/left" --root="right=${root}/right" --summary --summary-scope=root)"
+  expect_output_contains "${root}/left" "${out}"
+  expect_output_contains "${root}/right" "${out}"
+  expect_output_contains 'Summary scope:' "${out}"
+}
+
 test_runner
