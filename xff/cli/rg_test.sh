@@ -173,6 +173,19 @@ test::only_matching_applies_max_columns_to_each_portion() {
   _check 0 'hit abcdef abcdef' --rg -M0 hit "${root}/long"
 }
 
+test::zero_threads_are_automatic_but_invalid_counts_still_fail() {
+  local root out rc
+  root="$(_tree)"
+  _check 0 other --rg -j0 other "${root}/b.txt"
+  _check 0 other --rg --threads=0 other "${root}/b.txt"
+  out="$("$(_bin)" --rg --threads=-1 other "${root}/b.txt" 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  expect_output_contains 'expected a positive integer' "${out}"
+  out="$("$(_bin)" --jobs=0 "${root}" 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  expect_output_contains 'expected a positive integer' "${out}"
+}
+
 test::errors_are_not_silent_or_action_fallbacks() {
   local root out rc
   root="$(_tree)"

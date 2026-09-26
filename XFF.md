@@ -2892,7 +2892,7 @@ Options may appear among patterns and paths. Bundles and attached values work: `
 - `-g / --glob` - include glob; leading ! excludes; repeatable, last matching rule wins
 - `-L / --follow, --hidden, --no-ignore` - symlinks, hidden entries and ignore policy
 - `-a / --text, -M / --max-columns` - search binary content or replace long output lines with an omission marker
-- `-j / --threads, -q / --quiet` - worker allowance or silent match-sensitive exit
+- `-j / --threads, -q / --quiet` - worker allowance (0 selects automatic) or silent match-sensitive exit
 
 This is an rg-style frontend, not a complete ripgrep replacement. Unsupported short options are errors. XFF double-dash globals retain their normal meanings, validation and safety enforcement. Output uses XFF's existing line/JSON schemas, no heading or terminal-specific layout; binary files are skipped unless `--text` is set. Files and stdin are currently materialized for line selection. Exit status is `0` for a selected result, `1` for none and `2` for errors; errors outrank quiet matches. Native summaries count the files selected by the search. `--no-match-output` lists those files instead. Normal `-M` behavior is unchanged outside rg grammar; inside it, `-M` requires a maximum-column count.
 

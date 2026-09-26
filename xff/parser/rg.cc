@@ -30,7 +30,7 @@
 
 namespace xff::parser {
 namespace {
-enum class Effect { kGlobal, kPattern, kFile, kWord, kLine, kText, kColumns, kGlob, kRoot };
+enum class Effect { kGlobal, kPattern, kFile, kWord, kLine, kText, kColumns, kGlob, kRoot, kThreads };
 
 struct Option {
   std::string_view name;
@@ -163,8 +163,8 @@ constexpr auto kOptions = std::to_array<Option>({
     {
         .name = "threads",
         .short_name = 'j',
-        .replacement = "--jobs=",
         .value = true,
+        .effect = Effect::kThreads,
     },
     {
         .name = "word-regexp",
@@ -319,6 +319,12 @@ class RgParser {
           return absl::InvalidArgumentError("--max-columns requires a nonnegative integer");
         }
         break;
+      case Effect::kThreads: {
+        std::size_t workers = 0;
+        const bool automatic = absl::SimpleAtoi(value, &workers) && workers == 0;
+        native_.push_back(absl::StrCat("--jobs=", automatic ? "all" : value));
+        break;
+      }
       case Effect::kRoot: {
         const std::string token = absl::StrCat("--root=", value);
         // Reuse native root validation; the complete native parse below also rejects duplicate names.

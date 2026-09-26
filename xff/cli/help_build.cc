@@ -982,7 +982,7 @@ Section RgSection(bool in_full) {
       {"-g / --glob", "include glob; leading ! excludes; repeatable, last matching rule wins"},
       {"-L / --follow, --hidden, --no-ignore", "symlinks, hidden entries and ignore policy"},
       {"-a / --text, -M / --max-columns", "search binary content or replace long output lines with an omission marker"},
-      {"-j / --threads, -q / --quiet", "worker allowance or silent match-sensitive exit"},
+      {"-j / --threads, -q / --quiet", "worker allowance (0 selects automatic) or silent match-sensitive exit"},
   });
   section.children.push_back(RowsOf(kOptions));
   section.children.push_back(ProseOf(

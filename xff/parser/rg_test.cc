@@ -15,6 +15,7 @@
 
 #include <array>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "gmock/gmock.h"
@@ -138,6 +139,17 @@ TEST_F(RgTest, AttachedValuesBundlesAndConflictingShortOptions) {
   EXPECT_THAT(command.globals, Contains("--context=2"));
   const auto search = command.rg.value_or(RgSearch{});
   EXPECT_THAT(search.max_columns, Eq(120));
+}
+
+TEST_F(RgTest, ZeroThreadsSelectTheAutomaticAllowanceWithoutChangingNativeJobs) {
+  for (const std::string_view flag : {"-j0", "-j00", "--threads=0"}) {
+    ASSERT_OK_AND_ASSIGN(const auto command, Parse({"--rg", std::string(flag), "hit"}));
+    EXPECT_THAT(command.globals, Contains("--jobs=all"));
+  }
+  ASSERT_OK_AND_ASSIGN(const auto separate, Parse({"--rg", "--threads", "0", "hit"}));
+  EXPECT_THAT(separate.globals, Contains("--jobs=all"));
+  ASSERT_OK_AND_ASSIGN(const auto native, Parse({"--rg", "--jobs=0", "hit"}));
+  EXPECT_THAT(native.globals, Contains("--jobs=0"));
 }
 
 TEST_F(RgTest, PlusIsNativeOrButAnOrdinaryRgPattern) {
