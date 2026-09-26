@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Add `-M` / `--match-output` to print matching content lines with the normal xff expression grammar; `-M-` / `--no-match-output` restores path output.
+
 - Add grep content-output long options for matched portions, file selection, counts, inversion, and prefixes.
 
 - Reduce collection growth and text-allocation overhead with segmented records and collection-owned arenas.

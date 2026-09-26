@@ -753,6 +753,8 @@ GrepOptions ResolveGrepOptions(const std::vector<std::string>& globals) {
     using enum cli::GlobalFlag::GrepEffect;
     switch (flag->grep_effect) {
       case kNone: break;
+      case kMatchOutput: result.match_output = true; break;
+      case kNoMatchOutput: result.match_output = false; break;
       case kCountLines: result.output = GrepOptions::Output::kCount; break;
       case kCountMatches: result.output = GrepOptions::Output::kCountMatches; break;
       case kFilesWithMatches: result.output = GrepOptions::Output::kFilesWithMatches; break;
@@ -5161,6 +5163,27 @@ RunResult RunFindCore(
                                                     : std::string_view(pack_identity).substr(slash + 1);
   }
   const bool any_reduction = !summaries.empty() || !histograms.empty() || shards.enabled || pack_target.has_value();
+  std::optional<MatchOutput> match_output;
+  if (grep_options.match_output && implicit_print && !any_reduction) {
+    if (!expression.has_value()) {
+      on_error("--match-output", absl::InvalidArgumentError("requires a content predicate such as -rxc or -content"));
+      return RunResult{.errors = 2};
+    }
+    if ((format != render::Format::kPlain && format != render::Format::kJsonl) || !columns.empty()
+        || compiled_tmpl.has_value()) {
+      on_error(
+          "--match-output",
+          absl::InvalidArgumentError("requires plain or jsonl output without listing columns or templates"));
+      return RunResult{.errors = 2};
+    }
+    auto prepared = PrepareMatchOutput(*expression);
+    if (!prepared.ok()) {
+      on_error("--match-output", prepared.status());
+      return RunResult{.errors = 2};
+    }
+    match_output.emplace(*std::move(prepared));
+  }
+
   const absl::StatusOr<std::optional<std::size_t>> max_results = ResolveMaxResults(command.globals);
   if (!max_results.ok()) {
     on_error("--max-results", max_results.status());
@@ -5484,6 +5507,22 @@ RunResult RunFindCore(
       }
     } else if (matched && implicit_print && (!max_results->has_value() || listed_results < **max_results)) {
       ++listed_results;
+      if (match_output.has_value()) {
+        Control control;
+        EvalContext context{
+            .visit = visit,
+            .emit = emit,
+            .fs = visit.fs.has_value() ? *visit.fs : walk_fs,
+            .now = now,
+            .grep = grep_options,
+            .grep_json = format == render::Format::kJsonl,
+            .grep_before = grep_before,
+            .grep_after = grep_after,
+            .control = control,
+        };
+        EmitMatchOutput(*match_output, context);
+        return;
+      }
       const std::string_view entry_color = colorize ? palette.CodeFor(
                                                           visit.name, visit.metadata.type, visit.metadata.mode,
                                                           language_snapshot->TerminalColorForName(visit.name))
@@ -6728,6 +6767,12 @@ absl::StatusOr<std::set<registry::ModifierConsumer>> ActiveModifierConsumers(
   const bool has_action = command.expression && ContainsAction(*command.expression);
   const bool listing = ResolveImplicitPrint(command.globals).value_or(!has_action && !compare) && summaries.empty()
                        && histograms.empty() && !shards.enabled && !ReadPackTarget(command.globals).has_value();
+  if (listing && ResolveGrepOptions(command.globals).match_output) {
+    consumers.insert(ModifierConsumer::kGrep);
+    if (!grep_suppresses_template) {
+      consumers.insert(ModifierConsumer::kGrepLines);
+    }
+  }
   consumers.merge(OutputHashConsumers(command, summaries, listing));
   if (compare && ResolveTreeCompareOutput(command.globals) == TreeCompareOutput::kDiff) {
     consumers.insert(ModifierConsumer::kDiffComputation);

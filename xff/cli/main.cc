@@ -171,7 +171,8 @@ std::string RenderComingFrom() {
   }
   absl::StrAppend(
       &out,
-      "\nComing from ripgrep: -grep PATTERN prints matching lines; --only-matching prints matched parts.\n"
+      "\nComing from ripgrep: -M ROOT -rxc PATTERN prints matching lines; --only-matching prints matched parts; -M- "
+      "restores paths.\n"
       "Use --count, --count-matches, --files-with-matches, --invert-match, and --context to control output.\n"
       "--config=rg starts from rg's defaults - ignore files honored, dotfiles skipped, smart case.\n");
   return out;

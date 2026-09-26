@@ -107,8 +107,8 @@ reaches the output action, so a format error cannot leave earlier deletions or c
 
 ## Grep long-option controls
 
-The content-output controls apply to explicit `-grep PATTERN` actions. They do not enable
-line output for `-rxc` or `-content`; those remain file predicates. Each reached action emits
+The content-output controls apply to explicit `-grep PATTERN` actions and to default content
+output enabled by `--match-output` (`-M`). Content tests remain file predicates. Each reached explicit action emits
 immediately for its own pattern. Separate actions can emit the same line; a later false
 predicate does not retract earlier action output. `-o` remains the expression OR operator.
 
@@ -136,3 +136,32 @@ with selected lines, false for one without). Count records keep their existing s
 Explicit line templates retain their fields: in portion mode `{text}` is the complete line,
 while `{match}` and `{column}` describe the current portion. Inverted/context lines have no
 match or column value.
+
+### Default content-match output
+
+`xff -M ROOT -rxc PATTERN` replaces the default path listing with matching content lines.
+The equivalent long form, `--match-output`, works anywhere a global can appear and in INI
+configuration. `--no-match-output` (`-M-`) restores the path default; the last setting wins.
+The short `-M` and `-M-` aliases must precede the roots. No rg argument grammar is enabled.
+
+The file expression retains its normal truth and short-circuit rules. After a file passes,
+the output searches the union of all `-rxc`, `-irxc`, `-content`, and `-icontent` patterns
+present in the expression, including patterns in branches that were short-circuited.
+Each selected line is emitted once. Literal patterns stay literal; each regex retains its
+compiled grammar and case setting. Matched portions are non-overlapping, with the longest
+portion chosen when different patterns start at the same byte.
+
+Existing grep controls select lines, portions, counts, context, or filenames. Inversion
+changes line selection inside accepted files, not the file expression. To select files that
+do not contain a pattern, negate the content predicate; `--files-without-match` alone does
+not undo a positive file predicate. Whole-file matches spanning newlines need not match any
+individual line. Exit status and result limits continue to count accepted entries.
+
+Explicit actions suppress default output as usual; `--implicit-print=yes` can explicitly
+retain it. Summaries and other reductions retain their existing precedence. Default match
+output supports plain text and JSONL, not listing columns or tabular formats. A content
+predicate is required when the default output is active. Non-regular, unreadable, and binary
+files retain the existing content-search treatment.
+
+JSONL uses the existing grep records. One pattern retains the `pattern` field; a union uses
+`patterns`, an array in expression order. Output modifiers do not remove structural JSON fields.

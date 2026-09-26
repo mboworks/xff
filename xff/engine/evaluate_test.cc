@@ -1070,6 +1070,17 @@ TEST_F(EvaluateTest, GitTextAndBinaryUseOnlyTheLeadingNulSniffWindow) {
   EXPECT_THAT(Match({"-binary"}, directory), IsFalse());
 }
 
+TEST_F(EvaluateTest, MatchOutputRequiresBoundContentPatterns) {
+  ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({".", "-rxc", "foo"}));
+  EXPECT_THAT(
+      PrepareMatchOutput(*command.expression),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("unbound content matcher")));
+  ASSERT_OK_AND_ASSIGN(const auto names, parser::Parse({".", "-name", "foo"}));
+  EXPECT_THAT(
+      PrepareMatchOutput(*names.expression),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("content predicate")));
+}
+
 TEST_F(EvaluateTest, GrepOnlyMatchingEmitsEveryNonemptySpan) {
   const std::string path = WriteContentFile("parts.txt", "a12 b345\nnone\n");
   vfs::Metadata md;
