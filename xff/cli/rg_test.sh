@@ -108,6 +108,25 @@ test::filters_do_not_change_output_patterns() {
   _check 1 '' --rg -I -g '!*.cc' TODO "${root}"
 }
 
+test::positive_globs_override_hidden_entries_and_matching_ancestors() {
+  local root file
+  local files=(plain.txt .hidden.txt .secret/inside.txt .git/inside.txt ignored/inside.txt)
+  root="$(test_tmpdir globs)"
+  mkdir -p "${root}/.secret" "${root}/.git" "${root}/ignored"
+  for file in "${files[@]}"; do
+    printf 'hit\n' >"${root}/${file}"
+  done
+  printf 'ignored/\n' >"${root}/.ignore"
+  _check 0 "${root}/.git/inside.txt"$'\n'"${root}/.hidden.txt"$'\n'"${root}/.secret/inside.txt"$'\n'"${root}/ignored/inside.txt"$'\n'"${root}/plain.txt" \
+    --rg -l -g '*' hit "${root}" --sort=tree
+  _check 0 "${root}/.hidden.txt"$'\n'"${root}/plain.txt" \
+    --rg -l -g '*.txt' hit "${root}" --sort=tree
+  _check 0 "${root}/.hidden.txt"$'\n'"${root}/plain.txt" \
+    --rg -l -g '!*.txt' -g '*.txt' --no-hidden hit "${root}" --sort=tree
+  _check 1 '' --rg -l -g '*' -g '!*.txt' hit "${root}"
+  _check 1 '' --rg -l -g '.secret/*.txt' hit "${root}"
+}
+
 test::stdin_explicit_implicit_and_pattern_input() {
   local root
   root="$(_tree)"

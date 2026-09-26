@@ -5482,6 +5482,20 @@ RunResult RunFindCore(
   std::size_t listed_results = 0;
   int rg_errors = 0;
 
+  const auto rg_glob_decision = [&](const Visit& visit) {
+    auto relative = visit.path;
+    if (relative.starts_with(visit.root)) {
+      relative.remove_prefix(visit.root.size());
+      if (relative.starts_with('/')) {
+        relative.remove_prefix(1);
+      }
+    }
+    if (relative.empty()) {
+      relative = visit.name;
+    }
+    return rg_globs.Match(relative, visit.metadata.type == vfs::FileType::kDirectory);
+  };
+
   // Completes the run-level consequences of one fully evaluated entry. Deferred result-set
   // predicates (-top / -shard-status) call this after selection; ordinary entries call it from the walk.
   // Keeping it outside the visitor is what makes replay use precisely the same listing/reduction
@@ -5490,17 +5504,7 @@ RunResult RunFindCore(
   const auto finish_entry = [&](const Visit& visit, std::map<std::string, std::string>& outputs, bool matched,
                                 std::optional<bool> verification) {
     if (matched && rg_output) {
-      auto relative = visit.path;
-      if (relative.starts_with(visit.root)) {
-        relative.remove_prefix(visit.root.size());
-        if (relative.starts_with('/')) {
-          relative.remove_prefix(1);
-        }
-      }
-      if (relative.empty()) {
-        relative = visit.name;
-      }
-      const auto decision = rg_globs.Match(relative, visit.metadata.type == vfs::FileType::kDirectory);
+      const auto decision = rg_glob_decision(visit);
       if (decision == ignore::Decision::kIgnore || (rg_positive_glob && decision == ignore::Decision::kDefault)) {
         return;
       }
@@ -5753,11 +5757,14 @@ RunResult RunFindCore(
       walk_fs, roots, options,
       // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive dispatch
       [&](const Visit& visit) {
+        const auto rg_included = [&] { return command.rg && rg_glob_decision(visit) == ignore::Decision::kInclude; };
+        // An rg include overrides hidden/ignore defaults only for matching entries. A hidden
+        // ancestor that does not match still prunes its descendants, matching rg traversal.
         // Hidden filter: unless hidden files are included, drop a dotfile (basename
         // starting with '.') before any evaluation or output. A hidden directory is
         // pruned (its whole subtree skipped); a hidden file is skipped. Depth 0 is an
         // explicitly named search root, always entered -- so `xff .git` still descends.
-        if (skip_hidden && visit.depth > 0 && !visit.name.empty() && visit.name.front() == '.') {
+        if (skip_hidden && visit.depth > 0 && !visit.name.empty() && visit.name.front() == '.' && !rg_included()) {
           return visit.metadata.type == vfs::FileType::kDirectory ? WalkAction::kPrune : WalkAction::kContinue;
         }
         // VCS metadata filter: prune version-control plumbing directories (--skip-vcs; `-g` implies
@@ -5767,7 +5774,7 @@ RunResult RunFindCore(
         // `.gitignore`, ...) still show; only VCS plumbing is dropped. Depth 0 is an explicitly named
         // root, always entered, so `xff .git` still descends. `skip_vcs_names` holds the metadata
         // names (`.git`, `.hg`, ...); it is empty (this filter off) unless --skip-vcs or -g is active.
-        if (!skip_vcs_names.empty() && visit.depth > 0 && skip_vcs_names.contains(visit.name)) {
+        if (!skip_vcs_names.empty() && visit.depth > 0 && skip_vcs_names.contains(visit.name) && !rg_included()) {
           return visit.metadata.type == vfs::FileType::kDirectory ? WalkAction::kPrune : WalkAction::kContinue;
         }
         // Ignore filter: drop an ignored entry before any evaluation or output. A

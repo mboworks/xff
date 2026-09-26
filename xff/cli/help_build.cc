@@ -957,6 +957,9 @@ Section RgSection(bool in_full) {
       "In native XFF grammar, `--xff` is a no-op. Both mode flags are CLI-only. "
       "`--config=rg` by itself only selects configuration; it does not change argument grammar."));
   section.children.push_back(ProseOf(
+      "An rg include glob overrides hidden and ignore filtering for entries it matches; a hidden or ignored "
+      "ancestor must itself be included before its children can be searched."));
+  section.children.push_back(ProseOf(
       "Options may appear among patterns and paths. Bundles and attached values work: `-nio`, `-eTODO`, `-C2`. "
       "An option consumes its argument before interpreting switches: `-e --xff` searches for that text. "
       "Bare `--` ends rg option parsing, so later `--xff` is a literal pattern or path. "
