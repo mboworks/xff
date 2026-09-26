@@ -36,6 +36,54 @@ _tree() {
   echo "${root}"
 }
 
+test::rg_invocation_selects_short_options_help_and_errors() {
+  local root name out rc
+  root="$(_tree)"
+  for name in rg rg_full; do
+    ln -s "$(_bin)" "${root}/${name}"
+    out="$("${root}/${name}" -nio todo "${root}/a.cc")"
+    expect_eq $'1:TODO\n3:TODO\n3:TODO' "${out}"
+    out="$("${root}/${name}" --help)"
+    expect_output_contains 'RIPGREP-STYLE SEARCHES' "${out}"
+    expect_output_contains 'rg_full' "${out}"
+    expect_eq 'xff 0.0.0' "$("${root}/${name}" -V)"
+    out="$("${root}/${name}" -e 2>&1)" && rc=0 || rc=$?
+    expect_eq 2 "${rc}"
+    expect_output_contains 'requires' "${out}"
+    out="$("${root}/${name}" absent "${root}/a.cc" 2>&1)" && rc=0 || rc=$?
+    expect_eq 1 "${rc}"
+    expect_eq '' "${out}"
+  done
+}
+
+test::rg_invocation_preserves_config_and_native_filter_boundaries() {
+  local root out
+  root="$(_tree)"
+  ln -s "$(_bin)" "${root}/rg"
+  out="$("${root}/rg" -I TODO "${root}" --xff -name '*.cc')"
+  expect_eq $'TODO one\nTODO two TODO' "${out}"
+  out="$("${root}/rg" -n TODO "${root}/a.cc" --config=xff)"
+  expect_eq $'1:TODO one\n3:TODO two TODO' "${out}"
+  printf '%s\n' '--line-number' >"${root}/user.ini"
+  out="$(XFF_TEST_USER_CONFIG="${root}/user.ini" "${root}/rg" TODO "${root}/a.cc")"
+  expect_eq $'1:TODO one\n3:TODO two TODO' "${out}"
+  out="$("${root}/rg" TODO "${root}/a.cc" --no-match-output)"
+  expect_eq "${root}/a.cc" "${out}"
+}
+
+test::rg_invocation_preserves_stdin_and_literal_mode_words() {
+  local root out
+  root="$(test_tmpdir invocation)"
+  ln -s "$(_bin)" "${root}/rg"
+  out="$(printf 'hit\nmiss\n' | "${root}/rg" hit)"
+  expect_eq hit "${out}"
+  printf '%s\n' '--xff' '+' 'help' >"${root}/words"
+  expect_eq '--xff' "$("${root}/rg" -e --xff "${root}/words")"
+  expect_eq '--xff' "$("${root}/rg" -- --xff "${root}/words")"
+  expect_eq '+' "$("${root}/rg" -F + "${root}/words")"
+  expect_eq 'help' "$("${root}/rg" help "${root}/words")"
+}
+
 test::native_subcommand_names_are_valid_rg_patterns() {
   local root pattern
   root="$(_tree)"

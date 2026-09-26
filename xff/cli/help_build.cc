@@ -945,6 +945,8 @@ Section RgSection(bool in_full) {
   Section section{.title = "Ripgrep-style searches", .anchor = "topic-rg"};
   section.children.push_back(ProseOf(
       "`xff --rg [OPTIONS] PATTERN [PATH...]` selects `--config=rg` and content-match output. "
+      "Invoking the executable as `rg` or `rg_full` selects the same grammar and output automatically; "
+      "for example, `rg -n TODO src --xff -name '*.cc'`. "
       "Repeat `-e PATTERN` or `-f FILE` to supply a union of patterns; then every positional argument is a path. "
       "Pattern files contain one pattern per line; an empty file supplies no patterns. "
       "Named roots use `--root=NAME=PATH` before `--xff`, retain operand order, and keep their names for archive "
@@ -1824,11 +1826,11 @@ Section DescriptionSection() {
       "With no path it searches the current directory; with no action it prints each match. "
       "`xff --compare LEFT RIGHT` instead compares two directory trees as selected status records or a patch."));
   description.children.push_back(ProseOf(
-      "xff has two flavors selected by the program name: invoked as `find` it restricts the expression "
-      "to find-compatible primaries, operators, and values; invoked as `xff` it enables the modern "
-      "extensions. Whole-run xff globals remain available as explicit controls in either flavor. An "
-      "explicit `--config=find|xff` overrides the program name. The detailed reference marks the "
-      "xff extensions beyond find."));
+      "Invoked as `find`, xff restricts expressions to find-compatible primaries, operators, and values. "
+      "Invoked as `xff`, it enables the modern extensions. Invoked as `rg` or `rg_full`, it selects "
+      "rg argument grammar and matching-line output, like `xff --rg`. Explicit `--config=find|xff|rg` "
+      "selectors change the style preset without changing argument grammar. See `--help=rg` for supported "
+      "options and the `--xff` native-filter transition."));
   return description;
 }
 

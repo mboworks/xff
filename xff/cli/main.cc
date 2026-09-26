@@ -59,6 +59,7 @@
 #include "xff/env/env.h"
 #include "xff/matching/regex/regex.h"
 #include "xff/parser/parser.h"
+#include "xff/parser/rg.h"
 #include "xff/presentation/color/color.h"
 #include "xff/presentation/format/format.h"
 #include "xff/registry/descriptor.h"
@@ -500,7 +501,9 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   // Parse once before dispatching help/version. The parser identifies meta flags
   // only at option/expression boundaries, so `-exec echo --help ;` passes
   // `--help` to the child instead of turning the whole xff invocation into help.
-  absl::StatusOr<xff::parser::Command> parsed = xff::parser::Parse(args);
+  // The rg invocation selects the same grammar as an explicit leading --rg.
+  absl::StatusOr<xff::parser::Command> parsed =
+      xff::config::DefaultStyleForProgram(program) == "rg" ? xff::parser::ParseRg(args, 0) : xff::parser::Parse(args);
   if (!parsed.ok()) {
     std::cerr << "xff: " << parsed.status().message() << "\n" << xff::cli::ParseErrorHint(parsed.status());
     return 2;
@@ -738,10 +741,9 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     command.root_names.emplace_back();
   }
   xff::config::DiscoveryOptions opts = xff::config::SelectorsFromGlobals(command.globals);
-  // argv[0] dispatch: the program name picks the base style (invoked as `find` ->
-  // find expression style; as `xff` or any other alias -> modern xff) as the lowest-precedence
-  // selector, so an explicit --config still overrides it (design-config.md "CLI
-  // selectors"). Prepended before discovery so [find]/[xff] .xffrc sections gate on it too.
+  // The invocation name supplies the lowest-precedence config selector. Explicit --config
+  // can override its style preset, independently of the argument grammar selected above.
+  // Prepend before discovery so matching .xffrc sections can gate on the invocation too.
   opts.configs.insert(opts.configs.begin(), std::string(xff::config::DefaultStyleForProgram(program)));
   auto config_paths = paths();
   if (!config_paths.ok()) {

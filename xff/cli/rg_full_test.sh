@@ -28,6 +28,14 @@ _check() {
   expect_eq "${expected}" "${out}"
 }
 
+test::full_rg_invocation_reads_piped_input_with_pcre2() {
+  local root out
+  root="$(test_tmpdir invocation)"
+  ln -s "$(_bin)" "${root}/rg_full"
+  out="$(printf 'hit\nmiss\n' | "${root}/rg_full" -Pox 'h|hit')"
+  expect_eq hit "${out}"
+}
+
 test::stdin_search_survives_automatic_archive_probing() {
   printf 'hit\nmiss\n' | _check 0 hit --rg hit
   printf 'hit\nmiss\n' | _check 0 hit --rg hit -

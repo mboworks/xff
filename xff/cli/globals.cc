@@ -1674,7 +1674,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "grep-output",
         .header = "Content-match output",
         .summary = "parse ripgrep-style search arguments and print matching lines",
-        .details = "Must precede roots. Selects `--config=rg` and content output. `--xff` switches the remaining "
+        .details = "Must precede roots. Invocation as `rg` or `rg_full` selects this grammar automatically. "
+                   "Selects `--config=rg` and content output. `--xff` switches the remaining "
                    "arguments to an XFF filter expression without resetting output or configuration. "
                    "Use `--help=rg` for supported options and intentional differences.",
         .topic = "rg",

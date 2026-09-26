@@ -34,7 +34,7 @@ eXtended File Find, a find(1)-compatible file finder with modern extensions.
 
 xff walks each starting path and acts on the entries matching an expression, like `find`(1). With no path it searches the current directory; with no action it prints each match. `xff --compare LEFT RIGHT` instead compares two directory trees as selected status records or a patch.
 
-xff has two flavors selected by the program name: invoked as `find` it restricts the expression to find-compatible primaries, operators, and values; invoked as `xff` it enables the modern extensions. Whole-run xff globals remain available as explicit controls in either flavor. An explicit `--config=find|xff` overrides the program name. The detailed reference marks the xff extensions beyond find.
+Invoked as `find`, xff restricts expressions to find-compatible primaries, operators, and values. Invoked as `xff`, it enables the modern extensions. Invoked as `rg` or `rg_full`, it selects rg argument grammar and matching-line output, like `xff --rg`. Explicit `--config=find|xff|rg` selectors change the style preset without changing argument grammar. See `--help=rg` for supported options and the `--xff` native-filter transition.
 
 ## Command structure
 
@@ -1082,7 +1082,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `--rg [OPTIONS] PATTERN [PATH...]` - parse ripgrep-style search arguments and print matching lines _(global, xff, command-line-only)_
   Command-line only; rejected in configuration files.
-  Must precede roots. Selects `--config=rg` and content output. `--xff` switches the remaining arguments to an XFF filter expression without resetting output or configuration. Use `--help=rg` for supported options and intentional differences.
+  Must precede roots. Invocation as `rg` or `rg_full` selects this grammar automatically. Selects `--config=rg` and content output. `--xff` switches the remaining arguments to an XFF filter expression without resetting output or configuration. Use `--help=rg` for supported options and intentional differences.
   Affected by: --files-with-matches, --files-without-match, --invert-match, --no-invert-match
   See also: [Ripgrep-style searches](#topic-rg), [--files-with-matches](#flag-files-with-matches), [--files-without-match](#flag-files-without-match), [--invert-match](#flag-invert-match), [--no-invert-match](#flag-no-invert-match)
 
@@ -2872,7 +2872,7 @@ See also: [Regex grammars](#topic-grammars), [Content](#topic-content)
 
 ## Ripgrep-style searches
 
-`xff --rg [OPTIONS] PATTERN [PATH...]` selects `--config=rg` and content-match output. Repeat `-e PATTERN` or `-f FILE` to supply a union of patterns; then every positional argument is a path. Pattern files contain one pattern per line; an empty file supplies no patterns. Named roots use `--root=NAME=PATH` before `--xff`, retain operand order, and keep their names for archive packing. With no path, search piped standard input, otherwise the current directory. Explicit `-` reads standard input. `-f -` consumes stdin as patterns, making the no-path default the current directory. Using stdin as both a pattern file and a search path is an error.
+`xff --rg [OPTIONS] PATTERN [PATH...]` selects `--config=rg` and content-match output. Invoking the executable as `rg` or `rg_full` selects the same grammar and output automatically; for example, `rg -n TODO src --xff -name '*.cc'`. Repeat `-e PATTERN` or `-f FILE` to supply a union of patterns; then every positional argument is a path. Pattern files contain one pattern per line; an empty file supplies no patterns. Named roots use `--root=NAME=PATH` before `--xff`, retain operand order, and keep their names for archive packing. With no path, search piped standard input, otherwise the current directory. Explicit `-` reads standard input. `-f -` consumes stdin as patterns, making the no-path default the current directory. Using stdin as both a pattern file and a search path is an error.
 
 `--xff` starts a native XFF file-filter expression against the collected paths. It preserves search patterns, configuration and output controls. For example, `xff --rg -n TODO src --xff -name '*.cc' -size +1k`. The filter selects files; only the rg patterns select output lines, even if the filter contains `-rxc`. Actions are rejected in rg mode. Switching back into rg grammar is not supported. In native XFF grammar, `--xff` is a no-op. Both mode flags are CLI-only. `--config=rg` by itself only selects configuration; it does not change argument grammar.
 
