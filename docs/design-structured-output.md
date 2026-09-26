@@ -141,8 +141,8 @@ match or column value.
 
 `xff -M ROOT -rxc PATTERN` replaces the default path listing with matching content lines.
 The equivalent long form, `--match-output`, works anywhere a global can appear and in INI
-configuration. `--no-match-output` restores the path default; the last setting wins.
-The short `-M` alias must precede the roots. No rg argument grammar is enabled.
+configuration. `--no-match-output` (`-M-`) restores the path default; the last setting wins.
+The short `-M` and `-M-` aliases must precede the roots. No rg argument grammar is enabled.
 
 The file expression retains its normal truth and short-circuit rules. After a file passes,
 the output searches the union of all `-rxc`, `-irxc`, `-content`, and `-icontent` patterns

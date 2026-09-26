@@ -952,6 +952,7 @@ Section ContentSection(bool in_full) {
   section.children.push_back(ProseOf(
       "Use `--match-output` (leading short alias `-M`) to replace the default path listing with content lines. "
       "It uses the union of content patterns in files accepted by the complete expression; each line prints once. "
+      "Use `--no-match-output` (leading short alias `-M-`) to restore the default path listing. "
       "Without that selector, output controls modify explicit `-grep` actions; they do not make `-rxc` or "
       "`-content` print lines. `--only-matching` emits nonempty matched portions; `--files-with-matches` and "
       "`--files-without-match` emit paths; `--count-matches` counts portions rather than lines. The last "

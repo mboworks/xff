@@ -1081,8 +1081,8 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 <a id="flag-no-match-output"></a>
 
-- `--no-match-output` - restore the default path listing instead of content-match output _(global, xff)_
-  Disables `--match-output`. Last setting wins, including configuration-file defaults.
+- `--no-match-output, -M-` - restore the default path listing instead of content-match output _(global, xff)_
+  Disables `--match-output`. Last setting wins, including configuration-file defaults. The short alias `-M-` must precede the roots.
   Affects: --match-output
   See also: [Content](#topic-content), [--match-output](#flag-match-output)
 
@@ -2846,7 +2846,7 @@ See also: [Regex grammars](#topic-grammars), [Content](#topic-content)
 
 These primaries read the entry's BYTES, not its metadata: `-grep` prints matching lines the way ripgrep does, `-content` / `-icontent` test for a literal, `-rxc` / `-irxc` for a regex (grammar per `--regextype`, see `--help=grammars`), and `-text` / `-eofcr` / `-eofcrlf` classify line endings and completeness. `{lines}`, `{text}`, `{line}`, `{match}` and `{column}` carry the results into templates (`--help=fields`).
 
-Use `--match-output` (leading short alias `-M`) to replace the default path listing with content lines. It uses the union of content patterns in files accepted by the complete expression; each line prints once. Without that selector, output controls modify explicit `-grep` actions; they do not make `-rxc` or `-content` print lines. `--only-matching` emits nonempty matched portions; `--files-with-matches` and `--files-without-match` emit paths; `--count-matches` counts portions rather than lines. The last filename/count mode wins. `--invert-match` selects nonmatching lines, unlike file-level `!`. `--no-filename` and `--no-line-number` hide built-in plain-text prefixes; JSON fields and explicit templates remain intact. Each reached `-grep` action searches its own pattern and emits immediately; later predicates do not retract output, and separate actions do not deduplicate each other's lines. Rg-compatible argument parsing and short-option compatibility remain separate decisions; `-o` remains OR.
+Use `--match-output` (leading short alias `-M`) to replace the default path listing with content lines. It uses the union of content patterns in files accepted by the complete expression; each line prints once. Use `--no-match-output` (leading short alias `-M-`) to restore the default path listing. Without that selector, output controls modify explicit `-grep` actions; they do not make `-rxc` or `-content` print lines. `--only-matching` emits nonempty matched portions; `--files-with-matches` and `--files-without-match` emit paths; `--count-matches` counts portions rather than lines. The last filename/count mode wins. `--invert-match` selects nonmatching lines, unlike file-level `!`. `--no-filename` and `--no-line-number` hide built-in plain-text prefixes; JSON fields and explicit templates remain intact. Each reached `-grep` action searches its own pattern and emits immediately; later predicates do not retract output, and separate actions do not deduplicate each other's lines. Rg-compatible argument parsing and short-option compatibility remain separate decisions; `-o` remains OR.
 
 Every one of them reads through the entry's OWN filesystem, so under `--archive` a member is searched inside its container exactly like a plain file - `a.tar!notes.txt` greps without unpacking anything. Reading is per entry and streamed, so a match in a huge tree costs the bytes of the files visited, not of the tree.
 

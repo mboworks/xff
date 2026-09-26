@@ -585,11 +585,16 @@ predicate or action counts as a consumer after selector expansion and safety gat
 arguments never become modifier requests. A setting superseded later by configuration is no longer
 the effective CLI request.
 
+`--match-output` (`-M`) enables default content-line output; `--no-match-output`
+(`-M-`) restores the default path listing. Both long forms work in INI configuration.
+The short aliases must precede command-line roots. The last setting wins, so `-M-`
+can disable a configured match-output default.
+
 The initial registered dependencies cover:
 
 | Modifier                                                                                                      | Consumer                                                                                                                 |
 | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `--count` / `-c`, `--count-matches`, filename selection, prefix controls, `--only-matching`, `--invert-match` | A `-grep` action or active `--match-output`                                                                              |
+| `--count` / `-c`, `--count-matches`, filename selection, prefix controls, `--only-matching`, `--invert-match` | A `-grep` action or active `--match-output` (`-M`)                                                                       |
 | `--context`, `--before-context`, `--after-context`                                                            | `-grep` / `--match-output` line output, or symmetric default context for `-diff`; explicit diff context takes precedence |
 | `--diff-context`                                                                                              | Contextual `-diff` output without a per-action count, or tree diff output                                                |
 | `--diff-format`                                                                                               | `-diff` without an attached style; tree diffs use unified output                                                         |

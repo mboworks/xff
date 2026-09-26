@@ -341,6 +341,18 @@ test::match_output_activates_predicates_and_obeys_full_expression() {
   expect_eq "${root}/a.txt" "${out}"
 }
 
+test::match_output_short_reset_and_last_setting_win() {
+  local root out
+  root="$(_make_tree)"
+  out="$(_run -M -M- "${root}" -rxc TODO)"
+  expect_eq "${root}/a.txt" "${out}"
+  out="$(_run -M- -M "${root}" -rxc TODO --no-filename --no-line-number)"
+  expect_eq $'first TODO line\nanother TODO here' "${out}"
+  printf '%s\n' --match-output >"${root}/output.rc"
+  out="$(_run --xffrc="${root}/output.rc" -M- "${root}" -rxc TODO)"
+  expect_eq "${root}/a.txt" "${out}"
+}
+
 test::match_output_unions_patterns_without_duplicate_lines() {
   local root out
   root="$(_make_tree)"

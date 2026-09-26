@@ -1684,11 +1684,13 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     },
     {
         .name = "--no-match-output",
-        .display = "--no-match-output",
+        .alias = "-M-",
+        .display = "--no-match-output, -M-",
         .group = "grep-output",
         .header = "Content-match output",
         .summary = "restore the default path listing instead of content-match output",
-        .details = "Disables `--match-output`. Last setting wins, including configuration-file defaults.",
+        .details = "Disables `--match-output`. Last setting wins, including configuration-file defaults. "
+                   "The short alias `-M-` must precede the roots.",
         .affects = "--match-output",
         .topic = "content",
         .grep_effect = GlobalFlag::GrepEffect::kNoMatchOutput,
