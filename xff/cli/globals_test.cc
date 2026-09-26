@@ -49,6 +49,16 @@ using ::testing::SizeIs;
 
 struct GlobalsTest : ::testing::Test {};
 
+TEST_F(GlobalsTest, GrepAliasesShareTypedEffects) {
+  EXPECT_THAT(
+      LookupGlobalArgument("-c"), Optional(Field(&GlobalFlag::grep_effect, Eq(GlobalFlag::GrepEffect::kCountLines))));
+  EXPECT_THAT(
+      LookupGlobalArgument("--files-without-matches"),
+      Optional(Field(&GlobalFlag::grep_effect, Eq(GlobalFlag::GrepEffect::kFilesWithoutMatch))));
+  EXPECT_THAT(
+      LookupGlobalArgument("--summary"), Optional(Field(&GlobalFlag::grep_effect, Eq(GlobalFlag::GrepEffect::kNone))));
+}
+
 // NOLINTNEXTLINE(readability-function-cognitive-complexity): a flat per-field validation sweep.
 TEST_F(GlobalsTest, EveryGlobalIsWellFormed) {
   EXPECT_THAT(Globals(), Not(IsEmpty()));

@@ -950,6 +950,15 @@ Section ContentSection(bool in_full) {
       "classify line endings and completeness. `{lines}`, `{text}`, `{line}`, `{match}` and "
       "`{column}` carry the results into templates (`--help=fields`)."));
   section.children.push_back(ProseOf(
+      "Content-output long options currently modify explicit `-grep` actions; they do not make `-rxc` or "
+      "`-content` print lines. `--only-matching` emits nonempty matched portions; `--files-with-matches` and "
+      "`--files-without-match` emit paths; `--count-matches` counts portions rather than lines. The last "
+      "filename/count mode wins. `--invert-match` selects nonmatching lines, unlike file-level `!`. "
+      "`--no-filename` and `--no-line-number` hide built-in plain-text prefixes; JSON fields and explicit "
+      "templates remain intact. Each reached `-grep` action searches its own pattern and emits immediately; "
+      "later predicates do not retract output, and separate actions do not deduplicate each other's lines. "
+      "Short-option compatibility and implicit content-line output are separate decisions; `-o` remains OR."));
+  section.children.push_back(ProseOf(
       "Every one of them reads through the entry's OWN filesystem, so under `--archive` a member is "
       "searched inside its container exactly like a plain file - `a.tar!notes.txt` greps without "
       "unpacking anything. Reading is per entry and streamed, so a match in a huge tree costs the "

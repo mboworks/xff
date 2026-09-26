@@ -47,6 +47,7 @@ using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
 using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
+using ::mbo::testing::WithDropIndent;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::HasSubstr;
@@ -107,7 +108,7 @@ struct EvaluateTest : ::testing::Test {
                                             : mbo::types::OptionalRef<std::optional<int>>{},
         .hash_verification = collect_hash_verification_ ? mbo::types::OptionalRef{hash_verification_}
                                                         : mbo::types::OptionalRef<std::optional<bool>>{},
-        .grep_count = grep_count_,
+        .grep = grep_,
         .control = control_,
         .exec_fields = exec_fields_,
         .captures = exec_fields_ ? mbo::types::OptionalRef{captures_} : std::nullopt,
@@ -167,11 +168,11 @@ struct EvaluateTest : ::testing::Test {
   const absl::Time now_ = absl::FromUnixSeconds(1'700'000'000);
   absl::TimeZone tz_ = absl::LocalTimeZone();  // zone Match feeds to EvalContext::tz (varied by -newermt cases)
   vfs::MutationPolicy archive_mutations_;
-  Control control_;                             // set by Match from the most recent evaluation (-prune/-quit)
-  bool exec_fields_ = false;                    // when true, Match enables --exec-fields token substitution
-  bool fold_name_case_ = false;                 // when true, Match sets EvalContext::fold_name_case (FS-native fold)
-  std::string regextype_;                       // when set (e.g. "EXACT"), Match prepends --regextype=<v> as a global
-  bool grep_count_ = false;                     // when true, Match sets EvalContext::grep_count (-grep --count mode)
+  Control control_;              // set by Match from the most recent evaluation (-prune/-quit)
+  bool exec_fields_ = false;     // when true, Match enables --exec-fields token substitution
+  bool fold_name_case_ = false;  // when true, Match sets EvalContext::fold_name_case (FS-native fold)
+  std::string regextype_;        // when set (e.g. "EXACT"), Match prepends --regextype=<v> as a global
+  GrepOptions grep_;
   bool capture_outputs_ = true;                 // when false, Match leaves the -capture output sink unwired
   bool collect_fuzzy_score_ = true;             // when false, Match evaluates without a fuzzy-score consumer
   bool collect_hash_verification_ = false;      // when true, Match records the reached -hasheq verdict
@@ -1069,6 +1070,45 @@ TEST_F(EvaluateTest, GitTextAndBinaryUseOnlyTheLeadingNulSniffWindow) {
   EXPECT_THAT(Match({"-binary"}, directory), IsFalse());
 }
 
+TEST_F(EvaluateTest, GrepOnlyMatchingEmitsEveryNonemptySpan) {
+  const std::string path = WriteContentFile("parts.txt", "a12 b345\nnone\n");
+  vfs::Metadata md;
+  const Visit visit = MakeVisit(path, "parts.txt", vfs::FileType::kRegular, md);
+  grep_ = {.only_matching = true, .line_number = false, .filename = false};
+  EXPECT_THAT(Match({"-grep", "[0-9]+"}, visit), IsTrue());
+  EXPECT_THAT(emitted_, WithDropIndent(EqualsText(R"out(
+    12
+    345
+  )out")));
+}
+
+TEST_F(EvaluateTest, GrepInversionSelectsLinesRatherThanNegatingFiles) {
+  const std::string path = WriteContentFile("invert.txt", "yes\nno\nyes\n");
+  vfs::Metadata md;
+  const Visit visit = MakeVisit(path, "invert.txt", vfs::FileType::kRegular, md);
+  grep_ = {.invert = true, .line_number = false, .filename = false};
+  EXPECT_THAT(Match({"-grep", "yes"}, visit), IsTrue());
+  EXPECT_THAT(emitted_, EqualsText("no\n"));
+}
+
+TEST_F(EvaluateTest, GrepFilesWithoutMatchIncludesEmptyText) {
+  const std::string path = WriteContentFile("empty.txt", "");
+  vfs::Metadata md;
+  const Visit visit = MakeVisit(path, "empty.txt", vfs::FileType::kRegular, md);
+  grep_.output = GrepOptions::Output::kFilesWithoutMatch;
+  EXPECT_THAT(Match({"-grep", "yes"}, visit), IsTrue());
+  EXPECT_THAT(emitted_, EqualsText(path + "\n"));
+}
+
+TEST_F(EvaluateTest, GrepCountMatchesCountsPartsRatherThanLines) {
+  const std::string path = WriteContentFile("count.txt", "aa aa\naa\n");
+  vfs::Metadata md;
+  const Visit visit = MakeVisit(path, "count.txt", vfs::FileType::kRegular, md);
+  grep_ = {.output = GrepOptions::Output::kCountMatches, .filename = false};
+  EXPECT_THAT(Match({"-grep", "aa"}, visit), IsTrue());
+  EXPECT_THAT(emitted_, EqualsText("3\n"));
+}
+
 TEST_F(EvaluateTest, GrepEmitsMatchingLinesAsPathLineText) {
   const std::string path = WriteContentFile("grep.txt", "first TODO line\nsecond line\nanother TODO here\n");
   vfs::Metadata md;
@@ -1163,7 +1203,7 @@ TEST_F(EvaluateTest, GrepCountEmitsPerFileMatchLineCount) {
   const std::string path = WriteContentFile("grep_c.txt", "TODO a\nx\nTODO b\nTODO c\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_c.txt", vfs::FileType::kRegular, md);
-  grep_count_ = true;
+  grep_.output = GrepOptions::Output::kCount;
   EXPECT_THAT(Match({"-grep:{line}", "TODO"}, visit), IsTrue());  // FORMAT is superseded by --count
   EXPECT_THAT(emitted_, EqualsText(absl::StrCat(path, ":3\n")));
 }
@@ -1172,7 +1212,7 @@ TEST_F(EvaluateTest, GrepCountEmitsNothingWhenNoLineMatches) {
   const std::string path = WriteContentFile("grep_c0.txt", "nothing here\n");
   vfs::Metadata md;
   const Visit visit = MakeVisit(path, "grep_c0.txt", vfs::FileType::kRegular, md);
-  grep_count_ = true;
+  grep_.output = GrepOptions::Output::kCount;
   EXPECT_THAT(Match({"-grep", "TODO"}, visit), IsFalse());  // no match -> false, and no count line
   EXPECT_THAT(emitted_, IsEmpty());
 }

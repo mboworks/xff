@@ -104,3 +104,35 @@ An explicit `-grep:FORMAT` without `--count` retains authored output even with `
 Unsupported built-in comparison and grep formats fail before traversal or expression actions,
 including actions appearing earlier in the expression. Validation does not wait until a match
 reaches the output action, so a format error cannot leave earlier deletions or commands executed.
+
+## Grep long-option controls
+
+The content-output controls apply to explicit `-grep PATTERN` actions. They do not enable
+line output for `-rxc` or `-content`; those remain file predicates. Each reached action emits
+immediately for its own pattern. Separate actions can emit the same line; a later false
+predicate does not retract earlier action output. `-o` remains the expression OR operator.
+
+- `--only-matching` emits each nonempty, non-overlapping matched portion, ignoring context.
+  `--no-only-matching` restores whole lines. Empty matches produce no output portions.
+- `--invert-match` selects nonmatching lines; `--no-invert-match` restores matching lines.
+  This differs from negating a file predicate. Inverted lines have no match portions, so
+  only-matching emits nothing and match counts are zero, even when the action succeeds.
+- `--count` counts selected lines; with `--only-matching` it counts portions.
+  `--count-matches` counts portions explicitly. Files without selected lines emit no count.
+- `--files-with-matches` emits a path if any line is selected. `--files-without-match`
+  (also `--files-without-matches`) emits a path if none is selected, including empty text
+  files. Unreadable, binary and non-regular entries are skipped in both modes. The action's
+  truth reflects whether the requested file-selection condition holds.
+- Among counts and filename-only modes, the last specified mode wins; those modes supersede
+  an explicit grep template. Context does not affect them.
+- `--with-filename` / `--no-filename` and `--line-number` / `--no-line-number` control
+  built-in plain-text prefixes, with the last setting winning. Paths and line numbers remain
+  enabled by default. Filename-only output always includes the path.
+
+JSON output retains path and line fields regardless of plain-text prefix settings. Portion
+output emits one match record per portion, with `text` holding that portion. Filename modes
+emit `record: grep`, `kind: file`, `path`, `root`, `pattern`, and `selected` (true for a file
+with selected lines, false for one without). Count records keep their existing shape.
+Explicit line templates retain their fields: in portion mode `{text}` is the complete line,
+while `{match}` and `{column}` describe the current portion. Inverted/context lines have no
+match or column value.
