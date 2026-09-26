@@ -51,11 +51,6 @@ inline mbo::types::OptionalRef<const Expr> AsConstOptionalExpr(const std::unique
 // arguments, an unexpected operator, or unbalanced parentheses.
 absl::StatusOr<Command> Parse(const std::vector<std::string>& args);
 
-// Parses a native XFF filter tail after an explicit mode boundary. The `+`
-// OR spelling is accepted here, but remains ordinary positional data in the
-// default find grammar.
-absl::StatusOr<Command> ParseXff(const std::vector<std::string>& args);
-
 // Enforces the active find/xff style on a parsed command. Under the strict find
 // style (registry::Style::kFind, selected by --config=find), any expression
 // primary tagged registry::Style::kXff (an xff extension such as -println or

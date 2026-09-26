@@ -58,8 +58,10 @@ struct Expr {
   enum class Kind { kPredicate, kNot, kAnd, kOr, kXor, kNand, kNor, kXnor, kComma };
 
   Kind kind;
-  // kPredicate: the matched descriptor and its consumed arguments.
+  // Predicates and explicitly spelled OR-tier operators retain their descriptor
+  // so style validation can distinguish XFF aliases from find spellings.
   mbo::types::OptionalRef<const registry::Descriptor> descriptor;
+  // kPredicate: consumed arguments.
   std::vector<std::string> args;
   // -exec terminated by `+` (batch form): the matched paths are accumulated and
   // the command runs at end-of-walk in ARG_MAX-bounded chunks, not per entry.
