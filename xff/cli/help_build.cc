@@ -945,7 +945,7 @@ Section RgSection(bool in_full) {
   Section section{.title = "Ripgrep-style searches", .anchor = "topic-rg"};
   section.children.push_back(ProseOf(
       "`xff --rg [OPTIONS] PATTERN [PATH...]` selects `--config=rg` and content-match output. "
-      "Invoking the executable as `rg` or `rg_full` selects the same grammar and output automatically; "
+      "Invoking the executable as `rg` selects the same grammar and output automatically; "
       "for example, `rg -n TODO src --xff -name '*.cc'`. "
       "Repeat `-e PATTERN` or `-f FILE` to supply a union of patterns; then every positional argument is a path. "
       "Pattern files contain one pattern per line; an empty file supplies no patterns. "
@@ -1827,7 +1827,7 @@ Section DescriptionSection() {
       "`xff --compare LEFT RIGHT` instead compares two directory trees as selected status records or a patch."));
   description.children.push_back(ProseOf(
       "Invoked as `find`, xff restricts expressions to find-compatible primaries, operators, and values. "
-      "Invoked as `xff`, it enables the modern extensions. Invoked as `rg` or `rg_full`, it selects "
+      "Invoked as `xff`, it enables the modern extensions. Invoked as `rg`, it selects "
       "rg argument grammar and matching-line output, like `xff --rg`. Explicit `--config=find|xff|rg` "
       "selectors change the style preset without changing argument grammar. See `--help=rg` for supported "
       "options and the `--xff` native-filter transition."));

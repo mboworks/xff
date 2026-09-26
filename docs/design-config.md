@@ -305,8 +305,8 @@ The executable basename supplies the first selector:
 - `rg` selects the rg style, rg argument grammar, and matching-line output;
 - another basename such as `mytool` activates a same-named config block while
   retaining the xff style;
-- `_full` is removed first, so `xff_full`, `find_full`, and `rg_full` behave as
-  their base names.
+- for preset selection, `_full` is removed first, so `xff_full` and `find_full`
+  select their base presets.
 
 Explicit `--config` selectors follow the invocation selector and can therefore
 choose a later built-in style. Styles set baseline traversal and presentation
@@ -587,7 +587,7 @@ the effective CLI request.
 
 `--rg` and `--xff` are CLI-only grammar selectors. `--rg` must precede the roots;
 it selects the `rg` configuration and enables content output. Invocation through a
-`rg` or `rg_full` basename does the same automatically, including short options,
+`rg` basename does the same automatically, including short options,
 stdin defaults, and the `--xff` filter tail. For example, `rg -n TODO src --xff -name '*.cc'`
 is the invocation-name form of `xff --rg -n TODO src --xff -name '*.cc'`. `--config=rg` alone
 never changes argument grammar. INI files always use native XFF syntax, including

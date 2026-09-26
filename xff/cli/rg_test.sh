@@ -37,23 +37,20 @@ _tree() {
 }
 
 test::rg_invocation_selects_short_options_help_and_errors() {
-  local root name out rc
+  local root out rc
   root="$(_tree)"
-  for name in rg rg_full; do
-    ln -s "$(_bin)" "${root}/${name}"
-    out="$("${root}/${name}" -nio todo "${root}/a.cc")"
-    expect_eq $'1:TODO\n3:TODO\n3:TODO' "${out}"
-    out="$("${root}/${name}" --help)"
-    expect_output_contains 'RIPGREP-STYLE SEARCHES' "${out}"
-    expect_output_contains 'rg_full' "${out}"
-    expect_eq 'xff 0.0.0' "$("${root}/${name}" -V)"
-    out="$("${root}/${name}" -e 2>&1)" && rc=0 || rc=$?
-    expect_eq 2 "${rc}"
-    expect_output_contains 'requires' "${out}"
-    out="$("${root}/${name}" absent "${root}/a.cc" 2>&1)" && rc=0 || rc=$?
-    expect_eq 1 "${rc}"
-    expect_eq '' "${out}"
-  done
+  ln -s "$(_bin)" "${root}/rg"
+  out="$("${root}/rg" -nio todo "${root}/a.cc")"
+  expect_eq $'1:TODO\n3:TODO\n3:TODO' "${out}"
+  out="$("${root}/rg" --help)"
+  expect_output_contains 'RIPGREP-STYLE SEARCHES' "${out}"
+  expect_eq 'xff 0.0.0' "$("${root}/rg" -V)"
+  out="$("${root}/rg" -e 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  expect_output_contains 'requires' "${out}"
+  out="$("${root}/rg" absent "${root}/a.cc" 2>&1)" && rc=0 || rc=$?
+  expect_eq 1 "${rc}"
+  expect_eq '' "${out}"
 }
 
 test::rg_invocation_preserves_config_and_native_filter_boundaries() {

@@ -31,8 +31,8 @@ _check() {
 test::full_rg_invocation_reads_piped_input_with_pcre2() {
   local root out
   root="$(test_tmpdir invocation)"
-  ln -s "$(_bin)" "${root}/rg_full"
-  out="$(printf 'hit\nmiss\n' | "${root}/rg_full" -Pox 'h|hit')"
+  ln -s "$(_bin)" "${root}/rg"
+  out="$(printf 'hit\nmiss\n' | "${root}/rg" -Pox 'h|hit')"
   expect_eq hit "${out}"
 }
 

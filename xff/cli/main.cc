@@ -503,7 +503,7 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   // `--help` to the child instead of turning the whole xff invocation into help.
   // The rg invocation selects the same grammar as an explicit leading --rg.
   absl::StatusOr<xff::parser::Command> parsed =
-      xff::config::DefaultStyleForProgram(program) == "rg" ? xff::parser::ParseRg(args, 0) : xff::parser::Parse(args);
+      ProgramBasename(program) == "rg" ? xff::parser::ParseRg(args, 0) : xff::parser::Parse(args);
   if (!parsed.ok()) {
     std::cerr << "xff: " << parsed.status().message() << "\n" << xff::cli::ParseErrorHint(parsed.status());
     return 2;
