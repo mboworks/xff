@@ -2,6 +2,7 @@
 
 ## Content-search output controls
 
+- [x] Return a style enum for invocation dispatch; keep custom config selectors separate.
 - [x] Limit full-binary preset mapping to `xff_full`; preserve all other invocation names.
 
 - [x] Implement and validate the missing grep-style long output options with explicit `-grep`.

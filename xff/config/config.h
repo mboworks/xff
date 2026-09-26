@@ -146,7 +146,12 @@ registry::Style ActiveStyle(const std::vector<std::string>& configs);
 // ignores a non-style selector). main() prepends this as the lowest-precedence selector, so an
 // explicit --config still stacks over it via ActiveStyle's last-wins (design-config.md "CLI
 // selectors"). The returned view aliases `argv0` for a passthrough name; copy it to retain.
-std::string_view DefaultStyleForProgram(std::string_view argv0);
+std::string_view InvocationConfigForProgram(std::string_view argv0);
+
+// The default style of an invocation: exactly "find" and "rg" select their respective styles;
+// all other basenames use the xff style. Custom invocation names still select their named
+// configuration through InvocationConfigForProgram, independently of this enum.
+registry::Style DefaultStyleForProgram(std::string_view argv0);
 
 // Renders the effective configuration for --explain: the resolved config flags
 // (each prefixed by its provenance) in application order, then the CLI globals

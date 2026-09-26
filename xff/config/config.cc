@@ -468,7 +468,7 @@ std::string_view StyleName(registry::Style style) {
 
 }  // namespace
 
-std::string_view DefaultStyleForProgram(std::string_view argv0) {
+std::string_view InvocationConfigForProgram(std::string_view argv0) {
   if (const std::string_view::size_type slash = argv0.rfind('/'); slash != std::string_view::npos) {
     argv0 = argv0.substr(slash + 1);  // basename: the last path component
   }
@@ -486,6 +486,17 @@ std::string_view DefaultStyleForProgram(std::string_view argv0) {
   // aliasing xff auto-activates the matching `[mytool]` config block without a preset ever being
   // overloadable. An explicit --config still stacks (last wins).
   return argv0;
+}
+
+registry::Style DefaultStyleForProgram(std::string_view argv0) {
+  const std::string_view name = InvocationConfigForProgram(argv0);
+  if (name == "find") {
+    return registry::Style::kFind;
+  }
+  if (name == "rg") {
+    return registry::Style::kRg;
+  }
+  return registry::Style::kXff;
 }
 
 std::string ExplainConfig(const std::vector<ResolvedFlag>& application) {

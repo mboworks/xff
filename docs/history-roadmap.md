@@ -1054,7 +1054,7 @@ remains below is the design-forked / larger work.
     (`xff_minimal`), which would break every bashtest's hardcoded `xff/cli/xff` lookup; two named
     `cc_binary`s keep the `xff` artifact named `xff` (zero test churn), and the user picks which
     binary to run. `manual` keeps the heavy full binary + its deps out of default `//...`.
-    `DefaultStyleForProgram` maps the distribution name `xff_full` to the xff style; other
+    `InvocationConfigForProgram` maps the distribution name `xff_full` to the xff style; other
     invocation names are preserved; covered by `config_test` + `full_binary_test.sh`. `--config=xff_full` (`.bazelrc`) turns
     the extras on; `--config=xff_full --//xff:xff_pcre=false` drops one from an otherwise-full build.
   - **PCRE2 backend SHIPPED (#85 PR5).** `extra_modules/pcre2/` (removable dir) holds the real

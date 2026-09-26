@@ -428,34 +428,47 @@ TEST_F(ConfigTest, ActiveStyleDefaultsToXffAndTracksTheConfigStack) {
   EXPECT_THAT(ActiveStyle({"xfd"}), registry::Style::kXff);          // xfd was dropped: not a style -> default xff
 }
 
-TEST_F(ConfigTest, DefaultStyleForProgramSelectsByBasename) {
-  EXPECT_THAT(DefaultStyleForProgram("find"), "find");
-  EXPECT_THAT(DefaultStyleForProgram("/usr/local/bin/find"), "find");  // the basename, not the path
-  EXPECT_THAT(DefaultStyleForProgram("./find"), "find");
-  EXPECT_THAT(DefaultStyleForProgram("xff"), "xff");
-  EXPECT_THAT(DefaultStyleForProgram("/opt/mboworks/xff"), "xff");
-  EXPECT_THAT(DefaultStyleForProgram(""), "xff");  // no name -> the modern default
-  EXPECT_THAT(DefaultStyleForProgram("rg"), "rg");
+TEST_F(ConfigTest, DefaultStyleForProgramReturnsBuiltinStyles) {
+  EXPECT_THAT(DefaultStyleForProgram("find"), registry::Style::kFind);
+  EXPECT_THAT(DefaultStyleForProgram("/usr/local/bin/find"), registry::Style::kFind);
+  EXPECT_THAT(DefaultStyleForProgram("./rg"), registry::Style::kRg);
+  EXPECT_THAT(DefaultStyleForProgram("rg"), registry::Style::kRg);
+  EXPECT_THAT(DefaultStyleForProgram("xff"), registry::Style::kXff);
+  EXPECT_THAT(DefaultStyleForProgram("/opt/bin/xff_full"), registry::Style::kXff);
+  EXPECT_THAT(DefaultStyleForProgram(""), registry::Style::kXff);
+  EXPECT_THAT(DefaultStyleForProgram("find_full"), registry::Style::kXff);
+  EXPECT_THAT(DefaultStyleForProgram("rg_full"), registry::Style::kXff);
+  EXPECT_THAT(DefaultStyleForProgram("mytool"), registry::Style::kXff);
+}
+
+TEST_F(ConfigTest, InvocationConfigForProgramSelectsByBasename) {
+  EXPECT_THAT(InvocationConfigForProgram("find"), "find");
+  EXPECT_THAT(InvocationConfigForProgram("/usr/local/bin/find"), "find");  // the basename, not the path
+  EXPECT_THAT(InvocationConfigForProgram("./find"), "find");
+  EXPECT_THAT(InvocationConfigForProgram("xff"), "xff");
+  EXPECT_THAT(InvocationConfigForProgram("/opt/mboworks/xff"), "xff");
+  EXPECT_THAT(InvocationConfigForProgram(""), "xff");  // no name -> the modern default
+  EXPECT_THAT(InvocationConfigForProgram("rg"), "rg");
   // A non-preset invocation name is returned verbatim as a named-config selector (a `mytool`
   // symlink activates a `mytool:` config block; the base style stays the xff default). xfd was
   // dropped and fd was never a style, so both are plain verbatim names now (no magic remap).
-  EXPECT_THAT(DefaultStyleForProgram("xfd"), "xfd");
-  EXPECT_THAT(DefaultStyleForProgram("/usr/bin/fd"), "fd");  // basename, verbatim (not remapped to rg)
-  EXPECT_THAT(DefaultStyleForProgram("myfind"), "myfind");
-  EXPECT_THAT(DefaultStyleForProgram("findutils"), "findutils");
-  EXPECT_THAT(DefaultStyleForProgram("/opt/bin/mytool"), "mytool");  // basename, verbatim
+  EXPECT_THAT(InvocationConfigForProgram("xfd"), "xfd");
+  EXPECT_THAT(InvocationConfigForProgram("/usr/bin/fd"), "fd");  // basename, verbatim (not remapped to rg)
+  EXPECT_THAT(InvocationConfigForProgram("myfind"), "myfind");
+  EXPECT_THAT(InvocationConfigForProgram("findutils"), "findutils");
+  EXPECT_THAT(InvocationConfigForProgram("/opt/bin/mytool"), "mytool");  // basename, verbatim
 }
 
-TEST_F(ConfigTest, DefaultStyleForProgramMapsOnlyTheFullDistributionName) {
-  EXPECT_THAT(DefaultStyleForProgram("xff_full"), "xff");
-  EXPECT_THAT(DefaultStyleForProgram("/opt/mboworks/xff_full"), "xff");
-  EXPECT_THAT(DefaultStyleForProgram("find_full"), "find_full");
-  EXPECT_THAT(DefaultStyleForProgram("/opt/bin/find_full"), "find_full");
-  EXPECT_THAT(DefaultStyleForProgram("rg_full"), "rg_full");
-  EXPECT_THAT(DefaultStyleForProgram("mytool_full"), "mytool_full");
-  EXPECT_THAT(DefaultStyleForProgram("_full"), "_full");
-  EXPECT_THAT(DefaultStyleForProgram("fullbore"), "fullbore");
-  EXPECT_THAT(DefaultStyleForProgram("full"), "full");
+TEST_F(ConfigTest, InvocationConfigForProgramMapsOnlyTheFullDistributionName) {
+  EXPECT_THAT(InvocationConfigForProgram("xff_full"), "xff");
+  EXPECT_THAT(InvocationConfigForProgram("/opt/mboworks/xff_full"), "xff");
+  EXPECT_THAT(InvocationConfigForProgram("find_full"), "find_full");
+  EXPECT_THAT(InvocationConfigForProgram("/opt/bin/find_full"), "find_full");
+  EXPECT_THAT(InvocationConfigForProgram("rg_full"), "rg_full");
+  EXPECT_THAT(InvocationConfigForProgram("mytool_full"), "mytool_full");
+  EXPECT_THAT(InvocationConfigForProgram("_full"), "_full");
+  EXPECT_THAT(InvocationConfigForProgram("fullbore"), "fullbore");
+  EXPECT_THAT(InvocationConfigForProgram("full"), "full");
 }
 
 TEST_F(ConfigTest, ExplainConfigTagsEachFlagWithProvenance) {
