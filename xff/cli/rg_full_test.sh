@@ -36,4 +36,9 @@ test::stdin_search_survives_automatic_archive_probing() {
   printf '' | _check 1 '' --rg hit -
 }
 
+test::whole_line_pcre2_preserves_alternation_and_match_portions() {
+  printf 'hit\nhits\n' | _check 0 hit --rg -Pox 'h|hit'
+  printf 'hit\nhits\n' | _check 0 1 --rg -Px --count-matches 'h|hit'
+}
+
 test_runner

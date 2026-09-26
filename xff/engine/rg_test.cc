@@ -172,6 +172,33 @@ TEST_F(RgEngineTest, MaximumColumnsMeasureTheEmittedMatchBeforePrefixes) {
   EXPECT_THAT(output, HasSubstr(R"("text":"hit")"));
 }
 
+TEST_F(RgEngineTest, WholeLineMatchingUsesEachGrammarsFullMatchSemantics) {
+  const std::vector<std::pair<std::string, std::string>> patterns{
+      {"RE2", "h|hit"}, {"ERE", "h|hit"}, {"EXACT", "hit"}, {"FNMATCH", "h?t"}, {"GLOB", "h?t"}, {"SHGLOB", "{h,hit}"},
+  };
+  fs.files.insert_or_assign("tree/a", "hit\nshit\nhits\n");
+  for (const auto& [grammar, pattern] : patterns) {
+    EXPECT_THAT(Run({"--regextype=" + grammar, "-ox", pattern, "tree/a"}).errors, Eq(0));
+    EXPECT_THAT(output, EqualsText("tree/a:hit\n"));
+    EXPECT_THAT(Run({"--regextype=" + grammar, "-x", "--count-matches", pattern, "tree/a"}).any_match, IsTrue());
+    EXPECT_THAT(output, EqualsText("tree/a:1\n"));
+  }
+}
+
+TEST_F(RgEngineTest, WholeLineLiteralPatternsAndWordPrecedenceRemainLiteral) {
+  fs.files.insert_or_assign("tree/a", "a.b\naXb\na.bc\n");
+  EXPECT_THAT(Run({"-Fx", "a.b", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a:a.b\n"));
+  EXPECT_THAT(Run({"-Fx", "-e", "a", "-e", "a.b", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a:a.b\n"));
+  fs.files.insert_or_assign("tree/a", "@\n@x\n");
+  EXPECT_THAT(Run({"-Fwx", "@", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a:@\n"));
+  fs.files.insert_or_assign("tree/a", "\nmiss\n");
+  EXPECT_THAT(Run({"-x", "--count-matches", "", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a:1\n"));
+}
+
 TEST_F(RgEngineTest, SmartCaseAppliesToTheWholePatternUnion) {
   EXPECT_THAT(Run({"-S", "-e", "HIT", "-e", "MISS", "tree"}).any_match, IsFalse());
   EXPECT_THAT(Run({"-S", "-e", "HIT", "-e", "miss", "tree/a"}).any_match, IsTrue());
