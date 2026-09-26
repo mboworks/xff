@@ -131,6 +131,7 @@ struct GrepOptions {
   Output output = Output::kLines;
   bool match_output = false;
   bool rg_mode = false;
+  bool quiet = false;
   bool only_matching = false;
   bool invert = false;
   bool line_number = true;
@@ -145,6 +146,8 @@ class ContentSnapshot final {
   absl::StatusOr<std::string_view> Read(const vfs::FileSystem& fs, std::string_view path);
 
   void Invalidate() { bytes_.reset(); }
+
+  bool Loaded() const { return bytes_.has_value(); }
 
  private:
   std::optional<absl::StatusOr<std::string>> bytes_;

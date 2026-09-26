@@ -2173,6 +2173,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "matched population: `0` means discrepancies, `1` means none, and `2` means an error. "
                    "`--compare-select` and summary output do not change this status.",
         .see_also = "output",
+        .grep_effect = GlobalFlag::GrepEffect::kQuiet,
     },
     {
         .name = "--exit-match",

@@ -530,6 +530,7 @@ cc_test(
         ":run_cc",
         "//xff/parser:parser_cc",
         "//xff/vfs:local_fs_cc",
+        "//xff/vfs:vfs_cc",
         "@abseil-cpp//absl/status",
         "@googletest//:gtest",
         "@googletest//:gtest_main",

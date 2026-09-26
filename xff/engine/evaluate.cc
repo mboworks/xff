@@ -1589,6 +1589,28 @@ class GrepMatchers {
     return best;
   }
 
+  std::size_t Count(std::string_view text) const {
+    std::size_t count = 0;
+    std::size_t start = 0;
+    while (start <= text.size()) {
+      const auto span = FindFirst(text, start);
+      if (!span) {
+        break;
+      }
+      if (span->second != 0 || rg_) {
+        ++count;
+      }
+      if (span->second != 0) {
+        start = span->first + span->second;
+      } else if (span->first == text.size()) {
+        break;
+      } else {
+        start = span->first + 1;
+      }
+    }
+    return count;
+  }
+
   std::vector<std::pair<std::size_t, std::size_t>> FindAll(std::string_view text) const {
     if (single_.has_value()) {
       return single_->FindAll(text);
@@ -1726,18 +1748,75 @@ void EmitGrepPath(const parser::Expr& expr, const EvalContext& ctx) {
   }
 }
 
-std::size_t CountGrepPortions(
-    const std::vector<content::ContextLine>& lines,
+bool ReducedGrepOutput(const EvalContext& ctx) {
+  return ctx.grep.quiet || ctx.grep.output != GrepOptions::Output::kLines;
+}
+
+struct GrepSummary {
+  std::size_t lines = 0;
+  std::size_t portions = 0;
+  bool binary = false;
+};
+
+absl::StatusOr<GrepSummary> SummarizeGrep(
+    EvalContext& ctx,
     const GrepMatchers& matcher,
-    bool invert) {
-  if (invert) {
-    return 0;
+    std::uint64_t binary_scan_bytes) {
+  GrepSummary result;
+  if (ctx.visit.metadata.type != vfs::FileType::kRegular) {
+    result.binary = true;  // Non-regular entries are never grep inputs, even for files-without-match.
+    return result;
   }
-  std::size_t count = 0;
-  for (const auto& line : lines) {
-    count += matcher.FindAll(line.text).size();
+  const bool count =
+      !ctx.grep.quiet
+      && (ctx.grep.output == GrepOptions::Output::kCount || ctx.grep.output == GrepOptions::Output::kCountMatches);
+  const bool portions = count && (ctx.grep.only_matching || ctx.grep.output == GrepOptions::Output::kCountMatches)
+                        && !(ctx.grep.rg_mode && ctx.grep.invert);
+  const auto visit = [&](std::size_t, std::string_view line) {
+    if (matcher.PartialMatch(line) == ctx.grep.invert) {
+      return true;
+    }
+    ++result.lines;
+    if (portions && !ctx.grep.invert) {
+      result.portions += matcher.Count(line);
+    }
+    return count;  // File/quiet selection needs only the first selected line.
+  };
+  if (ctx.content.Loaded()) {
+    MBO_ASSIGN_OR_RETURN(const auto text, ctx.content.Read(ctx.fs, ctx.visit.path));
+    result.binary = text.substr(0, static_cast<std::size_t>(std::min<std::uint64_t>(text.size(), binary_scan_bytes)))
+                        .contains('\0');
+    if (!result.binary) {
+      content::VisitLines(text, visit);
+    }
+  } else {
+    MBO_ASSIGN_OR_RETURN(const auto source, ctx.fs.ContentSource(ctx.visit.path));
+    MBO_ASSIGN_OR_RETURN(const auto stream, source->Open());
+    MBO_ASSIGN_OR_RETURN(const auto scan, content::ScanLines(*stream, binary_scan_bytes, visit));
+    result.binary = scan.binary;
   }
-  return count;
+  return result;
+}
+
+bool EmitGrepSummary(const parser::Expr& expr, const EvalContext& ctx, const GrepSummary& summary) {
+  if (summary.binary) {
+    return false;
+  }
+  const auto output = ctx.grep.output;
+  const bool any = summary.lines != 0;
+  if (output == GrepOptions::Output::kFilesWithMatches || output == GrepOptions::Output::kFilesWithoutMatch) {
+    const bool selected = any == (output == GrepOptions::Output::kFilesWithMatches);
+    if (selected && !ctx.grep.quiet) {
+      EmitGrepPath(expr, ctx);
+    }
+    return selected;
+  }
+  if (any && !ctx.grep.quiet) {
+    const bool portions = (output == GrepOptions::Output::kCountMatches || ctx.grep.only_matching)
+                          && !(ctx.grep.rg_mode && ctx.grep.invert);
+    EmitGrepCount(expr, ctx, portions ? summary.portions : summary.lines);
+  }
+  return any;
 }
 
 void EmitSelectedGrepLines(
@@ -1785,35 +1864,20 @@ bool EvalGrepMatchers(
   if (expr.args.empty() && !supplied) {
     return false;
   }
+  if (ReducedGrepOutput(ctx)) {
+    const auto summary = SummarizeGrep(ctx, matcher, content::kBinaryNulSniffBytes);
+    return summary.ok() && EmitGrepSummary(expr, ctx, *summary);
+  }
   const auto content = supplied ? supplied : ContentToSearch(ctx);
   if (!content.has_value()) {
     return false;
   }
   const auto is_match = [&](std::string_view line) { return matcher.PartialMatch(line) != ctx.grep.invert; };
-  const auto output = ctx.grep.output;
-  const bool line_output = output == GrepOptions::Output::kLines;
   const bool only_matching = ctx.grep.only_matching && !(ctx.grep.rg_mode && ctx.grep.invert);
-  const bool with_context = line_output && !only_matching && (ctx.grep_before > 0 || ctx.grep_after > 0);
+  const bool with_context = !only_matching && (ctx.grep_before > 0 || ctx.grep_after > 0);
   const auto lines = content::CollectLineMatchesWithContext(
       *content, is_match, with_context ? ctx.grep_before : 0, with_context ? ctx.grep_after : 0);
   const bool any_match = !lines.empty();
-  if (output == GrepOptions::Output::kFilesWithMatches || output == GrepOptions::Output::kFilesWithoutMatch) {
-    const bool selected = any_match == (output == GrepOptions::Output::kFilesWithMatches);
-    if (selected) {
-      EmitGrepPath(expr, ctx);
-    }
-    return selected;
-  }
-  if (!line_output) {
-    std::size_t count = lines.size();
-    if ((output == GrepOptions::Output::kCountMatches || only_matching) && !(ctx.grep.rg_mode && ctx.grep.invert)) {
-      count = CountGrepPortions(lines, matcher, ctx.grep.invert);
-    }
-    if (any_match) {
-      EmitGrepCount(expr, ctx, count);
-    }
-    return any_match;
-  }
   EmitSelectedGrepLines(expr, ctx, lines, matcher, with_context);
   return any_match;
 }
@@ -3038,11 +3102,18 @@ absl::StatusOr<bool> EmitRgOutput(const MatchOutput& output, const parser::RgSea
   if (context.visit.metadata.type != vfs::FileType::kRegular) {
     return false;
   }
+  const GrepMatchers matcher(output.matchers, search);
+  if (ReducedGrepOutput(context)) {
+    MBO_ASSIGN_OR_RETURN(
+        const auto summary,
+        SummarizeGrep(context, matcher, search.text ? 0 : std::numeric_limits<std::uint64_t>::max()));
+    return EmitGrepSummary(output.source, context, summary);
+  }
   MBO_ASSIGN_OR_RETURN(const auto content, context.content.Read(context.fs, context.visit.path));
   if (!search.text && absl::StrContains(content, '\0')) {
     return false;
   }
-  return EvalGrepMatchers(output.source, context, GrepMatchers(output.matchers, search), content);
+  return EvalGrepMatchers(output.source, context, matcher, content);
 }
 
 bool EmitMatchOutput(const MatchOutput& output, EvalContext& context) {

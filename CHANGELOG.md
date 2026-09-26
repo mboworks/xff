@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Stream filename, count and quiet content searches without retaining whole-file text or selected-line lists.
+
 - Use executable basenames verbatim as config selectors, except for the `xff_full` distribution binary selecting `xff`.
 
 - Select rg argument grammar and matching-line output automatically when invoked as `rg`.

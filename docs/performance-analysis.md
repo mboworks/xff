@@ -437,24 +437,32 @@ fallbacks requested full metadata (including birth time on the host) and materia
 files for range probes. Tests verify exact request forwarding, error propagation, EOF, empty
 input, and oversized offsets without relying on host filesystem timing.
 
-Remaining optimization work:
+The remaining scheduling work is ordinary rg content matching: it runs in the coordinator's
+`finish_entry` path. The native parallel matcher pool requires a native content expression;
+`-j4` alone parallelizes traversal rather than the rg line search. Benchmark a separate
+content-work scheduling change with identical output and one/four workers before adopting it.
 
-- Ordinary rg content matching runs in the coordinator's `finish_entry` path. The native
-  parallel matcher pool requires a native content expression; `-j4` alone parallelizes
-  traversal rather than the rg line search. Benchmark a separate content-work scheduling
-  change with identical output and one/four workers before adopting it.
-  Native content predicates and match output now share a lazy, owned snapshot per evaluation.
-  The coordinator transfers it to output without copying; native worker batches retain selected
-  snapshots only until ordered emission (at most 256 entries). No lock is needed: one evaluator
-  owns each snapshot. Stateful predicates and actions invalidate it before execution. Deferred
-  result-set passes start fresh instead of retaining whole-file contents across the entire walk.
-  Tests measure one read per regular file for native `-M` and rg native filters, including a
-  300-file worker case spanning multiple batches, and verify error/invalidation behavior.
-- Filename/count/quiet modes reuse full content and line materialization. Early success for
-  filename/quiet queries and lightweight counting are candidates even before full streaming.
-  Rg option aliases, argument syntax, translation effects, and help summaries now share the
-  parser metadata. Help renders every descriptor; tests enforce unique names and shorts, required
-  arguments, nonempty summaries, and complete rendered coverage.
+Native content predicates and match output now share a lazy, owned snapshot per evaluation.
+The coordinator transfers it to output without copying; native worker batches retain selected
+snapshots only until ordered emission (at most 256 entries). No lock is needed: one evaluator
+owns each snapshot. Stateful predicates and actions invalidate it before execution. Deferred
+result-set passes start fresh instead of retaining whole-file contents across the entire walk.
+Tests measure one read per regular file for native `-M` and rg native filters, including a
+300-file worker case spanning multiple batches, and verify error/invalidation behavior.
+
+Filename/count/quiet modes now use the VFS sequential source with 64 KiB read requests and
+retain only an incomplete line. Counts accumulate directly; filename and quiet selection stop
+regex evaluation after the first selected line. The reader still drains the source to preserve
+binary detection and late read-error reporting. Native grep sniffs its existing 8,000-byte
+prefix; rg checks the whole source unless `--text` is active. An already owned predicate snapshot
+is reused without another read. A single very long line still requires memory proportional to
+that line; legacy backends may materialize their source, and CLI stdin remains staged. Full
+line/context output remains buffered. Chunk-boundary, long-line, late-NUL and late-error tests
+cover the streaming path.
+
+Rg option aliases, argument syntax, translation effects, and help summaries now share the
+parser metadata. Help renders every descriptor; tests enforce unique names and shorts, required
+arguments, nonempty summaries, and complete rendered coverage.
 
 Use equivalent native `-rxc`, native `-M`, and rg-style fixtures, with RE2 and PCRE2/JIT,
 when comparing these changes. Verify selected files and output before interpreting timings;

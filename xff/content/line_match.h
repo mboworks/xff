@@ -17,11 +17,14 @@
 #define XFF_CONTENT_LINE_MATCH_H_
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string_view>
 #include <vector>
 
 #include "absl/functional/function_ref.h"
+#include "absl/status/statusor.h"
+#include "xff/vfs/read_source.h"
 
 namespace xff::content {
 
@@ -31,6 +34,24 @@ namespace xff::content {
 // that skips or classifies binaries -- content search (-grep/-content/-rxc), line counting ({lines}),
 // -diff, and the -text/-binary predicates -- shares this one value so they all agree.
 inline constexpr std::size_t kBinaryNulSniffBytes = 8'000;
+
+// Visits lines without collecting them; returning false stops line evaluation.
+// The line view is borrowed only for the callback. CRLF and final-line rules match
+// CollectLineMatches. The first argument is the one-based line number.
+void VisitLines(std::string_view content, absl::FunctionRef<bool(std::size_t, std::string_view)> visit);
+
+struct LineScanResult {
+  bool binary = false;
+};
+
+// Streams in 64 KiB blocks, retaining at most one incomplete line. A false callback stops
+// further line evaluation; the source is still drained to detect read errors and NUL bytes
+// within binary_scan_bytes (zero disables detection). No selected result should be emitted
+// until this returns successfully with binary == false.
+absl::StatusOr<LineScanResult> ScanLines(
+    vfs::ReadStream& stream,
+    std::uint64_t binary_scan_bytes,
+    absl::FunctionRef<bool(std::size_t, std::string_view)> visit);
 
 // One matching line within a file's content, as grep/ripgrep report it: the line's
 // 1-based number and its text. Backs the `-grep` action's `{line}` / `{text}`

@@ -28,6 +28,7 @@
 #include "mbo/testing/status.h"
 #include "xff/engine/run.h"
 #include "xff/parser/parser.h"
+#include "xff/vfs/read_source.h"
 
 namespace xff::engine {
 namespace {
@@ -46,6 +47,8 @@ using ::testing::Not;
 struct SearchFs final : vfs::FileSystem {
   std::map<std::string, std::string> files{{"tree/a", "hit\nmiss\n"}, {"tree/b", "miss\n"}, {"patterns", "hit\n"}};
   bool read_error = false;
+  bool streaming = false;
+  mutable std::atomic<std::size_t> sources = 0;
   mutable std::atomic<std::size_t> reads = 0;
 
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view path) const override {
@@ -87,6 +90,21 @@ struct SearchFs final : vfs::FileSystem {
   absl::StatusOr<std::string> FsType(std::string_view) const override { return "memory"; }
 
   absl::StatusOr<bool> IsCaseSensitive(std::string_view) const override { return true; }
+
+  absl::StatusOr<vfs::SharedReadSource> ContentSource(std::string_view path) const override {
+    if (!streaming) {
+      return FileSystem::ContentSource(path);
+    }
+    sources.fetch_add(1, std::memory_order_relaxed);
+    if (read_error) {
+      return absl::PermissionDeniedError("denied stream");
+    }
+    const auto found = files.find(std::string(path));
+    if (found == files.end()) {
+      return absl::NotFoundError("missing stream");
+    }
+    return vfs::MemoryReadSource(found->second);
+  }
 
   absl::StatusOr<std::string> ReadContent(std::string_view path) const override {
     reads.fetch_add(1, std::memory_order_relaxed);
@@ -176,6 +194,62 @@ TEST_F(RgEngineTest, SnapshotRetainsErrorsUntilInvalidated) {
   snapshot.Invalidate();
   EXPECT_THAT(snapshot.Read(fs, "tree/a"), IsOkAndHolds(EqualsText("hit\nmiss\n")));
   EXPECT_THAT(fs.reads.load(), 2);
+}
+
+TEST_F(RgEngineTest, FilenameCountAndQuietSelectionsUseStreams) {
+  fs.streaming = true;
+  const auto modes = std::to_array<std::string_view>({"-l", "--files-without-match", "-c", "--count-matches", "-q"});
+  for (const auto mode : modes) {
+    SCOPED_TRACE(mode);
+    fs.sources = 0;
+    EXPECT_THAT(Run({std::string(mode), "hit", "tree"}).errors, 0);
+    EXPECT_THAT(fs.sources.load(), 2);
+    EXPECT_THAT(fs.reads.load(), 0);
+    if (mode == "-q") {
+      EXPECT_THAT(output, IsEmpty());
+    } else if (mode == "--files-without-match") {
+      EXPECT_THAT(output, EqualsText("tree/b\n"));
+    } else if (mode == "-l") {
+      EXPECT_THAT(output, EqualsText("tree/a\n"));
+    } else {
+      EXPECT_THAT(output, EqualsText("tree/a:1\n"));
+    }
+  }
+}
+
+TEST_F(RgEngineTest, StreamedCountPreservesPortionsInversionAndEmptyMatches) {
+  fs.streaming = true;
+  fs.files.at("tree/a") = "hit hit\r\nmiss\n\n";
+  EXPECT_THAT(Run({"--count-matches", "hit", "tree/a"}).errors, 0);
+  EXPECT_THAT(output, EqualsText("tree/a:2\n"));
+  EXPECT_THAT(Run({"--count-matches", "-v", "hit", "tree/a"}).errors, 0);
+  EXPECT_THAT(output, EqualsText("tree/a:2\n"));
+  EXPECT_THAT(Run({"--count-matches", "^", "tree/a"}).errors, 0);
+  EXPECT_THAT(output, EqualsText("tree/a:3\n"));
+  EXPECT_THAT(Run({"--count-matches", "-M", "tree/a", "-rxc", "hit"}, false).errors, 0);
+  EXPECT_THAT(output, EqualsText("tree/a:2\n"));
+  EXPECT_THAT(fs.sources.load(), 3);  // Native -M reuses its predicate's one buffered read.
+  EXPECT_THAT(fs.reads.load(), 1);
+}
+
+TEST_F(RgEngineTest, LateBinaryBytesCannotTurnIntoFilenameOrQuietSuccess) {
+  fs.streaming = true;
+  fs.files.at("tree/a") = "hit\n" + std::string(70'000, 'x') + '\0';
+  EXPECT_THAT(Run({"-l", "hit", "tree/a"}).any_match, IsFalse());
+  EXPECT_THAT(output, IsEmpty());
+  EXPECT_THAT(Run({"-q", "hit", "tree/a"}).any_match, IsFalse());
+  EXPECT_THAT(Run({"--text", "-l", "hit", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a\n"));
+  EXPECT_THAT(Run({"--files-with-matches", "tree/a", "-grep", "hit"}, false).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a\n"));  // Native binary detection is limited to its prefix.
+}
+
+TEST_F(RgEngineTest, StreamingErrorsRemainErrorsForQuietAndFilenameSelection) {
+  fs.streaming = true;
+  fs.read_error = true;
+  EXPECT_THAT(Run({"-q", "hit", "tree"}).errors, 2);
+  EXPECT_THAT(Run({"-l", "hit", "tree"}).errors, 2);
+  EXPECT_THAT(output, IsEmpty());
 }
 
 TEST_F(RgEngineTest, PreparationRequiresAnRgSearch) {

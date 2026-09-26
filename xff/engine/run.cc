@@ -755,6 +755,7 @@ GrepOptions ResolveGrepOptions(const std::vector<std::string>& globals, bool rg 
     using enum cli::GlobalFlag::GrepEffect;
     switch (flag->grep_effect) {
       case kNone: break;
+      case kQuiet: result.quiet = true; break;
       case kMatchOutput: result.match_output = true; break;
       case kNoMatchOutput: result.match_output = false; break;
       case kCountLines: result.output = GrepOptions::Output::kCount; break;
