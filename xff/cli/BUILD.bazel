@@ -1189,11 +1189,12 @@ bashtest(
     tags = ["release-binary"],
 )
 
-# Binary-level test of the `xff help [topic]` subcommand: dispatch, exit codes, and
+# Binary-level test of `xff --help=TOPIC`: dispatch, exit codes, and
 # the find-mode suppression (real-process concerns the help unit test cannot cover).
 bashtest(
     name = "help_topic_test",
     size = "small",
+    timeout = "moderate",  # Repeated help subprocesses exceed 60 seconds under MSan.
     srcs = ["help_topic_test.sh"],
     data = ["//xff/cli/testing:xff"],
 )

@@ -1616,11 +1616,13 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
     },
     {
         .name = "+",
-        .summary = "logical OR in native expression positions",
-        .details = "Synonym for `-o` in XFF expressions, including after `--xff`. It remains literal data "
+        .summary = "logical OR in XFF expression positions",
+        .details = "Synonym for `-o` in XFF expressions, including after `--xff`; rejected by `--config=find`. "
+                   "In rg arguments it is pattern or path data. It remains literal data "
                    "when consumed as a primary argument, and retains its batch terminator meaning for `-exec`.",
         .kind = Kind::kOperator,
         .arity = 0,
+        .style = Style::kXff,
         .see_also = "expressions,rg",
     },
     {

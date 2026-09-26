@@ -3,7 +3,7 @@
 
 # 0.9.0
 
-- Add `--rg` search syntax, rg short options and stdin input, with `--xff` for native file filters and `+` for expression OR.
+- Add `--rg` search syntax, rg short options and stdin input, with `--xff` for native file filters and `+` for XFF-mode expression OR.
 
 - Add `-M` / `--match-output` to print matching content lines with the normal xff expression grammar; `-M-` / `--no-match-output` restores path output.
 

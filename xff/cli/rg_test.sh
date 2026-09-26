@@ -149,4 +149,20 @@ test::complete_ini_files_keep_native_syntax_and_mandatory_globals() {
   expect_matches 'command.line' "${out}"
 }
 
+test::plus_or_uses_xff_style_and_keeps_find_compatibility() {
+  local root out rc
+  root="$(_tree)"
+  _check 0 "${root}/a.cc" --xff "${root}/a.cc" -false + -true
+  _check 0 "${root}/a.cc" "${root}/a.cc" -false + -true
+  _check 0 "${root}/a.cc" --config=find "${root}/a.cc" -false -o -true
+  out="$("$(_bin)" --config=find "${root}/a.cc" -false + -true 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  expect_output_contains "'+' is an xff extension" "${out}"
+  _check 0 "${root}/a.cc" --config=find --config=xff "${root}/a.cc" -false + -true
+  printf '%s\n' '[selection]' '-false + -true' >"${root}/user.ini"
+  out="$(XFF_TEST_USER_CONFIG="${root}/user.ini" "$(_bin)" --config=find --config=selection "${root}/a.cc" 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  expect_output_contains "'+' is an xff extension" "${out}"
+}
+
 test_runner
