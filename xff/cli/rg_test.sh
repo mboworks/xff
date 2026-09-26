@@ -136,6 +136,18 @@ test::stdin_explicit_implicit_and_pattern_input() {
   printf 'none\n' | _check 1 '' --rg hit -
 }
 
+test::stdin_pattern_ownership_is_exclusive_and_keeps_directory_defaults() {
+  local root out
+  root="$(_tree)"
+  printf 'hit\n' | _check 2 'xff: --rg cannot read patterns and search content from stdin simultaneously' --rg -f - -
+  out="$(
+    cd "${root}"
+    printf 'TODO\n' | "$(_bin)" --rg -f -
+  )"
+  expect_output_contains 'a.cc:TODO one' "${out}"
+  expect_output_contains 'a.cc:TODO two TODO' "${out}"
+}
+
 test::binary_empty_matches_context_and_max_columns() {
   local root out rc
   root="$(_tree)"

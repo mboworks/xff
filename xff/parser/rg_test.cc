@@ -114,6 +114,17 @@ TEST_F(RgTest, NamedRootsRetainValidationAndDoNotReplaceTheSearchPattern) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("put search paths before")));
 }
 
+TEST_F(RgTest, StdinCannotSupplyBothPatternsAndSearchedContent) {
+  EXPECT_THAT(
+      Parse({"--rg", "-f", "-", "-"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("stdin simultaneously")));
+  EXPECT_THAT(
+      Parse({"--rg", "-f", "-", "--root=input=-"}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("stdin simultaneously")));
+  EXPECT_THAT(Parse({"--rg", "-f", "-"}), IsOk());
+  EXPECT_THAT(Parse({"--rg", "-f", "patterns", "-"}), IsOk());
+  EXPECT_THAT(Parse({"--rg", "-e", "-", "-"}), IsOk());
+}
+
 TEST_F(RgTest, AttachedValuesBundlesAndConflictingShortOptions) {
   ASSERT_OK_AND_ASSIGN(const auto command, Parse({"--rg", "-nio", "-M120", "-PL", "-H", "-g*.cc", "-j4", "-C2", "x"}));
   ASSERT_THAT(command.rg, Optional(_));

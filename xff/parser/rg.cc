@@ -274,6 +274,11 @@ class RgParser {
       command.roots.push_back(std::move(root.path));
       command.root_names.push_back(std::move(root.name));
     }
+    if (std::ranges::find(command.roots, "-") != command.roots.end()
+        && std::ranges::any_of(
+            search_.patterns, [](const RgPattern& pattern) { return pattern.file && pattern.value == "-"; })) {
+      return absl::InvalidArgumentError("--rg cannot read patterns and search content from stdin simultaneously");
+    }
     command.rg.emplace(std::move(search_));
     return command;
   }

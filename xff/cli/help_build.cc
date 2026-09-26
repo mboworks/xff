@@ -950,7 +950,8 @@ Section RgSection(bool in_full) {
       "Named roots use `--root=NAME=PATH` before `--xff`, retain operand order, and keep their names for archive "
       "packing. "
       "With no path, search piped standard input, otherwise the current directory. Explicit `-` reads standard input. "
-      "`-f -` consumes stdin as patterns, making the no-path default the current directory."));
+      "`-f -` consumes stdin as patterns, making the no-path default the current directory. "
+      "Using stdin as both a pattern file and a search path is an error."));
   section.children.push_back(ProseOf(
       "`--xff` starts a native XFF file-filter expression against the collected paths. It preserves search patterns, "
       "configuration and output controls. For example, `xff --rg -n TODO src --xff -name '*.cc' -size +1k`. "
