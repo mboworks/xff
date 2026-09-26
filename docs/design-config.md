@@ -301,12 +301,10 @@ chooses the built-in style baseline; custom names do not change the style.
 The executable basename supplies the first selector:
 
 - `find` selects the find expression vocabulary and find defaults;
-- `xff` selects the xff style;
+- `xff` and the full distribution binary `xff_full` select the xff style;
 - `rg` selects the rg style, rg argument grammar, and matching-line output;
 - another basename such as `mytool` activates a same-named config block while
-  retaining the xff style;
-- for preset selection, `_full` is removed first, so `xff_full` and `find_full`
-  select their base presets.
+  retaining the xff style.
 
 Explicit `--config` selectors follow the invocation selector and can therefore
 choose a later built-in style. Styles set baseline traversal and presentation

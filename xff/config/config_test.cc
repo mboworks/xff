@@ -446,17 +446,16 @@ TEST_F(ConfigTest, DefaultStyleForProgramSelectsByBasename) {
   EXPECT_THAT(DefaultStyleForProgram("/opt/bin/mytool"), "mytool");  // basename, verbatim
 }
 
-TEST_F(ConfigTest, DefaultStyleForProgramStripsFullSuffix) {
-  // The extras-included full build is `<prefix>_full`; it behaves exactly as its lean twin, so the
-  // `_full` suffix is stripped before the name is used as a selector.
+TEST_F(ConfigTest, DefaultStyleForProgramMapsOnlyTheFullDistributionName) {
   EXPECT_THAT(DefaultStyleForProgram("xff_full"), "xff");
-  EXPECT_THAT(DefaultStyleForProgram("/opt/mboworks/xff_full"), "xff");  // basename, then strip
-  EXPECT_THAT(DefaultStyleForProgram("find_full"), "find");              // still find, not the xff default
-  EXPECT_THAT(DefaultStyleForProgram("rg_full"), "rg");
-  EXPECT_THAT(DefaultStyleForProgram("mytool_full"), "mytool");  // a custom full binary keeps its base
-  EXPECT_THAT(DefaultStyleForProgram("_full"), "xff");           // a bare `_full` -> the modern default
-  EXPECT_THAT(DefaultStyleForProgram("fullbore"), "fullbore");   // only a `_full` *suffix* is stripped
-  EXPECT_THAT(DefaultStyleForProgram("full"), "full");           // not a suffix match
+  EXPECT_THAT(DefaultStyleForProgram("/opt/mboworks/xff_full"), "xff");
+  EXPECT_THAT(DefaultStyleForProgram("find_full"), "find_full");
+  EXPECT_THAT(DefaultStyleForProgram("/opt/bin/find_full"), "find_full");
+  EXPECT_THAT(DefaultStyleForProgram("rg_full"), "rg_full");
+  EXPECT_THAT(DefaultStyleForProgram("mytool_full"), "mytool_full");
+  EXPECT_THAT(DefaultStyleForProgram("_full"), "_full");
+  EXPECT_THAT(DefaultStyleForProgram("fullbore"), "fullbore");
+  EXPECT_THAT(DefaultStyleForProgram("full"), "full");
 }
 
 TEST_F(ConfigTest, ExplainConfigTagsEachFlagWithProvenance) {

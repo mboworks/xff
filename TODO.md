@@ -2,6 +2,8 @@
 
 ## Content-search output controls
 
+- [x] Limit full-binary preset mapping to `xff_full`; preserve all other invocation names.
+
 - [x] Implement and validate the missing grep-style long output options with explicit `-grep`.
 - [x] Add `-M` / `--match-output` for default content-line output, reuse long modifiers, and validate INI selection.
 - [x] Add CLI-only `--rg` parsing and the `--xff` native-filter transition, with separate search patterns.

@@ -140,8 +140,8 @@ registry::Style ActiveStyle(const std::vector<std::string>& configs);
 
 // The leading --config selector implied by the program name (argv[0] dispatch), from its
 // basename: a built-in style name ("find"/"xff"/"rg") selects that preset; an empty name defaults
-// to "xff"; ANY OTHER name (including "fd"/"xfd" - there is no magic remap) is returned verbatim as
-// a NAMED-config selector (e.g. a "mytool" symlink -> "mytool"), which activates a matching
+// to "xff"; "xff_full" also selects "xff". ANY OTHER name (including "fd"/"xfd" - there is no magic remap) is returned
+// verbatim as a NAMED-config selector (e.g. a "mytool" symlink -> "mytool"), which activates a matching
 // `[mytool]` config block while leaving the base style at the modern xff default (ActiveStyle
 // ignores a non-style selector). main() prepends this as the lowest-precedence selector, so an
 // explicit --config still stacks over it via ActiveStyle's last-wins (design-config.md "CLI

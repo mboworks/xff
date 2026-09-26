@@ -202,7 +202,7 @@ Neither user `--allow-xffrc` nor an explicit file's own `--allow-exec` can undo 
 
 ### Choosing a style
 
-Every `--config=NAME` remains active, so multiple named blocks can apply. Among built-in style selectors, the last `find`, `xff`, or `rg` selects the baseline; custom names do not change it. See `--help=styles` for the table. The invocation name (`argv[0]`) is the leading selector, so a symlink named `find` selects the find expression style and `rg` the rg style; any other name (e.g. a `mytool` symlink) activates a same-named config block over the xff default. Explicit `--config` selectors stack on top.
+Every `--config=NAME` remains active, so multiple named blocks can apply. Among built-in style selectors, the last `find`, `xff`, or `rg` selects the baseline; custom names do not change it. See `--help=styles` for the table. The invocation name (`argv[0]`) is the leading selector, so a symlink named `find` selects the find expression style and `rg` the rg style. The full distribution name `xff_full` selects `xff`; all other names are used verbatim (e.g. a `mytool` symlink activates `[mytool]`) over the xff default. Explicit `--config` selectors stack on top.
 
 Configuration expands in application order. Automatic system/user defaults and the invocation selector come first; each command-line `--config` then activates newly matching lines at that exact position, and each `--xffrc` loads its currently matching lines where it appears. Because conflicting options usually use the last value, moving a selector can intentionally change the result. A config line is applied at most once.
 
