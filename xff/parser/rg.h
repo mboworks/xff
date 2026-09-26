@@ -17,13 +17,28 @@
 #define XFF_PARSER_RG_H_
 
 #include <cstddef>
+#include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "absl/status/statusor.h"
 #include "xff/parser/ast.h"
 
 namespace xff::parser {
+// Shared grammar and help metadata. A nonempty argument names the required value.
+struct RgOption {
+  enum class Effect { kGlobal, kPattern, kFile, kWord, kLine, kText, kColumns, kGlob, kRoot, kThreads };
+  std::string_view name;
+  char short_name = '\0';
+  std::string_view replacement;
+  std::string_view argument;
+  Effect effect = Effect::kGlobal;
+  std::string_view summary;
+};
+
+std::span<const RgOption> RgOptions();
+
 // Parse the segment after --rg. --xff starts a native filter expression.
 absl::StatusOr<Command> ParseRg(const std::vector<std::string>& args, std::size_t start);
 }  // namespace xff::parser

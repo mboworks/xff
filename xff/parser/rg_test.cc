@@ -13,7 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "xff/parser/rg.h"
+
 #include <array>
+#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -33,11 +36,35 @@ using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
 using ::testing::HasSubstr;
+using ::testing::IsEmpty;
 using ::testing::IsTrue;
+using ::testing::Not;
 using ::testing::NotNull;
 using ::testing::Optional;
 
 struct RgTest : ::testing::Test {};
+
+TEST_F(RgTest, OptionMetadataIsCompleteAndUnambiguous) {
+  std::set<std::string_view> names;
+  std::set<char> shorts;
+  for (const RgOption& option : RgOptions()) {
+    SCOPED_TRACE(option.name);
+    EXPECT_THAT(option.name, Not(IsEmpty()));
+    EXPECT_THAT(option.summary, Not(IsEmpty()));
+    EXPECT_THAT(names.insert(option.name).second, IsTrue());
+    if (option.short_name != '\0') {
+      EXPECT_THAT(shorts.insert(option.short_name).second, IsTrue());
+    }
+    if (option.effect == RgOption::Effect::kGlobal) {
+      EXPECT_THAT(option.replacement, Not(IsEmpty()));
+    }
+    if (!option.argument.empty()) {
+      EXPECT_THAT(
+          ParseRg({"--" + std::string(option.name)}, 0),
+          StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("requires")));
+    }
+  }
+}
 
 TEST_F(RgTest, SearchAndNativeFilterAreIndependent) {
   ASSERT_OK_AND_ASSIGN(const auto command, Parse({"--rg", "-n", "TODO", "src", "--xff", "-rxc", "license"}));

@@ -2880,20 +2880,41 @@ An rg include glob overrides hidden and ignore filtering for entries it matches;
 
 Options may appear among patterns and paths. Bundles and attached values work: `-nio`, `-eTODO`, `-C2`. An option consumes its argument before interpreting switches: `-e --xff` searches for that text. Bare `--` ends rg option parsing, so later `--xff` is a literal pattern or path. Native `+` and `-o` mean OR after the switch; before it, `+` is data and `-o` means only matching.
 
-- `-e / --regexp, -f / --file` - repeatable search patterns or pattern files
-- `-i / --ignore-case, -s / --case-sensitive, -S / --smart-case` - letter case; rg mode starts case-sensitive
-- `-F / --fixed-strings, -P / --pcre2` - literal search or the optional PCRE2 backend; RE2 is the default
-- `-w / --word-regexp, -x / --line-regexp` - whole words or whole lines
-- `-n / --line-number, -N / --no-line-number` - line prefixes; off by default
-- `-H / --with-filename, -I / --no-filename` - path prefixes; automatic for multiple paths, directory contents and archive members
-- `-o / --only-matching, -v / --invert-match` - matched portions or nonmatching lines
-- `-l / --files-with-matches, --files-without-match` - print selected filenames
-- `-c / --count, --count-matches` - selected line or occurrence counts
-- `-A / --after-context, -B / --before-context, -C / --context` - context line counts
-- `-g / --glob` - include glob; leading ! excludes; repeatable, last matching rule wins
-- `-L / --follow, --hidden, --no-ignore` - symlinks, hidden entries and ignore policy
-- `-a / --text, -M / --max-columns` - search binary content or replace long output lines with an omission marker
-- `-j / --threads, -q / --quiet` - worker allowance (0 selects automatic) or silent match-sensitive exit
+- `-e / --regexp PATTERN` - Add a search pattern; repeatable, combined as a union.
+- `-f / --file FILE` - Read patterns from `FILE`, one per line; `-` reads stdin; repeatable.
+- `-g / --glob GLOB` - Include glob; a leading `!` excludes; last matching rule wins.
+- `-o / --only-matching` - Print only matched portions.
+- `-v / --invert-match` - Select nonmatching lines.
+- `-n / --line-number` - Print line-number prefixes.
+- `-N / --no-line-number` - Omit line-number prefixes (the rg default).
+- `-H / --with-filename` - Always print path prefixes.
+- `-I / --no-filename` - Omit path prefixes; otherwise automatic for multiple inputs and archive members.
+- `-l / --files-with-matches` - Print filenames with selected lines.
+- `--files-without-match` - Print filenames without selected lines.
+- `-c / --count` - Print selected line counts.
+- `--count-matches` - Print matched occurrence counts.
+- `-i / --ignore-case` - Match case-insensitively.
+- `-s / --case-sensitive` - Match case-sensitively (the rg default).
+- `-S / --smart-case` - Ignore case unless the pattern contains an uppercase letter.
+- `-F / --fixed-strings` - Use literal matching.
+- `-P / --pcre2` - Use the optional PCRE2 backend; RE2 is the default.
+- `-L / --follow` - Follow symbolic links.
+- `-q / --quiet` - Suppress output; preserve match-sensitive exit status.
+- `-C / --context N` - Print `N` context lines before and after each match.
+- `-B / --before-context N` - Print `N` lines before each match.
+- `-A / --after-context N` - Print `N` lines after each match.
+- `-j / --threads N` - Worker allowance; `0` selects automatic.
+- `-w / --word-regexp` - Match whole words.
+- `-x / --line-regexp` - Match whole lines.
+- `-a / --text` - Search binary content as text.
+- `-M / --max-columns N` - Replace output lines longer than `N` bytes with an omission marker; `0` disables the limit.
+- `--root NAME=PATH` - Add a named search root before `--xff`.
+- `--hidden` - Include hidden entries.
+- `--no-hidden` - Skip hidden entries.
+- `--no-ignore` - Disable ignore-file filtering.
+- `--color WHEN` - Color policy: `auto`, `always`, or `never`.
+- `-h / --help` - Show rg help; `--help=TOPIC` selects another help topic.
+- `-V / --version` - Print the program version.
 
 This is an rg-style frontend, not a complete ripgrep replacement. Unsupported short options are errors. XFF double-dash globals retain their normal meanings, validation and safety enforcement. Output uses XFF's existing line/JSON schemas, no heading or terminal-specific layout; binary files are skipped unless `--text` is set. Files and stdin are currently materialized for line selection. Exit status is `0` for a selected result, `1` for none and `2` for errors; errors outrank quiet matches. Native summaries count the files selected by the search. `--no-match-output` lists those files instead. Search-selection modifiers remain active in both cases; line-rendering modifiers do not. Normal `-M` behavior is unchanged outside rg grammar; inside it, `-M` requires a maximum-column count.
 

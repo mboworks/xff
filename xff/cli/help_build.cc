@@ -40,6 +40,7 @@
 #include "xff/engine/evaluate.h"
 #include "xff/license/license.h"
 #include "xff/matching/regex/regex.h"
+#include "xff/parser/rg.h"
 #include "xff/presentation/fields/fields.h"
 #include "xff/registry/descriptor.h"
 #include "xff/registry/registry.h"
@@ -969,24 +970,17 @@ Section RgSection(bool in_full) {
       "An option consumes its argument before interpreting switches: `-e --xff` searches for that text. "
       "Bare `--` ends rg option parsing, so later `--xff` is a literal pattern or path. "
       "Native `+` and `-o` mean OR after the switch; before it, `+` is data and `-o` means only matching."));
-  static constexpr auto kOptions = std::to_array<DocPair>({
-      {"-e / --regexp, -f / --file", "repeatable search patterns or pattern files"},
-      {"-i / --ignore-case, -s / --case-sensitive, -S / --smart-case", "letter case; rg mode starts case-sensitive"},
-      {"-F / --fixed-strings, -P / --pcre2", "literal search or the optional PCRE2 backend; RE2 is the default"},
-      {"-w / --word-regexp, -x / --line-regexp", "whole words or whole lines"},
-      {"-n / --line-number, -N / --no-line-number", "line prefixes; off by default"},
-      {"-H / --with-filename, -I / --no-filename",
-       "path prefixes; automatic for multiple paths, directory contents and archive members"},
-      {"-o / --only-matching, -v / --invert-match", "matched portions or nonmatching lines"},
-      {"-l / --files-with-matches, --files-without-match", "print selected filenames"},
-      {"-c / --count, --count-matches", "selected line or occurrence counts"},
-      {"-A / --after-context, -B / --before-context, -C / --context", "context line counts"},
-      {"-g / --glob", "include glob; leading ! excludes; repeatable, last matching rule wins"},
-      {"-L / --follow, --hidden, --no-ignore", "symlinks, hidden entries and ignore policy"},
-      {"-a / --text, -M / --max-columns", "search binary content or replace long output lines with an omission marker"},
-      {"-j / --threads, -q / --quiet", "worker allowance (0 selects automatic) or silent match-sensitive exit"},
-  });
-  section.children.push_back(RowsOf(kOptions));
+  Rows options;
+  options.rows.reserve(parser::RgOptions().size());
+  for (const parser::RgOption& option : parser::RgOptions()) {
+    std::string term = option.short_name == '\0' ? "" : absl::StrCat("-", std::string(1, option.short_name), " / ");
+    absl::StrAppend(&term, "--", option.name);
+    if (!option.argument.empty()) {
+      absl::StrAppend(&term, " ", option.argument);
+    }
+    options.rows.push_back({.term = std::move(term), .description = ParseInline(option.summary)});
+  }
+  section.children.push_back(Content{.node = std::move(options)});
   section.children.push_back(ProseOf(
       "This is an rg-style frontend, not a complete ripgrep replacement. Unsupported short options are errors. "
       "XFF double-dash globals retain their normal meanings, validation and safety enforcement. "

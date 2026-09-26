@@ -447,8 +447,9 @@ Remaining optimization work:
   content with a bounded lifetime rather than adding locks to per-entry metadata.
 - Filename/count/quiet modes reuse full content and line materialization. Early success for
   filename/quiet queries and lightweight counting are candidates even before full streaming.
-- Rg alias, arity, and translation metadata are separate from help prose. Generate their
-  shared facts or add exhaustive consistency tests to prevent silent frontend drift.
+  Rg option aliases, argument syntax, translation effects, and help summaries now share the
+  parser metadata. Help renders every descriptor; tests enforce unique names and shorts, required
+  arguments, nonempty summaries, and complete rendered coverage.
 
 Use equivalent native `-rxc`, native `-M`, and rg-style fixtures, with RE2 and PCRE2/JIT,
 when comparing these changes. Verify selected files and output before interpreting timings;

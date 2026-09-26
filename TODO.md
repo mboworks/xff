@@ -30,7 +30,7 @@
 - [x] D13: Preserve field-aware metadata and bounded reads through the rg input adapter.
 - [ ] Benchmark and parallelize rg content selection, independently of traversal workers.
 - [ ] Avoid rereading selected content for native `-M`, and avoid full line materialization for filename/count/quiet output.
-- [ ] Unify rg option metadata and help, or enforce their consistency with exhaustive tests.
+- [x] Generate rg option help from the parser metadata, with completeness, arity, and uniqueness checks.
       See the Rg integration review in `docs/performance-analysis.md`.
 
 ## Release publication repair

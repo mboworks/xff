@@ -30,191 +30,220 @@
 
 namespace xff::parser {
 namespace {
-enum class Effect { kGlobal, kPattern, kFile, kWord, kLine, kText, kColumns, kGlob, kRoot, kThreads };
-
-struct Option {
-  std::string_view name;
-  char short_name = '\0';
-  std::string_view replacement;
-  bool value = false;
-  Effect effect = Effect::kGlobal;
-};
-
-constexpr auto kOptions = std::to_array<Option>({
+constexpr auto kOptions = std::to_array<RgOption>({
     {
         .name = "regexp",
         .short_name = 'e',
-        .value = true,
-        .effect = Effect::kPattern,
+        .argument = "PATTERN",
+        .effect = RgOption::Effect::kPattern,
+        .summary = "Add a search pattern; repeatable, combined as a union.",
     },
     {
         .name = "file",
         .short_name = 'f',
-        .value = true,
-        .effect = Effect::kFile,
+        .argument = "FILE",
+        .effect = RgOption::Effect::kFile,
+        .summary = "Read patterns from `FILE`, one per line; `-` reads stdin; repeatable.",
     },
     {
         .name = "glob",
         .short_name = 'g',
-        .value = true,
-        .effect = Effect::kGlob,
+        .argument = "GLOB",
+        .effect = RgOption::Effect::kGlob,
+        .summary = "Include glob; a leading `!` excludes; last matching rule wins.",
     },
     {
         .name = "only-matching",
         .short_name = 'o',
         .replacement = "--only-matching",
+        .summary = "Print only matched portions.",
     },
     {
         .name = "invert-match",
         .short_name = 'v',
         .replacement = "--invert-match",
+        .summary = "Select nonmatching lines.",
     },
     {
         .name = "line-number",
         .short_name = 'n',
         .replacement = "--line-number",
+        .summary = "Print line-number prefixes.",
     },
     {
         .name = "no-line-number",
         .short_name = 'N',
         .replacement = "--no-line-number",
+        .summary = "Omit line-number prefixes (the rg default).",
     },
     {
         .name = "with-filename",
         .short_name = 'H',
         .replacement = "--with-filename",
+        .summary = "Always print path prefixes.",
     },
     {
         .name = "no-filename",
         .short_name = 'I',
         .replacement = "--no-filename",
+        .summary = "Omit path prefixes; otherwise automatic for multiple inputs and archive members.",
     },
     {
         .name = "files-with-matches",
         .short_name = 'l',
         .replacement = "--files-with-matches",
+        .summary = "Print filenames with selected lines.",
     },
     {
         .name = "files-without-match",
         .replacement = "--files-without-match",
+        .summary = "Print filenames without selected lines.",
     },
     {
         .name = "count",
         .short_name = 'c',
         .replacement = "--count",
+        .summary = "Print selected line counts.",
     },
     {
         .name = "count-matches",
         .replacement = "--count-matches",
+        .summary = "Print matched occurrence counts.",
     },
     {
         .name = "ignore-case",
         .short_name = 'i',
         .replacement = "--case=insensitive",
+        .summary = "Match case-insensitively.",
     },
     {
         .name = "case-sensitive",
         .short_name = 's',
         .replacement = "--case=sensitive",
+        .summary = "Match case-sensitively (the rg default).",
     },
     {
         .name = "smart-case",
         .short_name = 'S',
         .replacement = "--case=smart",
+        .summary = "Ignore case unless the pattern contains an uppercase letter.",
     },
     {
         .name = "fixed-strings",
         .short_name = 'F',
         .replacement = "--regextype=EXACT",
+        .summary = "Use literal matching.",
     },
     {
         .name = "pcre2",
         .short_name = 'P',
         .replacement = "--regextype=PCRE2",
+        .summary = "Use the optional PCRE2 backend; RE2 is the default.",
     },
     {
         .name = "follow",
         .short_name = 'L',
         .replacement = "-L",
+        .summary = "Follow symbolic links.",
     },
     {
         .name = "quiet",
         .short_name = 'q',
         .replacement = "--quiet",
+        .summary = "Suppress output; preserve match-sensitive exit status.",
     },
     {
         .name = "context",
         .short_name = 'C',
         .replacement = "--context=",
-        .value = true,
+        .argument = "N",
+        .summary = "Print `N` context lines before and after each match.",
     },
     {
         .name = "before-context",
         .short_name = 'B',
         .replacement = "--before-context=",
-        .value = true,
+        .argument = "N",
+        .summary = "Print `N` lines before each match.",
     },
     {
         .name = "after-context",
         .short_name = 'A',
         .replacement = "--after-context=",
-        .value = true,
+        .argument = "N",
+        .summary = "Print `N` lines after each match.",
     },
     {
         .name = "threads",
         .short_name = 'j',
-        .value = true,
-        .effect = Effect::kThreads,
+        .argument = "N",
+        .effect = RgOption::Effect::kThreads,
+        .summary = "Worker allowance; `0` selects automatic.",
     },
     {
         .name = "word-regexp",
         .short_name = 'w',
-        .effect = Effect::kWord,
+        .effect = RgOption::Effect::kWord,
+        .summary = "Match whole words.",
     },
     {
         .name = "line-regexp",
         .short_name = 'x',
-        .effect = Effect::kLine,
+        .effect = RgOption::Effect::kLine,
+        .summary = "Match whole lines.",
     },
     {
         .name = "text",
         .short_name = 'a',
-        .effect = Effect::kText,
+        .effect = RgOption::Effect::kText,
+        .summary = "Search binary content as text.",
     },
     {
         .name = "max-columns",
         .short_name = 'M',
-        .value = true,
-        .effect = Effect::kColumns,
+        .argument = "N",
+        .effect = RgOption::Effect::kColumns,
+        .summary = "Replace output lines longer than `N` bytes with an omission marker; `0` disables the limit.",
     },
     {
         .name = "root",
-        .value = true,
-        .effect = Effect::kRoot,
+        .argument = "NAME=PATH",
+        .effect = RgOption::Effect::kRoot,
+        .summary = "Add a named search root before `--xff`.",
     },
     {
         .name = "hidden",
         .replacement = "--hidden",
+        .summary = "Include hidden entries.",
     },
     {
         .name = "no-hidden",
         .replacement = "--no-hidden",
+        .summary = "Skip hidden entries.",
     },
     {
         .name = "no-ignore",
         .replacement = "--no-ignore",
+        .summary = "Disable ignore-file filtering.",
     },
     {
         .name = "color",
         .replacement = "--color=",
-        .value = true,
+        .argument = "WHEN",
+        .summary = "Color policy: `auto`, `always`, or `never`.",
     },
     {
         .name = "help",
         .short_name = 'h',
         .replacement = "--help=rg",
+        .summary = "Show rg help; `--help=TOPIC` selects another help topic.",
     },
-    {.name = "version", .short_name = 'V', .replacement = "--version"},
+    {
+        .name = "version",
+        .short_name = 'V',
+        .replacement = "--version",
+        .summary = "Print the program version.",
+    },
 });
 
 struct RootOperand {
@@ -284,9 +313,9 @@ class RgParser {
   }
 
  private:
-  absl::Status Apply(const Option& option, std::optional<std::string_view> attached) {
+  absl::Status Apply(const RgOption& option, std::optional<std::string_view> attached) {
     std::string_view value;
-    if (option.value) {
+    if (!option.argument.empty()) {
       if (attached.has_value()) {
         value = *attached;
       } else {
@@ -299,33 +328,33 @@ class RgParser {
       return absl::InvalidArgumentError(absl::StrCat("--", option.name, " does not take a value"));
     }
     switch (option.effect) {
-      case Effect::kGlobal:
+      case RgOption::Effect::kGlobal:
         native_.push_back(absl::StrCat(option.replacement, value));
         help_ = help_ || option.short_name == 'h' || option.short_name == 'V';
         break;
-      case Effect::kPattern:
+      case RgOption::Effect::kPattern:
         search_.patterns.push_back({.value = std::string(value)});
         explicit_patterns_ = true;
         break;
-      case Effect::kFile:
+      case RgOption::Effect::kFile:
         search_.patterns.push_back({.value = std::string(value), .file = true});
         explicit_patterns_ = true;
         break;
-      case Effect::kWord: search_.word = true; break;
-      case Effect::kLine: search_.line = true; break;
-      case Effect::kText: search_.text = true; break;
-      case Effect::kColumns:
+      case RgOption::Effect::kWord: search_.word = true; break;
+      case RgOption::Effect::kLine: search_.line = true; break;
+      case RgOption::Effect::kText: search_.text = true; break;
+      case RgOption::Effect::kColumns:
         if (!absl::SimpleAtoi(value, &search_.max_columns)) {
           return absl::InvalidArgumentError("--max-columns requires a nonnegative integer");
         }
         break;
-      case Effect::kThreads: {
+      case RgOption::Effect::kThreads: {
         std::size_t workers = 0;
         const bool automatic = absl::SimpleAtoi(value, &workers) && workers == 0;
         native_.push_back(absl::StrCat("--jobs=", automatic ? "all" : value));
         break;
       }
-      case Effect::kRoot: {
+      case RgOption::Effect::kRoot: {
         const std::string token = absl::StrCat("--root=", value);
         // Reuse native root validation; the complete native parse below also rejects duplicate names.
         MBO_ASSIGN_OR_RETURN(auto root, parser::Parse({token}));
@@ -334,7 +363,7 @@ class RgParser {
         ++named_roots_;
         break;
       }
-      case Effect::kGlob:
+      case RgOption::Effect::kGlob:
         search_.globs.emplace_back(value);
         native_.push_back(
             absl::StrCat(
@@ -376,8 +405,9 @@ class RgParser {
         if (option.short_name != '\0' && option.short_name == arg.at(pos)) {
           found = true;
           const auto rest = arg.substr(pos + 1);
-          MBO_RETURN_IF_ERROR(Apply(option, option.value && !rest.empty() ? std::optional(rest) : std::nullopt));
-          if (option.value) {
+          MBO_RETURN_IF_ERROR(
+              Apply(option, !option.argument.empty() && !rest.empty() ? std::optional(rest) : std::nullopt));
+          if (!option.argument.empty()) {
             return absl::OkStatus();
           }
           break;
@@ -402,6 +432,10 @@ class RgParser {
   std::vector<std::string> native_{"--config=rg", "--match-output", "--exit-match"};
 };
 }  // namespace
+
+std::span<const RgOption> RgOptions() {
+  return kOptions;
+}
 
 absl::StatusOr<Command> ParseRg(const std::vector<std::string>& args, std::size_t start) {
   return RgParser(args, start).Parse();
