@@ -956,12 +956,6 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   }
   const xff::cli::RgInputFs input_fs(host_fs, std::move(input));
   const xff::vfs::FileSystem& fs = command.rg ? static_cast<const xff::vfs::FileSystem&>(input_fs) : host_fs;
-  if (command.rg && command.roots.size() == 1) {
-    const auto metadata = fs.Stat(command.roots.front(), true);
-    if (metadata.ok() && metadata->type == xff::vfs::FileType::kRegular) {
-      command.globals.insert(command.globals.begin(), "--no-filename");
-    }
-  }
   const xff::engine::RunResult result = xff::engine::RunFind(
       command, fs,
       [quiet](std::string_view record) {

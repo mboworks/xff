@@ -4858,6 +4858,12 @@ RunResult RunFindCore(
   }
   // --count / -c: -grep emits a per-file matching-line count instead of the lines.
   GrepOptions grep_options = ResolveGrepOptions(command.globals, command.rg.has_value());
+  const bool rg_auto_filename =
+      command.rg && std::ranges::none_of(command.globals, [](std::string_view argument) {
+        const auto flag = cli::LookupGlobalArgument(argument);
+        using enum cli::GlobalFlag::GrepEffect;
+        return flag.has_value() && (flag->grep_effect == kFilename || flag->grep_effect == kNoFilename);
+      });
   if (command.rg) {
     grep_options.max_columns = command.rg->max_columns;
   }
@@ -5514,6 +5520,10 @@ RunResult RunFindCore(
           .grep_after = grep_after,
           .control = control,
       };
+      if (rg_auto_filename) {
+        // A single file root needs no prefix; its archive members are distinct input files.
+        context.grep.filename = roots.size() != 1 || visit.depth != 0;
+      }
       const auto selected = EmitRgOutput(*rg_output, *command.rg, context);
       if (!selected.ok()) {
         on_error(visit.path, selected.status());

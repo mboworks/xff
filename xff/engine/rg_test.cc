@@ -99,7 +99,8 @@ struct RgEngineTest : ::testing::Test {
   std::vector<std::string> errors;
 
   RunResult Run(std::vector<std::string> args) {
-    args.insert(args.begin(), "--rg");
+    // Keep record identity explicit here; CLI integration covers automatic filename prefixes.
+    args.insert(args.begin(), {"--rg", "-H"});
     auto parsed = parser::Parse(args);
     EXPECT_THAT(parsed, IsOk());
     if (!parsed.ok()) {

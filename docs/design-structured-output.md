@@ -165,3 +165,8 @@ files retain the existing content-search treatment.
 
 JSONL uses the existing grep records. One pattern retains the `pattern` field; a union uses
 `patterns`, an array in expression order. Output modifiers do not remove structural JSON fields.
+
+In rg mode, automatic plain-text filename prefixes identify files found beneath directories
+and archive members. A single regular-file root or stdin has no automatic prefix.
+Explicit `--with-filename` / `--no-filename` settings, including INI settings, override
+that decision. JSON records always retain their path fields.

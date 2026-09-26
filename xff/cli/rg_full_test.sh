@@ -41,4 +41,20 @@ test::whole_line_pcre2_preserves_alternation_and_match_portions() {
   printf 'hit\nhits\n' | _check 0 1 --rg -Px --count-matches 'h|hit'
 }
 
+test::archive_members_have_automatic_prefixes_with_explicit_overrides() {
+  local root
+  root="$(test_tmpdir archive)"
+  printf 'hit\n' >"${root}/one.txt"
+  printf 'hit\n' >"${root}/two.txt"
+  COPYFILE_DISABLE=1 tar -cf "${root}/box.tar" -C "${root}" one.txt two.txt
+  _check 0 "${root}/box.tar!one.txt:hit"$'\n'"${root}/box.tar!two.txt:hit" \
+    --rg hit "${root}/box.tar" --archive=roots --sort=dir
+  _check 0 $'hit\nhit' --rg -I hit "${root}/box.tar" --archive=roots
+  _check 0 "${root}/one.txt:hit" --rg -H hit "${root}/one.txt"
+  _check 0 hit --rg hit "${root}/one.txt"
+  printf '%s\n' '--no-filename' >"${root}/user.ini"
+  XFF_TEST_USER_CONFIG="${root}/user.ini" \
+    _check 0 $'hit\nhit' --rg hit "${root}/box.tar" --archive=roots
+}
+
 test_runner

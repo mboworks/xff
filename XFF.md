@@ -2882,7 +2882,7 @@ Options may appear among patterns and paths. Bundles and attached values work: `
 - `-F / --fixed-strings, -P / --pcre2` - literal search or the optional PCRE2 backend; RE2 is the default
 - `-w / --word-regexp, -x / --line-regexp` - whole words or whole lines
 - `-n / --line-number, -N / --no-line-number` - line prefixes; off by default
-- `-H / --with-filename, -I / --no-filename` - path prefixes; automatic for multiple paths or a directory
+- `-H / --with-filename, -I / --no-filename` - path prefixes; automatic for multiple paths, directory contents and archive members
 - `-o / --only-matching, -v / --invert-match` - matched portions or nonmatching lines
 - `-l / --files-with-matches, --files-without-match` - print selected filenames
 - `-c / --count, --count-matches` - selected line or occurrence counts
