@@ -138,6 +138,18 @@ struct GrepOptions {
   std::size_t max_columns = 0;
 };
 
+// One entry's lazily read content. Owned by a single evaluator, with no locks; views remain
+// valid until invalidation or destruction. Never retain this across entries or deferred passes.
+class ContentSnapshot final {
+ public:
+  absl::StatusOr<std::string_view> Read(const vfs::FileSystem& fs, std::string_view path);
+
+  void Invalidate() { bytes_.reset(); }
+
+ private:
+  std::optional<absl::StatusOr<std::string>> bytes_;
+};
+
 // Per-evaluation environment threaded through Evaluate for one visited entry.
 // Bundles what an expression node may read -- the entry, the action sink, the
 // filesystem, the reference clock -- plus the traversal-control side-channel, so
@@ -265,6 +277,7 @@ struct EvalContext {
   // walk is reading from at that moment - so the driver applies them per container after the walk.
   // Empty - the default - keeps `-delete` a clean refusal on a member.
   mbo::types::OptionalRef<std::vector<std::string>> archive_deletions;
+  ContentSnapshot content;
 };
 
 // Evaluates a parsed find expression against one visited entry and returns its

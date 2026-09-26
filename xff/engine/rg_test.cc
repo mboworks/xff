@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <array>
+#include <atomic>
 #include <map>
 #include <string>
 #include <string_view>
@@ -44,15 +46,20 @@ using ::testing::Not;
 struct SearchFs final : vfs::FileSystem {
   std::map<std::string, std::string> files{{"tree/a", "hit\nmiss\n"}, {"tree/b", "miss\n"}, {"patterns", "hit\n"}};
   bool read_error = false;
+  mutable std::atomic<std::size_t> reads = 0;
 
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view path) const override {
     if (path != "tree") {
       return absl::NotFoundError("not a directory");
     }
-    return std::vector<vfs::Entry>{
-        {.path = "tree/a", .name = "a", .type = vfs::FileType::kRegular},
-        {.path = "tree/b", .name = "b", .type = vfs::FileType::kRegular},
-    };
+    std::vector<vfs::Entry> entries;
+    entries.reserve(files.size());
+    for (const auto& [name, data] : files) {
+      if (name.starts_with("tree/")) {
+        entries.push_back({.path = name, .name = name.substr(5), .type = vfs::FileType::kRegular});
+      }
+    }
+    return entries;
   }
 
   absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool) const override {
@@ -82,6 +89,7 @@ struct SearchFs final : vfs::FileSystem {
   absl::StatusOr<bool> IsCaseSensitive(std::string_view) const override { return true; }
 
   absl::StatusOr<std::string> ReadContent(std::string_view path) const override {
+    reads.fetch_add(1, std::memory_order_relaxed);
     if (read_error) {
       return absl::PermissionDeniedError("denied content");
     }
@@ -98,9 +106,11 @@ struct RgEngineTest : ::testing::Test {
   std::string output;
   std::vector<std::string> errors;
 
-  RunResult Run(std::vector<std::string> args) {
+  RunResult Run(std::vector<std::string> args, bool rg = true) {
     // Keep record identity explicit here; CLI integration covers automatic filename prefixes.
-    args.insert(args.begin(), {"--rg", "-H"});
+    if (rg) {
+      args.insert(args.begin(), {"--rg", "-H"});
+    }
     auto parsed = parser::Parse(args);
     EXPECT_THAT(parsed, IsOk());
     if (!parsed.ok()) {
@@ -117,6 +127,56 @@ struct RgEngineTest : ::testing::Test {
         [this](std::string_view, absl::Status status) { errors.emplace_back(status.message()); });
   }
 };
+
+TEST_F(RgEngineTest, NativeMatchOutputReusesContentWithinEachEntry) {
+  for (const std::string_view jobs : {"1", "4"}) {
+    fs.reads = 0;
+    EXPECT_THAT(
+        Run({"--jobs=" + std::string(jobs), "--archive=none", "--sort=none", "--exact", "-M", "tree", "-content", "hit",
+             "-rxc", "hit"},
+            false)
+            .errors,
+        0);
+    EXPECT_THAT(output, EqualsText("tree/a:1:hit\n"));
+    EXPECT_THAT(fs.reads.load(), 2);  // One read for each visited regular file, including the rejected file.
+  }
+}
+
+TEST_F(RgEngineTest, NativeParallelBatchesReuseReadsWithoutSharingEntryContent) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 300; ++index) {
+    fs.files.emplace("tree/" + std::to_string(index), "hit " + std::to_string(index) + "\n");
+  }
+  EXPECT_THAT(
+      Run({"--jobs=4", "--archive=none", "--sort=none", "--exact", "-M", "tree", "-rxc", "hit"}, false).errors, 0);
+  EXPECT_THAT(fs.reads.load(), 300);
+  EXPECT_THAT(output, HasSubstr("tree/0:1:hit 0\n"));
+  EXPECT_THAT(output, HasSubstr("tree/299:1:hit 299\n"));
+}
+
+TEST_F(RgEngineTest, RgFiltersAndLineSelectionReuseTheSameContent) {
+  EXPECT_THAT(Run({"hit", "tree", "--xff", "-content", "hit"}).errors, 0);
+  EXPECT_THAT(output, EqualsText("tree/a:hit\n"));
+  EXPECT_THAT(fs.reads.load(), 2);
+}
+
+TEST_F(RgEngineTest, StatefulPrimariesInvalidateTheContentSnapshot) {
+  EXPECT_THAT(Run({"--jobs=1", "-M", "tree/a", "-content", "hit", "-first", "1", "-rxc", "hit"}, false).errors, 0);
+  EXPECT_THAT(output, EqualsText("tree/a:1:hit\n"));
+  EXPECT_THAT(fs.reads.load(), 2);
+}
+
+TEST_F(RgEngineTest, SnapshotRetainsErrorsUntilInvalidated) {
+  ContentSnapshot snapshot;
+  fs.read_error = true;
+  EXPECT_THAT(snapshot.Read(fs, "tree/a"), StatusIs(absl::StatusCode::kPermissionDenied));
+  fs.read_error = false;
+  EXPECT_THAT(snapshot.Read(fs, "tree/a"), StatusIs(absl::StatusCode::kPermissionDenied));
+  EXPECT_THAT(fs.reads.load(), 1);
+  snapshot.Invalidate();
+  EXPECT_THAT(snapshot.Read(fs, "tree/a"), IsOkAndHolds(EqualsText("hit\nmiss\n")));
+  EXPECT_THAT(fs.reads.load(), 2);
+}
 
 TEST_F(RgEngineTest, PreparationRequiresAnRgSearch) {
   EXPECT_THAT(

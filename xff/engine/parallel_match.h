@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <memory>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "absl/base/thread_annotations.h"
@@ -26,7 +27,7 @@ bool HasContentMatch(const parser::Expr& expression);
 
 class ParallelMatch final {
  public:
-  ParallelMatch(const parser::Expr& expression, std::size_t workers, bool scores);
+  ParallelMatch(const parser::Expr& expression, std::size_t workers, bool scores, bool retain_content = false);
   ~ParallelMatch();
   ParallelMatch(const ParallelMatch&) = delete;
   ParallelMatch& operator=(const ParallelMatch&) = delete;
@@ -36,6 +37,8 @@ class ParallelMatch final {
   // Consumes a batch; entry filesystem observers must outlive this call. The
   // owning entries remain available for ordered output until the next call.
   const std::vector<EvaluationResult>& Match(std::vector<CollectedEntry> entries);
+
+  ContentSnapshot TakeContent(std::size_t index) { return std::move(content_.at(index)); }
 
   const std::vector<CollectedEntry>& Entries() const { return entries_; }
 
@@ -48,6 +51,7 @@ class ParallelMatch final {
   const parser::Expr& expression_;
   const std::size_t workers_;
   const bool scores_;
+  const bool retain_content_;
   std::vector<std::thread> threads_;
   absl::Mutex mutex_;
   bool stop_ ABSL_GUARDED_BY(mutex_) = false;
@@ -56,6 +60,7 @@ class ParallelMatch final {
   // Published under mutex_, immutable until all workers have completed the batch.
   std::vector<CollectedEntry> entries_;
   std::vector<EvaluationResult> results_;
+  std::vector<ContentSnapshot> content_;
   std::atomic<std::size_t> next_ = 0;
 };
 

@@ -5502,7 +5502,7 @@ RunResult RunFindCore(
   // path rather than a second, subtly different renderer.
   // NOLINTNEXTLINE(readability-function-cognitive-complexity): one extracted sink dispatch shared by walk and replay
   const auto finish_entry = [&](const Visit& visit, std::map<std::string, std::string>& outputs, bool matched,
-                                std::optional<bool> verification) {
+                                std::optional<bool> verification, ContentSnapshot content) {
     if (matched && rg_output) {
       const auto decision = rg_glob_decision(visit);
       if (decision == ignore::Decision::kIgnore || (rg_positive_glob && decision == ignore::Decision::kDefault)) {
@@ -5523,12 +5523,14 @@ RunResult RunFindCore(
           .grep_before = grep_before,
           .grep_after = grep_after,
           .control = control,
+          .content = std::move(content),
       };
       if (rg_auto_filename) {
         // A single file root needs no prefix; its archive members are distinct input files.
         context.grep.filename = roots.size() != 1 || visit.depth != 0;
       }
       const auto selected = EmitRgOutput(*rg_output, *command.rg, context);
+      content = std::move(context.content);
       if (!selected.ok()) {
         on_error(visit.path, selected.status());
         ++rg_errors;
@@ -5625,6 +5627,7 @@ RunResult RunFindCore(
             .grep_before = grep_before,
             .grep_after = grep_after,
             .control = control,
+            .content = std::move(content),
         };
         EmitMatchOutput(*match_output, context);
         return;
@@ -5724,7 +5727,8 @@ RunResult RunFindCore(
   }
   std::optional<ParallelMatch> parallel_match;
   if (parallel_expression.has_value()) {
-    parallel_match.emplace(*parallel_expression, options.workers, rank_by_score);
+    parallel_match.emplace(
+        *parallel_expression, options.workers, rank_by_score, match_output.has_value() || rg_output.has_value());
   }
   std::vector<CollectedEntry> pending_matches;
   const auto flush_matches = [&] {
@@ -5750,7 +5754,7 @@ RunResult RunFindCore(
         Evaluate(*parallel_output, context);
       }
       std::map<std::string, std::string> outputs;
-      finish_entry(visit, outputs, evaluated.matched, std::nullopt);
+      finish_entry(visit, outputs, evaluated.matched, std::nullopt, parallel_match->TakeContent(index));
     }
   };
   const absl::Status status = Walk(
@@ -5915,7 +5919,7 @@ RunResult RunFindCore(
                 visit.path, absl::FailedPreconditionError(
                                 "incomplete dry run: command result unavailable; remaining expression skipped"));
           } else {
-            finish_entry(visit, outputs, evaluated.matched, hash_verification);
+            finish_entry(visit, outputs, evaluated.matched, hash_verification, std::move(eval_context.content));
           }
         }
         if (!control.mutation_error.ok()) {
@@ -6043,7 +6047,9 @@ RunResult RunFindCore(
               visit.path, absl::FailedPreconditionError(
                               "incomplete dry run: command result unavailable; remaining expression skipped"));
         } else {
-          finish_entry(visit, candidate.outputs, evaluated.matched, candidate.hash_verification);
+          finish_entry(
+              visit, candidate.outputs, evaluated.matched, candidate.hash_verification,
+              std::move(eval_context.content));
         }
       }
       if (!control.mutation_error.ok()) {

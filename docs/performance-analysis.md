@@ -443,8 +443,13 @@ Remaining optimization work:
   parallel matcher pool requires a native content expression; `-j4` alone parallelizes
   traversal rather than the rg line search. Benchmark a separate content-work scheduling
   change with identical output and one/four workers before adopting it.
-- Native `-M` can read content for file predicates and again for line output. Share owned
-  content with a bounded lifetime rather than adding locks to per-entry metadata.
+  Native content predicates and match output now share a lazy, owned snapshot per evaluation.
+  The coordinator transfers it to output without copying; native worker batches retain selected
+  snapshots only until ordered emission (at most 256 entries). No lock is needed: one evaluator
+  owns each snapshot. Stateful predicates and actions invalidate it before execution. Deferred
+  result-set passes start fresh instead of retaining whole-file contents across the entire walk.
+  Tests measure one read per regular file for native `-M` and rg native filters, including a
+  300-file worker case spanning multiple batches, and verify error/invalidation behavior.
 - Filename/count/quiet modes reuse full content and line materialization. Early success for
   filename/quiet queries and lightweight counting are candidates even before full streaming.
   Rg option aliases, argument syntax, translation effects, and help summaries now share the

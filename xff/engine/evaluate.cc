@@ -77,6 +77,17 @@
 #include "xff/vfs/filesystem.h"
 
 namespace xff::engine {
+
+absl::StatusOr<std::string_view> ContentSnapshot::Read(const vfs::FileSystem& fs, std::string_view path) {
+  if (!bytes_) {
+    bytes_ = fs.ReadContent(path);
+  }
+  if (!bytes_->ok()) {
+    return bytes_->status();
+  }
+  return std::string_view(**bytes_);
+}
+
 namespace {
 
 template<typename T>
@@ -1016,19 +1027,19 @@ bool EvalRegex(const parser::Expr& expr, EvalContext& ctx) {
 // so content search skips binaries by default instead of emitting noise. The whole
 // file is read (hence the predicates' Cost::kExpensive); the prefix sniff only
 // decides the binary skip.
-std::optional<std::string> ContentToSearch(const Visit& visit, const vfs::FileSystem& fs) {
-  if (visit.metadata.type != vfs::FileType::kRegular) {
+std::optional<std::string_view> ContentToSearch(EvalContext& ctx) {
+  if (ctx.visit.metadata.type != vfs::FileType::kRegular) {
     return std::nullopt;  // only regular files have searchable content
   }
-  absl::StatusOr<std::string> content = fs.ReadContent(visit.path);
+  const auto content = ctx.content.Read(ctx.fs, ctx.visit.path);
   if (!content.ok()) {
     return std::nullopt;  // unreadable: a non-match here (the walk surfaces the read error itself)
   }
-  const std::string_view prefix(content->data(), std::min(content->size(), content::kBinaryNulSniffBytes));
+  const std::string_view prefix = std::string_view(*content).substr(0, content::kBinaryNulSniffBytes);
   if (absl::StrContains(prefix, '\0')) {
     return std::nullopt;  // a NUL in the sniff window marks the file binary; skip it
   }
-  return *std::move(content);
+  return *content;
 }
 
 // nullopt when `visit` is not a readable regular file; otherwise whether its content is binary -- a
@@ -1044,7 +1055,7 @@ std::optional<bool> FileContentIsBinary(const Visit& visit, const vfs::FileSyste
   if (!content.ok()) {
     return std::nullopt;
   }
-  const std::string_view prefix(content->data(), std::min(content->size(), content::kBinaryNulSniffBytes));
+  const std::string_view prefix = std::string_view(*content).substr(0, content::kBinaryNulSniffBytes);
   return absl::StrContains(prefix, '\0');
 }
 
@@ -1144,7 +1155,7 @@ bool EvalContent(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.empty()) {
     return false;
   }
-  const std::optional<std::string> content = ContentToSearch(ctx.visit, ctx.fs);
+  const auto content = ContentToSearch(ctx);
   if (!content.has_value()) {
     return false;
   }
@@ -1161,7 +1172,7 @@ bool EvalRxc(const parser::Expr& expr, EvalContext& ctx) {
   if (!matcher.has_value()) {
     return false;
   }
-  const std::optional<std::string> content = ContentToSearch(ctx.visit, ctx.fs);
+  const auto content = ContentToSearch(ctx);
   return content.has_value() && matcher->get().PartialMatch(*content);
 }
 
@@ -1210,7 +1221,7 @@ bool EvalCmp(const parser::Expr& expr, EvalContext& ctx) {
 // exact Jaccard calculation for one reference, not the MinHash approximation needed by a future
 // all-pairs clustering reduction.
 bool EvalSimilar(const parser::Expr& expr, EvalContext& ctx) {
-  const std::optional<std::string> lhs = ContentToSearch(ctx.visit, ctx.fs);
+  const auto lhs = ContentToSearch(ctx);
   const std::string target = RenderTarget(expr, ctx);
   if (!lhs.has_value() || target.empty()) {
     return false;
@@ -1774,8 +1785,7 @@ bool EvalGrepMatchers(
   if (expr.args.empty() && !supplied) {
     return false;
   }
-  const std::optional<std::string> owned = supplied ? std::nullopt : ContentToSearch(ctx.visit, ctx.fs);
-  const auto content = supplied ? supplied : owned ? std::optional<std::string_view>(*owned) : std::nullopt;
+  const auto content = supplied ? supplied : ContentToSearch(ctx);
   if (!content.has_value()) {
     return false;
   }
@@ -2907,6 +2917,9 @@ void PreviewExecution(const parser::Expr& expr, EvalContext& context) {
 EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) {
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate: {
+      if (!expr.descriptor->pure || expr.descriptor->kind == registry::Kind::kAction) {
+        context.content.Invalidate();
+      }
       if (expr.descriptor->needs_metadata || (expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
         context.control.metadata_error = context.visit.EnsureMetadata();
         if (!context.control.metadata_error.ok()) {
@@ -3025,7 +3038,7 @@ absl::StatusOr<bool> EmitRgOutput(const MatchOutput& output, const parser::RgSea
   if (context.visit.metadata.type != vfs::FileType::kRegular) {
     return false;
   }
-  MBO_ASSIGN_OR_RETURN(const auto content, context.fs.ReadContent(context.visit.path));
+  MBO_ASSIGN_OR_RETURN(const auto content, context.content.Read(context.fs, context.visit.path));
   if (!search.text && absl::StrContains(content, '\0')) {
     return false;
   }

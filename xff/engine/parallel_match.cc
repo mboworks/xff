@@ -31,8 +31,11 @@ bool HasContentMatch(const parser::Expr& expression) {
   return (expression.lhs && HasContentMatch(*expression.lhs)) || (expression.rhs && HasContentMatch(*expression.rhs));
 }
 
-ParallelMatch::ParallelMatch(const parser::Expr& expression, std::size_t workers, bool scores)
-    : expression_(expression), workers_(std::max(workers, std::size_t{1})), scores_(scores) {}
+ParallelMatch::ParallelMatch(const parser::Expr& expression, std::size_t workers, bool scores, bool retain_content)
+    : expression_(expression),
+      workers_(std::max(workers, std::size_t{1})),
+      scores_(scores),
+      retain_content_(retain_content) {}
 
 ParallelMatch::~ParallelMatch() {
   {
@@ -57,6 +60,8 @@ const std::vector<EvaluationResult>& ParallelMatch::Match(std::vector<CollectedE
   entries_ = std::move(entries);
   results_.clear();
   results_.resize(entries_.size());
+  content_.clear();
+  content_.resize(entries_.size());
   next_.store(0, std::memory_order_relaxed);
   if (threads_.empty() && entries_.size() < 64) {
     EvaluateEntries();
@@ -118,6 +123,9 @@ void ParallelMatch::EvaluateEntries() {
           .control = control,
       };
       results_.at(index) = EvaluateDeferred(expression_, context);
+      if (retain_content_ && results_.at(index).matched) {
+        content_.at(index) = std::move(context.content);
+      }
     }
   }
 }
