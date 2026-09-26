@@ -1071,96 +1071,111 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 ### Content-match output
 
+<a id="flag-match-output"></a>
+
+- `--match-output, -M` - print matching content lines instead of the default path listing _(global, xff)_
+  Uses content predicates such as `-rxc` and `-content` to select output lines in files that pass the complete expression. Existing grep output controls apply. Explicit actions retain their normal precedence over default output. The short alias `-M` must precede the roots.
+  Affects: -rxc, -irxc, -content, -icontent
+  Affected by: --no-match-output, --only-matching, --no-only-matching, --files-with-matches, --files-without-match, --count-matches, --invert-match, --no-invert-match, --line-number, --no-line-number, --with-filename, --no-filename, --count, --context
+  See also: [Content](#topic-content), [--no-match-output](#flag-no-match-output), [--only-matching](#flag-only-matching), [--no-only-matching](#flag-no-only-matching), [--files-with-matches](#flag-files-with-matches), [--files-without-match](#flag-files-without-match), [--count-matches](#flag-count-matches), [--invert-match](#flag-invert-match), [--no-invert-match](#flag-no-invert-match), [--line-number](#flag-line-number), [--no-line-number](#flag-no-line-number), [--with-filename](#flag-with-filename), [--no-filename](#flag-no-filename), [--count](#flag-count), [--context](#flag-context), [-rxc](#primary-rxc), [-irxc](#primary-irxc), [-content](#primary-content), [-icontent](#primary-icontent)
+
+<a id="flag-no-match-output"></a>
+
+- `--no-match-output` - restore the default path listing instead of content-match output _(global, xff)_
+  Disables `--match-output`. Last setting wins, including configuration-file defaults.
+  Affects: --match-output
+  See also: [Content](#topic-content), [--match-output](#flag-match-output)
+
 <a id="flag-only-matching"></a>
 
 - `--only-matching` - print each nonempty matched portion on its own line _(global, xff)_
-  With `-grep`, emit nonempty, non-overlapping matches instead of complete lines. Context is ignored. With `--count`, count individual matches. Inverted selection has no matching portions to print. `FNMATCH` treats the complete matching line as its matched portion.
-  Affects: -grep
-  See also: [Content](#topic-content), [-grep](#primary-grep)
+  For content-match output, emit nonempty, non-overlapping matches instead of complete lines. Context is ignored. With `--count`, count individual matches. Inverted selection has no matching portions to print. `FNMATCH` treats the complete matching line as its matched portion.
+  Affects: -grep, --match-output
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
 
 <a id="flag-no-only-matching"></a>
 
 - `--no-only-matching` - print complete selected lines instead of matched portions _(global, xff)_
-  Restores complete-line output for `-grep`. Last setting wins.
-  Affects: -grep
-  See also: [Content](#topic-content), [-grep](#primary-grep)
+  Restores complete-line content output. Last setting wins.
+  Affects: -grep, --match-output
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
 
 <a id="flag-files-with-matches"></a>
 
-- `--files-with-matches` - with -grep, print paths of files containing selected lines _(global, xff)_
+- `--files-with-matches` - print paths of files containing selected lines _(global, xff)_
   Suppresses line and count output. Selection includes `--invert-match`. Each reached `-grep` action reports its own result; this does not defer actions until the full expression succeeds.
-  Affects: -grep
-  See also: [Content](#topic-content), [-grep](#primary-grep)
+  Affects: -grep, --match-output
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
 
 <a id="flag-files-without-match"></a>
 
-- `--files-without-match, --files-without-matches` - with -grep, print paths of readable text files without selected lines _(global, xff)_
+- `--files-without-match, --files-without-matches` - print paths of readable text files without selected lines _(global, xff)_
   Empty text files qualify. Binary, unreadable and non-regular files do not. This changes the truth of the `-grep` action to whether the file has no selected lines.
-  Affects: -grep
-  See also: [Content](#topic-content), [-grep](#primary-grep)
+  Affects: -grep, --match-output
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
 
 <a id="flag-count-matches"></a>
 
-- `--count-matches` - with -grep, count nonempty matching portions per file _(global, xff)_
+- `--count-matches` - count nonempty matching portions per file _(global, xff)_
   Counts non-overlapping matched portions instead of selected lines. Context and explicit grep templates are superseded. Inverted selection has no matching portions to count.
-  Affects: -grep
-  See also: [Content](#topic-content), [-grep](#primary-grep)
+  Affects: -grep, --match-output
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
 
 <a id="flag-invert-match"></a>
 
-- `--invert-match` - with -grep, select lines that do not match its pattern _(global, xff)_
+- `--invert-match` - select lines that do not match its pattern _(global, xff)_
   Inverts line selection, not the file-level expression. `! -rxc PATTERN` instead selects files whose content does not match. Does not invert other predicates.
-  Affects: -grep
-  See also: [Content](#topic-content), [-grep](#primary-grep)
+  Affects: -grep, --match-output
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
 
 <a id="flag-no-invert-match"></a>
 
-- `--no-invert-match` - with -grep, select lines that match its pattern _(global, xff)_
+- `--no-invert-match` - select lines that match its pattern _(global, xff)_
   Restores positive line selection. Last setting wins.
-  Affects: -grep
-  See also: [Content](#topic-content), [-grep](#primary-grep)
+  Affects: -grep, --match-output
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
 
 <a id="flag-line-number"></a>
 
 - `--line-number` - include line numbers in built-in plain grep output (default) _(global, xff)_
   Prefix selected and context lines with one-based line numbers. Explicit templates and JSON records retain their own fields.
-  Affects: -grep
-  See also: [Content](#topic-content), [-grep](#primary-grep)
+  Affects: -grep, --match-output
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
 
 <a id="flag-no-line-number"></a>
 
 - `--no-line-number` - omit line numbers from built-in plain grep output _(global, xff)_
   Does not remove line fields from JSON records or explicit templates. Last setting wins.
-  Affects: -grep
-  See also: [Content](#topic-content), [-grep](#primary-grep)
+  Affects: -grep, --match-output
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
 
 <a id="flag-with-filename"></a>
 
 - `--with-filename` - include paths in built-in plain grep output (default) _(global, xff)_
   Applies to line and count prefixes. Filename-only modes always print paths. Explicit templates and JSON records retain their own fields.
-  Affects: -grep
-  See also: [Content](#topic-content), [-grep](#primary-grep)
+  Affects: -grep, --match-output
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
 
 <a id="flag-no-filename"></a>
 
 - `--no-filename` - omit paths from built-in plain grep line and count output _(global, xff)_
   Filename-only modes always print paths. Explicit templates and JSON records retain their own fields. Last setting wins.
-  Affects: -grep
-  See also: [Content](#topic-content), [-grep](#primary-grep)
+  Affects: -grep, --match-output
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
 
 <a id="flag-count"></a>
 
-- `--count, -c` - with -grep, print a per-file matching-line count (path:count) instead of the lines _(global, xff)_
+- `--count, -c` - print a per-file matching-line count (path:count) instead of the lines _(global, xff)_
   Counts selected lines, or nonempty matched portions with `--only-matching`. Files without selected lines emit no count. Context and templates are superseded. The last count/filename mode wins.
-  Affects: -grep
-  See also: [Content](#topic-content), [-grep](#primary-grep)
+  Affects: -grep, --match-output
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
 
 <a id="flag-context"></a>
 
 - `--context=SPEC` - -grep context lines: N both sides, or A:N,B:N,C:N for after/before/both _(global, xff)_
   `--context=2` is grep's `-C 2` (two lines either side); the A / B / C keys inside the value select one side (`--context=A:3,B:1`), which is what `--after-context` and `--before-context` spell one at a time. xff has NO single-dash `-A` / `-B` / `-C`: those letters are unclaimed for now (see TODO.md), and a single-dash flag would be an expression primary under xff's dash-count rule rather than a whole-run option. A final symmetric before/after context also supplies the default for contextual `-diff` output, unless `--diff-context` or a per-action count overrides it.
-  Affects: -grep, -diff, --diff-context
-  See also: [Content](#topic-content), [-grep](#primary-grep), [-diff](#primary-diff), [--diff-context](#flag-diff-context)
+  Affects: -grep, --match-output, -diff, --diff-context
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output), [-diff](#primary-diff), [--diff-context](#flag-diff-context)
 
 <a id="flag-after-context"></a>
 
@@ -1867,28 +1882,29 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `-content ARG` - match a literal substring in the file's content (xff) _(test, xff)_
   Matches when the file contains SUBSTRING literally (no regex metacharacters - the literal pair sidesteps grep's flavor ambiguity). Reads the file, so it is expensive; a non-regular, unreadable, or binary file (a NUL byte in the first 8,000 bytes) never matches. `-icontent` folds ASCII case. Use `-rxc` for a pattern. This is an xff extension `--config=find` rejects.
-  Affected by: --case
-  See also: [Content](#topic-content), [--case](#flag-case)
+  Affected by: --case, --match-output
+  See also: [Content](#topic-content), [--case](#flag-case), [--match-output](#flag-match-output)
 
 <a id="primary-icontent"></a>
 
 - `-icontent ARG` - match a literal substring in the file's content, case-insensitively (xff) _(test, xff)_
   The case-insensitive `-content`: folds ASCII case on the literal substring search.
-  See also: [Content](#topic-content)
+  Affected by: --match-output
+  See also: [Content](#topic-content), [--match-output](#flag-match-output)
 
 <a id="primary-rxc"></a>
 
 - `-rxc ARG` - match the file's content against a regular expression (xff) _(test, xff)_
   The regex counterpart of `-content`: matches when the selected regex pattern is found ANYWHERE in the content (unanchored, like grep - use `^` / `$` to anchor), not the whole-file anchoring `-regex` applies to the path. Same expensive read and non-regular / unreadable / binary skip; `-irxc` folds case. An xff extension `--config=find` rejects.
-  Affected by: -E, --case, --regextype, --re2, --pcre
-  See also: [Content](#topic-content), [-E](#flag-e), [--case](#flag-case), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre)
+  Affected by: -E, --case, --regextype, --re2, --pcre, --match-output
+  See also: [Content](#topic-content), [-E](#flag-e), [--case](#flag-case), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre), [--match-output](#flag-match-output)
 
 <a id="primary-irxc"></a>
 
 - `-irxc ARG` - match the file's content against a regular expression, case-insensitively (xff) _(test, xff)_
   The case-insensitive `-rxc`: folds case on the content regex search.
-  Affected by: -E, --regextype, --re2, --pcre
-  See also: [Content](#topic-content), [-E](#flag-e), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre)
+  Affected by: -E, --regextype, --re2, --pcre, --match-output
+  See also: [Content](#topic-content), [-E](#flag-e), [--regextype](#flag-regextype), [--re2](#flag-re2), [--pcre](#flag-pcre), [--match-output](#flag-match-output)
 
 <a id="primary-text"></a>
 
@@ -2830,7 +2846,7 @@ See also: [Regex grammars](#topic-grammars), [Content](#topic-content)
 
 These primaries read the entry's BYTES, not its metadata: `-grep` prints matching lines the way ripgrep does, `-content` / `-icontent` test for a literal, `-rxc` / `-irxc` for a regex (grammar per `--regextype`, see `--help=grammars`), and `-text` / `-eofcr` / `-eofcrlf` classify line endings and completeness. `{lines}`, `{text}`, `{line}`, `{match}` and `{column}` carry the results into templates (`--help=fields`).
 
-Content-output long options currently modify explicit `-grep` actions; they do not make `-rxc` or `-content` print lines. `--only-matching` emits nonempty matched portions; `--files-with-matches` and `--files-without-match` emit paths; `--count-matches` counts portions rather than lines. The last filename/count mode wins. `--invert-match` selects nonmatching lines, unlike file-level `!`. `--no-filename` and `--no-line-number` hide built-in plain-text prefixes; JSON fields and explicit templates remain intact. Each reached `-grep` action searches its own pattern and emits immediately; later predicates do not retract output, and separate actions do not deduplicate each other's lines. Short-option compatibility and implicit content-line output are separate decisions; `-o` remains OR.
+Use `--match-output` (leading short alias `-M`) to replace the default path listing with content lines. It uses the union of content patterns in files accepted by the complete expression; each line prints once. Without that selector, output controls modify explicit `-grep` actions; they do not make `-rxc` or `-content` print lines. `--only-matching` emits nonempty matched portions; `--files-with-matches` and `--files-without-match` emit paths; `--count-matches` counts portions rather than lines. The last filename/count mode wins. `--invert-match` selects nonmatching lines, unlike file-level `!`. `--no-filename` and `--no-line-number` hide built-in plain-text prefixes; JSON fields and explicit templates remain intact. Each reached `-grep` action searches its own pattern and emits immediately; later predicates do not retract output, and separate actions do not deduplicate each other's lines. Rg-compatible argument parsing and short-option compatibility remain separate decisions; `-o` remains OR.
 
 Every one of them reads through the entry's OWN filesystem, so under `--archive` a member is searched inside its container exactly like a plain file - `a.tar!notes.txt` greps without unpacking anything. Reading is per entry and streamed, so a match in a huge tree costs the bytes of the files visited, not of the tree.
 

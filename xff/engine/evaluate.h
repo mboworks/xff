@@ -129,6 +129,7 @@ struct DeferredEvaluation {
 struct GrepOptions {
   enum class Output { kLines, kCount, kCountMatches, kFilesWithMatches, kFilesWithoutMatch };
   Output output = Output::kLines;
+  bool match_output = false;
   bool only_matching = false;
   bool invert = false;
   bool line_number = true;
@@ -292,6 +293,15 @@ bool ContainsAction(const parser::Expr& expr);
 // per-entry no-match, matching find's parse-time rejection. Style-independent: the
 // size units (incl. the T/P/E continuation) are valid in every flavor.
 absl::Status ValidateSizeArgs(const parser::Expr& expr);
+
+// Prepared once from the expression; literal patterns retain literal matching semantics.
+struct MatchOutput {
+  parser::Expr source{.kind = parser::Expr::Kind::kPredicate};
+  std::vector<std::shared_ptr<const regex::Matcher>> matchers;
+};
+
+absl::StatusOr<MatchOutput> PrepareMatchOutput(const parser::Expr& expression);
+bool EmitMatchOutput(const MatchOutput& output, EvalContext& context);
 
 // Validates the --diff-ignore token list and the --diff-ignore-matching regex, returning the
 // first problem as an InvalidArgument (an unknown token names it; a bad regex carries RE2's

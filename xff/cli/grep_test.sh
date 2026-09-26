@@ -325,4 +325,85 @@ test::long_output_controls_work_in_config_and_preserve_expression_or() {
   expect_eq "${root}/a.txt" "${out}"
 }
 
+test::match_output_activates_predicates_and_obeys_full_expression() {
+  local root out rc
+  root="$(_make_tree)"
+  out="$(_run -M "${root}" -rxc TODO --no-filename --no-line-number)"
+  expect_eq $'first TODO line\nanother TODO here' "${out}"
+  out="$(_run "${root}" -icontent todo --match-output --only-matching --no-filename --no-line-number)"
+  expect_eq $'TODO\nTODO' "${out}"
+  out="$("$(_xff_bin)" -M "${root}" -rxc TODO -false 2>&1)" && rc=0 || rc=$?
+  expect_eq 0 "${rc}"
+  expect_eq '' "${out}"
+  out="$(_run -M "${root}" -rxc TODO -print)"
+  expect_eq "${root}/a.txt" "${out}"
+  out="$(_run -M "${root}" -rxc TODO --no-match-output)"
+  expect_eq "${root}/a.txt" "${out}"
+}
+
+test::match_output_unions_patterns_without_duplicate_lines() {
+  local root out
+  root="$(_make_tree)"
+  out="$(_run -M "${root}/a.txt" -rxc TODO -o -content second --no-filename --no-line-number)"
+  expect_eq $'first TODO line\nsecond line\nanother TODO here' "${out}"
+  out="$(_run -M "${root}/a.txt" -rxc TODO -content TODO --count --no-filename)"
+  expect_eq 2 "${out}"
+  out="$(_run -M "${root}/a.txt" -rxc TODO -content TODO --count-matches --no-filename)"
+  expect_eq 2 "${out}"
+  out="$(_run -M "${root}/a.txt" -rxc TODO --invert-match --no-filename --no-line-number)"
+  expect_eq 'second line' "${out}"
+}
+
+test::match_output_preserves_literals_and_uses_config_defaults() {
+  local root out
+  root="$(_make_tree)"
+  printf 'a.b\naxb\n' >"${root}/literal.txt"
+  printf '%s\n' --match-output --no-filename --no-line-number >"${root}/output.rc"
+  out="$(_run "${root}/literal.txt" --xffrc="${root}/output.rc" -content a.b)"
+  expect_eq a.b "${out}"
+  out="$(_run -M "${root}/a.txt" -irxc todo --context=1 --no-filename --no-line-number)"
+  expect_eq $'first TODO line\nsecond line\nanother TODO here' "${out}"
+}
+
+test::match_output_json_describes_all_patterns() {
+  local root out
+  root="$(_make_tree)"
+  out="$(_run -M "${root}/a.txt" -rxc TODO -o -content second --format=jsonl)"
+  python3 -c 'import json,sys; rows=[json.loads(s) for s in sys.argv[1].splitlines()]; assert [r["line"] for r in rows]==[1,2,3] and all(r["patterns"]==["TODO","second"] for r in rows)' "${out}"
+}
+
+test::match_output_rejects_missing_predicates_and_listing_formats() {
+  local root out rc
+  root="$(_make_tree)"
+  out="$("$(_xff_bin)" -M "${root}" 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  expect_matches 'content predicate' "${out}"
+  out="$("$(_xff_bin)" -M "${root}" -name '*.txt' 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  out="$("$(_xff_bin)" -M "${root}" -rxc TODO --format=csv 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+}
+
+test::match_output_named_ini_group_and_parallel_walk() {
+  local root out
+  root="$(_make_tree)"
+  printf '%s\n' '[lines]' --match-output --no-filename --no-line-number >"${root}/output.rc"
+  out="$(_run "${root}" --xffrc="${root}/output.rc" --config=lines --jobs=4 --sort=name -rxc TODO -name a.txt)"
+  expect_eq $'first TODO line\nanother TODO here' "${out}"
+}
+
+test::match_output_portions_choose_leftmost_longest_across_patterns() {
+  local root out
+  root="$(_make_tree)"
+  printf 'ab b aa\n' >"${root}/parts.txt"
+  out="$(_run -M "${root}/parts.txt" -rxc b -o -content ab --only-matching --no-filename --no-line-number)"
+  expect_eq $'ab\nb' "${out}"
+  out="$(_run -M "${root}/parts.txt" -rxc a -o -content ab --only-matching --no-filename --no-line-number)"
+  expect_eq $'ab\na\na' "${out}"
+  out="$(_run -M "${root}/parts.txt" -rxc a --files-with-matches)"
+  expect_eq "${root}/parts.txt" "${out}"
+  out="$(_run -M "${root}/b.txt" ! -rxc TODO --files-without-match)"
+  expect_eq "${root}/b.txt" "${out}"
+}
+
 test_runner
