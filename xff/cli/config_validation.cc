@@ -471,6 +471,9 @@ absl::StatusOr<parser::Command> ApplyResolvedConfig(
     parser::Command command,
     const std::vector<config::ResolvedFlag>& resolved) {
   command.globals.clear();
+  if (command.rg) {
+    command.globals = {"--case=sensitive", "--no-line-number"};
+  }
   command.safety_flags_expanded = true;
   std::vector<std::string> expression = {"."};
   for (const config::ResolvedFlag& flag : resolved) {

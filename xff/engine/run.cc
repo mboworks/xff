@@ -743,8 +743,10 @@ absl::StatusOr<ContextSides> ParseContextSpec(std::string_view spec) {
   return result;
 }
 
-GrepOptions ResolveGrepOptions(const std::vector<std::string>& globals) {
+GrepOptions ResolveGrepOptions(const std::vector<std::string>& globals, bool rg = false) {
   GrepOptions result;
+  result.line_number = !rg;
+  result.rg_mode = rg;
   for (const std::string_view argument : globals) {
     const auto flag = cli::LookupGlobalArgument(argument);
     if (!flag.has_value()) {
@@ -768,6 +770,9 @@ GrepOptions ResolveGrepOptions(const std::vector<std::string>& globals) {
       case kFilename: result.filename = true; break;
       case kNoFilename: result.filename = false; break;
     }
+  }
+  if (rg && result.invert) {
+    result.only_matching = false;
   }
   return result;
 }
@@ -4840,7 +4845,10 @@ RunResult RunFindCore(
     return RunResult{.errors = 2};  // do not traverse
   }
   // --count / -c: -grep emits a per-file matching-line count instead of the lines.
-  const GrepOptions grep_options = ResolveGrepOptions(command.globals);
+  GrepOptions grep_options = ResolveGrepOptions(command.globals, command.rg.has_value());
+  if (command.rg) {
+    grep_options.max_columns = command.rg->max_columns;
+  }
   const bool grep_suppresses_template = grep_options.output != GrepOptions::Output::kLines;
   // --context / --before-context / --after-context (grep -C/-B/-A): -grep context lines. Validated
   // here so a bad value is a usage error (exit 2) before the walk.
@@ -5163,8 +5171,40 @@ RunResult RunFindCore(
                                                     : std::string_view(pack_identity).substr(slash + 1);
   }
   const bool any_reduction = !summaries.empty() || !histograms.empty() || shards.enabled || pack_target.has_value();
+  if (command.rg && grep_options.match_output && !any_reduction
+      && ((format != render::Format::kPlain && format != render::Format::kJsonl) || !columns.empty()
+          || compiled_tmpl)) {
+    on_error(
+        "--rg",
+        absl::InvalidArgumentError("content output requires plain or jsonl without listing columns or templates"));
+    return RunResult{.errors = 2};
+  }
+  std::optional<MatchOutput> rg_output;
+  ignore::PatternList rg_globs;
+  bool rg_positive_glob = false;
+  if (command.rg) {
+    for (const auto& glob : command.rg->globs) {
+      if (!rg_globs.Add(glob, true)) {
+        on_error("--glob", absl::InvalidArgumentError("invalid or empty glob"));
+        return RunResult{.errors = 2};
+      }
+      rg_positive_glob = rg_positive_glob || !glob.starts_with("!");
+    }
+    if (has_action) {
+      on_error("--rg", absl::InvalidArgumentError("--xff accepts file filters in rg mode, not actions"));
+      return RunResult{.errors = 2};
+    }
+    const auto mode = parser::ResolveCaseMode(command.globals, registry::Style::kXff);
+    auto prepared =
+        PrepareRgOutput(command, fs, mode == parser::CaseMode::kInsensitive, mode == parser::CaseMode::kSmart);
+    if (!prepared.ok()) {
+      on_error("--rg", prepared.status());
+      return RunResult{.errors = 2};
+    }
+    rg_output.emplace(*std::move(prepared));
+  }
   std::optional<MatchOutput> match_output;
-  if (grep_options.match_output && implicit_print && !any_reduction) {
+  if (!command.rg && grep_options.match_output && implicit_print && !any_reduction) {
     if (!expression.has_value()) {
       on_error("--match-output", absl::InvalidArgumentError("requires a content predicate such as -rxc or -content"));
       return RunResult{.errors = 2};
@@ -5426,6 +5466,7 @@ RunResult RunFindCore(
   // `options.archive` decides whether it is ever called.
   const auto mount_container = MakeContainerMounter(walk_fs, member_path_options, archive_options->sniff_any);
   std::size_t listed_results = 0;
+  int rg_errors = 0;
 
   // Completes the run-level consequences of one fully evaluated entry. Deferred result-set
   // predicates (-top / -shard-status) call this after selection; ordinary entries call it from the walk.
@@ -5434,6 +5475,46 @@ RunResult RunFindCore(
   // NOLINTNEXTLINE(readability-function-cognitive-complexity): one extracted sink dispatch shared by walk and replay
   const auto finish_entry = [&](const Visit& visit, std::map<std::string, std::string>& outputs, bool matched,
                                 std::optional<bool> verification) {
+    if (matched && rg_output) {
+      auto relative = visit.path;
+      if (relative.starts_with(visit.root)) {
+        relative.remove_prefix(visit.root.size());
+        if (relative.starts_with('/')) {
+          relative.remove_prefix(1);
+        }
+      }
+      if (relative.empty()) {
+        relative = visit.name;
+      }
+      const auto decision = rg_globs.Match(relative, visit.metadata.type == vfs::FileType::kDirectory);
+      if (decision == ignore::Decision::kIgnore || (rg_positive_glob && decision == ignore::Decision::kDefault)) {
+        return;
+      }
+      Control control;
+      const auto discard = [](std::string_view) {};
+      EvalContext context{
+          .visit = visit,
+          .emit = grep_options.match_output && implicit_print && !any_reduction
+                          && (!max_results->has_value() || listed_results < **max_results)
+                      ? emit
+                      : EmitFn(discard),
+          .fs = visit.fs.has_value() ? *visit.fs : walk_fs,
+          .now = now,
+          .grep = grep_options,
+          .grep_json = format == render::Format::kJsonl,
+          .grep_before = grep_before,
+          .grep_after = grep_after,
+          .control = control,
+      };
+      const auto selected = EmitRgOutput(*rg_output, *command.rg, context);
+      if (!selected.ok()) {
+        on_error(visit.path, selected.status());
+        ++rg_errors;
+        matched = false;
+      } else {
+        matched = *selected;
+      }
+    }
     if (matched) {
       any_match = true;
       if (matched_entry.has_value()) {
@@ -5507,6 +5588,9 @@ RunResult RunFindCore(
       }
     } else if (matched && implicit_print && (!max_results->has_value() || listed_results < **max_results)) {
       ++listed_results;
+      if (rg_output && grep_options.match_output) {
+        return;
+      }
       if (match_output.has_value()) {
         Control control;
         EvalContext context{
@@ -6159,7 +6243,7 @@ RunResult RunFindCore(
           },
           CollectionShardPolicy{.config = shards, .matcher = *shard_matcher, .dedup = shard_dedup});
       collect_status != 0) {
-    return RunResult{.errors = collect_status, .any_match = any_match};
+    return RunResult{.errors = collect_status + rg_errors, .any_match = any_match};
   }
 
   if (comparison_summaries.has_value()) {
@@ -6277,14 +6361,14 @@ RunResult RunFindCore(
   // --shards-show picks each set's line (representative path / wildcard / wildcard + count), and an
   // incomplete set is annotated `(present/expected - INCOMPLETE)`; see RenderShardSet.
   if (!shards.enabled) {
-    return RunResult{.errors = errors, .any_match = any_match};
+    return RunResult{.errors = errors + rg_errors, .any_match = any_match};
   }
   // The one-line listing prints only when no --summary / --histogram is active; those aggregate the
   // sets and are the terminal output (like --summary replacing the plain listing). The sets were
   // grouped once above (shard_groups), so this just renders them per --shards-show and lists the
   // non-shard matches unchanged.
   if (!summaries.empty() || !histograms.empty()) {
-    return RunResult{.errors = errors, .any_match = any_match};
+    return RunResult{.errors = errors + rg_errors, .any_match = any_match};
   }
   for (const GroupedDir& group : shard_groups) {
     for (const shard::ShardSet& set : group.sets) {
@@ -6294,7 +6378,7 @@ RunResult RunFindCore(
       emit(absl::StrCat(group.prefix, name, "\n"));
     }
   }
-  return RunResult{.errors = errors, .any_match = any_match};
+  return RunResult{.errors = errors + rg_errors, .any_match = any_match};
 }
 
 bool HasSummaryExportOutput(const parser::Expr& expression, bool dry_run) {
@@ -6839,6 +6923,9 @@ absl::StatusOr<std::string> ExplainResources(const parser::Command& command, std
       line_histograms, "\n", "expensive-primaries\t",
       resources.expensive.empty() ? "none" : absl::StrJoin(resources.expensive, ","),
       " (registry cost tier, not a content-read classification)\n");
+  if (command.rg) {
+    absl::StrAppend(&output, "rg-search\tcontent materialized per selected file; patterns compiled once\n");
+  }
   absl::StrAppend(
       &output, DescribeRetainedResources(
                    command,
@@ -6879,6 +6966,10 @@ RunResult RunFind(
   const bool compare = absl::c_any_of(command.globals, [](std::string_view global) {
     return global == "--compare" || global.starts_with("--compare=");
   });
+  if (command.rg && compare) {
+    on_error("--rg", absl::InvalidArgumentError("rg search cannot be combined with tree comparison"));
+    return RunResult{.errors = 2};
+  }
   const auto output_format = ResolveFormat(command.globals);
   const bool grep_suppresses_template = GrepSuppressesTemplate(command.globals);
   if (output_format != render::Format::kPlain && output_format != render::Format::kJsonl && command.expression

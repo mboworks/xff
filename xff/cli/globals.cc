@@ -1669,6 +1669,30 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .required_consumer = registry::ModifierConsumer::kShardGrouping,
     },
     {
+        .name = "--rg",
+        .display = "--rg [OPTIONS] PATTERN [PATH...]",
+        .group = "grep-output",
+        .header = "Content-match output",
+        .summary = "parse ripgrep-style search arguments and print matching lines",
+        .details = "Must precede roots. Selects `--config=rg` and content output. `--xff` switches the remaining "
+                   "arguments to an XFF filter expression without resetting output or configuration. "
+                   "Use `--help=rg` for supported options and intentional differences.",
+        .topic = "rg",
+        .cli_only = true,
+    },
+    {
+        .name = "--xff",
+        .display = "--xff",
+        .group = "grep-output",
+        .header = "Content-match output",
+        .summary = "switch from rg arguments to an XFF filter expression; otherwise do nothing",
+        .details = "Preserves the search patterns, roots, output and configuration. In native XFF syntax this is "
+                   "a no-op. Inside an option argument, child command or after rg's bare `--`, it remains data. "
+                   "Grammar switches are command-line-only.",
+        .topic = "rg",
+        .cli_only = true,
+    },
+    {
         .name = "--match-output",
         .alias = "-M",
         .display = "--match-output, -M",
@@ -1702,7 +1726,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Content-match output",
         .summary = "print each nonempty matched portion on its own line",
         .details = "For content-match output, emit nonempty, non-overlapping matches instead of complete lines. "
-                   "Context is ignored. With "
+                   "In rg mode, empty matches are included and inversion selects whole nonmatching lines. "
+                   "Otherwise context is ignored. With "
                    "`--count`, count individual matches. Inverted selection has no matching portions to print. "
                    "`FNMATCH` treats the complete matching line as its matched portion.",
         .affects = "-grep,--match-output",

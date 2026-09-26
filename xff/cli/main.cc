@@ -48,6 +48,7 @@
 #include "xff/cli/modifier_diagnostics.h"
 #include "xff/cli/pager.h"
 #include "xff/cli/plain_backend.h"
+#include "xff/cli/rg_input.h"
 #include "xff/cli/roff_backend.h"
 #include "xff/cli/wrap.h"
 #include "xff/config/config.h"
@@ -729,6 +730,12 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
 
   // Load the layered config (system + user + discovered/explicit .xffrc) and resolve the
   // effective flags. --explain writes that effective configuration and exits.
+  if (command.rg && command.roots.empty()) {
+    const bool patterns_from_stdin =
+        absl::c_any_of(command.rg->patterns, [](const auto& input) { return input.file && input.value == "-"; });
+    command.roots.emplace_back(!patterns_from_stdin && ::isatty(STDIN_FILENO) == 0 ? "-" : ".");
+    command.root_names.emplace_back();
+  }
   xff::config::DiscoveryOptions opts = xff::config::SelectorsFromGlobals(command.globals);
   // argv[0] dispatch: the program name picks the base style (invoked as `find` ->
   // find expression style; as `xff` or any other alias -> modern xff) as the lowest-precedence
@@ -912,7 +919,8 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   // smart), in place before the walk: sets folding on the case-sensitive matchers and
   // recompiles their pre-compiled regex. A no-op under the sensitive default.
   xff::parser::BindMatchers(
-      command, xff::parser::GrammarFromGlobals(command.globals), xff::parser::ResolveCaseMode(command.globals, style));
+      command, xff::parser::GrammarFromGlobals(command.globals),
+      xff::parser::ResolveCaseMode(command.globals, command.rg ? xff::registry::Style::kXff : style));
 
   // Walk the roots and evaluate the expression, printing matches. Per-path errors
   // -> exit 2 (the xff exit-code model; design.md "Exit-code model"). Match-sensitive
@@ -932,7 +940,27 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   const xff::cli::PagerDecision listing_pager = xff::cli::DecidePager(
       *listing_config, xff::cli::PagerOutput::kListing, stdout_is_tty, quiet || xff::parser::TakesTerminal(command));
   const xff::cli::PagerStream pager_stream(listing_pager);
-  const xff::vfs::LocalFs fs;
+  const xff::vfs::LocalFs host_fs;
+  std::optional<std::string> input;
+  if (command.rg
+      && (absl::c_contains(command.roots, "-") || absl::c_any_of(command.rg->patterns, [](const auto& input) {
+            return input.file && input.value == "-";
+          }))) {
+    auto read = xff::cli::ReadRgStdin();
+    if (!read.ok()) {
+      std::cerr << "xff: " << read.status().message() << "\n";
+      return 2;
+    }
+    input.emplace(*std::move(read));
+  }
+  const xff::cli::RgInputFs input_fs(host_fs, std::move(input));
+  const xff::vfs::FileSystem& fs = command.rg ? static_cast<const xff::vfs::FileSystem&>(input_fs) : host_fs;
+  if (command.rg && command.roots.size() == 1) {
+    const auto metadata = fs.Stat(command.roots.front(), true);
+    if (metadata.ok() && metadata->type == xff::vfs::FileType::kRegular) {
+      command.globals.insert(command.globals.begin(), "--no-filename");
+    }
+  }
   const xff::engine::RunResult result = xff::engine::RunFind(
       command, fs,
       [quiet](std::string_view record) {
