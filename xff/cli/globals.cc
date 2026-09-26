@@ -1681,6 +1681,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep",
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
+        .grep_effect = GlobalFlag::GrepEffect::kOnlyMatching,
     },
     {
         .name = "--no-only-matching",
@@ -1692,6 +1693,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep",
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
+        .grep_effect = GlobalFlag::GrepEffect::kWholeLines,
     },
     {
         .name = "--files-with-matches",
@@ -1704,6 +1706,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep",
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
+        .grep_effect = GlobalFlag::GrepEffect::kFilesWithMatches,
     },
     {
         .name = "--files-without-match",
@@ -1717,6 +1720,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep",
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
+        .grep_effect = GlobalFlag::GrepEffect::kFilesWithoutMatch,
     },
     {
         .name = "--count-matches",
@@ -1729,6 +1733,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep",
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
+        .grep_effect = GlobalFlag::GrepEffect::kCountMatches,
     },
     {
         .name = "--invert-match",
@@ -1741,6 +1746,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep",
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
+        .grep_effect = GlobalFlag::GrepEffect::kInvertMatch,
     },
     {
         .name = "--no-invert-match",
@@ -1752,6 +1758,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep",
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
+        .grep_effect = GlobalFlag::GrepEffect::kPositiveMatch,
     },
     {
         .name = "--line-number",
@@ -1764,6 +1771,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep",
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
+        .grep_effect = GlobalFlag::GrepEffect::kLineNumber,
     },
     {
         .name = "--no-line-number",
@@ -1775,6 +1783,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep",
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
+        .grep_effect = GlobalFlag::GrepEffect::kNoLineNumber,
     },
     {
         .name = "--with-filename",
@@ -1787,6 +1796,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep",
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
+        .grep_effect = GlobalFlag::GrepEffect::kFilename,
     },
     {
         .name = "--no-filename",
@@ -1799,6 +1809,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep",
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
+        .grep_effect = GlobalFlag::GrepEffect::kNoFilename,
     },
     {
         .name = "--count",
@@ -1812,6 +1823,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep",
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
+        .grep_effect = GlobalFlag::GrepEffect::kCountLines,
     },
     {
         .name = "--context",

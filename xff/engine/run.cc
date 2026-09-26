@@ -61,6 +61,7 @@
 #include "nlohmann/json.hpp"
 #include "xff/archive/archive_backend.h"
 #include "xff/archive/member_path.h"
+#include "xff/cli/globals.h"
 #include "xff/config/safety.h"
 #include "xff/content/line_match.h"
 #include "xff/datetime/datetime.h"
@@ -744,23 +745,26 @@ absl::StatusOr<ContextSides> ParseContextSpec(std::string_view spec) {
 
 GrepOptions ResolveGrepOptions(const std::vector<std::string>& globals) {
   GrepOptions result;
-  for (const std::string_view flag : globals) {
-    if (flag == "--count" || flag == "-c") {
-      result.output = GrepOptions::Output::kCount;
-    } else if (flag == "--count-matches") {
-      result.output = GrepOptions::Output::kCountMatches;
-    } else if (flag == "--files-with-matches") {
-      result.output = GrepOptions::Output::kFilesWithMatches;
-    } else if (flag == "--files-without-match" || flag == "--files-without-matches") {
-      result.output = GrepOptions::Output::kFilesWithoutMatch;
-    } else if (flag == "--only-matching" || flag == "--no-only-matching") {
-      result.only_matching = flag == "--only-matching";
-    } else if (flag == "--invert-match" || flag == "--no-invert-match") {
-      result.invert = flag == "--invert-match";
-    } else if (flag == "--line-number" || flag == "--no-line-number") {
-      result.line_number = flag == "--line-number";
-    } else if (flag == "--with-filename" || flag == "--no-filename") {
-      result.filename = flag == "--with-filename";
+  for (const std::string_view argument : globals) {
+    const auto flag = cli::LookupGlobalArgument(argument);
+    if (!flag.has_value()) {
+      continue;
+    }
+    using enum cli::GlobalFlag::GrepEffect;
+    switch (flag->grep_effect) {
+      case kNone: break;
+      case kCountLines: result.output = GrepOptions::Output::kCount; break;
+      case kCountMatches: result.output = GrepOptions::Output::kCountMatches; break;
+      case kFilesWithMatches: result.output = GrepOptions::Output::kFilesWithMatches; break;
+      case kFilesWithoutMatch: result.output = GrepOptions::Output::kFilesWithoutMatch; break;
+      case kOnlyMatching: result.only_matching = true; break;
+      case kWholeLines: result.only_matching = false; break;
+      case kInvertMatch: result.invert = true; break;
+      case kPositiveMatch: result.invert = false; break;
+      case kLineNumber: result.line_number = true; break;
+      case kNoLineNumber: result.line_number = false; break;
+      case kFilename: result.filename = true; break;
+      case kNoFilename: result.filename = false; break;
     }
   }
   return result;
