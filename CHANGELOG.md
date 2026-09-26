@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Preserve virtual input sources during archive probing, including piped rg searches in the full build.
+
 - Add `--rg` search syntax, rg short options and stdin input, with `--xff` for native file filters and `+` for XFF-mode expression OR.
 
 - Add `-M` / `--match-output` to print matching content lines with the normal xff expression grammar; `-M-` / `--no-match-output` restores path output.

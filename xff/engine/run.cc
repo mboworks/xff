@@ -1105,6 +1105,10 @@ class ControlledFileSystem : public vfs::FileSystem {
     return fs_.ReadContentRange(path, offset, length);
   }
 
+  absl::StatusOr<vfs::SharedReadSource> ContentSource(std::string_view path) const override {
+    return fs_.ContentSource(path);
+  }
+
   absl::Status Remove(std::string_view path) const override {
     auto mutations = policy_.FileMutations();
     if (policy_.dry_run) {
@@ -2478,11 +2482,8 @@ std::string_view BasenameOf(std::string_view path) {
   return slash == std::string_view::npos ? path : path.substr(slash + 1);
 }
 
-auto MakeContainerMounter(
-    const vfs::FileSystem& walk_fs,
-    const archive::MemberPathOptions& member_path_options,
-    bool sniff_any) {
-  return [&member_path_options, &walk_fs, sniff_any](
+auto MakeContainerMounter(const archive::MemberPathOptions& member_path_options, bool sniff_any) {
+  return [&member_path_options, sniff_any](
              std::string_view container, const vfs::FileSystem& source,
              int depth) -> absl::StatusOr<std::unique_ptr<const vfs::FileSystem>> {
     // `--archive=all` offers every regular file in the tree, and asking the reader means opening one
@@ -2495,10 +2496,8 @@ auto MakeContainerMounter(
       return absl::InvalidArgumentError(absl::StrCat("not a container by name: ", container));
     }
     const auto open = [&]() -> absl::StatusOr<std::unique_ptr<vfs::FileSystem>> {
-      if (&source == &walk_fs) {
-        return archive::OpenContainer(container, member_path_options);
-      }
-      // Nested containers own restartable parent sources; no whole-payload copy is required.
+      // Outer roots may be virtual inputs too. Always ask their VFS for a restartable
+      // source; host files keep lazy reads and nested containers retain parent ownership.
       MBO_ASSIGN_OR_RETURN(const vfs::SharedReadSource bytes, source.ContentSource(container));
       return archive::OpenContainerSource(container, bytes, member_path_options);
     };
@@ -5464,7 +5463,7 @@ RunResult RunFindCore(
   // The walk's whole view of archives: hand it a container path, get a filesystem over the members
   // or the InvalidArgument that means "an ordinary file after all". Passed unconditionally because
   // `options.archive` decides whether it is ever called.
-  const auto mount_container = MakeContainerMounter(walk_fs, member_path_options, archive_options->sniff_any);
+  const auto mount_container = MakeContainerMounter(member_path_options, archive_options->sniff_any);
   std::size_t listed_results = 0;
   int rg_errors = 0;
 

@@ -1257,6 +1257,14 @@ bashtest(
     data = ["//xff/cli/testing:xff"],
 )
 
+bashtest(
+    name = "rg_full_test",
+    size = "small",
+    srcs = ["rg_full_test.sh"],
+    data = ["//xff/cli/testing:xff_full"],
+    target_compatible_with = XFF_FULL_ONLY,
+)
+
 cc_test(
     name = "rg_input_test",
     srcs = ["rg_input_test.cc"],

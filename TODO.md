@@ -9,6 +9,21 @@
 - [x] Give rg short options their rg meanings before `--xff`; retain native `-o` OR afterward.
 - [ ] Extend rg compatibility deliberately: type filters, multiline search, Unicode word semantics, heading/terminal layout, and streaming content.
 
+## Rg integration review (PRs 916-919)
+
+- [x] D01: Preserve VFS sources when probing stdin and other virtual roots for archives.
+- [ ] D02: Preserve rg pattern ownership in native subcommand diagnostics.
+- [ ] D03: Compose only-matching output with maximum columns.
+- [ ] D04: Enforce rg native-filter action eligibility independently of implicit output.
+- [ ] D05: Preserve regex grammar semantics for whole-line rg matching.
+- [ ] D06: Include archive-member identity in automatic filename prefixes.
+- [ ] D07: Apply positive rg globs before hidden-entry pruning.
+- [ ] D08: Preserve named roots in rg commands.
+- [ ] D09: Reject simultaneous stdin pattern and content consumption.
+- [ ] D10: Translate rg automatic worker selection.
+- [ ] D11: Explain active rg selection independently of line rendering.
+- [ ] D12: Remove the unrelated rg example from comparison help.
+
 ## Release publication repair
 
 - [x] Publish stable benchmark references (PR #890); both repair workflows completed successfully.

@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -38,6 +39,10 @@ class ReadSource {
   virtual absl::StatusOr<std::unique_ptr<ReadStream>> OpenAt(std::uint64_t offset) const;
   // Native sources use metadata; other sources scan within the shared replay budget.
   virtual absl::StatusOr<std::uint64_t> Size() const;
+
+  // Only a complete, untransformed host file may expose its path to legacy read adapters.
+  // Virtual, decoded, and bounded sources must keep the default absence.
+  virtual std::optional<std::string_view> HostPath() const { return std::nullopt; }
 
   const std::shared_ptr<ReadBudget>& Budget() const { return budget_; }
 
