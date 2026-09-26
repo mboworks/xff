@@ -941,6 +941,61 @@ Section ArchiveSection(bool in_full) {
 // are pulled from the registry SOT via Descriptor.topic and the flags via GlobalFlag.topic, so the
 // lists cannot drift; the cross-cutting rules are prose, because they are what a reader needs before
 // the family means anything. Standalone as `--help=content` and folded into the full reference.
+Section RgSection(bool in_full) {
+  Section section{.title = "Ripgrep-style searches", .anchor = "topic-rg"};
+  section.children.push_back(ProseOf(
+      "`xff --rg [OPTIONS] PATTERN [PATH...]` selects `--config=rg` and content-match output. "
+      "Repeat `-e PATTERN` or `-f FILE` to supply a union of patterns; then every positional argument is a path. "
+      "Pattern files contain one pattern per line; an empty file supplies no patterns. "
+      "With no path, search piped standard input, otherwise the current directory. Explicit `-` reads standard input. "
+      "`-f -` consumes stdin as patterns, making the no-path default the current directory."));
+  section.children.push_back(ProseOf(
+      "`--xff` starts a native XFF file-filter expression against the collected paths. It preserves search patterns, "
+      "configuration and output controls. For example, `xff --rg -n TODO src --xff -name '*.cc' -size +1k`. "
+      "The filter selects files; only the rg patterns select output lines, even if the filter contains `-rxc`. "
+      "Actions are rejected in rg mode. Switching back into rg grammar is not supported. "
+      "In native XFF grammar, `--xff` is a no-op. Both mode flags are CLI-only. "
+      "`--config=rg` by itself only selects configuration; it does not change argument grammar."));
+  section.children.push_back(ProseOf(
+      "Options may appear among patterns and paths. Bundles and attached values work: `-nio`, `-eTODO`, `-C2`. "
+      "An option consumes its argument before interpreting switches: `-e --xff` searches for that text. "
+      "Bare `--` ends rg option parsing, so later `--xff` is a literal pattern or path. "
+      "Native `+` and `-o` mean OR after the switch; before it, `+` is data and `-o` means only matching."));
+  static constexpr auto kOptions = std::to_array<DocPair>({
+      {"-e / --regexp, -f / --file", "repeatable search patterns or pattern files"},
+      {"-i / --ignore-case, -s / --case-sensitive, -S / --smart-case", "letter case; rg mode starts case-sensitive"},
+      {"-F / --fixed-strings, -P / --pcre2", "literal search or the optional PCRE2 backend; RE2 is the default"},
+      {"-w / --word-regexp, -x / --line-regexp", "whole words or whole lines"},
+      {"-n / --line-number, -N / --no-line-number", "line prefixes; off by default"},
+      {"-H / --with-filename, -I / --no-filename", "path prefixes; automatic for multiple paths or a directory"},
+      {"-o / --only-matching, -v / --invert-match", "matched portions or nonmatching lines"},
+      {"-l / --files-with-matches, --files-without-match", "print selected filenames"},
+      {"-c / --count, --count-matches", "selected line or occurrence counts"},
+      {"-A / --after-context, -B / --before-context, -C / --context", "context line counts"},
+      {"-g / --glob", "include glob; leading ! excludes; repeatable, last matching rule wins"},
+      {"-L / --follow, --hidden, --no-ignore", "symlinks, hidden entries and ignore policy"},
+      {"-a / --text, -M / --max-columns", "search binary content or replace long output lines with an omission marker"},
+      {"-j / --threads, -q / --quiet", "worker allowance or silent match-sensitive exit"},
+  });
+  section.children.push_back(RowsOf(kOptions));
+  section.children.push_back(ProseOf(
+      "This is an rg-style frontend, not a complete ripgrep replacement. Unsupported short options are errors. "
+      "XFF double-dash globals retain their normal meanings, validation and safety enforcement. "
+      "Output uses XFF's existing line/JSON schemas, no heading or terminal-specific layout; binary files are "
+      "skipped unless `--text` is set. Files and stdin are currently materialized for line selection. "
+      "Exit status is `0` for a selected result, `1` for none and `2` for errors; errors outrank quiet matches. "
+      "Native summaries count the files selected by the search. `--no-match-output` lists those files instead. "
+      "Normal `-M` behavior is unchanged outside rg grammar; inside it, `-M` requires a maximum-column count."));
+  if (!in_full) {
+    for (const auto& flag : Globals()) {
+      if (flag.topic == "rg") {
+        section.children.push_back(FlagEntry(flag));
+      }
+    }
+  }
+  return section;
+}
+
 Section ContentSection(bool in_full) {
   Section section{.title = "Content", .anchor = "topic-content"};
   section.children.push_back(ProseOf(
@@ -1172,6 +1227,9 @@ Section CompareSection(bool in_full) {
   examples.children.push_back(
       ExampleOf("xff --compare=summary left-tree right-tree --summary=ext --summary-scope=compare", "sh"));
   examples.children.push_back(ProseOf("summarize extensions in side-by-side left and right totals"));
+  examples.children.push_back(ExampleOf("xff --rg -n TODO src --xff -name '*.cc'", "sh"));
+  examples.children.push_back(
+      ProseOf("search matching lines with rg arguments, then filter files with XFF predicates"));
   examples.children.push_back(ExampleOf("xff --compare left-tree right-tree", "sh"));
   examples.children.push_back(ProseOf("print only paths present on one side or different on both sides"));
   examples.children.push_back(ExampleOf("xff --compare --compare-select=all left-tree right-tree", "sh"));
@@ -1779,14 +1837,15 @@ Section CommandStructureSection() {
 
   Bullets rules;
   rules.items.push_back(ParseInline(
-      "Whole-run double-dash options are position-independent, so `--summary=ext` may appear before the paths or "
+      "Apart from grammar selection with `--rg`, whole-run double-dash options are position-independent, so "
+      "`--summary=ext` may appear before the paths or "
       "after the expression. They remain literal arguments inside an argument-taking primary such as `-exec` "
       "or `-printf`."));
   rules.items.push_back(ParseInline(
       "The compatibility globals `-H`, `-L`, `-P`, `-g`, `-j`, and `-z` are leading-only because a single-dash "
       "word can otherwise be an expression primary."));
   rules.items.push_back(ParseInline(
-      "Adjacent tests and actions have an implicit `-a` (AND). Use `!` for NOT, `-o` for OR, and shell-quoted "
+      "Adjacent tests and actions have an implicit `-a` (AND). Use `!` for NOT, `-o` or `+` for OR, and shell-quoted "
       "or escaped `(` and `)` for grouping. Evaluation is left to right and short-circuits."));
   rules.items.push_back(ParseInline(
       "With no starting path, xff searches the current directory (`.`). With no explicit action, it prints "
@@ -1799,6 +1858,9 @@ Section CommandStructureSection() {
   examples.children.push_back(ProseOf("find regular C++ source files below `src`"));
   examples.children.push_back(ExampleOf("xff . \\( -name '*.cc' -o -name '*.h' \\) -print", "sh"));
   examples.children.push_back(ProseOf("group alternatives explicitly; the shell escapes keep the parentheses for xff"));
+  examples.children.push_back(ExampleOf("xff --rg -n TODO src --xff -name '*.cc'", "sh"));
+  examples.children.push_back(
+      ProseOf("search matching lines with rg arguments, then filter files with XFF predicates"));
   examples.children.push_back(ExampleOf("xff --compare left-tree right-tree", "sh"));
   examples.children.push_back(ProseOf("compare two trees and print only discrepancies"));
   section.children.push_back(Content{.node = std::move(examples)});
@@ -2079,6 +2141,8 @@ std::optional<Section> NamedTopicSection(std::string_view name) {
     return GrammarsSection();
   } else if (name == "reg" || name == "regex" || name == "regexp") {
     return RegexSection(/*in_full=*/false);
+  } else if (name == "rg") {
+    return RgSection(/*in_full=*/false);
   } else if (name == "content") {
     return ContentSection(/*in_full=*/false);
   } else if (name == "compare") {
@@ -2206,6 +2270,7 @@ Document BuildReference(Audience audience) {
   doc.sections.push_back(SizeSection());
   doc.sections.push_back(GrammarsSection());
   doc.sections.push_back(RegexSection(/*in_full=*/true));
+  doc.sections.push_back(RgSection(/*in_full=*/true));
   doc.sections.push_back(ContentSection(/*in_full=*/true));
   doc.sections.push_back(CompareSection(/*in_full=*/true));
   doc.sections.push_back(IgnoreSection(/*in_full=*/true));

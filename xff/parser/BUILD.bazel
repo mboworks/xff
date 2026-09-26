@@ -21,11 +21,15 @@ package(default_visibility = ["//visibility:private"])
 
 cc_library(
     name = "parser_cc",
-    srcs = ["parser.cc"],
+    srcs = [
+        "parser.cc",
+        "rg.cc",
+    ],
     hdrs = [
         "ast.h",
         "diagnostics.h",
         "parser.h",
+        "rg.h",
     ],
     visibility = ["//xff:__subpackages__"],
     deps = [
@@ -81,5 +85,19 @@ cc_binary(
     deps = [
         ":parser_cc",
         "@com_github_google_benchmark//:benchmark",
+    ],
+)
+
+cc_test(
+    name = "rg_test",
+    srcs = ["rg_test.cc"],
+    deps = [
+        ":parser_cc",
+        "//xff/matching/regex:regex_cc",
+        "//xff/registry:registry_cc",
+        "@abseil-cpp//absl/status",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )

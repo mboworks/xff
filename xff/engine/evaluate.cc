@@ -1531,9 +1531,16 @@ class GrepMatchers {
  public:
   explicit GrepMatchers(const regex::Matcher& matcher) : single_(matcher) {}
 
-  explicit GrepMatchers(absl::Span<const std::shared_ptr<const regex::Matcher>> matchers) : matchers_(matchers) {}
+  explicit GrepMatchers(
+      absl::Span<const std::shared_ptr<const regex::Matcher>> matchers,
+      bool word = false,
+      bool rg = false)
+      : matchers_(matchers), word_(word), rg_(rg) {}
 
   bool PartialMatch(std::string_view text) const {
+    if (word_) {
+      return FindFirst(text).has_value();
+    }
     if (single_.has_value()) {
       return single_->PartialMatch(text);
     }
@@ -1546,10 +1553,17 @@ class GrepMatchers {
     }
     std::optional<std::pair<std::size_t, std::size_t>> best;
     for (const auto& matcher : matchers_) {
-      const auto span = matcher->FindFirst(text, start);
+      auto span = matcher->FindFirst(text, start);
+      while (word_ && span && !WordBoundaries(text, *span)) {
+        if (span->first == text.size()) {
+          span.reset();
+          break;
+        }
+        span = matcher->FindFirst(text, span->first + 1);
+      }
       if (span.has_value()
           && (!best.has_value() || span->first < best->first
-              || (span->first == best->first && span->second > best->second))) {
+              || (!rg_ && span->first == best->first && span->second > best->second))) {
         best = span;
       }
     }
@@ -1567,8 +1581,10 @@ class GrepMatchers {
       if (!span.has_value()) {
         break;
       }
-      if (span->second != 0) {
+      if (span->second != 0 || rg_) {
         spans.push_back(*span);
+      }
+      if (span->second != 0) {
         start = span->first + span->second;
       } else if (span->first == text.size()) {
         break;
@@ -1580,8 +1596,16 @@ class GrepMatchers {
   }
 
  private:
+  static bool WordBoundaries(std::string_view text, std::pair<std::size_t, std::size_t> span) {
+    const auto word = [](unsigned char chr) { return absl::ascii_isalnum(chr) || chr == '_' || chr >= 128; };
+    const auto end = span.first + span.second;
+    return (span.first == 0 || !word(text.at(span.first - 1))) && (end == text.size() || !word(text.at(end)));
+  }
+
   mbo::types::OptionalRef<const regex::Matcher> single_;
   absl::Span<const std::shared_ptr<const regex::Matcher>> matchers_;
+  bool word_ = false;
+  bool rg_ = false;
 };
 
 std::string GrepPatternJson(const parser::Expr& expr) {
@@ -1707,7 +1731,13 @@ void EmitSelectedGrepLines(
     }
     first = false;
     previous_group = line.group;
-    if (ctx.grep.only_matching) {
+    if (ctx.grep.max_columns != 0 && line.text.size() > ctx.grep.max_columns) {
+      auto omitted = line;
+      omitted.text = line.is_match ? "[Omitted long matching line]" : "[Omitted long context line]";
+      EmitGrepRecord(expr, ctx, omitted, std::nullopt);
+      continue;
+    }
+    if (ctx.grep.only_matching && !(ctx.grep.rg_mode && ctx.grep.invert)) {
       if (!ctx.grep.invert) {
         for (const auto& span : matcher.FindAll(line.text)) {
           EmitGrepRecord(expr, ctx, line, span);
@@ -1730,18 +1760,24 @@ void EmitSelectedGrepLines(
 // unreadable, and binary files yield nothing (see ContentToSearch). Returns true
 // according to selected lines (or their absence for files-without-match), even when
 // only-matching suppresses empty/inverted portions. Expression OR and quiet mode use that truth.
-bool EvalGrepMatchers(const parser::Expr& expr, EvalContext& ctx, const GrepMatchers& matcher) {
-  if (expr.args.empty()) {
+bool EvalGrepMatchers(
+    const parser::Expr& expr,
+    EvalContext& ctx,
+    const GrepMatchers& matcher,
+    std::optional<std::string_view> supplied = std::nullopt) {
+  if (expr.args.empty() && !supplied) {
     return false;
   }
-  const std::optional<std::string> content = ContentToSearch(ctx.visit, ctx.fs);
+  const std::optional<std::string> owned = supplied ? std::nullopt : ContentToSearch(ctx.visit, ctx.fs);
+  const auto content = supplied ? supplied : owned ? std::optional<std::string_view>(*owned) : std::nullopt;
   if (!content.has_value()) {
     return false;
   }
   const auto is_match = [&](std::string_view line) { return matcher.PartialMatch(line) != ctx.grep.invert; };
   const auto output = ctx.grep.output;
   const bool line_output = output == GrepOptions::Output::kLines;
-  const bool with_context = line_output && !ctx.grep.only_matching && (ctx.grep_before > 0 || ctx.grep_after > 0);
+  const bool only_matching = ctx.grep.only_matching && !(ctx.grep.rg_mode && ctx.grep.invert);
+  const bool with_context = line_output && !only_matching && (ctx.grep_before > 0 || ctx.grep_after > 0);
   const auto lines = content::CollectLineMatchesWithContext(
       *content, is_match, with_context ? ctx.grep_before : 0, with_context ? ctx.grep_after : 0);
   const bool any_match = !lines.empty();
@@ -1754,7 +1790,7 @@ bool EvalGrepMatchers(const parser::Expr& expr, EvalContext& ctx, const GrepMatc
   }
   if (!line_output) {
     std::size_t count = lines.size();
-    if (output == GrepOptions::Output::kCountMatches || ctx.grep.only_matching) {
+    if ((output == GrepOptions::Output::kCountMatches || only_matching) && !(ctx.grep.rg_mode && ctx.grep.invert)) {
       count = CountGrepPortions(lines, matcher, ctx.grep.invert);
     }
     if (any_match) {
@@ -2936,6 +2972,83 @@ absl::StatusOr<MatchOutput> PrepareMatchOutput(const parser::Expr& expression) {
     return absl::InvalidArgumentError("requires a content predicate such as -rxc or -content");
   }
   return result;
+}
+
+namespace {
+absl::StatusOr<regex::Matcher> CompileRgPattern(
+    std::string_view original,
+    const parser::RgSearch& search,
+    regex::Grammar grammar,
+    bool fold_case) {
+  std::string pattern(original);
+  if (grammar == regex::Grammar::kExact && (search.word || search.line)) {
+    pattern.clear();
+    for (const char chr : original) {
+      if (absl::StrContains(R"(\.^$|()[]{}*+?)", chr)) {
+        pattern.push_back('\\');
+      }
+      pattern.push_back(chr);
+    }
+    grammar = regex::Grammar::kRe2;
+  }
+  if (search.line) {
+    pattern = absl::StrCat("^(?:", pattern, ")$");
+  }
+  return regex::Matcher::Compile(pattern, fold_case, grammar);
+}
+}  // namespace
+
+absl::StatusOr<MatchOutput> PrepareRgOutput(
+    const parser::Command& command,
+    const vfs::FileSystem& fs,
+    bool fold_case,
+    bool smart_case) {
+  if (!command.rg) {
+    return absl::InvalidArgumentError("rg search is not configured");
+  }
+  const auto& search = *command.rg;
+  MatchOutput result;
+  for (const auto& input : search.patterns) {
+    if (!input.file) {
+      if (absl::StrContains(input.value, '\n')) {
+        return absl::InvalidArgumentError("rg multiline patterns are not supported");
+      }
+      result.source.args.push_back(input.value);
+      continue;
+    }
+    MBO_ASSIGN_OR_RETURN(const auto content, fs.ReadContent(input.value));
+    std::size_t start = 0;
+    while (start < content.size()) {
+      const auto end = content.find('\n', start);
+      auto line = std::string_view(content).substr(start, end == std::string::npos ? end : end - start);
+      if (line.ends_with('\r')) {
+        line.remove_suffix(1);
+      }
+      result.source.args.emplace_back(line);
+      start = end == std::string::npos ? content.size() : end + 1;
+    }
+  }
+  const bool uppercase = std::ranges::any_of(result.source.args, [](const std::string& pattern) {
+    return std::ranges::any_of(pattern, [](char chr) { return chr >= 'A' && chr <= 'Z'; });
+  });
+  for (const auto& original : result.source.args) {
+    MBO_ASSIGN_OR_RETURN(
+        auto matcher, CompileRgPattern(original, search, command.grammar, fold_case || (smart_case && !uppercase)));
+    result.matchers.push_back(std::make_shared<const regex::Matcher>(std::move(matcher)));
+  }
+  return result;
+}
+
+absl::StatusOr<bool> EmitRgOutput(const MatchOutput& output, const parser::RgSearch& search, EvalContext& context) {
+  if (context.visit.metadata.type != vfs::FileType::kRegular) {
+    return false;
+  }
+  MBO_ASSIGN_OR_RETURN(const auto content, context.fs.ReadContent(context.visit.path));
+  if (!search.text && absl::StrContains(content, '\0')) {
+    return false;
+  }
+  return EvalGrepMatchers(
+      output.source, context, GrepMatchers(output.matchers, search.word && !search.line, true), content);
 }
 
 bool EmitMatchOutput(const MatchOutput& output, EvalContext& context) {
