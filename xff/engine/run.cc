@@ -742,6 +742,34 @@ absl::StatusOr<ContextSides> ParseContextSpec(std::string_view spec) {
   return result;
 }
 
+GrepOptions ResolveGrepOptions(const std::vector<std::string>& globals) {
+  GrepOptions result;
+  for (const std::string_view flag : globals) {
+    if (flag == "--count" || flag == "-c") {
+      result.output = GrepOptions::Output::kCount;
+    } else if (flag == "--count-matches") {
+      result.output = GrepOptions::Output::kCountMatches;
+    } else if (flag == "--files-with-matches") {
+      result.output = GrepOptions::Output::kFilesWithMatches;
+    } else if (flag == "--files-without-match" || flag == "--files-without-matches") {
+      result.output = GrepOptions::Output::kFilesWithoutMatch;
+    } else if (flag == "--only-matching" || flag == "--no-only-matching") {
+      result.only_matching = flag == "--only-matching";
+    } else if (flag == "--invert-match" || flag == "--no-invert-match") {
+      result.invert = flag == "--invert-match";
+    } else if (flag == "--line-number" || flag == "--no-line-number") {
+      result.line_number = flag == "--line-number";
+    } else if (flag == "--with-filename" || flag == "--no-filename") {
+      result.filename = flag == "--with-filename";
+    }
+  }
+  return result;
+}
+
+bool GrepSuppressesTemplate(const std::vector<std::string>& globals) {
+  return ResolveGrepOptions(globals).output != GrepOptions::Output::kLines;
+}
+
 // --context=SPEC / --before-context=N / --after-context=N (grep -C/-B/-A): the lines of context
 // -grep prints before/after each match. Processed in order, last value per side wins; `specified`
 // distinguishes a deliberate `--context=0` from no context flag. A malformed value is a usage error.
@@ -1173,9 +1201,9 @@ MetadataDemand ExpressionMetadata(const parser::Expr& expr) {
                                                                         : MetadataDemand::kOnDemand;
 }
 
-bool PredicateNeedsBirthTime(const parser::Expr& expr, bool exec_fields, bool grep_count) {
+bool PredicateNeedsBirthTime(const parser::Expr& expr, bool exec_fields, bool grep_suppresses_template) {
   if (expr.descriptor->needs_birth_time
-      || (!grep_count && expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
+      || (!grep_suppresses_template && expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
     return true;
   }
   const auto& expansion = expr.descriptor->argument_fields;
@@ -1198,12 +1226,12 @@ bool PredicateNeedsBirthTime(const parser::Expr& expr, bool exec_fields, bool gr
   return false;
 }
 
-bool ExpressionNeedsBirthTime(const parser::Expr& expr, bool exec_fields, bool grep_count) {
+bool ExpressionNeedsBirthTime(const parser::Expr& expr, bool exec_fields, bool grep_suppresses_template) {
   if (expr.kind == parser::Expr::Kind::kPredicate) {
-    return PredicateNeedsBirthTime(expr, exec_fields, grep_count);
+    return PredicateNeedsBirthTime(expr, exec_fields, grep_suppresses_template);
   }
-  return (expr.lhs && ExpressionNeedsBirthTime(*expr.lhs, exec_fields, grep_count))
-         || (expr.rhs && ExpressionNeedsBirthTime(*expr.rhs, exec_fields, grep_count));
+  return (expr.lhs && ExpressionNeedsBirthTime(*expr.lhs, exec_fields, grep_suppresses_template))
+         || (expr.rhs && ExpressionNeedsBirthTime(*expr.rhs, exec_fields, grep_suppresses_template));
 }
 
 bool NeedsNativeCase(const parser::Expr& expr) {
@@ -4806,7 +4834,8 @@ RunResult RunFindCore(
     return RunResult{.errors = 2};  // do not traverse
   }
   // --count / -c: -grep emits a per-file matching-line count instead of the lines.
-  const bool grep_count = HasGlobal(command.globals, "--count") || HasGlobal(command.globals, "-c");
+  const GrepOptions grep_options = ResolveGrepOptions(command.globals);
+  const bool grep_suppresses_template = grep_options.output != GrepOptions::Output::kLines;
   // --context / --before-context / --after-context (grep -C/-B/-A): -grep context lines. Validated
   // here so a bad value is a usage error (exit 2) before the walk.
   const absl::StatusOr<GrepContext> grep_context_result = ResolveGrepContext(command.globals);
@@ -5520,7 +5549,7 @@ RunResult RunFindCore(
                                               : MetadataDemand::kNever;
   const bool birth_time =
       matched_entry.has_value()
-      || (expression.has_value() && ExpressionNeedsBirthTime(*expression, exec_fields, grep_count))
+      || (expression.has_value() && ExpressionNeedsBirthTime(*expression, exec_fields, grep_suppresses_template))
       || (compiled_tmpl.has_value() && compiled_tmpl->NeedsBirthTime())
       || absl::c_any_of(column_templates, [](const fields::Template& field) { return field.NeedsBirthTime(); })
       || absl::c_any_of(summary_templates, [](const auto& item) { return item.has_value() && item->NeedsBirthTime(); });
@@ -5677,7 +5706,7 @@ RunResult RunFindCore(
                                                            : mbo::types::OptionalRef<std::optional<bool>>{},
             .deferred = deferred_nodes.empty() ? mbo::types::OptionalRef<DeferredEvaluation>{}
                                                : mbo::types::OptionalRef{deferred},
-            .grep_count = grep_count,
+            .grep = grep_options,
             .grep_json = format == render::Format::kJsonl,
             .grep_before = grep_before,
             .grep_after = grep_after,
@@ -5821,7 +5850,7 @@ RunResult RunFindCore(
           .hash_verification = hash_verification_summary ? mbo::types::OptionalRef{candidate.hash_verification}
                                                          : mbo::types::OptionalRef<std::optional<bool>>{},
           .deferred = deferred,
-          .grep_count = grep_count,
+          .grep = grep_options,
           .grep_json = format == render::Format::kJsonl,
           .grep_before = grep_before,
           .grep_after = grep_after,
@@ -6300,9 +6329,9 @@ std::set<registry::ModifierConsumer> HashConsumers(hash::DefaultUsage defaults) 
 std::set<registry::ModifierConsumer> PredicateHashConsumers(
     const parser::Expr& expr,
     bool exec_fields,
-    bool grep_count) {
+    bool grep_suppresses_template) {
   std::set<registry::ModifierConsumer> consumers;
-  if (expr.grep_template != nullptr && !grep_count) {
+  if (expr.grep_template != nullptr && !grep_suppresses_template) {
     consumers.merge(HashConsumers(expr.grep_template->HashDefaultsUsed()));
   }
   if (expr.descriptor->binding == registry::Binding::kHash) {
@@ -6332,18 +6361,18 @@ std::set<registry::ModifierConsumer> PredicateHashConsumers(
 
 std::set<registry::ModifierConsumer> ExpressionConsumers(
     const parser::Expr& expr,
-    bool grep_count,
+    bool grep_suppresses_template,
     mbo::diff::DiffOptions::OutputFormat diff_format,
     bool exec_fields) {
   using registry::ModifierConsumer;
   std::set<ModifierConsumer> consumers;
   if (expr.descriptor.has_value()) {
-    consumers.merge(PredicateHashConsumers(expr, exec_fields, grep_count));
+    consumers.merge(PredicateHashConsumers(expr, exec_fields, grep_suppresses_template));
     const ModifierConsumer consumer = expr.descriptor->modifier_consumer;
     if (consumer != ModifierConsumer::kNone) {
       consumers.insert(consumer);
     }
-    if (consumer == ModifierConsumer::kGrep && !grep_count) {
+    if (consumer == ModifierConsumer::kGrep && !grep_suppresses_template) {
       consumers.insert(ModifierConsumer::kGrepLines);
     }
     if (consumer == ModifierConsumer::kFileDiff) {
@@ -6362,10 +6391,10 @@ std::set<registry::ModifierConsumer> ExpressionConsumers(
     }
   }
   if (expr.lhs) {
-    consumers.merge(ExpressionConsumers(*expr.lhs, grep_count, diff_format, exec_fields));
+    consumers.merge(ExpressionConsumers(*expr.lhs, grep_suppresses_template, diff_format, exec_fields));
   }
   if (expr.rhs) {
-    consumers.merge(ExpressionConsumers(*expr.rhs, grep_count, diff_format, exec_fields));
+    consumers.merge(ExpressionConsumers(*expr.rhs, grep_suppresses_template, diff_format, exec_fields));
   }
   return consumers;
 }
@@ -6495,7 +6524,8 @@ struct ExpressionResources {
 // vector at each parent of a deeply nested expression.
 class ExpressionResourceInspector final {
  public:
-  ExpressionResourceInspector(bool exec_fields, bool grep_count) : exec_fields_(exec_fields), grep_count_(grep_count) {}
+  ExpressionResourceInspector(bool exec_fields, bool grep_suppresses_template)
+      : exec_fields_(exec_fields), grep_suppresses_template_(grep_suppresses_template) {}
 
   ExpressionResources Inspect(const parser::Expr& expr) && {
     Visit(expr);
@@ -6519,7 +6549,7 @@ class ExpressionResourceInspector final {
     }
     resources_.column_buffer |= descriptor.buffers_columns;
     resources_.command_batches |= expr.exec_batch;
-    if (!grep_count_ && expr.grep_template != nullptr) {
+    if (!grep_suppresses_template_ && expr.grep_template != nullptr) {
       resources_.content_fields += expr.grep_template->ContentFieldCount();
     }
     const registry::ArgumentFields& fields = descriptor.argument_fields;
@@ -6541,7 +6571,7 @@ class ExpressionResourceInspector final {
   }
 
   bool exec_fields_;
-  bool grep_count_;
+  bool grep_suppresses_template_;
   ExpressionResources resources_;
 };
 
@@ -6680,12 +6710,13 @@ absl::StatusOr<std::set<registry::ModifierConsumer>> ActiveModifierConsumers(
     const parser::Command& command,
     registry::Style style) {
   using registry::ModifierConsumer;
-  const bool grep_count = HasGlobal(command.globals, "--count") || HasGlobal(command.globals, "-c");
+  const bool grep_suppresses_template = GrepSuppressesTemplate(command.globals);
   MBO_ASSIGN_OR_RETURN(const auto diff_format, ResolveDiffFormat(command.globals));
-  std::set<ModifierConsumer> consumers = command.expression ? ExpressionConsumers(
-                                                                  *command.expression, grep_count, diff_format,
-                                                                  HasGlobal(command.globals, "--exec-fields"))
-                                                            : std::set<ModifierConsumer>{};
+  std::set<ModifierConsumer> consumers =
+      command.expression
+          ? ExpressionConsumers(
+                *command.expression, grep_suppresses_template, diff_format, HasGlobal(command.globals, "--exec-fields"))
+          : std::set<ModifierConsumer>{};
   const bool compare = IsTreeComparison(command.globals);
   MBO_ASSIGN_OR_RETURN(const auto histograms, ResolveHistograms(command.globals));
   MBO_ASSIGN_OR_RETURN(const auto shards, ResolveShards(command.globals));
@@ -6741,8 +6772,7 @@ absl::StatusOr<std::string> ExplainResources(const parser::Command& command, std
   ExpressionResources resources;
   std::vector<ExprIdentity> deferred;
   if (expression.has_value()) {
-    resources = ExpressionResourceInspector(
-                    HasGlobal(globals, "--exec-fields"), HasGlobal(globals, "--count") || HasGlobal(globals, "-c"))
+    resources = ExpressionResourceInspector(HasGlobal(globals, "--exec-fields"), GrepSuppressesTemplate(globals))
                     .Inspect(*expression);
     AppendDeferredNodes(*expression, deferred);
   }
@@ -6801,9 +6831,9 @@ RunResult RunFind(
     return global == "--compare" || global.starts_with("--compare=");
   });
   const auto output_format = ResolveFormat(command.globals);
-  const bool grep_count = HasGlobal(command.globals, "--count") || HasGlobal(command.globals, "-c");
+  const bool grep_suppresses_template = GrepSuppressesTemplate(command.globals);
   if (output_format != render::Format::kPlain && output_format != render::Format::kJsonl && command.expression
-      && HasBuiltinContentOutput(*command.expression, grep_count)) {
+      && HasBuiltinContentOutput(*command.expression, grep_suppresses_template)) {
     on_error(
         "--format", absl::InvalidArgumentError(
                         "built-in content output requires --format=plain or jsonl; "

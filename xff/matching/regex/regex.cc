@@ -67,9 +67,10 @@ class Re2Backend final : public RegexBackend {
 
   bool PartialMatch(std::string_view text) const override { return RE2::PartialMatch(text, *re_); }
 
-  std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text) const override {
+  std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text, std::size_t start)
+      const override {
     std::string_view match;  // submatch[0] = the whole match; its data() points into `text`
-    if (!re_->Match(text, 0, text.size(), RE2::UNANCHORED, &match, 1)) {
+    if (!re_->Match(text, start, text.size(), RE2::UNANCHORED, &match, 1)) {
       return std::nullopt;
     }
     return std::make_pair(static_cast<std::size_t>(match.data() - text.data()), match.size());
@@ -143,15 +144,17 @@ class EreBackend final : public RegexBackend {
            && static_cast<std::size_t>(match.rm_eo) == input.size();
   }
 
-  bool PartialMatch(std::string_view text) const override { return FindFirst(text).has_value(); }
+  bool PartialMatch(std::string_view text) const override { return FindFirst(text, 0).has_value(); }
 
-  std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text) const override {
+  std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text, std::size_t start)
+      const override {
     if (ContainsNul(text)) {
       return std::nullopt;
     }
     const std::string input(text);
-    regmatch_t match{};
-    if (regexec(&compiled_, input.c_str(), 1, &match, 0) != 0) {
+    regmatch_t match{.rm_so = static_cast<regoff_t>(start), .rm_eo = static_cast<regoff_t>(text.size())};
+    if (start > text.size()
+        || regexec(&compiled_, input.c_str(), 1, &match, REG_STARTEND | (start == 0 ? 0 : REG_NOTBOL)) != 0) {
       return std::nullopt;
     }
     return std::make_pair(static_cast<std::size_t>(match.rm_so), static_cast<std::size_t>(match.rm_eo - match.rm_so));
@@ -268,15 +271,17 @@ class ExactBackend final : public RegexBackend {
     return case_insensitive_ ? absl::EqualsIgnoreCase(text, pattern_) : text == pattern_;
   }
 
-  bool PartialMatch(std::string_view text) const override { return FindFirst(text).has_value(); }
+  bool PartialMatch(std::string_view text) const override { return FindFirst(text, 0).has_value(); }
 
-  std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text) const override {
+  std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text, std::size_t start)
+      const override {
     if (pattern_.empty()) {
-      return std::make_pair(std::size_t{0}, std::size_t{0});  // empty needle matches at the start
+      return start <= text.size() ? std::optional(std::make_pair(start, std::size_t{0})) : std::nullopt;
     }
     // ASCII case-folding preserves byte positions, so the offset found in the lowered copy maps back
     // to `text` unchanged (the reported length is the pattern's).
-    const std::size_t pos = case_insensitive_ ? absl::AsciiStrToLower(text).find(needle_) : text.find(needle_);
+    const std::size_t pos =
+        case_insensitive_ ? absl::AsciiStrToLower(text).find(needle_, start) : text.find(needle_, start);
     if (pos == std::string::npos) {
       return std::nullopt;
     }
@@ -337,10 +342,11 @@ class FnmatchBackend final : public RegexBackend {
 
   bool PartialMatch(std::string_view text) const override { return Fnmatch(partial_pattern_, text); }
 
-  std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text) const override {
+  std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text, std::size_t start)
+      const override {
     // fnmatch is a whole-string test, not a span search: when the unanchored pattern matches, the
     // match is the whole text (so -grep:FORMAT's {match} is the line, {column} is 1).
-    if (!PartialMatch(text)) {
+    if (start != 0 || !PartialMatch(text)) {
       return std::nullopt;
     }
     return std::make_pair(std::size_t{0}, text.size());
@@ -437,8 +443,29 @@ bool Matcher::PartialMatch(std::string_view text) const {
   return backend_->PartialMatch(text);
 }
 
-std::optional<std::pair<std::size_t, std::size_t>> Matcher::FindFirst(std::string_view text) const {
-  return backend_->FindFirst(text);
+std::optional<std::pair<std::size_t, std::size_t>> Matcher::FindFirst(std::string_view text, std::size_t start) const {
+  return start <= text.size() ? backend_->FindFirst(text, start) : std::nullopt;
+}
+
+std::vector<std::pair<std::size_t, std::size_t>> Matcher::FindAll(std::string_view text) const {
+  std::vector<std::pair<std::size_t, std::size_t>> result;
+  std::size_t start = 0;
+  while (start <= text.size()) {
+    const auto span = FindFirst(text, start);
+    if (!span.has_value()) {
+      break;
+    }
+    if (span->second != 0) {
+      result.push_back(*span);
+      start = span->first + span->second;
+    } else {
+      if (span->first == text.size()) {
+        break;
+      }
+      start = span->first + 1;
+    }
+  }
+  return result;
 }
 
 std::optional<std::vector<std::string>> Matcher::FullMatchCaptures(std::string_view text) const {

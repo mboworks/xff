@@ -255,4 +255,74 @@ test::grep_context_prints_surrounding_lines() {
   expect_matches "/a\.txt:3:another TODO here(\$|${NL})" "${out}"
 }
 
+test::long_output_controls_select_and_format_lines() {
+  local root out
+  root="$(_make_tree)"
+  out="$(_run "${root}/a.txt" -grep TODO --no-filename --no-line-number)"
+  expect_eq $'first TODO line\nanother TODO here' "${out}"
+  out="$(_run --only-matching "${root}/a.txt" -grep TODO --no-filename --no-line-number --context=5)"
+  expect_eq $'TODO\nTODO' "${out}"
+  out="$(_run "${root}/a.txt" -grep TODO --invert-match --no-filename --no-line-number)"
+  expect_eq 'second line' "${out}"
+  out="$(_run "${root}/a.txt" -grep TODO --invert-match --no-invert-match --only-matching --no-only-matching --no-filename --with-filename --no-line-number --line-number)"
+  expect_eq "${root}/a.txt:1:first TODO line${NL}${root}/a.txt:3:another TODO here" "${out}"
+}
+
+test::file_selection_modes_handle_empty_and_binary_files() {
+  local root out
+  root="$(_make_tree)"
+  : >"${root}/empty.txt"
+  out="$(_run "${root}" --sort=name -grep TODO --files-with-matches --no-filename)"
+  expect_eq "${root}/a.txt" "${out}"
+  out="$(_run "${root}" --sort=name -grep TODO --files-without-match)"
+  expect_eq "${root}/b.txt${NL}${root}/empty.txt" "${out}"
+  out="$(_run "${root}/b.txt" -grep TODO --files-without-matches)"
+  expect_eq "${root}/b.txt" "${out}"
+  out="$(_run "${root}/a.txt" -grep TODO --count --files-with-matches)"
+  expect_eq "${root}/a.txt" "${out}"
+  out="$(_run "${root}/a.txt" -grep TODO --files-with-matches --count --no-filename)"
+  expect_eq '2' "${out}"
+}
+
+test::matching_parts_counts_templates_and_anchors() {
+  local root out
+  root="$(_make_tree)"
+  printf 'aab aa\nnone\n' >"${root}/parts.txt"
+  out="$(_run "${root}/parts.txt" -grep '^a|b' --only-matching --no-filename --no-line-number)"
+  expect_eq $'a\nb' "${out}"
+  out="$(_run "${root}/parts.txt" -grep a --count-matches --no-filename)"
+  expect_eq '4' "${out}"
+  out="$(_run "${root}/parts.txt" -grep a --count --only-matching --no-filename)"
+  expect_eq '4' "${out}"
+  out="$(_run "${root}/parts.txt" '-grep:{column}:{match}' a --only-matching)"
+  expect_eq $'1:a\n2:a\n5:a\n6:a' "${out}"
+  out="$(_run "${root}/parts.txt" -grep '^' --only-matching)"
+  expect_eq '' "${out}"
+  out="$(_run "${root}/parts.txt" -grep a --invert-match --only-matching)"
+  expect_eq '' "${out}"
+  out="$(_run "${root}/parts.txt" -grep a --invert-match --count-matches --no-filename)"
+  expect_eq '0' "${out}"
+}
+
+test::long_output_controls_keep_json_records_structured() {
+  local root out
+  root="$(_make_tree)"
+  out="$(_run "${root}/a.txt" -grep TODO --files-with-matches --format=jsonl)"
+  python3 -c 'import json,sys; r=json.loads(sys.argv[1]); assert r["kind"]=="file" and r["selected"] is True and r["path"].endswith("a.txt")' "${out}"
+  out="$(_run "${root}/b.txt" -grep TODO --files-without-match --format=jsonl)"
+  python3 -c 'import json,sys; r=json.loads(sys.argv[1]); assert r["kind"]=="file" and r["selected"] is False' "${out}"
+  out="$(_run "${root}/a.txt" -grep TODO --only-matching --no-filename --no-line-number --format=jsonl)"
+  python3 -c 'import json,sys; r=[json.loads(s) for s in sys.argv[1].splitlines()]; assert [x["text"] for x in r]==["TODO","TODO"] and [x["line"] for x in r]==[1,3] and all("path" in x for x in r)' "${out}"
+}
+
+test::long_output_controls_work_in_config_and_preserve_expression_or() {
+  local root out
+  root="$(_make_tree)"
+  printf '%s\n' --only-matching --no-filename --no-line-number >"${root}/output.rc"
+  out="$(_run "${root}/a.txt" --xffrc="${root}/output.rc" -false -o -grep TODO)"
+  expect_eq $'TODO\nTODO' "${out}"
+  out="$(_run "${root}/a.txt" -rxc TODO --only-matching)"
+  expect_eq "${root}/a.txt" "${out}"
+}
+
 test_runner

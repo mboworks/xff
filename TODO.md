@@ -1,5 +1,11 @@
 # TODO
 
+## Content-search output controls
+
+- [x] Implement and validate the missing grep-style long output options with explicit `-grep`.
+- [ ] Decide together how content predicates enable grep-style default line output after the long-option PR.
+- [ ] Audit short-option collisions and decide compatibility handling afterward; preserve `-o` as OR meanwhile.
+
 ## Release publication repair
 
 - [x] Publish stable benchmark references (PR #890); both repair workflows completed successfully.

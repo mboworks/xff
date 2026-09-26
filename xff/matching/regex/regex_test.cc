@@ -54,6 +54,35 @@ TEST_F(RegexTest, ValidateRe2RewriteChecksBothPatternAndReplacement) {
       ValidateRe2Rewrite("a", R"(\q)", false), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("replacement")));
 }
 
+TEST_F(RegexTest, RepeatedSearchPreservesSubjectAndSkipsEmptyMatches) {
+  ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("^a|b", false));
+  EXPECT_THAT(matcher.FindAll("aab"), ElementsAre(Pair(0, 1), Pair(2, 1)));
+  EXPECT_THAT(matcher.FindFirst("aab", 1), Optional(Pair(2, 1)));
+  EXPECT_THAT(matcher.FindFirst("aab", 4), Eq(std::nullopt));
+  ASSERT_OK_AND_ASSIGN(const Matcher empty, Matcher::Compile("", false));
+  EXPECT_THAT(empty.FindAll("abc"), IsEmpty());
+  ASSERT_OK_AND_ASSIGN(const Matcher nullable, Matcher::Compile("a*", false));
+  EXPECT_THAT(nullable.FindAll("baab"), ElementsAre(Pair(1, 2)));
+}
+
+TEST_F(RegexTest, EreOffsetSearchRetainsOriginalAnchors) {
+  ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("^a|b", false, Grammar::kEre));
+  EXPECT_THAT(matcher.FindAll("aab"), ElementsAre(Pair(0, 1), Pair(2, 1)));
+}
+
+TEST_F(RegexTest, LiteralOffsetSearchFindsNonoverlappingParts) {
+  ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("aa", true, Grammar::kExact));
+  EXPECT_THAT(matcher.FindAll("aAaAa"), ElementsAre(Pair(0, 2), Pair(2, 2)));
+  ASSERT_OK_AND_ASSIGN(const Matcher empty, Matcher::Compile("", false, Grammar::kExact));
+  EXPECT_THAT(empty.FindAll("abc"), IsEmpty());
+}
+
+TEST_F(RegexTest, FnmatchSpanRemainsTheWholeSubject) {
+  ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile("a", false, Grammar::kFnmatch));
+  EXPECT_THAT(matcher.FindAll("baab"), ElementsAre(Pair(0, 4)));
+  EXPECT_THAT(matcher.FindFirst("baab", 1), Eq(std::nullopt));
+}
+
 TEST_F(RegexTest, FullMatchAnchorsBothEnds) {
   ASSERT_OK_AND_ASSIGN(const Matcher matcher, Matcher::Compile(".*\\.txt", /*case_insensitive=*/false));
   EXPECT_THAT(matcher.FullMatch("a/b/c.txt"), IsTrue());
