@@ -641,7 +641,8 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   // for one out of git/cargo habit would otherwise have the word silently taken as a
   // path to search, so (in the xff flavor only; find must keep `find help` meaning
   // "search ./help") catch a leading operand that names one and point at the flag.
-  if (xff::config::DefaultStyleForProgram(program) != "find") {
+  // Rg owns its operands and option values: "help" and "version" are valid search patterns.
+  if (!parsed->rg && xff::config::DefaultStyleForProgram(program) != "find") {
     for (const std::string& arg : args) {
       if (arg == "--") {
         break;  // explicit end-of-options: the next token is deliberately an operand

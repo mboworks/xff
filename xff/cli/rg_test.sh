@@ -36,6 +36,16 @@ _tree() {
   echo "${root}"
 }
 
+test::native_subcommand_names_are_valid_rg_patterns() {
+  local root pattern
+  root="$(_tree)"
+  printf 'help\nversion\n' >"${root}/words"
+  for pattern in help version; do
+    _check 0 "${pattern}" --rg "${pattern}" "${root}/words"
+    _check 0 "${pattern}" --rg -e "${pattern}" "${root}/words"
+  done
+}
+
 test::lines_case_prefixes_and_portions() {
   local root
   root="$(_tree)"

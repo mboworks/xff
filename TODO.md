@@ -12,7 +12,7 @@
 ## Rg integration review (PRs 916-919)
 
 - [x] D01: Preserve VFS sources when probing stdin and other virtual roots for archives.
-- [ ] D02: Preserve rg pattern ownership in native subcommand diagnostics.
+- [x] D02: Preserve rg pattern ownership in native subcommand diagnostics.
 - [ ] D03: Compose only-matching output with maximum columns.
 - [ ] D04: Enforce rg native-filter action eligibility independently of implicit output.
 - [ ] D05: Preserve regex grammar semantics for whole-line rg matching.
