@@ -2482,6 +2482,15 @@ std::string_view BasenameOf(std::string_view path) {
   return slash == std::string_view::npos ? path : path.substr(slash + 1);
 }
 
+// Rg's native tail is a filter, regardless of whether an action would replace output.
+// Use registry classification so captures and traversal actions cannot slip through.
+bool IsRgFilterExpression(const parser::Expr& expr) {
+  if (expr.descriptor.has_value() && expr.descriptor->kind == registry::Kind::kAction) {
+    return false;
+  }
+  return (!expr.lhs || IsRgFilterExpression(*expr.lhs)) && (!expr.rhs || IsRgFilterExpression(*expr.rhs));
+}
+
 auto MakeContainerMounter(const archive::MemberPathOptions& member_path_options, bool sniff_any) {
   return [&member_path_options, sniff_any](
              std::string_view container, const vfs::FileSystem& source,
@@ -4631,6 +4640,10 @@ RunResult RunFindCore(
     return RunResult{.errors = 2};
   }
   const mbo::types::OptionalRef<const parser::Expr> expression = parser::AsConstOptionalExpr(command.expression);
+  if (command.rg && expression.has_value() && !IsRgFilterExpression(*expression)) {
+    on_error("--rg", absl::InvalidArgumentError("--xff accepts file filters in rg mode, not actions"));
+    return RunResult{.errors = 2};
+  }
   const bool has_action = expression.has_value() && ContainsAction(*expression);
   // --implicit-print=yes|no overrides find's default-print rule (otherwise !has_action).
   const bool implicit_print = ResolveImplicitPrint(command.globals).value_or(!has_action && !compare_listing);
@@ -5188,10 +5201,6 @@ RunResult RunFindCore(
         return RunResult{.errors = 2};
       }
       rg_positive_glob = rg_positive_glob || !glob.starts_with("!");
-    }
-    if (has_action) {
-      on_error("--rg", absl::InvalidArgumentError("--xff accepts file filters in rg mode, not actions"));
-      return RunResult{.errors = 2};
     }
     const auto mode = parser::ResolveCaseMode(command.globals, registry::Style::kXff);
     auto prepared =

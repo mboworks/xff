@@ -14,7 +14,7 @@
 - [x] D01: Preserve VFS sources when probing stdin and other virtual roots for archives.
 - [x] D02: Preserve rg pattern ownership in native subcommand diagnostics.
 - [x] D03: Compose only-matching output with maximum columns.
-- [ ] D04: Enforce rg native-filter action eligibility independently of implicit output.
+- [x] D04: Enforce rg native-filter action eligibility independently of implicit output.
 - [ ] D05: Preserve regex grammar semantics for whole-line rg matching.
 - [ ] D06: Include archive-member identity in automatic filename prefixes.
 - [ ] D07: Apply positive rg globs before hidden-entry pruning.

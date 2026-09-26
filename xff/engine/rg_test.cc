@@ -16,6 +16,7 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "absl/status/status.h"
@@ -207,6 +208,25 @@ TEST_F(RgEngineTest, InvalidFormatsAndConflictingModesAreRejected) {
   EXPECT_THAT(Run({"hit", "tree", "--compare"}).errors, Eq(2));
   EXPECT_THAT(Run({"hit", "tree", "--xff", "-delete"}).errors, Eq(2));
   EXPECT_THAT(Run({"hit", "tree", "--xff", "-exec", "echo", "{}", ";"}).errors, Eq(2));
+}
+
+TEST_F(RgEngineTest, NonprintingActionsAreRejectedEvenInUnreachableBranches) {
+  const std::vector<std::vector<std::string>> filters{
+      {"-capture:x", "echo", "captured", ";"},
+      {"-capturedir:x", "echo", "captured", ";"},
+      {"-prune"},
+      {"-false", "-a", "-capture:x", "echo", "captured", ";"},
+      {"!", "(", "-true", "+", "-prune", ")"},
+  };
+  for (const auto& filter : filters) {
+    std::vector<std::string> args{"hit", "tree", "--xff"};
+    args.append_range(filter);
+    EXPECT_THAT(Run(std::move(args)).errors, Eq(2));
+    EXPECT_THAT(errors, Contains(HasSubstr("not actions")));
+    EXPECT_THAT(output, IsEmpty());
+  }
+  EXPECT_THAT(Run({"hit", "tree", "--xff", "!", "(", "-false", "+", "-name", "b", ")"}).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a:hit\n"));
 }
 
 TEST_F(RgEngineTest, OverlappingMatchesRespectInlineAndFilePatternOrder) {
