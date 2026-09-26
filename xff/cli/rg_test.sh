@@ -186,6 +186,15 @@ test::zero_threads_are_automatic_but_invalid_counts_still_fail() {
   expect_output_contains 'expected a positive integer' "${out}"
 }
 
+test::explain_keeps_search_selection_active_without_line_output() {
+  local root out
+  root="$(_tree)"
+  out="$("$(_bin)" --rg TODO "${root}" --files-without-match --no-match-output --explain)"
+  expect_output_not_contains 'inactive-modifier' "${out}"
+  out="$("$(_bin)" --rg TODO "${root}" --invert-match --summary --explain)"
+  expect_output_not_contains 'inactive-modifier' "${out}"
+}
+
 test::errors_are_not_silent_or_action_fallbacks() {
   local root out rc
   root="$(_tree)"

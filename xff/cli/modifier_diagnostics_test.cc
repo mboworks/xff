@@ -192,6 +192,20 @@ TEST_F(ModifierDiagnosticsTest, MatchOutputConsumesGrepModifiersOnlyWhenDefaultO
   EXPECT_THAT(Notes({"-M", ".", "-rxc", "foo", "--no-match-output", "--count"}), IsOkAndHolds(HasSubstr("--count")));
 }
 
+TEST_F(ModifierDiagnosticsTest, RgSelectionRemainsActiveWithoutLineOutput) {
+  const std::vector<std::string> selectors{
+      "--files-with-matches", "--files-without-match", "--invert-match", "--no-invert-match"};
+  for (const auto& selector : selectors) {
+    EXPECT_THAT(Notes({"--rg", "hit", ".", selector, "--no-match-output"}), IsOkAndHolds(IsEmpty()));
+    EXPECT_THAT(Notes({"--rg", "hit", ".", selector, "--summary"}), IsOkAndHolds(IsEmpty()));
+    EXPECT_THAT(Notes({".", selector, "-grep", "hit"}), IsOkAndHolds(IsEmpty()));
+    EXPECT_THAT(Notes({"-M", ".", selector, "-rxc", "hit"}), IsOkAndHolds(IsEmpty()));
+    EXPECT_THAT(Notes({".", selector}), IsOkAndHolds(HasSubstr("requires -grep")));
+  }
+  EXPECT_THAT(Notes({"--rg", "hit", ".", "--no-match-output", "--count"}), IsOkAndHolds(HasSubstr("--count")));
+  EXPECT_THAT(Notes({"--rg", "hit", ".", "--summary", "--line-number"}), IsOkAndHolds(HasSubstr("--line-number")));
+}
+
 TEST_F(ModifierDiagnosticsTest, CountRequiresGrepIncludingItsAttachedFormAndAlias) {
   EXPECT_THAT(Notes({".", "--count"}), IsOkAndHolds(HasSubstr("requires -grep or active --match-output")));
   EXPECT_THAT(Notes({"-c", ".", "-grep", "x"}), IsOkAndHolds(Eq("")));

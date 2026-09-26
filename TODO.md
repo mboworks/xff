@@ -21,7 +21,7 @@
 - [x] D08: Preserve named roots in rg commands.
 - [x] D09: Reject simultaneous stdin pattern and content consumption.
 - [x] D10: Translate rg automatic worker selection.
-- [ ] D11: Explain active rg selection independently of line rendering.
+- [x] D11: Explain active rg selection independently of line rendering.
 - [ ] D12: Remove the unrelated rg example from comparison help.
 
 ## Release publication repair

@@ -992,6 +992,7 @@ Section RgSection(bool in_full) {
       "skipped unless `--text` is set. Files and stdin are currently materialized for line selection. "
       "Exit status is `0` for a selected result, `1` for none and `2` for errors; errors outrank quiet matches. "
       "Native summaries count the files selected by the search. `--no-match-output` lists those files instead. "
+      "Search-selection modifiers remain active in both cases; line-rendering modifiers do not. "
       "Normal `-M` behavior is unchanged outside rg grammar; inside it, `-M` requires a maximum-column count."));
   if (!in_full) {
     for (const auto& flag : Globals()) {

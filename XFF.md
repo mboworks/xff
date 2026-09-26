@@ -1083,7 +1083,8 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 - `--rg [OPTIONS] PATTERN [PATH...]` - parse ripgrep-style search arguments and print matching lines _(global, xff, command-line-only)_
   Command-line only; rejected in configuration files.
   Must precede roots. Selects `--config=rg` and content output. `--xff` switches the remaining arguments to an XFF filter expression without resetting output or configuration. Use `--help=rg` for supported options and intentional differences.
-  See also: [Ripgrep-style searches](#topic-rg)
+  Affected by: --files-with-matches, --files-without-match, --invert-match, --no-invert-match
+  See also: [Ripgrep-style searches](#topic-rg), [--files-with-matches](#flag-files-with-matches), [--files-without-match](#flag-files-without-match), [--invert-match](#flag-invert-match), [--no-invert-match](#flag-no-invert-match)
 
 <a id="flag-xff"></a>
 
@@ -1125,15 +1126,15 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `--files-with-matches` - print paths of files containing selected lines _(global, xff)_
   Suppresses line and count output. Selection includes `--invert-match`. Each reached `-grep` action reports its own result; this does not defer actions until the full expression succeeds.
-  Affects: -grep, --match-output
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
+  Affects: -grep, --match-output, --rg
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output), [--rg](#flag-rg)
 
 <a id="flag-files-without-match"></a>
 
 - `--files-without-match, --files-without-matches` - print paths of readable text files without selected lines _(global, xff)_
   Empty text files qualify. Binary, unreadable and non-regular files do not. This changes the truth of the `-grep` action to whether the file has no selected lines.
-  Affects: -grep, --match-output
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
+  Affects: -grep, --match-output, --rg
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output), [--rg](#flag-rg)
 
 <a id="flag-count-matches"></a>
 
@@ -1146,15 +1147,15 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `--invert-match` - select lines that do not match its pattern _(global, xff)_
   Inverts line selection, not the file-level expression. `! -rxc PATTERN` instead selects files whose content does not match. Does not invert other predicates.
-  Affects: -grep, --match-output
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
+  Affects: -grep, --match-output, --rg
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output), [--rg](#flag-rg)
 
 <a id="flag-no-invert-match"></a>
 
 - `--no-invert-match` - select lines that match its pattern _(global, xff)_
   Restores positive line selection. Last setting wins.
-  Affects: -grep, --match-output
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
+  Affects: -grep, --match-output, --rg
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output), [--rg](#flag-rg)
 
 <a id="flag-line-number"></a>
 
@@ -2894,7 +2895,7 @@ Options may appear among patterns and paths. Bundles and attached values work: `
 - `-a / --text, -M / --max-columns` - search binary content or replace long output lines with an omission marker
 - `-j / --threads, -q / --quiet` - worker allowance (0 selects automatic) or silent match-sensitive exit
 
-This is an rg-style frontend, not a complete ripgrep replacement. Unsupported short options are errors. XFF double-dash globals retain their normal meanings, validation and safety enforcement. Output uses XFF's existing line/JSON schemas, no heading or terminal-specific layout; binary files are skipped unless `--text` is set. Files and stdin are currently materialized for line selection. Exit status is `0` for a selected result, `1` for none and `2` for errors; errors outrank quiet matches. Native summaries count the files selected by the search. `--no-match-output` lists those files instead. Normal `-M` behavior is unchanged outside rg grammar; inside it, `-M` requires a maximum-column count.
+This is an rg-style frontend, not a complete ripgrep replacement. Unsupported short options are errors. XFF double-dash globals retain their normal meanings, validation and safety enforcement. Output uses XFF's existing line/JSON schemas, no heading or terminal-specific layout; binary files are skipped unless `--text` is set. Files and stdin are currently materialized for line selection. Exit status is `0` for a selected result, `1` for none and `2` for errors; errors outrank quiet matches. Native summaries count the files selected by the search. `--no-match-output` lists those files instead. Search-selection modifiers remain active in both cases; line-rendering modifiers do not. Normal `-M` behavior is unchanged outside rg grammar; inside it, `-M` requires a maximum-column count.
 
 See also: [Content](#topic-content), [Regex matching](#topic-regex), [Configuration](#topic-config)
 

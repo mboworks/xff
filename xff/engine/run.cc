@@ -6882,6 +6882,9 @@ absl::StatusOr<std::set<registry::ModifierConsumer>> ActiveModifierConsumers(
       consumers.insert(ModifierConsumer::kGrepLines);
     }
   }
+  if (command.rg || consumers.contains(ModifierConsumer::kGrep)) {
+    consumers.insert(ModifierConsumer::kGrepSelection);
+  }
   consumers.merge(OutputHashConsumers(command, summaries, listing));
   if (compare && ResolveTreeCompareOutput(command.globals) == TreeCompareOutput::kDiff) {
     consumers.insert(ModifierConsumer::kDiffComputation);

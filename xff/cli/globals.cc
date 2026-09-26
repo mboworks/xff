@@ -1755,9 +1755,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "print paths of files containing selected lines",
         .details = "Suppresses line and count output. Selection includes `--invert-match`. Each reached `-grep` action "
                    "reports its own result; this does not defer actions until the full expression succeeds.",
-        .affects = "-grep,--match-output",
+        .affects = "-grep,--match-output,--rg",
         .topic = "content",
-        .required_consumer = registry::ModifierConsumer::kGrep,
+        .required_consumer = registry::ModifierConsumer::kGrepSelection,
         .grep_effect = GlobalFlag::GrepEffect::kFilesWithMatches,
     },
     {
@@ -1769,9 +1769,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "print paths of readable text files without selected lines",
         .details = "Empty text files qualify. Binary, unreadable and non-regular files do not. This changes the truth "
                    "of the `-grep` action to whether the file has no selected lines.",
-        .affects = "-grep,--match-output",
+        .affects = "-grep,--match-output,--rg",
         .topic = "content",
-        .required_consumer = registry::ModifierConsumer::kGrep,
+        .required_consumer = registry::ModifierConsumer::kGrepSelection,
         .grep_effect = GlobalFlag::GrepEffect::kFilesWithoutMatch,
     },
     {
@@ -1795,9 +1795,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "select lines that do not match its pattern",
         .details = "Inverts line selection, not the file-level expression. `! -rxc PATTERN` instead selects files "
                    "whose content does not match. Does not invert other predicates.",
-        .affects = "-grep,--match-output",
+        .affects = "-grep,--match-output,--rg",
         .topic = "content",
-        .required_consumer = registry::ModifierConsumer::kGrep,
+        .required_consumer = registry::ModifierConsumer::kGrepSelection,
         .grep_effect = GlobalFlag::GrepEffect::kInvertMatch,
     },
     {
@@ -1807,9 +1807,9 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Content-match output",
         .summary = "select lines that match its pattern",
         .details = "Restores positive line selection. Last setting wins.",
-        .affects = "-grep,--match-output",
+        .affects = "-grep,--match-output,--rg",
         .topic = "content",
-        .required_consumer = registry::ModifierConsumer::kGrep,
+        .required_consumer = registry::ModifierConsumer::kGrepSelection,
         .grep_effect = GlobalFlag::GrepEffect::kPositiveMatch,
     },
     {

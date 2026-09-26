@@ -32,6 +32,7 @@ std::string_view ConsumerRequirement(registry::ModifierConsumer consumer) {
     case ModifierConsumer::kHashEncoding: return "requires a hash consumer without an explicit encoding";
     case ModifierConsumer::kNone: return "";
     case ModifierConsumer::kGrep: return "requires -grep or active --match-output";
+    case ModifierConsumer::kGrepSelection: return "requires -grep, active --match-output or an rg search";
     case ModifierConsumer::kGrepLines:
       return "requires -grep or --match-output line output; --count suppresses line output";
     case ModifierConsumer::kSharedContext:

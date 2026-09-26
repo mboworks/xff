@@ -13,6 +13,7 @@ enum class ModifierConsumer {
   kHashAlgorithm,
   kHashEncoding,
   kGrep,
+  kGrepSelection,
   kGrepLines,
   kSharedContext,
   kFileDiffContext,
