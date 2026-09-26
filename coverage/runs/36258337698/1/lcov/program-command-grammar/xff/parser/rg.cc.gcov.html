@@ -1,0 +1,499 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - xff production coverage - program-command-grammar/xff/parser/rg.cc</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+  <style>
+    .xffNavigation { padding: .35rem 0; text-align: center; }
+    .xffHeaderSummary { margin: 0 auto; width: 80%; }
+    .xffPolicy { border-collapse: collapse; margin: .75rem auto 1rem; width: auto; }
+    .xffPolicy th { padding: .2rem .75rem; text-align: left; }
+    .xffPolicy td { font-size: 100%; padding: .2rem .75rem; text-align: center; }
+  </style>
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="xffNavigation"><a href="../../../../index.html">Report overview</a> &middot; <a href="../../../../../../index.html">All coverage reports</a></td></tr>
+
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table class="xffHeaderSummary" cellpadding=1 border=0>
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../index.html" title="Click to go to top-level">top level</a> - <a href="index.html" title="Click to go to directory program-command-grammar/xff/parser">program-command-grammar/xff/parser</a> - rg.cc<span style="font-size: 80%;"> (source / <a href="rg.cc.func-c.html" title="Click to go to function table">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">xff production coverage</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">129</td>
+            <td class="headerCovTableEntry">129</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2026-09-26 17:26:45</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntry">6</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryHi">96.9&nbsp;%</td>
+            <td class="headerCovTableEntry">98</td>
+            <td class="headerCovTableEntry">95</td>
+          </tr>
+                  <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : // SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors</span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : // SPDX-License-Identifier: Apache-2.0</span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : //</span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : // Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : // you may not use this file except in compliance with the License.</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : // You may obtain a copy of the License at</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : //</span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : //      http://www.apache.org/licenses/LICENSE-2.0</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : //</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             : // Unless required by applicable law or agreed to in writing, software</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : // distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : // See the License for the specific language governing permissions and</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : // limitations under the License.</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : </span>
+<span id="L16"><span class="lineNum">      16</span>                 :             : #include &quot;xff/parser/rg.h&quot;</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             : </span>
+<span id="L18"><span class="lineNum">      18</span>                 :             : #include &lt;array&gt;</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             : #include &lt;optional&gt;</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             : #include &lt;string_view&gt;</span>
+<span id="L21"><span class="lineNum">      21</span>                 :             : #include &lt;utility&gt;</span>
+<span id="L22"><span class="lineNum">      22</span>                 :             : </span>
+<span id="L23"><span class="lineNum">      23</span>                 :             : #include &quot;absl/status/status.h&quot;</span>
+<span id="L24"><span class="lineNum">      24</span>                 :             : #include &quot;absl/strings/numbers.h&quot;</span>
+<span id="L25"><span class="lineNum">      25</span>                 :             : #include &quot;absl/strings/str_cat.h&quot;</span>
+<span id="L26"><span class="lineNum">      26</span>                 :             : #include &quot;mbo/status/status_macros.h&quot;</span>
+<span id="L27"><span class="lineNum">      27</span>                 :             : #include &quot;xff/parser/parser.h&quot;</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             : </span>
+<span id="L29"><span class="lineNum">      29</span>                 :             : namespace xff::parser {</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             : namespace {</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             : enum class Effect { kGlobal, kPattern, kFile, kWord, kLine, kText, kColumns, kGlob };</span>
+<span id="L32"><span class="lineNum">      32</span>                 :             : </span>
+<span id="L33"><span class="lineNum">      33</span>                 :             : struct Option {</span>
+<span id="L34"><span class="lineNum">      34</span>                 :             :   std::string_view name;</span>
+<span id="L35"><span class="lineNum">      35</span>                 :             :   char short_name = '\0';</span>
+<span id="L36"><span class="lineNum">      36</span>                 :             :   std::string_view replacement;</span>
+<span id="L37"><span class="lineNum">      37</span>                 :             :   bool value = false;</span>
+<span id="L38"><span class="lineNum">      38</span>                 :             :   Effect effect = Effect::kGlobal;</span>
+<span id="L39"><span class="lineNum">      39</span>                 :             : };</span>
+<span id="L40"><span class="lineNum">      40</span>                 :             : </span>
+<span id="L41"><span class="lineNum">      41</span>                 :             : constexpr auto kOptions = std::to_array&lt;Option&gt;({</span>
+<span id="L42"><span class="lineNum">      42</span>                 :             :     {</span>
+<span id="L43"><span class="lineNum">      43</span>                 :             :         .name = &quot;regexp&quot;,</span>
+<span id="L44"><span class="lineNum">      44</span>                 :             :         .short_name = 'e',</span>
+<span id="L45"><span class="lineNum">      45</span>                 :             :         .value = true,</span>
+<span id="L46"><span class="lineNum">      46</span>                 :             :         .effect = Effect::kPattern,</span>
+<span id="L47"><span class="lineNum">      47</span>                 :             :     },</span>
+<span id="L48"><span class="lineNum">      48</span>                 :             :     {</span>
+<span id="L49"><span class="lineNum">      49</span>                 :             :         .name = &quot;file&quot;,</span>
+<span id="L50"><span class="lineNum">      50</span>                 :             :         .short_name = 'f',</span>
+<span id="L51"><span class="lineNum">      51</span>                 :             :         .value = true,</span>
+<span id="L52"><span class="lineNum">      52</span>                 :             :         .effect = Effect::kFile,</span>
+<span id="L53"><span class="lineNum">      53</span>                 :             :     },</span>
+<span id="L54"><span class="lineNum">      54</span>                 :             :     {</span>
+<span id="L55"><span class="lineNum">      55</span>                 :             :         .name = &quot;glob&quot;,</span>
+<span id="L56"><span class="lineNum">      56</span>                 :             :         .short_name = 'g',</span>
+<span id="L57"><span class="lineNum">      57</span>                 :             :         .value = true,</span>
+<span id="L58"><span class="lineNum">      58</span>                 :             :         .effect = Effect::kGlob,</span>
+<span id="L59"><span class="lineNum">      59</span>                 :             :     },</span>
+<span id="L60"><span class="lineNum">      60</span>                 :             :     {</span>
+<span id="L61"><span class="lineNum">      61</span>                 :             :         .name = &quot;only-matching&quot;,</span>
+<span id="L62"><span class="lineNum">      62</span>                 :             :         .short_name = 'o',</span>
+<span id="L63"><span class="lineNum">      63</span>                 :             :         .replacement = &quot;--only-matching&quot;,</span>
+<span id="L64"><span class="lineNum">      64</span>                 :             :     },</span>
+<span id="L65"><span class="lineNum">      65</span>                 :             :     {</span>
+<span id="L66"><span class="lineNum">      66</span>                 :             :         .name = &quot;invert-match&quot;,</span>
+<span id="L67"><span class="lineNum">      67</span>                 :             :         .short_name = 'v',</span>
+<span id="L68"><span class="lineNum">      68</span>                 :             :         .replacement = &quot;--invert-match&quot;,</span>
+<span id="L69"><span class="lineNum">      69</span>                 :             :     },</span>
+<span id="L70"><span class="lineNum">      70</span>                 :             :     {</span>
+<span id="L71"><span class="lineNum">      71</span>                 :             :         .name = &quot;line-number&quot;,</span>
+<span id="L72"><span class="lineNum">      72</span>                 :             :         .short_name = 'n',</span>
+<span id="L73"><span class="lineNum">      73</span>                 :             :         .replacement = &quot;--line-number&quot;,</span>
+<span id="L74"><span class="lineNum">      74</span>                 :             :     },</span>
+<span id="L75"><span class="lineNum">      75</span>                 :             :     {</span>
+<span id="L76"><span class="lineNum">      76</span>                 :             :         .name = &quot;no-line-number&quot;,</span>
+<span id="L77"><span class="lineNum">      77</span>                 :             :         .short_name = 'N',</span>
+<span id="L78"><span class="lineNum">      78</span>                 :             :         .replacement = &quot;--no-line-number&quot;,</span>
+<span id="L79"><span class="lineNum">      79</span>                 :             :     },</span>
+<span id="L80"><span class="lineNum">      80</span>                 :             :     {</span>
+<span id="L81"><span class="lineNum">      81</span>                 :             :         .name = &quot;with-filename&quot;,</span>
+<span id="L82"><span class="lineNum">      82</span>                 :             :         .short_name = 'H',</span>
+<span id="L83"><span class="lineNum">      83</span>                 :             :         .replacement = &quot;--with-filename&quot;,</span>
+<span id="L84"><span class="lineNum">      84</span>                 :             :     },</span>
+<span id="L85"><span class="lineNum">      85</span>                 :             :     {</span>
+<span id="L86"><span class="lineNum">      86</span>                 :             :         .name = &quot;no-filename&quot;,</span>
+<span id="L87"><span class="lineNum">      87</span>                 :             :         .short_name = 'I',</span>
+<span id="L88"><span class="lineNum">      88</span>                 :             :         .replacement = &quot;--no-filename&quot;,</span>
+<span id="L89"><span class="lineNum">      89</span>                 :             :     },</span>
+<span id="L90"><span class="lineNum">      90</span>                 :             :     {</span>
+<span id="L91"><span class="lineNum">      91</span>                 :             :         .name = &quot;files-with-matches&quot;,</span>
+<span id="L92"><span class="lineNum">      92</span>                 :             :         .short_name = 'l',</span>
+<span id="L93"><span class="lineNum">      93</span>                 :             :         .replacement = &quot;--files-with-matches&quot;,</span>
+<span id="L94"><span class="lineNum">      94</span>                 :             :     },</span>
+<span id="L95"><span class="lineNum">      95</span>                 :             :     {</span>
+<span id="L96"><span class="lineNum">      96</span>                 :             :         .name = &quot;files-without-match&quot;,</span>
+<span id="L97"><span class="lineNum">      97</span>                 :             :         .replacement = &quot;--files-without-match&quot;,</span>
+<span id="L98"><span class="lineNum">      98</span>                 :             :     },</span>
+<span id="L99"><span class="lineNum">      99</span>                 :             :     {</span>
+<span id="L100"><span class="lineNum">     100</span>                 :             :         .name = &quot;count&quot;,</span>
+<span id="L101"><span class="lineNum">     101</span>                 :             :         .short_name = 'c',</span>
+<span id="L102"><span class="lineNum">     102</span>                 :             :         .replacement = &quot;--count&quot;,</span>
+<span id="L103"><span class="lineNum">     103</span>                 :             :     },</span>
+<span id="L104"><span class="lineNum">     104</span>                 :             :     {</span>
+<span id="L105"><span class="lineNum">     105</span>                 :             :         .name = &quot;count-matches&quot;,</span>
+<span id="L106"><span class="lineNum">     106</span>                 :             :         .replacement = &quot;--count-matches&quot;,</span>
+<span id="L107"><span class="lineNum">     107</span>                 :             :     },</span>
+<span id="L108"><span class="lineNum">     108</span>                 :             :     {</span>
+<span id="L109"><span class="lineNum">     109</span>                 :             :         .name = &quot;ignore-case&quot;,</span>
+<span id="L110"><span class="lineNum">     110</span>                 :             :         .short_name = 'i',</span>
+<span id="L111"><span class="lineNum">     111</span>                 :             :         .replacement = &quot;--case=insensitive&quot;,</span>
+<span id="L112"><span class="lineNum">     112</span>                 :             :     },</span>
+<span id="L113"><span class="lineNum">     113</span>                 :             :     {</span>
+<span id="L114"><span class="lineNum">     114</span>                 :             :         .name = &quot;case-sensitive&quot;,</span>
+<span id="L115"><span class="lineNum">     115</span>                 :             :         .short_name = 's',</span>
+<span id="L116"><span class="lineNum">     116</span>                 :             :         .replacement = &quot;--case=sensitive&quot;,</span>
+<span id="L117"><span class="lineNum">     117</span>                 :             :     },</span>
+<span id="L118"><span class="lineNum">     118</span>                 :             :     {</span>
+<span id="L119"><span class="lineNum">     119</span>                 :             :         .name = &quot;smart-case&quot;,</span>
+<span id="L120"><span class="lineNum">     120</span>                 :             :         .short_name = 'S',</span>
+<span id="L121"><span class="lineNum">     121</span>                 :             :         .replacement = &quot;--case=smart&quot;,</span>
+<span id="L122"><span class="lineNum">     122</span>                 :             :     },</span>
+<span id="L123"><span class="lineNum">     123</span>                 :             :     {</span>
+<span id="L124"><span class="lineNum">     124</span>                 :             :         .name = &quot;fixed-strings&quot;,</span>
+<span id="L125"><span class="lineNum">     125</span>                 :             :         .short_name = 'F',</span>
+<span id="L126"><span class="lineNum">     126</span>                 :             :         .replacement = &quot;--regextype=EXACT&quot;,</span>
+<span id="L127"><span class="lineNum">     127</span>                 :             :     },</span>
+<span id="L128"><span class="lineNum">     128</span>                 :             :     {</span>
+<span id="L129"><span class="lineNum">     129</span>                 :             :         .name = &quot;pcre2&quot;,</span>
+<span id="L130"><span class="lineNum">     130</span>                 :             :         .short_name = 'P',</span>
+<span id="L131"><span class="lineNum">     131</span>                 :             :         .replacement = &quot;--regextype=PCRE2&quot;,</span>
+<span id="L132"><span class="lineNum">     132</span>                 :             :     },</span>
+<span id="L133"><span class="lineNum">     133</span>                 :             :     {</span>
+<span id="L134"><span class="lineNum">     134</span>                 :             :         .name = &quot;follow&quot;,</span>
+<span id="L135"><span class="lineNum">     135</span>                 :             :         .short_name = 'L',</span>
+<span id="L136"><span class="lineNum">     136</span>                 :             :         .replacement = &quot;-L&quot;,</span>
+<span id="L137"><span class="lineNum">     137</span>                 :             :     },</span>
+<span id="L138"><span class="lineNum">     138</span>                 :             :     {</span>
+<span id="L139"><span class="lineNum">     139</span>                 :             :         .name = &quot;quiet&quot;,</span>
+<span id="L140"><span class="lineNum">     140</span>                 :             :         .short_name = 'q',</span>
+<span id="L141"><span class="lineNum">     141</span>                 :             :         .replacement = &quot;--quiet&quot;,</span>
+<span id="L142"><span class="lineNum">     142</span>                 :             :     },</span>
+<span id="L143"><span class="lineNum">     143</span>                 :             :     {</span>
+<span id="L144"><span class="lineNum">     144</span>                 :             :         .name = &quot;context&quot;,</span>
+<span id="L145"><span class="lineNum">     145</span>                 :             :         .short_name = 'C',</span>
+<span id="L146"><span class="lineNum">     146</span>                 :             :         .replacement = &quot;--context=&quot;,</span>
+<span id="L147"><span class="lineNum">     147</span>                 :             :         .value = true,</span>
+<span id="L148"><span class="lineNum">     148</span>                 :             :     },</span>
+<span id="L149"><span class="lineNum">     149</span>                 :             :     {</span>
+<span id="L150"><span class="lineNum">     150</span>                 :             :         .name = &quot;before-context&quot;,</span>
+<span id="L151"><span class="lineNum">     151</span>                 :             :         .short_name = 'B',</span>
+<span id="L152"><span class="lineNum">     152</span>                 :             :         .replacement = &quot;--before-context=&quot;,</span>
+<span id="L153"><span class="lineNum">     153</span>                 :             :         .value = true,</span>
+<span id="L154"><span class="lineNum">     154</span>                 :             :     },</span>
+<span id="L155"><span class="lineNum">     155</span>                 :             :     {</span>
+<span id="L156"><span class="lineNum">     156</span>                 :             :         .name = &quot;after-context&quot;,</span>
+<span id="L157"><span class="lineNum">     157</span>                 :             :         .short_name = 'A',</span>
+<span id="L158"><span class="lineNum">     158</span>                 :             :         .replacement = &quot;--after-context=&quot;,</span>
+<span id="L159"><span class="lineNum">     159</span>                 :             :         .value = true,</span>
+<span id="L160"><span class="lineNum">     160</span>                 :             :     },</span>
+<span id="L161"><span class="lineNum">     161</span>                 :             :     {</span>
+<span id="L162"><span class="lineNum">     162</span>                 :             :         .name = &quot;threads&quot;,</span>
+<span id="L163"><span class="lineNum">     163</span>                 :             :         .short_name = 'j',</span>
+<span id="L164"><span class="lineNum">     164</span>                 :             :         .replacement = &quot;--jobs=&quot;,</span>
+<span id="L165"><span class="lineNum">     165</span>                 :             :         .value = true,</span>
+<span id="L166"><span class="lineNum">     166</span>                 :             :     },</span>
+<span id="L167"><span class="lineNum">     167</span>                 :             :     {</span>
+<span id="L168"><span class="lineNum">     168</span>                 :             :         .name = &quot;word-regexp&quot;,</span>
+<span id="L169"><span class="lineNum">     169</span>                 :             :         .short_name = 'w',</span>
+<span id="L170"><span class="lineNum">     170</span>                 :             :         .effect = Effect::kWord,</span>
+<span id="L171"><span class="lineNum">     171</span>                 :             :     },</span>
+<span id="L172"><span class="lineNum">     172</span>                 :             :     {</span>
+<span id="L173"><span class="lineNum">     173</span>                 :             :         .name = &quot;line-regexp&quot;,</span>
+<span id="L174"><span class="lineNum">     174</span>                 :             :         .short_name = 'x',</span>
+<span id="L175"><span class="lineNum">     175</span>                 :             :         .effect = Effect::kLine,</span>
+<span id="L176"><span class="lineNum">     176</span>                 :             :     },</span>
+<span id="L177"><span class="lineNum">     177</span>                 :             :     {</span>
+<span id="L178"><span class="lineNum">     178</span>                 :             :         .name = &quot;text&quot;,</span>
+<span id="L179"><span class="lineNum">     179</span>                 :             :         .short_name = 'a',</span>
+<span id="L180"><span class="lineNum">     180</span>                 :             :         .effect = Effect::kText,</span>
+<span id="L181"><span class="lineNum">     181</span>                 :             :     },</span>
+<span id="L182"><span class="lineNum">     182</span>                 :             :     {</span>
+<span id="L183"><span class="lineNum">     183</span>                 :             :         .name = &quot;max-columns&quot;,</span>
+<span id="L184"><span class="lineNum">     184</span>                 :             :         .short_name = 'M',</span>
+<span id="L185"><span class="lineNum">     185</span>                 :             :         .value = true,</span>
+<span id="L186"><span class="lineNum">     186</span>                 :             :         .effect = Effect::kColumns,</span>
+<span id="L187"><span class="lineNum">     187</span>                 :             :     },</span>
+<span id="L188"><span class="lineNum">     188</span>                 :             :     {</span>
+<span id="L189"><span class="lineNum">     189</span>                 :             :         .name = &quot;hidden&quot;,</span>
+<span id="L190"><span class="lineNum">     190</span>                 :             :         .replacement = &quot;--hidden&quot;,</span>
+<span id="L191"><span class="lineNum">     191</span>                 :             :     },</span>
+<span id="L192"><span class="lineNum">     192</span>                 :             :     {</span>
+<span id="L193"><span class="lineNum">     193</span>                 :             :         .name = &quot;no-hidden&quot;,</span>
+<span id="L194"><span class="lineNum">     194</span>                 :             :         .replacement = &quot;--no-hidden&quot;,</span>
+<span id="L195"><span class="lineNum">     195</span>                 :             :     },</span>
+<span id="L196"><span class="lineNum">     196</span>                 :             :     {</span>
+<span id="L197"><span class="lineNum">     197</span>                 :             :         .name = &quot;no-ignore&quot;,</span>
+<span id="L198"><span class="lineNum">     198</span>                 :             :         .replacement = &quot;--no-ignore&quot;,</span>
+<span id="L199"><span class="lineNum">     199</span>                 :             :     },</span>
+<span id="L200"><span class="lineNum">     200</span>                 :             :     {</span>
+<span id="L201"><span class="lineNum">     201</span>                 :             :         .name = &quot;color&quot;,</span>
+<span id="L202"><span class="lineNum">     202</span>                 :             :         .replacement = &quot;--color=&quot;,</span>
+<span id="L203"><span class="lineNum">     203</span>                 :             :         .value = true,</span>
+<span id="L204"><span class="lineNum">     204</span>                 :             :     },</span>
+<span id="L205"><span class="lineNum">     205</span>                 :             :     {</span>
+<span id="L206"><span class="lineNum">     206</span>                 :             :         .name = &quot;help&quot;,</span>
+<span id="L207"><span class="lineNum">     207</span>                 :             :         .short_name = 'h',</span>
+<span id="L208"><span class="lineNum">     208</span>                 :             :         .replacement = &quot;--help=rg&quot;,</span>
+<span id="L209"><span class="lineNum">     209</span>                 :             :     },</span>
+<span id="L210"><span class="lineNum">     210</span>                 :             :     {.name = &quot;version&quot;, .short_name = 'V', .replacement = &quot;--version&quot;},</span>
+<span id="L211"><span class="lineNum">     211</span>                 :             : });</span>
+<span id="L212"><span class="lineNum">     212</span>                 :             : </span>
+<span id="L213"><span class="lineNum">     213</span>                 :             : class RgParser {</span>
+<span id="L214"><span class="lineNum">     214</span>                 :             :  public:</span>
+<span id="L215"><span class="lineNum">     215</span>                 :<span class="tlaGNC">         105 :   RgParser(const std::vector&lt;std::string&gt;&amp; args, std::size_t start) : args_(args), index_(start) {}</span></span>
+<span id="L216"><span class="lineNum">     216</span>                 :             : </span>
+<span id="L217"><span class="lineNum">     217</span>                 :             :   // The option grammar deliberately keeps mode transitions, positional roots,</span>
+<span id="L218"><span class="lineNum">     218</span>                 :             :   // and native expression parsing in one pass so their ordering is explicit.</span>
+<span id="L219"><span class="lineNum">     219</span>                 :             :   // NOLINTNEXTLINE(readability-function-cognitive-complexity)</span>
+<span id="L220"><span class="lineNum">     220</span>                 :<span class="tlaGNC">         105 :   absl::StatusOr&lt;Command&gt; Parse() {</span></span>
+<span id="L221"><span class="lineNum">     221</span>         [<span class="tlaGBC" title="branch 0 was taken 284 times"> + </span><span class="tlaGBC" title="branch 1 was taken 79 times"> + </span>]:<span class="tlaGNC">         363 :     for (; index_ &lt; args_.size(); ++index_) {</span></span>
+<span id="L222"><span class="lineNum">     222</span>                 :<span class="tlaGNC">         284 :       const std::string_view arg = args_.at(index_);</span></span>
+<span id="L223"><span class="lineNum">     223</span> [<span class="tlaGBC" title="branch 0 was taken 280 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 12 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 268 times"> + </span>]:<span class="tlaGNC">         284 :       if (options_ &amp;&amp; arg == &quot;--xff&quot;) {</span></span>
+<span id="L224"><span class="lineNum">     224</span>                 :<span class="tlaGNC">          12 :         ++index_;</span></span>
+<span id="L225"><span class="lineNum">     225</span>                 :<span class="tlaGNC">          12 :         break;</span></span>
+<span id="L226"><span class="lineNum">     226</span>                 :<span class="tlaGNC">          12 :       }</span></span>
+<span id="L227"><span class="lineNum">     227</span> [<span class="tlaGBC" title="branch 0 was taken 268 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 267 times"> + </span>]:<span class="tlaGNC">         272 :       if (options_ &amp;&amp; arg == &quot;--&quot;) {</span></span>
+<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">           1 :         options_ = false;</span></span>
+<span id="L229"><span class="lineNum">     229</span> [<span class="tlaGBC" title="branch 0 was taken 267 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 24 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 243 times"> + </span>]:<span class="tlaGNC">         271 :       } else if (options_ &amp;&amp; arg.starts_with(&quot;--&quot;)) {</span></span>
+<span id="L230"><span class="lineNum">     230</span>         [<span class="tlaGBC" title="branch 0 was taken 44 times"> + </span><span class="tlaGBC" title="branch 1 was taken 28 times"> + </span>]:<span class="tlaGNC">          24 :         MBO_RETURN_IF_ERROR(Long(arg.substr(2)));</span></span>
+<span id="L231"><span class="lineNum">     231</span> [<span class="tlaGBC" title="branch 0 was taken 243 times"> + </span><span class="tlaGBC" title="branch 1 was taken 4 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 233 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 10 times"> + </span>]:<span class="tlaGNC">         247 :       } else if (options_ &amp;&amp; arg.size() &gt; 1 &amp;&amp; arg.front() == '-') {</span></span>
+<span class="lineNum">        </span>         [<span class="tlaGBC" title="branch &quot;4&quot; was taken 90 times"> + </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 143 times"> + </span>]
+<span id="L232"><span class="lineNum">     232</span>         [<span class="tlaGBC" title="branch 0 was taken 170 times"> + </span><span class="tlaGBC" title="branch 1 was taken 100 times"> + </span>]:<span class="tlaGNC">          90 :         MBO_RETURN_IF_ERROR(Short(arg.substr(1)));</span></span>
+<span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">         164 :       } else {</span></span>
+<span id="L234"><span class="lineNum">     234</span>                 :<span class="tlaGNC">         157 :         positionals_.emplace_back(arg);</span></span>
+<span id="L235"><span class="lineNum">     235</span>                 :<span class="tlaGNC">         157 :       }</span></span>
+<span id="L236"><span class="lineNum">     236</span>                 :<span class="tlaGNC">         272 :     }</span></span>
+<span id="L237"><span class="lineNum">     237</span>         [<span class="tlaGBC" title="branch 0 was taken 72 times"> + </span><span class="tlaGBC" title="branch 1 was taken 19 times"> + </span>]:<span class="tlaGNC">          91 :     if (!explicit_patterns_) {</span></span>
+<span id="L238"><span class="lineNum">     238</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 69 times"> + </span>]:<span class="tlaGNC">          72 :       if (positionals_.empty()) {</span></span>
+<span id="L239"><span class="lineNum">     239</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           3 :         if (!help_) {</span></span>
+<span id="L240"><span class="lineNum">     240</span>                 :<span class="tlaGNC">           1 :           return absl::InvalidArgumentError(&quot;--rg requires PATTERN or -e PATTERN / -f FILE&quot;);</span></span>
+<span id="L241"><span class="lineNum">     241</span>                 :<span class="tlaGNC">           1 :         }</span></span>
+<span id="L242"><span class="lineNum">     242</span>                 :<span class="tlaGNC">          69 :       } else {</span></span>
+<span id="L243"><span class="lineNum">     243</span>                 :<span class="tlaGNC">          69 :         search_.patterns.push_back({.value = positionals_.front()});</span></span>
+<span id="L244"><span class="lineNum">     244</span>                 :<span class="tlaGNC">          69 :         positionals_.erase(positionals_.begin());</span></span>
+<span id="L245"><span class="lineNum">     245</span>                 :<span class="tlaGNC">          69 :       }</span></span>
+<span id="L246"><span class="lineNum">     246</span>                 :<span class="tlaGNC">          72 :     }</span></span>
+<span id="L247"><span class="lineNum">     247</span>                 :             :     // A sentinel separates leading globals from the native filter. The actual roots are</span>
+<span id="L248"><span class="lineNum">     248</span>                 :             :     // assigned directly, so rg paths that look like native operators stay literal paths.</span>
+<span id="L249"><span class="lineNum">     249</span>                 :<span class="tlaGNC">          90 :     native_.emplace_back(&quot;.&quot;);</span></span>
+<span id="L250"><span class="lineNum">     250</span>                 :<span class="tlaGNC">          90 :     native_.insert(native_.end(), args_.begin() + static_cast&lt;std::ptrdiff_t&gt;(index_), args_.end());</span></span>
+<span id="L251"><span class="lineNum">     251</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 89 times"> + </span>]:<span class="tlaGNC">          90 :     MBO_ASSIGN_OR_RETURN(auto command, parser::ParseXff(native_));</span></span>
+<span id="L252"><span class="lineNum">     252</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 88 times"> + </span>]:<span class="tlaGNC">          89 :     if (command.roots.size() != 1) {</span></span>
+<span id="L253"><span class="lineNum">     253</span>                 :<span class="tlaGNC">           1 :       return absl::InvalidArgumentError(&quot;--xff starts a filter expression; put search paths before it&quot;);</span></span>
+<span id="L254"><span class="lineNum">     254</span>                 :<span class="tlaGNC">           1 :     }</span></span>
+<span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">          88 :     command.roots = std::move(positionals_);</span></span>
+<span id="L256"><span class="lineNum">     256</span>                 :<span class="tlaGNC">          88 :     command.root_names.assign(command.roots.size(), &quot;&quot;);</span></span>
+<span id="L257"><span class="lineNum">     257</span>                 :<span class="tlaGNC">          88 :     command.rg.emplace(std::move(search_));</span></span>
+<span id="L258"><span class="lineNum">     258</span>                 :<span class="tlaGNC">          88 :     return command;</span></span>
+<span id="L259"><span class="lineNum">     259</span>                 :<span class="tlaGNC">          89 :   }</span></span>
+<span id="L260"><span class="lineNum">     260</span>                 :             : </span>
+<span id="L261"><span class="lineNum">     261</span>                 :             :  private:</span>
+<span id="L262"><span class="lineNum">     262</span>                 :<span class="tlaGNC">         113 :   absl::Status Apply(const Option&amp; option, std::optional&lt;std::string_view&gt; attached) {</span></span>
+<span id="L263"><span class="lineNum">     263</span>                 :<span class="tlaGNC">         113 :     std::string_view value;</span></span>
+<span id="L264"><span class="lineNum">     264</span>         [<span class="tlaGBC" title="branch 0 was taken 49 times"> + </span><span class="tlaGBC" title="branch 1 was taken 64 times"> + </span>]:<span class="tlaGNC">         113 :     if (option.value) {</span></span>
+<span id="L265"><span class="lineNum">     265</span>         [<span class="tlaGBC" title="branch 0 was taken 11 times"> + </span><span class="tlaGBC" title="branch 1 was taken 38 times"> + </span>]:<span class="tlaGNC">          49 :       if (attached.has_value()) {</span></span>
+<span id="L266"><span class="lineNum">     266</span>                 :<span class="tlaGNC">          11 :         value = *attached;</span></span>
+<span id="L267"><span class="lineNum">     267</span>                 :<span class="tlaGNC">          38 :       } else {</span></span>
+<span id="L268"><span class="lineNum">     268</span>         [<span class="tlaGBC" title="branch 0 was taken 10 times"> + </span><span class="tlaGBC" title="branch 1 was taken 28 times"> + </span>]:<span class="tlaGNC">          38 :         if (++index_ == args_.size()) {</span></span>
+<span id="L269"><span class="lineNum">     269</span>                 :<span class="tlaGNC">          10 :           return absl::InvalidArgumentError(absl::StrCat(&quot;--&quot;, option.name, &quot; requires a value&quot;));</span></span>
+<span id="L270"><span class="lineNum">     270</span>                 :<span class="tlaGNC">          10 :         }</span></span>
+<span id="L271"><span class="lineNum">     271</span>                 :<span class="tlaGNC">          28 :         value = args_.at(index_);</span></span>
+<span id="L272"><span class="lineNum">     272</span>                 :<span class="tlaGNC">          28 :       }</span></span>
+<span id="L273"><span class="lineNum">     273</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 63 times"> + </span>]:<span class="tlaGNC">          74 :     } else if (attached.has_value()) {</span></span>
+<span id="L274"><span class="lineNum">     274</span>                 :<span class="tlaGNC">           1 :       return absl::InvalidArgumentError(absl::StrCat(&quot;--&quot;, option.name, &quot; does not take a value&quot;));</span></span>
+<span id="L275"><span class="lineNum">     275</span>                 :<span class="tlaGNC">           1 :     }</span></span>
+<span id="L276"><span class="lineNum">     276</span>         [<span class="tlaGBC" title="branch 0 was taken 102 times"> + </span><span class="tlaUNC" title="branch 1 was not taken"> - </span>]:<span class="tlaGNC">         102 :     switch (option.effect) {</span></span>
+<span id="L277"><span class="lineNum">     277</span>         [<span class="tlaGBC" title="branch 0 was taken 62 times"> + </span><span class="tlaGBC" title="branch 1 was taken 40 times"> + </span>]:<span class="tlaGNC">          62 :       case Effect::kGlobal:</span></span>
+<span id="L278"><span class="lineNum">     278</span>                 :<span class="tlaGNC">          62 :         native_.push_back(absl::StrCat(option.replacement, value));</span></span>
+<span id="L279"><span class="lineNum">     279</span> [<span class="tlaUNC" title="branch 0 was not taken"> - </span><span class="tlaGBC" title="branch 1 was taken 62 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 61 times"> + </span>]:<span class="tlaGNC">          62 :         help_ = help_ || option.short_name == 'h' || option.short_name == 'V';</span></span>
+<span class="lineNum">        </span>         [<span class="tlaUNC" title="branch &quot;4&quot; was not taken"> - </span><span class="tlaGBC" title="branch &quot;5&quot; was taken 61 times"> + </span>]
+<span id="L280"><span class="lineNum">     280</span>                 :<span class="tlaGNC">          62 :         break;</span></span>
+<span id="L281"><span class="lineNum">     281</span>         [<span class="tlaGBC" title="branch 0 was taken 17 times"> + </span><span class="tlaGBC" title="branch 1 was taken 85 times"> + </span>]:<span class="tlaGNC">          17 :       case Effect::kPattern:</span></span>
+<span id="L282"><span class="lineNum">     282</span>                 :<span class="tlaGNC">          17 :         search_.patterns.push_back({.value = std::string(value)});</span></span>
+<span id="L283"><span class="lineNum">     283</span>                 :<span class="tlaGNC">          17 :         explicit_patterns_ = true;</span></span>
+<span id="L284"><span class="lineNum">     284</span>                 :<span class="tlaGNC">          17 :         break;</span></span>
+<span id="L285"><span class="lineNum">     285</span>         [<span class="tlaGBC" title="branch 0 was taken 11 times"> + </span><span class="tlaGBC" title="branch 1 was taken 91 times"> + </span>]:<span class="tlaGNC">          11 :       case Effect::kFile:</span></span>
+<span id="L286"><span class="lineNum">     286</span>                 :<span class="tlaGNC">          11 :         search_.patterns.push_back({.value = std::string(value), .file = true});</span></span>
+<span id="L287"><span class="lineNum">     287</span>                 :<span class="tlaGNC">          11 :         explicit_patterns_ = true;</span></span>
+<span id="L288"><span class="lineNum">     288</span>                 :<span class="tlaGNC">          11 :         break;</span></span>
+<span id="L289"><span class="lineNum">     289</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 99 times"> + </span>]:<span class="tlaGNC">           3 :       case Effect::kWord: search_.word = true; break;</span></span>
+<span id="L290"><span class="lineNum">     290</span>         [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 100 times"> + </span>]:<span class="tlaGNC">           2 :       case Effect::kLine: search_.line = true; break;</span></span>
+<span id="L291"><span class="lineNum">     291</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 101 times"> + </span>]:<span class="tlaGNC">           1 :       case Effect::kText: search_.text = true; break;</span></span>
+<span id="L292"><span class="lineNum">     292</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 99 times"> + </span>]:<span class="tlaGNC">           3 :       case Effect::kColumns:</span></span>
+<span id="L293"><span class="lineNum">     293</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           3 :         if (!absl::SimpleAtoi(value, &amp;search_.max_columns)) {</span></span>
+<span id="L294"><span class="lineNum">     294</span>                 :<span class="tlaGNC">           1 :           return absl::InvalidArgumentError(&quot;--max-columns requires a nonnegative integer&quot;);</span></span>
+<span id="L295"><span class="lineNum">     295</span>                 :<span class="tlaGNC">           1 :         }</span></span>
+<span id="L296"><span class="lineNum">     296</span>                 :<span class="tlaGNC">           2 :         break;</span></span>
+<span id="L297"><span class="lineNum">     297</span>         [<span class="tlaGBC" title="branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="branch 1 was taken 99 times"> + </span>]:<span class="tlaGNC">           3 :       case Effect::kGlob:</span></span>
+<span id="L298"><span class="lineNum">     298</span>                 :<span class="tlaGNC">           3 :         search_.globs.emplace_back(value);</span></span>
+<span id="L299"><span class="lineNum">     299</span>                 :<span class="tlaGNC">           3 :         native_.push_back(</span></span>
+<span id="L300"><span class="lineNum">     300</span>                 :<span class="tlaGNC">           3 :             absl::StrCat(</span></span>
+<span id="L301"><span class="lineNum">     301</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           3 :                 value.starts_with(&quot;!&quot;) ? &quot;--exclude=&quot; : &quot;--include=&quot;,</span></span>
+<span id="L302"><span class="lineNum">     302</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           3 :                 value.starts_with(&quot;!&quot;) ? value.substr(1) : value));</span></span>
+<span id="L303"><span class="lineNum">     303</span>                 :<span class="tlaGNC">           3 :         break;</span></span>
+<span id="L304"><span class="lineNum">     304</span>                 :<span class="tlaGNC">         102 :     }</span></span>
+<span id="L305"><span class="lineNum">     305</span>                 :<span class="tlaGNC">         101 :     return absl::OkStatus();</span></span>
+<span id="L306"><span class="lineNum">     306</span>                 :<span class="tlaGNC">         102 :   }</span></span>
+<span id="L307"><span class="lineNum">     307</span>                 :             : </span>
+<span id="L308"><span class="lineNum">     308</span>                 :<span class="tlaGNC">          24 :   absl::Status Long(std::string_view arg) {</span></span>
+<span id="L309"><span class="lineNum">     309</span>                 :<span class="tlaGNC">          24 :     const auto equals = arg.find('=');</span></span>
+<span id="L310"><span class="lineNum">     310</span>                 :<span class="tlaGNC">          24 :     const auto name = arg.substr(0, equals);</span></span>
+<span id="L311"><span class="lineNum">     311</span>                 :<span class="tlaGNC">          24 :     const std::optional&lt;std::string_view&gt; value =</span></span>
+<span id="L312"><span class="lineNum">     312</span>         [<span class="tlaGBC" title="branch 0 was taken 14 times"> + </span><span class="tlaGBC" title="branch 1 was taken 10 times"> + </span>]:<span class="tlaGNC">          24 :         equals == std::string_view::npos ? std::nullopt : std::optional(arg.substr(equals + 1));</span></span>
+<span id="L313"><span class="lineNum">     313</span> [<span class="tlaGBC" title="branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="branch 1 was taken 22 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 1 time"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 1 time"> + </span>]:<span class="tlaGNC">          24 :     if (name == &quot;help&quot; &amp;&amp; value.has_value()) {</span></span>
+<span id="L314"><span class="lineNum">     314</span>                 :<span class="tlaGNC">           1 :       help_ = true;</span></span>
+<span id="L315"><span class="lineNum">     315</span>                 :<span class="tlaGNC">           1 :       native_.push_back(absl::StrCat(&quot;--&quot;, arg));</span></span>
+<span id="L316"><span class="lineNum">     316</span>                 :<span class="tlaGNC">           1 :       return absl::OkStatus();</span></span>
+<span id="L317"><span class="lineNum">     317</span>                 :<span class="tlaGNC">           1 :     }</span></span>
+<span id="L318"><span class="lineNum">     318</span>         [<span class="tlaGBC" title="branch 0 was taken 527 times"> + </span><span class="tlaGBC" title="branch 1 was taken 12 times"> + </span>]:<span class="tlaGNC">         527 :     for (const auto&amp; option : kOptions) {</span></span>
+<span id="L319"><span class="lineNum">     319</span>         [<span class="tlaGBC" title="branch 0 was taken 11 times"> + </span><span class="tlaGBC" title="branch 1 was taken 516 times"> + </span>]:<span class="tlaGNC">         527 :       if (option.name == name) {</span></span>
+<span id="L320"><span class="lineNum">     320</span>                 :<span class="tlaGNC">          11 :         return Apply(option, value);</span></span>
+<span id="L321"><span class="lineNum">     321</span>                 :<span class="tlaGNC">          11 :       }</span></span>
+<span id="L322"><span class="lineNum">     322</span>                 :<span class="tlaGNC">         527 :     }</span></span>
+<span id="L323"><span class="lineNum">     323</span>                 :             :     // Double-dash XFF globals keep their canonical spelling. Validation still happens</span>
+<span id="L324"><span class="lineNum">     324</span>                 :             :     // through the ordinary registry; unsupported rg shorts never become XFF aliases.</span>
+<span id="L325"><span class="lineNum">     325</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">          12 :     if (name == &quot;rg&quot;) {</span></span>
+<span id="L326"><span class="lineNum">     326</span>                 :<span class="tlaGNC">           1 :       return absl::InvalidArgumentError(&quot;--rg may only select the grammar once&quot;);</span></span>
+<span id="L327"><span class="lineNum">     327</span>                 :<span class="tlaGNC">           1 :     }</span></span>
+<span id="L328"><span class="lineNum">     328</span>                 :<span class="tlaGNC">          11 :     native_.push_back(absl::StrCat(&quot;--&quot;, arg));</span></span>
+<span id="L329"><span class="lineNum">     329</span>                 :<span class="tlaGNC">          11 :     return absl::OkStatus();</span></span>
+<span id="L330"><span class="lineNum">     330</span>                 :<span class="tlaGNC">          12 :   }</span></span>
+<span id="L331"><span class="lineNum">     331</span>                 :             : </span>
+<span id="L332"><span class="lineNum">     332</span>                 :<span class="tlaGNC">          90 :   absl::Status Short(std::string_view arg) {</span></span>
+<span id="L333"><span class="lineNum">     333</span>         [<span class="tlaGBC" title="branch 0 was taken 103 times"> + </span><span class="tlaGBC" title="branch 1 was taken 43 times"> + </span>]:<span class="tlaGNC">         146 :     for (std::size_t pos = 0; pos &lt; arg.size(); ++pos) {</span></span>
+<span id="L334"><span class="lineNum">     334</span>                 :<span class="tlaGNC">         103 :       bool found = false;</span></span>
+<span id="L335"><span class="lineNum">     335</span>         [<span class="tlaGBC" title="branch 0 was taken 1015 times"> + </span><span class="tlaGBC" title="branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">        1015 :       for (const auto&amp; option : kOptions) {</span></span>
+<span id="L336"><span class="lineNum">     336</span> [<span class="tlaGBC" title="branch 0 was taken 944 times"> + </span><span class="tlaGBC" title="branch 1 was taken 71 times"> + </span>][<span class="tlaGBC" title="branch &quot;2&quot; was taken 102 times"> + </span><span class="tlaGBC" title="branch &quot;3&quot; was taken 842 times"> + </span>]:<span class="tlaGNC">        1015 :         if (option.short_name != '\0' &amp;&amp; option.short_name == arg.at(pos)) {</span></span>
+<span id="L337"><span class="lineNum">     337</span>                 :<span class="tlaGNC">         102 :           found = true;</span></span>
+<span id="L338"><span class="lineNum">     338</span>                 :<span class="tlaGNC">         102 :           const auto rest = arg.substr(pos + 1);</span></span>
+<span id="L339"><span class="lineNum">     339</span>         [<span class="tlaGBC" title="branch 0 was taken 251 times"> + </span><span class="tlaGBC" title="branch 1 was taken 203 times"> + </span>]:<span class="tlaGNC">         102 :           MBO_RETURN_IF_ERROR(Apply(option, option.value &amp;&amp; !rest.empty() ? std::optional(rest) : std::nullopt));</span></span>
+<span id="L340"><span class="lineNum">     340</span>         [<span class="tlaGBC" title="branch 0 was taken 37 times"> + </span><span class="tlaGBC" title="branch 1 was taken 56 times"> + </span>]:<span class="tlaGNC">          93 :           if (option.value) {</span></span>
+<span id="L341"><span class="lineNum">     341</span>                 :<span class="tlaGNC">          37 :             return absl::OkStatus();</span></span>
+<span id="L342"><span class="lineNum">     342</span>                 :<span class="tlaGNC">          37 :           }</span></span>
+<span id="L343"><span class="lineNum">     343</span>                 :<span class="tlaGNC">          56 :           break;</span></span>
+<span id="L344"><span class="lineNum">     344</span>                 :<span class="tlaGNC">          93 :         }</span></span>
+<span id="L345"><span class="lineNum">     345</span>                 :<span class="tlaGNC">        1015 :       }</span></span>
+<span id="L346"><span class="lineNum">     346</span>         [<span class="tlaGBC" title="branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="branch 1 was taken 56 times"> + </span>]:<span class="tlaGNC">          57 :       if (!found) {</span></span>
+<span id="L347"><span class="lineNum">     347</span>                 :<span class="tlaGNC">           1 :         return absl::InvalidArgumentError(</span></span>
+<span id="L348"><span class="lineNum">     348</span>                 :<span class="tlaGNC">           1 :             absl::StrCat(&quot;unsupported rg option -&quot;, arg.substr(pos, 1), &quot;; use --xff before XFF expressions&quot;));</span></span>
+<span id="L349"><span class="lineNum">     349</span>                 :<span class="tlaGNC">           1 :       }</span></span>
+<span id="L350"><span class="lineNum">     350</span>                 :<span class="tlaGNC">          57 :     }</span></span>
+<span id="L351"><span class="lineNum">     351</span>                 :<span class="tlaGNC">          43 :     return absl::OkStatus();</span></span>
+<span id="L352"><span class="lineNum">     352</span>                 :<span class="tlaGNC">          90 :   }</span></span>
+<span id="L353"><span class="lineNum">     353</span>                 :             : </span>
+<span id="L354"><span class="lineNum">     354</span>                 :             :   const std::vector&lt;std::string&gt;&amp; args_;</span>
+<span id="L355"><span class="lineNum">     355</span>                 :             :   std::size_t index_;</span>
+<span id="L356"><span class="lineNum">     356</span>                 :             :   bool options_ = true;</span>
+<span id="L357"><span class="lineNum">     357</span>                 :             :   bool explicit_patterns_ = false;</span>
+<span id="L358"><span class="lineNum">     358</span>                 :             :   bool help_ = false;</span>
+<span id="L359"><span class="lineNum">     359</span>                 :             :   RgSearch search_;</span>
+<span id="L360"><span class="lineNum">     360</span>                 :             :   std::vector&lt;std::string&gt; positionals_;</span>
+<span id="L361"><span class="lineNum">     361</span>                 :             :   std::vector&lt;std::string&gt; native_{&quot;--config=rg&quot;, &quot;--match-output&quot;, &quot;--exit-match&quot;};</span>
+<span id="L362"><span class="lineNum">     362</span>                 :             : };</span>
+<span id="L363"><span class="lineNum">     363</span>                 :             : }  // namespace</span>
+<span id="L364"><span class="lineNum">     364</span>                 :             : </span>
+<span id="L365"><span class="lineNum">     365</span>                 :<span class="tlaGNC">         105 : absl::StatusOr&lt;Command&gt; ParseRg(const std::vector&lt;std::string&gt;&amp; args, std::size_t start) {</span></span>
+<span id="L366"><span class="lineNum">     366</span>                 :<span class="tlaGNC">         105 :   return RgParser(args, start).Parse();</span></span>
+<span id="L367"><span class="lineNum">     367</span>                 :<span class="tlaGNC">         105 : }</span></span>
+<span id="L368"><span class="lineNum">     368</span>                 :             : }  // namespace xff::parser</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table class="xffPolicy">
+            <thead>
+              <tr>
+                <th scope="col">Global coverage policy</th>
+                <th scope="col">Low</th>
+                <th scope="col">Medium</th>
+                <th scope="col">High</th>
+                <th scope="col">Enforced</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <th scope="row">Lines</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 92%</td>
+              <td class="headerValueLegH">&ge; 92%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Branches</th>
+              <td class="headerValueLegL">&lt; 80%</td>
+              <td class="headerValueLegM">&ge; 80% and &lt; 82%</td>
+              <td class="headerValueLegH">&ge; 82%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            <tr>
+              <th scope="row">Functions</th>
+              <td class="headerValueLegL">&lt; 90%</td>
+              <td class="headerValueLegM">&ge; 90% and &lt; 95%</td>
+              <td class="headerValueLegH">&ge; 95%</td>
+              <td class="headerValueLegH">High</td>
+            </tr>
+            </tbody>
+          </table>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 2.5-0</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>
