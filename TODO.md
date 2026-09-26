@@ -23,6 +23,11 @@
 - [x] D10: Translate rg automatic worker selection.
 - [x] D11: Explain active rg selection independently of line rendering.
 - [x] D12: Remove the unrelated rg example from comparison help.
+- [x] D13: Preserve field-aware metadata and bounded reads through the rg input adapter.
+- [ ] Benchmark and parallelize rg content selection, independently of traversal workers.
+- [ ] Avoid rereading selected content for native `-M`, and avoid full line materialization for filename/count/quiet output.
+- [ ] Unify rg option metadata and help, or enforce their consistency with exhaustive tests.
+      See [performance analysis](docs/performance-analysis.md#rg-integration-review).
 
 ## Release publication repair
 
