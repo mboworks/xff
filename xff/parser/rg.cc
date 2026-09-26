@@ -248,7 +248,7 @@ class RgParser {
     // assigned directly, so rg paths that look like native operators stay literal paths.
     native_.emplace_back(".");
     native_.insert(native_.end(), args_.begin() + static_cast<std::ptrdiff_t>(index_), args_.end());
-    MBO_ASSIGN_OR_RETURN(auto command, parser::Parse(native_));
+    MBO_ASSIGN_OR_RETURN(auto command, parser::ParseXff(native_));
     if (command.roots.size() != 1) {
       return absl::InvalidArgumentError("--xff starts a filter expression; put search paths before it");
     }

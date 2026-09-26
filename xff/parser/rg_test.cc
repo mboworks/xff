@@ -106,8 +106,9 @@ TEST_F(RgTest, PlusIsNativeOrButAnOrdinaryRgPattern) {
   const auto search = rg.rg.value_or(RgSearch{});
   EXPECT_THAT(search.patterns, ElementsAre(Field(&RgPattern::value, "+")));
   EXPECT_THAT(rg.expression->kind, Eq(Expr::Kind::kOr));
-  ASSERT_OK_AND_ASSIGN(const auto native, Parse({".", "-name", "+", "-o", "-true"}));
-  EXPECT_THAT(native.expression->lhs->args, ElementsAre("+"));
+  EXPECT_THAT(
+      Parse({".", "-true", "+", "-true"}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("unexpected operator")));
   ASSERT_OK_AND_ASSIGN(const auto exec, Parse({".", "-exec", "echo", "{}", "+"}));
   EXPECT_THAT(exec.expression->exec_batch, IsTrue());
 }

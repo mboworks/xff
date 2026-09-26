@@ -2564,7 +2564,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 <a id="primary"></a>
 
-- `+` - logical OR in native expression positions _(operator, find)_
+- `+` - logical OR in XFF expression positions _(operator, xff)_
   Synonym for `-o` in XFF expressions, including after `--xff`. It remains literal data when consumed as a primary argument, and retains its batch terminator meaning for `-exec`.
   See also: [Expression](#topic-expressions), [Ripgrep-style searches](#topic-rg)
 

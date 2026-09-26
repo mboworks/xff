@@ -50,14 +50,14 @@ namespace {
 
 // A token begins the find expression if it is a single-dash word, or one of
 // the operator/grouping tokens.
-bool StartsExpression(std::string_view arg) {
+bool StartsExpression(std::string_view arg, bool allow_xff_or) {
   if (arg.empty()) {
     return false;
   }
   if (arg[0] == '-') {
     return true;
   }
-  return arg == "(" || arg == ")" || arg == "!" || arg == "," || arg == "+";
+  return arg == "(" || arg == ")" || arg == "!" || arg == "," || (allow_xff_or && arg == "+");
 }
 
 // A whole-run global written with a double dash (`--summary=ext`, `--sort`, `--top=10`). Every
@@ -89,8 +89,8 @@ constexpr bool IsMetaFlag(std::string_view arg) {
   return kMetaFlags.contains(arg) || absl::StartsWith(arg, "--help=");
 }
 
-bool IsOr(std::string_view token) {
-  return token == "-o" || token == "-or" || token == "+";
+bool IsOr(std::string_view token, bool allow_xff_or) {
+  return token == "-o" || token == "-or" || (allow_xff_or && token == "+");
 }
 
 bool IsAnd(std::string_view token) {
@@ -109,10 +109,6 @@ bool IsNand(std::string_view token) {
 }
 
 // Operators at the OR tier (the lowest binary tier): -o / -or / -nor.
-bool IsOrTier(std::string_view token) {
-  return IsOr(token) || token == "-nor";
-}
-
 // Operators at the XOR tier (between AND and OR): -xor / -xnor.
 bool IsXorTier(std::string_view token) {
   return token == "-xor" || token == "-xnor";
@@ -208,8 +204,8 @@ class ExprParser {
  public:
   // `hoist_globals` = pull double-dash globals out of primary/operator positions into
   // HoistedGlobals() (off after an explicit `--` end-of-options delimiter).
-  explicit ExprParser(const std::vector<std::string>& tokens, bool hoist_globals = true)
-      : tokens_(tokens), hoist_globals_(hoist_globals) {}
+  explicit ExprParser(const std::vector<std::string>& tokens, bool hoist_globals = true, bool allow_xff_or = false)
+      : tokens_(tokens), hoist_globals_(hoist_globals), allow_xff_or_(allow_xff_or) {}
 
   absl::StatusOr<ExprPtr> Parse() {
     SkipGlobals();
@@ -731,8 +727,11 @@ class ExprParser {
     return MakePredicate(*descriptor, std::move(args));
   }
 
+  bool IsOrTier(std::string_view token) const { return IsOr(token, allow_xff_or_) || token == "-nor"; }
+
   const std::vector<std::string>& tokens_;
   bool hoist_globals_ = true;
+  bool allow_xff_or_ = false;
   std::vector<std::string> hoisted_globals_;
   std::vector<std::string> hoisted_meta_flags_;
   std::size_t pos_ = 0;
@@ -915,7 +914,8 @@ bool ConsumeLeadingJobsGlobal(
 // Owns the command under construction while parsing its three distinct phases.
 class CommandParser {
  public:
-  explicit CommandParser(const std::vector<std::string>& args) : args_(args) {}
+  explicit CommandParser(const std::vector<std::string>& args, bool allow_xff_or = false)
+      : args_(args), allow_xff_or_(allow_xff_or) {}
 
   absl::StatusOr<Command> Parse() {
     MBO_RETURN_IF_ERROR(LeadingGlobals());
@@ -984,7 +984,7 @@ class CommandParser {
         MBO_RETURN_IF_ERROR(Global(argument));
         continue;
       }
-      if (StartsExpression(argument)) {
+      if (StartsExpression(argument, allow_xff_or_)) {
         break;
       }
       command_.roots.push_back(argument);
@@ -998,7 +998,7 @@ class CommandParser {
     if (tokens.empty()) {
       return absl::OkStatus();
     }
-    ExprParser parser(tokens, /*hoist_globals=*/!options_ended_);
+    ExprParser parser(tokens, /*hoist_globals=*/!options_ended_, allow_xff_or_);
     MBO_ASSIGN_OR_RETURN(command_.expression, parser.Parse());
     for (const auto& global : parser.HoistedGlobals()) {
       MBO_RETURN_IF_ERROR(Global(global));
@@ -1014,6 +1014,7 @@ class CommandParser {
   Command command_;
   std::size_t index_ = 0;
   bool options_ended_ = false;
+  bool allow_xff_or_ = false;
 };
 
 }  // namespace
@@ -1024,6 +1025,10 @@ regex::Grammar GrammarFromGlobals(const std::vector<std::string>& globals) {
 
 absl::StatusOr<Command> Parse(const std::vector<std::string>& args) {
   return CommandParser(args).Parse();
+}
+
+absl::StatusOr<Command> ParseXff(const std::vector<std::string>& args) {
+  return CommandParser(args, /*allow_xff_or=*/true).Parse();
 }
 
 absl::Status EnforceStyle(const Command& command, registry::Style style) {
