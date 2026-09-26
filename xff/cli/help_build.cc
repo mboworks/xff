@@ -1235,9 +1235,6 @@ Section CompareSection(bool in_full) {
   examples.children.push_back(
       ExampleOf("xff --compare=summary left-tree right-tree --summary=ext --summary-scope=compare", "sh"));
   examples.children.push_back(ProseOf("summarize extensions in side-by-side left and right totals"));
-  examples.children.push_back(ExampleOf("xff --rg -n TODO src --xff -name '*.cc'", "sh"));
-  examples.children.push_back(
-      ProseOf("search matching lines with rg arguments, then filter files with XFF predicates"));
   examples.children.push_back(ExampleOf("xff --compare left-tree right-tree", "sh"));
   examples.children.push_back(ProseOf("print only paths present on one side or different on both sides"));
   examples.children.push_back(ExampleOf("xff --compare --compare-select=all left-tree right-tree", "sh"));

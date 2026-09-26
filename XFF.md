@@ -2991,12 +2991,6 @@ xff --compare=summary left-tree right-tree --summary=ext --summary-scope=compare
 summarize extensions in side-by-side left and right totals
 
 ```sh
-xff --rg -n TODO src --xff -name '*.cc'
-```
-
-search matching lines with rg arguments, then filter files with XFF predicates
-
-```sh
 xff --compare left-tree right-tree
 ```
 
