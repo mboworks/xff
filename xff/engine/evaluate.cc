@@ -1663,6 +1663,9 @@ void EmitGrepRecord(
     if (ctx.grep.only_matching) {
       output.text = match_text;
     }
+    if (ctx.grep.max_columns != 0 && output.text.size() > ctx.grep.max_columns) {
+      output.text = line.is_match ? "[Omitted long matching line]" : "[Omitted long context line]";
+    }
     EmitGrepLine(expr, ctx, output);
     return;
   }
@@ -1731,12 +1734,6 @@ void EmitSelectedGrepLines(
     }
     first = false;
     previous_group = line.group;
-    if (ctx.grep.max_columns != 0 && line.text.size() > ctx.grep.max_columns) {
-      auto omitted = line;
-      omitted.text = line.is_match ? "[Omitted long matching line]" : "[Omitted long context line]";
-      EmitGrepRecord(expr, ctx, omitted, std::nullopt);
-      continue;
-    }
     if (ctx.grep.only_matching && !(ctx.grep.rg_mode && ctx.grep.invert)) {
       if (!ctx.grep.invert) {
         for (const auto& span : matcher.FindAll(line.text)) {

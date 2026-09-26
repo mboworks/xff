@@ -133,6 +133,15 @@ test::binary_empty_matches_context_and_max_columns() {
   expect_matches 'xff:' "${out}"
 }
 
+test::only_matching_applies_max_columns_to_each_portion() {
+  local root
+  root="$(_tree)"
+  printf 'hit abcdef abcdef\n' >"${root}/long"
+  _check 0 $'hit\n[Omitted long matching line]\n[Omitted long matching line]' \
+    --rg -o -M3 'hit|abcdef' "${root}/long"
+  _check 0 'hit abcdef abcdef' --rg -M0 hit "${root}/long"
+}
+
 test::errors_are_not_silent_or_action_fallbacks() {
   local root out rc
   root="$(_tree)"

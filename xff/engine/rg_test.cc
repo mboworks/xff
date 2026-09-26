@@ -158,6 +158,19 @@ TEST_F(RgEngineTest, EmptyPatternsAndInvertedPortionsFollowRg) {
   EXPECT_THAT(output, EqualsText("tree/a:miss\n"));
 }
 
+TEST_F(RgEngineTest, MaximumColumnsMeasureTheEmittedMatchBeforePrefixes) {
+  fs.files.insert_or_assign("tree/a", "hit and other text\n");
+  EXPECT_THAT(Run({"-on", "-M3", "hit", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a:1:hit\n"));
+  EXPECT_THAT(Run({"-on", "-M3", "hit.*", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a:1:[Omitted long matching line]\n"));
+  EXPECT_THAT(Run({"-o", "-M3", "hit.*", "tree/a", "--format=jsonl"}).any_match, IsTrue());
+  EXPECT_THAT(output, HasSubstr(R"("text":"[Omitted long matching line]")"));
+  EXPECT_THAT(output, HasSubstr(R"("line":1)"));
+  EXPECT_THAT(Run({"-o", "-M3", "hit", "tree/a", "--format=jsonl"}).any_match, IsTrue());
+  EXPECT_THAT(output, HasSubstr(R"("text":"hit")"));
+}
+
 TEST_F(RgEngineTest, SmartCaseAppliesToTheWholePatternUnion) {
   EXPECT_THAT(Run({"-S", "-e", "HIT", "-e", "MISS", "tree"}).any_match, IsFalse());
   EXPECT_THAT(Run({"-S", "-e", "HIT", "-e", "miss", "tree/a"}).any_match, IsTrue());
