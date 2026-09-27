@@ -5803,6 +5803,9 @@ RunResult RunFindCore(
         parallel_expression, options.workers, full_metadata || rank_by_score, std::move(content_output));
   }
   std::vector<CollectedEntry> pending_matches;
+  // Decision-only batches retain no file bytes or rendered line records. Give them more work
+  // between coordinator barriers; keep content-output batches smaller because a line is unbounded.
+  const std::size_t match_batch_size = rg_output || match_output ? 256 : 1'024;
   const auto flush_matches = [&] {
     if (pending_matches.empty()) {
       return;
@@ -5887,7 +5890,7 @@ RunResult RunFindCore(
         }
         if (parallel_entry) {
           pending_matches.push_back(OwnVisit(visit));
-          if (pending_matches.size() >= 256) {
+          if (pending_matches.size() >= match_batch_size) {
             flush_matches();
           }
           return WalkAction::kContinue;

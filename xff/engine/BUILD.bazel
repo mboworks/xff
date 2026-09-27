@@ -535,6 +535,7 @@ cc_test(
     size = "small",
     srcs = ["rg_test.cc"],
     deps = [
+        ":parallel_match_cc",
         ":run_cc",
         "//xff/parser:parser_cc",
         "//xff/vfs:local_fs_cc",

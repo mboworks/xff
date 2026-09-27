@@ -359,6 +359,7 @@ cc_test(
         "@libarchive//libarchive",
         "@mboworks_mbo//mbo/testing:status_cc",
         "@xff_extras_api//:license_notice_cc",
+        "@xff_extras_api//:read_budget_cc",
     ],
 )
 

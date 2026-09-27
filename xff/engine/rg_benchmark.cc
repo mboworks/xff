@@ -18,9 +18,12 @@
 #include "xff/vfs/read_source.h"
 
 namespace {
+enum class Layout { kUniform, kClustered, kInterleaved, kLargeOutput };
+
 class SearchTree final : public xff::vfs::FileSystem {
  public:
-  explicit SearchTree(std::size_t count, bool late = false) : count_(count) {
+  explicit SearchTree(std::size_t count, bool late = false, Layout layout = Layout::kUniform)
+      : count_(count), layout_(layout) {
     if (!late) {
       text_ = "alpha123 needle\n";
     }
@@ -31,6 +34,8 @@ class SearchTree final : public xff::vfs::FileSystem {
       text_ += "alpha123 needle\n";
     }
     source_ = xff::vfs::MemoryReadSource(text_);
+    heavy_ = std::string(128UZ * 1'024, 'x') + "alpha123 needle\n";
+    heavy_source_ = xff::vfs::MemoryReadSource(heavy_);
   }
 
   absl::StatusOr<std::vector<xff::vfs::Entry>> ReadDir(std::string_view path) const override {
@@ -40,7 +45,7 @@ class SearchTree final : public xff::vfs::FileSystem {
     std::vector<xff::vfs::Entry> entries;
     entries.reserve(count_);
     for (std::size_t index = 0; index < count_; ++index) {
-      const auto name = std::to_string(index);
+      const auto name = (Heavy(index) ? "heavy" : "light") + std::to_string(index);
       entries.push_back({.path = "tree/" + name, .name = name, .type = xff::vfs::FileType::kRegular});
     }
     return entries;
@@ -49,13 +54,15 @@ class SearchTree final : public xff::vfs::FileSystem {
   absl::StatusOr<xff::vfs::Metadata> Stat(std::string_view path, bool) const override {
     return xff::vfs::Metadata{
         .type = path == "tree" ? xff::vfs::FileType::kDirectory : xff::vfs::FileType::kRegular,
-        .size = path == "tree" ? 0 : text_.size(),
+        .size = path == "tree" ? 0 : Content(path).size(),
     };
   }
 
-  absl::StatusOr<std::string> ReadContent(std::string_view) const override { return text_; }
+  absl::StatusOr<std::string> ReadContent(std::string_view path) const override { return Content(path); }
 
-  absl::StatusOr<xff::vfs::SharedReadSource> ContentSource(std::string_view) const override { return source_; }
+  absl::StatusOr<xff::vfs::SharedReadSource> ContentSource(std::string_view path) const override {
+    return path.starts_with("tree/heavy") ? heavy_source_ : source_;
+  }
 
   absl::Status Remove(std::string_view) const override { return absl::PermissionDeniedError("read-only"); }
 
@@ -72,13 +79,32 @@ class SearchTree final : public xff::vfs::FileSystem {
   absl::StatusOr<bool> IsCaseSensitive(std::string_view) const override { return true; }
 
  private:
+  const std::string& Content(std::string_view path) const { return path.starts_with("tree/heavy") ? heavy_ : text_; }
+
+  bool Heavy(std::size_t index) const {
+    if (layout_ == Layout::kLargeOutput) {
+      return true;
+    }
+    if (layout_ == Layout::kUniform) {
+      return false;
+    }
+    return layout_ == Layout::kClustered ? index % 256 >= 240 : index % 16 == 15;
+  }
+
   std::size_t count_;
+  Layout layout_;
+  std::string heavy_;
+  xff::vfs::SharedReadSource heavy_source_;
   std::string text_;
   xff::vfs::SharedReadSource source_;
 };
 
 enum class Mode {
+  kTraversal,
+  kLargeOutput,
   kFilterLate,
+  kFilterClustered,
+  kFilterInterleaved,
   kFilter,
   kFilterSummary,
   kContentFields,
@@ -98,6 +124,10 @@ std::vector<std::string> Arguments(Mode mode, std::string_view grammar, std::int
       "--sort=none",
       "--regextype=" + std::string(grammar),
   };
+  if (mode == Mode::kTraversal) {
+    arguments.insert(arguments.end(), {"tree", "-type", "f"});
+    return arguments;
+  }
   if (mode == Mode::kFilterSummary || mode == Mode::kRgSummary) {
     arguments.insert(arguments.end(), {"--summary=ext", "--format=csv"});
   }
@@ -114,8 +144,8 @@ std::vector<std::string> Arguments(Mode mode, std::string_view grammar, std::int
     return arguments;
   }
   constexpr std::string_view kPattern = "(alpha|beta)[0-9]{3}.*needle";
-  if (mode == Mode::kFilter || mode == Mode::kFilterLate || mode == Mode::kFilterSummary
-      || mode == Mode::kNativeLines) {
+  if (mode == Mode::kFilter || mode == Mode::kFilterLate || mode == Mode::kFilterSummary || mode == Mode::kNativeLines
+      || mode == Mode::kFilterClustered || mode == Mode::kFilterInterleaved) {
     if (mode == Mode::kNativeLines) {
       arguments.emplace_back("-M");
     }
@@ -129,14 +159,22 @@ std::vector<std::string> Arguments(Mode mode, std::string_view grammar, std::int
     } else if (mode == Mode::kRgQuiet) {
       arguments.emplace_back("-q");
     }
-    arguments.insert(arguments.end(), {std::string(kPattern), "tree"});
+    arguments.insert(arguments.end(), {mode == Mode::kLargeOutput ? "." : std::string(kPattern), "tree"});
   }
   return arguments;
 }
 
 void Search(benchmark::State& state, Mode mode, std::string_view grammar) {
   const auto count = static_cast<std::size_t>(state.range(0));
-  const SearchTree tree(count, mode == Mode::kFilterLate || mode == Mode::kFilterSummary || mode == Mode::kRgSummary);
+  const Layout layout = mode == Mode::kLargeOutput         ? Layout::kLargeOutput
+                        : mode == Mode::kFilterClustered   ? Layout::kClustered
+                        : mode == Mode::kFilterInterleaved ? Layout::kInterleaved
+                                                           : Layout::kUniform;
+  const SearchTree tree(
+      count,
+      layout != Layout::kUniform || mode == Mode::kFilterLate || mode == Mode::kFilterSummary
+          || mode == Mode::kRgSummary,
+      layout);
   const auto arguments = Arguments(mode, grammar, state.range(1));
   auto command = xff::parser::Parse(arguments);
   if (!command.ok()) {
@@ -148,7 +186,8 @@ void Search(benchmark::State& state, Mode mode, std::string_view grammar) {
       xff::parser::ResolveCaseMode(command->globals, xff::registry::Style::kXff));
   std::size_t records = 0;
   std::string initial_output;
-  bool checking = true;
+  // Large-output validation counts records without retaining a second copy of the output.
+  bool checking = mode != Mode::kLargeOutput;
   const auto emit = [&](std::string_view text) {
     records += std::ranges::count(text, '\n');
     if (checking) {
@@ -183,8 +222,12 @@ void Search(benchmark::State& state, Mode mode, std::string_view grammar) {
 int main(int argc, char** argv) {
   benchmark::Initialize(&argc, argv);
   constexpr auto kModes = std::to_array<std::pair<std::string_view, Mode>>({
+      {"traversal", Mode::kTraversal},
+      {"large-output", Mode::kLargeOutput},
       {"filter", Mode::kFilter},
       {"filter-late", Mode::kFilterLate},
+      {"filter-clustered", Mode::kFilterClustered},
+      {"filter-interleaved", Mode::kFilterInterleaved},
       {"filter-summary", Mode::kFilterSummary},
       {"content-fields", Mode::kContentFields},
       {"rewrites", Mode::kRewrites},

@@ -33,6 +33,7 @@
 #include "gtest/gtest.h"
 #include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
+#include "xff/engine/parallel_match.h"
 #include "xff/engine/run.h"
 #include "xff/parser/parser.h"
 #include "xff/vfs/read_source.h"
@@ -45,6 +46,7 @@ using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
 using ::mbo::testing::WithDropIndent;
 using ::testing::Contains;
+using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Gt;
 using ::testing::HasSubstr;
@@ -89,8 +91,10 @@ struct SearchFs final : vfs::FileSystem {
   std::string stat_error_path;
   std::string read_error_path;
   bool streaming = false;
+  vfs::Source entry_source = vfs::Source::kLocalFs;
   vfs::SharedReadSource source_override;
   bool track_threads = false;
+  std::size_t expected_threads = 2;
   mutable std::mutex read_mutex;
   mutable std::condition_variable read_condition;
   mutable std::set<std::thread::id> read_threads;
@@ -103,7 +107,8 @@ struct SearchFs final : vfs::FileSystem {
     if (read_threads.insert(std::this_thread::get_id()).second) {
       read_condition.notify_all();
       // Force overlap on the first read without hanging if scheduling regresses to serial.
-      read_condition.wait_for(lock, std::chrono::seconds(2), [this] { return read_threads.size() > 1; });
+      read_condition.wait_for(
+          lock, std::chrono::seconds(2), [this] { return read_threads.size() >= expected_threads; });
     }
   }
 
@@ -118,7 +123,12 @@ struct SearchFs final : vfs::FileSystem {
     entries.reserve(files.size());
     for (const auto& [name, data] : files) {
       if (name.starts_with("tree/")) {
-        entries.push_back({.path = name, .name = name.substr(5), .type = vfs::FileType::kRegular});
+        entries.push_back({
+            .path = name,
+            .name = name.substr(5),
+            .type = vfs::FileType::kRegular,
+            .source = entry_source,
+        });
       }
     }
     return entries;
@@ -135,7 +145,11 @@ struct SearchFs final : vfs::FileSystem {
     if (found == files.end()) {
       return absl::NotFoundError("missing file");
     }
-    return vfs::Metadata{.type = vfs::FileType::kRegular, .size = found->second.size()};
+    return vfs::Metadata{
+        .type = vfs::FileType::kRegular,
+        .source = entry_source,
+        .size = found->second.size(),
+    };
   }
 
   absl::Status Remove(std::string_view) const override {
@@ -243,6 +257,26 @@ TEST_F(RgEngineTest, NativeParallelBatchesReuseReadsWithoutSharingEntryContent) 
   EXPECT_THAT(fs.reads.load(), 300);
   EXPECT_THAT(output, HasSubstr("tree/0:1:hit 0\n"));
   EXPECT_THAT(output, HasSubstr("tree/299:1:hit 299\n"));
+}
+
+TEST_F(RgEngineTest, NativeDecisionBatchesPreserveOutputAndErrorsAcrossLargeBoundaries) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 1'100; ++index) {
+    fs.files.emplace("tree/" + std::to_string(index), index % 3 == 0 ? "hit\n" : "miss\n");
+  }
+  fs.stat_error_path = "tree/99";
+  std::vector<std::string> args{"--jobs=1", "--archive=none", "--sort=none", "--summary=ext", "tree", "-rxc", "hit"};
+  EXPECT_THAT(Run(args, false).errors, Eq(1));
+  const auto expected = output;
+  const auto expected_errors = errors;
+  fs.reads = 0;
+  fs.track_threads = true;
+  args.front() = "--jobs=4";
+  EXPECT_THAT(Run(args, false).errors, Eq(1));
+  EXPECT_THAT(output, EqualsText(expected));
+  EXPECT_THAT(errors, Eq(expected_errors));
+  EXPECT_THAT(fs.reads.load(), Eq(1'099));
+  EXPECT_THAT(fs.read_threads.size(), Gt(1));
 }
 
 TEST_F(RgEngineTest, RgFiltersAndLineSelectionReuseTheSameContent) {
@@ -383,6 +417,54 @@ TEST_F(RgEngineTest, OrdinaryRgSearchUsesContentWorkersWithoutNativeExpression) 
   EXPECT_THAT(fs.reads.load(), 300);
   EXPECT_THAT(output, HasSubstr("tree/0:hit 0\n"));
   EXPECT_THAT(output, HasSubstr("tree/299:hit 299\n"));
+}
+
+TEST_F(RgEngineTest, MatcherPoolGrowsForLaterBatchesAndRunsShortTailsInline) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 256; ++index) {
+    fs.files.emplace("tree/" + std::to_string(index), "hit\n");
+  }
+  const auto entries = [&](std::size_t count) {
+    std::vector<CollectedEntry> result;
+    result.reserve(count);
+    for (std::size_t index = 0; index < count; ++index) {
+      result.push_back({
+          .path = "tree/" + std::to_string(index),
+          .metadata = {.type = vfs::FileType::kRegular},
+          .fs = fs,
+      });
+    }
+    return result;
+  };
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"tree", "-content", "hit"}));
+  ParallelMatch matcher(*command.expression, 12, false);
+  fs.track_threads = true;
+  for (const auto [count, workers] : {std::pair{64UZ, 4UZ}, {256UZ, 12UZ}, {8UZ, 1UZ}}) {
+    fs.expected_threads = workers;
+    fs.read_threads.clear();
+    const auto& results = matcher.Match(entries(count));
+    EXPECT_THAT(results.size(), Eq(count));
+    EXPECT_THAT(fs.read_threads.size(), Eq(workers));
+    for (const auto& result : results) {
+      EXPECT_THAT(result.evaluation.matched, IsTrue());
+    }
+  }
+  EXPECT_THAT(fs.read_threads, ElementsAre(std::this_thread::get_id()));
+}
+
+TEST_F(RgEngineTest, ArchiveMembersKeepTheirSerialReadAdmissionWithMultipleWorkers) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 300; ++index) {
+    fs.files.emplace("tree/" + std::to_string(index), "hit\n");
+  }
+  fs.entry_source = vfs::Source::kArchiveMember;
+  EXPECT_THAT(Run({"-j1", "--archive=none", "hit", "tree"}).errors, Eq(0));
+  const auto expected = output;
+  fs.track_threads = true;
+  fs.expected_threads = 1;
+  EXPECT_THAT(Run({"-j4", "--archive=none", "hit", "tree"}).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText(expected));
+  EXPECT_THAT(fs.read_threads, ElementsAre(std::this_thread::get_id()));
 }
 
 TEST_F(RgEngineTest, ParallelRgMatchesSerialRecordsAcrossBatchesAndOutputModes) {

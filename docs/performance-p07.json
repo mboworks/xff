@@ -1,0 +1,49 @@
+{
+  "base_commit": "4f8b3bc72acd49f16a173408264f8893bc848ff0",
+  "platform": "macOS arm64",
+  "cpu": "Apple M5 Pro (18 CPUs reported)",
+  "build": "clang_release (O2 + ThinLTO), xff_full",
+  "experiment": "Remove fs_owner and ArchiveMember guards from parallel_entry in run.cc; keep !visit.dived; prototype rejected, no production change",
+  "fixture": "Warm host filesystem; Python tarfile uncompressed TAR / gzip TAR and zipfile ZIP_DEFLATED archives. Each member is named NNNNNN.txt and contains 128 copies of unmatched content for line selection newline followed by alpha123 needle newline (4752 bytes).",
+  "invocation": "--no-config --jobs=N --archive=roots --sort=dir ARCHIVE -rxc (alpha|beta)[0-9]{3}.*needle",
+  "measurement": "Five paired rounds, alternating binary order; discard round 0; mean fastest 3 of 4 retained samples. Startup and output capture included; exact ordered output and member count checked. ZIP capped at 100 members after a slow exploratory 1000-member run.",
+  "unit": "milliseconds",
+  "samples": {
+    "baseline": {
+      "tar/10/1": [8.496916, 9.070541, 9.345667, 9.69575],
+      "tar/10/4": [8.183833, 8.615458, 10.148333, 8.091959],
+      "tar/100/1": [15.444458, 14.404083, 17.804167, 15.103459],
+      "tar/100/4": [14.967666, 15.656292, 16.894042, 15.430333],
+      "tar/1000/1": [333.174459, 330.442958, 364.976, 334.090833],
+      "tar/1000/4": [337.729541, 340.35425, 347.269584, 355.540916],
+      "tgz/10/1": [9.605542, 9.610208, 9.128125, 8.805375],
+      "tgz/10/4": [8.809583, 8.983292, 9.000333, 8.637875],
+      "tgz/100/1": [25.444666, 24.907375, 25.160625, 24.73625],
+      "tgz/100/4": [25.804, 24.694833, 25.239625, 24.51775],
+      "tgz/1000/1": [1135.778167, 1131.8145, 1125.692083, 1146.648083],
+      "tgz/1000/4": [1138.019, 1159.665333, 1133.526542, 1144.017625],
+      "zip/10/1": [14.082792, 14.074334, 13.712167, 14.4545],
+      "zip/10/4": [13.783375, 13.840167, 14.085875, 15.364375],
+      "zip/100/1": [414.69625, 407.3845, 405.402875, 405.010833],
+      "zip/100/4": [403.075833, 400.66925, 400.494834, 399.3245]
+    },
+    "candidate": {
+      "tar/10/1": [9.482584, 8.497458, 10.326583, 8.558333],
+      "tar/10/4": [8.187667, 8.609666, 9.452084, 7.925458],
+      "tar/100/1": [15.414209, 15.316042, 15.649375, 14.896458],
+      "tar/100/4": [12.13975, 10.941792, 13.445792, 11.357625],
+      "tar/1000/1": [343.687375, 338.379125, 357.157541, 336.050125],
+      "tar/1000/4": [121.044667, 120.017166, 133.518333, 120.70375],
+      "tgz/10/1": [10.492167, 8.9615, 9.318125, 8.453375],
+      "tgz/10/4": [8.885708, 9.389291, 9.098625, 9.2195],
+      "tgz/100/1": [24.559209, 24.453791, 24.31075, 24.289625],
+      "tgz/100/4": [15.692375, 14.6815, 15.932333, 14.443416],
+      "tgz/1000/1": [1119.277333, 1091.03675, 1089.593542, 1083.118834],
+      "tgz/1000/4": [304.372625, 304.720542, 304.294083, 303.276167],
+      "zip/10/1": [14.051958, 13.682, 14.715208, 15.016125],
+      "zip/10/4": [13.598541, 13.431, 13.886417, 14.260292],
+      "zip/100/1": [423.794959, 405.578458, 406.48875, 401.216375],
+      "zip/100/4": [449.17025, 519.162333, 457.512167, 446.348084]
+    }
+  }
+}

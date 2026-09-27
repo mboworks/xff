@@ -45,18 +45,24 @@ A bounded directory-read worker pool with a single coordinator:
 - Workers perform only `ReadDir` plus metadata lookup and return complete listings.
   The coordinator submits sibling-directory reads ahead, then consumes their
   futures in the order required by `--sort`. Directory workers start only when at least
-  two sibling directories provide independent work; a flat directory or single-child
-  chain does not pay for idle directory threads.
+  two sibling directories provide independent work. For a coordinator-read directory with at least
+  512 children and eagerly required metadata, 128-entry stat chunks use the same pool. At most one
+  chunk per worker is pending; worker jobs never wait on nested jobs. Metadata-free, lazy and
+  owned/archive-source listings keep their serial per-directory path.
 - The coordinator applies traversal controls and writes the output sink in traversal order.
   Independent content predicates and rg content searches can evaluate in a separate bounded worker
   pool; all stateful expressions, mutations and execution actions retain the coordinator evaluator.
-- Content matching batches at most 256 owned entries and schedules chunks of 16, so one broad
-  directory can use several workers. Fewer than 64 entries run inline without starting matcher
-  threads. Completed results return to the coordinator in input order, including a trailing
-  path-only print action. Cheap name/type matching stays inline to avoid scheduling overhead.
+- Content matching schedules chunks of four owned entries, so clustered expensive files can use
+  several workers. Decision-only batches hold at most 1,024 entries; matching-line output retains
+  the smaller 256-entry bound. Fewer than 64 entries avoid initial thread startup, and tails below
+  16 run inline even after a pool exists. Later larger batches can grow the pool up to the worker
+  allowance. Completed results return in input order, including a trailing path-only print action.
+  Cheap name/type matching stays inline to avoid scheduling overhead.
 - Eligibility comes from audited descriptor capabilities, not names: only independent tests
-  without full metadata, mutable run state or safety effects qualify. Reductions, templates,
-  colored output and filesystem-native case probing use the general evaluator. Archive-root probing
+  without metadata predicates, mutable run state or safety effects qualify. Reductions, templates
+  and colored output can consume metadata on the coordinator after eligible filters run in workers;
+  their eager metadata demand does not itself disable workers. Filesystem-native case probing and
+  result-set controls still use the general evaluator. Archive-root probing
   does not disable host-file parallelism: mounted/archive-member entries flush pending host results
   and use the serial evaluator. Both paths keep the same VFS and safety preflight.
 - Workers own each entry's content snapshot and rendered output. Predicates and match output reuse
@@ -64,11 +70,17 @@ A bounded directory-read worker pool with a single coordinator:
   records for ordered emission. Full line/context output buffers each input; filename/count/quiet
   selection streams where the VFS supports it, retaining the longest line and draining the source
   for binary/error checks. Neither the entry-count batch bound nor streaming limits record size.
-- Each worker forks its RE2 matching state once to avoid shared DFA-cache contention. Other
-  immutable compiled backends, including PCRE2, remain shared. Entry content and lazy metadata
-  have one owner and need no additional locks.
+- Each worker binds native and output RE2 state once to avoid shared DFA-cache contention. PCRE2
+  workers share compiled patterns and reuse private match scratch, with bounded retained interpreter
+  heap frames and independent reentrant leases. Entry content and lazy metadata have one owner and
+  need no additional locks.
 - A listing future may retain a completed directory read until the coordinator
   reaches it. No worker emits a match and no traversal sort collects all matches.
+
+Comparison evaluates eligible large regular-file pairs in batches of at most 64 after collecting
+both trees. Each pair owns persistent read cursors; small patch inputs can be retained up to 64 KiB
+per side. The coordinator publishes sorted results, summaries and patches. Archive/owned-source
+pairs remain serial. This is not yet a completed-directory comparison pipeline.
 
 ## `--sort` modes
 
@@ -238,4 +250,5 @@ Deferred-expression memoization is allocated only when the expression contains a
 
 Lazy metadata is exclusively owned by the coordinator after a directory-read future hands
 off its listing. Its cached value and status need neither locks nor atomics. Matcher workers
-receive owned entries without lazy loaders, and their eligibility excludes metadata consumers.
+receive owned entries without lazy loaders, and their eligibility excludes metadata predicates.
+Presentation may consume the eager metadata carried by those entries after matching completes.
