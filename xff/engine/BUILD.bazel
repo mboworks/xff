@@ -258,7 +258,9 @@ cc_test(
     size = "small",
     srcs = ["parallel_match_test.cc"],
     deps = [
+        ":evaluate_cc",
         ":parallel_match_cc",
+        "//xff/matching/regex:regex_cc",
         "//xff/parser:parser_cc",
         "//xff/vfs:local_fs_cc",
         "@googletest//:gtest_main",

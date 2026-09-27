@@ -36,6 +36,7 @@ using ::mbo::testing::StatusIs;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::IsFalse;
+using ::testing::IsNull;
 using ::testing::IsTrue;
 using ::testing::Optional;
 
@@ -87,6 +88,7 @@ struct RegexBackendSeamTest : ::testing::Test {};
 TEST_F(RegexBackendSeamTest, AnExtraCanImplementTheSeamUsingOnlyThisModule) {
   const LiteralBackend backend("ab");
   const RegexBackend& seam = backend;  // held abstractly, the way Matcher owns it
+  EXPECT_THAT(seam.ForkForWorker(), IsNull());
   EXPECT_THAT(seam.FullMatch("ab"), IsTrue());
   EXPECT_THAT(seam.FullMatch("xaby"), IsFalse());
   EXPECT_THAT(seam.PartialMatch("xaby"), IsTrue());

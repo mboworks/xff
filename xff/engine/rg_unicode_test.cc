@@ -115,16 +115,16 @@ TEST_F(RgUnicodeTest, ByteModeCanSearchNonUtf8InputWithoutTranscoding) {
 }
 
 TEST_F(RgUnicodeTest, WorkerMatchersRetainExplicitTextInterpretation) {
-  ASSERT_OK_AND_ASSIGN(
-      const auto bytes, regex::Matcher::Compile(".", false, regex::Grammar::kRe2, regex::TextMode::kBytes));
-  ASSERT_OK_AND_ASSIGN(const auto bytes_worker, bytes.ForkForWorker());
-  EXPECT_THAT(bytes_worker.FullMatch("\xe9"), IsTrue());
-  EXPECT_THAT(bytes_worker.FullMatch("é"), IsFalse());
-  ASSERT_OK_AND_ASSIGN(
-      const auto utf8, regex::Matcher::Compile(".", false, regex::Grammar::kRe2, regex::TextMode::kUtf8));
-  ASSERT_OK_AND_ASSIGN(const auto utf8_worker, utf8.ForkForWorker());
-  EXPECT_THAT(utf8_worker.FullMatch("é"), IsTrue());
-  EXPECT_THAT(utf8_worker.FullMatch("\xe9"), IsFalse());
+  for (const auto grammar : {regex::Grammar::kRe2, regex::Grammar::kPcre2}) {
+    ASSERT_OK_AND_ASSIGN(const auto bytes, regex::Matcher::Compile(".", false, grammar, regex::TextMode::kBytes));
+    ASSERT_OK_AND_ASSIGN(const auto bytes_worker, bytes.ForkForWorker());
+    EXPECT_THAT(bytes_worker.FullMatch("\xe9"), IsTrue());
+    EXPECT_THAT(bytes_worker.FullMatch("é"), IsFalse());
+    ASSERT_OK_AND_ASSIGN(const auto utf8, regex::Matcher::Compile(".", false, grammar, regex::TextMode::kUtf8));
+    ASSERT_OK_AND_ASSIGN(const auto utf8_worker, utf8.ForkForWorker());
+    EXPECT_THAT(utf8_worker.FullMatch("é"), IsTrue());
+    EXPECT_THAT(utf8_worker.FullMatch("\xe9"), IsFalse());
+  }
 }
 
 TEST_F(RgUnicodeTest, Utf8StillFindsValidTextAroundMalformedBytes) {

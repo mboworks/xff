@@ -19,9 +19,15 @@
 namespace {
 class SearchTree final : public xff::vfs::FileSystem {
  public:
-  explicit SearchTree(std::size_t count) : count_(count), text_("alpha123 needle\n") {
+  explicit SearchTree(std::size_t count, bool late = false) : count_(count) {
+    if (!late) {
+      text_ = "alpha123 needle\n";
+    }
     for (std::size_t index = 0; index < 128; ++index) {
       text_ += "unmatched content for line selection\n";
+    }
+    if (late) {
+      text_ += "alpha123 needle\n";
     }
     source_ = xff::vfs::MemoryReadSource(text_);
   }
@@ -70,11 +76,11 @@ class SearchTree final : public xff::vfs::FileSystem {
   xff::vfs::SharedReadSource source_;
 };
 
-enum class Mode { kFilter, kNativeLines, kRgLines, kRgFiles, kRgCounts, kRgQuiet };
+enum class Mode { kFilterLate, kFilter, kNativeLines, kRgLines, kRgFiles, kRgCounts, kRgQuiet };
 
 void Search(benchmark::State& state, Mode mode, std::string_view grammar) {
   const auto count = static_cast<std::size_t>(state.range(0));
-  const SearchTree tree(count);
+  const SearchTree tree(count, mode == Mode::kFilterLate);
   std::vector<std::string> arguments{
       "--jobs=" + std::to_string(state.range(1)),
       "--archive=none",
@@ -82,7 +88,7 @@ void Search(benchmark::State& state, Mode mode, std::string_view grammar) {
       "--regextype=" + std::string(grammar),
   };
   constexpr std::string_view kPattern = "(alpha|beta)[0-9]{3}.*needle";
-  if (mode == Mode::kFilter || mode == Mode::kNativeLines) {
+  if (mode == Mode::kFilter || mode == Mode::kFilterLate || mode == Mode::kNativeLines) {
     if (mode == Mode::kNativeLines) {
       arguments.emplace_back("-M");
     }
@@ -133,6 +139,7 @@ int main(int argc, char** argv) {
   benchmark::Initialize(&argc, argv);
   constexpr auto kModes = std::to_array<std::pair<std::string_view, Mode>>({
       {"filter", Mode::kFilter},
+      {"filter-late", Mode::kFilterLate},
       {"native-lines", Mode::kNativeLines},
       {"rg-lines", Mode::kRgLines},
       {"rg-files", Mode::kRgFiles},

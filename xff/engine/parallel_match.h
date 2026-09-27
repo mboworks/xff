@@ -73,9 +73,13 @@ class ParallelMatch final {
   void Run();
   bool Ready(std::size_t generation) const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   bool Finished() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  void EvaluateEntries(mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output = {});
-  ParallelResult EvaluateEntry(const Visit& visit, mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output)
-      const;
+  void EvaluateEntries(
+      mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output = {},
+      mbo::types::OptionalRef<const WorkerMatchers> matchers = {});
+  ParallelResult EvaluateEntry(
+      const Visit& visit,
+      mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
+      mbo::types::OptionalRef<const WorkerMatchers> matchers) const;
 
   const mbo::types::OptionalRef<const parser::Expr> expression_;
   const std::size_t workers_;

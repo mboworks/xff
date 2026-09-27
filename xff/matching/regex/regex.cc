@@ -450,6 +450,9 @@ absl::StatusOr<Matcher> Matcher::ForkForWorker() const {
   if (re2_) {
     return Compile(re2_->pattern, re2_->case_insensitive, Grammar::kRe2, re2_->text_mode);
   }
+  if (auto worker = backend_->ForkForWorker()) {
+    return Matcher(std::move(worker));
+  }
   return Matcher(backend_);
 }
 

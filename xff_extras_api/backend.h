@@ -33,7 +33,7 @@ namespace xff::regex {
 enum class TextMode { kUtf8, kBytes };
 
 // The engine a `Matcher` delegates to for one compiled pattern: RE2 today, PCRE2 when that grammar
-// is built in. `Matcher` owns a `RegexBackend` behind a `unique_ptr` and forwards each operation, so
+// is built in. `Matcher` shares a compiled `RegexBackend` and forwards each operation, so
 // the public API is grammar-agnostic and the concrete engine (and its dependency) stays private.
 //
 // This is the extension seam a build extra implements. It lives in the standalone xff_extras_api
@@ -64,6 +64,12 @@ class RegexBackend {
       const = 0;
   virtual std::optional<std::vector<std::string>> FullMatchCaptures(std::string_view text) const = 0;
   virtual std::string Rewrite(std::string_view text, std::string_view replacement, bool global) const = 0;
+
+  // Optional worker-confined execution state. An empty result means this backend needs no
+  // private state and can remain shared. A returned backend may reuse mutable scratch: use it
+  // on only one worker at a time. The original backend retains its concurrent-call contract.
+  // Forks own their dependencies and may outlive the original; forking a fork is also supported.
+  virtual std::unique_ptr<const RegexBackend> ForkForWorker() const { return {}; }
 };
 
 // Compiles `pattern` into a PCRE2-backed RegexBackend (case-folding when `case_insensitive`), or an
