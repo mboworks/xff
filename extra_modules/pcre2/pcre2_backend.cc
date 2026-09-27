@@ -261,13 +261,16 @@ class Pcre2Backend final : public xff::regex::RegexBackend {
 }  // namespace
 
 // The factory registered with xff/matching/regex: compiles `pattern` into a Pcre2Backend, or an
-// InvalidArgument carrying PCRE2's diagnostic. Byte mode (no PCRE2_UTF) so arbitrary file bytes
-// never trip UTF-8 validation; PCRE2_CASELESS folds case.
+// InvalidArgument carrying PCRE2's diagnostic. Native callers default to arbitrary-byte
+// matching; rg explicitly selects UTF-8/UCP or bytes. PCRE2_CASELESS folds case.
 absl::StatusOr<std::unique_ptr<const RegexBackend>> internal::CompilePcre2(
     std::string_view pattern,
     bool case_insensitive,
-    std::function<void()> jit_observer) {
-  std::uint32_t options = 0;
+    std::function<void()> jit_observer,
+    TextMode mode) {
+  // Invalid bytes are non-matching barriers, so valid text elsewhere in an arbitrary
+  // file remains searchable by both the interpreter and JIT.
+  std::uint32_t options = mode == TextMode::kUtf8 ? PCRE2_UTF | PCRE2_UCP | PCRE2_MATCH_INVALID_UTF : PCRE2_NEVER_UTF;
   if (case_insensitive) {
     options |= PCRE2_CASELESS;
   }
@@ -317,7 +320,8 @@ absl::StatusOr<std::unique_ptr<const RegexBackend>> internal::CompilePcre2(
 
 // Self-registration (alwayslink keeps this TU): the factory makes the PCRE2 grammar available.
 namespace {
-const Pcre2Registrar kRegisterPcre2Backend{
-    [](std::string_view pattern, bool case_insensitive) { return internal::CompilePcre2(pattern, case_insensitive); }};
+const Pcre2Registrar kRegisterPcre2Backend{[](std::string_view pattern, bool case_insensitive, TextMode mode) {
+  return internal::CompilePcre2(pattern, case_insensitive, {}, mode);
+}};
 }  // namespace
 }  // namespace xff::regex

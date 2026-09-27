@@ -593,8 +593,8 @@ inside named sections selected by an rg invocation. `--xff` starts a native filt
 expression without resetting the selected configuration or search patterns.
 Required globals and monotonic safety blocks retain their normal enforcement.
 
-Rg mode defaults to case-sensitive matching and no line numbers; configured or
-explicit case/prefix options override those defaults. The `rg` style preset by itself
+Rg mode defaults to case-sensitive matching. Headings and line numbers default on for
+terminal output and off for a pipe; configured or explicit options override those defaults. The `rg` style preset by itself
 retains smart case. In rg grammar `-M NUMBER` sets maximum output columns; use the
 canonical `--match-output` / `--no-match-output` controls in configuration.
 

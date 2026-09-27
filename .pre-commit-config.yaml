@@ -75,7 +75,7 @@ repos:
         description: Use ASCII outside explicitly listed Unicode test files and graphical output locations.
         language: pygrep
         entry: '[^\x00-\x7f]'
-        exclude: ^tools/release_smoke_unicode\.py$|^xff/cli/csv_unicode_test\.sh$|^xff/presentation/render/(render|scoped_table)_unicode_test\.cc$|^xff/presentation/format/text_width_unicode_test\.cc$|^README\.md$|^(docs/history-roadmap\.md|xff/cli/histogram_test\.sh|xff/engine/run\.cc|xff/presentation/render/render(_test)?\.cc)$|\.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z|sqfs|png|ico)$
+        exclude: ^xff/content/word_unicode_test\.cc$|^xff/engine/rg_unicode_test\.cc$|^tools/release_smoke_unicode\.py$|^xff/cli/csv_unicode_test\.sh$|^xff/presentation/render/(render|scoped_table)_unicode_test\.cc$|^xff/presentation/format/text_width_unicode_test\.cc$|^README\.md$|^(docs/history-roadmap\.md|xff/cli/histogram_test\.sh|xff/engine/run\.cc|xff/presentation/render/render(_test)?\.cc)$|\.(phar|tar|tgz|gz|bz2|xz|zst|br|zip|jar|war|ear|apk|aab|whl|egg|nupkg|vsix|xpi|crx|jmod|deb|rpm|gem|crate|asar|7z|sqfs|png|ico)$
         types: [text]
       - id: histogram-doc-glyphs
         name: Histogram text uses only approved Unicode block glyphs

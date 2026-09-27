@@ -131,6 +131,9 @@ struct GrepOptions {
   Output output = Output::kLines;
   bool match_output = false;
   bool rg_mode = false;
+  bool heading = false;
+  bool column = false;
+  bool color = false;
   bool quiet = false;
   bool only_matching = false;
   bool invert = false;

@@ -43,14 +43,17 @@ bool Pcre2Available() {
   return static_cast<bool>(Pcre2FactorySlot());
 }
 
-absl::StatusOr<std::unique_ptr<const RegexBackend>> MakePcre2Backend(std::string_view pattern, bool case_insensitive) {
+absl::StatusOr<std::unique_ptr<const RegexBackend>> MakePcre2Backend(
+    std::string_view pattern,
+    bool case_insensitive,
+    TextMode mode) {
   // No factory registered means the real backend was not linked (lean build): a distinct
   // Unimplemented state from an InvalidArgument bad pattern, and never a silent fallback to RE2.
   const Pcre2Factory& factory = Pcre2FactorySlot();
   if (!factory) {
     return absl::UnimplementedError("the PCRE2 regex grammar (--regextype=PCRE2) is not built into this binary");
   }
-  return factory(pattern, case_insensitive);
+  return factory(pattern, case_insensitive, mode);
 }
 
 }  // namespace xff::regex

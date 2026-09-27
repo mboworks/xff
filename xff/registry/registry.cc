@@ -669,14 +669,16 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
     {
         .name = "-lang",
         .summary = "match the language by extension/filename against a glob, e.g. -lang 'C*' (xff)",
-        .details = "xff extension: matches the programming language inferred from the extension/filename "
-                   "against a shell glob, so `C*` matches C / C++ / C#. The lean binary has a curated common table; "
-                   "the removable GitHub Linguist build extra supplies hundreds of canonical records, and repeatable "
-                   "`--lang-db=FILE` JSON layers override mappings and metadata. Exact filenames win over "
-                   "the longest matching suffix. The same canonical value is `{lang}`; `{lang-type}`, `{lang-color}`, "
-                   "`{lang-group}`, and `{lang-source}` expose metadata. A pattern may also match an alias (`cpp` "
-                   "matches canonical `C++`). Matching is always case-insensitive and unaffected by `--case` / -i / "
-                   "-s. This is fast name classification, not Linguist's content/shebang heuristic classifier.",
+        .details =
+            "xff extension: matches any candidate language inferred from the extension/filename "
+            "against a shell glob, so `C*` matches C / C++ / C#. The lean binary has a curated common table; "
+            "the removable GitHub Linguist build extra supplies hundreds of canonical records, and repeatable "
+            "`--lang-db=FILE` JSON layers override mappings and metadata. Exact filenames win over "
+            "the longest matching suffix. Shared candidates overlap: `.h` matches `C`, `C++`, and `Objective-C`. "
+            "`{lang}` retains one preferred canonical label for display and summaries; `{lang-type}`, `{lang-color}`, "
+            "`{lang-group}`, and `{lang-source}` expose metadata. A pattern may also match an alias (`cpp` "
+            "matches canonical `C++`). Matching is always case-insensitive and unaffected by `--case` / -i / "
+            "-s. This is fast name classification, not Linguist's content/shebang heuristic classifier.",
         .kind = Kind::kTest,
         .arity = 1,
         .style = Style::kXff,

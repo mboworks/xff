@@ -119,9 +119,23 @@ struct RgPattern {
   bool file = false;
 };
 
+struct RgTypeRule {
+  enum class Kind { kInclude, kExclude, kAdd, kClear };
+  Kind kind;
+  std::string value;
+};
+
 struct RgSearch {
   std::vector<RgPattern> patterns;
   std::vector<std::string> globs;
+  std::vector<RgTypeRule> types;
+  bool type_list = false;
+  bool unicode = true;
+  bool unicode_explicit = false;
+  bool multiline = false;
+  bool dotall = false;
+  std::optional<bool> heading;
+  bool column = false;
   bool word = false;
   bool line = false;
   bool text = false;

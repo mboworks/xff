@@ -58,3 +58,21 @@ cc_test(
         "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )
+
+cc_library(
+    name = "word_cc",
+    srcs = ["word.cc"],
+    hdrs = ["word.h"],
+    visibility = ["//xff:__subpackages__"],
+    deps = ["@utf8proc"],
+)
+
+cc_test(
+    name = "word_unicode_test",
+    srcs = ["word_unicode_test.cc"],
+    deps = [
+        ":word_cc",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
+)

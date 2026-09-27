@@ -3,11 +3,13 @@
 
 #include "xff/matching/language/language.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <map>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <set>
 #include <string>
 #include <string_view>
@@ -44,12 +46,27 @@ struct LanguageVocabulary {
     std::vector<std::string_view> aliases;
     std::vector<std::string_view> extensions;
     std::vector<std::string_view> filenames;
+    std::vector<std::string_view> shared_extensions;
+    std::vector<std::string_view> shared_filenames;
     TerminalColor terminal_color;
   };
+
+  using SharedClaims = std::map<std::string, std::set<std::string, std::less<>>, std::less<>>;
+
+  struct Match {
+    std::string_view preferred;
+    std::vector<LanguageInfo> candidates;
+  };
+
+  using Matches = std::map<std::string, Match, std::less<>>;
 
   std::map<std::string, Record, std::less<>> languages;
   std::map<std::string, std::string, std::less<>> extensions;
   std::map<std::string, std::string, std::less<>> filenames;
+  SharedClaims shared_extensions;
+  SharedClaims shared_filenames;
+  Matches extension_matches;
+  Matches filename_matches;
   std::vector<LanguageInfo> views;
   std::vector<std::unique_ptr<const nlohmann::ordered_json>> layers;
   std::vector<std::unique_ptr<const std::string>> normalized;
@@ -230,6 +247,12 @@ LanguageVocabulary CoreVocabulary() {
   for (const auto& [extension, language] : kExtensions) {
     AddCore(vocabulary, extension, language);
   }
+  // Header filenames alone cannot distinguish these languages. Preserve the
+  // preferred C label while exposing all three candidates to language filters.
+  for (const std::string_view language : {"C++", "Objective-C"}) {
+    vocabulary.languages[std::string(language)].shared_extensions.emplace_back("h");
+    vocabulary.shared_extensions["h"].emplace(language);
+  }
   constexpr auto kFilenames = std::to_array<std::pair<std::string_view, std::string_view>>({
       {".bash_profile", "Shell"},
       {".bashrc", "Shell"},
@@ -310,8 +333,9 @@ absl::Status ApplyStringFields(
 absl::StatusOr<std::vector<std::string_view>> Filenames(
     const Json& value,
     std::string_view layer,
-    std::string_view name) {
-  MBO_ASSIGN_OR_RETURN(auto filenames, StringList(value, "filenames", layer, name));
+    std::string_view name,
+    std::string_view field = "filenames") {
+  MBO_ASSIGN_OR_RETURN(auto filenames, StringList(value, field, layer, name));
   for (const std::string_view filename : filenames) {
     if (filename.empty() || absl::StrContains(filename, '/')) {
       return JsonError(layer, absl::StrCat(name, " has invalid filename '", filename, "'"));
@@ -376,8 +400,11 @@ class LayerProcessor {
     return absl::OkStatus();
   }
 
-  absl::StatusOr<std::vector<std::string_view>> Extensions(const Json& value, std::string_view name) {
-    MBO_ASSIGN_OR_RETURN(auto extensions, StringList(value, "extensions", layer_, name));
+  absl::StatusOr<std::vector<std::string_view>> Extensions(
+      const Json& value,
+      std::string_view name,
+      std::string_view field = "extensions") {
+    MBO_ASSIGN_OR_RETURN(auto extensions, StringList(value, field, layer_, name));
     for (std::string_view& extension : extensions) {
       std::string normalized = Lower(extension);
       if (normalized.starts_with('.')) {
@@ -412,6 +439,24 @@ class LayerProcessor {
     return AddClaims(filename_claims_, info.filenames, name, "filename");
   }
 
+  absl::Status ApplySharedClaims(LanguageVocabulary::Record& info, const Json& value, std::string_view name) {
+    if (value.contains("shared_extensions")) {
+      MBO_ASSIGN_OR_RETURN(info.shared_extensions, Extensions(value, name, "shared_extensions"));
+      replaced_shared_extensions_.emplace(name);
+      for (const auto extension : info.shared_extensions) {
+        shared_extensions_[std::string(extension)].emplace(name);
+      }
+    }
+    if (value.contains("shared_filenames")) {
+      MBO_ASSIGN_OR_RETURN(info.shared_filenames, Filenames(value, layer_, name, "shared_filenames"));
+      replaced_shared_filenames_.emplace(name);
+      for (const auto filename : info.shared_filenames) {
+        shared_filenames_[std::string(filename)].emplace(name);
+      }
+    }
+    return absl::OkStatus();
+  }
+
   absl::Status ApplyEntry(std::string_view name, const Json& value) {
     if (name.empty() || !value.is_object()) {
       return JsonError(layer_, absl::StrCat("invalid language entry: ", name));
@@ -424,11 +469,23 @@ class LayerProcessor {
     MBO_RETURN_IF_ERROR(ApplyAliases(info, value, layer_, name));
     MBO_RETURN_IF_ERROR(ApplyExtensionClaims(info, value, name));
     MBO_RETURN_IF_ERROR(ApplyFilenameClaims(info, value, name));
+    MBO_RETURN_IF_ERROR(ApplySharedClaims(info, value, name));
     languages_[std::string(name)] = std::move(info);
     return absl::OkStatus();
   }
 
+  static void RemoveShared(LanguageVocabulary::SharedClaims& claims, const Replacements& replacements) {
+    for (auto& [key, languages] : claims) {
+      for (const auto& language : replacements) {
+        languages.erase(language);
+      }
+    }
+    std::erase_if(claims, [](const auto& claim) { return claim.second.empty(); });
+  }
+
   void Commit() {
+    RemoveShared(vocabulary_.shared_extensions, replaced_shared_extensions_);
+    RemoveShared(vocabulary_.shared_filenames, replaced_shared_filenames_);
     for (const std::string& name : replaced_extensions_) {
       std::erase_if(vocabulary_.extensions, [&](const auto& claim) { return claim.second == name; });
     }
@@ -440,9 +497,17 @@ class LayerProcessor {
     }
     for (const auto& [extension, name] : extension_claims_) {
       vocabulary_.extensions[extension] = name;
+      vocabulary_.shared_extensions.erase(extension);
     }
     for (const auto& [filename, name] : filename_claims_) {
       vocabulary_.filenames[filename] = name;
+      vocabulary_.shared_filenames.erase(filename);
+    }
+    for (const auto& [extension, names] : shared_extensions_) {
+      vocabulary_.shared_extensions[extension].insert(names.begin(), names.end());
+    }
+    for (const auto& [filename, names] : shared_filenames_) {
+      vocabulary_.shared_filenames[filename].insert(names.begin(), names.end());
     }
     for (auto& value : normalized_) {
       vocabulary_.normalized.push_back(std::move(value));
@@ -458,6 +523,10 @@ class LayerProcessor {
   std::map<std::string, LanguageVocabulary::Record, std::less<>> languages_;
   Replacements replaced_extensions_;
   Replacements replaced_filenames_;
+  Replacements replaced_shared_extensions_;
+  Replacements replaced_shared_filenames_;
+  LanguageVocabulary::SharedClaims shared_extensions_;
+  LanguageVocabulary::SharedClaims shared_filenames_;
   std::unique_ptr<const Json> root_;
   std::vector<std::unique_ptr<const std::string>> normalized_;
 };
@@ -471,26 +540,20 @@ absl::StatusOr<std::string> ReadFile(const std::string& path) {
   return *content;
 }
 
-struct LookupResult {
-  std::string_view name;
-  mbo::types::OptionalRef<const LanguageVocabulary::Record> record;
-};
-
-LookupResult Lookup(const LanguageVocabulary& vocabulary, std::string_view name) {
-  if (const auto found = vocabulary.filenames.find(name); found != vocabulary.filenames.end()) {
-    return {.name = found->second, .record = vocabulary.languages.at(found->second)};
+mbo::types::OptionalRef<const LanguageVocabulary::Match> Lookup(
+    const LanguageVocabulary& vocabulary,
+    std::string_view name) {
+  if (const auto found = vocabulary.filename_matches.find(name); found != vocabulary.filename_matches.end()) {
+    return found->second;
   }
   const std::string folded = Lower(name);
   for (std::size_t dot = folded.find('.'); dot != std::string::npos; dot = folded.find('.', dot + 1)) {
-    if (dot + 1 == folded.size()) {
-      continue;
-    }
-    const auto found = vocabulary.extensions.find(std::string_view(folded).substr(dot + 1));
-    if (found != vocabulary.extensions.end()) {
-      return {.name = found->second, .record = vocabulary.languages.at(found->second)};
+    const auto found = vocabulary.extension_matches.find(std::string_view(folded).substr(dot + 1));
+    if (found != vocabulary.extension_matches.end()) {
+      return found->second;
     }
   }
-  return {};
+  return std::nullopt;
 }
 
 LanguageInfo View(std::string_view name, const LanguageVocabulary::Record& record) {
@@ -503,7 +566,34 @@ LanguageInfo View(std::string_view name, const LanguageVocabulary::Record& recor
       .aliases = record.aliases,
       .extensions = record.extensions,
       .filenames = record.filenames,
+      .shared_extensions = record.shared_extensions,
+      .shared_filenames = record.shared_filenames,
   };
+}
+
+LanguageVocabulary::Matches BuildMatches(
+    const LanguageVocabulary& vocabulary,
+    const std::map<std::string, std::string, std::less<>>& preferred,
+    const LanguageVocabulary::SharedClaims& shared) {
+  LanguageVocabulary::Matches matches;
+  for (const auto& [key, name] : preferred) {
+    const auto language = vocabulary.languages.find(name);
+    auto& match = matches[key];
+    match.preferred = language->first;
+    match.candidates.push_back(View(language->first, language->second));
+  }
+  for (const auto& [key, names] : shared) {
+    auto& match = matches[key];
+    match.candidates.reserve(match.candidates.size() + names.size());
+    for (const auto& name : names) {
+      if (name != match.preferred) {
+        const auto language = vocabulary.languages.find(name);
+        match.candidates.push_back(View(language->first, language->second));
+      }
+    }
+    std::ranges::sort(match.candidates, {}, &LanguageInfo::name);
+  }
+  return matches;
 }
 
 void Finalize(LanguageVocabulary& vocabulary) {
@@ -512,6 +602,8 @@ void Finalize(LanguageVocabulary& vocabulary) {
     record.terminal_color = MakeTerminalColor(record.color);
     vocabulary.views.push_back(View(name, record));
   }
+  vocabulary.extension_matches = BuildMatches(vocabulary, vocabulary.extensions, vocabulary.shared_extensions);
+  vocabulary.filename_matches = BuildMatches(vocabulary, vocabulary.filenames, vocabulary.shared_filenames);
 }
 
 void EnsureConfigured(State& state) ABSL_EXCLUSIVE_LOCKS_REQUIRED(state.mutex) {
@@ -561,17 +653,33 @@ LanguageSnapshot ActiveSnapshot() {
 }
 
 std::optional<LanguageInfo> LanguageSnapshot::InfoForName(std::string_view name) const {
-  const LookupResult found = Lookup(vocabulary_.get(), name);
-  return found.record.has_value() ? std::optional<LanguageInfo>(View(found.name, *found.record)) : std::nullopt;
+  const auto found = Lookup(vocabulary_.get(), name);
+  if (!found.has_value() || found->preferred.empty()) {
+    return std::nullopt;
+  }
+  return View(found->preferred, vocabulary_.get().languages.find(found->preferred)->second);
 }
 
 std::string_view LanguageSnapshot::LanguageForName(std::string_view name) const {
-  return Lookup(vocabulary_.get(), name).name;
+  const auto found = Lookup(vocabulary_.get(), name);
+  return found.has_value() ? found->preferred : std::string_view{};
 }
 
 std::string_view LanguageSnapshot::TerminalColorForName(std::string_view name) const {
-  const LookupResult found = Lookup(vocabulary_.get(), name);
-  return found.record.has_value() ? found.record->terminal_color.View() : std::string_view();
+  const auto found = Lookup(vocabulary_.get(), name);
+  if (!found.has_value() || found->preferred.empty()) {
+    return {};
+  }
+  return vocabulary_.get().languages.find(found->preferred)->second.terminal_color.View();
+}
+
+absl::Span<const LanguageInfo> LanguageSnapshot::CandidatesForName(std::string_view name) const {
+  const auto found = Lookup(vocabulary_.get(), name);
+  return found.has_value() ? absl::Span<const LanguageInfo>(found->candidates) : absl::Span<const LanguageInfo>{};
+}
+
+absl::Span<const LanguageInfo> CandidatesForName(std::string_view name) {
+  return ActiveSnapshot().CandidatesForName(name);
 }
 
 absl::Span<const LanguageInfo> LanguageSnapshot::Languages() const {

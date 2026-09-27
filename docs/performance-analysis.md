@@ -524,3 +524,190 @@ baseline; small filter cases show some regression, including 0.88 times for PCRE
 files. These results do not establish a gain for every pattern, file size, match density or
 storage device. Full line output still needs a streaming renderer; archive member searches
 retain their serial path.
+
+## Applying the worker model elsewhere
+
+Analysis of the PR #921 implementation at `a99a4c1734`, including its current base. These are
+implementation candidates, not additional measured speedups. The measurements above establish
+the benefit for the tested rg and match-output workloads only.
+
+The reusable design is owned per-entry inputs, worker-local mutable scratch, bounded batches,
+and coordinator-owned publication. Workers return values and buffered records; the coordinator
+preserves ordering, errors, reductions, and effects. Entry content and metadata still need no
+locks when ownership passes exclusively between stages. This does not mean shared scheduling
+or archive read-budget state is lock-free.
+
+### Priorities and concrete consumers
+
+| Priority | Consumer                                               | Current limitation                                                                                         | Proposed application                                                                                                               |
+| :------- | :----------------------------------------------------- | :--------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------- |
+| 1        | Native regex/content predicates                        | `ParallelMatch::Run` forks `MatchOutput`, but `EvaluateEntry` still evaluates the shared native expression | Give each worker private RE2 state for native predicates, prepared once and reused across batches                                  |
+| 2        | PCRE2 matching                                         | `Pcre2Backend::Matches`, `FindFirst`, and captures allocate match data for each call                       | Share compiled code and give each worker reusable match scratch; preserve the existing shared backend's concurrency contract       |
+| 3        | Content filters with summaries or metadata output      | `full_metadata` disables matcher workers for every reduction, template, callback, and colored listing      | Separate metadata demand from worker eligibility; evaluate audited filters on owned entries, then reduce/render on the coordinator |
+| 4        | Hashes, line counts, text checks, and expensive fields | Several consumers reread content; field and histogram calculations run serially                            | Compute requested per-entry values in workers, reuse content or stream once, and return small results                              |
+| 5        | Tree comparison and patches                            | Two scans overlap, but paired content checks and patch creation are serial after collection                | Schedule bounded independent pairs and publish statuses, patches, and category contributions in path order                         |
+| 6        | Broad-directory metadata                               | A directory-read job stats its children serially; parallel read-ahead requires sibling directories         | Chunk required stat work after enumeration, retaining indexed results and coordinator-owned traversal decisions                    |
+| 7        | Archive-member matching                                | Every owned/mounted or archive-member visit takes the serial path                                          | Use retained ownership and independent read cursors selectively, with backend-specific replay and memory measurements              |
+| 8        | Pipeline overlap and scheduling                        | A batch blocks traversal; fixed chunks can strand workers on uneven files                                  | Measure two bounded buffers, smaller tail chunks, and work estimates before changing scheduling                                    |
+
+### Native matchers and reusable regex scratch
+
+`ParallelMatch::EvaluateEntry` passes the same expression to `EvaluateDeferred` on every worker.
+`EvalRxc` and `EvalRegex` use that expression's matcher. `ForkMatchOutput` only replaces the
+matchers used for output selection/rendering. Consequently, native `-rxc` filtering has not yet
+received the worker-private RE2 cache change that helped line output. This is the smallest
+extension to investigate first. Sharing RE2 is correct; the concern is cache contention, whose
+size depends on the workload.
+
+Prepare worker bindings once, preserving pattern translation, case settings, expression identity,
+and error behavior. An immutable expression with indexed worker bindings avoids copying unrelated
+AST data per entry. The existing compile-once-per-worker approach is the first useful baseline;
+a general expression-cloning framework is not a prerequisite. Continue sharing immutable compiled
+backends unless their actual mutable execution state needs separation.
+
+PCRE2 exposes a different opportunity. In `extra_modules/pcre2/pcre2_backend.cc`, even the boolean
+`Matches` path creates and frees `pcre2_match_data`; span and capture operations allocate their
+own vectors through `pcre2_match_data_create_from_pattern`. A worker-owned execution object could
+reuse those allocations while sharing compiled JIT code. Do not put mutable scratch on the
+currently shared backend or add a mutex around every match. The new interface must also handle
+serial callers, captures, repeated span searches, reentrancy, JIT-stack fallback, and the existing
+match/depth limits. Allocator savings and binary-size changes need measurement.
+
+### Metadata, reductions, and entry-derived values
+
+In `RunFindCore`, `full_metadata` combines metadata demand with reasons to avoid worker evaluation.
+An otherwise eligible content search becomes serial when `--summary=ext`, a template, colored
+listing, or the comparison callback is enabled. These consumers do not all require serial
+matching. For example, immutable metadata can accompany each owned entry, while the existing
+summary maps remain exclusively coordinator-owned. The first extension can leave all summary
+updates serial and parallelize only expensive filtering.
+
+Removing the gate alone is incorrect. `CollectedEntry::AsVisit` does not preserve a lazy metadata
+loader, and the worker context currently uses an epoch clock and UTC rather than the run's full
+evaluation settings. A broader worker plan must declare and carry its dependencies: metadata,
+time, filesystem case behavior, templates, capture requirements, and typed result contributions.
+Predicates needing metadata also require an explicit independence audit; `pure` alone is not an
+adequate scheduling contract. Resolve known metadata before handing it off, or transfer an owned
+lazy state to exactly one worker. Never share a mutable per-entry lazy cache.
+
+Concrete read-reuse gaps remain in `EvalText`, `EvalBinary`, `EvalEofTerminator`, `DigestOfEntry`,
+`HashField`, `ReadEntryLineCount`, and `HistogramValue`. The new snapshot currently covers
+`ContentToSearch` and match output, not all of these. Compositions such as text classification,
+end-of-line checks, and content matching can therefore reread the same entry. Extend the owned
+snapshot first where full content is already needed. For hash/line-only consumers, prefer a
+streaming scan with incremental digest/count state instead of materializing every file merely
+to cache it. The current xff hash API accepts whole content, so incremental hashing needs an API
+change. Avoid reading unrelated files or filling every possible derived field speculatively.
+
+Return verification verdicts and summary keys as values. In particular, `-hasheq` can contribute
+a failed verification even when the expression does not match; a worker result must preserve that
+distinction and expression short-circuiting. Keep collection appends, shard selection, `-first`,
+`-top`, traversal controls, and arbitrary callbacks on the coordinator. Pure stdout producers
+such as `-hash` or `-grep` need a separate audited buffered-output capability, not a blanket
+exception for actions.
+
+Field rewrites have another serial cost to remove before adding threads: `ApplyRewrite` invokes
+`CompileChain` during rendering. Bind valid rewrite/extraction programs once and provide private
+RE2 execution state when workers use them. This needs field-level dependency information so
+captures, named outputs, and per-entry values keep their existing meaning.
+
+### Comparison and broad-directory work
+
+`RunTreeCompare` runs the left scan with `std::async` while executing the right scan on its
+caller. Both populate complete maps before the merge loop calls `SameTreeEntry` and
+`TreeEntryPatch`. Thus concurrent traversal exists, but content comparison is not currently
+pipelined directory by directory. Parallel pair evaluation is an incremental improvement;
+implementing the intended completed-directory pipeline is a separate architectural change.
+Do not confuse the two or claim that batching pairs removes whole-tree retention.
+
+Most useful parallel work is equality for equal-size regular files and diff generation. Missing
+counterparts, type mismatches, and size mismatches are cheap. Keep those cheap decisions on the
+coordinator unless batching them demonstrably helps. Retain sorted emission and the current first
+reported error, with workers returning statuses rather than calling sinks. Category counts and
+left/right size contributions must still be accumulated exactly once.
+
+There is also avoidable I/O inside a pair: `SameTreeEntry` calls `ReadContentRange` separately for
+each 64 KiB chunk, and `LocalFs::ReadContentRange` opens/closes the file for each call. A VFS cursor
+per side can retain an open handle for the comparison. Preserve early-mismatch, short-read,
+concurrent-change, and error semantics explicitly. Patches then reread content today; reusable
+pair state can avoid some duplicate work without retaining bytes for every pair. Full diff inputs
+and generated patches require byte-aware memory limits, not just a pair-count limit.
+
+In `Walker::ReadDir`, enumeration and the required stats of all children belong to one job.
+`SubmitSubdirReads` starts parallel work only when at least two descendable sibling directories
+exist. A broad directory with many files therefore cannot distribute eager stat work using that
+mechanism. The content pool's indexed chunk approach can apply after enumeration. Schedule at
+the coordinator boundary or use a nonblocking continuation: a directory worker must not submit
+child jobs to its own saturated pool and wait for them. Skip this entirely for metadata-free
+entries, preserve basic versus birth-time requests, and keep pruning and error publication ordered.
+
+### Archive and scheduling limits
+
+The VFS already requires concurrent-safe calls, and `ReadSource` explicitly allows concurrent
+`Open` calls with independently owned single-threaded cursors. `CollectedEntry` can retain the
+mounted filesystem owner. These contracts make selected archive parallelism plausible; it is
+not inherently forbidden by virtual paths or ownership.
+
+However, `MemberSource::Open` creates a fresh archive session and scans headers to its target.
+Compressed members may repeat substantial decompression, and nested sources share memory/replay
+budgets. More workers can increase retained decoder state and exhaust a budget even when serial
+processing fits. Start with independent containers or cheap restartable sources, and measure
+compressed members separately. A serial extraction stage feeding owned member data to parallel
+matchers may outperform independently reopening the same compressed container. Do not simply
+remove the `fs_owner`/archive guard, duplicate budgets per worker, or bypass VFS reads.
+
+The present content pool has three further tuning constraints:
+
+- Chunks contain 16 entries and normal batches contain at most 256. At most 16 chunks can be
+  active in a normal batch. Worker count is fixed when the first non-inline batch starts;
+  a smaller early batch can permanently start fewer workers than later batches could use.
+- A batch below 64 entries avoids startup only before threads exist. Entry count is a rough cost
+  proxy: ten huge files may justify parallelism while many cheap name tests do not. First measure
+  heterogeneous file sizes and expensive fuzzy models; do not request stats solely to estimate work.
+- Traversal waits for matching, and the earliest slow result delays ordered publication. Two
+  buffers could overlap traversal and matching, but they need ownership, bounded queued bytes,
+  cancellation, and preserved error order. Full line output can retain large strings even though
+  input snapshots die per worker entry. An entry-count bound alone is not a byte bound.
+
+`--jobs` currently limits directory workers, content workers, and child processes independently.
+Comparison creates two traversal engines. Adding stages must not silently multiply runnable CPU
+work without measurement. A shared CPU allowance or explicit stage allocation is a separate
+scheduling design; do not change the existing meaning of `--jobs` incidentally.
+
+### Implementation and verification order
+
+Start with native worker-local RE2 bindings and PCRE2 scratch reuse as independently measured
+changes. Next decouple audited filtering from metadata/summary consumption, then add derived-value
+workers and pair comparison. Broad-directory stats and archive parallelism need backend-specific
+measurements. Pipeline overlap follows only if profiling still identifies the batch barrier as
+a significant cost. Cheap path/type filtering and lightweight rendering stay inline unless measured
+results justify scheduling overhead.
+
+For each candidate, preserve exact serial/parallel output, result counts, summary sizes, ordered
+errors, short-circuit behavior, and limits. Test actual overlap with controlled VFS operations,
+not elapsed-time assertions. Include metadata/read counts, unchanged safety enforcement, mutation
+boundaries, owner lifetime, failed reads, and sanitizer coverage. Add archive budget exhaustion
+tests and PCRE2 scratch/reentrancy tests where those features are widened.
+
+Extend the existing 10/100/1,000/10,000-entry, one/four-worker in-memory matrix with mixed sizes,
+late/no matches, metadata-plus-content filters, summary fields, equal/different pairs, and broad
+directories. Keep small-population regressions visible. Add host and compressed-container runs
+where I/O or decoding dominates; in-memory results cannot establish those gains. Report wall
+time, CPU use, peak retained bytes, reads/stat calls, and active worker counts. Use the established
+warmup and best-seven-of-nine measurements and change one mechanism at a time.
+
+### Rg compatibility follow-up
+
+The R01-R05 work in `docs/design-rg.md` extends the streaming path to full line/context
+output, retaining only pending context and an incomplete line from the input. Rendered
+records remain transactional until EOF. Multiline searches intentionally retain the whole
+subject. Earlier observations above describe the reviewed parent snapshot; ordinary line
+output no longer needs a second whole-file snapshot or an all-lines vector.
+
+Explicit UTF-8/byte mode reaches RE2 compilation, PCRE2 compilation and worker forks.
+Word boundaries use a concept-checked encoding interface with an ASCII fast path. UTF-8
+empty-match advancement preserves code-point boundaries. Type rules compile once per
+invocation and run before content reads; an unfiltered run does not initialize the type
+catalog. None of P01-P08 is claimed complete by this compatibility work. Measure Unicode
+word scans, multiline retained bytes and output-heavy worker batches before claiming a
+performance gain; the new streaming tests establish read/retention behavior, not speed.

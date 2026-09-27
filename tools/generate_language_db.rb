@@ -4,8 +4,8 @@
 
 # Convert github-linguist's pinned languages.yml to xff's compact, deterministic
 # extension vocabulary. Linguist resolves ambiguous suffixes with content
-# heuristics that xff intentionally does not run: retain xff's documented core
-# winner where one exists and otherwise leave that suffix unclaimed.
+# heuristics that xff intentionally does not run: retain a preferred core winner
+# where one exists, and preserve other claims as shared filtering candidates.
 
 require "json"
 require "yaml"
@@ -61,6 +61,10 @@ result = languages.to_h do |name, metadata|
   filenames = metadata.fetch("filenames", []).select { |filename| filename_winners[filename] == name }
   entry["extensions"] = extensions unless extensions.empty?
   entry["filenames"] = filenames unless filenames.empty?
+  shared_extensions = metadata.fetch("extensions", []) - extensions
+  shared_filenames = metadata.fetch("filenames", []) - filenames
+  entry["shared_extensions"] = shared_extensions unless shared_extensions.empty?
+  entry["shared_filenames"] = shared_filenames unless shared_filenames.empty?
   [name, entry]
 end
 

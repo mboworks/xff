@@ -25,6 +25,7 @@
 #include "gtest/gtest.h"
 #include "mbo/testing/status.h"
 #include "xff/parser/parser.h"
+#include "xff/parser/rg_types.h"
 
 namespace xff::parser {
 namespace {
@@ -41,6 +42,7 @@ using ::testing::IsTrue;
 using ::testing::Not;
 using ::testing::NotNull;
 using ::testing::Optional;
+using ::testing::SizeIs;
 
 struct RgTest : ::testing::Test {};
 
@@ -218,7 +220,7 @@ TEST_F(RgTest, RejectsMissingValuesAndUnsupportedShorts) {
   EXPECT_THAT(Parse({"--rg", "-Mno", "x"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("integer")));
   EXPECT_THAT(
       Parse({"--rg", "--count=3", "x"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("does not take")));
-  EXPECT_THAT(Parse({"--rg", "-type", "x"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("unsupported rg")));
+  EXPECT_THAT(Parse({"--rg", "-J", "x"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("unsupported rg")));
 }
 
 TEST_F(RgTest, RejectsModeValuesAndRootsAfterTheNativeBoundary) {
@@ -238,5 +240,101 @@ TEST_F(RgTest, RejectsLateSelectionAndReentry) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("re-entry")));
   EXPECT_THAT(Parse({"--rg", "--help"}), IsOk());
 }
+
+TEST_F(RgTest, CompatibilityControlsAreTypedAndLastOverrideWins) {
+  ASSERT_OK_AND_ASSIGN(
+      const auto command, Parse(
+                              {"--rg", "-U", "--no-multiline", "--multiline-dotall", "--no-multiline-dotall",
+                               "--no-unicode", "--unicode", "--heading", "--no-heading", "--column", "--no-column",
+                               "-xw", "-tcpp", "-Tpy", "--type-add=local:*.loc", "--type-clear=local", "hit"}));
+  ASSERT_THAT(command.rg, Optional(_));
+  const auto search = command.rg.value_or(RgSearch{});
+  EXPECT_THAT(search.multiline, Eq(false));
+  EXPECT_THAT(search.dotall, Eq(false));
+  EXPECT_THAT(search.unicode, Eq(true));
+  EXPECT_THAT(search.unicode_explicit, Eq(true));
+  EXPECT_THAT(search.heading, Optional(false));
+  EXPECT_THAT(search.column, Eq(false));
+  EXPECT_THAT(search.word, Eq(true));
+  EXPECT_THAT(search.line, Eq(false));
+  EXPECT_THAT(search.types, SizeIs(4));
+}
+
+TEST_F(RgTest, DefaultTypesUseCanonicalLanguagesAndSuffixAliases) {
+  for (const std::string_view name : {"cpp", "C++", "CPP"}) {
+    SCOPED_TRACE(name);
+    ASSERT_OK_AND_ASSIGN(const auto command, Parse({"--rg", "-t", std::string(name), "hit"}));
+    ASSERT_OK_AND_ASSIGN(const auto types, RgTypes::Compile(command.rg.value_or(RgSearch{})));
+    EXPECT_THAT(types.Includes("main.cc"), Eq(true));
+    EXPECT_THAT(types.Includes("main.CPP"), Eq(true));
+    EXPECT_THAT(types.Includes("main.h"), Eq(true));
+    EXPECT_THAT(types.Includes("main.py"), Eq(false));
+  }
+  ASSERT_OK_AND_ASSIGN(const auto command, Parse({"--rg", "--type-list"}));
+  ASSERT_OK_AND_ASSIGN(const auto types, RgTypes::Compile(command.rg.value_or(RgSearch{})));
+  EXPECT_THAT(types.Listing(), HasSubstr("cpp: language C++\n"));
+  EXPECT_THAT(types.Listing(), HasSubstr("py: language Python\n"));
+}
+
+TEST_F(RgTest, ClearAndAddApplyToEveryAliasOfTheSameType) {
+  ASSERT_OK_AND_ASSIGN(
+      const auto command, Parse({"--rg", "--type-clear=cpp", "--type-add=C++:*.local", "-tcc", "hit"}));
+  ASSERT_OK_AND_ASSIGN(const auto types, RgTypes::Compile(command.rg.value_or(RgSearch{})));
+  EXPECT_THAT(types.Includes("main.local"), Eq(true));
+  EXPECT_THAT(types.Includes("main.cc"), Eq(false));
+  ASSERT_OK_AND_ASSIGN(const auto cleared, Parse({"--rg", "--type-clear=C++", "-tcpp", "hit"}));
+  EXPECT_THAT(RgTypes::Compile(cleared.rg.value_or(RgSearch{})), StatusIs(absl::StatusCode::kInvalidArgument, _));
+}
+
+TEST_F(RgTest, TypeSelectionUsesGlobsAndOrderedOverrides) {
+  ASSERT_OK_AND_ASSIGN(const auto command, Parse({"--rg", "-tcpp", "-Tc", "hit"}));
+  ASSERT_OK_AND_ASSIGN(const auto types, RgTypes::Compile(command.rg.value_or(RgSearch{})));
+  EXPECT_THAT(types.Includes("one.cc"), Eq(true));
+  EXPECT_THAT(types.Includes("one.h"), Eq(false));
+  EXPECT_THAT(types.Includes("one.py"), Eq(false));
+  ASSERT_OK_AND_ASSIGN(const auto reverse, Parse({"--rg", "-Tc", "-tcpp", "hit"}));
+  ASSERT_OK_AND_ASSIGN(const auto reversed, RgTypes::Compile(reverse.rg.value_or(RgSearch{})));
+  EXPECT_THAT(reversed.Includes("one.h"), Eq(true));
+}
+
+TEST_F(RgTest, TypeDefinitionsCanBeImportedClearedAndListedWithoutPattern) {
+  ASSERT_OK_AND_ASSIGN(
+      const auto command, Parse(
+                              {"--rg", "--type-clear=cpp", "--type-add=cpp:*.one", "--type-add=local:include:cpp,py",
+                               "--type-add=local:*.{two,three}", "--type-list", "-tlocal"}));
+  ASSERT_OK_AND_ASSIGN(const auto types, RgTypes::Compile(command.rg.value_or(RgSearch{})));
+  EXPECT_THAT(types.Listing(), HasSubstr("cpp: *.one\n"));
+  EXPECT_THAT(types.Includes("one.cc"), Eq(false));
+  EXPECT_THAT(types.Includes("one.one"), Eq(true));
+  EXPECT_THAT(types.Includes("one.py"), Eq(true));
+  EXPECT_THAT(types.Includes("one.two"), Eq(true));
+  EXPECT_THAT(types.Includes("one.three"), Eq(true));
+  ASSERT_OK_AND_ASSIGN(const auto all, Parse({"--rg", "-tall", "hit"}));
+  ASSERT_OK_AND_ASSIGN(const auto all_types, RgTypes::Compile(all.rg.value_or(RgSearch{})));
+  EXPECT_THAT(all_types.Includes("main.cc"), Eq(true));
+  EXPECT_THAT(all_types.Includes("unrecognized.zznotatype"), Eq(false));
+  ASSERT_OK_AND_ASSIGN(const auto none, Parse({"--rg", "-Tall", "hit"}));
+  ASSERT_OK_AND_ASSIGN(const auto other_types, RgTypes::Compile(none.rg.value_or(RgSearch{})));
+  EXPECT_THAT(other_types.Includes("main.cc"), Eq(false));
+  EXPECT_THAT(other_types.Includes("unrecognized.zznotatype"), Eq(true));
+}
+
+TEST_F(RgTest, InvalidTypeSpecificationsFailBeforeTraversal) {
+  const std::vector<std::string> invalid{
+      "-tunknown",
+      "-th",
+      "--type-add=bad-name:*.bad",
+      "--type-add=:x",
+      "--type-add=name",
+      "--type-add=name:",
+      "--type-add=all:*.all",
+      "--type-add=name:include:missing"};
+  for (const auto& arg : invalid) {
+    SCOPED_TRACE(arg);
+    ASSERT_OK_AND_ASSIGN(const auto command, Parse({"--rg", arg, "hit"}));
+    EXPECT_THAT(RgTypes::Compile(command.rg.value_or(RgSearch{})), StatusIs(absl::StatusCode::kInvalidArgument, _));
+  }
+}
+
 }  // namespace
 }  // namespace xff::parser

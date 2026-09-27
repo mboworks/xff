@@ -147,6 +147,36 @@ std::vector<LineMatch> CollectLineMatches(
   return result;
 }
 
+void LineContext::Push(
+    std::size_t number,
+    std::string_view text,
+    bool matched,
+    absl::FunctionRef<void(const ContextLine&)> emit) {
+  const auto send = [&](std::size_t line, std::string_view value, bool selected) {
+    if (last_ != 0 && line - last_ > 1) {
+      ++group_;
+    }
+    emit({.number = line, .text = value, .is_match = selected, .group = group_});
+    last_ = line;
+  };
+  if (matched) {
+    for (const auto& line : pending_) {
+      send(line.number, line.text, false);
+    }
+    pending_.clear();
+    send(number, text, true);
+    remaining_ = after_;
+  } else if (remaining_ != 0) {
+    send(number, text, false);
+    --remaining_;
+  } else if (before_ != 0) {
+    if (pending_.size() == before_) {
+      pending_.pop_front();
+    }
+    pending_.push_back({.number = number, .text = std::string(text)});
+  }
+}
+
 std::vector<ContextLine> CollectLineMatchesWithContext(
     std::string_view content,
     absl::FunctionRef<bool(std::string_view line)> matches,

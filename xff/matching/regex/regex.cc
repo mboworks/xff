@@ -46,10 +46,14 @@
 namespace xff::regex {
 namespace {
 
-absl::StatusOr<std::unique_ptr<RE2>> CompileRe2(std::string_view pattern, bool case_insensitive) {
+absl::StatusOr<std::unique_ptr<RE2>> CompileRe2(
+    std::string_view pattern,
+    bool case_insensitive,
+    TextMode text_mode = TextMode::kUtf8) {
   RE2::Options options;
   options.set_case_sensitive(!case_insensitive);
   options.set_log_errors(false);
+  options.set_encoding(text_mode == TextMode::kBytes ? RE2::Options::EncodingLatin1 : RE2::Options::EncodingUTF8);
   auto re = std::make_unique<RE2>(pattern, options);
   if (!re->ok()) {
     return absl::InvalidArgumentError(absl::StrCat("invalid regular expression: ", re->error()));
@@ -386,14 +390,20 @@ absl::Status ValidateRe2Rewrite(std::string_view pattern, std::string_view repla
   return absl::OkStatus();
 }
 
-absl::StatusOr<Matcher> Matcher::Compile(std::string_view pattern, bool case_insensitive, Grammar grammar) {
+absl::StatusOr<Matcher> Matcher::Compile(
+    std::string_view pattern,
+    bool case_insensitive,
+    Grammar grammar,
+    std::optional<TextMode> text_mode) {
   // Shared RE2 compilation: kRe2 uses the pattern verbatim, kGlob its glob-to-RE2 translation. A
   // lambda in this member function reaches Matcher's private constructor.
-  const auto compile_re2 = [case_insensitive](std::string_view re_pattern) -> absl::StatusOr<Matcher> {
-    MBO_ASSIGN_OR_RETURN(auto re, CompileRe2(re_pattern, case_insensitive));
+  const auto compile_re2 = [case_insensitive, text_mode](std::string_view re_pattern) -> absl::StatusOr<Matcher> {
+    MBO_ASSIGN_OR_RETURN(auto re, CompileRe2(re_pattern, case_insensitive, text_mode.value_or(TextMode::kUtf8)));
     return Matcher(
-        std::make_unique<Re2Backend>(std::move(re)),
-        Re2Source{.pattern = std::string(re_pattern), .case_insensitive = case_insensitive});
+        std::make_unique<Re2Backend>(std::move(re)), Re2Source{
+                                                         .pattern = std::string(re_pattern),
+                                                         .case_insensitive = case_insensitive,
+                                                         .text_mode = text_mode.value_or(TextMode::kUtf8)});
   };
   switch (grammar) {
     case Grammar::kRe2: return compile_re2(pattern);
@@ -424,7 +434,9 @@ absl::StatusOr<Matcher> Matcher::Compile(std::string_view pattern, bool case_ins
       // in the xff_extras_api slot. MakePcre2Backend invokes it, or returns Unimplemented when no
       // PCRE2 backend is linked (lean build) -- a distinct state from an InvalidArgument bad pattern,
       // and never a silent fallback to RE2.
-      MBO_ASSIGN_OR_RETURN(std::unique_ptr<const RegexBackend> backend, MakePcre2Backend(pattern, case_insensitive));
+      MBO_ASSIGN_OR_RETURN(
+          std::unique_ptr<const RegexBackend> backend,
+          MakePcre2Backend(pattern, case_insensitive, text_mode.value_or(TextMode::kBytes)));
       return Matcher(std::move(backend));
     }
   }
@@ -436,7 +448,7 @@ Matcher::Matcher(std::shared_ptr<const RegexBackend> backend, std::optional<Re2S
 
 absl::StatusOr<Matcher> Matcher::ForkForWorker() const {
   if (re2_) {
-    return Compile(re2_->pattern, re2_->case_insensitive, Grammar::kRe2);
+    return Compile(re2_->pattern, re2_->case_insensitive, Grammar::kRe2, re2_->text_mode);
   }
   return Matcher(backend_);
 }

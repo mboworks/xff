@@ -29,6 +29,9 @@
 
 namespace xff::regex {
 
+// Text representation for a configured regex backend; no encoding autodetection.
+enum class TextMode { kUtf8, kBytes };
+
 // The engine a `Matcher` delegates to for one compiled pattern: RE2 today, PCRE2 when that grammar
 // is built in. `Matcher` owns a `RegexBackend` behind a `unique_ptr` and forwards each operation, so
 // the public API is grammar-agnostic and the concrete engine (and its dependency) stays private.
@@ -66,8 +69,8 @@ class RegexBackend {
 // Compiles `pattern` into a PCRE2-backed RegexBackend (case-folding when `case_insensitive`), or an
 // InvalidArgument error for a pattern PCRE2 rejects. The real PCRE2 backend -- built only into the
 // full binary, from its own removable module under extra_modules/ -- provides one of these.
-using Pcre2Factory =
-    std::function<absl::StatusOr<std::unique_ptr<const RegexBackend>>(std::string_view pattern, bool case_insensitive)>;
+using Pcre2Factory = std::function<absl::StatusOr<
+    std::unique_ptr<const RegexBackend>>(std::string_view pattern, bool case_insensitive, TextMode mode)>;
 
 // Registers the process-wide PCRE2 backend factory. Called once, at static-init, from the real
 // backend's translation unit; linkage is presence -- a lean build links no such unit, so nothing
@@ -92,7 +95,10 @@ bool Pcre2Available();
 // Returns Unimplemented when no PCRE2 backend is built in (lean build), or the factory's
 // InvalidArgument for a bad pattern. Matcher::Compile(kPcre2) calls this, so the xff core reaches the
 // PCRE2 seam without a direct dependency on PCRE2 or on the real backend's translation unit.
-absl::StatusOr<std::unique_ptr<const RegexBackend>> MakePcre2Backend(std::string_view pattern, bool case_insensitive);
+absl::StatusOr<std::unique_ptr<const RegexBackend>> MakePcre2Backend(
+    std::string_view pattern,
+    bool case_insensitive,
+    TextMode mode = TextMode::kBytes);
 
 }  // namespace xff::regex
 

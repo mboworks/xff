@@ -42,6 +42,7 @@ using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
 using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
+using ::mbo::testing::WithDropIndent;
 using ::testing::Contains;
 using ::testing::Eq;
 using ::testing::Gt;
@@ -575,5 +576,166 @@ TEST_F(RgEngineTest, JsonUsesTheExistingXffContentSchema) {
   EXPECT_THAT(output, HasSubstr("\"record\":\"grep\""));
   EXPECT_THAT(output, HasSubstr("\"path\":\"tree/a\""));
 }
+
+TEST_F(RgEngineTest, FullLineAndContextOutputUsesStreamsAndRetainsTransactionalErrors) {
+  fs.streaming = true;
+  fs.files["tree/a"] = "skip\npre\nhit\nhit\npost\nskip\nskip\npre\nhit\npost\n";
+  EXPECT_THAT(Run({"-n", "-C1", "hit", "tree/a"}).errors, Eq(0));
+  EXPECT_THAT(output, WithDropIndent(EqualsText(R"out(
+      tree/a-2-pre
+      tree/a:3:hit
+      tree/a:4:hit
+      tree/a-5-post
+      --
+      tree/a-8-pre
+      tree/a:9:hit
+      tree/a-10-post
+)out")));
+  EXPECT_THAT(fs.reads.load(), Eq(0));
+  EXPECT_THAT(fs.sources.load(), Eq(1));
+  fs.source_override = std::make_shared<FailingSource>(false);
+  EXPECT_THAT(Run({"hit", "tree/a"}).errors, Eq(1));
+  EXPECT_THAT(output, IsEmpty());
+  fs.source_override = vfs::MemoryReadSource("hit\n" + std::string(70'000, 'x') + std::string(1, '\0'));
+  EXPECT_THAT(Run({"hit", "tree/a"}).any_match, IsFalse());
+  EXPECT_THAT(output, IsEmpty());
+}
+
+TEST_F(RgEngineTest, TypesFilterSearchButExplicitGlobsHavePrecedence) {
+  fs.files = {{"tree/a.cc", "hit\n"}, {"tree/a.py", "hit\n"}, {"tree/other", "hit\n"}};
+  EXPECT_THAT(Run({"-tcpp", "hit", "tree"}).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText("tree/a.cc:hit\n"));
+  EXPECT_THAT(Run({"-tcpp", "-g*.py", "hit", "tree"}).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText("tree/a.py:hit\n"));
+  EXPECT_THAT(Run({"-tcpp", "hit", "tree", "--xff", "-name", "*.py"}).any_match, IsFalse());
+  EXPECT_THAT(output, IsEmpty());
+  EXPECT_THAT(Run({"--type-list"}).errors, Eq(0));
+  EXPECT_THAT(output, HasSubstr("cpp: "));
+  EXPECT_THAT(output, HasSubstr("py: "));
+  EXPECT_THAT(Run({"-tunknown", "hit", "tree"}).errors, Eq(2));
+}
+
+TEST_F(RgEngineTest, SharedTypesComposeWithNativeLanguageFiltersAndDoNotDuplicateOutput) {
+  fs.files = {{"tree/a.h", "hit header\n"}, {"tree/b.cc", "hit impl\n"}, {"tree/c.c", "hit C\n"}};
+  EXPECT_THAT(Run({"-tc", "-tcpp", "hit", "tree", "--xff", "-lang", "C++"}).errors, Eq(0));
+  EXPECT_THAT(output, WithDropIndent(EqualsText(R"out(
+      tree/a.h:hit header
+      tree/b.cc:hit impl
+)out")));
+  EXPECT_THAT(Run({"-tcpp", "-Tc", "hit", "tree"}).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText("tree/b.cc:hit impl\n"));
+  EXPECT_THAT(Run({"-Tc", "-tcpp", "hit", "tree", "--xff", "-lang", "C"}).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText("tree/a.h:hit header\n"));
+}
+
+TEST_F(RgEngineTest, MultilineMatchesArePrintedByLineButCountedByOccurrence) {
+  fs.files["tree/a"] = "zero\nalpha one\nbeta two\nend\nalpha\nbeta\n";
+  EXPECT_THAT(Run({"-Un", "alpha[^\\n]*\\nbeta", "tree/a"}).errors, Eq(0));
+  EXPECT_THAT(output, WithDropIndent(EqualsText(R"out(
+      tree/a:2:alpha one
+      tree/a:3:beta two
+      tree/a:5:alpha
+      tree/a:6:beta
+)out")));
+  EXPECT_THAT(Run({"-Uno", "alpha[^\\n]*\\nbeta", "tree/a"}).errors, Eq(0));
+  EXPECT_THAT(output, WithDropIndent(EqualsText(R"out(
+      tree/a:2:alpha one
+      tree/a:3:beta
+      tree/a:5:alpha
+      tree/a:6:beta
+)out")));
+  EXPECT_THAT(Run({"-Uc", "alpha[^\\n]*\\nbeta", "tree/a"}).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText("tree/a:2\n"));
+  EXPECT_THAT(Run({"-Unv", "alpha[^\\n]*\\nbeta", "tree/a"}).errors, Eq(0));
+  EXPECT_THAT(output, WithDropIndent(EqualsText(R"out(
+      tree/a:1:zero
+      tree/a:4:end
+)out")));
+  EXPECT_THAT(Run({"-Unx", "alpha\\nbeta", "tree/a"}).errors, Eq(0));
+  EXPECT_THAT(output, WithDropIndent(EqualsText(R"out(
+      tree/a:5:alpha
+      tree/a:6:beta
+)out")));
+}
+
+TEST_F(RgEngineTest, MultilineDotallContextAndEmptyInputs) {
+  fs.files["tree/a"] = "pre\nalpha\nbeta\npost\n";
+  EXPECT_THAT(Run({"-U", "alpha.*beta", "tree/a"}).any_match, IsFalse());
+  EXPECT_THAT(Run({"-Un", "--multiline-dotall", "-C1", "alpha.*beta", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, WithDropIndent(EqualsText(R"out(
+      tree/a-1-pre
+      tree/a:2:alpha
+      tree/a:3:beta
+      tree/a-4-post
+)out")));
+  EXPECT_THAT(Run({"-U", "alpha\nbeta", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(Run({"alpha\nbeta", "tree/a"}).errors, Eq(2));
+  fs.files["tree/a"] = "";
+  EXPECT_THAT(Run({"-U", "alpha", "tree/a"}).any_match, IsFalse());
+}
+
+TEST_F(RgEngineTest, HeadingsColumnsAndOverridesPreserveFileBoundaries) {
+  fs.files["tree/b"] = "miss hit\n";
+  EXPECT_THAT(Run({"--heading", "--column", "--sort=dir", "hit", "tree"}).errors, Eq(0));
+  EXPECT_THAT(output, WithDropIndent(EqualsText(R"out(
+      tree/a
+      1:1:hit
+
+      tree/b
+      1:6:miss hit
+)out")));
+  EXPECT_THAT(Run({"--heading", "--no-heading", "--column", "-o", "hit", "tree/b"}).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText("tree/b:1:6:hit\n"));
+  EXPECT_THAT(Run({"--heading", "-I", "hit", "tree/b"}).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText("miss hit\n"));
+  EXPECT_THAT(Run({"--heading", "-c", "hit", "tree/b"}).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText("tree/b:1\n"));
+  EXPECT_THAT(Run({"--heading", "--format=jsonl", "hit", "tree/b"}).errors, Eq(0));
+  EXPECT_THAT(output, HasSubstr("\"record\":\"grep\""));
+  EXPECT_THAT(output, Not(HasSubstr("tree/b\n")));
+}
+
+TEST_F(RgEngineTest, MultilineEmptyAndNewlinePortionsHaveNoPhantomFinalLine) {
+  fs.files["tree/a"] = "abc";
+  EXPECT_THAT(Run({"-Un", "$", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a:1:abc\n"));
+  fs.files["tree/a"] = "abc\n";
+  EXPECT_THAT(Run({"-Uno", "a*", "tree/a"}).errors, Eq(0));
+  EXPECT_THAT(output, WithDropIndent(EqualsText(R"out(
+      tree/a:1:a
+      tree/a:1:
+      tree/a:1:
+)out")));
+  EXPECT_THAT(Run({"-Uno", "\\n", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, IsEmpty());
+  EXPECT_THAT(Run({"--column", "-C1", "b", "tree/a"}).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText("tree/a:1:2:abc\n"));
+  fs.files["tree/a"] = "pre\nabc\npost\n";
+  EXPECT_THAT(Run({"--column", "-C1", "b", "tree/a"}).errors, Eq(0));
+  EXPECT_THAT(output, WithDropIndent(EqualsText(R"out(
+      tree/a-1-pre
+      tree/a:2:2:abc
+      tree/a-3-post
+)out")));
+  fs.files["tree/a"] = "";
+  EXPECT_THAT(Run({"-Uc", "", "tree/a"}).any_match, IsFalse());
+  EXPECT_THAT(output, IsEmpty());
+}
+
+TEST_F(RgEngineTest, MultilineFixedStringsAndPrettyRendering) {
+  fs.files["tree/a"] = "prealpha\nbeta\nalpha\nbeta\n";
+  EXPECT_THAT(Run({"-UFxn", "alpha\nbeta", "tree/a"}).errors, Eq(0));
+  EXPECT_THAT(output, WithDropIndent(EqualsText(R"out(
+      tree/a:3:alpha
+      tree/a:4:beta
+)out")));
+  EXPECT_THAT(Run({"-pU", "alpha\\nbeta", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, HasSubstr("\x1b[35mtree/a\x1b[0m\n"));
+  EXPECT_THAT(output, HasSubstr("\x1b[1;31malpha\x1b[0m"));
+  EXPECT_THAT(output, HasSubstr("\x1b[1;31mbeta\x1b[0m"));
+  EXPECT_THAT(Run({"-U", "--regextype=ERE", "alpha", "tree/a"}).errors, Eq(2));
+  EXPECT_THAT(Run({"--unicode", "--regextype=ERE", "alpha", "tree/a"}).errors, Eq(2));
+}
+
 }  // namespace
 }  // namespace xff::engine

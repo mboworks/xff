@@ -111,7 +111,8 @@ TEST_F(RegexBackendSeamTest, BRegisteringAFactoryMakesTheGrammarAvailableAndIsUs
   // What the real PCRE2 backend's Pcre2Registrar does at static init, and what a full build relies
   // on: after registration the grammar reports available and MakePcre2Backend delegates.
   RegisterPcre2Backend(
-      [](std::string_view pattern, bool case_insensitive) -> absl::StatusOr<std::unique_ptr<const RegexBackend>> {
+      [](std::string_view pattern, bool case_insensitive,
+         TextMode) -> absl::StatusOr<std::unique_ptr<const RegexBackend>> {
         if (pattern.empty()) {
           return absl::InvalidArgumentError("empty pattern");  // a bad pattern stays InvalidArgument
         }

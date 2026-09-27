@@ -33,6 +33,7 @@ using ::mbo::testing::IsOk;
 using ::mbo::testing::StatusIs;
 using ::testing::AllOf;
 using ::testing::Contains;
+using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
 using ::testing::HasSubstr;
@@ -61,6 +62,91 @@ TEST_F(LanguageTest, ByExtension) {
   EXPECT_THAT(LanguageForName("a.go"), Eq("Go"));
   EXPECT_THAT(LanguageForName("a.ts"), Eq("TypeScript"));
   EXPECT_THAT(LanguageForName("view.m"), Eq("Objective-C"));  // linguist's default for .m
+}
+
+TEST_F(LanguageTest, SharedHeaderCandidatesKeepOnePreferredLabel) {
+  const auto candidates = CandidatesForName("util.H");
+  EXPECT_THAT(
+      candidates, ElementsAre(
+                      Field(&LanguageInfo::name, "C"), Field(&LanguageInfo::name, "C++"),
+                      Field(&LanguageInfo::name, "Objective-C")));
+  EXPECT_THAT(LanguageForName("util.h"), Eq("C"));
+  EXPECT_THAT(CandidatesForName("impl.c"), ElementsAre(Field(&LanguageInfo::name, "C")));
+  EXPECT_THAT(CandidatesForName("impl.hpp"), ElementsAre(Field(&LanguageInfo::name, "C++")));
+  EXPECT_THAT(CandidatesForName("unknown."), IsEmpty());
+  EXPECT_THAT(CandidatesForName("unknown"), IsEmpty());
+}
+
+TEST_F(LanguageTest, SharedClaimsNeedNoConflictEscapeHatchAndDoNotChooseADisplayLabel) {
+  const std::string file = Write(R"({
+    "First": {"shared_extensions": [".shared", ".shared"], "shared_filenames": ["Build[1]"]},
+    "Second": {"shared_extensions": ["shared"], "shared_filenames": ["Build[1]"]}
+  })");
+  EXPECT_THAT(Configure({file}, ConflictPolicy::kError), IsOk());
+  const auto both = ElementsAre(Field(&LanguageInfo::name, "First"), Field(&LanguageInfo::name, "Second"));
+  EXPECT_THAT(CandidatesForName("a.SHARED"), both);
+  EXPECT_THAT(CandidatesForName("Build[1]"), both);
+  EXPECT_THAT(CandidatesForName("build[1]"), IsEmpty());
+  EXPECT_THAT(CandidatesForName("Build1"), IsEmpty());
+  EXPECT_THAT(LanguageForName("a.shared"), IsEmpty());
+  EXPECT_THAT(InfoForName("a.shared"), Eq(std::nullopt));
+  EXPECT_THAT(TerminalColorForName("a.shared"), IsEmpty());
+}
+
+TEST_F(LanguageTest, CandidateLookupUsesExactNamesThenLongestSuffix) {
+  const std::string file = Write(R"({
+    "Exact": {"shared_filenames": ["Exact.special.py"]},
+    "Specific": {"shared_extensions": ["special.py"]}
+  })");
+  EXPECT_THAT(Configure({file}, ConflictPolicy::kError), IsOk());
+  EXPECT_THAT(CandidatesForName("Exact.special.py"), ElementsAre(Field(&LanguageInfo::name, "Exact")));
+  EXPECT_THAT(CandidatesForName("other.SPECIAL.PY"), ElementsAre(Field(&LanguageInfo::name, "Specific")));
+  EXPECT_THAT(CandidatesForName("normal.py"), ElementsAre(Field(&LanguageInfo::name, "Python")));
+  EXPECT_THAT(LanguageForName("other.special.py"), IsEmpty());
+}
+
+TEST_F(LanguageTest, PreferredOverlayReplacesOlderSharedMembershipAndCanExplicitlyShareAgain) {
+  const auto before = ActiveSnapshot();
+  const auto old_candidates = before.CandidatesForName("a.h");
+  const std::string first = Write(R"({"Only": {"extensions": ["h"], "filenames": ["Exact"]},
+                                       "Other": {"shared_filenames": ["Exact"]}})");
+  EXPECT_THAT(Configure({first}, ConflictPolicy::kError), IsOk());
+  EXPECT_THAT(CandidatesForName("a.h"), ElementsAre(Field(&LanguageInfo::name, "Only")));
+  EXPECT_THAT(LanguageForName("a.h"), Eq("Only"));
+  EXPECT_THAT(
+      old_candidates, ElementsAre(
+                          Field(&LanguageInfo::name, "C"), Field(&LanguageInfo::name, "C++"),
+                          Field(&LanguageInfo::name, "Objective-C")));
+  EXPECT_THAT(before.CandidatesForName("a.h").data(), Eq(old_candidates.data()));
+  const std::string second = Write(R"({"New": {"extensions": ["h"], "filenames": ["Exact"]},
+                                        "C++": {"shared_extensions": ["h"]}})");
+  EXPECT_THAT(Configure({first, second}, ConflictPolicy::kError), IsOk());
+  EXPECT_THAT(
+      CandidatesForName("a.h"), ElementsAre(Field(&LanguageInfo::name, "C++"), Field(&LanguageInfo::name, "New")));
+  EXPECT_THAT(CandidatesForName("Exact"), ElementsAre(Field(&LanguageInfo::name, "New")));
+}
+
+TEST_F(LanguageTest, ReplacingSharedListsRemovesOnlyThatLanguagesSharedClaims) {
+  const std::string first = Write(R"({
+    "First": {"extensions": ["preferred"], "shared_extensions": ["old"], "shared_filenames": ["Exact"]},
+    "Second": {"shared_extensions": ["old"], "shared_filenames": ["Exact"]}
+  })");
+  const std::string second = Write(R"({"First": {"shared_extensions": ["new"], "shared_filenames": []}})");
+  EXPECT_THAT(Configure({first, second}, ConflictPolicy::kError), IsOk());
+  EXPECT_THAT(CandidatesForName("a.old"), ElementsAre(Field(&LanguageInfo::name, "Second")));
+  EXPECT_THAT(CandidatesForName("Exact"), ElementsAre(Field(&LanguageInfo::name, "Second")));
+  EXPECT_THAT(CandidatesForName("a.new"), ElementsAre(Field(&LanguageInfo::name, "First")));
+  EXPECT_THAT(CandidatesForName("a.preferred"), ElementsAre(Field(&LanguageInfo::name, "First")));
+  const std::string third = Write(R"({"Second": {"shared_extensions": [], "shared_filenames": []}})");
+  EXPECT_THAT(Configure({first, second, third}, ConflictPolicy::kError), IsOk());
+  EXPECT_THAT(CandidatesForName("a.old"), IsEmpty());
+  EXPECT_THAT(CandidatesForName("Exact"), IsEmpty());
+}
+
+TEST_F(LanguageTest, PreferredAndSharedClaimForSameLanguageIsOneCandidate) {
+  const std::string file = Write(R"({"Only": {"extensions": ["same"], "shared_extensions": ["same"]}})");
+  EXPECT_THAT(Configure({file}, ConflictPolicy::kError), IsOk());
+  EXPECT_THAT(CandidatesForName("a.same"), ElementsAre(Field(&LanguageInfo::name, "Only")));
 }
 
 TEST_F(LanguageTest, ExtensionIsCaseInsensitive) {
@@ -223,6 +309,10 @@ TEST_F(LanguageTest, RejectsMalformedLanguageRecords) {
       {.json = R"({"Broken":{"filenames":"Exact"}})", .message = "filenames must be an array of strings"},
       {.json = R"({"Broken":{"filenames":[""]}})", .message = "invalid filename"},
       {.json = R"({"Broken":{"filenames":["a/b"]}})", .message = "invalid filename"},
+      {.json = R"({"Broken":{"shared_extensions":"h"}})", .message = "shared_extensions must be an array"},
+      {.json = R"({"Broken":{"shared_extensions":[3]}})", .message = "shared_extensions must contain only strings"},
+      {.json = R"({"Broken":{"shared_extensions":["."]}})", .message = "invalid extension"},
+      {.json = R"({"Broken":{"shared_filenames":["a/b"]}})", .message = "invalid filename"},
   });
   for (const Case& test : kCases) {
     EXPECT_THAT(

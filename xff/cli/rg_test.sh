@@ -282,4 +282,59 @@ test::plus_or_uses_xff_style_and_keeps_find_compatibility() {
   expect_output_contains "'+' is an xff extension" "${out}"
 }
 
+test::types_custom_definitions_and_listing() {
+  local root out
+  root="$(_tree)"
+  _check 0 $'TODO one\nTODO two TODO' --rg -I -tcpp TODO "${root}"
+  _check 1 '' --rg -tcpp -g '*.txt' TODO "${root}"
+  _check 0 $'TODO one\nTODO two TODO' --rg -I --type-add 'local:*.cc' -tlocal TODO "${root}"
+  out="$("$(_bin)" --rg --type-list)"
+  expect_output_contains 'cpp: ' "${out}"
+  expect_output_contains 'py: ' "${out}"
+}
+
+test::multiline_context_counts_and_heading_overrides() {
+  local root
+  root="$(_tree)"
+  printf 'pre\nalpha one\nbeta two\npost\n' >"${root}/multi"
+  _check 0 $'2:alpha one\n3:beta two' --rg -Un 'alpha[^\n]*\nbeta' "${root}/multi"
+  _check 0 $'1-pre\n2:alpha one\n3:beta two\n4-post' --rg -Un -C1 'alpha[^\n]*\nbeta' "${root}/multi"
+  _check 0 '1' --rg -Uc 'alpha[^\n]*\nbeta' "${root}/multi"
+  _check 0 $'2:1:alpha one\n3:1:beta two' --rg -U --column 'alpha[^\n]*\nbeta' "${root}/multi"
+  _check 0 $'alpha one\nbeta two' --rg -U --heading --no-heading 'alpha[^\n]*\nbeta' "${root}/multi"
+}
+
+test::explicit_search_text_modes_pass_through_cli_configuration() {
+  local root
+  root="$(_tree)"
+  _check 0 $'TODO one\nTODO two TODO' --rg --unicode TODO "${root}/a.cc"
+  _check 0 $'TODO one\nTODO two TODO' --rg --no-unicode TODO "${root}/a.cc"
+  _check 0 $'TODO one\nTODO two TODO' --rg --no-unicode --unicode TODO "${root}/a.cc"
+}
+
+test::type_membership_uses_shared_language_overlays() {
+  local root out rc
+  root="$(test_tmpdir shared-types)"
+  mkdir -p "${root}/code"
+  printf 'hit header\n' >"${root}/code/header.h"
+  printf 'hit exact\n' >"${root}/code/Build[1]"
+  printf 'hit ordinary\n' >"${root}/code/ordinary.PY"
+  printf 'hit specific\n' >"${root}/code/module.special.py"
+  cat >"${root}/types.json" <<'JSON'
+{
+  "Only": {"extensions": ["h"], "filenames": ["Build[1]"], "aliases": ["project", "shared"]},
+  "Companion": {"shared_extensions": ["h"], "aliases": ["shared"]},
+  "Specific": {"extensions": ["special.py"]}
+}
+JSON
+  _check 0 $'hit exact\nhit header' --rg -I -tproject hit "${root}/code" --sort=dir --lang-db="${root}/types.json"
+  _check 0 'hit header' --rg -I -tCompanion hit "${root}/code" --lang-db="${root}/types.json"
+  _check 1 '' --rg -I -tcpp hit "${root}/code" --lang-db="${root}/types.json"
+  _check 0 'hit ordinary' --rg -I -tpy hit "${root}/code" --lang-db="${root}/types.json"
+  _check 0 'header.h|Only' --lang-db="${root}/types.json" "${root}/code" -lang Companion -printf '%f|%{lang}\n'
+  out="$("$(_bin)" --rg -tshared hit "${root}/code" --lang-db="${root}/types.json" 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  expect_output_contains "ambiguous file type alias 'shared'" "${out}"
+}
+
 test_runner

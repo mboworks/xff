@@ -3,6 +3,10 @@
 
 # 0.9.0
 
+- Reuse the language catalog for rg types and preserve overlapping candidates for language filters without duplicating output or summary counts.
+
+- Add rg file types, multiline search, explicit UTF-8/byte matching, headings and columns. Stream ordinary line/context input while preserving complete-file binary and error checks.
+
 - Run eligible rg content searches on ordered worker batches and reuse native content reads for `-M` output.
 - Generate rg option help from the parser metadata.
 

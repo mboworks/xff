@@ -1003,11 +1003,16 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "classification",
         .header = "Classification databases",
         .summary = "overlay language metadata and suffix/filename mappings from JSON; repeatable",
-        .details = "Loads a JSON object keyed by canonical language name. Each value may set `type`, `color`, "
-                   "`group`, and `source`, plus string arrays `aliases`, `extensions`, and `filenames`. Later files "
-                   "override earlier files and compiled data. Extensions may include their leading dot and may "
-                   "contain multiple parts; matching folds suffix case while exact filenames retain case. Conflicts "
-                   "between two languages in ONE file follow `--lang-conflicts`.",
+        .details =
+            "Loads a JSON object keyed by canonical language name. Each value may set `type`, `color`, "
+            "`group`, and `source`, plus string arrays `aliases`, `extensions`, `filenames`, "
+            "`shared_extensions`, and `shared_filenames`. Ordinary claims choose a preferred label; shared "
+            "claims add overlapping candidates for `-lang` and rg types without changing that label. Later files "
+            "override earlier files and compiled data. Extensions may include their leading dot and may "
+            "contain multiple parts; matching folds suffix case while exact filenames retain case. Conflicts "
+            "between two preferred claims in ONE file follow `--lang-conflicts`; shared claims may overlap. "
+            "A new preferred claim replaces older memberships for that key; shared claims in the same layer "
+            "are then added. A supplied shared list replaces that language's prior shared list of the same kind.",
         .affects = "-lang",
         .topic = "content",
         .repetition = GlobalFlag::Repetition::kAccumulate,
@@ -1018,7 +1023,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "classification",
         .header = "Classification databases",
         .summary = "resolve ambiguous suffix or filename claims within one language vocabulary file",
-        .details = "Controls only ambiguity inside one `--lang-db` file. Layering remains deterministic: "
+        .details = "Controls only preferred-label ambiguity inside one `--lang-db` file; explicit shared claims are "
+                   "allowed regardless of this policy. Layering remains deterministic: "
                    "a later file intentionally overrides earlier files and compiled data. `error` is the default; "
                    "`first` or `last` is an explicit compatibility escape hatch for imported databases.",
         .values = kLanguageConflictValues,
