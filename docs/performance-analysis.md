@@ -333,8 +333,7 @@ to be measured independently.
 
 ## MBO segmented collection storage and arenas
 
-The Git module override pins MBO `ac4c11113de868b27226c0fe74028f818dc6b4b8`, the head evaluated
-for this change. Both new APIs work without upstream changes. `SegmentedSequence` supplies stable
+The Git module override pins MBO `b3cfba13832e499b64d6b92d3493c54771aefd5e`. `SegmentedVector` supplies stable
 addresses, random-access iterators and explicit empty-directory reservation. `Arena` supplies raw
 aligned bytes and bulk lifetime, with no internal locks. Neither supplies contiguous element spans;
 `Arena` does not construct or destroy arbitrary C++ objects.
@@ -351,6 +350,13 @@ these views after the collection dies. Row/byte budgets continue to count the sa
 they are not physical allocator-memory caps. VFS routing and safety enforcement are unchanged.
 
 ### In-memory storage measurements
+
+These measurements use MBO `ac4c11113de868b27226c0fe74028f818dc6b4b8`, where the container was named
+`SegmentedSequence`. The current pin uses the renamed `SegmentedVector` and shared `SegmentedOptions`,
+and includes upstream source-construction improvements. XFF keeps the same segment and arena settings.
+The results below describe the measured revision; no additional speedup is claimed for the dependency
+update. `SegmentedDeque` is not used: collections append entries and retain them until destruction,
+without inserting or removing entries at the front.
 
 The committed `//xff/engine:collect_benchmark` constructs paths outside timing, then measures
 collection append, full iteration and destruction. Cases use 10 through 100,000 records, root

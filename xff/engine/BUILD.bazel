@@ -83,7 +83,7 @@ cc_library(
         "//xff/parser:parser_cc",
         "//xff/vfs:vfs_cc",
         "@abseil-cpp//absl/container:btree",
-        "@mboworks_mbo//mbo/container:segmented_sequence_cc",
+        "@mboworks_mbo//mbo/container:segmented_vector_cc",
         "@mboworks_mbo//mbo/memory:arena_cc",
     ],
 )
