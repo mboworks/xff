@@ -3,6 +3,11 @@
 
 # 0.9.0
 
+- Run eligible rg content searches on ordered worker batches and reuse native content reads for `-M` output.
+- Generate rg option help from the parser metadata.
+
+- Stream filename, count and quiet content searches without retaining whole-file text or selected-line lists.
+
 - Use executable basenames verbatim as config selectors, except for the `xff_full` distribution binary selecting `xff`.
 
 - Select rg argument grammar and matching-line output automatically when invoked as `rg`.

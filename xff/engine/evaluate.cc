@@ -77,6 +77,17 @@
 #include "xff/vfs/filesystem.h"
 
 namespace xff::engine {
+
+absl::StatusOr<std::string_view> ContentSnapshot::Read(const vfs::FileSystem& fs, std::string_view path) {
+  if (!bytes_) {
+    bytes_ = fs.ReadContent(path);
+  }
+  if (!bytes_->ok()) {
+    return bytes_->status();
+  }
+  return std::string_view(**bytes_);
+}
+
 namespace {
 
 template<typename T>
@@ -1016,19 +1027,19 @@ bool EvalRegex(const parser::Expr& expr, EvalContext& ctx) {
 // so content search skips binaries by default instead of emitting noise. The whole
 // file is read (hence the predicates' Cost::kExpensive); the prefix sniff only
 // decides the binary skip.
-std::optional<std::string> ContentToSearch(const Visit& visit, const vfs::FileSystem& fs) {
-  if (visit.metadata.type != vfs::FileType::kRegular) {
+std::optional<std::string_view> ContentToSearch(EvalContext& ctx) {
+  if (ctx.visit.metadata.type != vfs::FileType::kRegular) {
     return std::nullopt;  // only regular files have searchable content
   }
-  absl::StatusOr<std::string> content = fs.ReadContent(visit.path);
+  const auto content = ctx.content.Read(ctx.fs, ctx.visit.path);
   if (!content.ok()) {
     return std::nullopt;  // unreadable: a non-match here (the walk surfaces the read error itself)
   }
-  const std::string_view prefix(content->data(), std::min(content->size(), content::kBinaryNulSniffBytes));
+  const std::string_view prefix = std::string_view(*content).substr(0, content::kBinaryNulSniffBytes);
   if (absl::StrContains(prefix, '\0')) {
     return std::nullopt;  // a NUL in the sniff window marks the file binary; skip it
   }
-  return *std::move(content);
+  return *content;
 }
 
 // nullopt when `visit` is not a readable regular file; otherwise whether its content is binary -- a
@@ -1044,7 +1055,7 @@ std::optional<bool> FileContentIsBinary(const Visit& visit, const vfs::FileSyste
   if (!content.ok()) {
     return std::nullopt;
   }
-  const std::string_view prefix(content->data(), std::min(content->size(), content::kBinaryNulSniffBytes));
+  const std::string_view prefix = std::string_view(*content).substr(0, content::kBinaryNulSniffBytes);
   return absl::StrContains(prefix, '\0');
 }
 
@@ -1144,7 +1155,7 @@ bool EvalContent(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.empty()) {
     return false;
   }
-  const std::optional<std::string> content = ContentToSearch(ctx.visit, ctx.fs);
+  const auto content = ContentToSearch(ctx);
   if (!content.has_value()) {
     return false;
   }
@@ -1161,7 +1172,7 @@ bool EvalRxc(const parser::Expr& expr, EvalContext& ctx) {
   if (!matcher.has_value()) {
     return false;
   }
-  const std::optional<std::string> content = ContentToSearch(ctx.visit, ctx.fs);
+  const auto content = ContentToSearch(ctx);
   return content.has_value() && matcher->get().PartialMatch(*content);
 }
 
@@ -1210,7 +1221,7 @@ bool EvalCmp(const parser::Expr& expr, EvalContext& ctx) {
 // exact Jaccard calculation for one reference, not the MinHash approximation needed by a future
 // all-pairs clustering reduction.
 bool EvalSimilar(const parser::Expr& expr, EvalContext& ctx) {
-  const std::optional<std::string> lhs = ContentToSearch(ctx.visit, ctx.fs);
+  const auto lhs = ContentToSearch(ctx);
   const std::string target = RenderTarget(expr, ctx);
   if (!lhs.has_value() || target.empty()) {
     return false;
@@ -1578,6 +1589,28 @@ class GrepMatchers {
     return best;
   }
 
+  std::size_t Count(std::string_view text) const {
+    std::size_t count = 0;
+    std::size_t start = 0;
+    while (start <= text.size()) {
+      const auto span = FindFirst(text, start);
+      if (!span) {
+        break;
+      }
+      if (span->second != 0 || rg_) {
+        ++count;
+      }
+      if (span->second != 0) {
+        start = span->first + span->second;
+      } else if (span->first == text.size()) {
+        break;
+      } else {
+        start = span->first + 1;
+      }
+    }
+    return count;
+  }
+
   std::vector<std::pair<std::size_t, std::size_t>> FindAll(std::string_view text) const {
     if (single_.has_value()) {
       return single_->FindAll(text);
@@ -1715,18 +1748,75 @@ void EmitGrepPath(const parser::Expr& expr, const EvalContext& ctx) {
   }
 }
 
-std::size_t CountGrepPortions(
-    const std::vector<content::ContextLine>& lines,
+bool ReducedGrepOutput(const EvalContext& ctx) {
+  return ctx.grep.quiet || ctx.grep.output != GrepOptions::Output::kLines;
+}
+
+struct GrepSummary {
+  std::size_t lines = 0;
+  std::size_t portions = 0;
+  bool binary = false;
+};
+
+absl::StatusOr<GrepSummary> SummarizeGrep(
+    EvalContext& ctx,
     const GrepMatchers& matcher,
-    bool invert) {
-  if (invert) {
-    return 0;
+    std::uint64_t binary_scan_bytes) {
+  GrepSummary result;
+  if (ctx.visit.metadata.type != vfs::FileType::kRegular) {
+    result.binary = true;  // Non-regular entries are never grep inputs, even for files-without-match.
+    return result;
   }
-  std::size_t count = 0;
-  for (const auto& line : lines) {
-    count += matcher.FindAll(line.text).size();
+  const bool count =
+      !ctx.grep.quiet
+      && (ctx.grep.output == GrepOptions::Output::kCount || ctx.grep.output == GrepOptions::Output::kCountMatches);
+  const bool portions = count && (ctx.grep.only_matching || ctx.grep.output == GrepOptions::Output::kCountMatches)
+                        && !(ctx.grep.rg_mode && ctx.grep.invert);
+  const auto visit = [&](std::size_t, std::string_view line) {
+    if (matcher.PartialMatch(line) == ctx.grep.invert) {
+      return true;
+    }
+    ++result.lines;
+    if (portions && !ctx.grep.invert) {
+      result.portions += matcher.Count(line);
+    }
+    return count;  // File/quiet selection needs only the first selected line.
+  };
+  if (ctx.content.Loaded()) {
+    MBO_ASSIGN_OR_RETURN(const auto text, ctx.content.Read(ctx.fs, ctx.visit.path));
+    result.binary = text.substr(0, static_cast<std::size_t>(std::min<std::uint64_t>(text.size(), binary_scan_bytes)))
+                        .contains('\0');
+    if (!result.binary) {
+      content::VisitLines(text, visit);
+    }
+  } else {
+    MBO_ASSIGN_OR_RETURN(const auto source, ctx.fs.ContentSource(ctx.visit.path));
+    MBO_ASSIGN_OR_RETURN(const auto stream, source->Open());
+    MBO_ASSIGN_OR_RETURN(const auto scan, content::ScanLines(*stream, binary_scan_bytes, visit));
+    result.binary = scan.binary;
   }
-  return count;
+  return result;
+}
+
+bool EmitGrepSummary(const parser::Expr& expr, const EvalContext& ctx, const GrepSummary& summary) {
+  if (summary.binary) {
+    return false;
+  }
+  const auto output = ctx.grep.output;
+  const bool any = summary.lines != 0;
+  if (output == GrepOptions::Output::kFilesWithMatches || output == GrepOptions::Output::kFilesWithoutMatch) {
+    const bool selected = any == (output == GrepOptions::Output::kFilesWithMatches);
+    if (selected && !ctx.grep.quiet) {
+      EmitGrepPath(expr, ctx);
+    }
+    return selected;
+  }
+  if (any && !ctx.grep.quiet) {
+    const bool portions = (output == GrepOptions::Output::kCountMatches || ctx.grep.only_matching)
+                          && !(ctx.grep.rg_mode && ctx.grep.invert);
+    EmitGrepCount(expr, ctx, portions ? summary.portions : summary.lines);
+  }
+  return any;
 }
 
 void EmitSelectedGrepLines(
@@ -1774,36 +1864,20 @@ bool EvalGrepMatchers(
   if (expr.args.empty() && !supplied) {
     return false;
   }
-  const std::optional<std::string> owned = supplied ? std::nullopt : ContentToSearch(ctx.visit, ctx.fs);
-  const auto content = supplied ? supplied : owned ? std::optional<std::string_view>(*owned) : std::nullopt;
+  if (ReducedGrepOutput(ctx)) {
+    const auto summary = SummarizeGrep(ctx, matcher, content::kBinaryNulSniffBytes);
+    return summary.ok() && EmitGrepSummary(expr, ctx, *summary);
+  }
+  const auto content = supplied ? supplied : ContentToSearch(ctx);
   if (!content.has_value()) {
     return false;
   }
   const auto is_match = [&](std::string_view line) { return matcher.PartialMatch(line) != ctx.grep.invert; };
-  const auto output = ctx.grep.output;
-  const bool line_output = output == GrepOptions::Output::kLines;
   const bool only_matching = ctx.grep.only_matching && !(ctx.grep.rg_mode && ctx.grep.invert);
-  const bool with_context = line_output && !only_matching && (ctx.grep_before > 0 || ctx.grep_after > 0);
+  const bool with_context = !only_matching && (ctx.grep_before > 0 || ctx.grep_after > 0);
   const auto lines = content::CollectLineMatchesWithContext(
       *content, is_match, with_context ? ctx.grep_before : 0, with_context ? ctx.grep_after : 0);
   const bool any_match = !lines.empty();
-  if (output == GrepOptions::Output::kFilesWithMatches || output == GrepOptions::Output::kFilesWithoutMatch) {
-    const bool selected = any_match == (output == GrepOptions::Output::kFilesWithMatches);
-    if (selected) {
-      EmitGrepPath(expr, ctx);
-    }
-    return selected;
-  }
-  if (!line_output) {
-    std::size_t count = lines.size();
-    if ((output == GrepOptions::Output::kCountMatches || only_matching) && !(ctx.grep.rg_mode && ctx.grep.invert)) {
-      count = CountGrepPortions(lines, matcher, ctx.grep.invert);
-    }
-    if (any_match) {
-      EmitGrepCount(expr, ctx, count);
-    }
-    return any_match;
-  }
   EmitSelectedGrepLines(expr, ctx, lines, matcher, with_context);
   return any_match;
 }
@@ -2907,6 +2981,9 @@ void PreviewExecution(const parser::Expr& expr, EvalContext& context) {
 EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) {
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate: {
+      if (!expr.descriptor->pure || expr.descriptor->kind == registry::Kind::kAction) {
+        context.content.Invalidate();
+      }
       if (expr.descriptor->needs_metadata || (expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
         context.control.metadata_error = context.visit.EnsureMetadata();
         if (!context.control.metadata_error.ok()) {
@@ -2947,7 +3024,8 @@ EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) 
 }  // namespace
 
 absl::StatusOr<MatchOutput> PrepareMatchOutput(const parser::Expr& expression) {
-  MatchOutput result;
+  const auto source = std::make_shared<parser::Expr>(parser::Expr{.kind = parser::Expr::Kind::kPredicate});
+  MatchOutput result{.source = source};
   std::vector<std::reference_wrapper<const parser::Expr>> pending{std::cref(expression)};
   while (!pending.empty()) {
     const auto& node = pending.back().get();
@@ -2972,7 +3050,7 @@ absl::StatusOr<MatchOutput> PrepareMatchOutput(const parser::Expr& expression) {
                             node.args.front(), node.descriptor->fold_case || node.case_fold, regex::Grammar::kExact));
       result.matchers.push_back(std::make_shared<const regex::Matcher>(std::move(matcher)));
     }
-    result.source.args.push_back(node.args.front());
+    source->args.push_back(node.args.front());
   }
   if (result.matchers.empty()) {
     return absl::InvalidArgumentError("requires a content predicate such as -rxc or -content");
@@ -2989,13 +3067,14 @@ absl::StatusOr<MatchOutput> PrepareRgOutput(
     return absl::InvalidArgumentError("rg search is not configured");
   }
   const auto& search = *command.rg;
-  MatchOutput result;
+  const auto source = std::make_shared<parser::Expr>(parser::Expr{.kind = parser::Expr::Kind::kPredicate});
+  MatchOutput result{.source = source};
   for (const auto& input : search.patterns) {
     if (!input.file) {
       if (absl::StrContains(input.value, '\n')) {
         return absl::InvalidArgumentError("rg multiline patterns are not supported");
       }
-      result.source.args.push_back(input.value);
+      source->args.push_back(input.value);
       continue;
     }
     MBO_ASSIGN_OR_RETURN(const auto content, fs.ReadContent(input.value));
@@ -3006,14 +3085,14 @@ absl::StatusOr<MatchOutput> PrepareRgOutput(
       if (line.ends_with('\r')) {
         line.remove_suffix(1);
       }
-      result.source.args.emplace_back(line);
+      source->args.emplace_back(line);
       start = end == std::string::npos ? content.size() : end + 1;
     }
   }
-  const bool uppercase = std::ranges::any_of(result.source.args, [](const std::string& pattern) {
+  const bool uppercase = std::ranges::any_of(source->args, [](const std::string& pattern) {
     return std::ranges::any_of(pattern, [](char chr) { return chr >= 'A' && chr <= 'Z'; });
   });
-  for (const auto& original : result.source.args) {
+  for (const auto& original : source->args) {
     MBO_ASSIGN_OR_RETURN(
         auto matcher, regex::Matcher::Compile(original, fold_case || (smart_case && !uppercase), command.grammar));
     result.matchers.push_back(std::make_shared<const regex::Matcher>(std::move(matcher)));
@@ -3021,19 +3100,36 @@ absl::StatusOr<MatchOutput> PrepareRgOutput(
   return result;
 }
 
+absl::StatusOr<MatchOutput> ForkMatchOutput(const MatchOutput& output) {
+  MatchOutput fork{.source = output.source};
+  fork.matchers.reserve(output.matchers.size());
+  for (const auto& matcher : output.matchers) {
+    MBO_ASSIGN_OR_RETURN(auto local, matcher->ForkForWorker());
+    fork.matchers.push_back(std::make_shared<const regex::Matcher>(std::move(local)));
+  }
+  return fork;
+}
+
 absl::StatusOr<bool> EmitRgOutput(const MatchOutput& output, const parser::RgSearch& search, EvalContext& context) {
   if (context.visit.metadata.type != vfs::FileType::kRegular) {
     return false;
   }
-  MBO_ASSIGN_OR_RETURN(const auto content, context.fs.ReadContent(context.visit.path));
+  const GrepMatchers matcher(output.matchers, search);
+  if (ReducedGrepOutput(context)) {
+    MBO_ASSIGN_OR_RETURN(
+        const auto summary,
+        SummarizeGrep(context, matcher, search.text ? 0 : std::numeric_limits<std::uint64_t>::max()));
+    return EmitGrepSummary(*output.source, context, summary);
+  }
+  MBO_ASSIGN_OR_RETURN(const auto content, context.content.Read(context.fs, context.visit.path));
   if (!search.text && absl::StrContains(content, '\0')) {
     return false;
   }
-  return EvalGrepMatchers(output.source, context, GrepMatchers(output.matchers, search), content);
+  return EvalGrepMatchers(*output.source, context, matcher, content);
 }
 
 bool EmitMatchOutput(const MatchOutput& output, EvalContext& context) {
-  return EvalGrepMatchers(output.source, context, GrepMatchers(output.matchers));
+  return EvalGrepMatchers(*output.source, context, GrepMatchers(output.matchers));
 }
 
 bool Evaluate(const parser::Expr& expr, EvalContext& context) {

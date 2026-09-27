@@ -26,6 +26,7 @@
 #include "gtest/gtest.h"
 #include "xff/cli/globals.h"
 #include "xff/cli/help_model.h"
+#include "xff/parser/rg.h"
 
 namespace xff::cli {
 namespace {
@@ -190,6 +191,27 @@ TEST_F(BuildReferenceTest, FieldsCarriesTheBracesAndQualifiersSubsections) {
   EXPECT_THAT(subs, Contains("Braces"));
   EXPECT_THAT(subs, Contains("Dynamic namespaces"));
   EXPECT_THAT(subs, Contains("Qualifiers ({field:QUAL})"));
+}
+
+TEST_F(BuildReferenceTest, RgHelpDocumentsEveryParserOptionAndItsArgument) {
+  std::vector<std::string> terms;
+  for (const Content& child : SectionNamed(doc, "Ripgrep-style searches").children) {
+    if (std::holds_alternative<Rows>(child.node)) {
+      for (const Row& row : std::get<Rows>(child.node).rows) {
+        terms.push_back(row.term);
+        EXPECT_THAT(row.description, Not(IsEmpty()));
+      }
+    }
+  }
+  EXPECT_THAT(terms, SizeIs(parser::RgOptions().size()));
+  for (const parser::RgOption& option : parser::RgOptions()) {
+    std::string term = option.short_name == '\0' ? "" : absl::StrCat("-", std::string(1, option.short_name), " / ");
+    absl::StrAppend(&term, "--", option.name);
+    if (!option.argument.empty()) {
+      absl::StrAppend(&term, " ", option.argument);
+    }
+    EXPECT_THAT(terms, Contains(term));
+  }
 }
 
 TEST_F(BuildReferenceTest, RgExampleBelongsToCommandStructureInsteadOfComparisonHelp) {

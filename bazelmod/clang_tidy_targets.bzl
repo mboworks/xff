@@ -10,6 +10,7 @@ keeps the two sets identical.
 
 CLANG_TIDY_MANUAL_TARGETS = [
     "//xff/engine:read_accounting_test",
+    "//xff/engine:rg_benchmark",
     "//xff/matching/regex:regex_benchmark",
     "//xff/matching/similarity:near_duplicate_benchmark",
     "//xff/matching/similarity:similarity_benchmark",

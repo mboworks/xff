@@ -49,7 +49,7 @@ TEST_F(ParallelMatchTest, RepeatedBatchesRetainEntryOrderAndDoNotReuseOldResults
     EXPECT_THAT(results, SizeIs(count));
     EXPECT_THAT(matcher.Entries(), SizeIs(count));
     for (std::size_t index = 0; index < count; ++index) {
-      EXPECT_THAT(results.at(index).matched, Eq(index % 2 == 0));
+      EXPECT_THAT(results.at(index).evaluation.matched, Eq(index % 2 == 0));
       EXPECT_THAT(matcher.Entries().at(index).path, Eq(std::to_string(index)));
     }
   }

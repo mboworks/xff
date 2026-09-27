@@ -131,11 +131,26 @@ struct GrepOptions {
   Output output = Output::kLines;
   bool match_output = false;
   bool rg_mode = false;
+  bool quiet = false;
   bool only_matching = false;
   bool invert = false;
   bool line_number = true;
   bool filename = true;
   std::size_t max_columns = 0;
+};
+
+// One entry's lazily read content. Owned by a single evaluator, with no locks; views remain
+// valid until invalidation or destruction. Never retain this across entries or deferred passes.
+class ContentSnapshot final {
+ public:
+  absl::StatusOr<std::string_view> Read(const vfs::FileSystem& fs, std::string_view path);
+
+  void Invalidate() { bytes_.reset(); }
+
+  bool Loaded() const { return bytes_.has_value(); }
+
+ private:
+  std::optional<absl::StatusOr<std::string>> bytes_;
 };
 
 // Per-evaluation environment threaded through Evaluate for one visited entry.
@@ -265,6 +280,7 @@ struct EvalContext {
   // walk is reading from at that moment - so the driver applies them per container after the walk.
   // Empty - the default - keeps `-delete` a clean refusal on a member.
   mbo::types::OptionalRef<std::vector<std::string>> archive_deletions;
+  ContentSnapshot content;
 };
 
 // Evaluates a parsed find expression against one visited entry and returns its
@@ -298,11 +314,13 @@ absl::Status ValidateSizeArgs(const parser::Expr& expr);
 
 // Prepared once from the expression; literal patterns retain literal matching semantics.
 struct MatchOutput {
-  parser::Expr source{.kind = parser::Expr::Kind::kPredicate};
+  std::shared_ptr<const parser::Expr> source;
   std::vector<std::shared_ptr<const regex::Matcher>> matchers;
 };
 
 absl::StatusOr<MatchOutput> PrepareMatchOutput(const parser::Expr& expression);
+// Fork matching state once per worker while sharing the immutable rendering specification.
+absl::StatusOr<MatchOutput> ForkMatchOutput(const MatchOutput& output);
 bool EmitMatchOutput(const MatchOutput& output, EvalContext& context);
 // Compile rg patterns separately from native content filters; read pattern files via VFS.
 absl::StatusOr<MatchOutput> PrepareRgOutput(

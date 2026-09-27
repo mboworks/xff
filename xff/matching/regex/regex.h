@@ -62,6 +62,10 @@ class Matcher {
       bool case_insensitive,
       Grammar grammar = Grammar::kRe2);
 
+  // Isolate RE2's mutable DFA cache for one worker; immutable compiled state in other
+  // backends remains shared. Call once per worker, never once per entry or batch.
+  absl::StatusOr<Matcher> ForkForWorker() const;
+
   // True iff `text` matches the pattern in its entirety (both ends anchored).
   bool FullMatch(std::string_view text) const;
 
@@ -99,9 +103,15 @@ class Matcher {
   Matcher& operator=(const Matcher&) = delete;
 
  private:
-  explicit Matcher(std::unique_ptr<const RegexBackend> backend);
+  struct Re2Source {
+    std::string pattern;
+    bool case_insensitive = false;
+  };
 
-  std::unique_ptr<const RegexBackend> backend_;
+  explicit Matcher(std::shared_ptr<const RegexBackend> backend, std::optional<Re2Source> re2 = std::nullopt);
+
+  std::shared_ptr<const RegexBackend> backend_;
+  std::optional<Re2Source> re2_;
 };
 
 // The `--regextype` grammar reference: one row per Grammar, `{VALUE, what it is}`, in --regextype

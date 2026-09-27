@@ -429,27 +429,98 @@ where unknown-size append growth currently moves large records or invalidates re
 
 ## Rg integration review
 
-The PRs 916-919 integration review identified these code paths; no new timing ratios were
-measured. Restoring selective VFS operations is included with the correctness fixes:
+The PRs 916-919 integration review identified these code paths. Restoring selective VFS
+operations is included with the correctness fixes:
 `RgInputFs` now forwards host `StatFields` and `ReadContentRange` requests unchanged and
 implements bounded reads directly for its virtual stdin entry. Before the fix, inherited
 fallbacks requested full metadata (including birth time on the host) and materialized whole
 files for range probes. Tests verify exact request forwarding, error propagation, EOF, empty
 input, and oversized offsets without relying on host filesystem timing.
 
-Remaining optimization work:
+Ordinary rg searches and audited native content expressions now use the bounded matcher pool.
+Host entries are scheduled independently of archive-root probing: the full binary's default
+archive support no longer prevents host-file parallelism. Mounted/archive-member entries flush
+the pending host batch and retain serial evaluation. Stateful or metadata-dependent native
+expressions, reductions and full-metadata output also retain the coordinator path. The first
+batch below 64 entries avoids thread startup; larger batches hold at most 256 entries and
+workers acquire chunks of 16. Ordered emission happens after the batch, including errors and
+maximum-result limits; workers never invoke the external output sink.
 
-- Ordinary rg content matching runs in the coordinator's `finish_entry` path. The native
-  parallel matcher pool requires a native content expression; `-j4` alone parallelizes
-  traversal rather than the rg line search. Benchmark a separate content-work scheduling
-  change with identical output and one/four workers before adopting it.
-- Native `-M` can read content for file predicates and again for line output. Share owned
-  content with a bounded lifetime rather than adding locks to per-entry metadata.
-- Filename/count/quiet modes reuse full content and line materialization. Early success for
-  filename/quiet queries and lightweight counting are candidates even before full streaming.
-- Rg alias, arity, and translation metadata are separate from help prose. Generate their
-  shared facts or add exhaustive consistency tests to prevent silent frontend drift.
+An initial implementation shared the compiled RE2 object for every worker. The scaling fixture
+showed severe contention in its mutable DFA caches for line/count output, despite correct and
+thread-safe results. Each worker now forks RE2 state once at startup and reuses it across
+batches; translated glob grammars preserve the same pattern and case settings. PCRE2 and
+other immutable compiled backends remain shared. This spends additional RE2 cache memory
+per worker to avoid contention; it does not introduce locks into entry metadata or content
+snapshots. Tests preserve grammar/case behavior after the original matcher is destroyed.
+
+Native content predicates and match output share a lazy, owned snapshot per evaluation.
+Stateful predicates and actions invalidate it before execution. Deferred result-set passes
+start fresh instead of retaining content for the whole walk. One evaluator owns each snapshot,
+so it needs no lock. Workers perform content selection and rendering, then release source bytes;
+batches retain rendered records instead of up to 256 whole input files. Large output records
+and individual long lines can still consume substantial memory. Tests verify one read per
+regular file, serial/parallel output identity across batch boundaries and output modes, and
+actual overlapping content reads without relying on timing for the assertion.
+
+Filename/count/quiet modes now use the VFS sequential source with 64 KiB read requests and
+retain only an incomplete line. Counts accumulate directly; filename and quiet selection stop
+regex evaluation after the first selected line. The reader still drains the source to preserve
+binary detection and late read-error reporting. Native grep sniffs its existing 8,000-byte
+prefix; rg checks the whole source unless `--text` is active. An already owned predicate snapshot
+is reused without another read. A single very long line still requires memory proportional to
+that line; legacy backends may materialize their source, and CLI stdin remains staged. Full
+line/context output remains buffered. Chunk-boundary, long-line, late-NUL and late-error tests
+cover the streaming path.
+
+Rg option aliases, argument syntax, translation effects, and help summaries now share the
+parser metadata. Help renders every descriptor; tests enforce unique names and shorts, required
+arguments, nonempty summaries, and complete rendered coverage.
 
 Use equivalent native `-rxc`, native `-M`, and rg-style fixtures, with RE2 and PCRE2/JIT,
 when comparing these changes. Verify selected files and output before interpreting timings;
 traversal worker count alone does not establish parallel content execution.
+
+### Rg follow-up measurements
+
+`//xff/engine:rg_benchmark` compares the review baseline `6063f3d0e3` with these four follow-ups.
+The in-memory fixture contains 10, 100, 1,000 or 10,000 regular files; each has one matching
+line followed by 128 nonmatching lines. Both RE2 and PCRE2/JIT use
+`(alpha|beta)[0-9]{3}.*needle`. Every case verifies successful selection and output record counts
+before timing. The native filter is a control; native-lines adds `-M`; rg cases use ordinary
+lines, filenames (`-l`), counts (`-c`) and quiet (`-q`).
+
+Apple M5 Pro, 18 CPUs, 64 GiB RAM, macOS ARM64; `--config=clang_release --config=xff_full`
+(`-O2` with ThinLTO). Results are elapsed wall time, averaging the fastest seven of nine
+repetitions (`--benchmark_min_time=0.02s --benchmark_repetitions=9`). Parsing/native binding is
+outside the measured region; rg preparation is inside `RunFind`. These engine measurements
+exclude CLI startup and physical filesystem I/O, use requested workers rather than CPU affinity,
+and are illustrative rather than a regression gate. The baseline ran with one remaining local
+clang-tidy process; these are not isolated-machine measurements.
+
+Values are baseline time divided by candidate time: greater than one means faster. Raw
+aggregated timings and fixture metadata are in
+[`measurements/rg-review-macos-arm64.json`](measurements/rg-review-macos-arm64.json).
+
+| Engine / workload    | 10 files, 1 worker | 100 files, 1 worker | 1,000 files, 1 worker | 10,000 files, 1 worker | 10 files, 4 workers | 100 files, 4 workers | 1,000 files, 4 workers | 10,000 files, 4 workers |
+| :------------------- | -----------------: | ------------------: | --------------------: | ---------------------: | ------------------: | -------------------: | ---------------------: | ----------------------: |
+| RE2 / filter         |              1.00x |               0.99x |                 0.98x |                  0.99x |               0.98x |                0.99x |                  1.02x |                   0.98x |
+| RE2 / native-lines   |              0.96x |               0.97x |                 0.97x |                  0.98x |               0.98x |                2.31x |                  2.98x |                   3.05x |
+| RE2 / rg-lines       |              0.97x |               0.97x |                 0.99x |                  0.99x |               0.98x |                2.13x |                  2.96x |                   3.05x |
+| RE2 / rg-files       |              2.98x |               9.25x |                12.21x |                 12.79x |               3.30x |                5.86x |                 13.32x |                  14.51x |
+| RE2 / rg-counts      |              0.98x |               0.98x |                 0.98x |                  1.09x |               1.06x |                2.12x |                  3.17x |                   3.17x |
+| RE2 / rg-quiet       |              3.11x |              10.42x |                15.43x |                 16.56x |               3.48x |                5.75x |                 13.09x |                  14.76x |
+| PCRE2 / filter       |              0.88x |               0.93x |                 0.94x |                  0.95x |               0.97x |                0.95x |                  0.94x |                   0.94x |
+| PCRE2 / native-lines |              0.97x |               1.00x |                 1.01x |                  1.02x |               1.01x |                2.01x |                  2.60x |                   2.69x |
+| PCRE2 / rg-lines     |              0.93x |               0.99x |                 1.00x |                  1.01x |               0.97x |                1.65x |                  2.57x |                   2.48x |
+| PCRE2 / rg-files     |              2.48x |               6.90x |                 9.52x |                  9.86x |               2.51x |                3.78x |                  8.50x |                   9.38x |
+| PCRE2 / rg-counts    |              0.97x |               0.99x |                 1.14x |                  1.03x |               1.09x |                1.74x |                  2.57x |                   2.46x |
+| PCRE2 / rg-quiet     |              2.41x |               6.11x |                 8.28x |                  8.62x |               2.50x |                3.75x |                  8.23x |                   9.12x |
+
+At 10,000 files and four workers, line/count workloads improve about 2.5-3.2 times. Filename
+and quiet searches improve about 9-15 times with an early match, because they stop evaluating
+unneeded lines while retaining binary/error checks. Serial line output stays close to the
+baseline; small filter cases show some regression, including 0.88 times for PCRE2 at ten
+files. These results do not establish a gain for every pattern, file size, match density or
+storage device. Full line output still needs a streaming renderer; archive member searches
+retain their serial path.
