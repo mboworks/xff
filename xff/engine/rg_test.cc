@@ -85,6 +85,8 @@ class FailingSource final : public vfs::ReadSource {
 struct SearchFs final : vfs::FileSystem {
   std::map<std::string, std::string> files{{"tree/a", "hit\nmiss\n"}, {"tree/b", "miss\n"}, {"patterns", "hit\n"}};
   bool read_error = false;
+  std::string stat_error_path;
+  std::string read_error_path;
   bool streaming = false;
   vfs::SharedReadSource source_override;
   bool track_threads = false;
@@ -122,6 +124,9 @@ struct SearchFs final : vfs::FileSystem {
   }
 
   absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool) const override {
+    if (path == stat_error_path) {
+      return absl::PermissionDeniedError("denied metadata");
+    }
     if (path == "tree") {
       return vfs::Metadata{.type = vfs::FileType::kDirectory};
     }
@@ -168,7 +173,7 @@ struct SearchFs final : vfs::FileSystem {
   absl::StatusOr<std::string> ReadContent(std::string_view path) const override {
     TrackRead();
     reads.fetch_add(1, std::memory_order_relaxed);
-    if (read_error) {
+    if (read_error || path == read_error_path) {
       return absl::PermissionDeniedError("denied content");
     }
     const auto found = files.find(std::string(path));
@@ -382,6 +387,70 @@ TEST_F(RgEngineTest, ParallelNativeFilterAndRgSelectionShareEachRead) {
   EXPECT_THAT(Run({"-j4", "--archive=none", "-g0", "hit", "tree"}).errors, 0);
   EXPECT_THAT(fs.reads.load(), 1);
   EXPECT_THAT(output, EqualsText("tree/0:hit\n"));
+}
+
+TEST_F(RgEngineTest, MetadataConsumersKeepParallelFilteringAndOrderedResults) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 300; ++index) {
+    fs.files.emplace("tree/" + std::to_string(index) + ".txt", index % 2 == 0 ? "hit\n" : "miss\n");
+  }
+  const std::vector<std::vector<std::string>> consumers{
+      {"--summary=ext"},
+      {"--summary=type", "--format=csv"},
+      {"--no-match-output", "--columns=path,size", "--format=csv"},
+      {"--no-match-output", "--template={path}:{size}"},
+      {"--no-match-output", "--color=always"},
+  };
+  for (const auto& consumer : consumers) {
+    for (const bool rg : {false, true}) {
+      auto args = consumer;
+      args.insert(args.begin(), {"--jobs=1", "--archive=none", "--sort=none"});
+      if (rg) {
+        args.insert(args.end(), {"hit", "tree"});
+      } else {
+        args.insert(args.end(), {"tree", "-rxc", "hit"});
+      }
+      EXPECT_THAT(Run(args, rg).errors, Eq(0));
+      const std::string expected = output;
+      fs.reads = 0;
+      fs.read_threads.clear();
+      fs.track_threads = true;
+      args.front() = "--jobs=4";
+      EXPECT_THAT(Run(args, rg).errors, Eq(0));
+      fs.track_threads = false;
+      EXPECT_THAT(output, EqualsText(expected));
+      EXPECT_THAT(fs.reads.load(), Eq(300));
+      EXPECT_THAT(fs.read_threads.size(), Gt(1));
+    }
+  }
+}
+
+TEST_F(RgEngineTest, ParallelFilterRetainsFuzzyScoresForTemplates) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 300; ++index) {
+    fs.files.emplace("tree/hit" + std::to_string(index), "hit\n");
+  }
+  std::vector<std::string> args{
+      "--jobs=1", "--archive=none", "--sort=none", "--template={path}:{fuzzy}", "tree", "-rxc", "hit", "-fuzzy", "hit",
+  };
+  EXPECT_THAT(Run(args, false).errors, Eq(0));
+  const auto expected = output;
+  EXPECT_THAT(expected, Not(IsEmpty()));
+  args.front() = "--jobs=4";
+  EXPECT_THAT(Run(args, false).errors, Eq(0));
+  EXPECT_THAT(output, EqualsText(expected));
+}
+
+TEST_F(RgEngineTest, MetadataConsumerKeepsTraversalAndContentErrorOrder) {
+  fs.files = {{"tree/a", "hit\n"}, {"tree/b", "hit\n"}, {"tree/c", "hit\n"}};
+  fs.read_error_path = "tree/a";
+  fs.stat_error_path = "tree/b";
+  EXPECT_THAT(Run({"-j1", "--summary=ext", "--sort=none", "hit", "tree"}).errors, Eq(2));
+  const auto expected_errors = errors;
+  const auto expected_output = output;
+  EXPECT_THAT(Run({"-j4", "--summary=ext", "--sort=none", "hit", "tree"}).errors, Eq(2));
+  EXPECT_THAT(errors, Eq(expected_errors));
+  EXPECT_THAT(output, EqualsText(expected_output));
 }
 
 TEST_F(RgEngineTest, ParallelErrorsRemainErrorsAndProduceNoPartialRecords) {

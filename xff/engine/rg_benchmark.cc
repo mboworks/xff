@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -76,19 +77,31 @@ class SearchTree final : public xff::vfs::FileSystem {
   xff::vfs::SharedReadSource source_;
 };
 
-enum class Mode { kFilterLate, kFilter, kNativeLines, kRgLines, kRgFiles, kRgCounts, kRgQuiet };
+enum class Mode {
+  kFilterLate,
+  kFilter,
+  kFilterSummary,
+  kNativeLines,
+  kRgLines,
+  kRgFiles,
+  kRgCounts,
+  kRgQuiet,
+  kRgSummary
+};
 
-void Search(benchmark::State& state, Mode mode, std::string_view grammar) {
-  const auto count = static_cast<std::size_t>(state.range(0));
-  const SearchTree tree(count, mode == Mode::kFilterLate);
+std::vector<std::string> Arguments(Mode mode, std::string_view grammar, std::int64_t workers) {
   std::vector<std::string> arguments{
-      "--jobs=" + std::to_string(state.range(1)),
+      "--jobs=" + std::to_string(workers),
       "--archive=none",
       "--sort=none",
       "--regextype=" + std::string(grammar),
   };
+  if (mode == Mode::kFilterSummary || mode == Mode::kRgSummary) {
+    arguments.insert(arguments.end(), {"--summary=ext", "--format=csv"});
+  }
   constexpr std::string_view kPattern = "(alpha|beta)[0-9]{3}.*needle";
-  if (mode == Mode::kFilter || mode == Mode::kFilterLate || mode == Mode::kNativeLines) {
+  if (mode == Mode::kFilter || mode == Mode::kFilterLate || mode == Mode::kFilterSummary
+      || mode == Mode::kNativeLines) {
     if (mode == Mode::kNativeLines) {
       arguments.emplace_back("-M");
     }
@@ -104,6 +117,13 @@ void Search(benchmark::State& state, Mode mode, std::string_view grammar) {
     }
     arguments.insert(arguments.end(), {std::string(kPattern), "tree"});
   }
+  return arguments;
+}
+
+void Search(benchmark::State& state, Mode mode, std::string_view grammar) {
+  const auto count = static_cast<std::size_t>(state.range(0));
+  const SearchTree tree(count, mode == Mode::kFilterLate || mode == Mode::kFilterSummary || mode == Mode::kRgSummary);
+  const auto arguments = Arguments(mode, grammar, state.range(1));
   auto command = xff::parser::Parse(arguments);
   if (!command.ok()) {
     state.SkipWithError(command.status().ToString());
@@ -113,13 +133,24 @@ void Search(benchmark::State& state, Mode mode, std::string_view grammar) {
       *command, xff::parser::GrammarFromGlobals(command->globals),
       xff::parser::ResolveCaseMode(command->globals, xff::registry::Style::kXff));
   std::size_t records = 0;
-  const auto emit = [&](std::string_view text) { records += std::ranges::count(text, '\n'); };
+  std::string initial_output;
+  bool checking = true;
+  const auto emit = [&](std::string_view text) {
+    records += std::ranges::count(text, '\n');
+    if (checking) {
+      initial_output.append(text);
+    }
+  };
   const auto error = [](std::string_view, absl::Status) {};
   const auto initial = xff::engine::RunFind(*command, tree, emit, error);
-  if (initial.errors != 0 || !initial.any_match || (mode != Mode::kRgQuiet && records != count)) {
+  const bool summary = mode == Mode::kFilterSummary || mode == Mode::kRgSummary;
+  const bool correct_output = summary ? initial_output.contains("total,true," + std::to_string(count) + ",")
+                                      : mode == Mode::kRgQuiet || records == count;
+  if (initial.errors != 0 || !initial.any_match || !correct_output) {
     state.SkipWithError("incorrect selected results or output records");
     return;
   }
+  checking = false;
   for (auto iteration : state) {
     benchmark::DoNotOptimize(iteration);
     records = 0;
@@ -140,11 +171,13 @@ int main(int argc, char** argv) {
   constexpr auto kModes = std::to_array<std::pair<std::string_view, Mode>>({
       {"filter", Mode::kFilter},
       {"filter-late", Mode::kFilterLate},
+      {"filter-summary", Mode::kFilterSummary},
       {"native-lines", Mode::kNativeLines},
       {"rg-lines", Mode::kRgLines},
       {"rg-files", Mode::kRgFiles},
       {"rg-counts", Mode::kRgCounts},
       {"rg-quiet", Mode::kRgQuiet},
+      {"rg-summary", Mode::kRgSummary},
   });
   for (const std::string_view grammar : {"RE2", "PCRE2"}) {
     for (const auto& [name, mode] : kModes) {

@@ -821,3 +821,79 @@ Times are wall microseconds; change is candidate/baseline minus one (negative is
 | PCRE2  | rg-counts   |    100 |       4 |       340.4 |        278.7 | -18.1% |
 | PCRE2  | rg-counts   |  1,000 |       4 |      2012.8 |       1694.9 | -15.8% |
 | PCRE2  | rg-counts   | 10,000 |       4 |     19038.8 |      15825.9 | -16.9% |
+
+## P03: parallel filtering with metadata-consuming output
+
+Keep metadata collection and output ownership separate from matching eligibility. Summaries,
+column/template output, colored listings and matched-entry callbacks still receive complete metadata,
+but audited metadata-free predicates and rg content selection can now run in workers. Reductions,
+rendering, traversal decisions and error publication remain on the coordinator. Native filesystem
+case probes, collections, deferred predicates, dived containers and mounted/archive members retain
+the serial evaluator. No metadata-dependent predicate becomes worker-eligible in this change.
+Fuzzy scores are retained for presentation, and queued content results are drained before later
+traversal errors so diagnostics preserve serial ordering.
+
+Tests compare serial/parallel text and actual read-thread overlap for native and rg filters with
+extension/type summaries, CSV columns, templates and color. They also verify one content read per
+entry, fuzzy scores and mixed metadata/content error order. Existing run/evaluation cases remain
+part of validation. This is filtering parallelism; summary maps are not concurrently mutated.
+
+### Measurement and decision
+
+Retain the change for substantial workloads, with the small native-PCRE2 startup cost recorded as
+an explicit P08 scheduling input. The baseline is P01/P02 head `5b9db14f22`, with the identical
+expanded `rg_benchmark` fixture. Both executables use `clang_release` (O2 + ThinLTO) and `xff_full`
+on macOS arm64 / Apple M5 Pro. Each in-memory file has 128 nonmatching lines followed by one
+matching line; both workloads request `--summary=ext --format=csv`. Before timing, each case checks
+the selected-file total. Measurements alternate executable order for ten rounds, discard round one,
+and average the fastest seven of nine observations (`--benchmark_min_time=0.02s`). Raw data and
+invocation identity are in [performance-p03.json](performance-p03.json).
+
+At 10,000 files/four workers, native RE2 summaries improve 70.5%, rg RE2 summaries 65.5%,
+native PCRE2 summaries 36.8%, and rg PCRE2 summaries 70.6%. At 100 files, native PCRE2 is
+64.6% slower (108 to 177 microseconds): very cheap JIT matching does not amortize pool startup.
+The same small RE2 workload improves 53.8%, so a blanket higher entry-count threshold would lose
+useful parallelism. P08 must consider cost and startup together. Ten-file cases remain inline;
+one-worker measurements vary within 4.6%. These are elapsed-time observations on an unisolated
+host, not CPU-affinity or total-worker CPU measurements, and do not establish Linux results.
+
+The existing bounded 256-entry batches and per-worker scratch lifetime remain unchanged. Eager
+metadata already existed for these output consumers. The change adds worker threads/results in
+cases previously evaluated serially; no claim of reduced peak memory is made.
+
+Times are wall microseconds; change is candidate/baseline minus one (negative is faster).
+
+| Engine | Workload       |  Files | Workers | Baseline us | Candidate us | Change |
+| :----- | :------------- | -----: | ------: | ----------: | -----------: | -----: |
+| RE2    | filter-summary |     10 |       1 |       131.8 |        131.3 |  -0.4% |
+| RE2    | filter-summary |    100 |       1 |      1045.6 |       1049.0 |  +0.3% |
+| RE2    | filter-summary |  1,000 |       1 |      9959.8 |       9927.0 |  -0.3% |
+| RE2    | filter-summary | 10,000 |       1 |     99378.0 |      97966.5 |  -1.4% |
+| RE2    | filter-summary |     10 |       4 |       131.1 |        131.4 |  +0.2% |
+| RE2    | filter-summary |    100 |       4 |      1040.0 |        480.1 | -53.8% |
+| RE2    | filter-summary |  1,000 |       4 |     10119.9 |       3057.4 | -69.8% |
+| RE2    | filter-summary | 10,000 |       4 |     98175.8 |      28959.2 | -70.5% |
+| RE2    | rg-summary     |     10 |       1 |       165.4 |        172.2 |  +4.1% |
+| RE2    | rg-summary     |    100 |       1 |      1151.1 |       1204.6 |  +4.6% |
+| RE2    | rg-summary     |  1,000 |       1 |     11029.4 |      10934.5 |  -0.9% |
+| RE2    | rg-summary     | 10,000 |       1 |    110340.3 |     108789.5 |  -1.4% |
+| RE2    | rg-summary     |     10 |       4 |       166.9 |        168.4 |  +0.9% |
+| RE2    | rg-summary     |    100 |       4 |      1173.3 |        579.9 | -50.6% |
+| RE2    | rg-summary     |  1,000 |       4 |     11464.3 |       3752.5 | -67.3% |
+| RE2    | rg-summary     | 10,000 |       4 |    110308.9 |      38004.0 | -65.5% |
+| PCRE2  | filter-summary |     10 |       1 |        39.1 |         39.3 |  +0.4% |
+| PCRE2  | filter-summary |    100 |       1 |       107.8 |        109.0 |  +1.1% |
+| PCRE2  | filter-summary |  1,000 |       1 |       795.1 |        777.8 |  -2.2% |
+| PCRE2  | filter-summary | 10,000 |       1 |      7660.1 |       7689.3 |  +0.4% |
+| PCRE2  | filter-summary |     10 |       4 |        39.3 |         40.1 |  +1.9% |
+| PCRE2  | filter-summary |    100 |       4 |       107.8 |        177.4 | +64.6% |
+| PCRE2  | filter-summary |  1,000 |       4 |       796.2 |        593.1 | -25.5% |
+| PCRE2  | filter-summary | 10,000 |       4 |      7631.0 |       4819.6 | -36.8% |
+| PCRE2  | rg-summary     |     10 |       1 |       123.3 |        125.5 |  +1.8% |
+| PCRE2  | rg-summary     |    100 |       1 |       780.9 |        744.7 |  -4.6% |
+| PCRE2  | rg-summary     |  1,000 |       1 |      7239.1 |       7023.3 |  -3.0% |
+| PCRE2  | rg-summary     | 10,000 |       1 |     71382.6 |      68100.0 |  -4.6% |
+| PCRE2  | rg-summary     |     10 |       4 |       128.1 |        123.6 |  -3.5% |
+| PCRE2  | rg-summary     |    100 |       4 |       803.6 |        365.9 | -54.5% |
+| PCRE2  | rg-summary     |  1,000 |       4 |      7557.6 |       2103.0 | -72.2% |
+| PCRE2  | rg-summary     | 10,000 |       4 |     74674.2 |      21946.4 | -70.6% |
