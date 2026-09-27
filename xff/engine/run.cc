@@ -70,6 +70,7 @@
 #include "xff/engine/evaluate.h"
 #include "xff/engine/extract.h"
 #include "xff/engine/mount.h"
+#include "xff/engine/parallel_compare.h"
 #include "xff/engine/parallel_match.h"
 #include "xff/engine/walk.h"
 #include "xff/env/env.h"
@@ -4039,13 +4040,6 @@ int FinishCollections(
 
 namespace {
 
-struct TreeCompareEntry {
-  std::string path;
-  vfs::Metadata metadata;
-  mbo::types::OptionalRef<const vfs::FileSystem> fs;
-  std::shared_ptr<const vfs::FileSystem> fs_owner;
-};
-
 using TreeCompareEntries = std::map<std::string, TreeCompareEntry>;
 
 enum class TreeCompareOutput { kStatus, kDiff };
@@ -4106,41 +4100,12 @@ absl::StatusOr<TreeCompareSelection> ResolveTreeCompareSelection(const std::vect
   return selection;
 }
 
-absl::StatusOr<bool> SameTreeEntry(const TreeCompareEntry& left, const TreeCompareEntry& right) {
-  if (left.metadata.type != right.metadata.type) {
-    return false;
-  }
-  if (left.metadata.type == vfs::FileType::kDirectory) {
-    return true;
-  }
-  if (left.metadata.type == vfs::FileType::kSymlink) {
-    MBO_ASSIGN_OR_RETURN(const std::string left_target, left.fs->ReadLink(left.path));
-    MBO_ASSIGN_OR_RETURN(const std::string right_target, right.fs->ReadLink(right.path));
-    return left_target == right_target;
-  }
-  if (left.metadata.type != vfs::FileType::kRegular) {
-    return true;
-  }
-  if (left.metadata.size != right.metadata.size) {
-    return false;
-  }
-  constexpr std::size_t kChunkSize = std::size_t{64} * 1'024;
-  for (std::uint64_t offset = 0; offset < left.metadata.size; offset += kChunkSize) {
-    const auto length = static_cast<std::size_t>(std::min<std::uint64_t>(kChunkSize, left.metadata.size - offset));
-    MBO_ASSIGN_OR_RETURN(const std::string left_chunk, left.fs->ReadContentRange(left.path, offset, length));
-    MBO_ASSIGN_OR_RETURN(const std::string right_chunk, right.fs->ReadContentRange(right.path, offset, length));
-    if (left_chunk != right_chunk) {
-      return false;
-    }
-  }
-  return true;
-}
-
 absl::StatusOr<std::string> TreeEntryPatch(
-    const std::optional<TreeCompareEntry>& left,
-    const std::optional<TreeCompareEntry>& right,
+    mbo::types::OptionalRef<const TreeCompareEntry> left,
+    mbo::types::OptionalRef<const TreeCompareEntry> right,
     std::string_view relative_path,
-    const mbo::diff::DiffOptions& options) {
+    const mbo::diff::DiffOptions& options,
+    mbo::types::OptionalRef<const ComparisonBytes> prepared) {
   const std::string left_name = left.has_value() ? absl::StrCat("a/", relative_path) : "/dev/null";
   const std::string right_name = right.has_value() ? absl::StrCat("b/", relative_path) : "/dev/null";
   const bool regular = (!left.has_value() || left->metadata.type == vfs::FileType::kRegular)
@@ -4148,21 +4113,24 @@ absl::StatusOr<std::string> TreeEntryPatch(
   if (!regular) {
     return absl::StrCat("Files ", left_name, " and ", right_name, " differ\n");
   }
-  std::string left_data;
-  std::string right_data;
-  if (left.has_value()) {
-    MBO_ASSIGN_OR_RETURN(left_data, left->fs->ReadContent(left->path));
+  mbo::file::Artefact left_input{.name = left_name};
+  mbo::file::Artefact right_input{.name = right_name};
+  if (prepared) {
+    left_input.data = prepared->left;
+    right_input.data = prepared->right;
+  } else {
+    if (left) {
+      MBO_ASSIGN_OR_RETURN(left_input.data, left->fs->ReadContent(left->path));
+    }
+    if (right) {
+      MBO_ASSIGN_OR_RETURN(right_input.data, right->fs->ReadContent(right->path));
+    }
   }
-  if (right.has_value()) {
-    MBO_ASSIGN_OR_RETURN(right_data, right->fs->ReadContent(right->path));
-  }
-  if (absl::StrContains(left_data.substr(0, content::kBinaryNulSniffBytes), '\0')
-      || absl::StrContains(right_data.substr(0, content::kBinaryNulSniffBytes), '\0')) {
+  if (absl::StrContains(std::string_view(left_input.data).substr(0, content::kBinaryNulSniffBytes), '\0')
+      || absl::StrContains(std::string_view(right_input.data).substr(0, content::kBinaryNulSniffBytes), '\0')) {
     return absl::StrCat("Binary files ", left_name, " and ", right_name, " differ\n");
   }
-  return mbo::diff::Diff::FileDiff(
-      mbo::file::Artefact{.data = left_data, .name = left_name},
-      mbo::file::Artefact{.data = right_data, .name = right_name}, options);
+  return mbo::diff::Diff::FileDiff(left_input, right_input, options);
 }
 
 using MatchedEntryFn = absl::FunctionRef<void(const Visit&)>;
@@ -4464,76 +4432,56 @@ RunResult RunTreeCompare(
       emit(absl::StrCat(status, "\t", status_renderer.Record(relative_path)));
     }
   };
+  ParallelCompare comparisons(
+      ResolveJobs(command.globals, style).value_or(1), output == TreeCompareOutput::kDiff && selection.different);
+  const auto selected = std::array{selection.left_only, selection.right_only, selection.different, selection.identical};
   auto left = entries[0].begin();
   auto right = entries[1].begin();
   while (left != entries[0].end() || right != entries[1].end()) {
-    if (right == entries[1].end() || (left != entries[0].end() && left->first < right->first)) {
-      counts.Add(0, left->second, std::nullopt);
-      record_category(left->first, "left-only");
-      if (selection.left_only) {
-        if (output == TreeCompareOutput::kStatus) {
-          emit_status("left-only", left->first);
-        } else {
-          const absl::StatusOr<std::string> patch =
-              TreeEntryPatch(left->second, std::nullopt, left->first, diff_options);
-          if (!patch.ok()) {
-            on_error(left->first, patch.status());
-            return RunResult{.errors = 1};
-          }
-          emit(*patch);
-        }
+    std::vector<ComparisonPair> inputs;
+    inputs.reserve(ParallelCompare::kBatchSize);
+    while (inputs.size() < ParallelCompare::kBatchSize && (left != entries[0].end() || right != entries[1].end())) {
+      if (right == entries[1].end() || (left != entries[0].end() && left->first < right->first)) {
+        inputs.push_back({.path = left->first, .left = left->second});
+        ++left;
+      } else if (left == entries[0].end() || right->first < left->first) {
+        inputs.push_back({.path = right->first, .right = right->second});
+        ++right;
+      } else {
+        inputs.push_back({.path = left->first, .left = left->second, .right = right->second});
+        ++left;
+        ++right;
       }
-      different = true;
-      ++left;
-    } else if (left == entries[0].end() || right->first < left->first) {
-      counts.Add(1, std::nullopt, right->second);
-      record_category(right->first, "right-only");
-      if (selection.right_only) {
-        if (output == TreeCompareOutput::kStatus) {
-          emit_status("right-only", right->first);
-        } else {
-          const absl::StatusOr<std::string> patch =
-              TreeEntryPatch(std::nullopt, right->second, right->first, diff_options);
-          if (!patch.ok()) {
-            on_error(right->first, patch.status());
-            return RunResult{.errors = 1};
-          }
-          emit(*patch);
-        }
-      }
-      different = true;
-      ++right;
-    } else {
-      const absl::StatusOr<bool> same = SameTreeEntry(left->second, right->second);
-      if (!same.ok()) {
-        on_error(left->first, same.status());
+    }
+    const auto& results = comparisons.Compare(std::move(inputs));
+    for (std::size_t index = 0; index < results.size(); ++index) {
+      const auto& pair = comparisons.Inputs().at(index);
+      const auto& result = results.at(index);
+      if (!result.ok()) {
+        on_error(pair.path, result.status());
         return RunResult{.errors = 1};
       }
-      if (*same) {
-        counts.Add(3, left->second, right->second);
-        record_category(left->first, "identical");
+      const std::size_t category = !pair.left ? 1 : !pair.right ? 0 : result->same ? 3 : 2;
+      const auto category_name = kComparisonCategories.at(category);
+      counts.Add(category, pair.left, pair.right);
+      record_category(std::string(pair.path), category_name);
+      different |= category != 3;
+      if (!selected.at(category)) {
+        continue;
+      }
+      if (output == TreeCompareOutput::kStatus) {
+        emit_status(category_name, pair.path);
       } else {
-        counts.Add(2, left->second, right->second);
-        record_category(left->first, "different");
-      }
-      if (*same && selection.identical) {
-        emit_status("identical", left->first);
-      } else if (!*same && selection.different) {
-        if (output == TreeCompareOutput::kStatus) {
-          emit_status("different", left->first);
-        } else {
-          const absl::StatusOr<std::string> patch =
-              TreeEntryPatch(left->second, right->second, left->first, diff_options);
-          if (!patch.ok()) {
-            on_error(left->first, patch.status());
-            return RunResult{.errors = 1};
-          }
-          emit(*patch);
+        const auto patch = TreeEntryPatch(
+            pair.left, pair.right, pair.path, diff_options,
+            result->bytes ? mbo::types::OptionalRef<const ComparisonBytes>{*result->bytes}
+                          : mbo::types::OptionalRef<const ComparisonBytes>{});
+        if (!patch.ok()) {
+          on_error(pair.path, patch.status());
+          return RunResult{.errors = 1};
         }
+        emit(*patch);
       }
-      different = different || !*same;
-      ++left;
-      ++right;
     }
   }
   auto summaries = ResolveSummaries(command.globals, true);

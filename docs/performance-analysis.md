@@ -1004,3 +1004,96 @@ Times are wall microseconds; change is candidate/baseline minus one (negative is
 | PCRE2  | rewrites       |    100 |       4 |      1472.6 |        118.9 | -91.9% |
 | PCRE2  | rewrites       |  1,000 |       4 |     14688.4 |        580.8 | -96.0% |
 | PCRE2  | rewrites       | 10,000 |       4 |    148554.3 |       5513.5 | -96.3% |
+
+## P05: independent comparison pairs and persistent cursors
+
+Retain bounded pair comparisons, persistent cursors for multi-chunk files, and small patch-input
+reuse. Both root scans still finish before pairing; this is not a directory-by-directory comparison
+pipeline. The coordinator merges relative paths in batches of at most 64, workers return indexed
+values, and the coordinator publishes statuses, errors, patches and summary contributions in the
+same order. Workers never invoke output or mutation callbacks. Read-ahead may inspect later pairs
+before an earlier error is published, as with the existing matcher worker batches.
+
+Files of at most 64 KiB retain the single-range path. A batch starts workers only when at least two
+larger equal-size regular-file pairs need reads and their estimated combined left-side size reaches
+256 KiB. Metadata-only and small-file batches stay inline. Owned or archive-member sources keep
+serial comparisons. Pools persist across batches and grow only when useful work warrants it.
+
+Larger regular files open one cursor per side and keep it through the comparison, instead of
+reopening or replaying the source for each 64 KiB range. Short non-EOF reads are accumulated;
+empty reads mean EOF; read and open failures remain errors. Left-side read errors retain priority
+over right-side open errors. Each live cursor reserves a 64 KiB buffer from its source budget and
+releases it with the comparison. Metadata size still bounds comparison if a file changes after the
+scan; this does not establish an atomic filesystem snapshot.
+
+For selected patches, complete differing inputs of at most 64 KiB per side can be retained.
+An extra byte detects growth beyond the metadata size, preventing truncated patch reuse. The
+64-pair batch retains at most 8 MiB of these bytes; large patches retain their existing serial
+whole-input materialization. Constructing the diff's owned input records directly removes redundant
+copies and binary-sniff substrings. No output-producing action moves into a worker.
+
+Tests cover serial/parallel status, diff and JSON-summary equivalence across more than two batches,
+actual concurrent reads, indexed errors, repeated batches, short reads/EOF, stale sizes, cursor
+failures, read-budget exhaustion/release, missing entries, type/size shortcuts, symlinks and owned
+source guards. The benchmark checks output before timing and uses an efficient in-memory range
+implementation for the parent, avoiding an artificial baseline that copies a whole file per range.
+
+### Measurement and decision
+
+Parent `a885ceb6ce` and candidate use the identical `compare_benchmark` fixture, optimized
+`clang_release` (O2 + ThinLTO), `xff_full`, macOS arm64 / Apple M5 Pro. Four workloads cover 4 KiB
+identical files, 256 KiB identical files, 256 KiB files differing at the first byte, and 4 KiB text
+patches. Each is measured with 10/100/1,000/10,000 pairs and one/four worker allowances. Ten
+alternating baseline/candidate rounds discard the first round and average the fastest seven of
+nine; Google Benchmark minimum time is 0.02 seconds. No CPU affinity, host-I/O speedup, Linux result
+or total CPU-saving claim follows from these in-memory measurements.
+
+The rejected first prototype started workers for 32 small pairs: 100/1,000/10,000 small-file
+four-worker cases became 86%/50%/37% slower. Restricting startup to larger pairs and restoring the
+single-range small-file path removed that regression. This is why entry count alone is not a useful
+universal worker threshold. Raw retained observations are in
+[performance-p05.json](performance-p05.json).
+
+The retained four-worker large-identical workload improves 44-79%; large early differences improve
+62-68% at 100-10,000 pairs. Small comparisons vary from -0.4% to +2.6%, and small patches improve
+3-8% after removing redundant copies. Tradeoffs remain explicit: ten large early-different pairs
+are 13% slower (158 to 178 microseconds), and one-worker large-identical cases range from -2% to
++18%. Persistent source/cursor setup is extra work for an already cheap in-memory range backend;
+the experiment does not prove a serial win. Retain the substantially faster parallel path and
+bounded read reuse, with one-worker and early-exit costs available for P08 decisions. The data is
+noisy for the large one-worker workloads, so these are observations rather than universal limits.
+
+| Workload              |  Pairs | Workers | Parent us | Candidate us | Change |
+| :-------------------- | -----: | ------: | --------: | -----------: | -----: |
+| small-identical       |     10 |       1 |      58.4 |         58.9 |  +0.9% |
+| small-identical       |    100 |       1 |     111.5 |        113.7 |  +1.9% |
+| small-identical       |  1,000 |       1 |     706.6 |        703.4 |  -0.4% |
+| small-identical       | 10,000 |       1 |    7061.1 |       7184.3 |  +1.7% |
+| small-identical       |     10 |       4 |      53.3 |         54.7 |  +2.6% |
+| small-identical       |    100 |       4 |     110.9 |        113.0 |  +1.9% |
+| small-identical       |  1,000 |       4 |     700.4 |        712.5 |  +1.7% |
+| small-identical       | 10,000 |       4 |    7165.8 |       7153.8 |  -0.2% |
+| large-identical       |     10 |       1 |     415.7 |        459.8 | +10.6% |
+| large-identical       |    100 |       1 |    3676.2 |       3754.3 |  +2.1% |
+| large-identical       |  1,000 |       1 |   29890.7 |      35322.9 | +18.2% |
+| large-identical       | 10,000 |       1 |  348410.1 |     341924.8 |  -1.9% |
+| large-identical       |     10 |       4 |     480.9 |        269.7 | -43.9% |
+| large-identical       |    100 |       4 |    4127.7 |       1097.5 | -73.4% |
+| large-identical       |  1,000 |       4 |   37478.2 |       9794.9 | -73.9% |
+| large-identical       | 10,000 |       4 |  415270.8 |      89338.2 | -78.5% |
+| large-early-different |     10 |       1 |     124.2 |        120.5 |  -3.0% |
+| large-early-different |    100 |       1 |    1041.0 |        683.6 | -34.3% |
+| large-early-different |  1,000 |       1 |    7457.0 |       7203.8 |  -3.4% |
+| large-early-different | 10,000 |       1 |   62761.9 |      67086.7 |  +6.9% |
+| large-early-different |     10 |       4 |     158.0 |        178.1 | +12.7% |
+| large-early-different |    100 |       4 |    1140.5 |        436.7 | -61.7% |
+| large-early-different |  1,000 |       4 |   10166.4 |       3220.8 | -68.3% |
+| large-early-different | 10,000 |       4 |   86961.9 |      28479.0 | -67.3% |
+| small-patches         |     10 |       1 |      90.5 |         87.6 |  -3.3% |
+| small-patches         |    100 |       1 |     446.9 |        421.6 |  -5.7% |
+| small-patches         |  1,000 |       1 |    4008.3 |       3689.2 |  -8.0% |
+| small-patches         | 10,000 |       1 |   40041.9 |      37272.6 |  -6.9% |
+| small-patches         |     10 |       4 |      91.4 |         87.7 |  -4.0% |
+| small-patches         |    100 |       4 |     449.2 |        424.1 |  -5.6% |
+| small-patches         |  1,000 |       4 |    4031.3 |       3756.2 |  -6.8% |
+| small-patches         | 10,000 |       4 |   40145.6 |      36939.2 |  -8.0% |
