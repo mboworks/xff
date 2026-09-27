@@ -23,10 +23,12 @@
 #include <memory>
 #include <numeric>
 #include <queue>
+#include <ranges>
 #include <set>
 #include <string>
 #include <string_view>
 #include <thread>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -69,7 +71,7 @@ struct Stated {
 // The result of reading one directory: its children, or a ReadDir error.
 using Listing = absl::StatusOr<std::vector<Stated>>;
 
-// A fixed pool of worker threads running leaf read jobs (`readdir` + `lstat`).
+// A fixed pool of worker threads running leaf directory or stat jobs.
 // Workers touch only their job's inputs and the (thread-safe) FileSystem and the
 // task queue; they never call back into the walk, so no job can wait on another
 // and there is no shared walk state to race (the coordinator runs everything
@@ -78,8 +80,7 @@ class ReadPool {
  public:
   explicit ReadPool(std::size_t workers) : max_workers_(workers) {}
 
-  // Start only when sibling directories provide actual read-ahead opportunities. A
-  // single directory or a one-child chain has no independent directory jobs to overlap.
+  // Start only when sibling directories or eager stat chunks provide independent work.
   void Start(std::size_t directories) {
     const std::size_t count = std::min(max_workers_, directories);
     threads_.reserve(count);
@@ -105,9 +106,11 @@ class ReadPool {
 
   // Enqueues a read job (or runs it inline with no workers). Caller must NOT
   // hold `mutex_`.
-  std::future<Listing> Submit(std::function<Listing()> job) ABSL_LOCKS_EXCLUDED(mutex_) {
-    auto task = std::make_shared<std::packaged_task<Listing()>>(std::move(job));
-    std::future<Listing> future = task->get_future();
+  template<typename Job>
+  auto Submit(Job job) ABSL_LOCKS_EXCLUDED(mutex_) {
+    using Result = std::invoke_result_t<Job>;
+    auto task = std::make_shared<std::packaged_task<Result()>>(std::move(job));
+    std::future<Result> future = task->get_future();
     if (threads_.empty()) {
       (*task)();  // sequential: run inline
       return future;
@@ -244,7 +247,7 @@ class Walker {
     if (options_.max_depth >= 0 && depth >= options_.max_depth) {
       return;
     }
-    Listing listing = SubmitRead(container).get();
+    Listing listing = ReadNow(container);
     if (!listing.ok()) {
       on_error_(container, listing.status());
       return;
@@ -294,9 +297,8 @@ class Walker {
     return Stated{.path = std::move(path), .name = std::move(entry_name), .metadata = *metadata, .ok = true};
   }
 
-  // A read job: list `dir` and fetch the metadata required eagerly. Safe on a worker.
-  Listing ReadDir(const std::string& dir) const {
-    MBO_ASSIGN_OR_RETURN(std::vector<vfs::Entry> entries, fs_.ReadDir(dir));
+  // Resolve exactly the eager metadata required for this owned listing slice. Safe on a worker.
+  std::vector<Stated> StatEntries(absl::Span<vfs::Entry> entries) const {
     std::vector<Stated> children;
     children.reserve(entries.size());
     for (vfs::Entry& entry : entries) {
@@ -311,6 +313,48 @@ class Walker {
         });
       } else {
         children.push_back(StatNode(std::move(entry.path), follow_children_, std::move(entry.name)));
+      }
+    }
+    return children;
+  }
+
+  Listing ReadDir(const std::string& dir) const {
+    MBO_ASSIGN_OR_RETURN(auto entries, fs_.ReadDir(dir));
+    return StatEntries(absl::MakeSpan(entries));
+  }
+
+  // Only the coordinator dispatches and joins stat chunks. Directory read-ahead jobs
+  // stay leaves: no worker ever waits for jobs submitted to its own pool.
+  Listing ReadNow(const std::string& dir) {
+    MBO_ASSIGN_OR_RETURN(auto entries, fs_.ReadDir(dir));
+    constexpr std::size_t kChunk = 128;
+    if (options_.workers <= 1 || options_.metadata != MetadataDemand::kAlways || entries.size() < 4 * kChunk
+        || fs_owner_ || absl::c_any_of(entries, [](const vfs::Entry& entry) {
+             return entry.source == vfs::Source::kArchiveMember;
+           })) {
+      return StatEntries(absl::MakeSpan(entries));
+    }
+    const auto chunks = (entries.size() + kChunk - 1) / kChunk;
+    const auto pending = std::min(chunks, options_.workers);
+    pool_.Start(pending);
+    const auto all_entries = absl::MakeSpan(entries);
+    const auto submit = [&](std::size_t index) {
+      const auto offset = index * kChunk;
+      const auto chunk = all_entries.subspan(offset, std::min(kChunk, entries.size() - offset));
+      return pool_.Submit([this, chunk] { return StatEntries(chunk); });
+    };
+    std::vector<std::future<std::vector<Stated>>> reads;
+    reads.reserve(pending);
+    for (std::size_t index = 0; index < pending; ++index) {
+      reads.push_back(submit(index));
+    }
+    std::vector<Stated> children;
+    children.reserve(entries.size());
+    for (std::size_t index = 0; index < chunks; ++index) {
+      auto& read = reads.at(index % pending);
+      children.append_range(read.get() | std::views::as_rvalue);
+      if (index + pending < chunks) {
+        read = submit(index + pending);
       }
     }
     return children;
@@ -430,7 +474,7 @@ class Walker {
       on_error_(dir.path, absl::FailedPreconditionError("filesystem loop detected"));
       return;
     }
-    Listing listing = prefetched.has_value() ? prefetched->get() : SubmitRead(dir.path).get();
+    Listing listing = prefetched.has_value() ? prefetched->get() : ReadNow(dir.path);
     if (!listing.ok()) {
       // A directory that vanished before we could read it is the same readdir race.
       if (!(options_.ignore_readdir_race && absl::IsNotFound(listing.status()))) {

@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Share broad-directory eager metadata reads across the existing worker pool while keeping visits ordered.
+
 - Compare independent large files in bounded worker batches, keep read cursors open, and reuse small patch inputs.
 
 - Reuse entry content, hashes and line counts across filters and output; compile field rewrite programs once per template.
