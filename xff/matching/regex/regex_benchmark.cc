@@ -37,6 +37,35 @@ std::string Subject(bool match) {
 double Milliseconds(Clock::time_point start) {
   return std::chrono::duration<double, std::milli>(Clock::now() - start).count();
 }
+
+bool MeasureMatches(
+    std::size_t round,
+    std::size_t engine,
+    const xff::regex::Matcher& compiled,
+    const std::array<std::string, 2>& subjects,
+    double compile_ms) {
+  for (const bool private_state : {false, true}) {
+    auto worker = compiled.ForkForWorker();
+    if (!worker.ok()) {
+      return false;
+    }
+    const auto& matcher = private_state ? *worker : compiled;
+    const auto match_start = Clock::now();
+    std::size_t matches = 0;
+    for (std::size_t entry = 0; entry < kSubjects; ++entry) {
+      const bool matched = matcher.PartialMatch(subjects.at(entry % subjects.size()));
+      if (matched != (entry % subjects.size() == 0)) {
+        return false;
+      }
+      matches += static_cast<std::size_t>(matched);
+    }
+    const double match_ms = Milliseconds(match_start);
+    std::cout << absl::StrFormat(
+        "%d,%s,%s,%.6f,%.6f,%d,%d\n", round, kNames.at(engine), private_state ? "worker" : "shared", compile_ms,
+        match_ms, kSubjects, matches);
+  }
+  return true;
+}
 }  // namespace
 
 int main() {
@@ -57,25 +86,8 @@ int main() {
       if (!compiled.ok()) {
         return 1;
       }
-      for (const bool private_state : {false, true}) {
-        auto worker = compiled->ForkForWorker();
-        if (!worker.ok()) {
-          return 3;
-        }
-        const auto& matcher = private_state ? *worker : *compiled;
-        const auto match_start = Clock::now();
-        std::size_t matches = 0;
-        for (std::size_t entry = 0; entry < kSubjects; ++entry) {
-          const bool matched = matcher.PartialMatch(subjects.at(entry % subjects.size()));
-          if (matched != (entry % subjects.size() == 0)) {
-            return 2;
-          }
-          matches += static_cast<std::size_t>(matched);
-        }
-        const double match_ms = Milliseconds(match_start);
-        std::cout << absl::StrFormat(
-            "%d,%s,%s,%.6f,%.6f,%d,%d\n", round, kNames.at(engine), private_state ? "worker" : "shared", compile_ms,
-            match_ms, kSubjects, matches);
+      if (!MeasureMatches(round, engine, *compiled, subjects, compile_ms)) {
+        return 2;
       }
     }
   }

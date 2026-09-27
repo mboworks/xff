@@ -46,6 +46,7 @@ using ::mbo::testing::StatusIs;
 using ::testing::AllOf;
 using ::testing::Contains;
 using ::testing::ElementsAre;
+using ::testing::ElementsAreArray;
 using ::testing::Eq;
 using ::testing::Field;
 using ::testing::IsEmpty;
@@ -320,7 +321,12 @@ TEST_F(Pcre2BackendTest, WorkerRetainsInterpreterLimitsAndJitFallback) {
     for (const auto& subject : subjects) {
       EXPECT_THAT(worker->PartialMatch(subject), Eq(original->PartialMatch(subject)));
       EXPECT_THAT(worker->FullMatch(subject), Eq(original->FullMatch(subject)));
-      EXPECT_THAT(worker->FullMatchCaptures(subject), Eq(original->FullMatchCaptures(subject)));
+      const auto expected_captures = original->FullMatchCaptures(subject);
+      if (expected_captures) {
+        EXPECT_THAT(worker->FullMatchCaptures(subject), Optional(ElementsAreArray(*expected_captures)));
+      } else {
+        EXPECT_THAT(worker->FullMatchCaptures(subject), Eq(std::nullopt));
+      }
       EXPECT_THAT(worker->FindFirst(subject, 0), Eq(original->FindFirst(subject, 0)));
       EXPECT_THAT(worker->Rewrite(subject, "b", false), EqualsText(original->Rewrite(subject, "b", false)));
     }
