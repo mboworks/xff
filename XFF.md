@@ -34,7 +34,7 @@ eXtended File Find, a find(1)-compatible file finder with modern extensions.
 
 xff walks each starting path and acts on the entries matching an expression, like `find`(1). With no path it searches the current directory; with no action it prints each match. `xff --compare LEFT RIGHT` instead compares two directory trees as selected status records or a patch.
 
-xff has two flavors selected by the program name: invoked as `find` it restricts the expression to find-compatible primaries, operators, and values; invoked as `xff` it enables the modern extensions. Whole-run xff globals remain available as explicit controls in either flavor. An explicit `--config=find|xff` overrides the program name. The detailed reference marks the xff extensions beyond find.
+Invoked as `find`, xff restricts expressions to find-compatible primaries, operators, and values. Invoked as `xff`, it enables the modern extensions. Invoked as `rg`, it selects rg argument grammar and matching-line output, like `xff --rg`. Explicit `--config=find|xff|rg` selectors change the style preset without changing argument grammar. See `--help=rg` for supported options and the `--xff` native-filter transition.
 
 ## Command structure
 
@@ -202,7 +202,7 @@ Neither user `--allow-xffrc` nor an explicit file's own `--allow-exec` can undo 
 
 ### Choosing a style
 
-Every `--config=NAME` remains active, so multiple named blocks can apply. Among built-in style selectors, the last `find`, `xff`, or `rg` selects the baseline; custom names do not change it. See `--help=styles` for the table. The invocation name (`argv[0]`) is the leading selector, so a symlink named `find` selects the find expression style and `rg` the rg style; any other name (e.g. a `mytool` symlink) activates a same-named config block over the xff default. Explicit `--config` selectors stack on top.
+Every `--config=NAME` remains active, so multiple named blocks can apply. Among built-in style selectors, the last `find`, `xff`, or `rg` selects the baseline; custom names do not change it. See `--help=styles` for the table. The invocation name (`argv[0]`) is the leading selector, so a symlink named `find` selects the find expression style and `rg` the rg style. The full distribution name `xff_full` selects `xff`; all other names are used verbatim (e.g. a `mytool` symlink activates `[mytool]`) over the xff default. Explicit `--config` selectors stack on top.
 
 Configuration expands in application order. Automatic system/user defaults and the invocation selector come first; each command-line `--config` then activates newly matching lines at that exact position, and each `--xffrc` loads its currently matching lines where it appears. Because conflicting options usually use the last value, moving a selector can intentionally change the result. A config line is applied at most once.
 
@@ -1082,8 +1082,9 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `--rg [OPTIONS] PATTERN [PATH...]` - parse ripgrep-style search arguments and print matching lines _(global, xff, command-line-only)_
   Command-line only; rejected in configuration files.
-  Must precede roots. Selects `--config=rg` and content output. `--xff` switches the remaining arguments to an XFF filter expression without resetting output or configuration. Use `--help=rg` for supported options and intentional differences.
-  See also: [Ripgrep-style searches](#topic-rg)
+  Must precede roots. Invocation as `rg` selects this grammar automatically. Selects `--config=rg` and content output. `--xff` switches the remaining arguments to an XFF filter expression without resetting output or configuration. Use `--help=rg` for supported options and intentional differences.
+  Affected by: --files-with-matches, --files-without-match, --invert-match, --no-invert-match
+  See also: [Ripgrep-style searches](#topic-rg), [--files-with-matches](#flag-files-with-matches), [--files-without-match](#flag-files-without-match), [--invert-match](#flag-invert-match), [--no-invert-match](#flag-no-invert-match)
 
 <a id="flag-xff"></a>
 
@@ -1125,15 +1126,15 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `--files-with-matches` - print paths of files containing selected lines _(global, xff)_
   Suppresses line and count output. Selection includes `--invert-match`. Each reached `-grep` action reports its own result; this does not defer actions until the full expression succeeds.
-  Affects: -grep, --match-output
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
+  Affects: -grep, --match-output, --rg
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output), [--rg](#flag-rg)
 
 <a id="flag-files-without-match"></a>
 
 - `--files-without-match, --files-without-matches` - print paths of readable text files without selected lines _(global, xff)_
   Empty text files qualify. Binary, unreadable and non-regular files do not. This changes the truth of the `-grep` action to whether the file has no selected lines.
-  Affects: -grep, --match-output
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
+  Affects: -grep, --match-output, --rg
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output), [--rg](#flag-rg)
 
 <a id="flag-count-matches"></a>
 
@@ -1146,15 +1147,15 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 - `--invert-match` - select lines that do not match its pattern _(global, xff)_
   Inverts line selection, not the file-level expression. `! -rxc PATTERN` instead selects files whose content does not match. Does not invert other predicates.
-  Affects: -grep, --match-output
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
+  Affects: -grep, --match-output, --rg
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output), [--rg](#flag-rg)
 
 <a id="flag-no-invert-match"></a>
 
 - `--no-invert-match` - select lines that match its pattern _(global, xff)_
   Restores positive line selection. Last setting wins.
-  Affects: -grep, --match-output
-  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
+  Affects: -grep, --match-output, --rg
+  See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output), [--rg](#flag-rg)
 
 <a id="flag-line-number"></a>
 
@@ -2871,9 +2872,11 @@ See also: [Regex grammars](#topic-grammars), [Content](#topic-content)
 
 ## Ripgrep-style searches
 
-`xff --rg [OPTIONS] PATTERN [PATH...]` selects `--config=rg` and content-match output. Repeat `-e PATTERN` or `-f FILE` to supply a union of patterns; then every positional argument is a path. Pattern files contain one pattern per line; an empty file supplies no patterns. With no path, search piped standard input, otherwise the current directory. Explicit `-` reads standard input. `-f -` consumes stdin as patterns, making the no-path default the current directory.
+`xff --rg [OPTIONS] PATTERN [PATH...]` selects `--config=rg` and content-match output. Invoking the executable as `rg` selects the same grammar and output automatically; for example, `rg -n TODO src --xff -name '*.cc'`. Repeat `-e PATTERN` or `-f FILE` to supply a union of patterns; then every positional argument is a path. Pattern files contain one pattern per line; an empty file supplies no patterns. Named roots use `--root=NAME=PATH` before `--xff`, retain operand order, and keep their names for archive packing. With no path, search piped standard input, otherwise the current directory. Explicit `-` reads standard input. `-f -` consumes stdin as patterns, making the no-path default the current directory. Using stdin as both a pattern file and a search path is an error.
 
 `--xff` starts a native XFF file-filter expression against the collected paths. It preserves search patterns, configuration and output controls. For example, `xff --rg -n TODO src --xff -name '*.cc' -size +1k`. The filter selects files; only the rg patterns select output lines, even if the filter contains `-rxc`. Actions are rejected in rg mode. Switching back into rg grammar is not supported. In native XFF grammar, `--xff` is a no-op. Both mode flags are CLI-only. `--config=rg` by itself only selects configuration; it does not change argument grammar.
+
+An rg include glob overrides hidden and ignore filtering for entries it matches; a hidden or ignored ancestor must itself be included before its children can be searched.
 
 Options may appear among patterns and paths. Bundles and attached values work: `-nio`, `-eTODO`, `-C2`. An option consumes its argument before interpreting switches: `-e --xff` searches for that text. Bare `--` ends rg option parsing, so later `--xff` is a literal pattern or path. Native `+` and `-o` mean OR after the switch; before it, `+` is data and `-o` means only matching.
 
@@ -2882,7 +2885,7 @@ Options may appear among patterns and paths. Bundles and attached values work: `
 - `-F / --fixed-strings, -P / --pcre2` - literal search or the optional PCRE2 backend; RE2 is the default
 - `-w / --word-regexp, -x / --line-regexp` - whole words or whole lines
 - `-n / --line-number, -N / --no-line-number` - line prefixes; off by default
-- `-H / --with-filename, -I / --no-filename` - path prefixes; automatic for multiple paths or a directory
+- `-H / --with-filename, -I / --no-filename` - path prefixes; automatic for multiple paths, directory contents and archive members
 - `-o / --only-matching, -v / --invert-match` - matched portions or nonmatching lines
 - `-l / --files-with-matches, --files-without-match` - print selected filenames
 - `-c / --count, --count-matches` - selected line or occurrence counts
@@ -2890,9 +2893,9 @@ Options may appear among patterns and paths. Bundles and attached values work: `
 - `-g / --glob` - include glob; leading ! excludes; repeatable, last matching rule wins
 - `-L / --follow, --hidden, --no-ignore` - symlinks, hidden entries and ignore policy
 - `-a / --text, -M / --max-columns` - search binary content or replace long output lines with an omission marker
-- `-j / --threads, -q / --quiet` - worker allowance or silent match-sensitive exit
+- `-j / --threads, -q / --quiet` - worker allowance (0 selects automatic) or silent match-sensitive exit
 
-This is an rg-style frontend, not a complete ripgrep replacement. Unsupported short options are errors. XFF double-dash globals retain their normal meanings, validation and safety enforcement. Output uses XFF's existing line/JSON schemas, no heading or terminal-specific layout; binary files are skipped unless `--text` is set. Files and stdin are currently materialized for line selection. Exit status is `0` for a selected result, `1` for none and `2` for errors; errors outrank quiet matches. Native summaries count the files selected by the search. `--no-match-output` lists those files instead. Normal `-M` behavior is unchanged outside rg grammar; inside it, `-M` requires a maximum-column count.
+This is an rg-style frontend, not a complete ripgrep replacement. Unsupported short options are errors. XFF double-dash globals retain their normal meanings, validation and safety enforcement. Output uses XFF's existing line/JSON schemas, no heading or terminal-specific layout; binary files are skipped unless `--text` is set. Files and stdin are currently materialized for line selection. Exit status is `0` for a selected result, `1` for none and `2` for errors; errors outrank quiet matches. Native summaries count the files selected by the search. `--no-match-output` lists those files instead. Search-selection modifiers remain active in both cases; line-rendering modifiers do not. Normal `-M` behavior is unchanged outside rg grammar; inside it, `-M` requires a maximum-column count.
 
 See also: [Content](#topic-content), [Regex matching](#topic-regex), [Configuration](#topic-config)
 
@@ -2986,12 +2989,6 @@ xff --compare=summary left-tree right-tree --summary=ext --summary-scope=compare
 ```
 
 summarize extensions in side-by-side left and right totals
-
-```sh
-xff --rg -n TODO src --xff -name '*.cc'
-```
-
-search matching lines with rg arguments, then filter files with XFF predicates
 
 ```sh
 xff --compare left-tree right-tree

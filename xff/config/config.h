@@ -140,13 +140,18 @@ registry::Style ActiveStyle(const std::vector<std::string>& configs);
 
 // The leading --config selector implied by the program name (argv[0] dispatch), from its
 // basename: a built-in style name ("find"/"xff"/"rg") selects that preset; an empty name defaults
-// to "xff"; ANY OTHER name (including "fd"/"xfd" - there is no magic remap) is returned verbatim as
-// a NAMED-config selector (e.g. a "mytool" symlink -> "mytool"), which activates a matching
+// to "xff"; "xff_full" also selects "xff". ANY OTHER name (including "fd"/"xfd" - there is no magic remap) is returned
+// verbatim as a NAMED-config selector (e.g. a "mytool" symlink -> "mytool"), which activates a matching
 // `[mytool]` config block while leaving the base style at the modern xff default (ActiveStyle
 // ignores a non-style selector). main() prepends this as the lowest-precedence selector, so an
 // explicit --config still stacks over it via ActiveStyle's last-wins (design-config.md "CLI
 // selectors"). The returned view aliases `argv0` for a passthrough name; copy it to retain.
-std::string_view DefaultStyleForProgram(std::string_view argv0);
+std::string_view InvocationConfigForProgram(std::string_view argv0);
+
+// The default style of an invocation: exactly "find" and "rg" select their respective styles;
+// all other basenames use the xff style. Custom invocation names still select their named
+// configuration through InvocationConfigForProgram, independently of this enum.
+registry::Style DefaultStyleForProgram(std::string_view argv0);
 
 // Renders the effective configuration for --explain: the resolved config flags
 // (each prefixed by its provenance) in application order, then the CLI globals

@@ -16,6 +16,8 @@
 #ifndef XFF_CLI_RG_INPUT_H_
 #define XFF_CLI_RG_INPUT_H_
 
+#include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -37,12 +39,16 @@ class RgInputFs final : public vfs::FileSystem {
 
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view path) const override;
   absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool follow) const override;
+  absl::StatusOr<vfs::Metadata> StatFields(std::string_view path, bool follow, vfs::MetadataFields fields)
+      const override;
   absl::Status Remove(std::string_view path) const override;
   bool Access(std::string_view path, vfs::AccessMode mode) const override;
   absl::StatusOr<std::string> ReadLink(std::string_view path) const override;
   absl::StatusOr<std::string> FsType(std::string_view path) const override;
   absl::StatusOr<bool> IsCaseSensitive(std::string_view path) const override;
   absl::StatusOr<std::string> ReadContent(std::string_view path) const override;
+  absl::StatusOr<std::string> ReadContentRange(std::string_view path, std::uint64_t offset, std::size_t length)
+      const override;
   absl::StatusOr<vfs::SharedReadSource> ContentSource(std::string_view path) const override;
 
  private:

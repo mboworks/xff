@@ -15,8 +15,8 @@
 # limitations under the License.
 #
 # Dual-binary parity: the lean `xff` and the extended `xff_full` are thin shims over the same
-# main_cc, differing only by the composable extras they link and the `_full` argv[0]
-# (DefaultStyleForProgram strips it, so both resolve to the xff style). So any command that uses NO
+# main_cc, differing only by the composable extras they link and their argv[0]
+# (InvocationConfigForProgram maps both distribution names to the xff style). So any command that uses NO
 # extension feature must behave byte-identically in both. This runs a representative set of core
 # commands through both binaries and asserts identical stdout + exit code - a guard against the two
 # ever diverging on shared code (e.g. a stray `#ifdef` keyed on an extra being linked).

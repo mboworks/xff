@@ -2,12 +2,36 @@
 
 ## Content-search output controls
 
+- [x] Return a style enum for invocation dispatch; keep custom config selectors separate.
+- [x] Limit full-binary preset mapping to `xff_full`; preserve all other invocation names.
+
 - [x] Implement and validate the missing grep-style long output options with explicit `-grep`.
 - [x] Add `-M` / `--match-output` for default content-line output, reuse long modifiers, and validate INI selection.
 - [x] Add CLI-only `--rg` parsing and the `--xff` native-filter transition, with separate search patterns.
 - [x] Accept `+` as XFF-mode expression OR while preserving literal arguments and exec termination; keep it out of find mode.
+- [x] Select rg grammar and match output automatically for the `rg` invocation name.
 - [x] Give rg short options their rg meanings before `--xff`; retain native `-o` OR afterward.
 - [ ] Extend rg compatibility deliberately: type filters, multiline search, Unicode word semantics, heading/terminal layout, and streaming content.
+
+## Rg integration review (PRs 916-919)
+
+- [x] D01: Preserve VFS sources when probing stdin and other virtual roots for archives.
+- [x] D02: Preserve rg pattern ownership in native subcommand diagnostics.
+- [x] D03: Compose only-matching output with maximum columns.
+- [x] D04: Enforce rg native-filter action eligibility independently of implicit output.
+- [x] D05: Preserve regex grammar semantics for whole-line rg matching.
+- [x] D06: Include archive-member identity in automatic filename prefixes.
+- [x] D07: Apply positive rg globs before hidden-entry pruning.
+- [x] D08: Preserve named roots in rg commands.
+- [x] D09: Reject simultaneous stdin pattern and content consumption.
+- [x] D10: Translate rg automatic worker selection.
+- [x] D11: Explain active rg selection independently of line rendering.
+- [x] D12: Remove the unrelated rg example from comparison help.
+- [x] D13: Preserve field-aware metadata and bounded reads through the rg input adapter.
+- [ ] Benchmark and parallelize rg content selection, independently of traversal workers.
+- [ ] Avoid rereading selected content for native `-M`, and avoid full line materialization for filename/count/quiet output.
+- [ ] Unify rg option metadata and help, or enforce their consistency with exhaustive tests.
+      See the Rg integration review in `docs/performance-analysis.md`.
 
 ## Release publication repair
 

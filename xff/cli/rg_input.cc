@@ -44,6 +44,11 @@ absl::StatusOr<vfs::Metadata> RgInputFs::Stat(std::string_view path, bool follow
   return host_.Stat(path, follow);
 }
 
+absl::StatusOr<vfs::Metadata> RgInputFs::StatFields(std::string_view path, bool follow, vfs::MetadataFields fields)
+    const {
+  return IsInput(path) ? Stat(path, follow) : host_.StatFields(path, follow, fields);
+}
+
 absl::Status RgInputFs::Remove(std::string_view /*path*/) const {
   return absl::PermissionDeniedError("rg input is read-only");
 }
@@ -78,6 +83,17 @@ absl::StatusOr<std::string> RgInputFs::ReadContent(std::string_view path) const 
     return input_;
   }
   return host_.ReadContent(path);
+}
+
+absl::StatusOr<std::string> RgInputFs::ReadContentRange(std::string_view path, std::uint64_t offset, std::size_t length)
+    const {
+  if (!IsInput(path)) {
+    return host_.ReadContentRange(path, offset, length);
+  }
+  if (offset >= input_.size()) {
+    return std::string();
+  }
+  return input_.substr(static_cast<std::size_t>(offset), length);
 }
 
 absl::StatusOr<vfs::SharedReadSource> RgInputFs::ContentSource(std::string_view path) const {

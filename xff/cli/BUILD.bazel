@@ -144,7 +144,7 @@ cc_binary(
 # The extended binary: the same core plus every composable extra that is turned on. Incompatible in a
 # lean build (XFF_FULL_ONLY), so `//...` skips it there and links it under `--config=xff_full`; the
 # extras (and @pcre2) are never pulled otherwise. Its `xff_full` invocation name maps back to the base
-# style (DefaultStyleForProgram strips the `_full` suffix), so it behaves exactly as `xff` with the
+# style (InvocationConfigForProgram recognizes `xff_full`), so it behaves exactly as `xff` with the
 # extras present. The PCRE2 backend (@xff_pcre2) links in via the `select` on //xff:xff_pcre_enabled.
 cc_binary(
     name = "xff_full",
@@ -1255,6 +1255,14 @@ bashtest(
     size = "small",
     srcs = ["rg_test.sh"],
     data = ["//xff/cli/testing:xff"],
+)
+
+bashtest(
+    name = "rg_full_test",
+    size = "small",
+    srcs = ["rg_full_test.sh"],
+    data = ["//xff/cli/testing:xff_full"],
+    target_compatible_with = XFF_FULL_ONLY,
 )
 
 cc_test(

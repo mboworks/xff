@@ -24,8 +24,14 @@ using ::mbo::testing::StatusIs;
 using ::testing::Eq;
 using ::testing::Field;
 using ::testing::IsEmpty;
+using ::testing::Optional;
 
 struct ReadSourceTest : ::testing::Test {};
+
+TEST_F(ReadSourceTest, HostIdentityIsAbsentForVirtualSources) {
+  EXPECT_THAT(MemoryReadSource("content")->HostPath(), Eq(std::nullopt));
+  EXPECT_THAT(HostReadSource("/host/file")->HostPath(), Optional(Eq("/host/file")));
+}
 
 TEST_F(ReadSourceTest, IndependentCursorsOwnTheirBytesBeyondSourceLifetime) {
   auto source = MemoryReadSource("abcdef");

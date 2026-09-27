@@ -512,6 +512,21 @@ TEST_F(ArchiveBackendTest, StreamSourceHonorsOverrideOpener) {
   EXPECT_THAT(OpenContainerSource("sample", vfs::MemoryReadSource("payload")), IsOk());
 }
 
+TEST_F(ArchiveBackendTest, OnlyAnExplicitHostSourceUsesTheLegacyPathReader) {
+  RegisterContainerOpener(
+      [](std::string_view name, std::optional<std::string_view> bytes,
+         MemberPathOptions) -> absl::StatusOr<std::unique_ptr<vfs::FileSystem>> {
+        EXPECT_THAT(name, Eq("same-path"));
+        if (bytes.has_value()) {
+          EXPECT_THAT(*bytes, Eq("virtual content"));
+        }
+        return std::make_unique<StubFileSystem>();
+      });
+  // No such host file exists: a legacy path reader must not require materialization.
+  EXPECT_THAT(OpenContainerSource("same-path", vfs::HostReadSource("same-path")), IsOk());
+  EXPECT_THAT(OpenContainerSource("same-path", vfs::MemoryReadSource("virtual content")), IsOk());
+}
+
 TEST_F(ArchiveBackendTest, StreamReadersStopOnSuccessOrErrorsAndFallbackOnlyOnFormatMismatch) {
   const auto source = vfs::MemoryReadSource("payload");
   EXPECT_THAT(OpenContainerSource("none", source), StatusIs(absl::StatusCode::kUnimplemented));

@@ -87,6 +87,8 @@ class HostSource final : public ReadSource {
       : ReadSource(std::move(budget)), path_(std::move(path)) {}
 
   // XFF_HOST_IO: obtains the read source size without opening a writable handle.
+  std::optional<std::string_view> HostPath() const override { return path_; }
+
   absl::StatusOr<std::uint64_t> Size() const override {
     // XFF_HOST_IO: local metadata record for this read-only host adapter.
     struct stat metadata{};

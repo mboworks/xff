@@ -36,6 +36,61 @@ _tree() {
   echo "${root}"
 }
 
+test::rg_invocation_selects_short_options_help_and_errors() {
+  local root out rc
+  root="$(_tree)"
+  ln -s "$(_bin)" "${root}/rg"
+  out="$("${root}/rg" -nio todo "${root}/a.cc")"
+  expect_eq $'1:TODO\n3:TODO\n3:TODO' "${out}"
+  out="$("${root}/rg" --help)"
+  expect_output_contains 'RIPGREP-STYLE SEARCHES' "${out}"
+  expect_eq 'xff 0.0.0' "$("${root}/rg" -V)"
+  out="$("${root}/rg" -e 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  expect_output_contains 'requires' "${out}"
+  out="$("${root}/rg" absent "${root}/a.cc" 2>&1)" && rc=0 || rc=$?
+  expect_eq 1 "${rc}"
+  expect_eq '' "${out}"
+}
+
+test::rg_invocation_preserves_config_and_native_filter_boundaries() {
+  local root out
+  root="$(_tree)"
+  ln -s "$(_bin)" "${root}/rg"
+  out="$("${root}/rg" -I TODO "${root}" --xff -name '*.cc')"
+  expect_eq $'TODO one\nTODO two TODO' "${out}"
+  out="$("${root}/rg" -n TODO "${root}/a.cc" --config=xff)"
+  expect_eq $'1:TODO one\n3:TODO two TODO' "${out}"
+  printf '%s\n' '--line-number' >"${root}/user.ini"
+  out="$(XFF_TEST_USER_CONFIG="${root}/user.ini" "${root}/rg" TODO "${root}/a.cc")"
+  expect_eq $'1:TODO one\n3:TODO two TODO' "${out}"
+  out="$("${root}/rg" TODO "${root}/a.cc" --no-match-output)"
+  expect_eq "${root}/a.cc" "${out}"
+}
+
+test::rg_invocation_preserves_stdin_and_literal_mode_words() {
+  local root out
+  root="$(test_tmpdir invocation)"
+  ln -s "$(_bin)" "${root}/rg"
+  out="$(printf 'hit\nmiss\n' | "${root}/rg" hit)"
+  expect_eq hit "${out}"
+  printf '%s\n' '--xff' '+' 'help' >"${root}/words"
+  expect_eq '--xff' "$("${root}/rg" -e --xff "${root}/words")"
+  expect_eq '--xff' "$("${root}/rg" -- --xff "${root}/words")"
+  expect_eq '+' "$("${root}/rg" -F + "${root}/words")"
+  expect_eq 'help' "$("${root}/rg" help "${root}/words")"
+}
+
+test::native_subcommand_names_are_valid_rg_patterns() {
+  local root pattern
+  root="$(_tree)"
+  printf 'help\nversion\n' >"${root}/words"
+  for pattern in help version; do
+    _check 0 "${pattern}" --rg "${pattern}" "${root}/words"
+    _check 0 "${pattern}" --rg -e "${pattern}" "${root}/words"
+  done
+}
+
 test::lines_case_prefixes_and_portions() {
   local root
   root="$(_tree)"
@@ -98,6 +153,25 @@ test::filters_do_not_change_output_patterns() {
   _check 1 '' --rg -I -g '!*.cc' TODO "${root}"
 }
 
+test::positive_globs_override_hidden_entries_and_matching_ancestors() {
+  local root file
+  local files=(plain.txt .hidden.txt .secret/inside.txt .git/inside.txt ignored/inside.txt)
+  root="$(test_tmpdir globs)"
+  mkdir -p "${root}/.secret" "${root}/.git" "${root}/ignored"
+  for file in "${files[@]}"; do
+    printf 'hit\n' >"${root}/${file}"
+  done
+  printf 'ignored/\n' >"${root}/.ignore"
+  _check 0 "${root}/.git/inside.txt"$'\n'"${root}/.hidden.txt"$'\n'"${root}/.secret/inside.txt"$'\n'"${root}/ignored/inside.txt"$'\n'"${root}/plain.txt" \
+    --rg -l -g '*' hit "${root}" --sort=tree
+  _check 0 "${root}/.hidden.txt"$'\n'"${root}/plain.txt" \
+    --rg -l -g '*.txt' hit "${root}" --sort=tree
+  _check 0 "${root}/.hidden.txt"$'\n'"${root}/plain.txt" \
+    --rg -l -g '!*.txt' -g '*.txt' --no-hidden hit "${root}" --sort=tree
+  _check 1 '' --rg -l -g '*' -g '!*.txt' hit "${root}"
+  _check 1 '' --rg -l -g '.secret/*.txt' hit "${root}"
+}
+
 test::stdin_explicit_implicit_and_pattern_input() {
   local root
   root="$(_tree)"
@@ -105,6 +179,18 @@ test::stdin_explicit_implicit_and_pattern_input() {
   printf 'hit\nmiss\n' | _check 0 hit --rg hit -
   printf 'TODO\n' | _check 0 $'TODO one\nTODO two TODO' --rg -f - "${root}/a.cc"
   printf 'none\n' | _check 1 '' --rg hit -
+}
+
+test::stdin_pattern_ownership_is_exclusive_and_keeps_directory_defaults() {
+  local root out
+  root="$(_tree)"
+  printf 'hit\n' | _check 2 'xff: --rg cannot read patterns and search content from stdin simultaneously' --rg -f - -
+  out="$(
+    cd "${root}"
+    printf 'TODO\n' | "$(_bin)" --rg -f -
+  )"
+  expect_output_contains 'a.cc:TODO one' "${out}"
+  expect_output_contains 'a.cc:TODO two TODO' "${out}"
 }
 
 test::binary_empty_matches_context_and_max_columns() {
@@ -121,6 +207,37 @@ test::binary_empty_matches_context_and_max_columns() {
   out="$("$(_bin)" --rg -e '[' "${root}" 2>&1)" && rc=0 || rc=$?
   expect_eq 2 "${rc}"
   expect_matches 'xff:' "${out}"
+}
+
+test::only_matching_applies_max_columns_to_each_portion() {
+  local root
+  root="$(_tree)"
+  printf 'hit abcdef abcdef\n' >"${root}/long"
+  _check 0 $'hit\n[Omitted long matching line]\n[Omitted long matching line]' \
+    --rg -o -M3 'hit|abcdef' "${root}/long"
+  _check 0 'hit abcdef abcdef' --rg -M0 hit "${root}/long"
+}
+
+test::zero_threads_are_automatic_but_invalid_counts_still_fail() {
+  local root out rc
+  root="$(_tree)"
+  _check 0 other --rg -j0 other "${root}/b.txt"
+  _check 0 other --rg --threads=0 other "${root}/b.txt"
+  out="$("$(_bin)" --rg --threads=-1 other "${root}/b.txt" 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  expect_output_contains 'expected a positive integer' "${out}"
+  out="$("$(_bin)" --jobs=0 "${root}" 2>&1)" && rc=0 || rc=$?
+  expect_eq 2 "${rc}"
+  expect_output_contains 'expected a positive integer' "${out}"
+}
+
+test::explain_keeps_search_selection_active_without_line_output() {
+  local root out
+  root="$(_tree)"
+  out="$("$(_bin)" --rg TODO "${root}" --files-without-match --no-match-output --explain)"
+  expect_output_not_contains 'inactive-modifier' "${out}"
+  out="$("$(_bin)" --rg TODO "${root}" --invert-match --summary --explain)"
+  expect_output_not_contains 'inactive-modifier' "${out}"
 }
 
 test::errors_are_not_silent_or_action_fallbacks() {

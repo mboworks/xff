@@ -17,6 +17,7 @@
 
 #include <array>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -189,6 +190,12 @@ TEST_F(BuildReferenceTest, FieldsCarriesTheBracesAndQualifiersSubsections) {
   EXPECT_THAT(subs, Contains("Braces"));
   EXPECT_THAT(subs, Contains("Dynamic namespaces"));
   EXPECT_THAT(subs, Contains("Qualifiers ({field:QUAL})"));
+}
+
+TEST_F(BuildReferenceTest, RgExampleBelongsToCommandStructureInsteadOfComparisonHelp) {
+  constexpr std::string_view kRecipe = "search matching lines with rg arguments";
+  EXPECT_THAT(ProseTextOf(SectionNamed(doc, "Comparing trees").children), Not(HasSubstr(kRecipe)));
+  EXPECT_THAT(ProseTextOf(SectionNamed(doc, "Command structure").children), HasSubstr(kRecipe));
 }
 
 TEST_F(BuildReferenceTest, SeeAlsoCarriesManPageCrossReferences) {

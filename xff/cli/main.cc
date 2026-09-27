@@ -59,6 +59,7 @@
 #include "xff/env/env.h"
 #include "xff/matching/regex/regex.h"
 #include "xff/parser/parser.h"
+#include "xff/parser/rg.h"
 #include "xff/presentation/color/color.h"
 #include "xff/presentation/format/format.h"
 #include "xff/registry/descriptor.h"
@@ -500,7 +501,11 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   // Parse once before dispatching help/version. The parser identifies meta flags
   // only at option/expression boundaries, so `-exec echo --help ;` passes
   // `--help` to the child instead of turning the whole xff invocation into help.
-  absl::StatusOr<xff::parser::Command> parsed = xff::parser::Parse(args);
+  // The rg invocation selects the same grammar as an explicit leading --rg.
+  const xff::registry::Style invocation_style = xff::config::DefaultStyleForProgram(program);
+  const std::string_view invocation_selector = xff::config::InvocationConfigForProgram(program);
+  absl::StatusOr<xff::parser::Command> parsed =
+      invocation_style == xff::registry::Style::kRg ? xff::parser::ParseRg(args, 0) : xff::parser::Parse(args);
   if (!parsed.ok()) {
     std::cerr << "xff: " << parsed.status().message() << "\n" << xff::cli::ParseErrorHint(parsed.status());
     return 2;
@@ -524,8 +529,8 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
       auto options = xff::config::SelectorsFromGlobals(parsed->globals);
       options.paths = *config_paths;
       if (auto inputs = xff::config::DiscoverAutomatic(options, ReadFile); inputs.ok()) {
-        auto preferred = xff::cli::ConfiguredHelpWidth(
-            *std::move(inputs), parsed->globals, xff::config::DefaultStyleForProgram(program), detected_width);
+        auto preferred =
+            xff::cli::ConfiguredHelpWidth(*std::move(inputs), parsed->globals, invocation_selector, detected_width);
         if (preferred.ok()) {
           help_width = std::move(preferred);
         }
@@ -641,7 +646,8 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   // for one out of git/cargo habit would otherwise have the word silently taken as a
   // path to search, so (in the xff flavor only; find must keep `find help` meaning
   // "search ./help") catch a leading operand that names one and point at the flag.
-  if (xff::config::DefaultStyleForProgram(program) != "find") {
+  // Rg owns its operands and option values: "help" and "version" are valid search patterns.
+  if (!parsed->rg && invocation_style != xff::registry::Style::kFind) {
     for (const std::string& arg : args) {
       if (arg == "--") {
         break;  // explicit end-of-options: the next token is deliberately an operand
@@ -737,11 +743,10 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     command.root_names.emplace_back();
   }
   xff::config::DiscoveryOptions opts = xff::config::SelectorsFromGlobals(command.globals);
-  // argv[0] dispatch: the program name picks the base style (invoked as `find` ->
-  // find expression style; as `xff` or any other alias -> modern xff) as the lowest-precedence
-  // selector, so an explicit --config still overrides it (design-config.md "CLI
-  // selectors"). Prepended before discovery so [find]/[xff] .xffrc sections gate on it too.
-  opts.configs.insert(opts.configs.begin(), std::string(xff::config::DefaultStyleForProgram(program)));
+  // The invocation name supplies the lowest-precedence config selector. Explicit --config
+  // can override its style preset, independently of the argument grammar selected above.
+  // Prepend before discovery so matching .xffrc sections can gate on the invocation too.
+  opts.configs.insert(opts.configs.begin(), std::string(invocation_selector));
   auto config_paths = paths();
   if (!config_paths.ok()) {
     std::cerr << "xff: " << config_paths.status().message() << "\n";
@@ -792,7 +797,7 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     std::cerr << "xff: " << status.message() << "\n";
     return 2;
   }
-  inputs.rc_mode = xff::config::ResolveRcMode(inputs, command.globals, xff::config::DefaultStyleForProgram(program));
+  inputs.rc_mode = xff::config::ResolveRcMode(inputs, command.globals, invocation_selector);
   const xff::vfs::LocalFs discovery_filesystem;
   auto discovered = xff::config::DiscoverRc(std::move(inputs), command.roots, discovery_filesystem);
   if (!discovered.ok()) {
@@ -828,8 +833,7 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   // --xffrc dangerous lines inert.
   const bool xffrc_armed = xff::config::ArmedFromTrustedTier(inputs, command.globals, "--allow-exec");
   const xff::config::GateResult gated =
-      xff::config::GateConfig(inputs, xffrc_armed, command.globals, xff::config::DefaultStyleForProgram(program));
-  const std::string_view invocation_selector = xff::config::DefaultStyleForProgram(program);
+      xff::config::GateConfig(inputs, xffrc_armed, command.globals, invocation_selector);
   const std::vector<xff::config::ResolvedFlag> resolved =
       xff::config::ResolveConfigInOrder(gated.config, command.globals, invocation_selector);
   std::vector<std::string> effective_configs = {std::string(invocation_selector)};
@@ -955,12 +959,6 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   }
   const xff::cli::RgInputFs input_fs(host_fs, std::move(input));
   const xff::vfs::FileSystem& fs = command.rg ? static_cast<const xff::vfs::FileSystem&>(input_fs) : host_fs;
-  if (command.rg && command.roots.size() == 1) {
-    const auto metadata = fs.Stat(command.roots.front(), true);
-    if (metadata.ok() && metadata->type == xff::vfs::FileType::kRegular) {
-      command.globals.insert(command.globals.begin(), "--no-filename");
-    }
-  }
   const xff::engine::RunResult result = xff::engine::RunFind(
       command, fs,
       [quiet](std::string_view record) {

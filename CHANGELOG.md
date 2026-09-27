@@ -3,6 +3,12 @@
 
 # 0.9.0
 
+- Use executable basenames verbatim as config selectors, except for the `xff_full` distribution binary selecting `xff`.
+
+- Select rg argument grammar and matching-line output automatically when invoked as `rg`.
+
+- Preserve virtual input sources during archive probing, including piped rg searches in the full build.
+
 - Add `--rg` search syntax, rg short options and stdin input, with `--xff` for native file filters and `+` for XFF-mode expression OR.
 
 - Add `-M` / `--match-output` to print matching content lines with the normal xff expression grammar; `-M-` / `--no-match-output` restores path output.

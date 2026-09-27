@@ -16,6 +16,7 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "absl/status/status.h"
@@ -98,7 +99,8 @@ struct RgEngineTest : ::testing::Test {
   std::vector<std::string> errors;
 
   RunResult Run(std::vector<std::string> args) {
-    args.insert(args.begin(), "--rg");
+    // Keep record identity explicit here; CLI integration covers automatic filename prefixes.
+    args.insert(args.begin(), {"--rg", "-H"});
     auto parsed = parser::Parse(args);
     EXPECT_THAT(parsed, IsOk());
     if (!parsed.ok()) {
@@ -158,6 +160,46 @@ TEST_F(RgEngineTest, EmptyPatternsAndInvertedPortionsFollowRg) {
   EXPECT_THAT(output, EqualsText("tree/a:miss\n"));
 }
 
+TEST_F(RgEngineTest, MaximumColumnsMeasureTheEmittedMatchBeforePrefixes) {
+  fs.files.insert_or_assign("tree/a", "hit and other text\n");
+  EXPECT_THAT(Run({"-on", "-M3", "hit", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a:1:hit\n"));
+  EXPECT_THAT(Run({"-on", "-M3", "hit.*", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a:1:[Omitted long matching line]\n"));
+  EXPECT_THAT(Run({"-o", "-M3", "hit.*", "tree/a", "--format=jsonl"}).any_match, IsTrue());
+  EXPECT_THAT(output, HasSubstr(R"("text":"[Omitted long matching line]")"));
+  EXPECT_THAT(output, HasSubstr(R"("line":1)"));
+  EXPECT_THAT(Run({"-o", "-M3", "hit", "tree/a", "--format=jsonl"}).any_match, IsTrue());
+  EXPECT_THAT(output, HasSubstr(R"("text":"hit")"));
+}
+
+TEST_F(RgEngineTest, WholeLineMatchingUsesEachGrammarsFullMatchSemantics) {
+  const std::vector<std::pair<std::string, std::string>> patterns{
+      {"RE2", "h|hit"}, {"ERE", "h|hit"}, {"EXACT", "hit"}, {"FNMATCH", "h?t"}, {"GLOB", "h?t"}, {"SHGLOB", "{h,hit}"},
+  };
+  fs.files.insert_or_assign("tree/a", "hit\nshit\nhits\n");
+  for (const auto& [grammar, pattern] : patterns) {
+    EXPECT_THAT(Run({"--regextype=" + grammar, "-ox", pattern, "tree/a"}).errors, Eq(0));
+    EXPECT_THAT(output, EqualsText("tree/a:hit\n"));
+    EXPECT_THAT(Run({"--regextype=" + grammar, "-x", "--count-matches", pattern, "tree/a"}).any_match, IsTrue());
+    EXPECT_THAT(output, EqualsText("tree/a:1\n"));
+  }
+}
+
+TEST_F(RgEngineTest, WholeLineLiteralPatternsAndWordPrecedenceRemainLiteral) {
+  fs.files.insert_or_assign("tree/a", "a.b\naXb\na.bc\n");
+  EXPECT_THAT(Run({"-Fx", "a.b", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a:a.b\n"));
+  EXPECT_THAT(Run({"-Fx", "-e", "a", "-e", "a.b", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a:a.b\n"));
+  fs.files.insert_or_assign("tree/a", "@\n@x\n");
+  EXPECT_THAT(Run({"-Fwx", "@", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a:@\n"));
+  fs.files.insert_or_assign("tree/a", "\nmiss\n");
+  EXPECT_THAT(Run({"-x", "--count-matches", "", "tree/a"}).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a:1\n"));
+}
+
 TEST_F(RgEngineTest, SmartCaseAppliesToTheWholePatternUnion) {
   EXPECT_THAT(Run({"-S", "-e", "HIT", "-e", "MISS", "tree"}).any_match, IsFalse());
   EXPECT_THAT(Run({"-S", "-e", "HIT", "-e", "miss", "tree/a"}).any_match, IsTrue());
@@ -194,6 +236,25 @@ TEST_F(RgEngineTest, InvalidFormatsAndConflictingModesAreRejected) {
   EXPECT_THAT(Run({"hit", "tree", "--compare"}).errors, Eq(2));
   EXPECT_THAT(Run({"hit", "tree", "--xff", "-delete"}).errors, Eq(2));
   EXPECT_THAT(Run({"hit", "tree", "--xff", "-exec", "echo", "{}", ";"}).errors, Eq(2));
+}
+
+TEST_F(RgEngineTest, NonprintingActionsAreRejectedEvenInUnreachableBranches) {
+  const std::vector<std::vector<std::string>> filters{
+      {"-capture:x", "echo", "captured", ";"},
+      {"-capturedir:x", "echo", "captured", ";"},
+      {"-prune"},
+      {"-false", "-a", "-capture:x", "echo", "captured", ";"},
+      {"!", "(", "-true", "+", "-prune", ")"},
+  };
+  for (const auto& filter : filters) {
+    std::vector<std::string> args{"hit", "tree", "--xff"};
+    args.append_range(filter);
+    EXPECT_THAT(Run(std::move(args)).errors, Eq(2));
+    EXPECT_THAT(errors, Contains(HasSubstr("not actions")));
+    EXPECT_THAT(output, IsEmpty());
+  }
+  EXPECT_THAT(Run({"hit", "tree", "--xff", "!", "(", "-false", "+", "-name", "b", ")"}).any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("tree/a:hit\n"));
 }
 
 TEST_F(RgEngineTest, OverlappingMatchesRespectInlineAndFilePatternOrder) {

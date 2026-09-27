@@ -126,6 +126,21 @@ test::argv0_fd_alias_is_a_plain_name_not_opinionated() {
   expect_output_contains "out.o" "${out}" # .gitignore NOT applied -> fd is a plain name (xff base)
 }
 
+test::full_suffix_names_are_verbatim_config_selectors() {
+  local dir name out
+  dir="$(test_tmpdir fullnames)"
+  : >"${dir}/.secret"
+  for name in find_full rg_full; do
+    ln -s "$(_xff_bin)" "${dir}/${name}"
+    out="$(XFF_TEST_USER_CONFIG="${dir}/none" "${dir}/${name}" "${dir}" -name .secret -println 2>&1)"
+    expect_eq "${dir}/.secret" "${out}"
+    printf '[%s]\n--format=jsonl\n' "${name}" >"${dir}/config.ini"
+    out="$(XFF_TEST_USER_CONFIG="${dir}/config.ini" "${dir}/${name}" "${dir}" -name .secret 2>&1)"
+    expect_output_contains '"path":' "${out}"
+    expect_output_contains '.secret' "${out}"
+  done
+}
+
 test::argv0_custom_alias_activates_same_named_config() {
   local dir
   dir="$(test_tmpdir argv0alias)"

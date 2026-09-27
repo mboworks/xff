@@ -39,7 +39,7 @@ _xff_full_bin() {
 
 test::full_binary_resolves_to_the_xff_style_via_argv0() {
   # `-grep` is an xff extension the find style rejects; that `xff_full` accepts it proves its
-  # `_full` invocation name resolved to the xff style (DefaultStyleForProgram strips `_full`).
+  # `xff_full` distribution name resolved to the xff style.
   local root out rc
   root="$(test_tmpdir tree)"
   mkdir -p "${root}"

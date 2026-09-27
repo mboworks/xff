@@ -468,31 +468,35 @@ std::string_view StyleName(registry::Style style) {
 
 }  // namespace
 
-std::string_view DefaultStyleForProgram(std::string_view argv0) {
+std::string_view InvocationConfigForProgram(std::string_view argv0) {
   if (const std::string_view::size_type slash = argv0.rfind('/'); slash != std::string_view::npos) {
     argv0 = argv0.substr(slash + 1);  // basename: the last path component
   }
   if (argv0.empty()) {
     return "xff";  // no invocation name -> the modern default
   }
-  // A `_full` suffix marks the extras-included twin of a program (the `xff_full` full build, and
-  // more generally `<prefix>_full`); it behaves exactly as its base name, so `xff_full` -> xff,
-  // `find_full` -> find, `rg_full` -> rg. Without this strip, `find_full` would not match the
-  // `find` built-in selector and would silently fall through to the xff default, losing find
-  // semantics. The `_full` suffix is thus reserved for the full build and never a config name.
-  if (argv0.ends_with("_full")) {
-    argv0.remove_suffix(std::string_view("_full").size());
-    if (argv0.empty()) {
-      return "xff";  // a bare `_full` invocation name -> the modern default
-    }
+  // The full distribution binary shares xff's selector. Other invocation names stay verbatim.
+  if (argv0 == "xff_full") {
+    return "xff";
   }
   // The invocation name is the leading --config selector, used verbatim: a built-in style name
   // (find/xff/rg) selects that preset; any other name (a `mytool` symlink to xff, and note there
   // is no `xfd`/`fd` magic - those are just names too) selects a same-named NAMED config, leaving
   // the base style at the modern xff default (ActiveStyle ignores a non-style selector). So
-  // aliasing xff auto-activates the matching `mytool:` config block without a preset ever being
+  // aliasing xff auto-activates the matching `[mytool]` config block without a preset ever being
   // overloadable. An explicit --config still stacks (last wins).
   return argv0;
+}
+
+registry::Style DefaultStyleForProgram(std::string_view argv0) {
+  const std::string_view name = InvocationConfigForProgram(argv0);
+  if (name == "find") {
+    return registry::Style::kFind;
+  }
+  if (name == "rg") {
+    return registry::Style::kRg;
+  }
+  return registry::Style::kXff;
 }
 
 std::string ExplainConfig(const std::vector<ResolvedFlag>& application) {

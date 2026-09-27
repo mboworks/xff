@@ -1105,6 +1105,10 @@ class ControlledFileSystem : public vfs::FileSystem {
     return fs_.ReadContentRange(path, offset, length);
   }
 
+  absl::StatusOr<vfs::SharedReadSource> ContentSource(std::string_view path) const override {
+    return fs_.ContentSource(path);
+  }
+
   absl::Status Remove(std::string_view path) const override {
     auto mutations = policy_.FileMutations();
     if (policy_.dry_run) {
@@ -2478,11 +2482,17 @@ std::string_view BasenameOf(std::string_view path) {
   return slash == std::string_view::npos ? path : path.substr(slash + 1);
 }
 
-auto MakeContainerMounter(
-    const vfs::FileSystem& walk_fs,
-    const archive::MemberPathOptions& member_path_options,
-    bool sniff_any) {
-  return [&member_path_options, &walk_fs, sniff_any](
+// Rg's native tail is a filter, regardless of whether an action would replace output.
+// Use registry classification so captures and traversal actions cannot slip through.
+bool IsRgFilterExpression(const parser::Expr& expr) {
+  if (expr.descriptor.has_value() && expr.descriptor->kind == registry::Kind::kAction) {
+    return false;
+  }
+  return (!expr.lhs || IsRgFilterExpression(*expr.lhs)) && (!expr.rhs || IsRgFilterExpression(*expr.rhs));
+}
+
+auto MakeContainerMounter(const archive::MemberPathOptions& member_path_options, bool sniff_any) {
+  return [&member_path_options, sniff_any](
              std::string_view container, const vfs::FileSystem& source,
              int depth) -> absl::StatusOr<std::unique_ptr<const vfs::FileSystem>> {
     // `--archive=all` offers every regular file in the tree, and asking the reader means opening one
@@ -2495,10 +2505,8 @@ auto MakeContainerMounter(
       return absl::InvalidArgumentError(absl::StrCat("not a container by name: ", container));
     }
     const auto open = [&]() -> absl::StatusOr<std::unique_ptr<vfs::FileSystem>> {
-      if (&source == &walk_fs) {
-        return archive::OpenContainer(container, member_path_options);
-      }
-      // Nested containers own restartable parent sources; no whole-payload copy is required.
+      // Outer roots may be virtual inputs too. Always ask their VFS for a restartable
+      // source; host files keep lazy reads and nested containers retain parent ownership.
       MBO_ASSIGN_OR_RETURN(const vfs::SharedReadSource bytes, source.ContentSource(container));
       return archive::OpenContainerSource(container, bytes, member_path_options);
     };
@@ -4632,6 +4640,10 @@ RunResult RunFindCore(
     return RunResult{.errors = 2};
   }
   const mbo::types::OptionalRef<const parser::Expr> expression = parser::AsConstOptionalExpr(command.expression);
+  if (command.rg && expression.has_value() && !IsRgFilterExpression(*expression)) {
+    on_error("--rg", absl::InvalidArgumentError("--xff accepts file filters in rg mode, not actions"));
+    return RunResult{.errors = 2};
+  }
   const bool has_action = expression.has_value() && ContainsAction(*expression);
   // --implicit-print=yes|no overrides find's default-print rule (otherwise !has_action).
   const bool implicit_print = ResolveImplicitPrint(command.globals).value_or(!has_action && !compare_listing);
@@ -4846,6 +4858,12 @@ RunResult RunFindCore(
   }
   // --count / -c: -grep emits a per-file matching-line count instead of the lines.
   GrepOptions grep_options = ResolveGrepOptions(command.globals, command.rg.has_value());
+  const bool rg_auto_filename =
+      command.rg && std::ranges::none_of(command.globals, [](std::string_view argument) {
+        const auto flag = cli::LookupGlobalArgument(argument);
+        using enum cli::GlobalFlag::GrepEffect;
+        return flag.has_value() && (flag->grep_effect == kFilename || flag->grep_effect == kNoFilename);
+      });
   if (command.rg) {
     grep_options.max_columns = command.rg->max_columns;
   }
@@ -5190,10 +5208,6 @@ RunResult RunFindCore(
       }
       rg_positive_glob = rg_positive_glob || !glob.starts_with("!");
     }
-    if (has_action) {
-      on_error("--rg", absl::InvalidArgumentError("--xff accepts file filters in rg mode, not actions"));
-      return RunResult{.errors = 2};
-    }
     const auto mode = parser::ResolveCaseMode(command.globals, registry::Style::kXff);
     auto prepared =
         PrepareRgOutput(command, fs, mode == parser::CaseMode::kInsensitive, mode == parser::CaseMode::kSmart);
@@ -5464,9 +5478,23 @@ RunResult RunFindCore(
   // The walk's whole view of archives: hand it a container path, get a filesystem over the members
   // or the InvalidArgument that means "an ordinary file after all". Passed unconditionally because
   // `options.archive` decides whether it is ever called.
-  const auto mount_container = MakeContainerMounter(walk_fs, member_path_options, archive_options->sniff_any);
+  const auto mount_container = MakeContainerMounter(member_path_options, archive_options->sniff_any);
   std::size_t listed_results = 0;
   int rg_errors = 0;
+
+  const auto rg_glob_decision = [&](const Visit& visit) {
+    auto relative = visit.path;
+    if (relative.starts_with(visit.root)) {
+      relative.remove_prefix(visit.root.size());
+      if (relative.starts_with('/')) {
+        relative.remove_prefix(1);
+      }
+    }
+    if (relative.empty()) {
+      relative = visit.name;
+    }
+    return rg_globs.Match(relative, visit.metadata.type == vfs::FileType::kDirectory);
+  };
 
   // Completes the run-level consequences of one fully evaluated entry. Deferred result-set
   // predicates (-top / -shard-status) call this after selection; ordinary entries call it from the walk.
@@ -5476,17 +5504,7 @@ RunResult RunFindCore(
   const auto finish_entry = [&](const Visit& visit, std::map<std::string, std::string>& outputs, bool matched,
                                 std::optional<bool> verification) {
     if (matched && rg_output) {
-      auto relative = visit.path;
-      if (relative.starts_with(visit.root)) {
-        relative.remove_prefix(visit.root.size());
-        if (relative.starts_with('/')) {
-          relative.remove_prefix(1);
-        }
-      }
-      if (relative.empty()) {
-        relative = visit.name;
-      }
-      const auto decision = rg_globs.Match(relative, visit.metadata.type == vfs::FileType::kDirectory);
+      const auto decision = rg_glob_decision(visit);
       if (decision == ignore::Decision::kIgnore || (rg_positive_glob && decision == ignore::Decision::kDefault)) {
         return;
       }
@@ -5506,6 +5524,10 @@ RunResult RunFindCore(
           .grep_after = grep_after,
           .control = control,
       };
+      if (rg_auto_filename) {
+        // A single file root needs no prefix; its archive members are distinct input files.
+        context.grep.filename = roots.size() != 1 || visit.depth != 0;
+      }
       const auto selected = EmitRgOutput(*rg_output, *command.rg, context);
       if (!selected.ok()) {
         on_error(visit.path, selected.status());
@@ -5735,11 +5757,14 @@ RunResult RunFindCore(
       walk_fs, roots, options,
       // NOLINTNEXTLINE(readability-function-cognitive-complexity): cohesive dispatch
       [&](const Visit& visit) {
+        const auto rg_included = [&] { return command.rg && rg_glob_decision(visit) == ignore::Decision::kInclude; };
+        // An rg include overrides hidden/ignore defaults only for matching entries. A hidden
+        // ancestor that does not match still prunes its descendants, matching rg traversal.
         // Hidden filter: unless hidden files are included, drop a dotfile (basename
         // starting with '.') before any evaluation or output. A hidden directory is
         // pruned (its whole subtree skipped); a hidden file is skipped. Depth 0 is an
         // explicitly named search root, always entered -- so `xff .git` still descends.
-        if (skip_hidden && visit.depth > 0 && !visit.name.empty() && visit.name.front() == '.') {
+        if (skip_hidden && visit.depth > 0 && !visit.name.empty() && visit.name.front() == '.' && !rg_included()) {
           return visit.metadata.type == vfs::FileType::kDirectory ? WalkAction::kPrune : WalkAction::kContinue;
         }
         // VCS metadata filter: prune version-control plumbing directories (--skip-vcs; `-g` implies
@@ -5749,7 +5774,7 @@ RunResult RunFindCore(
         // `.gitignore`, ...) still show; only VCS plumbing is dropped. Depth 0 is an explicitly named
         // root, always entered, so `xff .git` still descends. `skip_vcs_names` holds the metadata
         // names (`.git`, `.hg`, ...); it is empty (this filter off) unless --skip-vcs or -g is active.
-        if (!skip_vcs_names.empty() && visit.depth > 0 && skip_vcs_names.contains(visit.name)) {
+        if (!skip_vcs_names.empty() && visit.depth > 0 && skip_vcs_names.contains(visit.name) && !rg_included()) {
           return visit.metadata.type == vfs::FileType::kDirectory ? WalkAction::kPrune : WalkAction::kContinue;
         }
         // Ignore filter: drop an ignored entry before any evaluation or output. A
@@ -6856,6 +6881,9 @@ absl::StatusOr<std::set<registry::ModifierConsumer>> ActiveModifierConsumers(
     if (!grep_suppresses_template) {
       consumers.insert(ModifierConsumer::kGrepLines);
     }
+  }
+  if (command.rg || consumers.contains(ModifierConsumer::kGrep)) {
+    consumers.insert(ModifierConsumer::kGrepSelection);
   }
   consumers.merge(OutputHashConsumers(command, summaries, listing));
   if (compare && ResolveTreeCompareOutput(command.globals) == TreeCompareOutput::kDiff) {

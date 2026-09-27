@@ -945,10 +945,15 @@ Section RgSection(bool in_full) {
   Section section{.title = "Ripgrep-style searches", .anchor = "topic-rg"};
   section.children.push_back(ProseOf(
       "`xff --rg [OPTIONS] PATTERN [PATH...]` selects `--config=rg` and content-match output. "
+      "Invoking the executable as `rg` selects the same grammar and output automatically; "
+      "for example, `rg -n TODO src --xff -name '*.cc'`. "
       "Repeat `-e PATTERN` or `-f FILE` to supply a union of patterns; then every positional argument is a path. "
       "Pattern files contain one pattern per line; an empty file supplies no patterns. "
+      "Named roots use `--root=NAME=PATH` before `--xff`, retain operand order, and keep their names for archive "
+      "packing. "
       "With no path, search piped standard input, otherwise the current directory. Explicit `-` reads standard input. "
-      "`-f -` consumes stdin as patterns, making the no-path default the current directory."));
+      "`-f -` consumes stdin as patterns, making the no-path default the current directory. "
+      "Using stdin as both a pattern file and a search path is an error."));
   section.children.push_back(ProseOf(
       "`--xff` starts a native XFF file-filter expression against the collected paths. It preserves search patterns, "
       "configuration and output controls. For example, `xff --rg -n TODO src --xff -name '*.cc' -size +1k`. "
@@ -956,6 +961,9 @@ Section RgSection(bool in_full) {
       "Actions are rejected in rg mode. Switching back into rg grammar is not supported. "
       "In native XFF grammar, `--xff` is a no-op. Both mode flags are CLI-only. "
       "`--config=rg` by itself only selects configuration; it does not change argument grammar."));
+  section.children.push_back(ProseOf(
+      "An rg include glob overrides hidden and ignore filtering for entries it matches; a hidden or ignored "
+      "ancestor must itself be included before its children can be searched."));
   section.children.push_back(ProseOf(
       "Options may appear among patterns and paths. Bundles and attached values work: `-nio`, `-eTODO`, `-C2`. "
       "An option consumes its argument before interpreting switches: `-e --xff` searches for that text. "
@@ -967,7 +975,8 @@ Section RgSection(bool in_full) {
       {"-F / --fixed-strings, -P / --pcre2", "literal search or the optional PCRE2 backend; RE2 is the default"},
       {"-w / --word-regexp, -x / --line-regexp", "whole words or whole lines"},
       {"-n / --line-number, -N / --no-line-number", "line prefixes; off by default"},
-      {"-H / --with-filename, -I / --no-filename", "path prefixes; automatic for multiple paths or a directory"},
+      {"-H / --with-filename, -I / --no-filename",
+       "path prefixes; automatic for multiple paths, directory contents and archive members"},
       {"-o / --only-matching, -v / --invert-match", "matched portions or nonmatching lines"},
       {"-l / --files-with-matches, --files-without-match", "print selected filenames"},
       {"-c / --count, --count-matches", "selected line or occurrence counts"},
@@ -975,7 +984,7 @@ Section RgSection(bool in_full) {
       {"-g / --glob", "include glob; leading ! excludes; repeatable, last matching rule wins"},
       {"-L / --follow, --hidden, --no-ignore", "symlinks, hidden entries and ignore policy"},
       {"-a / --text, -M / --max-columns", "search binary content or replace long output lines with an omission marker"},
-      {"-j / --threads, -q / --quiet", "worker allowance or silent match-sensitive exit"},
+      {"-j / --threads, -q / --quiet", "worker allowance (0 selects automatic) or silent match-sensitive exit"},
   });
   section.children.push_back(RowsOf(kOptions));
   section.children.push_back(ProseOf(
@@ -985,6 +994,7 @@ Section RgSection(bool in_full) {
       "skipped unless `--text` is set. Files and stdin are currently materialized for line selection. "
       "Exit status is `0` for a selected result, `1` for none and `2` for errors; errors outrank quiet matches. "
       "Native summaries count the files selected by the search. `--no-match-output` lists those files instead. "
+      "Search-selection modifiers remain active in both cases; line-rendering modifiers do not. "
       "Normal `-M` behavior is unchanged outside rg grammar; inside it, `-M` requires a maximum-column count."));
   if (!in_full) {
     for (const auto& flag : Globals()) {
@@ -1227,9 +1237,6 @@ Section CompareSection(bool in_full) {
   examples.children.push_back(
       ExampleOf("xff --compare=summary left-tree right-tree --summary=ext --summary-scope=compare", "sh"));
   examples.children.push_back(ProseOf("summarize extensions in side-by-side left and right totals"));
-  examples.children.push_back(ExampleOf("xff --rg -n TODO src --xff -name '*.cc'", "sh"));
-  examples.children.push_back(
-      ProseOf("search matching lines with rg arguments, then filter files with XFF predicates"));
   examples.children.push_back(ExampleOf("xff --compare left-tree right-tree", "sh"));
   examples.children.push_back(ProseOf("print only paths present on one side or different on both sides"));
   examples.children.push_back(ExampleOf("xff --compare --compare-select=all left-tree right-tree", "sh"));
@@ -1603,9 +1610,9 @@ Section ConfigSection(bool in_full) {
       "Every `--config=NAME` remains active, so multiple named blocks can apply. Among built-in style selectors, "
       "the last `find`, `xff`, or `rg` selects the baseline; custom names do not change it. See `--help=styles` for "
       "the table. The invocation name (`argv[0]`) is the leading selector, so a symlink named `find` selects the "
-      "find expression style and `rg` the rg style; any other name (e.g. a `mytool` symlink) activates a same-named "
-      "config block "
-      "over the xff default. Explicit `--config` selectors stack on top."));
+      "find expression style and `rg` the rg style. The full distribution name `xff_full` selects `xff`; "
+      "all other names are used verbatim (e.g. a `mytool` symlink activates `[mytool]`) over the xff default. "
+      "Explicit `--config` selectors stack on top."));
   style.children.push_back(ProseOf(
       "Configuration expands in application order. Automatic system/user defaults and the invocation selector "
       "come first; each command-line `--config` then activates newly matching lines at that exact position, and "
@@ -1819,11 +1826,11 @@ Section DescriptionSection() {
       "With no path it searches the current directory; with no action it prints each match. "
       "`xff --compare LEFT RIGHT` instead compares two directory trees as selected status records or a patch."));
   description.children.push_back(ProseOf(
-      "xff has two flavors selected by the program name: invoked as `find` it restricts the expression "
-      "to find-compatible primaries, operators, and values; invoked as `xff` it enables the modern "
-      "extensions. Whole-run xff globals remain available as explicit controls in either flavor. An "
-      "explicit `--config=find|xff` overrides the program name. The detailed reference marks the "
-      "xff extensions beyond find."));
+      "Invoked as `find`, xff restricts expressions to find-compatible primaries, operators, and values. "
+      "Invoked as `xff`, it enables the modern extensions. Invoked as `rg`, it selects "
+      "rg argument grammar and matching-line output, like `xff --rg`. Explicit `--config=find|xff|rg` "
+      "selectors change the style preset without changing argument grammar. See `--help=rg` for supported "
+      "options and the `--xff` native-filter transition."));
   return description;
 }
 

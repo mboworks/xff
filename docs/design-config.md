@@ -301,12 +301,10 @@ chooses the built-in style baseline; custom names do not change the style.
 The executable basename supplies the first selector:
 
 - `find` selects the find expression vocabulary and find defaults;
-- `xff` selects the xff style;
-- `rg` selects the rg style;
+- `xff` and the full distribution binary `xff_full` select the xff style;
+- `rg` selects the rg style, rg argument grammar, and matching-line output;
 - another basename such as `mytool` activates a same-named config block while
-  retaining the xff style;
-- `_full` is removed first, so `xff_full`, `find_full`, and `rg_full` behave as
-  their base names.
+  retaining the xff style.
 
 Explicit `--config` selectors follow the invocation selector and can therefore
 choose a later built-in style. Styles set baseline traversal and presentation
@@ -586,7 +584,10 @@ arguments never become modifier requests. A setting superseded later by configur
 the effective CLI request.
 
 `--rg` and `--xff` are CLI-only grammar selectors. `--rg` must precede the roots;
-it selects the `rg` configuration and enables content output. `--config=rg` alone
+it selects the `rg` configuration and enables content output. Invocation through a
+`rg` basename does the same automatically, including short options,
+stdin defaults, and the `--xff` filter tail. For example, `rg -n TODO src --xff -name '*.cc'`
+is the invocation-name form of `xff --rg -n TODO src --xff -name '*.cc'`. `--config=rg` alone
 never changes argument grammar. INI files always use native XFF syntax, including
 inside named sections selected by an rg invocation. `--xff` starts a native filter
 expression without resetting the selected configuration or search patterns.

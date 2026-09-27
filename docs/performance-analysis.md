@@ -426,3 +426,30 @@ a single executable's consecutive repetitions do not provide that interleaving.
 No blanket vector replacement is warranted. A known size plus `reserve`, range construction, sorting,
 contiguous spans, or short-lived small batches can favor vector. Segmented storage is most promising
 where unknown-size append growth currently moves large records or invalidates references.
+
+## Rg integration review
+
+The PRs 916-919 integration review identified these code paths; no new timing ratios were
+measured. Restoring selective VFS operations is included with the correctness fixes:
+`RgInputFs` now forwards host `StatFields` and `ReadContentRange` requests unchanged and
+implements bounded reads directly for its virtual stdin entry. Before the fix, inherited
+fallbacks requested full metadata (including birth time on the host) and materialized whole
+files for range probes. Tests verify exact request forwarding, error propagation, EOF, empty
+input, and oversized offsets without relying on host filesystem timing.
+
+Remaining optimization work:
+
+- Ordinary rg content matching runs in the coordinator's `finish_entry` path. The native
+  parallel matcher pool requires a native content expression; `-j4` alone parallelizes
+  traversal rather than the rg line search. Benchmark a separate content-work scheduling
+  change with identical output and one/four workers before adopting it.
+- Native `-M` can read content for file predicates and again for line output. Share owned
+  content with a bounded lifetime rather than adding locks to per-entry metadata.
+- Filename/count/quiet modes reuse full content and line materialization. Early success for
+  filename/quiet queries and lightweight counting are candidates even before full streaming.
+- Rg alias, arity, and translation metadata are separate from help prose. Generate their
+  shared facts or add exhaustive consistency tests to prevent silent frontend drift.
+
+Use equivalent native `-rxc`, native `-M`, and rg-style fixtures, with RE2 and PCRE2/JIT,
+when comparing these changes. Verify selected files and output before interpreting timings;
+traversal worker count alone does not establish parallel content execution.

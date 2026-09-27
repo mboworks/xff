@@ -370,6 +370,11 @@ absl::StatusOr<std::unique_ptr<vfs::FileSystem>> OpenContainerSource(
   if (!ContainerSupportAvailable()) {
     return absl::UnimplementedError("this binary was built without archive support");
   }
+  // Preserve direct host readers without inferring host identity from the display path.
+  // In particular a virtual stdin entry named "-" must never reopen a host file named "-".
+  if (source->HostPath() == container) {
+    return OpenContainer(container, options);
+  }
   constexpr std::size_t kLegacyLimit = 256UZ * 1'024 * 1'024;
   if (ContainerOpenerSlot()) {
     MBO_ASSIGN_OR_RETURN(const std::string bytes, vfs::ReadSourceBytes(*source, kLegacyLimit));
