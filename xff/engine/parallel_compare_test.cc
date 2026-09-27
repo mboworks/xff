@@ -180,7 +180,7 @@ TEST_F(ParallelCompareTest, RepeatedBatchesKeepInputOrderAcrossWorkersAndErrors)
   ParallelCompare compare(4);
   fs.track_threads = true;
   left.metadata.size = right.metadata.size = 262'144;
-  TreeCompareEntry missing{.path = "missing", .metadata = left.metadata, .fs = fs};
+  const TreeCompareEntry missing{.path = "missing", .metadata = left.metadata, .fs = fs};
   for (int repeat = 0; repeat < 3; ++repeat) {
     std::vector<ComparisonPair> pairs(64, {.path = "file", .left = left, .right = right});
     pairs.at(7).left.set_ref(missing);

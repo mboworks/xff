@@ -110,7 +110,7 @@ void Compare(benchmark::State& state, std::size_t bytes, bool different, bool pa
   };
   const auto error = [](std::string_view, absl::Status) {};
   const auto initial = xff::engine::RunFind(*command, tree, emit, error);
-  if (initial.errors != 0 || records != static_cast<std::size_t>(state.range(0)) || output_bytes == 0) {
+  if (initial.errors != 0 || std::cmp_not_equal(records, state.range(0)) || output_bytes == 0) {
     state.SkipWithError("incorrect comparison output");
     return;
   }
