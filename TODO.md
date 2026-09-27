@@ -51,7 +51,7 @@ These are separate from R01-R05. Evidence and implementation order are in
 - [x] P03: Decouple metadata demand from parallel-filter eligibility for summaries and presentation.
 - [x] P04: Reuse or stream per-entry hashes, line counts, and text checks; prebind field rewrite programs.
 - [x] P05: Parallelize independent comparison pairs; retain measured cursor and bounded patch-input reuse.
-- [ ] P06: Measure chunked eager stats for broad directories.
+- [x] P06: Measure and retain bounded eager-stat chunks for broad directories; preserve lazy/owned-source paths.
 - [ ] P07: Measure archive-member matching with retained ownership and shared read/replay budgets.
 - [ ] P08: Measure heterogeneous batches, worker startup limits, byte-aware buffering, and pipeline overlap.
 

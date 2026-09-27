@@ -1097,3 +1097,80 @@ noisy for the large one-worker workloads, so these are observations rather than 
 | small-patches         |    100 |       4 |     449.2 |        424.1 |  -5.6% |
 | small-patches         |  1,000 |       4 |    4031.3 |       3756.2 |  -6.8% |
 | small-patches         | 10,000 |       4 |   40145.6 |      36939.2 |  -8.0% |
+
+## P06: eager metadata within broad directories
+
+Retain stat chunking for large coordinator-read directory listings. Existing read-ahead jobs still
+list/stat their own directories as independent leaf jobs. The coordinator can instead enumerate a
+listing, submit 128-entry stat chunks to the same pool, and join their values in original listing
+order. No worker waits for another job in its own pool, and the visitor, sorting, pruning, errors,
+and lazy metadata ownership remain on the coordinator.
+
+Only eagerly required metadata, at least 512 children, and more than one allowed worker activate
+this path. Small, lazy, metadata-free, owned and archive-source listings retain the existing serial
+stat path. Basic/birth-time requests, followed-link fallback and readdir-race handling are preserved.
+Already-prefetched directory jobs retain their existing whole-directory work; this does not split
+every directory anywhere in the read-ahead tree.
+
+At most one 128-entry chunk per allowed worker is pending. Consuming the next ordered chunk refills
+that slot, bounding completed-but-unconsumed metadata to the worker window rather than retaining a
+second whole listing. Enumeration and the final listing still use their existing linear storage.
+Tests verify actual overlapping stats, serial/parallel visit and error equality, unchanged field
+selection, race suppression, lazy/no-stat behavior, and archive/owned-source guards.
+
+### Measurement and decision
+
+This experiment uses the host filesystem because an in-memory no-op `Stat` would measure scheduling
+and allocation rather than system-call cost. Parent PR #928 code at `cb0a6a5881` and candidate are
+optimized O2 + ThinLTO full builds on macOS arm64 / Apple M5 Pro. Independent flat roots contain
+10/100/1,000/10,000 files of eight bytes each. Ten rounds alternate parent/candidate order within
+each workload/size/worker pair; discard the first round and average the fastest seven of nine.
+Timings include subprocess startup, configuration loading and captured output, with warm filesystem
+caches. No CPU affinity or cold-disk/network/Linux improvement is claimed. Raw samples and invocation
+identity are in [performance-p06.json](performance-p06.json).
+
+At four workers, 1,000-file metadata workloads improve 8-10% and 10,000-file workloads improve
+33-35%. One-worker equivalents remain within 2%. The byte-exact name-listing control, which avoids
+child stats, remains within 3.3% (less than 0.3 ms for the largest relative increase). Small cases
+are dominated by roughly 7-8 ms of process/setup overhead; they do not start stat workers.
+
+The distinction between native and byte-exact name matching matters: ordinary XFF `-name` respects
+the volume's case rules and currently requires each entry's device metadata. Consequently both
+`-name '*.txt'` and that expression followed by `-printf '.'` exercise eager stats. The `--exact`
+control does not. The tests additionally verify directly that metadata-free/lazy visits issue no
+child stats, independent of subprocess timing noise.
+
+| Workload     |  Files | Workers | Parent ms | Candidate ms | Change |
+| :----------- | -----: | ------: | --------: | -----------: | -----: |
+| stat-summary |     10 |       1 |     7.785 |        7.700 |  -1.1% |
+| stat-summary |    100 |       1 |     7.598 |        7.660 |  +0.8% |
+| stat-summary |  1,000 |       1 |     9.730 |        9.576 |  -1.6% |
+| stat-summary | 10,000 |       1 |    30.372 |       30.161 |  -0.7% |
+| stat-summary |     10 |       4 |     7.846 |        7.868 |  +0.3% |
+| stat-summary |    100 |       4 |     7.738 |        7.753 |  +0.2% |
+| stat-summary |  1,000 |       4 |     9.877 |        9.080 |  -8.1% |
+| stat-summary | 10,000 |       4 |    31.194 |       20.378 | -34.7% |
+| print-action |     10 |       1 |     7.815 |        7.719 |  -1.2% |
+| print-action |    100 |       1 |     7.543 |        7.463 |  -1.1% |
+| print-action |  1,000 |       1 |     9.924 |        9.882 |  -0.4% |
+| print-action | 10,000 |       1 |    32.478 |       32.245 |  -0.7% |
+| print-action |     10 |       4 |     7.754 |        7.761 |  +0.1% |
+| print-action |    100 |       4 |     7.591 |        7.536 |  -0.7% |
+| print-action |  1,000 |       4 |     9.682 |        8.840 |  -8.7% |
+| print-action | 10,000 |       4 |    32.436 |       21.697 | -33.1% |
+| native-name  |     10 |       1 |     7.690 |        7.882 |  +2.5% |
+| native-name  |    100 |       1 |     7.754 |        7.591 |  -2.1% |
+| native-name  |  1,000 |       1 |     9.920 |       10.008 |  +0.9% |
+| native-name  | 10,000 |       1 |    32.252 |       32.435 |  +0.6% |
+| native-name  |     10 |       4 |     7.668 |        7.853 |  +2.4% |
+| native-name  |    100 |       4 |     7.706 |        7.736 |  +0.4% |
+| native-name  |  1,000 |       4 |     9.923 |        8.960 |  -9.7% |
+| native-name  | 10,000 |       4 |    32.559 |       21.809 | -33.0% |
+| exact-name   |     10 |       1 |     7.432 |        7.286 |  -2.0% |
+| exact-name   |    100 |       1 |     7.153 |        7.390 |  +3.3% |
+| exact-name   |  1,000 |       1 |     7.909 |        7.841 |  -0.9% |
+| exact-name   | 10,000 |       1 |    14.530 |       14.128 |  -2.8% |
+| exact-name   |     10 |       4 |     7.414 |        7.404 |  -0.1% |
+| exact-name   |    100 |       4 |     7.166 |        7.174 |  +0.1% |
+| exact-name   |  1,000 |       4 |     7.888 |        7.826 |  -0.8% |
+| exact-name   | 10,000 |       4 |    14.205 |       14.330 |  +0.9% |

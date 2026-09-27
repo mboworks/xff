@@ -631,3 +631,16 @@ cc_binary(
         "@com_github_google_benchmark//:benchmark",
     ],
 )
+
+cc_test(
+    name = "walk_parallel_test",
+    size = "small",
+    srcs = ["walk_parallel_test.cc"],
+    deps = [
+        ":walk_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
