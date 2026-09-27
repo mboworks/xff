@@ -300,6 +300,20 @@ TEST_F(RgTest, ReentryDoesNotInterpretCommandOrCaptureArguments) {
   }
 }
 
+TEST_F(RgTest, ReentryKeepsLeadingGlobalTranslationsInConfigurationOrder) {
+  ASSERT_OK_AND_ASSIGN(
+      const auto command, Parse(
+                              {"--rg", "hit", "tree", "--xff", "-type", "f", "--config=physical", "--rg", "-L", "--xff",
+                               "--config=final"}));
+  EXPECT_THAT(command.roots, ElementsAre("tree"));
+  EXPECT_THAT(
+      command.globals,
+      ElementsAre("--config=rg", "--match-output", "--exit-match", "--config=physical", "-L", "--config=final"));
+  ASSERT_THAT(command.expression, NotNull());
+  EXPECT_THAT(command.expression->descriptor->name, Eq("-type"));
+  EXPECT_THAT(command.expression->args, ElementsAre("f"));
+}
+
 TEST_F(RgTest, CompatibilityControlsAreTypedAndLastOverrideWins) {
   ASSERT_OK_AND_ASSIGN(
       const auto command, Parse(

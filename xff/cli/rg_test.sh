@@ -381,6 +381,24 @@ test::mode_switches_keep_native_and_rg_short_options_distinct() {
   _check 0 "${root}/a.cc" --file-type=cpp "${root}" -type f
 }
 
+test::mode_reentry_preserves_follow_and_configuration_order() {
+  local root out rc
+  root="$(test_tmpdir follow)"
+  mkdir "${root}/scan" "${root}/outside"
+  printf 'hit\n' >"${root}/outside/only.txt"
+  ln -s ../outside "${root}/scan/linked"
+  _check 1 '' --rg -I hit "${root}/scan" --xff -type f
+  _check 0 hit --rg -I hit "${root}/scan" --xff -type f --rg -L
+  printf '%s\n' '[physical]' '-P' >"${root}/user.ini"
+  out="$(XFF_TEST_USER_CONFIG="${root}/user.ini" "$(_bin)" --rg -I hit "${root}/scan" \
+    --xff -type f --config=physical --rg -L)"
+  expect_eq hit "${out}"
+  out="$(XFF_TEST_USER_CONFIG="${root}/user.ini" "$(_bin)" --rg -I hit "${root}/scan" \
+    --xff -type f --rg -L --xff --config=physical 2>&1)" && rc=0 || rc=$?
+  expect_eq 1 "${rc}"
+  expect_eq '' "${out}"
+}
+
 test::explicit_files_bypass_discovery_but_not_native_filters() {
   local root
   root="$(_tree)"

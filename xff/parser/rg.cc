@@ -84,7 +84,8 @@ class RgParser {
     }
     // A sentinel separates leading globals from the native filter. The actual roots are
     // assigned directly, so rg paths that look like native operators stay literal paths.
-    StartNative();
+    native_.emplace_back(".");
+    native_.insert(native_.end(), native_expression_.begin(), native_expression_.end());
     MBO_ASSIGN_OR_RETURN(auto command, parser::Parse(native_));
     if (command.roots.size() != named_roots_ + 1) {
       return absl::InvalidArgumentError("--xff starts a filter expression; put search paths before it");
@@ -107,18 +108,19 @@ class RgParser {
   }
 
  private:
-  void StartNative() {
-    if (!native_started_) {
-      native_.emplace_back(".");
-      native_started_ = true;
-    }
-  }
-
   // Copy each primary and its complete argument run together. Mode-looking values
   // therefore remain literal, including command arguments and attached bindings.
   void NativeToken(std::string_view arg) {
-    StartNative();
-    native_.emplace_back(arg);
+    // Collect globals in source order across both grammars. Compatibility aliases
+    // such as rg's -L must stay before the native expression's sentinel root.
+    if (options_ && arg.starts_with("--") && arg.size() > 2) {
+      native_.emplace_back(arg);
+      return;
+    }
+    if (arg == "--") {
+      options_ = false;
+    }
+    native_expression_.emplace_back(arg);
     const auto descriptor = registry::Lookup(arg.substr(0, arg.find(':')), mode_);
     if (!descriptor.has_value()) {
       return;
@@ -127,7 +129,7 @@ class RgParser {
     if (capture || descriptor->arity < 0) {
       while (index_ + 1 < args_.size()) {
         const auto& operand = args_.at(++index_);
-        native_.push_back(operand);
+        native_expression_.push_back(operand);
         if (operand == ";" || (!capture && operand == "+")) {
           break;
         }
@@ -136,7 +138,7 @@ class RgParser {
     }
     const auto next = index_ + 1 < args_.size() ? std::string_view(args_.at(index_ + 1)) : std::string_view{};
     for (int count = descriptor->ArgumentCount(next); count > 0 && index_ + 1 < args_.size(); --count) {
-      native_.push_back(args_.at(++index_));
+      native_expression_.push_back(args_.at(++index_));
     }
   }
 
@@ -280,13 +282,13 @@ class RgParser {
   std::size_t index_;
   bool options_ = true;
   registry::Mode mode_ = registry::Mode::kRg;
-  bool native_started_ = false;
   bool explicit_patterns_ = false;
   bool help_ = false;
   RgSearch search_;
   std::vector<RootOperand> positionals_;
   std::size_t named_roots_ = 0;
   std::vector<std::string> native_{"--config=rg", "--match-output", "--exit-match"};
+  std::vector<std::string> native_expression_;
 };
 }  // namespace
 
