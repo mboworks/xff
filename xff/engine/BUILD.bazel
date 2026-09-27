@@ -281,6 +281,7 @@ cc_library(
         ":evaluate_cc",
         ":extract_cc",
         ":mount_cc",
+        ":parallel_compare_cc",
         ":parallel_match_cc",
         ":walk_cc",
         "//xff/cli:globals_cc",
@@ -582,5 +583,51 @@ cc_binary(
         "@abseil-cpp//absl/status",
         "@com_github_google_benchmark//:benchmark",
         "@xff_pcre2//:pcre2_backend_cc",
+    ],
+)
+
+cc_library(
+    name = "parallel_compare_cc",
+    srcs = ["parallel_compare.cc"],
+    hdrs = ["parallel_compare.h"],
+    deps = [
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/synchronization",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@mboworks_mbo//mbo/types:optional_ref_cc",
+    ],
+)
+
+cc_test(
+    name = "parallel_compare_test",
+    size = "small",
+    srcs = ["parallel_compare_test.cc"],
+    deps = [
+        ":parallel_compare_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/status:status_macros_cc",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+# Paired in-memory comparisons; no host filesystem timing is inferred from this fixture.
+cc_binary(
+    name = "compare_benchmark",
+    srcs = ["compare_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        ":run_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@com_github_google_benchmark//:benchmark",
     ],
 )

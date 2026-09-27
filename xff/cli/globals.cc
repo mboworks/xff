@@ -884,14 +884,18 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .display = "-j N, -j=N, --jobs=N|all",
         .group = "scheduling",
         .header = "Concurrency and ordering",
-        .summary = "directory-read, eligible content-match and -exec workers",
+        .summary = "directory-read, eligible content-match, comparison and -exec workers",
         .details = "`N` is a positive integer; use `-j 4`, `-j=4`, or `--jobs=4`. The conventional attached "
                    "short form `-j4` is also accepted. Every form accepts `all` in place of `N`. `-j 1` makes "
                    "directory reads and `-exec ... ;` synchronous. At larger values, xff reads directories "
                    "on `N` worker threads. Independent content predicates and rg searches also match in bounded "
                    "parallel batches, "
                    "with output kept in traversal order. Small initial batches, archive members, stateful expressions "
-                   "and full-metadata output stay on the coordinator. "
+                   "stay on the coordinator. Metadata-consuming output does not itself prevent eligible content "
+                   "filters from running in workers; reductions and rendering remain serial. Independent "
+                   "regular-file comparison pairs can also use bounded workers, preserving relative-path output "
+                   "order. Batches of only small or metadata-only comparisons stay inline; archive and owned "
+                   "filesystem sources stay serial. "
                    "Xff may independently keep up to `N` semicolon-form `-exec` / "
                    "`-execdir` children outstanding. Reads and children can overlap; `N` is not one shared "
                    "operation budget. The children's truth value is therefore success on launch. The "

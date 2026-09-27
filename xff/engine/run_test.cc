@@ -616,6 +616,38 @@ TEST_F(RunTest, CompareRequiresTwoRootsAndAppliesTheExpressionToBoth) {
   EXPECT_THAT(last_errors_, 0);
 }
 
+TEST_F(RunTest, ParallelComparisonPreservesStatusesPatchesAndSummariesAcrossBatches) {
+  const auto left = root_ / "batch-left";
+  const auto right = root_ / "batch-right";
+  ASSERT_THAT(fs::create_directory(left), IsTrue());
+  ASSERT_THAT(fs::create_directory(right), IsTrue());
+  for (std::size_t index = 0; index < 130; ++index) {
+    const auto name = std::to_string(index) + ".txt";
+    if (index % 4 != 1) {
+      std::ofstream(left / name) << std::string(2'048, 'a') << '\n';
+    }
+    if (index % 4 != 0) {
+      std::ofstream(right / name) << std::string(2'048, index % 4 == 3 ? 'b' : 'a') << '\n';
+    }
+  }
+  const std::vector<std::vector<std::string>> modes{
+      {"--compare", "--compare-select=all"},
+      {"--compare=diff"},
+      {"--compare=summary", "--summary=ext", "--format=jsonl"},
+  };
+  for (const auto& mode : modes) {
+    auto args = mode;
+    args.insert(args.begin(), "--jobs=1");
+    args.insert(args.end(), {"--archive=none", left.string(), right.string(), "-type", "f"});
+    const auto expected = RunArgvRecords(args);
+    EXPECT_THAT(last_errors_, Eq(0));
+    EXPECT_THAT(expected, Not(IsEmpty()));
+    args.front() = "--jobs=4";
+    EXPECT_THAT(RunArgvRecords(args), Eq(expected));
+    EXPECT_THAT(last_errors_, Eq(0));
+  }
+}
+
 TEST_F(RunTest, CompareSelectsEveryResultKind) {
   const fs::path left = root_ / "select-left";
   const fs::path right = root_ / "select-right";

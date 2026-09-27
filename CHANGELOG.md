@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Compare independent large files in bounded worker batches, keep read cursors open, and reuse small patch inputs.
+
 - Reuse entry content, hashes and line counts across filters and output; compile field rewrite programs once per template.
 
 - Keep eligible content filters parallel when summaries, templates, columns or color require metadata.
