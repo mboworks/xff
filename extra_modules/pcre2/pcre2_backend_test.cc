@@ -327,7 +327,12 @@ TEST_F(Pcre2BackendTest, WorkerRetainsInterpreterLimitsAndJitFallback) {
       } else {
         EXPECT_THAT(worker->FullMatchCaptures(subject), Eq(std::nullopt));
       }
-      EXPECT_THAT(worker->FindFirst(subject, 0), Eq(original->FindFirst(subject, 0)));
+      const auto expected_span = original->FindFirst(subject, 0);
+      if (expected_span) {
+        EXPECT_THAT(worker->FindFirst(subject, 0), Optional(Pair(expected_span->first, expected_span->second)));
+      } else {
+        EXPECT_THAT(worker->FindFirst(subject, 0), Eq(std::nullopt));
+      }
       EXPECT_THAT(worker->Rewrite(subject, "b", false), EqualsText(original->Rewrite(subject, "b", false)));
     }
   }
