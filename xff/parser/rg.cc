@@ -53,6 +53,94 @@ constexpr auto kOptions = std::to_array<RgOption>({
         .summary = "Include glob; a leading `!` excludes; last matching rule wins.",
     },
     {
+        .name = "type",
+        .short_name = 't',
+        .argument = "TYPE",
+        .effect = RgOption::Effect::kType,
+        .summary = "Search files matching this type; repeatable; `all` selects every defined type.",
+    },
+    {
+        .name = "type-not",
+        .short_name = 'T',
+        .argument = "TYPE",
+        .effect = RgOption::Effect::kTypeNot,
+        .summary = "Exclude files matching this type; later matching type selections win.",
+    },
+    {
+        .name = "type-add",
+        .argument = "TYPE:GLOB",
+        .effect = RgOption::Effect::kTypeAdd,
+        .summary = "Add a type glob; `TYPE:include:TYPES` imports comma-separated type definitions.",
+    },
+    {
+        .name = "type-clear",
+        .argument = "TYPE",
+        .effect = RgOption::Effect::kTypeClear,
+        .summary = "Remove the globs for a type before subsequent additions.",
+    },
+    {
+        .name = "type-list",
+        .effect = RgOption::Effect::kTypeList,
+        .summary = "List available type names and definitions without searching.",
+    },
+    {
+        .name = "multiline",
+        .short_name = 'U',
+        .effect = RgOption::Effect::kMultiline,
+        .summary = "Allow matches to span lines; retains whole input for cross-line regex evaluation.",
+    },
+    {
+        .name = "no-multiline",
+        .effect = RgOption::Effect::kNoMultiline,
+        .summary = "Search one line at a time.",
+    },
+    {
+        .name = "multiline-dotall",
+        .effect = RgOption::Effect::kDotall,
+        .summary = "Make `.` match newlines when multiline search is enabled.",
+    },
+    {
+        .name = "no-multiline-dotall",
+        .effect = RgOption::Effect::kNoDotall,
+        .summary = "Restore the default dot behavior.",
+    },
+    {
+        .name = "heading",
+        .effect = RgOption::Effect::kHeading,
+        .summary = "Print the path above each file's matches; enabled by default on a terminal.",
+    },
+    {
+        .name = "no-heading",
+        .effect = RgOption::Effect::kNoHeading,
+        .summary = "Use per-line filename prefixes; the default for piped output.",
+    },
+    {
+        .name = "column",
+        .effect = RgOption::Effect::kColumn,
+        .summary = "Print one-based byte columns and enable line numbers.",
+    },
+    {
+        .name = "no-column",
+        .effect = RgOption::Effect::kNoColumn,
+        .summary = "Omit byte columns.",
+    },
+    {
+        .name = "pretty",
+        .short_name = 'p',
+        .effect = RgOption::Effect::kPretty,
+        .summary = "Enable headings, line numbers, and color, even when output is piped.",
+    },
+    {
+        .name = "unicode",
+        .effect = RgOption::Effect::kUnicode,
+        .summary = "Interpret content as UTF-8 and use Unicode word boundaries (default); no encoding detection.",
+    },
+    {
+        .name = "no-unicode",
+        .effect = RgOption::Effect::kNoUnicode,
+        .summary = "Match 8-bit bytes with ASCII word boundaries; no UTF-8 decoding or legacy-codepage conversion.",
+    },
+    {
         .name = "only-matching",
         .short_name = 'o',
         .replacement = "--only-matching",
@@ -279,7 +367,7 @@ class RgParser {
       const auto pattern =
           std::ranges::find_if(positionals_, [](const RootOperand& root) { return root.name.empty(); });
       if (pattern == positionals_.end()) {
-        if (!help_) {
+        if (!help_ && !search_.type_list) {
           return absl::InvalidArgumentError("--rg requires PATTERN or -e PATTERN / -f FILE");
         }
       } else {
@@ -340,9 +428,51 @@ class RgParser {
         search_.patterns.push_back({.value = std::string(value), .file = true});
         explicit_patterns_ = true;
         break;
-      case RgOption::Effect::kWord: search_.word = true; break;
-      case RgOption::Effect::kLine: search_.line = true; break;
+      case RgOption::Effect::kWord:
+        search_.word = true;
+        search_.line = false;
+        break;
+      case RgOption::Effect::kLine:
+        search_.line = true;
+        search_.word = false;
+        break;
       case RgOption::Effect::kText: search_.text = true; break;
+      case RgOption::Effect::kUnicode:
+        search_.unicode = true;
+        search_.unicode_explicit = true;
+        break;
+      case RgOption::Effect::kNoUnicode:
+        search_.unicode = false;
+        search_.unicode_explicit = true;
+        break;
+      case RgOption::Effect::kType:
+        search_.types.push_back({.kind = RgTypeRule::Kind::kInclude, .value = std::string(value)});
+        break;
+      case RgOption::Effect::kTypeNot:
+        search_.types.push_back({.kind = RgTypeRule::Kind::kExclude, .value = std::string(value)});
+        break;
+      case RgOption::Effect::kTypeAdd:
+        search_.types.push_back({.kind = RgTypeRule::Kind::kAdd, .value = std::string(value)});
+        break;
+      case RgOption::Effect::kTypeClear:
+        search_.types.push_back({.kind = RgTypeRule::Kind::kClear, .value = std::string(value)});
+        break;
+      case RgOption::Effect::kTypeList: search_.type_list = true; break;
+      case RgOption::Effect::kMultiline: search_.multiline = true; break;
+      case RgOption::Effect::kNoMultiline: search_.multiline = false; break;
+      case RgOption::Effect::kDotall: search_.dotall = true; break;
+      case RgOption::Effect::kNoDotall: search_.dotall = false; break;
+      case RgOption::Effect::kHeading: search_.heading = true; break;
+      case RgOption::Effect::kNoHeading: search_.heading = false; break;
+      case RgOption::Effect::kColumn:
+        search_.column = true;
+        native_.emplace_back("--line-number");
+        break;
+      case RgOption::Effect::kNoColumn: search_.column = false; break;
+      case RgOption::Effect::kPretty:
+        search_.heading = true;
+        native_.insert(native_.end(), {"--line-number", "--color=always"});
+        break;
       case RgOption::Effect::kColumns:
         if (!absl::SimpleAtoi(value, &search_.max_columns)) {
           return absl::InvalidArgumentError("--max-columns requires a nonnegative integer");

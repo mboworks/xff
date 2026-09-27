@@ -11,7 +11,42 @@
 - [x] Accept `+` as XFF-mode expression OR while preserving literal arguments and exec termination; keep it out of find mode.
 - [x] Select rg grammar and match output automatically for the `rg` invocation name.
 - [x] Give rg short options their rg meanings before `--xff`; retain native `-o` OR afterward.
-- [ ] Extend rg compatibility deliberately: type filters, multiline search, Unicode word semantics, heading/terminal layout, and streaming line/context output.
+- [x] R01: Implement rg type filters using the shared XFF language catalog, including glob precedence
+      and native-filter composition. Preserve overlapping filename/extension candidates (for example,
+      `.h` for C and C++) separately from the preferred language used for display and summaries.
+      Keep rg type and native `-lang` membership consistent; specify overlay/conflict handling and
+      test overlap, ordered inclusion/exclusion, aliases, and lean/full catalog behavior.
+- [x] R02: Add multiline matching and dotall controls with counts, context, and regex-backend coverage.
+- [x] R03: Add explicit UTF-8/byte search modes and concept-checked typed word classifiers; isolate Unicode fixtures.
+- [x] R04: Add heading/terminal layout with explicit overrides and deterministic piped/JSON output.
+- [x] R05: Stream full line/context output with bounded context retention and preserved binary/error handling.
+      Implementation, compatibility boundaries, and validation: `docs/design-rg.md`.
+- [ ] R06: Design explicit file decoding/transcoding (including UTF-16/32 byte order and source-offset mapping);
+      the typed word classifiers are not a file decoder. Keep rg byte/UTF-8 mode explicit in the meantime.
+- [ ] R07: Consider newline-capability metadata for regex backends so `-U` can retain streaming and
+      ripgrep's line-count optimization for patterns that cannot match newlines; current multiline counts
+      consistently count occurrences. See `docs/design-rg.md` before changing the documented count rule.
+
+## Combined rg stack audit
+
+- [ ] After the R01-R05 delivery, audit the complete stacked change for configuration precedence,
+      terminal/pipe defaults, encoding modes, multiline output, and native-filter interactions.
+      Put any new fixes in a follow-up PR with regression tests; merge in dependency order once
+      the combined work and required checks are green.
+
+## Rg performance candidates
+
+These are separate from R01-R05. Evidence and implementation order are in
+`docs/performance-analysis.md`, "Applying the worker model elsewhere".
+
+- [ ] P01: Give native content predicates worker-private RE2 state.
+- [ ] P02: Reuse PCRE2 match scratch per worker while sharing compiled code.
+- [ ] P03: Decouple metadata demand from parallel-filter eligibility for summaries and presentation.
+- [ ] P04: Reuse or stream per-entry hashes, line counts, and text checks; prebind field rewrite programs.
+- [ ] P05: Parallelize independent comparison pairs; investigate persistent read cursors and content reuse.
+- [ ] P06: Measure chunked eager stats for broad directories.
+- [ ] P07: Measure archive-member matching with retained ownership and shared read/replay budgets.
+- [ ] P08: Measure heterogeneous batches, worker startup limits, byte-aware buffering, and pipeline overlap.
 
 ## Rg integration review (PRs 916-919)
 

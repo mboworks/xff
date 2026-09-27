@@ -38,7 +38,7 @@ TEST_F(LanguageDbRegisterTest, RejectsInvalidBrotliAndWrongDeclaredSize) {
   EXPECT_THAT(Decode(kInvalid, 20), StatusIs(absl::StatusCode::kDataLoss, HasSubstr("not valid Brotli data")));
   EXPECT_THAT(
       Decode(data::Compressed(), data::UncompressedSize() + 1),
-      StatusIs(absl::StatusCode::kDataLoss, HasSubstr("decoded to 100850 bytes, expected 100851")));
+      StatusIs(absl::StatusCode::kDataLoss, HasSubstr("decoded to 109261 bytes, expected 109262")));
 }
 
 }  // namespace

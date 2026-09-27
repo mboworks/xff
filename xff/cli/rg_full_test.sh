@@ -100,4 +100,24 @@ test::parallel_pcre2_and_default_archive_probing_preserve_ordered_output() {
   expect_output_contains "${root}/box.tar!0.txt:hit hit" "${parallel}"
 }
 
+test::pcre2_multiline_uses_the_shared_context_and_count_renderers() {
+  local root out
+  root="$(test_tmpdir multiline)"
+  printf 'pre\nalpha one\nbeta two\npost\n' >"${root}/input"
+  out="$("$(_bin)" --rg -PUn -C1 'alpha[^\n]*\nbeta' "${root}/input")"
+  expect_eq $'1-pre\n2:alpha one\n3:beta two\n4-post' "${out}"
+  out="$("$(_bin)" --rg -PUc 'alpha[^\n]*\nbeta' "${root}/input")"
+  expect_eq '1' "${out}"
+}
+
+test::bundled_language_candidates_work_in_rg_and_native_filters() {
+  local root
+  root="$(test_tmpdir bundled-types)"
+  printf 'hit header\n' >"${root}/header.h"
+  printf 'hit script\n' >"${root}/script.pl"
+  _check 0 'hit header' --rg -I -tcpp hit "${root}" --xff -lang Objective-C
+  _check 0 'hit script' --rg -I -tProlog -tRaku hit "${root}" --xff -lang Perl
+  _check 0 'header.h|C' "${root}" -lang C++ -printf '%f|%{lang}\n'
+}
+
 test_runner

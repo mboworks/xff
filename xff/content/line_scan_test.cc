@@ -25,6 +25,7 @@ using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
 using ::testing::IsEmpty;
+using ::testing::Lt;
 
 class ChunkStream final : public vfs::ReadStream {
  public:
@@ -156,6 +157,39 @@ TEST_F(LineScanTest, BufferedVisitorCanStopAfterFirstLine) {
     return false;
   });
   EXPECT_THAT(lines, ElementsAre("first"));
+}
+
+TEST_F(LineScanTest, StreamingContextMatchesBufferedSelectionAcrossChunkBoundaries) {
+  stream.bytes = "old\r\npre\r\nhit\r\nhit\npost\nskip\nskip\npre\nhit\ntail";
+  const auto matches = [](std::string_view line) { return line == "hit"; };
+  for (const std::size_t before : {0UZ, 1UZ, 2UZ, 20UZ}) {
+    for (const std::size_t after : {0UZ, 1UZ, 2UZ, 20UZ}) {
+      SCOPED_TRACE(before);
+      SCOPED_TRACE(after);
+      const auto expected = CollectLineMatchesWithContext(stream.bytes, matches, before, after);
+      LineContext context(before, after);
+      std::size_t emitted = 0;
+      stream.position = 0;
+      stream.chunk = 3;
+      const auto emit = [&](const ContextLine& line) {
+        ASSERT_THAT(emitted, Lt(expected.size()));
+        const auto& want = expected.at(emitted++);
+        EXPECT_THAT(line.number, Eq(want.number));
+        EXPECT_THAT(line.text, Eq(want.text));
+        EXPECT_THAT(line.is_match, Eq(want.is_match));
+        EXPECT_THAT(line.group, Eq(want.group));
+      };
+      EXPECT_THAT(
+          ScanLines(
+              stream, 0,
+              [&](std::size_t number, std::string_view line) {
+                context.Push(number, line, matches(line), emit);
+                return true;
+              }),
+          IsOkAndHolds(Field(&LineScanResult::binary, false)));
+      EXPECT_THAT(emitted, Eq(expected.size()));
+    }
+  }
 }
 }  // namespace
 }  // namespace xff::content

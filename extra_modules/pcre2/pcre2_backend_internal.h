@@ -31,7 +31,8 @@ namespace xff::regex::internal {
 absl::StatusOr<std::unique_ptr<const RegexBackend>> CompilePcre2(
     std::string_view pattern,
     bool case_insensitive,
-    std::function<void()> jit_observer = {});
+    std::function<void()> jit_observer = {},
+    TextMode mode = TextMode::kBytes);
 
 }  // namespace xff::regex::internal
 

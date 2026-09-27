@@ -28,7 +28,34 @@
 namespace xff::parser {
 // Shared grammar and help metadata. A nonempty argument names the required value.
 struct RgOption {
-  enum class Effect { kGlobal, kPattern, kFile, kWord, kLine, kText, kColumns, kGlob, kRoot, kThreads };
+  enum class Effect {
+    kGlobal,
+    kPattern,
+    kFile,
+    kWord,
+    kLine,
+    kText,
+    kColumns,
+    kGlob,
+    kRoot,
+    kThreads,
+    kType,
+    kTypeNot,
+    kTypeAdd,
+    kTypeClear,
+    kTypeList,
+    kMultiline,
+    kNoMultiline,
+    kDotall,
+    kNoDotall,
+    kHeading,
+    kNoHeading,
+    kColumn,
+    kNoColumn,
+    kPretty,
+    kUnicode,
+    kNoUnicode
+  };
   std::string_view name;
   char short_name = '\0';
   std::string_view replacement;

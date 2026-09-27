@@ -964,12 +964,45 @@ Section RgSection(bool in_full) {
       "`--config=rg` by itself only selects configuration; it does not change argument grammar."));
   section.children.push_back(ProseOf(
       "An rg include glob overrides hidden and ignore filtering for entries it matches; a hidden or ignored "
-      "ancestor must itself be included before its children can be searched."));
+      "ancestor must itself be included before its children can be searched. "
+      "`-t TYPE` includes file types; `-T TYPE` excludes them. The last matching type rule wins. "
+      "`--type-list` lists definitions without searching; `all` selects every known type. "
+      "`--type-add=NAME:GLOB` appends a glob, `--type-add=NAME:include:TYPE,...` imports types, and "
+      "`--type-clear=NAME` removes a definition. Type globs match basenames and explicit `-g` matches "
+      "take precedence over type selection. Built-in types use XFF's shared language catalog, including "
+      "the linked language database and `--lang-db` overlays; they are not a copy of ripgrep's type list. "
+      "Canonical names, declared aliases, and unambiguous suffix aliases select the same definition "
+      "case-insensitively. Built-in suffix matching also ignores case; custom globs retain case. "
+      "Shared candidates overlap (`.h` is `C`, `C++`, and `Objective-C`); selecting several matching "
+      "types emits a file only once. Native `-lang` checks the same candidates, while `{lang}` and "
+      "language summaries retain one preferred label."));
   section.children.push_back(ProseOf(
       "Options may appear among patterns and paths. Bundles and attached values work: `-nio`, `-eTODO`, `-C2`. "
       "An option consumes its argument before interpreting switches: `-e --xff` searches for that text. "
       "Bare `--` ends rg option parsing, so later `--xff` is a literal pattern or path. "
       "Native `+` and `-o` mean OR after the switch; before it, `+` is data and `-o` means only matching."));
+  section.children.push_back(ProseOf(
+      "`--unicode` (default in rg grammar) interprets content as UTF-8; `--no-unicode` selects arbitrary "
+      "bytes and ASCII word boundaries. `-w` uses Unicode Alphabetic, Mark, Decimal_Number, "
+      "Connector_Punctuation and Join_Control in UTF-8 mode. The mode reaches RE2 and PCRE2 as well "
+      "as word-boundary checks; their regex syntax and character classes still differ. "
+      "These rg switches govern search patterns, not native filters after `--xff`. "
+      "They do not detect encodings or transcode Latin-1/UTF-16/UTF-32. Native XFF's valued "
+      "`--unicode=auto|always|never` controls presentation instead."));
+  section.children.push_back(ProseOf(
+      "`-U` / `--multiline` allows matches across newlines and buffers the searched subject. "
+      "`--multiline-dotall` makes dot include newlines when multiline is active; `--no-multiline` "
+      "and `--no-multiline-dotall` undo those settings. RE2, PCRE2 and fixed strings support multiline. "
+      "Full-line output prints each selected line once; `-o` prints matching portions per line. "
+      "In multiline mode `-c` counts matches, which can span several lines; with `-v` it counts "
+      "selected nonmatching lines. Context remains line-based. `-w` and `-x` override each other."));
+  section.children.push_back(ProseOf(
+      "On a terminal, headings and line numbers default on; piped output defaults to inline filenames "
+      "and no line numbers. `--heading` / `--no-heading` and `-n` / `-N` override these independently. "
+      "`--column` adds one-based byte columns and enables line numbers; `--no-column` hides columns. "
+      "`-p` / `--pretty` enables headings, line numbers and color even through a pipe. "
+      "Separate files have a blank line between headings. JSON keeps XFF's record schema without "
+      "headings or terminal color."));
   Rows options;
   options.rows.reserve(parser::RgOptions().size());
   for (const parser::RgOption& option : parser::RgOptions()) {
@@ -984,10 +1017,10 @@ Section RgSection(bool in_full) {
   section.children.push_back(ProseOf(
       "This is an rg-style frontend, not a complete ripgrep replacement. Unsupported short options are errors. "
       "XFF double-dash globals retain their normal meanings, validation and safety enforcement. "
-      "Output uses XFF's existing line/JSON schemas, no heading or terminal-specific layout; binary files are "
-      "skipped unless `--text` is set. Line output currently materializes each file. Filename, count and quiet "
-      "searches stream lines when the backend supports it; stdin is staged. These searches still read to EOF to detect "
-      "binary data and late errors. "
+      "Binary files are skipped unless `--text` is set. Single-line searches stream source bytes, retaining "
+      "one incomplete line and requested before-context. Rendered records are buffered per file until "
+      "EOF to detect binary data and late errors before publication. Long lines and selected output "
+      "can still require proportional memory; multiline searches and stdin retain their subject. "
       "`-j N` runs eligible host-file searches in parallel while keeping records in traversal order; "
       "archive members and stateful native filters stay serial. "
       "Exit status is `0` for a selected result, `1` for none and `2` for errors; errors outrank quiet matches. "

@@ -18,7 +18,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <deque>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -79,6 +81,28 @@ struct ContextLine {
   // 0-based group index; increments at each gap between emitted lines, so a caller prints a
   // group separator ("--") before every group after the first.
   std::size_t group = 0;
+};
+
+// Incremental context selection. Owns at most `before` unprinted lines; the sink borrows
+// each selected line only for its call. Adjacent windows share one group.
+class LineContext {
+ public:
+  LineContext(std::size_t before, std::size_t after) : before_(before), after_(after) {}
+
+  void Push(std::size_t number, std::string_view text, bool matched, absl::FunctionRef<void(const ContextLine&)> emit);
+
+ private:
+  struct Pending {
+    std::size_t number;
+    std::string text;
+  };
+
+  const std::size_t before_;
+  const std::size_t after_;
+  std::size_t remaining_ = 0;
+  std::size_t last_ = 0;
+  std::size_t group_ = 0;
+  std::deque<Pending> pending_;
 };
 
 // Like CollectLineMatches, but also returns `before` lines preceding and `after` lines following

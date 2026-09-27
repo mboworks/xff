@@ -660,7 +660,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 <a id="flag-lang-db"></a>
 
 - `--lang-db=FILE` - overlay language metadata and suffix/filename mappings from JSON; repeatable _(global, xff)_
-  Loads a JSON object keyed by canonical language name. Each value may set `type`, `color`, `group`, and `source`, plus string arrays `aliases`, `extensions`, and `filenames`. Later files override earlier files and compiled data. Extensions may include their leading dot and may contain multiple parts; matching folds suffix case while exact filenames retain case. Conflicts between two languages in ONE file follow `--lang-conflicts`.
+  Loads a JSON object keyed by canonical language name. Each value may set `type`, `color`, `group`, and `source`, plus string arrays `aliases`, `extensions`, `filenames`, `shared_extensions`, and `shared_filenames`. Ordinary claims choose a preferred label; shared claims add overlapping candidates for `-lang` and rg types without changing that label. Later files override earlier files and compiled data. Extensions may include their leading dot and may contain multiple parts; matching folds suffix case while exact filenames retain case. Conflicts between two preferred claims in ONE file follow `--lang-conflicts`; shared claims may overlap. A new preferred claim replaces older memberships for that key; shared claims in the same layer are then added. A supplied shared list replaces that language's prior shared list of the same kind.
   Affects: -lang
   Affected by: --lang-conflicts
   See also: [Content](#topic-content), [--lang-conflicts](#flag-lang-conflicts), [-lang](#primary-lang)
@@ -674,7 +674,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
   - `first` - keep the first claim in that file
   - `last` - keep the last claim in that file
 
-  Controls only ambiguity inside one `--lang-db` file. Layering remains deterministic: a later file intentionally overrides earlier files and compiled data. `error` is the default; `first` or `last` is an explicit compatibility escape hatch for imported databases.
+  Controls only preferred-label ambiguity inside one `--lang-db` file; explicit shared claims are allowed regardless of this policy. Layering remains deterministic: a later file intentionally overrides earlier files and compiled data. `error` is the default; `first` or `last` is an explicit compatibility escape hatch for imported databases.
   Affects: --lang-db
   See also: [Content](#topic-content), [--lang-db](#flag-lang-db)
 
@@ -2041,7 +2041,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 <a id="primary-lang"></a>
 
 - `-lang ARG` - match the language by extension/filename against a glob, e.g. -lang 'C*' (xff) _(test, xff)_
-  xff extension: matches the programming language inferred from the extension/filename against a shell glob, so `C*` matches C / C++ / C#. The lean binary has a curated common table; the removable GitHub Linguist build extra supplies hundreds of canonical records, and repeatable `--lang-db=FILE` JSON layers override mappings and metadata. Exact filenames win over the longest matching suffix. The same canonical value is `{lang}`; `{lang-type}`, `{lang-color}`, `{lang-group}`, and `{lang-source}` expose metadata. A pattern may also match an alias (`cpp` matches canonical `C++`). Matching is always case-insensitive and unaffected by `--case` / -i / -s. This is fast name classification, not Linguist's content/shebang heuristic classifier.
+  xff extension: matches any candidate language inferred from the extension/filename against a shell glob, so `C*` matches C / C++ / C#. The lean binary has a curated common table; the removable GitHub Linguist build extra supplies hundreds of canonical records, and repeatable `--lang-db=FILE` JSON layers override mappings and metadata. Exact filenames win over the longest matching suffix. Shared candidates overlap: `.h` matches `C`, `C++`, and `Objective-C`. `{lang}` retains one preferred canonical label for display and summaries; `{lang-type}`, `{lang-color}`, `{lang-group}`, and `{lang-source}` expose metadata. A pattern may also match an alias (`cpp` matches canonical `C++`). Matching is always case-insensitive and unaffected by `--case` / -i / -s. This is fast name classification, not Linguist's content/shebang heuristic classifier.
   Affected by: --lang-db
   See also: [Content](#topic-content), [Fields](#topic-fields), [--lang-db](#flag-lang-db)
 
@@ -2876,13 +2876,35 @@ See also: [Regex grammars](#topic-grammars), [Content](#topic-content)
 
 `--xff` starts a native XFF file-filter expression against the collected paths. It preserves search patterns, configuration and output controls. For example, `xff --rg -n TODO src --xff -name '*.cc' -size +1k`. The filter selects files; only the rg patterns select output lines, even if the filter contains `-rxc`. Actions are rejected in rg mode. Switching back into rg grammar is not supported. In native XFF grammar, `--xff` is a no-op. Both mode flags are CLI-only. `--config=rg` by itself only selects configuration; it does not change argument grammar.
 
-An rg include glob overrides hidden and ignore filtering for entries it matches; a hidden or ignored ancestor must itself be included before its children can be searched.
+An rg include glob overrides hidden and ignore filtering for entries it matches; a hidden or ignored ancestor must itself be included before its children can be searched. `-t TYPE` includes file types; `-T TYPE` excludes them. The last matching type rule wins. `--type-list` lists definitions without searching; `all` selects every known type. `--type-add=NAME:GLOB` appends a glob, `--type-add=NAME:include:TYPE,...` imports types, and `--type-clear=NAME` removes a definition. Type globs match basenames and explicit `-g` matches take precedence over type selection. Built-in types use XFF's shared language catalog, including the linked language database and `--lang-db` overlays; they are not a copy of ripgrep's type list. Canonical names, declared aliases, and unambiguous suffix aliases select the same definition case-insensitively. Built-in suffix matching also ignores case; custom globs retain case. Shared candidates overlap (`.h` is `C`, `C++`, and `Objective-C`); selecting several matching types emits a file only once. Native `-lang` checks the same candidates, while `{lang}` and language summaries retain one preferred label.
 
 Options may appear among patterns and paths. Bundles and attached values work: `-nio`, `-eTODO`, `-C2`. An option consumes its argument before interpreting switches: `-e --xff` searches for that text. Bare `--` ends rg option parsing, so later `--xff` is a literal pattern or path. Native `+` and `-o` mean OR after the switch; before it, `+` is data and `-o` means only matching.
+
+`--unicode` (default in rg grammar) interprets content as UTF-8; `--no-unicode` selects arbitrary bytes and ASCII word boundaries. `-w` uses Unicode Alphabetic, Mark, Decimal_Number, Connector_Punctuation and Join_Control in UTF-8 mode. The mode reaches RE2 and PCRE2 as well as word-boundary checks; their regex syntax and character classes still differ. These rg switches govern search patterns, not native filters after `--xff`. They do not detect encodings or transcode Latin-1/UTF-16/UTF-32. Native XFF's valued `--unicode=auto|always|never` controls presentation instead.
+
+`-U` / `--multiline` allows matches across newlines and buffers the searched subject. `--multiline-dotall` makes dot include newlines when multiline is active; `--no-multiline` and `--no-multiline-dotall` undo those settings. RE2, PCRE2 and fixed strings support multiline. Full-line output prints each selected line once; `-o` prints matching portions per line. In multiline mode `-c` counts matches, which can span several lines; with `-v` it counts selected nonmatching lines. Context remains line-based. `-w` and `-x` override each other.
+
+On a terminal, headings and line numbers default on; piped output defaults to inline filenames and no line numbers. `--heading` / `--no-heading` and `-n` / `-N` override these independently. `--column` adds one-based byte columns and enables line numbers; `--no-column` hides columns. `-p` / `--pretty` enables headings, line numbers and color even through a pipe. Separate files have a blank line between headings. JSON keeps XFF's record schema without headings or terminal color.
 
 - `-e / --regexp PATTERN` - Add a search pattern; repeatable, combined as a union.
 - `-f / --file FILE` - Read patterns from `FILE`, one per line; `-` reads stdin; repeatable.
 - `-g / --glob GLOB` - Include glob; a leading `!` excludes; last matching rule wins.
+- `-t / --type TYPE` - Search files matching this type; repeatable; `all` selects every defined type.
+- `-T / --type-not TYPE` - Exclude files matching this type; later matching type selections win.
+- `--type-add TYPE:GLOB` - Add a type glob; `TYPE:include:TYPES` imports comma-separated type definitions.
+- `--type-clear TYPE` - Remove the globs for a type before subsequent additions.
+- `--type-list` - List available type names and definitions without searching.
+- `-U / --multiline` - Allow matches to span lines; retains whole input for cross-line regex evaluation.
+- `--no-multiline` - Search one line at a time.
+- `--multiline-dotall` - Make `.` match newlines when multiline search is enabled.
+- `--no-multiline-dotall` - Restore the default dot behavior.
+- `--heading` - Print the path above each file's matches; enabled by default on a terminal.
+- `--no-heading` - Use per-line filename prefixes; the default for piped output.
+- `--column` - Print one-based byte columns and enable line numbers.
+- `--no-column` - Omit byte columns.
+- `-p / --pretty` - Enable headings, line numbers, and color, even when output is piped.
+- `--unicode` - Interpret content as UTF-8 and use Unicode word boundaries (default); no encoding detection.
+- `--no-unicode` - Match 8-bit bytes with ASCII word boundaries; no UTF-8 decoding or legacy-codepage conversion.
 - `-o / --only-matching` - Print only matched portions.
 - `-v / --invert-match` - Select nonmatching lines.
 - `-n / --line-number` - Print line-number prefixes.
@@ -2916,7 +2938,7 @@ Options may appear among patterns and paths. Bundles and attached values work: `
 - `-h / --help` - Show rg help; `--help=TOPIC` selects another help topic.
 - `-V / --version` - Print the program version.
 
-This is an rg-style frontend, not a complete ripgrep replacement. Unsupported short options are errors. XFF double-dash globals retain their normal meanings, validation and safety enforcement. Output uses XFF's existing line/JSON schemas, no heading or terminal-specific layout; binary files are skipped unless `--text` is set. Line output currently materializes each file. Filename, count and quiet searches stream lines when the backend supports it; stdin is staged. These searches still read to EOF to detect binary data and late errors. `-j N` runs eligible host-file searches in parallel while keeping records in traversal order; archive members and stateful native filters stay serial. Exit status is `0` for a selected result, `1` for none and `2` for errors; errors outrank quiet matches. Native summaries count the files selected by the search. `--no-match-output` lists those files instead. Search-selection modifiers remain active in both cases; line-rendering modifiers do not. Normal `-M` behavior is unchanged outside rg grammar; inside it, `-M` requires a maximum-column count.
+This is an rg-style frontend, not a complete ripgrep replacement. Unsupported short options are errors. XFF double-dash globals retain their normal meanings, validation and safety enforcement. Binary files are skipped unless `--text` is set. Single-line searches stream source bytes, retaining one incomplete line and requested before-context. Rendered records are buffered per file until EOF to detect binary data and late errors before publication. Long lines and selected output can still require proportional memory; multiline searches and stdin retain their subject. `-j N` runs eligible host-file searches in parallel while keeping records in traversal order; archive members and stateful native filters stay serial. Exit status is `0` for a selected result, `1` for none and `2` for errors; errors outrank quiet matches. Native summaries count the files selected by the search. `--no-match-output` lists those files instead. Search-selection modifiers remain active in both cases; line-rendering modifiers do not. Normal `-M` behavior is unchanged outside rg grammar; inside it, `-M` requires a maximum-column count.
 
 See also: [Content](#topic-content), [Regex matching](#topic-regex), [Configuration](#topic-config)
 

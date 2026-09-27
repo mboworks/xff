@@ -165,6 +165,7 @@ cc_library(
         ":mount_cc",
         ":walk_cc",
         "//xff/content:line_match_cc",
+        "//xff/content:word_cc",
         "//xff/datetime:datetime_cc",
         "//xff/exec:exec_cc",
         "//xff/fuzzy:fuzzy_cc",
@@ -539,6 +540,26 @@ cc_test(
         "@mboworks_mbo//mbo/testing:matchers_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
         "@nlohmann_json//:json",
+    ],
+)
+
+cc_test(
+    name = "rg_unicode_test",
+    size = "small",
+    srcs = ["rg_unicode_test.cc"],
+    deps = [
+        ":run_cc",
+        "//xff/matching/regex:regex_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:local_fs_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+        "@nlohmann_json//:json",
+        "@xff_pcre2//:pcre2_backend_cc",
     ],
 )
 

@@ -37,6 +37,8 @@ struct LanguageInfo {
   StringViewSpan aliases;
   StringViewSpan extensions;
   StringViewSpan filenames;
+  StringViewSpan shared_extensions;
+  StringViewSpan shared_filenames;
 };
 
 enum class ConflictPolicy { kError, kFirst, kLast };
@@ -50,6 +52,8 @@ struct LanguageVocabulary;
 class LanguageSnapshot {
  public:
   [[nodiscard]] std::optional<LanguageInfo> InfoForName(std::string_view name) const;
+  // All filename-based candidates, in canonical-name order, without reading content.
+  [[nodiscard]] absl::Span<const LanguageInfo> CandidatesForName(std::string_view name) const;
   [[nodiscard]] std::string_view LanguageForName(std::string_view name) const;
   [[nodiscard]] std::string_view TerminalColorForName(std::string_view name) const;
   [[nodiscard]] absl::Span<const LanguageInfo> Languages() const;
@@ -65,16 +69,23 @@ class LanguageSnapshot {
 // Builds and publishes an immutable process-vocabulary snapshot from the curated core, every
 // linked data layer, then the JSON files in command-line order. A later layer overrides an earlier
 // one. Conflict policy applies to two different languages claiming the same extension or filename
-// inside one input file. Published snapshots remain alive for the process lifetime, so returned
-// views remain valid. Production configures at most once; retaining older snapshots primarily
-// permits isolated repeated invocations in tests and embedders.
+// inside one input file. Explicit shared_extensions/shared_filenames add overlapping candidates
+// without changing that preferred classification. A new preferred claim clears older shared
+// claims for the same key; shared claims in that layer then add candidates back. Published snapshots remain alive for
+// the process lifetime, so returned views remain valid. Production configures at most once; retaining older snapshots
+// primarily permits isolated repeated invocations in tests and embedders.
 absl::Status Configure(absl::Span<const std::string> files, ConflictPolicy conflicts);
 
 // Acquires the active vocabulary under the registry lock, initializing the default snapshot when
 // needed. Subsequent lookups through the returned handle are lock-free.
 LanguageSnapshot ActiveSnapshot();
 
-// The complete metadata for the file named `name`. Its strings and spans view an immutable,
+// All candidates for filtering. Exact filenames win over suffixes, and the longest suffix wins.
+// Shared claims may overlap; the preferred language is included when one exists. Unknown names
+// return an empty span. Views are retained for the process lifetime.
+absl::Span<const LanguageInfo> CandidatesForName(std::string_view name);
+
+// The preferred metadata for the file named `name`. Its strings and spans view an immutable,
 // process-retained vocabulary snapshot and therefore remain valid for the process lifetime.
 std::optional<LanguageInfo> InfoForName(std::string_view name);
 
@@ -88,7 +99,8 @@ std::optional<LanguageInfo> InfoForName(std::string_view name);
 // linked data layers and JSON overlays may expand it without adding YAML parsing to the runtime.
 // The heuristics linguist layers on top (shebang / modeline /
 // content disambiguation of `.h`, `.m`, `.pl`, ...) are out of scope; this is a fast,
-// dependency-free first cut backing the `-lang GLOB` predicate and the `{lang}` field. -lang
+// dependency-free preferred label for the `{lang}` field. The `-lang GLOB` predicate instead
+// checks every candidate from CandidatesForName, including shared suffixes. -lang
 // matching is case-insensitive (a canonical name has fixed case that display keeps) and
 // independent of --case / -i / -s.
 //

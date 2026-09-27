@@ -16,7 +16,7 @@ license_body(
 language_database(
     name = "language_db_data_cc",
     src = "data/languages.json.br",
-    uncompressed_size = 100850,
+    uncompressed_size = 109261,
 )
 
 cc_library(

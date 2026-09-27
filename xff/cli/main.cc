@@ -946,7 +946,7 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   const xff::cli::PagerStream pager_stream(listing_pager);
   const xff::vfs::LocalFs host_fs;
   std::optional<std::string> input;
-  if (command.rg
+  if (command.rg && !command.rg->type_list
       && (absl::c_contains(command.roots, "-") || absl::c_any_of(command.rg->patterns, [](const auto& input) {
             return input.file && input.value == "-";
           }))) {

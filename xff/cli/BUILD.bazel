@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@aspect_rules_py//py:defs.bzl", "py_test")
 load("@mboworks_bashtest//bashtest:bashtest.bzl", "bashtest")
 load("@mboworks_mbo//mbo/diff:diff.bzl", "diff_test")
 load("//xff:cc.bzl", "cc_binary", "cc_library", "cc_test")
@@ -1278,4 +1279,13 @@ cc_test(
         "@mboworks_mbo//mbo/testing:status_cc",
         "@xff_extras_api//:vfs_cc",
     ],
+)
+
+py_test(
+    name = "rg_terminal_test",
+    size = "small",
+    srcs = ["rg_terminal_test.py"],
+    args = ["$(rlocationpath //xff/cli/testing:xff)"],
+    data = ["//xff/cli/testing:xff"],
+    deps = ["@rules_python//python/runfiles"],
 )

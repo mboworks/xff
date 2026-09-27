@@ -82,6 +82,7 @@
 #include "xff/matching/regex/regex.h"
 #include "xff/parser/ast.h"
 #include "xff/parser/parser.h"
+#include "xff/parser/rg_types.h"
 #include "xff/presentation/color/color.h"
 #include "xff/presentation/fields/fields.h"
 #include "xff/presentation/format/format.h"
@@ -743,9 +744,10 @@ absl::StatusOr<ContextSides> ParseContextSpec(std::string_view spec) {
   return result;
 }
 
-GrepOptions ResolveGrepOptions(const std::vector<std::string>& globals, bool rg = false) {
+GrepOptions ResolveGrepOptions(const std::vector<std::string>& globals, bool rg = false, bool terminal = false) {
   GrepOptions result;
-  result.line_number = !rg;
+  result.line_number = !rg || terminal;
+  result.heading = rg && terminal;
   result.rg_mode = rg;
   for (const std::string_view argument : globals) {
     const auto flag = cli::LookupGlobalArgument(argument);
@@ -4858,7 +4860,7 @@ RunResult RunFindCore(
     return RunResult{.errors = 2};  // do not traverse
   }
   // --count / -c: -grep emits a per-file matching-line count instead of the lines.
-  GrepOptions grep_options = ResolveGrepOptions(command.globals, command.rg.has_value());
+  GrepOptions grep_options = ResolveGrepOptions(command.globals, command.rg.has_value(), ::isatty(STDOUT_FILENO) != 0);
   const bool rg_auto_filename =
       command.rg && std::ranges::none_of(command.globals, [](std::string_view argument) {
         const auto flag = cli::LookupGlobalArgument(argument);
@@ -4867,6 +4869,9 @@ RunResult RunFindCore(
       });
   if (command.rg) {
     grep_options.max_columns = command.rg->max_columns;
+    grep_options.heading = command.rg->heading.value_or(grep_options.heading) && format != render::Format::kJsonl;
+    grep_options.column = command.rg->column;
+    grep_options.color = colorize;
   }
   const bool grep_suppresses_template = grep_options.output != GrepOptions::Output::kLines;
   // --context / --before-context / --after-context (grep -C/-B/-A): -grep context lines. Validated
@@ -5199,9 +5204,20 @@ RunResult RunFindCore(
     return RunResult{.errors = 2};
   }
   std::optional<MatchOutput> rg_output;
+  parser::RgTypes rg_types;
   ignore::PatternList rg_globs;
   bool rg_positive_glob = false;
   if (command.rg) {
+    auto types = parser::RgTypes::Compile(*command.rg);
+    if (!types.ok()) {
+      on_error("--type", types.status());
+      return RunResult{.errors = 2};
+    }
+    rg_types = *std::move(types);
+    if (command.rg->type_list) {
+      emit(rg_types.Listing());
+      return RunResult{.any_match = true};
+    }
     for (const auto& glob : command.rg->globs) {
       if (!rg_globs.Add(glob, true)) {
         on_error("--glob", absl::InvalidArgumentError("invalid or empty glob"));
@@ -5497,6 +5513,19 @@ RunResult RunFindCore(
     return rg_globs.Match(relative, visit.metadata.type == vfs::FileType::kDirectory);
   };
 
+  bool rg_emitted_file = false;
+  const auto emit_rg_file = [&](std::string_view text) {
+    if (text.empty()) {
+      return;
+    }
+    if (grep_options.heading && grep_options.filename && grep_options.output == GrepOptions::Output::kLines) {
+      if (rg_emitted_file) {
+        emit("\n");
+      }
+      rg_emitted_file = true;
+    }
+    emit(text);
+  };
   // Completes the run-level consequences of one fully evaluated entry. Deferred result-set
   // predicates (-top / -shard-status) call this after selection; ordinary entries call it from the walk.
   // Keeping it outside the visitor is what makes replay use precisely the same listing/reduction
@@ -5507,7 +5536,8 @@ RunResult RunFindCore(
                                 mbo::types::OptionalRef<const ContentResult> prepared = {}) {
     if (matched && rg_output) {
       const auto decision = rg_glob_decision(visit);
-      if (decision == ignore::Decision::kIgnore || (rg_positive_glob && decision == ignore::Decision::kDefault)) {
+      if (decision == ignore::Decision::kIgnore || (rg_positive_glob && decision == ignore::Decision::kDefault)
+          || (decision != ignore::Decision::kInclude && !rg_types.Includes(visit.name))) {
         return;
       }
       Control control;
@@ -5516,7 +5546,7 @@ RunResult RunFindCore(
           .visit = visit,
           .emit = grep_options.match_output && implicit_print && !any_reduction
                           && (!max_results->has_value() || listed_results < **max_results)
-                      ? emit
+                      ? EmitFn(emit_rg_file)
                       : EmitFn(discard),
           .fs = visit.fs.has_value() ? *visit.fs : walk_fs,
           .now = now,
@@ -5843,7 +5873,8 @@ RunResult RunFindCore(
         if (parallel_entry) {
           if (rg_output) {
             const auto decision = rg_glob_decision(visit);
-            if (decision == ignore::Decision::kIgnore || (rg_positive_glob && decision == ignore::Decision::kDefault)) {
+            if (decision == ignore::Decision::kIgnore || (rg_positive_glob && decision == ignore::Decision::kDefault)
+                || (decision != ignore::Decision::kInclude && !rg_types.Includes(visit.name))) {
               return WalkAction::kContinue;
             }
           }

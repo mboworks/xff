@@ -57,10 +57,13 @@ class Matcher {
   // Compiles `pattern` under `grammar`; `case_insensitive` folds case (find's -iregex). Returns an
   // InvalidArgument error carrying the engine's diagnostic when the pattern does not compile, or an
   // Unimplemented error when `grammar`'s backend is not built into this binary.
+  // TextMode explicitly chooses UTF-8 or bytes for RE2/PCRE2. Omitted mode preserves
+  // native grammar defaults (UTF-8 RE2/globs, byte PCRE2); it never transcodes files.
   static absl::StatusOr<Matcher> Compile(
       std::string_view pattern,
       bool case_insensitive,
-      Grammar grammar = Grammar::kRe2);
+      Grammar grammar = Grammar::kRe2,
+      std::optional<TextMode> text_mode = std::nullopt);
 
   // Isolate RE2's mutable DFA cache for one worker; immutable compiled state in other
   // backends remains shared. Call once per worker, never once per entry or batch.
@@ -106,6 +109,7 @@ class Matcher {
   struct Re2Source {
     std::string pattern;
     bool case_insensitive = false;
+    TextMode text_mode = TextMode::kUtf8;
   };
 
   explicit Matcher(std::shared_ptr<const RegexBackend> backend, std::optional<Re2Source> re2 = std::nullopt);
