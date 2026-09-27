@@ -70,10 +70,15 @@ class Matcher {
   // FullMatch's whole-string -regex.
   bool PartialMatch(std::string_view text) const;
 
-  // The `[offset, length)` byte span of the leftmost unanchored match in `text`, or
+  // The `(offset, length)` byte span of the leftmost unanchored match in `text`, or
   // nullopt when it does not match. Backs -grep's `{match}` (the matched substring)
   // and `{column}` (1-based match start); PartialMatch is the yes/no counterpart.
-  std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text) const;
+  // Search begins at `start` without changing the subject used by anchors or lookbehind.
+  std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text, std::size_t start = 0) const;
+
+  // All nonempty, non-overlapping spans, retaining original-subject anchor semantics.
+  // Empty matches advance one byte; they are never emitted.
+  std::vector<std::pair<std::size_t, std::size_t>> FindAll(std::string_view text) const;
 
   // Like FullMatch, but on success returns the captured substrings: index 0 is
   // the whole match, 1..N the parenthesised groups (a group that did not take

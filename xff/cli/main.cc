@@ -171,7 +171,8 @@ std::string RenderComingFrom() {
   }
   absl::StrAppend(
       &out,
-      "\nComing from ripgrep: -grep PATTERN is rg's search (with --count, --context, --color), and\n"
+      "\nComing from ripgrep: -grep PATTERN prints matching lines; --only-matching prints matched parts.\n"
+      "Use --count, --count-matches, --files-with-matches, --invert-match, and --context to control output.\n"
       "--config=rg starts from rg's defaults - ignore files honored, dotfiles skipped, smart case.\n");
   return out;
 }

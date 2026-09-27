@@ -1533,7 +1533,7 @@ void EmitGrepCount(const parser::Expr& expr, const EvalContext& ctx, std::size_t
             render::JsonValue(ctx.visit.root), R"(,"pattern":)", render::JsonValue(expr.args.front()), R"(,"count":)",
             count, "}\n"));
   } else {
-    ctx.emit(absl::StrCat(ctx.visit.path, ":", count, "\n"));
+    ctx.emit(absl::StrCat(ctx.grep.filename ? absl::StrCat(ctx.visit.path, ":") : "", count, "\n"));
   }
 }
 
@@ -1547,7 +1547,106 @@ void EmitGrepLine(const parser::Expr& expr, const EvalContext& ctx, const conten
             render::JsonValue(line.text), "}\n"));
   } else {
     const std::string_view separator = line.is_match ? ":" : "-";
-    ctx.emit(absl::StrCat(ctx.visit.path, separator, line.number, separator, line.text, "\n"));
+    ctx.emit(
+        absl::StrCat(
+            ctx.grep.filename ? absl::StrCat(ctx.visit.path, separator) : "",
+            ctx.grep.line_number ? absl::StrCat(line.number, separator) : "", line.text, "\n"));
+  }
+}
+
+void EmitGrepRecord(
+    const parser::Expr& expr,
+    const EvalContext& ctx,
+    const content::ContextLine& line,
+    std::optional<std::pair<std::size_t, std::size_t>> span) {
+  const std::string_view match_text =
+      span.has_value() ? line.text.substr(span->first, span->second) : std::string_view{};
+  const std::optional<std::size_t> match_column = span.has_value() ? std::optional(span->first + 1) : std::nullopt;
+  if (expr.grep_template == nullptr) {
+    content::ContextLine output = line;
+    if (ctx.grep.only_matching) {
+      output.text = match_text;
+    }
+    EmitGrepLine(expr, ctx, output);
+    return;
+  }
+  ctx.emit(
+      expr.grep_template->Render(
+          fields::RenderContext{
+              .path = ctx.visit.path,
+              .root = ctx.visit.root,
+              .link_target = LinkTarget(ctx),
+              .metadata = ctx.visit.metadata,
+              .depth = ctx.visit.depth,
+              .fs = ctx.fs,
+              .tz = ctx.tz,
+              .time_format = ctx.time_format,
+              .zone_suffix = ctx.zone_suffix,
+              .hash_algorithm = ctx.hash_algorithm,
+              .hash_encoding = ctx.hash_encoding,
+              .captures = AsConstOptionalRef(ctx.captures),
+              .defines = ctx.defines,
+              .outputs = AsConstOptionalRef(ctx.outputs),
+              .line_number = line.number,
+              .line_text = line.text,
+              .match_text = match_text,
+              .match_column = match_column,
+          })
+      + "\n");
+}
+
+void EmitGrepPath(const parser::Expr& expr, const EvalContext& ctx) {
+  if (ctx.grep_json) {
+    ctx.emit(
+        absl::StrCat(
+            R"({"record":"grep","kind":"file","path":)", render::JsonValue(ctx.visit.path), R"(,"root":)",
+            render::JsonValue(ctx.visit.root), R"(,"pattern":)", render::JsonValue(expr.args.front()),
+            R"(,"selected":)", ctx.grep.output == GrepOptions::Output::kFilesWithMatches ? "true" : "false", "}\n"));
+  } else {
+    ctx.emit(absl::StrCat(ctx.visit.path, "\n"));
+  }
+}
+
+std::size_t CountGrepPortions(
+    const std::vector<content::ContextLine>& lines,
+    const regex::Matcher& matcher,
+    bool invert) {
+  if (invert) {
+    return 0;
+  }
+  std::size_t count = 0;
+  for (const auto& line : lines) {
+    count += matcher.FindAll(line.text).size();
+  }
+  return count;
+}
+
+void EmitSelectedGrepLines(
+    const parser::Expr& expr,
+    const EvalContext& ctx,
+    const std::vector<content::ContextLine>& lines,
+    const regex::Matcher& matcher,
+    bool with_context) {
+  bool first = true;
+  std::size_t previous_group = 0;
+  for (const auto& line : lines) {
+    if (with_context && (!ctx.grep_json || expr.grep_template != nullptr) && !first && line.group != previous_group) {
+      ctx.emit("--\n");
+    }
+    first = false;
+    previous_group = line.group;
+    if (ctx.grep.only_matching) {
+      if (!ctx.grep.invert) {
+        for (const auto& span : matcher.FindAll(line.text)) {
+          EmitGrepRecord(expr, ctx, line, span);
+        }
+      }
+    } else {
+      EmitGrepRecord(
+          expr, ctx, line,
+          expr.grep_template != nullptr && line.is_match && !ctx.grep.invert ? matcher.FindFirst(line.text)
+                                                                             : std::nullopt);
+    }
   }
 }
 
@@ -1557,8 +1656,8 @@ void EmitGrepLine(const parser::Expr& expr, const EvalContext& ctx, const conten
 // default, the literal engine under EXACT, PCRE2 when built in). Matching is per line,
 // so a pattern with no '\n' selects individual lines the way grep does; non-regular,
 // unreadable, and binary files yield nothing (see ContentToSearch). Returns true
-// iff at least one line was printed, so the action's truth reflects "found a match"
-// for -o / -q.
+// according to selected lines (or their absence for files-without-match), even when
+// only-matching suppresses empty/inverted portions. Expression OR and quiet mode use that truth.
 bool EvalGrep(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.empty()) {
     return false;
@@ -1575,73 +1674,31 @@ bool EvalGrep(const parser::Expr& expr, EvalContext& ctx) {
   if (!matcher.has_value()) {
     return false;
   }
-  const auto is_match = [&](std::string_view line) { return matcher->get().PartialMatch(line); };
-  if (ctx.grep_count) {
-    // --count / -c (rg -c): one path:count per file with matches, in place of the
-    // lines (and any -grep:FORMAT); files with no match emit nothing. Context is ignored.
-    const std::vector<content::LineMatch> lines = content::CollectLineMatches(*content, is_match);
-    if (!lines.empty()) {
-      EmitGrepCount(expr, ctx, lines.size());
+  const auto is_match = [&](std::string_view line) { return matcher->get().PartialMatch(line) != ctx.grep.invert; };
+  const auto output = ctx.grep.output;
+  const bool line_output = output == GrepOptions::Output::kLines;
+  const bool with_context = line_output && !ctx.grep.only_matching && (ctx.grep_before > 0 || ctx.grep_after > 0);
+  const auto lines = content::CollectLineMatchesWithContext(
+      *content, is_match, with_context ? ctx.grep_before : 0, with_context ? ctx.grep_after : 0);
+  const bool any_match = !lines.empty();
+  if (output == GrepOptions::Output::kFilesWithMatches || output == GrepOptions::Output::kFilesWithoutMatch) {
+    const bool selected = any_match == (output == GrepOptions::Output::kFilesWithMatches);
+    if (selected) {
+      EmitGrepPath(expr, ctx);
     }
-    return !lines.empty();
+    return selected;
   }
-  // --context / --before-context / --after-context (grep -C/-B/-A): each match carries N lines of
-  // surrounding context (0/0 -> matches only, the default). A match line uses ':' separators, a
-  // context line '-', and a "--" line divides non-adjacent groups -- exactly grep/ripgrep.
-  const std::vector<content::ContextLine> lines =
-      content::CollectLineMatchesWithContext(*content, is_match, ctx.grep_before, ctx.grep_after);
-  const bool with_context =
-      (ctx.grep_before > 0 || ctx.grep_after > 0) && (!ctx.grep_json || expr.grep_template != nullptr);
-  const std::string link = expr.grep_template == nullptr ? std::string() : LinkTarget(ctx);
-  bool any_match = false;
-  bool first = true;
-  std::size_t prev_group = 0;
-  for (const content::ContextLine& line : lines) {
-    any_match = any_match || line.is_match;
-    if (with_context && !first && line.group != prev_group) {
-      ctx.emit("--\n");  // separator between non-adjacent context blocks
+  if (!line_output) {
+    std::size_t count = lines.size();
+    if (output == GrepOptions::Output::kCountMatches || ctx.grep.only_matching) {
+      count = CountGrepPortions(lines, matcher->get(), ctx.grep.invert);
     }
-    first = false;
-    prev_group = line.group;
-    if (expr.grep_template == nullptr) {
-      EmitGrepLine(expr, ctx, line);
-      continue;
+    if (any_match) {
+      EmitGrepCount(expr, ctx, count);
     }
-    // -grep:FORMAT: render the field template per line ({line}/{text} plus the entry's
-    // {path}/{name}/... vocabulary). {match}/{column} need the matched span, recomputed here on a
-    // match line; on a context line they stay empty.
-    std::string_view match_text;
-    std::optional<std::size_t> match_column;
-    if (line.is_match) {
-      if (const std::optional<std::pair<std::size_t, std::size_t>> span = matcher->get().FindFirst(line.text)) {
-        match_text = line.text.substr(span->first, span->second);
-        match_column = span->first + 1;
-      }
-    }
-    ctx.emit(
-        expr.grep_template->Render(
-            fields::RenderContext{
-                .path = ctx.visit.path,
-                .root = ctx.visit.root,
-                .link_target = link,
-                .metadata = ctx.visit.metadata,
-                .depth = ctx.visit.depth,
-                .fs = ctx.fs,
-                .tz = ctx.tz,
-                .time_format = ctx.time_format,
-                .zone_suffix = ctx.zone_suffix,
-                .hash_algorithm = ctx.hash_algorithm,
-                .hash_encoding = ctx.hash_encoding,
-                .captures = AsConstOptionalRef(ctx.captures),
-                .defines = ctx.defines,
-                .outputs = AsConstOptionalRef(ctx.outputs),
-                .line_number = line.number,
-                .line_text = line.text,
-                .match_text = match_text,
-                .match_column = match_column,
-            })
-        + "\n");
+    return any_match;
   }
+  EmitSelectedGrepLines(expr, ctx, lines, matcher->get(), with_context);
   return any_match;
 }
 

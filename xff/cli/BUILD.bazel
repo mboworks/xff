@@ -657,6 +657,7 @@ cc_library(
     name = "globals_cc",
     srcs = ["globals.cc"],
     hdrs = ["globals.h"],
+    visibility = ["//xff/engine:__pkg__"],
     deps = [
         ":help_width_cc",
         "//xff/presentation/format:format_cc",

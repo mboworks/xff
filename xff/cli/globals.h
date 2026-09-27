@@ -129,6 +129,23 @@ struct GlobalFlag {
   bool config_only = false;  // Accepted only through validated configuration files.
   // Optional modifier dependency for nonfatal explain diagnostics; affects remains help navigation.
   registry::ModifierConsumer required_consumer = registry::ModifierConsumer::kNone;
+  // Typed effects for grep output controls. Aliases share the canonical entry's effect.
+  enum class GrepEffect : std::uint8_t {
+    kNone,
+    kCountLines,
+    kCountMatches,
+    kFilesWithMatches,
+    kFilesWithoutMatch,
+    kOnlyMatching,
+    kWholeLines,
+    kInvertMatch,
+    kPositiveMatch,
+    kLineNumber,
+    kNoLineNumber,
+    kFilename,
+    kNoFilename,
+  };
+  GrepEffect grep_effect = GrepEffect::kNone;
   bool xff = true;  // false for a find-native option (-H/-L/-P); true for an xff extension
 };
 

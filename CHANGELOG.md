@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Add grep content-output long options for matched portions, file selection, counts, inversion, and prefixes.
+
 - Reduce collection growth and text-allocation overhead with segmented records and collection-owned arenas.
 
 - Add a platform selector and measured-version slider to the benchmark overview landscape.

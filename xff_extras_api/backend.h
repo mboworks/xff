@@ -52,7 +52,13 @@ class RegexBackend {
   // See the matching Matcher methods (regex.h) for the contract; the backend implements them.
   virtual bool FullMatch(std::string_view text) const = 0;
   virtual bool PartialMatch(std::string_view text) const = 0;
-  virtual std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text) const = 0;
+
+  std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text) const {
+    return FindFirst(text, 0);
+  }
+
+  virtual std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text, std::size_t start)
+      const = 0;
   virtual std::optional<std::vector<std::string>> FullMatchCaptures(std::string_view text) const = 0;
   virtual std::string Rewrite(std::string_view text, std::string_view replacement, bool global) const = 0;
 };

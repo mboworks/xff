@@ -129,11 +129,12 @@ class Pcre2Backend final : public xff::regex::RegexBackend {
 
   bool PartialMatch(std::string_view text) const override { return Matches(text, false); }
 
-  std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text) const override {
+  std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text, std::size_t start)
+      const override {
     // Keep the complete capture vector: PCRE2's MSan annotation does not
     // unpoison offsets when an undersized vector reports success as rc == 0.
     const MatchDataPtr data{pcre2_match_data_create_from_pattern(code_.get(), nullptr)};
-    const int rc = Match(*code_, text, 0, *data);
+    const int rc = Match(*code_, text, 0, *data, start);
     std::optional<std::pair<std::size_t, std::size_t>> result;
     if (rc >= 0) {
       // A span rather than the bare pointer PCRE2 hands back: the offsets are then indexed, which is
@@ -211,14 +212,19 @@ class Pcre2Backend final : public xff::regex::RegexBackend {
 
   std::uint32_t FullOptions() const { return full_code_ ? 0 : PCRE2_ANCHORED | PCRE2_ENDANCHORED; }
 
-  int Match(const pcre2_code& code, std::string_view text, std::uint32_t options, pcre2_match_data& data) const {
-    const int result = pcre2_match(&code, Sptr(text), text.size(), 0, options, &data, match_context_.get());
+  int Match(
+      const pcre2_code& code,
+      std::string_view text,
+      std::uint32_t options,
+      pcre2_match_data& data,
+      std::size_t start = 0) const {
+    const int result = pcre2_match(&code, Sptr(text), text.size(), start, options, &data, match_context_.get());
     if (result != PCRE2_ERROR_JIT_STACKLIMIT) {
       return result;
     }
     // A pattern may outgrow the default JIT stack while remaining within the
     // interpreter's limits. Retry with those limits rather than losing a match.
-    return pcre2_match(&code, Sptr(text), text.size(), 0, options | PCRE2_NO_JIT, &data, match_context_.get());
+    return pcre2_match(&code, Sptr(text), text.size(), start, options | PCRE2_NO_JIT, &data, match_context_.get());
   }
 
   bool Matches(std::string_view text, bool full) const {

@@ -74,6 +74,13 @@ TEST_F(Pcre2BackendTest, RegistersTheExtraAndLibraryLicenseNotices) {
   EXPECT_THAT(license::LicenseBodyFor("BSD-2-Clause"), Not(IsEmpty()));
 }
 
+TEST_F(Pcre2BackendTest, OffsetSearchRetainsLookbehindAndAnchors) {
+  ASSERT_OK_AND_ASSIGN(const auto backend, MakePcre2Backend("^a|(?<=a)b", false));
+  EXPECT_THAT(backend->FindFirst("aab", 1), Optional(Pair(2, 1)));
+  EXPECT_THAT(backend->FindFirst("aab", 3), Eq(std::nullopt));
+  EXPECT_THAT(backend->FindFirst("aab", 4), Eq(std::nullopt));
+}
+
 TEST_F(Pcre2BackendTest, BackreferencesMatch) {
   // A backreference is the canonical PCRE2-only feature (RE2 rejects it; see //xff/matching/regex:regex_test).
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<const RegexBackend> backend, MakePcre2Backend("(\\w+) \\1", false));

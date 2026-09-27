@@ -50,8 +50,9 @@ class LiteralBackend : public RegexBackend {
 
   bool PartialMatch(std::string_view text) const override { return text.contains(pattern_); }
 
-  std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text) const override {
-    const std::size_t at = text.find(pattern_);
+  std::optional<std::pair<std::size_t, std::size_t>> FindFirst(std::string_view text, std::size_t start)
+      const override {
+    const std::size_t at = text.find(pattern_, start);
     if (at == std::string_view::npos) {
       return std::nullopt;
     }

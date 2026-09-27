@@ -587,19 +587,19 @@ the effective CLI request.
 
 The initial registered dependencies cover:
 
-| Modifier                                           | Consumer                                                                                                |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `--count` / `-c`                                   | A `-grep` action                                                                                        |
-| `--context`, `--before-context`, `--after-context` | `-grep` line output, or symmetric default context for `-diff`; explicit diff context takes precedence   |
-| `--diff-context`                                   | Contextual `-diff` output without a per-action count, or tree diff output                               |
-| `--diff-format`                                    | `-diff` without an attached style; tree diffs use unified output                                        |
-| `--diff-ignore`, `--diff-ignore-matching`          | A `-diff` action                                                                                        |
-| `--diff-algorithm`                                 | A `-diff` action or tree diff output                                                                    |
-| `--shards-show`                                    | Ordinary shard listing, without active summaries or histograms                                          |
-| `--shards-dedup`, `--shard-pattern`                | Ordinary shard grouping or a `-shard-status` predicate                                                  |
-| `--histogram-width`                                | Plain or aligned histogram bars                                                                         |
-| `--top`                                            | An ordinary summary or categorical histogram; comparison-result tables and numeric ranges stay complete |
-| `--summary-precision`                              | An active summary or histogram mean                                                                     |
+| Modifier                                                                                                      | Consumer                                                                                                |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `--count` / `-c`, `--count-matches`, filename selection, prefix controls, `--only-matching`, `--invert-match` | A `-grep` action                                                                                        |
+| `--context`, `--before-context`, `--after-context`                                                            | `-grep` line output, or symmetric default context for `-diff`; explicit diff context takes precedence   |
+| `--diff-context`                                                                                              | Contextual `-diff` output without a per-action count, or tree diff output                               |
+| `--diff-format`                                                                                               | `-diff` without an attached style; tree diffs use unified output                                        |
+| `--diff-ignore`, `--diff-ignore-matching`                                                                     | A `-diff` action                                                                                        |
+| `--diff-algorithm`                                                                                            | A `-diff` action or tree diff output                                                                    |
+| `--shards-show`                                                                                               | Ordinary shard listing, without active summaries or histograms                                          |
+| `--shards-dedup`, `--shard-pattern`                                                                           | Ordinary shard grouping or a `-shard-status` predicate                                                  |
+| `--histogram-width`                                                                                           | Plain or aligned histogram bars                                                                         |
+| `--top`                                                                                                       | An ordinary summary or categorical histogram; comparison-result tables and numeric ranges stay complete |
+| `--summary-precision`                                                                                         | An active summary or histogram mean                                                                     |
 
 Hash dependencies inspect the parsed action specs and field templates. `--hash-algorithm`
 requires a hash consumer without an explicit algorithm, while `--hash-encoding` requires one

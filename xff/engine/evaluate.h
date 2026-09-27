@@ -124,6 +124,17 @@ struct DeferredEvaluation {
   EvaluationMemo& memo;
 };
 
+// Selection and presentation controls for the explicit content-output action.
+// They do not change file-level predicates or implicit listing defaults.
+struct GrepOptions {
+  enum class Output { kLines, kCount, kCountMatches, kFilesWithMatches, kFilesWithoutMatch };
+  Output output = Output::kLines;
+  bool only_matching = false;
+  bool invert = false;
+  bool line_number = true;
+  bool filename = true;
+};
+
 // Per-evaluation environment threaded through Evaluate for one visited entry.
 // Bundles what an expression node may read -- the entry, the action sink, the
 // filesystem, the reference clock -- plus the traversal-control side-channel, so
@@ -183,9 +194,7 @@ struct EvalContext {
   // The fuzzy score composed by the expression immediately to this node's left. EvaluateResult
   // maintains it while descending an AND RHS; -top consumes it as its ranking key.
   std::optional<int> incoming_fuzzy_score;
-  // --count / -c: -grep prints one `path:count` per file (its matching-line count)
-  // instead of the lines, rg -c style; supersedes -grep:FORMAT. Only -grep reads it.
-  bool grep_count = false;
+  GrepOptions grep;
   // Built-in grep output uses JSON records; explicit line templates remain authored output.
   bool grep_json = false;
   // --context / --before-context / --after-context (grep -C/-B/-A): lines of context -grep prints

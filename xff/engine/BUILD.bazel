@@ -276,6 +276,7 @@ cc_library(
         ":mount_cc",
         ":parallel_match_cc",
         ":walk_cc",
+        "//xff/cli:globals_cc",
         "//xff/config:config_cc",
         "//xff/content:line_match_cc",
         "//xff/datetime:datetime_cc",
