@@ -31,6 +31,7 @@ using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
 using ::testing::Eq;
 using ::testing::HasSubstr;
+using ::testing::IsEmpty;
 using ::testing::Not;
 
 struct ModifierDiagnosticsTest : ::testing::Test {
@@ -184,8 +185,15 @@ TEST_F(ArchiveModifierDiagnosticsTest, AggregateNeedsAnEffectiveReductionAndArch
       IsOkAndHolds(Eq("")));
 }
 
+TEST_F(ModifierDiagnosticsTest, MatchOutputConsumesGrepModifiersOnlyWhenDefaultOutputIsActive) {
+  EXPECT_THAT(Notes({"-M", ".", "-rxc", "foo", "--count"}), IsOkAndHolds(IsEmpty()));
+  EXPECT_THAT(Notes({".", "-content", "foo", "--match-output", "--context=1"}), IsOkAndHolds(IsEmpty()));
+  EXPECT_THAT(Notes({"-M", ".", "-rxc", "foo", "-print", "--count"}), IsOkAndHolds(HasSubstr("--count")));
+  EXPECT_THAT(Notes({"-M", ".", "-rxc", "foo", "--no-match-output", "--count"}), IsOkAndHolds(HasSubstr("--count")));
+}
+
 TEST_F(ModifierDiagnosticsTest, CountRequiresGrepIncludingItsAttachedFormAndAlias) {
-  EXPECT_THAT(Notes({".", "--count"}), IsOkAndHolds(HasSubstr("requires a -grep action")));
+  EXPECT_THAT(Notes({".", "--count"}), IsOkAndHolds(HasSubstr("requires -grep or active --match-output")));
   EXPECT_THAT(Notes({"-c", ".", "-grep", "x"}), IsOkAndHolds(Eq("")));
   EXPECT_THAT(Notes({".", "--count", "-grep:{text}", "x"}), IsOkAndHolds(Eq("")));
   EXPECT_THAT(

@@ -132,6 +132,8 @@ struct GlobalFlag {
   // Typed effects for grep output controls. Aliases share the canonical entry's effect.
   enum class GrepEffect : std::uint8_t {
     kNone,
+    kMatchOutput,
+    kNoMatchOutput,
     kCountLines,
     kCountMatches,
     kFilesWithMatches,

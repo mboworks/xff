@@ -589,7 +589,7 @@ INI
 test::explain_reports_inactive_cli_modifiers_without_rejecting_them() {
   local out
   out="$("$(_xff_bin)" . --count --explain)"
-  expect_output_contains $'inactive-modifier\t--count\trequires a -grep action' "${out}" || return
+  expect_output_contains $'inactive-modifier\t--count\trequires -grep or active --match-output' "${out}" || return
   out="$("$(_xff_bin)" left right --compare=diff --diff-format=y --explain)"
   expect_output_contains 'tree diffs use unified output' "${out}" || return
   out="$("$(_xff_bin)" . --shards --shards-show=count --summary=ext --explain)"

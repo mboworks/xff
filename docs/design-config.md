@@ -585,21 +585,26 @@ predicate or action counts as a consumer after selector expansion and safety gat
 arguments never become modifier requests. A setting superseded later by configuration is no longer
 the effective CLI request.
 
+`--match-output` (`-M`) enables default content-line output; `--no-match-output`
+(`-M-`) restores the default path listing. Both long forms work in INI configuration.
+The short aliases must precede command-line roots. The last setting wins, so `-M-`
+can disable a configured match-output default.
+
 The initial registered dependencies cover:
 
-| Modifier                                                                                                      | Consumer                                                                                                |
-| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `--count` / `-c`, `--count-matches`, filename selection, prefix controls, `--only-matching`, `--invert-match` | A `-grep` action                                                                                        |
-| `--context`, `--before-context`, `--after-context`                                                            | `-grep` line output, or symmetric default context for `-diff`; explicit diff context takes precedence   |
-| `--diff-context`                                                                                              | Contextual `-diff` output without a per-action count, or tree diff output                               |
-| `--diff-format`                                                                                               | `-diff` without an attached style; tree diffs use unified output                                        |
-| `--diff-ignore`, `--diff-ignore-matching`                                                                     | A `-diff` action                                                                                        |
-| `--diff-algorithm`                                                                                            | A `-diff` action or tree diff output                                                                    |
-| `--shards-show`                                                                                               | Ordinary shard listing, without active summaries or histograms                                          |
-| `--shards-dedup`, `--shard-pattern`                                                                           | Ordinary shard grouping or a `-shard-status` predicate                                                  |
-| `--histogram-width`                                                                                           | Plain or aligned histogram bars                                                                         |
-| `--top`                                                                                                       | An ordinary summary or categorical histogram; comparison-result tables and numeric ranges stay complete |
-| `--summary-precision`                                                                                         | An active summary or histogram mean                                                                     |
+| Modifier                                                                                                      | Consumer                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `--count` / `-c`, `--count-matches`, filename selection, prefix controls, `--only-matching`, `--invert-match` | A `-grep` action or active `--match-output` (`-M`)                                                                       |
+| `--context`, `--before-context`, `--after-context`                                                            | `-grep` / `--match-output` line output, or symmetric default context for `-diff`; explicit diff context takes precedence |
+| `--diff-context`                                                                                              | Contextual `-diff` output without a per-action count, or tree diff output                                                |
+| `--diff-format`                                                                                               | `-diff` without an attached style; tree diffs use unified output                                                         |
+| `--diff-ignore`, `--diff-ignore-matching`                                                                     | A `-diff` action                                                                                                         |
+| `--diff-algorithm`                                                                                            | A `-diff` action or tree diff output                                                                                     |
+| `--shards-show`                                                                                               | Ordinary shard listing, without active summaries or histograms                                                           |
+| `--shards-dedup`, `--shard-pattern`                                                                           | Ordinary shard grouping or a `-shard-status` predicate                                                                   |
+| `--histogram-width`                                                                                           | Plain or aligned histogram bars                                                                                          |
+| `--top`                                                                                                       | An ordinary summary or categorical histogram; comparison-result tables and numeric ranges stay complete                  |
+| `--summary-precision`                                                                                         | An active summary or histogram mean                                                                                      |
 
 Hash dependencies inspect the parsed action specs and field templates. `--hash-algorithm`
 requires a hash consumer without an explicit algorithm, while `--hash-encoding` requires one

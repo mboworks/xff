@@ -31,10 +31,12 @@ std::string_view ConsumerRequirement(registry::ModifierConsumer consumer) {
     case ModifierConsumer::kHashAlgorithm: return "requires a hash consumer without an explicit algorithm";
     case ModifierConsumer::kHashEncoding: return "requires a hash consumer without an explicit encoding";
     case ModifierConsumer::kNone: return "";
-    case ModifierConsumer::kGrep: return "requires a -grep action";
-    case ModifierConsumer::kGrepLines: return "requires -grep line output; --count suppresses line output";
+    case ModifierConsumer::kGrep: return "requires -grep or active --match-output";
+    case ModifierConsumer::kGrepLines:
+      return "requires -grep or --match-output line output; --count suppresses line output";
     case ModifierConsumer::kSharedContext:
-      return "requires -grep line output or symmetric default -diff context; --count suppresses grep lines";
+      return "requires -grep or --match-output line output or symmetric default -diff context; --count suppresses grep "
+             "lines";
     case ModifierConsumer::kFileDiffContext: return "requires a -diff action using default context";
     case ModifierConsumer::kDiffContext:
       return "requires --compare=diff or -diff context output without an explicit per-action context count";
