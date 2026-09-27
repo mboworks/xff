@@ -57,12 +57,6 @@
 
 namespace xff::fields {
 
-struct CompiledRewrite {
-  regex::Matcher matcher;
-  std::string replacement;
-  bool global = false;
-};
-
 namespace {
 
 namespace stdfs = ::std::filesystem;
@@ -316,7 +310,7 @@ StringOrView HashField(std::string_view, std::string_view qualifier, const Rende
   if (ctx.content) {
     return ctx.content->Digest(ContentFileSystem(ctx), ctx.path, *spec).value_or("");
   }
-  content::Snapshot content;
+  const content::Snapshot content;
   return content.Digest(ContentFileSystem(ctx), ctx.path, *spec).value_or("");
 }
 
@@ -326,7 +320,7 @@ std::optional<std::size_t> ReadEntryLineCount(const RenderContext& ctx) {
   if (ctx.content) {
     return ctx.content->Lines(ContentFileSystem(ctx), ctx.path);
   }
-  content::Snapshot content;
+  const content::Snapshot content;
   return content.Lines(ContentFileSystem(ctx), ctx.path);
 }
 
@@ -761,33 +755,6 @@ std::vector<RewriteOp> ParseRewriteChain(std::string_view spec) {
   return ops;
 }
 
-// Own every argument so a compiled template can outlive, move independently of, or be copied
-// separately from the source text. An invalid chain remains a whole no-op.
-std::vector<CompiledRewrite> CompileChain(std::string_view spec) {
-  const auto ops = ParseRewriteChain(spec);
-  std::vector<CompiledRewrite> result;
-  result.reserve(ops.size());
-  for (const auto& op : ops) {
-    auto matcher = regex::Matcher::Compile(op.pattern, absl::StrContains(op.flags, 'i'));
-    if (!matcher.ok()) {
-      return {};
-    }
-    result.push_back(
-        {.matcher = *std::move(matcher),
-         .replacement = std::string(op.replacement),
-         .global = absl::StrContains(op.flags, 'g')});
-  }
-  return result;
-}
-
-std::string ApplyRewrite(std::string_view value, const std::vector<CompiledRewrite>& ops) {
-  std::string out(value);
-  for (const auto& op : ops) {
-    out = op.matcher.Rewrite(out, op.replacement, op.global);
-  }
-  return out;
-}
-
 // A qualifier is a per-line extraction when it is `m` followed by a punctuation delimiter
 // (m/.../.../, m,...,...,, ...) -- the line-oriented, list-producing sibling of the `s` rewrite.
 bool IsExtractQualifier(std::string_view qualifier) {
@@ -799,20 +766,6 @@ bool IsExtractQualifier(std::string_view qualifier) {
 // then runs the remaining commands as substitutions on that per-line value. Non-matching lines are
 // dropped by the first command, so it filters as well as transforms. A malformed spec or any
 // uncompilable pattern yields an empty list (matching ApplyRewrite's leave-it-alone stance).
-std::vector<std::string> ExtractLines(std::string_view value, const std::vector<CompiledRewrite>& ops) {
-  if (ops.empty()) {
-    return {};
-  }
-  std::vector<std::string> out;
-  for (const std::string_view line : absl::StrSplit(value, '\n')) {
-    if (!ops.front().matcher.PartialMatch(line)) {
-      continue;
-    }
-    out.push_back(ApplyRewrite(line, ops));
-  }
-  return out;
-}
-
 // A stream reducer collapses an m// per-line value stream to a single scalar, so the extraction is
 // valid in a scalar context (-printf / --template / -exec / --columns). It is a terminal `;`-chain
 // segment in FUNCTION notation: v1 ships `join(SEP)` (join the stream with SEP; bare `join` = "\n",
@@ -1065,6 +1018,60 @@ absl::Status ValidateNativeQualifier(FieldFn renderer, std::string_view qualifie
 // Immutable programs are shared by copied templates. Rendering remains coordinator-owned;
 // regex backends retain their normal concurrent-call contract for other callers.
 struct Template::Transform {
+  struct Operation {
+    regex::Matcher matcher;
+    std::string replacement;
+    bool global = false;
+  };
+
+  static std::shared_ptr<const Transform> Bind(std::string_view qualifier) {
+    if (!IsRewriteQualifier(qualifier) && !IsExtractQualifier(qualifier)) {
+      return {};
+    }
+    return std::make_shared<const Transform>(qualifier);
+  }
+
+  // Own every argument so a compiled template can outlive, move independently of, or be copied
+  // separately from the source text. An invalid chain remains a whole no-op.
+  static std::vector<Operation> CompileChain(std::string_view spec) {
+    const auto ops = ParseRewriteChain(spec);
+    std::vector<Operation> result;
+    result.reserve(ops.size());
+    for (const auto& op : ops) {
+      auto matcher = regex::Matcher::Compile(op.pattern, absl::StrContains(op.flags, 'i'));
+      if (!matcher.ok()) {
+        return {};
+      }
+      result.push_back(
+          {.matcher = *std::move(matcher),
+           .replacement = std::string(op.replacement),
+           .global = absl::StrContains(op.flags, 'g')});
+    }
+    return result;
+  }
+
+  static std::string ApplyRewrite(std::string_view value, const std::vector<Operation>& ops) {
+    std::string out(value);
+    for (const auto& op : ops) {
+      out = op.matcher.Rewrite(out, op.replacement, op.global);
+    }
+    return out;
+  }
+
+  static std::vector<std::string> ExtractLines(std::string_view value, const std::vector<Operation>& ops) {
+    if (ops.empty()) {
+      return {};
+    }
+    std::vector<std::string> out;
+    for (const std::string_view line : absl::StrSplit(value, '\n')) {
+      if (!ops.front().matcher.PartialMatch(line)) {
+        continue;
+      }
+      out.push_back(ApplyRewrite(line, ops));
+    }
+    return out;
+  }
+
   explicit Transform(std::string_view spec) {
     const auto pipeline = IsExtractQualifier(spec) ? SplitPipeline(spec) : Pipeline{.stream = spec};
     stream = CompileChain(pipeline.stream);
@@ -1082,9 +1089,9 @@ struct Template::Transform {
     return ApplyRewrite(absl::StrJoin(Extract(value), separator.value_or("\n")), scalar);
   }
 
-  std::vector<CompiledRewrite> stream;
+  std::vector<Operation> stream;
   std::optional<std::string> separator;
-  std::vector<CompiledRewrite> scalar;
+  std::vector<Operation> scalar;
 };
 
 std::optional<std::size_t> PlaceholderSize(std::string_view text) {
@@ -1152,9 +1159,7 @@ Template Template::Compile(std::string_view tmpl) {
                                         : IsExtractQualifier(qualifier) ? Segment::PostProcess::kExtract
                                         : IsPathComponent(qualifier)    ? Segment::PostProcess::kComponent
                                                                         : Segment::PostProcess::kNone;
-      const auto transform = post == Segment::PostProcess::kRewrite || post == Segment::PostProcess::kExtract
-                                 ? std::make_shared<const Transform>(qualifier)
-                                 : std::shared_ptr<const Transform>{};
+      const auto transform = Transform::Bind(qualifier);
       compiled.segments_.push_back(
           {.fn = fn, .key = std::move(key), .qualifier = std::move(qualifier), .post = post, .transform = transform});
       i = field->next;
@@ -1207,7 +1212,7 @@ std::size_t Template::ContentFieldCount() const {
 }
 
 std::string Template::Render(const RenderContext& context) const {
-  content::Snapshot content;
+  const content::Snapshot content;
   RenderContext entry = context;
   if (!entry.content) {
     entry.content.set_ref(content);
