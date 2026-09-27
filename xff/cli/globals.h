@@ -18,12 +18,15 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "mbo/types/optional_ref.h"
+#include "xff/registry/compatibility.h"
 #include "xff/registry/consumers.h"
 #include "xff/registry/mode.h"
 
@@ -42,6 +45,7 @@ struct ValueDoc {
   // check accepts these; the help omits them, so one table stays the single source of truth for
   // both without the listing growing every synonym.
   bool hidden = false;
+  std::optional<registry::CompatibilitySpelling> rg;
 };
 
 // One whole-run option ("global"), the flag counterpart of registry::Descriptor.
@@ -158,8 +162,26 @@ struct GlobalFlag {
   // must not steal a compatibility spelling such as rg's -M or -H.
   registry::Modes modes = registry::Modes::kAll;
   registry::Modes alias_modes = registry::Modes::kAll;
+  // A required value on a short alias: accepts -x VALUE, -x=VALUE and -xVALUE.
+  // Normalization retains the alias spelling so mode restrictions survive config resolution.
+  std::string_view alias_argument;
   std::optional<registry::Mode> enters_mode;
+  std::optional<registry::CompatibilitySpelling> rg;
 };
+
+struct GlobalAliasArgument {
+  std::string token;
+  bool consumes_next = false;
+};
+
+// The caller has already looked up a valued short alias. Empty/missing values fail here.
+absl::StatusOr<GlobalAliasArgument> ParseGlobalAliasArgument(
+    const GlobalFlag& flag,
+    std::string_view token,
+    std::optional<std::string_view> next);
+
+// Check the spelling used, including alias-specific compatibility restrictions.
+absl::Status ValidateGlobalMode(std::string_view token, registry::Mode mode);
 
 template<typename Sink>
 void AbslStringify(Sink& sink, const GlobalFlag& flag) {
@@ -181,9 +203,16 @@ std::string_view ExtraBuildFlag(std::string_view key);
 // "which extras do I have" surface print. Empty for a lean build.
 [[nodiscard]] std::vector<std::string> EnabledExtras();
 
-// All global options, in display order. The single enumeration point for the help
-// system and the planned doc generators.
+// Native global options, in display order, projected from the full registry.
 absl::Span<const GlobalFlag> Globals();
+
+// The full registry also contains rg-only globals. Native help uses Globals();
+// rg grammar/help use the compile-time projection of these same declarations.
+absl::Span<const GlobalFlag> AllGlobals();
+absl::Span<const registry::CompatibilityOption> CompatibilityOptions();
+mbo::types::OptionalRef<const registry::CompatibilityOption> LookupCompatibilityOption(
+    std::string_view name,
+    registry::Mode mode);
 
 // The global option named `name` (matching the canonical name or an alias), or no reference if
 // none. `name` carries its leading dashes (e.g. "--sort", "-j").

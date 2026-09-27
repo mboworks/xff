@@ -966,6 +966,14 @@ class CommandParser {
         options_ended_ = true;
         break;
       }
+      if (const auto flag = cli::LookupGlobalArgument(argument);
+          flag.has_value() && !flag->alias_argument.empty() && argument.starts_with(flag->alias)) {
+        const auto next = index_ + 1 < args_.size() ? std::optional<std::string_view>(args_[index_ + 1]) : std::nullopt;
+        MBO_ASSIGN_OR_RETURN(auto alias, cli::ParseGlobalAliasArgument(*flag, argument, next));
+        command_.globals.push_back(std::move(alias.token));
+        index_ += alias.consumes_next;
+        continue;
+      }
       if (ConsumeLeadingJobsGlobal(args_, index_, command_.globals)) {
         continue;
       }
@@ -1034,6 +1042,9 @@ absl::StatusOr<Command> Parse(const std::vector<std::string>& args) {
 absl::Status EnforceStyle(const Command& command, registry::Style style) {
   if (style != registry::Style::kFind) {
     return absl::OkStatus();  // the xff style accepts the full vocabulary
+  }
+  for (const auto& token : command.globals) {
+    MBO_RETURN_IF_ERROR(cli::ValidateGlobalMode(token, registry::Mode::kFind));
   }
   const auto expression = AsConstOptionalExpr(command.expression);
   if (!expression.has_value()) {

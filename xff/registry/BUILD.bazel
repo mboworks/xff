@@ -20,7 +20,6 @@ package(default_visibility = ["//visibility:private"])
 cc_library(
     name = "registry_cc",
     srcs = [
-        "compatibility.cc",
         "registry.cc",
     ],
     hdrs = [

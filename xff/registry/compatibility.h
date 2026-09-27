@@ -16,10 +16,9 @@
 #ifndef XFF_REGISTRY_COMPATIBILITY_H_
 #define XFF_REGISTRY_COMPATIBILITY_H_
 
-#include <span>
+#include <optional>
 #include <string_view>
 
-#include "mbo/types/optional_ref.h"
 #include "xff/registry/mode.h"
 
 namespace xff::registry {
@@ -27,6 +26,7 @@ namespace xff::registry {
 struct CompatibilityOption {
   enum class Effect {
     kGlobal,
+    kMeta,
     kPattern,
     kFile,
     kWord,
@@ -51,7 +51,8 @@ struct CompatibilityOption {
   };
   std::string_view name;
   std::string_view alias;
-  std::string_view replacement;
+  std::string_view target;
+  std::optional<std::string_view> fixed_value;
   std::string_view argument;
   Effect effect = Effect::kGlobal;
   std::string_view summary;
@@ -63,8 +64,15 @@ void AbslStringify(Sink& sink, const CompatibilityOption& option) {
   sink.Append(option.name);
 }
 
-std::span<const CompatibilityOption> CompatibilityOptions();
-mbo::types::OptionalRef<const CompatibilityOption> LookupCompatibilityOption(std::string_view name, Mode mode);
+// Grammar differences live on the owning global/value declaration. Empty names
+// inherit that declaration; no summary, target or canonical name is duplicated.
+struct CompatibilitySpelling {
+  std::string_view name;
+  std::optional<std::string_view> alias;
+  std::string_view argument;
+  CompatibilityOption::Effect effect = CompatibilityOption::Effect::kGlobal;
+  std::optional<std::string_view> fixed_value;
+};
 
 }  // namespace xff::registry
 #endif  // XFF_REGISTRY_COMPATIBILITY_H_

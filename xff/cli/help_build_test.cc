@@ -204,8 +204,8 @@ TEST_F(BuildReferenceTest, RgHelpDocumentsEveryParserOptionAndItsArgument) {
       }
     }
   }
-  EXPECT_THAT(terms, SizeIs(registry::CompatibilityOptions().size()));
-  for (const registry::CompatibilityOption& option : registry::CompatibilityOptions()) {
+  EXPECT_THAT(terms, SizeIs(cli::CompatibilityOptions().size()));
+  for (const registry::CompatibilityOption& option : cli::CompatibilityOptions()) {
     std::string term = option.alias.empty() ? "" : absl::StrCat(option.alias, " / ");
     absl::StrAppend(&term, option.name);
     if (!option.argument.empty()) {

@@ -14,6 +14,13 @@ spelling can have different meanings in disjoint modes; duplicate compatibility
 spellings in the same mode fail compilation. These are XFF's modes, not a claim that
 an external find or ripgrep accepts every XFF global.
 
+The global registry owns each flag once. Shared flags declare their rg spelling and
+argument rules on the same entry; fixed-value aliases such as `--ignore-case` belong
+to the owning value declaration. Rg-only options register additional globals with rg
+scope. The compatibility lookup and help table are constexpr projections of those
+declarations, including their summaries and translation targets. They are not a
+second inventory. The rg frontend handles pattern/root ordering and typed effects.
+
 The initial `--rg` belongs before roots. Once rg grammar is selected, `--xff` and
 `--rg` may switch repeatedly at option boundaries. Switches only change interpretation
 of subsequent tokens: they preserve the search, roots, configuration and accumulated
@@ -23,7 +30,7 @@ file-filter expressions. Their boolean expression continues across rg segments.
 | Spelling    | XFF/find interpretation                    | Rg interpretation                     |
 | ----------- | ------------------------------------------ | ------------------------------------- |
 | `-type f`   | Filesystem kind                            | Unsupported; use `--xff` first        |
-| `-t cpp`    | Not a native alias                         | Filename-type inclusion               |
+| `-t cpp`    | XFF filename type; unavailable in find     | Filename-type inclusion               |
 | `-o`        | Boolean OR                                 | Only matching portions                |
 | `+`         | OR in XFF, rejected as an operator in find | Literal pattern/path                  |
 | `-M`        | Default content-match output               | Maximum output columns; takes a value |
@@ -100,7 +107,11 @@ See [PCRE2's invalid-UTF contract](https://pcre2project.github.io/pcre2/doc/pcre
 ## File types and overlapping language candidates
 
 `--file-type=TYPE` includes a filename type and `--file-type-not=TYPE` excludes one.
-Rg aliases are `-t` / `--type` and `-T` / `--type-not`. Repeated selections are ordered:
+XFF and rg both accept `-t` and `-T`, with separate or attached values (`-t cpp`,
+`-tcpp`, or `-t=cpp`). Native short forms must precede roots; the long forms are
+position-independent. Find mode rejects both short aliases. `-type f` retains its
+filesystem-kind meaning. Rg also spells the long forms `--type` and `--type-not`.
+INI files accept the same native aliases and long forms. Repeated selections are ordered:
 the last matching rule wins. If any positive type selection exists, files outside
 all selected types are excluded. `all` means every known type; `-Tall` selects
 unrecognized file types. Explicit rg `-g` decisions take precedence; native filters

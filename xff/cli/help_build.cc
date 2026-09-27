@@ -1017,16 +1017,17 @@ Section RgSection(bool in_full) {
   section.children.push_back(ProseOf(
       "Mode tags (`find`, `xff`, `rg`) come from the same metadata as flag lookup. "
       "Shared long options work in all declared modes; short aliases use the active vocabulary. "
-      "`-type` remains a filesystem-kind predicate; rg's `-t` / `--type` maps to `--file-type`, "
-      "and `-T` / `--type-not` maps to `--file-type-not`. "
+      "`-type` remains a filesystem-kind predicate. XFF and rg accept `-t` and `-T` for filename types; "
+      "find mode rejects those aliases. Native short forms precede roots; INI files accept them too. "
+      "Rg's `--type` and `--type-not` map to `--file-type` and `--file-type-not`. "
       "`--type-add`, `--type-clear`, and `--type-list` work in both grammars and native INI files. "
       "Edits follow resolved configuration order after language JSON overlays and do not change "
       "`-lang`, MIME, display labels, colors, or summary buckets. "
       "Explicit regular-file roots bypass these discovery filters; native predicates and safety remain active. "
       "Archive members remain discovered inputs and are filtered normally."));
   Rows options;
-  options.rows.reserve(registry::CompatibilityOptions().size());
-  for (const registry::CompatibilityOption& option : registry::CompatibilityOptions()) {
+  options.rows.reserve(cli::CompatibilityOptions().size());
+  for (const registry::CompatibilityOption& option : cli::CompatibilityOptions()) {
     std::string term = option.alias.empty() ? "" : absl::StrCat(option.alias, " / ");
     absl::StrAppend(&term, option.name);
     if (!option.argument.empty()) {

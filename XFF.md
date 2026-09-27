@@ -603,9 +603,9 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 - `--case=<MODE>, -i, -s[-|+]` - letter case for matchers: -i insensitive, -s/-s+ smart, -s- sensitive (rg -> smart) _(global, find, xff, rg)_
   MODE is one of:
 
-  - `sensitive` - match exactly (-s-)
-  - `insensitive` - fold case (-i)
-  - `smart` - fold case unless the pattern contains ASCII uppercase (-s / -s+)
+  - `sensitive` - match exactly
+  - `insensitive` - fold case
+  - `smart` - fold case unless the pattern contains ASCII uppercase
 
   Controls the otherwise case-sensitive name, path, symlink-target, fuzzy, regex, and content matchers (`-name`, `-path`, `-lname`, `-fuzzy`, `-fuzzypath`, `-regex`, `-rxc`, `-grep`). Their `-i...` variants always fold independently. `sensitive` matches exactly; `insensitive` (`-i`) folds case; `smart` (`-s` / `-s+`) folds only when the pattern is all free of ASCII uppercase letters and matches exactly otherwise; `-s-` forces `sensitive`. For name, path, and fuzzy matching, xff's filesystem-native folding can additionally apply unless `--exact` is present. rg defaults to `smart`; xff and find default to `sensitive`.
   Affects: -name, -path, -lname, -fuzzy, -fuzzypath, -regex, -rxc, -grep, -content
@@ -659,15 +659,15 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 <a id="flag-file-type"></a>
 
-- `--file-type=NAME` - include a filename type; repeatable, with the last matching type rule winning _(global, find, xff, rg)_
-  Selects a named filename-filter definition from the shared catalog. `all` selects every known type. Any positive selection excludes entries outside the selected types. Directory traversal continues through unselected names; explicitly named regular files bypass discovery filters. This is separate from filesystem `-type f/d/l`, language `-lang`, and media-type `-mime`. In rg grammar, `-t` is the short form.
+- `-t NAME, -t=NAME, -tNAME, --file-type=NAME` - include a filename type; repeatable, with the last matching type rule winning _(global, find, xff, rg)_
+  Selects a named filename-filter definition from the shared catalog. `all` selects every known type. Any positive selection excludes entries outside the selected types. Directory traversal continues through unselected names; explicitly named regular files bypass discovery filters. This is separate from filesystem `-type f/d/l`, language `-lang`, and media-type `-mime`. The `-t` short form works in XFF and rg modes, not find mode. Native short globals precede roots; the long form works anywhere.
   Affected by: --file-type-not, --type-add, --type-clear, --type-list
   See also: [Content](#topic-content), [--file-type-not](#flag-file-type-not), [--type-add](#flag-type-add), [--type-clear](#flag-type-clear), [--type-list](#flag-type-list)
 
 <a id="flag-file-type-not"></a>
 
-- `--file-type-not=NAME` - exclude a filename type; later matching include or exclude rules override it _(global, find, xff, rg)_
-  Uses the same definitions as `--file-type`. With exclusions alone, other entries remain eligible; `--file-type-not=all` keeps unrecognized names. In rg grammar, `-T` is the short form.
+- `-T NAME, -T=NAME, -TNAME, --file-type-not=NAME` - exclude a filename type; later matching include or exclude rules override it _(global, find, xff, rg)_
+  Uses the same definitions as `--file-type`. With exclusions alone, other entries remain eligible; `--file-type-not=all` keeps unrecognized names. The `-T` short form works in XFF and rg modes, not find mode. Native short globals precede roots; the long form works anywhere.
   Affects: --file-type
   Affected by: --type-add, --type-clear, --type-list
   See also: [Content](#topic-content), [--type-add](#flag-type-add), [--type-clear](#flag-type-clear), [--type-list](#flag-type-list), [--file-type](#flag-file-type)
@@ -1147,7 +1147,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 <a id="flag-only-matching"></a>
 
-- `--only-matching` - print each nonempty matched portion on its own line _(global, find, xff, rg)_
+- `--only-matching` - print matched portions instead of complete lines _(global, find, xff, rg)_
   For content-match output, emit nonempty, non-overlapping matches instead of complete lines. In rg mode, empty matches are included and inversion selects whole nonmatching lines. Otherwise context is ignored. With `--count`, count individual matches. Inverted selection has no matching portions to print. `FNMATCH` treats the complete matching line as its matched portion.
   Affects: -grep, --match-output
   See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
@@ -1175,7 +1175,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 <a id="flag-count-matches"></a>
 
-- `--count-matches` - count nonempty matching portions per file _(global, find, xff, rg)_
+- `--count-matches` - count matching portions per file _(global, find, xff, rg)_
   Counts non-overlapping matched portions instead of selected lines. Context and explicit grep templates are superseded. Inverted selection has no matching portions to count.
   Affects: -grep, --match-output
   See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
@@ -1210,7 +1210,7 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 <a id="flag-with-filename"></a>
 
-- `--with-filename` - include paths in built-in plain grep output (default) _(global, find, xff, rg)_
+- `--with-filename` - include paths in built-in plain grep output _(global, find, xff, rg)_
   Applies to line and count prefixes. Filename-only modes always print paths. Explicit templates and JSON records retain their own fields.
   Affects: -grep, --match-output
   See also: [Content](#topic-content), [-grep](#primary-grep), [--match-output](#flag-match-output)
@@ -2923,59 +2923,59 @@ Options may appear among patterns and paths. Bundles and attached values work: `
 
 On a terminal, headings and line numbers default on; piped output defaults to inline filenames and no line numbers. `--heading` / `--no-heading` and `-n` / `-N` override these independently. `--column` adds one-based byte columns and enables line numbers; `--no-column` hides columns. `-p` / `--pretty` enables headings, line numbers and color even through a pipe. Separate files have a blank line between headings. JSON keeps XFF's record schema without headings or terminal color.
 
-Mode tags (`find`, `xff`, `rg`) come from the same metadata as flag lookup. Shared long options work in all declared modes; short aliases use the active vocabulary. `-type` remains a filesystem-kind predicate; rg's `-t` / `--type` maps to `--file-type`, and `-T` / `--type-not` maps to `--file-type-not`. `--type-add`, `--type-clear`, and `--type-list` work in both grammars and native INI files. Edits follow resolved configuration order after language JSON overlays and do not change `-lang`, MIME, display labels, colors, or summary buckets. Explicit regular-file roots bypass these discovery filters; native predicates and safety remain active. Archive members remain discovered inputs and are filtered normally.
+Mode tags (`find`, `xff`, `rg`) come from the same metadata as flag lookup. Shared long options work in all declared modes; short aliases use the active vocabulary. `-type` remains a filesystem-kind predicate. XFF and rg accept `-t` and `-T` for filename types; find mode rejects those aliases. Native short forms precede roots; INI files accept them too. Rg's `--type` and `--type-not` map to `--file-type` and `--file-type-not`. `--type-add`, `--type-clear`, and `--type-list` work in both grammars and native INI files. Edits follow resolved configuration order after language JSON overlays and do not change `-lang`, MIME, display labels, colors, or summary buckets. Explicit regular-file roots bypass these discovery filters; native predicates and safety remain active. Archive members remain discovered inputs and are filtered normally.
 
-- `-e / --regexp PATTERN` - Add a search pattern; repeatable, combined as a union.
-- `-f / --file FILE` - Read patterns from `FILE`, one per line; `-` reads stdin; repeatable.
-- `-g / --glob GLOB` - Include glob; a leading `!` excludes; last matching rule wins.
-- `-t / --type TYPE` - Search files matching this type; repeatable; `all` selects every defined type.
-- `-T / --type-not TYPE` - Exclude files matching this type; later matching type selections win.
-- `--type-add TYPE:GLOB` - Add a type glob; `TYPE:include:TYPES` imports comma-separated type definitions.
-- `--type-clear TYPE` - Remove the globs for a type before subsequent additions.
-- `--type-list` - List available type names and definitions without searching.
-- `-U / --multiline` - Allow matches to span lines; retains whole input for cross-line regex evaluation.
-- `--no-multiline` - Search one line at a time.
-- `--multiline-dotall` - Make `.` match newlines when multiline search is enabled.
-- `--no-multiline-dotall` - Restore the default dot behavior.
-- `--heading` - Print the path above each file's matches; enabled by default on a terminal.
-- `--no-heading` - Use per-line filename prefixes; the default for piped output.
-- `--column` - Print one-based byte columns and enable line numbers.
-- `--no-column` - Omit byte columns.
-- `-p / --pretty` - Enable headings, line numbers, and color, even when output is piped.
-- `--unicode` - Interpret content as UTF-8 and use Unicode word boundaries (default); no encoding detection.
-- `--no-unicode` - Match 8-bit bytes with ASCII word boundaries; no UTF-8 decoding or legacy-codepage conversion.
-- `-o / --only-matching` - Print only matched portions.
-- `-v / --invert-match` - Select nonmatching lines.
-- `-n / --line-number` - Print line-number prefixes.
-- `-N / --no-line-number` - Omit line-number prefixes.
-- `-H / --with-filename` - Always print path prefixes.
-- `-I / --no-filename` - Omit path prefixes; otherwise automatic for multiple inputs and archive members.
-- `-l / --files-with-matches` - Print filenames with selected lines.
-- `--files-without-match` - Print filenames without selected lines.
-- `-c / --count` - Print selected line counts.
-- `--count-matches` - Print matched occurrence counts.
-- `-i / --ignore-case` - Match case-insensitively.
-- `-s / --case-sensitive` - Match case-sensitively (the rg default).
-- `-S / --smart-case` - Ignore case unless the pattern contains an uppercase letter.
-- `-F / --fixed-strings` - Use literal matching.
-- `-P / --pcre2` - Use the optional PCRE2 backend; RE2 is the default.
-- `-L / --follow` - Follow symbolic links.
-- `-q / --quiet` - Suppress output; preserve match-sensitive exit status.
-- `-C / --context N` - Print `N` context lines before and after each match.
-- `-B / --before-context N` - Print `N` lines before each match.
-- `-A / --after-context N` - Print `N` lines after each match.
-- `-j / --threads N` - Worker allowance; `0` selects automatic.
-- `-w / --word-regexp` - Match whole words.
-- `-x / --line-regexp` - Match whole lines.
-- `-a / --text` - Search binary content as text.
-- `-M / --max-columns N` - Replace output lines longer than `N` bytes with an omission marker; `0` disables the limit.
-- `--root NAME=PATH` - Add a named search root before `--xff`.
-- `--hidden` - Include hidden entries.
-- `--no-hidden` - Skip hidden entries.
-- `--no-ignore` - Disable ignore-file filtering.
-- `--color WHEN` - Color policy: `auto`, `always`, or `never`.
-- `-h / --help` - Show rg help; `--help=TOPIC` selects another help topic.
-- `-V / --version` - Print the program version.
+- `-L / --follow` - follow symlinks everywhere during the walk
+- `-j / --threads N` - directory-read, eligible content-match and -exec workers
+- `-s / --case-sensitive` - match exactly
+- `-i / --ignore-case` - fold case
+- `-S / --smart-case` - fold case unless the pattern contains ASCII uppercase
+- `-F / --fixed-strings` - a literal string; metacharacters are plain text
+- `-P / --pcre2` - Perl syntax (lookaround, backreferences); a build extra
+- `-t / --type TYPE` - include a filename type; repeatable, with the last matching type rule winning
+- `-T / --type-not TYPE` - exclude a filename type; later matching include or exclude rules override it
+- `--type-add TYPE:GLOB` - append a basename glob or import comma-separated filename types into a shared definition
+- `--type-clear TYPE` - remove a filename-filter definition through its canonical name or alias
+- `--type-list` - list effective filename-type definitions and aliases without searching
+- `--no-ignore` - disable all ignore-file processing (.gitignore/.ignore/.xffignore)
+- `--hidden` - include hidden dotfiles in the walk (default: find/xff show, rg skips)
+- `--no-hidden` - skip hidden dotfiles (the rg default; opts find/xff out)
+- `--root NAME=PATH` - add a named search root; use NAME as its archive destination directory
+- `-o / --only-matching` - print matched portions instead of complete lines
+- `-l / --files-with-matches` - print paths of files containing selected lines
+- `--files-without-match` - print paths of readable text files without selected lines
+- `--count-matches` - count matching portions per file
+- `-v / --invert-match` - select lines that do not match its pattern
+- `-n / --line-number` - include line numbers in built-in plain grep output (default)
+- `-N / --no-line-number` - omit line numbers from built-in plain grep output
+- `-H / --with-filename` - include paths in built-in plain grep output
+- `-I / --no-filename` - omit paths from built-in plain grep line and count output
+- `-c / --count` - print a per-file matching-line count (path:count) instead of the lines
+- `-C / --context N` - -grep context lines: N both sides, or A:N,B:N,C:N for after/before/both
+- `-A / --after-context N` - with -grep, print N lines of context after each match (= --context=A:N)
+- `-B / --before-context N` - with -grep, print N lines of context before each match (= --context=B:N)
+- `--color WHEN` - colorize the plain listing by file type and language: auto (a tty), always, or never
+- `-q / --quiet` - suppress output; exit 0 if anything matched, else 1 (-q: grep-compatible)
+- `-e / --regexp PATTERN` - add a search pattern; repeatable, combined as a union
+- `-f / --file FILE` - read patterns from `FILE`, one per line; `-` reads stdin; repeatable
+- `-g / --glob GLOB` - include glob; a leading `!` excludes; last matching rule wins
+- `-U / --multiline` - allow matches to span lines; retains whole input for cross-line regex evaluation
+- `--no-multiline` - search one line at a time
+- `--multiline-dotall` - make `.` match newlines when multiline search is enabled
+- `--no-multiline-dotall` - restore the default dot behavior
+- `--heading` - print the path above each file's matches; enabled by default on a terminal
+- `--no-heading` - use per-line filename prefixes; the default for piped output
+- `--column` - print one-based byte columns and enable line numbers
+- `--no-column` - omit byte columns
+- `-p / --pretty` - enable headings, line numbers, and color, even when output is piped
+- `--unicode` - interpret content as UTF-8 with Unicode word boundaries; no encoding detection
+- `--no-unicode` - match 8-bit bytes with ASCII word boundaries; no decoding or codepage conversion
+- `-w / --word-regexp` - match whole words
+- `-x / --line-regexp` - match whole lines
+- `-a / --text` - search binary content as text
+- `-M / --max-columns N` - replace output lines longer than `N` bytes with an omission marker; `0` disables the limit
+- `-h / --help` - show rg help; `--help=TOPIC` selects another help topic
+- `-V / --version` - print the program version
 
 This is an rg-style frontend, not a complete ripgrep replacement. Unsupported short options are errors. XFF double-dash globals retain their normal meanings, validation and safety enforcement. Binary files are skipped unless `--text` is set. Single-line searches stream source bytes, retaining one incomplete line and requested before-context. Rendered records are buffered per file until EOF to detect binary data and late errors before publication. Long lines and selected output can still require proportional memory; multiline searches and stdin retain their subject. `-j N` runs eligible host-file searches in parallel while keeping records in traversal order; archive members and stateful native filters stay serial. Exit status is `0` for a selected result, `1` for none and `2` for errors; errors outrank quiet matches. Native summaries count the files selected by the search. `--no-match-output` lists those files instead. Search-selection modifiers remain active in both cases; line-rendering modifiers do not. Normal `-M` behavior is unchanged outside rg grammar; inside it, `-M` requires a maximum-column count.
 

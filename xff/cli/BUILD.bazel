@@ -677,6 +677,7 @@ cc_library(
         "//xff/values:values_cc",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
         "@mboworks_mbo//mbo/types:optional_ref_cc",

@@ -23,7 +23,6 @@
 #include "absl/strings/str_format.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "xff/registry/compatibility.h"
 #include "xff/registry/descriptor.h"
 
 namespace xff::registry {
@@ -49,12 +48,6 @@ TEST_F(RegistryTest, CompatibilitySpellingsAreDisjointFromNativePrimaries) {
   EXPECT_THAT(Lookup("-o", Mode::kXff), Optional(Field(&Descriptor::kind, Kind::kOperator)));
   EXPECT_THAT(Lookup("-o", Mode::kFind), Optional(Field(&Descriptor::kind, Kind::kOperator)));
   EXPECT_THAT(Lookup("-o", Mode::kRg), Eq(std::nullopt));
-  EXPECT_THAT(
-      LookupCompatibilityOption("-o", Mode::kRg),
-      Optional(Field(&CompatibilityOption::replacement, "--only-matching")));
-  EXPECT_THAT(
-      LookupCompatibilityOption("-t", Mode::kRg), Optional(Field(&CompatibilityOption::replacement, "--file-type=")));
-  EXPECT_THAT(LookupCompatibilityOption("-t", Mode::kXff), Eq(std::nullopt));
   EXPECT_THAT(Lookup("-type", Mode::kFind), Optional(Field(&Descriptor::argument_choices, "b,c,d,f,l,p,s")));
   for (const auto mode : kModes) {
     EXPECT_THAT(Supports(Modes::kAll, mode), IsTrue());

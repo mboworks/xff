@@ -31,6 +31,7 @@ using ::mbo::testing::IsOk;
 using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
 using ::testing::AllOf;
+using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
@@ -42,6 +43,32 @@ using ::testing::SizeIs;
 struct ConfigValidationTest : ::testing::Test {
   void TearDown() override { env::ClearForTesting(); }
 };
+
+TEST_F(ConfigValidationTest, TypeAliasesNormalizeWithoutConsumingPrimaryArguments) {
+  const auto checked = ValidateConfigFile(
+      config::ParseIni(R"ini(
+-t cpp -Tpy
+[types]
+-t=cc -T --config=literal -exec echo -t cpp \;
+)ini"),
+      {"types"}, "/user.ini", config::Source::kUser);
+  EXPECT_THAT(checked.status, IsOk());
+  EXPECT_THAT(checked.disabled_configs, IsEmpty());
+  EXPECT_THAT(checked.config.globals, ElementsAre("-t=cpp", "-T=py"));
+  ASSERT_THAT(checked.config.named, SizeIs(1));
+  ASSERT_THAT(checked.config.named.front().lines, SizeIs(1));
+  EXPECT_THAT(
+      checked.config.named.front().lines.front().tokens,
+      ElementsAre("-t=cc", "-T=--config=literal", "-exec", "echo", "-t", "cpp", ";"));
+}
+
+TEST_F(ConfigValidationTest, TypeAliasesRejectMissingIniArguments) {
+  const auto checked =
+      ValidateConfigFile(config::ParseIni("-t\n[broken]\n-T=\n"), {"broken"}, "/user.ini", config::Source::kUser);
+  EXPECT_THAT(checked.status, StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(checked.diagnostics, Contains(HasSubstr("requires")));
+  EXPECT_THAT(checked.disabled_configs, ElementsAre("broken"));
+}
 
 TEST_F(ConfigValidationTest, DiffOptionalTargetKeepsFollowingConfigControlsVisible) {
   const auto checked = ValidateConfigFile(

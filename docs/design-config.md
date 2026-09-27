@@ -663,7 +663,10 @@ only registered dependencies are checked, and per-value interactions can need mo
 
 `--type-add=NAME:GLOB`, `--type-clear=NAME`, and `--type-list` use the same catalog
 in native and rg commands. `--file-type=NAME` and `--file-type-not=NAME` select from
-it; rg's `-t`/`-T` are grammar-specific aliases. INI files use the shared long forms.
+it. XFF and rg accept `-t NAME` / `-T NAME` as well as attached values (`-tNAME`,
+`-t=NAME`). Native CLI short forms precede roots; INI files accept them in globals
+or named sections. Find mode rejects these aliases; `-type` still tests filesystem
+kind. The shared long forms are position-independent.
 Definitions are applied in resolved configuration order after language JSON overlays.
 Custom filename groups do not change language labels, native `-lang`, MIME or summary
 classification. See [the catalog and mode rules](design-rg.md#file-types-and-overlapping-language-candidates).

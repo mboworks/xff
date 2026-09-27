@@ -24,6 +24,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/status.h"
+#include "xff/cli/globals.h"
 #include "xff/parser/parser.h"
 #include "xff/registry/compatibility.h"
 
@@ -48,7 +49,7 @@ struct RgTest : ::testing::Test {};
 TEST_F(RgTest, OptionMetadataIsCompleteAndUnambiguous) {
   std::set<std::string_view> names;
   std::set<std::string_view> shorts;
-  for (const registry::CompatibilityOption& option : registry::CompatibilityOptions()) {
+  for (const registry::CompatibilityOption& option : cli::CompatibilityOptions()) {
     SCOPED_TRACE(option.name);
     EXPECT_THAT(option.name, Not(IsEmpty()));
     EXPECT_THAT(option.summary, Not(IsEmpty()));
@@ -57,7 +58,7 @@ TEST_F(RgTest, OptionMetadataIsCompleteAndUnambiguous) {
       EXPECT_THAT(shorts.insert(option.alias).second, IsTrue());
     }
     if (option.effect == registry::CompatibilityOption::Effect::kGlobal) {
-      EXPECT_THAT(option.replacement, Not(IsEmpty()));
+      EXPECT_THAT(option.target, Not(IsEmpty()));
     }
     if (!option.argument.empty()) {
       EXPECT_THAT(

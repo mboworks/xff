@@ -157,9 +157,13 @@ class RgParser {
       return absl::InvalidArgumentError(absl::StrCat(option.name, " does not take a value"));
     }
     switch (option.effect) {
+      case registry::CompatibilityOption::Effect::kMeta:
       case registry::CompatibilityOption::Effect::kGlobal:
-        native_.push_back(absl::StrCat(option.replacement, value));
-        help_ = help_ || option.replacement == "--help=rg" || option.replacement == "--version";
+        native_.push_back(
+            absl::StrCat(
+                option.target, option.fixed_value.has_value() || !option.argument.empty() ? "=" : "",
+                option.fixed_value.value_or(value)));
+        help_ = help_ || option.effect == registry::CompatibilityOption::Effect::kMeta;
         break;
       case registry::CompatibilityOption::Effect::kPattern:
         search_.patterns.push_back({.value = std::string(value)});
@@ -246,7 +250,7 @@ class RgParser {
       native_.push_back(absl::StrCat("--", arg));
       return absl::OkStatus();
     }
-    if (const auto option = registry::LookupCompatibilityOption(absl::StrCat("--", name), registry::Mode::kRg);
+    if (const auto option = cli::LookupCompatibilityOption(absl::StrCat("--", name), registry::Mode::kRg);
         option.has_value()) {
       return Apply(*option, value);
     }
@@ -262,8 +266,7 @@ class RgParser {
 
   absl::Status Short(std::string_view arg) {
     for (std::size_t pos = 0; pos < arg.size(); ++pos) {
-      const auto option =
-          registry::LookupCompatibilityOption(absl::StrCat("-", arg.substr(pos, 1)), registry::Mode::kRg);
+      const auto option = cli::LookupCompatibilityOption(absl::StrCat("-", arg.substr(pos, 1)), registry::Mode::kRg);
       if (!option.has_value()) {
         return absl::InvalidArgumentError(
             absl::StrCat("unsupported rg option -", arg.substr(pos, 1), "; use --xff before XFF expressions"));
