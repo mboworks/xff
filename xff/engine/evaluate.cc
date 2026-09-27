@@ -79,6 +79,28 @@
 
 namespace xff::engine {
 
+void WorkerMatchers::Bind(const parser::Expr& expression) {
+  if (expression.matcher && !matchers_.contains(ExprIdentity(expression))) {
+    if (auto local = expression.matcher->ForkForWorker(); local.ok()) {
+      matchers_.emplace(ExprIdentity(expression), std::move(*local));
+    }
+  }
+  if (expression.lhs) {
+    Bind(*expression.lhs);
+  }
+  if (expression.rhs) {
+    Bind(*expression.rhs);
+  }
+}
+
+mbo::types::OptionalRef<const regex::Matcher> WorkerMatchers::Get(const parser::Expr& expression) const {
+  const auto local = matchers_.find(ExprIdentity(expression));
+  if (local != matchers_.end()) {
+    return local->second;
+  }
+  return expression.matcher ? mbo::types::OptionalRef<const regex::Matcher>{*expression.matcher} : std::nullopt;
+}
+
 absl::StatusOr<std::string_view> ContentSnapshot::Read(const vfs::FileSystem& fs, std::string_view path) {
   if (!bytes_) {
     bytes_ = fs.ReadContent(path);
@@ -847,6 +869,14 @@ MatcherRef AsRef(const std::shared_ptr<const regex::Matcher>& matcher) {
   return std::cref(*matcher);
 }
 
+MatcherRef MatcherFor(const parser::Expr& expression, const EvalContext& context) {
+  if (context.worker_matchers) {
+    const auto matcher = context.worker_matchers->Get(expression);
+    return matcher ? MatcherRef{std::cref(*matcher)} : std::nullopt;
+  }
+  return AsRef(expression.matcher);
+}
+
 // find's -regex/-iregex: `matcher` (the node's pre-compiled Expr::matcher) must
 // match the whole path (not a substring). An empty matcher (no pattern, or it
 // failed to compile) matches nothing. When `captures` is present (gated -exec is
@@ -1019,7 +1049,7 @@ bool EvalLname(const parser::Expr& expr, EvalContext& ctx) {
 // Both -regex and -iregex map here: case sensitivity is baked into the matcher the
 // parser compiled (iregex folds case), so the handler just matches the path.
 bool EvalRegex(const parser::Expr& expr, EvalContext& ctx) {
-  return MatchesRegex(AsRef(expr.matcher), ctx.visit.path, ctx.captures);
+  return MatchesRegex(MatcherFor(expr, ctx), ctx.visit.path, ctx.captures);
 }
 
 // Reads the regular-file content a content predicate should search, or nullopt when
@@ -1169,7 +1199,7 @@ bool EvalContent(const parser::Expr& expr, EvalContext& ctx) {
 // FullMatch). The matcher is pre-compiled by the parser, with case folding baked in
 // for -irxc. Non-regular, unreadable, and binary files do not match.
 bool EvalRxc(const parser::Expr& expr, EvalContext& ctx) {
-  const MatcherRef matcher = AsRef(expr.matcher);
+  const MatcherRef matcher = MatcherFor(expr, ctx);
   if (!matcher.has_value()) {
     return false;
   }

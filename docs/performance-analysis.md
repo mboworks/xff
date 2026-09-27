@@ -711,3 +711,113 @@ invocation and run before content reads; an unfiltered run does not initialize t
 catalog. None of P01-P08 is claimed complete by this compatibility work. Measure Unicode
 word scans, multiline retained bytes and output-heavy worker batches before claiming a
 performance gain; the new streaming tests establish read/retention behavior, not speed.
+
+## P01/P02: native worker bindings and reusable PCRE2 scratch
+
+Decision: retain both mechanisms. Native predicates now bind worker-private regex execution
+state once when each worker starts. Expression nodes and their identities remain unchanged;
+small inline batches retain their original compiled matchers. RE2 recompiles per worker as
+already done for line output. PCRE2 forks share compiled/JIT code and the immutable match
+context, while retaining their own capture-sized match-data block. Calls on the original
+backend remain concurrent-safe; worker forks require exclusive ownership.
+
+The PCRE2 scratch lease moves cached data out during a call. Reentrant matching therefore gets
+a separate block, and cannot overwrite an outer call's offsets. At most one block returns to
+the cache. Interpreter heap frames above 1 MiB are released at return instead of being retained
+for the worker lifetime; this is a retention ceiling, not a new subject-size or match-work limit.
+The existing match/depth limits, pattern limits, UTF-8/byte mode, default per-thread JIT stack
+and interpreter fallback remain in effect. No new locks or thread-local global cache are added.
+The [PCRE2 API contract](https://www.pcre.org/current/doc/html/pcre2api.html#SEC32) permits reused
+match blocks while requiring independent blocks for concurrent calls.
+
+Validation covers shared-original concurrency, independent forks, original/fork destruction,
+repeated captures with unmatched groups, offset searches, reentrant JIT callbacks, interpreter
+limits and JIT-stack fallback, explicit text modes, native Boolean operators and repeated batches.
+The full line/count/search suites also run unchanged. Allocation lifetime is bounded by each
+worker, not the process. PCRE2 bool/span/capture/rewrite calls reuse the same full capture vector;
+returned strings/spans remain value results.
+
+### Measurements and limits
+
+Baseline is main `c5f3dc93ef` with the same expanded benchmark fixture. Both builds use
+`--config=clang_release --config=xff_full` (O2 and ThinLTO), on macOS arm64 / Apple M5 Pro.
+The fixture stays in memory: 128 nonmatching lines and one matching line per file; `filter-late`
+places the matching line last. The unchanged early-match and count cases remain available.
+Ten baseline/candidate rounds alternate executable order, with the first round discarded.
+Each cell averages the fastest seven of the remaining nine observations. The per-case Google
+Benchmark minimum is 0.02 seconds. One/four are worker allowances; macOS CPU affinity is not
+available here. Raw observations and the invocation contract are in
+[performance-p01-p02.json](performance-p01-p02.json).
+
+Four-worker early-match native RE2 filtering improved 16.6% at 1,000 files and 19.2% at 10,000.
+Late-match RE2 filtering was within 3%, including a 1.9% slowdown at 10,000. PCRE2 count output
+improved 15.8-18.1% for 100-10,000 files. Ten-file paths avoid starting workers; one-worker
+results and other PCRE2 filtering cases were within 4%. These are workload-specific results:
+long-subject regex scanning can dominate scratch allocation, while many short line matches
+benefit more. A separate 16 KiB matching microbenchmark showed no meaningful scratch benefit.
+
+Host load increased sharply in the last round; the raw samples expose the outliers instead of
+hiding them. An initial non-interleaved run showed a 29% RE2 startup regression at 100 files,
+which did not reproduce in the alternating series. Linux and isolated-host confirmation remain
+necessary before making a cross-platform claim or changing scheduling thresholds. P08 will
+separately measure startup/batch policy. There is no new performance merge gate.
+
+A separate 10,000-file/four-worker PCRE2 count run reported peak resident memory of
+27,885,568 bytes for baseline and 27,230,208 bytes for candidate. These single process-level
+observations include executable/runtime memory and are not allocation-count measurements.
+Input reads remain one per file; matching workers retain one reusable scratch block per pattern.
+The microbenchmark's default CPU column covers its calling thread, not total worker CPU time,
+so it is not used to claim CPU savings.
+
+Times are wall microseconds; change is candidate/baseline minus one (negative is faster).
+
+| Engine | Workload    |  Files | Workers | Baseline us | Candidate us | Change |
+| :----- | :---------- | -----: | ------: | ----------: | -----------: | -----: |
+| RE2    | filter      |     10 |       1 |        23.8 |         23.6 |  -0.9% |
+| RE2    | filter      |    100 |       1 |        56.2 |         54.9 |  -2.4% |
+| RE2    | filter      |  1,000 |       1 |       381.5 |        369.2 |  -3.2% |
+| RE2    | filter      | 10,000 |       1 |      3768.4 |       3659.0 |  -2.9% |
+| RE2    | filter      |     10 |       4 |        23.9 |         23.9 |  +0.1% |
+| RE2    | filter      |    100 |       4 |       128.6 |        127.0 |  -1.3% |
+| RE2    | filter      |  1,000 |       4 |       427.8 |        356.9 | -16.6% |
+| RE2    | filter      | 10,000 |       4 |      3559.5 |       2875.8 | -19.2% |
+| RE2    | filter-late |     10 |       1 |       107.4 |        107.1 |  -0.2% |
+| RE2    | filter-late |    100 |       1 |       891.2 |        890.1 |  -0.1% |
+| RE2    | filter-late |  1,000 |       1 |      8746.4 |       8731.6 |  -0.2% |
+| RE2    | filter-late | 10,000 |       1 |     85856.3 |      84270.2 |  -1.8% |
+| RE2    | filter-late |     10 |       4 |       108.3 |        107.5 |  -0.8% |
+| RE2    | filter-late |    100 |       4 |       397.7 |        394.4 |  -0.8% |
+| RE2    | filter-late |  1,000 |       4 |      2555.6 |       2482.8 |  -2.9% |
+| RE2    | filter-late | 10,000 |       4 |     23885.6 |      24351.0 |  +1.9% |
+| RE2    | rg-counts   |     10 |       1 |       125.5 |        127.1 |  +1.3% |
+| RE2    | rg-counts   |    100 |       1 |       937.2 |        927.9 |  -1.0% |
+| RE2    | rg-counts   |  1,000 |       1 |      9015.4 |       9066.1 |  +0.6% |
+| RE2    | rg-counts   | 10,000 |       1 |     89380.8 |      90298.5 |  +1.0% |
+| RE2    | rg-counts   |     10 |       4 |       128.1 |        127.2 |  -0.7% |
+| RE2    | rg-counts   |    100 |       4 |       449.3 |        442.3 |  -1.6% |
+| RE2    | rg-counts   |  1,000 |       4 |      2918.0 |       2876.1 |  -1.4% |
+| RE2    | rg-counts   | 10,000 |       4 |     27745.8 |      27750.0 |  +0.0% |
+| PCRE2  | filter      |     10 |       1 |        24.3 |         24.3 |  +0.3% |
+| PCRE2  | filter      |    100 |       1 |        58.3 |         57.4 |  -1.6% |
+| PCRE2  | filter      |  1,000 |       1 |       386.9 |        375.8 |  -2.9% |
+| PCRE2  | filter      | 10,000 |       1 |      3838.7 |       3704.4 |  -3.5% |
+| PCRE2  | filter      |     10 |       4 |        24.8 |         24.7 |  -0.5% |
+| PCRE2  | filter      |    100 |       4 |       125.8 |        130.2 |  +3.4% |
+| PCRE2  | filter      |  1,000 |       4 |       359.8 |        364.2 |  +1.2% |
+| PCRE2  | filter      | 10,000 |       4 |      2991.7 |       2932.6 |  -2.0% |
+| PCRE2  | filter-late |     10 |       1 |        26.5 |         26.2 |  -1.0% |
+| PCRE2  | filter-late |    100 |       1 |        80.5 |         79.1 |  -1.8% |
+| PCRE2  | filter-late |  1,000 |       1 |       616.6 |        603.2 |  -2.2% |
+| PCRE2  | filter-late | 10,000 |       1 |      6087.9 |       5984.5 |  -1.7% |
+| PCRE2  | filter-late |     10 |       4 |        27.3 |         26.7 |  -2.4% |
+| PCRE2  | filter-late |    100 |       4 |       134.7 |        134.8 |  +0.1% |
+| PCRE2  | filter-late |  1,000 |       4 |       424.4 |        418.1 |  -1.5% |
+| PCRE2  | filter-late | 10,000 |       4 |      3515.0 |       3593.7 |  +2.2% |
+| PCRE2  | rg-counts   |     10 |       1 |        92.1 |         90.2 |  -2.1% |
+| PCRE2  | rg-counts   |    100 |       1 |       579.3 |        600.3 |  +3.6% |
+| PCRE2  | rg-counts   |  1,000 |       1 |      5567.1 |       5593.5 |  +0.5% |
+| PCRE2  | rg-counts   | 10,000 |       1 |     55242.8 |      55721.1 |  +0.9% |
+| PCRE2  | rg-counts   |     10 |       4 |        93.5 |         92.9 |  -0.6% |
+| PCRE2  | rg-counts   |    100 |       4 |       340.4 |        278.7 | -18.1% |
+| PCRE2  | rg-counts   |  1,000 |       4 |      2012.8 |       1694.9 | -15.8% |
+| PCRE2  | rg-counts   | 10,000 |       4 |     19038.8 |      15825.9 | -16.9% |

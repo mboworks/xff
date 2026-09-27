@@ -4,12 +4,16 @@
 #include "xff/engine/parallel_match.h"
 
 #include <cstddef>
+#include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "mbo/testing/status.h"
+#include "xff/engine/evaluate.h"
+#include "xff/matching/regex/regex.h"
 #include "xff/parser/parser.h"
 #include "xff/vfs/local_fs.h"
 
@@ -61,6 +65,31 @@ TEST_F(ParallelMatchTest, ZeroWorkersIsClampedAndUnusedPoolStartsNoWork) {
   ParallelMatch matcher(*command.expression, 0, true);
   EXPECT_THAT(matcher.Match(Entries(100)), SizeIs(100));
   EXPECT_THAT(matcher.Match(Entries(0)), SizeIs(0));
+}
+
+TEST_F(ParallelMatchTest, NativeRegexBindingsPreserveOperatorsCaseAndRepeatedBatches) {
+  MBO_ASSERT_OK_AND_ASSIGN(
+      auto command,
+      parser::Parse({"root", "(", "-iregex", "[02468]", "-o", "-regex", "1[0-9]", ")", "!", "-regex", "12"}));
+  parser::BindMatchers(command, regex::Grammar::kRe2, parser::CaseMode::kSensitive);
+  ASSERT_THAT(CanParallelMatch(*command.expression), IsTrue());
+  ParallelMatch matcher(*command.expression, 4, false);
+  for (const std::size_t count : {10, 1'000, 100, 10}) {
+    const auto& results = matcher.Match(Entries(count));
+    for (std::size_t index = 0; index < count; ++index) {
+      EXPECT_THAT(
+          results.at(index).evaluation.matched,
+          Eq((index < 10 && index % 2 == 0) || (index >= 10 && index < 20 && index != 12)));
+    }
+  }
+}
+
+TEST_F(ParallelMatchTest, UnboundRegexIsANonMatchInWorkers) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"root", "-regex", "foo"}));
+  ParallelMatch matcher(*command.expression, 4, false);
+  for (const auto& result : matcher.Match(Entries(100))) {
+    EXPECT_THAT(result.evaluation.matched, IsFalse());
+  }
 }
 
 TEST_F(ParallelMatchTest, StatefulMetadataAndActionExpressionsCannotEnterWorkers) {

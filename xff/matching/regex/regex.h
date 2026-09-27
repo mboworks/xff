@@ -51,7 +51,8 @@ absl::Status ValidateRe2Rewrite(std::string_view pattern, std::string_view repla
 // A compiled regular expression. -regex matches the whole string (FullMatch); -rxc / -grep match
 // anywhere (PartialMatch / FindFirst). The grammar (RE2 default) is chosen at Compile and
 // the engine held behind a RegexBackend, so this API is grammar-agnostic. Move-only; const after
-// compile, so a compiled Matcher is safe to match concurrently.
+// compile, so a compiled Matcher is safe to match concurrently. Worker forks instead have
+// exclusive ownership of mutable execution state and must not be used concurrently.
 class Matcher {
  public:
   // Compiles `pattern` under `grammar`; `case_insensitive` folds case (find's -iregex). Returns an
@@ -65,8 +66,8 @@ class Matcher {
       Grammar grammar = Grammar::kRe2,
       std::optional<TextMode> text_mode = std::nullopt);
 
-  // Isolate RE2's mutable DFA cache for one worker; immutable compiled state in other
-  // backends remains shared. Call once per worker, never once per entry or batch.
+  // Isolate RE2's mutable DFA cache and PCRE2 match scratch for one worker; immutable
+  // compiled PCRE2 code remains shared. Call once per worker, never per entry or batch.
   absl::StatusOr<Matcher> ForkForWorker() const;
 
   // True iff `text` matches the pattern in its entirety (both ends anchored).

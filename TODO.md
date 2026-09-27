@@ -46,8 +46,8 @@
 These are separate from R01-R05. Evidence and implementation order are in
 `docs/performance-analysis.md`, "Applying the worker model elsewhere".
 
-- [ ] P01: Give native content predicates worker-private RE2 state.
-- [ ] P02: Reuse PCRE2 match scratch per worker while sharing compiled code.
+- [x] P01: Give native content predicates worker-private RE2 state; measurements in `docs/performance-analysis.md`.
+- [x] P02: Reuse PCRE2 match scratch per worker while sharing compiled code; lifetime, reentrancy and limit tests included.
 - [ ] P03: Decouple metadata demand from parallel-filter eligibility for summaries and presentation.
 - [ ] P04: Reuse or stream per-entry hashes, line counts, and text checks; prebind field rewrite programs.
 - [ ] P05: Parallelize independent comparison pairs; investigate persistent read cursors and content reuse.

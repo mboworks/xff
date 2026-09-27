@@ -117,6 +117,17 @@ using EvaluationMemo = std::map<ExprIdentity, EvaluationResult>;
 using FirstCounts = std::map<ExprIdentity, int>;
 using ExecBatches = std::map<ExprIdentity, std::map<std::string, std::vector<std::string>>>;
 
+// Bind once for one worker. Expression identities and immutable AST data stay shared; only
+// matcher execution state is forked. Failed optimization attempts retain the validated original.
+class WorkerMatchers final {
+ public:
+  void Bind(const parser::Expr& expression);
+  mbo::types::OptionalRef<const regex::Matcher> Get(const parser::Expr& expression) const;
+
+ private:
+  std::map<ExprIdentity, regex::Matcher> matchers_;
+};
+
 // Inputs shared by one deferred evaluation pass. Decisions answer result-set predicates resolved by
 // the driver; the memo prevents completed prefix nodes from running twice during replay.
 struct DeferredEvaluation {
@@ -212,6 +223,7 @@ struct EvalContext {
   // EvaluationResult. During replay this capability supplies earlier decisions and memoizes
   // completed prefix nodes, so actions and stateful tests to the left never run twice.
   mbo::types::OptionalRef<DeferredEvaluation> deferred;
+  mbo::types::OptionalRef<const WorkerMatchers> worker_matchers;
   // The fuzzy score composed by the expression immediately to this node's left. EvaluateResult
   // maintains it while descending an AND RHS; -top consumes it as its ranking key.
   std::optional<int> incoming_fuzzy_score;

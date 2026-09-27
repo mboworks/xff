@@ -101,25 +101,80 @@ using CodePtr = std::unique_ptr<pcre2_code, CodeDeleter>;
 using MatchContextPtr = std::unique_ptr<pcre2_match_context, MatchContextDeleter>;
 using MatchDataPtr = std::unique_ptr<pcre2_match_data, MatchDataDeleter>;
 
-// A compiled PCRE2 pattern. The pcre2_code and match context are immutable after construction and
-// safe to share across threads; each match allocates its own match_data (PCRE2's per-match state),
-// so matching is thread-safe as the RegexBackend contract requires.
+// Compiled patterns and fixed contexts are shared. Only explicitly created worker backends
+// retain match data, with exclusive worker ownership and no per-match locks.
+struct CompiledPattern final {
+  CompiledPattern(
+      CodePtr input_code,
+      CodePtr input_full_code,
+      MatchContextPtr input_context,
+      std::uint32_t input_count,
+      std::function<void()> observer)
+      : code(std::move(input_code)),
+        full_code(std::move(input_full_code)),
+        match_context(std::move(input_context)),
+        capture_count(input_count),
+        jit_observer(std::move(observer)) {
+    if (jit_observer) {
+      pcre2_jit_stack_assign(match_context.get(), &ObserveJit, &jit_observer);
+    }
+  }
+
+  // XFF_ABI_POINTER: PCRE2's JIT stack callback ABI uses an opaque context and nullable stack result.
+  static pcre2_jit_stack* ObserveJit(void* context) {
+    // XFF_ABI_POINTER: recover the observer passed through PCRE2's opaque callback context.
+    const auto* observer = static_cast<const std::function<void()>*>(context);
+    (*observer)();
+    return nullptr;  // Use PCRE2's default per-thread machine-stack storage.
+  }
+
+  CodePtr code;
+  CodePtr full_code;
+  MatchContextPtr match_context;
+  std::uint32_t capture_count;
+  std::function<void()> jit_observer;
+};
+
+// Move cached scratch out while matching so a reentrant call cannot corrupt the outer match.
+// Retain at most one block, and discard unusually large interpreter backtracking allocations.
+class MatchDataLease final {
+ public:
+  MatchDataLease(MatchDataPtr& cache, bool reuse, const pcre2_code& code, bool captures)
+      : cache_(cache), reuse_(reuse), data_(reuse ? std::move(cache) : MatchDataPtr{}) {
+    if (!data_) {
+      data_.reset(
+          reuse || captures ? pcre2_match_data_create_from_pattern(&code, nullptr)
+                            : pcre2_match_data_create(1, nullptr));
+    }
+  }
+
+  ~MatchDataLease() {
+    constexpr std::size_t kRetainedHeapLimit = 1'048'576;
+    if (reuse_ && !cache_ && pcre2_get_match_data_heapframes_size(data_.get()) <= kRetainedHeapLimit) {
+      cache_ = std::move(data_);
+    }
+  }
+
+  MatchDataLease(const MatchDataLease&) = delete;
+  MatchDataLease& operator=(const MatchDataLease&) = delete;
+  MatchDataLease(MatchDataLease&&) = delete;
+  MatchDataLease& operator=(MatchDataLease&&) = delete;
+
+  pcre2_match_data& operator*() const { return *data_; }
+
+ private:
+  MatchDataPtr& cache_;
+  bool reuse_;
+  MatchDataPtr data_;
+};
+
 class Pcre2Backend final : public xff::regex::RegexBackend {
  public:
-  Pcre2Backend(
-      CodePtr code,
-      CodePtr full_code,
-      MatchContextPtr match_context,
-      std::uint32_t capture_count,
-      std::function<void()> jit_observer)
-      : code_(std::move(code)),
-        full_code_(std::move(full_code)),
-        match_context_(std::move(match_context)),
-        capture_count_(capture_count),
-        jit_observer_(std::move(jit_observer)) {
-    if (jit_observer_) {
-      pcre2_jit_stack_assign(match_context_.get(), &ObserveJit, &jit_observer_);
-    }
+  explicit Pcre2Backend(std::shared_ptr<const CompiledPattern> program, bool worker = false)
+      : program_(std::move(program)), worker_(worker) {}
+
+  std::unique_ptr<const RegexBackend> ForkForWorker() const override {
+    return std::make_unique<Pcre2Backend>(program_, true);
   }
 
   bool FullMatch(std::string_view text) const override {
@@ -133,8 +188,8 @@ class Pcre2Backend final : public xff::regex::RegexBackend {
       const override {
     // Keep the complete capture vector: PCRE2's MSan annotation does not
     // unpoison offsets when an undersized vector reports success as rc == 0.
-    const MatchDataPtr data{pcre2_match_data_create_from_pattern(code_.get(), nullptr)};
-    const int rc = Match(*code_, text, 0, *data, start);
+    const MatchDataLease data{scratch_, worker_, *program_->code, true};
+    const int rc = Match(*program_->code, text, 0, *data, start);
     std::optional<std::pair<std::size_t, std::size_t>> result;
     if (rc >= 0) {
       // A span rather than the bare pointer PCRE2 hands back: the offsets are then indexed, which is
@@ -146,14 +201,14 @@ class Pcre2Backend final : public xff::regex::RegexBackend {
   }
 
   std::optional<std::vector<std::string>> FullMatchCaptures(std::string_view text) const override {
-    const MatchDataPtr data{pcre2_match_data_create_from_pattern(code_.get(), nullptr)};
+    const MatchDataLease data{scratch_, worker_, *program_->code, true};
     const int rc = Match(FullCode(), text, FullOptions(), *data);
     std::optional<std::vector<std::string>> result;
     if (rc >= 0) {
-      const absl::Span<const PCRE2_SIZE> ovector = Ovector(*data, capture_count_ + 1);
+      const absl::Span<const PCRE2_SIZE> ovector = Ovector(*data, program_->capture_count + 1);
       std::vector<std::string> captures;
-      captures.reserve(capture_count_ + 1);
-      for (std::size_t group = 0; group <= capture_count_; ++group) {  // [0] = whole match, [1..] = groups
+      captures.reserve(program_->capture_count + 1);
+      for (std::size_t group = 0; group <= program_->capture_count; ++group) {  // [0] = whole match, [1..] = groups
         if (std::cmp_greater_equal(group, rc)) {
           captures.emplace_back();  // Trailing groups did not participate; no offset read is needed.
           continue;
@@ -175,7 +230,7 @@ class Pcre2Backend final : public xff::regex::RegexBackend {
     const std::string pcre2_replacement = Re2ReplacementToPcre2(replacement);
     const std::uint32_t options =
         PCRE2_SUBSTITUTE_OVERFLOW_LENGTH | (global ? PCRE2_SUBSTITUTE_GLOBAL : std::uint32_t{0});
-    const MatchDataPtr data{pcre2_match_data_create_from_pattern(code_.get(), nullptr)};
+    const MatchDataLease data{scratch_, worker_, *program_->code, true};
     // The output buffer is OURS, so it is declared in PCRE2's own element type and converted to a
     // std::string once at the end, which removes the char/uchar cast the std::string form needed.
     std::vector<PCRE2_UCHAR> out(text.size() + 16);  // initial guess; grown once on overflow
@@ -194,23 +249,15 @@ class Pcre2Backend final : public xff::regex::RegexBackend {
   }
 
  private:
-  // XFF_ABI_POINTER: PCRE2's JIT stack callback ABI uses an opaque context and nullable stack result.
-  static pcre2_jit_stack* ObserveJit(void* context) {
-    // XFF_ABI_POINTER: recover the observer passed through PCRE2's opaque callback context.
-    const auto* observer = static_cast<const std::function<void()>*>(context);
-    (*observer)();
-    return nullptr;  // Use PCRE2's default per-thread machine-stack storage.
-  }
-
   // PCRE2's ovector as a span of `pairs` start/end offsets, so callers index it instead of walking a
   // raw pointer. `pairs` is what the match data was created for, which is what bounds the array.
   static absl::Span<const PCRE2_SIZE> Ovector(pcre2_match_data& data, std::size_t pairs) {
     return absl::MakeConstSpan(pcre2_get_ovector_pointer(&data), 2 * pairs);
   }
 
-  const pcre2_code& FullCode() const { return full_code_ ? *full_code_ : *code_; }
+  const pcre2_code& FullCode() const { return program_->full_code ? *program_->full_code : *program_->code; }
 
-  std::uint32_t FullOptions() const { return full_code_ ? 0 : PCRE2_ANCHORED | PCRE2_ENDANCHORED; }
+  std::uint32_t FullOptions() const { return program_->full_code ? 0 : PCRE2_ANCHORED | PCRE2_ENDANCHORED; }
 
   int Match(
       const pcre2_code& code,
@@ -218,18 +265,20 @@ class Pcre2Backend final : public xff::regex::RegexBackend {
       std::uint32_t options,
       pcre2_match_data& data,
       std::size_t start = 0) const {
-    const int result = pcre2_match(&code, Sptr(text), text.size(), start, options, &data, match_context_.get());
+    const int result =
+        pcre2_match(&code, Sptr(text), text.size(), start, options, &data, program_->match_context.get());
     if (result != PCRE2_ERROR_JIT_STACKLIMIT) {
       return result;
     }
     // A pattern may outgrow the default JIT stack while remaining within the
     // interpreter's limits. Retry with those limits rather than losing a match.
-    return pcre2_match(&code, Sptr(text), text.size(), start, options | PCRE2_NO_JIT, &data, match_context_.get());
+    return pcre2_match(
+        &code, Sptr(text), text.size(), start, options | PCRE2_NO_JIT, &data, program_->match_context.get());
   }
 
   bool Matches(std::string_view text, bool full) const {
-    const MatchDataPtr data{pcre2_match_data_create(1, nullptr)};
-    return Match(full ? FullCode() : std::as_const(*code_), text, full ? FullOptions() : 0, *data) >= 0;
+    const MatchDataLease data{scratch_, worker_, *program_->code, false};
+    return Match(full ? FullCode() : std::as_const(*program_->code), text, full ? FullOptions() : 0, *data) >= 0;
   }
 
   int Substitute(
@@ -240,22 +289,20 @@ class Pcre2Backend final : public xff::regex::RegexBackend {
       std::vector<PCRE2_UCHAR>& out,
       PCRE2_SIZE& out_len) const {
     const int result = pcre2_substitute(
-        code_.get(), Sptr(text), text.size(), 0, options, &data, match_context_.get(), Sptr(replacement),
-        replacement.size(), out.data(), &out_len);
+        program_->code.get(), Sptr(text), text.size(), 0, options, &data, program_->match_context.get(),
+        Sptr(replacement), replacement.size(), out.data(), &out_len);
     if (result != PCRE2_ERROR_JIT_STACKLIMIT) {
       return result;
     }
     out_len = out.size();
     return pcre2_substitute(
-        code_.get(), Sptr(text), text.size(), 0, options | PCRE2_NO_JIT, &data, match_context_.get(), Sptr(replacement),
-        replacement.size(), out.data(), &out_len);
+        program_->code.get(), Sptr(text), text.size(), 0, options | PCRE2_NO_JIT, &data, program_->match_context.get(),
+        Sptr(replacement), replacement.size(), out.data(), &out_len);
   }
 
-  CodePtr code_;
-  CodePtr full_code_;
-  MatchContextPtr match_context_;
-  std::uint32_t capture_count_;
-  std::function<void()> jit_observer_;
+  const std::shared_ptr<const CompiledPattern> program_;
+  const bool worker_;
+  mutable MatchDataPtr scratch_;
 };
 
 }  // namespace
@@ -314,8 +361,8 @@ absl::StatusOr<std::unique_ptr<const RegexBackend>> internal::CompilePcre2(
   pcre2_set_depth_limit(match_context.get(), kDepthLimit);
   std::uint32_t capture_count = 0;
   pcre2_pattern_info(code.get(), PCRE2_INFO_CAPTURECOUNT, &capture_count);
-  return std::make_unique<Pcre2Backend>(
-      std::move(code), std::move(full_code), std::move(match_context), capture_count, std::move(jit_observer));
+  return std::make_unique<Pcre2Backend>(std::make_shared<CompiledPattern>(
+      std::move(code), std::move(full_code), std::move(match_context), capture_count, std::move(jit_observer)));
 }
 
 // Self-registration (alwayslink keeps this TU): the factory makes the PCRE2 grammar available.

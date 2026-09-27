@@ -25,11 +25,14 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <thread>
+#include <utility>
 
 #include "absl/status/status.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "pcre2_backend_internal.h"
 #include "xff/license/notice.h"
@@ -38,6 +41,7 @@
 namespace xff::regex {
 namespace {
 
+using ::mbo::testing::EqualsText;
 using ::mbo::testing::StatusIs;
 using ::testing::AllOf;
 using ::testing::Contains;
@@ -48,6 +52,7 @@ using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
 using ::testing::Not;
+using ::testing::NotNull;
 using ::testing::Optional;
 using ::testing::Pair;
 
@@ -278,6 +283,87 @@ TEST_F(Pcre2BackendTest, SharedPatternSupportsConcurrentMatching) {
 
 TEST_F(Pcre2BackendTest, InvalidPatternReturnsInvalidArgument) {
   EXPECT_THAT(MakePcre2Backend("a(b", false), StatusIs(absl::StatusCode::kInvalidArgument));
+}
+
+TEST_F(Pcre2BackendTest, WorkerRetainsCodeAfterOriginalDiesAndDoesNotReuseOldCaptures) {
+  ASSERT_OK_AND_ASSIGN(auto original, MakePcre2Backend("(a+)(b+)?", true));
+  auto worker = original->ForkForWorker();
+  ASSERT_THAT(worker, NotNull());
+  original.reset();
+  auto second = worker->ForkForWorker();
+  worker.reset();
+  for (int repeat = 0; repeat < 100; ++repeat) {
+    EXPECT_THAT(second->FullMatchCaptures("AABB"), Optional(ElementsAre("AABB", "AA", "BB")));
+    EXPECT_THAT(second->FullMatchCaptures("AA"), Optional(ElementsAre("AA", "AA", "")));
+    EXPECT_THAT(second->FullMatchCaptures("no"), Eq(std::nullopt));
+    EXPECT_THAT(second->FindFirst("xAAyA", 3), Optional(Pair(4, 1)));
+    EXPECT_THAT(second->FindFirst("none", 0), Eq(std::nullopt));
+    EXPECT_THAT(second->PartialMatch("xAAy"), IsTrue());
+    EXPECT_THAT(second->FullMatch("xAAy"), IsFalse());
+    EXPECT_THAT(second->Rewrite("AAB AB", "<\\2\\1>", true), EqualsText("<BAA> <BA>"));
+  }
+}
+
+TEST_F(Pcre2BackendTest, WorkerRetainsInterpreterLimitsAndJitFallback) {
+  constexpr auto kPatterns = std::to_array<std::string_view>({
+      "(a+)",
+      "(*NO_JIT)(a+)",
+      "(*LIMIT_DEPTH=1)(a+)",
+      "(*LIMIT_MATCH=2)(a|aa)+$",
+      "^(a|b)+$",
+  });
+  const auto subjects = std::to_array<std::string>({"aaa", "aab", "", std::string(12'000, 'a')});
+  for (const auto pattern : kPatterns) {
+    ASSERT_OK_AND_ASSIGN(const auto original, MakePcre2Backend(pattern, false));
+    const auto worker = original->ForkForWorker();
+    ASSERT_THAT(worker, NotNull());
+    for (const auto& subject : subjects) {
+      EXPECT_THAT(worker->PartialMatch(subject), Eq(original->PartialMatch(subject)));
+      EXPECT_THAT(worker->FullMatch(subject), Eq(original->FullMatch(subject)));
+      EXPECT_THAT(worker->FullMatchCaptures(subject), Eq(original->FullMatchCaptures(subject)));
+      EXPECT_THAT(worker->FindFirst(subject, 0), Eq(original->FindFirst(subject, 0)));
+      EXPECT_THAT(worker->Rewrite(subject, "b", false), EqualsText(original->Rewrite(subject, "b", false)));
+    }
+  }
+}
+
+TEST_F(Pcre2BackendTest, ReentrantWorkerMatchKeepsOuterOffsetsIntact) {
+  std::unique_ptr<const RegexBackend> worker;
+  bool nested = false;
+  std::size_t callbacks = 0;
+  const auto observer = [&] {
+    if (!std::exchange(nested, true)) {
+      ++callbacks;
+      EXPECT_THAT(worker->FindFirst("zzab", 0), Optional(Pair(2, 2)));
+      nested = false;
+    }
+  };
+  ASSERT_OK_AND_ASSIGN(auto original, internal::CompilePcre2("(a+)(b+)", false, observer));
+  worker = original->ForkForWorker();
+  original.reset();
+  for (int repeat = 0; repeat < 10; ++repeat) {
+    EXPECT_THAT(worker->FullMatchCaptures("aaaabbb"), Optional(ElementsAre("aaaabbb", "aaaa", "bbb")));
+  }
+  EXPECT_THAT(callbacks, Eq(10));
+}
+
+TEST_F(Pcre2BackendTest, IndependentWorkersAndSharedOriginalSupportConcurrentMatching) {
+  ASSERT_OK_AND_ASSIGN(const auto backend, MakePcre2Backend("(a+)(b+)", false));
+  std::atomic<bool> correct{true};
+  {
+    std::array<std::jthread, 4> workers;
+    for (auto& thread : workers) {
+      thread = std::jthread([&, local = backend->ForkForWorker()] {
+        for (int iteration = 0; iteration < 100; ++iteration) {
+          if (!local->FullMatch("aabb") || local->FullMatch("xaabby") || !backend->PartialMatch("ab")
+              || local->Rewrite("xaabby", "\\2\\1", false) != "xbbaay") {
+            correct.store(false);
+          }
+        }
+      });
+    }
+  }
+  EXPECT_THAT(correct.load(), IsTrue());
 }
 
 }  // namespace

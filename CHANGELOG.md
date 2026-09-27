@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Give native regex workers private execution state and reuse PCRE2 match scratch while preserving shared compiled patterns.
+
 - Share filename-type definitions and INI controls between native and rg commands; keep language and MIME classification independent.
 - Derive compatibility spellings, argument rules, translations and help from the global registry at compile time; allow repeated rg/native filter transitions.
 - Accept filename-type aliases `-t` and `-T` in XFF commands and INI files; keep them unavailable in find mode.

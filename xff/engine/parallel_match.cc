@@ -84,6 +84,10 @@ const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<CollectedEnt
 
 void ParallelMatch::Run() {
   const auto local = output_ ? std::optional(ForkMatchOutput(output_->output)) : std::nullopt;
+  WorkerMatchers matchers;
+  if (expression_) {
+    matchers.Bind(*expression_);
+  }
   std::size_t generation = 0;
   for (;;) {
     {
@@ -96,7 +100,8 @@ void ParallelMatch::Run() {
     }
     EvaluateEntries(
         local ? mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{*local}
-              : mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{});
+              : mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{},
+        matchers);
     {
       const absl::MutexLock lock(mutex_);
       --remaining_;
@@ -104,7 +109,9 @@ void ParallelMatch::Run() {
   }
 }
 
-void ParallelMatch::EvaluateEntries(mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output) {
+void ParallelMatch::EvaluateEntries(
+    mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
+    mbo::types::OptionalRef<const WorkerMatchers> matchers) {
   // Chunking amortizes scheduling without assigning one large directory to one worker.
   constexpr std::size_t kChunk = 16;
   for (;;) {
@@ -114,14 +121,15 @@ void ParallelMatch::EvaluateEntries(mbo::types::OptionalRef<const absl::StatusOr
     }
     const std::size_t end = std::min(first + kChunk, entries_.size());
     for (std::size_t index = first; index < end; ++index) {
-      results_.at(index) = EvaluateEntry(entries_.at(index).AsVisit(), output);
+      results_.at(index) = EvaluateEntry(entries_.at(index).AsVisit(), output, matchers);
     }
   }
 }
 
 ParallelResult ParallelMatch::EvaluateEntry(
     const Visit& visit,
-    mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output) const {
+    mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
+    mbo::types::OptionalRef<const WorkerMatchers> matchers) const {
   ParallelResult result;
   Control control;
   std::optional<int> fuzzy;
@@ -133,6 +141,7 @@ ParallelResult ParallelMatch::EvaluateEntry(
       .now = absl::UnixEpoch(),
       .tz = absl::UTCTimeZone(),
       .fuzzy_score = scores_ ? mbo::types::OptionalRef{fuzzy} : mbo::types::OptionalRef<std::optional<int>>{},
+      .worker_matchers = matchers,
       .control = control,
   };
   result.evaluation = expression_ ? EvaluateDeferred(*expression_, context) : EvaluationResult{.matched = true};
