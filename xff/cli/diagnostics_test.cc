@@ -94,10 +94,10 @@ TEST_F(DiagnosticsTest, PredicateSuggestionUsesParserProvenance) {
 }
 
 TEST_F(DiagnosticsTest, KeepsTheBestThreeSuggestionsWithDeterministicTies) {
-  const auto parsed = parser::Parse({".", "-time"});
+  const auto parsed = parser::Parse({".", "-xtime"});
   EXPECT_THAT(parsed, StatusIs(absl::StatusCode::kInvalidArgument));
   EXPECT_THAT(ParseErrorHint(parsed.status()), Eq("Did you mean '-Btime' or '-atime' or '-ctime'?\n"));
-  EXPECT_THAT(UnknownGlobalHint("-time"), Eq(ParseErrorHint(parsed.status())));
+  EXPECT_THAT(UnknownGlobalHint("-xtime"), Eq(ParseErrorHint(parsed.status())));
 }
 
 TEST_F(DiagnosticsTest, ExplainsShortGlobalPlacementWithoutInventingLongForms) {

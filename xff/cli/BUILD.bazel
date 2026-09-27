@@ -666,7 +666,10 @@ cc_library(
     name = "globals_cc",
     srcs = ["globals.cc"],
     hdrs = ["globals.h"],
-    visibility = ["//xff/engine:__pkg__"],
+    visibility = [
+        "//xff/engine:__pkg__",
+        "//xff/parser:__pkg__",
+    ],
     deps = [
         ":help_width_cc",
         "//xff/presentation/format:format_cc",
@@ -674,6 +677,7 @@ cc_library(
         "//xff/values:values_cc",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
         "@mboworks_mbo//mbo/types:optional_ref_cc",
@@ -697,6 +701,7 @@ cc_test(
         "@abseil-cpp//absl/strings",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )

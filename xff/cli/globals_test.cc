@@ -22,12 +22,14 @@
 #include "absl/strings/str_cat.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "xff/hash/hash.h"
 
 namespace xff::cli {
 namespace {
 
+using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
 using ::mbo::testing::StatusIs;
 using ::testing::_;
@@ -59,10 +61,60 @@ TEST_F(GlobalsTest, GrepAliasesShareTypedEffects) {
       LookupGlobalArgument("--summary"), Optional(Field(&GlobalFlag::grep_effect, Eq(GlobalFlag::GrepEffect::kNone))));
 }
 
+TEST_F(GlobalsTest, NativeAliasesDoNotStealRgCompatibilitySpellings) {
+  EXPECT_THAT(
+      LookupGlobal("-M", registry::Mode::kXff),
+      Optional(Field(&GlobalFlag::grep_effect, GlobalFlag::GrepEffect::kMatchOutput)));
+  EXPECT_THAT(LookupGlobal("-M", registry::Mode::kRg), Optional(Field(&GlobalFlag::name, "--max-columns")));
+  EXPECT_THAT(
+      LookupGlobal("--unicode", registry::Mode::kRg), Optional(Field(&GlobalFlag::modes, registry::Modes::kRg)));
+  EXPECT_THAT(LookupGlobalArgument("-g+", registry::Mode::kRg), Eq(std::nullopt));
+  EXPECT_THAT(
+      LookupGlobalArgument("--file-type=cpp", registry::Mode::kRg),
+      Optional(Field(&GlobalFlag::type_effect, GlobalFlag::TypeEffect::kInclude)));
+  EXPECT_THAT(LookupGlobal("--rg"), Optional(Field(&GlobalFlag::enters_mode, Optional(registry::Mode::kRg))));
+  EXPECT_THAT(LookupGlobal("--xff"), Optional(Field(&GlobalFlag::enters_mode, Optional(registry::Mode::kXff))));
+}
+
+TEST_F(GlobalsTest, CompatibilityViewsShareTheirOwningDeclarations) {
+  for (const GlobalFlag& flag : AllGlobals()) {
+    if (flag.rg.has_value()) {
+      const auto name = flag.rg->name.empty() ? flag.name : flag.rg->name;
+      const auto option = LookupCompatibilityOption(name, registry::Mode::kRg);
+      ASSERT_THAT(option, Optional(_)) << name;
+      EXPECT_THAT(option->target, EqualsText(flag.name));
+      EXPECT_THAT(option->summary, EqualsText(flag.summary));
+      EXPECT_THAT(option->alias, EqualsText(flag.rg->alias.value_or(flag.alias)));
+      EXPECT_THAT(LookupCompatibilityOption(name, registry::Mode::kFind), Eq(std::nullopt));
+    }
+    for (const ValueDoc& value : flag.values) {
+      if (!value.rg.has_value()) {
+        continue;
+      }
+      const auto option = LookupCompatibilityOption(value.rg->name, registry::Mode::kRg);
+      ASSERT_THAT(option, Optional(_));
+      EXPECT_THAT(option->target, EqualsText(flag.name));
+      EXPECT_THAT(option->fixed_value, Optional(EqualsText(value.value)));
+      EXPECT_THAT(option->summary, EqualsText(value.meaning));
+    }
+  }
+}
+
+TEST_F(GlobalsTest, TypeAliasModesAndPrimariesRemainDistinct) {
+  for (const std::string_view token : {"-t", "-tcpp", "-t=cpp", "-T", "-Tcpp", "-T=cpp"}) {
+    EXPECT_THAT(LookupGlobalArgument(token, registry::Mode::kXff), Optional(_));
+    EXPECT_THAT(LookupGlobalArgument(token, registry::Mode::kRg), Optional(_));
+    EXPECT_THAT(LookupGlobalArgument(token, registry::Mode::kFind), Eq(std::nullopt));
+  }
+  EXPECT_THAT(LookupGlobalArgument("-type"), Eq(std::nullopt));
+  EXPECT_THAT(LookupGlobalArgument("-true"), Eq(std::nullopt));
+  EXPECT_THAT(LookupGlobalArgument("-type:f"), Eq(std::nullopt));
+}
+
 // NOLINTNEXTLINE(readability-function-cognitive-complexity): a flat per-field validation sweep.
 TEST_F(GlobalsTest, EveryGlobalIsWellFormed) {
-  EXPECT_THAT(Globals(), Not(IsEmpty()));
-  for (const GlobalFlag& flag : Globals()) {
+  EXPECT_THAT(AllGlobals(), Not(IsEmpty()));
+  for (const GlobalFlag& flag : AllGlobals()) {
     ASSERT_THAT(flag.name, Not(IsEmpty())) << flag.name;
     EXPECT_THAT(flag.display, Not(IsEmpty())) << flag.name;
     EXPECT_THAT(flag.group, Not(IsEmpty())) << flag.name;
@@ -184,8 +236,9 @@ TEST_F(GlobalsTest, NonOverridingGlobalsDeclareTheirRepetitionSemantics) {
   }
   EXPECT_THAT(
       names, ElementsAre(
-                 "--config", "--xffrc", "--exclude", "--include", "--lang-db", "--mime-vocabulary", "--ignore-file",
-                 "--root", "--pack-option", "--summary", "--histogram", "--shard-pattern", "--define"));
+                 "--config", "--xffrc", "--exclude", "--include", "--file-type", "--file-type-not", "--type-add",
+                 "--type-clear", "--lang-db", "--mime-vocabulary", "--ignore-file", "--root", "--pack-option",
+                 "--summary", "--histogram", "--shard-pattern", "--define"));
 }
 
 TEST_F(GlobalsTest, IsKnownGlobalAcceptsEveryTableNameAndAlias) {

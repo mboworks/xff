@@ -337,4 +337,111 @@ JSON
   expect_output_contains "ambiguous file type alias 'shared'" "${out}"
 }
 
+test::shared_type_catalog_observes_ini_and_cli_order_in_both_modes() {
+  local root out
+  root="$(test_tmpdir shared-catalog)"
+  mkdir "${root}/code"
+  printf 'one\n' >"${root}/code/a.one"
+  printf 'two\n' >"${root}/code/a.two"
+  printf 'three\n' >"${root}/code/a.three"
+  printf 'source\n' >"${root}/code/a.cc"
+  printf '%s\n' '--type-add=local:*.one' >"${root}/system.ini"
+  cat >"${root}/user.ini" <<'INI'
+--type-clear=local --type-add=local:*.two
+[narrow]
+--type-clear=local --type-add=local:*.three
+INI
+  out="$(XFF_TEST_SYSTEM_CONFIG="${root}/system.ini" XFF_TEST_USER_CONFIG="${root}/user.ini" \
+    "$(_bin)" --file-type=local "${root}/code" -printf '%f\n')"
+  expect_eq a.two "${out}"
+  out="$(XFF_TEST_SYSTEM_CONFIG="${root}/system.ini" XFF_TEST_USER_CONFIG="${root}/user.ini" \
+    "$(_bin)" --rg -I -tlocal . "${root}/code")"
+  expect_eq two "${out}"
+  out="$(XFF_TEST_SYSTEM_CONFIG="${root}/system.ini" XFF_TEST_USER_CONFIG="${root}/user.ini" \
+    "$(_bin)" --config=narrow --file-type=local "${root}/code" -printf '%f\n')"
+  expect_eq a.three "${out}"
+  out="$(XFF_TEST_SYSTEM_CONFIG="${root}/system.ini" XFF_TEST_USER_CONFIG="${root}/user.ini" \
+    "$(_bin)" --rg --config=narrow -I -tlocal . "${root}/code")"
+  expect_eq three "${out}"
+  out="$(XFF_TEST_SYSTEM_CONFIG="${root}/system.ini" XFF_TEST_USER_CONFIG="${root}/user.ini" \
+    "$(_bin)" --config=narrow --type-clear=local '--type-add=local:*.cc' \
+    --file-type=local "${root}/code" -lang C++ -printf '%f|%{lang}\n')"
+  expect_eq 'a.cc|C++' "${out}"
+  out="$(XFF_TEST_SYSTEM_CONFIG="${root}/system.ini" XFF_TEST_USER_CONFIG="${root}/user.ini" \
+    "$(_bin)" --rg --config=narrow --type-clear=local '--type-add=local:*.cc' \
+    -I -tlocal . "${root}/code" --xff -lang C++)"
+  expect_eq source "${out}"
+}
+
+test::mode_switches_keep_native_and_rg_short_options_distinct() {
+  local root
+  root="$(_tree)"
+  _check 0 $'TODO\nTODO\nTODO' --rg TODO "${root}" --xff -type f \
+    --rg -tcpp -o --xff -name '*.cc' + -name '*.h' --rg -I
+  _check 0 "${root}/a.cc" --file-type=cpp "${root}" -type f
+}
+
+test::native_type_aliases_share_cli_and_ini_catalog_selection() {
+  local root out
+  root="$(_tree)"
+  _check 0 "${root}/a.cc" -t cpp "${root}" -type f
+  _check 0 "${root}/a.cc" -t=cpp "${root}" -type f
+  _check 0 "$(printf '%s\n' "${root}/b.txt" "${root}/empty")" -Tcpp "${root}" -type f
+  _check 0 "${root}/a.cc" -Tcpp -tcpp "${root}" -type f
+  _check 0 "${root}/a.cc" '--type-add=help:*.cc' -t help "${root}" -type f
+  printf '%s\n' '-t cpp' '[exclude]' '-Tcpp' >"${root}/user.ini"
+  out="$(XFF_TEST_USER_CONFIG="${root}/user.ini" "$(_bin)" "${root}" -type f)"
+  expect_eq "${root}/a.cc" "${out}"
+  out="$(XFF_TEST_USER_CONFIG="${root}/user.ini" "$(_bin)" --config=exclude "${root}" -type f)"
+  expect_eq '' "${out}"
+}
+
+test::find_style_rejects_native_type_aliases_from_cli_and_ini() {
+  local root out rc
+  root="$(_tree)"
+  out="$("$(_bin)" --config=find -tcpp "${root}" 2>&1)" && rc=0 || rc="${?}"
+  expect_eq 2 "${rc}"
+  expect_output_contains 'not available in find mode' "${out}"
+  out="$("$(_bin)" --config=find -Tcpp "${root}" --explain 2>&1)" && rc=0 || rc="${?}"
+  expect_eq 2 "${rc}"
+  expect_output_contains 'not available in find mode' "${out}"
+  printf '%s\n' '--config=find' '-t cpp' >"${root}/user.ini"
+  out="$(XFF_TEST_USER_CONFIG="${root}/user.ini" "$(_bin)" "${root}" 2>&1)" && rc=0 || rc="${?}"
+  expect_eq 2 "${rc}"
+  expect_output_contains 'not available in find mode' "${out}"
+  cp "$(_bin)" "${root}/find"
+  out="$("${root}/find" -tcpp "${root}" 2>&1)" && rc=0 || rc="${?}"
+  expect_eq 2 "${rc}"
+  expect_output_contains 'not available in find mode' "${out}"
+  out="$("${root}/find" -tcpp --help 2>&1)" && rc=0 || rc="${?}"
+  expect_eq 2 "${rc}"
+  expect_output_contains 'not available in find mode' "${out}"
+}
+
+test::mode_reentry_preserves_follow_and_configuration_order() {
+  local root out
+  root="$(test_tmpdir follow)"
+  mkdir "${root}/scan"
+  printf 'hit\n' >"${root}/scan/only.txt"
+  _check 0 hit --rg -I hit "${root}/scan" --xff -type f --rg -L
+  printf '%s\n' '[physical]' '-P' >"${root}/user.ini"
+  out="$(XFF_TEST_USER_CONFIG="${root}/user.ini" "$(_bin)" --rg -I hit "${root}/scan" \
+    --xff -type f --config=physical --rg -L --explain \
+    | awk -F '\t' '$2 == "-L" || $2 == "-P" { print $2 }')"
+  expect_eq $'-P\n-L' "${out}"
+  out="$(XFF_TEST_USER_CONFIG="${root}/user.ini" "$(_bin)" --rg -I hit "${root}/scan" \
+    --xff -type f --rg -L --xff --config=physical --explain \
+    | awk -F '\t' '$2 == "-L" || $2 == "-P" { print $2 }')"
+  expect_eq $'-L\n-P' "${out}"
+}
+
+test::explicit_files_bypass_discovery_but_not_native_filters() {
+  local root
+  root="$(_tree)"
+  _check 0 other --rg -tcpp other "${root}/b.txt"
+  _check 0 other --rg '-g!*.txt' other "${root}/b.txt"
+  _check 1 '' --rg -tcpp other "${root}/b.txt" --xff -name '*.cc'
+  _check 0 "${root}/b.txt" --file-type=cpp "${root}/b.txt"
+}
+
 test_runner

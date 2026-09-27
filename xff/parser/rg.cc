@@ -26,313 +26,13 @@
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "mbo/status/status_macros.h"
+#include "xff/cli/globals.h"
 #include "xff/parser/parser.h"
+#include "xff/registry/compatibility.h"
+#include "xff/registry/registry.h"
 
 namespace xff::parser {
 namespace {
-constexpr auto kOptions = std::to_array<RgOption>({
-    {
-        .name = "regexp",
-        .short_name = 'e',
-        .argument = "PATTERN",
-        .effect = RgOption::Effect::kPattern,
-        .summary = "Add a search pattern; repeatable, combined as a union.",
-    },
-    {
-        .name = "file",
-        .short_name = 'f',
-        .argument = "FILE",
-        .effect = RgOption::Effect::kFile,
-        .summary = "Read patterns from `FILE`, one per line; `-` reads stdin; repeatable.",
-    },
-    {
-        .name = "glob",
-        .short_name = 'g',
-        .argument = "GLOB",
-        .effect = RgOption::Effect::kGlob,
-        .summary = "Include glob; a leading `!` excludes; last matching rule wins.",
-    },
-    {
-        .name = "type",
-        .short_name = 't',
-        .argument = "TYPE",
-        .effect = RgOption::Effect::kType,
-        .summary = "Search files matching this type; repeatable; `all` selects every defined type.",
-    },
-    {
-        .name = "type-not",
-        .short_name = 'T',
-        .argument = "TYPE",
-        .effect = RgOption::Effect::kTypeNot,
-        .summary = "Exclude files matching this type; later matching type selections win.",
-    },
-    {
-        .name = "type-add",
-        .argument = "TYPE:GLOB",
-        .effect = RgOption::Effect::kTypeAdd,
-        .summary = "Add a type glob; `TYPE:include:TYPES` imports comma-separated type definitions.",
-    },
-    {
-        .name = "type-clear",
-        .argument = "TYPE",
-        .effect = RgOption::Effect::kTypeClear,
-        .summary = "Remove the globs for a type before subsequent additions.",
-    },
-    {
-        .name = "type-list",
-        .effect = RgOption::Effect::kTypeList,
-        .summary = "List available type names and definitions without searching.",
-    },
-    {
-        .name = "multiline",
-        .short_name = 'U',
-        .effect = RgOption::Effect::kMultiline,
-        .summary = "Allow matches to span lines; retains whole input for cross-line regex evaluation.",
-    },
-    {
-        .name = "no-multiline",
-        .effect = RgOption::Effect::kNoMultiline,
-        .summary = "Search one line at a time.",
-    },
-    {
-        .name = "multiline-dotall",
-        .effect = RgOption::Effect::kDotall,
-        .summary = "Make `.` match newlines when multiline search is enabled.",
-    },
-    {
-        .name = "no-multiline-dotall",
-        .effect = RgOption::Effect::kNoDotall,
-        .summary = "Restore the default dot behavior.",
-    },
-    {
-        .name = "heading",
-        .effect = RgOption::Effect::kHeading,
-        .summary = "Print the path above each file's matches; enabled by default on a terminal.",
-    },
-    {
-        .name = "no-heading",
-        .effect = RgOption::Effect::kNoHeading,
-        .summary = "Use per-line filename prefixes; the default for piped output.",
-    },
-    {
-        .name = "column",
-        .effect = RgOption::Effect::kColumn,
-        .summary = "Print one-based byte columns and enable line numbers.",
-    },
-    {
-        .name = "no-column",
-        .effect = RgOption::Effect::kNoColumn,
-        .summary = "Omit byte columns.",
-    },
-    {
-        .name = "pretty",
-        .short_name = 'p',
-        .effect = RgOption::Effect::kPretty,
-        .summary = "Enable headings, line numbers, and color, even when output is piped.",
-    },
-    {
-        .name = "unicode",
-        .effect = RgOption::Effect::kUnicode,
-        .summary = "Interpret content as UTF-8 and use Unicode word boundaries (default); no encoding detection.",
-    },
-    {
-        .name = "no-unicode",
-        .effect = RgOption::Effect::kNoUnicode,
-        .summary = "Match 8-bit bytes with ASCII word boundaries; no UTF-8 decoding or legacy-codepage conversion.",
-    },
-    {
-        .name = "only-matching",
-        .short_name = 'o',
-        .replacement = "--only-matching",
-        .summary = "Print only matched portions.",
-    },
-    {
-        .name = "invert-match",
-        .short_name = 'v',
-        .replacement = "--invert-match",
-        .summary = "Select nonmatching lines.",
-    },
-    {
-        .name = "line-number",
-        .short_name = 'n',
-        .replacement = "--line-number",
-        .summary = "Print line-number prefixes.",
-    },
-    {
-        .name = "no-line-number",
-        .short_name = 'N',
-        .replacement = "--no-line-number",
-        .summary = "Omit line-number prefixes (the rg default).",
-    },
-    {
-        .name = "with-filename",
-        .short_name = 'H',
-        .replacement = "--with-filename",
-        .summary = "Always print path prefixes.",
-    },
-    {
-        .name = "no-filename",
-        .short_name = 'I',
-        .replacement = "--no-filename",
-        .summary = "Omit path prefixes; otherwise automatic for multiple inputs and archive members.",
-    },
-    {
-        .name = "files-with-matches",
-        .short_name = 'l',
-        .replacement = "--files-with-matches",
-        .summary = "Print filenames with selected lines.",
-    },
-    {
-        .name = "files-without-match",
-        .replacement = "--files-without-match",
-        .summary = "Print filenames without selected lines.",
-    },
-    {
-        .name = "count",
-        .short_name = 'c',
-        .replacement = "--count",
-        .summary = "Print selected line counts.",
-    },
-    {
-        .name = "count-matches",
-        .replacement = "--count-matches",
-        .summary = "Print matched occurrence counts.",
-    },
-    {
-        .name = "ignore-case",
-        .short_name = 'i',
-        .replacement = "--case=insensitive",
-        .summary = "Match case-insensitively.",
-    },
-    {
-        .name = "case-sensitive",
-        .short_name = 's',
-        .replacement = "--case=sensitive",
-        .summary = "Match case-sensitively (the rg default).",
-    },
-    {
-        .name = "smart-case",
-        .short_name = 'S',
-        .replacement = "--case=smart",
-        .summary = "Ignore case unless the pattern contains an uppercase letter.",
-    },
-    {
-        .name = "fixed-strings",
-        .short_name = 'F',
-        .replacement = "--regextype=EXACT",
-        .summary = "Use literal matching.",
-    },
-    {
-        .name = "pcre2",
-        .short_name = 'P',
-        .replacement = "--regextype=PCRE2",
-        .summary = "Use the optional PCRE2 backend; RE2 is the default.",
-    },
-    {
-        .name = "follow",
-        .short_name = 'L',
-        .replacement = "-L",
-        .summary = "Follow symbolic links.",
-    },
-    {
-        .name = "quiet",
-        .short_name = 'q',
-        .replacement = "--quiet",
-        .summary = "Suppress output; preserve match-sensitive exit status.",
-    },
-    {
-        .name = "context",
-        .short_name = 'C',
-        .replacement = "--context=",
-        .argument = "N",
-        .summary = "Print `N` context lines before and after each match.",
-    },
-    {
-        .name = "before-context",
-        .short_name = 'B',
-        .replacement = "--before-context=",
-        .argument = "N",
-        .summary = "Print `N` lines before each match.",
-    },
-    {
-        .name = "after-context",
-        .short_name = 'A',
-        .replacement = "--after-context=",
-        .argument = "N",
-        .summary = "Print `N` lines after each match.",
-    },
-    {
-        .name = "threads",
-        .short_name = 'j',
-        .argument = "N",
-        .effect = RgOption::Effect::kThreads,
-        .summary = "Worker allowance; `0` selects automatic.",
-    },
-    {
-        .name = "word-regexp",
-        .short_name = 'w',
-        .effect = RgOption::Effect::kWord,
-        .summary = "Match whole words.",
-    },
-    {
-        .name = "line-regexp",
-        .short_name = 'x',
-        .effect = RgOption::Effect::kLine,
-        .summary = "Match whole lines.",
-    },
-    {
-        .name = "text",
-        .short_name = 'a',
-        .effect = RgOption::Effect::kText,
-        .summary = "Search binary content as text.",
-    },
-    {
-        .name = "max-columns",
-        .short_name = 'M',
-        .argument = "N",
-        .effect = RgOption::Effect::kColumns,
-        .summary = "Replace output lines longer than `N` bytes with an omission marker; `0` disables the limit.",
-    },
-    {
-        .name = "root",
-        .argument = "NAME=PATH",
-        .effect = RgOption::Effect::kRoot,
-        .summary = "Add a named search root before `--xff`.",
-    },
-    {
-        .name = "hidden",
-        .replacement = "--hidden",
-        .summary = "Include hidden entries.",
-    },
-    {
-        .name = "no-hidden",
-        .replacement = "--no-hidden",
-        .summary = "Skip hidden entries.",
-    },
-    {
-        .name = "no-ignore",
-        .replacement = "--no-ignore",
-        .summary = "Disable ignore-file filtering.",
-    },
-    {
-        .name = "color",
-        .replacement = "--color=",
-        .argument = "WHEN",
-        .summary = "Color policy: `auto`, `always`, or `never`.",
-    },
-    {
-        .name = "help",
-        .short_name = 'h',
-        .replacement = "--help=rg",
-        .summary = "Show rg help; `--help=TOPIC` selects another help topic.",
-    },
-    {
-        .name = "version",
-        .short_name = 'V',
-        .replacement = "--version",
-        .summary = "Print the program version.",
-    },
-});
 
 struct RootOperand {
   std::string path;
@@ -349,9 +49,16 @@ class RgParser {
   absl::StatusOr<Command> Parse() {
     for (; index_ < args_.size(); ++index_) {
       const std::string_view arg = args_.at(index_);
-      if (options_ && arg == "--xff") {
-        ++index_;
-        break;
+      if (options_) {
+        const auto flag = cli::LookupGlobal(arg, mode_);
+        if (flag.has_value() && flag->enters_mode.has_value()) {
+          mode_ = *flag->enters_mode;
+          continue;
+        }
+      }
+      if (mode_ == registry::Mode::kXff) {
+        NativeToken(arg);
+        continue;
       }
       if (options_ && arg == "--") {
         options_ = false;
@@ -378,7 +85,7 @@ class RgParser {
     // A sentinel separates leading globals from the native filter. The actual roots are
     // assigned directly, so rg paths that look like native operators stay literal paths.
     native_.emplace_back(".");
-    native_.insert(native_.end(), args_.begin() + static_cast<std::ptrdiff_t>(index_), args_.end());
+    native_.insert(native_.end(), native_expression_.begin(), native_expression_.end());
     MBO_ASSIGN_OR_RETURN(auto command, parser::Parse(native_));
     if (command.roots.size() != named_roots_ + 1) {
       return absl::InvalidArgumentError("--xff starts a filter expression; put search paths before it");
@@ -401,90 +108,119 @@ class RgParser {
   }
 
  private:
-  absl::Status Apply(const RgOption& option, std::optional<std::string_view> attached) {
+  // Copy each primary and its complete argument run together. Mode-looking values
+  // therefore remain literal, including command arguments and attached bindings.
+  void NativeToken(std::string_view arg) {
+    // Collect globals in source order across both grammars. Compatibility aliases
+    // such as rg's -L must stay before the native expression's sentinel root.
+    if (options_ && arg.starts_with("--") && arg.size() > 2) {
+      native_.emplace_back(arg);
+      return;
+    }
+    if (arg == "--") {
+      options_ = false;
+    }
+    native_expression_.emplace_back(arg);
+    const auto descriptor = registry::Lookup(arg.substr(0, arg.find(':')), mode_);
+    if (!descriptor.has_value()) {
+      return;
+    }
+    const bool capture = descriptor->binding == registry::Binding::kLabelRegex;
+    if (capture || descriptor->arity < 0) {
+      while (index_ + 1 < args_.size()) {
+        const auto& operand = args_.at(++index_);
+        native_expression_.push_back(operand);
+        if (operand == ";" || (!capture && operand == "+")) {
+          break;
+        }
+      }
+      return;
+    }
+    const auto next = index_ + 1 < args_.size() ? std::string_view(args_.at(index_ + 1)) : std::string_view{};
+    for (int count = descriptor->ArgumentCount(next); count > 0 && index_ + 1 < args_.size(); --count) {
+      native_expression_.push_back(args_.at(++index_));
+    }
+  }
+
+  absl::Status Apply(const registry::CompatibilityOption& option, std::optional<std::string_view> attached) {
     std::string_view value;
     if (!option.argument.empty()) {
       if (attached.has_value()) {
         value = *attached;
       } else {
         if (++index_ == args_.size()) {
-          return absl::InvalidArgumentError(absl::StrCat("--", option.name, " requires a value"));
+          return absl::InvalidArgumentError(absl::StrCat(option.name, " requires a value"));
         }
         value = args_.at(index_);
       }
     } else if (attached.has_value()) {
-      return absl::InvalidArgumentError(absl::StrCat("--", option.name, " does not take a value"));
+      return absl::InvalidArgumentError(absl::StrCat(option.name, " does not take a value"));
     }
     switch (option.effect) {
-      case RgOption::Effect::kGlobal:
-        native_.push_back(absl::StrCat(option.replacement, value));
-        help_ = help_ || option.short_name == 'h' || option.short_name == 'V';
+      case registry::CompatibilityOption::Effect::kMeta:
+      case registry::CompatibilityOption::Effect::kGlobal:
+        native_.push_back(
+            absl::StrCat(
+                option.target, option.fixed_value.has_value() || !option.argument.empty() ? "=" : "",
+                option.fixed_value.value_or(value)));
+        help_ = help_ || option.effect == registry::CompatibilityOption::Effect::kMeta;
         break;
-      case RgOption::Effect::kPattern:
+      case registry::CompatibilityOption::Effect::kPattern:
         search_.patterns.push_back({.value = std::string(value)});
         explicit_patterns_ = true;
         break;
-      case RgOption::Effect::kFile:
+      case registry::CompatibilityOption::Effect::kFile:
         search_.patterns.push_back({.value = std::string(value), .file = true});
         explicit_patterns_ = true;
         break;
-      case RgOption::Effect::kWord:
+      case registry::CompatibilityOption::Effect::kWord:
         search_.word = true;
         search_.line = false;
         break;
-      case RgOption::Effect::kLine:
+      case registry::CompatibilityOption::Effect::kLine:
         search_.line = true;
         search_.word = false;
         break;
-      case RgOption::Effect::kText: search_.text = true; break;
-      case RgOption::Effect::kUnicode:
+      case registry::CompatibilityOption::Effect::kText: search_.text = true; break;
+      case registry::CompatibilityOption::Effect::kUnicode:
         search_.unicode = true;
         search_.unicode_explicit = true;
         break;
-      case RgOption::Effect::kNoUnicode:
+      case registry::CompatibilityOption::Effect::kNoUnicode:
         search_.unicode = false;
         search_.unicode_explicit = true;
         break;
-      case RgOption::Effect::kType:
-        search_.types.push_back({.kind = RgTypeRule::Kind::kInclude, .value = std::string(value)});
+      case registry::CompatibilityOption::Effect::kTypeList:
+        search_.type_list = true;
+        native_.emplace_back("--type-list");
         break;
-      case RgOption::Effect::kTypeNot:
-        search_.types.push_back({.kind = RgTypeRule::Kind::kExclude, .value = std::string(value)});
-        break;
-      case RgOption::Effect::kTypeAdd:
-        search_.types.push_back({.kind = RgTypeRule::Kind::kAdd, .value = std::string(value)});
-        break;
-      case RgOption::Effect::kTypeClear:
-        search_.types.push_back({.kind = RgTypeRule::Kind::kClear, .value = std::string(value)});
-        break;
-      case RgOption::Effect::kTypeList: search_.type_list = true; break;
-      case RgOption::Effect::kMultiline: search_.multiline = true; break;
-      case RgOption::Effect::kNoMultiline: search_.multiline = false; break;
-      case RgOption::Effect::kDotall: search_.dotall = true; break;
-      case RgOption::Effect::kNoDotall: search_.dotall = false; break;
-      case RgOption::Effect::kHeading: search_.heading = true; break;
-      case RgOption::Effect::kNoHeading: search_.heading = false; break;
-      case RgOption::Effect::kColumn:
+      case registry::CompatibilityOption::Effect::kMultiline: search_.multiline = true; break;
+      case registry::CompatibilityOption::Effect::kNoMultiline: search_.multiline = false; break;
+      case registry::CompatibilityOption::Effect::kDotall: search_.dotall = true; break;
+      case registry::CompatibilityOption::Effect::kNoDotall: search_.dotall = false; break;
+      case registry::CompatibilityOption::Effect::kHeading: search_.heading = true; break;
+      case registry::CompatibilityOption::Effect::kNoHeading: search_.heading = false; break;
+      case registry::CompatibilityOption::Effect::kColumn:
         search_.column = true;
         native_.emplace_back("--line-number");
         break;
-      case RgOption::Effect::kNoColumn: search_.column = false; break;
-      case RgOption::Effect::kPretty:
+      case registry::CompatibilityOption::Effect::kNoColumn: search_.column = false; break;
+      case registry::CompatibilityOption::Effect::kPretty:
         search_.heading = true;
         native_.insert(native_.end(), {"--line-number", "--color=always"});
         break;
-      case RgOption::Effect::kColumns:
+      case registry::CompatibilityOption::Effect::kColumns:
         if (!absl::SimpleAtoi(value, &search_.max_columns)) {
           return absl::InvalidArgumentError("--max-columns requires a nonnegative integer");
         }
         break;
-      case RgOption::Effect::kThreads: {
+      case registry::CompatibilityOption::Effect::kThreads: {
         std::size_t workers = 0;
         const bool automatic = absl::SimpleAtoi(value, &workers) && workers == 0;
         native_.push_back(absl::StrCat("--jobs=", automatic ? "all" : value));
         break;
       }
-      case RgOption::Effect::kRoot: {
+      case registry::CompatibilityOption::Effect::kRoot: {
         const std::string token = absl::StrCat("--root=", value);
         // Reuse native root validation; the complete native parse below also rejects duplicate names.
         MBO_ASSIGN_OR_RETURN(auto root, parser::Parse({token}));
@@ -493,7 +229,7 @@ class RgParser {
         ++named_roots_;
         break;
       }
-      case RgOption::Effect::kGlob:
+      case registry::CompatibilityOption::Effect::kGlob:
         search_.globs.emplace_back(value);
         native_.push_back(
             absl::StrCat(
@@ -514,38 +250,32 @@ class RgParser {
       native_.push_back(absl::StrCat("--", arg));
       return absl::OkStatus();
     }
-    for (const auto& option : kOptions) {
-      if (option.name == name) {
-        return Apply(option, value);
-      }
+    if (const auto option = cli::LookupCompatibilityOption(absl::StrCat("--", name), registry::Mode::kRg);
+        option.has_value()) {
+      return Apply(*option, value);
     }
     // Double-dash XFF globals keep their canonical spelling. Validation still happens
     // through the ordinary registry; unsupported rg shorts never become XFF aliases.
-    if (name == "rg") {
-      return absl::InvalidArgumentError("--rg may only select the grammar once");
+    const std::string token = absl::StrCat("--", arg);
+    if (!cli::LookupGlobalArgument(token, registry::Mode::kRg).has_value() && cli::IsKnownGlobal(token)) {
+      return absl::InvalidArgumentError(absl::StrCat(token, " is not available in rg mode; use --xff first"));
     }
-    native_.push_back(absl::StrCat("--", arg));
+    native_.push_back(token);
     return absl::OkStatus();
   }
 
   absl::Status Short(std::string_view arg) {
     for (std::size_t pos = 0; pos < arg.size(); ++pos) {
-      bool found = false;
-      for (const auto& option : kOptions) {
-        if (option.short_name != '\0' && option.short_name == arg.at(pos)) {
-          found = true;
-          const auto rest = arg.substr(pos + 1);
-          MBO_RETURN_IF_ERROR(
-              Apply(option, !option.argument.empty() && !rest.empty() ? std::optional(rest) : std::nullopt));
-          if (!option.argument.empty()) {
-            return absl::OkStatus();
-          }
-          break;
-        }
-      }
-      if (!found) {
+      const auto option = cli::LookupCompatibilityOption(absl::StrCat("-", arg.substr(pos, 1)), registry::Mode::kRg);
+      if (!option.has_value()) {
         return absl::InvalidArgumentError(
             absl::StrCat("unsupported rg option -", arg.substr(pos, 1), "; use --xff before XFF expressions"));
+      }
+      const auto rest = arg.substr(pos + 1);
+      MBO_RETURN_IF_ERROR(
+          Apply(*option, !option->argument.empty() && !rest.empty() ? std::optional(rest) : std::nullopt));
+      if (!option->argument.empty()) {
+        return absl::OkStatus();
       }
     }
     return absl::OkStatus();
@@ -554,18 +284,16 @@ class RgParser {
   const std::vector<std::string>& args_;
   std::size_t index_;
   bool options_ = true;
+  registry::Mode mode_ = registry::Mode::kRg;
   bool explicit_patterns_ = false;
   bool help_ = false;
   RgSearch search_;
   std::vector<RootOperand> positionals_;
   std::size_t named_roots_ = 0;
   std::vector<std::string> native_{"--config=rg", "--match-output", "--exit-match"};
+  std::vector<std::string> native_expression_;
 };
 }  // namespace
-
-std::span<const RgOption> RgOptions() {
-  return kOptions;
-}
 
 absl::StatusOr<Command> ParseRg(const std::vector<std::string>& args, std::size_t start) {
   return RgParser(args, start).Parse();

@@ -27,6 +27,7 @@
 #include "xff/cli/globals.h"
 #include "xff/cli/help_model.h"
 #include "xff/parser/rg.h"
+#include "xff/registry/compatibility.h"
 
 namespace xff::cli {
 namespace {
@@ -203,10 +204,10 @@ TEST_F(BuildReferenceTest, RgHelpDocumentsEveryParserOptionAndItsArgument) {
       }
     }
   }
-  EXPECT_THAT(terms, SizeIs(parser::RgOptions().size()));
-  for (const parser::RgOption& option : parser::RgOptions()) {
-    std::string term = option.short_name == '\0' ? "" : absl::StrCat("-", std::string(1, option.short_name), " / ");
-    absl::StrAppend(&term, "--", option.name);
+  EXPECT_THAT(terms, SizeIs(cli::CompatibilityOptions().size()));
+  for (const registry::CompatibilityOption& option : cli::CompatibilityOptions()) {
+    std::string term = option.alias.empty() ? "" : absl::StrCat(option.alias, " / ");
+    absl::StrAppend(&term, option.name);
     if (!option.argument.empty()) {
       absl::StrAppend(&term, " ", option.argument);
     }

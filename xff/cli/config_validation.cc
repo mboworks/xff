@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -94,21 +95,37 @@ absl::Status ValidateSystemControl(std::string_view token) {
   return ValidateGlobalValue(token);
 }
 
-absl::Status ValidateTokens(const std::vector<std::string>& tokens) {
+absl::StatusOr<GlobalAliasArgument> NormalizeConfigGlobal(
+    const GlobalFlag& flag,
+    std::string_view token,
+    std::optional<std::string_view> next) {
+  if (flag.config_only) {
+    MBO_RETURN_IF_ERROR(ValidateSystemControl(token));
+    return GlobalAliasArgument{.token = std::string(token)};
+  }
+  if (flag.cli_only) {
+    return absl::InvalidArgumentError(absl::StrCat(flag.name, " is command-line only"));
+  }
+  GlobalAliasArgument result{.token = std::string(token)};
+  if (!flag.alias_argument.empty() && token.starts_with(flag.alias)) {
+    MBO_ASSIGN_OR_RETURN(result, ParseGlobalAliasArgument(flag, token, next));
+  }
+  MBO_RETURN_IF_ERROR(ValidateGlobalValue(result.token));
+  return result;
+}
+
+absl::StatusOr<std::vector<std::string>> NormalizeAndValidateTokens(const std::vector<std::string>& tokens) {
+  std::vector<std::string> normalized;
+  normalized.reserve(tokens.size());
   std::vector<std::string> arguments = {"."};
   for (std::size_t pos = 0; pos < tokens.size(); ++pos) {
     const std::string_view token = tokens[pos];
-    if (IsSystemControl(token)) {
-      MBO_RETURN_IF_ERROR(ValidateSystemControl(token));
-      continue;
-    }
+    normalized.emplace_back(token);
     if (const auto flag = LookupGlobalArgument(token); flag.has_value()) {
-      if (flag->cli_only) {
-        return absl::InvalidArgumentError(absl::StrCat(flag->name, " is command-line only"));
-      }
-      if (const absl::Status status = ValidateGlobalValue(token); !status.ok()) {
-        return status;
-      }
+      const auto next = pos + 1 < tokens.size() ? std::optional<std::string_view>(tokens[pos + 1]) : std::nullopt;
+      MBO_ASSIGN_OR_RETURN(auto argument, NormalizeConfigGlobal(*flag, token, next));
+      normalized.back() = std::move(argument.token);
+      pos += static_cast<std::size_t>(argument.consumes_next);
       continue;
     }
     arguments.emplace_back(token);
@@ -122,9 +139,11 @@ absl::Status ValidateTokens(const std::vector<std::string>& tokens) {
     MBO_ASSIGN_OR_RETURN(const std::size_t arity, PrimaryArgumentCount(tokens, pos, *primary));
     for (std::size_t offset = 0; offset < arity; ++offset) {
       arguments.push_back(tokens[++pos]);
+      normalized.push_back(tokens[pos]);
     }
   }
-  return parser::Parse(arguments).status();
+  MBO_RETURN_IF_ERROR(parser::Parse(arguments).status());
+  return normalized;
 }
 
 std::vector<std::string> ConfigReferences(const config::IniSection& section) {
@@ -302,9 +321,14 @@ class ConfigFileValidator {
       result_.config.globals.clear();
     }
     std::vector<config::IniLine> valid_lines;
-    for (const config::IniLine& line : result_.config.global_lines) {
-      absl::Status status =
-          line.syntax_error.empty() ? ValidateTokens(line.tokens) : absl::InvalidArgumentError(line.syntax_error);
+    for (config::IniLine line : result_.config.global_lines) {
+      auto tokens = line.syntax_error.empty()
+                        ? NormalizeAndValidateTokens(line.tokens)
+                        : absl::StatusOr<std::vector<std::string>>(absl::InvalidArgumentError(line.syntax_error));
+      absl::Status status = tokens.status();
+      if (tokens.ok()) {
+        line.tokens = *std::move(tokens);
+      }
       auto next_controls = ValidateControls(line, controls_);
       if (status.ok() && !next_controls.ok()) {
         status = next_controls.status();
@@ -340,8 +364,15 @@ class ConfigFileValidator {
   }
 
   void ValidateSections() {
-    for (const config::IniSection& section : result_.config.named) {
-      for (const config::IniLine& line : section.lines) {
+    for (config::IniSection& section : result_.config.named) {
+      for (config::IniLine& line : section.lines) {
+        auto tokens = line.syntax_error.empty()
+                          ? NormalizeAndValidateTokens(line.tokens)
+                          : absl::StatusOr<std::vector<std::string>>(absl::InvalidArgumentError(line.syntax_error));
+        const absl::Status token_status = tokens.status();
+        if (tokens.ok()) {
+          line.tokens = *std::move(tokens);
+        }
         const bool has_control =
             std::ranges::any_of(config::DirectiveTokens(line.tokens), [this](std::string_view token) {
               if (source_ == config::Source::kUser && (token == "--allow-xffrc" || token == "--no-allow-xffrc")) {
@@ -351,8 +382,7 @@ class ConfigFileValidator {
             });
         const absl::Status status =
             has_control ? absl::InvalidArgumentError("system controls must precede every system config section")
-                        : (line.syntax_error.empty() ? ValidateTokens(line.tokens)
-                                                     : absl::InvalidArgumentError(line.syntax_error));
+                        : token_status;
         if (!status.ok()) {
           Disable(
               section.name, absl::StrCat(

@@ -37,6 +37,7 @@
 #include "xff/matching/regex/backend.h"
 #include "xff/presentation/format/format.h"
 #include "xff/registry/consumers.h"
+#include "xff/registry/registry.h"
 #include "xff/values/values.h"
 
 namespace xff::cli {
@@ -54,9 +55,27 @@ constexpr std::array kHelpFormatValues = std::to_array<ValueDoc>({
 });
 
 constexpr std::array kCaseValues = std::to_array<ValueDoc>({
-    {.value = "sensitive", .meaning = "match exactly (-s-)"},
-    {.value = "insensitive", .meaning = "fold case (-i)"},
-    {.value = "smart", .meaning = "fold case unless the pattern contains ASCII uppercase (-s / -s+)"},
+    {.value = "sensitive",
+     .meaning = "match exactly",
+     .rg =
+         registry::CompatibilitySpelling{
+             .name = "--case-sensitive",
+             .alias = "-s",
+         }},
+    {.value = "insensitive",
+     .meaning = "fold case",
+     .rg =
+         registry::CompatibilitySpelling{
+             .name = "--ignore-case",
+             .alias = "-i",
+         }},
+    {.value = "smart",
+     .meaning = "fold case unless the pattern contains ASCII uppercase",
+     .rg =
+         registry::CompatibilitySpelling{
+             .name = "--smart-case",
+             .alias = "-S",
+         }},
 });
 constexpr std::array kDetailedBlockPolicyValues = std::to_array<ValueDoc>({
     {.value = "archive", .meaning = "use dedicated controls for archive output and member edits"},
@@ -75,12 +94,24 @@ constexpr std::array kLanguageConflictValues = std::to_array<ValueDoc>({
 });
 constexpr std::array kRegextypeValues = std::to_array<ValueDoc>({
     {.value = "ERE", .meaning = "platform POSIX extended regular expressions via regcomp(3)"},
-    {.value = "EXACT", .meaning = "a literal string; metacharacters are plain text"},
+    {.value = "EXACT",
+     .meaning = "a literal string; metacharacters are plain text",
+     .rg =
+         registry::CompatibilitySpelling{
+             .name = "--fixed-strings",
+             .alias = "-F",
+         }},
     {.value = "FNMATCH", .meaning = "flat shell wildcard; `*` matches any character including `/`"},
     {.value = "GLOB", .meaning = "path-aware shell glob; wildcards and classes are component-local"},
     // Reserved: keep the resolver's unsupported-grammar diagnostic.
     {.value = "MATCH", .meaning = "", .hidden = true},
-    {.value = "PCRE2", .meaning = "Perl syntax (lookaround, backreferences); a build extra"},
+    {.value = "PCRE2",
+     .meaning = "Perl syntax (lookaround, backreferences); a build extra",
+     .rg =
+         registry::CompatibilitySpelling{
+             .name = "--pcre2",
+             .alias = "-P",
+         }},
     {.value = "RE2", .meaning = "linear-time regular expressions (the default)"},
     {.value = "SHGLOB", .meaning = "GLOB plus `{a,b}` brace alternation, so `*.{cc,h}` matches either"},
 });
@@ -455,6 +486,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "--xffrc,--explain",
         .topic = "config",
         .sign_forms = kRcForms,
+        .alias_modes = registry::Modes::kNative,
     },
     {
         .name = "--allow-rc-globals",
@@ -551,7 +583,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "override a configured choice. This compatibility flag does not itself replace that choice.",
         .affects = "-regex,-iregex,-rxc,-irxc,-grep,-capture,-capturedir",
         .see_also = "regex,grammars",
-        .xff = false,
+        .modes = registry::Modes::kNative,
     },
     {
         .name = "-H",
@@ -563,7 +595,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "below that root as symlinks. A dangling root symlink falls back to the link itself. `-H`, `-L`, "
                    "and `-P` are mutually overriding leading options; the last occurrence wins.",
         .see_also = "config,ignore,archive",
-        .xff = false,
+        .modes = registry::Modes::kNative,
     },
     {
         .name = "-L",
@@ -576,7 +608,12 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "Filesystem loops are detected and reported instead of recursed indefinitely. `-H`, `-L`, and "
                    "`-P` are mutually overriding leading options; the last occurrence wins.",
         .see_also = "config,ignore,archive",
-        .xff = false,
+        .modes = registry::Modes::kNative,
+        .rg =
+            registry::CompatibilitySpelling{
+                .name = "--follow",
+                .alias = "-L",
+            },
     },
     {
         .name = "-P",
@@ -589,7 +626,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "their documented behavior. `-H`, `-L`, and `-P` are mutually overriding leading options; the "
                    "last occurrence wins.",
         .see_also = "config,ignore,archive",
-        .xff = false,
+        .modes = registry::Modes::kNative,
     },
     {
         .name = "--archive",
@@ -633,6 +670,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .extra = "archive",
         .sign_forms = kArchiveShorts,
         .value_check = GlobalFlag::ValueCheck::kEnum,
+        .alias_modes = registry::Modes::kNative,
     },
     {
         .name = "--archive-depth",
@@ -776,6 +814,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .topic = "archive",
         .extra = "archive",
         .sign_forms = kArchiveWriteShorts,
+        .alias_modes = registry::Modes::kNative,
     },
     {
         .name = "--archive-any",
@@ -860,6 +899,13 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "no flag, xff uses one fewer than the detected cores, capped at 15 and floored at 1; find and "
                    "rg modes use every detected core. `all` always means every detected core.",
         .see_also = "output,stats",
+        .alias_modes = registry::Modes::kNative,
+        .rg =
+            registry::CompatibilitySpelling{
+                .name = "--threads",
+                .argument = "N",
+                .effect = registry::CompatibilityOption::Effect::kThreads,
+            },
     },
     {
         .name = "--sort",
@@ -939,6 +985,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .see_also = "regex,grammars",
         .sign_forms = kCaseShorts,
         .value_check = GlobalFlag::ValueCheck::kEnum,
+        .alias_modes = registry::Modes::kNative,
     },
     {
         .name = "--regextype",
@@ -996,6 +1043,107 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .summary = "re-include paths a --exclude would skip, matching a gitignore-style glob (repeatable)",
         .topic = "ignore",
         .repetition = GlobalFlag::Repetition::kAccumulate,
+    },
+    {
+        .name = "--file-type",
+        .alias = "-t",
+        .display = "-t NAME, -t=NAME, -tNAME, --file-type=NAME",
+        .group = "classification",
+        .header = "Classification databases",
+        .summary = "include a filename type; repeatable, with the last matching type rule winning",
+        .details = "Selects a named filename-filter definition from the shared catalog. `all` selects every "
+                   "known type. Any positive selection excludes entries outside the selected types. "
+                   "Directory traversal continues through unselected names; explicitly named regular files "
+                   "bypass discovery filters. This is separate from filesystem `-type f/d/l`, language "
+                   "`-lang`, and media-type `-mime`. The `-t` short form works in XFF and rg modes, "
+                   "not find mode. Native short globals precede roots; the long form works anywhere.",
+        .topic = "content",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
+        .type_effect = GlobalFlag::TypeEffect::kInclude,
+        .alias_modes = registry::Modes::kXff | registry::Modes::kRg,
+        .alias_argument = "NAME",
+        .rg =
+            registry::CompatibilitySpelling{
+                .name = "--type",
+                .argument = "TYPE",
+            },
+    },
+    {
+        .name = "--file-type-not",
+        .alias = "-T",
+        .display = "-T NAME, -T=NAME, -TNAME, --file-type-not=NAME",
+        .group = "classification",
+        .header = "Classification databases",
+        .summary = "exclude a filename type; later matching include or exclude rules override it",
+        .details = "Uses the same definitions as `--file-type`. With exclusions alone, other entries remain "
+                   "eligible; `--file-type-not=all` keeps unrecognized names. The `-T` short form works in "
+                   "XFF and rg modes, not find mode. Native short globals precede roots; the long form works anywhere.",
+        .affects = "--file-type",
+        .topic = "content",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
+        .type_effect = GlobalFlag::TypeEffect::kExclude,
+        .alias_modes = registry::Modes::kXff | registry::Modes::kRg,
+        .alias_argument = "NAME",
+        .rg =
+            registry::CompatibilitySpelling{
+                .name = "--type-not",
+                .argument = "TYPE",
+            },
+    },
+    {
+        .name = "--type-add",
+        .display = "--type-add=NAME:GLOB|NAME:include:TYPES",
+        .group = "classification",
+        .header = "Classification databases",
+        .summary = "append a basename glob or import comma-separated filename types into a shared definition",
+        .details = "Available in native XFF, rg grammar, and INI files. Definitions start from the configured "
+                   "language database, including overlapping candidates. `NAME:GLOB` adds a case-sensitive "
+                   "basename glob; `NAME:include:TYPE,...` copies the current definitions of those types. "
+                   "New names contain letters and numbers; `all` is reserved. Edits run in resolved config/CLI "
+                   "order after JSON overlays, before selection. These filter groups do not change `-lang`, "
+                   "`-mime`, preferred labels, colors, or summary buckets.",
+        .affects = "--file-type,--file-type-not,--type-list",
+        .topic = "content",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
+        .type_effect = GlobalFlag::TypeEffect::kAdd,
+        .rg =
+            registry::CompatibilitySpelling{
+                .argument = "TYPE:GLOB",
+            },
+    },
+    {
+        .name = "--type-clear",
+        .display = "--type-clear=NAME",
+        .group = "classification",
+        .header = "Classification databases",
+        .summary = "remove a filename-filter definition through its canonical name or alias",
+        .details = "Later `--type-add` operations can rebuild the definition. Clearing an unknown name is "
+                   "a no-op. This removes filtering membership, preserving language metadata and preferred "
+                   "labels; use `--lang-db` to change those classifications.",
+        .affects = "--file-type,--file-type-not,--type-list",
+        .topic = "content",
+        .repetition = GlobalFlag::Repetition::kAccumulate,
+        .type_effect = GlobalFlag::TypeEffect::kClear,
+        .rg =
+            registry::CompatibilitySpelling{
+                .argument = "TYPE",
+            },
+    },
+    {
+        .name = "--type-list",
+        .display = "--type-list",
+        .group = "classification",
+        .header = "Classification databases",
+        .summary = "list effective filename-type definitions and aliases without searching",
+        .details = "Lists the shared catalog after configured JSON overlays and ordered add/import/clear "
+                   "operations. Available in both native XFF and rg grammar. Does not read search input.",
+        .affects = "--file-type,--file-type-not",
+        .topic = "content",
+        .type_effect = GlobalFlag::TypeEffect::kList,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kTypeList,
+            },
     },
     {
         .name = "--lang-db",
@@ -1075,6 +1223,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .topic = "ignore",
         .sign_forms = kGitignoreShorts,
         .value_check = GlobalFlag::ValueCheck::kTristate,
+        .alias_modes = registry::Modes::kNative,
     },
     {
         .name = "--ignore-files",
@@ -1101,6 +1250,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Filter & Ignore",
         .summary = "disable all ignore-file processing (.gitignore/.ignore/.xffignore)",
         .topic = "ignore",
+        .alias_modes = registry::Modes::kNative,
+        .rg =
+            registry::CompatibilitySpelling{
+                .alias = "",
+            },
     },
     {
         .name = "--ignore-vcs",
@@ -1134,6 +1288,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Filter & Ignore",
         .summary = "include hidden dotfiles in the walk (default: find/xff show, rg skips)",
         .topic = "ignore",
+        .rg = registry::CompatibilitySpelling{},
     },
     {
         .name = "--no-hidden",
@@ -1142,6 +1297,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .header = "Filter & Ignore",
         .summary = "skip hidden dotfiles (the rg default; opts find/xff out)",
         .topic = "ignore",
+        .rg = registry::CompatibilitySpelling{},
     },
     {
         .name = "--skip-vcs",
@@ -1406,6 +1562,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .topic = "archive",
         .repetition = GlobalFlag::Repetition::kAccumulate,
         .cli_only = true,
+        .rg =
+            registry::CompatibilitySpelling{
+                .argument = "NAME=PATH",
+                .effect = registry::CompatibilityOption::Effect::kRoot,
+            },
     },
     {
         .name = "--pack",
@@ -1682,12 +1843,14 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .group = "grep-output",
         .header = "Content-match output",
         .summary = "parse ripgrep-style search arguments and print matching lines",
-        .details = "Must precede roots. Invocation as `rg` selects this grammar automatically. "
-                   "Selects `--config=rg` and content output. `--xff` switches the remaining "
+        .details = "Initial selection must precede roots; later `--rg` resumes rg options after `--xff`. "
+                   "Invocation as `rg` selects this grammar automatically. "
+                   "Selects `--config=rg` and content output. `--xff` switches subsequent "
                    "arguments to an XFF filter expression without resetting output or configuration. "
                    "Use `--help=rg` for supported options and intentional differences.",
         .topic = "rg",
         .cli_only = true,
+        .enters_mode = registry::Mode::kRg,
     },
     {
         .name = "--xff",
@@ -1700,6 +1863,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "Grammar switches are command-line-only.",
         .topic = "rg",
         .cli_only = true,
+        .enters_mode = registry::Mode::kXff,
     },
     {
         .name = "--match-output",
@@ -1714,6 +1878,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-rxc,-irxc,-content,-icontent",
         .topic = "content",
         .grep_effect = GlobalFlag::GrepEffect::kMatchOutput,
+        .alias_modes = registry::Modes::kNative,
     },
     {
         .name = "--no-match-output",
@@ -1727,13 +1892,14 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "--match-output",
         .topic = "content",
         .grep_effect = GlobalFlag::GrepEffect::kNoMatchOutput,
+        .alias_modes = registry::Modes::kNative,
     },
     {
         .name = "--only-matching",
         .display = "--only-matching",
         .group = "grep-output",
         .header = "Content-match output",
-        .summary = "print each nonempty matched portion on its own line",
+        .summary = "print matched portions instead of complete lines",
         .details = "For content-match output, emit nonempty, non-overlapping matches instead of complete lines. "
                    "In rg mode, empty matches are included and inversion selects whole nonmatching lines. "
                    "Otherwise context is ignored. With "
@@ -1743,6 +1909,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
         .grep_effect = GlobalFlag::GrepEffect::kOnlyMatching,
+        .rg =
+            registry::CompatibilitySpelling{
+                .alias = "-o",
+            },
     },
     {
         .name = "--no-only-matching",
@@ -1768,6 +1938,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrepSelection,
         .grep_effect = GlobalFlag::GrepEffect::kFilesWithMatches,
+        .rg =
+            registry::CompatibilitySpelling{
+                .alias = "-l",
+            },
     },
     {
         .name = "--files-without-match",
@@ -1782,19 +1956,24 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrepSelection,
         .grep_effect = GlobalFlag::GrepEffect::kFilesWithoutMatch,
+        .rg =
+            registry::CompatibilitySpelling{
+                .alias = "",
+            },
     },
     {
         .name = "--count-matches",
         .display = "--count-matches",
         .group = "grep-output",
         .header = "Content-match output",
-        .summary = "count nonempty matching portions per file",
+        .summary = "count matching portions per file",
         .details = "Counts non-overlapping matched portions instead of selected lines. Context and explicit grep "
                    "templates are superseded. Inverted selection has no matching portions to count.",
         .affects = "-grep,--match-output",
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
         .grep_effect = GlobalFlag::GrepEffect::kCountMatches,
+        .rg = registry::CompatibilitySpelling{},
     },
     {
         .name = "--invert-match",
@@ -1808,6 +1987,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrepSelection,
         .grep_effect = GlobalFlag::GrepEffect::kInvertMatch,
+        .rg =
+            registry::CompatibilitySpelling{
+                .alias = "-v",
+            },
     },
     {
         .name = "--no-invert-match",
@@ -1833,6 +2016,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
         .grep_effect = GlobalFlag::GrepEffect::kLineNumber,
+        .rg =
+            registry::CompatibilitySpelling{
+                .alias = "-n",
+            },
     },
     {
         .name = "--no-line-number",
@@ -1845,19 +2032,27 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
         .grep_effect = GlobalFlag::GrepEffect::kNoLineNumber,
+        .rg =
+            registry::CompatibilitySpelling{
+                .alias = "-N",
+            },
     },
     {
         .name = "--with-filename",
         .display = "--with-filename",
         .group = "grep-output",
         .header = "Content-match output",
-        .summary = "include paths in built-in plain grep output (default)",
+        .summary = "include paths in built-in plain grep output",
         .details = "Applies to line and count prefixes. Filename-only modes always print paths. Explicit templates and "
                    "JSON records retain their own fields.",
         .affects = "-grep,--match-output",
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
         .grep_effect = GlobalFlag::GrepEffect::kFilename,
+        .rg =
+            registry::CompatibilitySpelling{
+                .alias = "-H",
+            },
     },
     {
         .name = "--no-filename",
@@ -1871,6 +2066,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
         .grep_effect = GlobalFlag::GrepEffect::kNoFilename,
+        .rg =
+            registry::CompatibilitySpelling{
+                .alias = "-I",
+            },
     },
     {
         .name = "--count",
@@ -1885,6 +2084,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kGrep,
         .grep_effect = GlobalFlag::GrepEffect::kCountLines,
+        .alias_modes = registry::Modes::kNative,
+        .rg = registry::CompatibilitySpelling{},
     },
     {
         .name = "--context",
@@ -1902,6 +2103,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep,--match-output,-diff,--diff-context",
         .topic = "content",
         .required_consumer = registry::ModifierConsumer::kSharedContext,
+        .rg =
+            registry::CompatibilitySpelling{
+                .alias = "-C",
+                .argument = "N",
+            },
     },
     {
         .name = "--after-context",
@@ -1914,6 +2120,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep,-diff",
         .see_also = "content,regex",
         .required_consumer = registry::ModifierConsumer::kSharedContext,
+        .rg =
+            registry::CompatibilitySpelling{
+                .alias = "-A",
+                .argument = "N",
+            },
     },
     {
         .name = "--before-context",
@@ -1926,6 +2137,11 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .affects = "-grep,-diff",
         .see_also = "content,regex",
         .required_consumer = registry::ModifierConsumer::kSharedContext,
+        .rg =
+            registry::CompatibilitySpelling{
+                .alias = "-B",
+                .argument = "N",
+            },
     },
     {
         .name = "--max-results",
@@ -2004,6 +2220,10 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .values = kColorValues,
         .see_also = "output,environment",
         .value_check = GlobalFlag::ValueCheck::kTristate,
+        .rg =
+            registry::CompatibilitySpelling{
+                .argument = "WHEN",
+            },
     },
     {
         .name = "--color-scheme",
@@ -2061,6 +2281,7 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .values = kUnicodeValues,
         .see_also = "output,environment",
         .value_check = GlobalFlag::ValueCheck::kTristate,
+        .modes = registry::Modes::kNative,
     },
     {
         .name = "--human",
@@ -2182,6 +2403,8 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
                    "`--compare-select` and summary output do not change this status.",
         .see_also = "output",
         .grep_effect = GlobalFlag::GrepEffect::kQuiet,
+        .alias_modes = registry::Modes::kNative,
+        .rg = registry::CompatibilitySpelling{},
     },
     {
         .name = "--exit-match",
@@ -2916,6 +3139,283 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
         .see_also = "time,fields",
         .value_check = GlobalFlag::ValueCheck::kTristate,
     },
+    // Additional globals consumed only by the rg grammar.
+    {
+        .name = "--regexp",
+        .alias = "-e",
+        .display = "--regexp=PATTERN",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "add a search pattern; repeatable, combined as a union",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .argument = "PATTERN",
+                .effect = registry::CompatibilityOption::Effect::kPattern,
+            },
+    },
+    {
+        .name = "--file",
+        .alias = "-f",
+        .display = "--file=FILE",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "read patterns from `FILE`, one per line; `-` reads stdin; repeatable",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .argument = "FILE",
+                .effect = registry::CompatibilityOption::Effect::kFile,
+            },
+    },
+    {
+        .name = "--glob",
+        .alias = "-g",
+        .display = "--glob=GLOB",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "include glob; a leading `!` excludes; last matching rule wins",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .argument = "GLOB",
+                .effect = registry::CompatibilityOption::Effect::kGlob,
+            },
+    },
+    {
+        .name = "--multiline",
+        .alias = "-U",
+        .display = "--multiline",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "allow matches to span lines; retains whole input for cross-line regex evaluation",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kMultiline,
+            },
+    },
+    {
+        .name = "--no-multiline",
+        .display = "--no-multiline",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "search one line at a time",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kNoMultiline,
+            },
+    },
+    {
+        .name = "--multiline-dotall",
+        .display = "--multiline-dotall",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "make `.` match newlines when multiline search is enabled",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kDotall,
+            },
+    },
+    {
+        .name = "--no-multiline-dotall",
+        .display = "--no-multiline-dotall",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "restore the default dot behavior",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kNoDotall,
+            },
+    },
+    {
+        .name = "--heading",
+        .display = "--heading",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "print the path above each file's matches; enabled by default on a terminal",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kHeading,
+            },
+    },
+    {
+        .name = "--no-heading",
+        .display = "--no-heading",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "use per-line filename prefixes; the default for piped output",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kNoHeading,
+            },
+    },
+    {
+        .name = "--column",
+        .display = "--column",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "print one-based byte columns and enable line numbers",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kColumn,
+            },
+    },
+    {
+        .name = "--no-column",
+        .display = "--no-column",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "omit byte columns",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kNoColumn,
+            },
+    },
+    {
+        .name = "--pretty",
+        .alias = "-p",
+        .display = "--pretty",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "enable headings, line numbers, and color, even when output is piped",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kPretty,
+            },
+    },
+    {
+        .name = "--unicode",
+        .display = "--unicode",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "interpret content as UTF-8 with Unicode word boundaries; no encoding detection",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kUnicode,
+            },
+    },
+    {
+        .name = "--no-unicode",
+        .display = "--no-unicode",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "match 8-bit bytes with ASCII word boundaries; no decoding or codepage conversion",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kNoUnicode,
+            },
+    },
+    {
+        .name = "--word-regexp",
+        .alias = "-w",
+        .display = "--word-regexp",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "match whole words",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kWord,
+            },
+    },
+    {
+        .name = "--line-regexp",
+        .alias = "-x",
+        .display = "--line-regexp",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "match whole lines",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kLine,
+            },
+    },
+    {
+        .name = "--text",
+        .alias = "-a",
+        .display = "--text",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "search binary content as text",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kText,
+            },
+    },
+    {
+        .name = "--max-columns",
+        .alias = "-M",
+        .display = "--max-columns=N",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "replace output lines longer than `N` bytes with an omission marker; `0` disables the limit",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .argument = "N",
+                .effect = registry::CompatibilityOption::Effect::kColumns,
+            },
+    },
+    {
+        .name = "--help",
+        .alias = "-h",
+        .display = "--help",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "show rg help; `--help=TOPIC` selects another help topic",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kMeta,
+                .fixed_value = "rg",
+            },
+    },
+    {
+        .name = "--version",
+        .alias = "-V",
+        .display = "--version",
+        .group = "rg",
+        .header = "Ripgrep-style options",
+        .summary = "print the program version",
+        .cli_only = true,
+        .modes = registry::Modes::kRg,
+        .rg =
+            registry::CompatibilitySpelling{
+                .effect = registry::CompatibilityOption::Effect::kMeta,
+            },
+    },
 });
 
 static_assert(
@@ -2929,46 +3429,167 @@ static_assert(
         }),
     "primary_expansion_topic must be an element of see_also");
 
+constexpr auto kNativeCount =
+    static_cast<std::size_t>(std::ranges::find(kGlobals, registry::Modes::kRg, &GlobalFlag::modes) - kGlobals.begin());
+
+static_assert(
+    std::ranges::all_of(
+        kGlobals | std::views::drop(kNativeCount),
+        [](const GlobalFlag& flag) { return flag.modes == registry::Modes::kRg && flag.rg.has_value(); }),
+    "rg-only globals must follow the native declarations");
+
+constexpr registry::CompatibilityOption CompatibilityView(
+    const GlobalFlag& flag,
+    const registry::CompatibilitySpelling& spelling,
+    std::optional<std::string_view> value = std::nullopt,
+    std::string_view meaning = {}) {
+  return {
+      .name = spelling.name.empty() ? flag.name : spelling.name,
+      .alias = spelling.alias.value_or(flag.alias),
+      .target = flag.name,
+      .fixed_value = value.has_value() ? value : spelling.fixed_value,
+      .argument = spelling.argument,
+      .effect = spelling.effect,
+      .summary = meaning.empty() ? flag.summary : meaning,
+  };
+}
+
+constexpr auto kCompatibilityCount = [] {
+  std::size_t count = 0;
+  for (const GlobalFlag& flag : kGlobals) {
+    count += flag.rg.has_value();
+    count += std::ranges::count_if(flag.values, [](const ValueDoc& value) { return value.rg.has_value(); });
+  }
+  return count;
+}();
+
+constexpr auto kCompatibility = [] {
+  std::array<registry::CompatibilityOption, kCompatibilityCount> result{};
+  std::size_t index = 0;
+  for (const GlobalFlag& flag : kGlobals) {
+    if (flag.rg.has_value()) {
+      result.at(index++) = CompatibilityView(flag, *flag.rg);
+    }
+    for (const ValueDoc& value : flag.values) {
+      if (value.rg.has_value()) {
+        result.at(index++) = CompatibilityView(flag, *value.rg, value.value, value.meaning);
+      }
+    }
+  }
+  return result;
+}();
+
+static_assert(
+    [] {
+      for (std::size_t first = 0; first < kCompatibility.size(); ++first) {
+        for (std::size_t second = first + 1; second < kCompatibility.size(); ++second) {
+          const auto& lhs = kCompatibility.at(first);
+          const auto& rhs = kCompatibility.at(second);
+          if (registry::Overlaps(lhs.modes, rhs.modes)
+              && (lhs.name == rhs.name || lhs.name == rhs.alias || lhs.alias == rhs.name
+                  || (!lhs.alias.empty() && lhs.alias == rhs.alias))) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }(),
+    "compatibility spellings must be unique within each mode");
+
 }  // namespace
 
 absl::Span<const GlobalFlag> Globals() {
+  return absl::Span<const GlobalFlag>(kGlobals).first(kNativeCount);
+}
+
+absl::Span<const GlobalFlag> AllGlobals() {
   return kGlobals;
 }
 
-mbo::types::OptionalRef<const GlobalFlag> LookupGlobal(std::string_view name) {
+absl::Span<const registry::CompatibilityOption> CompatibilityOptions() {
+  return kCompatibility;
+}
+
+mbo::types::OptionalRef<const registry::CompatibilityOption> LookupCompatibilityOption(
+    std::string_view name,
+    registry::Mode mode) {
+  for (const auto& option : kCompatibility) {
+    if (registry::Supports(option.modes, mode)
+        && (option.name == name || (!option.alias.empty() && option.alias == name))) {
+      return option;
+    }
+  }
+  return std::nullopt;
+}
+
+mbo::types::OptionalRef<const GlobalFlag> LookupGlobal(std::string_view name, registry::Mode mode) {
   for (const GlobalFlag& flag : kGlobals) {
-    if (flag.name == name || (!flag.alias.empty() && flag.alias == name)) {
+    if (registry::Supports(flag.modes, mode)
+        && (flag.name == name
+            || (registry::Supports(flag.alias_modes, mode) && !flag.alias.empty() && flag.alias == name))) {
       return flag;
     }
   }
   return std::nullopt;
 }
 
-mbo::types::OptionalRef<const GlobalFlag> LookupGlobalArgument(std::string_view arg) {
-  if (const mbo::types::OptionalRef<const GlobalFlag> exact = LookupGlobal(arg); exact.has_value()) {
+mbo::types::OptionalRef<const GlobalFlag> LookupGlobalArgument(std::string_view arg, registry::Mode mode) {
+  if (const mbo::types::OptionalRef<const GlobalFlag> exact = LookupGlobal(arg, mode); exact.has_value()) {
     return exact;
   }
-  if (arg == "-0") {
+  if (mode != registry::Mode::kRg && arg == "-0") {
     return LookupGlobal("--format");
   }
-  if (arg == "-i") {
+  if (mode != registry::Mode::kRg && arg == "-i") {
     return LookupGlobal("--case");
   }
-  if (arg.starts_with("-j") && arg.size() > 2 && !arg.starts_with("-j=")) {
+  if (mode != registry::Mode::kRg && arg.starts_with("-j") && arg.size() > 2 && !arg.starts_with("-j=")) {
     return LookupGlobal("--jobs");
   }
   for (const GlobalFlag& flag : Globals()) {
-    if (absl::c_contains(flag.sign_forms, arg)) {
+    if (!flag.alias_argument.empty() && registry::Supports(flag.alias_modes, mode)
+        && registry::Supports(flag.modes, mode) && arg.starts_with(flag.alias)
+        && !registry::Lookup(arg.substr(0, arg.find(':'))).has_value()) {
+      return flag;
+    }
+    if (registry::Supports(flag.alias_modes, mode) && registry::Supports(flag.modes, mode)
+        && absl::c_contains(flag.sign_forms, arg)) {
       return flag;
     }
   }
   if (const std::string_view::size_type equals = arg.find('='); equals != std::string_view::npos) {
-    const mbo::types::OptionalRef<const GlobalFlag> valued = LookupGlobal(arg.substr(0, equals));
+    const mbo::types::OptionalRef<const GlobalFlag> valued = LookupGlobal(arg.substr(0, equals), mode);
     if (valued.has_value() && absl::StrContains(valued->display, '=')) {
       return valued;
     }
   }
   return std::nullopt;
+}
+
+absl::StatusOr<GlobalAliasArgument> ParseGlobalAliasArgument(
+    const GlobalFlag& flag,
+    std::string_view token,
+    std::optional<std::string_view> next) {
+  const bool consumes_next = token == flag.alias;
+  std::string_view value = consumes_next ? next.value_or("") : token.substr(flag.alias.size());
+  if (!consumes_next && value.starts_with('=')) {
+    value.remove_prefix(1);
+  }
+  if (value.empty()) {
+    return absl::InvalidArgumentError(absl::StrCat(flag.alias, " requires ", flag.alias_argument));
+  }
+  return GlobalAliasArgument{
+      .token = absl::StrCat(flag.alias, "=", value),
+      .consumes_next = consumes_next,
+  };
+}
+
+absl::Status ValidateGlobalMode(std::string_view token, registry::Mode mode) {
+  if (LookupGlobalArgument(token).has_value() && !LookupGlobalArgument(token, mode).has_value()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("'", token, "' is not available in ", registry::ModeName(mode), " mode"));
+  }
+  return absl::OkStatus();
 }
 
 namespace {

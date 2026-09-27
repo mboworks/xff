@@ -26,6 +26,7 @@
 #include "mbo/status/status_macros.h"
 #include "mbo/types/optional_ref.h"
 #include "nlohmann/json.hpp"
+#include "xff/matching/language/catalog.h"
 #include "xff/matching/language/language_database_api.h"
 #include "xff/vfs/local_fs.h"
 
@@ -82,6 +83,7 @@ struct State {
   absl::Mutex mutex;
   std::vector<std::unique_ptr<const LanguageVocabulary>> snapshots ABSL_GUARDED_BY(mutex);
   mbo::types::OptionalRef<const LanguageVocabulary> active ABSL_GUARDED_BY(mutex);
+  std::optional<Catalog> catalog ABSL_GUARDED_BY(mutex);
 };
 
 State& GlobalState() {
@@ -621,11 +623,15 @@ void EnsureConfigured(State& state) ABSL_EXCLUSIVE_LOCKS_REQUIRED(state.mutex) {
 
 }  // namespace
 
-absl::Status Configure(absl::Span<const std::string> files, ConflictPolicy conflicts) {
-  if (files.empty()) {
+absl::Status Configure(
+    absl::Span<const std::string> files,
+    ConflictPolicy conflicts,
+    absl::Span<const CatalogEdit> edits) {
+  if (files.empty() && edits.empty()) {
     State& state = GlobalState();
     const absl::MutexLock lock(state.mutex);
     state.active.reset();
+    state.catalog.reset();
     return absl::OkStatus();
   }
   LanguageVocabulary vocabulary = CoreVocabulary();
@@ -637,11 +643,13 @@ absl::Status Configure(absl::Span<const std::string> files, ConflictPolicy confl
     MBO_RETURN_IF_ERROR(LayerProcessor(vocabulary, file, conflicts).Apply(text));
   }
   Finalize(vocabulary);
+  auto snapshot = std::make_unique<const LanguageVocabulary>(std::move(vocabulary));
+  MBO_ASSIGN_OR_RETURN(auto catalog, Catalog::Compile(LanguageSnapshot(*snapshot), edits));
   State& state = GlobalState();
   const absl::MutexLock lock(state.mutex);
-  auto snapshot = std::make_unique<const LanguageVocabulary>(std::move(vocabulary));
   state.snapshots.push_back(std::move(snapshot));
   state.active.set_ref(*state.snapshots.back());
+  state.catalog.emplace(std::move(catalog));
   return absl::OkStatus();
 }
 
@@ -650,6 +658,18 @@ LanguageSnapshot ActiveSnapshot() {
   const absl::MutexLock lock(state.mutex);
   EnsureConfigured(state);
   return LanguageSnapshot(*state.active);
+}
+
+Catalog ActiveCatalog() {
+  State& state = GlobalState();
+  const absl::MutexLock lock(state.mutex);
+  EnsureConfigured(state);
+  if (!state.catalog) {
+    auto catalog = Catalog::Compile(LanguageSnapshot(*state.active), {});
+    CHECK_OK(catalog.status());
+    state.catalog.emplace(*std::move(catalog));
+  }
+  return *state.catalog;
 }
 
 std::optional<LanguageInfo> LanguageSnapshot::InfoForName(std::string_view name) const {

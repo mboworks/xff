@@ -51,9 +51,9 @@ TEST_F(MarkdownTest, DocumentsEveryGlobalAndPrimaryAsCode) {
 }
 
 TEST_F(MarkdownTest, TagsEntriesWithTheirClassification) {
-  // Flags are tagged (global, xff|find); primaries (kind, xff|find, [safety]).
-  EXPECT_THAT(MarkdownReference(), HasSubstr("_(global, xff)_"));
-  EXPECT_THAT(MarkdownReference(), HasSubstr("_(test, find)_"));
+  // Accepted modes are explicit; native primaries require --xff during an rg search.
+  EXPECT_THAT(MarkdownReference(), HasSubstr("_(global, find, xff, rg)_"));
+  EXPECT_THAT(MarkdownReference(), HasSubstr("_(test, find, xff)_"));
 }
 
 TEST_F(MarkdownTest, TopicFlagsAreNotDuplicatedInTheFullReference) {

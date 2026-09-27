@@ -70,3 +70,26 @@ Linux, macOS, and GCC builds. These fit the default without evicting outputs. Th
 clang-tidy PR run had no restorable cache at all; trimming and complete cache misses are distinct
 problems. This main run created a 96 MB compressed clang-tidy cache. ASan reached 2.80 GB before
 trimming, so its explicit 3 GB allowance also avoids eviction for this workload.
+
+## CI warning audit for PR 923
+
+The completed jobs in [run 36326493746](https://github.com/mboworks/xff/actions/runs/36326493746)
+exposed three actionable infrastructure warnings:
+
+- Implicit Python package initialization in fuzz tools, the compile-command extractor and Bazel's
+  Java helper: require explicit initialization globally, declare the first-party `tools` package,
+  and let Python 3 namespace packages serve dependency imports that do not need initializers.
+  A module-only setting would leave the dependency warnings in place.
+- The transitive Aspect interpreter lacked a coverage tool: register the root's pinned Python 3.13
+  toolchain explicitly and configure its bundled coverage support. Aspect still owns Python rules.
+- `pre-commit/action` used `actions/cache@v4`, triggering Node runtime/deprecation warnings:
+  run pre-commit directly and cache its environments with `actions/cache@v6`.
+
+The compile-command extractor deliberately disables compiler parameter files, layering checks and
+header parsing during its internal action query. Its analysis-cache reset warning reflects that
+configuration change; normal target and exec builds retain both checks. Git's initial-branch hint
+and the hosted Ubuntu image migration notice require no source fix.
+
+Benchmark regression alarms remain visible. This run reported 11 Linux and 66 macOS comparison
+alarms above the informational 15% boundary. They need controlled measurement against the same
+base before attributing them to a change; they are not suppressed or treated as compiler warnings.

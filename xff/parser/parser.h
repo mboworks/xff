@@ -53,7 +53,7 @@ absl::StatusOr<Command> Parse(const std::vector<std::string>& args);
 
 // Enforces the active find/xff style on a parsed command. Under the strict find
 // style (registry::Style::kFind, selected by --config=find), any expression
-// primary tagged registry::Style::kXff (an xff extension such as -println or
+// primary whose modes exclude registry::Mode::kFind (an xff extension such as -println or
 // -capture) is outside find's vocabulary, so this returns InvalidArgument naming
 // the first such primary; the xff style (the default) accepts the full vocabulary
 // and always returns Ok. design-config.md "CLI selectors".

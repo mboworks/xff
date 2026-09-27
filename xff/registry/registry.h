@@ -27,7 +27,7 @@ namespace xff::registry {
 // Looks up the descriptor for a command-line expression token (e.g. "-name",
 // "-type", "-o", "!"). Returns empty if the token is not a known
 // predicate / action / operator.
-mbo::types::OptionalRef<const Descriptor> Lookup(std::string_view name);
+mbo::types::OptionalRef<const Descriptor> Lookup(std::string_view name, Mode mode = Mode::kXff);
 
 // All descriptors, in registry (source) order. The single enumeration point for
 // the help system, generated --help, `xff help`, and the planned man-page / .md

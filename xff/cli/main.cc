@@ -579,7 +579,16 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   if (meta.kind != Meta::kNone) {
     // Bad flags are hard errors even when help was asked for. Ignoring them because
     // help "wins" is how a typo silently vanishes behind 200 lines of output.
+    auto meta_configs = xff::config::SelectorsFromGlobals(parsed->globals).configs;
+    meta_configs.insert(meta_configs.begin(), std::string(invocation_selector));
+    const auto meta_mode = xff::config::ActiveStyle(meta_configs) == xff::registry::Style::kFind
+                               ? xff::registry::Mode::kFind
+                               : xff::registry::Mode::kXff;
     for (const std::string& global : parsed->globals) {
+      if (const auto status = xff::cli::ValidateGlobalMode(global, meta_mode); !status.ok()) {
+        std::cerr << "xff: " << status.message() << "\n";
+        return 2;
+      }
       if (const auto flag = xff::cli::LookupGlobalArgument(global); flag && flag->config_only) {
         std::cerr << "xff: " << global << " is a config-only directive\n";
         return 2;
@@ -648,12 +657,9 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   // "search ./help") catch a leading operand that names one and point at the flag.
   // Rg owns its operands and option values: "help" and "version" are valid search patterns.
   if (!parsed->rg && invocation_style != xff::registry::Style::kFind) {
-    for (const std::string& arg : args) {
-      if (arg == "--") {
-        break;  // explicit end-of-options: the next token is deliberately an operand
-      }
-      if (arg.starts_with("-") || arg.starts_with("+")) {
-        continue;  // a leading global, not yet the first operand
+    for (const std::string& arg : parsed->roots) {
+      if (absl::c_linear_search(args, "--")) {
+        break;  // an explicit end-of-options makes the following word a path
       }
       if (arg == "help" || arg == "version") {
         const std::string_view flag_hint =
@@ -882,6 +888,14 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     return 2;
   }
 
+  // The find style (--config=find) accepts only find's own expression vocabulary;
+  // reject xff extensions (e.g. -println) so a find-style run behaves like GNU
+  // find (design-config.md "CLI selectors"). The default xff style accepts all.
+  if (const absl::Status status = xff::parser::EnforceStyle(command, style); !status.ok()) {
+    std::cerr << "xff: " << status.message() << "\n";
+    return 2;
+  }
+
   if (explain) {
     if (const absl::Status status = xff::engine::ValidateCommandFields(command); !status.ok()) {
       std::cerr << "xff: field template: " << status.message() << "\n";
@@ -911,13 +925,6 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
     std::cout << *resources;
     return 0;
   }
-  // The find style (--config=find) accepts only find's own expression vocabulary;
-  // reject xff extensions (e.g. -println) so a find-style run behaves like GNU
-  // find (design-config.md "CLI selectors"). The default xff style accepts all.
-  if (const absl::Status status = xff::parser::EnforceStyle(command, style); !status.ok()) {
-    std::cerr << "xff: " << status.message() << "\n";
-    return 2;
-  }
 
   // Apply the resolved case mode to the matchers (--case / -i / -s[+|-]; rg defaults
   // smart), in place before the walk: sets folding on the case-sensitive matchers and
@@ -946,7 +953,11 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   const xff::cli::PagerStream pager_stream(listing_pager);
   const xff::vfs::LocalFs host_fs;
   std::optional<std::string> input;
-  if (command.rg && !command.rg->type_list
+  const bool type_listing = absl::c_any_of(command.globals, [](std::string_view argument) {
+    const auto flag = xff::cli::LookupGlobalArgument(argument);
+    return flag && flag->type_effect == xff::cli::GlobalFlag::TypeEffect::kList;
+  });
+  if (command.rg && !type_listing
       && (absl::c_contains(command.roots, "-") || absl::c_any_of(command.rg->patterns, [](const auto& input) {
             return input.file && input.value == "-";
           }))) {

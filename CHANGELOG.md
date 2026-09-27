@@ -3,6 +3,11 @@
 
 # 0.9.0
 
+- Share filename-type definitions and INI controls between native and rg commands; keep language and MIME classification independent.
+- Derive compatibility spellings, argument rules, translations and help from the global registry at compile time; allow repeated rg/native filter transitions.
+- Accept filename-type aliases `-t` and `-T` in XFF commands and INI files; keep them unavailable in find mode.
+- Preserve explicitly named files through rg discovery filters while retaining native predicates and archive-member filtering.
+
 - Reuse the language catalog for rg types and preserve overlapping candidates for language filters without duplicating output or summary counts.
 
 - Add rg file types, multiline search, explicit UTF-8/byte matching, headings and columns. Stream ordinary line/context input while preserving complete-file binary and error checks.

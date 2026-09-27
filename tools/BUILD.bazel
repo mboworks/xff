@@ -22,6 +22,11 @@ load("//xff:cc.bzl", "cc_binary")
 
 package(default_visibility = ["//visibility:private"])
 
+py_library(
+    name = "package_init",
+    srcs = ["__init__.py"],
+)
+
 sh_binary(
     name = "generate_reference",
     srcs = ["generate_reference.sh"],
@@ -200,6 +205,7 @@ py_library(
         ".",
         "..",
     ],
+    deps = [":package_init"],
 )
 
 py_library(
@@ -245,6 +251,7 @@ py_library(
         ".",
         "..",
     ],
+    deps = [":package_init"],
 )
 
 py_library(
@@ -254,6 +261,7 @@ py_library(
         ".",
         "..",
     ],
+    deps = [":package_init"],
 )
 
 py_library(
@@ -263,6 +271,7 @@ py_library(
         ".",
         "..",
     ],
+    deps = [":package_init"],
 )
 
 py_library(
@@ -272,6 +281,7 @@ py_library(
         ".",
         "..",
     ],
+    deps = [":package_init"],
 )
 
 py_library(

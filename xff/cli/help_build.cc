@@ -42,6 +42,7 @@
 #include "xff/matching/regex/regex.h"
 #include "xff/parser/rg.h"
 #include "xff/presentation/fields/fields.h"
+#include "xff/registry/compatibility.h"
 #include "xff/registry/descriptor.h"
 #include "xff/registry/registry.h"
 
@@ -99,7 +100,12 @@ SeeAlso TopicLinks(std::string_view topic, std::string_view related) {
 
 // The classification tags after a flag's term, e.g. (global, xff).
 std::vector<std::string> FlagTags(const GlobalFlag& flag) {
-  std::vector<std::string> tags = {"global", flag.xff ? "xff" : "find"};
+  std::vector<std::string> tags = {"global"};
+  for (const auto mode : registry::kModes) {
+    if (registry::Supports(flag.modes, mode)) {
+      tags.emplace_back(registry::ModeName(mode));
+    }
+  }
   if (flag.config_only) {
     tags.emplace_back("config-only");
   } else if (flag.cli_only) {
@@ -117,7 +123,11 @@ std::vector<std::string> PrimaryTags(const registry::Descriptor& descriptor) {
     case registry::Kind::kOperator: tags.emplace_back("operator"); break;
     case registry::Kind::kTest: tags.emplace_back("test"); break;
   }
-  tags.emplace_back(descriptor.style == registry::Style::kXff ? "xff" : "find");
+  for (const auto mode : registry::kModes) {
+    if (registry::Supports(descriptor.modes, mode)) {
+      tags.emplace_back(registry::ModeName(mode));
+    }
+  }
   if (descriptor.safety == registry::Safety::kSecurity) {
     tags.emplace_back("runs commands");
   } else if (descriptor.safety == registry::Safety::kSafety) {
@@ -238,7 +248,7 @@ Content FlagEntry(const GlobalFlag& flag, bool with_details = true, Audience aud
               .term = std::string(flag.display),
               .summary = ParseInline(flag.summary),
               .details = std::move(details),
-              .xff = flag.xff,
+              .xff = !registry::Supports(flag.modes, registry::Mode::kFind),
               .tags = FlagTags(flag),
               .anchor = absl::StrCat("flag-", flag.name),
           },
@@ -265,7 +275,7 @@ Content PrimaryEntry(const registry::Descriptor& descriptor, bool with_details =
               .term = std::move(term),
               .summary = ParseInline(descriptor.summary),
               .details = std::move(details),
-              .xff = descriptor.style == registry::Style::kXff,
+              .xff = !registry::Supports(descriptor.modes, registry::Mode::kFind),
               .tags = PrimaryTags(descriptor),
               .anchor = absl::StrCat("primary-", descriptor.name),
           },
@@ -980,7 +990,8 @@ Section RgSection(bool in_full) {
       "Options may appear among patterns and paths. Bundles and attached values work: `-nio`, `-eTODO`, `-C2`. "
       "An option consumes its argument before interpreting switches: `-e --xff` searches for that text. "
       "Bare `--` ends rg option parsing, so later `--xff` is a literal pattern or path. "
-      "Native `+` and `-o` mean OR after the switch; before it, `+` is data and `-o` means only matching."));
+      "`--rg` resumes rg options after native filters, without resetting the search or accumulated settings. "
+      "Native `+` and `-o` mean OR in XFF segments; in rg segments, `+` is data and `-o` means only matching."));
   section.children.push_back(ProseOf(
       "`--unicode` (default in rg grammar) interprets content as UTF-8; `--no-unicode` selects arbitrary "
       "bytes and ASCII word boundaries. `-w` uses Unicode Alphabetic, Mark, Decimal_Number, "
@@ -1003,11 +1014,22 @@ Section RgSection(bool in_full) {
       "`-p` / `--pretty` enables headings, line numbers and color even through a pipe. "
       "Separate files have a blank line between headings. JSON keeps XFF's record schema without "
       "headings or terminal color."));
+  section.children.push_back(ProseOf(
+      "Mode tags (`find`, `xff`, `rg`) come from the same metadata as flag lookup. "
+      "Shared long options work in all declared modes; short aliases use the active vocabulary. "
+      "`-type` remains a filesystem-kind predicate. XFF and rg accept `-t` and `-T` for filename types; "
+      "find mode rejects those aliases. Native short forms precede roots; INI files accept them too. "
+      "Rg's `--type` and `--type-not` map to `--file-type` and `--file-type-not`. "
+      "`--type-add`, `--type-clear`, and `--type-list` work in both grammars and native INI files. "
+      "Edits follow resolved configuration order after language JSON overlays and do not change "
+      "`-lang`, MIME, display labels, colors, or summary buckets. "
+      "Explicit regular-file roots bypass these discovery filters; native predicates and safety remain active. "
+      "Archive members remain discovered inputs and are filtered normally."));
   Rows options;
-  options.rows.reserve(parser::RgOptions().size());
-  for (const parser::RgOption& option : parser::RgOptions()) {
-    std::string term = option.short_name == '\0' ? "" : absl::StrCat("-", std::string(1, option.short_name), " / ");
-    absl::StrAppend(&term, "--", option.name);
+  options.rows.reserve(cli::CompatibilityOptions().size());
+  for (const registry::CompatibilityOption& option : cli::CompatibilityOptions()) {
+    std::string term = option.alias.empty() ? "" : absl::StrCat(option.alias, " / ");
+    absl::StrAppend(&term, option.name);
     if (!option.argument.empty()) {
       absl::StrAppend(&term, " ", option.argument);
     }

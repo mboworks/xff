@@ -120,4 +120,17 @@ test::bundled_language_candidates_work_in_rg_and_native_filters() {
   _check 0 'header.h|C' "${root}" -lang C++ -printf '%f|%{lang}\n'
 }
 
+test::archive_members_remain_discovered_files_under_explicit_archive_roots() {
+  local root out
+  root="$(test_tmpdir archive-types)"
+  printf 'hit source\n' >"${root}/one.cc"
+  printf 'hit text\n' >"${root}/one.txt"
+  COPYFILE_DISABLE=1 tar -cf "${root}/box.tar" -C "${root}" one.cc one.txt
+  out="$("$(_bin)" --rg -I -tcpp hit "${root}/box.tar")"
+  expect_eq 'hit source' "${out}"
+  out="$("$(_bin)" --file-type=cpp "${root}/box.tar" -type f -printf '%f\n')"
+  # The explicitly named archive itself remains selected; only discovered members are filtered.
+  expect_eq $'box.tar\none.cc' "${out}"
+}
+
 test_runner

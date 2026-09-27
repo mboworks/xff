@@ -20,6 +20,7 @@
 #include <string_view>
 
 #include "xff/registry/consumers.h"
+#include "xff/registry/mode.h"
 
 namespace xff::registry {
 
@@ -46,15 +47,8 @@ enum class Cost { kCheap, kMeta, kExpensive };
 // kSimilarity for -similar[:WIDTH[:PCT%]] TARGET (word-shingle width + Jaccard threshold).
 enum class Binding { kNone, kLabel, kLabelRegex, kFormat, kStyle, kHash, kText, kFuzzy, kSimilarity };
 
-// The active command style, and (for kFind/kXff) a primary's origin. As a primary
-// tag: kFind = find-native, kXff = an xff extension; the strict find style
-// (--config=find) rejects xff extensions, the xff style accepts all. The default is
-// kFind, so only xff-native primaries need tagging. kXff is find-evolved but
-// conservative (find-like visibility: shows hidden, ignore files off). kRg
-// (--config=rg) is a config-only style, never a descriptor tag: it uses the full
-// xff vocabulary but swaps in opinionated defaults (respect .gitignore/.ignore,
-// skip hidden, smart case). It is the single opinionated style. Vocabulary is accepted exactly
-// like kXff (everything but kFind accepts all).
+// Configuration presets choose defaults; they do not change how argv tokens are read.
+// Mode describes the command-line vocabulary independently of these presets.
 enum class Style { kFind, kXff, kRg };
 
 // Field expansion performed on trailing expression arguments. Attached templates (for example
@@ -120,7 +114,7 @@ struct Descriptor {
   Safety safety = Safety::kNone;
   bool buffers_columns = false;  // output uses the shared per-entry column alignment buffer
   bool writes_file = false;      // named file output; runtime writing/overwrite policy applies
-  Style style = Style::kFind;    // find-native by default; set kXff to mark an xff extension
+  Modes modes = Modes::kNative;  // expression spellings accepted in find and xff by default
   Cost cost = Cost::kCheap;
   bool pure = true;  // side-effect-free (reorderable within a conjunction)
   // The help topic (--help=TOPIC) this primary belongs to, or empty for none. The counterpart of

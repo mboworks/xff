@@ -1,28 +1,32 @@
 // SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
 // SPDX-License-Identifier: Apache-2.0
-#include "xff/parser/rg_types.h"
+#include "xff/matching/language/catalog.h"
 
 #include <algorithm>
+#include <memory>
 #include <ranges>
-#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
 #include "absl/container/btree_map.h"
+#include "absl/container/btree_set.h"
 #include "absl/status/status.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "mbo/status/status_macros.h"
+#include "xff/matching/regex/regex.h"
 
-namespace xff::parser {
+namespace xff::language {
 namespace {
 struct Definition {
-  std::set<std::string> languages;
+  absl::btree_set<std::string> languages;
   std::vector<std::string> globs;
+  std::vector<regex::Matcher> matchers;
+  std::vector<std::string_view> aliases;
 
   void Append(const Definition& other) {
     languages.insert(other.languages.begin(), other.languages.end());
@@ -30,7 +34,7 @@ struct Definition {
   }
 };
 
-struct TypeCatalog {
+struct Definitions {
   absl::btree_map<std::string, Definition, std::less<>> definitions;
   absl::btree_map<std::string, std::string, std::less<>> aliases;
 
@@ -73,12 +77,12 @@ struct TypeCatalog {
     if (found == definitions.end()) {
       return absl::InvalidArgumentError(absl::StrCat("unknown file type '", name, "'; use --type-list"));
     }
-    return found->second;
+    return Definition{.languages = found->second.languages, .globs = found->second.globs};
   }
 };
 
-TypeCatalog CatalogTypes(const language::LanguageSnapshot& vocabulary) {
-  TypeCatalog catalog;
+Definitions CatalogTypes(const LanguageSnapshot& vocabulary) {
+  Definitions catalog;
   for (const auto& info : vocabulary.Languages()) {
     const std::string name = absl::AsciiStrToLower(info.name);
     catalog.definitions[name].languages.emplace(info.name);
@@ -104,7 +108,7 @@ TypeCatalog CatalogTypes(const language::LanguageSnapshot& vocabulary) {
   return catalog;
 }
 
-absl::Status AddDefinition(TypeCatalog& catalog, std::string_view spec) {
+absl::Status AddDefinition(Definitions& catalog, std::string_view spec) {
   const auto colon = spec.find(':');
   const auto name = spec.substr(0, colon);
   MBO_ASSIGN_OR_RETURN(const auto key, catalog.Name(name));
@@ -132,19 +136,6 @@ absl::Status AddDefinition(TypeCatalog& catalog, std::string_view spec) {
   return absl::OkStatus();
 }
 
-absl::StatusOr<TypeCatalog> BuildDefinitions(const RgSearch& search, const language::LanguageSnapshot& vocabulary) {
-  TypeCatalog catalog = CatalogTypes(vocabulary);
-  for (const auto& rule : search.types) {
-    if (rule.kind == RgTypeRule::Kind::kClear) {
-      MBO_ASSIGN_OR_RETURN(const auto key, catalog.Name(rule.value));
-      catalog.definitions.erase(key);
-    } else if (rule.kind == RgTypeRule::Kind::kAdd) {
-      MBO_RETURN_IF_ERROR(AddDefinition(catalog, rule.value));
-    }
-  }
-  return catalog;
-}
-
 std::string Describe(const Definition& definition) {
   std::vector<std::string> parts;
   parts.reserve(definition.languages.size() + definition.globs.size());
@@ -158,7 +149,7 @@ std::string Describe(const Definition& definition) {
   return absl::StrJoin(parts, ", ");
 }
 
-std::string ListDefinitions(const TypeCatalog& catalog) {
+std::string ListDefinitions(const Definitions& catalog) {
   absl::btree_map<std::string, std::string, std::less<>> rows;
   for (const auto& [name, definition] : catalog.definitions) {
     rows.emplace(name, Describe(definition));
@@ -177,45 +168,85 @@ std::string ListDefinitions(const TypeCatalog& catalog) {
 }
 }  // namespace
 
-absl::StatusOr<RgTypes> RgTypes::Compile(const RgSearch& search) {
-  RgTypes result;
-  if (search.types.empty() && !search.type_list) {
-    return result;
-  }
-  const auto vocabulary = language::ActiveSnapshot();
-  result.vocabulary_ = vocabulary;
-  MBO_ASSIGN_OR_RETURN(const auto catalog, BuildDefinitions(search, vocabulary));
-  for (const auto& option : search.types) {
-    if (option.kind != RgTypeRule::Kind::kInclude && option.kind != RgTypeRule::Kind::kExclude) {
-      continue;
+struct Catalog::Data {
+  explicit Data(LanguageSnapshot snapshot) : vocabulary(snapshot), types(CatalogTypes(snapshot)) {}
+
+  LanguageSnapshot vocabulary;
+  Definitions types;
+  absl::btree_map<std::string, std::vector<std::string_view>, std::less<>> memberships;
+  std::vector<std::string_view> glob_types;
+
+  absl::Status Finalize() {
+    for (auto& [name, definition] : types.definitions) {
+      for (const auto& language : definition.languages) {
+        memberships[language].push_back(name);
+      }
+      if (!definition.globs.empty()) {
+        glob_types.push_back(name);
+      }
+      for (const auto& glob : definition.globs) {
+        MBO_ASSIGN_OR_RETURN(auto matcher, regex::Matcher::Compile(glob, false, regex::Grammar::kShglob));
+        definition.matchers.push_back(std::move(matcher));
+      }
     }
-    MBO_ASSIGN_OR_RETURN(const auto definition, catalog.Select(option.value));
-    Rule rule{.include = option.kind == RgTypeRule::Kind::kInclude};
-    rule.languages.insert(definition.languages.begin(), definition.languages.end());
-    result.default_include_ = result.default_include_ && !rule.include;
-    for (const auto& glob : definition.globs) {
-      MBO_ASSIGN_OR_RETURN(auto matcher, regex::Matcher::Compile(glob, false, regex::Grammar::kShglob));
-      rule.matchers.push_back(std::move(matcher));
+    for (const auto& [alias, name] : types.aliases) {
+      if (auto found = types.definitions.find(name); found != types.definitions.end() && alias != name) {
+        found->second.aliases.push_back(alias);
+      }
     }
-    result.rules_.push_back(std::move(rule));
+    return absl::OkStatus();
   }
-  if (search.type_list) {
-    result.listing_ = ListDefinitions(catalog);
+};
+
+absl::StatusOr<Catalog> Catalog::Compile(LanguageSnapshot vocabulary, absl::Span<const CatalogEdit> edits) {
+  auto data = std::make_shared<Data>(vocabulary);
+  for (const auto& edit : edits) {
+    if (edit.kind == CatalogEdit::Kind::kClear) {
+      MBO_ASSIGN_OR_RETURN(const auto key, data->types.Name(edit.value));
+      data->types.definitions.erase(key);
+    } else {
+      MBO_RETURN_IF_ERROR(AddDefinition(data->types, edit.value));
+    }
+  }
+  MBO_RETURN_IF_ERROR(data->Finalize());
+  return Catalog(std::move(data));
+}
+
+absl::StatusOr<std::string> Catalog::Resolve(std::string_view name) const {
+  MBO_ASSIGN_OR_RETURN(auto key, data_->types.Name(name));
+  if (key != "all" && !data_->types.definitions.contains(key)) {
+    return absl::InvalidArgumentError(absl::StrCat("unknown file type '", name, "'; use --type-list"));
+  }
+  return key;
+}
+
+absl::InlinedVector<FilterType, 4> Catalog::CandidatesForName(std::string_view basename) const {
+  absl::InlinedVector<std::string_view, 4> names;
+  for (const auto& candidate : data_->vocabulary.CandidatesForName(basename)) {
+    const auto found = data_->memberships.find(candidate.name);
+    if (found != data_->memberships.end()) {
+      names.insert(names.end(), found->second.begin(), found->second.end());
+    }
+  }
+  for (const auto& name : data_->glob_types) {
+    const auto& definition = data_->types.definitions.at(name);
+    if (std::ranges::any_of(definition.matchers, [&](const auto& matcher) { return matcher.FullMatch(basename); })) {
+      names.push_back(name);
+    }
+  }
+  std::ranges::sort(names);
+  const auto duplicates = std::ranges::unique(names);
+  names.erase(duplicates.begin(), duplicates.end());
+  absl::InlinedVector<FilterType, 4> result;
+  result.reserve(names.size());
+  for (const auto& name : names) {
+    result.push_back({.name = name, .aliases = data_->types.definitions.at(name).aliases});
   }
   return result;
 }
 
-bool RgTypes::Includes(std::string_view basename) const {
-  if (!vocabulary_) {
-    return default_include_;
-  }
-  const auto candidates = vocabulary_->CandidatesForName(basename);
-  for (const auto& rule : rules_ | std::views::reverse) {
-    if (std::ranges::any_of(candidates, [&](const auto& candidate) { return rule.languages.contains(candidate.name); })
-        || std::ranges::any_of(rule.matchers, [&](const auto& matcher) { return matcher.FullMatch(basename); })) {
-      return rule.include;
-    }
-  }
-  return default_include_;
+std::string Catalog::Listing() const {
+  return ListDefinitions(data_->types);
 }
-}  // namespace xff::parser
+
+}  // namespace xff::language

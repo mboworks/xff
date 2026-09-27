@@ -449,6 +449,29 @@ TEST_F(ParserTest, BindMatchersCompilesOptionalCaptureRegexWithoutApplyingGlobal
   EXPECT_THAT(without_regex.expression->matcher, IsNull());
 }
 
+TEST_F(ParserTest, TypeAliasesConsumeValuesBeforeRootsAndPreserveSpelling) {
+  ASSERT_OK_AND_ASSIGN(const auto command, Parse({"-t", "cpp", "-T=py", "-tcc", "src", "-type", "f"}));
+  EXPECT_THAT(command.globals, ElementsAre("-t=cpp", "-T=py", "-t=cc"));
+  EXPECT_THAT(command.roots, ElementsAre("src"));
+  EXPECT_THAT(EnforceStyle(command, registry::Style::kXff), IsOk());
+  EXPECT_THAT(
+      EnforceStyle(command, registry::Style::kFind),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("not available in find mode")));
+  ASSERT_OK_AND_ASSIGN(const auto empty_expression, Parse({"-tcpp", "src"}));
+  EXPECT_THAT(
+      EnforceStyle(empty_expression, registry::Style::kFind),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("-t=cpp")));
+}
+
+TEST_F(ParserTest, TypeAliasesRejectMissingValuesAndRemainLeadingOnly) {
+  for (const std::string_view alias : {"-t", "-T", "-t=", "-T="}) {
+    EXPECT_THAT(Parse({std::string(alias)}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("requires")));
+  }
+  EXPECT_THAT(Parse({"src", "-t", "cpp"}), StatusIs(absl::StatusCode::kInvalidArgument));
+  ASSERT_OK_AND_ASSIGN(const auto command, Parse({"src", "-type", "f", "--file-type=cpp"}));
+  EXPECT_THAT(command.globals, ElementsAre("--file-type=cpp"));
+}
+
 TEST_F(ParserTest, EnforceStyleRejectsXffExtensionUnderFind) {
   // The strict find style (--config=find) refuses an xff-only primary, naming it
   // and pointing at the escape hatch.
