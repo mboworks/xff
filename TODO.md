@@ -11,7 +11,7 @@
 - [x] Accept `+` as XFF-mode expression OR while preserving literal arguments and exec termination; keep it out of find mode.
 - [x] Select rg grammar and match output automatically for the `rg` invocation name.
 - [x] Give rg short options their rg meanings before `--xff`; retain native `-o` OR afterward.
-- [ ] Extend rg compatibility deliberately: type filters, multiline search, Unicode word semantics, heading/terminal layout, and streaming content.
+- [ ] Extend rg compatibility deliberately: type filters, multiline search, Unicode word semantics, heading/terminal layout, and streaming line/context output.
 
 ## Rg integration review (PRs 916-919)
 
@@ -28,7 +28,7 @@
 - [x] D11: Explain active rg selection independently of line rendering.
 - [x] D12: Remove the unrelated rg example from comparison help.
 - [x] D13: Preserve field-aware metadata and bounded reads through the rg input adapter.
-- [ ] Benchmark and parallelize rg content selection, independently of traversal workers.
+- [x] Benchmark and parallelize rg content selection, independently of traversal workers.
 - [x] Reuse per-entry content for native `-M` and rg native filters, including native matcher batches.
 - [x] Stream filename/count/quiet selection without collecting whole contents or selected lines.
 - [x] Generate rg option help from the parser metadata, with completeness, arity, and uniqueness checks.

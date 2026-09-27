@@ -391,7 +391,9 @@ absl::StatusOr<Matcher> Matcher::Compile(std::string_view pattern, bool case_ins
   // lambda in this member function reaches Matcher's private constructor.
   const auto compile_re2 = [case_insensitive](std::string_view re_pattern) -> absl::StatusOr<Matcher> {
     MBO_ASSIGN_OR_RETURN(auto re, CompileRe2(re_pattern, case_insensitive));
-    return Matcher(std::make_unique<Re2Backend>(std::move(re)));
+    return Matcher(
+        std::make_unique<Re2Backend>(std::move(re)),
+        Re2Source{.pattern = std::string(re_pattern), .case_insensitive = case_insensitive});
   };
   switch (grammar) {
     case Grammar::kRe2: return compile_re2(pattern);
@@ -429,7 +431,15 @@ absl::StatusOr<Matcher> Matcher::Compile(std::string_view pattern, bool case_ins
   return absl::InternalError("unknown regex grammar");  // unreachable: the enum is exhaustive
 }
 
-Matcher::Matcher(std::unique_ptr<const RegexBackend> backend) : backend_(std::move(backend)) {}
+Matcher::Matcher(std::shared_ptr<const RegexBackend> backend, std::optional<Re2Source> re2)
+    : backend_(std::move(backend)), re2_(std::move(re2)) {}
+
+absl::StatusOr<Matcher> Matcher::ForkForWorker() const {
+  if (re2_) {
+    return Compile(re2_->pattern, re2_->case_insensitive, Grammar::kRe2);
+  }
+  return Matcher(backend_);
+}
 
 Matcher::~Matcher() = default;
 Matcher::Matcher(Matcher&&) noexcept = default;

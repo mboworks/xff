@@ -48,16 +48,25 @@ A bounded directory-read worker pool with a single coordinator:
   two sibling directories provide independent work; a flat directory or single-child
   chain does not pay for idle directory threads.
 - The coordinator applies traversal controls and writes the output sink in traversal order.
-  Independent content predicates can evaluate in a separate bounded worker pool; all stateful
-  expressions, mutations and execution actions retain the coordinator evaluator.
+  Independent content predicates and rg content searches can evaluate in a separate bounded worker
+  pool; all stateful expressions, mutations and execution actions retain the coordinator evaluator.
 - Content matching batches at most 256 owned entries and schedules chunks of 16, so one broad
   directory can use several workers. Fewer than 64 entries run inline without starting matcher
   threads. Completed results return to the coordinator in input order, including a trailing
   path-only print action. Cheap name/type matching stays inline to avoid scheduling overhead.
 - Eligibility comes from audited descriptor capabilities, not names: only independent tests
   without full metadata, mutable run state or safety effects qualify. Reductions, templates,
-  colored output, filesystem-native case probing and archive diving currently use the general
-  evaluator. Both paths keep the same VFS and safety preflight.
+  colored output and filesystem-native case probing use the general evaluator. Archive-root probing
+  does not disable host-file parallelism: mounted/archive-member entries flush pending host results
+  and use the serial evaluator. Both paths keep the same VFS and safety preflight.
+- Workers own each entry's content snapshot and rendered output. Predicates and match output reuse
+  that snapshot; source bytes are released when evaluation finishes. The batch retains rendered
+  records for ordered emission. Full line/context output buffers each input; filename/count/quiet
+  selection streams where the VFS supports it, retaining the longest line and draining the source
+  for binary/error checks. Neither the entry-count batch bound nor streaming limits record size.
+- Each worker forks its RE2 matching state once to avoid shared DFA-cache contention. Other
+  immutable compiled backends, including PCRE2, remain shared. Entry content and lazy metadata
+  have one owner and need no additional locks.
 - A listing future may retain a completed directory read until the coordinator
   reaches it. No worker emits a match and no traversal sort collects all matches.
 
@@ -168,8 +177,9 @@ design-config.md):
   sink and folded into the final status (design.md "Exit-code model"); a partial
   failure still yields the right nonzero code.
 - **Thread-safety** - `vfs::FileSystem` is already documented thread-safe. The
-  coordinator alone evaluates expressions and writes the emit sink, capture map,
-  and `--summary` accumulators; directory-read workers never touch those objects.
+  coordinator evaluates stateful expressions and writes the emit sink, capture map,
+  and `--summary` accumulators. Matcher workers evaluate audited independent expressions and buffer
+  entry output privately; directory-read workers never touch those objects.
 
 ## ThreadSanitizer
 

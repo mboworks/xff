@@ -15,9 +15,15 @@
 
 #include <array>
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <map>
+#include <memory>
+#include <mutex>
+#include <set>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -38,16 +44,65 @@ using ::mbo::testing::IsOkAndHolds;
 using ::mbo::testing::StatusIs;
 using ::testing::Contains;
 using ::testing::Eq;
+using ::testing::Gt;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
 using ::testing::Not;
 
+// A restarted cursor reports a failure after an otherwise selected line.
+class FailingSource final : public vfs::ReadSource {
+ public:
+  explicit FailingSource(bool fail_open) : fail_open_(fail_open) {}
+
+  absl::StatusOr<std::unique_ptr<vfs::ReadStream>> Open() const override {
+    if (fail_open_) {
+      return absl::PermissionDeniedError("cannot open stream");
+    }
+    return std::make_unique<Stream>();
+  }
+
+ private:
+  class Stream final : public vfs::ReadStream {
+   public:
+    absl::StatusOr<std::string> Read(std::size_t max_bytes) override {
+      EXPECT_THAT(max_bytes, Eq(65'536));
+      if (std::exchange(emitted_, true)) {
+        return absl::DataLossError("late read failure");
+      }
+      return "hit\n";
+    }
+
+   private:
+    bool emitted_ = false;
+  };
+
+  bool fail_open_;
+};
+
 struct SearchFs final : vfs::FileSystem {
   std::map<std::string, std::string> files{{"tree/a", "hit\nmiss\n"}, {"tree/b", "miss\n"}, {"patterns", "hit\n"}};
   bool read_error = false;
   bool streaming = false;
+  vfs::SharedReadSource source_override;
+  bool track_threads = false;
+  mutable std::mutex read_mutex;
+  mutable std::condition_variable read_condition;
+  mutable std::set<std::thread::id> read_threads;
+
+  void TrackRead() const {
+    if (!track_threads) {
+      return;
+    }
+    std::unique_lock lock(read_mutex);
+    if (read_threads.insert(std::this_thread::get_id()).second) {
+      read_condition.notify_all();
+      // Force overlap on the first read without hanging if scheduling regresses to serial.
+      read_condition.wait_for(lock, std::chrono::seconds(2), [this] { return read_threads.size() > 1; });
+    }
+  }
+
   mutable std::atomic<std::size_t> sources = 0;
   mutable std::atomic<std::size_t> reads = 0;
 
@@ -96,6 +151,9 @@ struct SearchFs final : vfs::FileSystem {
       return FileSystem::ContentSource(path);
     }
     sources.fetch_add(1, std::memory_order_relaxed);
+    if (source_override) {
+      return source_override;
+    }
     if (read_error) {
       return absl::PermissionDeniedError("denied stream");
     }
@@ -107,6 +165,7 @@ struct SearchFs final : vfs::FileSystem {
   }
 
   absl::StatusOr<std::string> ReadContent(std::string_view path) const override {
+    TrackRead();
     reads.fetch_add(1, std::memory_order_relaxed);
     if (read_error) {
       return absl::PermissionDeniedError("denied content");
@@ -250,6 +309,107 @@ TEST_F(RgEngineTest, StreamingErrorsRemainErrorsForQuietAndFilenameSelection) {
   EXPECT_THAT(Run({"-q", "hit", "tree"}).errors, 2);
   EXPECT_THAT(Run({"-l", "hit", "tree"}).errors, 2);
   EXPECT_THAT(output, IsEmpty());
+}
+
+TEST_F(RgEngineTest, StreamOpenAndLateReadFailuresOutrankEarlyQuietSelection) {
+  fs.streaming = true;
+  for (const bool fail_open : {true, false}) {
+    fs.source_override = std::make_shared<FailingSource>(fail_open);
+    const auto result = Run({"-q", "hit", "tree/a"});
+    EXPECT_THAT(result.errors, 1);
+    EXPECT_THAT(result.any_match, IsFalse());
+    EXPECT_THAT(output, IsEmpty());
+    EXPECT_THAT(errors, Contains(HasSubstr(fail_open ? "cannot open stream" : "late read failure")));
+  }
+}
+
+TEST_F(RgEngineTest, OrdinaryRgSearchUsesContentWorkersWithoutNativeExpression) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 300; ++index) {
+    fs.files.emplace("tree/" + std::to_string(index), "hit " + std::to_string(index) + "\n");
+  }
+  fs.track_threads = true;
+  EXPECT_THAT(Run({"-j4", "--archive=none", "hit", "tree"}).errors, 0);
+  EXPECT_THAT(fs.read_threads.size(), Gt(1));
+  EXPECT_THAT(fs.reads.load(), 300);
+  EXPECT_THAT(output, HasSubstr("tree/0:hit 0\n"));
+  EXPECT_THAT(output, HasSubstr("tree/299:hit 299\n"));
+}
+
+TEST_F(RgEngineTest, ParallelRgMatchesSerialRecordsAcrossBatchesAndOutputModes) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 300; ++index) {
+    fs.files.emplace("tree/" + std::to_string(index), index % 3 == 0 ? "before\nhit hit\nafter\n" : "miss\n");
+  }
+  const std::vector<std::vector<std::string>> modes{
+      {},
+      {"--format=jsonl"},
+      {"-o"},
+      {"-C1"},
+      {"-c"},
+      {"--count-matches"},
+      {"-v"},
+      {"-l"},
+      {"--files-without-match"},
+      {"-q"},
+      {"--no-match-output"},
+      {"--max-results=3"},
+  };
+  for (const auto& mode : modes) {
+    auto args = mode;
+    args.insert(args.end(), {"--archive=none", "--sort=none", "hit", "tree"});
+    args.insert(args.begin(), "-j1");
+    const auto serial = Run(args);
+    EXPECT_THAT(serial.errors, 0);
+    const auto expected = output;
+    args.front() = "-j4";
+    const auto parallel = Run(args);
+    EXPECT_THAT(parallel.errors, 0);
+    EXPECT_THAT(parallel.any_match, serial.any_match);
+    EXPECT_THAT(output, EqualsText(expected));
+  }
+}
+
+TEST_F(RgEngineTest, ParallelNativeFilterAndRgSelectionShareEachRead) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 300; ++index) {
+    fs.files.emplace("tree/" + std::to_string(index), "hit\n");
+  }
+  EXPECT_THAT(Run({"-j4", "--archive=none", "hit", "tree", "--xff", "-content", "hit"}).errors, 0);
+  EXPECT_THAT(fs.reads.load(), 300);
+  fs.reads = 0;
+  EXPECT_THAT(Run({"-j4", "--archive=none", "-g0", "hit", "tree"}).errors, 0);
+  EXPECT_THAT(fs.reads.load(), 1);
+  EXPECT_THAT(output, EqualsText("tree/0:hit\n"));
+}
+
+TEST_F(RgEngineTest, ParallelErrorsRemainErrorsAndProduceNoPartialRecords) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 100; ++index) {
+    fs.files.emplace("tree/" + std::to_string(index), "hit\n");
+  }
+  fs.read_error = true;
+  EXPECT_THAT(Run({"-j4", "--archive=none", "hit", "tree"}).errors, 100);
+  EXPECT_THAT(output, IsEmpty());
+  EXPECT_THAT(Run({"-j4", "--archive=none", "-q", "hit", "tree"}).errors, 100);
+  EXPECT_THAT(output, IsEmpty());
+}
+
+TEST_F(RgEngineTest, StatefulNativeFiltersStayInCoordinator) {
+  fs.files.clear();
+  for (std::size_t index = 0; index < 100; ++index) {
+    fs.files.emplace("tree/" + std::to_string(index), "hit\n");
+  }
+  EXPECT_THAT(Run({"-j4", "--archive=none", "hit", "tree", "--xff", "-type", "f", "-first", "1"}).errors, 0);
+  EXPECT_THAT(fs.reads.load(), 1);
+  EXPECT_THAT(output, EqualsText("tree/0:hit\n"));
+}
+
+TEST_F(RgEngineTest, ResourceInspectionExplainsBufferedAndStreamedSearches) {
+  MBO_ASSERT_OK_AND_ASSIGN(const auto lines, parser::Parse({"--rg", "hit", "tree"}));
+  EXPECT_THAT(ExplainResources(lines), IsOkAndHolds(HasSubstr("line output materialized per file")));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto counts, parser::Parse({"--rg", "-c", "hit", "tree"}));
+  EXPECT_THAT(ExplainResources(counts), IsOkAndHolds(HasSubstr("streamed line selection; longest line retained")));
 }
 
 TEST_F(RgEngineTest, PreparationRequiresAnRgSearch) {

@@ -314,11 +314,13 @@ absl::Status ValidateSizeArgs(const parser::Expr& expr);
 
 // Prepared once from the expression; literal patterns retain literal matching semantics.
 struct MatchOutput {
-  parser::Expr source{.kind = parser::Expr::Kind::kPredicate};
+  std::shared_ptr<const parser::Expr> source;
   std::vector<std::shared_ptr<const regex::Matcher>> matchers;
 };
 
 absl::StatusOr<MatchOutput> PrepareMatchOutput(const parser::Expr& expression);
+// Fork matching state once per worker while sharing the immutable rendering specification.
+absl::StatusOr<MatchOutput> ForkMatchOutput(const MatchOutput& output);
 bool EmitMatchOutput(const MatchOutput& output, EvalContext& context);
 // Compile rg patterns separately from native content filters; read pattern files via VFS.
 absl::StatusOr<MatchOutput> PrepareRgOutput(

@@ -245,8 +245,10 @@ cc_library(
         "//xff/parser:parser_cc",
         "//xff/registry:registry_cc",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/synchronization",
         "@abseil-cpp//absl/time",
+        "@mboworks_mbo//mbo/types:optional_ref_cc",
     ],
 )
 
@@ -537,5 +539,23 @@ cc_test(
         "@mboworks_mbo//mbo/testing:matchers_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
         "@nlohmann_json//:json",
+    ],
+)
+
+# Explicit in-memory experiment; correctness is checked before timing each case.
+cc_binary(
+    name = "rg_benchmark",
+    srcs = ["rg_benchmark.cc"],
+    tags = [
+        "clang-tidy",
+        "manual",
+    ],
+    deps = [
+        ":run_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@com_github_google_benchmark//:benchmark",
+        "@xff_pcre2//:pcre2_backend_cc",
     ],
 )

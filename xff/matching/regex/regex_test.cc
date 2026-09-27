@@ -23,6 +23,7 @@
 #include "absl/status/status.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/status/status_macros.h"
 #include "mbo/testing/status.h"
 
 namespace xff::regex {
@@ -42,6 +43,42 @@ using ::testing::Pair;
 using ::testing::SizeIs;
 
 struct RegexTest : ::testing::Test {};
+
+TEST_F(RegexTest, WorkerForkPreservesPatternCaseAndGrammarAfterOriginalDies) {
+  constexpr auto kGrammars = std::to_array<Grammar>({
+      Grammar::kRe2,
+      Grammar::kGlob,
+      Grammar::kShglob,
+      Grammar::kExact,
+      Grammar::kFnmatch,
+      Grammar::kEre,
+  });
+  for (const auto grammar : kGrammars) {
+    for (const bool insensitive : {false, true}) {
+      const auto make_worker = [&]() -> absl::StatusOr<Matcher> {
+        MBO_ASSIGN_OR_RETURN(const auto original, Matcher::Compile("hello", insensitive, grammar));
+        return original.ForkForWorker();
+      };
+      ASSERT_OK_AND_ASSIGN(const auto fork, make_worker());
+      EXPECT_THAT(fork.FullMatch("hello"), IsTrue());
+      EXPECT_THAT(fork.FullMatch("HELLO"), Eq(insensitive));
+      EXPECT_THAT(fork.PartialMatch("say hello"), IsTrue());
+    }
+  }
+}
+
+TEST_F(RegexTest, WorkerForkRetainsTranslatedGlobAndCaptureSemantics) {
+  ASSERT_OK_AND_ASSIGN(const auto glob, Matcher::Compile("*.{cc,h}", true, Grammar::kShglob));
+  ASSERT_OK_AND_ASSIGN(const auto worker_glob, glob.ForkForWorker());
+  EXPECT_THAT(worker_glob.FullMatch("file.CC"), IsTrue());
+  EXPECT_THAT(worker_glob.FullMatch("file.h"), IsTrue());
+  EXPECT_THAT(worker_glob.FullMatch("dir/file.h"), IsFalse());
+  EXPECT_THAT(worker_glob.FullMatch("file.txt"), IsFalse());
+  ASSERT_OK_AND_ASSIGN(const auto regex, Matcher::Compile("(foo|bar)([0-9]+)", false));
+  ASSERT_OK_AND_ASSIGN(const auto worker_regex, regex.ForkForWorker());
+  EXPECT_THAT(worker_regex.FullMatchCaptures("foo123"), Optional(ElementsAre("foo123", "foo", "123")));
+  EXPECT_THAT(worker_regex.FindFirst("x bar42 y"), Optional(Pair(2, 5)));
+}
 
 TEST_F(RegexTest, ValidateRe2RewriteChecksBothPatternAndReplacement) {
   EXPECT_THAT(ValidateRe2Rewrite("(a)", R"(\1)", true), IsOk());

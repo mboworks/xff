@@ -80,4 +80,24 @@ test::named_search_roots_feed_packing_and_summaries() {
   expect_output_contains 'Summary scope:' "${out}"
 }
 
+test::parallel_pcre2_and_default_archive_probing_preserve_ordered_output() {
+  local root index serial parallel
+  root="$(test_tmpdir parallel)"
+  for ((index = 0; index < 300; ++index)); do
+    printf 'before\nhit hit\nafter\n' >"${root}/${index}.txt"
+  done
+  # Default archive-root probing must not disable host-file content workers.
+  serial="$("$(_bin)" --rg -j1 -P -C1 --sort=dir 'h|hit' "${root}")"
+  parallel="$("$(_bin)" --rg -j4 -P -C1 --sort=dir 'h|hit' "${root}")"
+  expect_eq "${serial}" "${parallel}"
+  serial="$("$(_bin)" --rg -j1 -P --count-matches --sort=dir 'h|hit' "${root}")"
+  parallel="$("$(_bin)" --rg -j4 -P --count-matches --sort=dir 'h|hit' "${root}")"
+  expect_eq "${serial}" "${parallel}"
+  COPYFILE_DISABLE=1 tar -cf "${root}/box.tar" -C "${root}" 0.txt 1.txt
+  serial="$("$(_bin)" --rg -j1 -P --sort=dir hit "${root}" "${root}/box.tar")"
+  parallel="$("$(_bin)" --rg -j4 -P --sort=dir hit "${root}" "${root}/box.tar")"
+  expect_eq "${serial}" "${parallel}"
+  expect_output_contains "${root}/box.tar!0.txt:hit hit" "${parallel}"
+}
+
 test_runner

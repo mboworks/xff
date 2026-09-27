@@ -31,11 +31,15 @@ bool HasContentMatch(const parser::Expr& expression) {
   return (expression.lhs && HasContentMatch(*expression.lhs)) || (expression.rhs && HasContentMatch(*expression.rhs));
 }
 
-ParallelMatch::ParallelMatch(const parser::Expr& expression, std::size_t workers, bool scores, bool retain_content)
+ParallelMatch::ParallelMatch(
+    mbo::types::OptionalRef<const parser::Expr> expression,
+    std::size_t workers,
+    bool scores,
+    std::optional<ParallelContentOutput> output)
     : expression_(expression),
       workers_(std::max(workers, std::size_t{1})),
       scores_(scores),
-      retain_content_(retain_content) {}
+      output_(std::move(output)) {}
 
 ParallelMatch::~ParallelMatch() {
   {
@@ -55,13 +59,11 @@ bool ParallelMatch::Finished() const {
   return remaining_ == 0;
 }
 
-const std::vector<EvaluationResult>& ParallelMatch::Match(std::vector<CollectedEntry> entries) {
+const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<CollectedEntry> entries) {
   const absl::MutexLock lock(mutex_);
   entries_ = std::move(entries);
   results_.clear();
   results_.resize(entries_.size());
-  content_.clear();
-  content_.resize(entries_.size());
   next_.store(0, std::memory_order_relaxed);
   if (threads_.empty() && entries_.size() < 64) {
     EvaluateEntries();
@@ -81,6 +83,7 @@ const std::vector<EvaluationResult>& ParallelMatch::Match(std::vector<CollectedE
 }
 
 void ParallelMatch::Run() {
+  const auto local = output_ ? std::optional(ForkMatchOutput(output_->output)) : std::nullopt;
   std::size_t generation = 0;
   for (;;) {
     {
@@ -91,7 +94,9 @@ void ParallelMatch::Run() {
       }
       generation = generation_;
     }
-    EvaluateEntries();
+    EvaluateEntries(
+        local ? mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{*local}
+              : mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>>{});
     {
       const absl::MutexLock lock(mutex_);
       --remaining_;
@@ -99,7 +104,7 @@ void ParallelMatch::Run() {
   }
 }
 
-void ParallelMatch::EvaluateEntries() {
+void ParallelMatch::EvaluateEntries(mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output) {
   // Chunking amortizes scheduling without assigning one large directory to one worker.
   constexpr std::size_t kChunk = 16;
   for (;;) {
@@ -109,25 +114,48 @@ void ParallelMatch::EvaluateEntries() {
     }
     const std::size_t end = std::min(first + kChunk, entries_.size());
     for (std::size_t index = first; index < end; ++index) {
-      const Visit visit = entries_.at(index).AsVisit();
-      Control control;
-      std::optional<int> fuzzy;
-      const auto discard = [](std::string_view) {};
-      EvalContext context{
-          .visit = visit,
-          .emit = discard,
-          .fs = *visit.fs,
-          .now = absl::UnixEpoch(),
-          .tz = absl::UTCTimeZone(),
-          .fuzzy_score = scores_ ? mbo::types::OptionalRef{fuzzy} : mbo::types::OptionalRef<std::optional<int>>{},
-          .control = control,
-      };
-      results_.at(index) = EvaluateDeferred(expression_, context);
-      if (retain_content_ && results_.at(index).matched) {
-        content_.at(index) = std::move(context.content);
-      }
+      results_.at(index) = EvaluateEntry(entries_.at(index).AsVisit(), output);
     }
   }
+}
+
+ParallelResult ParallelMatch::EvaluateEntry(
+    const Visit& visit,
+    mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output) const {
+  ParallelResult result;
+  Control control;
+  std::optional<int> fuzzy;
+  const auto discard = [](std::string_view) {};
+  EvalContext context{
+      .visit = visit,
+      .emit = discard,
+      .fs = *visit.fs,
+      .now = absl::UnixEpoch(),
+      .tz = absl::UTCTimeZone(),
+      .fuzzy_score = scores_ ? mbo::types::OptionalRef{fuzzy} : mbo::types::OptionalRef<std::optional<int>>{},
+      .control = control,
+  };
+  result.evaluation = expression_ ? EvaluateDeferred(*expression_, context) : EvaluationResult{.matched = true};
+  if (result.evaluation.matched && output_) {
+    auto& content = result.content.emplace();
+    // Forking is an optimization: retain the already validated shared matcher if it fails.
+    const auto& prepared = output && output->ok() ? **output : output_->output;
+    const auto buffer = [&](std::string_view text) { content.text.append(text); };
+    context.emit = buffer;
+    context.grep = output_->grep;
+    context.grep_json = output_->json;
+    context.grep_before = output_->before;
+    context.grep_after = output_->after;
+    if (output_->automatic_filename) {
+      context.grep.filename = output_->root_count != 1 || visit.depth != 0;
+    }
+    if (output_->rg) {
+      content.selected = EmitRgOutput(prepared, *output_->rg, context);
+    } else {
+      EmitMatchOutput(prepared, context);
+    }
+  }
+  return result;
 }
 
 }  // namespace xff::engine

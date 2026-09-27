@@ -5503,7 +5503,8 @@ RunResult RunFindCore(
   // path rather than a second, subtly different renderer.
   // NOLINTNEXTLINE(readability-function-cognitive-complexity): one extracted sink dispatch shared by walk and replay
   const auto finish_entry = [&](const Visit& visit, std::map<std::string, std::string>& outputs, bool matched,
-                                std::optional<bool> verification, ContentSnapshot content) {
+                                std::optional<bool> verification, ContentSnapshot content,
+                                mbo::types::OptionalRef<const ContentResult> prepared = {}) {
     if (matched && rg_output) {
       const auto decision = rg_glob_decision(visit);
       if (decision == ignore::Decision::kIgnore || (rg_positive_glob && decision == ignore::Decision::kDefault)) {
@@ -5526,11 +5527,18 @@ RunResult RunFindCore(
           .control = control,
           .content = std::move(content),
       };
+      if (!grep_options.match_output || !implicit_print || any_reduction
+          || (max_results->has_value() && listed_results >= **max_results)) {
+        context.grep.quiet = true;
+      }
       if (rg_auto_filename) {
         // A single file root needs no prefix; its archive members are distinct input files.
         context.grep.filename = roots.size() != 1 || visit.depth != 0;
       }
-      const auto selected = EmitRgOutput(*rg_output, *command.rg, context);
+      const auto selected = prepared ? prepared->selected : EmitRgOutput(*rg_output, *command.rg, context);
+      if (prepared && selected.ok()) {
+        context.emit(prepared->text);
+      }
       content = std::move(context.content);
       if (!selected.ok()) {
         on_error(visit.path, selected.status());
@@ -5630,7 +5638,11 @@ RunResult RunFindCore(
             .control = control,
             .content = std::move(content),
         };
-        EmitMatchOutput(*match_output, context);
+        if (prepared) {
+          emit(prepared->text);
+        } else {
+          EmitMatchOutput(*match_output, context);
+        }
         return;
       }
       const std::string_view entry_color = colorize ? palette.CodeFor(
@@ -5711,7 +5723,8 @@ RunResult RunFindCore(
   // side effects and every unclassified feature in the ordinary coordinator evaluator.
   mbo::types::OptionalRef<const parser::Expr> parallel_expression;
   mbo::types::OptionalRef<const parser::Expr> parallel_output;
-  if (options.workers > 1 && !full_metadata && expression.has_value() && options.archive == ArchiveDive::kNone) {
+  const bool parallel_allowed = options.workers > 1 && !full_metadata;
+  if (parallel_allowed && expression.has_value()) {
     if (CanParallelMatch(*expression)) {
       parallel_expression.set_ref(*expression);
     } else if (
@@ -5721,15 +5734,31 @@ RunResult RunFindCore(
       parallel_output.set_ref(*expression->rhs);
     }
   }
-  // Cheap names/types do not justify synchronization. Content reads do; independent
-  // chunks distribute even a single broad directory across the requested workers.
-  if (parallel_expression.has_value() && !HasContentMatch(*parallel_expression)) {
-    parallel_expression.reset();
-  }
+  // Rg supplies its own content search. A native expression, when present, must still be audited.
+  const bool parallel_rg = parallel_allowed && rg_output && (!expression || parallel_expression);
+  const bool parallel_native = parallel_expression && HasContentMatch(*parallel_expression);
   std::optional<ParallelMatch> parallel_match;
-  if (parallel_expression.has_value()) {
-    parallel_match.emplace(
-        *parallel_expression, options.workers, rank_by_score, match_output.has_value() || rg_output.has_value());
+  if (parallel_rg || parallel_native) {
+    std::optional<ParallelContentOutput> content_output;
+    if (rg_output || match_output) {
+      content_output.emplace(
+          ParallelContentOutput{
+              .output = rg_output ? *rg_output : *match_output,
+              .rg = command.rg ? mbo::types::OptionalRef<const parser::RgSearch>{*command.rg}
+                               : mbo::types::OptionalRef<const parser::RgSearch>{},
+              .grep = grep_options,
+              .json = format == render::Format::kJsonl,
+              .automatic_filename = rg_output.has_value() && rg_auto_filename,
+              .root_count = roots.size(),
+              .before = grep_before,
+              .after = grep_after,
+          });
+      // Selection still runs when match output is disabled; avoid constructing unused line records.
+      if (rg_output && (!grep_options.match_output || !implicit_print || any_reduction)) {
+        content_output->grep.quiet = true;
+      }
+    }
+    parallel_match.emplace(parallel_expression, options.workers, rank_by_score, std::move(content_output));
   }
   std::vector<CollectedEntry> pending_matches;
   const auto flush_matches = [&] {
@@ -5739,7 +5768,8 @@ RunResult RunFindCore(
     const auto& results = parallel_match->Match(std::move(pending_matches));
     pending_matches.clear();
     for (std::size_t index = 0; index < results.size(); ++index) {
-      const auto& evaluated = results.at(index);
+      const auto& result = results.at(index);
+      const auto& evaluated = result.evaluation;
       const Visit visit = parallel_match->Entries().at(index).AsVisit();
       fuzzy_score = evaluated.fuzzy;
       if (evaluated.matched && parallel_output.has_value()) {
@@ -5755,7 +5785,10 @@ RunResult RunFindCore(
         Evaluate(*parallel_output, context);
       }
       std::map<std::string, std::string> outputs;
-      finish_entry(visit, outputs, evaluated.matched, std::nullopt, parallel_match->TakeContent(index));
+      finish_entry(
+          visit, outputs, evaluated.matched, std::nullopt, {},
+          result.content ? mbo::types::OptionalRef<const ContentResult>{*result.content}
+                         : mbo::types::OptionalRef<const ContentResult>{});
     }
   };
   const absl::Status status = Walk(
@@ -5805,12 +5838,23 @@ RunResult RunFindCore(
             }
           }
         }
-        if (parallel_match.has_value()) {
+        const bool parallel_entry =
+            parallel_match && !visit.fs_owner && visit.metadata.source != vfs::Source::kArchiveMember;
+        if (parallel_entry) {
+          if (rg_output) {
+            const auto decision = rg_glob_decision(visit);
+            if (decision == ignore::Decision::kIgnore || (rg_positive_glob && decision == ignore::Decision::kDefault)) {
+              return WalkAction::kContinue;
+            }
+          }
           pending_matches.push_back(OwnVisit(visit));
           if (pending_matches.size() >= 256) {
             flush_matches();
           }
           return WalkAction::kContinue;
+        }
+        if (parallel_match) {
+          flush_matches();  // Emit queued host results before this serial archive entry.
         }
         Control control;
         std::vector<std::string> captures;           // -regex groups for this entry; consumed by gated -exec {0}..{N}
@@ -6952,14 +6996,20 @@ absl::StatusOr<std::string> ExplainResources(const parser::Command& command, std
   std::string output = absl::StrCat(
       "\n# execution resources: static inspection, not measured usage\n", "walks\t", compare ? 2 : 1, "\n",
       "directory-workers-per-walk\t", workers, "\n", "eligible-command-workers-per-walk\t", workers,
-      " (independent semicolon-form child pool)\n", "evaluation\tcoordinated within each walk\n",
+      " (independent semicolon-form child pool)\n",
+      "evaluation\tordered coordinator; eligible content uses independent workers\n",
       "traversal-state\tdirectory listings, read-ahead, and traversal stack\n", "content-field-occurrences\t",
       resources.content_fields, " (hash/lines segments, not predicted read calls)\n", "line-histogram-consumers\t",
       line_histograms, "\n", "expensive-primaries\t",
       resources.expensive.empty() ? "none" : absl::StrJoin(resources.expensive, ","),
       " (registry cost tier, not a content-read classification)\n");
   if (command.rg) {
-    absl::StrAppend(&output, "rg-search\tcontent materialized per selected file; patterns compiled once\n");
+    const auto grep = ResolveGrepOptions(globals, true);
+    const bool streaming = grep.quiet || !grep.match_output || !listing || grep.output != GrepOptions::Output::kLines;
+    absl::StrAppend(
+        &output, "rg-search\t",
+        streaming ? "streamed line selection; longest line retained" : "line output materialized per file",
+        "; patterns prepared once, RE2 state per worker; stdin and legacy sources may be buffered\n");
   }
   absl::StrAppend(
       &output, DescribeRetainedResources(

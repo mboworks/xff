@@ -1,0 +1,938 @@
+{
+  "platform": "macos-arm64",
+  "baseline_commit": "6063f3d0e3a3d55912e1f0c604650ecc8bcf003c",
+  "candidate": "four rg integration follow-ups",
+  "aggregation": "mean of best 7 of 9 repetitions",
+  "workload": "in-memory flat tree; each file has one initial matching line and 128 nonmatching lines; (alpha|beta)[0-9]{3}.*needle",
+  "scope": "engine-only, clang_release + ThinLTO; elapsed wall time; parser/native pattern setup excluded; rg preparation remains inside RunFind",
+  "context": {
+    "date": "2026-09-27T01:08:09+01:00",
+    "host_name": "Mac",
+    "executable": "/private/tmp/xff-rg-review-baseline/bazel-bin/xff/engine/rg_benchmark",
+    "num_cpus": 18,
+    "cpu_scaling_enabled": false,
+    "caches": [
+      {
+        "type": "Data",
+        "level": 1,
+        "size": 65536,
+        "num_sharing": 0
+      },
+      {
+        "type": "Instruction",
+        "level": 1,
+        "size": 131072,
+        "num_sharing": 0
+      },
+      {
+        "type": "Unified",
+        "level": 2,
+        "size": 8388608,
+        "num_sharing": 1
+      }
+    ],
+    "load_avg": [19.2251, 89.7852, 74.1128],
+    "library_version": "1.9.5",
+    "library_build_type": "release",
+    "json_schema_version": 1
+  },
+  "results": [
+    {
+      "grammar": "RE2",
+      "mode": "filter",
+      "files": 10,
+      "workers": 1,
+      "baseline_us": 20.408,
+      "candidate_us": 20.329,
+      "speedup": 1.0039
+    },
+    {
+      "grammar": "RE2",
+      "mode": "filter",
+      "files": 100,
+      "workers": 1,
+      "baseline_us": 51.919,
+      "candidate_us": 52.454,
+      "speedup": 0.9898
+    },
+    {
+      "grammar": "RE2",
+      "mode": "filter",
+      "files": 1000,
+      "workers": 1,
+      "baseline_us": 363.507,
+      "candidate_us": 371.486,
+      "speedup": 0.9785
+    },
+    {
+      "grammar": "RE2",
+      "mode": "filter",
+      "files": 10000,
+      "workers": 1,
+      "baseline_us": 3609.607,
+      "candidate_us": 3636.446,
+      "speedup": 0.9926
+    },
+    {
+      "grammar": "RE2",
+      "mode": "filter",
+      "files": 10,
+      "workers": 4,
+      "baseline_us": 21.074,
+      "candidate_us": 21.454,
+      "speedup": 0.9823
+    },
+    {
+      "grammar": "RE2",
+      "mode": "filter",
+      "files": 100,
+      "workers": 4,
+      "baseline_us": 118.016,
+      "candidate_us": 119.711,
+      "speedup": 0.9858
+    },
+    {
+      "grammar": "RE2",
+      "mode": "filter",
+      "files": 1000,
+      "workers": 4,
+      "baseline_us": 394.98,
+      "candidate_us": 388.099,
+      "speedup": 1.0177
+    },
+    {
+      "grammar": "RE2",
+      "mode": "filter",
+      "files": 10000,
+      "workers": 4,
+      "baseline_us": 3338.864,
+      "candidate_us": 3394.885,
+      "speedup": 0.9835
+    },
+    {
+      "grammar": "RE2",
+      "mode": "native-lines",
+      "files": 10,
+      "workers": 1,
+      "baseline_us": 119.865,
+      "candidate_us": 124.584,
+      "speedup": 0.9621
+    },
+    {
+      "grammar": "RE2",
+      "mode": "native-lines",
+      "files": 100,
+      "workers": 1,
+      "baseline_us": 1032.481,
+      "candidate_us": 1064.822,
+      "speedup": 0.9696
+    },
+    {
+      "grammar": "RE2",
+      "mode": "native-lines",
+      "files": 1000,
+      "workers": 1,
+      "baseline_us": 10198.494,
+      "candidate_us": 10504.133,
+      "speedup": 0.9709
+    },
+    {
+      "grammar": "RE2",
+      "mode": "native-lines",
+      "files": 10000,
+      "workers": 1,
+      "baseline_us": 101660.393,
+      "candidate_us": 103499.095,
+      "speedup": 0.9822
+    },
+    {
+      "grammar": "RE2",
+      "mode": "native-lines",
+      "files": 10,
+      "workers": 4,
+      "baseline_us": 120.126,
+      "candidate_us": 122.569,
+      "speedup": 0.9801
+    },
+    {
+      "grammar": "RE2",
+      "mode": "native-lines",
+      "files": 100,
+      "workers": 4,
+      "baseline_us": 1113.376,
+      "candidate_us": 482.453,
+      "speedup": 2.3077
+    },
+    {
+      "grammar": "RE2",
+      "mode": "native-lines",
+      "files": 1000,
+      "workers": 4,
+      "baseline_us": 10247.647,
+      "candidate_us": 3439.113,
+      "speedup": 2.9797
+    },
+    {
+      "grammar": "RE2",
+      "mode": "native-lines",
+      "files": 10000,
+      "workers": 4,
+      "baseline_us": 101664.845,
+      "candidate_us": 33339.101,
+      "speedup": 3.0494
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-lines",
+      "files": 10,
+      "workers": 1,
+      "baseline_us": 130.848,
+      "candidate_us": 134.962,
+      "speedup": 0.9695
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-lines",
+      "files": 100,
+      "workers": 1,
+      "baseline_us": 1020.017,
+      "candidate_us": 1054.442,
+      "speedup": 0.9674
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-lines",
+      "files": 1000,
+      "workers": 1,
+      "baseline_us": 9922.78,
+      "candidate_us": 10027.075,
+      "speedup": 0.9896
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-lines",
+      "files": 10000,
+      "workers": 1,
+      "baseline_us": 98858.584,
+      "candidate_us": 100004.191,
+      "speedup": 0.9885
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-lines",
+      "files": 10,
+      "workers": 4,
+      "baseline_us": 130.695,
+      "candidate_us": 132.726,
+      "speedup": 0.9847
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-lines",
+      "files": 100,
+      "workers": 4,
+      "baseline_us": 1019.297,
+      "candidate_us": 478.865,
+      "speedup": 2.1286
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-lines",
+      "files": 1000,
+      "workers": 4,
+      "baseline_us": 9885.71,
+      "candidate_us": 3341.367,
+      "speedup": 2.9586
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-lines",
+      "files": 10000,
+      "workers": 4,
+      "baseline_us": 98550.911,
+      "candidate_us": 32270.077,
+      "speedup": 3.0539
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-files",
+      "files": 10,
+      "workers": 1,
+      "baseline_us": 130.116,
+      "candidate_us": 43.645,
+      "speedup": 2.9813
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-files",
+      "files": 100,
+      "workers": 1,
+      "baseline_us": 1008.499,
+      "candidate_us": 109.083,
+      "speedup": 9.2453
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-files",
+      "files": 1000,
+      "workers": 1,
+      "baseline_us": 9810.817,
+      "candidate_us": 803.77,
+      "speedup": 12.206
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-files",
+      "files": 10000,
+      "workers": 1,
+      "baseline_us": 97989.685,
+      "candidate_us": 7663.579,
+      "speedup": 12.7864
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-files",
+      "files": 10,
+      "workers": 4,
+      "baseline_us": 130.941,
+      "candidate_us": 39.65,
+      "speedup": 3.3024
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-files",
+      "files": 100,
+      "workers": 4,
+      "baseline_us": 1014.581,
+      "candidate_us": 173.181,
+      "speedup": 5.8585
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-files",
+      "files": 1000,
+      "workers": 4,
+      "baseline_us": 9833.671,
+      "candidate_us": 738.194,
+      "speedup": 13.3212
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-files",
+      "files": 10000,
+      "workers": 4,
+      "baseline_us": 97935.768,
+      "candidate_us": 6749.662,
+      "speedup": 14.5097
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-counts",
+      "files": 10,
+      "workers": 1,
+      "baseline_us": 131.964,
+      "candidate_us": 135.12,
+      "speedup": 0.9766
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-counts",
+      "files": 100,
+      "workers": 1,
+      "baseline_us": 1007.997,
+      "candidate_us": 1031.834,
+      "speedup": 0.9769
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-counts",
+      "files": 1000,
+      "workers": 1,
+      "baseline_us": 9838.877,
+      "candidate_us": 10048.026,
+      "speedup": 0.9792
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-counts",
+      "files": 10000,
+      "workers": 1,
+      "baseline_us": 98453.018,
+      "candidate_us": 90086.577,
+      "speedup": 1.0929
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-counts",
+      "files": 10,
+      "workers": 4,
+      "baseline_us": 130.509,
+      "candidate_us": 122.646,
+      "speedup": 1.0641
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-counts",
+      "files": 100,
+      "workers": 4,
+      "baseline_us": 1012.752,
+      "candidate_us": 477.348,
+      "speedup": 2.1216
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-counts",
+      "files": 1000,
+      "workers": 4,
+      "baseline_us": 9866.71,
+      "candidate_us": 3110.82,
+      "speedup": 3.1717
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-counts",
+      "files": 10000,
+      "workers": 4,
+      "baseline_us": 98936.131,
+      "candidate_us": 31177.232,
+      "speedup": 3.1733
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-quiet",
+      "files": 10,
+      "workers": 1,
+      "baseline_us": 131.31,
+      "candidate_us": 42.287,
+      "speedup": 3.1052
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-quiet",
+      "files": 100,
+      "workers": 1,
+      "baseline_us": 1020.786,
+      "candidate_us": 97.956,
+      "speedup": 10.4208
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-quiet",
+      "files": 1000,
+      "workers": 1,
+      "baseline_us": 9949.673,
+      "candidate_us": 644.876,
+      "speedup": 15.4288
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-quiet",
+      "files": 10000,
+      "workers": 1,
+      "baseline_us": 98968.304,
+      "candidate_us": 5975.155,
+      "speedup": 16.5633
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-quiet",
+      "files": 10,
+      "workers": 4,
+      "baseline_us": 131.486,
+      "candidate_us": 37.756,
+      "speedup": 3.4825
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-quiet",
+      "files": 100,
+      "workers": 4,
+      "baseline_us": 1027.385,
+      "candidate_us": 178.73,
+      "speedup": 5.7482
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-quiet",
+      "files": 1000,
+      "workers": 4,
+      "baseline_us": 9928.617,
+      "candidate_us": 758.303,
+      "speedup": 13.0932
+    },
+    {
+      "grammar": "RE2",
+      "mode": "rg-quiet",
+      "files": 10000,
+      "workers": 4,
+      "baseline_us": 98995.91,
+      "candidate_us": 6707.631,
+      "speedup": 14.7587
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "filter",
+      "files": 10,
+      "workers": 1,
+      "baseline_us": 20.718,
+      "candidate_us": 23.54,
+      "speedup": 0.8801
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "filter",
+      "files": 100,
+      "workers": 1,
+      "baseline_us": 52.811,
+      "candidate_us": 56.68,
+      "speedup": 0.9317
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "filter",
+      "files": 1000,
+      "workers": 1,
+      "baseline_us": 372.409,
+      "candidate_us": 394.227,
+      "speedup": 0.9447
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "filter",
+      "files": 10000,
+      "workers": 1,
+      "baseline_us": 3657.356,
+      "candidate_us": 3863.611,
+      "speedup": 0.9466
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "filter",
+      "files": 10,
+      "workers": 4,
+      "baseline_us": 21.348,
+      "candidate_us": 21.903,
+      "speedup": 0.9747
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "filter",
+      "files": 100,
+      "workers": 4,
+      "baseline_us": 114.7,
+      "candidate_us": 121.067,
+      "speedup": 0.9474
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "filter",
+      "files": 1000,
+      "workers": 4,
+      "baseline_us": 345.951,
+      "candidate_us": 366.721,
+      "speedup": 0.9434
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "filter",
+      "files": 10000,
+      "workers": 4,
+      "baseline_us": 2818.551,
+      "candidate_us": 2994.913,
+      "speedup": 0.9411
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "native-lines",
+      "files": 10,
+      "workers": 1,
+      "baseline_us": 83.059,
+      "candidate_us": 85.632,
+      "speedup": 0.97
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "native-lines",
+      "files": 100,
+      "workers": 1,
+      "baseline_us": 665.275,
+      "candidate_us": 664.941,
+      "speedup": 1.0005
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "native-lines",
+      "files": 1000,
+      "workers": 1,
+      "baseline_us": 6479.863,
+      "candidate_us": 6414.795,
+      "speedup": 1.0101
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "native-lines",
+      "files": 10000,
+      "workers": 1,
+      "baseline_us": 64695.75,
+      "candidate_us": 63314.453,
+      "speedup": 1.0218
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "native-lines",
+      "files": 10,
+      "workers": 4,
+      "baseline_us": 83.754,
+      "candidate_us": 82.566,
+      "speedup": 1.0144
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "native-lines",
+      "files": 100,
+      "workers": 4,
+      "baseline_us": 737.682,
+      "candidate_us": 367.682,
+      "speedup": 2.0063
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "native-lines",
+      "files": 1000,
+      "workers": 4,
+      "baseline_us": 6457.582,
+      "candidate_us": 2481.291,
+      "speedup": 2.6025
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "native-lines",
+      "files": 10000,
+      "workers": 4,
+      "baseline_us": 63707.923,
+      "candidate_us": 23650.28,
+      "speedup": 2.6937
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-lines",
+      "files": 10,
+      "workers": 1,
+      "baseline_us": 90.847,
+      "candidate_us": 97.303,
+      "speedup": 0.9337
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-lines",
+      "files": 100,
+      "workers": 1,
+      "baseline_us": 648.29,
+      "candidate_us": 654.408,
+      "speedup": 0.9907
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-lines",
+      "files": 1000,
+      "workers": 1,
+      "baseline_us": 6197.964,
+      "candidate_us": 6197.064,
+      "speedup": 1.0001
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-lines",
+      "files": 10000,
+      "workers": 1,
+      "baseline_us": 61620.822,
+      "candidate_us": 60911.827,
+      "speedup": 1.0116
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-lines",
+      "files": 10,
+      "workers": 4,
+      "baseline_us": 90.393,
+      "candidate_us": 93.467,
+      "speedup": 0.9671
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-lines",
+      "files": 100,
+      "workers": 4,
+      "baseline_us": 643.288,
+      "candidate_us": 390.216,
+      "speedup": 1.6485
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-lines",
+      "files": 1000,
+      "workers": 4,
+      "baseline_us": 6163.966,
+      "candidate_us": 2395.04,
+      "speedup": 2.5736
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-lines",
+      "files": 10000,
+      "workers": 4,
+      "baseline_us": 61428.702,
+      "candidate_us": 24749.22,
+      "speedup": 2.482
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-files",
+      "files": 10,
+      "workers": 1,
+      "baseline_us": 90.95,
+      "candidate_us": 36.743,
+      "speedup": 2.4753
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-files",
+      "files": 100,
+      "workers": 1,
+      "baseline_us": 639.488,
+      "candidate_us": 92.73,
+      "speedup": 6.8962
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-files",
+      "files": 1000,
+      "workers": 1,
+      "baseline_us": 6107.536,
+      "candidate_us": 641.67,
+      "speedup": 9.5182
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-files",
+      "files": 10000,
+      "workers": 1,
+      "baseline_us": 60795.798,
+      "candidate_us": 6166.997,
+      "speedup": 9.8582
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-files",
+      "files": 10,
+      "workers": 4,
+      "baseline_us": 91.504,
+      "candidate_us": 36.487,
+      "speedup": 2.5079
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-files",
+      "files": 100,
+      "workers": 4,
+      "baseline_us": 637.636,
+      "candidate_us": 168.659,
+      "speedup": 3.7806
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-files",
+      "files": 1000,
+      "workers": 4,
+      "baseline_us": 6098.196,
+      "candidate_us": 717.413,
+      "speedup": 8.5003
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-files",
+      "files": 10000,
+      "workers": 4,
+      "baseline_us": 61112.75,
+      "candidate_us": 6517.475,
+      "speedup": 9.3768
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-counts",
+      "files": 10,
+      "workers": 1,
+      "baseline_us": 90.596,
+      "candidate_us": 92.975,
+      "speedup": 0.9744
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-counts",
+      "files": 100,
+      "workers": 1,
+      "baseline_us": 639.352,
+      "candidate_us": 646.306,
+      "speedup": 0.9892
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-counts",
+      "files": 1000,
+      "workers": 1,
+      "baseline_us": 6159.176,
+      "candidate_us": 5399.987,
+      "speedup": 1.1406
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-counts",
+      "files": 10000,
+      "workers": 1,
+      "baseline_us": 61202.339,
+      "candidate_us": 59438.089,
+      "speedup": 1.0297
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-counts",
+      "files": 10,
+      "workers": 4,
+      "baseline_us": 91.297,
+      "candidate_us": 83.967,
+      "speedup": 1.0873
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-counts",
+      "files": 100,
+      "workers": 4,
+      "baseline_us": 641.52,
+      "candidate_us": 367.669,
+      "speedup": 1.7448
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-counts",
+      "files": 1000,
+      "workers": 4,
+      "baseline_us": 6153.674,
+      "candidate_us": 2398.237,
+      "speedup": 2.5659
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-counts",
+      "files": 10000,
+      "workers": 4,
+      "baseline_us": 61387.054,
+      "candidate_us": 24973.619,
+      "speedup": 2.4581
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-quiet",
+      "files": 10,
+      "workers": 1,
+      "baseline_us": 94.597,
+      "candidate_us": 39.239,
+      "speedup": 2.4108
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-quiet",
+      "files": 100,
+      "workers": 1,
+      "baseline_us": 644.898,
+      "candidate_us": 105.48,
+      "speedup": 6.114
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-quiet",
+      "files": 1000,
+      "workers": 1,
+      "baseline_us": 6222.01,
+      "candidate_us": 751.76,
+      "speedup": 8.2766
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-quiet",
+      "files": 10000,
+      "workers": 1,
+      "baseline_us": 61724.863,
+      "candidate_us": 7163.664,
+      "speedup": 8.6164
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-quiet",
+      "files": 10,
+      "workers": 4,
+      "baseline_us": 91.621,
+      "candidate_us": 36.592,
+      "speedup": 2.5038
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-quiet",
+      "files": 100,
+      "workers": 4,
+      "baseline_us": 645.654,
+      "candidate_us": 172.076,
+      "speedup": 3.7521
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-quiet",
+      "files": 1000,
+      "workers": 4,
+      "baseline_us": 6196.715,
+      "candidate_us": 753.155,
+      "speedup": 8.2277
+    },
+    {
+      "grammar": "PCRE2",
+      "mode": "rg-quiet",
+      "files": 10000,
+      "workers": 4,
+      "baseline_us": 61725.72,
+      "candidate_us": 6771.586,
+      "speedup": 9.1154
+    }
+  ],
+  "machine": "Apple M5 Pro; 18 CPUs; 64 GiB RAM",
+  "measurement_notes": "Baseline had one remaining clang-tidy process. Requested workers, not CPU affinity. No physical filesystem I/O or CLI startup.",
+  "candidate_context": {
+    "date": "2026-09-27T01:22:36+01:00",
+    "host_name": "Mac",
+    "executable": "/private/tmp/xff-rg-candidate-worker-bench",
+    "num_cpus": 18,
+    "cpu_scaling_enabled": false,
+    "caches": [
+      {
+        "type": "Data",
+        "level": 1,
+        "size": 65536,
+        "num_sharing": 0
+      },
+      {
+        "type": "Instruction",
+        "level": 1,
+        "size": 131072,
+        "num_sharing": 0
+      },
+      {
+        "type": "Unified",
+        "level": 2,
+        "size": 8388608,
+        "num_sharing": 1
+      }
+    ],
+    "load_avg": [2.32861, 8.26807, 29.4087],
+    "library_version": "1.9.5",
+    "library_build_type": "release",
+    "json_schema_version": 1
+  }
+}

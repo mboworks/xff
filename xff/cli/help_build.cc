@@ -988,6 +988,8 @@ Section RgSection(bool in_full) {
       "skipped unless `--text` is set. Line output currently materializes each file. Filename, count and quiet "
       "searches stream lines when the backend supports it; stdin is staged. These searches still read to EOF to detect "
       "binary data and late errors. "
+      "`-j N` runs eligible host-file searches in parallel while keeping records in traversal order; "
+      "archive members and stateful native filters stay serial. "
       "Exit status is `0` for a selected result, `1` for none and `2` for errors; errors outrank quiet matches. "
       "Native summaries count the files selected by the search. `--no-match-output` lists those files instead. "
       "Search-selection modifiers remain active in both cases; line-rendering modifiers do not. "

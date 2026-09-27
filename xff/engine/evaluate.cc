@@ -3024,7 +3024,8 @@ EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) 
 }  // namespace
 
 absl::StatusOr<MatchOutput> PrepareMatchOutput(const parser::Expr& expression) {
-  MatchOutput result;
+  const auto source = std::make_shared<parser::Expr>(parser::Expr{.kind = parser::Expr::Kind::kPredicate});
+  MatchOutput result{.source = source};
   std::vector<std::reference_wrapper<const parser::Expr>> pending{std::cref(expression)};
   while (!pending.empty()) {
     const auto& node = pending.back().get();
@@ -3049,7 +3050,7 @@ absl::StatusOr<MatchOutput> PrepareMatchOutput(const parser::Expr& expression) {
                             node.args.front(), node.descriptor->fold_case || node.case_fold, regex::Grammar::kExact));
       result.matchers.push_back(std::make_shared<const regex::Matcher>(std::move(matcher)));
     }
-    result.source.args.push_back(node.args.front());
+    source->args.push_back(node.args.front());
   }
   if (result.matchers.empty()) {
     return absl::InvalidArgumentError("requires a content predicate such as -rxc or -content");
@@ -3066,13 +3067,14 @@ absl::StatusOr<MatchOutput> PrepareRgOutput(
     return absl::InvalidArgumentError("rg search is not configured");
   }
   const auto& search = *command.rg;
-  MatchOutput result;
+  const auto source = std::make_shared<parser::Expr>(parser::Expr{.kind = parser::Expr::Kind::kPredicate});
+  MatchOutput result{.source = source};
   for (const auto& input : search.patterns) {
     if (!input.file) {
       if (absl::StrContains(input.value, '\n')) {
         return absl::InvalidArgumentError("rg multiline patterns are not supported");
       }
-      result.source.args.push_back(input.value);
+      source->args.push_back(input.value);
       continue;
     }
     MBO_ASSIGN_OR_RETURN(const auto content, fs.ReadContent(input.value));
@@ -3083,19 +3085,29 @@ absl::StatusOr<MatchOutput> PrepareRgOutput(
       if (line.ends_with('\r')) {
         line.remove_suffix(1);
       }
-      result.source.args.emplace_back(line);
+      source->args.emplace_back(line);
       start = end == std::string::npos ? content.size() : end + 1;
     }
   }
-  const bool uppercase = std::ranges::any_of(result.source.args, [](const std::string& pattern) {
+  const bool uppercase = std::ranges::any_of(source->args, [](const std::string& pattern) {
     return std::ranges::any_of(pattern, [](char chr) { return chr >= 'A' && chr <= 'Z'; });
   });
-  for (const auto& original : result.source.args) {
+  for (const auto& original : source->args) {
     MBO_ASSIGN_OR_RETURN(
         auto matcher, regex::Matcher::Compile(original, fold_case || (smart_case && !uppercase), command.grammar));
     result.matchers.push_back(std::make_shared<const regex::Matcher>(std::move(matcher)));
   }
   return result;
+}
+
+absl::StatusOr<MatchOutput> ForkMatchOutput(const MatchOutput& output) {
+  MatchOutput fork{.source = output.source};
+  fork.matchers.reserve(output.matchers.size());
+  for (const auto& matcher : output.matchers) {
+    MBO_ASSIGN_OR_RETURN(auto local, matcher->ForkForWorker());
+    fork.matchers.push_back(std::make_shared<const regex::Matcher>(std::move(local)));
+  }
+  return fork;
 }
 
 absl::StatusOr<bool> EmitRgOutput(const MatchOutput& output, const parser::RgSearch& search, EvalContext& context) {
@@ -3107,17 +3119,17 @@ absl::StatusOr<bool> EmitRgOutput(const MatchOutput& output, const parser::RgSea
     MBO_ASSIGN_OR_RETURN(
         const auto summary,
         SummarizeGrep(context, matcher, search.text ? 0 : std::numeric_limits<std::uint64_t>::max()));
-    return EmitGrepSummary(output.source, context, summary);
+    return EmitGrepSummary(*output.source, context, summary);
   }
   MBO_ASSIGN_OR_RETURN(const auto content, context.content.Read(context.fs, context.visit.path));
   if (!search.text && absl::StrContains(content, '\0')) {
     return false;
   }
-  return EvalGrepMatchers(output.source, context, matcher, content);
+  return EvalGrepMatchers(*output.source, context, matcher, content);
 }
 
 bool EmitMatchOutput(const MatchOutput& output, EvalContext& context) {
-  return EvalGrepMatchers(output.source, context, GrepMatchers(output.matchers));
+  return EvalGrepMatchers(*output.source, context, GrepMatchers(output.matchers));
 }
 
 bool Evaluate(const parser::Expr& expr, EvalContext& context) {
