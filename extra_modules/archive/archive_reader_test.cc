@@ -385,7 +385,7 @@ TEST_F(ArchiveReaderTest, MemberStreamsReportTruncationAndReadErrorsAfterOpen) {
 TEST_F(ArchiveReaderTest, ConcurrentMemberCursorsShareMemoryAndReleaseItBeforeSerialRetry) {
   // A session keeps its 64 KiB buffer; its four-byte format probe is temporary. This budget
   // admits either member by itself, but cannot admit both decoders at once.
-  const auto budget = std::make_shared<vfs::ReadBudget>(64UZ * 1'024 + 4);
+  const auto budget = std::make_shared<vfs::ReadBudget>((64UZ * 1'024) + 4);
   const auto source = vfs::MemoryReadSource(
       MakeArchive({{.path = "first", .content = "abc"}, {.path = "second", .content = "def"}}, true), budget);
   MBO_ASSERT_OK_AND_ASSIGN(auto first, MemberReadSource(source, "first")->Open());
