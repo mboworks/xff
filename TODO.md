@@ -4,9 +4,10 @@
 
 - [x] Implement and validate the missing grep-style long output options with explicit `-grep`.
 - [x] Add `-M` / `--match-output` for default content-line output, reuse long modifiers, and validate INI selection.
-- [ ] Build rg presets/mode conveniences only after match output is available; keep argument grammar a separate decision.
-- [ ] Consider `+` as the shared OR spelling when adding rg-style short options.
-- [ ] Audit short-option collisions and decide compatibility handling afterward; preserve `-o` as OR meanwhile.
+- [x] Add CLI-only `--rg` parsing and the `--xff` native-filter transition, with separate search patterns.
+- [x] Accept `+` as native expression OR while preserving literal arguments and exec termination.
+- [x] Give rg short options their rg meanings before `--xff`; retain native `-o` OR afterward.
+- [ ] Extend rg compatibility deliberately: type filters, multiline search, Unicode word semantics, heading/terminal layout, and streaming content.
 
 ## Release publication repair
 

@@ -521,3 +521,20 @@ cc_binary(
         "@com_github_google_benchmark//:benchmark",
     ],
 )
+
+cc_test(
+    name = "rg_test",
+    size = "small",
+    srcs = ["rg_test.cc"],
+    deps = [
+        ":run_cc",
+        "//xff/parser:parser_cc",
+        "//xff/vfs:local_fs_cc",
+        "@abseil-cpp//absl/status",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+        "@nlohmann_json//:json",
+    ],
+)

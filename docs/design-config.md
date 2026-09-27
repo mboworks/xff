@@ -585,6 +585,18 @@ predicate or action counts as a consumer after selector expansion and safety gat
 arguments never become modifier requests. A setting superseded later by configuration is no longer
 the effective CLI request.
 
+`--rg` and `--xff` are CLI-only grammar selectors. `--rg` must precede the roots;
+it selects the `rg` configuration and enables content output. `--config=rg` alone
+never changes argument grammar. INI files always use native XFF syntax, including
+inside named sections selected by an rg invocation. `--xff` starts a native filter
+expression without resetting the selected configuration or search patterns.
+Required globals and monotonic safety blocks retain their normal enforcement.
+
+Rg mode defaults to case-sensitive matching and no line numbers; configured or
+explicit case/prefix options override those defaults. The `rg` style preset by itself
+retains smart case. In rg grammar `-M NUMBER` sets maximum output columns; use the
+canonical `--match-output` / `--no-match-output` controls in configuration.
+
 `--match-output` (`-M`) enables default content-line output; `--no-match-output`
 (`-M-`) restores the default path listing. Both long forms work in INI configuration.
 The short aliases must precede command-line roots. The last setting wins, so `-M-`

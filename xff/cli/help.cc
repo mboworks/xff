@@ -229,6 +229,13 @@ absl::Span<const HelpTopic> HelpTopics() {
           .in_full = true,
       },
       {
+          .name = "rg",
+          .aliases = {},
+          .summary = "ripgrep-style arguments, match output, and the --xff grammar switch",
+          .see_also = "content,regex,config",
+          .in_full = true,
+      },
+      {
           .name = "content",
           .aliases = {},
           .summary = "reading inside files: -grep, -content, -rxc, -text, and their fields",

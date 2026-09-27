@@ -110,6 +110,22 @@ struct Expr {
   ExprPtr rhs;
 };
 
+// The rg search is independent of the native expression, which only filters entries.
+// Pattern files are opened through the execution filesystem after configuration validation.
+struct RgPattern {
+  std::string value;
+  bool file = false;
+};
+
+struct RgSearch {
+  std::vector<RgPattern> patterns;
+  std::vector<std::string> globs;
+  bool word = false;
+  bool line = false;
+  bool text = false;
+  std::size_t max_columns = 0;
+};
+
 // A parsed command line: order-independent globals, search roots, and the
 // position-dependent expression tree (null when no expression was given).
 struct Command {
@@ -123,6 +139,7 @@ struct Command {
   // Parallel to roots for parsed commands; empty names identify positional roots.
   std::vector<std::string> root_names;
   ExprPtr expression;
+  std::optional<RgSearch> rg;
   // The final regex grammar for every matcher in this command. Parsing records patterns only;
   // BindMatchers sets this after configuration resolution and compiles each matcher once.
   regex::Grammar grammar = regex::Grammar::kRe2;

@@ -130,10 +130,12 @@ struct GrepOptions {
   enum class Output { kLines, kCount, kCountMatches, kFilesWithMatches, kFilesWithoutMatch };
   Output output = Output::kLines;
   bool match_output = false;
+  bool rg_mode = false;
   bool only_matching = false;
   bool invert = false;
   bool line_number = true;
   bool filename = true;
+  std::size_t max_columns = 0;
 };
 
 // Per-evaluation environment threaded through Evaluate for one visited entry.
@@ -302,6 +304,13 @@ struct MatchOutput {
 
 absl::StatusOr<MatchOutput> PrepareMatchOutput(const parser::Expr& expression);
 bool EmitMatchOutput(const MatchOutput& output, EvalContext& context);
+// Compile rg patterns separately from native content filters; read pattern files via VFS.
+absl::StatusOr<MatchOutput> PrepareRgOutput(
+    const parser::Command& command,
+    const vfs::FileSystem& fs,
+    bool fold_case,
+    bool smart_case);
+absl::StatusOr<bool> EmitRgOutput(const MatchOutput& output, const parser::RgSearch& search, EvalContext& context);
 
 // Validates the --diff-ignore token list and the --diff-ignore-matching regex, returning the
 // first problem as an InvalidArgument (an unknown token names it; a bad regex carries RE2's

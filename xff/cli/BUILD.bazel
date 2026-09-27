@@ -37,8 +37,14 @@ RELEASE_ELF_LINKOPTS = select({
 # Shared CLI implementation; production and isolated test entry points supply arguments.
 cc_library(
     name = "main_cc",
-    srcs = ["main.cc"],
-    hdrs = ["main.h"],
+    srcs = [
+        "main.cc",
+        "rg_input.cc",
+    ],
+    hdrs = [
+        "main.h",
+        "rg_input.h",
+    ],
     visibility = ["//xff/cli/testing:__pkg__"],
     deps = [
         ":config_validation_cc",
@@ -1241,4 +1247,24 @@ bashtest(
         "//xff:xff_apple_on": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
+)
+
+bashtest(
+    name = "rg_test",
+    size = "small",
+    srcs = ["rg_test.sh"],
+    data = ["//xff/cli/testing:xff"],
+)
+
+cc_test(
+    name = "rg_input_test",
+    srcs = ["rg_input_test.cc"],
+    deps = [
+        ":main_cc",
+        "@abseil-cpp//absl/status",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+        "@xff_extras_api//:vfs_cc",
+    ],
 )

@@ -1615,6 +1615,15 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .see_also = "expressions,cookbook",
     },
     {
+        .name = "+",
+        .summary = "logical OR in native expression positions",
+        .details = "Synonym for `-o` in XFF expressions, including after `--xff`. It remains literal data "
+                   "when consumed as a primary argument, and retains its batch terminator meaning for `-exec`.",
+        .kind = Kind::kOperator,
+        .arity = 0,
+        .see_also = "expressions,rg",
+    },
+    {
         .name = "-or",
         .summary = "logical OR",
         .kind = Kind::kOperator,

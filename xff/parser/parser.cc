@@ -39,6 +39,7 @@
 #include "xff/matching/regex/regex.h"
 #include "xff/parser/ast.h"
 #include "xff/parser/diagnostics.h"
+#include "xff/parser/rg.h"
 #include "xff/presentation/fields/fields.h"
 #include "xff/registry/descriptor.h"
 #include "xff/registry/registry.h"
@@ -56,7 +57,7 @@ bool StartsExpression(std::string_view arg) {
   if (arg[0] == '-') {
     return true;
   }
-  return arg == "(" || arg == ")" || arg == "!" || arg == ",";
+  return arg == "(" || arg == ")" || arg == "!" || arg == "," || arg == "+";
 }
 
 // A whole-run global written with a double dash (`--summary=ext`, `--sort`, `--top=10`). Every
@@ -89,7 +90,7 @@ constexpr bool IsMetaFlag(std::string_view arg) {
 }
 
 bool IsOr(std::string_view token) {
-  return token == "-o" || token == "-or";
+  return token == "-o" || token == "-or" || token == "+";
 }
 
 bool IsAnd(std::string_view token) {
@@ -918,6 +919,12 @@ class CommandParser {
 
   absl::StatusOr<Command> Parse() {
     MBO_RETURN_IF_ERROR(LeadingGlobals());
+    if (index_ < args_.size() && !options_ended_ && args_[index_] == "--rg") {
+      MBO_ASSIGN_OR_RETURN(auto command, ParseRg(args_, index_ + 1));
+      command.globals.insert(command.globals.begin(), command_.globals.begin(), command_.globals.end());
+      command.meta_flags.insert(command.meta_flags.begin(), command_.meta_flags.begin(), command_.meta_flags.end());
+      return command;
+    }
     MBO_RETURN_IF_ERROR(Roots());
     command_.grammar = GrammarFromGlobalsInternal(command_.globals);
     MBO_RETURN_IF_ERROR(Expression());
@@ -926,6 +933,12 @@ class CommandParser {
 
  private:
   absl::Status Global(const std::string& argument) {
+    if (argument.starts_with("--rg=") || argument.starts_with("--xff=")) {
+      return absl::InvalidArgumentError("--rg and --xff do not take values");
+    }
+    if (argument == "--rg") {
+      return absl::InvalidArgumentError("--rg must precede roots and the expression; rg re-entry is not supported");
+    }
     if (IsMetaFlag(argument)) {
       command_.meta_flags.push_back(argument);
       return absl::OkStatus();
@@ -940,6 +953,9 @@ class CommandParser {
   absl::Status LeadingGlobals() {
     for (; index_ < args_.size(); ++index_) {
       const std::string& argument = args_[index_];
+      if (argument == "--rg") {
+        break;
+      }
       if (argument == "--") {
         ++index_;
         options_ended_ = true;
