@@ -17,6 +17,7 @@
 #define XFF_CLI_GLOBALS_H_
 
 #include <cstdint>
+#include <optional>
 #include <string_view>
 #include <vector>
 
@@ -24,6 +25,7 @@
 #include "absl/types/span.h"
 #include "mbo/types/optional_ref.h"
 #include "xff/registry/consumers.h"
+#include "xff/registry/mode.h"
 
 namespace xff::cli {
 
@@ -149,7 +151,14 @@ struct GlobalFlag {
     kNoFilename,
   };
   GrepEffect grep_effect = GrepEffect::kNone;
-  bool xff = true;  // false for a find-native option (-H/-L/-P); true for an xff extension
+  // Shared filename-type filters and catalog edits, including rg compatibility options.
+  enum class TypeEffect : std::uint8_t { kNone, kInclude, kExclude, kAdd, kClear, kList };
+  TypeEffect type_effect = TypeEffect::kNone;
+  // Canonical long globals are shared. Native short aliases are leading-only and
+  // must not steal a compatibility spelling such as rg's -M or -H.
+  registry::Modes modes = registry::Modes::kAll;
+  registry::Modes alias_modes = registry::Modes::kAll;
+  std::optional<registry::Mode> enters_mode;
 };
 
 template<typename Sink>
@@ -178,12 +187,16 @@ absl::Span<const GlobalFlag> Globals();
 
 // The global option named `name` (matching the canonical name or an alias), or no reference if
 // none. `name` carries its leading dashes (e.g. "--sort", "-j").
-mbo::types::OptionalRef<const GlobalFlag> LookupGlobal(std::string_view name);
+mbo::types::OptionalRef<const GlobalFlag> LookupGlobal(
+    std::string_view name,
+    registry::Mode mode = registry::Mode::kXff);
 
 // The global option represented by the complete argument `arg`, normalized to its registry entry.
 // Accepts the same exact, valued, sign-suffixed, and compatibility forms as IsKnownGlobal. This is
 // useful when callers need the canonical option identity rather than only a yes/no classification.
-mbo::types::OptionalRef<const GlobalFlag> LookupGlobalArgument(std::string_view arg);
+mbo::types::OptionalRef<const GlobalFlag> LookupGlobalArgument(
+    std::string_view arg,
+    registry::Mode mode = registry::Mode::kXff);
 
 // Whether `arg` is a recognized whole-run global token, so `main` can reject an
 // unknown leading option instead of silently ignoring it. Accepts: an exact name or

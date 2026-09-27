@@ -25,7 +25,7 @@
 #include "gtest/gtest.h"
 #include "mbo/testing/status.h"
 #include "xff/parser/parser.h"
-#include "xff/parser/rg_types.h"
+#include "xff/registry/compatibility.h"
 
 namespace xff::parser {
 namespace {
@@ -42,28 +42,26 @@ using ::testing::IsTrue;
 using ::testing::Not;
 using ::testing::NotNull;
 using ::testing::Optional;
-using ::testing::SizeIs;
 
 struct RgTest : ::testing::Test {};
 
 TEST_F(RgTest, OptionMetadataIsCompleteAndUnambiguous) {
   std::set<std::string_view> names;
-  std::set<char> shorts;
-  for (const RgOption& option : RgOptions()) {
+  std::set<std::string_view> shorts;
+  for (const registry::CompatibilityOption& option : registry::CompatibilityOptions()) {
     SCOPED_TRACE(option.name);
     EXPECT_THAT(option.name, Not(IsEmpty()));
     EXPECT_THAT(option.summary, Not(IsEmpty()));
     EXPECT_THAT(names.insert(option.name).second, IsTrue());
-    if (option.short_name != '\0') {
-      EXPECT_THAT(shorts.insert(option.short_name).second, IsTrue());
+    if (!option.alias.empty()) {
+      EXPECT_THAT(shorts.insert(option.alias).second, IsTrue());
     }
-    if (option.effect == RgOption::Effect::kGlobal) {
+    if (option.effect == registry::CompatibilityOption::Effect::kGlobal) {
       EXPECT_THAT(option.replacement, Not(IsEmpty()));
     }
     if (!option.argument.empty()) {
       EXPECT_THAT(
-          ParseRg({"--" + std::string(option.name)}, 0),
-          StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("requires")));
+          ParseRg({std::string(option.name)}, 0), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("requires")));
     }
   }
 }
@@ -232,13 +230,74 @@ TEST_F(RgTest, RejectsModeValuesAndRootsAfterTheNativeBoundary) {
   EXPECT_THAT(Parse({"--rg", "--help=rg"}), IsOk());
 }
 
-TEST_F(RgTest, RejectsLateSelectionAndReentry) {
+TEST_F(RgTest, ModeReentryPreservesSearchAndNativeVocabulary) {
   EXPECT_THAT(Parse({"root", "--rg", "x"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("must precede")));
-  EXPECT_THAT(Parse({"--rg", "x", "--rg"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("once")));
-  EXPECT_THAT(
-      Parse({"--rg", "x", "--xff", "-true", "--rg"}),
-      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("re-entry")));
+  EXPECT_THAT(Parse({"--rg", "x", "--rg"}), IsOk());
+  ASSERT_OK_AND_ASSIGN(
+      const auto command,
+      Parse({"--rg", "x", "src", "--xff", "-type", "f", "--rg", "-tcpp", "-o", "--xff", "-name", "*.h"}));
+  EXPECT_THAT(command.globals, Contains("--file-type=cpp"));
+  EXPECT_THAT(command.globals, Contains("--only-matching"));
+  EXPECT_THAT(command.roots, ElementsAre("src"));
+  ASSERT_THAT(command.expression, NotNull());
+  EXPECT_THAT(command.expression->kind, Expr::Kind::kAnd);
   EXPECT_THAT(Parse({"--rg", "--help"}), IsOk());
+}
+
+TEST_F(RgTest, ReentryPreservesLiteralPrimaryArgumentsAndSettingsOrder) {
+  ASSERT_OK_AND_ASSIGN(
+      const auto command, Parse({
+                              "--rg",
+                              "hit",
+                              "tree",
+                              "--xff",
+                              "-name",
+                              "--rg",
+                              "-o",
+                              "-name",
+                              "--xff",
+                              "--type-add=mine:*.one",
+                              "--rg",
+                              "--type-clear=mine",
+                              "--type-add=mine:*.two",
+                              "-tmine",
+                              "--xff",
+                              "-rxc",
+                              "--rg",
+                              "--rg",
+                              "-N",
+                          }));
+  EXPECT_THAT(command.roots, ElementsAre("tree"));
+  EXPECT_THAT(
+      command.globals, ElementsAre(
+                           "--config=rg", "--match-output", "--exit-match", "--type-add=mine:*.one",
+                           "--type-clear=mine", "--type-add=mine:*.two", "--file-type=mine", "--no-line-number"));
+  ASSERT_THAT(command.expression, NotNull());
+  EXPECT_THAT(command.expression->kind, Expr::Kind::kOr);
+}
+
+TEST_F(RgTest, ReentryDoesNotInterpretCommandOrCaptureArguments) {
+  const auto primaries = std::to_array<std::string_view>({"-exec", "-capture:result"});
+  for (const auto primary : primaries) {
+    ASSERT_OK_AND_ASSIGN(
+        const auto command, Parse({
+                                "--rg",
+                                "hit",
+                                "tree",
+                                "--xff",
+                                std::string(primary),
+                                "echo",
+                                "--rg",
+                                "--xff",
+                                ";",
+                                "--rg",
+                                "-n",
+                            }));
+    EXPECT_THAT(command.globals, Contains("--line-number"));
+    ASSERT_THAT(command.expression, NotNull());
+    EXPECT_THAT(command.expression->args, Contains("--rg"));
+    EXPECT_THAT(command.expression->args, Contains("--xff"));
+  }
 }
 
 TEST_F(RgTest, CompatibilityControlsAreTypedAndLastOverrideWins) {
@@ -257,83 +316,16 @@ TEST_F(RgTest, CompatibilityControlsAreTypedAndLastOverrideWins) {
   EXPECT_THAT(search.column, Eq(false));
   EXPECT_THAT(search.word, Eq(true));
   EXPECT_THAT(search.line, Eq(false));
-  EXPECT_THAT(search.types, SizeIs(4));
+  EXPECT_THAT(command.globals, Contains("--file-type=cpp"));
+  EXPECT_THAT(command.globals, Contains("--file-type-not=py"));
+  EXPECT_THAT(command.globals, Contains("--type-add=local:*.loc"));
+  EXPECT_THAT(command.globals, Contains("--type-clear=local"));
 }
 
-TEST_F(RgTest, DefaultTypesUseCanonicalLanguagesAndSuffixAliases) {
-  for (const std::string_view name : {"cpp", "C++", "CPP"}) {
-    SCOPED_TRACE(name);
-    ASSERT_OK_AND_ASSIGN(const auto command, Parse({"--rg", "-t", std::string(name), "hit"}));
-    ASSERT_OK_AND_ASSIGN(const auto types, RgTypes::Compile(command.rg.value_or(RgSearch{})));
-    EXPECT_THAT(types.Includes("main.cc"), Eq(true));
-    EXPECT_THAT(types.Includes("main.CPP"), Eq(true));
-    EXPECT_THAT(types.Includes("main.h"), Eq(true));
-    EXPECT_THAT(types.Includes("main.py"), Eq(false));
-  }
+TEST_F(RgTest, TypeListingWithoutPatternUsesTheSharedGlobal) {
   ASSERT_OK_AND_ASSIGN(const auto command, Parse({"--rg", "--type-list"}));
-  ASSERT_OK_AND_ASSIGN(const auto types, RgTypes::Compile(command.rg.value_or(RgSearch{})));
-  EXPECT_THAT(types.Listing(), HasSubstr("cpp: language C++\n"));
-  EXPECT_THAT(types.Listing(), HasSubstr("py: language Python\n"));
-}
-
-TEST_F(RgTest, ClearAndAddApplyToEveryAliasOfTheSameType) {
-  ASSERT_OK_AND_ASSIGN(
-      const auto command, Parse({"--rg", "--type-clear=cpp", "--type-add=C++:*.local", "-tcc", "hit"}));
-  ASSERT_OK_AND_ASSIGN(const auto types, RgTypes::Compile(command.rg.value_or(RgSearch{})));
-  EXPECT_THAT(types.Includes("main.local"), Eq(true));
-  EXPECT_THAT(types.Includes("main.cc"), Eq(false));
-  ASSERT_OK_AND_ASSIGN(const auto cleared, Parse({"--rg", "--type-clear=C++", "-tcpp", "hit"}));
-  EXPECT_THAT(RgTypes::Compile(cleared.rg.value_or(RgSearch{})), StatusIs(absl::StatusCode::kInvalidArgument, _));
-}
-
-TEST_F(RgTest, TypeSelectionUsesGlobsAndOrderedOverrides) {
-  ASSERT_OK_AND_ASSIGN(const auto command, Parse({"--rg", "-tcpp", "-Tc", "hit"}));
-  ASSERT_OK_AND_ASSIGN(const auto types, RgTypes::Compile(command.rg.value_or(RgSearch{})));
-  EXPECT_THAT(types.Includes("one.cc"), Eq(true));
-  EXPECT_THAT(types.Includes("one.h"), Eq(false));
-  EXPECT_THAT(types.Includes("one.py"), Eq(false));
-  ASSERT_OK_AND_ASSIGN(const auto reverse, Parse({"--rg", "-Tc", "-tcpp", "hit"}));
-  ASSERT_OK_AND_ASSIGN(const auto reversed, RgTypes::Compile(reverse.rg.value_or(RgSearch{})));
-  EXPECT_THAT(reversed.Includes("one.h"), Eq(true));
-}
-
-TEST_F(RgTest, TypeDefinitionsCanBeImportedClearedAndListedWithoutPattern) {
-  ASSERT_OK_AND_ASSIGN(
-      const auto command, Parse(
-                              {"--rg", "--type-clear=cpp", "--type-add=cpp:*.one", "--type-add=local:include:cpp,py",
-                               "--type-add=local:*.{two,three}", "--type-list", "-tlocal"}));
-  ASSERT_OK_AND_ASSIGN(const auto types, RgTypes::Compile(command.rg.value_or(RgSearch{})));
-  EXPECT_THAT(types.Listing(), HasSubstr("cpp: *.one\n"));
-  EXPECT_THAT(types.Includes("one.cc"), Eq(false));
-  EXPECT_THAT(types.Includes("one.one"), Eq(true));
-  EXPECT_THAT(types.Includes("one.py"), Eq(true));
-  EXPECT_THAT(types.Includes("one.two"), Eq(true));
-  EXPECT_THAT(types.Includes("one.three"), Eq(true));
-  ASSERT_OK_AND_ASSIGN(const auto all, Parse({"--rg", "-tall", "hit"}));
-  ASSERT_OK_AND_ASSIGN(const auto all_types, RgTypes::Compile(all.rg.value_or(RgSearch{})));
-  EXPECT_THAT(all_types.Includes("main.cc"), Eq(true));
-  EXPECT_THAT(all_types.Includes("unrecognized.zznotatype"), Eq(false));
-  ASSERT_OK_AND_ASSIGN(const auto none, Parse({"--rg", "-Tall", "hit"}));
-  ASSERT_OK_AND_ASSIGN(const auto other_types, RgTypes::Compile(none.rg.value_or(RgSearch{})));
-  EXPECT_THAT(other_types.Includes("main.cc"), Eq(false));
-  EXPECT_THAT(other_types.Includes("unrecognized.zznotatype"), Eq(true));
-}
-
-TEST_F(RgTest, InvalidTypeSpecificationsFailBeforeTraversal) {
-  const std::vector<std::string> invalid{
-      "-tunknown",
-      "-th",
-      "--type-add=bad-name:*.bad",
-      "--type-add=:x",
-      "--type-add=name",
-      "--type-add=name:",
-      "--type-add=all:*.all",
-      "--type-add=name:include:missing"};
-  for (const auto& arg : invalid) {
-    SCOPED_TRACE(arg);
-    ASSERT_OK_AND_ASSIGN(const auto command, Parse({"--rg", arg, "hit"}));
-    EXPECT_THAT(RgTypes::Compile(command.rg.value_or(RgSearch{})), StatusIs(absl::StatusCode::kInvalidArgument, _));
-  }
+  EXPECT_THAT(command.globals, Contains("--type-list"));
+  EXPECT_THAT(command.rg, Optional(Field(&RgSearch::type_list, true)));
 }
 
 }  // namespace

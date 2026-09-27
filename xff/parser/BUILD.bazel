@@ -24,17 +24,16 @@ cc_library(
     srcs = [
         "parser.cc",
         "rg.cc",
-        "rg_types.cc",
     ],
     hdrs = [
         "ast.h",
         "diagnostics.h",
         "parser.h",
         "rg.h",
-        "rg_types.h",
     ],
     visibility = ["//xff:__subpackages__"],
     deps = [
+        "//xff/cli:globals_cc",
         "//xff/fuzzy:fuzzy_cc",
         "//xff/matching/language:language_cc",
         "//xff/matching/regex:regex_cc",

@@ -35,6 +35,7 @@
 #include "absl/strings/str_split.h"
 #include "mbo/container/limited_set.h"
 #include "mbo/status/status_macros.h"
+#include "xff/cli/globals.h"
 #include "xff/fuzzy/fuzzy.h"
 #include "xff/matching/regex/regex.h"
 #include "xff/parser/ast.h"
@@ -745,7 +746,7 @@ class ExprParser {
 // order) whose descriptor is tagged as an xff extension, or empty if the tree
 // has none. The strict find-style check uses it to name the offending vocabulary.
 mbo::types::OptionalRef<const registry::Descriptor> FirstXffExtension(const Expr& expr) {
-  if (expr.descriptor.has_value() && expr.descriptor->style == registry::Style::kXff) {
+  if (expr.descriptor.has_value() && !registry::Supports(expr.descriptor->modes, registry::Mode::kFind)) {
     return *expr.descriptor;
   }
   if (expr.lhs) {
@@ -811,8 +812,9 @@ mbo::types::OptionalRef<const Expr> FirstXffPrintfField(const Expr& expr) {
     if (descriptor.has_value()) {
       const auto& fields = descriptor->argument_fields;
       const std::size_t fmt_index = fields.first;
-      if (fields.syntax == registry::ArgumentFields::Syntax::kPrintf && descriptor->style == registry::Style::kFind
-          && expr.args.size() > fmt_index && absl::StrContains(expr.args[fmt_index], "%{")) {
+      if (fields.syntax == registry::ArgumentFields::Syntax::kPrintf
+          && registry::Supports(descriptor->modes, registry::Mode::kFind) && expr.args.size() > fmt_index
+          && absl::StrContains(expr.args[fmt_index], "%{")) {
         return expr;
       }
     }
@@ -918,7 +920,8 @@ class CommandParser {
 
   absl::StatusOr<Command> Parse() {
     MBO_RETURN_IF_ERROR(LeadingGlobals());
-    if (index_ < args_.size() && !options_ended_ && args_[index_] == "--rg") {
+    const auto selector = index_ < args_.size() ? cli::LookupGlobal(args_[index_]) : std::nullopt;
+    if (!options_ended_ && selector.has_value() && selector->enters_mode == registry::Mode::kRg) {
       MBO_ASSIGN_OR_RETURN(auto command, ParseRg(args_, index_ + 1));
       command.globals.insert(command.globals.begin(), command_.globals.begin(), command_.globals.end());
       command.meta_flags.insert(command.meta_flags.begin(), command_.meta_flags.begin(), command_.meta_flags.end());
@@ -932,11 +935,13 @@ class CommandParser {
 
  private:
   absl::Status Global(const std::string& argument) {
-    if (argument.starts_with("--rg=") || argument.starts_with("--xff=")) {
+    const std::string_view name = std::string_view(argument).substr(0, argument.find('='));
+    const auto selector = cli::LookupGlobal(name);
+    if (selector.has_value() && selector->enters_mode.has_value() && name.size() != argument.size()) {
       return absl::InvalidArgumentError("--rg and --xff do not take values");
     }
-    if (argument == "--rg") {
-      return absl::InvalidArgumentError("--rg must precede roots and the expression; rg re-entry is not supported");
+    if (selector.has_value() && selector->enters_mode == registry::Mode::kRg) {
+      return absl::InvalidArgumentError("--rg must precede roots and the expression when first selecting rg grammar");
     }
     if (IsMetaFlag(argument)) {
       command_.meta_flags.push_back(argument);
@@ -952,7 +957,8 @@ class CommandParser {
   absl::Status LeadingGlobals() {
     for (; index_ < args_.size(); ++index_) {
       const std::string& argument = args_[index_];
-      if (argument == "--rg") {
+      if (const auto selector = cli::LookupGlobal(argument);
+          selector.has_value() && selector->enters_mode == registry::Mode::kRg) {
         break;
       }
       if (argument == "--") {

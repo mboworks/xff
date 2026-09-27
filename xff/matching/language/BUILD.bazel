@@ -21,11 +21,22 @@ package(default_visibility = ["//visibility:private"])
 # dependency), for the -lang GLOB predicate and the {lang} field.
 cc_library(
     name = "language_cc",
-    srcs = ["language.cc"],
-    hdrs = ["language.h"],
+    srcs = [
+        "catalog.cc",
+        "language.cc",
+        "type_filter.cc",
+    ],
+    hdrs = [
+        "catalog.h",
+        "language.h",
+        "type_filter.h",
+    ],
     visibility = ["//xff:__subpackages__"],
     deps = [
+        "//xff/matching/regex:regex_cc",
         "//xff/vfs:local_fs_cc",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
@@ -47,6 +58,18 @@ cc_test(
         ":language_cc",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)
+
+cc_test(
+    name = "catalog_test",
+    size = "small",
+    srcs = ["catalog_test.cc"],
+    deps = [
+        ":language_cc",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )

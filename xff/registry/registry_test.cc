@@ -23,6 +23,7 @@
 #include "absl/strings/str_format.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "xff/registry/compatibility.h"
 #include "xff/registry/descriptor.h"
 
 namespace xff::registry {
@@ -33,6 +34,8 @@ using ::testing::Eq;
 using ::testing::Field;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
+using ::testing::IsFalse;
+using ::testing::IsTrue;
 using ::testing::Le;
 using ::testing::Ne;
 using ::testing::Not;
@@ -41,6 +44,27 @@ using ::testing::Ref;
 using ::testing::SizeIs;
 
 struct RegistryTest : ::testing::Test {};
+
+TEST_F(RegistryTest, CompatibilitySpellingsAreDisjointFromNativePrimaries) {
+  EXPECT_THAT(Lookup("-o", Mode::kXff), Optional(Field(&Descriptor::kind, Kind::kOperator)));
+  EXPECT_THAT(Lookup("-o", Mode::kFind), Optional(Field(&Descriptor::kind, Kind::kOperator)));
+  EXPECT_THAT(Lookup("-o", Mode::kRg), Eq(std::nullopt));
+  EXPECT_THAT(
+      LookupCompatibilityOption("-o", Mode::kRg),
+      Optional(Field(&CompatibilityOption::replacement, "--only-matching")));
+  EXPECT_THAT(
+      LookupCompatibilityOption("-t", Mode::kRg), Optional(Field(&CompatibilityOption::replacement, "--file-type=")));
+  EXPECT_THAT(LookupCompatibilityOption("-t", Mode::kXff), Eq(std::nullopt));
+  EXPECT_THAT(Lookup("-type", Mode::kFind), Optional(Field(&Descriptor::argument_choices, "b,c,d,f,l,p,s")));
+  for (const auto mode : kModes) {
+    EXPECT_THAT(Supports(Modes::kAll, mode), IsTrue());
+    EXPECT_THAT(Supports(Modes::kNone, mode), IsFalse());
+    EXPECT_THAT(ModeName(mode), Not(IsEmpty()));
+  }
+  EXPECT_THAT(ModeName(static_cast<Mode>(0)), IsEmpty());
+  EXPECT_THAT(Overlaps(Modes::kNative, Modes::kRg), IsFalse());
+  EXPECT_THAT(Overlaps(Modes::kFind | Modes::kRg, Modes::kRg), IsTrue());
+}
 
 TEST_F(RegistryTest, OutputCapabilitiesDistinguishStdoutFromCapturedAndFileSinks) {
   static constexpr std::array kStdoutPrimaries = std::to_array<std::string_view>({
@@ -157,13 +181,14 @@ TEST_F(RegistryTest, CaptureFamilyDeclaresLabelRegexBinding) {
   EXPECT_THAT(Lookup("-name"), Optional(Field("binding", &Descriptor::binding, Binding::kNone)));
 }
 
-TEST_F(RegistryTest, XffExtensionsAreStyleTagged) {
-  // The xff-native primaries carry Style::kXff so the strict find style (phase D)
-  // can reject them; everything inherited from find stays kFind (the default).
+TEST_F(RegistryTest, VocabularyModesDriveLookup) {
+  // The same applicability metadata drives lookup, strict find validation, and help.
   static constexpr std::array kXffPrimaries = std::to_array<std::string_view>(
       {"-println", "-printfln", "-capture", "-capturedir", "-xor", "-nand", "-nor", "-xnor"});
   for (const std::string_view name : kXffPrimaries) {
-    EXPECT_THAT(Lookup(name), Optional(Field("style", &Descriptor::style, Style::kXff))) << name;
+    EXPECT_THAT(Lookup(name), Optional(Field("modes", &Descriptor::modes, Modes::kXff))) << name;
+    EXPECT_THAT(Lookup(name, Mode::kFind), Eq(std::nullopt));
+    EXPECT_THAT(Lookup(name, Mode::kRg), Eq(std::nullopt));
   }
   static constexpr std::array kFindStylePrimaries = std::to_array<std::string_view>({
       "-print",
@@ -173,7 +198,7 @@ TEST_F(RegistryTest, XffExtensionsAreStyleTagged) {
       "-delete",
   });
   for (const std::string_view name : kFindStylePrimaries) {
-    EXPECT_THAT(Lookup(name), Optional(Field("style", &Descriptor::style, Style::kFind))) << name;
+    EXPECT_THAT(Lookup(name), Optional(Field("modes", &Descriptor::modes, Modes::kNative))) << name;
   }
 }
 

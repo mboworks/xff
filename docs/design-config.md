@@ -583,13 +583,15 @@ predicate or action counts as a consumer after selector expansion and safety gat
 arguments never become modifier requests. A setting superseded later by configuration is no longer
 the effective CLI request.
 
-`--rg` and `--xff` are CLI-only grammar selectors. `--rg` must precede the roots;
+`--rg` and `--xff` are CLI-only grammar selectors. the initial `--rg` must precede the roots;
 it selects the `rg` configuration and enables content output. Invocation through a
 `rg` basename does the same automatically, including short options,
 stdin defaults, and the `--xff` filter tail. For example, `rg -n TODO src --xff -name '*.cc'`
 is the invocation-name form of `xff --rg -n TODO src --xff -name '*.cc'`. `--config=rg` alone
 never changes argument grammar. INI files always use native XFF syntax, including
-inside named sections selected by an rg invocation. `--xff` starts a native filter
+inside named sections selected by an rg invocation. `--rg` can resume rg option
+interpretation after a native segment. Switches preserve search patterns and accumulated
+settings; required operands stay literal. `--xff` starts a native filter
 expression without resetting the selected configuration or search patterns.
 Required globals and monotonic safety blocks retain their normal enforcement.
 
@@ -656,3 +658,12 @@ adding `--summary=none` restores the shard listing. `--compare=diff --diff-forma
 These are structural dependency checks, not an execution forecast. A consumer behind a predicate
 that never matches is still present. Absence of a note does not prove every setting has an effect:
 only registered dependencies are checked, and per-value interactions can need more specific rules.
+
+### Shared filename-type definitions
+
+`--type-add=NAME:GLOB`, `--type-clear=NAME`, and `--type-list` use the same catalog
+in native and rg commands. `--file-type=NAME` and `--file-type-not=NAME` select from
+it; rg's `-t`/`-T` are grammar-specific aliases. INI files use the shared long forms.
+Definitions are applied in resolved configuration order after language JSON overlays.
+Custom filename groups do not change language labels, native `-lang`, MIME or summary
+classification. See [the catalog and mode rules](design-rg.md#file-types-and-overlapping-language-candidates).

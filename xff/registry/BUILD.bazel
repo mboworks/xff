@@ -19,10 +19,15 @@ package(default_visibility = ["//visibility:private"])
 
 cc_library(
     name = "registry_cc",
-    srcs = ["registry.cc"],
+    srcs = [
+        "compatibility.cc",
+        "registry.cc",
+    ],
     hdrs = [
+        "compatibility.h",
         "consumers.h",
         "descriptor.h",
+        "mode.h",
         "registry.h",
     ],
     visibility = ["//xff:__subpackages__"],

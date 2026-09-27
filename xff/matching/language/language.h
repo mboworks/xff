@@ -44,6 +44,8 @@ struct LanguageInfo {
 enum class ConflictPolicy { kError, kFirst, kLast };
 
 struct LanguageVocabulary;
+struct CatalogEdit;
+class Catalog;
 
 // A cheap handle to one immutable, process-retained vocabulary snapshot. Acquire it after Configure
 // and reuse it for a lookup-heavy operation: unlike the process-global convenience functions below,
@@ -60,6 +62,8 @@ class LanguageSnapshot {
 
  private:
   friend LanguageSnapshot ActiveSnapshot();
+  friend Catalog ActiveCatalog();
+  friend absl::Status Configure(absl::Span<const std::string>, ConflictPolicy, absl::Span<const CatalogEdit>);
 
   explicit LanguageSnapshot(const LanguageVocabulary& vocabulary) : vocabulary_(vocabulary) {}
 
@@ -74,7 +78,10 @@ class LanguageSnapshot {
 // claims for the same key; shared claims in that layer then add candidates back. Published snapshots remain alive for
 // the process lifetime, so returned views remain valid. Production configures at most once; retaining older snapshots
 // primarily permits isolated repeated invocations in tests and embedders.
-absl::Status Configure(absl::Span<const std::string> files, ConflictPolicy conflicts);
+absl::Status Configure(
+    absl::Span<const std::string> files,
+    ConflictPolicy conflicts,
+    absl::Span<const CatalogEdit> edits = {});
 
 // Acquires the active vocabulary under the registry lock, initializing the default snapshot when
 // needed. Subsequent lookups through the returned handle are lock-free.

@@ -77,12 +77,13 @@
 #include "xff/filesystem/ignore/ignore.h"
 #include "xff/filesystem/repo/repo.h"
 #include "xff/hash/hash.h"
+#include "xff/matching/language/catalog.h"
 #include "xff/matching/language/language.h"
+#include "xff/matching/language/type_filter.h"
 #include "xff/matching/mime/mime.h"
 #include "xff/matching/regex/regex.h"
 #include "xff/parser/ast.h"
 #include "xff/parser/parser.h"
-#include "xff/parser/rg_types.h"
 #include "xff/presentation/color/color.h"
 #include "xff/presentation/fields/fields.h"
 #include "xff/presentation/format/format.h"
@@ -4582,6 +4583,41 @@ RunResult RunTreeCompare(
 
 namespace {
 
+struct TypeOptions {
+  std::vector<language::CatalogEdit> edits;
+  std::vector<language::TypeRule> rules;
+  bool list = false;
+};
+
+absl::StatusOr<TypeOptions> ResolveTypeOptions(absl::Span<const std::string> globals) {
+  TypeOptions result;
+  using enum cli::GlobalFlag::TypeEffect;
+  for (const std::string_view argument : globals) {
+    const auto flag = cli::LookupGlobalArgument(argument);
+    if (!flag || flag->type_effect == kNone) {
+      continue;
+    }
+    if (flag->type_effect == kList) {
+      result.list = true;
+      continue;
+    }
+    const auto equal = argument.find('=');
+    if (equal == std::string_view::npos || equal + 1 == argument.size()) {
+      return absl::InvalidArgumentError(absl::StrCat(flag->name, " requires a value"));
+    }
+    const std::string value(argument.substr(equal + 1));
+    switch (flag->type_effect) {
+      case kInclude:
+      case kExclude: result.rules.push_back({.include = flag->type_effect == kInclude, .value = value}); break;
+      case kAdd: result.edits.push_back({.kind = language::CatalogEdit::Kind::kAdd, .value = value}); break;
+      case kClear: result.edits.push_back({.kind = language::CatalogEdit::Kind::kClear, .value = value}); break;
+      case kNone:
+      case kList: break;
+    }
+  }
+  return result;
+}
+
 // Cohesive run dispatch; the visitor and post-walk sinks intentionally share this state.
 // NOLINTNEXTLINE(readability-function-cognitive-complexity,readability-function-size,hicpp-function-size,google-readability-function-size)
 RunResult RunFindCore(
@@ -4638,9 +4674,24 @@ RunResult RunFindCore(
     on_error("--mime-vocabulary", status);
     return RunResult{.errors = 2};
   }
-  if (const absl::Status status = language::Configure(language_db_files, language_conflicts); !status.ok()) {
+  auto type_options = ResolveTypeOptions(command.globals);
+  if (!type_options.ok()) {
+    on_error("--file-type", type_options.status());
+    return RunResult{.errors = 2};
+  }
+  if (const absl::Status status = language::Configure(language_db_files, language_conflicts, type_options->edits);
+      !status.ok()) {
     on_error("--lang-db", status);
     return RunResult{.errors = 2};
+  }
+  const auto type_filter = language::TypeFilter::Compile(type_options->rules);
+  if (!type_filter.ok()) {
+    on_error("--file-type", type_filter.status());
+    return RunResult{.errors = 2};
+  }
+  if (type_options->list) {
+    emit(language::ActiveCatalog().Listing());
+    return RunResult{.any_match = true};
   }
   const mbo::types::OptionalRef<const parser::Expr> expression = parser::AsConstOptionalExpr(command.expression);
   if (command.rg && expression.has_value() && !IsRgFilterExpression(*expression)) {
@@ -5204,20 +5255,9 @@ RunResult RunFindCore(
     return RunResult{.errors = 2};
   }
   std::optional<MatchOutput> rg_output;
-  parser::RgTypes rg_types;
   ignore::PatternList rg_globs;
   bool rg_positive_glob = false;
   if (command.rg) {
-    auto types = parser::RgTypes::Compile(*command.rg);
-    if (!types.ok()) {
-      on_error("--type", types.status());
-      return RunResult{.errors = 2};
-    }
-    rg_types = *std::move(types);
-    if (command.rg->type_list) {
-      emit(rg_types.Listing());
-      return RunResult{.any_match = true};
-    }
     for (const auto& glob : command.rg->globs) {
       if (!rg_globs.Add(glob, true)) {
         on_error("--glob", absl::InvalidArgumentError("invalid or empty glob"));
@@ -5513,6 +5553,22 @@ RunResult RunFindCore(
     return rg_globs.Match(relative, visit.metadata.type == vfs::FileType::kDirectory);
   };
 
+  const bool discovery_filters = !type_options->rules.empty() || (command.rg && !command.rg->globs.empty());
+  const auto type_selected = [&](const Visit& visit) {
+    if (!discovery_filters) {
+      return true;
+    }
+    // Discovery filters never override an explicitly named file. Archive members
+    // are discovered inputs even when a container filesystem starts at depth zero.
+    if (visit.depth == 0 && visit.metadata.type == vfs::FileType::kRegular
+        && visit.metadata.source != vfs::Source::kArchiveMember) {
+      return true;
+    }
+    const auto decision = rg_glob_decision(visit);
+    return decision != ignore::Decision::kIgnore && (!rg_positive_glob || decision != ignore::Decision::kDefault)
+           && (decision == ignore::Decision::kInclude || type_filter->Includes(visit.name));
+  };
+
   bool rg_emitted_file = false;
   const auto emit_rg_file = [&](std::string_view text) {
     if (text.empty()) {
@@ -5535,9 +5591,7 @@ RunResult RunFindCore(
                                 std::optional<bool> verification, ContentSnapshot content,
                                 mbo::types::OptionalRef<const ContentResult> prepared = {}) {
     if (matched && rg_output) {
-      const auto decision = rg_glob_decision(visit);
-      if (decision == ignore::Decision::kIgnore || (rg_positive_glob && decision == ignore::Decision::kDefault)
-          || (decision != ignore::Decision::kInclude && !rg_types.Includes(visit.name))) {
+      if (!type_selected(visit)) {
         return;
       }
       Control control;
@@ -5870,14 +5924,10 @@ RunResult RunFindCore(
         }
         const bool parallel_entry =
             parallel_match && !visit.fs_owner && visit.metadata.source != vfs::Source::kArchiveMember;
+        if (!type_selected(visit)) {
+          return WalkAction::kContinue;
+        }
         if (parallel_entry) {
-          if (rg_output) {
-            const auto decision = rg_glob_decision(visit);
-            if (decision == ignore::Decision::kIgnore || (rg_positive_glob && decision == ignore::Decision::kDefault)
-                || (decision != ignore::Decision::kInclude && !rg_types.Includes(visit.name))) {
-              return WalkAction::kContinue;
-            }
-          }
           pending_matches.push_back(OwnVisit(visit));
           if (pending_matches.size() >= 256) {
             flush_matches();

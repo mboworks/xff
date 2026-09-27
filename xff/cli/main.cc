@@ -946,7 +946,11 @@ int RunMain(std::string_view program, const std::vector<std::string>& args, xff:
   const xff::cli::PagerStream pager_stream(listing_pager);
   const xff::vfs::LocalFs host_fs;
   std::optional<std::string> input;
-  if (command.rg && !command.rg->type_list
+  const bool type_listing = absl::c_any_of(command.globals, [](std::string_view argument) {
+    const auto flag = xff::cli::LookupGlobalArgument(argument);
+    return flag && flag->type_effect == xff::cli::GlobalFlag::TypeEffect::kList;
+  });
+  if (command.rg && !type_listing
       && (absl::c_contains(command.roots, "-") || absl::c_any_of(command.rg->patterns, [](const auto& input) {
             return input.file && input.value == "-";
           }))) {

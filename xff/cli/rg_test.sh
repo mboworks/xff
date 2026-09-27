@@ -337,4 +337,57 @@ JSON
   expect_output_contains "ambiguous file type alias 'shared'" "${out}"
 }
 
+test::shared_type_catalog_observes_ini_and_cli_order_in_both_modes() {
+  local root out
+  root="$(test_tmpdir shared-catalog)"
+  mkdir "${root}/code"
+  printf 'one\n' >"${root}/code/a.one"
+  printf 'two\n' >"${root}/code/a.two"
+  printf 'three\n' >"${root}/code/a.three"
+  printf 'source\n' >"${root}/code/a.cc"
+  printf '%s\n' '--type-add=local:*.one' >"${root}/system.ini"
+  cat >"${root}/user.ini" <<'INI'
+--type-clear=local --type-add=local:*.two
+[narrow]
+--type-clear=local --type-add=local:*.three
+INI
+  out="$(XFF_TEST_SYSTEM_CONFIG="${root}/system.ini" XFF_TEST_USER_CONFIG="${root}/user.ini" \
+    "$(_bin)" --file-type=local "${root}/code" -printf '%f\n')"
+  expect_eq a.two "${out}"
+  out="$(XFF_TEST_SYSTEM_CONFIG="${root}/system.ini" XFF_TEST_USER_CONFIG="${root}/user.ini" \
+    "$(_bin)" --rg -I -tlocal . "${root}/code")"
+  expect_eq two "${out}"
+  out="$(XFF_TEST_SYSTEM_CONFIG="${root}/system.ini" XFF_TEST_USER_CONFIG="${root}/user.ini" \
+    "$(_bin)" --config=narrow --file-type=local "${root}/code" -printf '%f\n')"
+  expect_eq a.three "${out}"
+  out="$(XFF_TEST_SYSTEM_CONFIG="${root}/system.ini" XFF_TEST_USER_CONFIG="${root}/user.ini" \
+    "$(_bin)" --rg --config=narrow -I -tlocal . "${root}/code")"
+  expect_eq three "${out}"
+  out="$(XFF_TEST_SYSTEM_CONFIG="${root}/system.ini" XFF_TEST_USER_CONFIG="${root}/user.ini" \
+    "$(_bin)" --config=narrow --type-clear=local '--type-add=local:*.cc' \
+    --file-type=local "${root}/code" -lang C++ -printf '%f|%{lang}\n')"
+  expect_eq 'a.cc|C++' "${out}"
+  out="$(XFF_TEST_SYSTEM_CONFIG="${root}/system.ini" XFF_TEST_USER_CONFIG="${root}/user.ini" \
+    "$(_bin)" --rg --config=narrow --type-clear=local '--type-add=local:*.cc' \
+    -I -tlocal . "${root}/code" --xff -lang C++)"
+  expect_eq source "${out}"
+}
+
+test::mode_switches_keep_native_and_rg_short_options_distinct() {
+  local root
+  root="$(_tree)"
+  _check 0 $'TODO\nTODO\nTODO' --rg TODO "${root}" --xff -type f \
+    --rg -tcpp -o --xff -name '*.cc' + -name '*.h' --rg -I
+  _check 0 "${root}/a.cc" --file-type=cpp "${root}" -type f
+}
+
+test::explicit_files_bypass_discovery_but_not_native_filters() {
+  local root
+  root="$(_tree)"
+  _check 0 other --rg -tcpp other "${root}/b.txt"
+  _check 0 other --rg '-g!*.txt' other "${root}/b.txt"
+  _check 1 '' --rg -tcpp other "${root}/b.txt" --xff -name '*.cc'
+  _check 0 "${root}/b.txt" --file-type=cpp "${root}/b.txt"
+}
+
 test_runner

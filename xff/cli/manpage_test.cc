@@ -71,9 +71,9 @@ TEST_F(ManPageTest, DocumentsEveryGlobalAndPrimary) {
 }
 
 TEST_F(ManPageTest, TagsEntriesWithTheirClassification) {
-  // Flags are tagged (global, xff|find); primaries (kind, xff|find, [safety]).
-  EXPECT_THAT(ManPage(), HasSubstr("(global, xff)"));
-  EXPECT_THAT(ManPage(), HasSubstr("(test, find)"));
+  // Accepted modes are explicit; native primaries require --xff during an rg search.
+  EXPECT_THAT(ManPage(), HasSubstr("(global, find, xff, rg)"));
+  EXPECT_THAT(ManPage(), HasSubstr("(test, find, xff)"));
 }
 
 }  // namespace

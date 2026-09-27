@@ -4,7 +4,41 @@
 output. Invoking the executable as `rg` selects the same behavior. `--xff` switches
 back to native file filters without changing the rg search patterns. Configuration,
 VFS routing, safety controls and ordered result publication remain shared with XFF.
-See `--help=rg` for the option reference generated directly from parser metadata.
+See `--help=rg` for the option reference generated directly from registry metadata.
+
+## Modes and registered spellings
+
+Every expression, global, and compatibility option declares a set of accepted modes:
+`find`, `xff`, and/or `rg`. Lookup and generated help use the same enum/set. A shared
+spelling can have different meanings in disjoint modes; duplicate compatibility
+spellings in the same mode fail compilation. These are XFF's modes, not a claim that
+an external find or ripgrep accepts every XFF global.
+
+The initial `--rg` belongs before roots. Once rg grammar is selected, `--xff` and
+`--rg` may switch repeatedly at option boundaries. Switches only change interpretation
+of subsequent tokens: they preserve the search, roots, configuration and accumulated
+settings. Search patterns and paths belong in rg segments; native segments contribute
+file-filter expressions. Their boolean expression continues across rg segments.
+
+| Spelling    | XFF/find interpretation                    | Rg interpretation                     |
+| ----------- | ------------------------------------------ | ------------------------------------- |
+| `-type f`   | Filesystem kind                            | Unsupported; use `--xff` first        |
+| `-t cpp`    | Not a native alias                         | Filename-type inclusion               |
+| `-o`        | Boolean OR                                 | Only matching portions                |
+| `+`         | OR in XFF, rejected as an operator in find | Literal pattern/path                  |
+| `-M`        | Default content-match output               | Maximum output columns; takes a value |
+| `--unicode` | Valued presentation setting                | UTF-8 search interpretation           |
+
+```sh
+xff --rg TODO src --xff -type f --rg -tcpp -o --xff -name '*.h'
+```
+
+A required option value, native primary operand, or command argument is consumed
+before mode switching. Thus `-e --xff`, `-name --rg`, and `-exec echo --rg \;`
+contain literal values. Bare `--` in rg mode ends option parsing, including switches.
+The execution action remains disallowed in an rg search, independently of parsing.
+Configuration presets such as `--config=rg` change defaults without selecting argv
+grammar. INI files use native spellings and reject CLI-only grammar switches.
 
 ## Input encoding and the C++ contract
 
@@ -21,7 +55,7 @@ xff --rg -w TODO src
 xff --rg --no-unicode -w TODO legacy-data
 ```
 
-These are rg search options, parsed before `--xff`. Native filters keep their
+These are rg search options, parsed in rg segments. Native filters keep their
 selected regex grammar's semantics. Native XFF's valued `--unicode=auto|always|never`
 is a separate presentation control. No native file predicate silently changes its
 encoding because an rg content search is active.
@@ -65,7 +99,8 @@ See [PCRE2's invalid-UTF contract](https://pcre2project.github.io/pcre2/doc/pcre
 
 ## File types and overlapping language candidates
 
-`-t TYPE` includes a type and `-T TYPE` excludes one. Repeated selections are ordered:
+`--file-type=TYPE` includes a filename type and `--file-type-not=TYPE` excludes one.
+Rg aliases are `-t` / `--type` and `-T` / `--type-not`. Repeated selections are ordered:
 the last matching rule wins. If any positive type selection exists, files outside
 all selected types are excluded. `all` means every known type; `-Tall` selects
 unrecognized file types. Explicit rg `-g` decisions take precedence; native filters
@@ -103,7 +138,29 @@ in order before selection. New custom names contain letters and numbers; existin
 canonical names can contain punctuation. `all` is reserved. `--type-list` prints
 sorted names and definitions (`language NAME` membership and any custom globs)
 without reading search input. Unknown selected/imported types and invalid definitions
-fail before traversal. These invocation-local edits do not modify `-lang` or the catalog.
+fail before traversal. One immutable filename-filter catalog is shared by native and
+rg selection; there is no rg-private definition set. Apply JSON language overlays
+first, then these edits in resolved system/user/named-section/CLI order, then resolve
+selections. Imports copy definitions as they exist at the import point. These
+invocation-local edits do not change language classification (`-lang`, `{lang}`),
+MIME classification, colors or summary buckets. Use `--lang-db` to change those
+language memberships and labels.
+
+Explicit regular-file roots bypass filename-type and rg glob discovery filters;
+native predicates and safety controls still apply. Discovered archive members remain
+filtered. In native listings the explicit archive file itself remains selected.
+Excluded directories are still traversed so matching descendants remain reachable.
+
+All five shared long options work in INI files as well as native commands. For example:
+
+```ini
+--type-add=project:*.{cc,h}
+[sources]
+--file-type=project
+```
+
+`xff --config=sources src` lists those files; `xff --rg --config=sources TODO src`
+searches their contents. An rg-only alias such as `-tproject` does not belong in INI.
 
 ```sh
 xff --rg --type-add='local:*.{one,two}' -tlocal TODO src
@@ -176,3 +233,19 @@ multiline patterns and counts, typed encoding interfaces, UTF-8/byte behavior in
 and PCRE2, layout overrides, streaming context across chunk boundaries, late failures,
 and binary suppression. Existing native grep tests protect shared rendering behavior.
 The separate P01-P08 performance candidates remain in `docs/performance-analysis.md`.
+
+## Combined-stack audit
+
+The follow-up review covers PRs 916-922 together. Regression tests exercise INI
+system/user/named-section/CLI ordering, native and rg catalog selection, terminal
+versus pipe defaults, UTF-8/byte interpretation, multiline output, native predicates,
+mode boundaries, explicit files, and discovered archive members. Serial and four-worker
+runs agree for thirteen output/filter combinations over 300 files.
+
+A 208-case differential check against ripgrep 15.2.0 found fifteen output differences.
+They concern documented multiline occurrence counting, zero-length matches, and byte
+columns. XFF reports the actual start column for multiline matches. Ripgrep can avoid
+multiline processing for newline-incapable patterns, affecting both counts and empty
+match output; XFF consistently uses the requested multiline path. Zero-length output
+at unterminated EOF needs a separate compatibility decision and remains tracked in
+TODO.md. This review does not claim complete ripgrep equivalence.

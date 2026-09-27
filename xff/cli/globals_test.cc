@@ -59,6 +59,20 @@ TEST_F(GlobalsTest, GrepAliasesShareTypedEffects) {
       LookupGlobalArgument("--summary"), Optional(Field(&GlobalFlag::grep_effect, Eq(GlobalFlag::GrepEffect::kNone))));
 }
 
+TEST_F(GlobalsTest, NativeAliasesDoNotStealRgCompatibilitySpellings) {
+  EXPECT_THAT(
+      LookupGlobal("-M", registry::Mode::kXff),
+      Optional(Field(&GlobalFlag::grep_effect, GlobalFlag::GrepEffect::kMatchOutput)));
+  EXPECT_THAT(LookupGlobal("-M", registry::Mode::kRg), Eq(std::nullopt));
+  EXPECT_THAT(LookupGlobal("--unicode", registry::Mode::kRg), Eq(std::nullopt));
+  EXPECT_THAT(LookupGlobalArgument("-g+", registry::Mode::kRg), Eq(std::nullopt));
+  EXPECT_THAT(
+      LookupGlobalArgument("--file-type=cpp", registry::Mode::kRg),
+      Optional(Field(&GlobalFlag::type_effect, GlobalFlag::TypeEffect::kInclude)));
+  EXPECT_THAT(LookupGlobal("--rg"), Optional(Field(&GlobalFlag::enters_mode, Optional(registry::Mode::kRg))));
+  EXPECT_THAT(LookupGlobal("--xff"), Optional(Field(&GlobalFlag::enters_mode, Optional(registry::Mode::kXff))));
+}
+
 // NOLINTNEXTLINE(readability-function-cognitive-complexity): a flat per-field validation sweep.
 TEST_F(GlobalsTest, EveryGlobalIsWellFormed) {
   EXPECT_THAT(Globals(), Not(IsEmpty()));
@@ -184,8 +198,9 @@ TEST_F(GlobalsTest, NonOverridingGlobalsDeclareTheirRepetitionSemantics) {
   }
   EXPECT_THAT(
       names, ElementsAre(
-                 "--config", "--xffrc", "--exclude", "--include", "--lang-db", "--mime-vocabulary", "--ignore-file",
-                 "--root", "--pack-option", "--summary", "--histogram", "--shard-pattern", "--define"));
+                 "--config", "--xffrc", "--exclude", "--include", "--file-type", "--file-type-not", "--type-add",
+                 "--type-clear", "--lang-db", "--mime-vocabulary", "--ignore-file", "--root", "--pack-option",
+                 "--summary", "--histogram", "--shard-pattern", "--define"));
 }
 
 TEST_F(GlobalsTest, IsKnownGlobalAcceptsEveryTableNameAndAlias) {

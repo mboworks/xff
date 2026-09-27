@@ -29,6 +29,13 @@
 
 ## Combined rg stack audit
 
+- [x] Move filename-type definitions and ordered edits into a shared catalog with native/INI controls.
+- [x] Preserve explicit regular-file roots through discovery filters without bypassing native predicates.
+- [x] Replace origin-only flag markers with compatibility mode sets shared by lookup and help.
+- [x] Support repeated rg/native transitions and preserve literal operand/command boundaries.
+- [ ] Decide rg zero-length EOF/multiline occurrence rendering after the differential audit;
+      preserve the documented multiline count rule until newline-capability metadata exists.
+
 - [ ] After the R01-R05 delivery, audit the complete stacked change for configuration precedence,
       terminal/pipe defaults, encoding modes, multiline output, and native-filter interactions.
       Put any new fixes in a follow-up PR with regression tests; merge in dependency order once

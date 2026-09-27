@@ -615,6 +615,30 @@ TEST_F(RgEngineTest, TypesFilterSearchButExplicitGlobsHavePrecedence) {
   EXPECT_THAT(Run({"-tunknown", "hit", "tree"}).errors, Eq(2));
 }
 
+TEST_F(RgEngineTest, ExplicitFilesBypassDiscoveryFiltersButRespectNativePredicates) {
+  fs.files = {{"tree/a.py", "hit\n"}};
+  for (const std::string_view jobs : {"1", "4"}) {
+    for (const std::string_view filter : {"-tcpp", "-Tpy", "-g*.cc", "-g!*.py"}) {
+      SCOPED_TRACE(jobs);
+      SCOPED_TRACE(filter);
+      const std::vector<std::string> options{
+          "--jobs=" + std::string(jobs), "--archive=none", "--sort=none", std::string(filter), "hit",
+      };
+      auto args = options;
+      args.emplace_back("tree/a.py");
+      EXPECT_THAT(Run(args).errors, Eq(0));
+      EXPECT_THAT(output, EqualsText("tree/a.py:hit\n"));
+      args.insert(args.end(), {"--xff", "-name", "*.cc"});
+      EXPECT_THAT(Run(args).any_match, IsFalse());
+      EXPECT_THAT(output, IsEmpty());
+      args = options;
+      args.emplace_back("tree");
+      EXPECT_THAT(Run(args).any_match, IsFalse());
+      EXPECT_THAT(output, IsEmpty());
+    }
+  }
+}
+
 TEST_F(RgEngineTest, SharedTypesComposeWithNativeLanguageFiltersAndDoNotDuplicateOutput) {
   fs.files = {{"tree/a.h", "hit header\n"}, {"tree/b.cc", "hit impl\n"}, {"tree/c.c", "hit C\n"}};
   EXPECT_THAT(Run({"-tc", "-tcpp", "hit", "tree", "--xff", "-lang", "C++"}).errors, Eq(0));
