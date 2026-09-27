@@ -65,14 +65,16 @@ const std::vector<ParallelResult>& ParallelMatch::Match(std::vector<CollectedEnt
   results_.clear();
   results_.resize(entries_.size());
   next_.store(0, std::memory_order_relaxed);
-  if (threads_.empty() && entries_.size() < 64) {
+  // Very small batches cannot amortize waking the pool.
+  if (workers_ == 1 || entries_.size() < 16 || (threads_.empty() && entries_.size() < 64)) {
     EvaluateEntries();
     return results_;
   }
-  if (threads_.empty()) {
-    const std::size_t count = std::min(workers_, (entries_.size() + 15) / 16);
+  const std::size_t count = std::min(workers_, (entries_.size() + 15) / 16);
+  // An early partial batch must not permanently cap the pool for later full batches.
+  if (threads_.size() < count) {
     threads_.reserve(count);
-    for (std::size_t index = 0; index < count; ++index) {
+    for (std::size_t index = threads_.size(); index < count; ++index) {
       threads_.emplace_back([this] { Run(); });
     }
   }
@@ -112,8 +114,8 @@ void ParallelMatch::Run() {
 void ParallelMatch::EvaluateEntries(
     mbo::types::OptionalRef<const absl::StatusOr<MatchOutput>> output,
     mbo::types::OptionalRef<const WorkerMatchers> matchers) {
-  // Chunking amortizes scheduling without assigning one large directory to one worker.
-  constexpr std::size_t kChunk = 16;
+  // Small chunks spread clustered expensive entries while amortizing atomic scheduling.
+  constexpr std::size_t kChunk = 4;
   for (;;) {
     const std::size_t first = next_.fetch_add(kChunk, std::memory_order_relaxed);
     if (first >= entries_.size()) {

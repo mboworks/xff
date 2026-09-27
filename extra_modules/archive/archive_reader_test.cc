@@ -36,6 +36,7 @@
 #include "mbo/testing/status.h"
 #include "xff/archive/archive_reader_internal.h"
 #include "xff/license/notice.h"
+#include "xff/vfs/read_budget.h"
 
 namespace xff::archive {
 namespace {
@@ -379,6 +380,24 @@ TEST_F(ArchiveReaderTest, MemberStreamsReportTruncationAndReadErrorsAfterOpen) {
   MBO_ASSERT_OK_AND_ASSIGN(auto short_stream, MemberReadSource(truncated, "large")->Open());
   EXPECT_THAT(short_stream->Read(64UZ * 1'024), StatusIs(absl::StatusCode::kDataLoss));
   EXPECT_THAT(MemberReadSource(truncated, "missing")->Open(), StatusIs(absl::StatusCode::kDataLoss));
+}
+
+TEST_F(ArchiveReaderTest, ConcurrentMemberCursorsShareMemoryAndReleaseItBeforeSerialRetry) {
+  // A session keeps its 64 KiB buffer; its four-byte format probe is temporary. This budget
+  // admits either member by itself, but cannot admit both decoders at once.
+  const auto budget = std::make_shared<vfs::ReadBudget>((64UZ * 1'024) + 4);
+  const auto source = vfs::MemoryReadSource(
+      MakeArchive({{.path = "first", .content = "abc"}, {.path = "second", .content = "def"}}, true), budget);
+  MBO_ASSERT_OK_AND_ASSIGN(auto first, MemberReadSource(source, "first")->Open());
+  EXPECT_THAT(first->Read(3), IsOkAndHolds(Eq("abc")));
+  EXPECT_THAT(MemberReadSource(source, "second")->Open(), StatusIs(absl::StatusCode::kResourceExhausted));
+  EXPECT_THAT(budget->MemoryUsed(), Eq(64UZ * 1'024));
+  first.reset();
+  EXPECT_THAT(budget->MemoryUsed(), Eq(0));
+  MBO_ASSERT_OK_AND_ASSIGN(auto second, MemberReadSource(source, "second")->Open());
+  EXPECT_THAT(second->Read(3), IsOkAndHolds(Eq("def")));
+  second.reset();
+  EXPECT_THAT(budget->MemoryUsed(), Eq(0));
 }
 
 }  // namespace

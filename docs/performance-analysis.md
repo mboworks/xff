@@ -1174,3 +1174,217 @@ child stats, independent of subprocess timing noise.
 | exact-name   |    100 |       4 |     7.166 |        7.174 |  +0.1% |
 | exact-name   |  1,000 |       4 |     7.888 |        7.826 |  -0.8% |
 | exact-name   | 10,000 |       4 |    14.205 |       14.330 |  +0.9% |
+
+## P07: archive-member concurrency decision
+
+Retain serial archive-member matching. The measurement-only prototype removed the owning-filesystem
+and archive-member exclusions from `parallel_entry`, retaining the existing `!visit.dived` exclusion
+and copying each filesystem owner into the pending entries. No safety checks or read budgets were
+bypassed. Ordered output matched the parent for every retained sample.
+
+TAR members show substantial available parallel work: at 1,000 members four workers reduce elapsed
+time by 65% for uncompressed TAR and 73% for gzip TAR. ZIP behaves differently: 100 members regress
+13%, and a single exploratory 1,000-member ZIP invocation took roughly 38 seconds serially and
+44 seconds with the prototype. Those single exploratory durations are not repeated performance
+claims; they motivated bounding the ZIP matrix at 100 members. Format-specific reader cost needs
+investigation before a general archive-parallel flag or default is justified.
+
+More importantly, `ConcurrentMemberCursorsShareMemoryAndReleaseItBeforeSerialRetry` now proves the
+resource issue using an in-memory gzip TAR. A shared budget admits either member's 64 KiB decoder
+buffer and four-byte probe, but rejects the second cursor while the first is alive. Releasing the
+first cursor allows the second to complete and returns memory use to zero. This intentionally small
+budget models the same admission problem with nested decoders and larger default budgets. Repeated
+opens also retain the existing cumulative replay accounting. A generic retry cannot refund consumed
+replay work. Ownership and thread safety alone are insufficient admission criteria.
+
+The next design should expose a backend capability and bounded admission, or extract members
+serially into a byte-bounded queue for parallel matching. It must preserve shared memory/replay
+limits, error ordering, and cancellation. Keep this separate from host-file scheduling and measure
+ZIP indexing/restart cost independently. No rejected prototype code is shipped.
+
+### Measurement protocol
+
+Parent: `4f8b3bc72acd49f16a173408264f8893bc848ff0`; macOS arm64, Apple M5 Pro,
+`clang_release` O2/ThinLTO with all extras. These are warm host-file archive reads, not the
+in-memory engine matrix. Python `tarfile` produced uncompressed and gzip TAR; `zipfile` used
+`ZIP_DEFLATED`. Members are `000000.txt`, `000001.txt`, etc., each containing 128 repetitions of
+`unmatched content for line selection\n` and a final `alpha123 needle\n` (4,752 bytes).
+
+Run both binaries with `--no-config --jobs=N --archive=roots --sort=dir ARCHIVE -rxc
+'(alpha|beta)[0-9]{3}.*needle'`. Five paired rounds alternate which binary runs first; discard
+the warm-up round and average the fastest three of four. Complete process startup and output
+capture are included; exact output and member counts are checked. Worker allowances do not pin
+CPU affinity. Raw samples and the prototype change are in
+[`performance-p07.json`](performance-p07.json). Positive percentages mean less elapsed time.
+
+| Format | Members | Workers | Parent ms | Prototype ms | Time saved |
+| ------ | ------: | ------: | --------: | -----------: | ---------: |
+| tar    |      10 |       1 |     8.971 |        8.846 |      +1.4% |
+| tar    |      10 |       4 |     8.297 |        8.241 |      +0.7% |
+| tar    |     100 |       1 |    14.984 |       15.209 |      -1.5% |
+| tar    |     100 |       4 |    15.351 |       11.480 |     +25.2% |
+| tar    |    1000 |       1 |   332.569 |      339.372 |      -2.0% |
+| tar    |    1000 |       4 |   341.784 |      120.589 |     +64.7% |
+| tgz    |      10 |       1 |     9.180 |        8.911 |      +2.9% |
+| tgz    |      10 |       4 |     8.810 |        9.068 |      -2.9% |
+| tgz    |     100 |       1 |    24.935 |       24.351 |      +2.3% |
+| tgz    |     100 |       4 |    24.817 |       14.939 |     +39.8% |
+| tgz    |    1000 |       1 |  1131.095 |     1087.916 |      +3.8% |
+| tgz    |    1000 |       4 |  1138.521 |      303.981 |     +73.3% |
+| zip    |      10 |       1 |    13.956 |       14.150 |      -1.4% |
+| zip    |      10 |       4 |    13.903 |       13.639 |      +1.9% |
+| zip    |     100 |       1 |   405.933 |      404.428 |      +0.4% |
+| zip    |     100 |       4 |   400.163 |      451.010 |     -12.7% |
+
+## P08: heterogeneous scheduling, startup, and buffering
+
+Retain four-entry matcher chunks, growth of the worker pool for later larger batches, and inline
+execution for fewer than 16 entries or a one-worker allowance. Decision-only batches can hold
+1,024 entries; batches carrying rendered content keep their 256-entry limit. The initial parallel threshold stays
+at 64 entries. Threads still receive indexed independent entries; results, errors, effects and
+rendering remain ordered on the coordinator. Entry content and lazy metadata acquire no locks.
+
+Previously a first 64-entry batch could permanently cap a requested 12-worker pool at four workers.
+The pool can now grow to the requested allowance when a later full batch has enough work. The
+regression test holds readers at a barrier and observes four then twelve distinct workers, followed
+by an eight-entry tail on the coordinator. Existing serial/parallel output-mode and error-order
+tests cover the unchanged publication contract. Archive-member reads remain serial.
+
+### Retained change measurements
+
+The parent is `4f8b3bc72acd49f16a173408264f8893bc848ff0`. Both binaries use the same extended
+`//xff/engine:rg_benchmark` fixtures, with no host file I/O. The uniform input is 4,752 bytes per
+file. Heterogeneous cases replace either the last 16 entries in each 256-entry block (clustered),
+or one entry in every 16 (interleaved), with a 131,088-byte file. Its only match is at the end.
+Counts are 10, 100, 1,000 and 10,000, with one/four worker allowances. The 10- and 100-entry
+clustered cases contain no large entries; they are intentional small-batch controls.
+
+On macOS arm64 / Apple M5 Pro, O2/ThinLTO with all extras, ten alternating paired rounds discard
+the warm-up and average the fastest seven of nine (`--benchmark_min_time=0.02s`, real time).
+Every case validates its selected output count before timing. Raw samples, including one-worker
+controls, are in [`performance-p08.json`](performance-p08.json).
+
+At 1,000/10,000 clustered files, the final combination improves RE2 by 61/64% and PCRE2 by 45/51%.
+Uniform early filters improve 13-21% at those sizes, and interleaved RE2 improves 1-5%.
+One-worker controls range from 4.6% faster to 3.1% slower. The largest four-worker
+regression in this matrix is 2.3% on the 100-file PCRE2 early-filter case (124.0 to 126.9 us).
+These are workload-specific macOS results, not a universal or cross-platform speedup claim.
+
+| Workload                 | Files | Workers | Parent us | Candidate us | Time saved |
+| ------------------------ | ----: | ------: | --------: | -----------: | ---------: |
+| RE2 filter               |    10 |       4 |      24.1 |         23.9 |      +1.0% |
+| RE2 filter               |   100 |       4 |     127.5 |        125.5 |      +1.6% |
+| RE2 filter               |  1000 |       4 |     372.7 |        298.5 |     +19.9% |
+| RE2 filter               | 10000 |       4 |    3073.0 |       2418.2 |     +21.3% |
+| RE2 filter-late          |    10 |       4 |     107.8 |        107.5 |      +0.2% |
+| RE2 filter-late          |   100 |       4 |     397.6 |        351.5 |     +11.6% |
+| RE2 filter-late          |  1000 |       4 |    2535.4 |       2407.9 |      +5.0% |
+| RE2 filter-late          | 10000 |       4 |   24321.2 |      23331.7 |      +4.1% |
+| RE2 filter-clustered     |    10 |       4 |     107.9 |        107.2 |      +0.7% |
+| RE2 filter-clustered     |   100 |       4 |     395.8 |        352.2 |     +11.0% |
+| RE2 filter-clustered     |  1000 |       4 |   13002.6 |       5100.9 |     +60.8% |
+| RE2 filter-clustered     | 10000 |       4 |  161518.7 |      58815.8 |     +63.6% |
+| RE2 filter-interleaved   |    10 |       4 |     107.6 |        107.4 |      +0.2% |
+| RE2 filter-interleaved   |   100 |       4 |     844.3 |        771.8 |      +8.6% |
+| RE2 filter-interleaved   |  1000 |       4 |    6142.3 |       5824.1 |      +5.2% |
+| RE2 filter-interleaved   | 10000 |       4 |   60133.3 |      59284.5 |      +1.4% |
+| RE2 filter-summary       |    10 |       4 |     112.9 |        112.7 |      +0.1% |
+| RE2 filter-summary       |   100 |       4 |     402.6 |        359.5 |     +10.7% |
+| RE2 filter-summary       |  1000 |       4 |    2649.7 |       2488.4 |      +6.1% |
+| RE2 filter-summary       | 10000 |       4 |   24561.0 |      22851.2 |      +7.0% |
+| RE2 rg-counts            |    10 |       4 |     127.1 |        127.2 |      -0.1% |
+| RE2 rg-counts            |   100 |       4 |     442.6 |        398.7 |      +9.9% |
+| RE2 rg-counts            |  1000 |       4 |    2865.3 |       2801.8 |      +2.2% |
+| RE2 rg-counts            | 10000 |       4 |   27476.6 |      27026.6 |      +1.6% |
+| PCRE2 filter             |    10 |       4 |      24.6 |         24.5 |      +0.5% |
+| PCRE2 filter             |   100 |       4 |     124.0 |        126.9 |      -2.3% |
+| PCRE2 filter             |  1000 |       4 |     373.5 |        312.9 |     +16.2% |
+| PCRE2 filter             | 10000 |       4 |    3025.3 |       2619.3 |     +13.4% |
+| PCRE2 filter-late        |    10 |       4 |      26.7 |         27.0 |      -1.1% |
+| PCRE2 filter-late        |   100 |       4 |     130.0 |        132.1 |      -1.6% |
+| PCRE2 filter-late        |  1000 |       4 |     429.6 |        362.1 |     +15.7% |
+| PCRE2 filter-late        | 10000 |       4 |    3614.8 |       2996.6 |     +17.1% |
+| PCRE2 filter-clustered   |    10 |       4 |      26.6 |         26.5 |      +0.4% |
+| PCRE2 filter-clustered   |   100 |       4 |     131.4 |        130.7 |      +0.6% |
+| PCRE2 filter-clustered   |  1000 |       4 |     854.4 |        466.9 |     +45.4% |
+| PCRE2 filter-clustered   | 10000 |       4 |    8875.5 |       4316.8 |     +51.4% |
+| PCRE2 filter-interleaved |    10 |       4 |      26.7 |         26.6 |      +0.3% |
+| PCRE2 filter-interleaved |   100 |       4 |     148.2 |        146.8 |      +1.0% |
+| PCRE2 filter-interleaved |  1000 |       4 |     589.7 |        494.8 |     +16.1% |
+| PCRE2 filter-interleaved | 10000 |       4 |    5148.0 |       4294.1 |     +16.6% |
+| PCRE2 filter-summary     |    10 |       4 |      32.6 |         32.0 |      +1.8% |
+| PCRE2 filter-summary     |   100 |       4 |     139.9 |        137.3 |      +1.8% |
+| PCRE2 filter-summary     |  1000 |       4 |     552.6 |        474.1 |     +14.2% |
+| PCRE2 filter-summary     | 10000 |       4 |    3969.3 |       3333.5 |     +16.0% |
+| PCRE2 rg-counts          |    10 |       4 |      92.9 |         93.0 |      -0.1% |
+| PCRE2 rg-counts          |   100 |       4 |     276.1 |        267.2 |      +3.2% |
+| PCRE2 rg-counts          |  1000 |       4 |    1644.6 |       1572.5 |      +4.4% |
+| PCRE2 rg-counts          | 10000 |       4 |   15853.1 |      14748.1 |      +7.0% |
+
+### Rejected startup and one-entry variants
+
+A four-round screening pass (discard first, best two of three, 0.01-second minimum per case)
+compared chunk sizes one and four while raising the startup threshold to 128. Cheap 100-file
+filters improved about 54%, but late RE2 filters and rg counts more than doubled in duration when
+forced serial. Keep the 64-entry startup threshold; an entry-count-only increase is not a sound
+cost model. One-entry scheduling offered little extra benefit for clustered inputs and regressed
+several uniform cases by 4-10%, so retain four-entry chunks. Screening samples, separately labeled
+from the final measurement protocol, are in
+[`performance-p08-experiments.json`](performance-p08-experiments.json).
+
+### Batch size, retained bytes, and pipeline overlap
+
+Additional real-time experiments use the retained four-entry scheduler, with 64, 256 or 1,024
+entries per batch. Large-output fixtures select the entire 131,088-byte line from each file;
+the benchmark counts records without keeping an additional full-output copy. RSS is whole-process
+peak, averaged across three fresh processes, not a precise allocator or decoder budget. The timing
+protocol is best two of three after one warm-up round.
+
+For the 10,000-file early-filter case, 1,024-entry batches improve time by about 23%, while
+64-entry batches regress about 65%. Larger batches also help the heterogeneous cases. Retain
+1,024 entries only for decision-only matching, where workers release source bytes immediately and
+the results contain no rendered content records. Keep the 256-entry limit for content output.
+
+Large-output measurements demonstrate why one entry cap cannot represent a byte budget: at
+10,000 files, 64/256/1,024-entry variants peak around 63/125/335 MiB. The 64-entry variant saves
+about 4% elapsed time here, but its much higher coordinator/barrier cost for ordinary searches
+rules out a universal smaller batch. Neither cap limits one long input line or selected result.
+A true byte-aware queue needs incremental output admission and ordered backpressure; merely
+estimating from file size would require metadata and would miss formatting expansion. That design
+is recorded as a follow-up rather than claiming a byte bound from this experiment.
+
+The overlap prototype starts one matcher batch asynchronously while traversal accumulates the
+next, then joins and emits on the coordinator before serial effects or errors. It preserves
+owning entries and passes the benchmark output-count checks. It improves the tested large-output
+case by less than 1%, leaves clustered/interleaved heavy work close, and makes the cheap 10,000-file
+filter about 17% slower. Reject this implementation: it adds an async coordinator and queued batch
+without a useful measured gain. A persistent pipeline could avoid per-batch async startup, but
+requires the same byte-aware admission and a shared CPU allowance across stages. These results
+do not claim that every possible overlapping pipeline is slower.
+
+| Workload                 | Variant    | Time ms | Time saved vs 256 | Mean peak RSS MiB |
+| ------------------------ | ---------- | ------: | ----------------: | ----------------: |
+| large-output/1000        | buffer256  |  40.675 |             +0.0% |              74.4 |
+| large-output/1000        | buffer64   |  39.216 |             +3.6% |              38.1 |
+| large-output/1000        | buffer1024 |  47.182 |            -16.0% |             211.6 |
+| large-output/1000        | overlap    |  40.495 |             +0.4% |              71.5 |
+| large-output/10000       | buffer256  | 407.194 |             +0.0% |             125.4 |
+| large-output/10000       | buffer64   | 389.151 |             +4.4% |              62.7 |
+| large-output/10000       | buffer1024 | 471.622 |            -15.8% |             334.5 |
+| large-output/10000       | overlap    | 403.952 |             +0.8% |             101.5 |
+| traversal/10000          | buffer256  |   1.419 |             +0.0% |              17.1 |
+| traversal/10000          | buffer64   |   1.390 |             +2.1% |              15.0 |
+| traversal/10000          | buffer1024 |   1.424 |             -0.4% |              15.6 |
+| traversal/10000          | overlap    |   1.426 |             -0.4% |              15.9 |
+| filter/10000             | buffer256  |   3.122 |             +0.0% |              25.8 |
+| filter/10000             | buffer64   |   5.165 |            -65.5% |              26.6 |
+| filter/10000             | buffer1024 |   2.412 |            +22.7% |              29.3 |
+| filter/10000             | overlap    |   3.657 |            -17.2% |              25.2 |
+| filter-clustered/10000   | buffer256  |  61.859 |             +0.0% |              16.9 |
+| filter-clustered/10000   | buffer64   |  66.356 |             -7.3% |              16.4 |
+| filter-clustered/10000   | buffer1024 |  59.048 |             +4.5% |              20.3 |
+| filter-clustered/10000   | overlap    |  62.143 |             -0.5% |              16.9 |
+| filter-interleaved/10000 | buffer256  |  63.238 |             +0.0% |              17.9 |
+| filter-interleaved/10000 | buffer64   |  77.577 |            -22.7% |              16.4 |
+| filter-interleaved/10000 | buffer1024 |  59.212 |             +6.4% |              20.1 |
+| filter-interleaved/10000 | overlap    |  62.940 |             +0.5% |              16.3 |
