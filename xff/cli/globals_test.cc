@@ -22,12 +22,14 @@
 #include "absl/strings/str_cat.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "xff/hash/hash.h"
 
 namespace xff::cli {
 namespace {
 
+using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
 using ::mbo::testing::StatusIs;
 using ::testing::_;
@@ -80,9 +82,9 @@ TEST_F(GlobalsTest, CompatibilityViewsShareTheirOwningDeclarations) {
       const auto name = flag.rg->name.empty() ? flag.name : flag.rg->name;
       const auto option = LookupCompatibilityOption(name, registry::Mode::kRg);
       ASSERT_THAT(option, Optional(_)) << name;
-      EXPECT_THAT(option->target, Eq(flag.name));
-      EXPECT_THAT(option->summary, Eq(flag.summary));
-      EXPECT_THAT(option->alias, Eq(flag.rg->alias.value_or(flag.alias)));
+      EXPECT_THAT(option->target, EqualsText(flag.name));
+      EXPECT_THAT(option->summary, EqualsText(flag.summary));
+      EXPECT_THAT(option->alias, EqualsText(flag.rg->alias.value_or(flag.alias)));
       EXPECT_THAT(LookupCompatibilityOption(name, registry::Mode::kFind), Eq(std::nullopt));
     }
     for (const ValueDoc& value : flag.values) {
@@ -91,15 +93,15 @@ TEST_F(GlobalsTest, CompatibilityViewsShareTheirOwningDeclarations) {
       }
       const auto option = LookupCompatibilityOption(value.rg->name, registry::Mode::kRg);
       ASSERT_THAT(option, Optional(_));
-      EXPECT_THAT(option->target, Eq(flag.name));
-      EXPECT_THAT(option->fixed_value, Optional(value.value));
-      EXPECT_THAT(option->summary, Eq(value.meaning));
+      EXPECT_THAT(option->target, EqualsText(flag.name));
+      EXPECT_THAT(option->fixed_value, Optional(EqualsText(value.value)));
+      EXPECT_THAT(option->summary, EqualsText(value.meaning));
     }
   }
 }
 
 TEST_F(GlobalsTest, TypeAliasModesAndPrimariesRemainDistinct) {
-  for (const auto token : {"-t", "-tcpp", "-t=cpp", "-T", "-Tcpp", "-T=cpp"}) {
+  for (const std::string_view token : {"-t", "-tcpp", "-t=cpp", "-T", "-Tcpp", "-T=cpp"}) {
     EXPECT_THAT(LookupGlobalArgument(token, registry::Mode::kXff), Optional(_));
     EXPECT_THAT(LookupGlobalArgument(token, registry::Mode::kRg), Optional(_));
     EXPECT_THAT(LookupGlobalArgument(token, registry::Mode::kFind), Eq(std::nullopt));

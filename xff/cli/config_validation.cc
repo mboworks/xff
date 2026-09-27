@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -94,6 +95,21 @@ absl::Status ValidateSystemControl(std::string_view token) {
   return ValidateGlobalValue(token);
 }
 
+absl::StatusOr<GlobalAliasArgument> NormalizeConfigGlobal(
+    const GlobalFlag& flag,
+    std::string_view token,
+    std::optional<std::string_view> next) {
+  if (flag.cli_only) {
+    return absl::InvalidArgumentError(absl::StrCat(flag.name, " is command-line only"));
+  }
+  GlobalAliasArgument result{.token = std::string(token)};
+  if (!flag.alias_argument.empty() && token.starts_with(flag.alias)) {
+    MBO_ASSIGN_OR_RETURN(result, ParseGlobalAliasArgument(flag, token, next));
+  }
+  MBO_RETURN_IF_ERROR(ValidateGlobalValue(result.token));
+  return result;
+}
+
 absl::StatusOr<std::vector<std::string>> NormalizeAndValidateTokens(const std::vector<std::string>& tokens) {
   std::vector<std::string> normalized;
   normalized.reserve(tokens.size());
@@ -106,16 +122,10 @@ absl::StatusOr<std::vector<std::string>> NormalizeAndValidateTokens(const std::v
       continue;
     }
     if (const auto flag = LookupGlobalArgument(token); flag.has_value()) {
-      if (flag->cli_only) {
-        return absl::InvalidArgumentError(absl::StrCat(flag->name, " is command-line only"));
-      }
-      if (!flag->alias_argument.empty() && token.starts_with(flag->alias)) {
-        const auto next = pos + 1 < tokens.size() ? std::optional<std::string_view>(tokens[pos + 1]) : std::nullopt;
-        MBO_ASSIGN_OR_RETURN(auto alias, ParseGlobalAliasArgument(*flag, token, next));
-        normalized.back() = std::move(alias.token);
-        pos += alias.consumes_next;
-      }
-      MBO_RETURN_IF_ERROR(ValidateGlobalValue(normalized.back()));
+      const auto next = pos + 1 < tokens.size() ? std::optional<std::string_view>(tokens[pos + 1]) : std::nullopt;
+      MBO_ASSIGN_OR_RETURN(auto argument, NormalizeConfigGlobal(*flag, token, next));
+      normalized.back() = std::move(argument.token);
+      pos += static_cast<std::size_t>(argument.consumes_next);
       continue;
     }
     arguments.emplace_back(token);

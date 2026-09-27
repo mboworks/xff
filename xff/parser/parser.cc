@@ -971,7 +971,7 @@ class CommandParser {
         const auto next = index_ + 1 < args_.size() ? std::optional<std::string_view>(args_[index_ + 1]) : std::nullopt;
         MBO_ASSIGN_OR_RETURN(auto alias, cli::ParseGlobalAliasArgument(*flag, argument, next));
         command_.globals.push_back(std::move(alias.token));
-        index_ += alias.consumes_next;
+        index_ += static_cast<std::size_t>(alias.consumes_next);
         continue;
       }
       if (ConsumeLeadingJobsGlobal(args_, index_, command_.globals)) {

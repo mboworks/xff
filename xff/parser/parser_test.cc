@@ -464,8 +464,8 @@ TEST_F(ParserTest, TypeAliasesConsumeValuesBeforeRootsAndPreserveSpelling) {
 }
 
 TEST_F(ParserTest, TypeAliasesRejectMissingValuesAndRemainLeadingOnly) {
-  for (const auto alias : {"-t", "-T", "-t=", "-T="}) {
-    EXPECT_THAT(Parse({alias}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("requires")));
+  for (const std::string_view alias : {"-t", "-T", "-t=", "-T="}) {
+    EXPECT_THAT(Parse({std::string(alias)}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("requires")));
   }
   EXPECT_THAT(Parse({"src", "-t", "cpp"}), StatusIs(absl::StatusCode::kInvalidArgument));
   ASSERT_OK_AND_ASSIGN(const auto command, Parse({"src", "-type", "f", "--file-type=cpp"}));
