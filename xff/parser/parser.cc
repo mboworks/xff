@@ -274,9 +274,11 @@ class ExprParser {
     ExprPtr lhs = ParseXor();
     while (status_.ok() && !AtEnd() && IsOrTier(Peek())) {
       const Expr::Kind kind = Peek() == "-nor" ? Expr::Kind::kNor : Expr::Kind::kOr;
+      const auto& descriptor = registry::Lookup(Peek()).value();
       ++pos_;
       ExprPtr rhs = ParseXor();
       lhs = MakeBinary(kind, std::move(lhs), std::move(rhs));
+      lhs->descriptor.set_ref(descriptor);
     }
     return lhs;
   }
@@ -739,15 +741,12 @@ class ExprParser {
   absl::Status status_ = absl::OkStatus();
 };
 
-// Returns the first expression primary (pre-order, left to right in evaluation
+// Returns the first expression descriptor (pre-order, left to right in evaluation
 // order) whose descriptor is tagged as an xff extension, or empty if the tree
-// has none. The strict find-style check uses it to name the offending primary.
+// has none. The strict find-style check uses it to name the offending vocabulary.
 mbo::types::OptionalRef<const registry::Descriptor> FirstXffExtension(const Expr& expr) {
-  if (expr.kind == Expr::Kind::kPredicate) {
-    if (expr.descriptor.has_value() && expr.descriptor->style == registry::Style::kXff) {
-      return *expr.descriptor;
-    }
-    return std::nullopt;
+  if (expr.descriptor.has_value() && expr.descriptor->style == registry::Style::kXff) {
+    return *expr.descriptor;
   }
   if (expr.lhs) {
     if (const auto found = FirstXffExtension(*expr.lhs); found.has_value()) {

@@ -5,7 +5,7 @@
 - [x] Implement and validate the missing grep-style long output options with explicit `-grep`.
 - [x] Add `-M` / `--match-output` for default content-line output, reuse long modifiers, and validate INI selection.
 - [x] Add CLI-only `--rg` parsing and the `--xff` native-filter transition, with separate search patterns.
-- [x] Accept `+` as native expression OR while preserving literal arguments and exec termination.
+- [x] Accept `+` as XFF-mode expression OR while preserving literal arguments and exec termination; keep it out of find mode.
 - [x] Give rg short options their rg meanings before `--xff`; retain native `-o` OR afterward.
 - [ ] Extend rg compatibility deliberately: type filters, multiline search, Unicode word semantics, heading/terminal layout, and streaming content.
 

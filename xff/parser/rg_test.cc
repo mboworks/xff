@@ -112,6 +112,24 @@ TEST_F(RgTest, PlusIsNativeOrButAnOrdinaryRgPattern) {
   EXPECT_THAT(exec.expression->exec_batch, IsTrue());
 }
 
+TEST_F(RgTest, PlusUsesTheResolvedStyleIncludingNestedExpressions) {
+  ASSERT_OK_AND_ASSIGN(const auto native, Parse({".", "-true", "+", "-false"}));
+  EXPECT_THAT(EnforceStyle(native, registry::Style::kXff), IsOk());
+  EXPECT_THAT(
+      EnforceStyle(native, registry::Style::kFind),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("'+' is an xff extension")));
+  ASSERT_OK_AND_ASSIGN(const auto explicit_xff, Parse({"--xff", ".", "-true", "+", "-false"}));
+  EXPECT_THAT(EnforceStyle(explicit_xff, registry::Style::kXff), IsOk());
+  ASSERT_OK_AND_ASSIGN(const auto nested, Parse({".", "-false", "-o", "(", "-true", "+", "-false", ")"}));
+  EXPECT_THAT(
+      EnforceStyle(nested, registry::Style::kFind),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("'+' is an xff extension")));
+  ASSERT_OK_AND_ASSIGN(const auto left_nested, Parse({".", "(", "-true", "+", "-false", ")", "-o", "-false"}));
+  EXPECT_THAT(EnforceStyle(left_nested, registry::Style::kFind), StatusIs(absl::StatusCode::kInvalidArgument));
+  ASSERT_OK_AND_ASSIGN(const auto find_or, Parse({".", "-name", "+", "-or", "-true"}));
+  EXPECT_THAT(EnforceStyle(find_or, registry::Style::kFind), IsOk());
+}
+
 TEST_F(RgTest, RejectsMissingValuesAndUnsupportedShorts) {
   constexpr auto options = std::to_array({"-e", "-f", "-g", "-M", "-A", "-B", "-C", "-j", "--regexp", "--file"});
   for (const auto* const option : options) {
