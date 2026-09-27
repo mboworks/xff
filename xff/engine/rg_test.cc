@@ -17,6 +17,7 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -188,6 +189,7 @@ struct RgEngineTest : ::testing::Test {
   SearchFs fs;
   std::string output;
   std::vector<std::string> errors;
+  std::function<void()> after_emit;
 
   RunResult Run(std::vector<std::string> args, bool rg = true) {
     // Keep record identity explicit here; CLI integration covers automatic filename prefixes.
@@ -206,7 +208,13 @@ struct RgEngineTest : ::testing::Test {
     output.clear();
     errors.clear();
     return RunFind(
-        command, fs, [this](std::string_view text) { output += text; },
+        command, fs,
+        [this](std::string_view text) {
+          output += text;
+          if (after_emit) {
+            after_emit();
+          }
+        },
         [this](std::string_view, absl::Status status) { errors.emplace_back(status.message()); });
   }
 };
@@ -241,6 +249,41 @@ TEST_F(RgEngineTest, RgFiltersAndLineSelectionReuseTheSameContent) {
   EXPECT_THAT(Run({"hit", "tree", "--xff", "-content", "hit"}).errors, 0);
   EXPECT_THAT(output, EqualsText("tree/a:hit\n"));
   EXPECT_THAT(fs.reads.load(), 2);
+}
+
+TEST_F(RgEngineTest, ContentPredicatesAndRenderedFieldsReuseOneEntryRead) {
+  const std::vector<std::vector<std::string>> outputs{
+      {"--template={hash:md5}:{hash:md5}:{lines}:{lines}"},
+      {"--columns=hash:md5,hash:md5,lines,lines", "--format=csv"},
+      {"--summary=hash", "--summary={lines}", "--histogram=lines:sum(lines)"},
+  };
+  for (const auto& controls : outputs) {
+    auto args = controls;
+    args.insert(args.end(), {"--jobs=1", "--archive=none", "tree", "-text", "-eofnl", "!", "-binary", "-rxc", "hit"});
+    fs.reads = 0;
+    EXPECT_THAT(Run(args, false).errors, Eq(0));
+    EXPECT_THAT(output, Not(IsEmpty()));
+    EXPECT_THAT(fs.reads.load(), Eq(2));
+  }
+}
+
+TEST_F(RgEngineTest, HashVerificationSharesBytesAndStillRecordsRejectedEntries) {
+  EXPECT_THAT(
+      Run({"--jobs=1", "--archive=none", "--summary=hash-verification", "tree", "-text", "-hasheq", "deadbeef"}, false)
+          .errors,
+      Eq(0));
+  EXPECT_THAT(output, HasSubstr("failed"));
+  EXPECT_THAT(fs.reads.load(), Eq(2));
+}
+
+TEST_F(RgEngineTest, ActionFieldReadsAreInvalidatedBeforeTheNextPredicate) {
+  after_emit = [&] { fs.files.at("tree/a") = "changed\n"; };
+  const auto result = Run(
+      {"--jobs=1", "--archive=none", "tree/a", "-content", "hit", "-printf", "%{lines}", "-content", "changed"}, false);
+  EXPECT_THAT(result.errors, Eq(0));
+  EXPECT_THAT(result.any_match, IsTrue());
+  EXPECT_THAT(output, EqualsText("2"));
+  EXPECT_THAT(fs.reads.load(), Eq(3));
 }
 
 TEST_F(RgEngineTest, StatefulPrimariesInvalidateTheContentSnapshot) {

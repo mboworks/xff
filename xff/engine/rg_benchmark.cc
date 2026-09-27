@@ -81,6 +81,8 @@ enum class Mode {
   kFilterLate,
   kFilter,
   kFilterSummary,
+  kContentFields,
+  kRewrites,
   kNativeLines,
   kRgLines,
   kRgFiles,
@@ -98,6 +100,18 @@ std::vector<std::string> Arguments(Mode mode, std::string_view grammar, std::int
   };
   if (mode == Mode::kFilterSummary || mode == Mode::kRgSummary) {
     arguments.insert(arguments.end(), {"--summary=ext", "--format=csv"});
+  }
+  if (mode == Mode::kRewrites) {
+    arguments.insert(
+        arguments.end(), {R"(--template={path:s/tree/ROOT/;s/([0-9]+)/[\1]/}:{name:m/([0-9]+)/\1/;join(,);s/^/id=/})",
+                          "tree", "-type", "f"});
+    return arguments;
+  }
+  if (mode == Mode::kContentFields) {
+    arguments.insert(
+        arguments.end(),
+        {"--template={hash:md5}:{hash:md5}:{lines}:{lines}", "tree", "-text", "-eofnl", "-rxc", "needle"});
+    return arguments;
   }
   constexpr std::string_view kPattern = "(alpha|beta)[0-9]{3}.*needle";
   if (mode == Mode::kFilter || mode == Mode::kFilterLate || mode == Mode::kFilterSummary
@@ -172,6 +186,8 @@ int main(int argc, char** argv) {
       {"filter", Mode::kFilter},
       {"filter-late", Mode::kFilterLate},
       {"filter-summary", Mode::kFilterSummary},
+      {"content-fields", Mode::kContentFields},
+      {"rewrites", Mode::kRewrites},
       {"native-lines", Mode::kNativeLines},
       {"rg-lines", Mode::kRgLines},
       {"rg-files", Mode::kRgFiles},

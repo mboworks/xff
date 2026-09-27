@@ -25,13 +25,14 @@ cc_library(
     hdrs = ["fields.h"],
     visibility = ["//xff:__subpackages__"],
     deps = [
-        "//xff/content:line_match_cc",
+        "//xff/content:snapshot_cc",
         "//xff/datetime:datetime_cc",
         "//xff/env:env_cc",
         "//xff/hash:hash_cc",
         "//xff/matching/language:language_cc",
         "//xff/matching/mime:mime_cc",
         "//xff/matching/regex:regex_cc",
+        "//xff/vfs:local_fs_cc",
         "//xff/vfs:vfs_cc",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
@@ -53,6 +54,7 @@ cc_test(
         "@abseil-cpp//absl/time",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
         "@mboworks_mbo//mbo/testing:status_cc",
     ],
 )

@@ -897,3 +897,110 @@ Times are wall microseconds; change is candidate/baseline minus one (negative is
 | PCRE2  | rg-summary     |    100 |       4 |       803.6 |        365.9 | -54.5% |
 | PCRE2  | rg-summary     |  1,000 |       4 |      7557.6 |       2103.0 | -72.2% |
 | PCRE2  | rg-summary     | 10,000 |       4 |     74674.2 |      21946.4 | -70.6% |
+
+## P04: entry content reuse and bound field transformations
+
+Move the evaluator's content snapshot into the shared content layer. Each snapshot lazily owns
+one entry's bytes, cached read failure, requested digest/encoding pairs and line count. Text/binary
+classification, final-terminator checks and hashing reuse it. The serial evaluator hands it to
+summary, histogram, column and template rendering; repeated hash/line fields share it, including
+histogram line buckets plus line metrics. Standalone template rendering gets a local snapshot and
+uses the VFS for both host paths and mounted content. No cache crosses entries or deferred passes.
+
+The snapshot has one evaluator owner and no locks. Const read access can fill its private lazy
+cache; it does not imply concurrent access is allowed. Effects and stateful predicates invalidate
+before evaluation, and again afterward: a field-producing action may read bytes before its output
+sink changes that same file. A regression case verifies that the following predicate sees the
+new content. Failed hash-verification checks still contribute their verdict independently of the
+whole expression's result; short-circuiting stays unchanged.
+
+Field templates own compiled rewrite/extraction chains, replacements and reducer separators.
+Render calls no longer parse or compile those regex programs per entry. Copies share immutable
+programs, and tests destroy/change source text and copy/move templates before rendering. Existing
+malformed-pattern, replacement, scalar/list, reducer, capture and escaping cases remain applicable.
+Rendering remains coordinator-owned; this does not introduce shared mutable worker caches.
+
+This change reuses the whole-file reads these consumers already required; it does not turn a
+streaming rg filename/count/quiet search into a full-file read. It also does not retain raw worker
+content in an entire result batch. Therefore a worker-filtered entry followed by content-derived
+coordinator output can still require a second read. Carrying requested derived values instead of
+unbounded content is the next extension if measurements justify it. The MBO digest algorithms do
+have incremental stream state; exposing that through XFF's name-dispatched hash API is a separate
+memory optimization from this reuse experiment. No new whole-file size limit is introduced.
+
+### Measurement and decision
+
+Retain both changes. Against P03 head `1e3cb82356`, the content-field workload improves
+46-50% across 10/100/1,000/10,000 files: it combines text/end-of-line/content predicates with two
+MD5 fields and two line-count fields. Integration tests confirm one read per regular entry instead
+of repeated reads, and only requested digests/line counts are cached. The rewrite workload uses
+two field chains and improves about 59% at ten files and 96.3% at 10,000 files (147 ms to 5.5 ms).
+These intentionally exercise the redundant-work paths; ordinary searches should not expect those
+percentages. The unchanged early-filter controls are within -2.2% to +3.7%.
+
+Both executables use the same expanded `rg_benchmark`, O2+ThinLTO full builds and in-memory
+SearchTree fixture on macOS arm64 / Apple M5 Pro. Ten rounds alternate binary order, discard the
+first, and average the fastest seven of nine observations, with a 0.02-second per-case minimum.
+Raw samples and invocation identity are in [performance-p04.json](performance-p04.json).
+One/four are worker allowances, not affinity. Content-field and rewrite rendering remain serial;
+the duplicated worker/backend settings demonstrate that this gain does not depend on enabling
+additional concurrency. Field rewrites always use their specified RE2 semantics, regardless of
+the command's content regex setting. This is a local elapsed-time result, not a CPU or RSS claim.
+
+The memory tradeoff is one entry's existing whole-file materialization plus only its requested
+small digest results and count. Compiled field programs live for the template's lifetime, replacing
+per-entry compilation. No cross-entry content map, process-global result cache or shared lock is
+introduced. Native Linux results and streaming hash memory improvements remain distinct analyses.
+
+Times are wall microseconds; change is candidate/baseline minus one (negative is faster).
+
+| Engine | Workload       |  Files | Workers | Baseline us | Candidate us | Change |
+| :----- | :------------- | -----: | ------: | ----------: | -----------: | -----: |
+| RE2    | filter         |     10 |       1 |        23.7 |         23.7 |  +0.4% |
+| RE2    | filter         |    100 |       1 |        57.1 |         56.9 |  -0.4% |
+| RE2    | filter         |  1,000 |       1 |       385.8 |        385.6 |  -0.1% |
+| RE2    | filter         | 10,000 |       1 |      3819.2 |       3805.2 |  -0.4% |
+| RE2    | filter         |     10 |       4 |        24.2 |         24.2 |  -0.1% |
+| RE2    | filter         |    100 |       4 |       128.8 |        133.6 |  +3.7% |
+| RE2    | filter         |  1,000 |       4 |       367.0 |        367.4 |  +0.1% |
+| RE2    | filter         | 10,000 |       4 |      3019.6 |       2957.2 |  -2.1% |
+| RE2    | content-fields |     10 |       1 |       467.0 |        247.5 | -47.0% |
+| RE2    | content-fields |    100 |       1 |      4319.7 |       2242.5 | -48.1% |
+| RE2    | content-fields |  1,000 |       1 |     43122.4 |      22299.9 | -48.3% |
+| RE2    | content-fields | 10,000 |       1 |    438073.0 |     219022.4 | -50.0% |
+| RE2    | content-fields |     10 |       4 |       457.3 |        247.1 | -46.0% |
+| RE2    | content-fields |    100 |       4 |      4514.4 |       2331.5 | -48.4% |
+| RE2    | content-fields |  1,000 |       4 |     42680.8 |      22200.6 | -48.0% |
+| RE2    | content-fields | 10,000 |       4 |    434193.9 |     220559.4 | -49.2% |
+| RE2    | rewrites       |     10 |       1 |       178.6 |         72.4 | -59.5% |
+| RE2    | rewrites       |    100 |       1 |      1459.9 |        118.9 | -91.9% |
+| RE2    | rewrites       |  1,000 |       1 |     14734.9 |        589.1 | -96.0% |
+| RE2    | rewrites       | 10,000 |       1 |    147152.4 |       5508.3 | -96.3% |
+| RE2    | rewrites       |     10 |       4 |       176.6 |         71.7 | -59.4% |
+| RE2    | rewrites       |    100 |       4 |      1470.0 |        120.5 | -91.8% |
+| RE2    | rewrites       |  1,000 |       4 |     14629.3 |        589.2 | -96.0% |
+| RE2    | rewrites       | 10,000 |       4 |    147699.5 |       5528.3 | -96.3% |
+| PCRE2  | filter         |     10 |       1 |        23.8 |         24.0 |  +0.5% |
+| PCRE2  | filter         |    100 |       1 |        57.5 |         57.2 |  -0.6% |
+| PCRE2  | filter         |  1,000 |       1 |       394.9 |        392.5 |  -0.6% |
+| PCRE2  | filter         | 10,000 |       1 |      3847.2 |       3851.6 |  +0.1% |
+| PCRE2  | filter         |     10 |       4 |        24.4 |         24.4 |  +0.1% |
+| PCRE2  | filter         |    100 |       4 |       129.1 |        126.2 |  -2.2% |
+| PCRE2  | filter         |  1,000 |       4 |       366.6 |        365.3 |  -0.4% |
+| PCRE2  | filter         | 10,000 |       4 |      2915.3 |       2928.7 |  +0.5% |
+| PCRE2  | content-fields |     10 |       1 |       464.6 |        247.5 | -46.7% |
+| PCRE2  | content-fields |    100 |       1 |      4420.2 |       2247.2 | -49.2% |
+| PCRE2  | content-fields |  1,000 |       1 |     43602.4 |      22098.6 | -49.3% |
+| PCRE2  | content-fields | 10,000 |       1 |    435068.1 |     218591.1 | -49.8% |
+| PCRE2  | content-fields |     10 |       4 |       466.7 |        249.8 | -46.5% |
+| PCRE2  | content-fields |    100 |       4 |      4478.6 |       2311.9 | -48.4% |
+| PCRE2  | content-fields |  1,000 |       4 |     43687.8 |      22215.1 | -49.2% |
+| PCRE2  | content-fields | 10,000 |       4 |    432579.3 |     220612.4 | -49.0% |
+| PCRE2  | rewrites       |     10 |       1 |       179.7 |         72.0 | -59.9% |
+| PCRE2  | rewrites       |    100 |       1 |      1450.6 |        120.0 | -91.7% |
+| PCRE2  | rewrites       |  1,000 |       1 |     14651.2 |        586.7 | -96.0% |
+| PCRE2  | rewrites       | 10,000 |       1 |    146807.5 |       5494.9 | -96.3% |
+| PCRE2  | rewrites       |     10 |       4 |       177.7 |         71.8 | -59.6% |
+| PCRE2  | rewrites       |    100 |       4 |      1472.6 |        118.9 | -91.9% |
+| PCRE2  | rewrites       |  1,000 |       4 |     14688.4 |        580.8 | -96.0% |
+| PCRE2  | rewrites       | 10,000 |       4 |    148554.3 |       5513.5 | -96.3% |

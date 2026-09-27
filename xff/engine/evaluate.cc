@@ -101,16 +101,6 @@ mbo::types::OptionalRef<const regex::Matcher> WorkerMatchers::Get(const parser::
   return expression.matcher ? mbo::types::OptionalRef<const regex::Matcher>{*expression.matcher} : std::nullopt;
 }
 
-absl::StatusOr<std::string_view> ContentSnapshot::Read(const vfs::FileSystem& fs, std::string_view path) {
-  if (!bytes_) {
-    bytes_ = fs.ReadContent(path);
-  }
-  if (!bytes_->ok()) {
-    return bytes_->status();
-  }
-  return std::string_view(**bytes_);
-}
-
 namespace {
 
 template<typename T>
@@ -347,6 +337,7 @@ std::string FormatPrintf(std::string_view format, const EvalContext& ctx) {
       .metadata = ctx.visit.metadata,
       .depth = ctx.visit.depth,
       .fs = ctx.fs,
+      .content = ctx.content,
       .tz = ctx.tz,
       .time_format = ctx.time_format,
       .zone_suffix = ctx.zone_suffix,
@@ -1078,11 +1069,11 @@ std::optional<std::string_view> ContentToSearch(EvalContext& ctx) {
 // exactly as -grep / -content skip it. Backs -text (content is text, i.e. == false) and -binary
 // (== true); both stay false for a non-regular or unreadable entry (nullopt), so they are not
 // complements.
-std::optional<bool> FileContentIsBinary(const Visit& visit, const vfs::FileSystem& fs) {
-  if (visit.metadata.type != vfs::FileType::kRegular) {
+std::optional<bool> FileContentIsBinary(EvalContext& ctx) {
+  if (ctx.visit.metadata.type != vfs::FileType::kRegular) {
     return std::nullopt;
   }
-  const absl::StatusOr<std::string> content = fs.ReadContent(visit.path);
+  const auto content = ctx.content.Read(ctx.fs, ctx.visit.path);
   if (!content.ok()) {
     return std::nullopt;
   }
@@ -1133,7 +1124,7 @@ bool EvalText(const parser::Expr& expr, EvalContext& ctx) {
   if (ctx.visit.metadata.type != vfs::FileType::kRegular) {
     return false;
   }
-  const absl::StatusOr<std::string> content = ctx.fs.ReadContent(ctx.visit.path);
+  const auto content = ctx.content.Read(ctx.fs, ctx.visit.path);
   if (!content.ok()) {
     return false;
   }
@@ -1141,7 +1132,7 @@ bool EvalText(const parser::Expr& expr, EvalContext& ctx) {
 }
 
 bool EvalBinary(const parser::Expr& /*expr*/, EvalContext& ctx) {
-  return FileContentIsBinary(ctx.visit, ctx.fs) == true;
+  return FileContentIsBinary(ctx) == true;
 }
 
 // Shared body for the -eofnl / -eofcr / -eofcrlf final-terminator lints: TRUE for a regular,
@@ -1154,7 +1145,7 @@ bool EvalEofTerminator(EvalContext& ctx, std::string_view terminator) {
   if (ctx.visit.metadata.type != vfs::FileType::kRegular) {
     return false;
   }
-  const absl::StatusOr<std::string> content = ctx.fs.ReadContent(ctx.visit.path);
+  const auto content = ctx.content.Read(ctx.fs, ctx.visit.path);
   if (!content.ok()) {
     return false;
   }
@@ -1227,6 +1218,7 @@ std::string RenderTarget(const parser::Expr& expr, EvalContext& ctx) {
               .metadata = ctx.visit.metadata,
               .depth = ctx.visit.depth,
               .fs = ctx.fs,
+              .content = ctx.content,
               .tz = ctx.tz,
               .time_format = ctx.time_format,
               .zone_suffix = ctx.zone_suffix,
@@ -1424,6 +1416,7 @@ bool EvalDiff(const parser::Expr& expr, EvalContext& ctx) {
                                          .metadata = ctx.visit.metadata,
                                          .depth = ctx.visit.depth,
                                          .fs = ctx.fs,
+                                         .content = ctx.content,
                                          .tz = ctx.tz,
                                          .time_format = ctx.time_format,
                                          .zone_suffix = ctx.zone_suffix,
@@ -1485,12 +1478,8 @@ bool EvalDiff(const parser::Expr& expr, EvalContext& ctx) {
 // The entry's digest, read through the filesystem the entry came FROM. That indirection is what
 // lets -hash / -hasheq work on an archive member: hashing by path would look for `a.tar!x` on the
 // real filesystem and find nothing. Both routes read the whole entry anyway.
-std::optional<std::string> DigestOfEntry(const EvalContext& ctx, const hash::AlgoEncoding& spec) {
-  const absl::StatusOr<std::string> content = ctx.fs.ReadContent(ctx.visit.path);
-  if (!content.ok()) {
-    return std::nullopt;  // unreadable / non-regular -> no digest, which every caller treats as a miss
-  }
-  return hash::HashData(spec.algo, *content, spec.encoding);
+std::optional<std::string> DigestOfEntry(EvalContext& ctx, const hash::AlgoEncoding& spec) {
+  return ctx.content.Digest(ctx.fs, ctx.visit.path, spec);
 }
 
 // xff -hash[:ALGO[/ENCODING]]: an ACTION that prints the entry's digest and path as
@@ -1540,6 +1529,7 @@ bool EvalHasheq(const parser::Expr& expr, EvalContext& ctx) {
                                            .metadata = ctx.visit.metadata,
                                            .depth = ctx.visit.depth,
                                            .fs = ctx.fs,
+                                           .content = ctx.content,
                                            .tz = ctx.tz,
                                            .time_format = ctx.time_format,
                                            .zone_suffix = ctx.zone_suffix,
@@ -1812,6 +1802,7 @@ void EmitGrepRecord(
               .metadata = ctx.visit.metadata,
               .depth = ctx.visit.depth,
               .fs = ctx.fs,
+              .content = ctx.content,
               .tz = ctx.tz,
               .time_format = ctx.time_format,
               .zone_suffix = ctx.zone_suffix,
@@ -2689,6 +2680,7 @@ bool RunCapture(const parser::Expr& expr, EvalContext& ctx, std::string_view dir
       .metadata = ctx.visit.metadata,
       .depth = ctx.visit.depth,
       .fs = ctx.fs,
+      .content = ctx.content,
       .tz = ctx.tz,
       .time_format = ctx.time_format,
       .zone_suffix = ctx.zone_suffix,
@@ -3105,7 +3097,8 @@ void PreviewExecution(const parser::Expr& expr, EvalContext& context) {
 EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) {
   switch (expr.kind) {
     case parser::Expr::Kind::kPredicate: {
-      if (!expr.descriptor->pure || expr.descriptor->kind == registry::Kind::kAction) {
+      const bool invalidate = !expr.descriptor->pure || expr.descriptor->kind == registry::Kind::kAction;
+      if (invalidate) {
         context.content.Invalidate();
       }
       if (expr.descriptor->needs_metadata || (expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
@@ -3125,6 +3118,10 @@ EvaluationResult EvaluateResult(const parser::Expr& expr, EvalContext& context) 
         return EvaluateShardStatus(expr, context);
       }
       const bool matched = EvaluatePredicate(expr, context);
+      if (invalidate) {
+        // An action may read fields before mutating this same file through its sink.
+        context.content.Invalidate();
+      }
       return {.fuzzy = context.fuzzy_score.has_value() ? *context.fuzzy_score : std::nullopt, .matched = matched};
     }
     case parser::Expr::Kind::kNot: {

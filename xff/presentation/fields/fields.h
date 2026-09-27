@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -30,6 +31,7 @@
 #include "absl/types/span.h"
 #include "mbo/types/optional_ref.h"
 #include "mbo/types/string_or_view.h"
+#include "xff/content/snapshot.h"
 #include "xff/datetime/datetime.h"
 #include "xff/hash/hash.h"
 #include "xff/vfs/entry.h"
@@ -50,6 +52,9 @@ struct RenderContext {
   // (`a.tar!x` is not a path the real filesystem has). Null means "read by path", which is what a
   // caller with no walk behind it (a bare Render) wants.
   mbo::types::OptionalRef<const vfs::FileSystem> fs;
+  // Optional entry-owned cache, confined to the rendering evaluator. Without one, each
+  // Render call creates a local cache so repeated fields share one VFS read.
+  mbo::types::OptionalRef<const content::Snapshot> content;
   absl::TimeZone tz = absl::LocalTimeZone();  // zone for {atime}/{mtime}/{ctime}/{btime} formatting; --timezone
   std::string_view time_format;               // default format for a time field with no {:qualifier}; --time-format
   // --time-zone-suffix: whether a named preset renders its zone suffix (kAuto keeps the
@@ -136,6 +141,8 @@ class Template {
   std::size_t ContentFieldCount() const;
 
  private:
+  struct Transform;
+
   // A literal run (fn == nullptr -> emit `literal`) or a field reference: fn is
   // the renderer and `key` its bound argument (capture index, {env.NAME} var, ...).
   struct Segment {
@@ -151,6 +158,7 @@ class Template {
     std::string key;
     std::string qualifier;
     PostProcess post = PostProcess::kNone;
+    std::shared_ptr<const Transform> transform;
   };
 
   std::vector<Segment> segments_;

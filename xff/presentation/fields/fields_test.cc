@@ -27,6 +27,7 @@
 #include "absl/time/time.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mbo/testing/matchers.h"
 #include "mbo/testing/status.h"
 #include "xff/env/env.h"
 #include "xff/vfs/entry.h"
@@ -35,6 +36,7 @@ namespace xff::fields {
 namespace {
 
 using ::mbo::StringOrView;
+using ::mbo::testing::EqualsText;
 using ::mbo::testing::IsOk;
 using ::mbo::testing::StatusIs;
 using ::testing::_;
@@ -60,6 +62,22 @@ struct FieldsTest : ::testing::Test {
     return md;
   }
 };
+
+TEST_F(FieldsTest, BoundTransformOwnsItsProgramAcrossCopiesMovesAndSourceChanges) {
+  std::string source = R"({name:s/(a)/<\1>/g}:{def.LINES:m/(a+)/[\1]/;join(,);s/\[/(/g;s/\]/)/g})";
+  auto original = Template::Compile(source);
+  source.assign("discarded");
+  ASSERT_THAT(original.Validate(), IsOk());
+  const auto copied = original;
+  const auto moved = std::move(original);
+  const auto metadata = Meta(vfs::FileType::kRegular, 0);
+  const std::map<std::string, std::string> defines{{"LINES", "aa\nmiss\na"}};
+  const RenderContext context{.path = "a", .metadata = metadata, .defines = defines};
+  for (int repeat = 0; repeat < 3; ++repeat) {
+    EXPECT_THAT(copied.Render(context), EqualsText("<a>:(aa),(a)"));
+    EXPECT_THAT(moved.Render(context), EqualsText("<a>:(aa),(a)"));
+  }
+}
 
 TEST_F(FieldsTest, ContentFieldCountInspectsCompiledFieldsWithoutRendering) {
   EXPECT_THAT(Template::Compile("{{hash}} {name} {text}").ContentFieldCount(), Eq(0U));

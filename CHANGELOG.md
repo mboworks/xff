@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Reuse entry content, hashes and line counts across filters and output; compile field rewrite programs once per template.
+
 - Keep eligible content filters parallel when summaries, templates, columns or color require metadata.
 
 - Give native regex workers private execution state and reuse PCRE2 match scratch while preserving shared compiled patterns.
