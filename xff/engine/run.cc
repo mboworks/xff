@@ -5807,7 +5807,11 @@ RunResult RunFindCore(
   // side effects and every unclassified feature in the ordinary coordinator evaluator.
   mbo::types::OptionalRef<const parser::Expr> parallel_expression;
   mbo::types::OptionalRef<const parser::Expr> parallel_output;
-  const bool parallel_allowed = options.workers > 1 && !full_metadata;
+  // Output/reductions may require eager metadata without making the filter stateful.
+  // Workers still accept only audited metadata-free predicates; owned entries carry the
+  // already resolved metadata back to the coordinator for summaries and rendering.
+  const bool parallel_allowed =
+      options.workers > 1 && !fs_native_case && !collections.Active() && deferred_nodes.empty();
   if (parallel_allowed && expression.has_value()) {
     if (CanParallelMatch(*expression)) {
       parallel_expression.set_ref(*expression);
@@ -5842,7 +5846,8 @@ RunResult RunFindCore(
         content_output->grep.quiet = true;
       }
     }
-    parallel_match.emplace(parallel_expression, options.workers, rank_by_score, std::move(content_output));
+    parallel_match.emplace(
+        parallel_expression, options.workers, full_metadata || rank_by_score, std::move(content_output));
   }
   std::vector<CollectedEntry> pending_matches;
   const auto flush_matches = [&] {
@@ -5923,7 +5928,7 @@ RunResult RunFindCore(
           }
         }
         const bool parallel_entry =
-            parallel_match && !visit.fs_owner && visit.metadata.source != vfs::Source::kArchiveMember;
+            parallel_match && !visit.dived && !visit.fs_owner && visit.metadata.source != vfs::Source::kArchiveMember;
         if (!type_selected(visit)) {
           return WalkAction::kContinue;
         }
@@ -6072,6 +6077,7 @@ RunResult RunFindCore(
         return WalkAction::kContinue;
       },
       [&](std::string_view path, absl::Status error_status) {
+        flush_matches();  // Earlier content errors/output precede this traversal error.
         ++errors;
         on_error(path, error_status);
       },

@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Keep eligible content filters parallel when summaries, templates, columns or color require metadata.
+
 - Give native regex workers private execution state and reuse PCRE2 match scratch while preserving shared compiled patterns.
 
 - Share filename-type definitions and INI controls between native and rg commands; keep language and MIME classification independent.
