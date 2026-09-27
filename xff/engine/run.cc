@@ -573,7 +573,8 @@ std::pair<std::string, std::string> DepthBucket(int depth) {
 std::optional<std::pair<std::string, std::string>> HistBucketKey(
     const HistogramSpec& spec,
     const Visit& visit,
-    const vfs::FileSystem& fs) {
+    const vfs::FileSystem& fs,
+    ContentSnapshot& content) {
   switch (spec.bucket) {
     case HistBucket::kOverall:
     case HistBucket::kType:
@@ -600,12 +601,8 @@ std::optional<std::pair<std::string, std::string>> HistBucketKey(
       if (visit.metadata.type != vfs::FileType::kRegular) {
         return std::nullopt;
       }
-      const absl::StatusOr<std::string> content = fs.ReadContent(visit.path);
-      if (!content.ok()) {
-        return std::nullopt;
-      }
-      const std::optional<std::size_t> lines = content::ContentLineCount(*content);
-      return lines.has_value() ? std::optional(MagnitudeBucket(*lines)) : std::nullopt;
+      const auto lines = content.Lines(fs, visit.path);
+      return lines ? std::optional(MagnitudeBucket(*lines)) : std::nullopt;
     }
     case HistBucket::kDepthRange: return DepthBucket(visit.depth);
   }
@@ -3825,7 +3822,11 @@ void FeedVerificationSummaries(
   }
 }
 
-std::optional<std::uint64_t> HistogramValue(const HistogramSpec& spec, const Visit& visit, const vfs::FileSystem& fs) {
+std::optional<std::uint64_t> HistogramValue(
+    const HistogramSpec& spec,
+    const Visit& visit,
+    const vfs::FileSystem& fs,
+    ContentSnapshot& content) {
   if (spec.agg == HistAgg::kCount) {
     return 1;
   }
@@ -3835,8 +3836,7 @@ std::optional<std::uint64_t> HistogramValue(const HistogramSpec& spec, const Vis
   if (visit.metadata.type != vfs::FileType::kRegular) {
     return std::nullopt;
   }
-  const absl::StatusOr<std::string> content = fs.ReadContent(visit.path);
-  return content.ok() ? content::ContentLineCount(*content) : std::nullopt;
+  return content.Lines(fs, visit.path);
 }
 
 // Accumulates one matched unit into every --histogram sink. An entry with no value for a spec is
@@ -3846,14 +3846,15 @@ void FeedHistograms(
     const std::vector<HistogramSpec>& specs,
     std::vector<std::map<std::string, HistCell>>& cells_per_sink,
     const Visit& visit,
-    const vfs::FileSystem& fs) {
+    const vfs::FileSystem& fs,
+    ContentSnapshot& content) {
   for (std::size_t i = 0; i < specs.size(); ++i) {
     const HistogramSpec& spec = specs[i];
-    const std::optional<std::pair<std::string, std::string>> bucket = HistBucketKey(spec, visit, fs);
+    const std::optional<std::pair<std::string, std::string>> bucket = HistBucketKey(spec, visit, fs, content);
     if (!bucket.has_value()) {
       continue;
     }
-    const std::optional<std::uint64_t> value = HistogramValue(spec, visit, fs);
+    const std::optional<std::uint64_t> value = HistogramValue(spec, visit, fs, content);
     if (!value.has_value()) {
       continue;
     }
@@ -3966,6 +3967,7 @@ int FeedCollections(
     const Visit visit = collected.AsVisit();
     const vfs::FileSystem& fs = visit.fs.has_value() ? *visit.fs : defaults.fs;
     const std::string link;  // {target} is not resolved for a collected entry
+    ContentSnapshot content;
     const fields::RenderContext key_ctx{
         .path = visit.path,
         .root = visit.root,
@@ -3973,6 +3975,7 @@ int FeedCollections(
         .metadata = visit.metadata,
         .depth = visit.depth,
         .fs = fs,
+        .content = content,
         .tz = defaults.tz,
         .time_format = defaults.time_format,
         .zone_suffix = defaults.zone_suffix,
@@ -3982,7 +3985,7 @@ int FeedCollections(
         .shard_count = shard_count,
     };
     FeedSummaries(summaries, summary_templates, summary_cells, key_ctx, visit);
-    FeedHistograms(histograms, histogram_cells, visit, fs);
+    FeedHistograms(histograms, histogram_cells, visit, fs, content);
   };
   int errors = 0;
   for (const std::string_view name : collections.Names()) {
@@ -5691,6 +5694,7 @@ RunResult RunFindCore(
             .metadata = visit.metadata,
             .depth = visit.depth,
             .fs = visit.fs.has_value() ? *visit.fs : walk_fs,
+            .content = content,
             .tz = tz,
             .time_format = time_format,
             .zone_suffix = zone_suffix,
@@ -5701,7 +5705,7 @@ RunResult RunFindCore(
             .fuzzy_score = fuzzy_score,
         };
         FeedSummaries(summaries, summary_templates, summary_cells, key_ctx, visit);
-        FeedHistograms(histograms, histogram_cells, visit, *visit.fs);
+        FeedHistograms(histograms, histogram_cells, visit, *visit.fs, content);
       }
     } else if (matched && implicit_print && (!max_results->has_value() || listed_results < **max_results)) {
       ++listed_results;
@@ -5751,6 +5755,7 @@ RunResult RunFindCore(
             .metadata = visit.metadata,
             .depth = visit.depth,
             .fs = visit.fs.has_value() ? *visit.fs : walk_fs,
+            .content = content,
             .tz = tz,
             .time_format = time_format,
             .zone_suffix = zone_suffix,
@@ -6315,15 +6320,10 @@ RunResult RunFindCore(
     // walk skips in shard mode. `visit` carries the unit's size (a set's total); `shard_count`
     // populates {shard} (nullopt for a non-shard file). A kLines histogram reads the representative
     // only (per-set line summing is a v2 concern with the reassembled view).
-    const auto feed_summaries = [&](const fields::RenderContext& key_ctx, const Visit& visit) {
-      FeedSummaries(summaries, summary_templates, summary_cells, key_ctx, visit);
-    };
-    const auto feed_histograms = [&](const Visit& visit) {
-      FeedHistograms(histograms, histogram_cells, visit, *visit.fs);
-    };
     // Feed one logical unit (a set, or a non-shard file) into both sinks; `shard_count` -> {shard}.
     const auto feed_unit = [&](const Visit& visit, std::optional<std::int64_t> shard_count) {
       const std::string link;
+      ContentSnapshot content;
       const fields::RenderContext key_ctx{
           .path = visit.path,
           .root = visit.root,
@@ -6331,6 +6331,7 @@ RunResult RunFindCore(
           .metadata = visit.metadata,
           .depth = visit.depth,
           .fs = visit.fs.has_value() ? *visit.fs : walk_fs,
+          .content = content,
           .tz = tz,
           .time_format = time_format,
           .zone_suffix = zone_suffix,
@@ -6339,8 +6340,8 @@ RunResult RunFindCore(
           .defines = defines,
           .shard_count = shard_count,
       };
-      feed_summaries(key_ctx, visit);
-      feed_histograms(visit);
+      FeedSummaries(summaries, summary_templates, summary_cells, key_ctx, visit);
+      FeedHistograms(histograms, histogram_cells, visit, *visit.fs, content);
     };
     const bool feed = !summaries.empty() || !histograms.empty();
     for (const auto& [dir, files] : shard_buckets) {

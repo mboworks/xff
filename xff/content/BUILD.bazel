@@ -76,3 +76,31 @@ cc_test(
         "@googletest//:gtest_main",
     ],
 )
+
+cc_library(
+    name = "snapshot_cc",
+    srcs = ["snapshot.cc"],
+    hdrs = ["snapshot.h"],
+    visibility = ["//xff:__subpackages__"],
+    deps = [
+        ":line_match_cc",
+        "//xff/hash:hash_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+cc_test(
+    name = "snapshot_test",
+    size = "small",
+    srcs = ["snapshot_test.cc"],
+    deps = [
+        ":snapshot_cc",
+        "//xff/hash:hash_cc",
+        "//xff/vfs:vfs_cc",
+        "@abseil-cpp//absl/status",
+        "@googletest//:gtest_main",
+        "@mboworks_mbo//mbo/testing:matchers_cc",
+        "@mboworks_mbo//mbo/testing:status_cc",
+    ],
+)

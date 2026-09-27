@@ -49,7 +49,7 @@ These are separate from R01-R05. Evidence and implementation order are in
 - [x] P01: Give native content predicates worker-private RE2 state; measurements in `docs/performance-analysis.md`.
 - [x] P02: Reuse PCRE2 match scratch per worker while sharing compiled code; lifetime, reentrancy and limit tests included.
 - [x] P03: Decouple metadata demand from parallel-filter eligibility for summaries and presentation.
-- [ ] P04: Reuse or stream per-entry hashes, line counts, and text checks; prebind field rewrite programs.
+- [x] P04: Reuse or stream per-entry hashes, line counts, and text checks; prebind field rewrite programs.
 - [ ] P05: Parallelize independent comparison pairs; investigate persistent read cursors and content reuse.
 - [ ] P06: Measure chunked eager stats for broad directories.
 - [ ] P07: Measure archive-member matching with retained ownership and shared read/replay budgets.

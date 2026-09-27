@@ -45,7 +45,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/time/time.h"
 #include "mbo/container/limited_map.h"
-#include "xff/content/line_match.h"
+#include "xff/content/snapshot.h"
 #include "xff/datetime/datetime.h"
 #include "xff/env/env.h"
 #include "xff/hash/hash.h"
@@ -53,8 +53,16 @@
 #include "xff/matching/mime/mime.h"
 #include "xff/matching/regex/regex.h"
 #include "xff/vfs/entry.h"
+#include "xff/vfs/local_fs.h"
 
 namespace xff::fields {
+
+struct CompiledRewrite {
+  regex::Matcher matcher;
+  std::string replacement;
+  bool global = false;
+};
+
 namespace {
 
 namespace stdfs = ::std::filesystem;
@@ -288,6 +296,11 @@ StringOrView ColumnField(std::string_view, std::string_view, const RenderContext
   return ctx.match_column.has_value() ? std::to_string(*ctx.match_column) : std::string();
 }
 
+const vfs::FileSystem& ContentFileSystem(const RenderContext& ctx) {
+  static const vfs::LocalFs kLocal;
+  return ctx.fs ? *ctx.fs : kLocal;
+}
+
 // {hash} / {hash:ALGO[/ENCODING]}: the digest of the entry's file content. The qualifier is an
 // algorithm name optionally followed by /ENCODING (e.g. {hash:md5}, {hash:sha256/base64},
 // {hash:/base64}); empty parts fall back to the --hash-algorithm / --hash-encoding defaults
@@ -300,29 +313,21 @@ StringOrView HashField(std::string_view, std::string_view qualifier, const Rende
   if (!spec.has_value()) {
     return "";  // unknown algorithm or encoding -> empty, like an unknown field
   }
-  if (!ctx.fs.has_value()) {
-    return hash::HashFile(spec->algo, ctx.path, spec->encoding).value_or("");
+  if (ctx.content) {
+    return ctx.content->Digest(ContentFileSystem(ctx), ctx.path, *spec).value_or("");
   }
-  // Through the entry's own filesystem when there is one: a member's bytes live in its container,
-  // and HashFile would find nothing at `a.tar!x`. Both routes read the whole entry either way.
-  const absl::StatusOr<std::string> content = ctx.fs->ReadContent(ctx.path);
-  if (!content.ok()) {
-    return "";  // unreadable -> empty, the field convention
-  }
-  return hash::HashData(spec->algo, *content, spec->encoding).value_or("");
+  content::Snapshot content;
+  return content.Digest(ContentFileSystem(ctx), ctx.path, *spec).value_or("");
 }
 
 // The line count of the entry, read the same way {hash} reads it: through the filesystem the entry
 // came from when there is one (so an archive member counts its own lines), else by path.
 std::optional<std::size_t> ReadEntryLineCount(const RenderContext& ctx) {
-  if (!ctx.fs.has_value()) {
-    return content::FileLineCount(ctx.path);
+  if (ctx.content) {
+    return ctx.content->Lines(ContentFileSystem(ctx), ctx.path);
   }
-  const absl::StatusOr<std::string> content = ctx.fs->ReadContent(ctx.path);
-  if (!content.ok()) {
-    return std::nullopt;
-  }
-  return content::ContentLineCount(*content);
+  content::Snapshot content;
+  return content.Lines(ContentFileSystem(ctx), ctx.path);
 }
 
 // {lines}: the number of text lines in the entry's file content (like `wc -l`, but also counting a
@@ -756,34 +761,29 @@ std::vector<RewriteOp> ParseRewriteChain(std::string_view spec) {
   return ops;
 }
 
-// Compiles every op's pattern (case-insensitive when its flags carry `i`), or nullopt if any fails
-// to compile - so a chain with a bad pattern is a whole no-op (the leave-alone stance).
-std::optional<std::vector<regex::Matcher>> CompileChain(const std::vector<RewriteOp>& ops) {
-  std::vector<regex::Matcher> matchers;
-  matchers.reserve(ops.size());
-  for (const RewriteOp& op : ops) {
-    absl::StatusOr<regex::Matcher> matcher =
-        regex::Matcher::Compile(op.pattern, /*case_insensitive=*/absl::StrContains(op.flags, 'i'));
+// Own every argument so a compiled template can outlive, move independently of, or be copied
+// separately from the source text. An invalid chain remains a whole no-op.
+std::vector<CompiledRewrite> CompileChain(std::string_view spec) {
+  const auto ops = ParseRewriteChain(spec);
+  std::vector<CompiledRewrite> result;
+  result.reserve(ops.size());
+  for (const auto& op : ops) {
+    auto matcher = regex::Matcher::Compile(op.pattern, absl::StrContains(op.flags, 'i'));
     if (!matcher.ok()) {
-      return std::nullopt;
+      return {};
     }
-    matchers.push_back(*std::move(matcher));
+    result.push_back(
+        {.matcher = *std::move(matcher),
+         .replacement = std::string(op.replacement),
+         .global = absl::StrContains(op.flags, 'g')});
   }
-  return matchers;
+  return result;
 }
 
-// Applies a sed-style rewrite chain `s<delim>PAT<delim>REPL<delim>[flags][;...]` to `value`: each
-// command is an RE2 substitution (`g` all matches, `i` case-insensitive), applied left to right. A
-// malformed spec or any uncompilable pattern leaves the value unchanged.
-std::string ApplyRewrite(std::string_view value, std::string_view spec) {
-  const std::vector<RewriteOp> ops = ParseRewriteChain(spec);
-  const std::optional<std::vector<regex::Matcher>> matchers = CompileChain(ops);
-  if (ops.empty() || !matchers.has_value()) {
-    return std::string(value);
-  }
+std::string ApplyRewrite(std::string_view value, const std::vector<CompiledRewrite>& ops) {
   std::string out(value);
-  for (std::size_t i = 0; i < ops.size(); ++i) {
-    out = (*matchers)[i].Rewrite(out, ops[i].replacement, /*global=*/absl::StrContains(ops[i].flags, 'g'));
+  for (const auto& op : ops) {
+    out = op.matcher.Rewrite(out, op.replacement, op.global);
   }
   return out;
 }
@@ -799,23 +799,16 @@ bool IsExtractQualifier(std::string_view qualifier) {
 // then runs the remaining commands as substitutions on that per-line value. Non-matching lines are
 // dropped by the first command, so it filters as well as transforms. A malformed spec or any
 // uncompilable pattern yields an empty list (matching ApplyRewrite's leave-it-alone stance).
-std::vector<std::string> ExtractLines(std::string_view value, std::string_view spec) {
-  const std::vector<RewriteOp> ops = ParseRewriteChain(spec);
-  const std::optional<std::vector<regex::Matcher>> matchers = CompileChain(ops);
-  if (ops.empty() || !matchers.has_value()) {
+std::vector<std::string> ExtractLines(std::string_view value, const std::vector<CompiledRewrite>& ops) {
+  if (ops.empty()) {
     return {};
   }
-  const bool first_global = absl::StrContains(ops.front().flags, 'g');
   std::vector<std::string> out;
   for (const std::string_view line : absl::StrSplit(value, '\n')) {
-    if (!matchers->front().PartialMatch(line)) {
-      continue;  // the first command filters: only matching lines contribute
+    if (!ops.front().matcher.PartialMatch(line)) {
+      continue;
     }
-    std::string current = matchers->front().Rewrite(line, ops.front().replacement, first_global);
-    for (std::size_t i = 1; i < ops.size(); ++i) {  // remaining commands substitute on the survivor
-      current = (*matchers)[i].Rewrite(current, ops[i].replacement, /*global=*/absl::StrContains(ops[i].flags, 'g'));
-    }
-    out.push_back(std::move(current));
+    out.push_back(ApplyRewrite(line, ops));
   }
   return out;
 }
@@ -940,12 +933,6 @@ Pipeline SplitPipeline(std::string_view spec) {
     pos = end < spec.size() ? end + 1 : end;
   }
   return {.stream = spec, .reducer = std::nullopt, .scalar = {}};
-}
-
-// Whether an m// extract qualifier ends its pipeline in a reducer -- so it is scalar-valued, not a
-// value stream. The scalar-context guard (#136) rejects only UNREDUCED extractions.
-bool HasReducer(std::string_view spec) {
-  return SplitPipeline(spec).reducer.has_value();
 }
 
 // The path-component qualifier keywords ({field:KEYWORD}). Sorted (for readability).
@@ -1075,6 +1062,31 @@ absl::Status ValidateNativeQualifier(FieldFn renderer, std::string_view qualifie
 
 }  // namespace
 
+// Immutable programs are shared by copied templates. Rendering remains coordinator-owned;
+// regex backends retain their normal concurrent-call contract for other callers.
+struct Template::Transform {
+  explicit Transform(std::string_view spec) {
+    const auto pipeline = IsExtractQualifier(spec) ? SplitPipeline(spec) : Pipeline{.stream = spec};
+    stream = CompileChain(pipeline.stream);
+    if (pipeline.reducer) {
+      separator = pipeline.reducer->separator;
+      scalar = CompileChain(pipeline.scalar);
+    }
+  }
+
+  std::string Rewrite(std::string_view value) const { return ApplyRewrite(value, stream); }
+
+  std::vector<std::string> Extract(std::string_view value) const { return ExtractLines(value, stream); }
+
+  std::string ExtractScalar(std::string_view value) const {
+    return ApplyRewrite(absl::StrJoin(Extract(value), separator.value_or("\n")), scalar);
+  }
+
+  std::vector<CompiledRewrite> stream;
+  std::optional<std::string> separator;
+  std::vector<CompiledRewrite> scalar;
+};
+
 std::optional<std::size_t> PlaceholderSize(std::string_view text) {
   if (text.empty() || text.front() != '{') {
     return std::nullopt;
@@ -1140,7 +1152,11 @@ Template Template::Compile(std::string_view tmpl) {
                                         : IsExtractQualifier(qualifier) ? Segment::PostProcess::kExtract
                                         : IsPathComponent(qualifier)    ? Segment::PostProcess::kComponent
                                                                         : Segment::PostProcess::kNone;
-      compiled.segments_.push_back({.fn = fn, .key = std::move(key), .qualifier = std::move(qualifier), .post = post});
+      const auto transform = post == Segment::PostProcess::kRewrite || post == Segment::PostProcess::kExtract
+                                 ? std::make_shared<const Transform>(qualifier)
+                                 : std::shared_ptr<const Transform>{};
+      compiled.segments_.push_back(
+          {.fn = fn, .key = std::move(key), .qualifier = std::move(qualifier), .post = post, .transform = transform});
       i = field->next;
     } else {
       if (ch == '}') {
@@ -1191,6 +1207,11 @@ std::size_t Template::ContentFieldCount() const {
 }
 
 std::string Template::Render(const RenderContext& context) const {
+  content::Snapshot content;
+  RenderContext entry = context;
+  if (!entry.content) {
+    entry.content.set_ref(content);
+  }
   std::string out;
   for (const Segment& segment : segments_) {
     if (segment.fn != nullptr) {
@@ -1199,30 +1220,17 @@ std::string Template::Render(const RenderContext& context) const {
       // field's own format argument.
       const bool transform = segment.post != Segment::PostProcess::kNone;
       const StringOrView field_value =
-          segment.fn(segment.key, transform ? std::string_view{} : segment.qualifier, context);
+          segment.fn(segment.key, transform ? std::string_view{} : segment.qualifier, entry);
       const std::string_view value = field_value.view();
       switch (segment.post) {
         case Segment::PostProcess::kComponent: out.append(PathComponent(value, segment.qualifier)); break;
         case Segment::PostProcess::kNone: out.append(value); break;
-        case Segment::PostProcess::kRewrite: out.append(ApplyRewrite(value, segment.qualifier)); break;
+        case Segment::PostProcess::kRewrite: out.append(segment.transform->Rewrite(value)); break;
         // A per-line extraction is a value stream. A terminal reducer (`;join(...)`) collapses it to
         // a scalar (then a post-reducer s/// chain rewrites that scalar); without one it has no single
         // scalar value, so its scalar projection is the matches newline-joined -- but the scalar-
         // context guard (#136) rejects an unreduced extraction up front, so that branch is a fallback.
-        case Segment::PostProcess::kExtract: {
-          const Pipeline pipeline = SplitPipeline(segment.qualifier);
-          const std::vector<std::string> stream = ExtractLines(value, pipeline.stream);
-          if (pipeline.reducer.has_value()) {
-            std::string scalar = absl::StrJoin(stream, pipeline.reducer->separator);
-            if (!pipeline.scalar.empty()) {
-              scalar = ApplyRewrite(scalar, pipeline.scalar);
-            }
-            out.append(scalar);
-          } else {
-            out.append(absl::StrJoin(stream, "\n"));
-          }
-          break;
-        }
+        case Segment::PostProcess::kExtract: out.append(segment.transform->ExtractScalar(value)); break;
       }
     } else {
       out.append(segment.literal);
@@ -1239,21 +1247,24 @@ std::optional<std::vector<std::string>> Template::AsExtraction(const RenderConte
     return std::nullopt;
   }
   const Segment& segment = segments_.front();
-  if (segment.fn == nullptr || segment.post != Segment::PostProcess::kExtract || HasReducer(segment.qualifier)) {
+  if (segment.fn == nullptr || segment.post != Segment::PostProcess::kExtract
+      || segment.transform->separator.has_value()) {
     return std::nullopt;
   }
   const StringOrView value = segment.fn(segment.key, std::string_view{}, context);  // base value, no qualifier
-  return ExtractLines(value.view(), segment.qualifier);
+  return segment.transform->Extract(value.view());
 }
 
 bool Template::IsExtraction() const {
   return segments_.size() == 1 && segments_.front().fn != nullptr
-         && segments_.front().post == Segment::PostProcess::kExtract && !HasReducer(segments_.front().qualifier);
+         && segments_.front().post == Segment::PostProcess::kExtract
+         && !segments_.front().transform->separator.has_value();
 }
 
 bool Template::HasUnreducedExtraction() const {
   return absl::c_any_of(segments_, [](const Segment& segment) {
-    return segment.fn != nullptr && segment.post == Segment::PostProcess::kExtract && !HasReducer(segment.qualifier);
+    return segment.fn != nullptr && segment.post == Segment::PostProcess::kExtract
+           && !segment.transform->separator.has_value();
   });
 }
 

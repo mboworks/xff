@@ -33,6 +33,7 @@
 #include "absl/types/span.h"
 #include "mbo/diff/diff_options.h"
 #include "mbo/types/optional_ref.h"
+#include "xff/content/snapshot.h"
 #include "xff/datetime/datetime.h"
 #include "xff/engine/collect.h"
 #include "xff/engine/extract.h"
@@ -153,19 +154,7 @@ struct GrepOptions {
   std::size_t max_columns = 0;
 };
 
-// One entry's lazily read content. Owned by a single evaluator, with no locks; views remain
-// valid until invalidation or destruction. Never retain this across entries or deferred passes.
-class ContentSnapshot final {
- public:
-  absl::StatusOr<std::string_view> Read(const vfs::FileSystem& fs, std::string_view path);
-
-  void Invalidate() { bytes_.reset(); }
-
-  bool Loaded() const { return bytes_.has_value(); }
-
- private:
-  std::optional<absl::StatusOr<std::string>> bytes_;
-};
+using ContentSnapshot = content::Snapshot;
 
 // Per-evaluation environment threaded through Evaluate for one visited entry.
 // Bundles what an expression node may read -- the entry, the action sink, the
