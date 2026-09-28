@@ -333,7 +333,7 @@ to be measured independently.
 
 ## MBO segmented collection storage and arenas
 
-The Git module override pins MBO `b3cfba13832e499b64d6b92d3493c54771aefd5e`. `SegmentedVector` supplies stable
+The Git module override pins MBO `c854476fb9bf22b6dc372a756d80831f7655d60e`. `SegmentedVector` supplies stable
 addresses, random-access iterators and explicit empty-directory reservation. `Arena` supplies raw
 aligned bytes and bulk lifetime, with no internal locks. Neither supplies contiguous element spans;
 `Arena` does not construct or destroy arbitrary C++ objects.
