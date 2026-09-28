@@ -99,7 +99,7 @@ Measured follow-ups (see the P07/P08 sections of `docs/performance-analysis.md`)
       and 4 KiB -> 1 MiB. Compare allocation counts, CPU time, unused capacity and peak memory
       for small/large collections on Linux and macOS before choosing new defaults.
 
-- [x] Evaluate MBO SegmentedSequence and Arena at pinned Git head; adopt measured collection storage
+- [x] Evaluate MBO SegmentedVector and Arena at pinned Git head; adopt measured collection storage
       improvements with lifetime tests and allocation/memory tradeoffs in `docs/performance-analysis.md`.
 - [ ] Confirm collection storage gains on native Linux and in traversal-inclusive workloads; measure
       deferred result candidates, listing API changes and matcher-buffer reuse before extending adoption.

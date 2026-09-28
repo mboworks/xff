@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "absl/container/btree_map.h"
-#include "mbo/container/segmented_sequence.h"
+#include "mbo/container/segmented_vector.h"
 #include "mbo/memory/arena.h"
 #include "mbo/types/optional_ref.h"
 #include "xff/engine/walk.h"
@@ -78,7 +78,7 @@ class Collections {
  public:
   // Text belongs to this collection's arena, not the traversal or the individual record.
   using Entry = BasicCollectedEntry<std::string_view>;
-  using EntriesType = mbo::container::SegmentedSequence<Entry, {.segment_size = 64, .segment_reservation = 0}>;
+  using EntriesType = mbo::container::SegmentedVector<Entry, {.segment_size = 64, .segment_reservation = 0}>;
 
   // The row / byte ceiling a collection may occupy, from `--buffer` (0 = no limit, the default).
   // Bytes count the stored path, name and root text, which is what a collection actually holds on to.
