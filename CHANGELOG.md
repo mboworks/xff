@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Update the MBO Git pin and toolchains_llvm to 1.10.0 while retaining LLVM 22.1.8.
+
 - Update MBO and use its renamed SegmentedVector for collected result storage.
 
 - Balance uneven content searches with smaller work chunks and let later batches use the full worker allowance.
