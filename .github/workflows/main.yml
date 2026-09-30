@@ -231,6 +231,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: bazel-contrib/setup-bazel@0.19.0
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
@@ -597,16 +598,9 @@ jobs:
         with:
           key: ${{ steps.bazel-cache.outputs.key }}
 
-  # clang-tidy (hermetic clang-22) over the compile DB. Mirrors mboworks/mbo's job and OWNS clang-tidy
-  # in CI: it needs a compile_commands.json this job builds (the pre-commit / trunk jobs skip the
-  # local-only hook, which has no compile DB there). Scoped to sources changed against main on a
-  # branch; the whole tree on main. The compile DB is extracted in --config=clang-tidy (the develop
-  # config: hermetic clang + libc++), so it pulls the hermetic LLVM each run (not cached, like the
-  # sanitizer jobs); only a small disk cache of build outputs is persisted.
-  # Report-only for now (continue-on-error on the lint STEP): .clang-tidy sets WarningsAsErrors '*'
-  # and the test tree is not clang-tidy-clean yet. Building the compile DB still gates (no job-level
-  # continue-on-error). Drop the step's continue-on-error to promote this to a hard gate once the
-  # remaining (test-file) findings are swept.
+  # clang-tidy uses the hermetic compiler's matching version and gates CI. Ordinary changes lint
+  # affected translation units; toolchain or lint-policy changes lint the complete C++ source set.
+  # The compile database includes core, extras and manual targets. Cache compiled outputs only.
   clang-tidy:
     needs: [pre-commit, trunk]
     runs-on: ubuntu-latest
@@ -630,12 +624,19 @@ jobs:
             git fetch --no-tags --quiet origin main
             BASE_REF="origin/main"
           fi
-          git diff --name-only "${BASE_REF}"...HEAD -- \
-            '*.cc' '*.cpp' '*.cxx' '*.h' '*.hh' '*.hpp' '*.hxx' '*.inc' '*.ipp' '*.h.in' \
-            >.clang-tidy-inputs
+          if ! git diff --quiet "${BASE_REF}"...HEAD -- \
+            bazelmod/llvm.MODULE.bazel .clang-tidy; then
+            echo '--all' >.clang-tidy-inputs
+            SCOPE="all translation units (toolchain or lint policy changed)"
+          else
+            SCOPE="affected translation units"
+            git diff --name-only "${BASE_REF}"...HEAD -- \
+              '*.cc' '*.cpp' '*.cxx' '*.h' '*.hh' '*.hpp' '*.hxx' '*.inc' '*.ipp' '*.h.in' \
+              >.clang-tidy-inputs
+          fi
           if [ -s .clang-tidy-inputs ]; then
             echo "CLANG_TIDY_ENABLED=true" >>"${GITHUB_ENV}"
-            echo "CLANG_TIDY_SCOPE=affected translation units" >>"${GITHUB_ENV}"
+            echo "CLANG_TIDY_SCOPE=${SCOPE}" >>"${GITHUB_ENV}"
             echo "Linting translation units affected by:"
             sed 's/^/  /' .clang-tidy-inputs
           else

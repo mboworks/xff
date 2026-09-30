@@ -27,6 +27,34 @@ class ClangTidyScopeTest(unittest.TestCase):
             self.assertIn("xff/new.cc", result.stderr)
             self.assertIn("./compile_commands-update.sh", result.stderr)
 
+    def test_full_scan_selects_only_indexed_first_party_translation_units(self):
+        database = [
+            {"file": "xff/z.cc"},
+            {"file": "xff/z.cc"},
+            {"file": "xff/a.cc"},
+            {"file": "xff_extras_api/api.cc"},
+            {"file": "external/dependency.cc"},
+            {"file": "bazel-out/generated.cc"},
+            {"file": "/tmp/absolute.cc"},
+            {"file": "xff/header.h"},
+        ]
+        self.assertEqual(
+            clang_tidy_scope.select_sources(database, ["--all"], {}),
+            ["xff/a.cc", "xff/z.cc", "xff_extras_api/api.cc"],
+        )
+
+    def test_full_scan_cli_does_not_walk_the_checkout(self):
+        with TemporaryDirectory() as directory:
+            database = Path(directory) / "compile_commands.json"
+            database.write_text('[{"file": "xff/z.cc"}, {"file": "xff/a.cc"}]', encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(Path(clang_tidy_scope.__file__).resolve()),
+                 str(database), "--all"],
+                cwd=directory, capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.splitlines(), ["xff/a.cc", "xff/z.cc"])
+
     def test_source_changes_are_narrow_and_sorted(self):
         database = [{"file": "xff/z.cc"}, {"file": "xff/a.cc"}, {"file": "external/x.cc"}]
         self.assertEqual(

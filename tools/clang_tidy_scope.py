@@ -67,6 +67,8 @@ def select_sources(
     graph: dict[str, set[str]],
 ) -> list[str]:
     sources = database_sources(database)
+    if changed == ["--all"]:
+        return sorted(sources)
     selected = {path for path in changed if path in sources}
     affected = {path for path in changed if is_header(path)}
     visited = set(affected)
@@ -82,7 +84,7 @@ def select_sources(
 
 def main() -> int:
     if len(sys.argv) < 2:
-        raise SystemExit("usage: clang_tidy_scope.py COMPILE_COMMANDS [CHANGED_FILE ...]")
+        raise SystemExit("usage: clang_tidy_scope.py COMPILE_COMMANDS [--all | CHANGED_FILE ...]")
     with open(sys.argv[1], encoding="utf-8") as stream:
         database = json.load(stream)
     changed = sys.argv[2:]
@@ -96,7 +98,8 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
-    for source in select_sources(database, changed, include_graph(pathlib.Path.cwd())):
+    graph = {} if changed == ["--all"] else include_graph(pathlib.Path.cwd())
+    for source in select_sources(database, changed, graph):
         print(source)
     return 0
 

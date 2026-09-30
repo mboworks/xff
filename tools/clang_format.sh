@@ -15,61 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Run the formatter from the pinned LLVM distribution. Bazel fetches this tool on
+# demand without compiling XFF; no PATH fallback can silently select another version.
 set -euo pipefail
 
-function die() {
-  echo "ERROR: ${*}" 1>&2
-  exit 1
-}
-
-# Resolve clang-format, preferring the hermetic toolchains_llvm binary so CI and
-# local runs agree on the version, ahead of any system clang-format on PATH.
-# Mirrors mboworks/mbo's tools/clang_format.sh.
-
-# The `bazel-<repo>` convenience link points at the execroot; fall back to cwd.
-BAZEL_OUTPUT="bazel-$(basename "${PWD}")"
-[ -d "${BAZEL_OUTPUT}" ] || BAZEL_OUTPUT="."
-
-# The output base holds every fetched repo, including the `--config=clang`
-# dev-dependency LLVM toolchain that the execroot symlink forest may omit.
-OUTPUT_BASE="$(bazel info output_base 2>/dev/null || true)"
-
-declare -a CLANG_FORMAT_LOCS=(
-  # 1) Hermetic toolchain via the `bazel-<repo>` execroot link.
-  "${BAZEL_OUTPUT}/external/llvm_toolchain_llvm/bin/clang-format"
-  "${BAZEL_OUTPUT}/external/llvm_toolchain/bin/clang-format"
-  "${BAZEL_OUTPUT}/external/toolchains_llvm~~llvm~llvm_toolchain_llvm/bin/clang-format"
-  "${BAZEL_OUTPUT}/external/toolchains_llvm~~llvm~llvm_toolchain_llvm_llvm/bin/clang-format"
-  "${BAZEL_OUTPUT}/external/toolchains_llvm++llvm+llvm_toolchain_llvm/bin/clang-format"
-  "${BAZEL_OUTPUT}/external/toolchains_llvm++llvm+llvm_toolchain_llvm_llvm/bin/clang-format"
-
-  # 2) Same hermetic toolchain via the output base (covers the dev-dependency
-  #    case where it is absent from the execroot symlink forest). Still hermetic,
-  #    so this is tried BEFORE any system clang-format below.
-  "${OUTPUT_BASE:+${OUTPUT_BASE}/external/toolchains_llvm++llvm+llvm_toolchain_llvm/bin/clang-format}"
-  "${OUTPUT_BASE:+${OUTPUT_BASE}/external/toolchains_llvm++llvm+llvm_toolchain_llvm_llvm/bin/clang-format}"
-
-  # 3) System clang-format by versioned name (version may differ; last resort).
-  "$(which "clang-format-23" 2>/dev/null || true)"
-  "$(which "clang-format-22" 2>/dev/null || true)"
-  "$(which "clang-format-21" 2>/dev/null || true)"
-  "$(which "clang-format-20" 2>/dev/null || true)"
-  "$(which "clang-format-19" 2>/dev/null || true)"
-  "$(which "clang-format-18" 2>/dev/null || true)"
-
-  # 4) LLVM_PATH or a plain clang-format on PATH.
-  "${LLVM_PATH:-/usr}/bin/clang-format"
-  "$(which clang-format 2>/dev/null || true)"
-)
-
-CLANG_FORMAT=""
-for LOC in "${CLANG_FORMAT_LOCS[@]}"; do
-  if [ -n "${LOC}" ] && [ -x "${LOC}" ]; then
-    CLANG_FORMAT="${LOC}"
-    break
-  fi
-done
-
-[ -n "${CLANG_FORMAT}" ] || die "Cannot find clang-format (build once with --config=clang so the hermetic toolchain is fetched, or install clang-format)"
-
+CLANG_FORMAT="$(bazel cquery --config=clang --ui_event_filters=-info --noshow_progress \
+  --output=files @llvm_toolchain_llvm//:clang-format)"
+if [[ "${CLANG_FORMAT}" != /* ]]; then
+  EXEC_ROOT="$(bazel info execution_root)"
+  CLANG_FORMAT="${EXEC_ROOT}/${CLANG_FORMAT}"
+fi
 exec "${CLANG_FORMAT}" "${@}"

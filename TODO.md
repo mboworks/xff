@@ -1,5 +1,11 @@
 # TODO
 
+## Toolchain follow-up
+
+- [ ] Complete the Clang/LLVM 23.1.2 upgrade: validate native macOS linking, Linux LTO, the
+      LLVM 22 MSan compiler/runtime override, matching formatting, full CI, benchmark results,
+      and stripped binary sizes before merging the separate follow-up to #936.
+
 ## Content-search output controls
 
 - [x] Return a style enum for invocation dispatch; keep custom config selectors separate.

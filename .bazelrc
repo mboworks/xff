@@ -192,7 +192,8 @@ common:tsan --test_env=TSAN_OPTIONS=halt_on_error=1:second_deadlock_stack=1:symb
 
 # --config=msan : MemorySanitizer (reads of uninitialized memory - what asan does NOT
 # catch), run with `--config=clang --config=msan`. LINUX ONLY (there is no macOS MSan),
-# so this is a single Linux CI cell.
+# so this is a single Linux CI cell. The msan feature selects LLVM 22.1.8 with its
+# matching instrumented libc++; ordinary target and build-tool configurations use LLVM 23.
 #
 # MSan false-positives on anything it did not instrument, so EVERY library linked in must
 # be instrumented. Our deps all build from source under bazel, so `-fsanitize=memory` reaches
