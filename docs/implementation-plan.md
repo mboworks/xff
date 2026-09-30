@@ -22,8 +22,10 @@ change should cross its boundaries. It is not a feature roadmap.
   full under `--config=xff_full`.
 - `--config=xff_docs` enables every composable extra. Generated `XFF.md`, HTML,
   NOTICE.md content, and their drift tests use that complete surface.
-- `--config=clang_release` composes hermetic Clang with the production `-Oz`,
-  ThinLTO, debug-information, and platform-appropriate linker settings. Artifact
+- `--config=clang_release` composes hermetic Clang with the production `-O2`,
+  `--config=lto`, debug-information, and platform-appropriate linker settings.
+  `--config=lto` enables `--features=thin_lto`; the toolchain uses Apple linker-managed
+  ThinLTO on macOS and selects bundled LLD for Bazel's separate Linux LTO backends. Artifact
   staging strips the executables and splits their symbols; it does not rebuild
   them under another compilation configuration.
 

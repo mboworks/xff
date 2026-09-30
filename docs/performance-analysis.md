@@ -33,6 +33,51 @@ optimization flags except the variable under study. Inspection of compiler actio
 last optimization argument takes effect; a transitive allocator dependency is not evidence that
 its allocator is linked.
 
+## Bazel ThinLTO configuration (2026-09-30)
+
+`--config=clang` selects the hermetic compiler; `--config=lto` selects
+`--features=thin_lto`. `--config=clang_release` composes the compiler, `-O2`, and LTO.
+There are no raw `-flto=thin` compile/link options in XFF's release configuration.
+
+The pinned toolchain commit `5945c1789a8405867bea31a0b5cbce7204157dc6` includes
+[toolchains_llvm #876](https://github.com/bazel-contrib/toolchains_llvm/pull/876) and
+[#877](https://github.com/bazel-contrib/toolchains_llvm/pull/877):
+
+- macOS translates the configuration-level feature into linker-managed ThinLTO. The toolchain
+  adds `-flto=thin` to C/C++ compilation and linking. Apple ld performs indexing and backend
+  work inside the link action; the absence of separate Bazel LTO actions is expected here.
+- Linux uses Bazel's separate `CppLTOIndexing` and `CcLtoBackendCompile` actions. A feature
+  override selects bundled LLD when `thin_lto` is enabled, retaining mold otherwise. LLD
+  supports this protocol without the `LLVMgold.so` plugin absent from the mold/LLVM archives
+  used in the earlier failing release links.
+- `--features=-thin_lto` disables the feature, including after `--config=lto`. Execution tools
+  are independent: use `--host_features=thin_lto` only when those tools should also use LTO.
+  Rule-local `features` attributes and raw compiler flags do not select the feature override;
+  use configuration-level feature selection.
+
+Linux IR backend actions still inherit source-only toolchain options (`-U_FORTIFY_SOURCE`,
+`-idirafter`, and `-cxx-isystem`). Under `-Werror` those unused arguments fail the build.
+The Clang configuration therefore passes `--ltobackendopt=-Wno-unused-command-line-argument`.
+This affects only the IR backend; C/C++ source compilation retains warnings as errors.
+Upstream action-specific flag handling would let XFF remove this remaining workaround.
+
+At the earlier upstream commit `0c21fa0a259ddd8f9096bba30a03db358c0d408e`, macOS simply ignored
+`--features=thin_lto`. XFF action queries showed that replacing the raw flags removed LTO.
+PR #877 changes that behavior without requiring Apple's linker to understand ELF indexing
+options. The earlier Linux ARM64 experiment also reproduced the missing mold plugin and the
+backend warning failure; selecting LLD plus the backend-specific exception addressed them.
+
+Validation uses action queries and a C/C++ cross-library probe with an undefined call that can
+only be eliminated by optimization across both libraries. The enabled build must link and run;
+the explicitly disabled build must fail with that undefined symbol. XFF's generated reference,
+notice, and main CLI tests exercise the composed release configuration separately.
+
+This change does not establish a runtime speedup. Linker-managed ThinLTO already runs backend
+work in parallel; the Linux benefit to investigate is per-backend scheduling and cache reuse.
+See the [LLVM ThinLTO documentation](https://clang.llvm.org/docs/ThinLTO.html). Measure clean,
+one-source incremental, and warm disk-cache builds before claiming build-time gains; compare
+stripped binary size and existing traversal/content workloads before claiming runtime gains.
+
 ## Metadata and filesystem costs
 
 `LocalFs::ReadDir` already consumes `dirent.d_type`; the walker uses it for known regular-file

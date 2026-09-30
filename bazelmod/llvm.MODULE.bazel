@@ -20,14 +20,11 @@
 # macOS + clang-22 + asan works straight from the release.
 bazel_dep(name = "toolchains_llvm", version = "1.10.0")
 
-# Use platform-specific catalogue linkers without resolving Linux mold as a
-# Darwin executable. Remove the git override after toolchains_llvm#872 ships.
-# The local patch fixes linker sandbox inputs and instruments C under MSan.
+# Feature-based linker selection and macOS ThinLTO are provided by toolchains_llvm
+# PRs #876 and #877. Keep the commit pinned until both changes are released upstream.
 git_override(
     module_name = "toolchains_llvm",
-    commit = "c91a6ade94040999a455b41d62f128fa1c1f7f0f",
-    patch_strip = 1,
-    patches = ["//bazelmod:llvm-linker-msan.patch"],
+    commit = "5945c1789a8405867bea31a0b5cbce7204157dc6",
     remote = "https://github.com/helly25/toolchains_llvm.git",
 )
 
@@ -76,6 +73,17 @@ llvm.toolchain(
         "linux-x86_64": "latest",
     },
     llvm_version = LLVM_VERSION,
+)
+# Mold's archive has no matching LLVMgold plugin. Bundled LLD implements Bazel's
+# separate indexing/backend protocol without an external plugin. Other builds keep mold.
+llvm.feature_override(
+    name = "llvm_toolchain_llvm",
+    features = ["thin_lto"],
+    targets = ["linux-aarch64", "linux-x86_64"],
+    linker = {
+        "linux-aarch64": "",
+        "linux-x86_64": "",
+    },
 )
 use_repo(llvm, "llvm_toolchain_llvm")
 
