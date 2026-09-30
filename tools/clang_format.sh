@@ -19,6 +19,9 @@
 # demand without compiling XFF; no PATH fallback can silently select another version.
 set -euo pipefail
 
+# Linux distributions can expose a generated wrapper, so analysis alone is not enough.
+bazel build --config=clang --ui_event_filters=-info --noshow_progress \
+  @llvm_toolchain_llvm//:clang-format
 CLANG_FORMAT="$(bazel cquery --config=clang --ui_event_filters=-info --noshow_progress \
   --output=files @llvm_toolchain_llvm//:clang-format)"
 if [[ "${CLANG_FORMAT}" != /* ]]; then
