@@ -1,6 +1,6 @@
 # Traversal performance analysis
 
-## Hosted capacity and local backfill
+## Hosted capacity and benchmark backfill
 
 Benchmark run 36831896372 failed macOS aggregation because one shard recorded five host CPUs
 while the other two recorded three. Source, tools and the remaining contract fields matched.
@@ -9,7 +9,9 @@ The driver also checked capacity only when Linux affinity was available, allowin
 four-worker request on a three-CPU host. Retrying aggregation cannot repair those measurements.
 
 GitHub's documented standard ARM64 macOS capacity is three CPUs; Linux remains four.
-The workflow uses one/three workers on a single Mac host and retains one/four pinned CPUs on Linux.
+The workflows use one/three workers on both platforms, with the full Mac matrix on one host.
+Linux pins three of the four available vCPUs, leaving headroom for background work; this is
+not an exclusive CPU reservation and does not eliminate hosted contention.
 Both platforms now check capacity before build/measurement. Unpinned historical comparisons also
 require equal host CPU counts. See [runner specifications](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
 and [the measurement contract](benchmark-comparisons.md).
@@ -18,28 +20,42 @@ The local Apple M5 Pro has 18 CPUs and 64 GiB RAM. A direct `thread_policy_get` 
 `THREAD_AFFINITY_POLICY`, outside the execution sandbox, returned `KERN_NOT_SUPPORTED` (46).
 Even where supported, that policy represents cache-affinity hints rather than a CPU mask;
 see [Apple's definition](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/mach/thread_policy.h).
-Four-worker local measurements are practical, but must not be labeled pinned four-CPU runs or
-substituted for GitHub-hosted samples. A four-vCPU macOS VM would constrain guest capacity while
-introducing another measurement environment. Local backfill should run selected revisions with
-one common measurement driver, fixture contract and reference-tool set, preserving compiler/build
-provenance. A pilot is needed for a wall-time estimate; no local backfill has been run yet.
+Local measurements are practical, but must not be labeled pinned CPU runs or substituted for
+GitHub-hosted samples. A macOS VM would constrain guest capacity while introducing another
+measurement environment. Local backfill uses selected revisions with one common measurement
+driver, fixture contract and reference-tool set, preserving compiler/build provenance.
+A completed M5 Pro pilot used 10 files in both tree shapes, one/four workers and the fastest two
+of three samples: the cached historical build took about 34 seconds and measurements about
+20 seconds. Resume reused the verified binary and results. This validates execution and resuming;
+it is not a full campaign or a reliable estimate for the 100,000-file matrix.
 
-Follow-up: retain separate Mac and Zen 5 histories, with controlled local measurements preferred
-in the presentation and hosted measurements explicitly labeled. A valid three-worker hosted run
-is a different allocation, not inherently an invalid observation. Preserve raw results even when
-another series becomes the default.
+The CI-only workflow collects replacements for the macOS and Linux hosted histories on the 1/3
+allocation grid. The standalone tool collects separate local Mac and Zen 5 histories. The local
+1/3/10 grid adds a shared three-worker view and a ten-worker scaling point, with approximately
+logarithmic spacing that could later extend to 30. Equal counts do not equate different machines.
+Local Linux selects one allowed hardware thread per physical core using sysfs topology, pins
+all measured tool processes, and records the IDs. Unknown topology or insufficient cores fail.
+Mac allocations remain worker requests; M5 Pro and M2 Ultra are separate series.
+
+Follow-up: run the complete campaigns, import/promote CI replacements and add local series in the
+publisher. Preserve raw results even when another series becomes the preferred presentation.
+A valid three-worker hosted run is a different allocation from historical four-worker runs, not
+inherently an invalid observation. The collection tool records purpose and replacement targets;
+it does not yet modify the published history.
 
 For one compatible task/tree/file-count/allocation/reference-tool cell, let `X` be the measured
-XFF time, `R` the reference time in the same run, and `B` a reference baseline estimated from five
-calibration runs. The correction is `B / R`; normalized XFF time is `X * B / R` and normalized
+XFF time, `R` the reference time in the same run, and `B` a reference baseline averaged over five
+compatible measurements. The correction is `B / R`; normalized XFF time is `X * B / R` and normalized
 reference time is `B`. This is the existing XFF/reference ratio expressed in baseline time units,
 not an independent performance observation. It assumes shared proportional runner effects, so
 memory bandwidth, cache behavior and scheduler differences can leave residual noise.
-A fixed `B` keeps the historical axis stable; a rolling five-run `B` instead creates a moving
-baseline and suits recent-regression views. Calibration must stay within the same machine series,
+The selected design keeps normalization in presentation: an initial forward window, followed by
+current plus four prior measurements from measurement five onward. This is a moving baseline;
+each view must expose its window and factor. Calibration must stay within the same machine series,
 fixture, allocation and reference binary/version. Reference-tool upgrades require a new segment
-or an explicit overlap calibration. This normalization and local backfill are planned follow-ups;
-the current implementation retains raw timings and same-run ratios.
+or an explicit overlap calibration. The [backfill workflow](benchmark-backfill.md) collects separate
+single-host series and preserves their original observations. The normalized historical view remains
+a follow-up; current reports retain raw timings and same-run ratios.
 
 ## Measured compiler and allocator decisions
 

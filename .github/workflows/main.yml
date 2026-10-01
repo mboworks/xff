@@ -712,7 +712,7 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
-            cpus: 4
+            cpus: 3
             timeout: 30
           - os: macos-latest
             platform: macos

@@ -2,17 +2,26 @@
 
 ## Benchmark runner capacity
 
-- [x] Reject undersized runners before measurement; keep Linux's 1/4 pinned CPU grid and use
-      the documented hosted macOS 1/3 worker grid on a single host. Preserve strict shard identity
-      checks, name mismatched fields, and render both grids without mixing incompatible baselines.
-- [ ] Plan separate local historical series on the Mac and Zen 5 machine, preserving hosted
-      observations while preferring controlled local results in the display. Native Mac
-      four-worker runs are possible, but the tested Apple Silicon host does not support Mach
-      affinity. Record actual host/CPU allocation, reference binaries and invocation contracts.
-- [ ] Evaluate reference-based normalization per compatible benchmark cell. Estimate a fixed
-      reference anchor from five runs for historical plots; consider the previous five runs for
-      recent-regression comparisons. Preserve raw timings and ratios, expose calibration
-      provenance, and do not normalize between different worker counts or machine series.
+- [x] Reject undersized runners before measurement; use the same 1/3 grid on both hosted
+      platforms, pinned on Linux and on one measurement host for macOS. Leave one Linux vCPU
+      outside the benchmark mask for background work. Preserve strict shard identity checks.
+- [x] Add a CI-only historical backfill workflow for macOS and Linux replacement campaigns,
+      plus a standalone tool for additional local Mac/Zen 5 series. Freeze revisions, driver,
+      tools and allocations; build before measuring, resume verified records, report incomplete
+      revisions, and enforce one hardware thread per physical core for local Linux pinning.
+      See `docs/benchmark-backfill.md`.
+- [ ] Run both full CI replacement backfills on the 1/3 grid and implement publication import
+      and promotion by platform/commit, retaining superseded raw observations. An incomplete
+      campaign must not silently replace an entire history.
+- [ ] Run separate local Mac and Zen 5 backfills on the 1/3/10 grid, subject to host capacity,
+      and publish these as additional machine series. Keep M5 Pro, M2 Ultra and Zen 5 distinct;
+      document Mac worker requests versus Linux physical-core affinity. Extend the landscape's
+      two-allocation presentation to select pairs from a larger grid; tables already show all.
+- [ ] Implement presentation-only reference normalization using exactly five compatible measurements:
+      start with current plus four following, then use current plus four prior from measurement five.
+      Settle whether measurements two through four share the first window or use forward windows.
+      Preserve raw timings and ratios, expose the selected window and correction factor, and do not
+      normalize between different worker counts, reference binaries or machine series.
       See `docs/performance-analysis.md` and `docs/benchmark-comparisons.md`.
 
 ## Toolchain follow-up

@@ -1,0 +1,87 @@
+# SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
+# SPDX-License-Identifier: Apache-2.0
+name: Benchmark backfill
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: benchmark-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: macos
+            arch: arm64
+            cpus: 3
+          - os: ubuntu-latest
+            platform: linux
+            arch: x86_64
+            cpus: 3
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          ref: coverage-pages
+          path: benchmark-history
+          sparse-checkout: benchmarks/runs
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: bazel-contrib/setup-bazel@0.19.0
+      - name: Check runner capacity
+        run: |
+          affinity=()
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            affinity=(--require-cpu-affinity)
+          fi
+          python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=${{ matrix.cpus }} "${affinity[@]}"
+      - uses: ./.github/actions/bazel-cache-restore
+        with:
+          namespace: default
+      - name: Install reference tools once for the complete batch
+        run: |
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf
+          else
+            brew install findutils ripgrep fzf
+          fi
+      - name: Build and measure revisions on this host
+        timeout-minutes: 345
+        run: |
+          set -euo pipefail
+          storage=(--fixture-parent="${RUNNER_TEMP}")
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            storage=(--fixture-parent=/dev/shm --require-memory --require-cpu-affinity)
+          fi
+          python3 tools/benchmark_backfill.py --repo="${GITHUB_WORKSPACE}" \
+            --output="${RUNNER_TEMP}/backfill" --series=github-ci-${{ matrix.platform }} \
+            --purpose=ci-replacement --history-root=benchmark-history/benchmarks \
+            --history-platform=${{ matrix.platform }} --cpus=1 --cpus=${{ matrix.cpus }} \
+            --disk-cache="${HOME}/.cache/bazel-disk" "${storage[@]}" --run
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: benchmark-backfill-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            ${{ runner.temp }}/backfill/batch.json
+            ${{ runner.temp }}/backfill/status.json
+            ${{ runner.temp }}/backfill/index.html
+            ${{ runner.temp }}/backfill/reports
+            ${{ runner.temp }}/backfill/binaries/*/build.log
+          if-no-files-found: warn
+          retention-days: 30

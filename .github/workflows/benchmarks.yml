@@ -22,7 +22,7 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
-            cpus: 4
+            cpus: 3
             shards: 3
             timeout: 45
           - os: macos-latest
@@ -136,7 +136,7 @@ jobs:
         include:
           - platform: linux
             os: ubuntu-latest
-            cpus: 4
+            cpus: 3
             timeout: 60
           - platform: macos
             os: macos-latest
