@@ -55,27 +55,33 @@ constexpr std::array kHelpFormatValues = std::to_array<ValueDoc>({
 });
 
 constexpr std::array kCaseValues = std::to_array<ValueDoc>({
-    {.value = "sensitive",
-     .meaning = "match exactly",
-     .rg =
-         registry::CompatibilitySpelling{
-             .name = "--case-sensitive",
-             .alias = "-s",
-         }},
-    {.value = "insensitive",
-     .meaning = "fold case",
-     .rg =
-         registry::CompatibilitySpelling{
-             .name = "--ignore-case",
-             .alias = "-i",
-         }},
-    {.value = "smart",
-     .meaning = "fold case unless the pattern contains ASCII uppercase",
-     .rg =
-         registry::CompatibilitySpelling{
-             .name = "--smart-case",
-             .alias = "-S",
-         }},
+    {
+        .value = "sensitive",
+        .meaning = "match exactly",
+        .rg =
+            registry::CompatibilitySpelling{
+                .name = "--case-sensitive",
+                .alias = "-s",
+            },
+    },
+    {
+        .value = "insensitive",
+        .meaning = "fold case",
+        .rg =
+            registry::CompatibilitySpelling{
+                .name = "--ignore-case",
+                .alias = "-i",
+            },
+    },
+    {
+        .value = "smart",
+        .meaning = "fold case unless the pattern contains ASCII uppercase",
+        .rg =
+            registry::CompatibilitySpelling{
+                .name = "--smart-case",
+                .alias = "-S",
+            },
+    },
 });
 constexpr std::array kDetailedBlockPolicyValues = std::to_array<ValueDoc>({
     {.value = "archive", .meaning = "use dedicated controls for archive output and member edits"},
@@ -94,24 +100,28 @@ constexpr std::array kLanguageConflictValues = std::to_array<ValueDoc>({
 });
 constexpr std::array kRegextypeValues = std::to_array<ValueDoc>({
     {.value = "ERE", .meaning = "platform POSIX extended regular expressions via regcomp(3)"},
-    {.value = "EXACT",
-     .meaning = "a literal string; metacharacters are plain text",
-     .rg =
-         registry::CompatibilitySpelling{
-             .name = "--fixed-strings",
-             .alias = "-F",
-         }},
+    {
+        .value = "EXACT",
+        .meaning = "a literal string; metacharacters are plain text",
+        .rg =
+            registry::CompatibilitySpelling{
+                .name = "--fixed-strings",
+                .alias = "-F",
+            },
+    },
     {.value = "FNMATCH", .meaning = "flat shell wildcard; `*` matches any character including `/`"},
     {.value = "GLOB", .meaning = "path-aware shell glob; wildcards and classes are component-local"},
     // Reserved: keep the resolver's unsupported-grammar diagnostic.
     {.value = "MATCH", .meaning = "", .hidden = true},
-    {.value = "PCRE2",
-     .meaning = "Perl syntax (lookaround, backreferences); a build extra",
-     .rg =
-         registry::CompatibilitySpelling{
-             .name = "--pcre2",
-             .alias = "-P",
-         }},
+    {
+        .value = "PCRE2",
+        .meaning = "Perl syntax (lookaround, backreferences); a build extra",
+        .rg =
+            registry::CompatibilitySpelling{
+                .name = "--pcre2",
+                .alias = "-P",
+            },
+    },
     {.value = "RE2", .meaning = "linear-time regular expressions (the default)"},
     {.value = "SHGLOB", .meaning = "GLOB plus `{a,b}` brace alternation, so `*.{cc,h}` matches either"},
 });

@@ -28,7 +28,8 @@ class MemorySource final : public vfs::FileSystem {
  public:
   absl::StatusOr<std::vector<vfs::Entry>> ReadDir(std::string_view path) const override {
     return std::vector<vfs::Entry>{
-        {.path = std::string(path) + "/file", .name = "file", .type = vfs::FileType::kRegular}};
+        {.path = std::string(path) + "/file", .name = "file", .type = vfs::FileType::kRegular},
+    };
   }
 
   absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool) const override {

@@ -61,6 +61,18 @@ The coverage-index and release-site suites require host Git; release-note tests 
 Their Bazel targets carry `requires-host-tools`, and the supported Linux/macOS CI images provide them.
 No tests contact GitHub or recursively invoke Bazel; the separate site integration step does use GitHub.
 
+## Compiler and sanitizer versions
+
+`--config=clang` uses LLVM 23.1.2. The `msan` feature selects LLVM 22.1.8 and its matching
+instrumented libc++ on Linux x86-64, independently of config flag order. ASan, TSan, coverage,
+fuzzing, releases, build tools, and clang-tidy use LLVM 23. The existing `--config=lto` selection
+continues to use native Apple ld on macOS and bundled LLD on Linux.
+
+Pre-commit and `tools/clang_format.sh` run clang-format from the same pinned LLVM 23 distribution.
+The first run fetches that distribution if needed; it does not compile XFF. CI runs clang-tidy
+across the complete indexed source set when the compiler or lint policy changes; ordinary source
+changes keep the affected-file scope.
+
 ## Local clang-tidy scope
 
 The normal commit and push hooks run clang-tidy on their changed C++ files. Changed headers

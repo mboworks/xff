@@ -217,9 +217,16 @@ struct RunTest : ::testing::Test {
 };
 
 TEST_F(RunTest, SummaryJsonIdentifiesRepeatedAndTemplateRequests) {
-  const auto records = RunArgvRecords(
-      {root_.string(), "-type", "f", "--summary=ext", "--summary=ext", "--summary={name}", "--summary={ext}",
-       "--format=jsonl"});
+  const auto records = RunArgvRecords({
+      root_.string(),
+      "-type",
+      "f",
+      "--summary=ext",
+      "--summary=ext",
+      "--summary={name}",
+      "--summary={ext}",
+      "--format=jsonl",
+  });
   EXPECT_THAT(last_errors_, Eq(0));
   std::map<std::size_t, std::string> identities;
   for (const auto& record : records) {
@@ -235,9 +242,16 @@ TEST_F(RunTest, SummaryJsonIdentifiesRepeatedAndTemplateRequests) {
 }
 
 TEST_F(RunTest, SummaryJsonCanonicalizesAliasesWithoutMergingRequests) {
-  const auto records = RunArgvRecords(
-      {root_.string(), "-type", "f", "--summary=owner", "--summary=user", "--summary=group", "--summary=hash",
-       "--format=jsonl"});
+  const auto records = RunArgvRecords({
+      root_.string(),
+      "-type",
+      "f",
+      "--summary=owner",
+      "--summary=user",
+      "--summary=group",
+      "--summary=hash",
+      "--format=jsonl",
+  });
   EXPECT_THAT(last_errors_, Eq(0));
   std::map<std::size_t, std::string> identities;
   for (const auto& record : records) {
@@ -265,9 +279,17 @@ TEST_F(RunTest, ComparisonSummaryJsonPreservesRequestIndicesAndRoots) {
 }
 
 TEST_F(RunTest, SummaryJsonResetRestartsIdentityAndRootScopeNamesItsRoot) {
-  const auto records = RunArgvRecords(
-      {root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--summary=none", "--summary=type",
-       "--summary-scope=root", "--format=jsonl"});
+  const auto records = RunArgvRecords({
+      root_.string(),
+      Path("sub"),
+      "-type",
+      "f",
+      "--summary=ext",
+      "--summary=none",
+      "--summary=type",
+      "--summary-scope=root",
+      "--format=jsonl",
+  });
   EXPECT_THAT(last_errors_, Eq(0));
   std::map<std::string, std::size_t> roots;
   for (const auto& record : records) {
@@ -325,9 +347,16 @@ TEST_F(RunTest, SummaryTotalMarkerDoesNotReserveGroupNames) {
 
 TEST_F(RunTest, ComparisonScopeTotalMarkerDistinguishesLiteralTotal) {
   ASSERT_THAT(fs_.WriteContent(Path("total"), "abc"), IsOk());
-  const auto records = RunArgvRecords(
-      {"--compare=status", "--compare-select=none", root_.string(), Path("sub"), "-type", "f", "--summary={name}",
-       "--format=jsonl"});
+  const auto records = RunArgvRecords({
+      "--compare=status",
+      "--compare-select=none",
+      root_.string(),
+      Path("sub"),
+      "-type",
+      "f",
+      "--summary={name}",
+      "--format=jsonl",
+  });
   EXPECT_THAT(last_errors_, Eq(0));
   std::size_t literal_rows = 0;
   std::size_t total_rows = 0;
@@ -387,9 +416,17 @@ TEST_F(RunTest, ComparisonScopeDisplayQuotesAmbiguousDataLabels) {
   ASSERT_THAT(fs_.WriteContent(Path("\"total\""), "x"), IsOk());
   const auto formats = std::to_array<std::string>({"--format=plain", "--format=md"});
   for (const auto& format : formats) {
-    const auto records = RunArgvRecords(
-        {"--compare=status", "--compare-select=none", root_.string(), Path("sub"), "-name", "*total*",
-         "--summary={name}", "--summary={def.MISSING}", format});
+    const auto records = RunArgvRecords({
+        "--compare=status",
+        "--compare-select=none",
+        root_.string(),
+        Path("sub"),
+        "-name",
+        "*total*",
+        "--summary={name}",
+        "--summary={def.MISSING}",
+        format,
+    });
     EXPECT_THAT(last_errors_, Eq(0));
     EXPECT_THAT(records, Contains(HasSubstr("\"total\"")));
     EXPECT_THAT(records, Contains(HasSubstr("\"\"")));
@@ -418,9 +455,16 @@ TEST_F(RunTest, StructuredProducersPreserveNonUtf8PathsAndGrepText) {
 
 TEST_F(RunTest, CompareJsonlStatusAndSummaryFormOneJsonStream) {
   ASSERT_THAT(fs_.WriteContent(Path("a\"name.txt"), "quoted"), IsOk());
-  const auto records = RunArgvRecords(
-      {"--compare", root_.string(), Path("sub"), "-type", "f", "--compare-select=all", "--summary=ext",
-       "--format=jsonl"});
+  const auto records = RunArgvRecords({
+      "--compare",
+      root_.string(),
+      Path("sub"),
+      "-type",
+      "f",
+      "--compare-select=all",
+      "--summary=ext",
+      "--format=jsonl",
+  });
   EXPECT_THAT(last_errors_, Eq(0));
   std::size_t comparisons = 0;
   std::size_t summaries = 0;
@@ -859,16 +903,17 @@ TEST_F(RunTest, PrintfPercentBraceEscapeExpandsXffFields) {
 }
 
 TEST_F(RunTest, InvalidFieldConsumersFailBeforeEarlierDeletion) {
-  const auto consumers = std::to_array<std::vector<std::string>>(
-      {{"-printf", "%{nmae}"},
-       {"-printf", "%{name"},
-       {"-cmp", "{nmae}"},
-       {"-grep:{nmae}", "a"},
-       {"--template={nmae}"},
-       {"--summary={nmae}"},
-       {"--summary={name:s/a/b/x}"},
-       {"--format=csv", "--columns=nmae"},
-       {"--exec-fields", "-exec", "echo", "{nmae}", ";"}});
+  const auto consumers = std::to_array<std::vector<std::string>>({
+      {"-printf", "%{nmae}"},
+      {"-printf", "%{name"},
+      {"-cmp", "{nmae}"},
+      {"-grep:{nmae}", "a"},
+      {"--template={nmae}"},
+      {"--summary={nmae}"},
+      {"--summary={name:s/a/b/x}"},
+      {"--format=csv", "--columns=nmae"},
+      {"--exec-fields", "-exec", "echo", "{nmae}", ";"},
+  });
   for (const auto& consumer : consumers) {
     std::vector<std::string> args{root_.string(), "-delete", ","};
     args.insert(args.end(), consumer.begin(), consumer.end());
@@ -1523,7 +1568,7 @@ TEST_F(RunTest, DiffIgnoreRejectsUnknownToken) {
   absl::Status reported;
   const auto [errors, any_match] = RunFind(
       command, fs_, [&](std::string_view record) { records.emplace_back(record); },
-      [&](std::string_view, absl::Status status) { reported = status; });
+      [&](std::string_view, absl::Status status) { reported = std::move(status); });
   EXPECT_THAT(records, IsEmpty());
   EXPECT_THAT(errors, 2);
   EXPECT_THAT(reported, StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("unknown --diff-ignore token 'bogus'")));
@@ -1546,7 +1591,8 @@ TEST_F(RunTest, InvalidValuedGlobalsAreRejectedBeforeTraversal) {
     MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({test.flag, root_.string()}));
     absl::Status reported;
     const RunResult result = RunFind(
-        command, fs_, [](std::string_view) {}, [&](std::string_view, absl::Status status) { reported = status; });
+        command, fs_, [](std::string_view) {},
+        [&](std::string_view, absl::Status status) { reported = std::move(status); });
     EXPECT_THAT(result.errors, 2);
     EXPECT_THAT(result.any_match, IsFalse());
     EXPECT_THAT(reported, StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr(test.message)));
@@ -1572,7 +1618,8 @@ TEST_F(RunTest, EveryExplicitArchiveModeRequiresAnAvailableBackend) {
     MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({std::string(flag), root_.string()}));
     absl::Status reported;
     const RunResult result = RunFind(
-        command, fs_, [](std::string_view) {}, [&](std::string_view, absl::Status status) { reported = status; });
+        command, fs_, [](std::string_view) {},
+        [&](std::string_view, absl::Status status) { reported = std::move(status); });
     EXPECT_THAT(result.errors, 2);
     EXPECT_THAT(result.any_match, IsFalse());
     EXPECT_THAT(reported, StatusIs(absl::StatusCode::kUnimplemented, HasSubstr("not built into this binary")));
@@ -1594,8 +1641,9 @@ TEST_F(RunTest, ExplicitArchiveResetDoesNotRequireABackend) {
 TEST_F(RunTest, PackWithoutAnArchiveBackendIsRejectedBeforeTraversal) {
   MBO_ASSERT_OK_AND_ASSIGN(const auto command, parser::Parse({"--pack=" + Path("output.tar"), root_.string()}));
   absl::Status reported;
-  const RunResult result =
-      RunFind(command, fs_, [](std::string_view) {}, [&](std::string_view, absl::Status status) { reported = status; });
+  const RunResult result = RunFind(
+      command, fs_, [](std::string_view) {},
+      [&](std::string_view, absl::Status status) { reported = std::move(status); });
   EXPECT_THAT(result.errors, 2);
   EXPECT_THAT(result.any_match, IsFalse());
   EXPECT_THAT(reported, StatusIs(absl::StatusCode::kUnimplemented, HasSubstr("without archive support")));
@@ -1658,7 +1706,7 @@ TEST_F(RunTest, DiffFormatAndContextRejectBadValues) {
     absl::Status reported;
     const auto [errors, any_match] = RunFind(
         command, fs_, [&](std::string_view record) { records.emplace_back(record); },
-        [&](std::string_view, absl::Status status) { reported = status; });
+        [&](std::string_view, absl::Status status) { reported = std::move(status); });
     EXPECT_THAT(records, IsEmpty());
     EXPECT_THAT(errors, 2);
     EXPECT_THAT(reported, StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr(message)));
@@ -1724,7 +1772,7 @@ TEST_F(RunTest, HashRejectsUnknownSpec) {
   absl::Status reported;
   const auto [errors, any_match] = RunFind(
       command, fs_, [&](std::string_view record) { records.emplace_back(record); },
-      [&](std::string_view, absl::Status status) { reported = status; });
+      [&](std::string_view, absl::Status status) { reported = std::move(status); });
   EXPECT_THAT(records, IsEmpty());
   EXPECT_THAT(errors, 2);
   EXPECT_THAT(reported, StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("'-hash:crc32'")));
@@ -1901,7 +1949,7 @@ TEST_F(RunTest, UnknownTimezoneIsRefusedBeforeTraversal) {
       command, fs_, [&](std::string_view) { emitted = true; },
       [&](std::string_view path, absl::Status status) {
         err_path = std::string(path);
-        err_status = status;
+        err_status = std::move(status);
       });
   EXPECT_THAT(errors, 2);
   EXPECT_THAT(err_path, "--timezone");
@@ -1917,7 +1965,7 @@ TEST_F(RunTest, OversizedSizeUnitIsRefusedBeforeTraversal) {
   bool emitted = false;
   const auto [errors, any_match] = RunFind(
       command, fs_, [&](std::string_view) { emitted = true; },
-      [&](std::string_view, absl::Status status) { err_status = status; });
+      [&](std::string_view, absl::Status status) { err_status = std::move(status); });
   EXPECT_THAT(errors, 2);
   EXPECT_THAT(err_status, StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("largest units")));
   EXPECT_THAT(emitted, IsFalse()) << "a malformed -size must not traverse";
@@ -1951,7 +1999,7 @@ TEST_F(RunTest, InvalidBlockSizeIsRefusedBeforeTraversal) {
   bool emitted = false;
   const auto [errors, any_match] = RunFind(
       command, fs_, [&](std::string_view) { emitted = true; },
-      [&](std::string_view, absl::Status status) { err_status = status; });
+      [&](std::string_view, absl::Status status) { err_status = std::move(status); });
   EXPECT_THAT(errors, 2);
   EXPECT_THAT(err_status, StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("positive")));
   EXPECT_THAT(emitted, IsFalse()) << "an invalid --block-size must not traverse";
@@ -2559,9 +2607,16 @@ TEST_F(RunTest, SummaryTopKeepsTheLargestGroupsBySize) {
 }
 
 TEST_F(RunTest, SummaryControlsRejectInvalidNumbersBeforeActions) {
-  static constexpr auto kInvalidFlags = std::to_array<std::string_view>(
-      {"--summary-precision=", "--summary-precision=garbage", "--summary-precision=-1", "--summary-precision=10",
-       "--top=", "--top=garbage", "--top=-1", "--top=18446744073709551616"});
+  static constexpr auto kInvalidFlags = std::to_array<std::string_view>({
+      "--summary-precision=",
+      "--summary-precision=garbage",
+      "--summary-precision=-1",
+      "--summary-precision=10",
+      "--top=",
+      "--top=garbage",
+      "--top=-1",
+      "--top=18446744073709551616",
+  });
   for (const std::string_view flag : kInvalidFlags) {
     SCOPED_TRACE(flag);
     EXPECT_THAT(RunArgvRecords({root_.string(), "--summary=ext", std::string(flag), "-print"}), IsEmpty());
@@ -2620,8 +2675,9 @@ TEST_F(RunTest, SummaryRejectsUnsupportedFormatsInsteadOfWritingPlainText) {
 
 TEST_F(RunTest, AlignedSummaryMatchesPlainInBothModes) {
   const std::vector<std::string> ordinary = {root_.string(), "-type", "f", "--summary=ext"};
-  const std::vector<std::string> comparison = {"--compare=summary", root_.string(), Path("sub"), "-type", "f",
-                                               "--summary=ext"};
+  const std::vector<std::string> comparison = {
+      "--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext",
+  };
   const auto commands = std::to_array<std::vector<std::string>>({ordinary, comparison});
   for (auto args : commands) {
     const auto plain = RunArgvRecords(args);
@@ -2660,9 +2716,16 @@ TEST_F(RunTest, SummaryTopBreaksEqualSizeTiesByCountThenName) {
 TEST_F(RunTest, ComparisonScopesSelectOrderedColumnGroups) {
   ASSERT_THAT(fs_.WriteContent(Path("sub/a.txt"), "aa"), IsOk());
   ASSERT_THAT(fs_.WriteContent(Path("sub/b.md"), "b"), IsOk());
-  const auto records = RunArgvRecords(
-      {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=overall",
-       "--summary-scope=diff,identical,left-total,right-total,different", "--format=jsonl"});
+  const auto records = RunArgvRecords({
+      "--compare=summary",
+      root_.string(),
+      Path("sub"),
+      "-type",
+      "f",
+      "--summary=overall",
+      "--summary-scope=diff,identical,left-total,right-total,different",
+      "--format=jsonl",
+  });
   EXPECT_THAT(
       records, Contains(AllOf(
                    HasSubstr(R"("scope":"left-only,right-only,different,identical,left-total,right-total")"),
@@ -2676,9 +2739,14 @@ TEST_F(RunTest, ComparisonScopesSelectOrderedColumnGroups) {
 
 TEST_F(RunTest, ComparisonCategoryTypeTransitionsCountPairsOnce) {
   ASSERT_THAT(fs_.WriteContent(Path("sub/sub"), "file"), IsOk());
-  const auto records = RunArgvRecords(
-      {"--compare=summary", root_.string(), Path("sub"), "--summary=type", "--summary-scope=different",
-       "--format=jsonl"});
+  const auto records = RunArgvRecords({
+      "--compare=summary",
+      root_.string(),
+      Path("sub"),
+      "--summary=type",
+      "--summary-scope=different",
+      "--format=jsonl",
+  });
   EXPECT_THAT(
       records, Contains(AllOf(HasSubstr(R"("group":"directory -> file")"), HasSubstr(R"("different":{"count":1,)"))));
   EXPECT_THAT(last_errors_, 0);
@@ -2694,9 +2762,16 @@ TEST_F(RunTest, ComparisonSummaryRejectsEmptyScopeList) {
 TEST_F(RunTest, ComparisonSummaryAccountsForBothSidesAndMissingEntries) {
   ASSERT_THAT(fs_.WriteContent(Path("sub/a.txt"), "aa"), IsOk());
   ASSERT_THAT(fs_.WriteContent(Path("sub/b.md"), "b"), IsOk());
-  const auto records = RunArgvRecords(
-      {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=overall",
-       "--summary-scope=all,compare", "--format=jsonl"});
+  const auto records = RunArgvRecords({
+      "--compare=summary",
+      root_.string(),
+      Path("sub"),
+      "-type",
+      "f",
+      "--summary=overall",
+      "--summary-scope=all,compare",
+      "--format=jsonl",
+  });
   const std::string comparison_prefix = absl::StrCat(
       R"({"record":"summary","request":0,"summary":"compare","scope":"compare","left_root":)",
       nlohmann::json(root_.string()).dump(), R"(,"right_root":)", nlohmann::json(Path("sub")).dump(), ",");
@@ -2727,9 +2802,16 @@ TEST_F(RunTest, ComparisonSummaryAccountsForBothSidesAndMissingEntries) {
                    HasSubstr(R"("scope":"left-total,right-total")"),
                    HasSubstr(R"("count":5,"count_percent":100.00,"bytes":6,"size_percent":100.00)"),
                    HasSubstr(R"("count":3,"count_percent":100.00,"bytes":4,"size_percent":100.00)"))));
-  const auto one_sided = RunArgvRecords(
-      {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext",
-       "--summary-scope=left-only,right-only", "--format=jsonl"});
+  const auto one_sided = RunArgvRecords({
+      "--compare=summary",
+      root_.string(),
+      Path("sub"),
+      "-type",
+      "f",
+      "--summary=ext",
+      "--summary-scope=left-only,right-only",
+      "--format=jsonl",
+  });
   EXPECT_THAT(one_sided, Contains(AllOf(HasSubstr(R"("group":"md")"), HasSubstr(R"("right-only":null)"))));
   EXPECT_THAT(last_errors_, 0);
 }
@@ -2749,17 +2831,32 @@ TEST_F(RunTest, ComparisonSummaryIncludesEmptyDirectoriesAndTypeTransitions) {
 TEST_F(RunTest, PairedSummaryDistinguishesZeroBytesAndUsesSelectedCategoryDenominators) {
   ASSERT_THAT(fs_.WriteContent(Path("a.txt"), ""), IsOk());
   ASSERT_THAT(fs_.WriteContent(Path("sub/a.txt"), ""), IsOk());
-  const auto records = RunArgvRecords(
-      {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--summary-scope=identical",
-       "--top=1", "--format=jsonl"});
+  const auto records = RunArgvRecords({
+      "--compare=summary",
+      root_.string(),
+      Path("sub"),
+      "-type",
+      "f",
+      "--summary=ext",
+      "--summary-scope=identical",
+      "--top=1",
+      "--format=jsonl",
+  });
   EXPECT_THAT(
       records,
       Contains(AllOf(
           HasSubstr(R"("scope":"identical")"), HasSubstr(R"("group":"txt")"),
           HasSubstr(R"("count":1,"count_percent":100.00,"bytes":0,"size_percent":0.00)"), Not(HasSubstr("null")))));
-  const auto plain = RunArgvRecords(
-      {"--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext", "--summary-scope=compare",
-       "--human=off"});
+  const auto plain = RunArgvRecords({
+      "--compare=summary",
+      root_.string(),
+      Path("sub"),
+      "-type",
+      "f",
+      "--summary=ext",
+      "--summary-scope=compare",
+      "--human=off",
+  });
   EXPECT_THAT(plain, Contains(AllOf(HasSubstr("Group  left-total"), HasSubstr("Count  % count"))).Times(1));
   EXPECT_THAT(plain, Contains(HasSubstr("-")));
   EXPECT_THAT(last_errors_, 0);
@@ -2774,9 +2871,16 @@ TEST_F(RunTest, ComparisonSummaryDefaultsToPairedScopeAndExplicitScopeOverridesI
           {"--summary-scope=compare", "--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext",
            "--format=jsonl"}),
       Eq(implicit));
-  const auto combined = RunArgvRecords(
-      {"--summary-scope=all", "--compare=summary", root_.string(), Path("sub"), "-type", "f", "--summary=ext",
-       "--format=jsonl"});
+  const auto combined = RunArgvRecords({
+      "--summary-scope=all",
+      "--compare=summary",
+      root_.string(),
+      Path("sub"),
+      "-type",
+      "f",
+      "--summary=ext",
+      "--format=jsonl",
+  });
   EXPECT_THAT(combined, Contains(HasSubstr(R"("scope":"all","root":"","group":"total","count":4)")));
   EXPECT_THAT(
       RunArgvRecords(
@@ -2826,9 +2930,15 @@ TEST_F(RunTest, BareSummaryDoesNotDuplicateComparisonShorthand) {
 }
 
 TEST_F(RunTest, ExplicitComparisonAndOrdinarySummaryRequestsRemainRepeatable) {
-  const auto comparison = RunArgvRecords(
-      {"--compare=status", "--compare-select=none", root_.string(), Path("sub"), "--summary=compare",
-       "--summary=compare", "--format=md"});
+  const auto comparison = RunArgvRecords({
+      "--compare=status",
+      "--compare-select=none",
+      root_.string(),
+      Path("sub"),
+      "--summary=compare",
+      "--summary=compare",
+      "--format=md",
+  });
   EXPECT_THAT(last_errors_, 0);
   EXPECT_THAT(comparison, Contains("\n## Comparison summary").Times(2));
   const auto ordinary = RunArgvRecords({root_.string(), "--summary", "--summary", "--format=md"});
@@ -2860,8 +2970,9 @@ TEST_F(RunTest, TruncatedSummariesReportCompleteGroupPopulation) {
     for (const bool compare : std::to_array<bool>({false, true})) {
       SCOPED_TRACE(format);
       SCOPED_TRACE(compare);
-      std::vector<std::string> args = {root_.string(),  "-type",   "f",
-                                       "--summary=ext", "--top=1", absl::StrCat("--format=", format)};
+      std::vector<std::string> args = {
+          root_.string(), "-type", "f", "--summary=ext", "--top=1", absl::StrCat("--format=", format),
+      };
       if (compare) {
         args.insert(args.begin(), "--compare=summary");
         args.insert(args.begin() + 2, Path("sub"));
@@ -2890,9 +3001,16 @@ TEST_F(RunTest, TruncatedSummariesReportCompleteGroupPopulation) {
 }
 
 TEST_F(RunTest, RootSummaryTruncationIsSpecificToEachRequest) {
-  const auto records = RunArgvRecords(
-      {root_.string(), "-type", "f", "--summary=ext", "--summary=type", "--summary-scope=root", "--top=1",
-       "--format=jsonl"});
+  const auto records = RunArgvRecords({
+      root_.string(),
+      "-type",
+      "f",
+      "--summary=ext",
+      "--summary=type",
+      "--summary-scope=root",
+      "--top=1",
+      "--format=jsonl",
+  });
   ASSERT_THAT(records, SizeIs(4));
   for (const auto& record : records) {
     const auto row = nlohmann::json::parse(record);
@@ -3253,7 +3371,8 @@ class NoBtimeFs : public vfs::FileSystem {
       return absl::NotFoundError("NoBtimeFs: no such directory");
     }
     return std::vector<vfs::Entry>{
-        vfs::Entry{.path = root_ + "/f.txt", .name = "f.txt", .type = vfs::FileType::kRegular}};
+        vfs::Entry{.path = root_ + "/f.txt", .name = "f.txt", .type = vfs::FileType::kRegular},
+    };
   }
 
   absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool /*follow_symlinks*/) const override {
@@ -3337,7 +3456,8 @@ class CaseFoldFs : public vfs::FileSystem {
       return absl::NotFoundError("CaseFoldFs: no such directory");
     }
     return std::vector<vfs::Entry>{
-        vfs::Entry{.path = root_ + "/Foo.txt", .name = "Foo.txt", .type = vfs::FileType::kRegular}};
+        vfs::Entry{.path = root_ + "/Foo.txt", .name = "Foo.txt", .type = vfs::FileType::kRegular},
+    };
   }
 
   absl::StatusOr<vfs::Metadata> Stat(std::string_view path, bool /*follow_symlinks*/) const override {

@@ -81,22 +81,27 @@ Section MakeFieldsSection() {
                   .node =
                       Prose{
                           .runs =
-                              {{.style = Inline::Style::kText, .text = "See "},
-                               {
-                                   .style = Inline::Style::kRef,
-                                   .text = "the printf directives",
-                                   .target = RefTarget{.kind = RefTarget::Kind::kTopic, .id = "printf"},
-                               },
-                               {.style = Inline::Style::kCode, .text = "-printf"}},
+                              {
+                                  {.style = Inline::Style::kText, .text = "See "},
+                                  {
+                                      .style = Inline::Style::kRef,
+                                      .text = "the printf directives",
+                                      .target = RefTarget{.kind = RefTarget::Kind::kTopic, .id = "printf"},
+                                  },
+                                  {.style = Inline::Style::kCode, .text = "-printf"},
+                              },
                       },
               },
               Content{
                   .node =
                       Rows{
-                          .rows = {{
-                              .term = "{path}",
-                              .description = {{.style = Inline::Style::kText, .text = "full path"}},
-                          }},
+                          .rows =
+                              {
+                                  {
+                                      .term = "{path}",
+                                      .description = {{.style = Inline::Style::kText, .text = "full path"}},
+                                  },
+                              },
                       },
               },
               Content{.node = Bullets{.items = {{{.style = Inline::Style::kText, .text = "a bullet"}}}}},

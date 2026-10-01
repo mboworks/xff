@@ -115,7 +115,7 @@ class PbzxStream final : public vfs::ReadStream {
     }
     MBO_ASSIGN_OR_RETURN(auto retained, budget_->Reserve(static_cast<std::size_t>(decoded_size)));
     const auto workspace = static_cast<std::size_t>(stored_size + (stored_size == decoded_size ? 0 : kDecoderLimit));
-    MBO_ASSIGN_OR_RETURN(auto temporary, budget_->Reserve(workspace));
+    MBO_ASSIGN_OR_RETURN(const auto temporary, budget_->Reserve(workspace));
     MBO_ASSIGN_OR_RETURN(std::string input, ReadExact(*input_, static_cast<std::size_t>(stored_size)));
     MBO_ASSIGN_OR_RETURN(decoded_, DecodeChunk(std::move(input), static_cast<std::size_t>(decoded_size)));
     cached_ = std::move(retained);

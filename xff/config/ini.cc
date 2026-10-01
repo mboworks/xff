@@ -37,7 +37,7 @@ class IniLexer {
   IniLine Next() {
     const std::size_t start = pos_;
     const std::string_view remaining = text_.substr(pos_);
-    expand_ = !absl::StripLeadingAsciiWhitespace(remaining.substr(0, remaining.find('\n'))).starts_with("[");
+    expand_ = !absl::StripLeadingAsciiWhitespace(remaining.substr(0, remaining.find('\n'))).starts_with('[');
     IniLine line{.number = number_};
     std::size_t end = text_.size();
     while (!Done()) {

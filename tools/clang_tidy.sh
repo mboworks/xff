@@ -21,7 +21,7 @@
 # repository-wide sweep.
 #
 # clang-tidy resolution prefers the hermetic toolchains_llvm binary (so it matches
-# the compile DB's clang-22 flags and understands C++23), then a versioned system
+# the compile DB's compiler flags and understands C++23), then a versioned system
 # clang-tidy on PATH. A resolved clang-tidy older than the minimum below is treated
 # as "not installed" and skipped - clang-tidy 16/17 mis-parse this codebase's C++23
 # and emit false positives whose fixes break the build. Mirrors tools/clang_format.sh.

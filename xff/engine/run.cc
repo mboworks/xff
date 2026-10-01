@@ -300,7 +300,7 @@ enum class SummaryMode : std::uint8_t {
   kGroup,
   kHash,
   kHashVerification,
-  kTemplate
+  kTemplate,
 };
 
 // One --summary sink: a group-by mode plus the {template} string (mode == kTemplate only). --summary
@@ -575,7 +575,7 @@ std::optional<std::pair<std::string, std::string>> HistBucketKey(
     const HistogramSpec& spec,
     const Visit& visit,
     const vfs::FileSystem& fs,
-    ContentSnapshot& content) {
+    const ContentSnapshot& content) {
   switch (spec.bucket) {
     case HistBucket::kOverall:
     case HistBucket::kType:
@@ -2506,7 +2506,7 @@ auto MakeContainerMounter(const archive::MemberPathOptions& member_path_options,
     if (depth > 0 && !sniff_any && !archive::LooksLikeContainerName(BasenameOf(container)) && !package_payload) {
       return absl::InvalidArgumentError(absl::StrCat("not a container by name: ", container));
     }
-    const auto open = [&]() -> absl::StatusOr<std::unique_ptr<vfs::FileSystem>> {
+    const auto open = [&] -> absl::StatusOr<std::unique_ptr<vfs::FileSystem>> {
       // Outer roots may be virtual inputs too. Always ask their VFS for a restartable
       // source; host files keep lazy reads and nested containers retain parent ownership.
       MBO_ASSIGN_OR_RETURN(const vfs::SharedReadSource bytes, source.ContentSource(container));
@@ -2563,15 +2563,17 @@ bool ResolveSkipHidden(const std::vector<std::string>& globals, std::optional<re
 
 // The version-control systems whose metadata --skip-vcs can prune: a token (the --skip-vcs= value)
 // mapped to the directory / gitlink-file name to drop. Order matches the --help / display order.
-constexpr std::array<std::pair<std::string_view, std::string_view>, 7> kVcsMetadata = {{
-    {"git", ".git"},
-    {"hg", ".hg"},
-    {"svn", ".svn"},
-    {"jj", ".jj"},
-    {"bzr", ".bzr"},
-    {"darcs", "_darcs"},
-    {"cvs", "CVS"},
-}};
+constexpr std::array<std::pair<std::string_view, std::string_view>, 7> kVcsMetadata = {
+    {
+        {"git", ".git"},
+        {"hg", ".hg"},
+        {"svn", ".svn"},
+        {"jj", ".jj"},
+        {"bzr", ".bzr"},
+        {"darcs", "_darcs"},
+        {"cvs", "CVS"},
+    },
+};
 
 // Resolves the VCS metadata NAMES (`.git`, `.hg`, ...) --skip-vcs should prune from the walk.
 // Explicit --skip-vcs / --no-skip-vcs win, last occurrence: bare or `=all` selects every VCS, `=none`
@@ -3307,9 +3309,11 @@ std::vector<std::string> SummaryColumns(
     unsigned precision,
     bool has_size = true) {
   return {
-      format::Int(row.count, ','), absl::StrCat(SummaryPercent(row.count, total.count, precision), "%"),
+      format::Int(row.count, ','),
+      absl::StrCat(SummaryPercent(row.count, total.count, precision), "%"),
       has_size ? SummarySize(row.size, human, precision) : "-",
-      has_size ? absl::StrCat(SummaryPercent(row.size, total.size, precision), "%") : "-"};
+      has_size ? absl::StrCat(SummaryPercent(row.size, total.size, precision), "%") : "-",
+  };
 }
 
 std::string SummaryJson(const SummaryRow& row, const SummaryRow& total, unsigned precision, bool has_size = true) {
@@ -3483,8 +3487,13 @@ void EmitSummaryRows(
     return;
   }
   SummaryTable table(
-      {format::Align::kLeft, format::Align::kRight, format::Align::kRight, format::Align::kRight,
-       format::Align::kRight},
+      {
+          format::Align::kLeft,
+          format::Align::kRight,
+          format::Align::kRight,
+          format::Align::kRight,
+          format::Align::kRight,
+      },
       {"Group", "Count", "% count", "Size", "% size"}, output_format, with_header);
   for (std::size_t index = 0; index < rows.size(); ++index) {
     const auto& row = rows.at(index);
@@ -3827,7 +3836,7 @@ std::optional<std::uint64_t> HistogramValue(
     const HistogramSpec& spec,
     const Visit& visit,
     const vfs::FileSystem& fs,
-    ContentSnapshot& content) {
+    const ContentSnapshot& content) {
   if (spec.agg == HistAgg::kCount) {
     return 1;
   }
@@ -3848,7 +3857,7 @@ void FeedHistograms(
     std::vector<std::map<std::string, HistCell>>& cells_per_sink,
     const Visit& visit,
     const vfs::FileSystem& fs,
-    ContentSnapshot& content) {
+    const ContentSnapshot& content) {
   for (std::size_t i = 0; i < specs.size(); ++i) {
     const HistogramSpec& spec = specs[i];
     const std::optional<std::pair<std::string, std::string>> bucket = HistBucketKey(spec, visit, fs, content);
@@ -3968,7 +3977,7 @@ int FeedCollections(
     const Visit visit = collected.AsVisit();
     const vfs::FileSystem& fs = visit.fs.has_value() ? *visit.fs : defaults.fs;
     const std::string link;  // {target} is not resolved for a collected entry
-    ContentSnapshot content;
+    const ContentSnapshot content;
     const fields::RenderContext key_ctx{
         .path = visit.path,
         .root = visit.root,
@@ -4199,8 +4208,11 @@ SummaryTables PairSummaryContributions(const SummaryTables& left, const SummaryT
       const auto& [left_key, left_value] = *cells.begin();
       const auto& [right_key, right_value] = *other.begin();
       SummaryCells transition{
-          {absl::StrCat(left_key, " -> ", right_key),
-           {std::max(left_value.first, right_value.first), left_value.second + right_value.second}}};
+          {
+              absl::StrCat(left_key, " -> ", right_key),
+              {std::max(left_value.first, right_value.first), left_value.second + right_value.second},
+          },
+      };
       cells = std::move(transition);
       continue;
     }
@@ -4256,8 +4268,14 @@ void EmitTreeCompareSummary(
       continue;
     }
     SummaryTable table(
-        {format::Align::kLeft, format::Align::kLeft, format::Align::kRight, format::Align::kRight,
-         format::Align::kRight, format::Align::kRight},
+        {
+            format::Align::kLeft,
+            format::Align::kLeft,
+            format::Align::kRight,
+            format::Align::kRight,
+            format::Align::kRight,
+            format::Align::kRight,
+        },
         {"Type", "Status", "Results", "% results", "Combined size", "% size"}, output_format,
         !HasGlobal(globals, "--no-header"));
     const auto add_row = [&](std::string_view type, const SummaryRow& row, bool is_total) {
@@ -5214,7 +5232,7 @@ RunResult RunFindCore(
         on_error("--glob", absl::InvalidArgumentError("invalid or empty glob"));
         return RunResult{.errors = 2};
       }
-      rg_positive_glob = rg_positive_glob || !glob.starts_with("!");
+      rg_positive_glob = rg_positive_glob || !glob.starts_with('!');
     }
     const auto mode = parser::ResolveCaseMode(command.globals, registry::Style::kXff);
     auto prepared =
@@ -6274,7 +6292,7 @@ RunResult RunFindCore(
     // Feed one logical unit (a set, or a non-shard file) into both sinks; `shard_count` -> {shard}.
     const auto feed_unit = [&](const Visit& visit, std::optional<std::int64_t> shard_count) {
       const std::string link;
-      ContentSnapshot content;
+      const ContentSnapshot content;
       const fields::RenderContext key_ctx{
           .path = visit.path,
           .root = visit.root,
@@ -7133,7 +7151,7 @@ RunResult RunFind(
 namespace {
 
 // Display strings for the flavor feature-map, one per resolver's value type.
-std::string GitignoreName(GitignoreMode mode) {
+std::string_view GitignoreName(GitignoreMode mode) {
   switch (mode) {
     case GitignoreMode::kAuto: return "auto";
     case GitignoreMode::kOff: return "off";
@@ -7142,18 +7160,18 @@ std::string GitignoreName(GitignoreMode mode) {
   return "off";
 }
 
-std::string HiddenName(bool skip) {
+std::string_view HiddenName(bool skip) {
   return skip ? "skip" : "show";
 }
 
-std::string HumanName(std::optional<format::SizeUnits> units) {
+std::string_view HumanName(std::optional<format::SizeUnits> units) {
   if (!units.has_value()) {
     return "bytes";
   }
   return *units == format::SizeUnits::kSi ? "si" : "iec";
 }
 
-std::string SortName(SortOrder order) {
+std::string_view SortName(SortOrder order) {
   switch (order) {
     case SortOrder::kNone: return "none";
     case SortOrder::kDir: return "per-dir";
@@ -7165,7 +7183,7 @@ std::string SortName(SortOrder order) {
   return "none";
 }
 
-std::string CaseName(parser::CaseMode mode) {
+std::string_view CaseName(parser::CaseMode mode) {
   switch (mode) {
     case parser::CaseMode::kInsensitive: return "insensitive";
     case parser::CaseMode::kSensitive: return "sensitive";

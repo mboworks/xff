@@ -261,7 +261,7 @@ void OpReaddir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fu
   std::string buf(size, '\0');
   std::size_t used = 0;
   off_t next = 0;
-  auto emit = [&](const char* name, const struct stat& attr) {
+  const auto emit = [&](const char* name, const struct stat& attr) {
     ++next;
     if (next <= off) {
       return true;
@@ -321,6 +321,7 @@ void OpOpen(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info* file_info) {
   api.reply_open(req, file_info);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): libfuse requires this callback signature.
 void OpRead(fuse_req_t req, fuse_ino_t /*ino*/, size_t size, off_t off, struct fuse_file_info* file_info) {
   const FuseApi& api = *ResolvedApi();
   FuseServer::Impl& impl = ImplOf(req);
@@ -346,6 +347,7 @@ void OpRead(fuse_req_t req, fuse_ino_t /*ino*/, size_t size, off_t off, struct f
 
 // XFF_UNSTABLE_COVERAGE_START: close queues RELEASE asynchronously; teardown may detach the mount before the
 // kernel delivers it. Kernel-path tests exercise this callback, but its coverage is not deterministic.
+// NOLINTNEXTLINE(misc-const-correctness): libfuse requires this callback signature.
 void OpRelease(fuse_req_t req, fuse_ino_t /*ino*/, struct fuse_file_info* file_info) {
   const FuseApi& api = *ResolvedApi();
   FuseServer::Impl& impl = ImplOf(req);

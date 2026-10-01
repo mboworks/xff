@@ -59,21 +59,23 @@ std::optional<Tristate> ParseTristate(std::string_view value) {
 
 std::optional<std::uint64_t> ParseByteUnit(std::string_view unit) {
   using Unit = std::pair<std::string_view, std::uint64_t>;
-  static constexpr std::array<Unit, 13> kUnits = {{
-      {"b", 1},
-      {"kb", 1'000},
-      {"mb", 1'000'000},
-      {"gb", 1'000'000'000},
-      {"tb", 1'000'000'000'000},
-      {"pb", 1'000'000'000'000'000},
-      {"eb", 1'000'000'000'000'000'000},
-      {"kib", 1ULL << 10U},
-      {"mib", 1ULL << 20U},
-      {"gib", 1ULL << 30U},
-      {"tib", 1ULL << 40U},
-      {"pib", 1ULL << 50U},
-      {"eib", 1ULL << 60U},
-  }};
+  static constexpr std::array<Unit, 13> kUnits = {
+      {
+          {"b", 1},
+          {"kb", 1'000},
+          {"mb", 1'000'000},
+          {"gb", 1'000'000'000},
+          {"tb", 1'000'000'000'000},
+          {"pb", 1'000'000'000'000'000},
+          {"eb", 1'000'000'000'000'000'000},
+          {"kib", 1ULL << 10U},
+          {"mib", 1ULL << 20U},
+          {"gib", 1ULL << 30U},
+          {"tib", 1ULL << 40U},
+          {"pib", 1ULL << 50U},
+          {"eib", 1ULL << 60U},
+      },
+  };
   const std::string lower = absl::AsciiStrToLower(unit);
   // This is an array iterator, not an optionally borrowed object. Its pointer representation is an
   // implementation detail of the contiguous iterator.

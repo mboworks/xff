@@ -214,7 +214,7 @@ TEST_F(ParallelCompareTest, ShortReadsAndEarlyEofPreserveRangeSemantics) {
 }
 
 TEST_F(ParallelCompareTest, CursorFailuresRemainErrors) {
-  auto source = std::make_shared<ShortSource>();
+  const auto source = std::make_shared<ShortSource>();
   fs.source_override = source;
   source->fail_open = true;
   left.metadata.size = right.metadata.size = 262'144;
@@ -280,7 +280,7 @@ TEST_F(ParallelCompareTest, CheapKindsAndSizesDoNotReadContent) {
 TEST_F(ParallelCompareTest, LeftFailurePrecedesRightOpenAndReadErrors) {
   CompareFs right_fs;
   right.fs.set_ref(right_fs);
-  auto source = std::make_shared<ShortSource>();
+  const auto source = std::make_shared<ShortSource>();
   fs.source_override = source;
   source->fail_at = 0;
   left.metadata.size = right.metadata.size = 262'144;
@@ -288,7 +288,7 @@ TEST_F(ParallelCompareTest, LeftFailurePrecedesRightOpenAndReadErrors) {
   EXPECT_THAT(compare.Compare({{.left = left, .right = right}}).front(), StatusIs(absl::StatusCode::kDataLoss));
   EXPECT_THAT(right_fs.sources.load(), Eq(0));
   source->fail_at = 100;
-  auto right_source = std::make_shared<ShortSource>();
+  const auto right_source = std::make_shared<ShortSource>();
   right_source->fail_open = true;
   right_fs.source_override = right_source;
   EXPECT_THAT(compare.Compare({{.left = left, .right = right}}).front(), StatusIs(absl::StatusCode::kPermissionDenied));
@@ -300,14 +300,14 @@ TEST_F(ParallelCompareTest, LeftFailurePrecedesRightOpenAndReadErrors) {
 TEST_F(ParallelCompareTest, PatchRetentionRequiresSuccessfulEofProbesOnBothSides) {
   CompareFs right_fs;
   right.fs.set_ref(right_fs);
-  auto source = std::make_shared<ShortSource>();
+  const auto source = std::make_shared<ShortSource>();
   source->bytes = "abcd";
   source->fail_at = 4;
   fs.source_override = source;
   ParallelCompare compare(1, true);
   EXPECT_THAT(compare.Compare({{.left = left, .right = right}}).front(), StatusIs(absl::StatusCode::kDataLoss));
   source->fail_at = 100;
-  auto right_source = std::make_shared<ShortSource>();
+  const auto right_source = std::make_shared<ShortSource>();
   right_source->bytes = "efgh";
   right_source->fail_at = 4;
   right_fs.source_override = right_source;

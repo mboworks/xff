@@ -55,7 +55,7 @@ TEST_F(RegexTest, WorkerForkPreservesPatternCaseAndGrammarAfterOriginalDies) {
   });
   for (const auto grammar : kGrammars) {
     for (const bool insensitive : {false, true}) {
-      const auto make_worker = [&]() -> absl::StatusOr<Matcher> {
+      const auto make_worker = [&] -> absl::StatusOr<Matcher> {
         MBO_ASSIGN_OR_RETURN(const auto original, Matcher::Compile("hello", insensitive, grammar));
         return original.ForkForWorker();
       };

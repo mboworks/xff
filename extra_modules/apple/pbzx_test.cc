@@ -52,7 +52,7 @@ struct PbzxTest : ::testing::Test {
   }
 
   static absl::StatusOr<std::string> Decode(std::string bytes) {
-    MBO_ASSIGN_OR_RETURN(auto source, DecodePbzx(vfs::MemoryReadSource(std::move(bytes))));
+    MBO_ASSIGN_OR_RETURN(const auto source, DecodePbzx(vfs::MemoryReadSource(std::move(bytes))));
     return vfs::ReadSourceBytes(*source, 1'024UZ * 1'024);
   }
 
@@ -91,7 +91,7 @@ class FragmentSource final : public vfs::ReadSource {
 
 TEST_F(PbzxTest, HeaderAndChunkParsingAcceptShortReads) {
   const auto input = std::make_shared<FragmentSource>(vfs::MemoryReadSource(Frame("fragmented")));
-  MBO_ASSERT_OK_AND_ASSIGN(auto source, DecodePbzx(input));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto source, DecodePbzx(input));
   MBO_ASSERT_OK_AND_ASSIGN(auto stream, source->Open());
   EXPECT_THAT(stream->Read(0), IsOkAndHolds(IsEmpty()));
   EXPECT_THAT(vfs::ReadSourceBytes(*source, 100), IsOkAndHolds(EqualsText("fragmented")));
@@ -99,18 +99,18 @@ TEST_F(PbzxTest, HeaderAndChunkParsingAcceptShortReads) {
 
 TEST_F(PbzxTest, FragmentedXarSourcePreservesPackageContextAndParentLifetime) {
   auto source = std::make_shared<FragmentSource>(vfs::HostReadSource(Fixture("sample.xip")));
-  MBO_ASSERT_OK_AND_ASSIGN(auto outer, archive::ArchiveFileSystem::OpenSource("sample.xip", source));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto outer, archive::ArchiveFileSystem::OpenSource("sample.xip", source));
   EXPECT_THAT(outer.ContainerCandidate("sample.xip!Content"), IsTrue());
-  MBO_ASSERT_OK_AND_ASSIGN(auto member, outer.ContentSource("sample.xip!Content"));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto member, outer.ContentSource("sample.xip!Content"));
   source.reset();
-  MBO_ASSERT_OK_AND_ASSIGN(auto inner, archive::ArchiveFileSystem::OpenSource("payload", member));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto inner, archive::ArchiveFileSystem::OpenSource("payload", member));
   EXPECT_THAT(
       inner.ReadContent("payload!Applications/Example.app/Contents/info.txt"),
       IsOkAndHolds(EqualsText("portable package\n")));
 }
 
 TEST_F(PbzxTest, RawChunksAndRestartableSources) {
-  MBO_ASSERT_OK_AND_ASSIGN(auto source, DecodePbzx(vfs::MemoryReadSource(Frame("abcdef"))));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto source, DecodePbzx(vfs::MemoryReadSource(Frame("abcdef"))));
   MBO_ASSERT_OK_AND_ASSIGN(auto first, source->Open());
   MBO_ASSERT_OK_AND_ASSIGN(auto second, source->Open());
   EXPECT_THAT(first->Read(2), IsOkAndHolds(EqualsText("ab")));
@@ -146,7 +146,7 @@ TEST_F(PbzxTest, ValidatesTerminatorAndXzData) {
 }
 
 TEST_F(PbzxTest, MixedRawXzFixtureMatchesIndependentCpio) {
-  MBO_ASSERT_OK_AND_ASSIGN(auto source, DecodePbzx(vfs::HostReadSource(Fixture("payload.pbzx"))));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto source, DecodePbzx(vfs::HostReadSource(Fixture("payload.pbzx"))));
   MBO_ASSERT_OK_AND_ASSIGN(
       const auto expected, vfs::ReadSourceBytes(*vfs::HostReadSource(Fixture("payload.cpio")), 4'096));
   EXPECT_THAT(vfs::ReadSourceBytes(*source, 4'096), IsOkAndHolds(EqualsText(expected)));
@@ -154,11 +154,11 @@ TEST_F(PbzxTest, MixedRawXzFixtureMatchesIndependentCpio) {
 }
 
 TEST_F(PbzxTest, XarEnvelopeAndNestedPayloadStreamWithoutHostExtraction) {
-  MBO_ASSERT_OK_AND_ASSIGN(auto outer, archive::ArchiveFileSystem::Open(Fixture("sample.xip")));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto outer, archive::ArchiveFileSystem::Open(Fixture("sample.xip")));
   const auto member = Fixture("sample.xip") + "!Content";
   EXPECT_THAT(outer.ContainerCandidate(member), IsTrue());
-  MBO_ASSERT_OK_AND_ASSIGN(auto source, outer.ContentSource(member));
-  MBO_ASSERT_OK_AND_ASSIGN(auto inner, archive::ArchiveFileSystem::OpenSource(member, source));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto source, outer.ContentSource(member));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto inner, archive::ArchiveFileSystem::OpenSource(member, source));
   EXPECT_THAT(
       inner.ReadContent(member + "!Applications/Example.app/Contents/info.txt"),
       IsOkAndHolds(EqualsText("portable package\n")));
@@ -166,10 +166,11 @@ TEST_F(PbzxTest, XarEnvelopeAndNestedPayloadStreamWithoutHostExtraction) {
 
 TEST_F(PbzxTest, GenericXarNamesDoNotCreatePackageContext) {
   MBO_ASSERT_OK_AND_ASSIGN(
-      auto source, archive::ArchiveFileSystem::OpenSource("ordinary.xar", vfs::HostReadSource(Fixture("plain.pkg"))));
+      const auto source,
+      archive::ArchiveFileSystem::OpenSource("ordinary.xar", vfs::HostReadSource(Fixture("plain.pkg"))));
   EXPECT_THAT(source.ContainerCandidate("ordinary.xar!Payload"), IsFalse());
   MBO_ASSERT_OK_AND_ASSIGN(
-      auto package,
+      const auto package,
       archive::ArchiveFileSystem::OpenSource("APPLICATION.PKG", vfs::HostReadSource(Fixture("plain.pkg"))));
   EXPECT_THAT(package.ContainerCandidate("APPLICATION.PKG!Payload"), IsTrue());
 }
@@ -237,8 +238,8 @@ TEST_F(PbzxTest, XzEnforcesMemoryBudgetDecodedSizeAndCompleteConsumption) {
 }
 
 TEST_F(PbzxTest, SharedChunkCacheBudgetCoversIndependentAndNestedCursors) {
-  auto budget = std::make_shared<vfs::ReadBudget>(12);
-  MBO_ASSERT_OK_AND_ASSIGN(auto source, DecodePbzx(vfs::MemoryReadSource(Frame("abcdef"), budget)));
+  const auto budget = std::make_shared<vfs::ReadBudget>(12);
+  MBO_ASSERT_OK_AND_ASSIGN(const auto source, DecodePbzx(vfs::MemoryReadSource(Frame("abcdef"), budget)));
   EXPECT_THAT(source->Budget(), Eq(budget));
   MBO_ASSERT_OK_AND_ASSIGN(auto first, source->Open());
   MBO_ASSERT_OK_AND_ASSIGN(auto second, source->Open());
@@ -253,14 +254,14 @@ TEST_F(PbzxTest, SharedChunkCacheBudgetCoversIndependentAndNestedCursors) {
   EXPECT_THAT(third->Read(6), IsOkAndHolds(EqualsText("abcdef")));
   EXPECT_THAT(third->Read(1), IsOkAndHolds(IsEmpty()));
   EXPECT_THAT(budget->MemoryUsed(), Eq(0));
-  MBO_ASSERT_OK_AND_ASSIGN(auto nested, DecodePbzx(vfs::MemoryReadSource(Frame(Frame("data")), budget)));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto nested, DecodePbzx(vfs::MemoryReadSource(Frame(Frame("data")), budget)));
   EXPECT_THAT(vfs::ReadSourceBytes(*nested, 100), StatusIs(absl::StatusCode::kResourceExhausted));
   EXPECT_THAT(budget->MemoryUsed(), Eq(0));
 }
 
 TEST_F(PbzxTest, CompressedDecoderWorkspaceIsReservedBeforeDecoding) {
-  auto budget = std::make_shared<vfs::ReadBudget>(128);
-  MBO_ASSERT_OK_AND_ASSIGN(auto source, DecodePbzx(vfs::HostReadSource(Fixture("xz.pbzx"), budget)));
+  const auto budget = std::make_shared<vfs::ReadBudget>(128);
+  MBO_ASSERT_OK_AND_ASSIGN(const auto source, DecodePbzx(vfs::HostReadSource(Fixture("xz.pbzx"), budget)));
   EXPECT_THAT(vfs::ReadSourceBytes(*source, 10), StatusIs(absl::StatusCode::kResourceExhausted));
   EXPECT_THAT(budget->MemoryUsed(), Eq(0));
 }
@@ -297,7 +298,7 @@ class SeekFailureSource final : public vfs::ReadSource {
 };
 
 TEST_F(PbzxTest, NativeProductPackageNeedsSeeksAndPreservesSourceErrors) {
-  auto source = vfs::HostReadSource(Fixture("native-product.pkg"));
+  const auto source = vfs::HostReadSource(Fixture("native-product.pkg"));
   EXPECT_THAT(archive::ListMembersOfSource(source), IsOk());
   EXPECT_THAT(
       archive::ListMembersOfSource(std::make_shared<SeekFailureSource>(source, SeekFailureSource::Failure::kSize)),
@@ -308,7 +309,7 @@ TEST_F(PbzxTest, NativeProductPackageNeedsSeeksAndPreservesSourceErrors) {
   EXPECT_THAT(
       archive::ListMembersOfSource(std::make_shared<SeekFailureSource>(source, SeekFailureSource::Failure::kSeek)),
       StatusIs(absl::StatusCode::kDataLoss));
-  auto small = vfs::HostReadSource(Fixture("native-product.pkg"), std::make_shared<vfs::ReadBudget>(1));
+  const auto small = vfs::HostReadSource(Fixture("native-product.pkg"), std::make_shared<vfs::ReadBudget>(1));
   EXPECT_THAT(archive::ListMembersOfSource(small), StatusIs(absl::StatusCode::kResourceExhausted));
 }
 

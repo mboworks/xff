@@ -4,13 +4,11 @@
 # pre-commit configuration (https://pre-commit.com). Mirrors mboworks/mbo's set,
 # trimmed to what xff uses. Install once with `pre-commit install`; run over the
 # whole tree with `pre-commit run -a`. clang-tidy runs here too (the local-only
-# `clang-tidy` hook, via tools/clang_tidy.sh using the hermetic clang-22); the
-# broader linters live in trunk (.trunk/trunk.yaml). clang-format here is pinned to v22.1.8 to match the
-# hermetic toolchain clang-format (tools/clang_format.sh)
-# byte-for-byte; keep this pin in lockstep with the LLVM toolchain version. A
-# mismatch surfaces loudly as a CI clang-format failure rather than silent
-# reformatting churn. This file owns clang-format, shell, YAML, workflow and
-# repo-policy text checks.
+# hook uses the matching hermetic toolchain and a generated compile database).
+# clang-format comes directly from that LLVM distribution through tools/clang_format.sh,
+# so local and CI formatting cannot drift with Python-package or mirror release timing.
+# This file owns clang-format, shell, YAML, workflow and repo-policy text checks;
+# broader linters live in trunk (.trunk/trunk.yaml).
 #
 # Pin the Python that pre-commit builds its managed hook environments with to 3.13
 # (the version CI runs via actions/setup-python), so a contributor whose default
@@ -59,6 +57,12 @@ repos:
 
   - repo: local
     hooks:
+      - id: clang-format
+        name: clang-format (hermetic LLVM)
+        language: script
+        entry: tools/clang_format.sh -i
+        types_or: [c, c++, cuda]
+        require_serial: true
       - id: no-do-not-merge
         name: No 'DO NOT MERGE'
         description: |
@@ -513,12 +517,6 @@ repos:
         entry: python3 -m unittest tools.check_host_io_test
         pass_filenames: false
         files: ^tools/check_host_io(_test)?\.py$
-
-  - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v22.1.8
-    hooks:
-      - id: clang-format
-        types_or: [c, c++, cuda]
 
   - repo: https://github.com/scop/pre-commit-shfmt
     rev: v3.11.0-1

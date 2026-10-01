@@ -195,7 +195,7 @@ TEST_F(VfsSeamTest, ReadDirReportsVirtualEntriesAsReadOnly) {
 
 TEST_F(VfsSeamTest, DefaultContentSourceOwnsBytesAndPreservesErrors) {
   const ReadOnlyFakeFs fs;
-  MBO_ASSERT_OK_AND_ASSIGN(auto source, fs.ContentSource("/box/member.txt"));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto source, fs.ContentSource("/box/member.txt"));
   EXPECT_THAT(ReadSourceBytes(*source, 100), IsOkAndHolds(Eq("content")));
   EXPECT_THAT(fs.ContentSource("missing"), StatusIs(absl::StatusCode::kNotFound));
 }

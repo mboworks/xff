@@ -98,22 +98,43 @@ TEST_F(HtmlBackendTest, RendersAStandaloneSemanticDocument) {
       .name = "x&f",
       .tagline = "Find <files>",
       .usage = "[path]",
-      .sections = {Section{
-          .title = "Options",
-          .children = {Content{
-              .node =
-                  Subsection{
-                      .title = "Output",
-                      .children = {Content{
-                          .node =
-                              Entry{
-                                  .term = "--help-format=html",
-                                  .summary = {Text("render "), Code("HTML")},
-                                  .details = {Content{.node = Example{.text = "x&f --help=full --help-format=html", .lang = "sh"}}},
-                                  .tags = {"global", "xff"},
-                              },}},
-                  },}},
-      }},
+      .sections =
+          {
+              Section{
+                  .title = "Options",
+                  .children =
+                      {
+                          Content{
+                              .node =
+                                  Subsection{
+                                      .title = "Output",
+                                      .children =
+                                          {
+                                              Content{
+                                                  .node =
+                                                      Entry{
+                                                          .term = "--help-format=html",
+                                                          .summary = {Text("render "), Code("HTML")},
+                                                          .details =
+                                                              {
+                                                                  Content{
+                                                                      .node =
+                                                                          Example{
+                                                                              .text =
+                                                                                  "x&f --help=full --help-format=html",
+                                                                              .lang = "sh",
+                                                                          },
+                                                                  },
+                                                              },
+                                                          .tags = {"global", "xff"},
+                                                      },
+                                              },
+                                          },
+                                  },
+                          },
+                      },
+              },
+          },
   };
 
   HtmlBackend backend;

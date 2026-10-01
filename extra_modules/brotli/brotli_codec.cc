@@ -131,7 +131,7 @@ absl::StatusOr<int> IntegerOption(
   return value;
 }
 
-absl::Status EncodeFile(const stdfs::path& source, vfs::TemporaryOutput& output, int quality, int window_bits) {
+absl::Status EncodeFile(const stdfs::path& source, const vfs::TemporaryOutput& output, int quality, int window_bits) {
   // XFF_HOST_IO: Brotli adapter reads the explicitly selected host input file.
   std::ifstream input(source, std::ios::binary);
   if (!input.is_open()) {
@@ -181,7 +181,10 @@ absl::Status EncodeFile(const stdfs::path& source, vfs::TemporaryOutput& output,
   return absl::OkStatus();
 }
 
-absl::Status WriteFramed(const stdfs::path& raw, vfs::TemporaryOutput& destination, std::uint64_t uncompressed_size) {
+absl::Status WriteFramed(
+    const stdfs::path& raw,
+    const vfs::TemporaryOutput& destination,
+    std::uint64_t uncompressed_size) {
   std::error_code error;
   const std::uint64_t raw_size = stdfs::file_size(raw, error);
   if (error) {
@@ -351,7 +354,7 @@ absl::StatusOr<EncodingOptions> ResolveEncodingOptions(const archive::PackOption
   return EncodingOptions{.quality = quality, .window_bits = window_bits, .raw = framing == "raw"};
 }
 
-absl::Status FrameEncodedTar(const stdfs::path& tar, const stdfs::path& raw, vfs::TemporaryOutput& compressed) {
+absl::Status FrameEncodedTar(const stdfs::path& tar, const stdfs::path& raw, const vfs::TemporaryOutput& compressed) {
   std::error_code size_error;
   const std::uint64_t tar_size = stdfs::file_size(tar, size_error);
   if (size_error) {
@@ -418,14 +421,14 @@ absl::StatusOr<std::string> Decode(
 namespace {
 absl::Status EncodeTarOutput(
     const stdfs::path& tar,
-    vfs::TemporaryOutput& compressed,
+    const vfs::TemporaryOutput& compressed,
     const vfs::TemporaryDirectory& scratch,
     const EncodingOptions& encoding,
     const vfs::MutationPolicy& mutations) {
   if (encoding.raw) {
     return EncodeFile(tar, compressed, encoding.quality, encoding.window_bits);
   }
-  MBO_ASSIGN_OR_RETURN(auto raw, vfs::TemporaryOutput::Create(scratch.Path() + "/raw", mutations));
+  MBO_ASSIGN_OR_RETURN(const auto raw, vfs::TemporaryOutput::Create(scratch.Path() + "/raw", mutations));
   MBO_RETURN_IF_ERROR(EncodeFile(tar, *raw, encoding.quality, encoding.window_bits));
   return FrameEncodedTar(tar, raw->Path(), compressed);
 }
@@ -438,11 +441,11 @@ absl::Status PackTar(
   MBO_ASSIGN_OR_RETURN(const EncodingOptions encoding, ResolveEncodingOptions(options));
 
   MBO_ASSIGN_OR_RETURN(
-      auto scratch, vfs::TemporaryDirectory::Create(std::string(path) + ".xff-brotli", options.mutations));
+      const auto scratch, vfs::TemporaryDirectory::Create(std::string(path) + ".xff-brotli", options.mutations));
   const stdfs::path tar = stdfs::path(scratch->Path()) / "input.tar";
   MBO_RETURN_IF_ERROR(archive::PackNativeArchiveContainer(tar.string(), files, {.mutations = options.mutations}));
   MBO_ASSIGN_OR_RETURN(
-      auto compressed, vfs::TemporaryOutput::Create(std::string(path) + ".xff-pack", options.mutations));
+      const auto compressed, vfs::TemporaryOutput::Create(std::string(path) + ".xff-pack", options.mutations));
   MBO_RETURN_IF_ERROR(EncodeTarOutput(tar, *compressed, *scratch, encoding, options.mutations));
   return compressed->Publish(path);
 }

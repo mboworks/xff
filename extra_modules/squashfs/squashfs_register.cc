@@ -32,11 +32,13 @@ absl::StatusOr<std::unique_ptr<vfs::FileSystem>> OpenSquashfsContainer(
 const archive::ContainerRegistrar kRegisterSquashfs{
     "squashfs",
     &OpenSquashfsContainer,
-    {{
-        .name = "squashfs",
-        .suffixes = {".sfs", ".sqfs", ".sqsh", ".squashfs", ".snap", ".appimage"},
-        .detail = "SquashFS images, Snap packages, and AppImage payloads (BSD-licensed libsqsh reader)",
-    }},
+    {
+        {
+            .name = "squashfs",
+            .suffixes = {".sfs", ".sqfs", ".sqsh", ".squashfs", ".snap", ".appimage"},
+            .detail = "SquashFS images, Snap packages, and AppImage payloads (BSD-licensed libsqsh reader)",
+        },
+    },
 };
 
 }  // namespace

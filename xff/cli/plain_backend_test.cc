@@ -98,8 +98,11 @@ TEST_F(PlainBackendTest, RendersAWholeDocumentInOrder) {
                               .node =
                                   Prose{
                                       .runs =
-                                          {Text("Find files; see "),
-                                           Ref("", {.kind = RefTarget::Kind::kTopic, .id = "fields"}), Text(".")},
+                                          {
+                                              Text("Find files; see "),
+                                              Ref("", {.kind = RefTarget::Kind::kTopic, .id = "fields"}),
+                                              Text("."),
+                                          },
                                   },
                           },
                       },
@@ -121,8 +124,10 @@ TEST_F(PlainBackendTest, RendersAWholeDocumentInOrder) {
                               .node =
                                   Rows{
                                       .rows =
-                                          {{.term = "%p", .description = {Text("path")}},
-                                           {.term = "%f", .description = {Text("name")}}},
+                                          {
+                                              {.term = "%p", .description = {Text("path")}},
+                                              {.term = "%f", .description = {Text("name")}},
+                                          },
                                   },
                           },
                           Content{.node = Bullets{.items = {{Text("first")}, {Text("second")}}}},

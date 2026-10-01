@@ -1,5 +1,18 @@
 # TODO
 
+## Toolchain follow-up
+
+- [ ] Complete the Clang/LLVM 23.1.2 upgrade: validate native macOS linking, Linux LTO, the
+      LLVM 22 MSan compiler/runtime override, matching formatting, full CI, benchmark results,
+      and stripped binary sizes before merging the separate follow-up to #936.
+- [ ] Correct clang-tidy's inherited `mbo/` header filter to cover XFF-owned headers,
+      including extension headers reached through Bazel's external include paths. Add a
+      regression test distinguishing first-party headers from dependency headers.
+- [ ] Profile the static-analyzer cost of `xff/engine/run_test.cc` and evaluate splitting
+      it into focused test targets. LLVM 23 spent 1,626 seconds on this translation unit in
+      CI run 36786917255; a local run took 712 seconds, and process sampling found the
+      static analyzer active. Preserve useful checks while reducing this serial bottleneck.
+
 ## Content-search output controls
 
 - [x] Return a style enum for invocation dispatch; keep custom config selectors separate.

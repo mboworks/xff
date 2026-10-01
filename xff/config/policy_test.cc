@@ -353,7 +353,8 @@ TEST_F(PolicyTest, MissingSourcesNeedNoSkipPermission) {
 TEST_F(PolicyTest, XffrcDangerousLineIsInertUnlessArmed) {
   ConfigInputs inputs;
   inputs.xffrc = {
-      {.path = "/named", .config = {.global_lines = {Line({"-exec", "rm", ";"}), Line({"--color=never"})}}}};
+      {.path = "/named", .config = {.global_lines = {Line({"-exec", "rm", ";"}), Line({"--color=never"})}}},
+  };
   const GateResult unarmed = GateConfig(inputs, /*xffrc_armed=*/false);
   EXPECT_THAT(
       unarmed.config.xffrc,

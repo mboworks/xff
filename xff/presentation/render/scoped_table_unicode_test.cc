@@ -26,12 +26,15 @@ struct UnicodeScopedTableTest : ::testing::Test {
       {
           .label = "wide",
           .metrics =
-              {{{"1", "25.00%", "1  B", "25.00%"}},
-               {{"-", "-", "-", "-"}},
-               {{"0", "0.00%", "0  B", "0.00%"}},
-               {{"3", "75.00%", "3  B", "75.00%"}}},
+              {
+                  {{"1", "25.00%", "1  B", "25.00%"}},
+                  {{"-", "-", "-", "-"}},
+                  {{"0", "0.00%", "0  B", "0.00%"}},
+                  {{"3", "75.00%", "3  B", "75.00%"}},
+              },
       },
-      {.label = "total", .metrics = std::vector<std::array<std::string, 4>>(4, {"4", "100.00%", "4  B", "100.00%"})}};
+      {.label = "total", .metrics = std::vector<std::array<std::string, 4>>(4, {"4", "100.00%", "4  B", "100.00%"})},
+  };
 };
 
 TEST_F(UnicodeScopedTableTest, LongUnicodeLabelsWrapAndRetainAllContent) {

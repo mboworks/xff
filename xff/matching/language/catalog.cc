@@ -190,7 +190,7 @@ struct Catalog::Data {
       }
     }
     for (const auto& [alias, name] : types.aliases) {
-      if (auto found = types.definitions.find(name); found != types.definitions.end() && alias != name) {
+      if (const auto found = types.definitions.find(name); found != types.definitions.end() && alias != name) {
         found->second.aliases.push_back(alias);
       }
     }

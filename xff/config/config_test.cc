@@ -473,7 +473,9 @@ TEST_F(ConfigTest, InvocationConfigForProgramMapsOnlyTheFullDistributionName) {
 
 TEST_F(ConfigTest, ExplainConfigTagsEachFlagWithProvenance) {
   const std::vector<ResolvedFlag> resolved = {
-      {.flag = "--color=auto", .source = Source::kSystem}, {.flag = "--sort", .source = Source::kUser}};
+      {.flag = "--color=auto", .source = Source::kSystem},
+      {.flag = "--sort", .source = Source::kUser},
+  };
   const std::string explained =
       ExplainConfig({resolved[0], resolved[1], {.flag = "--format=jsonl", .source = Source::kCli}});
   EXPECT_THAT(explained, HasSubstr("system\t--color=auto\n"));
@@ -602,16 +604,19 @@ TEST_F(ConfigTest, OrderedResolutionRetainsOriginsAcrossExpansionAndComposition)
 --config=locked
 --no-safe-block-file-writing
 )ini");
-  inputs.xffrc = {{
-      .path = "/task.rc",
-      .config = ParseIni(R"ini([profile]
+  inputs.xffrc = {
+      {
+          .path = "/task.rc",
+          .config = ParseIni(R"ini([profile]
 --safe
 -name '--safe'
 )ini"),
-  }};
+      },
+  };
   inputs.sources = {
       {.path = "/etc/xff.ini", .layer = Source::kSystem, .found = true},
-      {.path = "/home/user/xff.ini", .layer = Source::kUser, .found = true}};
+      {.path = "/home/user/xff.ini", .layer = Source::kUser, .found = true},
+  };
   const auto resolved = ResolveConfigInOrder(inputs, {"--config=profile", "--xffrc=/task.rc", "--no-safe"}, "xff");
   const auto origin = [](std::string_view path, std::size_t line, std::string_view section) {
     return Field(
@@ -665,7 +670,8 @@ TEST_F(ConfigTest, SafetyExplanationShowsMandatoryAndShadowedProfileOrigins) {
   inputs.user = ParseIni("--safe --no-safe-block-file-writing");
   inputs.sources = {
       {.path = "/system.ini", .layer = Source::kSystem, .found = true},
-      {.path = "/user.ini", .layer = Source::kUser, .found = true}};
+      {.path = "/user.ini", .layer = Source::kUser, .found = true},
+  };
   const auto resolved = ResolveConfigInOrder(inputs, {}, "xff");
   const auto explanation = ExplainSafety(resolved, inputs);
   EXPECT_THAT(explanation, HasSubstr("safe-mode\ton\tuser /user.ini:1 (--safe)"));
@@ -692,7 +698,8 @@ TEST_F(ConfigTest, SafetyExplanationKeepsFirstMandatoryAndRootDeclarations) {
 )ini");
   inputs.sources = {
       {.path = "/system.ini", .layer = Source::kSystem, .found = true},
-      {.path = "/user.ini", .layer = Source::kUser, .found = true}};
+      {.path = "/user.ini", .layer = Source::kUser, .found = true},
+  };
   const auto resolved = ResolveConfigInOrder(inputs, {"--no-safe", "--block-execution"}, "xff");
   const auto explanation = ExplainSafety(resolved, inputs);
   EXPECT_THAT(explanation, HasSubstr("policy\tsystem\tarchive,temp"));
@@ -715,7 +722,8 @@ TEST_F(ConfigTest, SafetyExplanationIgnoresLiteralArgumentsAndTracksCliDeactivat
 TEST_F(ConfigTest, ExplainSourcesListsActiveStyleAndConsultedFiles) {
   const std::vector<ConfigSource> sources = {
       {.path = "/etc/xff.ini", .layer = Source::kSystem, .found = false},
-      {.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true}};
+      {.path = "/home/u/.config/xff/config", .layer = Source::kUser, .found = true},
+  };
   const std::string out = ExplainSources(sources, registry::Style::kFind);
   EXPECT_THAT(out, HasSubstr("# xff active style: find\n"));
   EXPECT_THAT(out, HasSubstr("source\tsystem\tabsent\t/etc/xff.ini\n"));

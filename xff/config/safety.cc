@@ -37,7 +37,8 @@ constexpr std::array<std::string_view, SafetyPolicy::kCapabilities> kNames = {
     "output-file-overwrite",
     "output-file-deletion",
     "output-directory-creation",
-    "output-directory-deletion"};
+    "output-directory-deletion",
+};
 }  // namespace
 
 bool SafetyPolicy::Blocks(Capability capability) const {
@@ -70,7 +71,11 @@ vfs::MutationPolicy SafetyPolicy::ArchiveMutations() const {
       .outside_directory_blocks = directories ? std::make_optional(
                                                     std::array{
                                                         Blocks(Capability::kFileWriting),
-                                                        Blocks(Capability::kFileOverwrite), false, false, false})
+                                                        Blocks(Capability::kFileOverwrite),
+                                                        false,
+                                                        false,
+                                                        false,
+                                                    })
                                               : std::nullopt,
   };
 }
@@ -82,18 +87,26 @@ absl::StatusOr<SafetyPolicy> SafetyPolicy::PrepareDirectories() const {
     rules.push_back({
         .root = temp_root,
         .blocks =
-            {Blocks(Capability::kTempFileWriting), Blocks(Capability::kTempFileOverwrite),
-             Blocks(Capability::kTempFileDeletion), Blocks(Capability::kTempDirectoryCreation),
-             Blocks(Capability::kTempDirectoryDeletion)},
+            {
+                Blocks(Capability::kTempFileWriting),
+                Blocks(Capability::kTempFileOverwrite),
+                Blocks(Capability::kTempFileDeletion),
+                Blocks(Capability::kTempDirectoryCreation),
+                Blocks(Capability::kTempDirectoryDeletion),
+            },
     });
   }
   if (!output_root.empty()) {
     rules.push_back({
         .root = output_root,
         .blocks =
-            {Blocks(Capability::kOutputFileWriting), Blocks(Capability::kOutputFileOverwrite),
-             Blocks(Capability::kOutputFileDeletion), Blocks(Capability::kOutputDirectoryCreation),
-             Blocks(Capability::kOutputDirectoryDeletion)},
+            {
+                Blocks(Capability::kOutputFileWriting),
+                Blocks(Capability::kOutputFileOverwrite),
+                Blocks(Capability::kOutputFileDeletion),
+                Blocks(Capability::kOutputDirectoryCreation),
+                Blocks(Capability::kOutputDirectoryDeletion),
+            },
     });
   }
   if (!rules.empty()) {

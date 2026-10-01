@@ -141,11 +141,12 @@ void RegisterContainerReader(
       readers.erase(found);
     }
   } else if (found == readers.end()) {
-    readers.push_back(
-        {.name = std::move(name),
-         .opener = std::move(opener),
-         .source_opener = std::move(source_opener),
-         .formats = std::move(formats)});
+    readers.push_back({
+        .name = std::move(name),
+        .opener = std::move(opener),
+        .source_opener = std::move(source_opener),
+        .formats = std::move(formats),
+    });
   } else {
     found->opener = std::move(opener);
     found->source_opener = std::move(source_opener);

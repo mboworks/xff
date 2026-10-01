@@ -366,9 +366,9 @@ TEST_F(LocalFsTest, IsCaseSensitiveAgreesWithTheVolumeBehaviour) {
 }
 
 TEST_F(LocalFsTest, ContentSourceStreamsHostBytesAndPreservesMissingFileErrors) {
-  MBO_ASSERT_OK_AND_ASSIGN(auto source, local_fs_.ContentSource(Path("file.txt")));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto source, local_fs_.ContentSource(Path("file.txt")));
   EXPECT_THAT(ReadSourceBytes(*source, 100), IsOkAndHolds(Eq("hello")));
-  MBO_ASSERT_OK_AND_ASSIGN(auto missing, local_fs_.ContentSource(Path("nope")));
+  MBO_ASSERT_OK_AND_ASSIGN(const auto missing, local_fs_.ContentSource(Path("nope")));
   EXPECT_THAT(missing->Open(), StatusIs(absl::StatusCode::kNotFound));
   EXPECT_THAT(local_fs_.ContainerCandidate(Path("file.txt")), IsFalse());
 }

@@ -39,7 +39,8 @@ namespace xff::engine {
 // and a real run read the same source and cannot drift. FlavorFacets() is the collector
 // (a --feature capability would append its own facet here later).
 struct FlavorFacet {
-  using ValueFn = std::string (*)(const std::vector<std::string>& globals, registry::Style style);
+  // Display values refer to static text; the rendering boundary owns any needed copies.
+  using ValueFn = std::string_view (*)(const std::vector<std::string>& globals, registry::Style style);
 
   std::string_view behavior;
   std::string_view flag;

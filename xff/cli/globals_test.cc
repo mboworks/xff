@@ -271,9 +271,18 @@ TEST_F(GlobalsTest, IsKnownGlobalAcceptsValuedFormsAndCompatAliases) {
 }
 
 TEST_F(GlobalsTest, BufferBoundsRejectInvalidValues) {
-  const auto invalid_buffers = std::to_array<std::string_view>(
-      {"", "garbage", "-1", "-1MB", "1.5", "1Q", "1ZB", "18446744073709551616", "18446744073709551615T",
-       "18446744073709551615MB"});
+  const auto invalid_buffers = std::to_array<std::string_view>({
+      "",
+      "garbage",
+      "-1",
+      "-1MB",
+      "1.5",
+      "1Q",
+      "1ZB",
+      "18446744073709551616",
+      "18446744073709551615T",
+      "18446744073709551615MB",
+  });
   for (const std::string_view value : invalid_buffers) {
     EXPECT_THAT(
         ValidateGlobalValue(absl::StrCat("--buffer=", value)),

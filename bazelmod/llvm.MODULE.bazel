@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""LLVM toolchain. clang-22 is the minimum supported toolchain for xff."""
+"""LLVM 23 by default; LLVM 22 with its matching instrumented libc++ for MSan."""
 
 # toolchains_llvm 1.8.0 includes PR bazel-contrib/toolchains_llvm#769 (macOS
 # sanitizer runtime via `dynamic_runtime_lib` + `@loader_path` rpath), so
@@ -48,20 +48,15 @@ git_override(
 # resulting `include/` + `lib/` tree as a release asset of our own: the overlay is 3.9 MB and the
 # attribute takes any URL.
 #
-# The URL takes its version from LLVM_VERSION rather than spelling one of its own, because the
-# instrumented libc++ and the clang that compiles against it MUST be the same LLVM release. A
-# version bump is therefore: LLVM_VERSION, `libcxx_sha256`, and the four distribution checksums,
-# all together.
+# Keep the MSan compiler and instrumented standard library on the same release.
+# The ordinary compiler can advance independently through the feature override below.
 MSAN_LIBCXX_URL = "https://github.com/RealtimeRoboticsGroup/toolchains/releases/download/{v}/libcxx-msan-{v}-x86_64-linux-gnu-ubuntu-22.04.tar.zst"
-
-# clang-22 is the minimum (and only) supported toolchain rung.
-LLVM_VERSION = "22.1.8"
+LLVM_VERSION = "23.1.2"
+MSAN_LLVM_VERSION = "22.1.8"
 
 llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
 llvm.toolchain(
     name = "llvm_toolchain_llvm",
-    libcxx_sha256 = "fd1ac49eeda4edc6deeda2037998e558718a63a5054fff4fdace7751b270217a",
-    libcxx_url = MSAN_LIBCXX_URL.format(v = LLVM_VERSION),
     linker = {
         "darwin-aarch64": "auto",
         "darwin-x86_64": "auto",
@@ -78,12 +73,23 @@ llvm.toolchain(
 # separate indexing/backend protocol without an external plugin. Other builds keep mold.
 llvm.feature_override(
     name = "llvm_toolchain_llvm",
-    features = ["thin_lto"],
+    features = ["thin_lto", "-msan"],
     targets = ["linux-aarch64", "linux-x86_64"],
     linker = {
         "linux-aarch64": "",
         "linux-x86_64": "",
     },
+)
+# MSan selects a complete compiler/runtime pair independently of flag order. Keep this
+# condition disjoint from the LLVM 23 LTO override; LLD also supports MSan plus ThinLTO.
+llvm.feature_override(
+    name = "llvm_toolchain_llvm",
+    features = ["msan"],
+    targets = ["linux-x86_64"],
+    libcxx_sha256 = "fd1ac49eeda4edc6deeda2037998e558718a63a5054fff4fdace7751b270217a",
+    libcxx_url = MSAN_LIBCXX_URL.format(v = MSAN_LLVM_VERSION),
+    linker = {"linux-x86_64": ""},
+    llvm_version = MSAN_LLVM_VERSION,
 )
 use_repo(llvm, "llvm_toolchain_llvm")
 
