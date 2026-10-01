@@ -67,7 +67,7 @@ jobs:
               --root=site/benchmarks --report="${report}" \
               --source=source-reference.json --pulls=pulls.json --repository="${GITHUB_REPOSITORY}" --keep=100
           done
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
       - name: Build pinned benchmark renderer
