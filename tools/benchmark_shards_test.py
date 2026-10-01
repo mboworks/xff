@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 import benchmark_shards as shards
 
@@ -100,6 +101,43 @@ class BenchmarkShardsTest(unittest.TestCase):
         self.assertEqual(len(result['tool_comparisons']['tasks']), 16)
         self.assertEqual(result['tool_comparisons']['contract']['cpu_counts'], [1, 3])
         self.assertEqual(len(result['measurement_shards']), 1)
+
+    def test_merge_directory_accepts_flat_and_per_artifact_downloads(self):
+        for count, nested in ((1, False), (1, True), (3, True)):
+            with self.subTest(count=count, nested=nested), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                incoming = root / 'shards'
+                inputs = records(cpus=(1, 3), count=count)
+                for index, record in enumerate(inputs):
+                    folder = incoming / f'artifact-{index}' if nested else incoming
+                    folder.mkdir(parents=True, exist_ok=True)
+                    (folder / 'benchmark-shard.json').write_text(json.dumps(record))
+                # Other JSON artifacts are not measurement shards.
+                (incoming / 'metadata.json').write_text('{}')
+                output = root / 'merged.json'
+                with mock.patch('sys.argv', ['benchmark_shards.py', '--merge-directory', str(incoming),
+                                             '--output', str(output)]):
+                    shards.main()
+                self.assertEqual(json.loads(output.read_text()), shards.merge_reports(inputs))
+
+    def test_merge_directory_rejects_missing_and_duplicate_shards_without_output(self):
+        for failure in ('empty', 'missing', 'duplicate'):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                inputs = [] if failure == 'empty' else records(cpus=(1, 3), count=3)
+                if failure == 'missing':
+                    inputs.pop()
+                elif failure == 'duplicate':
+                    inputs[1] = copy.deepcopy(inputs[0])
+                for index, record in enumerate(inputs):
+                    folder = root / f'artifact-{index}'
+                    folder.mkdir()
+                    (folder / 'benchmark-shard.json').write_text(json.dumps(record))
+                output = root / 'merged.json'
+                with mock.patch('sys.argv', ['benchmark_shards.py', '--merge-directory', str(root),
+                                             '--output', str(output)]), self.assertRaises(ValueError):
+                    shards.main()
+                self.assertFalse(output.exists())
 
     def test_identity_diagnostic_includes_nested_and_missing_fields(self):
         self.assertEqual(shards.identity_difference({'tools': {'rg': {'sha256': 'old'}}},
