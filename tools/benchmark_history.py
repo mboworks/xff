@@ -17,6 +17,7 @@ import subprocess
 import tempfile
 
 import benchmark_compare
+import benchmark_records
 
 SCHEMA = 1
 METRICS = ("elapsed_seconds", "first_stdout_seconds", "user_cpu_seconds",
@@ -154,7 +155,11 @@ def retain(root, record, source, keep):
         json.loads(path.read_text())["source"]["created_at"],
         int(json.loads(path.read_text())["source"]["id"]),
         int(json.loads(path.read_text())["source"]["run_attempt"])), reverse=True)
+    protected = {original for path in root.glob('backfills/*/*/*/*/report.json')
+                 for original in json.loads(path.read_text()).get('original_reports', [])}
     for path in paths[keep:]:
+        if path.relative_to(root).as_posix() in protected:
+            continue
         path.unlink()
         (path.parent / "index.html").unlink(missing_ok=True)
         (path.parent / "landscape.json").unlink(missing_ok=True)
@@ -172,6 +177,25 @@ def page(title, body):
 
 
 def render_report(record, history_href="../../../"):
+    if benchmark_records.is_backfill(record):
+        body = (f'<p><a href="{html.escape(history_href)}">Benchmark history</a> | '
+                '<a href="report.json">Raw observations and provenance</a> | '
+                '<a href="batch.json">Host and build contract</a> | '
+                '<a href="../../campaign.json">Complete campaign plan</a></p>'
+                f'<p>CI backfill for commit <code>{html.escape(record["head"])}</code>. '
+                'The complete file-count, worker-allocation and task matrix for this revision ran on one host, '
+                'with its reference tools. Other revisions can use different hosts. '
+                'Raw times across hosts are not paired comparisons; same-run tool ratios remain available.</p>'
+                '<p>This report replaces the selected CI comparison data for this platform and commit. '
+                'It does not invent a historical base/head pair.</p>')
+        originals = record.get('original_reports', [])
+        if originals:
+            body += '<p>Original measurements, including paired base/head results:</p><ul>'
+            body += ''.join(f'<li><a href="{html.escape(history_href + path.removesuffix("report.json"))}">'
+                            f'{html.escape(path.removesuffix("/report.json"))}</a></li>' for path in originals)
+            body += '</ul>'
+        body += benchmark_compare.render(record['tool_comparisons'])
+        return page(benchmark_compare.benchmark_matrix.platform_title(record['tool_comparisons']), body)
     rows = []
     for result in summarize(record):
         for metric, values in result["metrics"].items():
@@ -197,14 +221,7 @@ def render_report(record, history_href="../../../"):
 
 
 def recorded_platform(record):
-    if record.get('platform'):
-        return record['platform']
-    identity = record.get('contract', {}).get('platform', '').lower()
-    if identity.startswith('linux'):
-        return 'linux'
-    if identity.startswith(('macos', 'darwin')):
-        return 'macos'
-    return ''
+    return benchmark_records.platform_key(record)
 
 
 def render_site(root, pulls, repository):
@@ -212,8 +229,9 @@ def render_site(root, pulls, repository):
         raise ValueError("invalid repository")
     by_sha = {pull["merge_commit_sha"]: pull for pull in pulls if pull.get("merged_at")}
     by_number = {pull["number"]: pull for pull in pulls}
+    replacements = benchmark_records.replacements(root)
     selected = {}
-    for path in root.glob("runs/*/*/**/report.json"):
+    for path in benchmark_records.paths(root):
         record = json.loads(path.read_text())
         source = record["source"]
         phase = ""
@@ -229,13 +247,17 @@ def render_site(root, pulls, repository):
             reference = pull.get("merged_at") or source["created_at"]
         elif re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", source["head_branch"]):
             label, reference = source["head_branch"], source.get("reference_time", source["created_at"])
-        elif source["head_sha"] in by_sha:
-            pull = by_sha[source["head_sha"]]
+        elif record["head"] in by_sha:
+            pull = by_sha[record["head"]]
             label, phase, reference = f'PR {pull["number"]}', "post-merge", pull["merged_at"]
         else:
-            label, reference = "main", source["created_at"]
+            label, reference = "main", benchmark_records.reference_time(record)
         key = (label, phase, recorded_platform(record))
-        rank = (source["created_at"], source["id"], source["run_attempt"])
+        replacement = replacements.get((recorded_platform(record), record['head']))
+        if phase != 'pre-merge' and replacement is not None and replacement != path:
+            path = replacement
+            record = json.loads(path.read_text())
+        rank = (reference, benchmark_records.preference(record))
         if key not in selected or rank > selected[key][0]:
             selected[key] = (rank, reference, path, record)
     rows = []
@@ -245,21 +267,26 @@ def render_site(root, pulls, repository):
         relative = path.parent.relative_to(root).as_posix()
         (path.parent / "index.html").write_text(render_report(record, "../" * len(path.parent.relative_to(root).parts)))
         commit = record["head"]
-        base = record["base"]
+        base = record.get("base")
+        baseline = (f'<a href="https://github.com/{repository}/commit/{base}">{base[:7]}</a>'
+                    if base else 'CI backfill; reference tools')
         rows.append(f'<tr><td><a href="{relative}/">{html.escape(label)} {phase} {html.escape(platform_key)}</a></td>'
                     f'<td>{html.escape(reference)}</td><td><a href="https://github.com/{repository}/commit/{commit}">{commit[:7]}</a></td>'
-                    f'<td><a href="https://github.com/{repository}/commit/{base}">{base[:7]}</a></td>'
+                    f'<td>{baseline}</td>'
                     f'<td><a href="https://github.com/{repository}/actions/runs/{int(source["id"])}">{int(source["id"])}, attempt {int(source["run_attempt"])}</a></td></tr>')
-    return page("Benchmark history", '<p>Informational paired comparisons; no cross-host performance ratios. '
+    return page("Benchmark history", '<p>Informational measurements; paired results compare commits on one host, '
+                'and CI backfills compare each historical commit with reference tools on one host. '
+                'Validated complete campaigns replace the selected platform/commit results, preserving original measurements. '
                 'Each PR phase/release shows its latest retained attempt. Missing or failed runs produce no result. '
-                'Raw records are bounded by publication retention.</p><table><tr><th>Source</th><th>Reference time</th>'
+                'Ordinary run retention excludes backfills and their preserved originals.</p>'
+                '<table><tr><th>Source</th><th>Reference time</th>'
                 '<th>Head</th><th>Baseline</th><th>Workflow</th></tr>' + ''.join(rows) + '</table>')
 
 
 def reference_pages(root, pulls, repository_path):
     """Resolve stable PR/tag URLs without inventing measurements or rerunning them."""
     records = []
-    for path in root.glob("runs/*/*/**/report.json"):
+    for path in benchmark_records.paths(root):
         record = json.loads(path.read_text())
         source = record["source"]
         records.append((record, path.parent.relative_to(root).as_posix()))
@@ -282,11 +309,11 @@ def reference_pages(root, pulls, repository_path):
         candidates = {}
         for record, report_path in records:
             source = record["source"]
-            post = source["event"] == "push" and record["head"] == commit
+            post = (source["event"] == "push" or benchmark_records.is_backfill(record)) and record["head"] == commit
             pre = number is not None and source["event"] == "pull_request" and any(
                 pull["number"] == number for pull in source.get("pull_requests", []))
             if post or pre:
-                rank = (post, source["created_at"], source["id"], source["run_attempt"])
+                rank = (post, benchmark_records.preference(record))
                 platform_key = recorded_platform(record)
                 if platform_key not in candidates or rank > candidates[platform_key][0]:
                     candidates[platform_key] = (rank, report_path)

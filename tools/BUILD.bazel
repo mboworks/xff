@@ -693,13 +693,19 @@ py_library(
     name = "benchmark_history_lib",
     srcs = ["benchmark_history.py"],
     imports = ["."],
-    deps = [":benchmark_compare_lib"],
+    deps = [
+        ":benchmark_compare_lib",
+        ":benchmark_records_lib",
+    ],
 )
 
 py_binary(
     name = "benchmark_history",
     srcs = ["benchmark_history.py"],
-    deps = [":benchmark_compare_lib"],
+    deps = [
+        ":benchmark_compare_lib",
+        ":benchmark_records_lib",
+    ],
 )
 
 py_test(
@@ -739,6 +745,7 @@ test_suite(
         ":align_markdown_tables_test",
         ":bazel_cache_test",
         ":benchmark_backfill_test",
+        ":benchmark_campaign_test",
         ":benchmark_compare_test",
         ":benchmark_fixture_test",
         ":benchmark_history_test",
@@ -777,6 +784,44 @@ test_suite(
         ":release_notes_test",
         ":release_site_test",
         ":site_artwork_test",
+    ],
+)
+
+py_library(
+    name = "benchmark_records_lib",
+    srcs = ["benchmark_records.py"],
+    imports = ["."],
+)
+
+py_library(
+    name = "benchmark_campaign_lib",
+    srcs = ["benchmark_campaign.py"],
+    imports = ["."],
+    deps = [
+        ":benchmark_backfill_lib",
+        ":benchmark_compare_lib",
+        ":benchmark_records_lib",
+    ],
+)
+
+py_binary(
+    name = "benchmark_campaign",
+    srcs = ["benchmark_campaign.py"],
+    deps = [
+        ":benchmark_backfill_lib",
+        ":benchmark_compare_lib",
+        ":benchmark_records_lib",
+    ],
+)
+
+py_test(
+    name = "benchmark_campaign_test",
+    size = "small",
+    srcs = ["benchmark_campaign_test.py"],
+    deps = [
+        ":benchmark_campaign_lib",
+        ":benchmark_history_lib",
+        ":benchmark_landscape_lib",
     ],
 )
 
@@ -894,13 +939,19 @@ py_library(
     name = "benchmark_landscape_lib",
     srcs = ["benchmark_landscape.py"],
     imports = ["."],
-    deps = [":benchmark_matrix_lib"],
+    deps = [
+        ":benchmark_matrix_lib",
+        ":benchmark_records_lib",
+    ],
 )
 
 py_binary(
     name = "benchmark_landscape",
     srcs = ["benchmark_landscape.py"],
-    deps = [":benchmark_matrix_lib"],
+    deps = [
+        ":benchmark_matrix_lib",
+        ":benchmark_records_lib",
+    ],
 )
 
 py_test(

@@ -58,17 +58,20 @@ commit time. Open PRs use measurement creation time. Unassociated main runs are 
 one row. Closed, unmerged PRs are omitted. Each result names its exact baseline; an aggregation
 PR's post-merge measurements are not silently attributed to its constituent PRs.
 
-Actions artifacts are kept for 30 days. The published site retains at most 100 successful run
-attempts, including their raw observations. Old attempts remain distinguishable by run/attempt
+Actions artifacts are kept for 30 days. Ordinary publication retains the latest 100 successful run
+records, plus originals referenced by a published CI backfill. Backfill campaigns and their preserved
+originals are exempt from ordinary run eviction. Old attempts remain distinguishable by run/attempt
 identity but do not become extra index rows. Cleanup removes the oldest records and detail pages;
 therefore an old PR or release eventually leaves this bounded history. Replaying the same attempt
 is idempotent; changing its measurements is rejected. No generated measurements are committed to
 the source branch. Missing, cancelled, or failed runs do not create fabricated measurements.
 
 The workflow can be dispatched manually from its Actions page. Automatic collection and
-publication occur after merge only. There is no historical backfill of measurements that were never
-made. Initial runs should establish total build/measurement cost and runner noise before changing
-fixture sizes or proposing any performance gate.
+publication occur after merge only. The separate [CI backfill workflow](benchmark-backfill.md)
+rebuilds selected historical commits and measures them with the frozen current comparison driver.
+It replaces selected cross-tool comparisons only after whole-campaign validation, preserving
+original observations and their paired base/head results. A replay is a new measurement, not a
+reconstruction of the machine or elapsed times from the original merge.
 
 ## Local measurement and tests
 

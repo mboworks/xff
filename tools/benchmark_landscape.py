@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 
 import benchmark_matrix as matrix
+import benchmark_records
 
 
 ORDER_LABELS = {
@@ -264,7 +265,7 @@ def publish_history(root, catalog):
     selected = {}
     for item in catalog:
         key = (item['platform'], item['commit'])
-        rank = (item['date'], item['run'], item['attempt'])
+        rank = (item.get('backfill', False), item['run'], item['attempt'])
         if key not in selected or rank > selected[key][0]:
             selected[key] = (rank, item)
     entries = sorted((item for _, item in selected.values()),
@@ -325,7 +326,7 @@ def publish(root, javascript):
     end_marker = '<!-- benchmark-landscape:end -->'
     count = 0
     catalog = []
-    for path in sorted(root.glob('runs/*/*/**/report.json')):
+    for path in benchmark_records.paths(root):
         record = json.loads(path.read_text())
         report = record.get('tool_comparisons')
         if not report or allocation_groups(report) is None:
@@ -337,16 +338,20 @@ def publish(root, javascript):
             payload = path.with_name('landscape.json')
             payload.write_text(json.dumps(figures(report), allow_nan=False), encoding='utf-8')
             contract = report.get('contract', {})
-            platform = record.get('platform') or contract.get('platform', 'Unknown platform')
+            platform = benchmark_records.platform_key(record) or contract.get('platform', 'Unknown platform')
             machine = contract.get('machine', record.get('contract', {}).get('machine', ''))
             if machine and machine.lower() not in platform.lower():
                 platform += ' / ' + machine
-            commit = source['head_sha']
+            commit = record.get('head', source['head_sha'])
             label = source['head_branch'] + ' / ' + commit[:10]
             if source.get('pull_requests'):
                 label = 'PR ' + str(source['pull_requests'][0]['number']) + ' / ' + commit[:10]
+            if benchmark_records.is_backfill(record):
+                label = 'CI backfill / ' + commit[:10]
             catalog.append(dict(platform=platform, commit=commit, label=label,
-                                date=source['created_at'], run=int(source['id']), attempt=int(source['run_attempt']),
+                                date=benchmark_records.reference_time(record),
+                                backfill=benchmark_records.is_backfill(record),
+                                run=int(source['id']), attempt=int(source['run_attempt']),
                                 report=path.parent.relative_to(root).as_posix() + '/',
                                 figures=payload.relative_to(root).as_posix(), identity=matrix.platform_title(report)))
         page = path.with_name('index.html')

@@ -138,7 +138,7 @@ def check_environment(expected):
         raise ValueError('backfill environment changed: ' + difference)
 
 
-def prepare(args):
+def prepare(args, *, campaign=None, collection=None):
     if not re.fullmatch('[a-z0-9][a-z0-9-]*', args.series):
         raise ValueError('series must contain lowercase letters, digits and hyphens')
     counts = args.files or [*compare.DEFAULT_FILE_COUNTS, 20000, 50000, 100000]
@@ -173,6 +173,8 @@ def prepare(args):
         'build': {'config': 'clang_release', 'bazel': str(Path(bazel).resolve()),
                   'version': subprocess.check_output([bazel, '--version'], text=True).strip()},
     }
+    if campaign is not None:
+        contract.update(campaign=campaign, collection=collection)
     args.output.mkdir(parents=True, exist_ok=True)
     path = args.output / 'batch.json'
     if path.exists():

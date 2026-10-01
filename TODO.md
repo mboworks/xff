@@ -15,6 +15,9 @@
 - [ ] Run both full CI replacement backfills on the 1/3 grid and implement publication import
       and promotion by platform/commit, retaining superseded raw observations. An incomplete
       campaign must not silently replace an entire history.
+- [x] Prepare one complete-revision job per platform/commit, freeze the whole campaign, and
+      validate/import it atomically. Prefer replacements in history, charts and exact PR/tag
+      links while retaining original paired results and actual collection-attempt provenance.
 - [ ] Run separate local Mac and Zen 5 backfills on the 1/3/10 grid, subject to host capacity,
       and publish these as additional machine series. Keep M5 Pro, M2 Ultra and Zen 5 distinct;
       document Mac worker requests versus Linux physical-core affinity. Extend the landscape's
