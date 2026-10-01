@@ -223,15 +223,18 @@ bazel build --config=xff_full //xff/cli:xff_full
 The `//xff` target alias follows your active workspace configuration automatically: it resolves to the lean binary by default, and switches to the full binary under `--config=xff_full`. The underlying targets remain explicit and configuration-stable: `//xff/cli:xff` is always lean, and `//xff/cli:xff_full` is always full.
 
 Published binaries use `--config=clang_release`, which combines the hermetic Clang toolchain with
-size optimization and ThinLTO. Releases provide the stripped `xff-PLATFORM-ARCH` and
+`-O2` optimization and `--config=lto`. Select ThinLTO independently with
+`--config=clang --config=lto -c opt`; `--config=lto` enables `--features=thin_lto`.
+macOS uses Apple linker-managed ThinLTO; Linux selects bundled LLD and Bazel's separate LTO
+backend actions. Linux builds without ThinLTO use mold. Releases provide the stripped `xff-PLATFORM-ARCH` and
 `xff_full-PLATFORM-ARCH` executables directly. Each platform also provides separate level-19
 Zstandard-compressed `xff-PLATFORM-ARCH.tar.zst` and `xff_full-PLATFORM-ARCH.tar.zst` archives.
 Each archive contains its own executable and matching symbol file under `debug/`; no `.tar.gz`
 duplicate is published. See the [latest release](https://github.com/mboworks/xff/releases/latest)
 for downloads and installation instructions. The ordinary Linux and
-macOS CI jobs run tagged binary-level tests with this same configuration and execute the staged,
-stripped binaries before a release can use it; the full unit-test graph stays on the same hermetic
-Clang toolchain without paying ThinLTO cost for every test executable. Each release also publishes
+macOS CI jobs test the complete core and extras graph with this same configuration and execute
+the staged, stripped binaries before a release can use it. Sanitizer jobs use their own Clang
+configurations. Each release also publishes
 an attested `SHA256SUMS` manifest and installation instructions, including generation of the
 matching man page directly from the installed binary with `xff --pager=never --man`.
 

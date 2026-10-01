@@ -13,13 +13,7 @@ common:macos --linkopt=-framework --linkopt=CoreFoundation --host_linkopt=-frame
 # native target triple and the hermetic LLVM compile and link actions.
 common:macos --macos_minimum_os=11.0 --host_macos_minimum_os=11.0
 
-# TODO: Drop these Apple linker overrides as soon as the pinned LLVM linker accepts
-# SDK 27's arm64e.x1 target (LLVM PR 222721, after LLVM 23.1.1). Keep this
-# Darwin-only: Linux should continue to use the hermetic LLD toolchain.
-common:macos --features=-supports_start_end_lib --host_features=-supports_start_end_lib
-common:macos --linkopt=--ld-path=/usr/bin/ld --host_linkopt=--ld-path=/usr/bin/ld
-# Also identify the linker to Clang so it passes the matching LLVM libLTO plugin.
-common:macos --linkopt=-fuse-ld=/usr/bin/ld --host_linkopt=-fuse-ld=/usr/bin/ld
+# The LLVM module selects native Apple ld and its capabilities on macOS.
 
 try-import %workspace%/.bazelrc.user
 
@@ -109,20 +103,22 @@ common:xff_fuse_tests_required --@xff_extras_api//:fuse_tests_must_mount=true
 # the autodetected local toolchain) keeps gcc/native builds on the local compiler.
 common:clang --extra_toolchains=@llvm_toolchain_llvm//:all
 common:clang --cxxopt=-gmlt --host_cxxopt=-gmlt
-# Linker selection comes from the toolchain and the macOS override above.
+# Linux IR backend actions inherit source-only toolchain arguments. Ignore that specific warning
+# there; source compilation keeps its full warnings-as-errors policy.
+common:clang --ltobackendopt=-Wno-unused-command-line-argument
+# Linker selection and LTO feature overrides come from the toolchain module.
 common:clang --define is_clang=true
 
 # --config=release supplies the production optimization and link settings without selecting a
 # compiler. --config=clang_release is the exact composed configuration used for tests and published
 # executables. Keep debug information in Bazel's outputs so tools/stage_release_artifacts.sh can
-# split it from the shipped binaries. Explicit -flto=thin flags are intentional: toolchains_llvm
-# does not expose Bazel's thin_lto feature, and --features=thin_lto would therefore be accepted but
-# silently do nothing.
+# split it from the shipped binaries. LTO is independently selectable with --config=lto.
+# The toolchain uses linker-managed ThinLTO on macOS and separate Bazel backends on Linux.
+common:lto --features=thin_lto
 common:release --compilation_mode=opt
 common:release --strip=never
 common:release --copt=-O2
-common:release --copt=-flto=thin
-common:release --linkopt=-flto=thin
+common:release --config=lto
 # Enable the ELF-only linkopts selected by the two shipped binary targets. Keeping these behind a
 # build setting prevents LLD spellings from reaching macOS or unrelated test/host executables.
 common:release --//xff:xff_release_elf_link_optimizations=True
