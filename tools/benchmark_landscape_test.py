@@ -12,18 +12,37 @@ import unittest
 import benchmark_landscape as landscape
 
 
-def report():
-    return {'contract': {'file_counts': [10, 100, 1000], 'cpu_counts': [1, 4],
+def report(cpus=(1, 4)):
+    return {'contract': {'file_counts': [10, 100, 1000], 'cpu_counts': list(cpus),
                          'repetitions': 1, 'retained': 1, 'estimator': 'mean-fastest'},
             'tasks': [dict(dataset=tree, name=task, cpus=cpu, files=count, skips={},
                            participants={name: {'samples': [{'elapsed_seconds': elapsed}]}
                                          for name, elapsed in [('xff', 1), ('rg', reference)]})
-                      for tree in ('broad', 'deep') for cpu in (1, 4)
+                      for tree in ('broad', 'deep') for cpu in cpus
                       for count in (10, 100, 1000)
                       for task, reference in [('fast', 2), ('slow', 0.5)]]}
 
 
 class BenchmarkLandscapeTest(unittest.TestCase):
+    def test_three_worker_grid_labels_and_hover_use_actual_allocations(self):
+        data = report(cpus=(1, 3))
+        for order in landscape.ORDER_LABELS:
+            for metric in ('percent', 'factor'):
+                figure = landscape.figure(data, order, metric)
+                self.assertEqual(figure['layout']['scene']['xaxis']['title']['text'],
+                                 '1 worker \u2190 File count \u2192 3 workers')
+                self.assertEqual([surface['name'] for surface in figure['data']],
+                                 ['Broad / 1 worker', 'Deep / 1 worker',
+                                  'Broad / 3 workers', 'Deep / 3 workers'])
+                for surface in figure['data'][2:]:
+                    self.assertTrue(all('3 workers /' in cell for row in surface['text'] for cell in row))
+        self.assertIn('right: 3 workers, small to large', landscape.render(data, '/* renderer */'))
+
+    def test_landscape_rejects_missing_or_ambiguous_allocation_groups(self):
+        for cpus in ((), (1,), (1, 1), (0, 3), (2, 3), (1, 3, 4)):
+            with self.subTest(cpus=cpus), self.assertRaisesRegex(ValueError, 'allocation group'):
+                landscape.figure(report(cpus=cpus))
+
     def test_percent_ticks_and_colorbar_show_units(self):
         layout = landscape.figure(report())['layout']
         self.assertEqual(layout['scene']['yaxis']['ticksuffix'], '%')
@@ -179,7 +198,8 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                 folder.mkdir(parents=True)
                 source = dict(id=run, run_attempt=attempt, head_sha=sha * 40,
                               head_branch='main', created_at=f'2026-09-{run:02d}T12:00:00Z')
-                data = dict(tool_comparisons=report(), platform=platform, source=source)
+                data = dict(tool_comparisons=report(cpus=(1, 3) if platform == 'macos' else (1, 4)),
+                            platform=platform, source=source)
                 (folder / 'report.json').write_text(json.dumps(data))
                 (folder / 'index.html').write_text('<h1>Report</h1>')
             self.assertEqual(landscape.publish(root, '/* renderer */'), 4)
@@ -192,6 +212,8 @@ class BenchmarkLandscapeTest(unittest.TestCase):
             for row in catalog:
                 payload = json.loads((root / row['figures']).read_text())
                 self.assertEqual(set(payload), set(landscape.ORDER_LABELS))
+                expected = '3 workers' if row['platform'] == 'macos' else '4 workers'
+                self.assertIn(expected, payload['similarity']['percent']['layout']['scene']['xaxis']['title']['text'])
                 self.assertTrue((root / row['report'] / 'index.html').is_file())
             landscape.publish(root, '/* renderer */')
             self.assertEqual((root / 'index.html').read_text(), first)

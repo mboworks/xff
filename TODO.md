@@ -1,5 +1,20 @@
 # TODO
 
+## Benchmark runner capacity
+
+- [x] Reject undersized runners before measurement; keep Linux's 1/4 pinned CPU grid and use
+      the documented hosted macOS 1/3 worker grid on a single host. Preserve strict shard identity
+      checks, name mismatched fields, and render both grids without mixing incompatible baselines.
+- [ ] Plan separate local historical series on the Mac and Zen 5 machine, preserving hosted
+      observations while preferring controlled local results in the display. Native Mac
+      four-worker runs are possible, but the tested Apple Silicon host does not support Mach
+      affinity. Record actual host/CPU allocation, reference binaries and invocation contracts.
+- [ ] Evaluate reference-based normalization per compatible benchmark cell. Estimate a fixed
+      reference anchor from five runs for historical plots; consider the previous five runs for
+      recent-regression comparisons. Preserve raw timings and ratios, expose calibration
+      provenance, and do not normalize between different worker counts or machine series.
+      See `docs/performance-analysis.md` and `docs/benchmark-comparisons.md`.
+
 ## Toolchain follow-up
 
 - [ ] Complete the Clang/LLVM 23.1.2 upgrade: validate native macOS linking, Linux LTO, the

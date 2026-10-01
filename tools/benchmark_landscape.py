@@ -107,6 +107,11 @@ def padded_ticks(labels, align='left'):
     return [label + '\u00a0' * (width - len(label) + 3) for label in labels]
 
 
+def allocation_groups(report):
+    groups = sorted(report.get('contract', {}).get('cpu_counts', []))
+    return groups if len(groups) == 2 and groups[0] == 1 and groups[1] > 1 else None
+
+
 def figure(report, order='similarity', metric='percent'):
     """Keep CPU/tree quadrants disconnected; never fill missing observations."""
     if metric not in ('percent', 'factor'):
@@ -115,8 +120,9 @@ def figure(report, order='similarity', metric='percent'):
     counts = sorted(report['contract']['file_counts'])
     if not counts or any(n <= 0 for n in counts):
         raise ValueError('file counts must be positive')
-    if sorted(report['contract']['cpu_counts']) != [1, 4]:
-        raise ValueError('landscape requires the 1 and 4 allocation groups')
+    groups = allocation_groups(report)
+    if groups is None:
+        raise ValueError('landscape requires 1 and one larger allocation group')
     pairs = ordered_pairs(rows, order)
     if not pairs:
         raise ValueError('no comparable measurements')
@@ -131,7 +137,7 @@ def figure(report, order='similarity', metric='percent'):
     traces = []
     ticks = []
     labels = []
-    for cpu, side in ((1, -1), (4, 1)):
+    for cpu, side in zip(groups, (-1, 1), strict=True):
         ordered = list(reversed(counts)) if cpu == 1 else counts
         xs = [side * (0.3 + math.log10(n / counts[0])) for n in ordered]
         ticks.extend(xs)
@@ -172,7 +178,7 @@ def figure(report, order='similarity', metric='percent'):
         coloraxis=dict(cmin=-extent, cmax=extent,
                        colorscale=colorscale,
                        colorbar=dict(title=dict(text='Relative performance %'), ticksuffix='%')),
-        scene=dict(xaxis=dict(title=dict(text=f'{matrix.allocation_label(report, 1)} \u2190 File count \u2192 {matrix.allocation_label(report, 4)}'),
+        scene=dict(xaxis=dict(title=dict(text=f'{matrix.allocation_label(report, groups[0])} \u2190 File count \u2192 {matrix.allocation_label(report, groups[1])}'),
                               ticks='outside', tickfont=tick_font, tickvals=ticks, ticktext=labels),
                    yaxis=dict(title=dict(text='Relative performance (%)'), zeroline=True,
                               zerolinecolor='#3269b5', ticksuffix='%'),
@@ -269,6 +275,7 @@ def publish_history(root, catalog):
 
 def render(report, javascript):
     plots = figures(report)
+    groups = allocation_groups(report)
     plot = json.dumps(plots, allow_nan=False, ensure_ascii=False).replace('<', '\\u003c')
     return ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -278,8 +285,9 @@ def render(report, javascript):
             'summary{cursor:pointer;font-weight:bold}</style></head><body>'
             '<h1>Benchmark comparison landscape</h1>'
             '<details id="landscape-panel" open><summary>3D comparison chart (show/hide)</summary>'
-            '<p>Drag to rotate; scroll to zoom; right-drag to pan. Focus the chart for arrow-key rotation, +/- zoom, and Home reset. Y is vertical. Left: 1 allocation, large to small; '
-            'right: 4 allocations, small to large. The mirrored X axis uses log10 spacing. '
+            '<p>Drag to rotate; scroll to zoom; right-drag to pan. Focus the chart for arrow-key rotation, +/- zoom, and Home reset. Y is vertical. '
+            f'Left: {matrix.allocation_label(report, groups[0])}, large to small; '
+            f'right: {matrix.allocation_label(report, groups[1])}, small to large. The mirrored X axis uses log10 spacing. '
             'Broad and Deep tasks extend in opposite Z directions.</p>'
             '<p>Relative performance (%) = 100 &times; (1 - xff time / reference time). Green is faster, '
             'blue is equal, red is slower; this reverses the sign of the table difference. '
@@ -320,7 +328,7 @@ def publish(root, javascript):
     for path in sorted(root.glob('runs/*/*/**/report.json')):
         record = json.loads(path.read_text())
         report = record.get('tool_comparisons')
-        if not report or sorted(report.get('contract', {}).get('cpu_counts', [])) != [1, 4]:
+        if not report or allocation_groups(report) is None:
             continue
         if not matrix.relative_results(report):
             continue

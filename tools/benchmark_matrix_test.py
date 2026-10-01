@@ -38,6 +38,21 @@ class BenchmarkMatrixTest(unittest.TestCase):
         self.assertIn('>1 worker</th>', matrix.render_html(data))
         self.assertIn('>4 workers</th>', matrix.render_html(data))
 
+    def test_host_capacity_matters_unless_every_allocation_is_pinned(self):
+        for allocations in ({'1': [0], '4': [0, 1, 2, 3]}, {'1': None, '4': None},
+                            {'1': [0], '4': None}, {}):
+            with self.subTest(allocations=allocations):
+                previous, current = report(), report()
+                previous['contract'].update(cpu_count=5, affinity_by_cpu_count=allocations)
+                current['contract'].update(cpu_count=3, affinity_by_cpu_count=allocations)
+                pinned = bool(allocations) and all(value is not None for value in allocations.values())
+                self.assertEqual(matrix.compatibility(previous) == matrix.compatibility(current), pinned)
+                with tempfile.TemporaryDirectory() as temporary:
+                    root = Path(temporary)
+                    self.retain(root, previous)
+                    matrix.attach_baseline(current, root)
+                self.assertEqual(current['baseline']['status'] == 'available', pinned)
+
     def retain(self, root, data, run=1, event='push', branch='main'):
         path = root / 'runs' / str(run) / '1' / 'report.json'
         path.parent.mkdir(parents=True)

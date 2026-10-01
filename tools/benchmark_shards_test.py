@@ -10,20 +10,20 @@ import unittest
 import benchmark_shards as shards
 
 
-def records():
-    plan = shards.make_plan([10, 100], [1, 4], 3, task_names=['files', 'content'])
+def records(cpus=(1, 4), count=3):
+    plan = shards.make_plan([10, 100], cpus, count, task_names=['files', 'content'])
     result = []
-    for index in range(3):
+    for index in range(count):
         tasks = []
-        for files, cpus, dataset in shards.assigned_fixtures(plan, index):
+        for files, cpu, dataset in shards.assigned_fixtures(plan, index):
             for name in plan['task_names']:
-                tasks.append(dict(files=files, cpus=cpus, dataset=dataset, name=name,
-                                  shape=f'{cpus}cpu/{files}/{dataset}', participants={
+                tasks.append(dict(files=files, cpus=cpu, dataset=dataset, name=name,
+                                  shape=f'{cpu}cpu/{files}/{dataset}', participants={
                                       'xff': {'samples': [{'elapsed_seconds': 1}]}}, skips={}))
         result.append({'head': 'same-head', 'tool_comparisons': {
             'schema': 1, 'tools': {'xff': {'sha256': 'same-binary'}}, 'tasks': tasks,
-            'contract': {'file_counts': [10, 100], 'cpu_counts': [1, 4], 'repetitions': 1, 'retained': 1,
-                         'affinity_by_cpu_count': {'1': [0], '4': [0, 1, 2, 3]},
+            'contract': {'file_counts': [10, 100], 'cpu_counts': list(cpus), 'repetitions': 1, 'retained': 1,
+                         'affinity_by_cpu_count': {str(cpu): list(range(cpu)) for cpu in cpus},
                          'shard': {'index': index, 'plan': plan}}}})
     result[0]['base'] = 'paired-base'
     return result
@@ -83,6 +83,32 @@ class BenchmarkShardsTest(unittest.TestCase):
         for value in cases:
             with self.subTest(value=value), self.assertRaises(ValueError):
                 shards.merge_reports(value)
+
+    def test_macos_cpu_capacity_mismatch_identifies_field_and_shard(self):
+        inputs = records()
+        for index, record in enumerate(inputs):
+            record['tool_comparisons']['contract'].update(
+                cpu_count=5 if index == 0 else 3, affinity_by_cpu_count={'1': None, '4': None})
+        with self.assertRaisesRegex(ValueError, r'incompatible shard 1: contract\.cpu_count: expected 5, got 3'):
+            shards.merge_reports(inputs)
+
+    def test_single_host_three_worker_grid_retains_every_case(self):
+        inputs = records(cpus=(1, 3), count=1)
+        inputs[0]['tool_comparisons']['contract'].update(
+            cpu_count=3, affinity_by_cpu_count={'1': None, '3': None})
+        result = shards.merge_reports(inputs)
+        self.assertEqual(len(result['tool_comparisons']['tasks']), 16)
+        self.assertEqual(result['tool_comparisons']['contract']['cpu_counts'], [1, 3])
+        self.assertEqual(len(result['measurement_shards']), 1)
+
+    def test_identity_diagnostic_includes_nested_and_missing_fields(self):
+        self.assertEqual(shards.identity_difference({'tools': {'rg': {'sha256': 'old'}}},
+                                                    {'tools': {'rg': {'sha256': 'new'}}}),
+                         "tools.rg.sha256: expected 'old', got 'new'")
+        self.assertEqual(shards.identity_difference({'cpu_count': None}, {}),
+                         'cpu_count: missing (expected None)')
+        self.assertEqual(shards.identity_difference({}, {'cpu_count': 3}),
+                         'cpu_count: unexpected value 3')
 
     def test_contract_affinity_and_task_mismatches_fail(self):
         for change, message in (

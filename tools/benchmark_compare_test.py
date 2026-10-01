@@ -122,10 +122,65 @@ class BenchmarkCompareTest(unittest.TestCase):
         def report(binary, files, depth, repetitions, **kwargs):
             return {"tools": {}, "contract": {"files": files, "cpu_affinity": list(range(kwargs['cpus']))},
                     "tasks": [{"shape": "broad", "name": "files"}]}
-        with mock.patch.object(compare, 'collect', side_effect=report):
+        with mock.patch.object(compare, 'collect', side_effect=report), \
+                mock.patch.object(compare.os, 'sched_getaffinity', return_value=set(range(4)), create=True):
             result = compare.collect_scales(Path('/xff'), [10])
         self.assertEqual([task['shape'] for task in result['tasks']], ['1cpu/10/broad', '4cpu/10/broad'])
         self.assertEqual(result['contract']['affinity_by_cpu_count'], {'1': [0], '4': [0, 1, 2, 3]})
+
+    def test_unpinned_runner_capacity_is_enforced_before_any_measurement(self):
+        with mock.patch.object(compare.os, 'sched_getaffinity', None, create=True), \
+                mock.patch.object(compare.os, 'cpu_count', return_value=3), \
+                mock.patch.object(compare, 'collect') as collect:
+            self.assertIsNone(compare.cpu_allocation(3))
+            with self.assertRaisesRegex(ValueError, 'requested 4 CPUs, only 3 available'):
+                compare.collect_scales(Path('/xff'), [10], cpu_counts=[1, 4])
+            collect.assert_not_called()
+            with self.assertRaisesRegex(ValueError, 'affinity enforcement requires Linux'):
+                compare.cpu_allocation(1, require_cpu_affinity=True)
+
+    def test_cpu_capacity_rejects_unknown_empty_and_invalid_allocations(self):
+        with mock.patch.object(compare.os, 'sched_getaffinity', None, create=True):
+            for capacity in (None, 0):
+                with self.subTest(capacity=capacity), mock.patch.object(compare.os, 'cpu_count', return_value=capacity):
+                    with self.assertRaisesRegex(ValueError, 'cannot determine'):
+                        compare.cpu_allocation(1)
+        with mock.patch.object(compare.os, 'sched_getaffinity', return_value=set(), create=True):
+            with self.assertRaisesRegex(ValueError, 'cannot determine'):
+                compare.cpu_allocation(1)
+        with self.assertRaisesRegex(ValueError, 'positive'):
+            compare.cpu_allocation(0)
+
+    def test_cpu_affinity_uses_allowed_mask_not_host_count(self):
+        with mock.patch.object(compare.os, 'sched_getaffinity', return_value={2, 4, 6, 8}, create=True), \
+                mock.patch.object(compare.os, 'cpu_count', return_value=18):
+            self.assertEqual(compare.cpu_allocation(4, True), [2, 4, 6, 8])
+            with self.assertRaisesRegex(ValueError, 'only 4 available'):
+                compare.cpu_allocation(5)
+
+    def test_runner_preflight_needs_no_binary_and_reports_allocation_policy(self):
+        for affinity, maximum, policy in ((None, 3, 'worker counts; no CPU pinning'),
+                                         ({2, 4, 6, 8}, 4, 'CPU affinity [2, 4, 6, 8]')):
+            output = io.StringIO()
+            getter = mock.Mock(return_value=affinity) if affinity is not None else None
+            with self.subTest(affinity=affinity), \
+                    mock.patch.object(compare.os, 'sched_getaffinity', getter, create=True), \
+                    mock.patch.object(compare.os, 'cpu_count', return_value=3), \
+                    mock.patch.object(sys, 'argv', ['benchmark_compare', '--check-runner', '--cpus=1', f'--cpus={maximum}']), \
+                    mock.patch.object(compare, 'collect_scales') as collect, contextlib.redirect_stdout(output):
+                compare.main()
+                collect.assert_not_called()
+                self.assertIn(policy, output.getvalue())
+        for counts, message in (([1, 4], 'only 3 available'), ([0], 'positive'), ([1, 1], 'unique')):
+            output = io.StringIO()
+            with self.subTest(counts=counts), \
+                    mock.patch.object(compare.os, 'sched_getaffinity', None, create=True), \
+                    mock.patch.object(compare.os, 'cpu_count', return_value=3), \
+                    mock.patch.object(sys, 'argv', ['benchmark_compare', '--check-runner'] + [f'--cpus={n}' for n in counts]), \
+                    contextlib.redirect_stderr(output), self.assertRaises(SystemExit) as error:
+                compare.main()
+            self.assertEqual(error.exception.code, 2)
+            self.assertIn(message, output.getvalue())
 
     def test_memory_storage_requires_verified_tmpfs(self):
         with tempfile.TemporaryDirectory() as temporary:

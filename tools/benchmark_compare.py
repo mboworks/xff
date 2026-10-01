@@ -211,22 +211,29 @@ class MeasurementProgress:
             self.last = now
 
 
+def cpu_allocation(cpus, require_cpu_affinity=False):
+    """Reject oversubscription on every platform; return an enforceable mask if supported."""
+    if cpus < 1:
+        raise ValueError("CPU count must be positive")
+    get_affinity = getattr(os, 'sched_getaffinity', None)
+    available = sorted(get_affinity(0)) if get_affinity else None
+    capacity = len(available) if available is not None else os.cpu_count()
+    if capacity is None or capacity < 1:
+        raise ValueError("cannot determine available CPU count")
+    if cpus > capacity:
+        raise ValueError(f"requested {cpus} CPUs, only {capacity} available")
+    if available is None and require_cpu_affinity:
+        raise ValueError("CPU affinity enforcement requires Linux")
+    return available[:cpus] if available is not None else None
+
+
 def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_tools=False,
             fixture_parent=None, require_memory=False, cpus=1, require_cpu_affinity=False, keep=None, fixtures=None, progress=None, shapes=("broad", "deep")):
     progress = progress or MeasurementProgress()
     keep = min(7, repetitions) if keep is None else keep
     if not 1 <= keep <= repetitions:
         raise ValueError("retained samples must be between one and repetitions")
-    if cpus < 1:
-        raise ValueError("CPU count must be positive")
-    affinity = None
-    if hasattr(os, "sched_getaffinity"):
-        available = sorted(os.sched_getaffinity(0))
-        if len(available) < cpus:
-            raise ValueError(f"requested {cpus} CPUs, only {len(available)} available")
-        affinity = available[:cpus]
-    elif require_cpu_affinity:
-        raise ValueError("CPU affinity enforcement requires Linux")
+    affinity = cpu_allocation(cpus, require_cpu_affinity)
     storage = fixture_storage(fixture_parent, require_memory)
     tools = {name: tool_info(name, str(binary) if name == "xff" else shutil.which(name))
              for name in ("xff", "find", "rg", "fzf")}
@@ -308,6 +315,7 @@ def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=F
         raise ValueError("file counts must be unique and positive; depth must be positive")
     if not cpu_counts or len(set(cpu_counts)) != len(cpu_counts) or min(cpu_counts) < 1:
         raise ValueError("CPU counts must be unique and positive")
+    cpu_allocation(max(cpu_counts), require_cpu_affinity)
     selected = benchmark_shards.assigned_fixtures(shard_plan, shard_index) if shard_plan else None
     if shard_plan and (list(file_counts) != shard_plan['file_counts'] or list(cpu_counts) != shard_plan['cpu_counts'] or fixtures):
         raise ValueError('shard plan requires its exact standard fixture grid')
@@ -426,6 +434,8 @@ def render_document(report):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check-runner', action='store_true',
+                        help='Check capacity for --cpus before building or measuring; no binary/report required')
     parser.add_argument('--render-only', action='store_true',
                         help='Render an existing --report JSON without running measurements; requires --html or --summary')
     parser.add_argument('--shard-plan', type=Path, help='Use a shared complete-fixture shard plan')
@@ -469,6 +479,16 @@ def main():
     shard_plan = json.loads(args.shard_plan.read_text()) if args.shard_plan else None
     file_counts = args.files or (shard_plan['file_counts'] if shard_plan else list(DEFAULT_FILE_COUNTS))
     cpu_counts = args.cpus or (shard_plan['cpu_counts'] if shard_plan else [1, 4])
+    if args.check_runner:
+        try:
+            if min(cpu_counts) < 1 or len(set(cpu_counts)) != len(cpu_counts):
+                raise ValueError('CPU counts must be unique and positive')
+            affinity = cpu_allocation(max(cpu_counts), args.require_cpu_affinity)
+        except ValueError as error:
+            parser.error(str(error))
+        policy = f'CPU affinity {affinity}' if affinity is not None else 'worker counts; no CPU pinning'
+        print(f'Runner supports requested allocations {cpu_counts}: {policy}')
+        return
     if (not args.binary or not args.report or min(*file_counts, args.depth, args.repetitions) < 1
             or len(set(file_counts)) != len(file_counts) or min(cpu_counts) < 1
             or len(set(cpu_counts)) != len(cpu_counts)):

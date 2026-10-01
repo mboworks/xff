@@ -22,9 +22,13 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
+            cpus: 4
+            shards: 3
             timeout: 45
           - os: macos-latest
             platform: macos
+            cpus: 3
+            shards: 1
             timeout: 90
     runs-on: ${{ matrix.os }}
     timeout-minutes: ${{ matrix.timeout }}
@@ -38,6 +42,13 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
+      - name: Check runner CPU capacity
+        run: |
+          affinity=()
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            affinity=(--require-cpu-affinity)
+          fi
+          python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=${{ matrix.cpus }} "${affinity[@]}"
       # Restore the existing release-build cache; do not add another cache generation or quota.
       - uses: ./.github/actions/bazel-cache-restore
         with:
@@ -95,7 +106,8 @@ jobs:
           for count in 10 20 50 100 200 500 1000 2000 5000 10000 20000 50000 100000; do
             scales+=(--files="${count}")
           done
-          python3 tools/benchmark_shards.py --plan --count=3 "${scales[@]}" \
+          python3 tools/benchmark_shards.py --plan --count=${{ matrix.shards }} "${scales[@]}" \
+            --cpus=1 --cpus=${{ matrix.cpus }} \
             --reference-root=benchmark-history/benchmarks --output=benchmark-plan.json
           tar -cf benchmark-build.tar -C "${RUNNER_TEMP}" benchmark-head
       - uses: actions/upload-artifact@v7
@@ -115,13 +127,23 @@ jobs:
       matrix:
         shard: [0, 1, 2]
         platform: [linux, macos]
+        # macOS has no enforced CPU affinity; keep its complete grid on one host.
+        exclude:
+          - platform: macos
+            shard: 1
+          - platform: macos
+            shard: 2
         include:
           - platform: linux
             os: ubuntu-latest
+            cpus: 4
+            timeout: 60
           - platform: macos
             os: macos-latest
+            cpus: 3
+            timeout: 90
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: ${{ matrix.timeout }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -130,6 +152,13 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
+      - name: Check runner CPU capacity
+        run: |
+          affinity=()
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            affinity=(--require-cpu-affinity)
+          fi
+          python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=${{ matrix.cpus }} "${affinity[@]}"
       - uses: actions/download-artifact@v8
         with:
           name: benchmark-build-${{ matrix.platform }}
@@ -155,6 +184,7 @@ jobs:
           python3 tools/benchmark_compare.py --binary="${RUNNER_TEMP}/benchmark-head" \
             --head="${{ github.sha }}" --report=benchmark-shard.json --require-tools "${storage[@]}" \
             --shard-plan=benchmark-plan.json --shard-index=${{ matrix.shard }} \
+            --cpus=1 --cpus=${{ matrix.cpus }} \
             --repetitions=9 --keep=7 --runner-class='github-hosted ${{ matrix.os }}' \
             --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | shasum -a 256 | cut -d ' ' -f 1)"
       - uses: actions/upload-artifact@v7

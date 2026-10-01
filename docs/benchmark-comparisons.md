@@ -7,10 +7,11 @@ informational. A 15% advisory alarm identifies normalized slowdowns without bloc
 
 ## Matrix and sampling
 
-Each tree shape has one table. Rows identify the task and tool. The eight standard columns are
-grouped by CPU allocation: **1 CPU** with a 1-2-5 progression from 10 through 10,000 files, then **4 CPUs** with the
-same sizes. HTML uses spanning CPU headers; Markdown repeats CPU/count labels and aligns numeric
-cells and their source text to the right.
+Each tree shape has one table. Rows identify the task and tool. Columns are grouped by allocation:
+Linux uses **1 CPU** and **4 CPUs** with enforced affinity; hosted macOS uses **1 worker** and
+**3 workers** without affinity. Each group has a 1-2-5 progression from 10 through 10,000 files
+before merge, extended through 100,000 after merge. HTML uses spanning allocation headers;
+Markdown repeats allocation/count labels and aligns numeric cells and their source text to the right.
 
 - Normal PR CI runs three measured repetitions and averages the fastest two.
 - Main's post-merge benchmark workflow runs nine and averages the fastest seven.
@@ -34,6 +35,10 @@ per-participant commands and competitor identities. Each compared cell must also
 and expected results. Adding a new size or fixture preserves comparisons for overlapping unchanged
 cells; changed/new cells show `n/a`. If no compatible main report exists, the table says so explicitly.
 The first run of a changed contract may therefore establish a new baseline.
+Without enforced affinity, host CPU count must also match. A three-CPU macOS measurement cannot
+use a five-CPU measurement as its baseline. Local measurements keep their own runner class and
+must not replace hosted observations; remeasure selected revisions on one local machine when a
+local history is needed.
 
 ## Relative performance and advisory alarm
 
@@ -146,8 +151,31 @@ reused without cache flushes. These are not cold-storage benchmarks.
 Linux workers bind to one/four CPUs from the runner's allowed affinity set before timing, and child
 processes inherit that allocation. The entire find/fzf pipeline shares it. xff receives matching
 `--jobs`, rg matching `--threads`, and fzf matching `GOMAXPROCS`. Find remains single-threaded.
-Affinity does not reserve physical cores or eliminate hosted-runner contention. Insufficient CPUs
-or unavailable affinity enforcement fail the hosted run.
+Affinity does not reserve physical cores or eliminate hosted-runner contention.
+
+GitHub documents four CPUs for public Linux runners and three for standard ARM64 macOS runners.
+The hosted macOS matrix therefore requests one/three workers; this is not CPU pinning. macOS uses
+ordinary temporary storage and scheduler placement. See
+[GitHub's runner specifications](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
+On every platform, collection rejects a requested allocation larger than the available CPU count
+before creating any fixtures or measuring smaller allocations. Linux checks the allowed affinity
+mask; other platforms check the host CPU count. An unknown capacity is an error. Requiring
+affinity on an unsupported platform is also an error.
+
+CI runs the same preflight before builds and tool installation. It can be run independently:
+
+```sh
+# Linux: require four available CPUs and affinity support.
+python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=4 --require-cpu-affinity
+# Standard hosted macOS: require capacity for three workers without claiming pinning.
+python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=3
+```
+
+Local runs still default to one/four requested workers and validate that capacity. A native macOS
+worker limit does not bind threads to specific CPUs. Mach's affinity policy describes cache-sharing
+hints, not a CPU mask, and is unsupported on the tested Apple Silicon host. See
+[Apple's policy definition](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/mach/thread_policy.h).
+A macOS VM can limit virtual CPU count but represents a different measurement environment.
 
 Each invocation uses a fresh measurement worker. Commands run without a shell; stdout is drained
 through a pipe and stderr captured. Validation is outside timing. Both pipeline processes contribute
@@ -237,10 +265,10 @@ within the current task, including the tool and warm-up/sample index. Small scal
 produce little output. Progress output and correctness checks happen outside the timed child
 commands; scale completion confirms all its output validation finished.
 
-The macOS job has a 60-minute pre-merge budget and a 90-minute post-merge budget, including
-compilation and fixture creation. Its first 100,000-file CI matrix exceeded the old 30-minute job
-budget after an eight-minute build. Linux keeps its 30/45-minute budgets. These are job ceilings,
-not requested measurement durations; individual benchmark invocations retain their timeout.
+The macOS job has a 60-minute pre-merge budget. Post-merge, its build and measurement jobs each
+have a 90-minute budget. Linux has 30 minutes before merge, then 45 minutes for its paired build
+and 60 minutes per measurement shard after merge. These are job ceilings, not requested
+measurement durations; individual benchmark invocations retain their timeout.
 
 PR measurements use 10, 20, 50, 100, 200, 500, 1,000, 2,000, 5,000, and 10,000 files, retaining
 the fastest 2 of 3 samples. Post-merge adds 20,000, 50,000, and 100,000 files and retains the
@@ -251,7 +279,9 @@ the default grid for local experiments.
 ## Post-merge measurement shards
 
 Main runs build the paired binaries once per platform, then distribute the exact head binary to
-three measurement runners. A fixture consists of its file count, CPU allocation and broad/deep
+three Linux measurement runners or one macOS measurement runner. macOS keeps its entire grid
+on one host because affinity cannot enforce a common CPU allocation across hosts with different
+capacities. This trades shard parallelism for a consistent matrix. A fixture consists of its file count, CPU allocation and broad/deep
 shape. All tools, tasks, warmups and repetitions for that fixture stay on one runner; samples for
 one cell are never pooled across runners. The post-merge estimator remains the fastest seven of
 nine observations, while PR runs retain the fastest two of three.
@@ -264,7 +294,8 @@ three shards do not guarantee a threefold wall-time improvement.
 Aggregation requires every planned fixture and task exactly once, matching source and executable
 identities, compatible CPU affinity, and identical sampling contracts. Missing or incompatible
 shards fail the workflow rather than publishing a partial matrix. Each merged report retains
-per-shard provenance. Historical baselines belong on the complete merged report, not individual
+per-shard provenance. An identity mismatch reports its shard, field and differing values, such as
+`incompatible shard 1: contract.cpu_count: expected 5, got 3`. Historical baselines belong on the complete merged report, not individual
 shards. JSON and HTML share the platform-specific basename; only final merged artifacts are
 selected by the publisher.
 
@@ -275,7 +306,9 @@ HTML landscape. It requires no remeasurement. The 3D chart is open by default; i
 show/hide disclosure collapses the chart, controls and explanation without hiding the tables.
 Reopening resizes the chart to the available width. Absolute measurements are collapsed by default;
 the comparison table stays visible below the plot. Benchmark publication inserts the landscape above all tables on retained reports with the
-1/4 allocation matrix. Older reports without that matrix retain their existing presentation.
+one-worker/one-larger-allocation matrix, including hosted macOS's 1/3 and Linux's 1/4 groups.
+Axis labels, hover cards and explanations use the recorded allocations. Older reports without
+that matrix retain their existing presentation.
 The benchmark overview also shows the same landscape with a **Platform** selector and **Version**
 slider. Versions are retained measured commits (including branch/PR/tag labels), not only releases.
 The slider runs oldest to newest and initially selects the newest measurement on the first listed
