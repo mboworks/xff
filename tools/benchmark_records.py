@@ -3,6 +3,7 @@
 """Retained benchmark paths and preference, without changing raw observations."""
 
 from datetime import datetime, timezone
+import json
 
 
 def paths(root):
@@ -29,6 +30,17 @@ def platform_key(record):
 def preference(record):
     source = record['source']
     return (is_backfill(record), source['created_at'], int(source['id']), int(source['run_attempt']))
+
+
+def replacements(root):
+    selected = {}
+    for path in root.glob('backfills/*/*/*/*/report.json'):
+        record = json.loads(path.read_text())
+        key = (platform_key(record), record['head'])
+        rank = preference(record)
+        if key not in selected or rank > selected[key][0]:
+            selected[key] = (rank, path)
+    return {key: path for key, (_, path) in selected.items()}
 
 
 def reference_time(record):

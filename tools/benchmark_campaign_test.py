@@ -244,6 +244,7 @@ class BenchmarkCampaignTest(unittest.TestCase):
             event = {'id': 1, 'run_attempt': 1, 'created_at': '2026-09-01T13:00:00Z',
                      'event': 'push', 'head_branch': 'main', 'head_sha': HEAD, 'pull_requests': []}
             history.retain(site, original, event, 100)
+            history.retain(site, original, dict(event, id=3, head_branch='v1.0.0'), 100)
             path = site / 'runs/1/1/linux/report.json'
             saved = path.read_bytes()
             campaign.retain(site, artifacts, source(), 'owner/repo')
@@ -251,7 +252,9 @@ class BenchmarkCampaignTest(unittest.TestCase):
             history.retain(site, incoming, dict(event, id=2, head_sha='f' * 40, created_at='2026-10-02T00:00:00Z'), 1)
             self.assertEqual(path.read_bytes(), saved)
             pulls = [{'number': 12, 'merge_commit_sha': HEAD, 'merged_at': '2026-09-01T12:00:00Z'}]
-            (site / 'index.html').write_text(history.render_site(site, pulls, 'owner/repo'))
+            rendered = history.render_site(site, pulls, 'owner/repo')
+            self.assertIn('href="backfills/20/2/linux/' + HEAD + '/">v1.0.0', rendered)
+            (site / 'index.html').write_text(rendered)
             with mock.patch.object(history.subprocess, 'check_output', return_value=''):
                 history.reference_pages(site, pulls, site)
             backfilled = site / 'backfills/20/2/linux' / HEAD / 'index.html'

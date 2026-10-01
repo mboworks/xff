@@ -229,6 +229,7 @@ def render_site(root, pulls, repository):
         raise ValueError("invalid repository")
     by_sha = {pull["merge_commit_sha"]: pull for pull in pulls if pull.get("merged_at")}
     by_number = {pull["number"]: pull for pull in pulls}
+    replacements = benchmark_records.replacements(root)
     selected = {}
     for path in benchmark_records.paths(root):
         record = json.loads(path.read_text())
@@ -252,6 +253,10 @@ def render_site(root, pulls, repository):
         else:
             label, reference = "main", benchmark_records.reference_time(record)
         key = (label, phase, recorded_platform(record))
+        replacement = replacements.get((recorded_platform(record), record['head']))
+        if phase != 'pre-merge' and replacement is not None and replacement != path:
+            path = replacement
+            record = json.loads(path.read_text())
         rank = (reference, benchmark_records.preference(record))
         if key not in selected or rank > selected[key][0]:
             selected[key] = (rank, reference, path, record)
