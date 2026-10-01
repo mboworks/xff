@@ -1,13 +1,31 @@
 # Historical benchmark backfill
 
-Use one batch on one host to measure historical XFF revisions with the same current driver,
-reference tools, generated fixtures and CPU/worker requests. This produces a separate measurement
-series; it does not replace or relabel older hosted measurements.
+The CI workflow collects replacements for historical CI measurements. The standalone tool also supports additional
+local machine histories. These are distinct purposes, recorded explicitly in each batch and report:
 
-The initial local grid is one/four workers. Four preserves the historical scaling target; eight
-can be added explicitly for a scaling experiment. macOS does not provide the CPU pinning used by
-our Linux driver, so its allocations are worker requests. A Linux Zen 5 series can enforce CPU
-affinity, but remains separate from the Mac and hosted series.
+| Collection          | Grid                                  | Purpose                                           |
+| ------------------- | ------------------------------------- | ------------------------------------------------- |
+| macOS CI            | 1 and 3 workers                       | Replace macOS CI history for the measured commits |
+| Linux CI            | 1 and 3 pinned logical CPUs           | Replace Linux CI history for the measured commits |
+| Local Mac, M5 Pro   | 1, 3 and 10 workers (host maximum 18) | Add a separate M5 Pro history                     |
+| Local Mac, M2 Ultra | 1, 3 and 10 workers (host maximum 24) | Add a separate M2 Ultra history                   |
+| Local Linux, Zen 5  | 1, 3 and 10 physical cores            | Add a separate Zen 5 history                      |
+
+Use one host session per batch, with a common benchmark driver, reference tools and fixtures.
+The local grid must be selected explicitly. The recommended 1, 3, 10 grid shares the
+three-worker comparison with CI and adds a larger scaling measurement; it can extend to 30
+on a suitable future host. This approximately logarithmic progression does not make timings
+from different hosts interchangeable. The two Mac models
+remain separate histories. macOS allocations are worker requests because the driver cannot pin
+Mac CPUs. Apple's `container --cpus=N` caps a Linux VM, so it would measure Linux ARM64,
+not macOS. A macOS VM can cap guest vCPUs but would be a separate series and does not
+select physical host cores. Local Linux uses one hardware thread per physical core and enforces affinity.
+
+Replacement means selecting the backfilled CI data as the active history for the corresponding
+platform and commit. Superseded raw observations remain available for provenance. A local series
+must never replace a CI series, and different CPU allocations must not be pooled or normalized
+into equivalence. The reports carry this publication intent; importing/promoting them into the
+shared site is a separate step and is not performed by the collection command.
 
 ## Local batch
 
@@ -19,19 +37,28 @@ Place the desired Git references in a whitespace-separated file, or repeat `--re
 python3 tools/benchmark_backfill.py \
   --repo="$PWD" --output=/tmp/xff-backfill-macos --series=macos-m5-pro \
   --revisions-file=/tmp/xff-backfill-revisions.txt \
-  --cpus=1 --cpus=4 --disk-cache="$HOME/.cache/bazel-disk"
+  --purpose=local-addition --cpus=1 --cpus=3 --cpus=10 --disk-cache="$HOME/.cache/bazel-disk"
 ```
 
 Without `--run`, this resolves references to full commit IDs, sorts them by commit date, validates
 capacity and tools, and writes `batch.json`. Inspect it, then repeat the command with `--run`.
 The same driver is available as `bazel run //tools:benchmark_backfill -- ...`.
-Use `--history-root=PATH/benchmarks` instead of a revision list to select all commits with retained
-macOS comparison reports from a coverage-pages checkout. The selection is deduplicated.
+Use `--history-root=PATH/benchmarks` instead of a revision list to select retained comparison commits
+from a coverage-pages checkout. Selection defaults to the local OS; `--history-platform=macos|linux`
+chooses another historical platform's commit list. The selection is deduplicated. This only chooses
+revisions to build; it does not relabel where the new measurements run.
 
-For a Linux run, select a separate `--series=linux-zen5`, and add
-`--require-cpu-affinity --fixture-parent=/dev/shm --require-memory`. The allowed CPU mask must
-contain at least the requested count. CPU affinity restricts logical CPUs; select an appropriate
-host mask before starting if the experiment requires distinct physical cores rather than SMT siblings.
+For a local Linux run, select `--series=linux-zen5`, an explicit grid such as `--cpus=1 --cpus=3 --cpus=10`,
+and `--fixture-parent=/dev/shm --require-memory`. Pinning is mandatory for local Linux even without
+`--require-cpu-affinity`: the driver reads package/core IDs from sysfs, selects one allowed logical
+CPU per physical core, and rejects requests exceeding the available physical-core count. Missing
+or unknown topology is an error, not permission to count SMT siblings as separate cores.
+
+The measurement worker and all tool processes inherit the selected mask. Each allocation uses
+its requested subset of that pool. The driver restores its original mask after measurement, also
+on failure; builds run with the original allowance. The frozen contract records the selected pool
+and each result records the actual per-allocation CPU IDs. Respect an externally restricted mask;
+the driver never expands it. Core pinning does not reserve those cores against unrelated processes.
 
 The standard grid includes the 1-2-5 file-count progression from 10 through 100,000, both tree
 shapes and all current comparison tasks, retaining the fastest seven of nine samples. Repeated
@@ -78,15 +105,26 @@ is separate from measurement; this workflow does not rewrite hosted data or inve
 
 ## Manual GitHub workflow
 
-**Benchmark backfill** is a manually dispatched, single-job macOS workflow. It defaults to all
-retained macOS comparison commits, or accepts an explicit whitespace-separated revision list.
-It installs reference tools once and measures the entire selection on the same hosted machine
-with one/three workers. Its artifact contains the manifest, status, reports and build logs.
+**Benchmark backfill** is a manually dispatched CI-only workflow with one job per platform.
+It selects every retained macOS comparison commit for the macOS job and every retained Linux
+comparison commit for the Linux job. Each job installs reference tools once and measures its
+complete selection on one hosted machine: one/three workers on macOS, one/three pinned logical CPUs
+on Linux. Linux fixtures use verified tmpfs, matching the ordinary hosted measurement policy. Using three
+of a four-vCPU Linux runner's CPUs leaves one outside the tools' affinity mask for background
+work. This provides headroom without reserving CPUs or preventing background work on the
+measured CPUs; reduced contention is expected, not guaranteed.
 
-Use the local workflow for a complete campaign that may exceed a hosted job's time limit. The
-hosted measurement step has a 345-minute ceiling within a 360-minute job, leaving time to upload
-completed results after failure or timeout. A partial batch is visibly incomplete, never presented
-as a complete history. Another hosted runner cannot resume the same host series.
+The tool's `--purpose=ci-replacement` requires a GitHub-hosted environment and the exact platform
+grid. Its `replacement_target` is `github-ci-macos` or `github-ci-linux`. Local runs default to
+`--purpose=local-addition`, have no replacement target, and require an explicit grid. The workflow
+has no dispatch inputs; arbitrary local host labels or allocations cannot change its CI targets.
+
+Artifacts contain the manifest, status, reports and build logs. The hosted measurement step has a
+345-minute ceiling within a 360-minute job, leaving time to upload completed results after failure
+or timeout. An incomplete campaign remains visible as incomplete and is not sufficient to promote
+an entire replacement history. Another hosted runner cannot resume the same host session.
+Longer campaigns require an explicit continuation plan; local runs are additional data, not a
+substitute for CI replacements. The collection workflow does not modify the published site.
 
 ## Presentation normalization
 

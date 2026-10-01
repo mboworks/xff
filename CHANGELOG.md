@@ -3,7 +3,8 @@
 
 # 0.9.0
 
-- Add a resumable single-host benchmark backfill workflow with frozen revision, tool and measurement contracts.
+- Add CI benchmark backfills and a resumable local collection tool with frozen contracts and physical-core pinning on Linux.
+- Use one/three-worker CI benchmark grids on both platforms, leaving one Linux vCPU outside the measurement mask.
 
 - Validate benchmark runner capacity before measurement; keep macOS's complete one/three-worker matrix on one host and explain incompatible shard identities.
 

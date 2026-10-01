@@ -150,13 +150,15 @@ routing, and safety checks. Tmpfs can swap under memory pressure. Executables an
 remain outside the fixture-storage contract. Fixtures are prepared before timing, warmed up, then
 reused without cache flushes. These are not cold-storage benchmarks.
 
-Linux workers bind to one/four CPUs from the runner's allowed affinity set before timing, and child
+Linux workers bind to one/three CPUs from the runner's allowed affinity set before timing, and child
 processes inherit that allocation. The entire find/fzf pipeline shares it. xff receives matching
 `--jobs`, rg matching `--threads`, and fzf matching `GOMAXPROCS`. Find remains single-threaded.
 Affinity does not reserve physical cores or eliminate hosted-runner contention.
 
 GitHub documents four CPUs for public Linux runners and three for standard ARM64 macOS runners.
-The hosted macOS matrix therefore requests one/three workers; this is not CPU pinning. macOS uses
+Both hosted grids request one/three workers. Linux leaves one vCPU outside the tools' affinity
+mask for background work; this is headroom, not an exclusive reservation. macOS has no CPU
+pinning and uses
 ordinary temporary storage and scheduler placement. See
 [GitHub's runner specifications](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
 On every platform, collection rejects a requested allocation larger than the available CPU count
@@ -167,13 +169,14 @@ affinity on an unsupported platform is also an error.
 CI runs the same preflight before builds and tool installation. It can be run independently:
 
 ```sh
-# Linux: require four available CPUs and affinity support.
-python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=4 --require-cpu-affinity
+# Linux: use three CPUs, leaving headroom on the standard four-vCPU runner.
+python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=3 --require-cpu-affinity
 # Standard hosted macOS: require capacity for three workers without claiming pinning.
 python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=3
 ```
 
-Local runs still default to one/four requested workers and validate that capacity. A native macOS
+The standalone comparison driver defaults to one/four requested workers. The local backfill
+tool instead requires an explicit grid; use one/three/ten on a suitable host. Both validate capacity. A native macOS
 worker limit does not bind threads to specific CPUs. Mach's affinity policy describes cache-sharing
 hints, not a CPU mask, and is unsupported on the tested Apple Silicon host. See
 [Apple's policy definition](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/mach/thread_policy.h).
@@ -308,7 +311,7 @@ HTML landscape. It requires no remeasurement. The 3D chart is open by default; i
 show/hide disclosure collapses the chart, controls and explanation without hiding the tables.
 Reopening resizes the chart to the available width. Absolute measurements are collapsed by default;
 the comparison table stays visible below the plot. Benchmark publication inserts the landscape above all tables on retained reports with the
-one-worker/one-larger-allocation matrix, including hosted macOS's 1/3 and Linux's 1/4 groups.
+one-worker/one-larger-allocation matrix, including both hosted platforms' 1/3 groups and historical 1/4 groups.
 Axis labels, hover cards and explanations use the recorded allocations. Older reports without
 that matrix retain their existing presentation.
 The benchmark overview also shows the same landscape with a **Platform** selector and **Version**

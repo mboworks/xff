@@ -5,8 +5,10 @@
 import argparse
 import copy
 import json
+import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -17,16 +19,19 @@ import benchmark_backfill as backfill
 class BenchmarkBackfillTest(unittest.TestCase):
     def args(self, root):
         return argparse.Namespace(repo=root, output=root / 'results', series='test-mac',
+                                  purpose='local-addition', history_platform=None,
                                   revision=['main'], revisions_file=None, history_root=None,
-                                  files=[10], cpus=[1, 4], depth=4, repetitions=3, keep=2,
+                                  files=[10], cpus=[1, 3, 10], depth=4, repetitions=3, keep=2,
                                   require_cpu_affinity=False, fixture_parent=root,
                                   require_memory=False, disk_cache=None)
 
     def batch(self):
         return {'identity': 'batch', 'contract': {
             'series': 'test-mac', 'environment': {'host': 'same'},
+            'platform': 'macos', 'purpose': 'local-addition', 'replacement_target': None,
+            'allocation': {'kind': 'workers', 'cpu_ids': None, 'required': False},
             'revisions': [{'sha': 'a' * 40, 'subject': '<first>'}, {'sha': 'b' * 40, 'subject': 'second'}],
-            'files': [10], 'cpus': [1, 4], 'depth': 4, 'repetitions': 3, 'retained': 2,
+            'files': [10], 'cpus': [1, 3, 10], 'depth': 4, 'repetitions': 3, 'retained': 2,
             'storage': {'parent': '/tmp', 'memory_required': False}, 'require_cpu_affinity': False}}
 
     def report(self):
@@ -45,7 +50,7 @@ class BenchmarkBackfillTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'select revisions'):
             backfill.revisions(Path('/repo'), [])
 
-    def test_history_selection_uses_only_macos_comparison_reports(self):
+    def test_history_selection_uses_only_the_requested_platform(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for platform in ('macos', 'linux'):
@@ -53,9 +58,11 @@ class BenchmarkBackfillTest(unittest.TestCase):
                 folder.mkdir(parents=True)
                 (folder / 'report.json').write_text(json.dumps({
                     'head': platform, 'platform': platform, 'tool_comparisons': {'contract': {}}}))
-            with mock.patch.object(backfill, 'git', side_effect=['a' * 40, '2026-10-01T00:00:00+00:00', 'subject']) as git:
-                self.assertEqual(len(backfill.revisions(root, [], root)), 1)
-                self.assertEqual(git.call_args_list[0].args[-1], 'macos^{commit}')
+            for platform in ('macos', 'linux'):
+                with self.subTest(platform=platform), mock.patch.object(
+                        backfill, 'git', side_effect=['a' * 40, '2026-10-01T00:00:00+00:00', 'subject']) as git:
+                    self.assertEqual(len(backfill.revisions(root, [], root, platform)), 1)
+                    self.assertEqual(git.call_args_list[0].args[-1], platform + '^{commit}')
 
     def test_plan_is_immutable_and_changed_host_or_grid_refuses_resume(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -64,11 +71,14 @@ class BenchmarkBackfillTest(unittest.TestCase):
             with mock.patch.object(backfill, 'revisions', return_value=self.batch()['contract']['revisions']), \
                     mock.patch.object(backfill, 'environment', return_value={'host': 'one'}) as environment, \
                     mock.patch.object(backfill, 'driver_identity', return_value={'driver': 'same'}), \
-                    mock.patch.object(backfill.compare, 'cpu_allocation'), \
+                    mock.patch.object(backfill, 'allocation_policy', return_value=self.batch()['contract']['allocation']), \
                     mock.patch.object(backfill.compare, 'fixture_storage', return_value={'parent': '/tmp'}), \
                     mock.patch.object(backfill.shutil, 'which', return_value='/usr/bin/true'), \
                     mock.patch.object(backfill.subprocess, 'check_output', return_value='bazel version'):
                 first = backfill.prepare(args)
+                self.assertEqual(first['contract']['purpose'], 'local-addition')
+                self.assertIsNone(first['contract']['replacement_target'])
+                self.assertEqual(first['contract']['cpus'], [1, 3, 10])
                 self.assertEqual(first, backfill.prepare(args))
                 environment.return_value = {'host': 'two'}
                 with self.assertRaisesRegex(ValueError, r'environment.host'):
@@ -91,6 +101,80 @@ class BenchmarkBackfillTest(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'undersized'):
                     backfill.prepare(args)
                 revisions.assert_not_called()
+            args.cpus = None
+            with self.assertRaisesRegex(ValueError, 'explicit --cpus'):
+                backfill.prepare(args)
+
+    def test_ci_replacement_requires_hosted_matching_allocations_and_linux_storage(self):
+        args = self.args(Path('/unused'))
+        args.purpose = 'ci-replacement'
+        with mock.patch.object(backfill, 'host_platform', return_value='macos'), \
+                mock.patch.object(backfill.compare, 'cpu_allocation', return_value=None), \
+                mock.patch.dict(os.environ, {}, clear=True):
+            with self.assertRaisesRegex(ValueError, 'GitHub-hosted'):
+                backfill.allocation_policy(args, [1, 3])
+        for platform, cpus in (('macos', [1, 3]), ('linux', [1, 3])):
+            with self.subTest(platform=platform), mock.patch.object(backfill, 'host_platform', return_value=platform), \
+                    mock.patch.object(backfill.compare, 'cpu_allocation', return_value=None if platform == 'macos' else [0, 1, 2]), \
+                    mock.patch.dict(os.environ, {'GITHUB_ACTIONS': 'true', 'RUNNER_ENVIRONMENT': 'github-hosted'}):
+                args.require_memory = platform == 'linux'
+                policy = backfill.allocation_policy(args, cpus)
+                self.assertEqual(policy['kind'], 'workers' if platform == 'macos' else 'logical-cpus')
+                self.assertEqual(policy['required'], platform == 'linux')
+                with self.assertRaisesRegex(ValueError, 'requires allocations'):
+                    backfill.allocation_policy(args, [1, 8])
+                if platform == 'linux':
+                    args.require_memory = False
+                    with self.assertRaisesRegex(ValueError, 'memory-backed'):
+                        backfill.allocation_policy(args, cpus)
+
+    def test_physical_core_selection_respects_affinity_packages_and_smt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            topology = Path(directory)
+            for cpu, package, core in ((0, 0, 0), (1, 0, 1), (4, 0, 0), (5, 0, 1), (8, 1, 0)):
+                path = topology / f'cpu{cpu}/topology'
+                path.mkdir(parents=True)
+                (path / 'physical_package_id').write_text(str(package))
+                (path / 'core_id').write_text(str(core))
+            self.assertEqual(backfill.physical_cpus({0, 1, 4, 5, 8}, topology), [0, 1, 8])
+            self.assertEqual(backfill.physical_cpus({4, 5, 8}, topology), [4, 5, 8])
+            with self.assertRaisesRegex(ValueError, 'cannot identify physical core'):
+                backfill.physical_cpus({9}, topology)
+            (topology / 'cpu8/topology/core_id').write_text('-1')
+            with self.assertRaisesRegex(ValueError, 'unknown physical topology'):
+                backfill.physical_cpus({8}, topology)
+
+    def test_local_linux_cannot_use_smt_siblings_to_satisfy_core_count(self):
+        args = self.args(Path('/unused'))
+        with mock.patch.object(backfill, 'host_platform', return_value='linux'), \
+                mock.patch.object(backfill.compare, 'cpu_allocation') as allocation, \
+                mock.patch.object(backfill.os, 'sched_getaffinity', return_value=set(range(8)), create=True), \
+                mock.patch.object(backfill, 'physical_cpus', return_value=[0, 2, 4, 6]):
+            policy = backfill.allocation_policy(args, [1, 4])
+            allocation.assert_called_once_with(4, True)
+            self.assertEqual(policy, {'kind': 'physical-cores', 'cpu_ids': [0, 2, 4, 6], 'required': True})
+            with self.assertRaisesRegex(ValueError, 'only 4 available'):
+                backfill.allocation_policy(args, [1, 6])
+
+    def test_pinning_restores_the_original_mask_on_failure(self):
+        with mock.patch.object(backfill.os, 'sched_getaffinity', return_value={0, 1, 2, 3}, create=True), \
+                mock.patch.object(backfill.os, 'sched_setaffinity', create=True) as pin:
+            with self.assertRaisesRegex(ValueError, 'measurement failed'):
+                with backfill.pinned_cpus([0, 2]):
+                    pin.assert_called_once_with(0, [0, 2])
+                    raise ValueError('measurement failed')
+            self.assertEqual(pin.call_args_list[-1], mock.call(0, {0, 1, 2, 3}))
+
+    @unittest.skipUnless(sys.platform == 'linux', 'Linux affinity required')
+    def test_child_inherits_physical_core_mask(self):
+        original = os.sched_getaffinity(0)
+        cores = backfill.physical_cpus(original)[:2]
+        self.assertTrue(cores)
+        with backfill.pinned_cpus(cores):
+            actual = json.loads(subprocess.check_output(
+                [sys.executable, '-c', 'import json,os; print(json.dumps(sorted(os.sched_getaffinity(0))))'], text=True))
+            self.assertEqual(actual, cores)
+        self.assertEqual(os.sched_getaffinity(0), original)
 
     def test_build_phase_precedes_all_measurements_and_completed_reports_are_reused(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -102,7 +186,7 @@ class BenchmarkBackfillTest(unittest.TestCase):
                 return Path('/binary'), {'sha256': 'binary', 'configuration': {'compiler': 'revision'}}
             def measure(*args, **kwargs):
                 calls.append('measure')
-                self.assertEqual(kwargs['cpu_counts'], [1, 4])
+                self.assertEqual(kwargs['cpu_counts'], [1, 3, 10])
                 return self.report()
             with mock.patch.object(backfill, 'build', side_effect=build), \
                     mock.patch.object(backfill, 'check_environment'), \

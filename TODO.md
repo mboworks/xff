@@ -2,16 +2,21 @@
 
 ## Benchmark runner capacity
 
-- [x] Reject undersized runners before measurement; keep Linux's 1/4 pinned CPU grid and use
-      the documented hosted macOS 1/3 worker grid on a single host. Preserve strict shard identity
-      checks, name mismatched fields, and render both grids without mixing incompatible baselines.
-- [x] Add a single-host historical backfill workflow for local Mac/Zen 5 series and manually
-      dispatched hosted macOS batches. Freeze revisions, driver, tools and allocations; build
-      before measuring, resume verified complete records and report incomplete revisions.
+- [x] Reject undersized runners before measurement; use the same 1/3 grid on both hosted
+      platforms, pinned on Linux and on one measurement host for macOS. Leave one Linux vCPU
+      outside the benchmark mask for background work. Preserve strict shard identity checks.
+- [x] Add a CI-only historical backfill workflow for macOS and Linux replacement campaigns,
+      plus a standalone tool for additional local Mac/Zen 5 series. Freeze revisions, driver,
+      tools and allocations; build before measuring, resume verified records, report incomplete
+      revisions, and enforce one hardware thread per physical core for local Linux pinning.
       See `docs/benchmark-backfill.md`.
-- [ ] Run the full selected macOS backfill and optionally a separate Zen 5 series, then integrate
-      those series into published history without overwriting hosted observations. Prefer controlled
-      local results in the display, with explicit worker/CPU allocation and host provenance.
+- [ ] Run both full CI replacement backfills on the 1/3 grid and implement publication import
+      and promotion by platform/commit, retaining superseded raw observations. An incomplete
+      campaign must not silently replace an entire history.
+- [ ] Run separate local Mac and Zen 5 backfills on the 1/3/10 grid, subject to host capacity,
+      and publish these as additional machine series. Keep M5 Pro, M2 Ultra and Zen 5 distinct;
+      document Mac worker requests versus Linux physical-core affinity. Extend the landscape's
+      two-allocation presentation to select pairs from a larger grid; tables already show all.
 - [ ] Implement presentation-only reference normalization using exactly five compatible measurements:
       start with current plus four following, then use current plus four prior from measurement five.
       Settle whether measurements two through four share the first window or use forward windows.

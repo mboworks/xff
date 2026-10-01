@@ -4,6 +4,7 @@
 """Build and measure historical revisions sequentially in one reproducible host series."""
 
 import argparse
+from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
 import html
@@ -36,14 +37,71 @@ def git(repo, *arguments):
     return subprocess.check_output(['git', '-C', str(repo), *arguments], text=True).strip()
 
 
-def revisions(repo, references, history_root=None):
+def host_platform():
+    if sys.platform not in ('darwin', 'linux'):
+        raise ValueError('backfill supports macOS and Linux')
+    return 'macos' if sys.platform == 'darwin' else 'linux'
+
+
+def physical_cpus(allowed, topology=Path('/sys/devices/system/cpu')):
+    """Choose one allowed hardware thread from each physical package/core pair."""
+    selected = {}
+    for cpu in sorted(allowed):
+        folder = topology / f'cpu{cpu}' / 'topology'
+        try:
+            package = int((folder / 'physical_package_id').read_text())
+            core = int((folder / 'core_id').read_text())
+        except (OSError, ValueError) as error:
+            raise ValueError(f'cannot identify physical core for CPU {cpu}: {error}') from error
+        if package < 0 or core < 0:
+            raise ValueError(f'unknown physical topology for CPU {cpu}')
+        selected.setdefault((package, core), cpu)
+    return sorted(selected.values())
+
+
+def allocation_policy(args, cpus):
+    system = host_platform()
+    required = system == 'linux' or args.require_cpu_affinity
+    ids = compare.cpu_allocation(max(cpus), required)
+    if args.purpose == 'ci-replacement':
+        if os.environ.get('GITHUB_ACTIONS') != 'true' or os.environ.get('RUNNER_ENVIRONMENT') != 'github-hosted':
+            raise ValueError('CI replacement must run on a GitHub-hosted runner; local runs add separate series')
+        expected = [1, 3]
+        if cpus != expected:
+            raise ValueError(f'{system} CI replacement requires allocations {expected}')
+        if system == 'linux' and not args.require_memory:
+            raise ValueError('Linux CI replacement requires verified memory-backed fixtures')
+    elif system == 'linux':
+        ids = physical_cpus(os.sched_getaffinity(0))
+        if len(ids) < max(cpus):
+            raise ValueError(f'requested {max(cpus)} physical cores, only {len(ids)} available')
+        ids = ids[:max(cpus)]
+    kind = ('physical-cores' if args.purpose == 'local-addition' else 'logical-cpus') if ids is not None else 'workers'
+    return {'kind': kind, 'cpu_ids': ids, 'required': required}
+
+
+@contextmanager
+def pinned_cpus(ids):
+    if ids is None:
+        yield
+        return
+    original = os.sched_getaffinity(0)
+    try:
+        os.sched_setaffinity(0, ids)
+        yield
+    finally:
+        os.sched_setaffinity(0, original)
+
+
+def revisions(repo, references, history_root=None, history_platform='macos'):
     references = list(references)
     if history_root:
         for path in sorted(history_root.glob('runs/*/*/**/report.json')):
             record = json.loads(path.read_text())
             report = record.get('tool_comparisons')
-            if report and (record.get('platform') == 'macos'
-                           or report['contract'].get('platform', '').lower().startswith(('macos', 'darwin'))):
+            identity = report.get('contract', {}).get('platform', '').lower() if report else ''
+            prefixes = ('macos', 'darwin') if history_platform == 'macos' else ('linux',)
+            if report and (record.get('platform') == history_platform or identity.startswith(prefixes)):
                 references.append(record['head'])
     if not references:
         raise ValueError('select revisions with --revision, --revisions-file or --history-root')
@@ -84,26 +142,33 @@ def prepare(args):
     if not re.fullmatch('[a-z0-9][a-z0-9-]*', args.series):
         raise ValueError('series must contain lowercase letters, digits and hyphens')
     counts = args.files or [*compare.DEFAULT_FILE_COUNTS, 20000, 50000, 100000]
-    cpus = args.cpus or [1, 4]
+    system = host_platform()
+    cpus = args.cpus
+    if cpus is None:
+        if args.purpose == 'local-addition':
+            raise ValueError('local collection requires an explicit --cpus grid')
+        cpus = [1, 3]
     if len(set(counts)) != len(counts) or min(counts) < 1 or len(set(cpus)) != len(cpus) or min(cpus) < 1:
         raise ValueError('file and CPU counts must be unique and positive')
     if args.depth < 1 or not 1 <= args.keep <= args.repetitions:
         raise ValueError('positive depth and 1 <= keep <= repetitions required')
-    compare.cpu_allocation(max(cpus), args.require_cpu_affinity)
+    allocation = allocation_policy(args, cpus)
     repo = args.repo.resolve(strict=True)
     references = list(args.revision)
     if args.revisions_file:
         references.extend(args.revisions_file.read_text().split())
-    selected = revisions(repo, references, args.history_root)
+    selected = revisions(repo, references, args.history_root, args.history_platform or system)
     bazel = shutil.which('bazel')
     if bazel is None:
         raise ValueError('Bazel is required to build historical revisions')
     contract = {
         'schema': 1, 'series': args.series, 'revisions': selected,
+        'platform': system, 'purpose': args.purpose, 'allocation': allocation,
+        'replacement_target': f'github-ci-{system}' if args.purpose == 'ci-replacement' else None,
         'environment': environment(), 'driver': driver_identity(),
         'files': counts, 'cpus': cpus, 'depth': args.depth,
         'repetitions': args.repetitions, 'retained': args.keep,
-        'require_cpu_affinity': args.require_cpu_affinity,
+        'require_cpu_affinity': allocation['required'],
         'storage': compare.fixture_storage(args.fixture_parent, args.require_memory),
         'build': {'config': 'clang_release', 'bazel': str(Path(bazel).resolve()),
                   'version': subprocess.check_output([bazel, '--version'], text=True).strip()},
@@ -167,7 +232,10 @@ def render_index(output, batch, status):
         '<!doctype html><html lang="en"><meta charset="utf-8"><title>' + title + '</title>'
         '<style>body{font:16px system-ui;margin:2rem}td,th{padding:.4rem;text-align:left}</style>'
         '<h1>' + title + '</h1><p><a href="batch.json">Frozen measurement contract</a> | '
-        '<a href="status.json">Batch status</a></p><p>Separate host series. Raw observations are retained; '
+        '<a href="status.json">Batch status</a></p><p>' +
+        ('CI replacement for ' + html.escape(batch['contract']['replacement_target'])
+         if batch['contract']['purpose'] == 'ci-replacement' else 'Additional local series') +
+        '. Raw observations are retained; '
         'no cross-host or cross-allocation normalization is applied.</p>'
         '<table><tr><th>Revision</th><th>Status</th><th>Diagnostic</th></tr>' + ''.join(rows) + '</table>')
 
@@ -208,16 +276,19 @@ def run(args, batch):
             print(f'Measure {index}/{len(contract["revisions"])}: {sha}', flush=True)
             started = now()
             try:
-                report = compare.collect_scales(
-                    binary, contract['files'], depth=contract['depth'], repetitions=contract['repetitions'],
-                    keep=contract['retained'], cpu_counts=contract['cpus'], require_tools=True,
-                    fixture_parent=contract['storage']['parent'], require_memory=contract['storage']['memory_required'],
-                    require_cpu_affinity=contract['require_cpu_affinity'])
+                with pinned_cpus(contract['allocation']['cpu_ids']):
+                    report = compare.collect_scales(
+                        binary, contract['files'], depth=contract['depth'], repetitions=contract['repetitions'],
+                        keep=contract['retained'], cpu_counts=contract['cpus'], require_tools=True,
+                        fixture_parent=contract['storage']['parent'], require_memory=contract['storage']['memory_required'],
+                        require_cpu_affinity=contract['require_cpu_affinity'])
                 check_environment(contract['environment'])
                 report['contract'].update(runner_class=contract['series'], batch=batch['identity'],
                                           build_identity=json.dumps(build_record['configuration'], sort_keys=True))
                 record = {'schema': 1, 'kind': 'backfill', 'head': sha, 'series': contract['series'],
                           'batch': batch['identity'], 'revision': revision, 'build': build_record,
+                          'platform': contract['platform'], 'purpose': contract['purpose'],
+                          'replacement_target': contract['replacement_target'], 'allocation': contract['allocation'],
                           'started_at': started, 'completed_at': now(), 'tool_comparisons': report}
                 write_json(path, record)
             except (ValueError, subprocess.SubprocessError) as error:
@@ -239,11 +310,15 @@ def main():
     parser.add_argument('--repo', type=Path, default=Path(os.environ.get('BUILD_WORKSPACE_DIRECTORY', Path.cwd())))
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--series', required=True, help='Stable host-series label, e.g. macos-m5-pro or linux-zen5')
+    parser.add_argument('--purpose', choices=('local-addition', 'ci-replacement'), default='local-addition',
+                        help='Local runs add a machine series; hosted backfills replace their CI history')
     parser.add_argument('--revision', action='append', default=[])
     parser.add_argument('--revisions-file', type=Path, help='Whitespace-separated Git references; resolved and frozen to commits')
-    parser.add_argument('--history-root', type=Path, help='Select all retained macOS comparison commits below this benchmark directory')
+    parser.add_argument('--history-root', type=Path, help='Select retained comparison commits below this benchmark directory')
+    parser.add_argument('--history-platform', choices=('macos', 'linux'), help='Historical selection; defaults to this host platform')
     parser.add_argument('--files', action='append', type=int)
-    parser.add_argument('--cpus', action='append', type=int, help='Default: 1 and 4; requests are checked against capacity')
+    parser.add_argument('--cpus', action='append', type=int,
+                        help='Explicit local grid; CI requires 1/3 on both platforms; local Linux pins distinct physical cores')
     parser.add_argument('--depth', type=int, default=40)
     parser.add_argument('--repetitions', type=int, default=9)
     parser.add_argument('--keep', type=int, default=7)

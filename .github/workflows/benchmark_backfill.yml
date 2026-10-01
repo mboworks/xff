@@ -3,16 +3,7 @@
 name: Benchmark backfill
 
 on:
-  workflow_dispatch:
-    inputs:
-      revisions:
-        description: "Whitespace-separated revisions; empty selects every retained macOS comparison commit"
-        type: string
-        default: ""
-      series:
-        description: "Measurement series label (lowercase letters, digits and hyphens)"
-        type: string
-        default: github-macos-backfill
+  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -22,8 +13,20 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  macos:
-    runs-on: macos-latest
+  backfill:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: macos
+            arch: arm64
+            cpus: 3
+          - os: ubuntu-latest
+            platform: linux
+            arch: x86_64
+            cpus: 3
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 360
     steps:
       - uses: actions/checkout@v7
@@ -41,32 +44,39 @@ jobs:
           python-version: "3.13"
       - uses: bazel-contrib/setup-bazel@0.19.0
       - name: Check runner capacity
-        run: python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=3
+        run: |
+          affinity=()
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            affinity=(--require-cpu-affinity)
+          fi
+          python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=${{ matrix.cpus }} "${affinity[@]}"
       - uses: ./.github/actions/bazel-cache-restore
         with:
           namespace: default
       - name: Install reference tools once for the complete batch
-        run: brew install findutils ripgrep fzf
+        run: |
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            sudo apt-get update && sudo apt-get install -y findutils ripgrep fzf
+          else
+            brew install findutils ripgrep fzf
+          fi
       - name: Build and measure revisions on this host
         timeout-minutes: 345
-        env:
-          BACKFILL_REVISIONS: ${{ inputs.revisions }}
-          BACKFILL_SERIES: ${{ inputs.series }}
         run: |
           set -euo pipefail
-          selection=(--history-root=benchmark-history/benchmarks)
-          if [[ -n "${BACKFILL_REVISIONS}" ]]; then
-            printf '%s\n' "${BACKFILL_REVISIONS}" >"${RUNNER_TEMP}/backfill-revisions.txt"
-            selection=(--revisions-file="${RUNNER_TEMP}/backfill-revisions.txt")
+          storage=(--fixture-parent="${RUNNER_TEMP}")
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            storage=(--fixture-parent=/dev/shm --require-memory --require-cpu-affinity)
           fi
           python3 tools/benchmark_backfill.py --repo="${GITHUB_WORKSPACE}" \
-            --output="${RUNNER_TEMP}/backfill" --series="${BACKFILL_SERIES}" \
-            --cpus=1 --cpus=3 --fixture-parent="${RUNNER_TEMP}" \
-            --disk-cache="${HOME}/.cache/bazel-disk" "${selection[@]}" --run
+            --output="${RUNNER_TEMP}/backfill" --series=github-ci-${{ matrix.platform }} \
+            --purpose=ci-replacement --history-root=benchmark-history/benchmarks \
+            --history-platform=${{ matrix.platform }} --cpus=1 --cpus=${{ matrix.cpus }} \
+            --disk-cache="${HOME}/.cache/bazel-disk" "${storage[@]}" --run
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: benchmark-backfill-macos-arm64
+          name: benchmark-backfill-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
             ${{ runner.temp }}/backfill/batch.json
             ${{ runner.temp }}/backfill/status.json
