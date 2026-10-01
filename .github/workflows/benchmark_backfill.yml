@@ -1,0 +1,77 @@
+# SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
+# SPDX-License-Identifier: Apache-2.0
+name: Benchmark backfill
+
+on:
+  workflow_dispatch:
+    inputs:
+      revisions:
+        description: "Whitespace-separated revisions; empty selects every retained macOS comparison commit"
+        type: string
+        default: ""
+      series:
+        description: "Measurement series label (lowercase letters, digits and hyphens)"
+        type: string
+        default: github-macos-backfill
+
+permissions:
+  contents: read
+
+concurrency:
+  group: benchmark-backfill
+  cancel-in-progress: false
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          ref: coverage-pages
+          path: benchmark-history
+          sparse-checkout: benchmarks/runs
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: bazel-contrib/setup-bazel@0.19.0
+      - name: Check runner capacity
+        run: python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=3
+      - uses: ./.github/actions/bazel-cache-restore
+        with:
+          namespace: default
+      - name: Install reference tools once for the complete batch
+        run: brew install findutils ripgrep fzf
+      - name: Build and measure revisions on this host
+        timeout-minutes: 345
+        env:
+          BACKFILL_REVISIONS: ${{ inputs.revisions }}
+          BACKFILL_SERIES: ${{ inputs.series }}
+        run: |
+          set -euo pipefail
+          selection=(--history-root=benchmark-history/benchmarks)
+          if [[ -n "${BACKFILL_REVISIONS}" ]]; then
+            printf '%s\n' "${BACKFILL_REVISIONS}" >"${RUNNER_TEMP}/backfill-revisions.txt"
+            selection=(--revisions-file="${RUNNER_TEMP}/backfill-revisions.txt")
+          fi
+          python3 tools/benchmark_backfill.py --repo="${GITHUB_WORKSPACE}" \
+            --output="${RUNNER_TEMP}/backfill" --series="${BACKFILL_SERIES}" \
+            --cpus=1 --cpus=3 --fixture-parent="${RUNNER_TEMP}" \
+            --disk-cache="${HOME}/.cache/bazel-disk" "${selection[@]}" --run
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: benchmark-backfill-macos-arm64
+          path: |
+            ${{ runner.temp }}/backfill/batch.json
+            ${{ runner.temp }}/backfill/status.json
+            ${{ runner.temp }}/backfill/index.html
+            ${{ runner.temp }}/backfill/reports
+            ${{ runner.temp }}/backfill/binaries/*/build.log
+          if-no-files-found: warn
+          retention-days: 30

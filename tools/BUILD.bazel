@@ -738,6 +738,7 @@ test_suite(
     tests = [
         ":align_markdown_tables_test",
         ":bazel_cache_test",
+        ":benchmark_backfill_test",
         ":benchmark_compare_test",
         ":benchmark_fixture_test",
         ":benchmark_history_test",
@@ -777,6 +778,36 @@ test_suite(
         ":release_site_test",
         ":site_artwork_test",
     ],
+)
+
+py_library(
+    name = "benchmark_backfill_lib",
+    srcs = ["benchmark_backfill.py"],
+    imports = ["."],
+    deps = [
+        ":benchmark_compare_lib",
+        ":benchmark_fixture_lib",
+        ":benchmark_matrix_lib",
+        ":benchmark_shards_lib",
+    ],
+)
+
+py_binary(
+    name = "benchmark_backfill",
+    srcs = ["benchmark_backfill.py"],
+    deps = [
+        ":benchmark_compare_lib",
+        ":benchmark_fixture_lib",
+        ":benchmark_matrix_lib",
+        ":benchmark_shards_lib",
+    ],
+)
+
+py_test(
+    name = "benchmark_backfill_test",
+    size = "small",
+    srcs = ["benchmark_backfill_test.py"],
+    deps = [":benchmark_backfill_lib"],
 )
 
 py_library(

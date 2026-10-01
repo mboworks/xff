@@ -39,6 +39,8 @@ Without enforced affinity, host CPU count must also match. A three-CPU macOS mea
 use a five-CPU measurement as its baseline. Local measurements keep their own runner class and
 must not replace hosted observations; remeasure selected revisions on one local machine when a
 local history is needed.
+Use the [historical backfill workflow](benchmark-backfill.md) to build and measure a frozen revision
+list in one host session, with a common driver and reference-tool set.
 
 ## Relative performance and advisory alarm
 

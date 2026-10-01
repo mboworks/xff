@@ -30,16 +30,18 @@ is a different allocation, not inherently an invalid observation. Preserve raw r
 another series becomes the default.
 
 For one compatible task/tree/file-count/allocation/reference-tool cell, let `X` be the measured
-XFF time, `R` the reference time in the same run, and `B` a reference baseline estimated from five
-calibration runs. The correction is `B / R`; normalized XFF time is `X * B / R` and normalized
+XFF time, `R` the reference time in the same run, and `B` a reference baseline averaged over five
+compatible measurements. The correction is `B / R`; normalized XFF time is `X * B / R` and normalized
 reference time is `B`. This is the existing XFF/reference ratio expressed in baseline time units,
 not an independent performance observation. It assumes shared proportional runner effects, so
 memory bandwidth, cache behavior and scheduler differences can leave residual noise.
-A fixed `B` keeps the historical axis stable; a rolling five-run `B` instead creates a moving
-baseline and suits recent-regression views. Calibration must stay within the same machine series,
+The selected design keeps normalization in presentation: an initial forward window, followed by
+current plus four prior measurements from measurement five onward. This is a moving baseline;
+each view must expose its window and factor. Calibration must stay within the same machine series,
 fixture, allocation and reference binary/version. Reference-tool upgrades require a new segment
-or an explicit overlap calibration. This normalization and local backfill are planned follow-ups;
-the current implementation retains raw timings and same-run ratios.
+or an explicit overlap calibration. The [backfill workflow](benchmark-backfill.md) collects separate
+single-host series and preserves their original observations. The normalized historical view remains
+a follow-up; current reports retain raw timings and same-run ratios.
 
 ## Measured compiler and allocator decisions
 

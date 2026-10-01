@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Add a resumable single-host benchmark backfill workflow with frozen revision, tool and measurement contracts.
+
 - Validate benchmark runner capacity before measurement; keep macOS's complete one/three-worker matrix on one host and explain incompatible shard identities.
 
 - Build with Clang/LLVM 23.1.2 and its matching formatter; retain LLVM 22.1.8 with its instrumented libc++ for MSan.
