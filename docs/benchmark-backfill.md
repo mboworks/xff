@@ -11,7 +11,12 @@ local machine histories. These are distinct purposes, recorded explicitly in eac
 | Local Mac, M2 Ultra | 1, 3 and 10 workers (host maximum 24) | Add a separate M2 Ultra history                   |
 | Local Linux, Zen 5  | 1, 3 and 10 physical cores            | Add a separate Zen 5 history                      |
 
-Use one host session per batch, with a common benchmark driver, reference tools and fixtures.
+Keep every measurement of one replayed revision on one host, with a common benchmark driver,
+reference tools and fixtures. Different historical revisions may use different machines. The CI
+workflow schedules those revisions concurrently; a standalone local batch can keep its complete
+revision list on one host. Record each host and reference-tool identity: raw elapsed times from
+different hosts are not a paired comparison, and same-run XFF/reference ratios do not remove
+every hardware or storage difference.
 The local grid must be selected explicitly. The recommended 1, 3, 10 grid shares the
 three-worker comparison with CI and adds a larger scaling measurement; it can extend to 30
 on a suitable future host. This approximately logarithmic progression does not make timings
@@ -24,8 +29,8 @@ select physical host cores. Local Linux uses one hardware thread per physical co
 Replacement means selecting the backfilled CI data as the active history for the corresponding
 platform and commit. Superseded raw observations remain available for provenance. A local series
 must never replace a CI series, and different CPU allocations must not be pooled or normalized
-into equivalence. The reports carry this publication intent; importing/promoting them into the
-shared site is a separate step and is not performed by the collection command.
+into equivalence. The collection command records this intent. After a complete successful CI
+campaign, the trusted publisher validates and imports the whole campaign before selecting any replacements.
 
 ## Local batch
 
@@ -101,14 +106,18 @@ The output contains:
 The shared clone borrows source Git objects. Do not prune those objects during the campaign.
 Completed result JSON and HTML are independent of the source checkout. Keep them even when
 another series becomes the preferred presentation. Publication into the shared benchmark history
-is separate from measurement; this workflow does not rewrite hosted data or invent paired results.
+is separate from measurement and does not invent paired results for historical commits.
 
 ## Manual GitHub workflow
 
-**Benchmark backfill** is a manually dispatched CI-only workflow with one job per platform.
-It selects every retained macOS comparison commit for the macOS job and every retained Linux
-comparison commit for the Linux job. Each job installs reference tools once and measures its
-complete selection on one hosted machine: one/three workers on macOS, one/three pinned logical CPUs
+**Benchmark backfill** is a manually dispatched CI-only workflow. Its planning job freezes every
+retained comparison commit for each platform, the source and history commits, driver hashes,
+task/participant set and full sampling grid in `campaign.json`. It creates one job per platform
+and historical revision, with at most eight jobs running concurrently. A revision is never split
+across hosts. This avoids putting the entire history into a single six-hour hosted job.
+
+Each job installs reference tools once, builds its revision with that revision's release settings,
+then measures the complete matrix on the same machine: one/three workers on macOS, one/three pinned logical CPUs
 on Linux. Linux fixtures use verified tmpfs, matching the ordinary hosted measurement policy. Using three
 of a four-vCPU Linux runner's CPUs leaves one outside the tools' affinity mask for background
 work. This provides headroom without reserving CPUs or preventing background work on the
@@ -119,12 +128,34 @@ grid. Its `replacement_target` is `github-ci-macos` or `github-ci-linux`. Local 
 `--purpose=local-addition`, have no replacement target, and require an explicit grid. The workflow
 has no dispatch inputs; arbitrary local host labels or allocations cannot change its CI targets.
 
-Artifacts contain the manifest, status, reports and build logs. The hosted measurement step has a
-345-minute ceiling within a 360-minute job, leaving time to upload completed results after failure
-or timeout. An incomplete campaign remains visible as incomplete and is not sufficient to promote
-an entire replacement history. Another hosted runner cannot resume the same host session.
-Longer campaigns require an explicit continuation plan; local runs are additional data, not a
-substitute for CI replacements. The collection workflow does not modify the published site.
+Artifacts contain the campaign plan plus each revision's host manifest, status, reports and build
+logs. The build/measurement step has a 165-minute ceiling within a 180-minute job, leaving time to
+upload completed results after failure or timeout. Failed jobs do not cancel the other revisions.
+Retrying a failed job replaces that revision's artifact with a complete new measurement; it never
+pools partial observations across hosts. Successful jobs from an earlier attempt remain usable
+when they belong to the same frozen campaign, source commit and workflow run. Each batch records
+its actual collection attempt separately from the successful campaign attempt.
+
+## Publication
+
+**Publish benchmarks** imports a successful main-branch **Benchmark backfill** dispatch. Publisher
+code comes from trusted main; artifacts are read as data. It verifies source workflow identity,
+the complete frozen job set, report and binary identities, driver hashes, host/tool consistency,
+the full files/CPUs/tree/task/participant matrix, every repetition, and Linux affinity/tmpfs.
+Missing, duplicate, failed or incompatible data rejects the campaign before the site changes.
+Local additions cannot enter this replacement path.
+
+The complete campaign is retained atomically under `backfills/RUN/ATTEMPT/`, with the plan and
+per-platform/commit raw reports, batch contracts and completion states. Re-importing identical
+data is harmless; changing a retained campaign is an error. The index, version slider, and exact
+PR/release references prefer a validated CI backfill for its measured platform and commit. They
+use the historical commit/merge time, not the replay date or the publisher's source commit.
+
+Each replacement links its original measurements, including the paired base/head results that
+the backfill does not reproduce. These original reports are protected from ordinary retention;
+backfill records are also kept outside that bounded run cache. New commits remain independent
+entries. Host and reference-tool differences between revisions remain visible in the raw contracts;
+publication does not normalize, pool or relabel their observations.
 
 ## Presentation normalization
 

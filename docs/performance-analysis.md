@@ -37,11 +37,25 @@ Local Linux selects one allowed hardware thread per physical core using sysfs to
 all measured tool processes, and records the IDs. Unknown topology or insufficient cores fail.
 Mac allocations remain worker requests; M5 Pro and M2 Ultra are separate series.
 
-Follow-up: run the complete campaigns, import/promote CI replacements and add local series in the
-publisher. Preserve raw results even when another series becomes the preferred presentation.
+CI campaigns schedule one complete revision per job, with at most eight concurrent jobs. The
+whole campaign is validated before publication; original observations and paired results remain
+available. Different revisions may run on different machines, while all measurements and reference
+tools for one revision share a host. A successful earlier-attempt job can remain in the campaign;
+a retried revision must restart its complete matrix on the new host.
+
+The previous successful hosted run 36907159606 spent 52.4 aggregate measurement minutes on macOS
+versus 22.1 on Linux. Three concurrent Mac shards reduced the visible measurement wait to 22.6
+minutes. Run 36926663737's single Mac job measured all 572 cases and 9,360 samples in 56.7 minutes.
+Its aggregation failed on single-artifact download layout, not on measurement validity. The older
+one-worker, 100,000-file broad absent-marker scan averaged 8.94 seconds for XFF and 8.83 for rg on
+Mac, versus 0.69 and 0.60 on Linux. Linux used tmpfs; Mac used the runner filesystem. This points
+to a broader host/storage difference, not evidence of an XFF-only regression or intrinsic OS cost.
+
+Follow-up: run and verify complete published CI campaigns, then add local series in the publisher.
 A valid three-worker hosted run is a different allocation from historical four-worker runs, not
 inherently an invalid observation. The collection tool records purpose and replacement targets;
-it does not yet modify the published history.
+the publisher promotes only complete validated CI campaigns, preserving historical ordering and
+keeping local additions separate.
 
 For one compatible task/tree/file-count/allocation/reference-tool cell, let `X` be the measured
 XFF time, `R` the reference time in the same run, and `B` a reference baseline averaged over five
@@ -54,7 +68,7 @@ current plus four prior measurements from measurement five onward. This is a mov
 each view must expose its window and factor. Calibration must stay within the same machine series,
 fixture, allocation and reference binary/version. Reference-tool upgrades require a new segment
 or an explicit overlap calibration. The [backfill workflow](benchmark-backfill.md) collects separate
-single-host series and preserves their original observations. The normalized historical view remains
+host-recorded series and preserves their original observations. The normalized historical view remains
 a follow-up; current reports retain raw timings and same-run ratios.
 
 ## Measured compiler and allocator decisions

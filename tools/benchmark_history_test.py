@@ -297,7 +297,7 @@ class BenchmarkHistoryTest(unittest.TestCase):
 
     def test_release_refresh_does_not_download_measurement_artifacts(self):
         publish = repository_file(".github/workflows/benchmark_pages.yml").read_text()
-        self.assertIn("workflows: [Benchmarks, Release]", publish)
+        self.assertIn("workflows: [Benchmarks, Release, Benchmark backfill]", publish)
         self.assertIn("workflow_dispatch: {}", publish)
         self.assertIn("fetch-depth: 0", publish)
         self.assertIn("uses: actions/download-artifact@v8\n        if: github.event.workflow_run.name == 'Benchmarks'", publish)

@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Replay CI benchmark history with one complete revision per job and publish validated replacement campaigns while preserving original measurements.
+
 - Fix benchmark aggregation when a single artifact downloads without a containing directory.
 
 - Add CI benchmark backfills and a resumable local collection tool with frozen contracts and physical-core pinning on Linux.
