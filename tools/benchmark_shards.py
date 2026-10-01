@@ -59,6 +59,23 @@ def assigned_fixtures(plan, index):
     return {fixture_key(fixture) for fixture in plan['shards'][index]['fixtures']}
 
 
+def identity_difference(expected, actual, path=''):
+    """Describe the first differing identity field, including absent fields."""
+    if isinstance(expected, dict) and isinstance(actual, dict):
+        for key in sorted(expected.keys() | actual.keys()):
+            field = f'{path}.{key}' if path else key
+            if key not in expected:
+                return f'{field}: unexpected value {actual[key]!r}'
+            if key not in actual:
+                return f'{field}: missing (expected {expected[key]!r})'
+            difference = identity_difference(expected[key], actual[key], field)
+            if difference:
+                return difference
+    elif expected != actual:
+        return f'{path}: expected {expected!r}, got {actual!r}'
+    return ''
+
+
 def merge_reports(records):
     if not records:
         raise ValueError('no shard reports')
@@ -84,8 +101,11 @@ def merge_reports(records):
         index = shard['index']
         if shard['plan'] != plan or index in indices:
             raise ValueError('inconsistent plan or duplicate shard')
-        if record['head'] != result['head'] or current != contract or report['tools'] != combined['tools']:
-            raise ValueError('incompatible shard source, contract or tools')
+        difference = identity_difference(
+            {'head': result['head'], 'contract': contract, 'tools': combined['tools']},
+            {'head': record['head'], 'contract': current, 'tools': report['tools']})
+        if difference:
+            raise ValueError(f'incompatible shard {index}: {difference}')
         for cpu, value in allocation.items():
             if cpu in affinity and affinity[cpu] != value:
                 raise ValueError('incompatible shard CPU affinity')

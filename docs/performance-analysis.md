@@ -1,5 +1,46 @@
 # Traversal performance analysis
 
+## Hosted capacity and local backfill
+
+Benchmark run 36831896372 failed macOS aggregation because one shard recorded five host CPUs
+while the other two recorded three. Source, tools and the remaining contract fields matched.
+The aggregator correctly refused to combine them, but its diagnostic did not identify the field.
+The driver also checked capacity only when Linux affinity was available, allowing the macOS
+four-worker request on a three-CPU host. Retrying aggregation cannot repair those measurements.
+
+GitHub's documented standard ARM64 macOS capacity is three CPUs; Linux remains four.
+The workflow uses one/three workers on a single Mac host and retains one/four pinned CPUs on Linux.
+Both platforms now check capacity before build/measurement. Unpinned historical comparisons also
+require equal host CPU counts. See [runner specifications](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
+and [the measurement contract](benchmark-comparisons.md).
+
+The local Apple M5 Pro has 18 CPUs and 64 GiB RAM. A direct `thread_policy_get` probe for
+`THREAD_AFFINITY_POLICY`, outside the execution sandbox, returned `KERN_NOT_SUPPORTED` (46).
+Even where supported, that policy represents cache-affinity hints rather than a CPU mask;
+see [Apple's definition](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/mach/thread_policy.h).
+Four-worker local measurements are practical, but must not be labeled pinned four-CPU runs or
+substituted for GitHub-hosted samples. A four-vCPU macOS VM would constrain guest capacity while
+introducing another measurement environment. Local backfill should run selected revisions with
+one common measurement driver, fixture contract and reference-tool set, preserving compiler/build
+provenance. A pilot is needed for a wall-time estimate; no local backfill has been run yet.
+
+Follow-up: retain separate Mac and Zen 5 histories, with controlled local measurements preferred
+in the presentation and hosted measurements explicitly labeled. A valid three-worker hosted run
+is a different allocation, not inherently an invalid observation. Preserve raw results even when
+another series becomes the default.
+
+For one compatible task/tree/file-count/allocation/reference-tool cell, let `X` be the measured
+XFF time, `R` the reference time in the same run, and `B` a reference baseline estimated from five
+calibration runs. The correction is `B / R`; normalized XFF time is `X * B / R` and normalized
+reference time is `B`. This is the existing XFF/reference ratio expressed in baseline time units,
+not an independent performance observation. It assumes shared proportional runner effects, so
+memory bandwidth, cache behavior and scheduler differences can leave residual noise.
+A fixed `B` keeps the historical axis stable; a rolling five-run `B` instead creates a moving
+baseline and suits recent-regression views. Calibration must stay within the same machine series,
+fixture, allocation and reference binary/version. Reference-tool upgrades require a new segment
+or an explicit overlap calibration. This normalization and local backfill are planned follow-ups;
+the current implementation retains raw timings and same-run ratios.
+
 ## Measured compiler and allocator decisions
 
 Experiments used identical xff source within each comparison, broad/deep trees, 10, 100, 1,000

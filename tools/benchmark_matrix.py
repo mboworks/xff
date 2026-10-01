@@ -62,7 +62,10 @@ def compatibility(report):
                 'file_counts', 'cpu_counts', 'depth', 'depth_rule', 'invocation'}
     key = {name: value for name, value in contract.items() if name not in excluded}
     key['storage'] = {name: value for name, value in contract['storage'].items() if name != 'parent'}
-    key['affinity_enforced'] = all(value is not None for value in contract['affinity_by_cpu_count'].values())
+    allocations = contract['affinity_by_cpu_count']
+    key['affinity_enforced'] = bool(allocations) and all(value is not None for value in allocations.values())
+    if not key['affinity_enforced']:
+        key['cpu_count'] = contract.get('cpu_count')
     return key
 
 

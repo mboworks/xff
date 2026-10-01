@@ -712,9 +712,11 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
+            cpus: 4
             timeout: 30
           - os: macos-latest
             platform: macos
+            cpus: 3
             timeout: 60
     runs-on: ${{ matrix.os }}
     timeout-minutes: ${{ matrix.timeout }}
@@ -734,6 +736,13 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
+      - name: Check runner CPU capacity
+        run: |
+          affinity=()
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            affinity=(--require-cpu-affinity)
+          fi
+          python3 tools/benchmark_compare.py --check-runner --cpus=1 --cpus=${{ matrix.cpus }} "${affinity[@]}"
       - uses: ./.github/actions/bazel-cache-restore
         with:
           namespace: default
@@ -758,7 +767,7 @@ jobs:
           fi
           python3 tools/benchmark_compare.py --binary=bazel-bin/xff/cli/xff \
             --report=benchmark-pr-${BENCHMARK_PLATFORM}.json --head="${BENCHMARK_HEAD}" \
-            --repetitions=3 --keep=2 --require-tools "${storage[@]}" \
+            --cpus=1 --cpus=${{ matrix.cpus }} --repetitions=3 --keep=2 --require-tools "${storage[@]}" \
             --runner-class='github-hosted ${{ matrix.os }}' \
             --build-identity="$(cat .bazelrc bazelmod/llvm.MODULE.bazel | shasum -a 256 | cut -d ' ' -f 1)" \
             --baseline-root=benchmark-baseline/benchmarks --summary=benchmark-pr.md --html=benchmark-pr-${BENCHMARK_PLATFORM}.html
