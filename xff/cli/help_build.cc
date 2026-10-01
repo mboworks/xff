@@ -57,11 +57,13 @@ struct KindSection {
   std::string_view title;
 };
 
-constexpr std::array<KindSection, 3> kKindSections = {{
-    {.kind = registry::Kind::kTest, .title = "Tests"},
-    {.kind = registry::Kind::kAction, .title = "Actions"},
-    {.kind = registry::Kind::kOperator, .title = "Operators"},
-}};
+constexpr std::array<KindSection, 3> kKindSections = {
+    {
+        {.kind = registry::Kind::kTest, .title = "Tests"},
+        {.kind = registry::Kind::kAction, .title = "Actions"},
+        {.kind = registry::Kind::kOperator, .title = "Operators"},
+    },
+};
 
 // A single prose paragraph block from an authored string (backtick inline markup).
 Content ProseOf(std::string_view text) {
@@ -567,30 +569,44 @@ Section EnvironmentSection() {
       "Environment variables xff reads. An explicit command-line flag generally overrides the matching "
       "variable."));
   static constexpr auto kVars = std::to_array<DocPair>({
-      {"NO_COLOR",
-       "when set (any value), disables color like `--color=never`; `--color=always` still wins "
-       "(https://no-color.org)"},
+      {
+          "NO_COLOR",
+          "when set (any value), disables color like `--color=never`; `--color=always` still wins "
+          "(https://no-color.org)",
+      },
       {"XFF_PAGER", "the first automatic environment fallback when neither `less` nor `more` is available"},
       {"PAGER", "the final automatic environment fallback when no known or xff-specific pager is available"},
-      {"XFF_MANPAGER",
-       "the pager / formatter for `--man`; overrides the built-in `mandoc` pipeline; set empty to disable"},
+      {
+          "XFF_MANPAGER",
+          "the pager / formatter for `--man`; overrides the built-in `mandoc` pipeline; set empty to disable",
+      },
       {"COLUMNS", "positive terminal-width override, ahead of tty detection; automatic `--width` caps still apply"},
       {"XDG_CONFIG_HOME", "Git global-ignore discovery root; does not change the xff config location"},
       {"HOME", "Git configuration and global-ignore discovery; does not change the xff config location"},
-      {"LC_ALL, LC_CTYPE, LANG",
-       "locale for `--unicode=auto`: a UTF-8 locale selects the Unicode `--format=tree` connectors, else ASCII"},
-      {"LSCOLORS",
-       "the same theme in BSD / macOS spelling (11 letter pairs); read when `$LS_COLORS` is unset, which "
-       "is what makes a themed macOS shell work (see `--color-scheme`)"},
-      {"LS_COLORS",
-       "the terminal's colour theme, as `ls` / `dircolors` set it: type keys (`di`, `ln`, `ex`, ...) and "
-       "per-extension `*.tar=` entries, used by default (see `--color-scheme`)"},
-      {"XDG_RUNTIME_DIR",
-       "preferred directory for a member extracted by `--archive-extract`: it is a memory-backed tmpfs, so "
-       "the copy avoids disk when this location is usable (`/dev/shm` is tried next)"},
-      {"TMPDIR",
-       "where a temporary file goes when no memory-backed directory fits it: an extracted member "
-       "(`--archive-extract`) and the in-progress rewrite of a container (`--archive-delete`)"},
+      {
+          "LC_ALL, LC_CTYPE, LANG",
+          "locale for `--unicode=auto`: a UTF-8 locale selects the Unicode `--format=tree` connectors, else ASCII",
+      },
+      {
+          "LSCOLORS",
+          "the same theme in BSD / macOS spelling (11 letter pairs); read when `$LS_COLORS` is unset, which "
+          "is what makes a themed macOS shell work (see `--color-scheme`)",
+      },
+      {
+          "LS_COLORS",
+          "the terminal's colour theme, as `ls` / `dircolors` set it: type keys (`di`, `ln`, `ex`, ...) and "
+          "per-extension `*.tar=` entries, used by default (see `--color-scheme`)",
+      },
+      {
+          "XDG_RUNTIME_DIR",
+          "preferred directory for a member extracted by `--archive-extract`: it is a memory-backed tmpfs, so "
+          "the copy avoids disk when this location is usable (`/dev/shm` is tried next)",
+      },
+      {
+          "TMPDIR",
+          "where a temporary file goes when no memory-backed directory fits it: an extracted member "
+          "(`--archive-extract`) and the in-progress rewrite of a container (`--archive-delete`)",
+      },
   });
   env.children.push_back(RowsOf(kVars));
   env.children.push_back(ProseOf(
@@ -619,14 +635,16 @@ Section StatsSection(bool in_full) {
       section.children.push_back(FlagEntry(flag));
     }
   }
-  static constexpr std::array<DocPair, 6> kExamples = {{
-      {"xff --summary=ext", "files + total size per extension"},
-      {"xff --histogram=ext", "a bar chart of files per extension"},
-      {"xff --histogram='ext:sum(lines)'", "total lines per extension"},
-      {"xff --histogram=size", "the file-size distribution"},
-      {"xff --summary=type --histogram=ext --format=jsonl", "both, as machine rows"},
-      {"xff --summary=type --histogram=ext --format=md", "both, as Markdown tables"},
-  }};
+  static constexpr std::array<DocPair, 6> kExamples = {
+      {
+          {"xff --summary=ext", "files + total size per extension"},
+          {"xff --histogram=ext", "a bar chart of files per extension"},
+          {"xff --histogram='ext:sum(lines)'", "total lines per extension"},
+          {"xff --histogram=size", "the file-size distribution"},
+          {"xff --summary=type --histogram=ext --format=jsonl", "both, as machine rows"},
+          {"xff --summary=type --histogram=ext --format=md", "both, as Markdown tables"},
+      },
+  };
   Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
   // Each example is a verbatim (copy-pastable) command with its explanation as prose,
   // which wraps to the width - the cookbook pattern, not a term/desc table whose wide
@@ -651,14 +669,16 @@ Section IgnoreSection(bool in_full) {
       "trees such as `.git` or `.hg` at all. Hidden-path filtering is a third independent switch. "
       "Changing one does not silently change the others."));
 
-  static constexpr std::array<DocPair, 6> kAxes = {{
-      {"--exclude / --include", "command-line gitignore-style patterns; repeatable, later matches win"},
-      {"--gitignore / -g", "Git's `.gitignore`, `.git/info/exclude`, and `core.excludesFile` layer"},
-      {"--ignore-files", "per-directory `.ignore` and `.xffignore` files"},
-      {"--ignore-file=PATH", "an explicitly named rule file, rooted at its own directory"},
-      {"--skip-vcs", "prune VCS metadata names; independent of pattern-based ignore files"},
-      {"--hidden / --no-hidden", "show or skip dot-prefixed path components"},
-  }};
+  static constexpr std::array<DocPair, 6> kAxes = {
+      {
+          {"--exclude / --include", "command-line gitignore-style patterns; repeatable, later matches win"},
+          {"--gitignore / -g", "Git's `.gitignore`, `.git/info/exclude`, and `core.excludesFile` layer"},
+          {"--ignore-files", "per-directory `.ignore` and `.xffignore` files"},
+          {"--ignore-file=PATH", "an explicitly named rule file, rooted at its own directory"},
+          {"--skip-vcs", "prune VCS metadata names; independent of pattern-based ignore files"},
+          {"--hidden / --no-hidden", "show or skip dot-prefixed path components"},
+      },
+  };
   Subsection axes{.title = "Independent axes"};
   axes.children.push_back(RowsOf(kAxes));
   section.children.push_back(Content{.node = std::move(axes)});
@@ -703,12 +723,14 @@ Section IgnoreSection(bool in_full) {
     section.children.push_back(Content{.node = std::move(flags)});
   }
 
-  static constexpr std::array<DocPair, 4> kExamples = {{
-      {"xff -g . -name '*.cc'", "honour Git rules automatically and search the remaining tree"},
-      {"xff --skip-vcs=git,hg .", "prune only Git and Mercurial metadata, without enabling ignore files"},
-      {"xff -g --no-skip-vcs .", "honour Git rules while allowing nested `.git` metadata into the walk"},
-      {"xff -u --skip-vcs .", "ignore no rule files, but still prune every known VCS metadata tree"},
-  }};
+  static constexpr std::array<DocPair, 4> kExamples = {
+      {
+          {"xff -g . -name '*.cc'", "honour Git rules automatically and search the remaining tree"},
+          {"xff --skip-vcs=git,hg .", "prune only Git and Mercurial metadata, without enabling ignore files"},
+          {"xff -g --no-skip-vcs .", "honour Git rules while allowing nested `.git` metadata into the walk"},
+          {"xff -u --skip-vcs .", "ignore no rule files, but still prune every known VCS metadata tree"},
+      },
+  };
   Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
   for (const auto& [command, explanation] : kExamples) {
     examples.children.push_back(ExampleOf(std::string(command), "sh"));
@@ -733,12 +755,14 @@ Section ArchiveSection(bool in_full) {
       "Needs at least one container-reader extra; `--help=extras` says which readers this binary "
       "has."));
 
-  static constexpr std::array<DocPair, 4> kModes = {{
-      {"none", "an archive is one plain file (find's behaviour, and the find-style default)"},
-      {"roots", "dive only when a search root IS an archive (the xff-family default)"},
-      {"all", "dive archives met during the walk too (what a bare `--archive` selects)"},
-      {"any", "`all`, and offer EVERY file to the reader rather than only container-looking names"},
-  }};
+  static constexpr std::array<DocPair, 4> kModes = {
+      {
+          {"none", "an archive is one plain file (find's behaviour, and the find-style default)"},
+          {"roots", "dive only when a search root IS an archive (the xff-family default)"},
+          {"all", "dive archives met during the walk too (what a bare `--archive` selects)"},
+          {"any", "`all`, and offer EVERY file to the reader rather than only container-looking names"},
+      },
+  };
   Subsection modes{.title = "How far diving goes"};
   modes.children.push_back(RowsOf(kModes));
   modes.children.push_back(ProseOf(
@@ -929,16 +953,25 @@ Section ArchiveSection(bool in_full) {
     }
   }
 
-  static constexpr std::array<DocPair, 6> kExamples = {{
-      {"xff --archive=roots a.tar", "list the archive and its members"},
-      {"xff -z+ . -grep TODO", "search inside every archive met in the tree"},
-      {"xff --archive=roots a.tgz --summary", "count what is INSIDE, not the compressed container"},
-      {"xff --archive=roots --archive-extract a.tar -name '*.json' -exec jq . {} \\;",
-       "run a tool over a member, via a temporary copy"},
-      {"xff --archive=roots --archive-delete a.tar -name '*.bak' -delete", "rewrite the archive without those members"},
-      {"xff . -name '*.cc' -newer VERSION --pack=changed.tar.gz",
-       "pack what the expression matched into a new archive"},
-  }};
+  static constexpr std::array<DocPair, 6> kExamples = {
+      {
+          {"xff --archive=roots a.tar", "list the archive and its members"},
+          {"xff -z+ . -grep TODO", "search inside every archive met in the tree"},
+          {"xff --archive=roots a.tgz --summary", "count what is INSIDE, not the compressed container"},
+          {
+              "xff --archive=roots --archive-extract a.tar -name '*.json' -exec jq . {} \\;",
+              "run a tool over a member, via a temporary copy",
+          },
+          {
+              "xff --archive=roots --archive-delete a.tar -name '*.bak' -delete",
+              "rewrite the archive without those members",
+          },
+          {
+              "xff . -name '*.cc' -newer VERSION --pack=changed.tar.gz",
+              "pack what the expression matched into a new archive",
+          },
+      },
+  };
   Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
   for (const auto& [command, explanation] : kExamples) {
     examples.children.push_back(ExampleOf(std::string(command), "sh"));
@@ -1094,11 +1127,13 @@ Section ContentSection(bool in_full) {
       section.children.push_back(FlagEntry(flag));
     }
   }
-  static constexpr std::array<DocPair, 3> kExamples = {{
-      {"xff src -name '*.cc' -grep 'TODO\\('", "matching lines, rg-style, from the files an expression picked"},
-      {"xff . -type f ! -text", "the files that are NOT line-oriented text"},
-      {"xff -z logs.tar -grep ERROR --count", "per-member match counts inside an archive"},
-  }};
+  static constexpr std::array<DocPair, 3> kExamples = {
+      {
+          {"xff src -name '*.cc' -grep 'TODO\\('", "matching lines, rg-style, from the files an expression picked"},
+          {"xff . -type f ! -text", "the files that are NOT line-oriented text"},
+          {"xff -z logs.tar -grep ERROR --count", "per-member match counts inside an archive"},
+      },
+  };
   Subsection examples{.title = "Examples", .anchor = "topic-cookbook"};
   for (const auto& [command, explanation] : kExamples) {
     examples.children.push_back(ExampleOf(std::string(command), "sh"));
@@ -1117,16 +1152,18 @@ Section OutputSection(bool in_full) {
       "`--summary`, `--histogram`, and `--pack` are terminal sinks: they replace the implicit per-match listing "
       "but do not suppress actions written in the expression."));
 
-  static constexpr std::array<DocPair, 8> kFormats = {{
-      {"plain", "one path plus newline; streaming; use `--path-encoding=escape` for visible control bytes"},
-      {"nul", "raw paths separated by NUL; streaming and safe for arbitrary path bytes"},
-      {"jsonl", "one JSON object per record; the default listing uses a `path` member"},
-      {"csv", "RFC 4180 rows; streaming; header and `--columns` supported"},
-      {"tsv", "tab-separated rows with tabs, newlines, carriage returns, and backslashes escaped"},
-      {"aligned", "human-readable columns; buffers rows to determine display widths"},
-      {"markdown", "a GitHub-flavored Markdown table; also spelled `md`; buffered"},
-      {"tree", "an indented path hierarchy; buffered; Unicode or ASCII connectors per `--unicode`"},
-  }};
+  static constexpr std::array<DocPair, 8> kFormats = {
+      {
+          {"plain", "one path plus newline; streaming; use `--path-encoding=escape` for visible control bytes"},
+          {"nul", "raw paths separated by NUL; streaming and safe for arbitrary path bytes"},
+          {"jsonl", "one JSON object per record; the default listing uses a `path` member"},
+          {"csv", "RFC 4180 rows; streaming; header and `--columns` supported"},
+          {"tsv", "tab-separated rows with tabs, newlines, carriage returns, and backslashes escaped"},
+          {"aligned", "human-readable columns; buffers rows to determine display widths"},
+          {"markdown", "a GitHub-flavored Markdown table; also spelled `md`; buffered"},
+          {"tree", "an indented path hierarchy; buffered; Unicode or ASCII connectors per `--unicode`"},
+      },
+  };
   Subsection formats{.title = "Formats"};
   formats.children.push_back(RowsOf(kFormats));
   formats.children.push_back(ProseOf(
@@ -1197,12 +1234,14 @@ Section CompareSection(bool in_full) {
       "excluded differing entries. For example, `xff --compare=summary LEFT RIGHT --exit-match` prints "
       "statistics and returns `0` when the selected trees differ; use `--quiet` to suppress output."));
 
-  static constexpr std::array<DocPair, 4> kStatuses = {{
-      {"left-only", "the relative path matched only below the left root"},
-      {"right-only", "the relative path matched only below the right root"},
-      {"different", "both sides matched the path, but its type, bytes, or symlink target differs"},
-      {"identical", "both sides matched and compare equal; omitted unless explicitly selected"},
-  }};
+  static constexpr std::array<DocPair, 4> kStatuses = {
+      {
+          {"left-only", "the relative path matched only below the left root"},
+          {"right-only", "the relative path matched only below the right root"},
+          {"different", "both sides matched the path, but its type, bytes, or symlink target differs"},
+          {"identical", "both sides matched and compare equal; omitted unless explicitly selected"},
+      },
+  };
   Subsection statuses{.title = "Status output"};
   statuses.children.push_back(ProseOf(
       "Bare `--compare` (or `--compare=status`) writes tab-separated `STATUS` and relative-path records. "
@@ -1341,19 +1380,31 @@ Section SafetySection(bool in_full) {
       .header = {"Operation", "archive not selected (default)", "archive selected"},
       .cells =
           {
-              {"What switches", "Archives and members use file controls",
-               "Archive output and member edits use archive controls"},
+              {
+                  "What switches",
+                  "Archives and members use file controls",
+                  "Archive output and member edits use archive controls",
+              },
               {"Create ordinary file", "file-writing", "file-writing"},
               {"Overwrite ordinary file", "file-writing, file-overwrite", "file-writing, file-overwrite"},
               {"Delete file or entire archive", "file-deletion", "file-deletion"},
               {"Pack new archive and members", "file-writing", "archive-writing"},
               {"Pack replacement archive", "file-writing, file-overwrite", "archive-writing, archive-overwrite"},
-              {"Add member to existing archive", "file-writing, file-overwrite",
-               "archive-writing, archive-overwrite, archive-content-writing"},
-              {"Replace existing member", "file-writing, file-overwrite",
-               "archive-writing, archive-overwrite, archive-content-writing, archive-content-overwrite"},
-              {"Delete existing member", "file-writing, file-overwrite, file-deletion",
-               "archive-writing, archive-overwrite, archive-content-deletion"},
+              {
+                  "Add member to existing archive",
+                  "file-writing, file-overwrite",
+                  "archive-writing, archive-overwrite, archive-content-writing",
+              },
+              {
+                  "Replace existing member",
+                  "file-writing, file-overwrite",
+                  "archive-writing, archive-overwrite, archive-content-writing, archive-content-overwrite",
+              },
+              {
+                  "Delete existing member",
+                  "file-writing, file-overwrite, file-deletion",
+                  "archive-writing, archive-overwrite, archive-content-deletion",
+              },
               {"Extract to new ordinary file", "file-writing", "file-writing"},
               {"Extract over existing file", "file-writing, file-overwrite", "file-writing, file-overwrite"},
           },
@@ -1373,8 +1424,12 @@ Section SafetySection(bool in_full) {
       .cells =
           {
               {"Create file", "file-writing", "temp-file-writing", "output-file-writing"},
-              {"Overwrite file", "file-writing, file-overwrite", "temp-file-writing, temp-file-overwrite",
-               "output-file-writing, output-file-overwrite"},
+              {
+                  "Overwrite file",
+                  "file-writing, file-overwrite",
+                  "temp-file-writing, temp-file-overwrite",
+                  "output-file-writing, output-file-overwrite",
+              },
               {"Delete file or symlink", "file-deletion", "temp-file-deletion", "output-file-deletion"},
               {"Create directory", "directory-creation", "temp-directory-creation", "output-directory-creation"},
               {"Delete empty directory", "directory-deletion", "temp-directory-deletion", "output-directory-deletion"},
@@ -1452,13 +1507,15 @@ Section ConfigSection(bool in_full) {
       "layers win. A style (`find` / `xff` / `rg`) sets the baseline defaults, which the tiers and the "
       "command line then adjust. Run `--explain` to print exactly what resolved."));
 
-  static constexpr std::array<DocPair, 5> kLayers = {{
-      {"system config", "machine-wide defaults (plus root-owned global controls that can prohibit arming)"},
-      {"user config", "your personal defaults"},
-      {"autoloaded .xffrc", "opt-in root discovery; a NON-ARMING tier before command-line processing"},
-      {"--xffrc=FILE", "an explicitly named file (repeatable) - a NON-ARMING tier"},
-      {"command line", "flags and `--config`, highest"},
-  }};
+  static constexpr std::array<DocPair, 5> kLayers = {
+      {
+          {"system config", "machine-wide defaults (plus root-owned global controls that can prohibit arming)"},
+          {"user config", "your personal defaults"},
+          {"autoloaded .xffrc", "opt-in root discovery; a NON-ARMING tier before command-line processing"},
+          {"--xffrc=FILE", "an explicitly named file (repeatable) - a NON-ARMING tier"},
+          {"command line", "flags and `--config`, highest"},
+      },
+  };
   Subsection layers{.title = "Layers (lowest to highest precedence)"};
   layers.children.push_back(RowsOf(kLayers));
   layers.children.push_back(ProseOf(
@@ -1550,41 +1607,66 @@ Section ConfigSection(bool in_full) {
       "diagnostic at its starting line number; no partial arguments are applied."));
   section.children.push_back(Content{.node = std::move(layers)});
 
-  static constexpr std::array<DocPair, 9> kConfigControls = {{
-      {"--no-require-system-globals",
-       "permits skipping system globals with `--no-system-config` or `--no-config`; system config only, before the "
-       "first section, and at most one "
-       "of this pair"},
-      {"--require-system-globals",
-       "keeps system globals active, including with `--no-config`; system config only, before the first section, "
-       "and at most one of "
-       "this pair"},
-      {"--no-require-user-globals",
-       "permits skipping user globals with `--no-user-config` or `--no-config`; before the first section in the "
-       "system or user config, and at "
-       "most one of this pair per file; the system decision is authoritative"},
-      {"--require-user-globals",
-       "keeps user globals active, including with `--no-config`; before the first section in the system or user "
-       "config, and at most "
-       "one of this pair per file; the system decision is authoritative"},
-      {"--allow-xffrc",
-       "allows automatic discovery and command-line `--xffrc=FILE`; usable in system defaults or any user config "
-       "block, with normal config "
-       "selection and last-value precedence"},
-      {"--no-allow-xffrc",
-       "denies automatic discovery and command-line `--xffrc=FILE`; usable in system defaults or any user config "
-       "block, with normal config "
-       "selection and last-value precedence; an unsectioned system denial is authoritative"},
-      {"--allow-rc-globals",
-       "permits unsectioned content in autoloaded `.xffrc` files; once per pair before sections in system/user INI; "
-       "a system denial wins, otherwise the applying user choice wins"},
-      {"--no-allow-rc-globals",
-       "rejects autoloaded files containing unsectioned content before actions run (default); same scope and "
-       "precedence as the positive form; explicit `--xffrc=FILE` is unaffected"},
-      {"--block-policy-categories=LIST",
-       "selects the interpretation of blocks in this file, including its named sections; once before sections "
-       "in system or user config; see `--help=safety` for the operation table"},
-  }};
+  static constexpr std::array<DocPair, 9> kConfigControls = {
+      {
+          {
+              "--no-require-system-globals",
+              "permits skipping system globals with `--no-system-config` or `--no-config`; system config only, before "
+              "the "
+              "first section, and at most one "
+              "of this pair",
+          },
+          {
+              "--require-system-globals",
+              "keeps system globals active, including with `--no-config`; system config only, before the first "
+              "section, "
+              "and at most one of "
+              "this pair",
+          },
+          {
+              "--no-require-user-globals",
+              "permits skipping user globals with `--no-user-config` or `--no-config`; before the first section in the "
+              "system or user config, and at "
+              "most one of this pair per file; the system decision is authoritative",
+          },
+          {
+              "--require-user-globals",
+              "keeps user globals active, including with `--no-config`; before the first section in the system or user "
+              "config, and at most "
+              "one of this pair per file; the system decision is authoritative",
+          },
+          {
+              "--allow-xffrc",
+              "allows automatic discovery and command-line `--xffrc=FILE`; usable in system defaults or any user "
+              "config "
+              "block, with normal config "
+              "selection and last-value precedence",
+          },
+          {
+              "--no-allow-xffrc",
+              "denies automatic discovery and command-line `--xffrc=FILE`; usable in system defaults or any user "
+              "config "
+              "block, with normal config "
+              "selection and last-value precedence; an unsectioned system denial is authoritative",
+          },
+          {
+              "--allow-rc-globals",
+              "permits unsectioned content in autoloaded `.xffrc` files; once per pair before sections in system/user "
+              "INI; "
+              "a system denial wins, otherwise the applying user choice wins",
+          },
+          {
+              "--no-allow-rc-globals",
+              "rejects autoloaded files containing unsectioned content before actions run (default); same scope and "
+              "precedence as the positive form; explicit `--xffrc=FILE` is unaffected",
+          },
+          {
+              "--block-policy-categories=LIST",
+              "selects the interpretation of blocks in this file, including its named sections; once before sections "
+              "in system or user config; see `--help=safety` for the operation table",
+          },
+      },
+  };
   Subsection controls{.title = "Config-only controls"};
   controls.children.push_back(ProseOf(
       "These directives are accepted only inside the stated system/user config files, not on the command line or in "
@@ -1682,11 +1764,13 @@ Section ConfigSection(bool in_full) {
   section.children.push_back(Content{.node = std::move(style)});
 
   Subsection autoload{.title = "Autoloading .xffrc files"};
-  static constexpr std::array<DocPair, 3> kRcModes = {{
-      {"--rc-", "disable automatic loading (default); explicit `--xffrc=FILE` remains active"},
-      {"--rc", "load `.xffrc` directly in each directory search root"},
-      {"--rc+", "also load `.xffrc` throughout descendant directories"},
-  }};
+  static constexpr std::array<DocPair, 3> kRcModes = {
+      {
+          {"--rc-", "disable automatic loading (default); explicit `--xffrc=FILE` remains active"},
+          {"--rc", "load `.xffrc` directly in each directory search root"},
+          {"--rc+", "also load `.xffrc` throughout descendant directories"},
+      },
+  };
   autoload.children.push_back(RowsOf(kRcModes));
   autoload.children.push_back(ProseOf(
       "Modes may be set on the CLI or in applying system/user configuration; the last setting wins. "
@@ -2348,11 +2432,13 @@ Document BuildReference(Audience audience) {
   Section see_also{.title = "See also"};
   SeeAlso block{
       .refs =
-          {{.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"},
-           {.kind = RefTarget::Kind::kManPage, .id = "grep", .section = "1"},
-           {.kind = RefTarget::Kind::kManPage, .id = "fnmatch", .section = "3"},
-           {.kind = RefTarget::Kind::kManPage, .id = "glob", .section = "7"},
-           {.kind = RefTarget::Kind::kManPage, .id = "pcre2pattern", .section = "3"}},
+          {
+              {.kind = RefTarget::Kind::kManPage, .id = "find", .section = "1"},
+              {.kind = RefTarget::Kind::kManPage, .id = "grep", .section = "1"},
+              {.kind = RefTarget::Kind::kManPage, .id = "fnmatch", .section = "3"},
+              {.kind = RefTarget::Kind::kManPage, .id = "glob", .section = "7"},
+              {.kind = RefTarget::Kind::kManPage, .id = "pcre2pattern", .section = "3"},
+          },
       .note = ParseInline(
           "For the `--regextype` grammars see the Regex grammars section above (`--help=grammars`). FNMATCH "
           "is the platform's fnmatch(3) and PCRE2 is pcre2pattern(3); GLOB and SHGLOB are xff's "

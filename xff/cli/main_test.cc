@@ -41,7 +41,7 @@ struct MainTest : ::testing::Test {};
 
 TEST_F(MainTest, AccountLookupFailureStopsTheCliEvenWhenConfigSkipsAreRequested) {
   int calls = 0;
-  const auto lookup = [&]() -> absl::StatusOr<config::ConfigPaths> {
+  const auto lookup = [&] -> absl::StatusOr<config::ConfigPaths> {
     ++calls;
     return absl::UnavailableError("account service unavailable");
   };
@@ -51,7 +51,7 @@ TEST_F(MainTest, AccountLookupFailureStopsTheCliEvenWhenConfigSkipsAreRequested)
 
 TEST_F(MainTest, ExplicitHelpWidthAvoidsAccountLookup) {
   int calls = 0;
-  const auto lookup = [&]() -> absl::StatusOr<config::ConfigPaths> {
+  const auto lookup = [&] -> absl::StatusOr<config::ConfigPaths> {
     ++calls;
     return absl::UnavailableError("account service unavailable");
   };
@@ -61,7 +61,7 @@ TEST_F(MainTest, ExplicitHelpWidthAvoidsAccountLookup) {
 
 TEST_F(MainTest, MetaHelpRemainsAvailableWhenAccountLookupFails) {
   int calls = 0;
-  const auto lookup = [&]() -> absl::StatusOr<config::ConfigPaths> {
+  const auto lookup = [&] -> absl::StatusOr<config::ConfigPaths> {
     ++calls;
     return absl::UnavailableError("account service unavailable");
   };
@@ -88,7 +88,7 @@ struct FormattedHelpTest : ::testing::TestWithParam<HelpFormatCase> {};
 TEST_P(FormattedHelpTest, RendersSelectedTargetWithoutLoadingConfiguration) {
   const auto& param = GetParam();
   int calls = 0;
-  const auto lookup = [&]() -> absl::StatusOr<config::ConfigPaths> {
+  const auto lookup = [&] -> absl::StatusOr<config::ConfigPaths> {
     ++calls;
     return absl::UnavailableError("configuration must not be read for formatted help");
   };

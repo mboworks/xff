@@ -114,7 +114,7 @@ enum class Mode {
   kRgFiles,
   kRgCounts,
   kRgQuiet,
-  kRgSummary
+  kRgSummary,
 };
 
 std::vector<std::string> Arguments(Mode mode, std::string_view grammar, std::int64_t workers) {
@@ -133,8 +133,13 @@ std::vector<std::string> Arguments(Mode mode, std::string_view grammar, std::int
   }
   if (mode == Mode::kRewrites) {
     arguments.insert(
-        arguments.end(), {R"(--template={path:s/tree/ROOT/;s/([0-9]+)/[\1]/}:{name:m/([0-9]+)/\1/;join(,);s/^/id=/})",
-                          "tree", "-type", "f"});
+        arguments.end(),
+        {
+            R"(--template={path:s/tree/ROOT/;s/([0-9]+)/[\1]/}:{name:m/([0-9]+)/\1/;join(,);s/^/id=/})",
+            "tree",
+            "-type",
+            "f",
+        });
     return arguments;
   }
   if (mode == Mode::kContentFields) {

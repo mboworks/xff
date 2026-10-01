@@ -22,13 +22,14 @@
 namespace xff::engine {
 
 absl::StatusOr<ReadWorkload> ParseReadWorkload(std::string_view name) {
-  constexpr auto kNames = std::to_array<std::pair<std::string_view, ReadWorkload>>(
-      {{"listing", ReadWorkload::kListing},
-       {"summary", ReadWorkload::kSummary},
-       {"hash", ReadWorkload::kHash},
-       {"hash_twice", ReadWorkload::kHashTwice},
-       {"hash_lines", ReadWorkload::kHashLines},
-       {"compare", ReadWorkload::kCompare}});
+  constexpr auto kNames = std::to_array<std::pair<std::string_view, ReadWorkload>>({
+      {"listing", ReadWorkload::kListing},
+      {"summary", ReadWorkload::kSummary},
+      {"hash", ReadWorkload::kHash},
+      {"hash_twice", ReadWorkload::kHashTwice},
+      {"hash_lines", ReadWorkload::kHashLines},
+      {"compare", ReadWorkload::kCompare},
+  });
   for (const auto& [spelling, workload] : kNames) {
     if (name == spelling) {
       return workload;

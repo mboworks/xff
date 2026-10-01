@@ -161,7 +161,7 @@ void BmAllPairs(benchmark::State& state, bool shared_boilerplate) {
   VerifyCandidateContract(documents);
   // google-benchmark's loop value drives iteration and is deliberately not read.
   // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores)
-  for (auto unused : state) {
+  for (const auto unused : state) {
     Result result = AllPairs(documents);
     benchmark::DoNotOptimize(result.matches);
     state.counters["verified_pairs"] = static_cast<double>(result.compared);
@@ -173,7 +173,7 @@ void BmInvertedIndex(benchmark::State& state, bool shared_boilerplate) {
   VerifyCandidateContract(documents);
   // google-benchmark's loop value drives iteration and is deliberately not read.
   // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores)
-  for (auto unused : state) {
+  for (const auto unused : state) {
     Result result = Indexed(documents);
     benchmark::DoNotOptimize(result.matches);
     state.counters["verified_pairs"] = static_cast<double>(result.compared);

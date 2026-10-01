@@ -139,7 +139,7 @@ namespace {
 // the tool-specific and generic environment commands only if neither known pager exists.
 // The shell performs command discovery in the child immediately before exec, avoiding a check/use
 // race. `cat` is the final lossless fallback, not a pager selected while less or more is available.
-std::string ResolveAutomaticTextPager() {
+std::string_view ResolveAutomaticTextPager() {
   return "if command -v less >/dev/null 2>&1; then exec less -FRX; "
          "elif command -v more >/dev/null 2>&1; then exec more; "
          "elif [ -n \"${XFF_PAGER:-}\" ]; then exec sh -c \"$XFF_PAGER\"; "
@@ -170,7 +170,7 @@ std::string ResolvePagerCommand(PagerKind kind, std::string_view explicit_comman
         "if command -v mandoc >/dev/null 2>&1; then mandoc | { ", ResolveAutomaticTextPager(),
         "; }; else exit 127; fi");
   }
-  return ResolveAutomaticTextPager();
+  return std::string(ResolveAutomaticTextPager());
 }
 
 void EmitPaged(std::string_view text, const PagerDecision& decision, PagerKind kind) {

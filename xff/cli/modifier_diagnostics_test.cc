@@ -194,7 +194,11 @@ TEST_F(ModifierDiagnosticsTest, MatchOutputConsumesGrepModifiersOnlyWhenDefaultO
 
 TEST_F(ModifierDiagnosticsTest, RgSelectionRemainsActiveWithoutLineOutput) {
   const std::vector<std::string> selectors{
-      "--files-with-matches", "--files-without-match", "--invert-match", "--no-invert-match"};
+      "--files-with-matches",
+      "--files-without-match",
+      "--invert-match",
+      "--no-invert-match",
+  };
   for (const auto& selector : selectors) {
     EXPECT_THAT(Notes({"--rg", "hit", ".", selector, "--no-match-output"}), IsOkAndHolds(IsEmpty()));
     EXPECT_THAT(Notes({"--rg", "hit", ".", selector, "--summary"}), IsOkAndHolds(IsEmpty()));

@@ -1042,10 +1042,11 @@ struct Template::Transform {
       if (!matcher.ok()) {
         return {};
       }
-      result.push_back(
-          {.matcher = *std::move(matcher),
-           .replacement = std::string(op.replacement),
-           .global = absl::StrContains(op.flags, 'g')});
+      result.push_back({
+          .matcher = *std::move(matcher),
+          .replacement = std::string(op.replacement),
+          .global = absl::StrContains(op.flags, 'g'),
+      });
     }
     return result;
   }

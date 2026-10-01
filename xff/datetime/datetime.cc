@@ -181,7 +181,7 @@ std::optional<absl::TimeZone> ParseTimeZone(std::string_view spec) {
     return std::nullopt;  // malformed offset
   }
   absl::TimeZone zone;
-  return absl::LoadTimeZone(std::string(spec), &zone) ? std::optional(zone) : std::nullopt;
+  return absl::LoadTimeZone(spec, &zone) ? std::optional(zone) : std::nullopt;
 }
 
 // Preset time formats; any other spec is used verbatim as an absl::FormatTime

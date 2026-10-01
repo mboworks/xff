@@ -97,7 +97,7 @@ class SequentialSource final : public ReadSource {
 };
 
 TEST_F(ReadSourceTest, RetainedRangesShareMemoryAndNativeOffsetsDoNotReplay) {
-  auto budget = std::make_shared<ReadBudget>(6, 0);
+  const auto budget = std::make_shared<ReadBudget>(6, 0);
   const auto source = MemoryReadSource("abcdef", budget);
   EXPECT_THAT(source->Size(), IsOkAndHolds(Eq(6)));
   {
@@ -116,7 +116,7 @@ TEST_F(ReadSourceTest, RetainedRangesShareMemoryAndNativeOffsetsDoNotReplay) {
 }
 
 TEST_F(ReadSourceTest, SequentialRangesChargeReplayAcrossCursorsAndReleaseFailedReservations) {
-  auto budget = std::make_shared<ReadBudget>(10, 5);
+  const auto budget = std::make_shared<ReadBudget>(10, 5);
   const SequentialSource source(budget);
   EXPECT_THAT(ReadSourceRange(source, 2, 2), IsOkAndHolds(Field(&ReadBlock::bytes, EqualsText("cd"))));
   EXPECT_THAT(ReadSourceRange(source, 3, 3), IsOkAndHolds(Field(&ReadBlock::bytes, EqualsText("def"))));

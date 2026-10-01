@@ -93,7 +93,7 @@ void ParallelMatch::Run() {
   std::size_t generation = 0;
   for (;;) {
     {
-      const auto ready = [&]() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) { return Ready(generation); };
+      const auto ready = [&] ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) { return Ready(generation); };
       const absl::MutexLock lock(mutex_, absl::Condition(&ready));
       if (stop_) {
         return;

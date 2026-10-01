@@ -109,7 +109,7 @@ class ReadPool {
   template<typename Job>
   auto Submit(Job job) ABSL_LOCKS_EXCLUDED(mutex_) {
     using Result = std::invoke_result_t<Job>;
-    auto task = std::make_shared<std::packaged_task<Result()>>(std::move(job));
+    const auto task = std::make_shared<std::packaged_task<Result()>>(std::move(job));
     std::future<Result> future = task->get_future();
     if (threads_.empty()) {
       (*task)();  // sequential: run inline

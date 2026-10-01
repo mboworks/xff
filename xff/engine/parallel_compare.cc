@@ -21,7 +21,7 @@ absl::StatusOr<std::string> ReadChunk(vfs::ReadStream& stream, std::size_t lengt
     return bytes;
   }
   while (bytes.size() < length) {
-    MBO_ASSIGN_OR_RETURN(auto tail, stream.Read(length - bytes.size()));
+    MBO_ASSIGN_OR_RETURN(const auto tail, stream.Read(length - bytes.size()));
     if (tail.empty()) {
       break;
     }
@@ -78,12 +78,12 @@ absl::StatusOr<ComparisonResult> CompareRegular(
   constexpr std::size_t kChunk = ParallelCompare::kRetainedFileBytes;
   for (std::uint64_t offset = 0; offset < left.metadata.size; offset += kChunk) {
     const auto length = static_cast<std::size_t>(std::min<std::uint64_t>(kChunk, left.metadata.size - offset));
-    MBO_ASSIGN_OR_RETURN(auto left_bytes, ReadChunk(*left_stream.stream, length));
+    MBO_ASSIGN_OR_RETURN(const auto left_bytes, ReadChunk(*left_stream.stream, length));
     if (!right_stream) {
       MBO_ASSIGN_OR_RETURN(auto cursor, OpenEntry(right));
       right_stream.emplace(std::move(cursor));
     }
-    MBO_ASSIGN_OR_RETURN(auto right_bytes, ReadChunk(*right_stream->stream, length));
+    MBO_ASSIGN_OR_RETURN(const auto right_bytes, ReadChunk(*right_stream->stream, length));
     if (left_bytes != right_bytes) {
       return ComparisonResult{};
     }
@@ -176,7 +176,7 @@ void ParallelCompare::Run() {
   std::size_t generation = 0;
   for (;;) {
     {
-      const auto ready = [&]() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) { return Ready(generation); };
+      const auto ready = [&] ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) { return Ready(generation); };
       const absl::MutexLock lock(mutex_, absl::Condition(&ready));
       if (stop_) {
         return;

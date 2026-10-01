@@ -111,14 +111,16 @@ std::string RenderFlavorTable(const std::vector<std::string>& globals, std::opti
 
   std::vector<FacetRow> rows;
   for (const xff::engine::FlavorFacet& facet : xff::engine::FlavorFacets()) {
-    const std::string find = facet.value({}, Style::kFind);
-    const std::string xff = facet.value({}, Style::kXff);
-    const std::string rg = facet.value({}, Style::kRg);
-    std::vector<std::string> cells = {std::string(facet.behavior), std::string(facet.flag), find, xff, rg};
+    const std::string_view find = facet.value({}, Style::kFind);
+    const std::string_view xff = facet.value({}, Style::kXff);
+    const std::string_view rg = facet.value({}, Style::kRg);
+    std::vector<std::string> cells = {
+        std::string(facet.behavior), std::string(facet.flag), std::string(find), std::string(xff), std::string(rg),
+    };
     bool relevant = !(find == xff && xff == rg);  // the styles disagree on this behavior
     if (current.has_value()) {
-      const std::string resolved = facet.value(globals, *current);
-      cells.push_back(resolved);
+      const std::string_view resolved = facet.value(globals, *current);
+      cells.emplace_back(resolved);
       if (resolved != facet.value({}, *current)) {
         relevant = true;  // a flag overrode the active style's default this run
       }
@@ -155,18 +157,20 @@ std::string RenderFlavorTable(const std::vector<std::string>& globals, std::opti
 // positional pattern, and the primary is the choice. (`-g` is xff's gitignore toggle, and would be
 // the wrong letter anyway.)
 std::string RenderComingFrom() {
-  static constexpr std::array<std::pair<std::string_view, std::string_view>, 10> kFromFd = {{
-      {"PATTERN (fd's default: a regex)", "-regex PATTERN, or -name '*glob*' for a glob"},
-      {"-g / --glob PATTERN", "-name PATTERN (the primary IS the choice; there is no mode to switch)"},
-      {"-p / --full-path", "-path (matches the whole path, where -name matches the basename)"},
-      {"-e / --extension EXT", "-name '*.EXT' (a glob on the basename)"},
-      {"-t / --type f|d|l|x", "-type f|d|l, and -perm /111 for executable"},
-      {"-H / --hidden", "the default; --no-hidden (or --config=rg) skips dotfiles"},
-      {"-I / --no-ignore", "-u / --no-ignore (xff also starts with ignore files OFF)"},
-      {"-x / --exec CMD", "-exec CMD \\;   (and -X / --exec-batch is -exec CMD +)"},
-      {"--changed-within 1d", "-mtime -1d (see --help=time)"},
-      {"-d / --max-depth N", "-maxdepth N (find's spelling; -mindepth too)"},
-  }};
+  static constexpr std::array<std::pair<std::string_view, std::string_view>, 10> kFromFd = {
+      {
+          {"PATTERN (fd's default: a regex)", "-regex PATTERN, or -name '*glob*' for a glob"},
+          {"-g / --glob PATTERN", "-name PATTERN (the primary IS the choice; there is no mode to switch)"},
+          {"-p / --full-path", "-path (matches the whole path, where -name matches the basename)"},
+          {"-e / --extension EXT", "-name '*.EXT' (a glob on the basename)"},
+          {"-t / --type f|d|l|x", "-type f|d|l, and -perm /111 for executable"},
+          {"-H / --hidden", "the default; --no-hidden (or --config=rg) skips dotfiles"},
+          {"-I / --no-ignore", "-u / --no-ignore (xff also starts with ignore files OFF)"},
+          {"-x / --exec CMD", "-exec CMD \\;   (and -X / --exec-batch is -exec CMD +)"},
+          {"--changed-within 1d", "-mtime -1d (see --help=time)"},
+          {"-d / --max-depth N", "-maxdepth N (find's spelling; -mindepth too)"},
+      },
+  };
   std::string out = "Coming from fd:\n";
   for (const auto& [theirs, ours] : kFromFd) {
     absl::StrAppendFormat(&out, "  %-32s %s\n", theirs, ours);

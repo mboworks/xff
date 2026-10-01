@@ -291,7 +291,7 @@ TEST_F(Pcre2BackendTest, WorkerRetainsCodeAfterOriginalDiesAndDoesNotReuseOldCap
   auto worker = original->ForkForWorker();
   ASSERT_THAT(worker, NotNull());
   original.reset();
-  auto second = worker->ForkForWorker();
+  const auto second = worker->ForkForWorker();
   worker.reset();
   for (int repeat = 0; repeat < 100; ++repeat) {
     EXPECT_THAT(second->FullMatchCaptures("AABB"), Optional(ElementsAre("AABB", "AA", "BB")));

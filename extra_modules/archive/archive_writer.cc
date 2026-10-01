@@ -252,7 +252,7 @@ absl::Status TransferFirstMember(
 absl::Status RewriteMembers(
     ::archive& reader,
     ::archive_entry& first,
-    vfs::TemporaryOutput& temporary,
+    const vfs::TemporaryOutput& temporary,
     std::string_view path,
     const std::vector<std::string>& members) {
   const WritePtr writer{::archive_write_new()};

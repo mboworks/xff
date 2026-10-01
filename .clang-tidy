@@ -17,6 +17,8 @@
 #   micro-optimization; our option/context structs are built once per run, field grouping wins).
 # - Broken: abseil-unchecked-statusor-access SEGFAULTS in clang-tidy 22.1.7 (dataflow analysis
 #   crashes on our StatusOr patterns). Matches mboworks/mbo; re-test on a future LLVM.
+# - LLVM 23 deprecates zircon-temporary-objects in favor of fuchsia-temporary-objects;
+#   exclude the alias as well as the already excluded Fuchsia-specific check.
 Checks: >
   *,
   abseil-*,
@@ -68,6 +70,7 @@ Checks: >
   -readability-named-parameter,
   -readability-redundant-inline-specifier,
   -readability-use-concise-preprocessor-directives,
+  -zircon-*,
 
 WarningsAsErrors: '*'
 FormatStyle:       '.clang-format'
@@ -177,6 +180,11 @@ CheckOptions:
     value:           'type'
   - key:             readability-identifier-naming.ConstexprVariableIgnoredRegexp
     value:           'value|index|.*[a-z]V'
+  # LLVM 23 mistakes the comma AFTER an empty {} for a trailing comma INSIDE it.
+  # Preserve single-line initializers (and their separators); still require commas
+  # inside multiline initializers, as STYLE_CPP.md specifies.
+  - key:             readability-trailing-comma.SingleLineCommaPolicy
+    value:           Ignore
   - key:             llvm-header-guard.HeaderFileExtensions
     value:           'h,hh,hpp,hxx'
 ...

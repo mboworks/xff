@@ -926,6 +926,7 @@ bool EvalFalse(const parser::Expr&, EvalContext&) {
 // folds the case-sensitive variant when FS-native matching is in effect (the
 // entry is on a case-folding volume, xff style, no --exact), so -name matches
 // the way the filesystem itself resolves names.
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalName(const parser::Expr& expr, EvalContext& ctx) {
   const int flags = (expr.descriptor->fold_case || ctx.fold_name_case || expr.case_fold) ? FNM_CASEFOLD : 0;
   return !expr.args.empty() && Fnmatch(expr.args.front(), ctx.visit.name, flags);
@@ -1006,6 +1007,7 @@ bool EvalFuzzyPath(const parser::Expr& expr, EvalContext& ctx) {
   return EvalFuzzyOn(expr, ctx, ctx.visit.path);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalPath(const parser::Expr& expr, EvalContext& ctx) {
   const int flags = (expr.descriptor->fold_case || ctx.fold_name_case || expr.case_fold) ? FNM_CASEFOLD : 0;
   return !expr.args.empty() && Fnmatch(expr.args.front(), ctx.visit.path, flags);
@@ -1025,6 +1027,7 @@ std::string LinkTarget(const EvalContext& ctx) {
 // -lname/-ilname: glob the symlink's *target* text (the link is never resolved).
 // Only a symlink can match; the descriptor's fold_case selects -ilname's
 // FNM_CASEFOLD, mirroring -name/-iname.
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalLname(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.empty() || ctx.visit.metadata.type != vfs::FileType::kSymlink) {
     return false;
@@ -1039,6 +1042,7 @@ bool EvalLname(const parser::Expr& expr, EvalContext& ctx) {
 
 // Both -regex and -iregex map here: case sensitivity is baked into the matcher the
 // parser compiled (iregex folds case), so the handler just matches the path.
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalRegex(const parser::Expr& expr, EvalContext& ctx) {
   return MatchesRegex(MatcherFor(expr, ctx), ctx.visit.path, ctx.captures);
 }
@@ -1049,7 +1053,7 @@ bool EvalRegex(const parser::Expr& expr, EvalContext& ctx) {
 // so content search skips binaries by default instead of emitting noise. The whole
 // file is read (hence the predicates' Cost::kExpensive); the prefix sniff only
 // decides the binary skip.
-std::optional<std::string_view> ContentToSearch(EvalContext& ctx) {
+std::optional<std::string_view> ContentToSearch(const EvalContext& ctx) {
   if (ctx.visit.metadata.type != vfs::FileType::kRegular) {
     return std::nullopt;  // only regular files have searchable content
   }
@@ -1069,7 +1073,7 @@ std::optional<std::string_view> ContentToSearch(EvalContext& ctx) {
 // exactly as -grep / -content skip it. Backs -text (content is text, i.e. == false) and -binary
 // (== true); both stay false for a non-regular or unreadable entry (nullopt), so they are not
 // complements.
-std::optional<bool> FileContentIsBinary(EvalContext& ctx) {
+std::optional<bool> FileContentIsBinary(const EvalContext& ctx) {
   if (ctx.visit.metadata.type != vfs::FileType::kRegular) {
     return std::nullopt;
   }
@@ -1120,6 +1124,7 @@ bool TextMatchesFlavor(std::string_view content, std::string_view flavor) {
 // xff -text[=git|posix|windows|apple] / -binary: classify a regular file's content. -text matches
 // text (bare / =git: the NUL heuristic; the other flavors add a no-NUL-anywhere + line-ending
 // discipline); -binary matches binary. Neither matches a non-regular or unreadable entry.
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalText(const parser::Expr& expr, EvalContext& ctx) {
   if (ctx.visit.metadata.type != vfs::FileType::kRegular) {
     return false;
@@ -1131,6 +1136,7 @@ bool EvalText(const parser::Expr& expr, EvalContext& ctx) {
   return TextMatchesFlavor(*content, expr.text_flavor);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalBinary(const parser::Expr& /*expr*/, EvalContext& ctx) {
   return FileContentIsBinary(ctx) == true;
 }
@@ -1141,7 +1147,7 @@ bool EvalBinary(const parser::Expr& /*expr*/, EvalContext& ctx) {
 // is a well-formed (POSIX-style) text file and `-text ! -eofnl` the missing-final-newline lint, and
 // `-text:windows -eofcrlf` / `-text:apple -eofcr` are their CRLF / CR analogues. Orthogonal on
 // purpose: bundling the binary heuristic here would make `! -eof*` sweep in binaries and non-files.
-bool EvalEofTerminator(EvalContext& ctx, std::string_view terminator) {
+bool EvalEofTerminator(const EvalContext& ctx, std::string_view terminator) {
   if (ctx.visit.metadata.type != vfs::FileType::kRegular) {
     return false;
   }
@@ -1153,17 +1159,20 @@ bool EvalEofTerminator(EvalContext& ctx, std::string_view terminator) {
 }
 
 // xff -eofnl: content ends with LF (a CRLF file, ending in "\r\n", also ends in LF and so matches).
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalEofnl(const parser::Expr& /*expr*/, EvalContext& ctx) {
   return EvalEofTerminator(ctx, "\n");
 }
 
 // xff -eofcr: content ends with a bare CR (the classic-Mac / -text:apple terminator). A CRLF file
 // ends in LF, not CR, so it does NOT match -eofcr.
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalEofcr(const parser::Expr& /*expr*/, EvalContext& ctx) {
   return EvalEofTerminator(ctx, "\r");
 }
 
 // xff -eofcrlf: content ends with CRLF (the Windows / -text:windows terminator).
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalEofcrlf(const parser::Expr& /*expr*/, EvalContext& ctx) {
   return EvalEofTerminator(ctx, "\r\n");
 }
@@ -1173,6 +1182,7 @@ bool EvalEofcrlf(const parser::Expr& /*expr*/, EvalContext& ctx) {
 // like -iname). Non-regular, unreadable, and binary files do not match (see
 // ContentToSearch). The literal form sidesteps grep's regex-flavor ambiguity; -rxc
 // is the regex counterpart.
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalContent(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.empty()) {
     return false;
@@ -1189,6 +1199,7 @@ bool EvalContent(const parser::Expr& expr, EvalContext& ctx) {
 // PartialMatch, unanchored -- the content counterpart of -regex's whole-path
 // FullMatch). The matcher is pre-compiled by the parser, with case folding baked in
 // for -irxc. Non-regular, unreadable, and binary files do not match.
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalRxc(const parser::Expr& expr, EvalContext& ctx) {
   const MatcherRef matcher = MatcherFor(expr, ctx);
   if (!matcher.has_value()) {
@@ -1478,7 +1489,7 @@ bool EvalDiff(const parser::Expr& expr, EvalContext& ctx) {
 // The entry's digest, read through the filesystem the entry came FROM. That indirection is what
 // lets -hash / -hasheq work on an archive member: hashing by path would look for `a.tar!x` on the
 // real filesystem and find nothing. Both routes read the whole entry anyway.
-std::optional<std::string> DigestOfEntry(EvalContext& ctx, const hash::AlgoEncoding& spec) {
+std::optional<std::string> DigestOfEntry(const EvalContext& ctx, const hash::AlgoEncoding& spec) {
   return ctx.content.Digest(ctx.fs, ctx.visit.path, spec);
 }
 
@@ -1488,6 +1499,7 @@ std::optional<std::string> DigestOfEntry(EvalContext& ctx, const hash::AlgoEncod
 // --hash-encoding (sha256 / hex). Reads the file (Cost::kExpensive); an unreadable file emits
 // nothing. Like -print it is always true. The spec was validated before the walk
 // (ValidateHashArgs), so a parse failure here defensively no-ops.
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalHash(const parser::Expr& expr, EvalContext& ctx) {
   const std::string_view default_algo = ctx.hash_algorithm.empty() ? "sha256" : ctx.hash_algorithm;
   const hash::Encoding default_encoding = hash::ParseEncoding(ctx.hash_encoding).value_or(hash::Encoding::kHex);
@@ -1509,6 +1521,7 @@ bool EvalHash(const parser::Expr& expr, EvalContext& ctx) {
 // like -hash; the hex comparison folds case since sha256sum and SRI differ only in case. An empty
 // EXPECTED, an unreadable file, or a bad spec is FALSE (no match), so drift-selection is safe.
 // Cost::kExpensive (reads the whole file).
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalHasheq(const parser::Expr& expr, EvalContext& ctx) {
   const auto verdict = [&](bool matched) {
     if (ctx.hash_verification.has_value()) {
@@ -1714,7 +1727,7 @@ std::string GrepPatternJson(const parser::Expr& expr) {
     absl::StrAppend(&result, separator, render::JsonValue(pattern));
     separator = ",";
   }
-  result += "]";
+  result += ']';
   return result;
 }
 
@@ -2004,6 +2017,7 @@ bool EvalGrep(const parser::Expr& expr, EvalContext& ctx) {
   return EvalGrepMatchers(expr, ctx, GrepMatchers(*expr.matcher));
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalType(const parser::Expr& expr, EvalContext& ctx) {
   return !expr.args.empty() && MatchesType(expr.args.front(), ctx.visit.metadata.type);
 }
@@ -2015,6 +2029,7 @@ bool EvalType(const parser::Expr& expr, EvalContext& ctx) {
 // glob-compared, so it is independent of --case / -i / -s (which govern the text matchers, not
 // this derived vocabulary). Content is not read; an unknown or absent extension is
 // application/octet-stream. (See mime::TypeForName for the deferred richer-data plan.)
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalMime(const parser::Expr& expr, EvalContext& ctx) {
   return !expr.args.empty()
          && Fnmatch(
@@ -2025,6 +2040,7 @@ bool EvalMime(const parser::Expr& expr, EvalContext& ctx) {
 // via the language table, including shared candidates) against a shell glob, case-insensitively, so -lang 'c*' selects
 // C / C++ / C# / CSS / Clojure at once. Content is not read; an unrecognized name has no language (the empty string),
 // which only a `*` / empty pattern matches.
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalLang(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.empty()) {
     return false;
@@ -2043,6 +2059,7 @@ bool EvalLang(const parser::Expr& expr, EvalContext& ctx) {
 // -xtype: like -type, but for a symlink it tests the type of the link's *target*
 // (the link is followed). A broken symlink is reported as a symlink, so
 // "-xtype l" matches it, matching GNU find under the default -P.
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalXtype(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.empty()) {
     return false;
@@ -2061,6 +2078,7 @@ bool EvalXtype(const parser::Expr& expr, EvalContext& ctx) {
 // platform-specific -- macOS/BSD report `f_fstypename` verbatim, Linux maps the
 // `statfs` magic to a find-compatible name -- so a portable expression usually
 // tests a single known value. An unqueryable path never matches.
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalFstype(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.empty()) {
     return false;
@@ -2069,6 +2087,7 @@ bool EvalFstype(const parser::Expr& expr, EvalContext& ctx) {
   return type.ok() && *type == expr.args.front();
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalSize(const parser::Expr& expr, EvalContext& ctx) {
   return !expr.args.empty() && MatchesSize(expr.args.front(), ctx.visit.metadata.size, ctx.block_size);
 }
@@ -2077,14 +2096,17 @@ bool EvalSize(const parser::Expr& expr, EvalContext& ctx) {
 // 512 bytes) instead of the apparent size. So `-blocks +0` selects files that occupy
 // any disk, `-blocks 1` files in one --block-size block (default 512), `-blocks +1M`
 // files using more than a mebibyte. The honest "disk-occupancy" counterpart to -size.
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalBlocks(const parser::Expr& expr, EvalContext& ctx) {
   return !expr.args.empty() && MatchesSize(expr.args.front(), ctx.visit.metadata.blocks * 512U, ctx.block_size);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalLinks(const parser::Expr& expr, EvalContext& ctx) {
   return !expr.args.empty() && MatchesNumeric(expr.args.front(), ctx.visit.metadata.nlink);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalInum(const parser::Expr& expr, EvalContext& ctx) {
   return !expr.args.empty() && MatchesNumeric(expr.args.front(), ctx.visit.metadata.ino);
 }
@@ -2092,6 +2114,7 @@ bool EvalInum(const parser::Expr& expr, EvalContext& ctx) {
 // find's -used N: the entry was last accessed N days after its status last
 // changed, i.e. trunc((atime - ctime) / day). The delta is negative when the
 // access predates the status change; N uses the usual N / +N / -N comparison.
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalUsed(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.empty()) {
     return false;
@@ -2100,14 +2123,17 @@ bool EvalUsed(const parser::Expr& expr, EvalContext& ctx) {
   return MatchesSignedNumeric(expr.args.front(), seconds / 86'400);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalUid(const parser::Expr& expr, EvalContext& ctx) {
   return !expr.args.empty() && MatchesNumeric(expr.args.front(), ctx.visit.metadata.uid);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalGid(const parser::Expr& expr, EvalContext& ctx) {
   return !expr.args.empty() && MatchesNumeric(expr.args.front(), ctx.visit.metadata.gid);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalUser(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.empty()) {
     return false;
@@ -2116,6 +2142,7 @@ bool EvalUser(const parser::Expr& expr, EvalContext& ctx) {
   return uid.has_value() && ctx.visit.metadata.uid == *uid;
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalGroup(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.empty()) {
     return false;
@@ -2126,26 +2153,31 @@ bool EvalGroup(const parser::Expr& expr, EvalContext& ctx) {
 
 // find's -nouser / -nogroup: the entry's owner uid / group gid has no entry in
 // the passwd / group database (an orphaned id).
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalNouser(const parser::Expr&, EvalContext& ctx) {
   // NOLINTNEXTLINE(concurrency-mt-unsafe): single-threaded CLI/test path
   return ::getpwuid(ctx.visit.metadata.uid) == nullptr;
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalNogroup(const parser::Expr&, EvalContext& ctx) {
   // NOLINTNEXTLINE(concurrency-mt-unsafe): single-threaded CLI/test path
   return ::getgrgid(ctx.visit.metadata.gid) == nullptr;
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalPerm(const parser::Expr& expr, EvalContext& ctx) {
   return !expr.args.empty() && MatchesPerm(expr.args.front(), ctx.visit.metadata.mode);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalEmpty(const parser::Expr&, EvalContext& ctx) {
   return IsEmpty(ctx.visit, ctx.fs);
 }
 
 // find's -sparse: the file has holes -- fewer 512-byte blocks allocated than its
 // apparent size needs (st_blocks * 512 < st_size). A zero-size file is not sparse.
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalSparse(const parser::Expr&, EvalContext& ctx) {
   const vfs::Metadata& md = ctx.visit.metadata;
   return md.size > 0 && md.blocks * 512U < md.size;
@@ -2153,22 +2185,27 @@ bool EvalSparse(const parser::Expr&, EvalContext& ctx) {
 
 // find's -readable/-writable/-executable: the current user can access the entry
 // for that mode (a real access() probe, not just a mode-bit guess).
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalReadable(const parser::Expr&, EvalContext& ctx) {
   return ctx.fs.Access(ctx.visit.path, vfs::AccessMode::kRead);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalWritable(const parser::Expr&, EvalContext& ctx) {
   return ctx.fs.Access(ctx.visit.path, vfs::AccessMode::kWrite);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalExecutable(const parser::Expr&, EvalContext& ctx) {
   return ctx.fs.Access(ctx.visit.path, vfs::AccessMode::kExecute);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalNewer(const parser::Expr& expr, EvalContext& ctx) {
   return !expr.args.empty() && IsNewerThan(ctx.visit, expr.args.front(), ctx.fs);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalSamefile(const parser::Expr& expr, EvalContext& ctx) {
   return !expr.args.empty() && IsSameFile(ctx.visit, expr.args.front(), ctx.fs);
 }
@@ -2207,14 +2244,17 @@ bool EvalNewerXY(const parser::Expr& expr, EvalContext& ctx) {
 // find's -anewer/-cnewer: the entry's access/change time is newer than the
 // reference file's modification time -- the classic spellings of -neweram /
 // -newercm. (-newer itself is mtime-vs-mtime, handled by EvalNewer above.)
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalAnewer(const parser::Expr& expr, EvalContext& ctx) {
   return !expr.args.empty() && IsNewerXY(ctx.visit, 'a', 'm', expr.args.front(), ctx.fs);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalCnewer(const parser::Expr& expr, EvalContext& ctx) {
   return !expr.args.empty() && IsNewerXY(ctx.visit, 'c', 'm', expr.args.front(), ctx.fs);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalMtime(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.empty()) {
     return false;
@@ -2226,12 +2266,14 @@ bool EvalMtime(const parser::Expr& expr, EvalContext& ctx) {
   return MatchesTime(arg, ctx.visit.metadata.mtime, ctx.now, absl::Hours(24), /*allow_unit_suffix=*/true);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalMmin(const parser::Expr& expr, EvalContext& ctx) {
   return !expr.args.empty()
          && MatchesTime(
              expr.args.front(), ctx.visit.metadata.mtime, ctx.now, absl::Minutes(1), /*allow_unit_suffix=*/false);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalAtime(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.empty()) {
     return false;
@@ -2243,12 +2285,14 @@ bool EvalAtime(const parser::Expr& expr, EvalContext& ctx) {
   return MatchesTime(arg, ctx.visit.metadata.atime, ctx.now, absl::Hours(24), /*allow_unit_suffix=*/true);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalAmin(const parser::Expr& expr, EvalContext& ctx) {
   return !expr.args.empty()
          && MatchesTime(
              expr.args.front(), ctx.visit.metadata.atime, ctx.now, absl::Minutes(1), /*allow_unit_suffix=*/false);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalCtime(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.empty()) {
     return false;
@@ -2260,6 +2304,7 @@ bool EvalCtime(const parser::Expr& expr, EvalContext& ctx) {
   return MatchesTime(arg, ctx.visit.metadata.ctime, ctx.now, absl::Hours(24), /*allow_unit_suffix=*/true);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalCmin(const parser::Expr& expr, EvalContext& ctx) {
   return !expr.args.empty()
          && MatchesTime(
@@ -2316,16 +2361,19 @@ std::string LsRecord(const Visit& visit, absl::Time now, absl::TimeZone tz, std:
   return absl::StrCat(absl::StrJoin(LsCells(visit, now, tz, std::nullopt, color), " "), "\n");
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalPrint(const parser::Expr&, EvalContext& ctx) {
   ctx.emit(PrintRecord(ctx.visit));
   return true;
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalPrint0(const parser::Expr&, EvalContext& ctx) {
   ctx.emit(Print0Record(ctx.visit));
   return true;
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalLs(const parser::Expr&, EvalContext& ctx) {
   // Aligned path: hand the columns to the driver's ColumnBuffer. Without a row sink
   // (in-process callers, no --buffer wiring) fall back to the single-spaced line.
@@ -2337,6 +2385,7 @@ bool EvalLs(const parser::Expr&, EvalContext& ctx) {
   return true;
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalPrintf(const parser::Expr& expr, EvalContext& ctx) {
   if (!expr.args.empty()) {
     ctx.emit(FormatPrintf(expr.args.front(), ctx));  // no implicit newline; the format owns it
@@ -2344,11 +2393,13 @@ bool EvalPrintf(const parser::Expr& expr, EvalContext& ctx) {
   return true;
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalPrintln(const parser::Expr&, EvalContext& ctx) {
   ctx.emit(absl::StrCat(ctx.visit.path, kOsLineEnding));  // xff: -print with the OS line ending
   return true;
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalPrintfln(const parser::Expr& expr, EvalContext& ctx) {
   if (!expr.args.empty()) {  // xff: -printf plus the OS line ending appended
     ctx.emit(absl::StrCat(FormatPrintf(expr.args.front(), ctx), kOsLineEnding));
@@ -2362,6 +2413,7 @@ bool EvalPrintfln(const parser::Expr& expr, EvalContext& ctx) {
 // counterparts of -println / -printfln. The driver opens each file once
 // (truncating) and appends across firings; with no file sink wired the actions
 // are inert (in-process callers that pass none).
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalFprint(const parser::Expr& expr, EvalContext& ctx) {
   if (!expr.args.empty() && ctx.emit_file) {
     ctx.emit_file(expr.args.front(), PrintRecord(ctx.visit));
@@ -2370,6 +2422,7 @@ bool EvalFprint(const parser::Expr& expr, EvalContext& ctx) {
 }
 
 // xff: -fprint with the OS line ending (the file-writing form of -println).
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalFprintln(const parser::Expr& expr, EvalContext& ctx) {
   if (!expr.args.empty() && ctx.emit_file) {
     ctx.emit_file(expr.args.front(), absl::StrCat(ctx.visit.path, kOsLineEnding));
@@ -2377,6 +2430,7 @@ bool EvalFprintln(const parser::Expr& expr, EvalContext& ctx) {
   return true;
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalFprint0(const parser::Expr& expr, EvalContext& ctx) {
   if (!expr.args.empty() && ctx.emit_file) {
     ctx.emit_file(expr.args.front(), Print0Record(ctx.visit));
@@ -2384,6 +2438,7 @@ bool EvalFprint0(const parser::Expr& expr, EvalContext& ctx) {
   return true;
 }
 
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalFls(const parser::Expr& expr, EvalContext& ctx) {
   if (!expr.args.empty() && ctx.emit_file) {
     ctx.emit_file(expr.args.front(), LsRecord(ctx.visit, ctx.now, ctx.tz));
@@ -2392,6 +2447,7 @@ bool EvalFls(const parser::Expr& expr, EvalContext& ctx) {
 }
 
 // -fprintf takes FILE then FORMAT; the format owns its own terminator, like -printf.
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalFprintf(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.size() >= 2 && ctx.emit_file) {
     ctx.emit_file(expr.args.front(), FormatPrintf(expr.args[1], ctx));
@@ -2401,6 +2457,7 @@ bool EvalFprintf(const parser::Expr& expr, EvalContext& ctx) {
 
 // xff: -fprintf plus the OS line ending (the file-writing form of -printfln);
 // FILE then FORMAT, like -fprintf.
+// NOLINTNEXTLINE(misc-const-correctness): EvalFn requires a mutable context.
 bool EvalFprintfln(const parser::Expr& expr, EvalContext& ctx) {
   if (expr.args.size() >= 2 && ctx.emit_file) {
     ctx.emit_file(expr.args.front(), absl::StrCat(FormatPrintf(expr.args[1], ctx), kOsLineEnding));
@@ -3065,7 +3122,7 @@ EvaluationResult EvaluateXnor(const parser::Expr& expr, EvalContext& context) {
   return (rhs.deferred || rhs.unknown) ? rhs : EvaluationResult{.matched = lhs.matched == rhs.matched};
 }
 
-void PreviewExecution(const parser::Expr& expr, EvalContext& context) {
+void PreviewExecution(const parser::Expr& expr, const EvalContext& context) {
   std::string preview = absl::StrCat("would execute ", expr.descriptor->name, " for ", context.visit.path, ":");
   const bool capture = expr.descriptor->binds_capture;
   const std::size_t first = capture ? 2 : 0;
@@ -3602,9 +3659,11 @@ absl::Span<const std::pair<std::string_view, std::string_view>> PrintfDocs() {
       {"%%", "a literal percent"},
       {R"(\n \t \r \\ \0)", "newline, tab, carriage return, backslash, NUL"},
       {"%{NAME}", "xff: the {field} vocabulary (%{relpath}, %{size:h}, %{def.X}); see --help=fields"},
-      {"%{NAME:qual}",
-       "xff: a field with a :qualifier -- time format, {size:h}, s/// rewrite, or path component "
-       "(see --help=fields for the full qualifier list)"},
+      {
+          "%{NAME:qual}",
+          "xff: a field with a :qualifier -- time format, {size:h}, s/// rewrite, or path component "
+          "(see --help=fields for the full qualifier list)",
+      },
   });
   return kDocs;
 }

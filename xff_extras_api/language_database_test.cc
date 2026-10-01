@@ -14,7 +14,7 @@ using ::testing::Field;
 struct LanguageDatabaseTest : ::testing::Test {};
 
 TEST_F(LanguageDatabaseTest, RegistrarContributesLazyLinkedDatabase) {
-  const auto json = []() -> std::string_view { return R"({})"; };
+  const auto json = [] -> std::string_view { return R"({})"; };
   const DatabaseRegistrar registrar{{.name = "test", .json = json}};
   EXPECT_THAT(Databases(), Contains(Field(&Database::name, "test")));
 }

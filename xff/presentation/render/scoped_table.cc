@@ -152,14 +152,14 @@ std::string RenderScopedTable(
     for (const Widths& scope : widths) {
       result += "  " + MetricHeader(scope);
     }
-    result += "\n";
+    result += '\n';
   }
   for (const ScopedTableRow& row : rows) {
     result += PadLabel(row.label, label_width);
     for (std::size_t scope = 0; scope < scopes.size(); ++scope) {
       result += "  " + MetricCells(row.metrics.at(scope), widths.at(scope));
     }
-    result += "\n";
+    result += '\n';
   }
   return result;
 }

@@ -67,7 +67,8 @@ int main(int argc, char** argv) {
       {"elapsed_seconds", result->elapsed_seconds},
       {"errors", result->errors},
       {"first_output_seconds", nullptr},
-      {"measurement", "engine logical VFS bytes; not storage traffic"}};
+      {"measurement", "engine logical VFS bytes; not storage traffic"},
+  };
   if (result->first_output_seconds.has_value()) {
     report["first_output_seconds"] = *result->first_output_seconds;
   }

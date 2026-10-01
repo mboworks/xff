@@ -476,16 +476,18 @@ TEST_F(FieldsTest, TypeAndAccessCoverEveryFileKindAndSpecialPermissionState) {
     std::uint32_t mode;
   };
 
-  constexpr std::array<Case, 8> kCases = {{
-      {.type = vfs::FileType::kBlockDevice, .mode = 0000},
-      {.type = vfs::FileType::kCharDevice, .mode = 0777},
-      {.type = vfs::FileType::kDirectory, .mode = 07000},
-      {.type = vfs::FileType::kFifo, .mode = 04100},
-      {.type = vfs::FileType::kRegular, .mode = 02011},
-      {.type = vfs::FileType::kSocket, .mode = 01001},
-      {.type = vfs::FileType::kSymlink, .mode = 0644},
-      {.type = vfs::FileType::kUnknown, .mode = 0000},
-  }};
+  constexpr std::array<Case, 8> kCases = {
+      {
+          {.type = vfs::FileType::kBlockDevice, .mode = 0000},
+          {.type = vfs::FileType::kCharDevice, .mode = 0777},
+          {.type = vfs::FileType::kDirectory, .mode = 07000},
+          {.type = vfs::FileType::kFifo, .mode = 04100},
+          {.type = vfs::FileType::kRegular, .mode = 02011},
+          {.type = vfs::FileType::kSocket, .mode = 01001},
+          {.type = vfs::FileType::kSymlink, .mode = 0644},
+          {.type = vfs::FileType::kUnknown, .mode = 0000},
+      },
+  };
   std::vector<std::string> access;
   access.reserve(kCases.size());
   for (const Case& test : kCases) {
@@ -679,7 +681,8 @@ TEST_F(FieldsTest, MExtractorYieldsAPerLineValueStream) {
   const vfs::Metadata md = Meta(vfs::FileType::kRegular, 0);
   // git-blame --line-porcelain-shaped output: many lines, an `author X` header per source line.
   const std::map<std::string, std::string> outputs = {
-      {"blame", "author Bob\nauthor-mail <b@x>\nauthor Ann\n\tsource line\nauthor Bob\n"}};
+      {"blame", "author Bob\nauthor-mail <b@x>\nauthor Ann\n\tsource line\nauthor Bob\n"},
+  };
   const Template compiled = Template::Compile("{capture.blame:m/^author (.+)$/\\1/}");
   const RenderContext ctx{.path = "f", .metadata = md, .outputs = outputs};
   // AsExtraction: one value per matching line, non-matching lines dropped, \1 = capture group.

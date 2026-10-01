@@ -38,12 +38,15 @@ const struct AppleRegistrar {
     archive::RegisterCompressionExtension({
         .name = "pbzx",
         .suffixes = {".pbzx"},
-        .read_formats = {{
-            .name = "pbzx",
-            .suffixes = {".pbzx"},
-            .detail =
-                "Apple PKG/XIP payloads (raw/XZ chunks), readable on Linux and macOS; no DMG or installer execution",
-        }},
+        .read_formats =
+            {
+                {
+                    .name = "pbzx",
+                    .suffixes = {".pbzx"},
+                    .detail = "Apple PKG/XIP payloads (raw/XZ chunks), readable on Linux and macOS; no DMG or "
+                              "installer execution",
+                },
+            },
     });
     archive::RegisterArchiveBackend();
   }

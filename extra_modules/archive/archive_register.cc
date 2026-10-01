@@ -118,9 +118,11 @@ constexpr std::array kNativeReadFormats = std::to_array<ReadFormatSpec>({
         .detail = "tar archives, plain or through any compression filter; `.crate` and `.gem` are tars",
     },
     {.name = "warc", .suffixes = kWarcSuffixes, .detail = "web archives"},
-    {.name = "xar",
-     .suffixes = kXarSuffixes,
-     .detail = "XAR archives and flat PKG/XIP envelopes; payload codecs depend on linked extensions"},
+    {
+        .name = "xar",
+        .suffixes = kXarSuffixes,
+        .detail = "XAR archives and flat PKG/XIP envelopes; payload codecs depend on linked extensions",
+    },
     {
         .name = "zip",
         .suffixes = kZipSuffixes,

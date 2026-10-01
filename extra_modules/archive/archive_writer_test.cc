@@ -112,9 +112,11 @@ TEST_F(ArchiveWriterTest, RemovingAMemberLeavesTheOthersIntact) {
   // The whole contract: the named member is gone, every other member is still there AND still holds
   // its own bytes - a rewrite that lost content would still pass a name-only check.
   const std::string path = WriteArchive(
-      {{.path = "one.txt", .content = "one\n"},
-       {.path = "two.txt", .content = "two\n"},
-       {.path = "three.txt", .content = "3\n"}},
+      {
+          {.path = "one.txt", .content = "one\n"},
+          {.path = "two.txt", .content = "two\n"},
+          {.path = "three.txt", .content = "3\n"},
+      },
       "r1.tar");
   EXPECT_THAT(RemoveMembersOfFile(path, {"two.txt"}), IsOk());
   EXPECT_THAT(MemberNames(path), UnorderedElementsAre("one.txt", "three.txt"));
@@ -127,10 +129,12 @@ TEST_F(ArchiveWriterTest, SeveralMembersGoInOneRewrite) {
   // A run deletes what its expression matched, which is a set, not one name - and rewriting the
   // container once per member would be both slow and a wider window for an interrupted write.
   const std::string path = WriteArchive(
-      {{.path = "a", .content = "a"},
-       {.path = "b", .content = "b"},
-       {.path = "c", .content = "c"},
-       {.path = "d", .content = "d"}},
+      {
+          {.path = "a", .content = "a"},
+          {.path = "b", .content = "b"},
+          {.path = "c", .content = "c"},
+          {.path = "d", .content = "d"},
+      },
       "r2.tar");
   EXPECT_THAT(RemoveMembersOfFile(path, {"a", "c"}), IsOk());
   EXPECT_THAT(MemberNames(path), UnorderedElementsAre("b", "d"));

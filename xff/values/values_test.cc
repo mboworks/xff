@@ -83,21 +83,23 @@ TEST_F(ValuesTest, ParseTristateRejectsUnknown) {
 
 TEST_F(ValuesTest, ParseByteUnitDistinguishesSiAndIecScales) {
   using Case = std::pair<std::string_view, std::uint64_t>;
-  static constexpr std::array<Case, 13> kCases = {{
-      {"B", 1},
-      {"kB", 1'000},
-      {"MB", 1'000'000},
-      {"GB", 1'000'000'000},
-      {"TB", 1'000'000'000'000},
-      {"PB", 1'000'000'000'000'000},
-      {"EB", 1'000'000'000'000'000'000},
-      {"KiB", 1ULL << 10U},
-      {"MiB", 1ULL << 20U},
-      {"GiB", 1ULL << 30U},
-      {"TiB", 1ULL << 40U},
-      {"PiB", 1ULL << 50U},
-      {"EiB", 1ULL << 60U},
-  }};
+  static constexpr std::array<Case, 13> kCases = {
+      {
+          {"B", 1},
+          {"kB", 1'000},
+          {"MB", 1'000'000},
+          {"GB", 1'000'000'000},
+          {"TB", 1'000'000'000'000},
+          {"PB", 1'000'000'000'000'000},
+          {"EB", 1'000'000'000'000'000'000},
+          {"KiB", 1ULL << 10U},
+          {"MiB", 1ULL << 20U},
+          {"GiB", 1ULL << 30U},
+          {"TiB", 1ULL << 40U},
+          {"PiB", 1ULL << 50U},
+          {"EiB", 1ULL << 60U},
+      },
+  };
   for (const auto& [unit, bytes] : kCases) {
     EXPECT_THAT(ParseByteUnit(unit), Optional(Eq(bytes))) << unit;
   }

@@ -233,8 +233,8 @@ class RgParser {
         search_.globs.emplace_back(value);
         native_.push_back(
             absl::StrCat(
-                value.starts_with("!") ? "--exclude=" : "--include=",
-                value.starts_with("!") ? value.substr(1) : value));
+                value.starts_with('!') ? "--exclude=" : "--include=",
+                value.starts_with('!') ? value.substr(1) : value));
         break;
     }
     return absl::OkStatus();

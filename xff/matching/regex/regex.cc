@@ -403,7 +403,8 @@ absl::StatusOr<Matcher> Matcher::Compile(
         std::make_unique<Re2Backend>(std::move(re)), Re2Source{
                                                          .pattern = std::string(re_pattern),
                                                          .case_insensitive = case_insensitive,
-                                                         .text_mode = text_mode.value_or(TextMode::kUtf8)});
+                                                         .text_mode = text_mode.value_or(TextMode::kUtf8),
+                                                     });
   };
   switch (grammar) {
     case Grammar::kRe2: return compile_re2(pattern);
@@ -503,45 +504,59 @@ std::string Matcher::Rewrite(std::string_view text, std::string_view replacement
 
 absl::Span<const std::pair<std::string_view, std::string_view>> GrammarDocs() {
   static constexpr auto kDocs = std::to_array<std::pair<std::string_view, std::string_view>>({
-      {"ERE",
-       "POSIX extended regular expressions through the platform regcomp(3) implementation. This provides "
-       "traditional find -E syntax, captures, partial matching, and rewrites, but locale details and some "
-       "edge-case behavior follow the host C library rather than RE2's cross-platform semantics or linear-time "
-       "guarantee. Patterns containing NUL are errors; subjects containing NUL do not match because the POSIX API "
-       "uses C strings."},
-      {"EXACT",
-       "a literal string; every character matches itself, no metacharacters. -regex is whole-string "
-       "equality, -rxc / -grep a substring test."},
-      {"FNMATCH",
-       "a flat shell wildcard via the platform's fnmatch(3): * matches any run of characters "
-       "(including /), ? one character, [...] a class. Whole-string, like find -name / -path (no "
-       "/-awareness); -i uses FNM_CASEFOLD. Provided by libc, so class / collation details vary by "
-       "system."},
-      {"GLOB",
-       "xff's path-aware, locale-independent shell glob (compiled to RE2 - NOT POSIX glob(7)): * "
-       "and ? stay within one path component; a complete-component ** crosses components (middle "
-       "foo/**/bar permits zero or more, while trailing foo/** requires a descendant); embedded star "
-       "runs reduce to *. [...] supports literals, ascending ranges, leading ! negation, and RE2 ASCII "
-       "named classes, always excluding / except the compatibility spelling [/]. Malformed ranges, "
-       "descending ranges, unsupported named classes, collation/equivalence, and negative extglob are "
-       "errors. Braces are literal. Because it compiles to RE2, -grep / -rxc partial matching and match "
-       "spans work."},
-      {"PCRE2",
-       "Perl-Compatible Regular Expressions (lookaround, backreferences, ...). A build-time extra: "
-       "present only in a full build - run `xff --help=extras` to see whether THIS binary has it. Full "
-       "syntax: pcre2pattern(3). Eligible patterns use JIT on ARM64 and x86-64, with interpreter "
-       "fallback when JIT is unavailable. Explicit pattern depth/heap limits keep interpreter "
-       "execution; matching remains resource-bounded. RE2 remains the default grammar."},
-      {"RE2",
-       "the default. Google RE2 regular expressions - linear-time, no catastrophic backtracking. "
-       "Full syntax: https://github.com/google/re2/wiki/Syntax ."},
-      {"SHGLOB",
-       "GLOB plus brace alternation: {a,b,c} matches any one alternative, so *.{cc,h} matches either. "
-       "Integer and ASCII-letter sequences expand in either direction (`{1..9}`, `{09..01}`, `{a..z}`); a "
-       "leading zero preserves integer width, and expansion above 10,000 terms is rejected. Alternatives "
-       "and sequences may nest; alternatives may be empty. Escaped braces and commas, braces inside a "
-       "[...] class, and comma-less braces that are not a sequence are literal. The optional shell "
-       "increment form (`{1..9..2}`) is not supported and remains literal. Everything else is exactly GLOB."},
+      {
+          "ERE",
+          "POSIX extended regular expressions through the platform regcomp(3) implementation. This provides "
+          "traditional find -E syntax, captures, partial matching, and rewrites, but locale details and some "
+          "edge-case behavior follow the host C library rather than RE2's cross-platform semantics or linear-time "
+          "guarantee. Patterns containing NUL are errors; subjects containing NUL do not match because the POSIX API "
+          "uses C strings.",
+      },
+      {
+          "EXACT",
+          "a literal string; every character matches itself, no metacharacters. -regex is whole-string "
+          "equality, -rxc / -grep a substring test.",
+      },
+      {
+          "FNMATCH",
+          "a flat shell wildcard via the platform's fnmatch(3): * matches any run of characters "
+          "(including /), ? one character, [...] a class. Whole-string, like find -name / -path (no "
+          "/-awareness); -i uses FNM_CASEFOLD. Provided by libc, so class / collation details vary by "
+          "system.",
+      },
+      {
+          "GLOB",
+          "xff's path-aware, locale-independent shell glob (compiled to RE2 - NOT POSIX glob(7)): * "
+          "and ? stay within one path component; a complete-component ** crosses components (middle "
+          "foo/**/bar permits zero or more, while trailing foo/** requires a descendant); embedded star "
+          "runs reduce to *. [...] supports literals, ascending ranges, leading ! negation, and RE2 ASCII "
+          "named classes, always excluding / except the compatibility spelling [/]. Malformed ranges, "
+          "descending ranges, unsupported named classes, collation/equivalence, and negative extglob are "
+          "errors. Braces are literal. Because it compiles to RE2, -grep / -rxc partial matching and match "
+          "spans work.",
+      },
+      {
+          "PCRE2",
+          "Perl-Compatible Regular Expressions (lookaround, backreferences, ...). A build-time extra: "
+          "present only in a full build - run `xff --help=extras` to see whether THIS binary has it. Full "
+          "syntax: pcre2pattern(3). Eligible patterns use JIT on ARM64 and x86-64, with interpreter "
+          "fallback when JIT is unavailable. Explicit pattern depth/heap limits keep interpreter "
+          "execution; matching remains resource-bounded. RE2 remains the default grammar.",
+      },
+      {
+          "RE2",
+          "the default. Google RE2 regular expressions - linear-time, no catastrophic backtracking. "
+          "Full syntax: https://github.com/google/re2/wiki/Syntax .",
+      },
+      {
+          "SHGLOB",
+          "GLOB plus brace alternation: {a,b,c} matches any one alternative, so *.{cc,h} matches either. "
+          "Integer and ASCII-letter sequences expand in either direction (`{1..9}`, `{09..01}`, `{a..z}`); a "
+          "leading zero preserves integer width, and expansion above 10,000 terms is rejected. Alternatives "
+          "and sequences may nest; alternatives may be empty. Escaped braces and commas, braces inside a "
+          "[...] class, and comma-less braces that are not a sequence are literal. The optional shell "
+          "increment form (`{1..9..2}`) is not supported and remains literal. Everything else is exactly GLOB.",
+      },
   });
   return kDocs;
 }

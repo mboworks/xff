@@ -26,9 +26,11 @@ std::string Percent(std::uint64_t value, std::uint64_t total, unsigned precision
 
 std::vector<std::string> MetricCells(const SummaryExportMetrics& metrics, unsigned precision) {
   return {
-      absl::StrCat(metrics.count), Percent(metrics.count, metrics.total_count, precision),
+      absl::StrCat(metrics.count),
+      Percent(metrics.count, metrics.total_count, precision),
       metrics.bytes.has_value() ? absl::StrCat(metrics.bytes->value) : "",
-      metrics.bytes.has_value() ? Percent(metrics.bytes->value, metrics.bytes->total, precision) : ""};
+      metrics.bytes.has_value() ? Percent(metrics.bytes->value, metrics.bytes->total, precision) : "",
+  };
 }
 
 }  // namespace
@@ -36,9 +38,10 @@ std::vector<std::string> MetricCells(const SummaryExportMetrics& metrics, unsign
 SummaryExport::SummaryExport(std::vector<std::string> scopes) : scopes_(std::move(scopes)) {}
 
 std::string SummaryExport::Header(Format format) const {
-  std::vector<std::string> cells{"record",   "request",   "summary",       "template", "scope",
-                                 "root",     "left_root", "right_root",    "type",     "group",
-                                 "is_total", "count",     "count_percent", "bytes",    "size_percent"};
+  std::vector<std::string> cells{
+      "record", "request", "summary",  "template", "scope",         "root",  "left_root",    "right_root",
+      "type",   "group",   "is_total", "count",    "count_percent", "bytes", "size_percent",
+  };
   cells.reserve(cells.size() + (kMetrics.size() * scopes_.size()));
   for (const std::string& scope : scopes_) {
     for (const std::string_view metric : kMetrics) {
@@ -60,7 +63,8 @@ std::string SummaryExport::Row(const SummaryExportRecord& record, Format format,
       std::string(record.right_root),
       std::string(record.type),
       std::string(record.group),
-      record.is_total ? "true" : "false"};
+      record.is_total ? "true" : "false",
+  };
   cells.reserve(cells.size() + (kMetrics.size() * (1 + scopes_.size())));
   auto metrics = record.metrics.has_value() ? MetricCells(*record.metrics, precision) : std::vector<std::string>(4);
   cells.insert(cells.end(), metrics.begin(), metrics.end());

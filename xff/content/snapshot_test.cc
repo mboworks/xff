@@ -104,7 +104,7 @@ TEST_F(SnapshotTest, CachesFailuresWithoutTurningThemIntoEmptyContent) {
 TEST_F(SnapshotTest, KeepsBinaryClassificationAndMovesOwnedState) {
   fs.bytes = std::string("a\0b\n", 4);
   EXPECT_THAT(snapshot.Lines(fs, "file"), Eq(std::nullopt));
-  auto moved = std::move(snapshot);
+  const auto moved = std::move(snapshot);
   EXPECT_THAT(moved.Read(fs, "file"), IsOkAndHolds(EqualsText(fs.bytes)));
   EXPECT_THAT(moved.Lines(fs, "file"), Eq(std::nullopt));
   EXPECT_THAT(fs.reads, Eq(1));
