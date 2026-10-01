@@ -198,6 +198,7 @@ jobs:
     needs: measure
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         platform: [linux, macos]
     steps:
@@ -215,9 +216,10 @@ jobs:
       - name: Validate, merge and render platform results
         run: |
           set -euo pipefail
-          arch="$(python3 -c 'import glob,json; print(json.load(open(glob.glob("shards/*/*.json")[0]))["tool_comparisons"]["contract"]["machine"])')"
+          python3 tools/benchmark_shards.py --merge-directory=shards --output=benchmark-main.json
+          arch="$(python3 -c 'import json; print(json.load(open("benchmark-main.json"))["tool_comparisons"]["contract"]["machine"])')"
           report="benchmark-report-${{ matrix.platform }}-${arch}"
-          python3 tools/benchmark_shards.py --merge shards/*/*.json --output="${report}.json"
+          mv benchmark-main.json "${report}.json"
           python3 tools/benchmark_compare.py --render-only --report="${report}.json" \
             --html="${report}.html" --summary=benchmark-main.md
           cat benchmark-main.md >>"${GITHUB_STEP_SUMMARY}"

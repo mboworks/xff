@@ -72,6 +72,14 @@ fixture sizes or proposing any performance gate.
 
 ## Local measurement and tests
 
+Completed measurement artifacts can be checked without repeating their workloads. Download one
+platform's `benchmark-shard-*` artifacts into a directory, then run
+`python3 tools/benchmark_shards.py --merge-directory=PATH --output=merged.json`. Discovery accepts
+both a single artifact extracted directly into that directory and multiple artifact subdirectories.
+Aggregation validates the complete planned shard/task set before writing output; missing or duplicate
+shards remain errors. Linux and macOS aggregation jobs run independently so one failure does not
+cancel the other platform's validation.
+
 Build `//xff/cli:xff`, `//xff/engine:read_benchmark`, and `//tools:benchmark_resources` with the
 chosen optimized configuration in each checkout. Run `//tools:benchmark_history` with the
 `measure` arguments shown in `.github/workflows/benchmarks.yml`, using both executables and exact

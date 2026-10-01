@@ -74,7 +74,10 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertIn("shard: [0, 1, 2]", measure)
         self.assertIn("--shard-plan=benchmark-plan.json", measure)
         self.assertIn("--reference-root=benchmark-history/benchmarks", measure)
-        self.assertIn("--merge shards/*/*.json", measure)
+        self.assertIn("--merge-directory=shards --output=benchmark-main.json", measure)
+        self.assertNotIn('shards/*/*.json', measure)
+        aggregate = measure.split('\n  aggregate:', 1)[1]
+        self.assertIn('fail-fast: false', aggregate)
         self.assertIn("--repetitions=9 --keep=7", measure)
         self.assertIn("git -C site add benchmarks", publish)
 

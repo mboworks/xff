@@ -158,6 +158,8 @@ def main():
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--plan', action='store_true')
     mode.add_argument('--merge', type=Path, nargs='+')
+    mode.add_argument('--merge-directory', type=Path,
+                      help='Discover benchmark-shard.json in flat or per-artifact download directories')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--files', type=int, action='append')
     parser.add_argument('--cpus', type=int, action='append')
@@ -175,7 +177,9 @@ def main():
         names = [name for name, _, _ in benchmark_compare.scenarios(Path('.'), [], tools)]
         result = make_plan(args.files or [], args.cpus or [1, 4], args.count, reference, names)
     else:
-        result = merge_reports([json.loads(path.read_text()) for path in args.merge])
+        paths = (sorted(args.merge_directory.rglob('benchmark-shard.json'))
+                 if args.merge_directory is not None else args.merge)
+        result = merge_reports([json.loads(path.read_text()) for path in paths])
     args.output.write_text(json.dumps(result, indent=2) + '\n')
 
 

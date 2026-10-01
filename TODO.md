@@ -2,6 +2,8 @@
 
 ## Benchmark runner capacity
 
+- [x] Accept flat single-artifact and nested multi-artifact shard downloads; validate the
+      complete shard set before deriving report filenames, and keep platform aggregation independent.
 - [x] Reject undersized runners before measurement; use the same 1/3 grid on both hosted
       platforms, pinned on Linux and on one measurement host for macOS. Leave one Linux vCPU
       outside the benchmark mask for background work. Preserve strict shard identity checks.

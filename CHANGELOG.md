@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Fix benchmark aggregation when a single artifact downloads without a containing directory.
+
 - Add CI benchmark backfills and a resumable local collection tool with frozen contracts and physical-core pinning on Linux.
 - Use one/three-worker CI benchmark grids on both platforms, leaving one Linux vCPU outside the measurement mask.
 
