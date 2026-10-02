@@ -38,6 +38,24 @@
       normalize between different worker counts, reference binaries or machine series.
       See `docs/performance-analysis.md` and `docs/benchmark-comparisons.md`.
 
+## macOS startup follow-up
+
+Demand-driven timezone/CoreFoundation implementation and local measurements are recorded in
+`docs/performance-analysis.md`: ordinary startup cases improve 25-33%; local-time formatting
+regresses 3-11% across the two sessions. Keep this tradeoff visible when comparing startup paths.
+
+- [x] Make civil-timezone resolution demand-driven using descriptor and compiled-output requirements;
+      preserve explicit-zone validation, date/printf/summary behavior and config safety. The local
+      investigation measured about 0.59 ms for the unnecessary default-zone query on an empty search.
+- [x] Implement lazy CoreFoundation loading through Abseil/CCTZ's platform adapter; preserve macOS
+      default-zone and DST semantics. The control program adds about 1.27 ms when linked to that framework.
+- [ ] Measure precomputed immutable language/MIME catalogs and mode-aware flag indexes derived from
+      their existing registries; keep user overlays and multi-match semantics. Do not rebuild catalogs
+      for feature paths that never use them.
+- [ ] Measure generated notice/extension tables and loader-friendly data layouts before adopting them.
+      Linker-only chained-fixup/export experiments have no consistent startup win so far.
+      See `docs/performance-analysis.md` and raw `docs/performance-startup.json`.
+
 ## Toolchain follow-up
 
 - [ ] Complete the Clang/LLVM 23.1.2 upgrade: validate native macOS linking, Linux LTO, the

@@ -79,6 +79,21 @@ TEST_F(FieldsTest, BoundTransformOwnsItsProgramAcrossCopiesMovesAndSourceChanges
   }
 }
 
+TEST_F(FieldsTest, TimeZoneDemandIncludesTransformedTimeFields) {
+  static constexpr auto kTimeFields = std::to_array<std::string_view>({
+      "{atime}",
+      "{btime:%z}",
+      "{ctime:iso}",
+      "{mtime:s/2026/year/}",
+      "{mtime:m/./x/;join(,)}",
+      "{mtime:year}",
+  });
+  for (const std::string_view text : kTimeFields) {
+    EXPECT_THAT(Template::Compile(text).NeedsTimeZone(), IsTrue()) << text;
+  }
+  EXPECT_THAT(Template::Compile("{{mtime}} {name} {size} {text}").NeedsTimeZone(), IsFalse());
+}
+
 TEST_F(FieldsTest, ContentFieldCountInspectsCompiledFieldsWithoutRendering) {
   EXPECT_THAT(Template::Compile("{{hash}} {name} {text}").ContentFieldCount(), Eq(0U));
   EXPECT_THAT(Template::Compile("{hash} {hash:sha256/base64} {lines}").ContentFieldCount(), Eq(3U));

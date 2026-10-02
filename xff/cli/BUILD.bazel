@@ -1294,3 +1294,11 @@ py_test(
     data = ["//xff/cli/testing:xff"],
     deps = ["@rules_python//python/runfiles"],
 )
+
+# Local civil-time semantics and macOS demand-driven framework initialization.
+bashtest(
+    name = "timezone_test",
+    size = "small",
+    srcs = ["timezone_test.sh"],
+    data = ["//xff/cli/testing:xff"],
+)

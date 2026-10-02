@@ -902,6 +902,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_time_zone = true,
     },
     {
         .name = "-newerct",
@@ -909,6 +910,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_time_zone = true,
     },
     {
         .name = "-newermt",
@@ -920,6 +922,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_time_zone = true,
     },
     // Birthtime -newerXY combos (BSD-compat): X or Y = B (birth/creation time).
     {
@@ -960,6 +963,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_time_zone = true,
         .needs_birth_time = true,
     },
     {
@@ -996,6 +1000,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .see_also = "time,fields",
         .day_duration = true,
+        .needs_time_zone = true,
     },
     {
         .name = "-mmin",
@@ -1016,6 +1021,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .see_also = "time,fields",
         .day_duration = true,
+        .needs_time_zone = true,
     },
     {
         .name = "-amin",
@@ -1036,6 +1042,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .see_also = "time,fields",
         .day_duration = true,
+        .needs_time_zone = true,
     },
     {
         .name = "-cmin",
@@ -1056,6 +1063,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .kind = Kind::kTest,
         .arity = 1,
         .see_also = "time,fields",
+        .needs_time_zone = true,
         .needs_birth_time = true,
     },
     {
@@ -1177,6 +1185,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 0,
         .see_also = "time,fields",
         .control = Control::kDayStart,
+        .needs_time_zone = true,
     },
     {
         .name = "-ignore_readdir_race",
@@ -1271,6 +1280,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 0,
         .buffers_columns = true,
         .see_also = "output,fields",
+        .needs_time_zone = true,
     },
     {
         .name = "-print",
@@ -1312,6 +1322,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .primary_expansion_topic = "printf",
         .see_also = "printf,fields,output",
         .argument_fields = {.syntax = ArgumentFields::Syntax::kPrintf},
+        .needs_time_zone = true,
     },
     {
         // xff: -print with the OS line ending
@@ -1338,6 +1349,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .primary_expansion_topic = "printf",
         .see_also = "printf,fields,output",
         .argument_fields = {.syntax = ArgumentFields::Syntax::kPrintf},
+        .needs_time_zone = true,
     },
     {
         // xff: the line-output companion of the -rxc content predicate. Bare -grep
@@ -1416,6 +1428,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .primary_expansion_topic = "printf",
         .see_also = "printf,fields,output,safety",
         .argument_fields = {.syntax = ArgumentFields::Syntax::kPrintf, .first = 1},
+        .needs_time_zone = true,
     },
     {
         // xff: -fprintf with the OS line ending (the file form of -printfln)
@@ -1439,6 +1452,7 @@ constexpr std::array kDescriptors = std::to_array<Descriptor>({
         .arity = 1,
         .writes_file = true,
         .see_also = "output,fields,safety",
+        .needs_time_zone = true,
     },
     {
         .name = "-delete",

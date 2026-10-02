@@ -1190,6 +1190,13 @@ bool Template::NeedsBirthTime() const {
   return absl::c_any_of(segments_, [](const Segment& segment) { return segment.fn == &BtimeField; });
 }
 
+bool Template::NeedsTimeZone() const {
+  return std::ranges::any_of(segments_, [](const Segment& segment) {
+    return segment.fn == &AtimeField || segment.fn == &BtimeField || segment.fn == &CtimeField
+           || segment.fn == &MtimeField;
+  });
+}
+
 hash::DefaultUsage Template::HashDefaultsUsed() const {
   hash::DefaultUsage usage;
   for (const Segment& segment : segments_) {
