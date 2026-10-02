@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Use the toolchains_llvm 1.11.0 release in place of the Git override.
+
 - Prefix benchmark backfill progress with local timestamps and revision positions.
 
 - Reduce macOS startup work by resolving civil time only when needed and deferring timezone framework initialization.
