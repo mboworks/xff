@@ -19,9 +19,11 @@
       tools and allocations; build before measuring, resume verified records, report incomplete
       revisions, and enforce one hardware thread per physical core for local Linux pinning.
       See `docs/benchmark-backfill.md`.
-- [ ] Run both full CI replacement backfills on the 1/3 grid and implement publication import
+- [x] Run both full CI replacement backfills on the 1/3 grid and implement publication import
       and promotion by platform/commit, retaining superseded raw observations. An incomplete
       campaign must not silently replace an entire history.
+      Published campaign `36952332747/2` (19 revisions per platform) and the 17-revision local
+      M5 Pro series; verified live after recovery deployment `37028502778`.
 - [x] Prepare one complete-revision job per platform/commit, freeze the whole campaign, and
       validate/import it atomically. Prefer replacements in history, charts and exact PR/tag
       links while retaining original paired results and actual collection-attempt provenance.
