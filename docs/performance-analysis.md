@@ -1510,3 +1510,191 @@ do not claim that every possible overlapping pipeline is slower.
 | filter-interleaved/10000 | buffer64   |  77.577 |            -22.7% |              16.4 |
 | filter-interleaved/10000 | buffer1024 |  59.212 |             +6.4% |              20.1 |
 | filter-interleaved/10000 | overlap    |  62.940 |             +0.5% |              16.3 |
+
+## macOS startup investigation (2026-10-02)
+
+Investigated current main `91a865617c` in a separate worktree using the production
+`--config=clang_release` lean executable on the local M5 Pro. The published local backfill
+currently ends at `6574a7e18b` (#934), before the later compiler/linker changes; it is useful history,
+but is not the current-main executable used here. The local timezone/framework prototype and its
+measurements follow the initial investigation below. Raw observations are in [performance-startup.json](performance-startup.json).
+
+### Measured fixed costs
+
+Rotate commands, discard two warmups and retain 40 subprocess wall-time samples per case, with
+stdout redirected to `/dev/null`. Separately instrument CLI stages with `steady_clock` and collect
+20 samples after two warmups. Stage logging adds a little overhead, so these are attribution
+measurements rather than release-binary speed claims. Temporary fixtures use warm local APFS;
+there is no CPU affinity. Do not combine absolute medians from different experiment sessions:
+background load changed substantially during later linker trials. The launch measurements include
+Python's child-process creation/waiting overhead as well as dyld, static initialization and exit.
+
+| Probe                                                 |        Median | Interpretation                                                    |
+| :---------------------------------------------------- | ------------: | :---------------------------------------------------------------- |
+| Minimal C++ program with iostream                     |      3.178 ms | Launch/loader/control baseline, not XFF work                      |
+| Same program linked to CoreFoundation                 |      4.447 ms | About 1.27 ms additional fixed cost in this session               |
+| Same program linked to both Foundation frameworks     |      4.461 ms | CoreFoundation already brings the expensive dependency tree       |
+| Current-main XFF `--version`                          |      5.630 ms | Full process invocation                                           |
+| Current-main XFF empty `-type f` search               |      7.608 ms | Full invocation with enforced config discovery                    |
+| Same empty search with `--timezone=UTC`               |      6.821 ms | Controlled timezone diagnostic, not a proposed change of defaults |
+| Instrumented XFF `--version`, application only        |      0.064 ms | Most version-command elapsed time is outside CLI execution        |
+| Instrumented empty search, application only           |      1.764 ms | Includes config, execution preparation and an empty walk          |
+| OS-account home lookup within empty search            | about 0.89 ms | Required authoritative identity for the user-config path          |
+| Default local-timezone resolution within empty search |      0.590 ms | Done even when no matcher or output consumes civil time           |
+| Explicit UTC resolution within empty search           |      0.009 ms | Avoids querying the macOS default timezone                        |
+
+The home-lookup estimate is the difference between median adjacent stage timestamps, not a
+separately isolated end-to-end optimization. Default timezone and account lookup dominate the
+approximately 1.76 ms application work; other work is roughly 0.3 ms. The existing parser
+microbenchmark takes approximately 1 us for one `-name` predicate, 2.7 us for 16, and 46 us for 256. It does not establish the cost of every flag, cold lookup, config file or regex.
+
+`DYLD_PRINT_INITIALIZERS=1` reports five initializer calls for a minimal C++ executable, and 404
+when the same executable links CoreFoundation. A minimal program performing `getpwuid_r` still
+has five and loads no frameworks: the account lookup does not itself require CoreFoundation.
+XFF's own five initializers are four notice/license-registration translation units and Abseil's
+stacktrace setup. The only undefined CoreFoundation imports in the lean XFF executable are the
+six functions used by Abseil/CCTZ's macOS local-timezone lookup. The framework dependency is
+currently a link-time requirement, even for `--version` and filename-only searches.
+
+### Prioritized implementation work
+
+1. **Resolve civil timezone only when consumed.** `RunFindCore` unconditionally calls
+   `ResolveTimeZone`. Add explicit requirement metadata to expression descriptors and compiled
+   output/template plans, then resolve the local zone once before workers only when needed.
+   Preserve validation of explicit `--timezone` values even when output does not use them.
+   Cover `-daystart`, absolute-date comparisons, `-ls`, printf/time fields, summaries with time
+   fields, timezone suffixes, configured templates and comparisons. Ordinary elapsed age tests
+   do not all require a civil timezone. Public `EvalContext` / `RenderContext` defaults and
+   convenience rendering helpers also need review so they cannot accidentally reintroduce eager
+   resolution. The measured 0.59 ms resolver is a concrete target; the 0.79 ms process difference
+   is indicative, not a promised additive saving.
+2. **Remove eager framework loading while preserving macOS timezone semantics.** CCTZ directly
+   imports CoreFoundation under `__APPLE__`, and both its link dependency and XFF's explicit
+   framework flags retain it. Investigate an upstream-supported lazy platform adapter, resolving
+   the same APIs only when local civil time is requested. Simply deleting the link flag leaves
+   unresolved symbols, and simply enabling dead dylib stripping cannot remove a used dependency.
+   A POSIX `/etc/localtime` implementation needs a semantic audit before substituting it for
+   `CFTimeZoneCopyDefault`; keep explicit zones, environment behavior and DST correctness.
+   This is the larger cross-cutting startup opportunity, not a constexpr calculation.
+3. **Generate immutable core language/MIME catalogs at build/constexpr time.** Source tables are
+   already constexpr, but `CoreVocabulary`, `Finalize`, `CatalogTypes` and `Catalog::Compile`
+   construct runtime maps, aliases, overlap lists and memberships on first use. Provide an
+   immutable precomputed base with runtime overlays for user catalogs and edits. Preserve
+   multi-language suffix matches and ambiguous-alias errors. These catalogs are already lazy;
+   this helps type/language/MIME requests and relevant color/output paths, not every plain scan.
+4. **Derive compact flag indexes from the existing constexpr registry.** `LookupGlobal`,
+   `LookupGlobalArgument`, `LookupCompatibilityOption` and expression `Lookup` still scan the
+   descriptor arrays. Generate mode-aware name/alias/sign-form indexes and precompute valued-flag
+   acceptance and config repetition identities from the same source of truth. Measure global,
+   rg, late-table and miss cases before replacing the expression scan: common `-name` is first
+   today, so an indexed search need not beat that case. This is a smaller target than framework
+   and timezone initialization; the descriptors themselves are already constexpr.
+5. **Generate immutable notice/extension registration data.** Four of the lean program's five
+   own static initializer functions populate notice/license vectors. Build-selected arrays can
+   remove those allocations and constructors, while keeping test registration isolated and full
+   extension lists correct. Time this separately; the number of constructors does not establish
+   their duration, and full-extension binaries need their own measurements.
+
+The existing field dispatch is already a constexpr `mbo::container::LimitedMap`; regex compilation
+already occurs after the final configuration/case selection. Neither should be listed as missing
+work. `env::Prewarm` currently calls the locked `Get` once per name, despite the CLI comment saying
+one locked pass; the measured prewarm stage is only about 11 us, so fixing that is low priority.
+Do not trade away the authoritative OS account lookup or mandatory config handling for startup
+numbers. A persistent daemon or changing the fixed config location is a separate product decision.
+
+### Loader experiments and limits of constexpr
+
+The baseline Mach-O has 6,930 rebases, 351 binds and 216 lazy binds, with about 208 KiB of
+`__DATA_CONST`. Constant string-view tables still contain addresses the loader must relocate;
+constexpr does not make all startup work disappear. Reducing pointer-bearing help/catalog data
+could be investigated later using generated offsets into shared text storage, but requires evidence
+that this matters before changing the descriptor APIs.
+
+Tested two local link-only variants on the same source and toolchain:
+
+- `-Wl,-fixup_chains`: produced valid chained fixups with the existing macOS 11 deployment target;
+  executable size fell from 3,774,288 to 3,765,200 bytes. Across version, empty, UTC-empty and
+  10/100/1,000-file cases, median changes ranged from 4.0% faster to 6.6% slower. No consistent win.
+- Add `-Wl,-exported_symbol,_main`: reduced reported exports from 651 to two and size to 3,710,800
+  bytes. Empty search improved 6.8%, UTC-empty 2.5%, but version regressed 5.0% in that interleaved
+  session. No startup-wide win; full-extension/linkage validation is also outstanding.
+
+Neither variant is enabled. The host was substantially slower during those later sessions, which
+is visible in the raw absolute timings; comparisons were interleaved within each session. These
+are screening results, not release qualification or evidence that a linker option is universally
+bad. All temporary timing instrumentation was removed from the source checkout.
+
+Next validation should include current-main lean/full binaries, empty and 10/100/1,000-file cases,
+then representative larger workloads with one/three workers. Include config safety and failure
+paths, explicit invalid zones, local-zone/DST formatting and feature-specific catalogs. Keep fixed
+startup gains separate from per-file throughput and thread scheduling. A crossover at 20,000 or
+100,000 files does not, by itself, prove that all of the deficit is startup cost.
+
+### Demand-driven timezone and framework implementation
+
+Implemented and measured on the same M5 Pro, with the same LLVM 23.1.2, `-O2` and native Apple
+ThinLTO settings. The combined implementation retains both measured changes below.
+
+The engine now derives civil-time demand from expression registry metadata and compiled time fields.
+It resolves the local zone once before traversal when needed; workers receive the resolved value,
+with no per-entry lazy state or lock. Explicit `--timezone` values remain validated even when unused.
+UTC is only an unconsumed placeholder on paths without a timezone consumer, not a new user default.
+The implementation conservatively resolves for every printf action and day-duration matcher, including
+those particular invocations that only use paths or fixed durations. Public standalone rendering
+context defaults still resolve local time; they do not affect the measured engine fast path.
+
+A small Abseil/CCTZ patch opens the system CoreFoundation framework by absolute path on first local
+zone lookup and resolves the same six CoreFoundation functions. It retains the framework for the
+process lifetime. `CFTimeZoneCopyDefault`, environment override handling and DST interpretation
+remain in the same lookup path. Linux does not compile the Apple adapter. No alternative filesystem
+zone-discovery semantics or config-path shortcuts were substituted.
+
+The first loader experiment exposed another dependency: toolchains_llvm adds `-fobjc-link-runtime`,
+which tells Clang to link Foundation even though XFF uses no Objective-C API. Clang has no matching
+`-fno-objc-link-runtime` flag. Apple's `-Wl,-dead_strip_dylibs` removes this unused dependency.
+Both this setting and removal of the explicit CoreFoundation link are needed for this experiment.
+The resulting lean executable directly links only libc++ and libSystem. Loader diagnostics still
+list delayed framework images, so searching `DYLD_PRINT_LIBRARIES` for a framework name alone is
+not proof that it initialized. `DYLD_PRINT_INITIALIZERS` shows 409 calls for the baseline, versus
+10 for the candidate's version/ordinary search and 409 when local civil-time output needs it.
+
+The confirmation run interleaved all four variants and all nine cases in shuffled order, discarded
+four warmups, then retained 80 samples per cell. There were no concurrent builds. Values are median
+whole-process milliseconds, including launch/wait overhead, against warm local APFS fixtures.
+`TZ` was unset. Raw samples, hashes, arguments and the measurement program are stored in
+[performance-startup.json](performance-startup.json). Do not compare absolute values across sessions.
+
+| Case                        | Baseline ms | Demand only ms | Framework only ms | Combined ms | Combined elapsed reduction |
+| :-------------------------- | ----------: | -------------: | ----------------: | ----------: | -------------------------: |
+| Version                     |       6.036 |          6.093 |             4.503 |       4.525 |                     +25.0% |
+| Empty search                |       8.767 |          7.455 |             8.897 |       5.862 |                     +33.1% |
+| Empty search, explicit UTC  |       7.572 |          7.489 |             5.847 |       5.988 |                     +20.9% |
+| 10 files                    |       8.247 |          7.439 |             8.795 |       6.007 |                     +27.2% |
+| 100 files                   |       8.457 |          7.659 |             8.605 |       6.040 |                     +28.6% |
+| 1,000 files                 |       9.128 |          8.403 |             9.620 |       6.837 |                     +25.1% |
+| Content match, 1,000 files  |      19.025 |         18.793 |            19.861 |      16.818 |                     +11.6% |
+| Local time fields, 10 files |       8.390 |          8.738 |             8.838 |       9.300 |                     -10.8% |
+| UTC time fields, 10 files   |       8.003 |          7.610 |             6.083 |       6.188 |                     +22.7% |
+
+The first independent 60-sample session found 25-30% reductions for version/ordinary searches,
+11.5% for the content case, and a 3.3% regression for local time fields. The confirmation found
+25-33%, 11.6%, and a 10.8% regression respectively. Local-time users still need initialization;
+dynamic framework loading moves it later and can add cost. Framework-only is insufficient for
+ordinary searches while the engine still asks for local time unconditionally. Retain the two-part
+implementation together if adopting it, and weigh the local-time regression explicitly.
+
+The lean executable changed from 3,774,288 to 3,774,080 bytes before stripping (208 bytes smaller);
+there is no material binary-size penalty in this experiment. These local startup results do not
+establish Linux gains, large-tree throughput, or equivalent gains in every extension build.
+
+Six targeted suites pass locally: engine run/evaluation, datetime, fields, registry, and the new
+CLI timezone suite. The new checks exercise winter/summer New York offsets, calendar comparisons,
+time fields in columns/summaries/INI configuration, and whether macOS actually initializes the
+framework. Existing engine tests also cover explicit invalid zones and `-daystart`. Full CI,
+Linux validation, and upstream review of the dependency patch remain separate qualification work.
+
+The full extension executable also builds and passes the release smoke checks, as does the lean
+candidate. The full binary is 7,801,992 bytes before stripping (no matching full baseline was
+measured), directly links only libc++/libSystem, and has 40 initializer calls for `--version`,
+with no CoreFoundation initializer. Formatting/policy hooks passed at the measurement stage;
+clang-tidy and CI validation are tracked separately in the pull request.

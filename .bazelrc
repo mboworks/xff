@@ -1,14 +1,16 @@
 # To debug bazel options, uncomment next line.
 # common --announce_rc
 
-# Allow platform specific control and add the missing 'CoreFoundation' lib.
+# Allow platform-specific control.
 common --enable_platform_specific_config
 
 # Define the Apple OS (flags mirror mboworks/mbo).
 common --apple_platform_type=macos
 common:macos --features=-macos_default_link_flags
 common:macos --features=-supports_dynamic_linker
-common:macos --linkopt=-framework --linkopt=CoreFoundation --host_linkopt=-framework --host_linkopt=CoreFoundation
+# The LLVM driver also adds Foundation via -fobjc-link-runtime. Discard unused
+# dylibs so timezone-independent C++ commands do not initialize that framework.
+common:macos --linkopt=-Wl,-dead_strip_dylibs --host_linkopt=-Wl,-dead_strip_dylibs
 # Earliest arm64 macOS. Bazel propagates these settings to apple_support's
 # native target triple and the hermetic LLVM compile and link actions.
 common:macos --macos_minimum_os=11.0 --host_macos_minimum_os=11.0

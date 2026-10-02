@@ -954,8 +954,8 @@ std::optional<std::string> ResolveTemplate(const std::vector<std::string>& globa
 
 // --timezone=ZONE (short alias --tz=ZONE) overrides the detected local zone used to interpret
 // time-string arguments (-newerXt). Last occurrence of either spelling wins. An unknown zone is a
-// usage error; absent the flag resolves to the local-zone default.
-absl::StatusOr<absl::TimeZone> ResolveTimeZone(const std::vector<std::string>& globals) {
+// usage error; absent the flag resolves the local-zone default only when consumed.
+absl::StatusOr<absl::TimeZone> ResolveTimeZone(const std::vector<std::string>& globals, bool needed) {
   std::optional<std::string> spec;
   for (const std::string& global : globals) {
     static constexpr std::array kTimezonePrefixes = std::to_array<std::string_view>({
@@ -969,7 +969,7 @@ absl::StatusOr<absl::TimeZone> ResolveTimeZone(const std::vector<std::string>& g
     }
   }
   if (!spec.has_value()) {
-    return absl::LocalTimeZone();
+    return needed ? absl::LocalTimeZone() : absl::UTCTimeZone();
   }
   if (const std::optional<absl::TimeZone> zone = datetime::ParseTimeZone(*spec); zone.has_value()) {
     return *zone;
@@ -1218,9 +1218,22 @@ MetadataDemand ExpressionMetadata(const parser::Expr& expr) {
                                                                         : MetadataDemand::kOnDemand;
 }
 
-bool PredicateNeedsBirthTime(const parser::Expr& expr, bool exec_fields, bool grep_suppresses_template) {
-  if (expr.descriptor->needs_birth_time
-      || (!grep_suppresses_template && expr.grep_template != nullptr && expr.grep_template->NeedsBirthTime())) {
+enum class TimeRequirement { kBirthTime, kCivilZone };
+
+bool TemplateNeedsTime(const fields::Template& field, TimeRequirement requirement) {
+  return requirement == TimeRequirement::kBirthTime ? field.NeedsBirthTime() : field.NeedsTimeZone();
+}
+
+bool PredicateNeedsTime(
+    const parser::Expr& expr,
+    bool exec_fields,
+    bool grep_suppresses_template,
+    TimeRequirement requirement) {
+  const bool descriptor_needs_time =
+      requirement == TimeRequirement::kBirthTime ? expr.descriptor->needs_birth_time : expr.descriptor->needs_time_zone;
+  if (descriptor_needs_time
+      || (!grep_suppresses_template && expr.grep_template != nullptr
+          && TemplateNeedsTime(*expr.grep_template, requirement))) {
     return true;
   }
   const auto& expansion = expr.descriptor->argument_fields;
@@ -1232,23 +1245,28 @@ bool PredicateNeedsBirthTime(const parser::Expr& expr, bool exec_fields, bool gr
   for (const std::string& arg :
        args.subspan(expansion.first, expansion.remaining ? args.size() - expansion.first : 1)) {
     if (expansion.syntax == registry::ArgumentFields::Syntax::kPrintf) {
-      if (absl::c_any_of(
-              fields::PrintfTemplates(arg), [](const fields::Template& field) { return field.NeedsBirthTime(); })) {
+      if (absl::c_any_of(fields::PrintfTemplates(arg), [requirement](const fields::Template& field) {
+            return TemplateNeedsTime(field, requirement);
+          })) {
         return true;
       }
-    } else if (fields::Template::Compile(arg).NeedsBirthTime()) {
+    } else if (TemplateNeedsTime(fields::Template::Compile(arg), requirement)) {
       return true;
     }
   }
   return false;
 }
 
-bool ExpressionNeedsBirthTime(const parser::Expr& expr, bool exec_fields, bool grep_suppresses_template) {
+bool ExpressionNeedsTime(
+    const parser::Expr& expr,
+    bool exec_fields,
+    bool grep_suppresses_template,
+    TimeRequirement requirement) {
   if (expr.kind == parser::Expr::Kind::kPredicate) {
-    return PredicateNeedsBirthTime(expr, exec_fields, grep_suppresses_template);
+    return PredicateNeedsTime(expr, exec_fields, grep_suppresses_template, requirement);
   }
-  return (expr.lhs && ExpressionNeedsBirthTime(*expr.lhs, exec_fields, grep_suppresses_template))
-         || (expr.rhs && ExpressionNeedsBirthTime(*expr.rhs, exec_fields, grep_suppresses_template));
+  return (expr.lhs && ExpressionNeedsTime(*expr.lhs, exec_fields, grep_suppresses_template, requirement))
+         || (expr.rhs && ExpressionNeedsTime(*expr.rhs, exec_fields, grep_suppresses_template, requirement));
 }
 
 bool NeedsNativeCase(const parser::Expr& expr) {
@@ -4839,20 +4857,6 @@ RunResult RunFindCore(
       return RunResult{.errors = 2};  // do not traverse
     }
   }
-  // --timezone=ZONE overrides the local zone for interpreting time-string args
-  // (-newerXt) and -daystart's midnight. Resolved first (both need it); an unknown
-  // zone is a usage error, refused before traversal.
-  const absl::StatusOr<absl::TimeZone> tz_result = ResolveTimeZone(command.globals);
-  if (!tz_result.ok()) {
-    on_error("--timezone", tz_result.status());
-    return RunResult{.errors = 2};  // do not traverse
-  }
-  const absl::TimeZone tz = *tz_result;
-  // Capture one reference instant so every entry's age test (-mtime/-mmin) is
-  // measured against the same clock. -daystart measures from today's local
-  // midnight (in tz) instead of find's start time (the run's start).
-  const bool daystart = expression.has_value() && ContainsControl(*expression, registry::Control::kDayStart);
-  const absl::Time now = daystart ? datetime::StartOfDay(absl::Now(), tz) : absl::Now();
   // --time-format=NAME: default spec for a time field with no {:qualifier}.
   const std::string time_format = ResolveTimeFormat(command.globals);
   const datetime::ZoneSuffix zone_suffix = ResolveZoneSuffix(command.globals);
@@ -5047,6 +5051,31 @@ RunResult RunFindCore(
     }
     summary_templates[i] = std::move(tmpl);
   }
+  // --timezone=ZONE overrides the local zone for interpreting time-string args
+  // (-newerXt), -daystart's midnight and civil-time output. An unknown explicit
+  // zone is a usage error, refused before traversal even without a consumer.
+  const bool needs_time_zone =
+      (expression.has_value()
+       && ExpressionNeedsTime(
+           *expression, HasGlobal(command.globals, "--exec-fields"), grep_suppresses_template,
+           TimeRequirement::kCivilZone))
+      || (compiled_tmpl.has_value() && compiled_tmpl->NeedsTimeZone())
+      || std::ranges::any_of(column_templates, [](const fields::Template& field) { return field.NeedsTimeZone(); })
+      || std::ranges::any_of(
+          summary_templates, [](const auto& field) { return field.has_value() && field->NeedsTimeZone(); });
+  // UTC is only an unused placeholder when no consumer needs a zone. An explicit zone is
+  // always validated. Resolve local time once before workers; there is no per-entry lazy lock.
+  const absl::StatusOr<absl::TimeZone> tz_result = ResolveTimeZone(command.globals, needs_time_zone);
+  if (!tz_result.ok()) {
+    on_error("--timezone", tz_result.status());
+    return RunResult{.errors = 2};  // do not traverse
+  }
+  const absl::TimeZone tz = *tz_result;
+  // Capture one reference instant so every entry's age test (-mtime/-mmin) is
+  // measured against the same clock. -daystart measures from today's local
+  // midnight (in tz) instead of find's start time (the run's start).
+  const bool daystart = expression.has_value() && ContainsControl(*expression, registry::Control::kDayStart);
+  const absl::Time now = daystart ? datetime::StartOfDay(absl::Now(), tz) : absl::Now();
   const std::optional<format::SizeUnits> human =
       ResolveHuman(command.globals, style);  // --human: size units for --summary and -ls (xff -> human)
   // One {group -> {count, total size}} accumulator per --summary sink.
@@ -5769,7 +5798,8 @@ RunResult RunFindCore(
                                               : MetadataDemand::kNever;
   const bool birth_time =
       matched_entry.has_value()
-      || (expression.has_value() && ExpressionNeedsBirthTime(*expression, exec_fields, grep_suppresses_template))
+      || (expression.has_value()
+          && ExpressionNeedsTime(*expression, exec_fields, grep_suppresses_template, TimeRequirement::kBirthTime))
       || (compiled_tmpl.has_value() && compiled_tmpl->NeedsBirthTime())
       || absl::c_any_of(column_templates, [](const fields::Template& field) { return field.NeedsBirthTime(); })
       || absl::c_any_of(summary_templates, [](const auto& item) { return item.has_value() && item->NeedsBirthTime(); });

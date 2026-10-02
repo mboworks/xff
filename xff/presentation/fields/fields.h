@@ -136,6 +136,9 @@ class Template {
   // Whether a compiled field consumes birth time, including transformed fields.
   bool NeedsBirthTime() const;
 
+  // Whether a compiled field renders civil time, including transformed time fields.
+  bool NeedsTimeZone() const;
+
   // Number of compiled hash/line-count fields that can read content when rendered.
   // This describes template structure, not observed reads or bytes.
   std::size_t ContentFieldCount() const;

@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Reduce macOS startup work by resolving civil time only when needed and deferring timezone framework initialization.
+
 - Reduce Pages deployment size by redirecting duplicate coverage pages to their preserved archived reports.
 
 - Publish local benchmark batches as separate machine series with selectable worker pairs and verified live deployment.

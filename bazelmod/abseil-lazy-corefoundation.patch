@@ -1,0 +1,96 @@
+diff --git a/absl/time/internal/cctz/src/time_zone_lookup.cc b/absl/time/internal/cctz/src/time_zone_lookup.cc
+--- a/absl/time/internal/cctz/src/time_zone_lookup.cc
++++ b/absl/time/internal/cctz/src/time_zone_lookup.cc
+@@ -21,6 +21,7 @@
+
+ #if defined(__APPLE__)
+ #include <CoreFoundation/CFTimeZone.h>
++#include <dlfcn.h>
+
+ #include <vector>
+ #endif
+@@ -49,6 +50,42 @@
+ ABSL_NAMESPACE_BEGIN
+ namespace time_internal {
+ namespace cctz {
++
++#if defined(__APPLE__)
++namespace {
++// Keep the framework open for the process lifetime: CoreFoundation owns global state.
++// Calling the same APIs lazily preserves macOS timezone discovery while avoiding
++// framework initialization for programs that never request the local timezone.
++struct CoreFoundationTimeZone {
++  void* handle = dlopen(
++      "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation",
++      RTLD_LAZY | RTLD_LOCAL);
++  decltype(&CFTimeZoneCopyDefault) copy_default =
++      Resolve<decltype(copy_default)>("CFTimeZoneCopyDefault");
++  decltype(&CFTimeZoneGetName) get_name =
++      Resolve<decltype(get_name)>("CFTimeZoneGetName");
++  decltype(&CFStringGetLength) get_length =
++      Resolve<decltype(get_length)>("CFStringGetLength");
++  decltype(&CFStringGetMaximumSizeForEncoding) get_maximum_size =
++      Resolve<decltype(get_maximum_size)>("CFStringGetMaximumSizeForEncoding");
++  decltype(&CFStringGetCString) get_c_string =
++      Resolve<decltype(get_c_string)>("CFStringGetCString");
++  decltype(&CFRelease) release = Resolve<decltype(release)>("CFRelease");
++
++  template <typename Function>
++  Function Resolve(const char* name) const {
++    return handle == nullptr ? nullptr
++                             : reinterpret_cast<Function>(dlsym(handle, name));
++  }
++
++  bool available() const {
++    return copy_default != nullptr && get_name != nullptr && get_length != nullptr
++           && get_maximum_size != nullptr && get_c_string != nullptr
++           && release != nullptr;
++  }
++};
++}  // namespace
++#endif
+
+ std::string time_zone::name() const { return effective_impl().Name(); }
+
+@@ -110,17 +147,21 @@
+ #endif
+ #if defined(__APPLE__)
+   std::vector<char> buffer;
+-  CFTimeZoneRef tz_default = CFTimeZoneCopyDefault();
+-  if (CFStringRef tz_name = CFTimeZoneGetName(tz_default)) {
+-    CFStringEncoding encoding = kCFStringEncodingUTF8;
+-    CFIndex length = CFStringGetLength(tz_name);
+-    CFIndex max_size = CFStringGetMaximumSizeForEncoding(length, encoding) + 1;
+-    buffer.resize(static_cast<size_t>(max_size));
+-    if (CFStringGetCString(tz_name, &buffer[0], max_size, encoding)) {
+-      zone = &buffer[0];
++  static const CoreFoundationTimeZone cf;
++  if (cf.available()) {
++    if (CFTimeZoneRef tz_default = cf.copy_default()) {
++      if (CFStringRef tz_name = cf.get_name(tz_default)) {
++        CFStringEncoding encoding = kCFStringEncodingUTF8;
++        CFIndex length = cf.get_length(tz_name);
++        CFIndex max_size = cf.get_maximum_size(length, encoding) + 1;
++        buffer.resize(static_cast<size_t>(max_size));
++        if (cf.get_c_string(tz_name, buffer.data(), max_size, encoding)) {
++          zone = buffer.data();
++        }
++      }
++      cf.release(tz_default);
+     }
+   }
+-  CFRelease(tz_default);
+ #endif
+ #if defined(__Fuchsia__)
+   std::string primary_tz;
+diff --git a/absl/time/internal/cctz/BUILD.bazel b/absl/time/internal/cctz/BUILD.bazel
+--- a/absl/time/internal/cctz/BUILD.bazel
++++ b/absl/time/internal/cctz/BUILD.bazel
+@@ -72,7 +72,6 @@
+     ],
+     copts = ABSL_DEFAULT_COPTS,
+     linkopts = ABSL_DEFAULT_LINKOPTS + select({
+-        "@platforms//os:osx": ["-Wl,-framework,CoreFoundation"],
+         "@platforms//os:ios": ["-Wl,-framework,CoreFoundation"],
+         "//conditions:default": [],
+     }),
