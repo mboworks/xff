@@ -124,3 +124,23 @@ The publisher uses the source run's original commit, timestamps, run ID, and att
 assign the recovery dispatch's identity to the measurements. Older reports are archived without
 replacing newer target reports. Recovery shares the normal publication queue. Omitting the input
 continues to refresh metadata only. Expired artifacts cannot be recovered by this command.
+
+## Publication size
+
+All three site publishers replace duplicate stable coverage HTML pages with redirects to their
+canonical `coverage/runs/RUN_ID/ATTEMPT/` pages before adding favicons. This avoids deploying two
+copies of every source report. Only byte-identical pages with matching run, attempt and commit
+metadata qualify. Missing archives, differing pages and legacy reports remain unchanged. Summary
+and metadata JSON remain directly available; source-line fragments and query parameters survive
+the redirects. Archived reports and raw benchmark measurements are never modified or removed.
+
+Inspect the saving with `python3 tools/compact_coverage.py SITE/coverage --dry-run`.
+Normal workflow compaction affects the staged deployment, not the retained branch. The same tool
+can compact retained stable copies for a recovery publication; archived originals must remain.
+
+GitHub's [Pages artifact limits](https://github.com/actions/upload-pages-artifact#artifact-validation)
+recommend a site below 1 GB and impose an absolute 10 GB limit on the uncompressed TAR. The publishers also report the total file payload and reject more than 9 GB, leaving packaging
+headroom below the hard limit; this does not raise GitHub's supported 1 GB size. A successful
+artifact upload does not establish that the new site is live. The benchmark publisher verifies
+the served index against the staged bytes after deployment. Continued growth of immutable history
+will eventually require a separate retention or hosting decision; redirects do not solve that.

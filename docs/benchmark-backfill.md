@@ -181,12 +181,9 @@ anything. It preserves raw reports and the frozen host/build contract under
 batch fails. Binaries, source checkouts and build logs are not uploaded. There is no automatic
 upload from the measurement machine.
 
-Automatic benchmark imports dispatch a publication after updating the retained branch. Deployment
-uses `workflow_dispatch` to avoid the stale-artifact behavior reported in
-[actions/deploy-pages#383](https://github.com/actions/deploy-pages/issues/383). Publication is restricted to `main` by the Pages environment; both manual and automatic imports
-execute trusted main code. Every
-deployment fetches the public benchmark index and checks its digest, so a successful Pages response
-alone cannot mark stale content as successfully published.
+Publication is restricted to `main` by the Pages environment and uses trusted main code.
+Every deployment fetches the public benchmark index and checks its digest, so a successful
+Pages response alone cannot mark stale content as successfully published.
 
 ## Presentation normalization
 

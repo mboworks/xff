@@ -1,5 +1,12 @@
 # TODO
 
+## Pages deployment size
+
+- [x] Redirect byte-identical stable coverage HTML to preserved run archives in all publishers;
+      check the complete staged payload before upload and verify the served benchmark index.
+- [ ] Decide long-term coverage history hosting or retention before immutable reports alone
+      approach the deployment ceiling. Keep raw measurements and report provenance.
+
 ## Benchmark runner capacity
 
 - [x] Accept flat single-artifact and nested multi-artifact shard downloads; validate the

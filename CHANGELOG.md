@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Reduce Pages deployment size by redirecting duplicate coverage pages to their preserved archived reports.
+
 - Publish local benchmark batches as separate machine series with selectable worker pairs and verified live deployment.
 
 - Replay CI benchmark history with one complete revision per job and publish validated replacement campaigns while preserving original measurements.

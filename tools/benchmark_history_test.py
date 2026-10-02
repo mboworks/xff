@@ -69,7 +69,6 @@ class BenchmarkHistoryTest(unittest.TestCase):
         self.assertNotIn("bazel-cache-save", measure)
         self.assertIn("group: coverage-pages\n  queue: max\n  cancel-in-progress: false", publish)
         self.assertIn("ref: main\n          path: source", publish)
-        self.assertIn("gh workflow run benchmark_pages.yml", publish)
         self.assertIn("Verify live benchmark publication", publish)
         self.assertIn("--keep=100", publish)
         self.assertIn("retention-days: 30", measure)
