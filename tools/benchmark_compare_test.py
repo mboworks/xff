@@ -120,13 +120,18 @@ class BenchmarkCompareTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'only 2 available'):
                 compare.collect(Path('/xff'), cpus=4)
         def report(binary, files, depth, repetitions, **kwargs):
+            kwargs['progress']('Fixture ready', force=True)
             return {"tools": {}, "contract": {"files": files, "cpu_affinity": list(range(kwargs['cpus']))},
                     "tasks": [{"shape": "broad", "name": "files"}]}
+        messages = []
         with mock.patch.object(compare, 'collect', side_effect=report), \
                 mock.patch.object(compare.os, 'sched_getaffinity', return_value=set(range(4)), create=True):
-            result = compare.collect_scales(Path('/xff'), [10])
+            result = compare.collect_scales(Path('/xff'), [10], progress=compare.MeasurementProgress(write=messages.append))
         self.assertEqual([task['shape'] for task in result['tasks']], ['1cpu/10/broad', '4cpu/10/broad'])
         self.assertEqual(result['contract']['affinity_by_cpu_count'], {'1': [0], '4': [0, 1, 2, 3]})
+        self.assertEqual(messages, [
+            'Scale 1/2: 10 files, 1 requested workers', 'Fixture ready', 'Completed scale 1/2',
+            'Scale 2/2: 10 files, 4 requested workers', 'Fixture ready', 'Completed scale 2/2'])
 
     def test_unpinned_runner_capacity_is_enforced_before_any_measurement(self):
         with mock.patch.object(compare.os, 'sched_getaffinity', None, create=True), \

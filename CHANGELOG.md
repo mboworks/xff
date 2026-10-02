@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Prefix benchmark backfill progress with local timestamps and revision positions.
+
 - Reduce macOS startup work by resolving civil time only when needed and deferring timezone framework initialization.
 
 - Reduce Pages deployment size by redirecting duplicate coverage pages to their preserved archived reports.
