@@ -18,10 +18,10 @@
 - [x] Prepare one complete-revision job per platform/commit, freeze the whole campaign, and
       validate/import it atomically. Prefer replacements in history, charts and exact PR/tag
       links while retaining original paired results and actual collection-attempt provenance.
-- [ ] Run separate local Mac and Zen 5 backfills on the 1/3/10 grid, subject to host capacity,
-      and publish these as additional machine series. Keep M5 Pro, M2 Ultra and Zen 5 distinct;
-      document Mac worker requests versus Linux physical-core affinity. Extend the landscape's
-      two-allocation presentation to select pairs from a larger grid; tables already show all.
+- [x] Collect the local M5 Pro 1/3/10 batch (17 revisions) and implement publication as an additional
+      machine series with selectable landscape allocation pairs and preserved raw observations.
+- [ ] Run and publish the separate local Zen 5 1/3/10 series with physical-core affinity. Keep
+      M5 Pro, M2 Ultra and Zen 5 distinct; macOS requests workers without claiming CPU affinity.
 - [ ] Implement presentation-only reference normalization using exactly five compatible measurements:
       start with current plus four following, then use current plus four prior from measurement five.
       Settle whether measurements two through four share the first window or use forward windows.

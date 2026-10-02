@@ -107,11 +107,20 @@ def validate_report(record, batch, job, plan):
                        'revisions': [job['revision']], **{key: expected[key] for key in
                        ('files', 'cpus', 'depth', 'repetitions', 'retained', 'driver')}}.items():
         require(contract[key] == value, 'batch contract mismatch: ' + key)
+    require(contract['environment']['machine'].lower() == job['arch'], 'campaign architecture changed')
+    validate_measurements(record, batch, job['revision'], expected['tasks'])
+
+
+def validate_measurements(record, batch, revision, tasks):
+    """Validate observations shared by CI replacement and independent local series."""
+    contract = batch['contract']
+    expected = contract
+    arch = contract['environment']['machine'].lower()
     require(record['schema'] == 1 and record['kind'] == 'backfill', 'expected a backfill report')
     for key in ('platform', 'series', 'purpose', 'replacement_target', 'allocation'):
         require(record[key] == contract[key], 'report contract mismatch: ' + key)
-    sha = job['revision']['sha']
-    require(record['head'] == sha and record['revision'] == job['revision']
+    sha = revision['sha']
+    require(record['head'] == sha and record['revision'] == revision
             and record['build']['revision'] == sha and record['batch'] == batch['identity'],
             'report revision or batch mismatch')
     report = record['tool_comparisons']
@@ -122,11 +131,11 @@ def validate_report(record, batch, job, plan):
                        'depth': expected['depth'], 'repetitions': expected['repetitions'],
                        'retained': expected['retained'], 'batch': batch['identity'],
                        'runner_class': contract['series'], 'estimator': 'mean-fastest',
-                       'machine': job['arch'], 'storage': contract['storage'],
+                       'machine': arch, 'storage': contract['storage'],
                        'build_identity': json.dumps(record['build']['configuration'], sort_keys=True)}.items():
         require(actual[key] == value, 'measurement contract mismatch: ' + key)
     environment, allocation = contract['environment'], contract['allocation']
-    require(environment['machine'].lower() == job['arch'] and environment['cpu_count'] >= 3,
+    require(environment['cpu_count'] >= max(expected['cpus']),
             'insufficient or different measurement host')
     require(actual['platform'] == environment['platform'] and actual['cpu_count'] == environment['cpu_count'],
             'measurement host changed')
@@ -134,25 +143,26 @@ def validate_report(record, batch, job, plan):
         require(report['tools'][name] == environment['tools'][name]
                 and report['tools'][name]['status'] == 'available', 'reference tool changed or missing: ' + name)
     masks = actual['affinity_by_cpu_count']
-    if job['platform'] == 'linux':
+    if contract['platform'] == 'linux':
         ids = allocation['cpu_ids']
-        require(allocation['kind'] == 'logical-cpus' and allocation['required'] and ids is not None
-                and len(ids) == len(set(ids)) == 3, 'Linux requires three pinned logical CPUs')
-        require(masks == {'1': ids[:1], '3': ids}, 'Linux measurement affinity changed')
+        kind = 'physical-cores' if contract['purpose'] == 'local-addition' else 'logical-cpus'
+        require(allocation['kind'] == kind and allocation['required'] and ids is not None
+                and len(ids) == len(set(ids)) == max(expected['cpus']), 'Linux requires pinned CPU allocations')
+        require(masks == {str(cpu): ids[:cpu] for cpu in expected['cpus']}, 'Linux measurement affinity changed')
         require(contract['storage']['filesystem'] == 'tmpfs' and contract['storage']['memory_required'],
                 'Linux requires verified tmpfs fixtures')
     else:
         require(allocation == {'kind': 'workers', 'cpu_ids': None, 'required': False}
-                and masks == {'1': None, '3': None}, 'macOS must record worker requests without pinning')
+                and masks == {str(cpu): None for cpu in expected['cpus']}, 'macOS must record worker requests without pinning')
     expected_keys = {(files, cpus, shape, name) for files in expected['files'] for cpus in expected['cpus']
-                     for shape in ('broad', 'deep') for name in expected['tasks']}
+                     for shape in ('broad', 'deep') for name in tasks}
     keys = set()
     for task in report['tasks']:
         key = (task['files'], task['cpus'], task['dataset'], task['name'])
         require(key in expected_keys and key not in keys, 'unexpected or duplicate campaign task')
         keys.add(key)
         require(task['shape'] == f"{task['cpus']}cpu/{task['files']}/{task['dataset']}", 'task coordinates changed')
-        require(not task['skips'] and sorted(task['participants']) == expected['tasks'][task['name']],
+        require(not task['skips'] and sorted(task['participants']) == tasks[task['name']],
                 'missing campaign participant')
     require(keys == expected_keys, 'incomplete campaign task matrix')
     compare.render(report)  # Validate all samples, successful commands and finite measurements.

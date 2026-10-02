@@ -157,6 +157,37 @@ backfill records are also kept outside that bounded run cache. New commits remai
 entries. Host and reference-tool differences between revisions remain visible in the raw contracts;
 publication does not normalize, pool or relabel their observations.
 
+## Publishing a completed local series
+
+Local collection writes reports on the measurement machine. Upload a completed batch once; the
+benchmark publisher then includes it in the main page's platform/version selector and report table.
+Local series have their own names and never replace the CI series. The landscape's Workers selector
+chooses any measured pair (for a 1/3/10 grid: 1/3, 1/10 or 3/10); detailed tables retain all allocations.
+
+Use a current source checkout and a separate checkout of the `coverage-pages` branch:
+
+```sh
+python3 tools/benchmark_local.py --batch="$HOME/xff-benchmarks/macos-m5-pro" \
+  --root=/path/to/pages-checkout/benchmarks
+git -C /path/to/pages-checkout add benchmarks/local
+git -C /path/to/pages-checkout commit -m "benchmarks: retain completed local series"
+git -C /path/to/pages-checkout push origin HEAD:coverage-pages
+gh workflow run benchmark_pages.yml --repo mboworks/xff --ref main
+```
+
+The importer validates every revision, allocation, task, participant and sample before retaining
+anything. It preserves raw reports and the frozen host/build contract under
+`local/SERIES/BATCH_ID/`. Re-importing identical observations is harmless; changing an existing
+batch fails. Binaries, source checkouts and build logs are not uploaded. There is no automatic
+upload from the measurement machine.
+
+Automatic benchmark imports dispatch a publication after updating the retained branch. Deployment
+uses `workflow_dispatch` to avoid the stale-artifact behavior reported in
+[actions/deploy-pages#383](https://github.com/actions/deploy-pages/issues/383). Publication is restricted to `main` by the Pages environment; both manual and automatic imports
+execute trusted main code. Every
+deployment fetches the public benchmark index and checks its digest, so a successful Pages response
+alone cannot mark stale content as successfully published.
+
 ## Presentation normalization
 
 Raw results remain unchanged. Reference-window normalization belongs in the presentation layer,

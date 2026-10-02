@@ -7,6 +7,7 @@ Supply the built Three.js renderer with --renderer-js; no network is used by the
 
 import argparse
 import html
+import itertools
 import json
 import math
 import os
@@ -110,10 +111,10 @@ def padded_ticks(labels, align='left'):
 
 def allocation_groups(report):
     groups = sorted(report.get('contract', {}).get('cpu_counts', []))
-    return groups if len(groups) == 2 and groups[0] == 1 and groups[1] > 1 else None
+    return groups[:2] if len(groups) >= 2 and len(set(groups)) == len(groups) and groups[0] > 0 else None
 
 
-def figure(report, order='similarity', metric='percent'):
+def figure(report, order='similarity', metric='percent', groups=None):
     """Keep CPU/tree quadrants disconnected; never fill missing observations."""
     if metric not in ('percent', 'factor'):
         raise ValueError('unknown comparison metric')
@@ -121,9 +122,11 @@ def figure(report, order='similarity', metric='percent'):
     counts = sorted(report['contract']['file_counts'])
     if not counts or any(n <= 0 for n in counts):
         raise ValueError('file counts must be positive')
-    groups = allocation_groups(report)
-    if groups is None:
-        raise ValueError('landscape requires 1 and one larger allocation group')
+    groups = allocation_groups(report) if groups is None else groups
+    if groups is None or len(groups) != 2 or groups[0] >= groups[1] or any(
+            cpu not in report['contract']['cpu_counts'] for cpu in groups):
+        raise ValueError('landscape requires two distinct positive allocation groups')
+    rows = [row for row in rows if row['cpus'] in groups]
     pairs = ordered_pairs(rows, order)
     if not pairs:
         raise ValueError('no comparable measurements')
@@ -139,7 +142,7 @@ def figure(report, order='similarity', metric='percent'):
     ticks = []
     labels = []
     for cpu, side in zip(groups, (-1, 1), strict=True):
-        ordered = list(reversed(counts)) if cpu == 1 else counts
+        ordered = list(reversed(counts)) if side < 0 else counts
         xs = [side * (0.3 + math.log10(n / counts[0])) for n in ordered]
         ticks.extend(xs)
         labels.extend(f'{n:,}' for n in ordered)
@@ -214,8 +217,16 @@ def figure(report, order='similarity', metric='percent'):
 
 
 def figures(report):
-    return {mode: {metric: figure(report, mode, metric) for metric in ('percent', 'factor')}
-            for mode in ORDER_LABELS}
+    result = {mode: {metric: figure(report, mode, metric) for metric in ('percent', 'factor')}
+              for mode in ORDER_LABELS}
+    if len(report['contract']['cpu_counts']) > 2:
+        result['allocation_pairs'] = [
+            dict(value=f'{left}/{right}',
+                 label=f'{matrix.allocation_label(report, left)} / {matrix.allocation_label(report, right)}',
+                 figures={mode: {metric: figure(report, mode, metric, (left, right))
+                                 for metric in ('percent', 'factor')} for mode in ORDER_LABELS})
+            for left, right in itertools.combinations(sorted(report['contract']['cpu_counts']), 2)]
+    return result
 
 
 def history_panel(catalog):
@@ -240,6 +251,7 @@ def history_panel(catalog):
             ''.join('<option value="' + key + '">' + label + '</option>'
                     for key, label in ORDER_LABELS.items()) + '</select></label> '
             '<label>Platform: <select data-control="platform"></select></label> '
+            '<label data-allocation-label hidden>Workers: <select data-control="allocations"></select></label> '
             '<label style="display:flex;align-items:center;gap:.4rem">Version: '
             '<input data-control="version" type="range" min="0" max="0" step="1" value="0"></label>'
             '<button type="button" data-reset style="margin-left:auto">Reset view</button></div>'
@@ -265,11 +277,11 @@ def publish_history(root, catalog):
     selected = {}
     for item in catalog:
         key = (item['platform'], item['commit'])
-        rank = (item.get('backfill', False), item['run'], item['attempt'])
+        rank = (item.get('backfill', False), item.get('measured', ''), item.get('run', 0), item.get('attempt', 0))
         if key not in selected or rank > selected[key][0]:
             selected[key] = (rank, item)
     entries = sorted((item for _, item in selected.values()),
-                     key=lambda item: (item['date'], item['run'], item['attempt']))
+                     key=lambda item: (item['date'], item.get('run', 0), item.get('attempt', 0)))
     insertion = text.index('</h1>') + len('</h1>')
     page.write_text(text[:insertion] + start + history_panel(entries) + end + text[insertion:], encoding='utf-8')
 
@@ -287,8 +299,11 @@ def render(report, javascript):
             '<h1>Benchmark comparison landscape</h1>'
             '<details id="landscape-panel" open><summary>3D comparison chart (show/hide)</summary>'
             '<p>Drag to rotate; scroll to zoom; right-drag to pan. Focus the chart for arrow-key rotation, +/- zoom, and Home reset. Y is vertical. '
-            f'Left: {matrix.allocation_label(report, groups[0])}, large to small; '
-            f'right: {matrix.allocation_label(report, groups[1])}, small to large. The mirrored X axis uses log10 spacing. '
+            + (f'Left: {matrix.allocation_label(report, groups[0])}, large to small; '
+               f'right: {matrix.allocation_label(report, groups[1])}, small to large. '
+               if len(report['contract']['cpu_counts']) == 2 else
+               'Choose the worker pair below. Left runs large to small; right runs small to large. ')
+            + 'The mirrored X axis uses log10 spacing. '
             'Broad and Deep tasks extend in opposite Z directions.</p>'
             '<p>Relative performance (%) = 100 &times; (1 - xff time / reference time). Green is faster, '
             'blue is equal, red is slower; this reverses the sign of the table difference. '
@@ -305,14 +320,18 @@ def render(report, javascript):
             '<label>Task order: <select id="task-order">' +
             ''.join('<option value="' + key + '">' + label + '</option>'
                     for key, label in ORDER_LABELS.items()) + '</select></label>'
+            '<label id="allocation-label" hidden>Workers: <select id="allocations"></select></label>'
             '<button id="reset-landscape" type="button">Reset view</button><div id="landscape"></div><script>' + javascript + '</script><script>'
             'const figures=' + plot + ';'
             'const chart=window.XffLandscape(document.getElementById("landscape"),figures);'
             'document.getElementById("landscape-panel").addEventListener("toggle",event=>{'
             'if(event.target.open)requestAnimationFrame(()=>chart.resize());});'
-            'function updateLandscape(){chart.update('
-            'document.getElementById("task-order").value,document.getElementById("metric").value);}'
-            'for(const id of ["task-order","metric"])document.getElementById(id).addEventListener("change",updateLandscape);'
+            'const allocations=document.getElementById("allocations");'
+            'for(const pair of figures.allocation_pairs||[]){allocations.add(new Option(pair.label,pair.value));}'
+            'document.getElementById("allocation-label").hidden=!figures.allocation_pairs;'
+            'function updateLandscape(){const selected=figures.allocation_pairs?.find(pair=>pair.value===allocations.value)?.figures||figures;'
+            'chart.update(document.getElementById("task-order").value,document.getElementById("metric").value,selected);}'
+            'for(const id of ["task-order","metric","allocations"])document.getElementById(id).addEventListener("change",updateLandscape);'
             'document.getElementById("reset-landscape").addEventListener("click",()=>chart.reset());</script></details>'
             '<h2>Measurements</h2>' + matrix.render_html(report) + '</body></html>')
 
@@ -334,7 +353,8 @@ def publish(root, javascript):
         if not matrix.relative_results(report):
             continue
         source = record.get('source')
-        if source:
+        local = benchmark_records.is_local(record)
+        if source or local:
             payload = path.with_name('landscape.json')
             payload.write_text(json.dumps(figures(report), allow_nan=False), encoding='utf-8')
             contract = report.get('contract', {})
@@ -342,16 +362,19 @@ def publish(root, javascript):
             machine = contract.get('machine', record.get('contract', {}).get('machine', ''))
             if machine and machine.lower() not in platform.lower():
                 platform += ' / ' + machine
-            commit = record.get('head', source['head_sha'])
-            label = source['head_branch'] + ' / ' + commit[:10]
-            if source.get('pull_requests'):
+            if local:
+                platform = 'Local / ' + record['series'] + ' / ' + machine
+            commit = record.get('head') or source['head_sha']
+            label = ('Local' if local else source['head_branch']) + ' / ' + commit[:10]
+            if source and source.get('pull_requests'):
                 label = 'PR ' + str(source['pull_requests'][0]['number']) + ' / ' + commit[:10]
             if benchmark_records.is_backfill(record):
                 label = 'CI backfill / ' + commit[:10]
             catalog.append(dict(platform=platform, commit=commit, label=label,
                                 date=benchmark_records.reference_time(record),
                                 backfill=benchmark_records.is_backfill(record),
-                                run=int(source['id']), attempt=int(source['run_attempt']),
+                                **(dict(measured=record['completed_at'], local=True) if local else
+                                   dict(run=int(source['id']), attempt=int(source['run_attempt']))),
                                 report=path.parent.relative_to(root).as_posix() + '/',
                                 figures=payload.relative_to(root).as_posix(), identity=matrix.platform_title(report)))
         page = path.with_name('index.html')

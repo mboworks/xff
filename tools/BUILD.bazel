@@ -750,6 +750,7 @@ test_suite(
         ":benchmark_fixture_test",
         ":benchmark_history_test",
         ":benchmark_landscape_test",
+        ":benchmark_local_test",
         ":benchmark_matrix_test",
         ":benchmark_regex_test",
         ":benchmark_shards_test",
@@ -784,6 +785,7 @@ test_suite(
         ":release_notes_test",
         ":release_site_test",
         ":site_artwork_test",
+        ":verify_benchmark_publication_test",
     ],
 )
 
@@ -822,6 +824,31 @@ py_test(
         ":benchmark_campaign_lib",
         ":benchmark_history_lib",
         ":benchmark_landscape_lib",
+    ],
+)
+
+py_library(
+    name = "benchmark_local_lib",
+    srcs = ["benchmark_local.py"],
+    imports = ["."],
+    deps = [":benchmark_campaign_lib"],
+)
+
+py_binary(
+    name = "benchmark_local",
+    srcs = ["benchmark_local.py"],
+    deps = [":benchmark_campaign_lib"],
+)
+
+py_test(
+    name = "benchmark_local_test",
+    size = "small",
+    srcs = ["benchmark_local_test.py"],
+    deps = [
+        ":benchmark_campaign_lib",
+        ":benchmark_history_lib",
+        ":benchmark_landscape_lib",
+        ":benchmark_local_lib",
     ],
 )
 
@@ -979,4 +1006,22 @@ py_test(
     size = "small",
     srcs = ["benchmark_regex_test.py"],
     deps = [":benchmark_regex_lib"],
+)
+
+py_library(
+    name = "verify_benchmark_publication_lib",
+    srcs = ["verify_benchmark_publication.py"],
+    imports = ["."],
+)
+
+py_binary(
+    name = "verify_benchmark_publication",
+    srcs = ["verify_benchmark_publication.py"],
+)
+
+py_test(
+    name = "verify_benchmark_publication_test",
+    size = "small",
+    srcs = ["verify_benchmark_publication_test.py"],
+    deps = [":verify_benchmark_publication_lib"],
 )
