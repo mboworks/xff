@@ -72,6 +72,18 @@ shapes and all current comparison tasks, retaining the fastest seven of nine sam
 
 ## Execution, failures and resuming
 
+Progress lines begin with the local time and the revision's one-based position in the batch:
+
+```text
+20261002 205713 10/17 Scale 8/39: 2,000 files, 1 requested workers
+```
+
+The timestamp uses `YYYYMMDD HHMMSS`; `10/17` means the tenth of seventeen selected revisions.
+The initial batch summary uses `0/17` before any revision starts. Build, measurement, nested
+fixture/sample progress, failures, reused reports and completion messages carry this prefix.
+Nested progress retains its five-second throttle, with scale boundaries always shown.
+Raw build-tool logs remain available separately in each revision's `build.log`.
+
 All selected binaries are built before measurement begins. An isolated shared Git clone under the
 output directory checks out each exact revision and uses its own `clang_release` configuration,
 Bazel version and dependency pins. Binaries and build logs are retained outside the checkout.

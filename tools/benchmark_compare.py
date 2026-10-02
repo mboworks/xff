@@ -201,13 +201,14 @@ def fixture_storage(parent, require_memory=False):
 class MeasurementProgress:
     """Bound log volume while keeping long-running measurements visibly active."""
 
-    def __init__(self):
+    def __init__(self, write=None):
         self.last = None
+        self.write = write or (lambda message: print(message, file=sys.stderr, flush=True))
 
     def __call__(self, message, *, force=False):
         now = time.monotonic()
         if force or self.last is None or now - self.last >= 5:
-            print(message, file=sys.stderr, flush=True)
+            self.write(message)
             self.last = now
 
 
@@ -309,7 +310,7 @@ def collect(binary, files=2000, depth=40, repetitions=9, worker=None, require_to
 
 def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=False,
                    fixture_parent=None, require_memory=False, cpu_counts=(1, 4), require_cpu_affinity=False, keep=None, fixtures=None,
-                   shard_plan=None, shard_index=0):
+                   shard_plan=None, shard_index=0, progress=None):
     """Retain independent scales without mixing sample populations or tool identities."""
     if not file_counts or len(set(file_counts)) != len(file_counts) or min(file_counts) < 1 or depth < 1:
         raise ValueError("file counts must be unique and positive; depth must be positive")
@@ -324,7 +325,7 @@ def collect_scales(binary, file_counts, depth=40, repetitions=9, require_tools=F
                   "fixtures": [{"dataset": shape, "files": count, "source_sha256": value[1],
                                 "tree_sha256": benchmark_fixture.identity(value[0])}
                                for (shape, count), value in sorted((fixtures or {}).items())]}
-    progress = MeasurementProgress()
+    progress = progress or MeasurementProgress()
     total_scales = len({(files, cpus) for files, cpus, _ in selected}) if selected is not None else len(cpu_counts) * len(file_counts)
     completed_scales = 0
     for cpus in cpu_counts:

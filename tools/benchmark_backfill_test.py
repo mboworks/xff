@@ -3,7 +3,10 @@
 """A fixed host series builds before measuring and resumes without mixing contracts."""
 
 import argparse
+import contextlib
 import copy
+from datetime import datetime
+import io
 import json
 import os
 from pathlib import Path
@@ -17,6 +20,16 @@ import benchmark_backfill as backfill
 
 
 class BenchmarkBackfillTest(unittest.TestCase):
+    def test_progress_uses_local_time_at_emission_and_revision_position(self):
+        output = io.StringIO()
+        with mock.patch.object(backfill, 'datetime') as clock, contextlib.redirect_stderr(output):
+            clock.now.side_effect = [datetime(2026, 10, 2, 20, 57, 13), datetime(2026, 10, 2, 20, 57, 14)]
+            backfill.log_progress('Scale 8/39', 10, 17)
+            backfill.log_progress('Complete', 10, 17)
+            self.assertEqual(clock.now.call_args_list, [mock.call(), mock.call()])
+        self.assertEqual(output.getvalue().splitlines(), [
+            '20261002 205713 10/17 Scale 8/39', '20261002 205714 10/17 Complete'])
+
     def args(self, root):
         return argparse.Namespace(repo=root, output=root / 'results', series='test-mac',
                                   purpose='local-addition', history_platform=None,
@@ -181,22 +194,31 @@ class BenchmarkBackfillTest(unittest.TestCase):
             args, batch = self.args(Path(directory)), self.batch()
             args.output.mkdir()
             calls = []
+            output = io.StringIO()
             def build(repo, output, revision, contract, cache):
                 calls.append('build-' + revision['sha'][0])
                 return Path('/binary'), {'sha256': 'binary', 'configuration': {'compiler': 'revision'}}
             def measure(*args, **kwargs):
                 calls.append('measure')
                 self.assertEqual(kwargs['cpu_counts'], [1, 3, 10])
+                kwargs['progress']('Nested fixture progress', force=True)
                 return self.report()
             with mock.patch.object(backfill, 'build', side_effect=build), \
                     mock.patch.object(backfill, 'check_environment'), \
                     mock.patch.object(backfill.compare, 'collect_scales', side_effect=measure) as collect, \
-                    mock.patch.object(backfill.compare, 'render_document', return_value='<h1>Report</h1>'):
+                    mock.patch.object(backfill.compare, 'render_document', return_value='<h1>Report</h1>'), \
+                    contextlib.redirect_stderr(output):
                 self.assertEqual(backfill.run(args, batch), 0)
                 self.assertEqual(calls, ['build-a', 'build-b', 'measure', 'measure'])
                 collect.reset_mock()
                 self.assertEqual(backfill.run(args, batch), 0)
                 collect.assert_not_called()
+            lines = output.getvalue().splitlines()
+            for line in lines:
+                self.assertRegex(line, r'^\d{8} \d{6} [12]/2 ')
+            self.assertEqual([line.split(' ', 2)[2] for line in lines if 'Nested fixture progress' in line],
+                             ['1/2 Nested fixture progress', '2/2 Nested fixture progress'])
+            self.assertEqual(sum('Reuse completed report:' in line for line in lines), 2)
             status = json.loads((args.output / 'status.json').read_text())
             self.assertTrue(all(entry['status'] == 'complete' for entry in status.values()))
             self.assertIn('&lt;first&gt;', (args.output / 'index.html').read_text())

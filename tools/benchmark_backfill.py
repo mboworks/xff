@@ -6,6 +6,7 @@
 import argparse
 from contextlib import contextmanager
 from datetime import datetime, timezone
+from functools import partial
 import hashlib
 import html
 import json
@@ -25,6 +26,11 @@ import benchmark_shards
 
 def now():
     return datetime.now(timezone.utc).isoformat()
+
+
+def log_progress(message, index, total):
+    """Keep the local wall clock and revision position on every progress line."""
+    print(f'{datetime.now():%Y%m%d %H%M%S} {index}/{total} {message}', file=sys.stderr, flush=True)
 
 
 def write_json(path, value):
@@ -244,6 +250,7 @@ def render_index(output, batch, status):
 
 def run(args, batch):
     contract, output = batch['contract'], args.output
+    total = len(contract['revisions'])
     status_path = output / 'status.json'
     status = json.loads(status_path.read_text()) if status_path.exists() else {}
     binaries = {}
@@ -251,10 +258,11 @@ def run(args, batch):
     for index, revision in enumerate(contract['revisions'], 1):
         sha = revision['sha']
         check_environment(contract['environment'])
-        print(f'Build {index}/{len(contract["revisions"])}: {sha}', flush=True)
+        log_progress(f'Build: {sha}', index, total)
         try:
             binaries[sha] = build(args.repo.resolve(), output, revision, contract, args.disk_cache)
         except subprocess.CalledProcessError as error:
+            log_progress(f'Build failed: {sha}: {error}', index, total)
             status[sha] = {'status': 'build-failed', 'error': str(error)}
             write_json(status_path, status)
             render_index(output, batch, status)
@@ -274,8 +282,10 @@ def run(args, batch):
                     or record['tool_comparisons']['tools']['xff']['sha256'] != build_record['sha256']):
                 raise ValueError('saved report does not match batch/binary: ' + sha)
             compare.render_document(record['tool_comparisons'])  # Validate retained observations before reuse.
+            log_progress(f'Reuse completed report: {sha}', index, total)
         else:
-            print(f'Measure {index}/{len(contract["revisions"])}: {sha}', flush=True)
+            log_progress(f'Measure: {sha}', index, total)
+            progress = compare.MeasurementProgress(write=partial(log_progress, index=index, total=total))
             started = now()
             try:
                 with pinned_cpus(contract['allocation']['cpu_ids']):
@@ -283,7 +293,7 @@ def run(args, batch):
                         binary, contract['files'], depth=contract['depth'], repetitions=contract['repetitions'],
                         keep=contract['retained'], cpu_counts=contract['cpus'], require_tools=True,
                         fixture_parent=contract['storage']['parent'], require_memory=contract['storage']['memory_required'],
-                        require_cpu_affinity=contract['require_cpu_affinity'])
+                        require_cpu_affinity=contract['require_cpu_affinity'], progress=progress)
                 check_environment(contract['environment'])
                 report['contract'].update(runner_class=contract['series'], batch=batch['identity'],
                                           build_identity=json.dumps(build_record['configuration'], sort_keys=True))
@@ -295,6 +305,7 @@ def run(args, batch):
                 write_json(path, record)
             except (ValueError, subprocess.SubprocessError) as error:
                 check_environment(contract['environment'])  # Host/tool drift stops the whole series.
+                log_progress(f'Measurement failed: {sha}: {error}', index, total)
                 status[sha] = {'status': 'measurement-failed', 'error': str(error)}
                 write_json(status_path, status)
                 render_index(output, batch, status)
@@ -304,6 +315,7 @@ def run(args, batch):
         status[sha] = {'status': 'complete', 'report': page.relative_to(output).as_posix()}
         write_json(status_path, status)
         render_index(output, batch, status)
+        log_progress(f'Complete: {page}', index, total)
     return 0 if all(status.get(item['sha'], {}).get('status') == 'complete' for item in contract['revisions']) else 1
 
 
@@ -333,8 +345,9 @@ def main():
     args.output = args.output.resolve()
     try:
         batch = prepare(args)
-        print(f'{len(batch["contract"]["revisions"])} revisions; allocations {batch["contract"]["cpus"]}; '
-              f'batch {batch["identity"]}; output {args.output}', flush=True)
+        total = len(batch['contract']['revisions'])
+        log_progress(f'{total} revisions; allocations {batch["contract"]["cpus"]}; '
+                     f'batch {batch["identity"]}; output {args.output}', 0, total)
         return run(args, batch) if args.run else 0
     except (ValueError, subprocess.SubprocessError) as error:
         parser.error(str(error))
