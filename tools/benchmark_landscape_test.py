@@ -57,7 +57,10 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                 for surface, cpu in zip(figure['data'], (left, left, right, right)):
                     self.assertTrue(all(f'{cpu} worker' in text for row in surface['text'] for text in row))
                     self.assertEqual(surface['x'], sorted(surface['x']))
-        self.assertIn('id="allocations"', landscape.render(data, ''))
+        rendered = landscape.render(data, '')
+        self.assertIn('id="allocations"', rendered)
+        self.assertIn('Choose the worker pair below.', rendered)
+        self.assertNotIn('right: 3 workers', rendered)
 
     def test_percent_ticks_and_colorbar_show_units(self):
         layout = landscape.figure(report())['layout']

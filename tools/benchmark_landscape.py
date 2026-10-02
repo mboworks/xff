@@ -299,8 +299,11 @@ def render(report, javascript):
             '<h1>Benchmark comparison landscape</h1>'
             '<details id="landscape-panel" open><summary>3D comparison chart (show/hide)</summary>'
             '<p>Drag to rotate; scroll to zoom; right-drag to pan. Focus the chart for arrow-key rotation, +/- zoom, and Home reset. Y is vertical. '
-            f'Left: {matrix.allocation_label(report, groups[0])}, large to small; '
-            f'right: {matrix.allocation_label(report, groups[1])}, small to large. The mirrored X axis uses log10 spacing. '
+            + (f'Left: {matrix.allocation_label(report, groups[0])}, large to small; '
+               f'right: {matrix.allocation_label(report, groups[1])}, small to large. '
+               if len(report['contract']['cpu_counts']) == 2 else
+               'Choose the worker pair below. Left runs large to small; right runs small to large. ')
+            + 'The mirrored X axis uses log10 spacing. '
             'Broad and Deep tasks extend in opposite Z directions.</p>'
             '<p>Relative performance (%) = 100 &times; (1 - xff time / reference time). Green is faster, '
             'blue is equal, red is slower; this reverses the sign of the table difference. '

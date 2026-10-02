@@ -38,7 +38,7 @@ jobs:
       # Only trusted publisher code executes; incoming benchmark artifacts are JSON data.
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || 'main' }}
+          ref: main
           path: source
           fetch-depth: 0
       - uses: actions/checkout@v7
