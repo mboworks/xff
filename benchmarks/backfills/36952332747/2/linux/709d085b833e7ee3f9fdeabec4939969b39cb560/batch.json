@@ -1,0 +1,107 @@
+{
+  "created_at": "2026-10-02T01:45:59.702111+00:00",
+  "contract": {
+    "schema": 1,
+    "series": "github-ci-linux",
+    "revisions": [
+      {
+        "sha": "709d085b833e7ee3f9fdeabec4939969b39cb560",
+        "date": "2026-09-24T23:06:36+01:00",
+        "subject": "Render benchmark landscapes with Three.js and linked hover guides (#913)"
+      }
+    ],
+    "platform": "linux",
+    "purpose": "ci-replacement",
+    "allocation": {
+      "kind": "logical-cpus",
+      "cpu_ids": [
+        0,
+        1,
+        2
+      ],
+      "required": true
+    },
+    "replacement_target": "github-ci-linux",
+    "environment": {
+      "host_id": "a17d02f8591d252a61f84c77a45495f850170de6ab42fdf3cea6fd4e003e964d",
+      "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "machine": "x86_64",
+      "cpu_count": 4,
+      "allowed_cpus": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "python": "3.13.15 (main, Aug  6 2026, 02:15:18) [GCC 13.3.0]",
+      "tools": {
+        "find": {
+          "status": "available",
+          "path": "/usr/bin/find",
+          "version": "find (GNU findutils) 4.9.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Eric B. Decker, James Youngman, and Kevin Dalley.\nFeatures enabled: D_TYPE O_NOFOLLOW(enabled) LEAF_OPTIMISATION FTS(FTS_CWDFD) CBO(level=2)",
+          "sha256": "ac1ea1c5391de921aca1572f1bf25d03707beb3887b27c16a5b4948fd553941b"
+        },
+        "rg": {
+          "status": "available",
+          "path": "/usr/bin/rg",
+          "version": "ripgrep 14.1.0\n\nfeatures:-simd-accel,+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.42 is available (JIT is available)",
+          "sha256": "be2fbcdd985161603bfa268c7647eec670b9e94374f0e972da708d7de670a8fb"
+        },
+        "fzf": {
+          "status": "available",
+          "path": "/usr/bin/fzf",
+          "version": "0.44.1 (debian)",
+          "sha256": "f0949769ebc72cd1f8c30d91a84e1d2f1ecaa935b9a43adb68575a5a6bf78dba"
+        }
+      }
+    },
+    "driver": {
+      "benchmark_backfill.py": "43baaf3151e406e0c569c0ebf5121764d72381a57af02ebad70a2c594f8a5d97",
+      "benchmark_compare.py": "186199d2ee22f1b776f50180818a74139842db8770efcebaf1060075b9fcc3e6",
+      "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+      "benchmark_matrix.py": "7c5d482093afe15e92edc390ffc25296a86faf7234bed7d523251e3e74d5998a",
+      "benchmark_shards.py": "c6de8bf7c93e7c5fbf69dab9a8b1bebc111a3c9387e813b556adf68da6fbae1f"
+    },
+    "files": [
+      10,
+      20,
+      50,
+      100,
+      200,
+      500,
+      1000,
+      2000,
+      5000,
+      10000,
+      20000,
+      50000,
+      100000
+    ],
+    "cpus": [
+      1,
+      3
+    ],
+    "depth": 40,
+    "repetitions": 9,
+    "retained": 7,
+    "require_cpu_affinity": true,
+    "storage": {
+      "parent": "/dev/shm",
+      "filesystem": "tmpfs",
+      "memory_required": true,
+      "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+    },
+    "build": {
+      "config": "clang_release",
+      "bazel": "/usr/local/lib/node_modules/@bazel/bazelisk/bazelisk.js",
+      "version": "bazel 9.2.0"
+    },
+    "campaign": "3cb56f086784325b5657e3672b1c7f0a4628df433bc1ab2b381a3d99613f0a4d",
+    "collection": {
+      "id": 36952332747,
+      "run_attempt": 1,
+      "head_sha": "4331864b62fb1bdc8e8ffee6722d2b0b6cdc98bb"
+    }
+  },
+  "identity": "fa656ec2572fe87b22c7424db736542e137ad71ea444deaa4f2a1918926c182c"
+}
