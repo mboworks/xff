@@ -1,0 +1,93 @@
+{
+  "created_at": "2026-10-02T19:23:05.041046+00:00",
+  "contract": {
+    "schema": 1,
+    "series": "macos-m5-pro",
+    "revisions": [
+      {
+        "sha": "623cab238f6a2ede58b20f538d310c1e12c60dfc",
+        "date": "2026-10-02T20:19:46+01:00",
+        "subject": "Defer unused timezone and macOS framework initialization (#947)"
+      }
+    ],
+    "platform": "macos",
+    "purpose": "local-addition",
+    "allocation": {
+      "kind": "workers",
+      "cpu_ids": null,
+      "required": false
+    },
+    "replacement_target": null,
+    "environment": {
+      "host_id": "5380f824bcba5159f0d2b8149f5b320d6bcc86b8ed13e6726abc458285b214e2",
+      "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+      "machine": "arm64",
+      "cpu_count": 18,
+      "allowed_cpus": null,
+      "python": "3.13.14 (main, Jun 10 2026, 12:24:04) [Clang 21.0.0 (clang-2100.0.123.102)]",
+      "tools": {
+        "find": {
+          "status": "available",
+          "path": "/usr/bin/find",
+          "version": "BSD find; macOS-26.6-arm64-arm-64bit-Mach-O",
+          "sha256": "05aa84ee15d95122cfa3de6a132ace019eb78b27da57534b5d555719c8380f7b"
+        },
+        "rg": {
+          "status": "available",
+          "path": "/opt/homebrew/Cellar/ripgrep/15.2.0/bin/rg",
+          "version": "ripgrep 15.2.0\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)",
+          "sha256": "1c57905960cd69dbb5b05492560957f4a57cdd4d39137e20de23981c6e1f4423"
+        },
+        "fzf": {
+          "status": "available",
+          "path": "/opt/homebrew/Cellar/fzf/0.74.4/bin/fzf",
+          "version": "0.74.4 (Homebrew)",
+          "sha256": "2a5e90d9e419511854657ff571f0aa12138f48ccf59e898b04d6f4f86e7c8588"
+        }
+      }
+    },
+    "driver": {
+      "benchmark_backfill.py": "43baaf3151e406e0c569c0ebf5121764d72381a57af02ebad70a2c594f8a5d97",
+      "benchmark_compare.py": "186199d2ee22f1b776f50180818a74139842db8770efcebaf1060075b9fcc3e6",
+      "benchmark_fixture.py": "75327146cdd27d1ca2d21b7f7ac495e255f59fad02a26dc44069a7e2818970b7",
+      "benchmark_matrix.py": "7c5d482093afe15e92edc390ffc25296a86faf7234bed7d523251e3e74d5998a",
+      "benchmark_shards.py": "c6de8bf7c93e7c5fbf69dab9a8b1bebc111a3c9387e813b556adf68da6fbae1f"
+    },
+    "files": [
+      10,
+      20,
+      50,
+      100,
+      200,
+      500,
+      1000,
+      2000,
+      5000,
+      10000,
+      20000,
+      50000,
+      100000
+    ],
+    "cpus": [
+      1,
+      3,
+      10
+    ],
+    "depth": 40,
+    "repetitions": 9,
+    "retained": 7,
+    "require_cpu_affinity": false,
+    "storage": {
+      "parent": "/private/var/folders/63/hryz23f53nz8c1556gqxh4sm0000gn/T",
+      "filesystem": "unverified host filesystem",
+      "memory_required": false,
+      "scope": "fixture storage only; filesystem syscalls and production VFS remain measured"
+    },
+    "build": {
+      "config": "clang_release",
+      "bazel": "/opt/homebrew/Cellar/bazelisk/1.29.0/bin/bazelisk",
+      "version": "bazel 9.2.0"
+    }
+  },
+  "identity": "4cb5882beb8cb5fe204dcc12a316a343be93e9634ec0adb2dae27aea4789574d"
+}
