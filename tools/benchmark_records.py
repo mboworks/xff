@@ -8,7 +8,12 @@ import json
 
 def paths(root):
     return sorted([*root.glob('runs/*/*/**/report.json'),
-                   *root.glob('backfills/*/*/*/*/report.json')])
+                   *root.glob('backfills/*/*/*/*/report.json'),
+                   *root.glob('local/*/*/*/report.json')])
+
+
+def is_local(record):
+    return record.get('kind') == 'backfill' and record.get('purpose') == 'local-addition'
 
 
 def is_backfill(record):
@@ -44,7 +49,7 @@ def replacements(root):
 
 
 def reference_time(record):
-    if is_backfill(record):
+    if is_backfill(record) or is_local(record):
         value = record['revision']['date']
     else:
         value = record['source'].get('reference_time', record['source']['created_at'])

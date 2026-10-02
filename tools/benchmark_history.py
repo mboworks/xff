@@ -177,6 +177,18 @@ def page(title, body):
 
 
 def render_report(record, history_href="../../../"):
+    if benchmark_records.is_local(record):
+        body = (f'<p><a href="{html.escape(history_href)}">Benchmark history</a> | '
+                '<a href="report.json">Raw observations and provenance</a> | '
+                '<a href="../batch.json">Host and build contract</a></p>'
+                f'<p>Local series: <strong>{html.escape(record["series"])}</strong>. '
+                f'Commit: <code>{html.escape(record["head"])}</code>. '
+                f'Measured: {html.escape(record["completed_at"])}.</p>'
+                '<p>Additional measurements on one local host; these do not replace CI results. '
+                'Ratios compare XFF with reference tools measured together. '
+                'macOS allocations request workers; Linux allocations pin physical cores. '
+                'No cross-host normalization is applied.</p>')
+        return page('Local benchmarks: ' + record['series'], body + benchmark_compare.render(record['tool_comparisons']))
     if benchmark_records.is_backfill(record):
         body = (f'<p><a href="{html.escape(history_href)}">Benchmark history</a> | '
                 '<a href="report.json">Raw observations and provenance</a> | '
@@ -231,8 +243,17 @@ def render_site(root, pulls, repository):
     by_number = {pull["number"]: pull for pull in pulls}
     replacements = benchmark_records.replacements(root)
     selected = {}
+    local_rows = []
     for path in benchmark_records.paths(root):
         record = json.loads(path.read_text())
+        if benchmark_records.is_local(record):
+            relative = path.parent.relative_to(root).as_posix()
+            (path.parent / "index.html").write_text(render_report(record, "../" * len(path.parent.relative_to(root).parts)))
+            local_rows.append((benchmark_records.reference_time(record),
+                               f'<tr><td><a href="{relative}/">{html.escape(record["series"])}</a></td>'
+                               f'<td>{html.escape(record["revision"]["date"])}</td>'
+                               f'<td>{record["head"][:10]}</td><td>{html.escape(record["completed_at"])}</td></tr>'))
+            continue
         source = record["source"]
         phase = ""
         if source["event"] == "pull_request":
@@ -280,7 +301,10 @@ def render_site(root, pulls, repository):
                 'Each PR phase/release shows its latest retained attempt. Missing or failed runs produce no result. '
                 'Ordinary run retention excludes backfills and their preserved originals.</p>'
                 '<table><tr><th>Source</th><th>Reference time</th>'
-                '<th>Head</th><th>Baseline</th><th>Workflow</th></tr>' + ''.join(rows) + '</table>')
+                '<th>Head</th><th>Baseline</th><th>Workflow</th></tr>' + ''.join(rows) + '</table>' +
+                ('<h2>Local machine series</h2><p>Independent local observations, also available in the platform selector above.</p>'
+                 '<table><tr><th>Machine series</th><th>Revision time</th><th>Commit</th><th>Measured</th></tr>' +
+                 ''.join(row for _, row in sorted(local_rows, reverse=True)) + '</table>' if local_rows else ''))
 
 
 def reference_pages(root, pulls, repository_path):
@@ -288,6 +312,8 @@ def reference_pages(root, pulls, repository_path):
     records = []
     for path in benchmark_records.paths(root):
         record = json.loads(path.read_text())
+        if benchmark_records.is_local(record):
+            continue
         source = record["source"]
         records.append((record, path.parent.relative_to(root).as_posix()))
         (path.parent / "index.html").write_text(render_report(record, "../" * len(path.parent.relative_to(root).parts)))

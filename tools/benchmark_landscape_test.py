@@ -39,9 +39,25 @@ class BenchmarkLandscapeTest(unittest.TestCase):
         self.assertIn('right: 3 workers, small to large', landscape.render(data, '/* renderer */'))
 
     def test_landscape_rejects_missing_or_ambiguous_allocation_groups(self):
-        for cpus in ((), (1,), (1, 1), (0, 3), (2, 3), (1, 3, 4)):
+        for cpus in ((), (1,), (1, 1), (0, 3), (1, 3, 3)):
             with self.subTest(cpus=cpus), self.assertRaisesRegex(ValueError, 'allocation group'):
                 landscape.figure(report(cpus=cpus))
+
+    def test_local_grid_has_every_pair_with_matching_ticks_and_hover(self):
+        data = report(cpus=(1, 3, 10))
+        pairs = landscape.figures(data)['allocation_pairs']
+        self.assertEqual([pair['value'] for pair in pairs], ['1/3', '1/10', '3/10'])
+        for pair in pairs:
+            left, right = map(int, pair['value'].split('/'))
+            for mode in landscape.ORDER_LABELS:
+                figure = pair['figures'][mode]['percent']
+                title = figure['layout']['scene']['xaxis']['title']['text']
+                self.assertIn(f'{left} worker', title)
+                self.assertIn(f'{right} workers', title)
+                for surface, cpu in zip(figure['data'], (left, left, right, right)):
+                    self.assertTrue(all(f'{cpu} worker' in text for row in surface['text'] for text in row))
+                    self.assertEqual(surface['x'], sorted(surface['x']))
+        self.assertIn('id="allocations"', landscape.render(data, ''))
 
     def test_percent_ticks_and_colorbar_show_units(self):
         layout = landscape.figure(report())['layout']

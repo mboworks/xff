@@ -3,6 +3,8 @@
 
 # 0.9.0
 
+- Publish local benchmark batches as separate machine series with selectable worker pairs and verified live deployment.
+
 - Replay CI benchmark history with one complete revision per job and publish validated replacement campaigns while preserving original measurements.
 
 - Fix benchmark aggregation when a single artifact downloads without a containing directory.

@@ -182,6 +182,12 @@ for run, platform, commit in [(1, 'linux', 'a'), (2, 'linux', 'b'), (3, 'macos',
     source = dict(id=run, run_attempt=1, head_sha=commit * 40, head_branch='main', created_at=f'2026-09-{run:02d}')
     (folder / 'report.json').write_text(json.dumps(dict(tool_comparisons=report(), platform=platform, source=source)))
     (folder / 'index.html').write_text('<h1>Report</h1>')
+folder = root / 'local/macos-test/batch' / ('a' * 40)
+folder.mkdir(parents=True)
+(folder / 'report.json').write_text(json.dumps(dict(tool_comparisons=report(cpus=(1, 3, 10)),
+    platform='macos', kind='backfill', purpose='local-addition', series='macos-test', head='a' * 40,
+    revision=dict(date='2026-09-01T00:00:00Z'), completed_at='2026-10-02T00:00:00Z')))
+(folder / 'index.html').write_text('<h1>Local report</h1>')
 publish(root, Path(sys.argv[2]).read_text())
 `,
     tools,
@@ -221,6 +227,7 @@ publish(root, Path(sys.argv[2]).read_text())
           !document.querySelector("[data-chart]").hidden,
         commit.repeat(40),
       );
+    await page.selectOption('[data-control="platform"]', "linux");
     await waitCommit("b");
     const slider = page.locator('[data-control="version"]');
     await slider.fill("0");
@@ -256,6 +263,34 @@ publish(root, Path(sys.argv[2]).read_text())
     assert.equal(
       await page.locator("[data-chart]").getAttribute("data-metric"),
       "factor",
+    );
+    await page.selectOption(
+      '[data-control="platform"]',
+      "Local / macos-test / ",
+    );
+    await waitCommit("a");
+    for (const value of ["1/10", "3/10", "1/3"]) {
+      await page.selectOption('[data-control="allocations"]', value);
+      assert.equal(
+        await page.locator('[data-control="allocations"]').inputValue(),
+        value,
+      );
+      assert.equal(
+        await page.locator("[data-chart]").getAttribute("data-metric"),
+        "factor",
+      );
+    }
+    assert.ok(
+      (await page.locator("[data-report]").textContent()).includes(
+        "measured 2026-10-02",
+      ),
+    );
+    assert.equal(
+      await page
+        .locator("[data-report]")
+        .textContent()
+        .then((text) => text.includes("run undefined")),
+      false,
     );
     assert.deepEqual(errors, []);
   } finally {
