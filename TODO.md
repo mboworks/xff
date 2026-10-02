@@ -1,5 +1,12 @@
 # TODO
 
+## Pages deployment size
+
+- [x] Redirect byte-identical stable coverage HTML to preserved run archives in all publishers;
+      check the complete staged payload before upload and verify the served benchmark index.
+- [ ] Decide long-term coverage history hosting or retention before immutable reports alone
+      approach the deployment ceiling. Keep raw measurements and report provenance.
+
 ## Benchmark runner capacity
 
 - [x] Accept flat single-artifact and nested multi-artifact shard downloads; validate the
@@ -12,9 +19,11 @@
       tools and allocations; build before measuring, resume verified records, report incomplete
       revisions, and enforce one hardware thread per physical core for local Linux pinning.
       See `docs/benchmark-backfill.md`.
-- [ ] Run both full CI replacement backfills on the 1/3 grid and implement publication import
+- [x] Run both full CI replacement backfills on the 1/3 grid and implement publication import
       and promotion by platform/commit, retaining superseded raw observations. An incomplete
       campaign must not silently replace an entire history.
+      Published campaign `36952332747/2` (19 revisions per platform) and the 17-revision local
+      M5 Pro series; verified live after recovery deployment `37028502778`.
 - [x] Prepare one complete-revision job per platform/commit, freeze the whole campaign, and
       validate/import it atomically. Prefer replacements in history, charts and exact PR/tag
       links while retaining original paired results and actual collection-attempt provenance.

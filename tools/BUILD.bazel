@@ -771,6 +771,7 @@ test_suite(
         ":clang_tidy_pre_push_test",
         ":clang_tidy_runner_test",
         ":clang_tidy_scope_test",
+        ":compact_coverage_test",
         ":coverage_html_test",
         ":coverage_index_test",
         ":coverage_lcovrc_test",
@@ -1024,4 +1025,26 @@ py_test(
     size = "small",
     srcs = ["verify_benchmark_publication_test.py"],
     deps = [":verify_benchmark_publication_lib"],
+)
+
+py_library(
+    name = "compact_coverage_lib",
+    srcs = ["compact_coverage.py"],
+    imports = ["."],
+)
+
+py_binary(
+    name = "compact_coverage",
+    srcs = ["compact_coverage.py"],
+)
+
+py_test(
+    name = "compact_coverage_test",
+    size = "small",
+    srcs = ["compact_coverage_test.py"],
+    data = ["//:python_workflow_test_data"],
+    deps = [
+        ":compact_coverage_lib",
+        ":test_paths_lib",
+    ],
 )

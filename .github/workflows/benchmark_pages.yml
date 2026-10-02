@@ -26,7 +26,7 @@ jobs:
       (github.event.workflow_run.name == 'Benchmark backfill' && github.event.workflow_run.event == 'workflow_dispatch')))))
     runs-on: ubuntu-latest
     permissions:
-      actions: write
+      actions: read
       contents: write
       pull-requests: read
       pages: write
@@ -114,24 +114,14 @@ jobs:
           fi
           mkdir -p public
           rsync --archive --exclude='.git' site/ public/
+          python3 source/tools/compact_coverage.py public/coverage --site-root public
           python3 source/tools/site_artwork.py source/docs/assets public
-      # Repeated workflow_run deployments can report success while serving an older artifact.
-      # Import first, then deploy via workflow_dispatch under the same site concurrency queue.
-      # https://github.com/actions/deploy-pages/issues/383
-      - name: Dispatch publication of the updated site
-        if: github.event_name == 'workflow_run'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh workflow run benchmark_pages.yml --repo "${GITHUB_REPOSITORY}" --ref main
       - uses: actions/upload-pages-artifact@v5
-        if: github.event_name == 'workflow_dispatch'
         with:
           path: public
       - uses: actions/deploy-pages@v5
-        if: github.event_name == 'workflow_dispatch'
         id: deployment
       - name: Verify live benchmark publication
-        if: github.event_name == 'workflow_dispatch'
         env:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
