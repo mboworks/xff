@@ -110,7 +110,7 @@ its allocator is linked.
 `--features=thin_lto`. `--config=clang_release` composes the compiler, `-O2`, and LTO.
 There are no raw `-flto=thin` compile/link options in XFF's release configuration.
 
-The pinned toolchain commit `5945c1789a8405867bea31a0b5cbce7204157dc6` includes
+The released [toolchains_llvm 1.11.0](https://github.com/bazel-contrib/toolchains_llvm/releases/tag/v1.11.0) includes
 [toolchains_llvm #876](https://github.com/bazel-contrib/toolchains_llvm/pull/876) and
 [#877](https://github.com/bazel-contrib/toolchains_llvm/pull/877):
 
