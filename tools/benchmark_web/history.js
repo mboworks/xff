@@ -19,7 +19,8 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     .landscape-version-table th{text-align:left;font-weight:500;white-space:nowrap}
     .landscape-version-table td{text-align:right;overflow-wrap:anywhere}
     [data-platform-details]{height:48px;line-height:16px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-    [data-version-panel] [role=status]{margin-top:4px}`;
+    [data-version-panel] [role=status]{margin-top:4px;height:16px;line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    [data-version-panel] [role=status][hidden]{display:block;visibility:hidden}`;
   host.append(versionStyle);
   const metric = root.querySelector('[data-control="metric"]');
   const range = root.querySelector('[data-control="range"]');
@@ -86,6 +87,7 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     if (!chart) showReport();
     version.setAttribute("aria-valuetext", reportText);
     status.textContent = `Loading ${record.label}...`;
+    status.title = status.textContent;
     status.hidden = false;
     try {
       const response = await fetch(record.figures, { signal: pending.signal });
@@ -111,11 +113,13 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
       );
       showReport();
       status.textContent = "";
+      status.title = "";
       status.hidden = true;
       host.dataset.commit = record.commit;
     } catch (error) {
       if (request !== serial) return;
       status.textContent = `Unable to load ${record.commit.slice(0, 10)} (${error.message}). ${chart ? "The previous result remains visible. " : ""}Open the linked report or select another version.`;
+      status.title = status.textContent;
     } finally {
       if (request === serial) host.removeAttribute("aria-busy");
     }

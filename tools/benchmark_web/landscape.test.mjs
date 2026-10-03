@@ -566,6 +566,8 @@ publish(root, Path(sys.argv[2]).read_text())
     assert.equal(await host.isVisible(), true);
     assert.equal(await host.getAttribute("data-commit"), "b".repeat(40));
     assert.deepEqual(await host.boundingBox(), originalBox);
+    assert.deepEqual(await versionPanel.boundingBox(), panelBox);
+    assert.deepEqual(await legendPanel.boundingBox(), legendBox);
     assert.ok(
       (await page.locator("[data-report]").textContent()).includes(
         "b".repeat(10),
@@ -587,6 +589,8 @@ publish(root, Path(sys.argv[2]).read_text())
     );
     await page.unroute("**/runs/1/1/linux/landscape.json");
     assert.deepEqual(await host.boundingBox(), originalBox);
+    assert.deepEqual(await versionPanel.boundingBox(), panelBox);
+    assert.deepEqual(await legendPanel.boundingBox(), legendBox);
     assert.equal(
       await originalCanvas.evaluate(
         (canvas) => canvas === document.querySelector("[data-chart] canvas"),
@@ -607,6 +611,8 @@ publish(root, Path(sys.argv[2]).read_text())
     assert.equal(await slider.inputValue(), "0");
     await page.selectOption('[data-control="metric"]', "factor");
     await page.selectOption('[data-control="order"]', "alphabetical");
+    const beforeFailurePanel = await versionPanel.boundingBox();
+    const beforeFailureLegend = await legendPanel.boundingBox();
     await page.route("**/runs/2/1/linux/landscape.json", (route) =>
       route.fulfill({ status: 503, body: "unavailable" }),
     );
@@ -627,6 +633,8 @@ publish(root, Path(sys.argv[2]).read_text())
       await page.locator("[data-report]").textContent(),
       "a".repeat(10),
     );
+    assert.deepEqual(await versionPanel.boundingBox(), beforeFailurePanel);
+    assert.deepEqual(await legendPanel.boundingBox(), beforeFailureLegend);
     assert.equal(
       await host.evaluate((element) => element.clientHeight),
       originalBox.height,

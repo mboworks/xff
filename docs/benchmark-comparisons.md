@@ -347,7 +347,7 @@ Switching platforms preserves the selected commit when available; otherwise it s
 platform's newest report. A single available version disables the slider.
 
 The chart's upper-left panel holds the version slider above a compact table: version position,
-linked commit, PR/release, platform, revision date and measurement date when recorded. All rows
+linked commit, PR/release, revision date, measurement date when recorded, and platform. All rows
 remain visible, using explicit placeholders for missing information. Platform details come last
 in a reserved three-line area; their full text remains available in the tooltip.
 The commit opens the full report, including tables and raw data;
@@ -359,7 +359,9 @@ not a paired cross-host or cross-version regression claim. Missing versions are 
 The overview downloads only the selected report's generated landscape JSON. While loading, the
 previous chart and its report link remain visible; the new data replaces them in place without
 collapsing the chart or resetting the camera. Interrupted requests cannot overwrite newer
-selections. On failure the panel explains which requested version could not load; the previous
+selections. A reserved status line keeps the version card and the panels below it stationary
+during loading and failure transitions. Longer errors remain available in the status tooltip.
+On failure the panel explains which requested version could not load; the previous
 chart and its matching metadata remain visible, and the slider remains usable. Generated payloads
 expire with their raw reports under existing retention.
 
