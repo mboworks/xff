@@ -93,8 +93,10 @@ jobs:
         working-directory: source
         run: |
           set -euo pipefail
-          git fetch origin
-          if git show-ref --verify --quiet refs/remotes/origin/coverage-pages; then
+          retained_ref="$(git ls-remote --heads origin refs/heads/coverage-pages)"
+          if [[ -n "${retained_ref}" ]]; then
+            git fetch --no-tags --depth=1 origin \
+              +refs/heads/coverage-pages:refs/remotes/origin/coverage-pages
             git worktree add ../site -B coverage-pages origin/coverage-pages
           else
             git worktree add --detach ../site

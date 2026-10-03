@@ -41,6 +41,7 @@ jobs:
           path: source
           ref: main
           fetch-depth: 0
+          filter: blob:none
       - uses: actions/checkout@v7
         with:
           path: site

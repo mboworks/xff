@@ -4,7 +4,9 @@ The complete Pages deployment shares one storage budget across coverage, benchma
 sites, and assets. `storage-report.json` reports each section's file count and byte total.
 Publication emits a warning at **200 MB**, so we can review growth before it disrupts deployment.
 The final packaging guard remains 9 GB. Git history is not part of the deployed site; publishers
-use a shallow checkout and do not rewrite old publication commits.
+restore the site with a shallow checkout and do not rewrite old publication commits. Source
+checkouts that need complete commit history use `blob:none` filtering to avoid fetching historical
+report contents.
 
 ## Retention
 

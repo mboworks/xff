@@ -70,6 +70,7 @@ jobs:
           ref: main
           path: source
           fetch-depth: 0
+          filter: blob:none
       - uses: actions/checkout@v7
         with:
           ref: coverage-pages

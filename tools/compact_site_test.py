@@ -32,6 +32,11 @@ class CompactSiteTest(unittest.TestCase):
                 self.assertLess(source.index('site_artwork.py'), source.index('compact_site.py public'))
                 self.assertLess(source.index('compact_site.py public'), source.index('uses: actions/upload-pages-artifact@'))
                 self.assertIn('git -C site add --all', source)
+                if name == 'pages.yml':
+                    self.assertIn('git fetch --no-tags --depth=1 origin', source)
+                    self.assertNotIn('git fetch origin\n', source)
+                else:
+                    self.assertIn('fetch-depth: 0\n          filter: blob:none', source)
 
 
 if __name__ == '__main__':
