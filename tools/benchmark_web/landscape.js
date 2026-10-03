@@ -3,7 +3,7 @@
 import "./history.js";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { reserveChart, viewOptions } from "./view.js";
+import { chartSidebar, panelStyle, reserveChart, viewOptions } from "./view.js";
 
 window.XffLandscapeView = viewOptions;
 
@@ -13,8 +13,12 @@ window.XffLandscape = function createLandscape(root, figures) {
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true });
   } catch {
-    root.textContent =
+    const message = document.createElement("p");
+    message.textContent =
       "The 3D chart requires WebGL2. All measurements remain available in the tables below.";
+    message.style.cssText =
+      "position:absolute;left:12px;bottom:12px;max-width:90%";
+    root.append(message);
     return { update() {}, resize() {} };
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -43,9 +47,9 @@ window.XffLandscape = function createLandscape(root, figures) {
     .landscape-hover-table td{text-align:right;overflow-wrap:anywhere}`;
   root.append(hoverStyle);
   const legend = document.createElement("div");
-  legend.style.cssText =
-    "position:absolute;left:12px;top:12px;background:#fffffff0;padding:8px;font:12px system-ui;color:#172333;max-width:90%";
-  root.append(legend);
+  legend.className = "landscape-legend-panel";
+  legend.style.cssText = panelStyle;
+  chartSidebar(root).append(legend);
   const legendMarker = document.createElement("div");
   legendMarker.className = "landscape-legend-marker";
   legendMarker.hidden = true;
@@ -619,7 +623,8 @@ window.XffLandscape = function createLandscape(root, figures) {
     ticks.forEach((value, index) => {
       const tick = document.createElement("span");
       tick.textContent = tickLabels[index];
-      tick.style.cssText = `position:absolute;left:${((value + ymax) / (2 * ymax)) * 100}%;transform:translateX(-50%)`;
+      const anchor = index === 0 ? 0 : index === ticks.length - 1 ? -100 : -50;
+      tick.style.cssText = `position:absolute;left:${((value + ymax) / (2 * ymax)) * 100}%;transform:translateX(${anchor}%)`;
       scale.append(tick);
     });
     legend.append(title, bar, scale, filterNote, previewOptions);

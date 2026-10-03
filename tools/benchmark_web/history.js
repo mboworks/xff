@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) M. Boerger, the MBO Works authors
 // SPDX-License-Identifier: Apache-2.0
-import { reserveChart, viewOptions } from "./view.js";
+import { chartSidebar, panelStyle, reserveChart, viewOptions } from "./view.js";
 
 window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
   const platform = root.querySelector('[data-control="platform"]');
@@ -10,6 +10,16 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
   const versionLinks = root.querySelector("[data-version-links]");
   const host = root.querySelector("[data-chart]");
   reserveChart(host);
+  const versionPanel = root.querySelector("[data-version-panel]");
+  versionPanel.style.cssText = panelStyle;
+  chartSidebar(host).append(versionPanel);
+  const versionStyle = document.createElement("style");
+  versionStyle.textContent = `.landscape-version-table{width:100%;border-collapse:collapse;margin:0;font:inherit}
+    .landscape-version-table th,.landscape-version-table td{padding:2px 4px;border:0;vertical-align:top;background:transparent}
+    .landscape-version-table th{text-align:left;font-weight:500;white-space:nowrap}
+    .landscape-version-table td{text-align:right;overflow-wrap:anywhere}
+    [data-version-panel] [role=status]{margin-top:4px}`;
+  host.append(versionStyle);
   const metric = root.querySelector('[data-control="metric"]');
   const range = root.querySelector('[data-control="range"]');
   const overflow = root.querySelector('[data-control="overflow"]');
@@ -34,7 +44,8 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     platform.append(option);
   }
   async function selectVersion() {
-    const record = records[Number(version.value)];
+    const index = Number(version.value);
+    const record = records[index];
     current = record;
     const request = ++serial;
     pending?.abort();
@@ -43,7 +54,20 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     const reportText = `${record.label} | ${record.date} | ${record.local ? `measured ${record.measured}` : `run ${record.run}, attempt ${record.attempt}`}`;
     function showReport() {
       reportLink.href = record.report;
-      reportLink.textContent = reportText;
+      reportLink.textContent = record.commit.slice(0, 10);
+      reportLink.title = `Open the full benchmark report: ${reportText}`;
+      root.querySelector("[data-version-count]").textContent =
+        `${index + 1} of ${records.length}`;
+      root.querySelector("[data-platform]").textContent = record.platform;
+      root.querySelector("[data-platform-details]").textContent =
+        record.platform_details || record.identity;
+      const date = root.querySelector("[data-revision-date]");
+      date.textContent = record.date.slice(0, 10);
+      date.title = record.date;
+      root.querySelector("[data-measured-row]").hidden = !record.local;
+      root.querySelector("[data-measured]").textContent =
+        record.measured?.slice(0, 10) || "";
+      root.querySelector("[data-measured]").title = record.measured || "";
       versionLinks.replaceChildren();
       for (const link of record.links || []) {
         const target = new URL(link.href, location.href);
@@ -51,12 +75,16 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
         const anchor = document.createElement("a");
         anchor.href = target.href;
         anchor.textContent = link.label;
-        versionLinks.append(" | ", anchor);
+        if (versionLinks.childElementCount) versionLinks.append(" / ");
+        versionLinks.append(anchor);
       }
+      root.querySelector("[data-links-row]").hidden =
+        !versionLinks.childElementCount;
     }
     if (!chart) showReport();
     version.setAttribute("aria-valuetext", reportText);
     status.textContent = `Loading ${record.label}...`;
+    status.hidden = false;
     try {
       const response = await fetch(record.figures, { signal: pending.signal });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -79,15 +107,13 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
         selected,
         viewOptions(metric.value, range, overflow, normalization),
       );
-      host.style.visibility = "visible";
       showReport();
-      status.textContent = `${Number(version.value) + 1} of ${records.length} measured versions. ${record.identity}`;
+      status.textContent = "";
+      status.hidden = true;
       host.dataset.commit = record.commit;
     } catch (error) {
       if (request !== serial) return;
-      host.style.visibility = "hidden";
-      showReport();
-      status.textContent = `Unable to load this chart (${error.message}). Open the linked report or select another version.`;
+      status.textContent = `Unable to load ${record.commit.slice(0, 10)} (${error.message}). ${chart ? "The previous result remains visible. " : ""}Open the linked report or select another version.`;
     } finally {
       if (request === serial) host.removeAttribute("aria-busy");
     }
@@ -120,7 +146,7 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
   ])
     selector.addEventListener("change", () => {
       const view = viewOptions(metric.value, range, overflow, normalization);
-      if (chart && host.style.visibility !== "hidden")
+      if (chart)
         chart.update(order.value, metric.value, selectedFigures(), view);
     });
   root
@@ -130,6 +156,8 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     if (event.target.open) requestAnimationFrame(() => chart?.resize());
   });
   if (catalog.length) selectPlatform();
-  else
+  else {
+    status.hidden = false;
     status.textContent = "No retained reports have comparison landscape data.";
+  }
 };

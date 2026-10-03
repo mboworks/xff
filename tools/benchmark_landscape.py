@@ -294,12 +294,20 @@ def history_panel(catalog):
                     for key, label in ORDER_LABELS.items()) + '</select></label> '
             '<label>Platform: <select data-control="platform"></select></label> '
             '<label data-allocation-label hidden>Workers: <select data-control="allocations"></select></label> '
-            '<label style="display:flex;align-items:center;gap:.4rem">Version: '
-            '<input data-control="version" type="range" min="0" max="0" step="1" value="0"></label>'
             '<button type="button" data-reset style="margin-left:auto">Reset view</button></div>'
-            '<p style="min-height:3em"><a data-report>Selected report</a><span data-version-links></span></p>'
-            '<p role="status" aria-live="polite" style="min-height:3em"></p>'
-            '<div data-chart></div></details>'
+            '<div data-chart><div data-version-panel>'
+            '<label style="display:flex;align-items:center;gap:.5rem;margin-bottom:4px">Version '
+            '<input data-control="version" type="range" min="0" max="0" step="1" value="0" '
+            'style="flex:1;min-width:0"></label>'
+            '<table class="landscape-version-table"><tbody>'
+            '<tr><th scope="row">Version</th><td data-version-count></td></tr>'
+            '<tr><th scope="row">Commit</th><td><a data-report title="Open the full benchmark report"></a></td></tr>'
+            '<tr data-links-row hidden><th scope="row">PR / release</th><td data-version-links></td></tr>'
+            '<tr><th scope="row">Platform</th><td data-platform></td></tr>'
+            '<tr><th scope="row">Details</th><td data-platform-details></td></tr>'
+            '<tr><th scope="row">Revision date</th><td data-revision-date></td></tr>'
+            '<tr data-measured-row hidden><th scope="row">Measured</th><td data-measured></td></tr>'
+            '</tbody></table><div role="status" aria-live="polite" hidden></div></div></div></details>'
             '<script src="assets/three-landscape.js"></script><script>'
             'window.XffBenchmarkHistory(document.getElementById("benchmark-explorer"),' + data + ');'
             '</script></section>')
@@ -434,7 +442,8 @@ def publish(root, javascript):
                                 **(dict(measured=record['completed_at'], local=True) if local else
                                    dict(run=int(source['id']), attempt=int(source['run_attempt']))),
                                 report=path.parent.relative_to(root).as_posix() + '/',
-                                figures=payload.relative_to(root).as_posix(), identity=matrix.platform_title(report)))
+                                figures=payload.relative_to(root).as_posix(), identity=matrix.platform_title(report),
+                                platform_details=contract.get('platform', 'Platform details not recorded')))
         page = path.with_name('index.html')
         text = page.read_text()
         if start_marker in text:

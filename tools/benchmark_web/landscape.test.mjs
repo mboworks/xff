@@ -466,8 +466,6 @@ publish(root, Path(sys.argv[2]).read_text())
       page.waitForFunction(
         (commit) =>
           document.querySelector("[data-chart]").dataset.commit === commit &&
-          document.querySelector("[data-chart]").style.visibility ===
-            "visible" &&
           !document.querySelector("[data-chart]").hasAttribute("aria-busy"),
         commit.repeat(40),
       );
@@ -487,6 +485,39 @@ publish(root, Path(sys.argv[2]).read_text())
     );
     const slider = page.locator('[data-control="version"]');
     const host = page.locator("[data-chart]");
+    const versionPanel = page.locator("[data-version-panel]");
+    const legendPanel = page.locator(".landscape-legend-panel");
+    const panelBox = await versionPanel.boundingBox();
+    const legendBox = await legendPanel.boundingBox();
+    const chartBox = await host.boundingBox();
+    assert.equal(panelBox.x, chartBox.x + 12);
+    assert.equal(panelBox.y, chartBox.y + 12);
+    assert.equal(legendBox.x, panelBox.x);
+    assert.ok(legendBox.y >= panelBox.y + panelBox.height + 8);
+    assert.equal(
+      await versionPanel.locator('[data-control="version"]').count(),
+      1,
+    );
+    assert.equal(
+      await page.locator("[data-version-count]").textContent(),
+      "2 of 2",
+    );
+    assert.equal(await page.locator("[data-platform]").textContent(), "linux");
+    assert.equal(await page.locator("[data-measured-row]").isVisible(), false);
+    for (const panel of [versionPanel, legendPanel])
+      assert.equal(
+        await panel.evaluate(
+          (element) => getComputedStyle(element).borderTopWidth,
+        ),
+        "1px",
+      );
+    for (const tick of await page
+      .locator(".landscape-legend-ticks span")
+      .all()) {
+      const bounds = await tick.boundingBox();
+      assert.ok(bounds.x >= legendBox.x);
+      assert.ok(bounds.x + bounds.width <= legendBox.x + legendBox.width);
+    }
     const originalBox = await host.boundingBox();
     const originalCanvas = await host.locator("canvas").elementHandle();
     await page.selectOption(".landscape-preview-opacity", "0.5");
@@ -536,17 +567,15 @@ publish(root, Path(sys.argv[2]).read_text())
       true,
     );
     await page.selectOption('[data-control="platform"]', "macos");
-    await page.waitForFunction(() =>
-      document
-        .querySelector('[role="status"]')
-        .textContent.startsWith("1 of 1"),
+    await page.waitForFunction(
+      () =>
+        document.querySelector("[data-version-count]").textContent === "1 of 1",
     );
     assert.equal(await slider.isDisabled(), true);
     await page.selectOption('[data-control="platform"]', "linux");
-    await page.waitForFunction(() =>
-      document
-        .querySelector('[role="status"]')
-        .textContent.startsWith("1 of 2"),
+    await page.waitForFunction(
+      () =>
+        document.querySelector("[data-version-count]").textContent === "1 of 2",
     );
     assert.equal(await slider.inputValue(), "0");
     await page.selectOption('[data-control="metric"]', "factor");
@@ -560,7 +589,17 @@ publish(root, Path(sys.argv[2]).read_text())
         .querySelector('[role="status"]')
         .textContent.includes("Unable to load"),
     );
-    assert.equal(await page.locator("[data-chart]").isVisible(), false);
+    assert.equal(await page.locator("[data-chart]").isVisible(), true);
+    assert.equal(await slider.isVisible(), true);
+    assert.equal(await host.getAttribute("data-commit"), "a".repeat(40));
+    assert.equal(
+      await page.locator("[data-version-count]").textContent(),
+      "1 of 2",
+    );
+    assert.equal(
+      await page.locator("[data-report]").textContent(),
+      "a".repeat(10),
+    );
     assert.equal(
       await host.evaluate((element) => element.clientHeight),
       originalBox.height,
@@ -587,10 +626,17 @@ publish(root, Path(sys.argv[2]).read_text())
         "factor",
       );
     }
+    assert.equal(
+      await page.locator("[data-measured]").textContent(),
+      "2026-10-02",
+    );
+    assert.equal(await page.locator("[data-measured-row]").isVisible(), true);
+    assert.equal(await page.locator('[role="status"]').isVisible(), false);
+    const localPanelBox = await versionPanel.boundingBox();
+    assert.equal(localPanelBox.y, chartBox.y + 12);
     assert.ok(
-      (await page.locator("[data-report]").textContent()).includes(
-        "measured 2026-10-02",
-      ),
+      (await legendPanel.boundingBox()).y >=
+        localPanelBox.y + localPanelBox.height + 8,
     );
     assert.equal(
       await page

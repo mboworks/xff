@@ -346,15 +346,19 @@ run/attempt for each platform and commit. Platform labels include architecture w
 Switching platforms preserves the selected commit when available; otherwise it selects that
 platform's newest report. A single available version disables the slider.
 
-The selected report link shows branch/PR/tag, commit, time and run/attempt; it opens the full tables
-and raw-data link. Scale, order and camera state survive version changes. Each chart retains its
+The chart's upper-left panel holds the version slider above a compact table: version position,
+linked commit, PR/release when known, platform, platform details and revision date. Local series
+also show the measurement date. The commit opens the full report, including tables and raw data;
+its tooltip retains the full branch, time and run/attempt information. The performance scale sits
+in a separate outlined panel directly below it. Scale, order and camera state survive version changes. Each chart retains its
 own measurement contract and automatically scaled axes/colors: moving the slider is exploration,
 not a paired cross-host or cross-version regression claim. Missing versions are not interpolated.
 The overview downloads only the selected report's generated landscape JSON. While loading, the
 previous chart and its report link remain visible; the new data replaces them in place without
 collapsing the chart or resetting the camera. Interrupted requests cannot overwrite newer
-selections. Failures hide the previous chart while preserving its space and leave the requested
-report link available. Generated payloads expire with their raw reports under existing retention.
+selections. On failure the panel explains which requested version could not load; the previous
+chart and its matching metadata remain visible, and the slider remains usable. Generated payloads
+expire with their raw reports under existing retention.
 
 The version selection includes links to the matching PR and release when those references are
 known. The chart reserves its full height before loading; changing versions, worker pairs, range,
