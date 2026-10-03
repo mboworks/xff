@@ -32,10 +32,14 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
     const request = ++serial;
     pending?.abort();
     pending = new AbortController();
-    host.hidden = true;
-    reportLink.href = record.report;
-    reportLink.textContent = `${record.label} | ${record.date} | ${record.local ? `measured ${record.measured}` : `run ${record.run}, attempt ${record.attempt}`}`;
-    version.setAttribute("aria-valuetext", reportLink.textContent);
+    host.setAttribute("aria-busy", "true");
+    const reportText = `${record.label} | ${record.date} | ${record.local ? `measured ${record.measured}` : `run ${record.run}, attempt ${record.attempt}`}`;
+    function showReport() {
+      reportLink.href = record.report;
+      reportLink.textContent = reportText;
+    }
+    if (!chart) showReport();
+    version.setAttribute("aria-valuetext", reportText);
     status.textContent = `Loading ${record.label}...`;
     try {
       const response = await fetch(record.figures, { signal: pending.signal });
@@ -52,14 +56,19 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
       root.querySelector("[data-allocation-label]").hidden =
         !figures.allocation_pairs;
       const selected = selectedFigures();
-      host.hidden = false;
       if (!chart) chart = window.XffLandscape(host, selected);
       chart.update(order.value, metric.value, selected);
+      host.style.visibility = "visible";
+      showReport();
       status.textContent = `${Number(version.value) + 1} of ${records.length} measured versions. ${record.identity}`;
       host.dataset.commit = record.commit;
     } catch (error) {
       if (request !== serial) return;
+      host.style.visibility = "hidden";
+      showReport();
       status.textContent = `Unable to load this chart (${error.message}). Open the linked report or select another version.`;
+    } finally {
+      if (request === serial) host.removeAttribute("aria-busy");
     }
   }
   function selectedFigures() {

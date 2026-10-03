@@ -203,6 +203,7 @@ Measured follow-ups (see the P07/P08 sections of `docs/performance-analysis.md`)
 ## Benchmark visualization follow-up
 
 - [x] Keep the hover card at the rendering area's top-right corner instead of following the pointer.
+- [x] Replace benchmark versions in place while preserving chart space and camera state during loading.
 
 - [x] Add a benchmark overview landscape with platform selection and a slider over retained measured commits.
 

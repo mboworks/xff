@@ -224,14 +224,49 @@ publish(root, Path(sys.argv[2]).read_text())
       page.waitForFunction(
         (commit) =>
           document.querySelector("[data-chart]").dataset.commit === commit &&
-          !document.querySelector("[data-chart]").hidden,
+          document.querySelector("[data-chart]").style.visibility ===
+            "visible" &&
+          !document.querySelector("[data-chart]").hasAttribute("aria-busy"),
         commit.repeat(40),
       );
     await page.selectOption('[data-control="platform"]', "linux");
     await waitCommit("b");
     const slider = page.locator('[data-control="version"]');
+    const host = page.locator("[data-chart]");
+    const originalBox = await host.boundingBox();
+    const originalCanvas = await host.locator("canvas").elementHandle();
+    let releaseResponse, requestStarted;
+    const heldResponse = new Promise((resolve) => {
+      releaseResponse = resolve;
+    });
+    const loading = new Promise((resolve) => {
+      requestStarted = resolve;
+    });
+    await page.route("**/runs/1/1/linux/landscape.json", async (route) => {
+      requestStarted();
+      await heldResponse;
+      await route.continue();
+    });
     await slider.fill("0");
+    await loading;
+    assert.equal(await host.isVisible(), true);
+    assert.equal(await host.getAttribute("data-commit"), "b".repeat(40));
+    assert.deepEqual(await host.boundingBox(), originalBox);
+    assert.ok(
+      (await page.locator("[data-report]").textContent()).includes(
+        "b".repeat(10),
+      ),
+    );
+    releaseResponse();
     await waitCommit("a");
+    await page.unroute("**/runs/1/1/linux/landscape.json");
+    assert.deepEqual(await host.boundingBox(), originalBox);
+    assert.equal(
+      await originalCanvas.evaluate(
+        (canvas) => canvas === document.querySelector("[data-chart] canvas"),
+      ),
+      true,
+    );
     await page.selectOption('[data-control="platform"]', "macos");
     await page.waitForFunction(() =>
       document
@@ -258,6 +293,10 @@ publish(root, Path(sys.argv[2]).read_text())
         .textContent.includes("Unable to load"),
     );
     assert.equal(await page.locator("[data-chart]").isVisible(), false);
+    assert.equal(
+      await host.evaluate((element) => element.clientHeight),
+      originalBox.height,
+    );
     await slider.fill("0");
     await waitCommit("a");
     assert.equal(

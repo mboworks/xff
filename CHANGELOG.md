@@ -3,7 +3,7 @@
 
 # 0.9.0
 
-- Keep benchmark hover cards in the chart's top-right corner instead of following the pointer.
+- Keep benchmark hover cards in the chart's top-right corner and prevent page jumps when changing measured versions.
 
 - Run three complete-matrix benchmark shards on both platforms: one measured round each for PRs and three each for main, pooling raw samples before fastest-run selection.
 

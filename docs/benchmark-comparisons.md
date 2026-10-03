@@ -350,9 +350,11 @@ The selected report link shows branch/PR/tag, commit, time and run/attempt; it o
 and raw-data link. Scale, order and camera state survive version changes. Each chart retains its
 own measurement contract and automatically scaled axes/colors: moving the slider is exploration,
 not a paired cross-host or cross-version regression claim. Missing versions are not interpolated.
-The overview downloads only the selected report's generated landscape JSON. Interrupted requests
-cannot overwrite newer selections; failures hide the previous chart and leave its selected report
-link available. Generated payloads expire with their raw reports under existing retention.
+The overview downloads only the selected report's generated landscape JSON. While loading, the
+previous chart and its report link remain visible; the new data replaces them in place without
+collapsing the chart or resetting the camera. Interrupted requests cannot overwrite newer
+selections. Failures hide the previous chart while preserving its space and leave the requested
+report link available. Generated payloads expire with their raw reports under existing retention.
 
 One shared, pinned Three.js renderer bundle is published alongside the reports; no external CDN is used.
 Standalone previews embed the same bundle for offline use.
