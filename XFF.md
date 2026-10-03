@@ -1238,15 +1238,15 @@ See also: [Configuration](#topic-config), [Archives](#topic-archive), [Output](#
 
 <a id="flag-context-after"></a>
 
-- `--context-after=N` - with -grep, print N lines of context after each match (= --context=A:N) _(global, find, xff, rg)_
-  In rg mode, `--after-context`, `-A N` and `-AN` are aliases; native XFF/find mode and INI files use the long form. Together with the other context settings, a final symmetric context also supplies the default for contextual `-diff` output unless `--diff-context` or a per-action count overrides it.
+- `--context-after=N, --after-context=N` - with -grep, print N lines of context after each match (= --context=A:N) _(global, find, xff, rg)_
+  `--after-context` is an alias in every mode and in INI files. In rg mode, `-A N` and `-AN` are short aliases. Together with the other context settings, a final symmetric context also supplies the default for contextual `-diff` output unless `--diff-context` or a per-action count overrides it.
   Affects: -grep, -diff
   See also: [Content](#topic-content), [Regex matching](#topic-regex), [-grep](#primary-grep), [-diff](#primary-diff)
 
 <a id="flag-context-before"></a>
 
-- `--context-before=N` - with -grep, print N lines of context before each match (= --context=B:N) _(global, find, xff, rg)_
-  In rg mode, `--before-context`, `-B N` and `-BN` are aliases; native XFF/find mode and INI files use the long form. Together with the other context settings, a final symmetric context also supplies the default for contextual `-diff` output unless `--diff-context` or a per-action count overrides it.
+- `--context-before=N, --before-context=N` - with -grep, print N lines of context before each match (= --context=B:N) _(global, find, xff, rg)_
+  `--before-context` is an alias in every mode and in INI files. In rg mode, `-B N` and `-BN` are short aliases. Together with the other context settings, a final symmetric context also supplies the default for contextual `-diff` output unless `--diff-context` or a per-action count overrides it.
   Affects: -grep, -diff
   See also: [Content](#topic-content), [Regex matching](#topic-regex), [-grep](#primary-grep), [-diff](#primary-diff)
 

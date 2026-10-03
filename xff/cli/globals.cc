@@ -2127,12 +2127,13 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     },
     {
         .name = "--context-after",
-        .display = "--context-after=N",
+        .alias = "--after-context",
+        .display = "--context-after=N, --after-context=N",
         .group = "grep-output",
         .header = "Content-match output",
         .summary = "with -grep, print N lines of context after each match (= --context=A:N)",
-        .details = "In rg mode, `--after-context`, `-A N` and `-AN` are aliases; native XFF/find mode and INI files "
-                   "use the long form. "
+        .details = "`--after-context` is an alias in every mode and in INI files. In rg mode, `-A N` and `-AN` "
+                   "are short aliases. "
                    "Together with the other context settings, a final symmetric context also supplies the "
                    "default for contextual `-diff` output unless `--diff-context` or a per-action count overrides it.",
         .affects = "-grep,-diff",
@@ -2147,12 +2148,13 @@ constexpr std::array kGlobals = std::to_array<GlobalFlag>({
     },
     {
         .name = "--context-before",
-        .display = "--context-before=N",
+        .alias = "--before-context",
+        .display = "--context-before=N, --before-context=N",
         .group = "grep-output",
         .header = "Content-match output",
         .summary = "with -grep, print N lines of context before each match (= --context=B:N)",
-        .details = "In rg mode, `--before-context`, `-B N` and `-BN` are aliases; native XFF/find mode and INI files "
-                   "use the long form. "
+        .details = "`--before-context` is an alias in every mode and in INI files. In rg mode, `-B N` and `-BN` "
+                   "are short aliases. "
                    "Together with the other context settings, a final symmetric context also supplies the "
                    "default for contextual `-diff` output unless `--diff-context` or a per-action count overrides it.",
         .affects = "-grep,-diff",

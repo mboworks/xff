@@ -48,9 +48,9 @@ Context counts can be separate (`-A 2`, `-B 2`, `-C 2`) or attached (`-A2`, `-B2
 precede or follow the pattern and paths. These aliases are available only in rg
 segments. The canonical names `--context`, `--context-after`, and `--context-before`
 group the output function before its direction and work in all modes and INI files.
-Rg mode additionally accepts `--after-context` and `--before-context`, mapped to the
-same registry entries. After `--xff`, use the canonical names or switch back with
-`--rg`. A zero count requests no context on the selected side.
+The familiar `--after-context` and `--before-context` spellings are aliases in every
+mode and in INI files, mapped to the same registry entries. After `--xff`, use either
+long spelling or switch back with `--rg` for the short forms. A zero count requests no context on the selected side.
 
 ```sh
 xff --rg -n -B 1 -A2 TODO src

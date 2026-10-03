@@ -793,28 +793,31 @@ struct GrepContext {
 };
 
 absl::StatusOr<GrepContext> ResolveGrepContext(const std::vector<std::string>& globals) {
-  constexpr std::string_view kContext = "--context=";
-  constexpr std::string_view kBefore = "--context-before=";
-  constexpr std::string_view kAfter = "--context-after=";
   GrepContext result;
-  for (const std::string& global : globals) {
-    if (global.starts_with(kContext)) {
+  for (const std::string_view global : globals) {
+    const std::size_t equals = global.find('=');
+    if (equals == std::string_view::npos) {
+      continue;
+    }
+    const auto flag = cli::LookupGlobal(global.substr(0, equals));
+    if (!flag.has_value()) {
+      continue;
+    }
+    const std::string_view value = global.substr(equals + 1);
+    if (flag->name == "--context") {
       result.specified = true;
-      MBO_ASSIGN_OR_RETURN(
-          const ContextSides sides, ParseContextSpec(std::string_view(global).substr(kContext.size())));
+      MBO_ASSIGN_OR_RETURN(const ContextSides sides, ParseContextSpec(value));
       result.before = sides.before.value_or(result.before);
       result.after = sides.after.value_or(result.after);
-    } else if (global.starts_with(kBefore)) {
+    } else if (flag->name == "--context-before") {
       result.specified = true;
-      if (const std::string_view value = std::string_view(global).substr(kBefore.size());
-          !absl::SimpleAtoi(value, &result.before)) {
-        return absl::InvalidArgumentError(absl::StrCat("bad --context-before value '", value, "'"));
+      if (!absl::SimpleAtoi(value, &result.before)) {
+        return absl::InvalidArgumentError(absl::StrCat("bad ", flag->name, " value '", value, "'"));
       }
-    } else if (global.starts_with(kAfter)) {
+    } else if (flag->name == "--context-after") {
       result.specified = true;
-      if (const std::string_view value = std::string_view(global).substr(kAfter.size());
-          !absl::SimpleAtoi(value, &result.after)) {
-        return absl::InvalidArgumentError(absl::StrCat("bad --context-after value '", value, "'"));
+      if (!absl::SimpleAtoi(value, &result.after)) {
+        return absl::InvalidArgumentError(absl::StrCat("bad ", flag->name, " value '", value, "'"));
       }
     }
   }

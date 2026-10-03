@@ -256,23 +256,31 @@ test::context_help_explains_rg_only_short_options() {
 }
 
 test::context_family_names_share_rg_output_and_config_settings() {
-  local root flag out rc
+  local root flag out
   root="$(test_tmpdir context-names)"
   printf 'before\nhit\nafter\n' >"${root}/lines"
-  _check 0 $'before\nhit' --rg --context-before=1 hit "${root}/lines"
-  _check 0 $'before\nhit' --rg --before-context 1 hit "${root}/lines"
-  _check 0 $'hit\nafter' --rg --context-after=1 hit "${root}/lines"
-  _check 0 $'hit\nafter' --rg --after-context 1 hit "${root}/lines"
-  _check 0 $'before\nhit\nafter' --context-before=1 --context-after=1 --no-filename --no-line-number \
-    "${root}/lines" -grep hit
-  for flag in --before-context --after-context; do
-    out="$("$(_bin)" "${flag}=1" "${root}/lines" -grep hit 2>&1)" && rc=0 || rc=$?
-    expect_eq 2 "${rc}"
-    expect_output_contains "${flag}" "${out}"
+  for flag in --context-before --before-context; do
+    _check 0 $'before\nhit' --rg "${flag}=1" hit "${root}/lines"
+    _check 0 $'before\nhit' "${flag}=1" --no-filename --no-line-number "${root}/lines" -grep hit
+    printf '%s\n' "${flag}=1" >"${root}/user.ini"
+    out="$(XFF_TEST_USER_CONFIG="${root}/user.ini" "$(_bin)" --no-filename --no-line-number "${root}/lines" -grep hit)"
+    expect_eq $'before\nhit' "${out}"
   done
-  printf '%s\n' '--context-before=1' '--context-after=1' >"${root}/user.ini"
-  out="$(XFF_TEST_USER_CONFIG="${root}/user.ini" "$(_bin)" --rg hit "${root}/lines")"
-  expect_eq $'before\nhit\nafter' "${out}"
+  for flag in --context-after --after-context; do
+    _check 0 $'hit\nafter' --rg "${flag}=1" hit "${root}/lines"
+    _check 0 $'hit\nafter' "${flag}=1" --no-filename --no-line-number "${root}/lines" -grep hit
+    printf '%s\n' "${flag}=1" >"${root}/user.ini"
+    out="$(XFF_TEST_USER_CONFIG="${root}/user.ini" "$(_bin)" --no-filename --no-line-number "${root}/lines" -grep hit)"
+    expect_eq $'hit\nafter' "${out}"
+  done
+  _check 0 $'before\nhit' --rg --before-context 1 hit "${root}/lines"
+  _check 0 $'hit\nafter' --rg --after-context 1 hit "${root}/lines"
+  _check 0 $'hit\nafter' --context=1 --before-context=0 --after-context=2 --context-after=1 \
+    --no-filename --no-line-number "${root}/lines" -grep hit
+  out="$("$(_bin)" --help=--after-context --width=0)"
+  expect_output_contains '--context-after=N' "${out}"
+  out="$("$(_bin)" --help=--before-context --width=0)"
+  expect_output_contains '--context-before=N' "${out}"
 }
 
 test::only_matching_applies_max_columns_to_each_portion() {
