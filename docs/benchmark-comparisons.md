@@ -350,6 +350,8 @@ The chart's upper-left panel holds the version slider above a compact table: ver
 linked commit, PR/release, revision date, measurement date when recorded, and platform. All rows
 remain visible, using explicit placeholders for missing information. Platform details come last
 in a reserved three-line area; their full text remains available in the tooltip.
+Revision date identifies the code revision. Measured uses the recorded completion date for both
+CI backfills and local runs; older revisions can therefore have newer measurement dates.
 The commit opens the full report, including tables and raw data;
 its tooltip retains the full branch, time and run/attempt information. The performance scale sits
 in a separate outlined panel directly below it, with inset endpoints to keep long tick labels

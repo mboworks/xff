@@ -415,7 +415,11 @@ for run, platform, commit in [(1, 'linux', 'a'), (2, 'linux', 'b'), (3, 'macos',
     folder = root / 'runs' / str(run) / '1' / platform
     folder.mkdir(parents=True)
     source = dict(id=run, run_attempt=1, head_sha=commit * 40, head_branch='main', created_at=f'2026-09-{run:02d}')
-    (folder / 'report.json').write_text(json.dumps(dict(tool_comparisons=report(), platform=platform, source=source)))
+    data = dict(tool_comparisons=report(), platform=platform, source=source)
+    if platform == 'macos':
+        data.update(kind='backfill', purpose='ci-replacement', head=commit * 40,
+                    revision={'date': source['created_at']}, completed_at='2026-10-02T12:00:00Z')
+    (folder / 'report.json').write_text(json.dumps(data))
     (folder / 'index.html').write_text('<h1>Report</h1>')
 folder = root / 'local/macos-test/batch' / ('c' * 40)
 folder.mkdir(parents=True)
@@ -603,6 +607,10 @@ publish(root, Path(sys.argv[2]).read_text())
         document.querySelector("[data-version-count]").textContent === "1 of 1",
     );
     assert.equal(await slider.isDisabled(), true);
+    assert.equal(
+      await page.locator("[data-measured]").textContent(),
+      "2026-10-02",
+    );
     await page.selectOption('[data-control="platform"]', "linux");
     await page.waitForFunction(
       () =>

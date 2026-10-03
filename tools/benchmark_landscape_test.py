@@ -255,6 +255,9 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                               head_branch='main', created_at=f'2026-09-{run:02d}T12:00:00Z')
                 data = dict(tool_comparisons=report(cpus=(1, 3) if platform == 'macos' else (1, 4)),
                             platform=platform, source=source)
+                if platform == 'macos':
+                    data.update(kind='backfill', purpose='ci-replacement', head=sha * 40,
+                                revision={'date': source['created_at']}, completed_at='2026-10-02T12:00:00Z')
                 (folder / 'report.json').write_text(json.dumps(data))
                 (folder / 'index.html').write_text('<h1>Report</h1>')
             self.assertEqual(landscape.publish(root, '/* renderer */'), 4)
@@ -265,6 +268,8 @@ class BenchmarkLandscapeTest(unittest.TestCase):
                              [('linux', 1, 2), ('macos', 2, 1), ('linux', 3, 1)])
             self.assertLess(first.index('benchmark-explorer'), first.index('<table>'))
             for row in catalog:
+                self.assertEqual(row['measurement_date'], '2026-10-02T12:00:00Z'
+                                 if row['platform'] == 'macos' else None)
                 payload = json.loads((root / row['figures']).read_text())
                 self.assertEqual(set(payload), set(landscape.ORDER_LABELS))
                 expected = '3 workers' if row['platform'] == 'macos' else '4 workers'

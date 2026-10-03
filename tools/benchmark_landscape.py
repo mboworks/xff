@@ -438,6 +438,7 @@ def publish(root, javascript):
             catalog.append(dict(platform=platform, commit=commit, label=label,
                                 links=version_links.get(commit, []),
                                 date=benchmark_records.reference_time(record),
+                                measurement_date=record.get('completed_at'),
                                 backfill=benchmark_records.is_backfill(record),
                                 **(dict(measured=record['completed_at'], local=True) if local else
                                    dict(run=int(source['id']), attempt=int(source['run_attempt']))),

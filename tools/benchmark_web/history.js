@@ -68,9 +68,10 @@ window.XffBenchmarkHistory = function historyExplorer(root, catalog) {
       const date = root.querySelector("[data-revision-date]");
       date.textContent = record.date.slice(0, 10);
       date.title = record.date;
+      const measured = record.measurement_date || record.measured;
       root.querySelector("[data-measured]").textContent =
-        record.measured?.slice(0, 10) || "Not recorded";
-      root.querySelector("[data-measured]").title = record.measured || "";
+        measured?.slice(0, 10) || "Not recorded";
+      root.querySelector("[data-measured]").title = measured || "";
       versionLinks.replaceChildren();
       for (const link of record.links || []) {
         const target = new URL(link.href, location.href);
