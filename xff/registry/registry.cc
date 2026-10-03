@@ -1728,7 +1728,7 @@ static_assert(
         }),
     "primary_expansion_topic must be an element of see_also");
 
-constexpr auto kSpellingIndex = [] {
+constexpr auto kSpellingIndex = [] consteval {
   SpellingIndex<kDescriptors.size() * 2> result;
   for (std::size_t i = 0; i < kDescriptors.size(); ++i) {
     const auto& descriptor = kDescriptors.at(i);

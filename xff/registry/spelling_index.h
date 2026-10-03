@@ -35,13 +35,13 @@ struct ModeSpellings {
   std::array<IndexedSpelling, Capacity> entries{};
   std::size_t size = 0;
 
-  constexpr void Add(std::string_view name, std::size_t entry) {
+  consteval void Add(std::string_view name, std::size_t entry) {
     if (!name.empty()) {
       entries.at(size++) = {.name = name, .entry = entry};
     }
   }
 
-  constexpr bool Sort() {
+  consteval bool Sort() {
     auto active = std::span(entries).first(size);
     std::ranges::sort(active, {}, &IndexedSpelling::name);
     for (std::size_t i = 1; i < size; ++i) {
@@ -64,11 +64,11 @@ struct SpellingIndex {
   std::array<ModeSpellings<Capacity>, registry::kModes.size()> modes;
   bool valid = true;
 
-  constexpr void Add(registry::Mode mode, std::string_view name, std::size_t entry) {
+  consteval void Add(registry::Mode mode, std::string_view name, std::size_t entry) {
     modes.at(SpellingModeIndex(mode)).Add(name, entry);
   }
 
-  constexpr void Sort() {
+  consteval void Sort() {
     for (auto& mode : modes) {
       valid = mode.Sort() && valid;
     }

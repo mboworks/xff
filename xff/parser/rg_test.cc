@@ -338,6 +338,12 @@ TEST_F(RgTest, NativeHelpAfterRgDoesNotRequireASearchPattern) {
   EXPECT_THAT(command.rg, Optional(Field(&RgSearch::patterns, IsEmpty())));
 }
 
+TEST_F(RgTest, EmptyTokenAfterReturningToNativeFiltersIsNotAPrimary) {
+  EXPECT_THAT(
+      Parse({"--rg", "hit", "--xff", ""}),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("--xff starts a filter expression")));
+}
+
 TEST_F(RgTest, LateRgConsumesNativeCommandAndCaptureArgumentsAtomically) {
   for (const std::string_view primary : {"-exec", "-capture:result"}) {
     ASSERT_OK_AND_ASSIGN(

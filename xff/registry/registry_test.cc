@@ -24,6 +24,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "xff/registry/descriptor.h"
+#include "xff/registry/spelling_index.h"
 
 namespace xff::registry {
 namespace {
@@ -43,6 +44,36 @@ using ::testing::Ref;
 using ::testing::SizeIs;
 
 struct RegistryTest : ::testing::Test {};
+
+TEST_F(RegistryTest, SpellingIndexesValidateModeLocalIdentityAtCompileTime) {
+  static constexpr auto kIndex = [] consteval {
+    SpellingIndex<4> result;
+    result.Add(Mode::kXff, "-z", 2);
+    result.Add(Mode::kXff, "-a", 1);
+    result.Add(Mode::kXff, "-a", 1);
+    result.Add(Mode::kXff, "", 3);
+    result.Add(Mode::kRg, "-a", 4);
+    result.Sort();
+    return result;
+  }();
+  static_assert(kIndex.valid);
+  EXPECT_THAT(kIndex.Find("-a", Mode::kXff), Optional(1));
+  EXPECT_THAT(kIndex.Find("-z", Mode::kXff), Optional(2));
+  EXPECT_THAT(kIndex.Find("-a", Mode::kRg), Optional(4));
+  EXPECT_THAT(kIndex.Find("-a", Mode::kFind), Eq(std::nullopt));
+  EXPECT_THAT(kIndex.Find("", Mode::kXff), Eq(std::nullopt));
+  EXPECT_THAT(kIndex.Find("-", Mode::kXff), Eq(std::nullopt));
+  EXPECT_THAT(kIndex.Find("-a-extra", Mode::kXff), Eq(std::nullopt));
+
+  static constexpr auto kConflict = [] consteval {
+    SpellingIndex<2> result;
+    result.Add(Mode::kXff, "-a", 1);
+    result.Add(Mode::kXff, "-a", 2);
+    result.Sort();
+    return result;
+  }();
+  static_assert(!kConflict.valid);
+}
 
 TEST_F(RegistryTest, CompatibilitySpellingsAreDisjointFromNativePrimaries) {
   EXPECT_THAT(Lookup("-o", Mode::kXff), Optional(Field(&Descriptor::kind, Kind::kOperator)));

@@ -142,6 +142,11 @@ TEST_F(ParserTest, GlobalsRootsExpression) {
   EXPECT_THAT(cmd.expression->args, ElementsAre("f"));
 }
 
+TEST_F(ParserTest, RejectsAnUnmatchedClosingParenthesisAfterAPredicate) {
+  EXPECT_THAT(
+      Parse({".", "-true", ")"}), StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("unexpected token: ')'")));
+}
+
 TEST_F(ParserTest, JobsShortFormsCanonicalizeToTheLongGlobal) {
   ASSERT_OK_AND_ASSIGN(const Command spaced, Parse({"-j", "4", "."}));
   EXPECT_THAT(spaced.globals, ElementsAre("--jobs=4"));

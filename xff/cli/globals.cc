@@ -3532,7 +3532,7 @@ static_assert(
     }(),
     "compatibility spellings must be unique within each mode");
 
-constexpr auto kGlobalIndex = [] {
+constexpr auto kGlobalIndex = [] consteval {
   registry::SpellingIndex<kGlobals.size() * 2> result;
   for (std::size_t i = 0; i < kGlobals.size(); ++i) {
     const auto& flag = kGlobals.at(i);
@@ -3549,7 +3549,7 @@ constexpr auto kGlobalIndex = [] {
   return result;
 }();
 
-constexpr auto kSignIndex = [] {
+constexpr auto kSignIndex = [] consteval {
   constexpr auto kCapacity = [] {
     std::size_t size = 0;
     for (const auto& flag : kGlobals) {
@@ -3572,7 +3572,7 @@ constexpr auto kSignIndex = [] {
   return result;
 }();
 
-constexpr auto kCompatibilityIndex = [] {
+constexpr auto kCompatibilityIndex = [] consteval {
   registry::SpellingIndex<kCompatibility.size() * 2> result;
   for (std::size_t i = 0; i < kCompatibility.size(); ++i) {
     const auto& option = kCompatibility.at(i);
